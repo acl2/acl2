@@ -43,7 +43,7 @@
 
 ; ----------------- World Lookup Stuff --------------------------
 
-(defun get-formals (fn fn-pkg fn-name context world)
+(defun get-formals (fn context world)
   (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
        ((unless (eq formals :bad))
         formals)
@@ -51,26 +51,35 @@
        ((unless (eq macro-args :bad))
         macro-args))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-formals failed for ~s1::~s2.~%" context fn-pkg fn-name))
-    (str::cat "Error getting formals for " fn-pkg "::" fn-name)))
+         (cw "; xdoc error in ~x0: get-formals failed for ~x1.~%" context fn))
+    (str::cat "Error getting formals for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
-(defun get-measure (fn fn-pkg fn-name context world)
+(defun get-measure (fn context world)
   (b* ((just (getprop fn 'justification nil 'current-acl2-world world))
        ((when just)
         (access justification just :measure)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-measure failed for ~s1::~s2.~%" context fn-pkg fn-name))
-    (str::cat "Error getting measure for " fn-pkg "::" fn-name)))
+         (cw "; xdoc error in ~x0: get-measure failed for ~x1.~%" context fn))
+    (str::cat "Error getting measure for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
-(defun get-guard (fn fn-pkg fn-name context world)
+(defun get-guard (fn context world)
   (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
        ((unless (eq formals :bad))
         (getprop fn 'guard nil 'current-acl2-world world)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-guard failed for ~s1::~s2.~%" context fn-pkg fn-name))
-    (str::cat "Error getting guard for " fn-pkg "::" fn-name)))
+         (cw "; xdoc error in ~x0: get-guard failed for ~x1.~%" context fn))
+    (str::cat "Error getting guard for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
-(defun get-body (fn fn-pkg fn-name context world)
+(defun get-body (fn context world)
   ;; This gets the original body normalized or non-normalized body based on
   ;; what the user typed for the :normalize xarg.  The use of "last" skips past
   ;; any other :definition rules that have been added since then.
@@ -78,8 +87,11 @@
        ((when bodies)
         (access def-body (car (last bodies)) :concl)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-body failed for ~s1::~s2.~%" context fn-pkg fn-name))
-    (str::cat "Error getting body for " fn-pkg "::" fn-name)))
+         (cw "; xdoc error in ~x0: get-body failed for ~x1.~%" context fn))
+    (str::cat "Error getting body for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
 
 (defun eat-things-from-event (keys event)
@@ -216,18 +228,21 @@
            (xdoc::get-event* name (scan-to-event (cdr wrld1))))
           (t ev))))
 
-(defun get-event-aux (fn fn-pkg fn-name context world)
+(defun get-event-aux (name context world)
   ;; A general purpose event lookup as in :pe
-  (b* ((props (acl2::getprops fn 'current-acl2-world world))
-       (evt   (and props (get-event* fn world)))
+  (b* ((props (acl2::getprops name 'current-acl2-world world))
+       (evt   (and props (get-event* name world)))
        ((when evt)
         evt))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-event failed for ~s1::~s2.~%" context fn-pkg fn-name))
-    (str::cat "Error getting event for " fn-pkg "::" fn-name)))
+         (cw "; xdoc error in ~x0: get-event failed for ~x1.~%" context name))
+    (str::cat "Error getting event for "
+              (symbol-package-name name)
+              "::"
+              (symbol-name name))))
 
-(defun get-event (fn fn-pkg fn-name context world)
-  (clean-up-event fn (get-event-aux fn fn-pkg fn-name context world)))
+(defun get-event (name context world)
+  (clean-up-event name (get-event-aux name context world)))
 
 (defun start-event (event acc)
   (b* ((acc (str::revappend-chars "<b>" acc))
@@ -368,148 +383,76 @@
   (read-through-some-char-aux x n xl chars nil))
 
 
-; Basic preprocessor directives.
+; Basic preprocessor directives:
 
-(defun parse-directive (x n xl base-pkg kpa context)
-  ;; Every basic directive has the form @(command arg), where command and arg
-  ;; are symbols.  We assume @( has just been read, and N is now pointing right
-  ;; after the open paren.  We try to read the command and arg.
-  ;;
-  ;; Returns (MV ERROR                error message for malformed directives
-  ;;             COMMAND              command symbol, e.g., xdoc::see for @(see append)
-  ;;             ARG                  arg symbol, e.g., 'append for @(see append), possibly fudged (see below)
-  ;;             ARG-RAW              string form of arg for capitalization stuff
-  ;;             ARG-PKGNAME          "real" package name for arg (may not exist)
-  ;;             ARG-SYMNAME          "real" symbol name for arg
-  ;;             N-PRIME              new position in X
-  ;;             )
-  ;;
-  ;; Historically, on success, we just returned the ARG as a symbol.
-  ;;
-  ;; Later, to support fancier @(see Foo) capitalization preservation, we added
-  ;; ARG-RAW to capture the raw string version of the argument.
-  ;;
-  ;; Later, to better handle certain situations with missing packages, we added
-  ;; additional ARG-PKGNAME and ARG-SYMNAME returns.  In particular, especially
-  ;; when issuing :doc commands at the terminal, it is possible to try to
-  ;; display documentation topics that include links to other packages that do
-  ;; not yet exist.  For example:
-  ;;
-  ;;   $ acl2
-  ;;   (in-package "ACL2")
-  ;;   (include-book "xdoc/top" :dir :system)
-  ;;   (defxdoc foo :short "See @(see mypkg::foo) for more information")
-  ;;   :doc foo
-  ;;
-  ;; Here we are trying to display a documentation topic that includes a link
-  ;; into MYPKG, but MYPKG doesn't exist yet in our ACL2 session (and
-  ;; presumably won't exist until we include some books from that library.)
-  ;; Other similar situations can arise with other directives like @(def
-  ;; mypkg::foo) and so on.
-  ;;
-  ;; Historically XDOC did not handle this situation gracefully, and just
-  ;; caused errors that complained about the missing package.
-  ;;
-  ;; Indeed, it is tricky to come up with a good solution, because the topic
-  ;; above is perfectly sensible, just not in the current ACL2 world.  I
-  ;; considered some raw Lisp solutions such as creating packages on the fly,
-  ;; but that's tricky.  In particular, if we just do (make-package "MYPKG"),
-  ;; then this package will now be known to Common Lisp but not to ACL2.  As a
-  ;; result, the ACL2 user will be unable to subsequently (defpkg "MYPKG" ...)
-  ;; because defpkg has explicit checks that the package doesn't exist.  Is
-  ;; that a problem?  Yes, because if MYPKG is a real ACL2 library with such a
-  ;; defpkg form, the user will now be unable to load books from that library.
-  ;; So, underhanded Lisp stuff seems like a bad solution and it seems better
-  ;; to just adjust XDOC to deal with this situation head on.
-  ;;
-  ;; My new approach.  If there's a missing package, then we will:
-  ;;
-  ;;   (1) Fudge the argument, ARG, by just returning 'UNKNOWN-PACKAGE if
-  ;;       its package does not yet exist
-  ;;
-  ;;   (2) Return the PKGNAME and SYMNAME that ARG are supposed to refer to so
-  ;;       that, when possible, preprocessor directives can use them to produce
-  ;;       sensible output, even when the package is missing.
+(defun parse-directive (x n xl base-pkg kpa) ;; ==> (MV ERROR COMMAND ARG ARG-RAW N-PRIME)
+  ;; Every basic directive has the form @(command arg)
+  ;; Where command and arg are symbols.
+  ;; We assume @( has just been read, and N is now pointing right after the open paren.
+  ;; We try to read the command and arg.
+  ;; Historically, on success, we returned the ARG as a symbol alone.
+  ;; Now, to support fancier @(see Foo) capitalization preservation, we need to also
+  ;; return the raw argument.
   (declare (type string x))
-  (b* (;; Read the command.  We want to get nice error messages here, because
-       ;; if there'a a directive we really do expect it to be a valid symbol.
-       (n (skip-past-ws x n xl))
+  (b* ((n                    (skip-past-ws x n xl))
+       ;; We want to get nice error messages here, because if there'a a directive we
+       ;; really do expect it to be a valid symbol.
        ((mv error command n) (parse-symbol x n xl (pkg-witness "XDOC") kpa t))
        ((when error)
-        (mv error
-            nil nil nil nil nil
-            n))
+        (mv error nil nil nil n))
+       (n                    (skip-past-ws x n xl))
+       (arg-start-n          n)
+       ((mv error arg n)     (parse-symbol x n xl base-pkg kpa t)))
+      (cond
+       ;; Some error parsing arg.  Add a little more context.
+       (error (mv (str::cat "In " (symbol-name command) " directive: " error)
+                  nil nil nil n))
 
-       ;; Read the argument.  We now use parse-symbol-main because we don't
-       ;; want to error out just for missing packages.
-       (n (skip-past-ws x n xl))
-       (arg-start-n n)
-       ((mv error arg-pkgname arg-symname n)
-        (parse-symbol-main x n xl base-pkg t))
-       ((when error)
-        ;; Some error parsing arg.  Add a little more context.
-        (mv (str::cat "In " (symbol-name command) " directive: " error)
-            nil nil nil nil nil
-            n))
+       ;; Ends with ), good.
+       ((and (< n xl)
+             (eql (char x n) #\)))
+        (mv nil command arg (subseq x arg-start-n n) (+ n 1)))
 
-       ;; Read the close paren.
-       ((unless (and (< n xl)
-                     (eql (char x n) #\))))
+       (t
         (mv (str::cat "In " (symbol-name command) " directive, expected ) after "
-                      arg-symname ". Near " (error-context x n xl) ".")
-            nil nil nil nil nil
-            n))
-
-       (arg-raw (subseq x arg-start-n n))
-       (arg     (if (assoc-equal arg-pkgname kpa)
-                    (intern$ arg-symname arg-pkgname)
-                  (progn$
-                   (and (xdoc-verbose-p)
-                        (cw "; xdoc error in ~x0: unknown package ~s2 in @(~s1 ~s2::~s3)~%"
-                            context (symbol-name command) arg-pkgname arg-symname))
-                   'unknown-package))))
-
-    (mv nil command arg arg-raw arg-pkgname arg-symname (+ n 1))))
+                      (symbol-name arg) ". Near " (error-context x n xl) ".")
+            nil nil nil n)))))
 
 #||
 (let ((x "body Foo)"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
 (let ((x "body foo) bar"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
 (let ((x "body xdoc::foo) bar"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
 (let ((x "xdoc::body xdoc::foo) bar"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
 (let ((x "acl2::body xdoc::foo) bar"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
 (let ((x "acl2::body)xdoc::foo) bar"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
-
-(let ((x "body missing::foo) bar"))
-  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state) 'blah))
-
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 ||#
 
 
 
 ; -------------- Executing Directives ---------------------------
 
-(defun process-url-directive (arg-pkgname arg-symname acc) ;; ===> ACC
+(defun process-url-directive (arg acc) ;; ===> ACC
   ;; @(url foo) just expands into the file name for foo.
-  (file-name-mangle-main arg-pkgname arg-symname acc))
+  (file-name-mangle arg acc))
 
-(defun process-sym-directive (arg arg-pkgname arg-symname base-pkg acc) ;; ===> ACC
+(defun process-sym-directive (arg base-pkg acc) ;; ===> ACC
   ;; @(sym foo) just expands into the standard name mangling for foo
-  (sym-mangle-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc))
+  (sym-mangle arg base-pkg acc))
 
-(defun process-sym-cap-directive (arg arg-pkgname arg-symname base-pkg acc) ;; ===> ACC
+(defun process-sym-cap-directive (arg base-pkg acc) ;; ===> ACC
   ;; @(csym foo) just expands into the standard capitalized name mangling for foo
-  (sym-mangle-cap-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc))
+  (sym-mangle-cap arg base-pkg acc))
 
 (defun want-to-preserve-case-p (arg arg-raw base-pkg)
   ;; Decide whether we want to preserve the case on a link like @(see Foo).
@@ -537,177 +480,176 @@
    ;; backslash escape characters.
    (str::istreqv arg-raw (symbol-name arg))))
 
-(defun process-see-directive (arg arg-raw arg-pkgname arg-symname base-pkg acc) ;; ===> ACC
+(defun process-see-directive (arg arg-raw base-pkg acc) ;; ===> ACC
   ;; @(see foo) just expands into a link with a (usually) lowercase name, but we go to
   ;; some trouble to preserve case for things like @(see Guard).
   (b* ((acc (str::revappend-chars "<see topic=\"" acc))
-       (acc (file-name-mangle-main arg-pkgname arg-symname acc))
+       (acc (file-name-mangle arg acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
                 ;; BOZO can this possibly be right?  What if arg-raw has '<' in it?
                 ;; If this is a bug, fix the other see-like directives below, too.
                 (str::revappend-chars (str::trim arg-raw) acc)
-              (sym-mangle-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc)))
+              (sym-mangle arg base-pkg acc)))
        (acc (str::revappend-chars "</see>" acc)))
     acc))
 
-(defun process-see-cap-directive (arg arg-pkgname arg-symname base-pkg acc) ;; ===> ACC
+(defun process-see-cap-directive (arg base-pkg acc) ;; ===> ACC
   ;; @(csee foo) just expands into a link with a capitalized name.
   (b* ((acc (str::revappend-chars "<see topic=\"" acc))
-       (acc (file-name-mangle-main arg-pkgname arg-symname acc))
+       (acc (file-name-mangle arg acc))
        (acc (str::revappend-chars "\">" acc))
-       (acc (sym-mangle-cap-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc))
+       (acc (sym-mangle-cap arg base-pkg acc))
        (acc (str::revappend-chars "</see>" acc)))
     acc))
 
-(defun process-tsee-directive (arg arg-raw arg-pkgname arg-symname base-pkg acc) ;; ===> ACC
+(defun process-tsee-directive (arg arg-raw base-pkg acc) ;; ===> ACC
   ;; @(tsee foo) is basically <tt>@(see ...)</tt>.
   (b* ((acc (str::revappend-chars "<tt>" acc))
-       (acc (process-see-directive arg arg-raw arg-pkgname arg-symname base-pkg acc))
+       (acc (process-see-directive arg arg-raw base-pkg acc))
        (acc (str::revappend-chars "</tt>" acc)))
     acc))
 
-(defun process-see?-directive (arg arg-raw arg-pkgname arg-symname topics-fal base-pkg acc) ;; ===> ACC
+(defun process-see?-directive (arg arg-raw topics-fal base-pkg acc) ;; ===> ACC
   ;; @(see? foo) is useful for macros like DEFLIST or DEFPROJECTION where you
   ;; are extending some function.  If FOO is the name of a documented topic,
   ;; then we insert a link to it just as in @(see foo).  But if FOO isn't
   ;; documented, we just turn it into a <tt>foo</tt> style thing.
   (b* (((when (hons-get arg topics-fal))
-        (process-see-directive arg arg-raw arg-pkgname arg-symname base-pkg acc))
+        (process-see-directive arg arg-raw base-pkg acc))
        ;; Not documented, don't insert a link.
        (acc (str::revappend-chars "<tt>" acc))
        (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
                 (str::revappend-chars (str::trim arg-raw) acc)
-              (sym-mangle-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc)))
+              (sym-mangle arg base-pkg acc)))
        (acc (str::revappend-chars "</tt>" acc)))
     acc))
 
-(defun process-srclink-directive (arg-symname acc) ;; ===> ACC
-  (b* ((shortname (explode (str::downcase-string arg-symname)))
+(defun process-srclink-directive (arg acc) ;; ===> ACC
+  (b* ((shortname (explode (str::downcase-string (symbol-name arg))))
        (acc (str::revappend-chars "<srclink>" acc))
        (acc (simple-html-encode-chars shortname acc))
        (acc (str::revappend-chars "</srclink>" acc)))
     acc))
 
-(defun process-body-directive (arg arg-pkgname arg-symname context topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-body-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(body foo) -- look up the body and pretty-print it in a <code> block.
-  (b* ((body (get-body arg arg-pkgname arg-symname context (w state)))
+  (b* ((body (get-body arg context (w state)))
        (acc  (str::revappend-chars "<code>" acc))
        (acc  (xml-ppr-obj-aux body topics-fal base-pkg state acc))
        (acc  (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-def-directive (arg arg-pkgname arg-symname context topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-def-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
   ;; block, along with a source-code link.
-  (b* ((def (get-event arg arg-pkgname arg-symname context (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
-       (acc (process-srclink-directive arg-symname acc))
+       (acc (process-srclink-directive arg acc))
        (acc (str::revappend-chars "</p>" acc))
        (acc (str::revappend-chars "<code>" acc))
        (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-gdef-directive (arg arg-pkgname arg-symname context topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-gdef-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
   ;; but don't use a source-code link because this is a "Generated Definition"
   ;; for which a tags-search will probably fail.
-  (b* ((def (get-event arg arg-pkgname arg-symname context (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
-       (acc (sym-mangle-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc))
+       (acc (sym-mangle arg base-pkg acc))
        (acc (str::revappend-chars "</p>" acc))
        (acc (str::revappend-chars "<code>" acc))
        (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-thm-directive (arg arg-pkgname arg-symname context topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-thm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(thm foo) -- Look up the theorem named foo, and pretty-print its event
   ;; along with a source link.
-  (b* ((def (get-event arg arg-pkgname arg-symname context (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
-       (acc (process-srclink-directive arg-symname acc))
+       (acc (process-srclink-directive arg acc))
        (acc (str::revappend-chars "</p>" acc))
        (acc (str::revappend-chars "<code>" acc))
        (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-gthm-directive (arg arg-pkgname arg-symname context topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-gthm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this
   ;; is a generated theorem.
-  (b* ((def (get-event arg arg-pkgname arg-symname context (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
-       (acc (sym-mangle-aux arg-pkgname arg-symname (in-package-p arg base-pkg) acc))
+       (acc (sym-mangle arg base-pkg acc))
        (acc (str::revappend-chars "</p>" acc))
        (acc (str::revappend-chars "<code>" acc))
        (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-formals-directive (arg arg-pkgname arg-symname context base-pkg state acc) ;; ===> ACC
+(defun process-formals-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(formals foo) -- just find the formals for foo and print them with;out
   ;; any extra formatting.
-  (b* ((formals (get-formals arg arg-pkgname arg-symname context (w state)))
+  (b* ((formals (get-formals arg context (w state)))
        (acc     (fmt-and-encode-to-acc formals base-pkg acc)))
     acc))
 
-(defun process-call-directive (arg arg-pkgname arg-symname context base-pkg state acc) ;; ===> ACC
+(defun process-call-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(call foo) -- find the formals to foo and insert <tt>(foo x y z)</tt>.
-  (b* ((formals (get-formals arg arg-pkgname arg-symname context (w state)))
+  (b* ((formals (get-formals arg context (w state)))
        (call    (cons arg formals))
        (acc     (str::revappend-chars "<tt>" acc))
        (acc     (fmt-and-encode-to-acc call base-pkg acc))
        (acc     (str::revappend-chars "</tt>" acc)))
     acc))
 
-(defun process-ccall-directive (arg arg-pkgname arg-symname context base-pkg state acc) ;; ===> ACC
+(defun process-ccall-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(ccall foo) -- "code call" is like @(call foo), but uses <code> instead
   ;; of <tt> tags.
-  (b* ((formals (get-formals arg arg-pkgname arg-symname context (w state)))
+  (b* ((formals (get-formals arg context (w state)))
        (call    (cons arg formals))
        (acc     (str::revappend-chars "<code>" acc))
        (acc     (fmt-and-encode-to-acc call base-pkg acc))
        (acc     (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-measure-directive (arg arg-pkgname arg-symname context base-pkg state acc) ;; ===> ACC
+(defun process-measure-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(measure foo) -- find the measure for foo and print it without any extra
   ;; formatting.
-  (b* ((measure (get-measure arg arg-pkgname arg-symname context (w state)))
+  (b* ((measure (get-measure arg context (w state)))
        (acc     (fmt-and-encode-to-acc measure base-pkg acc)))
     acc))
 
 
-(defun process-directive (command arg arg-raw arg-pkgname arg-symname
-                                  context topics-fal base-pkg state acc)
+(defun process-directive (command arg arg-raw context topics-fal base-pkg state acc)
    "Returns (MV ACC STATE)"
    ;; Command and Arg are the already-parsed symbols we have read from the
    ;; documentation string.  Carry out whatever directive we've been asked to
    ;; do.  Acc is the accumulator for our output characters.
    (case command
-     (def       (mv (process-def-directive     arg arg-pkgname arg-symname context topics-fal base-pkg state acc) state))
-     (thm       (mv (process-thm-directive     arg arg-pkgname arg-symname context topics-fal base-pkg state acc) state))
-     (srclink   (mv (process-srclink-directive arg-symname acc) state))
-     (gdef      (mv (process-gdef-directive    arg arg-pkgname arg-symname context topics-fal base-pkg state acc) state))
-     (gthm      (mv (process-gthm-directive    arg arg-pkgname arg-symname context topics-fal base-pkg state acc) state))
-     (body      (mv (process-body-directive    arg arg-pkgname arg-symname context topics-fal base-pkg state acc) state))
-     (formals   (mv (process-formals-directive arg arg-pkgname arg-symname context base-pkg state acc) state))
-     (measure   (mv (process-measure-directive arg arg-pkgname arg-symname context base-pkg state acc) state))
-     (call      (mv (process-call-directive    arg arg-pkgname arg-symname context base-pkg state acc) state))
-     (ccall     (mv (process-ccall-directive   arg arg-pkgname arg-symname context base-pkg state acc) state))
-     (url       (mv (process-url-directive     arg-pkgname arg-symname acc) state))
-     (see       (mv (process-see-directive     arg arg-raw arg-pkgname arg-symname base-pkg acc) state))
-     (csee      (mv (process-see-cap-directive arg arg-pkgname arg-symname base-pkg acc) state))
-     (tsee      (mv (process-tsee-directive    arg arg-raw arg-pkgname arg-symname base-pkg acc) state))
-     (sym       (mv (process-sym-directive     arg arg-pkgname arg-symname base-pkg acc) state))
-     (csym      (mv (process-sym-cap-directive arg arg-pkgname arg-symname base-pkg acc) state))
-     (see?      (mv (process-see?-directive    arg arg-raw arg-pkgname arg-symname topics-fal base-pkg acc) state))
+     (def       (mv (process-def-directive     arg context topics-fal base-pkg state acc)     state))
+     (thm       (mv (process-thm-directive     arg context topics-fal base-pkg state acc)     state))
+     (srclink   (mv (process-srclink-directive arg acc)                               state))
+     (gdef      (mv (process-gdef-directive    arg context topics-fal base-pkg state acc)     state))
+     (gthm      (mv (process-gthm-directive    arg context topics-fal base-pkg state acc)     state))
+     (body      (mv (process-body-directive    arg context topics-fal base-pkg state acc)     state))
+     (formals   (mv (process-formals-directive arg context base-pkg state acc)                state))
+     (measure   (mv (process-measure-directive arg context base-pkg state acc)                state))
+     (call      (mv (process-call-directive    arg context base-pkg state acc)                state))
+     (ccall     (mv (process-ccall-directive   arg context base-pkg state acc)                state))
+     (url       (mv (process-url-directive     arg acc)                               state))
+     (see       (mv (process-see-directive     arg arg-raw base-pkg acc)              state))
+     (csee      (mv (process-see-cap-directive arg base-pkg acc)                      state))
+     (tsee      (mv (process-tsee-directive    arg arg-raw base-pkg acc)              state))
+     (sym       (mv (process-sym-directive     arg base-pkg acc)                      state))
+     (csym      (mv (process-sym-cap-directive arg base-pkg acc)                      state))
+     (see?      (mv (process-see?-directive    arg arg-raw topics-fal base-pkg acc)   state))
      (otherwise
       (progn$
        (and (xdoc-verbose-p)
@@ -1297,15 +1239,13 @@ baz
                           ((mv acc state) (preprocess-eval str context topics-fal base-pkg kpa state acc)))
                        (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
-                    ((mv error command arg arg-raw arg-pkgname arg-symname n)
-                     (parse-directive x (+ n 2) xl base-pkg kpa context))
+                    ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
                      (prog2$ (and (xdoc-verbose-p)
                                   (cw "; xdoc error in ~x0: ~x1.~%" context error))
                              (mv acc state)))
                     ((mv acc state)
-                     (process-directive command arg arg-raw arg-pkgname arg-symname
-                                        context topics-fal base-pkg state acc)))
+                     (process-directive command arg arg-raw context topics-fal base-pkg state acc)))
                  (preprocess-aux x n xl context topics-fal base-pkg kpa state acc)))
 
               (t
