@@ -94,7 +94,7 @@
            (equal (foo y) (cons y y)))
   :rule-classes nil)
 
-(defthm test4 ; same as above, with an :expand hint causing delay
+(defthm test4 ; same as above (:expand hint isn't relevant)
   (implies (and (hint-wrapper '(:in-theory (enable mv-nth)))
                 (hint-wrapper '(:in-theory (enable foo)))
                 (hint-wrapper '(:in-theory (enable nth))))

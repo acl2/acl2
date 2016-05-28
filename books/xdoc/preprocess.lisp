@@ -627,18 +627,40 @@
     acc))
 
 
-(defun process-directive (command arg arg-raw context topics-fal base-pkg state acc)
+(defun process-directive (command arg arg-raw context
+                                  topics-fal disable-autolinking-p
+                                  base-pkg state acc)
    "Returns (MV ACC STATE)"
    ;; Command and Arg are the already-parsed symbols we have read from the
    ;; documentation string.  Carry out whatever directive we've been asked to
    ;; do.  Acc is the accumulator for our output characters.
    (case command
-     (def       (mv (process-def-directive     arg context topics-fal base-pkg state acc)     state))
-     (thm       (mv (process-thm-directive     arg context topics-fal base-pkg state acc)     state))
+     (def       (mv (process-def-directive arg context
+                                           (and (not disable-autolinking-p)
+                                                topics-fal)
+                                           base-pkg state acc)
+                    state))
+     (thm       (mv (process-thm-directive arg context
+                                           (and (not disable-autolinking-p)
+                                                topics-fal)
+                                           base-pkg state acc)
+                    state))
      (srclink   (mv (process-srclink-directive arg acc)                               state))
-     (gdef      (mv (process-gdef-directive    arg context topics-fal base-pkg state acc)     state))
-     (gthm      (mv (process-gthm-directive    arg context topics-fal base-pkg state acc)     state))
-     (body      (mv (process-body-directive    arg context topics-fal base-pkg state acc)     state))
+     (gdef      (mv (process-gdef-directive arg context
+                                            (and (not disable-autolinking-p)
+                                                 topics-fal)
+                                            base-pkg state acc)
+                    state))
+     (gthm      (mv (process-gthm-directive arg context
+                                            (and (not disable-autolinking-p)
+                                                 topics-fal)
+                                            base-pkg state acc)
+                    state))
+     (body      (mv (process-body-directive arg context
+                                            (and (not disable-autolinking-p)
+                                                 topics-fal)
+                                            base-pkg state acc)
+                    state))
      (formals   (mv (process-formals-directive arg context base-pkg state acc)                state))
      (measure   (mv (process-measure-directive arg context base-pkg state acc)                state))
      (call      (mv (process-call-directive    arg context base-pkg state acc)                state))
@@ -1145,7 +1167,8 @@ baz
           (mv acc state))))
     (mv acc state)))
 
-(defun preprocess-aux (x n xl context topics-fal base-pkg kpa state acc)
+(defun preprocess-aux (x n xl context topics-fal disable-autolinking-p base-pkg
+                         kpa state acc)
   "Returns (MV ACC STATE)"
   ;; Main preprocessor loop.  Read from the string and accumulate the result
   ;; into acc, expanding away any preprocessor directives.
@@ -1158,7 +1181,9 @@ baz
         (cond ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\@))
                ;; @@ --> @
-               (preprocess-aux x (+ n 2) xl context topics-fal base-pkg kpa state (cons #\@ acc)))
+               (preprocess-aux x (+ n 2) xl context
+                               topics-fal disable-autolinking-p
+                               base-pkg kpa state (cons #\@ acc)))
 
               ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\())
@@ -1183,9 +1208,14 @@ baz
                            ;; in @('...'), so changing to just use a simple subseq
                            (subseq x (+ n 3) end))
                           (acc (str::revappend-chars "<v>" acc))
-                          (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
+                          (acc (autolink-and-encode sub 0 (length sub)
+                                                    (and (not disable-autolinking-p)
+                                                         topics-fal)
+                                                    base-pkg kpa acc))
                           (acc (str::revappend-chars "</v>" acc)))
-                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context
+                                       topics-fal disable-autolinking-p
+                                       base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\{)))
@@ -1199,9 +1229,14 @@ baz
                                    (mv acc state)))
                           (sub (maybe-fix-spaces-in-sub (fancy-extract-block x (+ n 3) end)))
                           (acc (str::revappend-chars "<code>" acc))
-                          (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
+                          (acc (autolink-and-encode sub 0 (length sub)
+                                                    (and (not disable-autolinking-p)
+                                                         topics-fal)
+                                                    base-pkg kpa acc))
                           (acc (str::revappend-chars "</code>" acc)))
-                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context
+                                       topics-fal disable-autolinking-p
+                                       base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (or (eql (char x (+ n 2)) #\[)
@@ -1225,7 +1260,9 @@ baz
                           ;; that would very likely totally screw up katex.
                           (acc (simple-html-encode-str sub 0 (length sub) acc))
                           (acc (str::revappend-chars (if fragp "</mathfrag>" "</math>") acc)))
-                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context
+                                       topics-fal disable-autolinking-p
+                                       base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\`)))
@@ -1236,8 +1273,14 @@ baz
                                         (cw "; xdoc error in ~x0: no closing `) found for @(` ...~%" context))
                                    (mv acc state)))
                           (str (subseq x (+ n 3) end))
-                          ((mv acc state) (preprocess-eval str context topics-fal base-pkg kpa state acc)))
-                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
+                          ((mv acc state)
+                           (preprocess-eval str context
+                                            (and (not disable-autolinking-p)
+                                                 topics-fal)
+                                            base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context
+                                       topics-fal disable-autolinking-p
+                                       base-pkg kpa state acc)))
 
                     ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
@@ -1245,12 +1288,18 @@ baz
                                   (cw "; xdoc error in ~x0: ~x1.~%" context error))
                              (mv acc state)))
                     ((mv acc state)
-                     (process-directive command arg arg-raw context topics-fal base-pkg state acc)))
-                 (preprocess-aux x n xl context topics-fal base-pkg kpa state acc)))
+                     (process-directive command arg arg-raw context
+                                        topics-fal disable-autolinking-p
+                                        base-pkg state acc)))
+                 (preprocess-aux x n xl context
+                                 topics-fal disable-autolinking-p
+                                 base-pkg kpa state acc)))
 
               (t
                ;; @ sign in some other context.
-               (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state (cons #\@ acc)))))
+               (preprocess-aux x (+ n 1) xl context
+                               topics-fal disable-autolinking-p
+                               base-pkg kpa state (cons #\@ acc)))))
 
        ((when (eql char #\Newline))
         ;; Gross hack #1: eat initial newlines from the start of a <code>
@@ -1259,19 +1308,28 @@ baz
             (if (and (< (+ n 1) xl)
                      (eql (char x (+ n 1)) #\Newline))
                 ;; Avoid eating multiple newlines at the start of a code block.
-                (preprocess-aux x (+ n 2) xl context topics-fal base-pkg kpa state (cons #\Newline acc))
-              (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state acc))
+                (preprocess-aux x (+ n 2) xl context
+                                topics-fal disable-autolinking-p
+                                base-pkg kpa state (cons #\Newline acc))
+              (preprocess-aux x (+ n 1) xl context
+                              topics-fal disable-autolinking-p
+                              base-pkg kpa state acc))
           ;; Gross hack #2: the XSLT transformer in firefox seems to have some
           ;; problems if there aren't spaces at the end of lines, e.g., it will
           ;; run together the hover-text in the hierarchical description in
           ;; preview.html.  Fix by putting a space before newlines.  Horrible.
-          (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state
+          (preprocess-aux x (+ n 1) xl context
+                          topics-fal disable-autolinking-p
+                          base-pkg kpa state
                           (list* #\Newline #\Space acc)))))
 
     ;; Otherwise just keep the char and keep going.
-    (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state (cons char acc))))
+    (preprocess-aux x (+ n 1) xl context
+                    topics-fal disable-autolinking-p
+                    base-pkg kpa state (cons char acc))))
 
-(defun preprocess-main (x context topics-fal base-pkg state acc)
+(defun preprocess-main (x context topics-fal disable-autolinking-p base-pkg
+                          state acc)
   "Returns (mv acc state)"
   (declare (type (or string null) x))
   (b* ((x (or x ""))
@@ -1280,7 +1338,9 @@ baz
        ;; ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
        (kpa            (known-package-alist state))
        (x              (transform-code x))
-       ((mv acc state) (preprocess-aux x 0 (length x) context topics-fal base-pkg kpa state acc))
+       ((mv acc state) (preprocess-aux x 0 (length x) context
+                                       topics-fal disable-autolinking-p
+                                       base-pkg kpa state acc))
        ;; Restore base-pkg for whoever called us.
        ;; ((mv & & state) (acl2::set-current-package current-pkg state))
        )
