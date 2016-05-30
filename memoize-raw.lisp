@@ -660,7 +660,7 @@
     (loop for x in *stobjs-out-invalid*
           do (mf-sethash x t ht))
     #+rdtsc (mf-sethash #+ccl 'ccl::rdtsc
-                        #+sbcl sb-impl::read-cycle-counter
+                        #+sbcl 'sb-impl::read-cycle-counter
                         t
                         ht) ; used in memoize implementation
     ht))
@@ -1063,7 +1063,9 @@
                                    (funcall 'function-lambda-expression fn))
                               #-gcl
                               (function-lambda-expression fn))))
-               (cond (lam (assert (eq (car lam) 'lambda))
+               (cond (lam (assert (or (eq (car lam) 'lambda)
+                                      #+sbcl 
+                                      (eq (car lam) 'SB-INT::NAMED-LAMBDA)))
                           lam)
                      (quiet-p nil)
                      (t (error "Lisp cannot find a definition for ~
@@ -3881,7 +3883,7 @@
                                           (t (concatenate
                                               'string
                                               (subseq str 0 (max 0 n))
-                                              "...")))
+                                              "///")))
                                     *mf-shorten-ht*)))))))))
 
 (defun-one-output mf-print-alist (alist separation)
