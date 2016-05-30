@@ -1216,6 +1216,12 @@
                    (owned-vars process mine-flg (cdr history))))
         (t (owned-vars process mine-flg (cdr history)))))
 
+(defun ens-from-pspv (pspv)
+  (access rewrite-constant
+          (access prove-spec-var pspv
+                  :rewrite-constant)
+          :current-enabled-structure))
+
 (defun eliminate-destructors-clause (clause hist pspv wrld state)
 
 ; This is the waterfall processor that eliminates destructors.
@@ -1232,11 +1238,7 @@
                                                hist))
                                   (owned-vars 'eliminate-destructors-clause nil
                                               hist)
-                                  (access rewrite-constant
-                                          (access prove-spec-var
-                                                  pspv
-                                                  :rewrite-constant)
-                                          :current-enabled-structure)
+                                  (ens-from-pspv pspv)
                                   wrld
                                   t)
    (cond (elim-seq (mv 'hit clauses
@@ -1910,11 +1912,7 @@
 
   (mv-let (direction lit equiv lhs rhs len-tail)
           (first-fertilize-lit cl cl hist
-                               (access rewrite-constant
-                                       (access prove-spec-var
-                                               pspv
-                                               :rewrite-constant)
-                                       :current-enabled-structure)
+                               (ens-from-pspv pspv)
                                wrld)
           (cond
            ((null direction) (mv 'miss nil nil nil))
@@ -2241,12 +2239,6 @@
    cl ens wrld
    (generalizable-terms-across-relations
     cl ens wrld nil)))
-
-(defun ens-from-pspv (pspv)
-  (access rewrite-constant
-          (access prove-spec-var pspv
-                  :rewrite-constant)
-          :current-enabled-structure))
 
 (defun generalize-clause (cl hist pspv wrld state)
 

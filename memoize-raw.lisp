@@ -187,13 +187,50 @@
 ;; nonsense as instructions apparently executing in negative time, when timing
 ;; starts on one core and finishes on another.  To some extent we ignore such
 ;; RDTSC nonsense, but we still can report mysterious results since we have no
-;; clue about which core we are running on in CCL.
+;; clue about which core we are running on in CCL (or, presumably, SBCL).
 
-#+ccl
+#+(or ccl sbcl)
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
- (when (fboundp 'ccl::rdtsc)
+ (when (fboundp #+ccl 'ccl::rdtsc
+                #+sbcl 'sb-impl::read-cycle-counter)
    (pushnew :RDTSC *features*)))
+
+#+rdtsc
+(defconstant *2^30-1-for-rdtsc*
+  (1- (ash 1 30)))
+
+#+rdtsc
+(defmacro rdtsc ()
+
+; rdtsc always returns a fixnum, by zeroing out the top two bits of the real
+; rdtsc value.  We add with the possibly slightly faster logior.
+
+  #+ccl
+  '(ccl::rdtsc)
+  #+sbcl
+  '(multiple-value-bind 
+      (t1 t2)
+      (sb-impl::read-cycle-counter)
+    (declare (fixnum t1 t2))
+    (the fixnum (logior (the fixnum (ash (logand t1 *2^30-1-for-rdtsc*)
+                                         32))
+                        t2))))
+
+#+rdtsc
+(defmacro rdtsc64 ()
+
+; Rdtsc64 may return a bignum, but it returns all 64 bits of the real rdtsc
+; value.
+
+  #+ccl
+  '(ccl::rdtsc64)
+  #+sbcl
+  '(multiple-value-bind 
+    (t1 t2)
+    (sb-impl::read-cycle-counter)
+    (declare (fixnum t1 t2))
+    (+ (ash t1 32) t2)))
 
 ; SECTION: Multithreaded Memoization
 
@@ -622,7 +659,10 @@
   (let ((ht (mf-mht :test 'eq :shared :default)))
     (loop for x in *stobjs-out-invalid*
           do (mf-sethash x t ht))
-    #+ccl (mf-sethash 'ccl::rdtsc t ht) ; used in memoize implementation
+    #+rdtsc (mf-sethash #+ccl 'ccl::rdtsc
+                        #+sbcl sb-impl::read-cycle-counter
+                        t
+                        ht) ; used in memoize implementation
     ht))
 
 ; Subsection: Variables not user-settable (managed by the implementation)
@@ -993,11 +1033,11 @@
 ;    (setq ccl::*fasl-save-definitions* t)
 
 ; However, while memoization is implemented with some features specific to CCL
-; (e.g., RDTSC), in general we prefer that the functionality be independent of
-; the host Lisp, so that books are less likely to fail certification when
-; changing host Lisps (or versions of a given host Lisp).  Moreover, an ACL2
-; regression based on CCL took close to 2% longer when including those forms in
-; acl2.lisp:
+; (e.g., RDTSC, though this is now used in SBCL as well), in general we prefer
+; that the functionality be independent of the host Lisp, so that books are
+; less likely to fail certification when changing host Lisps (or versions of a
+; given host Lisp).  Moreover, an ACL2 regression based on CCL took close to 2%
+; longer when including those forms in acl2.lisp:
 
 ; With the above forms:
 ; 33606.972u 498.459s 1:16:57.09 738.6%   0+0k 0+2676744io 0pf+0w
@@ -1169,9 +1209,9 @@
 ; http://trac.clozure.com/ccl/wiki/ReleaseNotes.
 
   #+(and RDTSC (not 32-bit-target)) ; faster for 64
-  '(the-mfixnum (ccl::rdtsc))
+  '(the-mfixnum (rdtsc))
   #+(and RDTSC 32-bit-target)          ; slower for 32
-  '(the-mfixnum (logand (ccl::rdtsc64) ; don't truncate at 32-bit CCL fixnum
+  '(the-mfixnum (logand (rdtsc64) ; don't truncate at 32-bit CCL fixnum
                         most-positive-mfixnum))
   #-RDTSC
   '(the-mfixnum (logand (the-mfixnum (get-internal-real-time))
@@ -1180,11 +1220,11 @@
 (defun-one-output float-ticks/second-init ()
 
 ; [Jared] multithreading note: I think it's fine not to protect this with a
-; lock, if two threads happen to recompute it, that's seems harmless enough.
+; lock; if two threads happen to recompute it, that seems harmless enough.
 
   (unless *float-ticks/second-initialized*
-    #+RDTSC (let ((i1 (ccl::rdtsc64))
-                  (i2 (progn (sleep .1) (ccl::rdtsc64))))
+    #+RDTSC (let ((i1 (rdtsc64))
+                  (i2 (progn (sleep .1) (rdtsc64))))
               (cond
                ((> i2 i1)
                 (setq *float-ticks/second*
@@ -1211,7 +1251,8 @@
                 1000 ;; ghz
                 ))
       (format t "*** Tick-based timing seems to be broken.~%")
-      (format t "*** Our estimated *float-ticks/second* is ~s; seems too large.~%"
+      (format t "*** Our estimated *float-ticks/second* is ~s; seems too ~
+                 large.~%"
               *float-ticks/second*)
       (format t "*** Is your processor really running at ~s GHz?~%"
               (/ *float-ticks/second* (* 1000 1000 1000)))
