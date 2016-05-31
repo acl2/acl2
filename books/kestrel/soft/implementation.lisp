@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "SOFT")
 
 (include-book "std/alists/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
@@ -38,9 +38,9 @@
 
 ; Make the BODY system utility usable in logic mode.
 
-(verify-termination latest-body) ; called by BODY
-(verify-termination def-body) ; called by BODY
-(verify-termination body)
+(verify-termination acl2::latest-body) ; called by BODY
+(verify-termination acl2::def-body) ; called by BODY
+(verify-termination acl2::body)
 
 ; The JUSTIFICATION property of a recursive function is a record
 ; called JUSTIFICATION that has the form
@@ -51,7 +51,7 @@
 ; and MEASURE is the measure (a term).
 
 (define justification ((fun symbolp) (w plist-worldp))
-  (getprop fun 'justification nil 'current-acl2-world w))
+  (getprop fun 'acl2::justification nil 'acl2::current-acl2-world w))
 
 (define wfrel ((fun symbolp) (w plist-worldp))
   (cddr (caddr (justification fun w))))
@@ -62,12 +62,12 @@
 ; Logic-mode simplified version of the GUARD system utility.
 
 (define fguard ((fun symbolp) (w plist-worldp))
-  (getprop fun 'guard *T* 'current-acl2-world w))
+  (getprop fun 'acl2::guard acl2::*T* 'acl2::current-acl2-world w))
 
 ; Logic-mode simplified version of the FORMULA system utility.
 
 (define tformula ((thm symbolp) (w plist-worldp))
-  (getprop thm 'theorem nil 'current-acl2-world w))
+  (getprop thm 'acl2::theorem nil 'acl2::current-acl2-world w))
 
 ; Check that all the symbols in a list are names of functions.
 
@@ -99,31 +99,31 @@
 ; From the form of DEFCHOOSE-AXIOM, the value of :STRENGTHEN can be determined.
 
 (define defchoose-axiom ((fun symbolp) (w plist-worldp))
-  (getprop fun 'defchoose-axiom nil 'current-acl2-world w))
+  (getprop fun 'acl2::defchoose-axiom nil 'acl2::current-acl2-world w))
 
 (define defchoose-body ((fun symbolp) (w plist-worldp))
   :guard (defchoose-axiom fun w)
   (let ((axiom (defchoose-axiom fun w)))
-    (if (eq (fn-symb axiom) 'implies) ; form 1
-        (fargn axiom 1)
-      (let ((if-test (fargn axiom 1)))
-        (case (fn-symb if-test)
+    (if (eq (acl2::fn-symb axiom) 'acl2::implies) ; form 1
+        (acl2::fargn axiom 1)
+      (let ((if-test (acl2::fargn axiom 1)))
+        (case (acl2::fn-symb if-test)
           (true-listp ; form 2
-           (let ((if-then (fargn axiom 2)))
-             (fargn if-then 1)))
+           (let ((if-then (acl2::fargn axiom 2)))
+             (acl2::fargn if-then 1)))
           (implies ; form 3
-           (fargn if-test 1))
+           (acl2::fargn if-test 1))
           (otherwise ; form 4
-           (let ((nested-if-then (fargn if-test 2)))
-             (fargn nested-if-then 1))))))))
+           (let ((nested-if-then (acl2::fargn if-test 2)))
+             (acl2::fargn nested-if-then 1))))))))
 
 (define defchoose-strongp ; value of :STRENGTHEN
   ((fun symbolp) (w plist-worldp))
   :guard (defchoose-axiom fun w)
   (let ((axiom (defchoose-axiom fun w)))
-    (and (eq (fn-symb axiom) 'if) ; not form 1
-         (let ((if-test (fargn axiom 1)))
-           (not (eq (fn-symb if-test) 'true-listp)))))) ; not form 2
+    (and (eq (acl2::fn-symb axiom) 'acl2::if) ; not form 1
+         (let ((if-test (acl2::fargn axiom 1)))
+           (not (eq (acl2::fn-symb if-test) 'acl2::true-listp)))))) ; not form 2
 
 ; The quantified formula of a DEFUN-SK is in prenex normal form;
 ; the matrix of this prenex normal form is the term
@@ -153,23 +153,23 @@
 ; in the form of a boolean flag that is true when there was one bound variable.
 
 (define defun-sk-matrix ((fun symbolp) (1bvarp booleanp) (w plist-worldp))
-  (let* ((body (body fun nil w))
-         (core (if (eq (car body) 'return-last)
-                   (fargn body 3)
+  (let* ((body (acl2::body fun nil w))
+         (core (if (eq (car body) 'acl2::return-last)
+                   (acl2::fargn body 3)
                  body))
-         (lamb (fn-symb core)))
+         (lamb (acl2::fn-symb core)))
     (if 1bvarp
-        (lambda-body lamb) ; form 1
-      (let* ((nested-app (lambda-body lamb))
-             (nested-lamb (fn-symb nested-app)))
-        (lambda-body nested-lamb)))))
+        (acl2::lambda-body lamb) ; form 1
+      (let* ((nested-app (acl2::lambda-body lamb))
+             (nested-lamb (acl2::fn-symb nested-app)))
+        (acl2::lambda-body nested-lamb)))))
 
 ; Experiments suggest that
 ; the name of the witness of a function introduced via DEFUN-SK
 ; is the CONSTRAINT-LST of the function.
 
 (define defun-sk-witness-name ((fun symbolp) (w plist-worldp))
-  (getprop fun 'constraint-lst nil 'current-acl2-world w))
+  (getprop fun 'acl2::constraint-lst nil 'acl2::current-acl2-world w))
 
 ; Experiments suggest that
 ; to determine whether a DEFUN-SK
@@ -181,13 +181,17 @@
 (define defun-sk-strongp ((fun symbolp) (w plist-worldp))
   (let* ((witness (defun-sk-witness-name fun w))
          (constraint-lst
-          (getprop witness 'constraint-lst nil 'current-acl2-world w)))
+          (getprop witness
+                   'acl2::constraint-lst
+                   nil
+                   'acl2::current-acl2-world
+                   w)))
     (= (len constraint-lst) 3)))
 
 ; The :BOGUS-DEFUN-HINTS-OK setting is in the ACL2-DEFAULTS-TABLE.
 
 (define get-bogus-defun-hints-ok ((w plist-worldp))
-  (let ((table (table-alist 'acl2-defaults-table w)))
+  (let ((table (table-alist 'acl2::acl2-defaults-table w)))
     (cdr (assoc-eq :bogus-defun-hints-ok table))))
 
 ; Second-order functions and theorems depend on function variables.
@@ -198,7 +202,7 @@
 (define *-listp (stars)
   (if (atom stars)
       (null stars)
-    (and (eq (car stars) '*)
+    (and (eq (car stars) 'acl2::*)
          (*-listp (cdr stars)))))
 
 (define funvar-typep (type)
@@ -206,13 +210,13 @@
        (= (len type) 3)
        (*-listp (first type))
        (first type)
-       (eq (second type) '=>)
-       (eq (third type) '*)))
+       (eq (second type) 'acl2::=>)
+       (eq (third type) 'acl2::*)))
 
 ; The name and type of each function variable are stored in a table.
 
-(table function-variables nil nil :guard (and (symbolp key) ; name
-                                              (funvar-typep val)))
+(table function-variables nil nil :guard (and (symbolp acl2::key) ; name
+                                              (funvar-typep acl2::val)))
 
 (define funvarp (funvar (w plist-worldp))
   (let ((table (table-alist 'function-variables w)))
@@ -233,18 +237,18 @@
         (raise "~x0 must be a name." funvar))
        ((unless (*-listp arguments))
         (raise "~x0 must be a list (* ... *)." arguments))
-       ((unless (eq arrow '=>))
+       ((unless (eq arrow 'acl2::=>))
         (raise "~x0 must be the arrow =>." arrow))
-       ((unless (eq result '*))
+       ((unless (eq result 'acl2::*))
         (raise "~x0 must be *." result)))
       `(progn
-         (defstub ,funvar ,arguments => *)
-         (table function-variables ',funvar '(,arguments => *)))))
+         (defstub ,funvar ,arguments ,'acl2::=> *)
+         (table function-variables ',funvar '(,arguments ,'acl2::=> *)))))
 
-(defmacro defunvar (funvar arguments arrow result)
+(defmacro acl2::defunvar (funvar arguments arrow result)
   `(make-event (defunvar-event ',funvar ',arguments ',arrow ',result)))
 
-(defmacro show-defunvar (funvar arguments arrow result)
+(defmacro acl2::show-defunvar (funvar arguments arrow result)
   `(defunvar-event ',funvar ',arguments ',arrow ',result))
 
 ; A second-order function or theorem depends on
@@ -300,8 +304,8 @@
        (no-duplicatesp bvars)))
 
 (define quantifierp (quant)
-  (or (eq quant 'forall)
-      (eq quant 'exists)))
+  (or (eq quant 'acl2::forall)
+      (eq quant 'acl2::exists)))
 
 (define qrewrite-kindp (qrkind)
   (or (eq qrkind 'default)
@@ -335,8 +339,9 @@
       (choice-sofun-infop info w)
       (quant-sofun-infop info w)))
 
-(table second-order-functions nil nil :guard (and (symbolp key) ; name
-                                                  (sofun-infop val world)))
+(table second-order-functions nil nil
+  :guard (and (symbolp acl2::key) ; name
+              (sofun-infop acl2::val world)))
 
 (define sofunp (sofun (w plist-worldp))
   (let ((table (table-alist 'second-order-functions w)))
@@ -408,19 +413,19 @@
 (defines funvars-of-term/terms
 
   (define funvars-of-term ((term pseudo-termp) (w plist-worldp))
-    (if (or (variablep term)
+    (if (or (acl2::variablep term)
             (quotep term))
         nil ; no function variables in individual variables and constants
-      (let* ((fn (fn-symb term))
+      (let* ((fn (acl2::fn-symb term))
              (fn-vars ; function variables in FN
-              (if (flambdap fn)
-                  (funvars-of-term (lambda-body fn) w)
+              (if (acl2::flambdap fn)
+                  (funvars-of-term (acl2::lambda-body fn) w)
                 (if (funvarp fn w)
                     (list fn)
                   (if (sofunp fn w)
                       (sofun-fparams fn w)
                     nil))))) ; is a 1st-order function
-        (append fn-vars (funvars-of-terms (fargs term) w)))))
+        (append fn-vars (funvars-of-terms (acl2::fargs term) w)))))
 
   (define funvars-of-terms ((terms pseudo-term-listp) (w plist-worldp))
     (if (endp terms)
@@ -440,7 +445,7 @@
 ; may not reference function variables in their well-founded relations.
 
 (define funvars-of-defun ((fun symbolp) (w plist-worldp))
-  (let* ((body (body fun nil w))
+  (let* ((body (acl2::body fun nil w))
          (measure (fmeasure fun w))
          (guard (fguard fun w))
          (body-funvars (funvars-of-term body w))
@@ -497,7 +502,7 @@
 (define check-wfrel-o< ((fun symbolp) (w plist-worldp))
   (let ((wfrel (wfrel fun w)))
     (cond ((null wfrel) t) ; FUN is not recursive
-          ((eq wfrel 'o<) t)
+          ((eq wfrel 'acl2::o<) t)
           (t (raise "~x0 must use O< as well-founded relation, not ~x1.~%"
                     fun wfrel)))))
 
@@ -510,7 +515,7 @@
   ((fun symbolp) (quant quantifierp) (w plist-worldp))
   (let* ((rule-name (defun-sk-rewrite-rule-name fun quant))
          (rule-body (tformula rule-name w))
-         (fun-body (body fun nil w)))
+         (fun-body (acl2::body fun nil w)))
     (set-equiv (funvars-of-term rule-body w)
                (funvars-of-term fun-body w))))
 
@@ -589,10 +594,10 @@
                                                       ',fparams
                                                       (w state)))))))
 
-(defmacro defun2 (sofun fparams &rest rest)
+(defmacro acl2::defun2 (sofun fparams &rest rest)
   `(make-event (defun2-event ',sofun ',fparams ',rest (w state))))
 
-(defmacro show-defun2 (sofun fparams &rest rest)
+(defmacro acl2::show-defun2 (sofun fparams &rest rest)
   `(defun2-event ',sofun ',fparams ',rest (w state)))
 
 ; The name of the termination theorem of a recursive second-order function
@@ -647,12 +652,12 @@
                                                  ',fparams
                                                  (w state))))))
 
-(defmacro defchoose2 (sofun bvars fparams vars body &rest options)
+(defmacro acl2::defchoose2 (sofun bvars fparams vars body &rest options)
   `(make-event
     (defchoose2-event
       ',sofun ',bvars ',fparams ',vars ',body ',options (w state))))
 
-(defmacro show-defchoose2 (sofun bvars fparams vars body &rest options)
+(defmacro acl2::show-defchoose2 (sofun bvars fparams vars body &rest options)
   `(defchoose2-event
      ',sofun ',bvars ',fparams ',vars ',body ',options (w state)))
 
@@ -728,11 +733,11 @@
                                                     ',quant
                                                     (w state))))))
 
-(defmacro defun-sk2 (sofun fparams params body &rest options)
+(defmacro acl2::defun-sk2 (sofun fparams params body &rest options)
   `(make-event
     (defun-sk2-event ',sofun ',fparams ',params ',body ',options (w state))))
 
-(defmacro show-defun-sk2 (sofun fparams params body &rest options)
+(defmacro acl2::show-defun-sk2 (sofun fparams params body &rest options)
   `(defun-sk2-event ',sofun ',fparams ',params ',body ',options (w state)))
 
 ; A theorem may reference function variables in its formula.
@@ -829,8 +834,8 @@
 ; A table maps second-order functions to their instances.
 ; Only second-order functions with instances appear in the table.
 
-(table sof-instances nil nil :guard (and (symbolp key) ; name
-                                         (sof-instancesp val world)))
+(table sof-instances nil nil :guard (and (symbolp acl2::key) ; name
+                                         (sof-instancesp acl2::val world)))
 
 (define sof-instances ; instances of SOFUN (NIL if none)
   (sofun (w plist-worldp))
@@ -875,7 +880,7 @@
         (cdr pair)
       (if (sofunp fun w)
           (let* ((fparams (sofun-fparams fun w))
-                 (subfsbs (restrict-alist fparams fsbs)))
+                 (subfsbs (acl2::restrict-alist fparams fsbs)))
             (if (null subfsbs) ; FUN does not depend on keys of FSBS
                 fun
               (let* ((instmap (sof-instances fun w))
@@ -890,19 +895,19 @@
 
   (define fun-subst-term
     ((fsbs fun-substp) (term pseudo-termp) (w plist-worldp))
-    (if (or (variablep term)
+    (if (or (acl2::variablep term)
             (quotep term))
         term ; no change to individual variables and constants
-      (let* ((fn (fn-symb term))
+      (let* ((fn (acl2::fn-symb term))
              ;; apply substitution to FN:
              (new-fn (if (symbolp fn)
                          (fun-subst-function fsbs fn w)
-                       (make-lambda (lambda-formals fn)
-                                    (fun-subst-term fsbs
-                                                    (lambda-body fn)
-                                                    w))))
+                       (acl2::make-lambda (acl2::lambda-formals fn)
+                                          (fun-subst-term fsbs
+                                                          (acl2::lambda-body fn)
+                                                          w))))
              ;; apply substitution to arguments:
-             (new-args (fun-subst-terms fsbs (fargs term) w)))
+             (new-args (fun-subst-terms fsbs (acl2::fargs term) w)))
         (cons new-fn new-args))))
 
   (define fun-subst-terms
@@ -950,14 +955,14 @@
 
   (define ext-fun-subst-term
     ((term pseudo-termp) (fsbs fun-substp) (w plist-worldp))
-    (if (or (variablep term)
+    (if (or (acl2::variablep term)
             (quotep term))
         fsbs ; no 2nd-order functions in individual variables and constants
-      (let* ((fn (fn-symb term))
+      (let* ((fn (acl2::fn-symb term))
              (fsbs (if (symbolp fn)
                        (ext-fun-subst-function fn fsbs w)
-                     (ext-fun-subst-term (lambda-body fn) fsbs w))))
-        (ext-fun-subst-terms (fargs term) fsbs w))))
+                     (ext-fun-subst-term (acl2::lambda-body fn) fsbs w))))
+        (ext-fun-subst-terms (acl2::fargs term) fsbs w))))
 
   (define ext-fun-subst-terms
     ((terms pseudo-term-listp) (fsbs fun-substp) (w plist-worldp))
@@ -972,7 +977,7 @@
      ((assoc fun fsbs) fsbs) ; pair already present
      ((sofunp fun w)
       (b* ((fparams (sofun-fparams fun w))
-           (subfsbs (restrict-alist fparams fsbs))
+           (subfsbs (acl2::restrict-alist fparams fsbs))
            ((if (null subfsbs)) fsbs) ; FUN unchanged under FSBS
            (instmap (sof-instances fun w))
            (funinst (get-sof-instance subfsbs instmap w))
@@ -980,10 +985,10 @@
             (raise "~x0 has no instance for ~x1." fun fsbs))
            (fsbs (acons fun funinst fsbs))) ; extend FSBS
           (case (sofun-kind fun w)
-            (plain (ext-fun-subst-term (body fun nil w) fsbs w))
+            (plain (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
             (choice (ext-fun-subst-term (defchoose-body fun w) fsbs w))
             (quant
-             (let* ((fsbs (ext-fun-subst-term (body fun nil w) fsbs w))
+             (let* ((fsbs (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
                     ;; the 2nd-order functions in the matrix of FUN
                     ;; are the same as in the rewrite rule of FUN:
                     (quant (sofun-quantifier fun w))
@@ -1165,11 +1170,11 @@
       ;; generate event (REST is RULE-CLASSES, if present):
       `(defthm ,thm ,thm-formula ,@thm-proof ,@rest)))
 
-(defmacro defthm-inst (thm uqfvars-or-sothminst &rest rest)
+(defmacro acl2::defthm-inst (thm uqfvars-or-sothminst &rest rest)
   `(make-event
     (defthm-inst-event ',thm ',uqfvars-or-sothminst ',rest (w state))))
 
-(defmacro show-defthm-inst (thm uqfvars-or-sothminst &rest rest)
+(defmacro acl2::show-defthm-inst (thm uqfvars-or-sothminst &rest rest)
   `(defthm-inst-event ',thm ',uqfvars-or-sothminst ',rest (w state)))
 
 ; The macro DEFUN-INST introduces an instance of a second-order function.
@@ -1313,7 +1318,7 @@
                   (null fparams))         ; FUN is 1st-order
               (plain-sofunp sofun w))
   (b* (;; retrieve body, measure, and guard of SOFUN:
-       (sofun-body (body sofun nil w))
+       (sofun-body (acl2::body sofun nil w))
        (sofun-measure (fmeasure sofun w))
        (sofun-guard (fguard sofun w))
        ;; extend instantiation with (SOFUN . FUN) if SOFUN is recursive
@@ -1347,7 +1352,7 @@
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
       ;; generated list of events:
-      `((define ,fun ,(formals sofun w)
+      `((define ,fun ,(acl2::formals sofun w)
           ,fun-body
           ,@measure
           ,@hints
@@ -1383,7 +1388,7 @@
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
       ;; generated list of events:
-      `((defchoose ,fun ,bound-vars ,(formals sofun w)
+      `((defchoose ,fun ,bound-vars ,(acl2::formals sofun w)
           ,fun-body
           :strengthen ,(defchoose-strongp sofun w)
           ,@options)
@@ -1443,14 +1448,14 @@
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
       ;; generated list of events:
-      `((defun-sk ,fun ,(formals sofun w)
+      `((defun-sk ,fun ,(acl2::formals sofun w)
           (,quant ,bound-vars ,fun-matrix)
           :strengthen ,(defun-sk-strongp sofun w)
           :quant-ok t
           :rewrite ,rewrite
           :witness-dcls (,wit-dcl)
 ; Matt K. mod: avoid duplicate keywords.
-          ,@(strip-keyword-list
+          ,@(acl2::strip-keyword-list
              '(:strengthen :quant-ok :rewrite :witness-dcls)
              options))
         ,@table-event
@@ -1517,11 +1522,11 @@
                                                  ',fparams
                                                  (w state))))))
 
-(defmacro defun-inst (fun fparams-or-sofuninst &rest rest)
+(defmacro acl2::defun-inst (fun fparams-or-sofuninst &rest rest)
   `(make-event
     (defun-inst-event ',fun ',fparams-or-sofuninst ',rest (w state))))
 
-(defmacro show-defun-inst (fun fparams-or-sofuninst &rest rest)
+(defmacro acl2::show-defun-inst (fun fparams-or-sofuninst &rest rest)
   `(defun-inst-event ',fun ',fparams-or-sofuninst ',rest (w state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
