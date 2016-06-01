@@ -5827,9 +5827,15 @@
          :all-fnnames '(acl2-count cdr o< true-listp not equal))))
 
 (defun built-in-clausep2 (bic-lst cl fns ens)
+
+; Ens is either nil or an enabled structure.  If ens is nil, then we consider
+; only the rules specified by *initial-built-in-clauses* to be enabled.
+
   (cond ((null bic-lst) nil)
-        ((and (enabled-numep (access built-in-clause (car bic-lst) :nume)
-                             ens)
+        ((and (let ((nume (access built-in-clause (car bic-lst) :nume)))
+                (if (null ens)
+                    (null nume)
+                  (enabled-numep nume ens)))
               (subsetp-eq (access built-in-clause (car bic-lst) :all-fnnames)
                           fns)
               (eq (subsumes *init-subsumes-count*
@@ -5840,6 +5846,9 @@
         (t (built-in-clausep2 (cdr bic-lst) cl fns ens))))
 
 (defun built-in-clausep1 (bic-alist cl fns ens)
+
+; Ens is either nil or an enabled structure.  If ens is nil, then we consider
+; only the rules specified by *initial-built-in-clauses* to be enabled.
 
 ; Bic-alist is the alist of built-in clauses, organized via top fnname.  Cl is
 ; a clause and fns is the all-fnnames-lst of cl.  This function is akin to
@@ -5898,6 +5907,9 @@
 
 (defun built-in-clausep (caller cl ens match-free-override wrld state)
 
+; Ens is either nil or an enabled structure.  If ens is nil, then we consider
+; only the rules specified by *initial-built-in-clauses* to be enabled.
+
 ; We return two results.  The first indicates whether cl is a ``built
 ; in clause,'' i.e., a known truth.  The second is the supporting
 ; ttree (or nil).  This ttree is guaranteed to be assumption-free.
@@ -5933,6 +5945,9 @@
                                  ens)))
     (cond
      (rune (mv t (push-lemma rune nil)))
+     ((null ens) ; then skip forward-chaining
+      (cond ((trivial-clause-p cl wrld) (mv t nil))
+            (t (mv nil nil))))
      (t (mv-let (contradictionp type-alist ttree)
                 (forward-chain-top caller
                                    cl

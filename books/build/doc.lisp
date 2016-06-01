@@ -56,9 +56,9 @@ find valuable.  For instance:</p>
 <ul>
 
 <li>ACL2 features like packages, ttags, @(see add-include-book-dir), and @(see
-save-exec) images are properly supported.  In particular, @(see portcullis)
-(@('.port')) files of included books are loaded automatically before
-certification; see @(see pre-certify-book-commands).</li>
+save-exec) images are properly supported.  In particular,
+(@('.port')) files (see @(see acl2::portcullis)) of included books are loaded
+automatically before certification; see @(see pre-certify-book-commands).</li>
 
 <li>Parallel builds (as in @('make -j')) are well-supported.  For the truly
 adventurous, you may even be able to distribute your build over a cluster.</li>

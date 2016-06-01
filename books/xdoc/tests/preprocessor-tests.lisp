@@ -34,7 +34,8 @@
 (defmacro test (str expect)
   `(make-event
     (b* (((mv acc state)
-          (preprocess-main ',str 'context nil (pkg-witness "XDOC") state nil))
+          (preprocess-main ',str 'context nil nil (pkg-witness "XDOC") state
+                           nil))
          (result (str::rchars-to-string acc))
          (- (cw "~s0 --> ~s1~%" ',str result))
          ((when (equal result ',expect))

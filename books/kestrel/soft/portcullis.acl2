@@ -1,0 +1,17 @@
+; SOFT ('Second-Order Functions and Theorems') -- Portcullis Certification
+;
+; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file provides portcullis certification instructions
+; for SOFT ('Second-Order Functions and Theorems'),
+; according to the recommendations in the WORKING-WITH-PACKAGES manual page.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ld "package.lsp")

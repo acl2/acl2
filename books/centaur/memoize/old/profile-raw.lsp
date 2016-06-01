@@ -189,6 +189,7 @@
             (do-symbols (fn p)
               (cond ((gethash fn fns-ht) nil)
                     ((or (not (fboundp fn))
+                         (compiler-macro-function fn)
                          (macro-function fn)
                          (special-form-or-op-p fn))
                      (setf (gethash fn fns-ht) 'no))
