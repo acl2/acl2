@@ -3003,13 +3003,6 @@
                                         &optional (actual-form 'nil
                                                                actual-form-p))
 
-; Warning: Do not attempt to move the extra flag argument to the normal last
-; position one might expect of an optional argument, without considering the
-; need to change several functions (e.g., chk-embedded-event-form,
-; elide-locals-rec, and destructure-expansion) that currently treat
-; with-prover-step-limit as with-output is treated: expecting the event form to
-; be in the last position.
-
 ; See the Essay on Step-limits.
 
 ; Form should evaluate to an error triple.  A value of :START for limit says
