@@ -535,13 +535,13 @@
   (defthm 3vec-p-of-4vec-rsh
     (implies (3vec-p y)
              (3vec-p (4vec-rsh x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-rsh))
+    :hints (("goal" :in-theory (enable 3vec-p 4vec-rsh 4vec-shift-core))
             (bitops::logbitp-reasoning)))
 
   (defthm 3vec-p-of-4vec-lsh
     (implies (3vec-p y)
              (3vec-p (4vec-lsh x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-lsh))
+    :hints (("goal" :in-theory (enable 3vec-p 4vec-lsh 4vec-shift-core))
             (bitops::logbitp-reasoning)))
 
 
@@ -942,12 +942,12 @@
 (def-svex-rewrite rsh-of-xdet
   :lhs (rsh (xdet n) x)
   :rhs (rsh n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 4vec-xdet))))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 4vec-shift-core 4vec-xdet))))
 
 (def-svex-rewrite lsh-of-xdet
   :lhs (lsh (xdet n) x)
   :rhs (lsh n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 4vec-xdet))))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 4vec-shift-core 4vec-xdet))))
 
 (def-svex-rewrite concat-of-xdet
   :lhs (concat (xdet n) x y)
@@ -1115,7 +1115,7 @@
   :lhs (partsel lsb width (unfloat in))
   :rhs (unfloat (partsel lsb width in))
   :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-select 4vec-zero-ext
-                                             4vec-concat 4vec-rsh
+                                             4vec-concat 4vec-rsh 4vec-shift-core
                                              3vec-fix 4vec-mask)))
          (bitops::logbitp-reasoning
           :add-hints (:in-theory (enable* bitops::logbitp-case-splits
@@ -1175,7 +1175,7 @@
 (def-svex-rewrite rsh-of-unfloat-1
   :lhs (rsh (unfloat n) x)
   :rhs (rsh n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 3vec-fix 4vec-mask))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 4vec-shift-core 3vec-fix 4vec-mask))
          (bitops::logbitp-reasoning
           :add-hints (:in-theory (enable* bitops::logbitp-case-splits
                                           bitops::logbitp-when-bit
@@ -1185,7 +1185,7 @@
 (def-svex-rewrite rsh-of-unfloat-2
   :lhs (rsh n (unfloat x))
   :rhs (unfloat (rsh n x))
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 3vec-fix 4vec-mask))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 4vec-shift-core 3vec-fix 4vec-mask))
          (bitops::logbitp-reasoning
           :add-hints (:in-theory (enable* bitops::logbitp-case-splits
                                           bitops::logbitp-when-bit
@@ -1195,7 +1195,7 @@
 (def-svex-rewrite lsh-of-unfloat-1
   :lhs (lsh (unfloat n) x)
   :rhs (lsh n x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 3vec-fix 4vec-mask))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 4vec-shift-core 3vec-fix 4vec-mask))
          (bitops::logbitp-reasoning
           :add-hints (:in-theory (enable* bitops::logbitp-case-splits
                                           bitops::logbitp-when-bit
@@ -1205,7 +1205,7 @@
 (def-svex-rewrite lsh-of-unfloat-2
   :lhs (lsh n (unfloat x))
   :rhs (unfloat (lsh n x))
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 3vec-fix 4vec-mask))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 4vec-shift-core 3vec-fix 4vec-mask))
          (bitops::logbitp-reasoning
           :add-hints (:in-theory (enable* bitops::logbitp-case-splits
                                           bitops::logbitp-when-bit
@@ -1616,7 +1616,7 @@
                      (equal (svex-quote->val x) 0)))
            (bind xx (svex-quote 0)))
   :rhs (concat w xx y)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh 4vec-shift-core))
          (svex-generalize-lookups)
          (bitops::logbitp-reasoning :prune-examples nil)))
 
@@ -1638,7 +1638,7 @@
   :checks ((svex-quoted-index-p w)
            (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
   :rhs x
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh 4vec-shift-core))
          (bitops::logbitp-reasoning :prune-examples nil))
   ;; :localp t
   )
@@ -1677,7 +1677,7 @@
            (bind new-w (svex-quote (2vec (+ (2vec->val (svex-quote->val w1))
                                             (2vec->val (svex-quote->val w2)))))))
   :rhs (concat new-w newx y)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh 4vec-shift-core))
          (bitops::logbitp-reasoning :prune-examples nil)))
 
 
@@ -1693,7 +1693,7 @@
            (svex-quoted-index-p w2)
            (<= (2vec->val (svex-quote->val w1)) (2vec->val (svex-quote->val w2))))
   :rhs (zerox w1 x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-zero-ext 4vec-mask 4vec-lsh))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-zero-ext 4vec-mask 4vec-lsh 4vec-shift-core))
          (bitops::logbitp-reasoning :prune-examples nil)))
 
 
@@ -2072,13 +2072,13 @@
            (svex-quoted-index-p sh2)
            (bind sh3 (svex-quote (2vec (+ (2vec->val (svex-quote->val sh1)) (2vec->val (svex-quote->val sh2)))))))
   :rhs (rsh sh3 x)
-  :hints(("Goal" :in-theory (enable svex-apply 4vec-mask 4vec-rsh 4vec-lsh))
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-mask 4vec-rsh 4vec-lsh 4vec-shift-core))
          (bitops::logbitp-reasoning :prune-examples nil)))
 
 (def-svex-rewrite lsh-to-rsh
   :lhs (lsh sh x)
   :rhs (rsh (u- sh) x)
-  :hints(("Goal" :in-theory (enable 4vec-lsh 4vec-rsh 4vec-uminus svex-apply))))
+  :hints(("Goal" :in-theory (enable 4vec-lsh 4vec-rsh 4vec-shift-core 4vec-uminus svex-apply))))
 
 (def-svex-rewrite rsh-to-concat
   :lhs (rsh sh x)
@@ -2086,7 +2086,7 @@
            (< (2vec->val (svex-quote->val sh)) 0)
            (bind w (svex-quote (2vec (- (2vec->val (svex-quote->val sh)))))))
   :rhs (concat w 0 x)
-  :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat svex-apply))))
+  :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-concat svex-apply))))
 
 
 
@@ -2424,7 +2424,7 @@
                                                       (svex-eval y env))))
                     (logbitp n (4vec->upper (svex-eval y env)))))
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-res-must-choose-mask
-                                      4vec-rsh 4vec-res res-combine-cond))
+                                      4vec-rsh 4vec-shift-core 4vec-res res-combine-cond))
            (logbitp-reasoning :prune-examples nil)
            (and stable-under-simplificationp
                 '(:in-theory (enable bool->bit)))))
@@ -2438,7 +2438,7 @@
                                                       (svex-eval y env))))
                     (logbitp n (4vec->lower (svex-eval y env)))))
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-res-must-choose-mask
-                                      4vec-rsh 4vec-res res-combine-cond))
+                                      4vec-rsh 4vec-shift-core 4vec-res res-combine-cond))
            (logbitp-reasoning :prune-examples nil)
            (and stable-under-simplificationp
                 '(:in-theory (enable bool->bit)))))
@@ -2497,7 +2497,7 @@
                                             (4vec-rsh (2vec (+ lsb width))
                                                       (4vec-res (svex-eval x env)
                                                                 (svex-eval y env)))))))
-    :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh))
+    :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh 4vec-shift-core))
            (logbitp-reasoning :prune-examples nil
                               :simp-hint (:in-theory (enable* logbitp-case-splits
                                                               logbitp-when-4vec-[=-svex-eval-strong
@@ -2584,7 +2584,7 @@
                                                    (svex-eval y env))))
                     (4vec-mask (logtail lsb mask)
                                (4vec-rsh (2vec lsb) (svex-eval y env)))))
-    :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh))
+    :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh 4vec-shift-core))
            (logbitp-reasoning :prune-examples nil
                               :simp-hint (:in-theory (enable* logbitp-case-splits
                                                               logbitp-when-4vec-[=-svex-eval-strong
@@ -2851,7 +2851,7 @@
   (local (defthm 4vec-rsh-0
            (equal (4vec-rsh 0 x)
                   (4vec-fix x))
-           :hints(("Goal" :in-theory (enable 4vec-rsh)))))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core)))))
 
   (local (defthm 4vec-res-symm
            (equal (4vec-res x y)
@@ -3022,7 +3022,7 @@
            (< 0 (2vec->val (svex-quote->val n))))
   :rhs 0
   :hints(("Goal" :expand ((4vec-mask mask 0))
-          :in-theory (enable svex-apply 4vec-reduction-and 4vec-lsh
+          :in-theory (enable svex-apply 4vec-reduction-and 4vec-lsh 4vec-shift-core
                              3vec-reduction-and 3vec-fix 4vec-mask
                              bool->bit))))
 
@@ -3087,12 +3087,12 @@
 (def-svex-rewrite rsh-of-0
   :lhs (rsh 0 x)
   :rhs x
-  :hints(("Goal" :in-theory (enable 4vec-rsh svex-apply))))
+  :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core svex-apply))))
 
 (def-svex-rewrite lsh-of-0
   :lhs (lsh 0 x)
   :rhs x
-  :hints(("Goal" :in-theory (enable 4vec-lsh svex-apply))))
+  :hints(("Goal" :in-theory (enable 4vec-lsh 4vec-shift-core svex-apply))))
 
 (def-svex-rewrite concat-redundant
   :lhs (concat n x (rsh n x))
@@ -3101,6 +3101,7 @@
   :hints(("Goal" :in-theory (enable svex-apply
                                     4vec-concat
                                     4vec-rsh
+                                    4vec-shift-core
                                     4vec-index-p
                                     4vec-mask))
          (bitops::logbitp-reasoning)
@@ -3124,6 +3125,7 @@
   :hints(("Goal" :in-theory (enable svex-apply
                                     4vec-concat
                                     4vec-rsh
+                                    4vec-shift-core
                                     4vec-index-p
                                     4vec-mask))))
 
@@ -3324,7 +3326,7 @@
                                         (4vec-rsh (2vec shift) x)
                                         (4vec-rsh (2vec shift2) x))
                            (4vec-rsh (2vec shift) x)))
-           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-concat))
                   (logbitp-reasoning))))
 
   (local (defthm 4vec-concat-of-concat-merge
@@ -3338,7 +3340,7 @@
                            (4vec-concat (2vec (+ w1 w2))
                                         (4vec-rsh (2vec shift) x)
                                         y)))
-           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-concat))
                   (logbitp-reasoning))))
 
   (defret merge-branches-correct
@@ -3587,7 +3589,7 @@
   :checks ((4vec-index-p (svex-xeval lsb)))
   :rhs (zerox width val)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-part-install 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
@@ -3596,7 +3598,7 @@
   :lhs (partinst lsb width (partinst lsb width x val1) val2)
   :rhs (partinst lsb width x val2)
   :hints(("Goal" :in-theory (enable 4vec-part-install 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask))
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
 
@@ -3616,7 +3618,7 @@
                    (2vec->val lsb1-val))))
   :rhs (partsel lsb1 width1 x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-part-install 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
@@ -3644,7 +3646,7 @@
                                              (2vec->val shift-val))))))
   :rhs (partsel newlsb width x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
@@ -3663,7 +3665,7 @@
                (2vec->val cwidth-val)))
   :rhs (partsel lsb width x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
@@ -3682,7 +3684,7 @@
                                               (2vec->val cwidth-val))))))
   :rhs (partsel new-lsb width y)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
@@ -3705,7 +3707,7 @@
                                                   (2vec->val width1-val))))))
   :rhs (partsel new-lsb new-width x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
@@ -3718,7 +3720,7 @@
            (equal 0 (logtail (2vec->val width-val) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh svex-apply 4vec-mask
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning :prune-examples nil)))
@@ -3810,7 +3812,7 @@
            (let x-val (svex-xeval x))
            (equal (4vec-rsh width-val x-val) y-val))
   :rhs x
-  :hints (("goal" :in-theory (enable 4vec-concat 4vec-xfree-p 4vec-mask 4vec-rsh svex-apply
+  :hints (("goal" :in-theory (enable 4vec-concat 4vec-xfree-p 4vec-mask 4vec-rsh 4vec-shift-core svex-apply
                                      svex-eval-when-2vec-p-of-minval
                                      svex-eval-when-4vec-xfree-of-minval))
           (svex-generalize-lookups)
