@@ -231,10 +231,44 @@
 ; rem-shadowed, the argument a does not appear in the answer and so it doesn't
 ; really matter if it is well-formed or not!
 
+(defthm logic-fnsp-rem-shadowed
+  (implies (and ; (termp mem w)
+                (logic-fnsp mem w)
+                ; (arities-okp *arity-alist* w)
+                )
+           (logic-fnsp (rem-shadowed a mem) w)))
+
+; The following lemma isn't needed (because the two above are sufficient), but
+; it's still nice to prove.
+
+(defthm logic-termp-rem-shadowed
+  (implies (and (termp mem w)
+                (logic-termp mem w)
+                (arities-okp *arity-alist* w))
+           (logic-termp (rem-shadowed a mem) w)))
+
 (defthm termp-meta-wr
   (implies (and (termp x w)
                 (arities-okp *arity-alist* w))
            (termp (meta-wr x) w)))
+
+(defthm arities-okp-implies-not-programp
+  (implies (and (arities-okp alist w)
+                (assoc-eq fn alist))
+           (not (equal (fgetprop fn 'symbol-class nil w)
+                       :program)))
+  :hints (("Goal" :in-theory (enable arities-okp))))
+
+(defthm logic-fnsp-meta-wr
+  (implies (and ;(termp x w)
+                (logic-fnsp x w)
+                (arities-okp *arity-alist* w))
+           (logic-fnsp (meta-wr x) w)))
+
+(defthm logic-termp-meta-wr
+  (implies (and (logic-termp x w)
+                (arities-okp *arity-alist* w))
+           (logic-termp (meta-wr x) w)))
 
 ; This next event is entirely irrelevant to the point of this book but is
 ; probably the most interesting mathematical step!  We need to prove that it is
@@ -284,7 +318,7 @@
                   (evl (meta-wr x) a)))
   :hints (("Goal" :expand ((:free (x) (hide x)))))
   :rule-classes ((:meta :trigger-fns (wr)
-                        :well-formedness-guarantee termp-meta-wr)))
+                        :well-formedness-guarantee logic-termp-meta-wr)))
 
 ; Now we disable shadowing-justifies-rem-shadowed just so there is no
 ; rewrite rule that hits WR expressions (although this rule will never
@@ -309,7 +343,7 @@
 
  (comp 'big-fn) ; speeds things up somewhat
 
- (defmacro big (n) (big-fn n))
+ (defmacro big (n) (time$ (big-fn n)))
                                ; fn calls
  (defun addr1 (x)    (big 12)) ;   4095
  (defun addr2 (x)    (big 13)) ;   8191
@@ -356,6 +390,8 @@
   '(er-progn
     (profile 'meta-wr)
     (profile 'termp)
+    (profile 'logic-fnsp)
+    (profile 'logic-termp)
     (value (clear-memoize-statistics))
     (thm
      (equal (wr (addr1 x) (new-val1 x)
@@ -375,6 +411,8 @@
   '(er-progn
     (profile 'meta-wr)
     (profile 'termp)
+    (profile 'logic-fnsp)
+    (profile 'logic-termp) ; still expect some from translate-cmp
     (value (clear-memoize-statistics))
     (thm
      (equal (wr (addr1 x) (new-val1 x)

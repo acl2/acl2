@@ -1973,7 +1973,8 @@
                         STRIP-CADRS
                         ALL->=-LEN >=-LEN EQUIVALENCE-RELATIONP
                         GUARD-LST GUARD DEFUN-MODE
-                        PROGRAM-TERM-LISTP PROGRAM-TERMP
+                        LOGIC-TERM-LIST-LISTP LOGIC-TERM-LISTP LOGIC-TERMP
+                        LOGIC-FNS-LIST-LISTP LOGIC-FNS-LISTP LOGIC-FNSP
                         LOGICALP PROGRAMP FDEFUN-MODE
                         SYMBOL-CLASS BODY STOBJS-OUT STOBJS-IN
                         ARITY FORMALS READ-FILE

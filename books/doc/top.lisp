@@ -35,6 +35,7 @@
 ; instead of the following, we get a name conflict.
 (include-book "std/system/non-parallel-book" :dir :system)
 
+(include-book "xdoc/defxdoc-raw" :dir :system) ; for xdoc::all-xdoc-topics
 
  ;; Disabling waterfall parallelism because the include-books are too slow with
  ;; it enabled, since waterfall parallelism unmemoizes the six or so functions
@@ -192,6 +193,7 @@
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
+(include-book "tools/memoize-prover-fns" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
 
@@ -452,11 +454,13 @@
  (time$
   (state-global-let*
    ((current-package "ACL2" set-current-package-state))
-   (b* ((all-topics (time$
+   (b* (((mv ? all-topics0 state)
+         (all-xdoc-topics state))
+        (all-topics (time$
                      (force-missing-parents
                       (maybe-add-top-topic
                        (normalize-parents-list ; Should we clean-topics?
-                        (get-xdoc-table (w state)))))))
+                        all-topics0)))))
         ((mv rendered state)
          (time$ (render-topics all-topics all-topics state)))
         (rendered (time$ (split-acl2-topics rendered nil nil nil)))

@@ -185,7 +185,8 @@
   (b* ((short    (or (cdr (assoc :short topic)) ""))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv short-rchars state) (preprocess-main short name topics-fal base-pkg state nil))
+       ((mv short-rchars state)
+        (preprocess-main short name topics-fal nil base-pkg state nil))
        (short-str (str::rchars-to-string short-rchars))
        ((mv err &) (parse-xml short-str))
        (state
@@ -214,7 +215,8 @@
   (b* ((long     (or (cdr (assoc :long topic)) ""))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv long-rchars state) (preprocess-main long name topics-fal base-pkg state nil))
+       ((mv long-rchars state)
+        (preprocess-main long name topics-fal nil base-pkg state nil))
        (long-str (str::rchars-to-string long-rchars))
        ((mv err &) (parse-xml long-str))
        (state

@@ -127,10 +127,10 @@ with many solvers.)</p>
 open source, recommended</h3>
 
 <p>Based on our experiences using @(see gl) for proofs about hardware modules
-at Centaur, we usually try Glucose first.  Version 3.0 or 4.0 should work with
-Satlink without any modifications.  (We have also successfully used earlier
-versions with Satlink, but occasionally needed to patch them in minor ways,
-e.g., to print counterexamples.)</p>
+at Centaur, we usually try Glucose first.  On Linux, version 3.0 or 4.0 should
+work with Satlink without modification.  (We have also successfully used
+earlier versions with Satlink, but occasionally needed to patch them in minor
+ways, e.g., to print counterexamples.)</p>
 
 <p>Quick instructions:</p>
 
@@ -141,11 +141,14 @@ e.g., to print counterexamples.)</p>
 <li>Verify that @('glucose-3.0/simp/glucose --help') prints a help message</li>
 </ul>
 
-<p>(NOTE for Mac users: If you are building Glucose 3.0 or 4.0 on a Mac, the
-build might fail.  In that case, a solution may be to make the two replacements
-shown below, where the the first in each pair (@('<')) is the Mac version,
-while the second in each pair (@('>')) is the original source.  (Thanks to
-Marijn Heule for these suggestions.)</p>
+<p>(NOTE for Mac and FreeBSD/PCBSD users: If you are building Glucose 3.0 or
+4.0, the build might fail.  In that case, a solution may be first to make the
+replacements shown below, where the the first in each pair (@('<')) is the
+Mac/FreeBSD/PCBSD version, while the second in each pair (@('>')) is the
+original source.  (Thanks to Marijn Heule and Warren Hunt for these
+suggestions.)</p>
+
+<p>In file @('../glucose-3.0/core/SolverTypes.h'):</p>
 
 @({
 <     // friend Lit mkLit(Var var, bool sign = false);
@@ -159,9 +162,19 @@ var + var + (int)sign; return p; }
 
 })
 
-<p>End of NOTE for Mac users.)</p>
+<p>In the file @('../glucose-3.0/utils/System.cc') comment the line below, but
+note that this is probably only necessary for FreeBSD/PCBSD, not for Mac:</p>
 
-<p>Now create a shell script, somewhere in your @('$PATH'), named @('glucose'):</p>
+@({
+   <   // double MiniSat::memUsedPeak(void) { return memUsed(); }
+   ---
+   >   double MiniSat::memUsedPeak(void) { return memUsed(); }
+})
+
+<p>End of NOTE for Mac and FreeBSD/PCBSD users.)</p>
+
+<p>Now create a shell script as follows, somewhere in your @('$PATH'), named
+@('glucose').  Note that the order of the arguments is important.</p>
 
 @({
     #!/bin/sh

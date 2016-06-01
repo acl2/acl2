@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "SOFT")
 
 (include-book "implementation")
 
@@ -22,7 +22,7 @@
 
 (defxdoc soft
 
-  :parents (kestrel-books macro-libraries)
+  :parents (acl2::kestrel-books acl2::macro-libraries)
 
   :short
   "SOFT (&lsquo;Second-Order Functions and Theorems&rsquo;),

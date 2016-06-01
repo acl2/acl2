@@ -3003,13 +3003,6 @@
                                         &optional (actual-form 'nil
                                                                actual-form-p))
 
-; Warning: Do not attempt to move the extra flag argument to the normal last
-; position one might expect of an optional argument, without considering the
-; need to change several functions (e.g., chk-embedded-event-form,
-; elide-locals-rec, and destructure-expansion) that currently treat
-; with-prover-step-limit as with-output is treated: expecting the event form to
-; be in the last position.
-
 ; See the Essay on Step-limits.
 
 ; Form should evaluate to an error triple.  A value of :START for limit says
@@ -6314,8 +6307,8 @@
                            (pe ,logical-name)
                            (value '(value-triple :invisible))))))
 
-(defmacro gthm (fn)
-  `(value (untranslate (guard-theorem ,fn (w state) state)
+(defmacro gthm (fn &optional (clean-up-p 't))
+  `(value (untranslate (guard-theorem ,fn ,clean-up-p (w state) state)
                        t
                        (w state))))
 
@@ -9613,25 +9606,6 @@
            (and (body fn nil wrld)
                 t))))
 
-(mutual-recursion
-
-(defun all-ffn-symbs (term ans)
-  (cond
-   ((variablep term) ans)
-   ((fquotep term) ans)
-   (t (all-ffn-symbs-lst (fargs term)
-                         (cond ((flambda-applicationp term)
-                                (all-ffn-symbs (lambda-body (ffn-symb term))
-                                               ans))
-                               (t (add-to-set-eq (ffn-symb term) ans)))))))
-
-(defun all-ffn-symbs-lst (lst ans)
-  (cond ((null lst) ans)
-        (t (all-ffn-symbs-lst (cdr lst)
-                              (all-ffn-symbs (car lst) ans)))))
-
-)
-
 (defconst *unknown-constraints*
 
 ; This value must not be a function symbol, because functions may need to
@@ -11918,7 +11892,140 @@
 ; That completes the generation of the guard clauses.  We will prove
 ; them with prove.
 
-(defun guard-theorem (fn wrld state)
+(defun remove-built-in-clauses (cl-set ens oncep-override wrld state ttree)
+
+; We return two results.  The first is a subset of cl-set obtained by deleting
+; all built-in-clauseps and the second is the accumulated ttrees for the
+; clauses we deleted.
+
+  (cond
+   ((null cl-set) (mv nil ttree))
+   (t (mv-let
+       (built-in-clausep ttree1)
+       (built-in-clausep
+
+; We added defun-or-guard-verification as the caller arg of the call of
+; built-in-clausep below.  This addition is a little weird because there is no
+; such function as defun-or-guard-verification; the caller argument is only
+; used in trace reporting by forward-chaining.  If we wanted to be more precise
+; about who is responsible for this call, we'd have to change a bunch of
+; functions because this function is called by clean-up-clause-set which is in
+; turn called by prove-termination, guard-obligation-clauses, and
+; verify-valid-std-usage (which is used in the non-standard defun-fn1).  We
+; just didn't think it mattered so much as to to warrant changing all those
+; functions.
+
+        'defun-or-guard-verification
+        (car cl-set) ens oncep-override wrld state)
+
+; Ttree is known to be 'assumption free.
+
+       (mv-let
+        (new-set ttree)
+        (remove-built-in-clauses (cdr cl-set) ens oncep-override wrld state
+                                 (cons-tag-trees ttree1 ttree))
+        (cond (built-in-clausep (mv new-set ttree))
+              (t (mv (cons (car cl-set) new-set) ttree))))))))
+
+(defun length-exceedsp (lst n)
+  (cond ((null lst) nil)
+        ((= n 0) t)
+        (t (length-exceedsp (cdr lst) (1- n)))))
+
+(defconst *half-length-initial-built-in-clauses*
+  (floor (length *initial-built-in-clauses*)
+         2))
+
+(defun clean-up-clause-set (cl-set ens wrld ttree state)
+
+; Warning: The set of clauses returned by this function only implies the input
+; set.  They are thought to be equivalent only if the input set contains no
+; tautologies.  See the caution in subsumption-replacement-loop.
+
+; Note: ens can be nil or an enabled structure.  If ens is nil, then we
+; consider only the rules specified by *initial-built-in-clauses* to be
+; enabled.
+
+; This function removes subsumed clauses from cl-set, does replacement (e.g.,
+; if the set includes the clauses {~q p} and {q p} replace them both with {p}),
+; and removes built-in clauses.  It returns two results, the cleaned up clause
+; set and a ttree justifying the deletions and extending ttree.  The returned
+; ttree is 'assumption free (provided the incoming ttree is also) because all
+; necessary splitting is done internally.
+
+; Bishop Brock has pointed out that it is unclear what is the best order in
+; which to do these two checks.  Subsumption-replacement first and then
+; built-in clauses?  Or vice versa?  We do a very trivial analysis here to
+; order the two.  Bishop is not to blame for this trivial analysis!
+
+; Suppose there are n clauses in the initial cl-set.  Suppose there are b
+; built-in clauses.  The cost of the subsumption-replacement loop is roughly
+; n*n and that of the built-in check is n*b.  Contrary to all common sense let
+; us suppose that the subsumption-replacement loop eliminates redundant clauses
+; at the rate, r, so that if we do the subsumption- replacement loop first at a
+; cost of n*n we are left with n*r clauses.  Note that the worst case for r is
+; 1 and the smaller r is, the better; if r were 1/100 it would mean that we
+; could expect subsumption-replacement to pare down a set of 1000 clauses to
+; just 10.  More commonly perhaps, r is just below 1, e.g., 99 out of 100
+; clauses are unaffected.  To make the analysis possible, let's assume that
+; built-in clauses crop up at the same rate!  So,
+
+; n^2 + bnr   = cost of doing subsumption-replacement first  = sub-first
+
+; bn + (nr)^2 = cost of doing built-in clauses first         = bic-first
+
+; Observe that when r=1 the two costs are the same, as they should be.  But
+; generally, r can be expected to be slightly less than 1.
+
+; Here is an example.  Let n = 10, b = 100 and r = 99/100.  In this example we
+; have only a few clauses to consider but lots of built in clauses, and we have
+; a realistically low expectation of hits.  The cost of sub-first is 1090 but
+; the cost of bic-first is 1098.  So we should do sub-first.
+
+; On the other hand, if n=100, b=20, and r=99/100 we see sub-first costs 11980
+; but bic-first costs 11801, so we should do built-in clauses first.  This is a
+; more common case.
+
+; In general, we should do built-in clauses first when sub-first exceeds
+; bic-first.
+
+; n^2 + bnr >= bn + (nr)^2  = when we should do built-in clauses first
+
+; Solving we get:
+
+; n > b/(1+r).
+
+; Indeed, if n=50 and b=100 and r=99/100 we see the costs of the two equal
+; at 7450.
+
+  (cond
+   ((let ((sr-limit (sr-limit wrld)))
+      (and sr-limit (> (length cl-set) sr-limit)))
+    (pstk
+     (remove-built-in-clauses
+      cl-set ens (match-free-override wrld) wrld state
+      (add-to-tag-tree 'sr-limit t ttree))))
+   ((length-exceedsp cl-set
+                     (if ens
+                         (global-val 'half-length-built-in-clauses wrld)
+                       *half-length-initial-built-in-clauses*))
+    (mv-let (cl-set ttree)
+            (pstk
+             (remove-built-in-clauses cl-set ens
+                                      (match-free-override wrld)
+                                      wrld state ttree))
+            (mv (pstk
+                 (subsumption-replacement-loop
+                  (merge-sort-length cl-set) nil nil))
+                ttree)))
+   (t (pstk
+       (remove-built-in-clauses
+        (pstk
+         (subsumption-replacement-loop
+          (merge-sort-length cl-set) nil nil))
+        ens (match-free-override wrld) wrld state ttree)))))
+
+(defun guard-theorem (fn clean-up-p wrld state)
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
@@ -11940,8 +12047,15 @@
                                 (f-get-global 'safe-mode state)
                                 (gc-off state)
                                 nil)
-      (declare (ignore ttree)) ; assumption-free (see guard-clauses-for-clique)
-      (termify-clause-set cl-set))))
+; Note that ttree is assumption-free; see guard-clauses-for-clique.
+      (let ((cl-set
+             (cond (clean-up-p
+                    (mv-let (cl-set ttree)
+                      (clean-up-clause-set cl-set nil wrld ttree state)
+                      (declare (ignore ttree)) ; assumption-free
+                      cl-set))
+                   (t cl-set))))
+        (termify-clause-set cl-set)))))
 
 (defun guard-or-termination-theorem-msg (kwd args coda)
   (declare (xargs :guard (and (member-eq kwd '(:gthm :tthm))
@@ -12006,7 +12120,8 @@
 ; (3) (:theorem formula),
 ; (4) (:instance lmi . substn),
 ; (5) (:functional-instance lmi . substn),
-; (6) (:guard-theorem fn-symb) for fn-symb a guard-verified function symbol, or
+; (6) (:guard-theorem fn-symb) or (:guard-theorem fn-symb clean-up-flg)
+;     for fn-symb a guard-verified function symbol, or
 ; (7) (:termination-theorem fn-symb) or (:termination-theorem! fn-symb)
 ;     for fn-symb a :logic mode function symbol,
 
@@ -12039,10 +12154,15 @@
                  "it is an atom that is not a symbol"))))
      ((and (member-eq (car lmi) atomic-lmi-cars)
            (not (and (true-listp lmi)
-                     (= (length lmi) 2))))
+                     (or (= (length lmi) 2)
+                         (and (eq (car lmi) :guard-theorem)
+                              (= (length lmi) 3))))))
       (er@par soft ctx str lmi
-        (msg "this ~x0 lemma instance is not a true list of length 2"
-             (car lmi))))
+        (msg "this ~x0 lemma instance is not a true list of length 2~@1"
+             (car lmi)
+             (if (eq (car lmi) :guard-theorem)
+                 " or 3"
+               ""))))
      ((eq (car lmi) :theorem)
       (er-let*@par
        ((term (translate@par (cadr lmi) t t t ctx wrld state)))
@@ -12094,7 +12214,11 @@
                        current ACL2 logical world"
                       fn)))
               (t
-               (let ((term (guard-theorem fn wrld state)))
+               (let ((term (guard-theorem fn
+                                          (if (= (length lmi) 2)
+                                              t
+                                            (caddr lmi))
+                                          wrld state)))
                  (value@par (list term nil nil nil)))))))
      ((member-eq (car lmi) '(:termination-theorem :termination-theorem!))
       (let ((fn (cadr lmi)))
