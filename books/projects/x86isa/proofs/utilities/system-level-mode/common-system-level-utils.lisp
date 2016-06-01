@@ -83,7 +83,7 @@
 (defthm mv-nth-2-rb-in-system-level-marking-mode
   (implies (and (not (programmer-level-mode x86))
                 (page-structure-marking-mode x86)
-                (not (mv-nth 0 (rb l-addrs r-w-x x86))))
+                (not (mv-nth 0 (rb l-addrs r-w-x (double-rewrite x86)))))
            (equal (mv-nth 2 (rb l-addrs r-w-x x86))
                   (mv-nth 2 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))

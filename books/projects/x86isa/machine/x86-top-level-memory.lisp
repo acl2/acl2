@@ -2243,6 +2243,10 @@ memory.</li>
                                                 (1+ addr))))
     ///
 
+    (defthm true-listp-create-canonical-address-list
+      (true-listp (create-canonical-address-list cnt lin-addr))
+      :rule-classes (:rewrite :type-prescription))
+
     (defthm canonical-address-listp-create-canonical-address-list
       (canonical-address-listp
        (create-canonical-address-list count addr))
