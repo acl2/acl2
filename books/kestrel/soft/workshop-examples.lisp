@@ -19,6 +19,9 @@
 
 (include-book "implementation")
 
+; Matt K.: Avoid ACL2(p) error in quad[?f] below pertaining to override hints.
+(local (set-waterfall-parallelism nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; 1  Second-Order Functions and Theorems
@@ -34,9 +37,6 @@
 ; 1.2   Second-Order Functions
 
 ; 1.2.1   Plain Functions
-
-; Matt K.: Avoid ACL2(p) error in quad[?f] below pertaining to override hints.
-(local (set-waterfall-parallelism nil))
 
 (defun2 quad[?f] (?f) (x)
   (?f (?f (?f (?f x)))))
