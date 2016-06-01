@@ -2701,14 +2701,13 @@
               (when (null ,tablename) ; e.g., after (clear-memoize-tables)
                 ,@mf-record-mht
                 (setq ,tablename (make-initial-memoize-hash-table
-                                  ',fn ,memo-table-init-size))
-                ,@(and (> number-of-args 1)
-                       `((setq ,ponstablename
-                               (make-initial-memoize-pons-table
-                                ',fn ,memo-table-init-size)))))
+                                  ',fn ,memo-table-init-size)))
               (setq ,localtablename ,tablename)
               ,@(and (> number-of-args 1)
-                     `((assert ,ponstablename)
+                     `((when (null ,ponstablename)
+                         (setq ,ponstablename
+                               (make-initial-memoize-pons-table
+                                ',fn ,memo-table-init-size)))
                        (setq ,localponstablename ,ponstablename)))
 
 ; Generate the pons key.  If there is just one arg, pist* just returns the arg
