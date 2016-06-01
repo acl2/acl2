@@ -2840,7 +2840,7 @@ optimization to avoid problems due to large masks.</p>"
             :do-not-induct t)
            (and stable-under-simplificationp
                 '(:expand nil
-                  :in-theory (enable 4vec-part-select 4vec-zero-ext 4vec-rsh 4vec-concat
+                  :in-theory (enable 4vec-part-select 4vec-zero-ext 4vec-rsh 4vec-shift-core 4vec-concat
                                       aig-list->s-upper-bound-correct)))
            (and stable-under-simplificationp
                 '(:in-theory (enable 4vec-mask))))))
@@ -3294,7 +3294,7 @@ creating enormous vectors when given a huge shift amount.</p>"
              :do-not-induct t)
             (and stable-under-simplificationp
                  '(:expand nil
-                   :in-theory (e/d (4vec-rsh 4vec-mask)
+                   :in-theory (e/d (4vec-rsh 4vec-shift-core 4vec-mask)
                                    (aig-sign-s-correct))
                    :use ((:instance aig-sign-s-correct
                           (x (aig-unary-minus-s (a4vec->upper amt)))
@@ -3453,7 +3453,7 @@ creating enormous vectors when given a huge shift amount.</p>"
                  '(:expand nil
                    :in-theory (enable 4vec-part-install)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable  4vec-zero-ext 4vec-rsh 4vec-concat 4vec-mask))))))
+                 '(:in-theory (enable  4vec-zero-ext 4vec-rsh 4vec-shift-core 4vec-concat 4vec-mask))))))
 
 
                                                                  
@@ -3573,7 +3573,7 @@ provides special optimization to avoid problems due to large masks.</p>"
             :do-not-induct t)
            (and stable-under-simplificationp
                 '(:expand nil
-                  :in-theory (e/d (4vec-lsh 4vec-mask)
+                  :in-theory (e/d (4vec-lsh 4vec-shift-core 4vec-mask)
                                   (aig-sign-s-correct))
                   :use ((:instance aig-sign-s-correct
                          (x (a4vec->upper amt))
