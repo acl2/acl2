@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems') - Workshop Examples
+; SOFT ('Second-Order Functions and Theorems') - Workshop Paper Examples
 ;
 ; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,7 +10,6 @@
 
 ; This file contains the SOFT ('Second-Order Functions and Theorems') examples
 ; in the ACL2-2015 Workshop paper "Second-Order Functions and Theorems in ACL2".
-
 ; Comments indicate the sections and subsections of the paper.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
