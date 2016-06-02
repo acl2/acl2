@@ -422,7 +422,8 @@ the two instances are the same (or there aren't any parameters).</p>")
                (b* (((mv & size) (vl-expr-selfsize x nil nil))
                     ((mv & type) (vl-expr-typedecide x nil nil)))
                  (and (eql size 32) (eq type :vl-signed))))
-          (str::natstr (vl-resolved->val x))
+          (b* ((val (vl-resolved->val x)))
+            (cat (if (< val 0) "-" "") (str::natstr (abs val))))
         ;; Generic, safe but stupid way to get a name that should be reasonably
         ;; intuitive and reasonably unique.
         (acl2::substitute #\_ #\Space (vl-pps-expr x)))

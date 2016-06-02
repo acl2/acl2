@@ -1106,11 +1106,17 @@ lists.</p>"
     :hints(("Goal" :in-theory (enable str::basic-natchars))))
   (verify-guards vl-print-natchars-aux))
 
-(define vl-print-nat-main ((n natp) &key (ps 'ps))
+(define vl-print-int-main ((n integerp) &key (ps 'ps))
   :parents (vl-print-nat)
   :split-types t
-  (declare (type unsigned-byte n))
-  (b* (((when (zp n))
+  (declare (type signed-byte n))
+  (b* ((n (lifix n))
+       (ps (if (< n 0)
+               (vl-ps-seq (vl-ps-update-rchars (cons #\- (vl-ps->rchars)))
+                          (vl-ps-update-col (the unsigned-byte (+ 1 (vl-ps->col)))))
+             ps))
+       (n (abs n))
+       ((when (eql n 0))
         (vl-ps-seq (vl-ps-update-rchars (cons #\0 (vl-ps->rchars)))
                    (vl-ps-update-col (the unsigned-byte (+ 1 (vl-ps->col))))))
        ((mv rchars col)
@@ -1149,7 +1155,7 @@ avoid doing the loop.</li>
            (let ((str (natstr x)))
              `(vl-print-raw-fast ,str ,(length str))))
           (t
-           `(vl-print-nat-main ,x)))))
+           `(vl-print-int-main ,x)))))
 
 (define vl-print-non-string ((x (and (vl-printable-p x)
                                      (not (stringp x))))
@@ -1162,8 +1168,8 @@ avoid doing the loop.</li>
         ((characterp x)
          ;; Fast to check.
          (vl-print-charlist-main (list x)))
-        ((natp x)
-         (vl-print-nat-main x))
+        ((integerp x)
+         (vl-print-int-main x))
         (t
          ;; Else some other kind of number
          (vl-print-charlist-main
@@ -1228,7 +1234,7 @@ vl-print-url) for alternatives that perform different kinds of encoding.</p>
            (if (vl-string-needs-html-encoding-p x 0 (length x))
                `(vl-print-str ,x)
              `(vl-print-raw-fast ,x ,(length x))))
-          ((natp x)
+          ((integerp x)
            `(vl-print-nat ,x))
           (t
            `(vl-print-main ,x)))))

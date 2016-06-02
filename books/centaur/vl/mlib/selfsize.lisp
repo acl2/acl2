@@ -302,7 +302,15 @@ only meant as a heuristic for generating more useful warnings.</p>"
     :vl-literal (vl-value-case x.val :vl-extint)
     :otherwise nil))
 
-
+(define ints-probably-fit-p ((size natp)
+                             (consts integer-listp))
+  (if (atom consts)
+      t
+    (and (b* ((size (lnfix size)))
+           (or (unsigned-byte-p size (car consts))
+               (and (< 0 size)
+                    (signed-byte-p size (car consts)))))
+         (ints-probably-fit-p size (cdr consts)))))
 
 (define vl-tweak-fussy-warning-type
   :parents (vl-expr-selfsize)
@@ -362,8 +370,13 @@ details.</p>"
         ;; size of whatever is around them.
         nil)
 
-       (a-fits-b-p (and (vl-expr-resolved-p a) (unsigned-byte-p bsize (vl-resolved->val a))))
-       (b-fits-a-p (and (vl-expr-resolved-p b) (unsigned-byte-p asize (vl-resolved->val b))))
+       (a-fits-b-p (and (vl-expr-resolved-p a) 
+                        (or (unsigned-byte-p bsize (vl-resolved->val a))
+                            (and (< 0 bsize) (signed-byte-p bsize (vl-resolved->val a))))))
+       (b-fits-a-p (and (vl-expr-resolved-p b)
+                        (or (unsigned-byte-p asize (vl-resolved->val b))
+                            (and (< 0 asize)
+                                 (signed-byte-p asize (vl-resolved->val b))))))
        ((when (and (or a-fits-b-p b-fits-a-p)
                    (member op '(:vl-binary-eq :vl-binary-neq
                                 :vl-binary-ceq :vl-binary-cne
@@ -407,9 +420,9 @@ details.</p>"
        ;; collecting them, see if they fit into the size of the other expr.
        (atoms         (vl-expr-interesting-size-atoms expr-32))
        (unsized       (vl-collect-unsized-ints atoms ss scopes))
-       (unsized-fit-p (nats-below-p (ash 1 size-other)
-                                    (vl-exprlist-resolved->vals
-                                     (vl-collect-resolved-exprs unsized))))
+       (unsized-fit-p (ints-probably-fit-p size-other
+                                  (vl-exprlist-resolved->vals
+                                   (vl-collect-resolved-exprs unsized))))
        ((unless unsized-fit-p)
         ;; Well, hrmn, there's some integer here that doesn't fit into the size
         ;; of the other argument.  This is especially interesting because
@@ -968,11 +981,18 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                                              resolved."
                                          :args (list x))
                                   nil))
+                             (reps (vl-resolved->val x.reps))
+                             ((unless (<= 0 reps))
+                              (mv (fatal :type :vl-unresolved-multiplicity
+                                         :msg "cannot size ~a0 because its ~
+                                             multiplicity is negative."
+                                         :args (list x))
+                                  nil))
                              ((mv warnings part-sizes)
                               (vl-exprlist-selfsize x.parts ss scopes))
                              ((when (member nil part-sizes))
                               (mv warnings nil)))
-                          (mv (ok) (* (vl-resolved->val x.reps) (sum-nats part-sizes))))
+                          (mv (ok) (* reps (sum-nats part-sizes))))
 
         ;; Streaming concatenations need to be treated specially.  They sort of
         ;; have a self-size -- the number of bits available -- but can't be
@@ -1016,12 +1036,18 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                               ((unless (vl-datatype-packedp to-type))
                                (mv (ok) nil)))
                            (mv (ok) size))
-                   :size (b* (((when (vl-expr-resolved-p x.to.size))
-                               (mv (ok) (vl-resolved->val x.to.size))))
-                           (mv (fatal :type :vl-selfsize-fail
-                                      :msg "Unresolved size in cast expression ~a0"
-                                      :args (list x))
-                               nil))
+                   :size (b* (((unless (vl-expr-resolved-p x.to.size))
+                               (mv (fatal :type :vl-selfsize-fail
+                                          :msg "Unresolved size in cast expression ~a0"
+                                          :args (list x))
+                                   nil))
+                              (size (vl-resolved->val x.to.size))
+                              ((unless (<= 0 size))
+                               (mv (fatal :type :vl-selfsize-fail
+                                          :msg "Negative size in cast expression ~a0"
+                                          :args (list x))
+                                   nil)))
+                           (mv (ok) size))
                    :otherwise (vl-expr-selfsize x.expr ss scopes))
 
 

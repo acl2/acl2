@@ -2368,8 +2368,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                       x)
                 nil))
            (width (vl-resolved->val x.width))
-           ((when (eql width 0))
-            (mv (vmsg "Zero-width partselect not allowed: ~a0"
+           ((when (<= width 0))
+            (mv (vmsg "Non-positive-width partselect not allowed: ~a0"
                       x)
                 nil)))
         (mv nil width))
@@ -2780,7 +2780,9 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   (b* (((when (atom indices))
         acc)
        (acc (cons #\[ acc))
-       (acc (revappend (str::natchars (vl-resolved->val (car indices))) acc))
+       (idx (vl-resolved->val (car indices)))
+       (acc (if (< idx 0) (cons #\- acc) acc))
+       (acc (revappend (str::natchars (abs idx)) acc))
        (acc (cons #\] acc)))
     (vl-flatten-hidindex-aux (cdr indices) acc)))
 
