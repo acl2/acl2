@@ -459,7 +459,7 @@ the order given (LSBs-first).</p>")
                     (lhs-eval (list x y) env)))
     :hints(("Goal" :in-theory (e/d (lhrange-eval
                                     lhs-eval lhatom-eval
-                                      4vec-concat 4vec-rsh)
+                                      4vec-concat 4vec-rsh 4vec-shift-core)
                                    (bitops::logapp-of-j-0))))))
 
   ;; (defthm lhrange-combine-width
@@ -764,7 +764,7 @@ the order given (LSBs-first).</p>")
             :in-theory (e/d (lhs-eval lhrange-eval lhatom-eval)
                             ((:d lhs-rsh))))
            (and stable-under-simplificationp
-                '(:in-theory (e/d (4vec-rsh 4vec-concat)
+                '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core)
                                   (lhs-rsh))))))
 
   (defthm lhs-width-of-lhs-rsh
@@ -931,7 +931,7 @@ the order given (LSBs-first).</p>")
                               4vec-index-p)
                              ((:d svex->lhs-bound))))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (4vec-rsh 4vec-concat) (svex->lhs-bound)))))))
+                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core) (svex->lhs-bound)))))))
 
 
 (define svex->lhs ((x svex-p))
@@ -987,7 +987,7 @@ the order given (LSBs-first).</p>")
                               4vec-index-p)
                              ((:d svex->lhs))))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (4vec-rsh 4vec-concat) (svex->lhs)))))))
+                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core) (svex->lhs)))))))
 
 
 (fty::deftagsum lhbit
@@ -1015,7 +1015,7 @@ the order given (LSBs-first).</p>")
     (equal (lhbit-eval (lhatom-bitproj idx x) env)
            (4vec-bit-index idx (lhatom-eval x env)))
     :hints(("Goal" :in-theory (enable lhbit-eval lhatom-eval
-                                      4vec-bit-index 4vec-rsh)))))
+                                      4vec-bit-index 4vec-rsh 4vec-shift-core)))))
 
 (define lhrange-bitproj ((idx natp) (x lhrange-p))
   :returns (bit lhbit-p)
@@ -1537,7 +1537,7 @@ the order given (LSBs-first).</p>")
                              (2vec->val extw)))
                     (equal (4vec-concat w (4vec-rsh shift (4vec-sign-ext extw x)) y)
                            (4vec-concat w (4vec-rsh shift x) y)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-sign-ext)))))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-sign-ext)))))
 
 
   (defthm svex-lhsrewrite-aux-correct-lemma
@@ -1597,7 +1597,7 @@ the order given (LSBs-first).</p>")
                             (svex-eval x env)))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
-                 '(:in-theory (enable svex-apply svexlist-eval 4vec-concat 4vec-rsh
+                 '(:in-theory (enable svex-apply svexlist-eval 4vec-concat 4vec-rsh 4vec-shift-core
                                       4vec-rev-blocks rev-blocks)))))
 
   (defret svex-lhs-preproc-blkrev-vars
@@ -1678,7 +1678,7 @@ the order given (LSBs-first).</p>")
   (local (defthm 4vec-bit-extract-to-concat
            (implies (4vec-index-p n)
                     (equal (4vec-bit-extract n x) (4vec-concat 1 (4vec-rsh n x) 0)))
-           :hints(("Goal" :in-theory (enable 4vec-bit-extract 4vec-concat 4vec-rsh
+           :hints(("Goal" :in-theory (enable 4vec-bit-extract 4vec-concat 4vec-rsh 4vec-shift-core
                                              4vec-bit-index)))))
 
   (local (defthm 4vec-part-select-to-concat

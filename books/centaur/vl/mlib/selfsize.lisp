@@ -221,6 +221,38 @@ only meant as a heuristic for generating more useful warnings.</p>"
     :hints(("Goal" :in-theory (enable (:e tau-system) member-equal))))
   (deffixequiv-mutual vl-interesting-size-atoms))
 
+#||
+(trace$ #!vl (vl-operandinfo->type$inline :entry (list 'vl-operandinfo->type)
+                                          :exit (list 'vl-operandinfo->type
+                                                      (with-local-ps (vl-pp-datatype value)))))
+(trace$ #!Vl (vl-is-unsized-int :entry (list 'vl-is-unsized-int (with-local-ps (vl-pp-expr x)) x)))
+||#
+
+(define vl-is-unsized-int ((x vl-expr-p)
+                           (ss vl-scopestack-p)
+                           (scopes vl-elabscopes-p))
+  (b* ((x1 (vl-expr-fix x)))
+    (vl-expr-case x1
+      :vl-literal (vl-value-case x1.val
+                    :vl-constint x1.val.wasunsized
+                    :otherwise nil)
+      :vl-index (b* (((mv err opinfo) (vl-index-expr-typetrace x1 ss scopes))
+                     ((when err) nil)
+                     ((vl-operandinfo opinfo)))
+                  (vl-datatype-case opinfo.type
+                    :vl-coretype (and (atom opinfo.type.pdims)
+                                      (atom opinfo.type.udims)
+                                      (or (vl-coretypename-equiv opinfo.type.name :vl-int)
+                                          (vl-coretypename-equiv opinfo.type.name :vl-integer)))
+                    :vl-enum (vl-datatype-case opinfo.type.basetype
+                               :vl-coretype (and (atom opinfo.type.basetype.pdims)
+                                                 (atom opinfo.type.basetype.udims)
+                                                 (or (vl-coretypename-equiv opinfo.type.basetype.name :vl-int)
+                                                     (vl-coretypename-equiv opinfo.type.basetype.name :vl-integer)))
+                               :otherwise nil)
+                    :otherwise nil))
+      :otherwise nil)))
+
 
 (define vl-collect-unsized-ints
   ((x vl-exprlist-p)
@@ -231,26 +263,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
   (b* (((when (atom x))
         nil)
        (x1 (vl-expr-fix (car x)))
-       (keep (vl-expr-case x1
-               :vl-literal (vl-value-case x1.val
-                             :vl-constint x1.val.wasunsized
-                             :otherwise nil)
-               :vl-index (b* (((mv err opinfo) (vl-index-expr-typetrace x1 ss scopes))
-                              ((when err) nil)
-                              ((vl-operandinfo opinfo)))
-                           (vl-datatype-case opinfo.type
-                             :vl-coretype (and (atom opinfo.type.pdims)
-                                               (atom opinfo.type.udims)
-                                               (or (vl-coretypename-equiv opinfo.type.name :vl-int)
-                                                   (vl-coretypename-equiv opinfo.type.name :vl-integer)))
-                             :vl-enum (vl-datatype-case opinfo.type.basetype
-                                        :vl-coretype (and (atom opinfo.type.basetype.pdims)
-                                                          (atom opinfo.type.basetype.udims)
-                                                          (or (vl-coretypename-equiv opinfo.type.basetype.name :vl-int)
-                                                              (vl-coretypename-equiv opinfo.type.basetype.name :vl-integer)))
-                                        :otherwise nil)
-                             :otherwise nil))
-               :otherwise nil)))
+       (keep (vl-is-unsized-int x1 ss scopes)))
     (if keep
         (cons x1 (vl-collect-unsized-ints (cdr x) ss scopes))
       (vl-collect-unsized-ints (cdr x) ss scopes))))
@@ -361,12 +374,29 @@ details.</p>"
         ;; fits into the width of foo, so this isn't really wrong.
         nil)
 
+       ;; If the lesser-sized argument is a +, it's probably intended that the
+       ;; size of that plus be increased to accomodate carry-outs.  We could
+       ;; refine this by checking whether the maximum possible value of the sum
+       ;; requires the greater number of bits, but for now we'll make it a
+       ;; minor warning anyway.
+       (a-plusp (vl-expr-case a 
+                  :vl-binary (vl-binaryop-equiv a.op :vl-binary-plus)
+                  :otherwise nil))
+       (b-plusp (vl-expr-case b
+                  :vl-binary (vl-binaryop-equiv b.op :vl-binary-plus)
+                  :otherwise nil))
+       ;; Change the type to return if unmodified by the tests below.
+       (ret-type (if (if (< asize bsize) a-plusp b-plusp)
+                     (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)
+                   type))
+
+
        (a32p (eql asize 32))
        (b32p (eql bsize 32))
        ((unless (or a32p b32p))
         ;; Neither op is 32 bits, so this doesn't seem like it's related to
         ;; unsized numbers, go ahead and warn.
-        type)
+        ret-type)
 
        ;; Figure out which one is 32-bit and which one is not.  We assume
        ;; they aren't both 32 bits, since otherwise we shouldn't be called.
@@ -396,7 +426,8 @@ details.</p>"
 
     ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
     ;; warning.
-    type))
+    ret-type))
+
 
 (define vl-binary->original-operator ((x vl-expr-p))
   :guard (vl-expr-case x :vl-binary)

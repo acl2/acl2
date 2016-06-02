@@ -1163,7 +1163,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                         (4vec-mask (logtail w1 mask1)
                                                    (4vec-rsh w x)))
                            (4vec-mask mask x)))
-           :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh))
+           :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh 4vec-shift-core))
                   (logbitp-reasoning :prune-examples nil))))
 
   (local (defthmd 4vec-concat-of-equal-4vec-conct
@@ -1188,7 +1188,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (implies (and (2vec-p w) (<= 0 (2vec->val w)))
                     (equal (4vec-concat w x (4vec-rsh w x))
                            (4vec-fix x)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core))
                   (logbitp-reasoning :prune-examples nil))))
 
   (local (defthmd equal-of-4vec-concat2
@@ -1197,7 +1197,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                            (and (4vec-p z)
                                 (equal (4vec-zero-ext w x) (4vec-zero-ext w z))
                                 (equal (4vec-fix y) (4vec-rsh w z)))))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-zero-ext 4vec-rsh))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-zero-ext 4vec-rsh 4vec-shift-core))
                   (logbitp-reasoning))
            :otf-flg t))
 
@@ -1235,7 +1235,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (equal (4vec-rsh shift (4vec-mask mask x))
                            (4vec-mask (logtail (2vec->val shift) (4vmask-fix mask))
                                       (4vec-rsh shift x))))
-           :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh)))))
+           :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh 4vec-shift-core)))))
 
   (local (defthm equal-zero-ext-of-mask
            (implies (and (2vec-p w)
@@ -1687,7 +1687,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                            (4vec-mask? (logtail (2vec->val sh) (4vmask-fix mask))
                                        (4vec-rsh sh a)
                                        (4vec-rsh sh b))))
-           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-mask?
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-mask?
                                              4vec-bit? 3vec-bit?)))))
 
   (local (defthm 4vec-rsh-of-4vec-zero-ext
@@ -1698,7 +1698,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                 (4vec-zero-ext (2vec (- (2vec->val b) (2vec->val a)))
                                                (4vec-rsh a x)))
                          (equal (4vec-rsh b (4vec-zero-ext a x)) 0)))
-           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-zero-ext))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-zero-ext))
                   (and stable-under-simplificationp
                        '(:in-theory (enable* ihsext-recursive-redefs))))))
 
