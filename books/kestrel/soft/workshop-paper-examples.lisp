@@ -18,7 +18,7 @@
 
 (include-book "implementation")
 
-; Matt K.: Avoid ACL2(p) error in quad[?f] below pertaining to override hints.
+; Avoid ACL2(p) error in DEFUN2 pertaining to override hints.
 (local (set-waterfall-parallelism nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
