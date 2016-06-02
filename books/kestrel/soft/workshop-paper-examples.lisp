@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems') - Workshop Examples
+; SOFT ('Second-Order Functions and Theorems') - Workshop Paper Examples
 ;
 ; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,7 +10,6 @@
 
 ; This file contains the SOFT ('Second-Order Functions and Theorems') examples
 ; in the ACL2-2015 Workshop paper "Second-Order Functions and Theorems in ACL2".
-
 ; Comments indicate the sections and subsections of the paper.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,6 +17,9 @@
 (in-package "ACL2")
 
 (include-book "implementation")
+
+; Avoid ACL2(p) error in DEFUN2 pertaining to override hints.
+(local (set-waterfall-parallelism nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,9 +36,6 @@
 ; 1.2   Second-Order Functions
 
 ; 1.2.1   Plain Functions
-
-; Matt K.: Avoid ACL2(p) error in quad[?f] below pertaining to override hints.
-(local (set-waterfall-parallelism nil))
 
 (defun2 quad[?f] (?f) (x)
   (?f (?f (?f (?f x)))))
