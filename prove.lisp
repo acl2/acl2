@@ -2398,7 +2398,7 @@
          '(set-waterfall-parallelism-hacks-enabled t))
         nil))
    (t
-    (let ((wrld (w state))
+    (let ((original-wrld (w state))
           (cl-term (subst-var (kwote clause) 'clause term)))
       (mv-let
        (erp trans-result)
@@ -2439,7 +2439,7 @@
                   (t
                    (let* ((user-says-skip-termp-checkp
                            (skip-meta-termp-checks
-                            (ffn-symb term) wrld))
+                            (ffn-symb term) original-wrld))
                           (well-formedness-guarantee
                            (if (consp verified-p)
                                verified-p
@@ -2452,7 +2452,7 @@
                                     (not user-says-skip-termp-checkp))
                                (collect-bad-fn-arity-info
                                 (cdr well-formedness-guarantee)
-                                wrld nil nil)
+                                original-wrld nil nil)
                              nil)))
                      (cond
                       (bad-arity-info
@@ -2469,7 +2469,7 @@
                               bad-arity-info)
                              nil)))
                       ((and not-skipped
-                            (not (logic-term-list-listp val wrld)))
+                            (not (logic-term-list-listp val original-wrld)))
                        (cond
                         ((not (term-list-listp val original-wrld))
                          (mv (msg
@@ -2479,7 +2479,7 @@
                               term nil
                               val nil
                               (non-term-list-listp-msg
-                               val wrld))
+                               val original-wrld))
                              nil))
                         (t
                          (mv (msg
@@ -2492,7 +2492,7 @@
                               val nil
                               (collect-programs
                                (all-ffn-symbs-lst-lst val nil)
-                               wrld))
+                               original-wrld))
                              nil))))
                       ((and not-skipped
                             (forbidden-fns-in-term-list-list
