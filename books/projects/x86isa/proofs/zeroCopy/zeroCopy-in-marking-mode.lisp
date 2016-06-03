@@ -227,13 +227,13 @@
         (not (mv-nth 0
                      (las-to-pas
                       (create-canonical-address-list cnt start-rip)
-                      :x (cpl x86) x86)))
+                      :x (cpl x86) (double-rewrite x86))))
         (disjoint-p
          (mv-nth 1
                  (las-to-pas (create-canonical-address-list cnt start-rip)
                              :x (cpl x86) (double-rewrite x86)))
          (open-qword-paddr-list
-          (gather-all-paging-structure-qword-addresses x86))))
+          (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
    (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86))
           (mv-nth 2 (las-to-pas (list start-rip) :x (cpl x86) x86))))
   :hints
@@ -289,7 +289,7 @@
     (canonical-address-listp l-addrs-1)
     (canonical-address-listp l-addrs-2))
    (equal (mv-nth 1 (rb l-addrs-1 r-w-x-1 (mv-nth 2 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
-          (mv-nth 1 (rb l-addrs-1 r-w-x-1 x86))))
+          (mv-nth 1 (rb l-addrs-1 r-w-x-1 (double-rewrite x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (rb) (rewrite-rb-to-rb-alt force (force))))))
@@ -616,6 +616,24 @@
   :g-bindings
   (gl::auto-bindings (:nat entry 64)))
 
+;; (def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
+;;   :hyp (and (equal (part-select source-entry :low 7 :width 1) 1)
+;;             (equal (part-select source-entry :low 0 :width 1) 1)
+;;             (equal (part-select destination-entry :low 7 :width 1) 1)
+;;             (equal (part-select destination-entry :low 0 :width 1) 1)
+;;             (unsigned-byte-p 64 source-entry)
+;;             (unsigned-byte-p 64 destination-entry))
+;;   :concl (equal (zf-spec
+;;                  (loghead 64
+;;                           (+
+;;                            -129
+;;                            (logand 129 (logior
+;;                                         (loghead 30 destination-entry)
+;;                                         (logand 3221225472 (loghead 32 source-entry)))))))
+;;                 1)
+;;   :g-bindings
+;;   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
+
 (def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
   :hyp (and (equal (part-select source-entry :low 7 :width 1) 1)
             (equal (part-select source-entry :low 0 :width 1) 1)
@@ -628,8 +646,8 @@
                           (+
                            -129
                            (logand 129 (logior
-                                        (loghead 30 destination-entry)
-                                        (logand 3221225472 (loghead 32 source-entry)))))))
+                                        (logext 64 (loghead 30 destination-entry))
+                                        (logand 3221225472 (logext 64 (loghead 32 source-entry))))))))
                 1)
   :g-bindings
   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
@@ -909,8 +927,7 @@
           1)))
 
 (defun-nx return-instruction-address-ok-p (x86)
-  (and
-   ;; Return address on the stack is canonical.
+  (and ;; Return address on the stack is canonical.
    (canonical-address-p
     (logext 64
             (combine-bytes
@@ -1020,10 +1037,11 @@
      x86))))
 
 (defun-nx ret-instruction-and-destination-PDPTE-no-interfere-p (x86)
+  ;; The translation-governing addresses of the ret address are
+  ;; disjoint from the destination PDPTE.
   (and
-   ;; The translation-governing addresses of the ret address are
-   ;; disjoint from the destination PDPTE.
-   (disjoint-p$
+   ;; !!!! NOTE: This is in terms of disjoint-p instead of disjoint-p$.
+   (disjoint-p
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list
                 8
@@ -1033,30 +1051,118 @@
                :r (cpl x86) x86))
     (all-translation-governing-addresses
      (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86))
-
    ;; The destination PDPTE is disjoint from the ret address
    ;; on the stack.
    (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-               :r (cpl x86) x86))
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list
                 8
                 (page-dir-ptr-table-entry-addr
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-               :r (cpl x86) x86)))))
+               :w (cpl x86) x86))
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+               :r (cpl x86) x86)))
+   ;; !!!! NOTE: This is in terms of disjoint-p instead of disjoint-p$.
+   (disjoint-p$
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+               :r (cpl x86) x86))
+    (all-translation-governing-addresses
+     (create-canonical-address-list
+      8
+      (page-dir-ptr-table-entry-addr
+       (xr :rgf *rsi* x86)
+       (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+     x86))))
 
-(defun-nx return-address-and-stack-no-interfere-p (x86)
-  ;; The ret address on the stack is disjoint from the rest of the
+(defun-nx ret-instruction-and-destination-PML4E-no-interfere-p (x86)
+  ;; The destination PML4E is disjoint from the ret address on the
   ;; stack.
   (disjoint-p$
    (mv-nth 1 (las-to-pas
-              (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
+              (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+              :r (cpl x86) x86))
+
+   (all-translation-governing-addresses
+    (create-canonical-address-list
+     8
+     (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+    x86)))
+
+(defun-nx ret-instruction-and-source-PML4E-no-interfere-p (x86)
+  ;; The destination PML4E is disjoint from the ret address on the
+  ;; stack.
+  (disjoint-p$
    (mv-nth 1 (las-to-pas
               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-              :r (cpl x86) x86))))
+              :r (cpl x86) x86))
+
+   (all-translation-governing-addresses
+    (create-canonical-address-list
+     8
+     (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+    x86)))
+
+(defun-nx ret-instruction-and-source-PDPTE-no-interfere-p (x86)
+  ;; The destination PML4E is disjoint from the ret address on the
+  ;; stack.
+  (disjoint-p$
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+              :r (cpl x86) x86))
+
+   (all-translation-governing-addresses
+    (create-canonical-address-list
+     8
+     (page-dir-ptr-table-entry-addr
+      (xr :rgf *rdi* x86)
+      (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+    x86)))
+
+(defun-nx return-address-and-stack-no-interfere-p (x86)
+  ;; !!! FIX ME.
+  (and
+   (disjoint-p
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+               :r (cpl x86) x86))
+    (all-translation-governing-addresses
+     (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) x86))
+   (disjoint-p
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+               :r (cpl x86) x86)))))
+
+(defun-nx return-addresses-and-program-no-interfere-p (x86)
+  (disjoint-p$
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+              :r (cpl x86) x86))
+   (all-translation-governing-addresses
+    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+    x86)))
+
+(defun-nx return-addresses-itself-no-interfere-p (x86)
+  ;; !!! FIX: The following is in terms of disjoint-p instead of disjoint-p$.
+  (and
+   (disjoint-p
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+               :r (cpl x86) x86))
+    (all-translation-governing-addresses
+     (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+     x86))
+   (disjoint-p$
+    (mv-nth 1 (las-to-pas
+               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+               :r (cpl x86) x86))
+    (all-translation-governing-addresses
+     (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+     x86))))
 
 (defun-nx well-formedness-assumptions (x86)
   (and
@@ -2187,36 +2293,34 @@
               (subset-p (open-qword-paddr-list x) (open-qword-paddr-list y)))
      :hints (("Goal" :in-theory (e/d* (subset-p open-qword-paddr-list) ())))))
 
-  (local
-   (defthm disjointness-of-las-to-pas-from-subset-of-paging-structures
-     (implies (and
-               (equal p-addrs (addr-range 8 index))
-               (disjoint-p
-                (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))
-                (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
-               (equal (page-size (combine-bytes bytes)) 1)
-               (physical-address-p index)
-               (equal (loghead 3 index) 0)
-               (byte-listp bytes)
-               (equal (len bytes) 8)
-               (not (programmer-level-mode x86)))
+  (defthm disjointness-of-las-to-pas-from-subset-of-paging-structures
+    (implies (and
+              (equal p-addrs (addr-range 8 index))
               (disjoint-p
                (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))
-               (open-qword-paddr-list
-                (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86)))))
-     :hints (("Goal"
-              :use ((:instance gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-subset-p)
-                    (:instance disjoint-p-subset-p
-                               (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-                               (y (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
-                               (a (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-                               (b (open-qword-paddr-list
-                                   (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86))))))
-              :in-theory (e/d* (subset-p
-                                subset-p-reflexive)
-                               (disjoint-p-subset-p
-                                gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-subset-p))))))
-
+               (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+              (equal (page-size (combine-bytes bytes)) 1)
+              (physical-address-p index)
+              (equal (loghead 3 index) 0)
+              (byte-listp bytes)
+              (equal (len bytes) 8)
+              (not (programmer-level-mode x86)))
+             (disjoint-p
+              (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))
+              (open-qword-paddr-list
+               (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86)))))
+    :hints (("Goal"
+             :use ((:instance gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-subset-p)
+                   (:instance disjoint-p-subset-p
+                              (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                              (y (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+                              (a (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
+                              (b (open-qword-paddr-list
+                                  (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86))))))
+             :in-theory (e/d* (subset-p
+                               subset-p-reflexive)
+                              (disjoint-p-subset-p
+                               gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-subset-p)))))
 
   (defthm get-prefixes-alt-and-write-to-physical-memory-paging-structures
     (implies
@@ -2560,8 +2664,6 @@
        (equal (mv-nth 1 (get-prefixes-alt start-rip-1 cnt-1 prefixes-1
                                           (mv-nth 2 (get-prefixes-alt start-rip-2 cnt-2 prefixes-2 x86))))
               (mv-nth 1 (get-prefixes-alt start-rip-1 cnt-1 prefixes-1 x86)))))
-
-;; (i-am-here)
 
 (defun-nx source-PML4TE-and-program-no-interfere-p (x86)
   ;; The PML4TE physical addresses are disjoint from the
@@ -3215,6 +3317,22 @@
       (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
     x86)))
 
+(defun-nx destination-PDPTE-and-program-no-interfere-p-aux (x86)
+  ;; We need these assumptions because the destination PDPTE is
+  ;; modified, and we need to make sure that this modification does
+  ;; not affect the program in any way.
+  (disjoint-p$
+   (mv-nth 1 (las-to-pas
+              (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+              :x (cpl x86) x86))
+   (all-translation-governing-addresses
+    (create-canonical-address-list
+     8
+     (page-dir-ptr-table-entry-addr
+      (xr :rgf *rsi* x86)
+      (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+    x86)))
+
 (defthm xlate-equiv-memory-and-direct-map-p
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (direct-map-p count addr r-w-x cpl x86-1)
@@ -3251,6 +3369,314 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat val-1 64) (:nat val-2 64))))
 
+;; (defun get-l-addrs-from-disjointness-precond-aux (xlate-l-addrs calls)
+;;   (declare (xargs :mode :program))
+;;   (if (atom calls)
+;;       nil
+;;     (b* ((term (car calls))
+;;          ;; (- (cw "~%~x0~%" term))
+;;          )
+;;       (case-match term
+;;         (('disjoint-p$
+;;           ('mv-nth 1 ('las-to-pas l-addrs-1 . &))
+;;           ('all-translation-governing-addresses l-addrs-2 . &))
+;;          (if (equal xlate-l-addrs l-addrs-2)
+;;              (cons l-addrs-1 (get-l-addrs-from-disjointness-precond-aux xlate-l-addrs (cdr calls)))
+;;            (get-l-addrs-from-disjointness-precond-aux xlate-l-addrs (cdr calls)))
+;;          )
+;;         (& (get-l-addrs-from-disjointness-precond-aux xlate-l-addrs (cdr calls)))))))
+
+;; (defun get-l-addrs-from-disjointness-precond
+;;   (fn l-addrs-var xlate-l-addrs mfc state)
+;;   (declare (xargs :stobjs (state) :mode :program)
+;;            (ignorable state))
+;;   (b* ((calls (acl2::find-calls-lst fn (acl2::mfc-clause mfc)))
+;;        ((when (not calls)) nil)
+;;        (l-addrs (get-l-addrs-from-disjointness-precond-aux xlate-l-addrs calls))
+;;        (alst-lst
+;;         (make-bind-free-alist-lists l-addrs-var l-addrs)))
+;;     alst-lst))
+
+(defthm disjoint-p-las-to-pas-subset-p-and-all-translation-governing-addresses-subsets-1
+  ;; Very similar to
+  ;; mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs (but
+  ;; less general and hence, less expensive).
+  (implies
+   (and
+    (syntaxp (not (eq l-addrs-1-subset l-addrs-2)))
+    (bind-free (find-l-addrs-from-program-at-or-program-at-alt-term
+                'disjoint-p-las-to-pas-subset-p-and-all-translation-governing-addresses
+                'l-addrs-1 mfc state)
+               (l-addrs-1))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas l-addrs-1 :x cpl (double-rewrite x86)))
+     (all-translation-governing-addresses l-addrs-2 (double-rewrite x86)))
+    (subset-p l-addrs-1-subset l-addrs-1)
+    (not (mv-nth 0 (las-to-pas l-addrs-1 :x cpl (double-rewrite x86)))))
+   (disjoint-p (mv-nth 1 (las-to-pas l-addrs-1-subset :x cpl x86))
+               (all-translation-governing-addresses l-addrs-2 x86)))
+  :hints (("Goal" :in-theory (e/d* () (mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
+           :use ((:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                            (other-p-addrs (all-translation-governing-addresses l-addrs-2 x86))
+                            (r-w-x :x)
+                            (l-addrs l-addrs-1)
+                            (l-addrs-subset l-addrs-1-subset))))))
+
+(defthm infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-both-disjoint-p-and-disjoint-p$-and-subset-p
+  (implies
+   (and
+    (bind-free (find-l-addrs-from-program-at-or-program-at-alt-term
+                'infer-disjointness
+                'l-addrs mfc state)
+               (l-addrs))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86)))
+     (open-qword-paddr-list
+      (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+    (not (mv-nth 0 (las-to-pas l-addrs :x cpl (double-rewrite x86))))
+    (subset-p l-addrs-subset-1 l-addrs)
+    (subset-p l-addrs-subset-2 l-addrs)
+    (canonical-address-listp l-addrs))
+   (disjoint-p
+    (mv-nth 1 (las-to-pas l-addrs-subset-1 :x cpl x86))
+    (all-translation-governing-addresses l-addrs-subset-2 x86)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p$
+                             subset-p)
+                            ())
+           :use ((:instance infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
+                            (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86)))
+                            (l-addrs l-addrs-subset))
+                 (:instance disjoint-p-subset-p
+                            (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86)))
+                            (y (all-translation-governing-addresses l-addrs x86))
+                            (a (mv-nth 1 (las-to-pas l-addrs-subset-1 :x cpl x86)))
+                            (b (all-translation-governing-addresses l-addrs-subset-2 x86))))))
+
+  :rule-classes :rewrite)
+
+(defthm disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures
+  ;; Note that r-w-x = :x here.
+  (implies (and
+            (bind-free
+             (find-l-addrs-from-program-at-or-program-at-alt-term
+              'infer-disjointness 'l-addrs mfc state)
+             (l-addrs))
+            ;; The equality of
+            ;; gather-all-paging-structure-qword-addresses and
+            ;; las-to-pas with x86-1 and x86-2 are better than the
+            ;; xlate-equiv-memory hyp because x86-2 may contain wb
+            ;; terms, which don't preserve xlate-equiv-memory relation
+            ;; on the x86 states.
+            ;; (xlate-equiv-memory (double-rewrite x86-1) (double-rewrite x86-2))
+            (equal
+             (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))
+             (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))
+            (equal (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86-1)))
+                   (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86-2))))
+            (equal (page-size value) 1)
+            (direct-map-p 8 lin-addr :w (cpl x86-2) (double-rewrite x86-2))
+            (disjoint-p$
+             (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86-1)))
+             (open-qword-paddr-list
+              (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+            (subset-p l-addrs-subset l-addrs)
+            (not (mv-nth 0 (las-to-pas l-addrs :x cpl (double-rewrite x86-1))))
+            ;; !!
+            (physical-address-p lin-addr)
+            (equal (loghead 3 lin-addr) 0)
+            (canonical-address-p lin-addr)
+            ;; !!
+            (unsigned-byte-p 64 value)
+            (not (programmer-level-mode x86-2)))
+           (disjoint-p
+            (mv-nth 1 (las-to-pas l-addrs-subset :x cpl x86-1))
+            (open-qword-paddr-list
+             (gather-all-paging-structure-qword-addresses
+              (mv-nth 1 (wb (create-addr-bytes-alist
+                             (create-canonical-address-list 8 lin-addr)
+                             (byte-ify 8 value))
+                            x86-2))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance disjointness-of-las-to-pas-from-subset-of-paging-structures
+                            (p-addrs (addr-range 8 lin-addr))
+                            (r-w-x :x)
+                            (index lin-addr)
+                            (bytes (byte-ify 8 value))
+                            (x86 (mv-nth 2
+                                         (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                                     :w (cpl x86-2) x86-2))))
+                 (:instance disjoint-p-subset-p
+                            (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86-1)))
+                            (y (open-qword-paddr-list
+                                (gather-all-paging-structure-qword-addresses x86-1)))
+                            (a (mv-nth 1 (las-to-pas l-addrs-subset :x cpl x86-1)))
+                            (b (open-qword-paddr-list
+                                (gather-all-paging-structure-qword-addresses x86-1))))
+                 (:instance disjoint-p-subset-p
+                            (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86-1)))
+                            (y (open-qword-paddr-list
+                                (gather-all-paging-structure-qword-addresses
+                                 (write-to-physical-memory
+                                  (addr-range 8 lin-addr)
+                                  (byte-ify 8 value)
+                                  (mv-nth 2
+                                          (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                                      :w (cpl x86-2)
+                                                      x86-2))))))
+                            (a (mv-nth 1 (las-to-pas l-addrs-subset :x cpl x86-1)))
+                            (b (open-qword-paddr-list
+                                (gather-all-paging-structure-qword-addresses
+                                 (write-to-physical-memory
+                                  (addr-range 8 lin-addr)
+                                  (byte-ify 8 value)
+                                  (mv-nth 2
+                                          (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                                      :w (cpl x86-2)
+                                                      x86-2))))))))
+           :in-theory (e/d* (disjoint-p$
+                             subset-p
+                             subset-p-reflexive
+                             wb
+                             direct-map-p)
+                            (disjointness-of-las-to-pas-from-subset-of-paging-structures)))))
+
+(encapsulate
+  ()
+  (defthmd disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
+    (implies (and
+              ;; The equality of
+              ;; gather-all-paging-structure-qword-addresses and
+              ;; las-to-pas with x86-1 and x86-2 are better than the
+              ;; xlate-equiv-memory hyp because x86-2 may contain wb
+              ;; terms, which don't preserve xlate-equiv-memory relation
+              ;; on the x86 states.
+              ;; (xlate-equiv-memory (double-rewrite x86-1) (double-rewrite x86-2))
+              (equal
+               (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))
+               (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))
+              (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1)))
+                     (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-2))))
+              (equal (page-size value) 1)
+              (direct-map-p 8 lin-addr :w (cpl x86-2) (double-rewrite x86-2))
+              (disjoint-p$
+               (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1)))
+               (open-qword-paddr-list
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+              (subset-p l-addrs-subset l-addrs)
+              (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86-1))))
+              ;; !!
+              (physical-address-p lin-addr)
+              (equal (loghead 3 lin-addr) 0)
+              (canonical-address-p lin-addr)
+              ;; !!
+              (unsigned-byte-p 64 value)
+              (not (programmer-level-mode x86-2)))
+             (disjoint-p
+              (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86-1))
+              (open-qword-paddr-list
+               (gather-all-paging-structure-qword-addresses
+                (mv-nth 1 (wb (create-addr-bytes-alist
+                               (create-canonical-address-list 8 lin-addr)
+                               (byte-ify 8 value))
+                              x86-2))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance disjointness-of-las-to-pas-from-subset-of-paging-structures
+                              (p-addrs (addr-range 8 lin-addr))
+                              (r-w-x r-w-x)
+                              (index lin-addr)
+                              (bytes (byte-ify 8 value))
+                              (x86 (mv-nth 2
+                                           (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                                       :w (cpl x86-2) x86-2))))
+                   (:instance disjoint-p-subset-p
+                              (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)))
+                              (y (open-qword-paddr-list
+                                  (gather-all-paging-structure-qword-addresses x86-1)))
+                              (a (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86-1)))
+                              (b (open-qword-paddr-list
+                                  (gather-all-paging-structure-qword-addresses x86-1))))
+                   (:instance disjoint-p-subset-p
+                              (x (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86-1)))
+                              (y (open-qword-paddr-list
+                                  (gather-all-paging-structure-qword-addresses
+                                   (write-to-physical-memory
+                                    (addr-range 8 lin-addr)
+                                    (byte-ify 8 value)
+                                    (mv-nth 2
+                                            (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                                        :w (cpl x86-2)
+                                                        x86-2))))))
+                              (a (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86-1)))
+                              (b (open-qword-paddr-list
+                                  (gather-all-paging-structure-qword-addresses
+                                   (write-to-physical-memory
+                                    (addr-range 8 lin-addr)
+                                    (byte-ify 8 value)
+                                    (mv-nth 2
+                                            (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                                        :w (cpl x86-2)
+                                                        x86-2))))))))
+             :in-theory (e/d* (disjoint-p$
+                               subset-p
+                               subset-p-reflexive
+                               wb
+                               direct-map-p)
+                              (disjointness-of-las-to-pas-from-subset-of-paging-structures)))))
+
+  (defthm rb-alt-and-wb-to-paging-structures-disjoint
+    (implies (and
+              (equal (page-size value) 1)
+              (direct-map-p 8 lin-addr :w (cpl x86) (double-rewrite x86))
+              (disjoint-p
+               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+               (open-qword-paddr-list
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+              (disjoint-p
+               (mv-nth 1 (las-to-pas
+                          (create-canonical-address-list 8 lin-addr)
+                          :w (cpl x86) (double-rewrite x86)))
+               (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+              (disjoint-p
+               (mv-nth 1 (las-to-pas (create-canonical-address-list 8 lin-addr)
+                                     :w (cpl x86) (double-rewrite x86)))
+               (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+              ;; !!
+              (physical-address-p lin-addr)
+              (equal (loghead 3 lin-addr) 0)
+              (canonical-address-p lin-addr)
+              ;; !!
+              (unsigned-byte-p 64 value)
+              (x86p x86))
+             (and
+              (equal (mv-nth 0 (rb-alt l-addrs r-w-x
+                                       (mv-nth 1 (wb
+                                                  (create-addr-bytes-alist
+                                                   (create-canonical-address-list 8 lin-addr)
+                                                   (byte-ify 8 value)) x86))))
+                     (mv-nth 0 (rb-alt l-addrs r-w-x (double-rewrite x86))))
+              (equal (mv-nth 1 (rb-alt l-addrs r-w-x
+                                       (mv-nth 1 (wb
+                                                  (create-addr-bytes-alist
+                                                   (create-canonical-address-list 8 lin-addr)
+                                                   (byte-ify 8 value)) x86))))
+                     (mv-nth 1 (rb-alt l-addrs r-w-x (double-rewrite x86))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
+                              (l-addrs-subset l-addrs)
+                              (cpl (cpl x86))
+                              (x86-1 x86)
+                              (x86-2 x86)))
+             :in-theory (e/d* (disjoint-p$
+                               subset-p
+                               subset-p-reflexive
+                               rb-alt)
+                              (rewrite-rb-to-rb-alt))))))
+
 ;; Argh, ACL2's default ancestors-check is killing me --- it prevents
 ;; x86-fetch-decode-execute from opening up (because the first hyp of
 ;; get-prefixes-alt-opener-lemma-no-prefix-byte is judged more
@@ -3258,8 +3684,6 @@
 ;; trivial ancestors-check version.
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
-
-#||
 
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
@@ -3281,876 +3705,17 @@
 
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-las-to-pas)
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-rb)
+
 ;; (acl2::why get-prefixes-alt-and-wb-to-paging-structures)
-
 ;; (acl2::why rb-wb-disjoint-in-system-level-mode)
-
 ;; (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
 
-(thm ;; 45th instruction
- ;; len and page-size are enabled.
- (implies
-  ;; (rewire_dst_to_src-assumptions x86)
-  (and
-   (x86-state-okp x86)
-   (program-ok-p x86)
-   (stack-ok-p x86)
-   (program-and-stack-no-interfere-p x86)
-   (program-and-stack-no-interfere-p-aux x86)
-   (source-addresses-ok-p x86)
-   (source-PML4TE-ok-p x86)
-   (source-PDPTE-ok-p x86)
-   (source-PML4TE-and-stack-no-interfere-p x86)
-   (source-PML4TE-and-program-no-interfere-p x86)
-   (source-PML4TE-itself-no-interfere-p x86)
-   (source-PML4TE-and-stack-no-interfere-p-aux x86)
-   (source-PDPTE-and-stack-no-interfere-p x86)
-   (source-PDPTE-and-program-no-interfere-p x86)
-   (source-PDPTE-itself-no-interfere-p x86)
-   (source-PDPTE-and-stack-no-interfere-p-aux x86)
-   ;; This is too strong ('coz equality of rbs doesn't matter, but
-   ;; xlate-equiv matters), but I'll let this lie for now.
-   (source-PDPTE-and-source-PML4E-no-interfere-p x86)
+;; (acl2::why mv-nth-2-get-prefixes-alt-no-prefix-byte)
+;; (acl2::why rb-alt-and-wb-to-paging-structures-disjoint)
 
-   (destination-addresses-ok-p x86)
-   (destination-PML4TE-ok-p x86)
-   (destination-PDPTE-ok-p x86)
-   (destination-PML4TE-and-stack-no-interfere-p x86)
-   (destination-PML4TE-and-program-no-interfere-p x86)
-   (destination-PML4TE-itself-no-interfere-p x86)
-   (destination-PML4TE-and-stack-no-interfere-p-aux x86)
-   ;; Too strong?
-   (destination-PML4TE-and-source-PML4TE-no-interfere-p x86)
-   (destination-PML4TE-and-source-PDPTE-no-interfere-p x86)
-
-   (destination-PDPTE-and-source-PML4E-no-interfere-p x86)
-   (destination-PDPTE-and-source-PDPTE-no-interfere-p x86)
-   (destination-PDPTE-and-destination-PML4TE-no-interfere-p x86)
-   (destination-PDPTE-and-stack-no-interfere-p x86)
-   (destination-PDPTE-and-program-no-interfere-p x86)
-   (destination-PDPTE-itself-no-interfere-p x86)
-   (destination-PDPTE-and-stack-no-interfere-p-aux x86)
-
-   (direct-map-p
-    8
-    (page-dir-ptr-table-entry-addr
-     (xr :rgf *rsi* x86)
-     (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-    :w (cpl x86) x86))
-
-  (equal (X86-FETCH-DECODE-EXECUTE
-          (XW
-           :RGF
-           0
-           (LOGIOR
-            (LOGAND
-             4088
-             (LOGHEAD 32
-                      (LOGTAIL 27
-                               (XR :RGF 6 X86))))
-            (ASH
-             (LOGHEAD
-              40
-              (LOGTAIL
-               12
-               (COMBINE-BYTES
-                (MV-NTH
-                 1
-                 (RB
-                  (CREATE-CANONICAL-ADDRESS-LIST
-                   8
-                   (LOGIOR
-                    (LOGAND -4096
-                            (LOGEXT 64 (XR :CTR 3 X86)))
-                    (LOGAND 4088
-                            (LOGHEAD
-                             28
-                             (LOGTAIL 36
-                                      (XR :RGF 6 X86))))))
-                  :R
-                  X86)))))
-             12))
-           (XW
-            :RGF
-            1
-            (LOGIOR
-             (LOGAND -4096
-                     (LOGEXT 64 (XR :CTR 3 X86)))
-             (LOGAND
-              4088
-              (LOGHEAD 28
-                       (LOGTAIL 36
-                                (XR :RGF 6 X86)))))
-            (XW
-             :RGF
-             2
-             (LOGIOR
-              (LOGAND
-               -4503598553628673
-               (LOGEXT
-                64
-                (COMBINE-BYTES
-                 (MV-NTH
-                  1
-                  (RB
-                   (CREATE-CANONICAL-ADDRESS-LIST
-                    8
-                    (LOGIOR
-                     (LOGAND
-                      4088
-                      (LOGHEAD 32
-                               (LOGTAIL 27
-                                        (XR :RGF 6 X86))))
-                     (ASH
-                      (LOGHEAD
-                       40
-                       (LOGTAIL
-                        12
-                        (COMBINE-BYTES
-                         (MV-NTH
-                          1
-                          (RB
-                           (CREATE-CANONICAL-ADDRESS-LIST
-                            8
-                            (LOGIOR
-                             (LOGAND -4096
-                                     (LOGEXT 64 (XR :CTR 3 X86)))
-                             (LOGAND
-                              4088
-                              (LOGHEAD
-                               28
-                               (LOGTAIL 36
-                                        (XR :RGF 6 X86))))))
-                           :R
-                           X86)))))
-                      12)))
-                   :R
-                   X86)))))
-              (LOGAND
-               4503598553628672
-               (LOGEXT
-                64
-                (COMBINE-BYTES
-                 (MV-NTH
-                  1
-                  (RB
-                   (CREATE-CANONICAL-ADDRESS-LIST
-                    8
-                    (LOGIOR
-                     (LOGAND
-                      4088
-                      (LOGHEAD 32
-                               (LOGTAIL 27
-                                        (XR :RGF 7 X86))))
-                     (ASH
-                      (LOGHEAD
-                       40
-                       (LOGTAIL
-                        12
-                        (COMBINE-BYTES
-                         (MV-NTH
-                          1
-                          (RB
-                           (CREATE-CANONICAL-ADDRESS-LIST
-                            8
-                            (LOGIOR
-                             (LOGAND -4096
-                                     (LOGEXT 64 (XR :CTR 3 X86)))
-                             (LOGAND
-                              4088
-                              (LOGHEAD
-                               28
-                               (LOGTAIL 36
-                                        (XR :RGF 7 X86))))))
-                           :R
-                           X86)))))
-                      12)))
-                   :R
-                   X86))))))
-             (XW
-              :RGF
-              8
-              1099511627775
-              (XW
-               :RGF
-               9
-               (LOGAND
-                4503598553628672
-                (LOGEXT
-                 64
-                 (COMBINE-BYTES
-                  (MV-NTH
-                   1
-                   (RB
-                    (CREATE-CANONICAL-ADDRESS-LIST
-                     8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD
-                               32
-                               (LOGTAIL 27
-                                        (XR :RGF 7 X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (COMBINE-BYTES
-                          (MV-NTH
-                           1
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST
-                             8
-                             (LOGIOR
-                              (LOGAND -4096
-                                      (LOGEXT 64 (XR :CTR 3 X86)))
-                              (LOGAND
-                               4088
-                               (LOGHEAD
-                                28
-                                (LOGTAIL 36
-                                         (XR :RGF 7 X86))))))
-                            :R
-                            X86)))))
-                       12)))
-                    :R
-                    X86)))))
-               (XW
-                :RIP
-                0
-                (+ 190 (XR :RIP 0 X86))
-                (XW
-                 :UNDEF
-                 0
-                 (+ 39
-                    (NFIX (XR :UNDEF 0 X86)))
-                 (!FLGI
-                  0
-                  0
-                  (!FLGI
-                   2
-                   (PF-SPEC64
-                    (LOGIOR
-                     (LOGAND
-                      18442240475155922943
-                      (COMBINE-BYTES
-                       (MV-NTH
-                        1
-                        (RB
-                         (CREATE-CANONICAL-ADDRESS-LIST
-                          8
-                          (LOGIOR
-                           (LOGAND
-                            4088
-                            (LOGHEAD
-                             32
-                             (LOGTAIL 27
-                                      (XR :RGF 6 X86))))
-                           (ASH
-                            (LOGHEAD
-                             40
-                             (LOGTAIL
-                              12
-                              (COMBINE-BYTES
-                               (MV-NTH
-                                1
-                                (RB
-                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                  8
-                                  (LOGIOR
-                                   (LOGAND -4096
-                                           (LOGEXT 64 (XR :CTR 3 X86)))
-                                   (LOGAND
-                                    4088
-                                    (LOGHEAD
-                                     28
-                                     (LOGTAIL 36
-                                              (XR :RGF 6 X86))))))
-                                 :R
-                                 X86)))))
-                            12)))
-                         :R
-                         X86))))
-                     (LOGAND
-                      4503598553628672
-                      (COMBINE-BYTES
-                       (MV-NTH
-                        1
-                        (RB
-                         (CREATE-CANONICAL-ADDRESS-LIST
-                          8
-                          (LOGIOR
-                           (LOGAND
-                            4088
-                            (LOGHEAD
-                             32
-                             (LOGTAIL 27
-                                      (XR :RGF 7 X86))))
-                           (ASH
-                            (LOGHEAD
-                             40
-                             (LOGTAIL
-                              12
-                              (COMBINE-BYTES
-                               (MV-NTH
-                                1
-                                (RB
-                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                  8
-                                  (LOGIOR
-                                   (LOGAND -4096
-                                           (LOGEXT 64 (XR :CTR 3 X86)))
-                                   (LOGAND
-                                    4088
-                                    (LOGHEAD
-                                     28
-                                     (LOGTAIL 36
-                                              (XR :RGF 7 X86))))))
-                                 :R
-                                 X86)))))
-                            12)))
-                         :R
-                         X86))))))
-                   (!FLGI
-                    4
-                    (LOGHEAD
-                     1
-                     (CREATE-UNDEF (+ 38
-                                      (NFIX (XR :UNDEF 0 X86)))))
-                    (!FLGI
-                     6
-                     (ZF-SPEC
-                      (LOGIOR
-                       (LOGAND
-                        18442240475155922943
-                        (COMBINE-BYTES
-                         (MV-NTH
-                          1
-                          (RB
-                           (CREATE-CANONICAL-ADDRESS-LIST
-                            8
-                            (LOGIOR
-                             (LOGAND
-                              4088
-                              (LOGHEAD
-                               32
-                               (LOGTAIL 27
-                                        (XR :RGF 6 X86))))
-                             (ASH
-                              (LOGHEAD
-                               40
-                               (LOGTAIL
-                                12
-                                (COMBINE-BYTES
-                                 (MV-NTH
-                                  1
-                                  (RB
-                                   (CREATE-CANONICAL-ADDRESS-LIST
-                                    8
-                                    (LOGIOR
-                                     (LOGAND -4096
-                                             (LOGEXT 64 (XR :CTR 3 X86)))
-                                     (LOGAND
-                                      4088
-                                      (LOGHEAD
-                                       28
-                                       (LOGTAIL 36
-                                                (XR :RGF 6 X86))))))
-                                   :R
-                                   X86)))))
-                              12)))
-                           :R
-                           X86))))
-                       (LOGAND
-                        4503598553628672
-                        (COMBINE-BYTES
-                         (MV-NTH
-                          1
-                          (RB
-                           (CREATE-CANONICAL-ADDRESS-LIST
-                            8
-                            (LOGIOR
-                             (LOGAND
-                              4088
-                              (LOGHEAD
-                               32
-                               (LOGTAIL 27
-                                        (XR :RGF 7 X86))))
-                             (ASH
-                              (LOGHEAD
-                               40
-                               (LOGTAIL
-                                12
-                                (COMBINE-BYTES
-                                 (MV-NTH
-                                  1
-                                  (RB
-                                   (CREATE-CANONICAL-ADDRESS-LIST
-                                    8
-                                    (LOGIOR
-                                     (LOGAND -4096
-                                             (LOGEXT 64 (XR :CTR 3 X86)))
-                                     (LOGAND
-                                      4088
-                                      (LOGHEAD
-                                       28
-                                       (LOGTAIL 36
-                                                (XR :RGF 7 X86))))))
-                                   :R
-                                   X86)))))
-                              12)))
-                           :R
-                           X86))))))
-                     (!FLGI
-                      7
-                      (SF-SPEC64
-                       (LOGIOR
-                        (LOGAND
-                         18442240475155922943
-                         (COMBINE-BYTES
-                          (MV-NTH
-                           1
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST
-                             8
-                             (LOGIOR
-                              (LOGAND
-                               4088
-                               (LOGHEAD
-                                32
-                                (LOGTAIL 27
-                                         (XR :RGF 6 X86))))
-                              (ASH
-                               (LOGHEAD
-                                40
-                                (LOGTAIL
-                                 12
-                                 (COMBINE-BYTES
-                                  (MV-NTH
-                                   1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
-                                     8
-                                     (LOGIOR
-                                      (LOGAND -4096
-                                              (LOGEXT 64 (XR :CTR 3 X86)))
-                                      (LOGAND
-                                       4088
-                                       (LOGHEAD
-                                        28
-                                        (LOGTAIL 36
-                                                 (XR :RGF 6 X86))))))
-                                    :R
-                                    X86)))))
-                               12)))
-                            :R
-                            X86))))
-                        (LOGAND
-                         4503598553628672
-                         (COMBINE-BYTES
-                          (MV-NTH
-                           1
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST
-                             8
-                             (LOGIOR
-                              (LOGAND
-                               4088
-                               (LOGHEAD
-                                32
-                                (LOGTAIL 27
-                                         (XR :RGF 7 X86))))
-                              (ASH
-                               (LOGHEAD
-                                40
-                                (LOGTAIL
-                                 12
-                                 (COMBINE-BYTES
-                                  (MV-NTH
-                                   1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
-                                     8
-                                     (LOGIOR
-                                      (LOGAND -4096
-                                              (LOGEXT 64 (XR :CTR 3 X86)))
-                                      (LOGAND
-                                       4088
-                                       (LOGHEAD
-                                        28
-                                        (LOGTAIL 36
-                                                 (XR :RGF 7 X86))))))
-                                    :R
-                                    X86)))))
-                               12)))
-                            :R
-                            X86))))))
-                      (!FLGI
-                       11
-                       0
-                       (MV-NTH
-                        1
-                        (WB
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST
-                           8
-                           (LOGIOR
-                            (LOGAND
-                             4088
-                             (LOGHEAD
-                              32
-                              (LOGTAIL 27
-                                       (XR :RGF 6 X86))))
-                            (ASH
-                             (LOGHEAD
-                              40
-                              (LOGTAIL
-                               12
-                               (COMBINE-BYTES
-                                (MV-NTH
-                                 1
-                                 (RB
-                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                   8
-                                   (LOGIOR
-                                    (LOGAND -4096
-                                            (LOGEXT 64 (XR :CTR 3 X86)))
-                                    (LOGAND
-                                     4088
-                                     (LOGHEAD
-                                      28
-                                      (LOGTAIL 36
-                                               (XR :RGF 6 X86))))))
-                                  :R
-                                  X86)))))
-                             12)))
-                          (BYTE-IFY
-                           8
-                           (LOGIOR
-                            (LOGAND
-                             18442240475155922943
-                             (COMBINE-BYTES
-                              (MV-NTH
-                               1
-                               (RB
-                                (CREATE-CANONICAL-ADDRESS-LIST
-                                 8
-                                 (LOGIOR
-                                  (LOGAND
-                                   4088
-                                   (LOGHEAD
-                                    32
-                                    (LOGTAIL 27
-                                             (XR :RGF 6 X86))))
-                                  (ASH
-                                   (LOGHEAD
-                                    40
-                                    (LOGTAIL
-                                     12
-                                     (COMBINE-BYTES
-                                      (MV-NTH
-                                       1
-                                       (RB
-                                        (CREATE-CANONICAL-ADDRESS-LIST
-                                         8
-                                         (LOGIOR
-                                          (LOGAND
-                                           -4096
-                                           (LOGEXT 64 (XR :CTR 3 X86)))
-                                          (LOGAND
-                                           4088
-                                           (LOGHEAD
-                                            28
-                                            (LOGTAIL
-                                             36
-                                             (XR :RGF 6 X86))))))
-                                        :R
-                                        X86)))))
-                                   12)))
-                                :R
-                                X86))))
-                            (LOGAND
-                             4503598553628672
-                             (COMBINE-BYTES
-                              (MV-NTH
-                               1
-                               (RB
-                                (CREATE-CANONICAL-ADDRESS-LIST
-                                 8
-                                 (LOGIOR
-                                  (LOGAND
-                                   4088
-                                   (LOGHEAD
-                                    32
-                                    (LOGTAIL 27
-                                             (XR :RGF 7 X86))))
-                                  (ASH
-                                   (LOGHEAD
-                                    40
-                                    (LOGTAIL
-                                     12
-                                     (COMBINE-BYTES
-                                      (MV-NTH
-                                       1
-                                       (RB
-                                        (CREATE-CANONICAL-ADDRESS-LIST
-                                         8
-                                         (LOGIOR
-                                          (LOGAND
-                                           -4096
-                                           (LOGEXT 64 (XR :CTR 3 X86)))
-                                          (LOGAND
-                                           4088
-                                           (LOGHEAD
-                                            28
-                                            (LOGTAIL
-                                             36
-                                             (XR :RGF 7 X86))))))
-                                        :R
-                                        X86)))))
-                                   12)))
-                                :R
-                                X86)))))))
-                         (MV-NTH
-                          2
-                          (LAS-TO-PAS
-                           (CREATE-CANONICAL-ADDRESS-LIST
-                            6
-                            (+ 184 (XR :RIP 0 X86)))
-                           :X
-                           0
-                           (MV-NTH
-                            2
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST
-                              8
-                              (LOGIOR
-                               (LOGAND
-                                4088
-                                (LOGHEAD
-                                 32
-                                 (LOGTAIL 27
-                                          (XR :RGF 6 X86))))
-                               (ASH
-                                (LOGHEAD
-                                 40
-                                 (LOGTAIL
-                                  12
-                                  (COMBINE-BYTES
-                                   (MV-NTH
-                                    1
-                                    (RB
-                                     (CREATE-CANONICAL-ADDRESS-LIST
-                                      8
-                                      (LOGIOR
-                                       (LOGAND -4096
-                                               (LOGEXT 64 (XR :CTR 3 X86)))
-                                       (LOGAND
-                                        4088
-                                        (LOGHEAD
-                                         28
-                                         (LOGTAIL 36
-                                                  (XR :RGF 6 X86))))))
-                                     :R
-                                     X86)))))
-                                12)))
-                             :R
-                             (MV-NTH
-                              2
-                              (LAS-TO-PAS
-                               (CREATE-CANONICAL-ADDRESS-LIST
-                                40
-                                (+ 144 (XR :RIP 0 X86)))
-                               :X
-                               0
-                               (MV-NTH
-                                2
-                                (LAS-TO-PAS
-                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                  3
-                                  (+ 140 (XR :RIP 0 X86)))
-                                 :X
-                                 0
-                                 (MV-NTH
-                                  2
-                                  (RB
-                                   (CREATE-CANONICAL-ADDRESS-LIST
-                                    8
-                                    (LOGIOR
-                                     (LOGAND -4096
-                                             (LOGEXT 64 (XR :CTR 3 X86)))
-                                     (LOGAND
-                                      4088
-                                      (LOGHEAD
-                                       28
-                                       (LOGTAIL 36
-                                                (XR :RGF 6 X86))))))
-                                   :R
-                                   (MV-NTH
-                                    2
-                                    (LAS-TO-PAS
-                                     (CREATE-CANONICAL-ADDRESS-LIST
-                                      32
-                                      (+ 108 (XR :RIP 0 X86)))
-                                     :X
-                                     0
-                                     (MV-NTH
-                                      2
-                                      (LAS-TO-PAS
-                                       (CREATE-CANONICAL-ADDRESS-LIST
-                                        18
-                                        (+ 86 (XR :RIP 0 X86)))
-                                       :X
-                                       0
-                                       (MV-NTH
-                                        2
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
-                                          8
-                                          (LOGIOR
-                                           (LOGAND
-                                            4088
-                                            (LOGHEAD
-                                             32
-                                             (LOGTAIL
-                                              27
-                                              (XR :RGF 7 X86))))
-                                           (ASH
-                                            (LOGHEAD
-                                             40
-                                             (LOGTAIL
-                                              12
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB
-                                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                                  8
-                                                  (LOGIOR
-                                                   (LOGAND
-                                                    -4096
-                                                    (LOGEXT 64 (XR :CTR 3 X86)))
-                                                   (LOGAND
-                                                    4088
-                                                    (LOGHEAD
-                                                     28
-                                                     (LOGTAIL
-                                                      36
-                                                      (XR :RGF 7 X86))))))
-                                                 :R
-                                                 X86)))))
-                                            12)))
-                                         :R
-                                         (MV-NTH
-                                          2
-                                          (LAS-TO-PAS
-                                           (CREATE-CANONICAL-ADDRESS-LIST
-                                            40
-                                            (+ 46 (XR :RIP 0 X86)))
-                                           :X
-                                           0
-                                           (MV-NTH
-                                            2
-                                            (LAS-TO-PAS
-                                             (CREATE-CANONICAL-ADDRESS-LIST
-                                              4
-                                              (+ 38 (XR :RIP 0 X86)))
-                                             :X
-                                             0
-                                             (MV-NTH
-                                              2
-                                              (RB
-                                               (CREATE-CANONICAL-ADDRESS-LIST
-                                                8
-                                                (LOGIOR
-                                                 (LOGAND
-                                                  -4096
-                                                  (LOGEXT 64 (XR :CTR 3 X86)))
-                                                 (LOGAND
-                                                  4088
-                                                  (LOGHEAD
-                                                   28
-                                                   (LOGTAIL
-                                                    36
-                                                    (XR :RGF 7 X86))))))
-                                               :R
-                                               (MV-NTH
-                                                2
-                                                (LAS-TO-PAS
-                                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                                  25
-                                                  (+ 13 (XR :RIP 0 X86)))
-                                                 :X
-                                                 0
-                                                 (MV-NTH
-                                                  2
-                                                  (LAS-TO-PAS
-                                                   (CREATE-CANONICAL-ADDRESS-LIST
-                                                    8
-                                                    (+ -24 (XR :RGF 4 X86)))
-                                                   :R
-                                                   0
-                                                   (MV-NTH
-                                                    2
-                                                    (LAS-TO-PAS
-                                                     (CREATE-CANONICAL-ADDRESS-LIST
-                                                      5
-                                                      (+ 8 (XR :RIP 0 X86)))
-                                                     :X
-                                                     0
-                                                     (MV-NTH
-                                                      1
-                                                      (WB
-                                                       (CREATE-ADDR-BYTES-ALIST
-                                                        (CREATE-CANONICAL-ADDRESS-LIST
-                                                         8
-                                                         (+ -24
-                                                            (XR :RGF 4 X86)))
-                                                        (BYTE-IFY 8
-                                                                  (XR :CTR 3 X86)))
-                                                       (MV-NTH
-                                                        2
-                                                        (LAS-TO-PAS
-                                                         (CREATE-CANONICAL-ADDRESS-LIST
-                                                          8
-                                                          (XR :RIP 0 X86))
-                                                         :X
-                                                         0
-                                                         X86))))))))))))))))))))))))))))))))))))))))))))))))
-         xxx))
-
- :hints (("Goal"
-          :in-theory (e/d* (len
-                            page-size
-                            consp-of-create-canonical-address-list
-                            car-create-canonical-address-list
-                            cdr-create-canonical-address-list
-                            loghead-negative
-                            disjoint-p-all-translation-governing-addresses-subset-p)
-                           (create-canonical-address-list
-                            (:rewrite program-at-values-and-!flgi)
-                            (:rewrite get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)
-                            (:rewrite rb-in-terms-of-rb-subset-p-in-system-level-mode)
-                            (:rewrite get-prefixes-opener-lemma-group-3-prefix-in-marking-mode)
-                            (:rewrite get-prefixes-opener-lemma-group-2-prefix-in-marking-mode)
-                            (:rewrite get-prefixes-opener-lemma-group-1-prefix-in-marking-mode)
-                            ;; !!! Maybe I can afford to enable the following rule now?
-                            (:rewrite mv-nth-2-rb-in-system-level-marking-mode)
-                            (:rewrite mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures)
-                            (:rewrite mv-nth-2-rb-in-system-level-non-marking-mode)
-                            (:rewrite rb-returns-x86-programmer-level-mode)
-                            (:linear rm-low-64-logand-logior-helper-1)
-                            (:definition n64p$inline)
-                            (:type-prescription xlate-equiv-memory)
-                            (:rewrite program-at-alt-wb-disjoint-in-system-level-mode)
-                            (:type-prescription natp-page-dir-ptr-table-entry-addr)
-                            mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
-          :do-not '(preprocess)
-          :do-not-induct t))
- :otf-flg t)
+(i-am-here)
 
 (defthmd rewire_dst_to_src-effects-45-instructions
-  ;; len and page-size are enabled.
   (implies
    ;; (rewire_dst_to_src-assumptions x86)
    (and
@@ -4170,8 +3735,8 @@
     (source-PDPTE-and-program-no-interfere-p x86)
     (source-PDPTE-itself-no-interfere-p x86)
     (source-PDPTE-and-stack-no-interfere-p-aux x86)
-    ;; This is too strong ('coz equality of rbs doesn't matter, but
-    ;; xlate-equiv matters), but I'll let this lie for now.
+    ;; This is too strong (coz equality of rbs doesnt matter, but
+    ;; xlate-equiv matters), but Ill let this lie for now.
     (source-PDPTE-and-source-PML4E-no-interfere-p x86)
 
     (destination-addresses-ok-p x86)
@@ -4190,6 +3755,7 @@
     (destination-PDPTE-and-destination-PML4TE-no-interfere-p x86)
     (destination-PDPTE-and-stack-no-interfere-p x86)
     (destination-PDPTE-and-program-no-interfere-p x86)
+    (destination-PDPTE-and-program-no-interfere-p-aux x86)
     (destination-PDPTE-itself-no-interfere-p x86)
     (destination-PDPTE-and-stack-no-interfere-p-aux x86)
 
@@ -4201,7 +3767,657 @@
      :w (cpl x86) x86))
 
    (equal (x86-run 45 x86) ;; (rewire_dst_to_src-clk)
-          xxx))
+          (XW
+           :RGF *RAX*
+           (LOGIOR
+            (LOGAND
+             -4503598553628673
+             (LOGEXT
+              64
+              (COMBINE-BYTES
+               (MV-NTH
+                1
+                (RB
+                 (CREATE-CANONICAL-ADDRESS-LIST
+                  8
+                  (LOGIOR
+                   (LOGAND 4088
+                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                   (ASH
+                    (LOGHEAD
+                     40
+                     (LOGTAIL
+                      12
+                      (COMBINE-BYTES
+                       (MV-NTH
+                        1
+                        (RB
+                         (CREATE-CANONICAL-ADDRESS-LIST
+                          8
+                          (LOGIOR
+                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                           (LOGAND 4088
+                                   (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                         :R X86)))))
+                    12)))
+                 :R X86)))))
+            (LOGAND
+             4503598553628672
+             (LOGEXT
+              64
+              (COMBINE-BYTES
+               (MV-NTH
+                1
+                (RB
+                 (CREATE-CANONICAL-ADDRESS-LIST
+                  8
+                  (LOGIOR
+                   (LOGAND 4088
+                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                   (ASH
+                    (LOGHEAD
+                     40
+                     (LOGTAIL
+                      12
+                      (COMBINE-BYTES
+                       (MV-NTH
+                        1
+                        (RB
+                         (CREATE-CANONICAL-ADDRESS-LIST
+                          8
+                          (LOGIOR
+                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                           (LOGAND 4088
+                                   (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                         :R X86)))))
+                    12)))
+                 :R X86))))))
+           (XW
+            :RGF *RCX*
+            (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                    (LOGAND 4088
+                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+            (XW
+             :RGF *RDX*
+             (LOGIOR
+              (LOGAND
+               -4503598553628673
+               (LOGEXT
+                64
+                (COMBINE-BYTES
+                 (MV-NTH
+                  1
+                  (RB
+                   (CREATE-CANONICAL-ADDRESS-LIST
+                    8
+                    (LOGIOR
+                     (LOGAND 4088
+                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                     (ASH
+                      (LOGHEAD
+                       40
+                       (LOGTAIL
+                        12
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                             (LOGAND 4088
+                                     (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                           :R X86)))))
+                      12)))
+                   :R X86)))))
+              (LOGAND
+               4503598553628672
+               (LOGEXT
+                64
+                (COMBINE-BYTES
+                 (MV-NTH
+                  1
+                  (RB
+                   (CREATE-CANONICAL-ADDRESS-LIST
+                    8
+                    (LOGIOR
+                     (LOGAND 4088
+                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                     (ASH
+                      (LOGHEAD
+                       40
+                       (LOGTAIL
+                        12
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                             (LOGAND 4088
+                                     (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                           :R X86)))))
+                      12)))
+                   :R X86))))))
+             (XW
+              :RGF *R8* 1099511627775
+              (XW
+               :RGF *R9*
+               (LOGAND
+                4503598553628672
+                (LOGEXT
+                 64
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST
+                     8
+                     (LOGIOR
+                      (LOGAND 4088
+                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                      (ASH
+                       (LOGHEAD
+                        40
+                        (LOGTAIL
+                         12
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                              (LOGAND
+                               4088
+                               (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                            :R X86)))))
+                       12)))
+                    :R X86)))))
+               (XW
+                :RIP 0 (+ 193 (XR :RIP 0 X86))
+                (XW
+                 :UNDEF 0 (+ 39 (NFIX (XR :UNDEF 0 X86)))
+                 (!FLGI
+                  *CF* 0
+                  (!FLGI
+                   *PF*
+                   (PF-SPEC64
+                    (LOGIOR
+                     (LOGAND
+                      18442240475155922943
+                      (COMBINE-BYTES
+                       (MV-NTH
+                        1
+                        (RB
+                         (CREATE-CANONICAL-ADDRESS-LIST
+                          8
+                          (LOGIOR
+                           (LOGAND 4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                           (ASH
+                            (LOGHEAD
+                             40
+                             (LOGTAIL
+                              12
+                              (COMBINE-BYTES
+                               (MV-NTH
+                                1
+                                (RB
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  8
+                                  (LOGIOR
+                                   (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                   (LOGAND
+                                    4088
+                                    (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                 :R X86)))))
+                            12)))
+                         :R X86))))
+                     (LOGAND
+                      4503598553628672
+                      (COMBINE-BYTES
+                       (MV-NTH
+                        1
+                        (RB
+                         (CREATE-CANONICAL-ADDRESS-LIST
+                          8
+                          (LOGIOR
+                           (LOGAND 4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                           (ASH
+                            (LOGHEAD
+                             40
+                             (LOGTAIL
+                              12
+                              (COMBINE-BYTES
+                               (MV-NTH
+                                1
+                                (RB
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  8
+                                  (LOGIOR
+                                   (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                   (LOGAND
+                                    4088
+                                    (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                 :R X86)))))
+                            12)))
+                         :R X86))))))
+                   (!FLGI
+                    *AF*
+                    (LOGHEAD 1
+                             (CREATE-UNDEF (+ 38 (NFIX (XR :UNDEF 0 X86)))))
+                    (!FLGI
+                     *ZF*
+                     (ZF-SPEC
+                      (LOGIOR
+                       (LOGAND
+                        18442240475155922943
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND 4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                             (ASH
+                              (LOGHEAD
+                               40
+                               (LOGTAIL
+                                12
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                   :R X86)))))
+                              12)))
+                           :R X86))))
+                       (LOGAND
+                        4503598553628672
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND 4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                             (ASH
+                              (LOGHEAD
+                               40
+                               (LOGTAIL
+                                12
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                   :R X86)))))
+                              12)))
+                           :R X86))))))
+                     (!FLGI
+                      *SF*
+                      (SF-SPEC64
+                       (LOGIOR
+                        (LOGAND
+                         18442240475155922943
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND 4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
+                                       4088
+                                       (LOGHEAD
+                                        28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                    :R X86)))))
+                               12)))
+                            :R X86))))
+                        (LOGAND
+                         4503598553628672
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND 4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
+                                       4088
+                                       (LOGHEAD
+                                        28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                    :R X86)))))
+                               12)))
+                            :R X86))))))
+                      (!FLGI
+                       *OF* 0
+                       (MV-NTH
+                        2
+                        (LAS-TO-PAS
+                         (CREATE-CANONICAL-ADDRESS-LIST 3 (+ 190 (XR :RIP 0 X86)))
+                         :X 0
+                         (MV-NTH
+                          1
+                          (WB
+                           (CREATE-ADDR-BYTES-ALIST
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND 4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
+                                       4088
+                                       (LOGHEAD
+                                        28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                    :R X86)))))
+                               12)))
+                            (BYTE-IFY
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               18442240475155922943
+                               (COMBINE-BYTES
+                                (MV-NTH
+                                 1
+                                 (RB
+                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                   8
+                                   (LOGIOR
+                                    (LOGAND
+                                     4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                    (ASH
+                                     (LOGHEAD
+                                      40
+                                      (LOGTAIL
+                                       12
+                                       (COMBINE-BYTES
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           8
+                                           (LOGIOR
+                                            (LOGAND
+                                             -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD
+                                              28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                          :R X86)))))
+                                     12)))
+                                  :R X86))))
+                              (LOGAND
+                               4503598553628672
+                               (COMBINE-BYTES
+                                (MV-NTH
+                                 1
+                                 (RB
+                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                   8
+                                   (LOGIOR
+                                    (LOGAND
+                                     4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                    (ASH
+                                     (LOGHEAD
+                                      40
+                                      (LOGTAIL
+                                       12
+                                       (COMBINE-BYTES
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           8
+                                           (LOGIOR
+                                            (LOGAND
+                                             -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD
+                                              28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                          :R X86)))))
+                                     12)))
+                                  :R X86)))))))
+                           (MV-NTH
+                            2
+                            (LAS-TO-PAS
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              6 (+ 184 (XR :RIP 0 X86)))
+                             :X 0
+                             (MV-NTH
+                              2
+                              (RB
+                               (CREATE-CANONICAL-ADDRESS-LIST
+                                8
+                                (LOGIOR
+                                 (LOGAND
+                                  4088
+                                  (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                 (ASH
+                                  (LOGHEAD
+                                   40
+                                   (LOGTAIL
+                                    12
+                                    (COMBINE-BYTES
+                                     (MV-NTH
+                                      1
+                                      (RB
+                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                        8
+                                        (LOGIOR
+                                         (LOGAND
+                                          -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD
+                                           28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                       :R X86)))))
+                                  12)))
+                               :R
+                               (MV-NTH
+                                2
+                                (LAS-TO-PAS
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  40 (+ 144 (XR :RIP 0 X86)))
+                                 :X 0
+                                 (MV-NTH
+                                  2
+                                  (LAS-TO-PAS
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    3 (+ 140 (XR :RIP 0 X86)))
+                                   :X 0
+                                   (MV-NTH
+                                    2
+                                    (RB
+                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                      8
+                                      (LOGIOR
+                                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                       (LOGAND
+                                        4088
+                                        (LOGHEAD
+                                         28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                     :R
+                                     (MV-NTH
+                                      2
+                                      (LAS-TO-PAS
+                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                        32 (+ 108 (XR :RIP 0 X86)))
+                                       :X 0
+                                       (MV-NTH
+                                        2
+                                        (LAS-TO-PAS
+                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                          18 (+ 86 (XR :RIP 0 X86)))
+                                         :X 0
+                                         (MV-NTH
+                                          2
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                             (ASH
+                                              (LOGHEAD
+                                               40
+                                               (LOGTAIL
+                                                12
+                                                (COMBINE-BYTES
+                                                 (MV-NTH
+                                                  1
+                                                  (RB
+                                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                                    8
+                                                    (LOGIOR
+                                                     (LOGAND
+                                                      -4096
+                                                      (LOGEXT
+                                                       64 (XR :CTR *CR3* X86)))
+                                                     (LOGAND
+                                                      4088
+                                                      (LOGHEAD
+                                                       28
+                                                       (LOGTAIL
+                                                        36 (XR :RGF *RDI* X86))))))
+                                                   :R X86)))))
+                                              12)))
+                                           :R
+                                           (MV-NTH
+                                            2
+                                            (LAS-TO-PAS
+                                             (CREATE-CANONICAL-ADDRESS-LIST
+                                              40 (+ 46 (XR :RIP 0 X86)))
+                                             :X 0
+                                             (MV-NTH
+                                              2
+                                              (LAS-TO-PAS
+                                               (CREATE-CANONICAL-ADDRESS-LIST
+                                                4 (+ 38 (XR :RIP 0 X86)))
+                                               :X 0
+                                               (MV-NTH
+                                                2
+                                                (RB
+                                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                                  8
+                                                  (LOGIOR
+                                                   (LOGAND
+                                                    -4096
+                                                    (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                   (LOGAND
+                                                    4088
+                                                    (LOGHEAD
+                                                     28
+                                                     (LOGTAIL
+                                                      36 (XR :RGF *RDI* X86))))))
+                                                 :R
+                                                 (MV-NTH
+                                                  2
+                                                  (LAS-TO-PAS
+                                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                                    25 (+ 13 (XR :RIP 0 X86)))
+                                                   :X 0
+                                                   (MV-NTH
+                                                    2
+                                                    (LAS-TO-PAS
+                                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                                      8 (+ -24 (XR :RGF *RSP* X86)))
+                                                     :R 0
+                                                     (MV-NTH
+                                                      2
+                                                      (LAS-TO-PAS
+                                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                                        5 (+ 8 (XR :RIP 0 X86)))
+                                                       :X 0
+                                                       (MV-NTH
+                                                        1
+                                                        (WB
+                                                         (CREATE-ADDR-BYTES-ALIST
+                                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                                           8
+                                                           (+
+                                                            -24 (XR :RGF *RSP* X86)))
+                                                          (BYTE-IFY
+                                                           8 (XR :CTR *CR3* X86)))
+                                                         (MV-NTH
+                                                          2
+                                                          (LAS-TO-PAS
+                                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                                            8 (XR :RIP 0 X86))
+                                                           :X 0
+                                                           X86)))))))))))))))))))))))))))))))))))))))))))))))))))
 
   :hints (("Goal"
            :in-theory (e/d* (len
@@ -4228,12 +4444,2241 @@
                              (:type-prescription xlate-equiv-memory)
                              (:rewrite program-at-alt-wb-disjoint-in-system-level-mode)
                              (:type-prescription natp-page-dir-ptr-table-entry-addr)
-                             mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
+                             mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                             mv-nth-2-las-to-pas-system-level-non-marking-mode))
            :do-not '(preprocess)
-           :do-not-induct t))
-  :otf-flg t)
+           :do-not-induct t)))
 
+(defthm canonical-address-p-and-logext-64
+  (implies (canonical-address-p a)
+           (equal (logext 64 a) a))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p
+                                    (:rewrite acl2::logext-identity)
+                                    (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller))
+                                   ()))))
 
+;; (defthm XR-SEG-VISIBLE-MV-NTH-2-RB-new
+;;   (IMPLIES t
+;;            (EQUAL (XR :SEG-VISIBLE
+;;                       INDEX (MV-NTH 2 (RB L-ADDRS R-W-X X86)))
+;;                   (XR :SEG-VISIBLE INDEX (double-rewrite X86))))
+;;   :hints (("Goal" :cases ((programmer-level-mode x86)))))
+
+;; (thm ;; canonical-address-p for ret instruction
+;;  (implies
+;;   ;; (rewire_dst_to_src-assumptions x86)
+;;   (and
+;;    (x86-state-okp x86)
+;;    (program-ok-p x86)
+;;    (stack-ok-p x86)
+;;    (program-and-stack-no-interfere-p x86)
+;;    (program-and-stack-no-interfere-p-aux x86)
+;;    (source-addresses-ok-p x86)
+;;    (source-PML4TE-ok-p x86)
+;;    (source-PDPTE-ok-p x86)
+;;    (source-PML4TE-and-stack-no-interfere-p x86)
+;;    (source-PML4TE-and-program-no-interfere-p x86)
+;;    (source-PML4TE-itself-no-interfere-p x86)
+;;    (source-PML4TE-and-stack-no-interfere-p-aux x86)
+;;    (source-PDPTE-and-stack-no-interfere-p x86)
+;;    (source-PDPTE-and-program-no-interfere-p x86)
+;;    (source-PDPTE-itself-no-interfere-p x86)
+;;    (source-PDPTE-and-stack-no-interfere-p-aux x86)
+;;    ;; This is too strong ('coz equality of rbs doesn't matter, but
+;;    ;; xlate-equiv matters), but I'll let this lie for now.
+;;    (source-PDPTE-and-source-PML4E-no-interfere-p x86)
+
+;;    (destination-addresses-ok-p x86)
+;;    (destination-PML4TE-ok-p x86)
+;;    (destination-PDPTE-ok-p x86)
+;;    (destination-PML4TE-and-stack-no-interfere-p x86)
+;;    (destination-PML4TE-and-program-no-interfere-p x86)
+;;    (destination-PML4TE-itself-no-interfere-p x86)
+;;    (destination-PML4TE-and-stack-no-interfere-p-aux x86)
+;;    ;; Too strong?
+;;    (destination-PML4TE-and-source-PML4TE-no-interfere-p x86)
+;;    (destination-PML4TE-and-source-PDPTE-no-interfere-p x86)
+
+;;    (destination-PDPTE-and-source-PML4E-no-interfere-p x86)
+;;    (destination-PDPTE-and-source-PDPTE-no-interfere-p x86)
+;;    (destination-PDPTE-and-destination-PML4TE-no-interfere-p x86)
+;;    (destination-PDPTE-and-stack-no-interfere-p x86)
+;;    (destination-PDPTE-and-program-no-interfere-p x86)
+;;    (destination-PDPTE-and-program-no-interfere-p-aux x86)
+;;    (destination-PDPTE-itself-no-interfere-p x86)
+;;    (destination-PDPTE-and-stack-no-interfere-p-aux x86)
+
+;;    (direct-map-p
+;;     8
+;;     (page-dir-ptr-table-entry-addr
+;;      (xr :rgf *rsi* x86)
+;;      (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+;;     :w (cpl x86) x86)
+
+;;    (return-instruction-address-ok-p x86)
+;;    (return-addresses-itself-no-interfere-p x86)
+;;    ;; !!! FIX: The following is in terms of disjoint-p instead of disjoint-p$.
+;;    (return-addresses-and-program-no-interfere-p x86)
+;;    (ret-instruction-and-source-PML4E-no-interfere-p x86)
+;;    (ret-instruction-and-source-PDPTE-no-interfere-p x86)
+;;    (ret-instruction-and-destination-PML4E-no-interfere-p x86)
+;;    (ret-instruction-and-destination-PDPTE-no-interfere-p x86)
+;;    (return-address-and-stack-no-interfere-p x86)
+
+;;    ;; (canonical-address-p (xr :rgf *rsp* x86))
+;;    )
+
+;;   (CANONICAL-ADDRESS-P
+;;    (LOGEXT
+;;     64
+;;     (COMBINE-BYTES
+;;      (MV-NTH
+;;       1
+;;       (RB
+;;        (CREATE-CANONICAL-ADDRESS-LIST 8 (XR :RGF *RSP* X86))
+;;        :R
+;;        (MV-NTH
+;;         2
+;;         (LAS-TO-PAS
+;;          (CREATE-CANONICAL-ADDRESS-LIST 22 (+ 224 (XR :RIP 0 X86)))
+;;          :X 0
+;;          (MV-NTH
+;;           2
+;;           (LAS-TO-PAS
+;;            (CREATE-CANONICAL-ADDRESS-LIST 6 (+ 218 (XR :RIP 0 X86)))
+;;            :X 0
+;;            (MV-NTH
+;;             2
+;;             (LAS-TO-PAS
+;;              (CREATE-CANONICAL-ADDRESS-LIST 10 (+ 208 (XR :RIP 0 X86)))
+;;              :X 0
+;;              (MV-NTH
+;;               2
+;;               (LAS-TO-PAS
+;;                (CREATE-CANONICAL-ADDRESS-LIST 2 (+ 206 (XR :RIP 0 X86)))
+;;                :X 0
+;;                (MV-NTH
+;;                 2
+;;                 (LAS-TO-PAS
+;;                  (CREATE-CANONICAL-ADDRESS-LIST 5 (+ 200 (XR :RIP 0 X86)))
+;;                  :X 0
+;;                  (MV-NTH
+;;                   2
+;;                   (LAS-TO-PAS
+;;                    (CREATE-CANONICAL-ADDRESS-LIST 6 (+ 194 (XR :RIP 0 X86)))
+;;                    :X 0
+;;                    (MV-NTH
+;;                     2
+;;                     (LAS-TO-PAS
+;;                      (CREATE-CANONICAL-ADDRESS-LIST
+;;                       4 (+ 190 (XR :RIP 0 X86)))
+;;                      :X 0
+;;                      (MV-NTH
+;;                       1
+;;                       (WB
+;;                        (CREATE-ADDR-BYTES-ALIST
+;;                         (CREATE-CANONICAL-ADDRESS-LIST
+;;                          8
+;;                          (LOGIOR
+;;                           (LOGAND
+;;                            4088
+;;                            (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+;;                           (ASH
+;;                            (LOGHEAD
+;;                             40
+;;                             (LOGTAIL
+;;                              12
+;;                              (COMBINE-BYTES
+;;                               (MV-NTH
+;;                                1
+;;                                (RB
+;;                                 (CREATE-CANONICAL-ADDRESS-LIST
+;;                                  8
+;;                                  (LOGIOR
+;;                                   (LOGAND
+;;                                    -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+;;                                   (LOGAND
+;;                                    4088
+;;                                    (LOGHEAD
+;;                                     28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+;;                                 :R X86)))))
+;;                            12)))
+;;                         (BYTE-IFY
+;;                          8
+;;                          (LOGIOR
+;;                           (LOGAND
+;;                            18442240475155922943
+;;                            (COMBINE-BYTES
+;;                             (MV-NTH
+;;                              1
+;;                              (RB
+;;                               (CREATE-CANONICAL-ADDRESS-LIST
+;;                                8
+;;                                (LOGIOR
+;;                                 (LOGAND
+;;                                  4088
+;;                                  (LOGHEAD
+;;                                   32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+;;                                 (ASH
+;;                                  (LOGHEAD
+;;                                   40
+;;                                   (LOGTAIL
+;;                                    12
+;;                                    (COMBINE-BYTES
+;;                                     (MV-NTH
+;;                                      1
+;;                                      (RB
+;;                                       (CREATE-CANONICAL-ADDRESS-LIST
+;;                                        8
+;;                                        (LOGIOR
+;;                                         (LOGAND
+;;                                          -4096
+;;                                          (LOGEXT 64 (XR :CTR *CR3* X86)))
+;;                                         (LOGAND
+;;                                          4088
+;;                                          (LOGHEAD
+;;                                           28
+;;                                           (LOGTAIL
+;;                                            36 (XR :RGF *RSI* X86))))))
+;;                                       :R X86)))))
+;;                                  12)))
+;;                               :R X86))))
+;;                           (LOGAND
+;;                            4503598553628672
+;;                            (COMBINE-BYTES
+;;                             (MV-NTH
+;;                              1
+;;                              (RB
+;;                               (CREATE-CANONICAL-ADDRESS-LIST
+;;                                8
+;;                                (LOGIOR
+;;                                 (LOGAND
+;;                                  4088
+;;                                  (LOGHEAD
+;;                                   32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+;;                                 (ASH
+;;                                  (LOGHEAD
+;;                                   40
+;;                                   (LOGTAIL
+;;                                    12
+;;                                    (COMBINE-BYTES
+;;                                     (MV-NTH
+;;                                      1
+;;                                      (RB
+;;                                       (CREATE-CANONICAL-ADDRESS-LIST
+;;                                        8
+;;                                        (LOGIOR
+;;                                         (LOGAND
+;;                                          -4096
+;;                                          (LOGEXT 64 (XR :CTR *CR3* X86)))
+;;                                         (LOGAND
+;;                                          4088
+;;                                          (LOGHEAD
+;;                                           28
+;;                                           (LOGTAIL
+;;                                            36 (XR :RGF *RDI* X86))))))
+;;                                       :R X86)))))
+;;                                  12)))
+;;                               :R X86)))))))
+;;                        (MV-NTH
+;;                         2
+;;                         (LAS-TO-PAS
+;;                          (CREATE-CANONICAL-ADDRESS-LIST
+;;                           6 (+ 184 (XR :RIP 0 X86)))
+;;                          :X 0
+;;                          (MV-NTH
+;;                           2
+;;                           (RB
+;;                            (CREATE-CANONICAL-ADDRESS-LIST
+;;                             8
+;;                             (LOGIOR
+;;                              (LOGAND
+;;                               4088
+;;                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+;;                              (ASH
+;;                               (LOGHEAD
+;;                                40
+;;                                (LOGTAIL
+;;                                 12
+;;                                 (COMBINE-BYTES
+;;                                  (MV-NTH
+;;                                   1
+;;                                   (RB
+;;                                    (CREATE-CANONICAL-ADDRESS-LIST
+;;                                     8
+;;                                     (LOGIOR
+;;                                      (LOGAND
+;;                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+;;                                      (LOGAND
+;;                                       4088
+;;                                       (LOGHEAD
+;;                                        28
+;;                                        (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+;;                                    :R X86)))))
+;;                               12)))
+;;                            :R
+;;                            (MV-NTH
+;;                             2
+;;                             (LAS-TO-PAS
+;;                              (CREATE-CANONICAL-ADDRESS-LIST
+;;                               40 (+ 144 (XR :RIP 0 X86)))
+;;                              :X 0
+;;                              (MV-NTH
+;;                               2
+;;                               (LAS-TO-PAS
+;;                                (CREATE-CANONICAL-ADDRESS-LIST
+;;                                 3 (+ 140 (XR :RIP 0 X86)))
+;;                                :X 0
+;;                                (MV-NTH
+;;                                 2
+;;                                 (RB
+;;                                  (CREATE-CANONICAL-ADDRESS-LIST
+;;                                   8
+;;                                   (LOGIOR
+;;                                    (LOGAND
+;;                                     -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+;;                                    (LOGAND
+;;                                     4088
+;;                                     (LOGHEAD
+;;                                      28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+;;                                  :R
+;;                                  (MV-NTH
+;;                                   2
+;;                                   (LAS-TO-PAS
+;;                                    (CREATE-CANONICAL-ADDRESS-LIST
+;;                                     32 (+ 108 (XR :RIP 0 X86)))
+;;                                    :X 0
+;;                                    (MV-NTH
+;;                                     2
+;;                                     (LAS-TO-PAS
+;;                                      (CREATE-CANONICAL-ADDRESS-LIST
+;;                                       18 (+ 86 (XR :RIP 0 X86)))
+;;                                      :X 0
+;;                                      (MV-NTH
+;;                                       2
+;;                                       (RB
+;;                                        (CREATE-CANONICAL-ADDRESS-LIST
+;;                                         8
+;;                                         (LOGIOR
+;;                                          (LOGAND
+;;                                           4088
+;;                                           (LOGHEAD
+;;                                            32
+;;                                            (LOGTAIL
+;;                                             27 (XR :RGF *RDI* X86))))
+;;                                          (ASH
+;;                                           (LOGHEAD
+;;                                            40
+;;                                            (LOGTAIL
+;;                                             12
+;;                                             (COMBINE-BYTES
+;;                                              (MV-NTH
+;;                                               1
+;;                                               (RB
+;;                                                (CREATE-CANONICAL-ADDRESS-LIST
+;;                                                 8
+;;                                                 (LOGIOR
+;;                                                  (LOGAND
+;;                                                   -4096
+;;                                                   (LOGEXT
+;;                                                    64 (XR :CTR *CR3* X86)))
+;;                                                  (LOGAND
+;;                                                   4088
+;;                                                   (LOGHEAD
+;;                                                    28
+;;                                                    (LOGTAIL
+;;                                                     36
+;;                                                     (XR :RGF *RDI* X86))))))
+;;                                                :R X86)))))
+;;                                           12)))
+;;                                        :R
+;;                                        (MV-NTH
+;;                                         2
+;;                                         (LAS-TO-PAS
+;;                                          (CREATE-CANONICAL-ADDRESS-LIST
+;;                                           40 (+ 46 (XR :RIP 0 X86)))
+;;                                          :X 0
+;;                                          (MV-NTH
+;;                                           2
+;;                                           (LAS-TO-PAS
+;;                                            (CREATE-CANONICAL-ADDRESS-LIST
+;;                                             4 (+ 38 (XR :RIP 0 X86)))
+;;                                            :X 0
+;;                                            (MV-NTH
+;;                                             2
+;;                                             (RB
+;;                                              (CREATE-CANONICAL-ADDRESS-LIST
+;;                                               8
+;;                                               (LOGIOR
+;;                                                (LOGAND
+;;                                                 -4096
+;;                                                 (LOGEXT
+;;                                                  64 (XR :CTR *CR3* X86)))
+;;                                                (LOGAND
+;;                                                 4088
+;;                                                 (LOGHEAD
+;;                                                  28
+;;                                                  (LOGTAIL
+;;                                                   36
+;;                                                   (XR :RGF *RDI* X86))))))
+;;                                              :R
+;;                                              (MV-NTH
+;;                                               2
+;;                                               (LAS-TO-PAS
+;;                                                (CREATE-CANONICAL-ADDRESS-LIST
+;;                                                 25 (+ 13 (XR :RIP 0 X86)))
+;;                                                :X 0
+;;                                                (MV-NTH
+;;                                                 2
+;;                                                 (LAS-TO-PAS
+;;                                                  (CREATE-CANONICAL-ADDRESS-LIST
+;;                                                   8
+;;                                                   (+
+;;                                                    -24 (XR :RGF *RSP* X86)))
+;;                                                  :R 0
+;;                                                  (MV-NTH
+;;                                                   2
+;;                                                   (LAS-TO-PAS
+;;                                                    (CREATE-CANONICAL-ADDRESS-LIST
+;;                                                     5 (+ 8 (XR :RIP 0 X86)))
+;;                                                    :X 0
+;;                                                    (MV-NTH
+;;                                                     1
+;;                                                     (WB
+;;                                                      (CREATE-ADDR-BYTES-ALIST
+;;                                                       (CREATE-CANONICAL-ADDRESS-LIST
+;;                                                        8
+;;                                                        (+
+;;                                                         -24
+;;                                                         (XR
+;;                                                          :RGF *RSP* X86)))
+;;                                                       (BYTE-IFY
+;;                                                        8
+;;                                                        (XR :CTR *CR3* X86)))
+;;                                                      (MV-NTH
+;;                                                       2
+;;                                                       (LAS-TO-PAS
+;;                                                        (CREATE-CANONICAL-ADDRESS-LIST
+;;                                                         8 (XR :RIP 0 X86))
+;;                                                        :X 0
+;;                                                        X86))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+;;  :hints (("Goal"
+;;           :in-theory (e/d* (len
+;;                             page-size
+;;                             consp-of-create-canonical-address-list
+;;                             car-create-canonical-address-list
+;;                             cdr-create-canonical-address-list
+;;                             loghead-negative
+;;                             disjoint-p-all-translation-governing-addresses-subset-p)
+;;                            (create-canonical-address-list
+;;                             (:rewrite program-at-values-and-!flgi)
+;;                             (:rewrite get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)
+;;                             (:rewrite rb-in-terms-of-rb-subset-p-in-system-level-mode)
+;;                             (:rewrite get-prefixes-opener-lemma-group-3-prefix-in-marking-mode)
+;;                             (:rewrite get-prefixes-opener-lemma-group-2-prefix-in-marking-mode)
+;;                             (:rewrite get-prefixes-opener-lemma-group-1-prefix-in-marking-mode)
+;;                             ;; !!! Maybe I can afford to enable the following rule now?
+;;                             (:rewrite mv-nth-2-rb-in-system-level-marking-mode)
+;;                             (:rewrite mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures)
+;;                             (:rewrite mv-nth-2-rb-in-system-level-non-marking-mode)
+;;                             (:rewrite rb-returns-x86-programmer-level-mode)
+;;                             (:linear rm-low-64-logand-logior-helper-1)
+;;                             (:definition n64p$inline)
+;;                             (:type-prescription xlate-equiv-memory)
+;;                             (:rewrite program-at-alt-wb-disjoint-in-system-level-mode)
+;;                             (:type-prescription natp-page-dir-ptr-table-entry-addr)
+;;                             mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+;;                             mv-nth-2-las-to-pas-system-level-non-marking-mode))
+;;           :do-not '(preprocess)
+;;           :do-not-induct t)))
+
+(thm ;; 46-58 instructions
+ (implies
+  ;; (rewire_dst_to_src-assumptions x86)
+  (and
+   (x86-state-okp x86)
+   (program-ok-p x86)
+   (stack-ok-p x86)
+   (program-and-stack-no-interfere-p x86)
+   (program-and-stack-no-interfere-p-aux x86)
+   (source-addresses-ok-p x86)
+   (source-PML4TE-ok-p x86)
+   (source-PDPTE-ok-p x86)
+   (source-PML4TE-and-stack-no-interfere-p x86)
+   (source-PML4TE-and-program-no-interfere-p x86)
+   (source-PML4TE-itself-no-interfere-p x86)
+   (source-PML4TE-and-stack-no-interfere-p-aux x86)
+   (source-PDPTE-and-stack-no-interfere-p x86)
+   (source-PDPTE-and-program-no-interfere-p x86)
+   (source-PDPTE-itself-no-interfere-p x86)
+   (source-PDPTE-and-stack-no-interfere-p-aux x86)
+   ;; This is too strong (coz equality of rbs doesnt matter, but
+   ;; xlate-equiv matters), but Ill let this lie for now.
+   (source-PDPTE-and-source-PML4E-no-interfere-p x86)
+
+   (destination-addresses-ok-p x86)
+   (destination-PML4TE-ok-p x86)
+   (destination-PDPTE-ok-p x86)
+   (destination-PML4TE-and-stack-no-interfere-p x86)
+   (destination-PML4TE-and-program-no-interfere-p x86)
+   (destination-PML4TE-itself-no-interfere-p x86)
+   (destination-PML4TE-and-stack-no-interfere-p-aux x86)
+   ;; Too strong?
+   (destination-PML4TE-and-source-PML4TE-no-interfere-p x86)
+   (destination-PML4TE-and-source-PDPTE-no-interfere-p x86)
+
+   (destination-PDPTE-and-source-PML4E-no-interfere-p x86)
+   (destination-PDPTE-and-source-PDPTE-no-interfere-p x86)
+   (destination-PDPTE-and-destination-PML4TE-no-interfere-p x86)
+   (destination-PDPTE-and-stack-no-interfere-p x86)
+   (destination-PDPTE-and-program-no-interfere-p x86)
+   (destination-PDPTE-and-program-no-interfere-p-aux x86)
+   (destination-PDPTE-itself-no-interfere-p x86)
+   (destination-PDPTE-and-stack-no-interfere-p-aux x86)
+
+   (direct-map-p
+    8
+    (page-dir-ptr-table-entry-addr
+     (xr :rgf *rsi* x86)
+     (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+    :w (cpl x86) x86)
+
+   ;; !!! FIX: Some of the following are in terms of disjoint-p
+   ;; !!! instead of disjoint-p$.
+   (return-instruction-address-ok-p x86)
+   (return-addresses-itself-no-interfere-p x86)
+   (return-addresses-and-program-no-interfere-p x86)
+   (ret-instruction-and-source-PML4E-no-interfere-p x86)
+   (ret-instruction-and-source-PDPTE-no-interfere-p x86)
+   (ret-instruction-and-destination-PML4E-no-interfere-p x86)
+   (ret-instruction-and-destination-PDPTE-no-interfere-p x86)
+   (return-address-and-stack-no-interfere-p x86))
+
+  (equal (x86-run 13
+                  ;; Result of (x86-run 45 x86).
+                  (XW
+                   :RGF *RAX*
+                   (LOGIOR
+                    (LOGAND
+                     -4503598553628673
+                     (LOGEXT
+                      64
+                      (COMBINE-BYTES
+                       (MV-NTH
+                        1
+                        (RB
+                         (CREATE-CANONICAL-ADDRESS-LIST
+                          8
+                          (LOGIOR
+                           (LOGAND 4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                           (ASH
+                            (LOGHEAD
+                             40
+                             (LOGTAIL
+                              12
+                              (COMBINE-BYTES
+                               (MV-NTH
+                                1
+                                (RB
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  8
+                                  (LOGIOR
+                                   (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                   (LOGAND 4088
+                                           (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                 :R X86)))))
+                            12)))
+                         :R X86)))))
+                    (LOGAND
+                     4503598553628672
+                     (LOGEXT
+                      64
+                      (COMBINE-BYTES
+                       (MV-NTH
+                        1
+                        (RB
+                         (CREATE-CANONICAL-ADDRESS-LIST
+                          8
+                          (LOGIOR
+                           (LOGAND 4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                           (ASH
+                            (LOGHEAD
+                             40
+                             (LOGTAIL
+                              12
+                              (COMBINE-BYTES
+                               (MV-NTH
+                                1
+                                (RB
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  8
+                                  (LOGIOR
+                                   (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                   (LOGAND 4088
+                                           (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                 :R X86)))))
+                            12)))
+                         :R X86))))))
+                   (XW
+                    :RGF *RCX*
+                    (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                            (LOGAND 4088
+                                    (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                    (XW
+                     :RGF *RDX*
+                     (LOGIOR
+                      (LOGAND
+                       -4503598553628673
+                       (LOGEXT
+                        64
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND 4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                             (ASH
+                              (LOGHEAD
+                               40
+                               (LOGTAIL
+                                12
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND 4088
+                                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                   :R X86)))))
+                              12)))
+                           :R X86)))))
+                      (LOGAND
+                       4503598553628672
+                       (LOGEXT
+                        64
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND 4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                             (ASH
+                              (LOGHEAD
+                               40
+                               (LOGTAIL
+                                12
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND 4088
+                                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                   :R X86)))))
+                              12)))
+                           :R X86))))))
+                     (XW
+                      :RGF *R8* 1099511627775
+                      (XW
+                       :RGF *R9*
+                       (LOGAND
+                        4503598553628672
+                        (LOGEXT
+                         64
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND 4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
+                                       4088
+                                       (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                    :R X86)))))
+                               12)))
+                            :R X86)))))
+                       (XW
+                        :RIP 0 (+ 193 (XR :RIP 0 X86))
+                        (XW
+                         :UNDEF 0 (+ 39 (NFIX (XR :UNDEF 0 X86)))
+                         (!FLGI
+                          *CF* 0
+                          (!FLGI
+                           *PF*
+                           (PF-SPEC64
+                            (LOGIOR
+                             (LOGAND
+                              18442240475155922943
+                              (COMBINE-BYTES
+                               (MV-NTH
+                                1
+                                (RB
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  8
+                                  (LOGIOR
+                                   (LOGAND 4088
+                                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                   (ASH
+                                    (LOGHEAD
+                                     40
+                                     (LOGTAIL
+                                      12
+                                      (COMBINE-BYTES
+                                       (MV-NTH
+                                        1
+                                        (RB
+                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                          8
+                                          (LOGIOR
+                                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                           (LOGAND
+                                            4088
+                                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                         :R X86)))))
+                                    12)))
+                                 :R X86))))
+                             (LOGAND
+                              4503598553628672
+                              (COMBINE-BYTES
+                               (MV-NTH
+                                1
+                                (RB
+                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                  8
+                                  (LOGIOR
+                                   (LOGAND 4088
+                                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                   (ASH
+                                    (LOGHEAD
+                                     40
+                                     (LOGTAIL
+                                      12
+                                      (COMBINE-BYTES
+                                       (MV-NTH
+                                        1
+                                        (RB
+                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                          8
+                                          (LOGIOR
+                                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                           (LOGAND
+                                            4088
+                                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                         :R X86)))))
+                                    12)))
+                                 :R X86))))))
+                           (!FLGI
+                            *AF*
+                            (LOGHEAD 1
+                                     (CREATE-UNDEF (+ 38 (NFIX (XR :UNDEF 0 X86)))))
+                            (!FLGI
+                             *ZF*
+                             (ZF-SPEC
+                              (LOGIOR
+                               (LOGAND
+                                18442240475155922943
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND 4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (COMBINE-BYTES
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                           :R X86)))))
+                                      12)))
+                                   :R X86))))
+                               (LOGAND
+                                4503598553628672
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND 4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (COMBINE-BYTES
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                           :R X86)))))
+                                      12)))
+                                   :R X86))))))
+                             (!FLGI
+                              *SF*
+                              (SF-SPEC64
+                               (LOGIOR
+                                (LOGAND
+                                 18442240475155922943
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (COMBINE-BYTES
+                                          (MV-NTH
+                                           1
+                                           (RB
+                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                             8
+                                             (LOGIOR
+                                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                              (LOGAND
+                                               4088
+                                               (LOGHEAD
+                                                28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                            :R X86)))))
+                                       12)))
+                                    :R X86))))
+                                (LOGAND
+                                 4503598553628672
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (COMBINE-BYTES
+                                          (MV-NTH
+                                           1
+                                           (RB
+                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                             8
+                                             (LOGIOR
+                                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                              (LOGAND
+                                               4088
+                                               (LOGHEAD
+                                                28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                            :R X86)))))
+                                       12)))
+                                    :R X86))))))
+                              (!FLGI
+                               *OF* 0
+                               (MV-NTH
+                                2
+                                (LAS-TO-PAS
+                                 (CREATE-CANONICAL-ADDRESS-LIST 3 (+ 190 (XR :RIP 0 X86)))
+                                 :X 0
+                                 (MV-NTH
+                                  1
+                                  (WB
+                                   (CREATE-ADDR-BYTES-ALIST
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (COMBINE-BYTES
+                                          (MV-NTH
+                                           1
+                                           (RB
+                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                             8
+                                             (LOGIOR
+                                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                              (LOGAND
+                                               4088
+                                               (LOGHEAD
+                                                28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                            :R X86)))))
+                                       12)))
+                                    (BYTE-IFY
+                                     8
+                                     (LOGIOR
+                                      (LOGAND
+                                       18442240475155922943
+                                       (COMBINE-BYTES
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           8
+                                           (LOGIOR
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                            (ASH
+                                             (LOGHEAD
+                                              40
+                                              (LOGTAIL
+                                               12
+                                               (COMBINE-BYTES
+                                                (MV-NTH
+                                                 1
+                                                 (RB
+                                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                                   8
+                                                   (LOGIOR
+                                                    (LOGAND
+                                                     -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                    (LOGAND
+                                                     4088
+                                                     (LOGHEAD
+                                                      28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                                  :R X86)))))
+                                             12)))
+                                          :R X86))))
+                                      (LOGAND
+                                       4503598553628672
+                                       (COMBINE-BYTES
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           8
+                                           (LOGIOR
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                            (ASH
+                                             (LOGHEAD
+                                              40
+                                              (LOGTAIL
+                                               12
+                                               (COMBINE-BYTES
+                                                (MV-NTH
+                                                 1
+                                                 (RB
+                                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                                   8
+                                                   (LOGIOR
+                                                    (LOGAND
+                                                     -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                    (LOGAND
+                                                     4088
+                                                     (LOGHEAD
+                                                      28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                                  :R X86)))))
+                                             12)))
+                                          :R X86)))))))
+                                   (MV-NTH
+                                    2
+                                    (LAS-TO-PAS
+                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                      6 (+ 184 (XR :RIP 0 X86)))
+                                     :X 0
+                                     (MV-NTH
+                                      2
+                                      (RB
+                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                        8
+                                        (LOGIOR
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                         (ASH
+                                          (LOGHEAD
+                                           40
+                                           (LOGTAIL
+                                            12
+                                            (COMBINE-BYTES
+                                             (MV-NTH
+                                              1
+                                              (RB
+                                               (CREATE-CANONICAL-ADDRESS-LIST
+                                                8
+                                                (LOGIOR
+                                                 (LOGAND
+                                                  -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                 (LOGAND
+                                                  4088
+                                                  (LOGHEAD
+                                                   28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                               :R X86)))))
+                                          12)))
+                                       :R
+                                       (MV-NTH
+                                        2
+                                        (LAS-TO-PAS
+                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                          40 (+ 144 (XR :RIP 0 X86)))
+                                         :X 0
+                                         (MV-NTH
+                                          2
+                                          (LAS-TO-PAS
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            3 (+ 140 (XR :RIP 0 X86)))
+                                           :X 0
+                                           (MV-NTH
+                                            2
+                                            (RB
+                                             (CREATE-CANONICAL-ADDRESS-LIST
+                                              8
+                                              (LOGIOR
+                                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                               (LOGAND
+                                                4088
+                                                (LOGHEAD
+                                                 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                             :R
+                                             (MV-NTH
+                                              2
+                                              (LAS-TO-PAS
+                                               (CREATE-CANONICAL-ADDRESS-LIST
+                                                32 (+ 108 (XR :RIP 0 X86)))
+                                               :X 0
+                                               (MV-NTH
+                                                2
+                                                (LAS-TO-PAS
+                                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                                  18 (+ 86 (XR :RIP 0 X86)))
+                                                 :X 0
+                                                 (MV-NTH
+                                                  2
+                                                  (RB
+                                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                                    8
+                                                    (LOGIOR
+                                                     (LOGAND
+                                                      4088
+                                                      (LOGHEAD
+                                                       32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                                     (ASH
+                                                      (LOGHEAD
+                                                       40
+                                                       (LOGTAIL
+                                                        12
+                                                        (COMBINE-BYTES
+                                                         (MV-NTH
+                                                          1
+                                                          (RB
+                                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                                            8
+                                                            (LOGIOR
+                                                             (LOGAND
+                                                              -4096
+                                                              (LOGEXT
+                                                               64 (XR :CTR *CR3* X86)))
+                                                             (LOGAND
+                                                              4088
+                                                              (LOGHEAD
+                                                               28
+                                                               (LOGTAIL
+                                                                36 (XR :RGF *RDI* X86))))))
+                                                           :R X86)))))
+                                                      12)))
+                                                   :R
+                                                   (MV-NTH
+                                                    2
+                                                    (LAS-TO-PAS
+                                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                                      40 (+ 46 (XR :RIP 0 X86)))
+                                                     :X 0
+                                                     (MV-NTH
+                                                      2
+                                                      (LAS-TO-PAS
+                                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                                        4 (+ 38 (XR :RIP 0 X86)))
+                                                       :X 0
+                                                       (MV-NTH
+                                                        2
+                                                        (RB
+                                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                                          8
+                                                          (LOGIOR
+                                                           (LOGAND
+                                                            -4096
+                                                            (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                           (LOGAND
+                                                            4088
+                                                            (LOGHEAD
+                                                             28
+                                                             (LOGTAIL
+                                                              36 (XR :RGF *RDI* X86))))))
+                                                         :R
+                                                         (MV-NTH
+                                                          2
+                                                          (LAS-TO-PAS
+                                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                                            25 (+ 13 (XR :RIP 0 X86)))
+                                                           :X 0
+                                                           (MV-NTH
+                                                            2
+                                                            (LAS-TO-PAS
+                                                             (CREATE-CANONICAL-ADDRESS-LIST
+                                                              8 (+ -24 (XR :RGF *RSP* X86)))
+                                                             :R 0
+                                                             (MV-NTH
+                                                              2
+                                                              (LAS-TO-PAS
+                                                               (CREATE-CANONICAL-ADDRESS-LIST
+                                                                5 (+ 8 (XR :RIP 0 X86)))
+                                                               :X 0
+                                                               (MV-NTH
+                                                                1
+                                                                (WB
+                                                                 (CREATE-ADDR-BYTES-ALIST
+                                                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                                                   8
+                                                                   (+
+                                                                    -24 (XR :RGF *RSP* X86)))
+                                                                  (BYTE-IFY
+                                                                   8 (XR :CTR *CR3* X86)))
+                                                                 (MV-NTH
+                                                                  2
+                                                                  (LAS-TO-PAS
+                                                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                                                    8 (XR :RIP 0 X86))
+                                                                   :X 0
+                                                                   X86))))))))))))))))))))))))))))))))))))))))))))))))))
+         (XW
+          :RGF *RAX* 1
+          (XW
+           :RGF *RCX*
+           (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                   (LOGAND 4088
+                           (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+           (XW
+            :RGF *RDX*
+            (LOGAND
+             4503598553628672
+             (LOGIOR
+              (LOGAND
+               -4503598553628673
+               (LOGEXT
+                64
+                (COMBINE-BYTES
+                 (MV-NTH
+                  1
+                  (RB
+                   (CREATE-CANONICAL-ADDRESS-LIST
+                    8
+                    (LOGIOR
+                     (LOGAND 4088
+                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                     (ASH
+                      (LOGHEAD
+                       40
+                       (LOGTAIL
+                        12
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                             (LOGAND 4088
+                                     (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                           :R X86)))))
+                      12)))
+                   :R X86)))))
+              (LOGAND
+               4503598553628672
+               (LOGEXT
+                64
+                (COMBINE-BYTES
+                 (MV-NTH
+                  1
+                  (RB
+                   (CREATE-CANONICAL-ADDRESS-LIST
+                    8
+                    (LOGIOR
+                     (LOGAND 4088
+                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                     (ASH
+                      (LOGHEAD
+                       40
+                       (LOGTAIL
+                        12
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                             (LOGAND 4088
+                                     (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                           :R X86)))))
+                      12)))
+                   :R X86)))))))
+            (XW
+             :RGF *RSP* (+ 8 (XR :RGF *RSP* X86))
+             (XW
+              :RGF *RSI* 0
+              (XW
+               :RGF *RDI*
+               (LOGAND
+                4503598553628672
+                (LOGEXT
+                 64
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST
+                     8
+                     (LOGIOR
+                      (LOGAND 4088
+                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                      (ASH
+                       (LOGHEAD
+                        40
+                        (LOGTAIL
+                         12
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                              (LOGAND 4088
+                                      (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                            :R X86)))))
+                       12)))
+                    :R X86)))))
+               (XW
+                :RGF *R8* 1099511627775
+                (XW
+                 :RGF *R9*
+                 (LOGAND
+                  4503598553628672
+                  (LOGEXT
+                   64
+                   (COMBINE-BYTES
+                    (MV-NTH
+                     1
+                     (RB
+                      (CREATE-CANONICAL-ADDRESS-LIST
+                       8
+                       (LOGIOR
+                        (LOGAND 4088
+                                (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                        (ASH
+                         (LOGHEAD
+                          40
+                          (LOGTAIL
+                           12
+                           (COMBINE-BYTES
+                            (MV-NTH
+                             1
+                             (RB
+                              (CREATE-CANONICAL-ADDRESS-LIST
+                               8
+                               (LOGIOR
+                                (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                (LOGAND
+                                 4088
+                                 (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                              :R X86)))))
+                         12)))
+                      :R X86)))))
+                 (XW
+                  :RIP 0
+                  (LOGEXT
+                   64
+                   (COMBINE-BYTES
+                    (MV-NTH 1
+                            (RB (CREATE-CANONICAL-ADDRESS-LIST 8 (XR :RGF *RSP* X86))
+                                :R X86))))
+                  (XW
+                   :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
+                   (!FLGI
+                    *CF*
+                    (BOOL->BIT
+                     (<
+                      (LOGAND
+                       4503598553628672
+                       (COMBINE-BYTES
+                        (MV-NTH
+                         1
+                         (RB
+                          (CREATE-CANONICAL-ADDRESS-LIST
+                           8
+                           (LOGIOR
+                            (LOGAND 4088
+                                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                            (ASH
+                             (LOGHEAD
+                              40
+                              (LOGTAIL
+                               12
+                               (COMBINE-BYTES
+                                (MV-NTH
+                                 1
+                                 (RB
+                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                   8
+                                   (LOGIOR
+                                    (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                    (LOGAND
+                                     4088
+                                     (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                  :R X86)))))
+                             12)))
+                          :R X86))))
+                      (LOGAND
+                       4503598553628672
+                       (LOGIOR
+                        (LOGAND
+                         18442240475155922943
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND 4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
+                                       4088
+                                       (LOGHEAD
+                                        28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                    :R X86)))))
+                               12)))
+                            :R X86))))
+                        (LOGAND
+                         4503598553628672
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             8
+                             (LOGIOR
+                              (LOGAND 4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (COMBINE-BYTES
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                     8
+                                     (LOGIOR
+                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
+                                       4088
+                                       (LOGHEAD
+                                        28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                    :R X86)))))
+                               12)))
+                            :R X86))))))))
+                    (!FLGI
+                     *PF*
+                     (PF-SPEC64
+                      (LOGHEAD
+                       64
+                       (+
+                        (LOGAND
+                         4503598553628672
+                         (LOGEXT
+                          64
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              8
+                              (LOGIOR
+                               (LOGAND 4088
+                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                               (ASH
+                                (LOGHEAD
+                                 40
+                                 (LOGTAIL
+                                  12
+                                  (COMBINE-BYTES
+                                   (MV-NTH
+                                    1
+                                    (RB
+                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                      8
+                                      (LOGIOR
+                                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                       (LOGAND
+                                        4088
+                                        (LOGHEAD
+                                         28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                     :R X86)))))
+                                12)))
+                             :R X86)))))
+                        (-
+                         (LOGAND
+                          4503598553628672
+                          (LOGIOR
+                           (LOGAND
+                            -4503598553628673
+                            (LOGEXT
+                             64
+                             (COMBINE-BYTES
+                              (MV-NTH
+                               1
+                               (RB
+                                (CREATE-CANONICAL-ADDRESS-LIST
+                                 8
+                                 (LOGIOR
+                                  (LOGAND
+                                   4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                  (ASH
+                                   (LOGHEAD
+                                    40
+                                    (LOGTAIL
+                                     12
+                                     (COMBINE-BYTES
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         8
+                                         (LOGIOR
+                                          (LOGAND
+                                           -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD
+                                            28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                        :R X86)))))
+                                   12)))
+                                :R X86)))))
+                           (LOGAND
+                            4503598553628672
+                            (LOGEXT
+                             64
+                             (COMBINE-BYTES
+                              (MV-NTH
+                               1
+                               (RB
+                                (CREATE-CANONICAL-ADDRESS-LIST
+                                 8
+                                 (LOGIOR
+                                  (LOGAND
+                                   4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                  (ASH
+                                   (LOGHEAD
+                                    40
+                                    (LOGTAIL
+                                     12
+                                     (COMBINE-BYTES
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         8
+                                         (LOGIOR
+                                          (LOGAND
+                                           -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD
+                                            28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                        :R X86)))))
+                                   12)))
+                                :R X86)))))))))))
+                     (!FLGI
+                      *AF*
+                      (SUB-AF-SPEC64
+                       (LOGAND
+                        4503598553628672
+                        (COMBINE-BYTES
+                         (MV-NTH
+                          1
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST
+                            8
+                            (LOGIOR
+                             (LOGAND 4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                             (ASH
+                              (LOGHEAD
+                               40
+                               (LOGTAIL
+                                12
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                   :R X86)))))
+                              12)))
+                           :R X86))))
+                       (LOGAND
+                        4503598553628672
+                        (LOGIOR
+                         (LOGAND
+                          18442240475155922943
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              8
+                              (LOGIOR
+                               (LOGAND 4088
+                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                               (ASH
+                                (LOGHEAD
+                                 40
+                                 (LOGTAIL
+                                  12
+                                  (COMBINE-BYTES
+                                   (MV-NTH
+                                    1
+                                    (RB
+                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                      8
+                                      (LOGIOR
+                                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                       (LOGAND
+                                        4088
+                                        (LOGHEAD
+                                         28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                     :R X86)))))
+                                12)))
+                             :R X86))))
+                         (LOGAND
+                          4503598553628672
+                          (COMBINE-BYTES
+                           (MV-NTH
+                            1
+                            (RB
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              8
+                              (LOGIOR
+                               (LOGAND 4088
+                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                               (ASH
+                                (LOGHEAD
+                                 40
+                                 (LOGTAIL
+                                  12
+                                  (COMBINE-BYTES
+                                   (MV-NTH
+                                    1
+                                    (RB
+                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                      8
+                                      (LOGIOR
+                                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                       (LOGAND
+                                        4088
+                                        (LOGHEAD
+                                         28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                     :R X86)))))
+                                12)))
+                             :R X86)))))))
+                      (!FLGI
+                       *ZF* 1
+                       (!FLGI
+                        *SF*
+                        (SF-SPEC64
+                         (LOGHEAD
+                          64
+                          (+
+                           (LOGAND
+                            4503598553628672
+                            (LOGEXT
+                             64
+                             (COMBINE-BYTES
+                              (MV-NTH
+                               1
+                               (RB
+                                (CREATE-CANONICAL-ADDRESS-LIST
+                                 8
+                                 (LOGIOR
+                                  (LOGAND
+                                   4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                  (ASH
+                                   (LOGHEAD
+                                    40
+                                    (LOGTAIL
+                                     12
+                                     (COMBINE-BYTES
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         8
+                                         (LOGIOR
+                                          (LOGAND
+                                           -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD
+                                            28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                        :R X86)))))
+                                   12)))
+                                :R X86)))))
+                           (-
+                            (LOGAND
+                             4503598553628672
+                             (LOGIOR
+                              (LOGAND
+                               -4503598553628673
+                               (LOGEXT
+                                64
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (COMBINE-BYTES
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND
+                                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                           :R X86)))))
+                                      12)))
+                                   :R X86)))))
+                              (LOGAND
+                               4503598553628672
+                               (LOGEXT
+                                64
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (COMBINE-BYTES
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND
+                                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                           :R X86)))))
+                                      12)))
+                                   :R X86)))))))))))
+                        (!FLGI
+                         *OF*
+                         (OF-SPEC64
+                          (+
+                           (LOGAND
+                            4503598553628672
+                            (LOGEXT
+                             64
+                             (COMBINE-BYTES
+                              (MV-NTH
+                               1
+                               (RB
+                                (CREATE-CANONICAL-ADDRESS-LIST
+                                 8
+                                 (LOGIOR
+                                  (LOGAND
+                                   4088
+                                   (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                  (ASH
+                                   (LOGHEAD
+                                    40
+                                    (LOGTAIL
+                                     12
+                                     (COMBINE-BYTES
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         8
+                                         (LOGIOR
+                                          (LOGAND
+                                           -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD
+                                            28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                        :R X86)))))
+                                   12)))
+                                :R X86)))))
+                           (-
+                            (LOGAND
+                             4503598553628672
+                             (LOGIOR
+                              (LOGAND
+                               -4503598553628673
+                               (LOGEXT
+                                64
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (COMBINE-BYTES
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND
+                                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                           :R X86)))))
+                                      12)))
+                                   :R X86)))))
+                              (LOGAND
+                               4503598553628672
+                               (LOGEXT
+                                64
+                                (COMBINE-BYTES
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (COMBINE-BYTES
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND
+                                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
+                                           :R X86)))))
+                                      12)))
+                                   :R X86))))))))))
+                         (MV-NTH
+                          2
+                          (RB
+                           (CREATE-CANONICAL-ADDRESS-LIST 8 (XR :RGF *RSP* X86))
+                           :R
+                           (MV-NTH
+                            2
+                            (LAS-TO-PAS
+                             (CREATE-CANONICAL-ADDRESS-LIST
+                              40 (+ 206 (XR :RIP 0 X86)))
+                             :X 0
+                             (MV-NTH
+                              2
+                              (LAS-TO-PAS
+                               (CREATE-CANONICAL-ADDRESS-LIST
+                                15 (+ 190 (XR :RIP 0 X86)))
+                               :X 0
+                               (MV-NTH
+                                1
+                                (WB
+                                 (CREATE-ADDR-BYTES-ALIST
+                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                   8
+                                   (LOGIOR
+                                    (LOGAND
+                                     4088
+                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                    (ASH
+                                     (LOGHEAD
+                                      40
+                                      (LOGTAIL
+                                       12
+                                       (COMBINE-BYTES
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                           8
+                                           (LOGIOR
+                                            (LOGAND
+                                             -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD
+                                              28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                          :R X86)))))
+                                     12)))
+                                  (BYTE-IFY
+                                   8
+                                   (LOGIOR
+                                    (LOGAND
+                                     18442240475155922943
+                                     (COMBINE-BYTES
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         8
+                                         (LOGIOR
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD
+                                            32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                          (ASH
+                                           (LOGHEAD
+                                            40
+                                            (LOGTAIL
+                                             12
+                                             (COMBINE-BYTES
+                                              (MV-NTH
+                                               1
+                                               (RB
+                                                (CREATE-CANONICAL-ADDRESS-LIST
+                                                 8
+                                                 (LOGIOR
+                                                  (LOGAND
+                                                   -4096
+                                                   (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                  (LOGAND
+                                                   4088
+                                                   (LOGHEAD
+                                                    28
+                                                    (LOGTAIL
+                                                     36 (XR :RGF *RSI* X86))))))
+                                                :R X86)))))
+                                           12)))
+                                        :R X86))))
+                                    (LOGAND
+                                     4503598553628672
+                                     (COMBINE-BYTES
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                         8
+                                         (LOGIOR
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD
+                                            32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                          (ASH
+                                           (LOGHEAD
+                                            40
+                                            (LOGTAIL
+                                             12
+                                             (COMBINE-BYTES
+                                              (MV-NTH
+                                               1
+                                               (RB
+                                                (CREATE-CANONICAL-ADDRESS-LIST
+                                                 8
+                                                 (LOGIOR
+                                                  (LOGAND
+                                                   -4096
+                                                   (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                                  (LOGAND
+                                                   4088
+                                                   (LOGHEAD
+                                                    28
+                                                    (LOGTAIL
+                                                     36 (XR :RGF *RDI* X86))))))
+                                                :R X86)))))
+                                           12)))
+                                        :R X86)))))))
+                                 (MV-NTH
+                                  2
+                                  (LAS-TO-PAS
+                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                    6 (+ 184 (XR :RIP 0 X86)))
+                                   :X 0
+                                   (MV-NTH
+                                    2
+                                    (RB
+                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                      8
+                                      (LOGIOR
+                                       (LOGAND
+                                        4088
+                                        (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                       (ASH
+                                        (LOGHEAD
+                                         40
+                                         (LOGTAIL
+                                          12
+                                          (COMBINE-BYTES
+                                           (MV-NTH
+                                            1
+                                            (RB
+                                             (CREATE-CANONICAL-ADDRESS-LIST
+                                              8
+                                              (LOGIOR
+                                               (LOGAND
+                                                -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                               (LOGAND
+                                                4088
+                                                (LOGHEAD
+                                                 28
+                                                 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                             :R X86)))))
+                                        12)))
+                                     :R
+                                     (MV-NTH
+                                      2
+                                      (LAS-TO-PAS
+                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                        40 (+ 144 (XR :RIP 0 X86)))
+                                       :X 0
+                                       (MV-NTH
+                                        2
+                                        (LAS-TO-PAS
+                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                          3 (+ 140 (XR :RIP 0 X86)))
+                                         :X 0
+                                         (MV-NTH
+                                          2
+                                          (RB
+                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                            8
+                                            (LOGIOR
+                                             (LOGAND
+                                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                             (LOGAND
+                                              4088
+                                              (LOGHEAD
+                                               28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
+                                           :R
+                                           (MV-NTH
+                                            2
+                                            (LAS-TO-PAS
+                                             (CREATE-CANONICAL-ADDRESS-LIST
+                                              32 (+ 108 (XR :RIP 0 X86)))
+                                             :X 0
+                                             (MV-NTH
+                                              2
+                                              (LAS-TO-PAS
+                                               (CREATE-CANONICAL-ADDRESS-LIST
+                                                18 (+ 86 (XR :RIP 0 X86)))
+                                               :X 0
+                                               (MV-NTH
+                                                2
+                                                (RB
+                                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                                  8
+                                                  (LOGIOR
+                                                   (LOGAND
+                                                    4088
+                                                    (LOGHEAD
+                                                     32
+                                                     (LOGTAIL
+                                                      27 (XR :RGF *RDI* X86))))
+                                                   (ASH
+                                                    (LOGHEAD
+                                                     40
+                                                     (LOGTAIL
+                                                      12
+                                                      (COMBINE-BYTES
+                                                       (MV-NTH
+                                                        1
+                                                        (RB
+                                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                                          8
+                                                          (LOGIOR
+                                                           (LOGAND
+                                                            -4096
+                                                            (LOGEXT
+                                                             64 (XR :CTR *CR3* X86)))
+                                                           (LOGAND
+                                                            4088
+                                                            (LOGHEAD
+                                                             28
+                                                             (LOGTAIL
+                                                              36
+                                                              (XR :RGF *RDI* X86))))))
+                                                         :R X86)))))
+                                                    12)))
+                                                 :R
+                                                 (MV-NTH
+                                                  2
+                                                  (LAS-TO-PAS
+                                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                                    40 (+ 46 (XR :RIP 0 X86)))
+                                                   :X 0
+                                                   (MV-NTH
+                                                    2
+                                                    (LAS-TO-PAS
+                                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                                      4 (+ 38 (XR :RIP 0 X86)))
+                                                     :X 0
+                                                     (MV-NTH
+                                                      2
+                                                      (RB
+                                                       (CREATE-CANONICAL-ADDRESS-LIST
+                                                        8
+                                                        (LOGIOR
+                                                         (LOGAND
+                                                          -4096
+                                                          (LOGEXT
+                                                           64 (XR :CTR *CR3* X86)))
+                                                         (LOGAND
+                                                          4088
+                                                          (LOGHEAD
+                                                           28
+                                                           (LOGTAIL
+                                                            36
+                                                            (XR :RGF *RDI* X86))))))
+                                                       :R
+                                                       (MV-NTH
+                                                        2
+                                                        (LAS-TO-PAS
+                                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                                          25 (+ 13 (XR :RIP 0 X86)))
+                                                         :X 0
+                                                         (MV-NTH
+                                                          2
+                                                          (LAS-TO-PAS
+                                                           (CREATE-CANONICAL-ADDRESS-LIST
+                                                            8
+                                                            (+
+                                                             -24 (XR :RGF *RSP* X86)))
+                                                           :R 0
+                                                           (MV-NTH
+                                                            2
+                                                            (LAS-TO-PAS
+                                                             (CREATE-CANONICAL-ADDRESS-LIST
+                                                              5 (+ 8 (XR :RIP 0 X86)))
+                                                             :X 0
+                                                             (MV-NTH
+                                                              1
+                                                              (WB
+                                                               (CREATE-ADDR-BYTES-ALIST
+                                                                (CREATE-CANONICAL-ADDRESS-LIST
+                                                                 8
+                                                                 (+
+                                                                  -24
+                                                                  (XR
+                                                                   :RGF *RSP* X86)))
+                                                                (BYTE-IFY
+                                                                 8
+                                                                 (XR :CTR *CR3* X86)))
+                                                               (MV-NTH
+                                                                2
+                                                                (LAS-TO-PAS
+                                                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                                                  8 (XR :RIP 0 X86))
+                                                                 :X 0
+                                                                 X86))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+ :hints (("Goal"
+          :in-theory (e/d* (len
+                            page-size
+                            consp-of-create-canonical-address-list
+                            car-create-canonical-address-list
+                            cdr-create-canonical-address-list
+                            loghead-negative
+                            disjoint-p-all-translation-governing-addresses-subset-p)
+                           (create-canonical-address-list
+                            (:rewrite program-at-values-and-!flgi)
+                            (:rewrite get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)
+                            (:rewrite rb-in-terms-of-rb-subset-p-in-system-level-mode)
+                            (:rewrite get-prefixes-opener-lemma-group-3-prefix-in-marking-mode)
+                            (:rewrite get-prefixes-opener-lemma-group-2-prefix-in-marking-mode)
+                            (:rewrite get-prefixes-opener-lemma-group-1-prefix-in-marking-mode)
+                            ;; !!! Maybe I can afford to enable the following rule now?
+                            (:rewrite mv-nth-2-rb-in-system-level-marking-mode)
+                            (:rewrite mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures)
+                            (:rewrite mv-nth-2-rb-in-system-level-non-marking-mode)
+                            (:rewrite rb-returns-x86-programmer-level-mode)
+                            (:linear rm-low-64-logand-logior-helper-1)
+                            (:definition n64p$inline)
+                            (:type-prescription xlate-equiv-memory)
+                            (:rewrite program-at-alt-wb-disjoint-in-system-level-mode)
+                            (:type-prescription natp-page-dir-ptr-table-entry-addr)
+                            mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                            mv-nth-2-las-to-pas-system-level-non-marking-mode
+                            ;; (:REWRITE R/X-IS-IRRELEVANT-FOR-MV-NTH-2-LAS-TO-PAS-WHEN-NO-ERRORS)
+                            ;; (:REWRITE XR-FAULT-AND-GET-PREFIXES-ALT)
+                            ;; (:REWRITE XR-MS-MV-NTH-2-GET-PREFIXES-ALT)
+                            ;; (:TYPE-PRESCRIPTION N01P-PAGE-SIZE)
+                            ;; (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P-PHYSICAL-ADDRESS-LISTP)
+                            ;; (:REWRITE CDR-OF-APPEND-WHEN-CONSP)
+                            ;; (:REWRITE CAR-OF-APPEND)
+                            ;; (:TYPE-PRESCRIPTION MEMBER-P-PHYSICAL-ADDRESS-P)
+                            ;; (:REWRITE
+                            ;;  INT-LISTS-IN-SEQ-P-AND-APPEND-WITH-CREATE-CANONICAL-ADDRESS-LIST-2)
+                            ;; (:REWRITE CONSP-OF-APPEND)
+                            ;; (:REWRITE GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE)
+                            ;; (:REWRITE X86P-GET-PREFIXES)
+                            ;; (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV)
+                            ;; (:TYPE-PRESCRIPTION APPEND)
+                            ;; (:REWRITE INT-LISTS-IN-SEQ-P-AND-APPEND)
+                            ;; (:REWRITE XR-RB-STATE-IN-PROGRAMMER-LEVEL-MODE)
+                            ;; (:REWRITE MV-NTH-0-GET-PREFIXES-XW-RGF)
+                            ;; (:REWRITE RIGHT-CANCELLATION-FOR-+)
+                            ;; (:REWRITE RM08-XW-SYSTEM-MODE)
+                            ;; (:REWRITE RM08-XW-PROGRAMMER-LEVEL-MODE)
+                            ;; (:REWRITE PROGRAMMER-LEVEL-MODE-RM08-NO-ERROR)
+                            ;; (:REWRITE
+                            ;;  GET-PREFIXES-DOES-NOT-MODIFY-X86-STATE-IN-SYSTEM-LEVEL-NON-MARKING-MODE)
+                            ;; (:REWRITE GET-PREFIXES-DOES-NOT-MODIFY-X86-STATE-IN-PROGRAMMER-LEVEL-MODE)
+                            ;; (:REWRITE MV-NTH-2-GET-PREFIXES-XW-RGF)
+                            ;; (:REWRITE MV-NTH-1-GET-PREFIXES-XW-RGF)
+                            ;; (:REWRITE LAS-TO-PAS-AFTER-MV-NTH-2-RB)
+                            ;; (:TYPE-PRESCRIPTION NATP-GET-PREFIXES)
+                            ;; (:REWRITE RM08-VALUE-WHEN-ERROR)
+                            ;; (:DEFINITION NOT)
+                            ;; (:TYPE-PRESCRIPTION X86-DECODE-SIB-P)
+                            ;; (:REWRITE XLATE-EQUIV-MEMORY-AND-TWO-GET-PREFIXES-VALUES)
+                            ;; (:REWRITE XLATE-EQUIV-MEMORY-AND-MV-NTH-1-RM08)
+                            ;; (:REWRITE BITOPS::LOGTAIL-OF-LOGTAIL)
+                            ;; (:REWRITE APPEND-SINGLETON-UNDER-SET-EQUIV)
+                            ;; (:REWRITE !FLGI-UNDEFINED-AND-XW)
+                            ))
+          :do-not '(preprocess)
+          :do-not-induct t)))
 
 ;; (def-gl-thm test-mapped-address
 ;;   ;; Map the destination PDPTE to contain the same value (not
