@@ -1231,8 +1231,7 @@ memory.</li>
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
-      :output-index 0
-      :hyps t))
+      :output-index 0))
 
     (make-event
      (generate-read-fn-over-xw-thms
@@ -1241,8 +1240,7 @@ memory.</li>
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
-      :output-index 1
-      :hyps t))
+      :output-index 1))
 
     (defthm las-to-pas-xw-rflags-not-ac
       (implies (equal (rflags-slice :ac value)
@@ -1726,8 +1724,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    :output-index 2
-    :hyps '(not (programmer-level-mode x86))))
+    :output-index 2))
 
   (defthm rb-1-xw-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1774,8 +1771,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    :output-index 0
-    :hyps '(not (programmer-level-mode x86))))
+    :output-index 0))
 
   (make-event
    (generate-read-fn-over-xw-thms
@@ -1784,8 +1780,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    :output-index 1
-    :hyps '(not (programmer-level-mode x86))))
+    :output-index 1))
 
   (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
@@ -1848,8 +1843,7 @@ memory.</li>
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
-    :output-index 2
-    :hyps '(not (programmer-level-mode x86))))
+    :output-index 2))
 
   (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
