@@ -13158,7 +13158,7 @@
                         (cons
                          "~|The certificate for ~x0 lists the book-hash of ~
                           that book as ~x3.  But its book-hash is now ~
-                          computed to be ~x4.  See :DOC book-hash-mismatch."
+                          computed to be ~x4.~|See :DOC book-hash-mismatch."
                          (list (cons #\3 post-alist-book-hash)
                                (cons #\4 ev-lst-book-hash)))
                         :uncertified-okp

@@ -8309,18 +8309,16 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                                  "NIL")))))
               (book-hash-alistp-env
 
-; For now, we think of book-hash-keysp as a generalized Boolean.  But it will
-; be easy to view it as a list of keywords such as :BOOK-LENGTH, to indicate
-; that instead of a numeric checksum we will store an alist mapping keys to
-; values.  For now, a non-nil value of this variable will indicate that those
-; two specific keywords are to be mapped to the .lisp file's length in bytes
-; and write date, respectively.
+; A non-nil value of this variable indicates that we are to use the "book-hash"
+; mechanism of storing an alist in the .cert file, instead of a numeric
+; checksum.  Starting in June 2016, storing such an alist is the default.  That
+; default is defeated when the indicated environment variable is empty or (up
+; to case) "NIL".
 
                (let ((s (getenv$-raw "ACL2_BOOK_HASH_ALISTP")))
-                 (and s
-                      (not (equal s ""))
-                      (not (equal (string-upcase s)
-                                  "NIL")))))
+                 (or (null s) ; default case
+                     (not (equal (string-upcase s)
+                                 "NIL")))))
               (user-home-dir-path (our-user-homedir-pathname))
               (user-home-dir0 (and user-home-dir-path
                                    (our-truename user-home-dir-path
