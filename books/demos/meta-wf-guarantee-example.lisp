@@ -543,7 +543,6 @@
            (if flg
                (logic-fns-listp x w)
              (logic-fnsp x w)))
-  :hints (("Goal" :in-theory (disable logicp))) ; !! shouldn't be needed
   :rule-classes nil)
 
 (defthm termp*-implies-logic-fnsp
