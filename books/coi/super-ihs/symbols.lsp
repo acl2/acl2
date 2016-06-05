@@ -1975,7 +1975,7 @@
                         GUARD-LST GUARD DEFUN-MODE
                         LOGIC-TERM-LIST-LISTP LOGIC-TERM-LISTP LOGIC-TERMP
                         LOGIC-FNS-LIST-LISTP LOGIC-FNS-LISTP LOGIC-FNSP
-                        LOGICALP PROGRAMP FDEFUN-MODE
+                        LOGICP PROGRAMP FDEFUN-MODE
                         SYMBOL-CLASS BODY STOBJS-OUT STOBJS-IN
                         ARITY FORMALS READ-FILE
                         READ-FILE-ITERATE GET-CHECK-SUMS-LST

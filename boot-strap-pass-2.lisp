@@ -1342,6 +1342,8 @@
   (let ((wrld (w state)))
     (new-verify-guards-fns1 wrld wrld nil)))
 
+(verify-termination-boot-strap logicp) ; and guards
+
 (defconst *system-verify-guards-alist*
 
 ; Each cdr was produced by evaluating
@@ -1600,6 +1602,11 @@
   (implies (and (arities-okp user-table w)
                 (assoc fn user-table))
            (equal (arity fn w) (cdr (assoc fn user-table)))))
+
+(defthm arities-okp-implies-logicp
+  (implies (and (arities-okp user-table w)
+                (assoc fn user-table))
+           (logicp fn w)))
 
 (in-theory (disable arity arities-okp))
 

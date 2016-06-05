@@ -122,7 +122,7 @@
        (equal (stobjs-out fun w) (repeat (len (stobjs-out fun w)) nil))))
 
 (define measure ((fun (and (function-namep fun w)
-                           (logicalp fun w)
+                           (logicp fun w)
                            (recursivep fun w)))
                  (w plist-worldp))
   :returns (measure pseudo-termp)
@@ -131,7 +131,7 @@
   (access justification (getpropc fun 'justification nil w) :measure))
 
 (define measured-subset ((fun (and (function-namep fun w)
-                                   (logicalp fun w)
+                                   (logicp fun w)
                                    (recursivep fun w)))
                          (w plist-worldp))
   :returns (measure pseudo-termp)
@@ -140,7 +140,7 @@
   (access justification (getpropc fun 'justification nil w) :subset))
 
 (define well-founded-relation ((fun (and (function-namep fun w)
-                                         (logicalp fun w)
+                                         (logicp fun w)
                                          (recursivep fun w)))
                                (w plist-worldp))
   :returns (well-founded-relation symbolp)
@@ -152,7 +152,7 @@
   (access justification (getpropc fun 'justification nil w) :rel))
 
 (define ruler-extenders ((fun (and (function-namep fun w)
-                                   (logicalp fun w)
+                                   (logicp fun w)
                                    (recursivep fun w)))
                          (w plist-worldp))
   :returns (ruler-extenders (or (symbol-listp ruler-extenders)

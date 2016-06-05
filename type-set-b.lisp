@@ -1118,7 +1118,7 @@
 ; for the formals used.
 
         ((and flg                             ; (all-quoteps args)
-              (logicalp (ffn-symb term) wrld) ; maybe fn is being admitted
+              (logicp (ffn-symb term) wrld) ; maybe fn is being admitted
               (enabled-xfnp (ffn-symb term) ens wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,

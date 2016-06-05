@@ -11687,7 +11687,7 @@
                     (cond
                      ((and
                        (or (flambdap fn)
-                           (logicalp fn wrld))
+                           (logicp fn wrld))
                        (all-quoteps rewritten-args)
                        (or
                         (flambda-applicationp term)

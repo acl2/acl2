@@ -252,13 +252,6 @@
                 (arities-okp *arity-alist* w))
            (termp (meta-wr x) w)))
 
-(defthm arities-okp-implies-not-programp
-  (implies (and (arities-okp alist w)
-                (assoc-eq fn alist))
-           (not (equal (fgetprop fn 'symbol-class nil w)
-                       :program)))
-  :hints (("Goal" :in-theory (enable arities-okp))))
-
 (defthm logic-fnsp-meta-wr
   (implies (and ;(termp x w)
                 (logic-fnsp x w)
