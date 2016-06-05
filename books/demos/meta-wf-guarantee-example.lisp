@@ -37,6 +37,9 @@
 ; guarantees.  The last macro proves it with the guarantee.  Both of the
 ; successful proofs print profiling information about the proofs.
 
+; At the end of this book we define a clause-processor, prove a well-formedness
+; guarantee for it, and prove it correct.
+
 ; How to Use This Book
 
 ; The best way to use it is first to read it and understand the metafunction we
@@ -421,5 +424,159 @@
     (value (memsum))
     (value (clear-memoize-statistics))))
 
+; We conclude with a small example that illustrates well-formedness-guarantees
+; for clause-processors.  It is based on the example for function strengthen-cl
+; in community book books/clause-processors/basic-examples.lisp.
 
+(defevaluator evl2 evl2-list
+  ((if x y z) (length x) (member-equal x y) (equal x y) (not x)))
 
+(defconst *arity-alist2* '((if . 3) (length . 1) (member-equal . 2)
+                           (equal . 2) (not . 1)))
+
+; Next we introduce an alternative to termp, termp*, that takes an arity-alist
+; rather than a world.  There are quite a few events here, culminating in key
+; lemmas termp*-implies-termp and termp*-implies-logic-fnsp.
+
+(verify-termination arity-alistp)
+
+(defthm arity-alistp-implies-symbol-alistp
+  (implies (arity-alistp x)
+           (symbol-alistp x))
+  :rule-classes :forward-chaining)
+
+(verify-guards arity-alistp)
+
+(defun termp* (flg x aa)
+  (declare (xargs :guard (arity-alistp aa)
+                  :verify-guards nil))
+  (cond (flg ; x is a list of terms
+         (cond ((atom x) (null x))
+               (t (and (termp* nil (car x) aa)
+                       (termp* t (cdr x) aa)))))
+        ((atom x) (legal-variablep x))
+        ((eq (car x) 'quote)
+         (and (consp (cdr x))
+              (null (cddr x))))
+        ((symbolp (car x))
+         (let ((arity (cdr (assoc-eq (car x) aa))))
+           (and arity
+                (true-listp (cdr x))
+                (eql (length (cdr x)) arity)
+                (termp* t (cdr x) aa))))
+        ((and (consp (car x))
+              (true-listp (car x))
+              (eq (car (car x)) 'lambda)
+              (equal 3 (length (car x)))
+              (arglistp (cadr (car x)))
+              (termp* nil (caddr (car x)) aa)
+              (null (set-difference-eq
+                     (all-vars (caddr (car x)))
+                     (cadr (car x))))
+              (termp* t (cdr x) aa)
+              (equal (length (cadr (car x)))
+                     (length (cdr x))))
+         t)
+        (t nil)))
+
+(defthm arglistp1-implies-symbol-listp
+  (implies (arglistp1 x)
+           (symbol-listp x)))
+
+(defthm termp*-implies-pseudo-termp
+  (implies (termp* flg x aa)
+           (if flg
+               (pseudo-term-listp x)
+             (pseudo-termp x)))
+  :rule-classes :forward-chaining)
+
+(defun true-listp-all-vars1-induction (flg x ans)
+  (cond
+   (flg
+    (cond
+     ((endp x) ans)
+     (t (list
+         (true-listp-all-vars1-induction nil (car x) ans)
+         (true-listp-all-vars1-induction t
+                                         (cdr x)
+                                         (all-vars1 (car x) ans))))))
+   ((variablep x)
+    (add-to-set-eq x ans))
+   ((fquotep x) ans)
+   (t (true-listp-all-vars1-induction t (fargs x) ans))))
+
+(defthm true-listp-all-vars1-lemma
+  (implies (true-listp ans)
+           (true-listp (if flg
+                           (all-vars1-lst x ans)
+                         (all-vars1 x ans))))
+  :hints (("Goal"
+           :induct (true-listp-all-vars1-induction flg x ans)))
+  :rule-classes nil)
+
+(defthm true-listp-all-vars1
+  (true-listp (all-vars1 x nil))
+  :hints (("Goal" :use ((:instance true-listp-all-vars1-lemma
+                                   (flg nil)
+                                   (ans nil))))))
+
+(verify-guards termp*)
+
+(defthm termp*-implies-termp-lemma
+  (implies (and (termp* flg x arity-alist)
+                (arities-okp arity-alist w))
+           (if flg
+               (term-listp x w)
+             (termp x w)))
+  :rule-classes nil)
+
+(defthm termp*-implies-termp
+  (implies (and (termp* nil x arity-alist)
+                (arities-okp arity-alist w))
+           (termp x w))
+  :hints (("Goal" :use ((:instance termp*-implies-termp-lemma
+                                   (flg nil))))))
+
+(defthm termp*-implies-logic-fnsp-lemma
+  (implies (and (termp* flg x arity-alist)
+                (arities-okp arity-alist w))
+           (if flg
+               (logic-fns-listp x w)
+             (logic-fnsp x w)))
+  :hints (("Goal" :in-theory (disable logicp))) ; !! shouldn't be needed
+  :rule-classes nil)
+
+(defthm termp*-implies-logic-fnsp
+  (implies (and (termp* nil x arity-alist)
+                (arities-okp arity-alist w))
+           (logic-fnsp x w))
+  :hints (("Goal" :use ((:instance termp*-implies-logic-fnsp-lemma
+                                   (flg nil))))))
+
+; Finally we define our clause-processor.
+
+(defun split-cl (cl term)
+  (declare (xargs :guard t))
+  (cond ((termp* nil term *arity-alist2*)
+         (list (cons (list 'not term)
+                     cl)
+               (list term)))
+        (t (prog2$ (er hard? 'split-cl
+                       "Not a logic-termp:~|~x0"
+                       term)
+                   (list cl)))))
+
+(defthmd logic-term-list-listp-split-cl
+  (implies (and (logic-term-listp cl w)
+                (arities-okp *arity-alist2* w))
+           (logic-term-list-listp (split-cl cl term) w))
+  :hints (("Goal" :in-theory (disable logic-termp))))
+
+(defthm correctness-of-split-cl
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl2 (conjoin-clauses (split-cl cl term))
+                      a))
+           (evl2 (disjoin cl) a))
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-split-cl)))

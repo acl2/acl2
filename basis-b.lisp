@@ -2201,8 +2201,6 @@
   (not (eq (getpropc fn 'symbol-class nil wrld)
            :program)))
 
-(in-theory (disable logicp)) ; for arities-okp-implies-logicp
-
 (defmacro logicalp (fn wrld)
 ; DEPRECATED in favor of logicp!
   `(logicp ,fn ,wrld))
