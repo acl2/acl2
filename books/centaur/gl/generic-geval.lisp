@@ -515,7 +515,7 @@
        (wrld (w state))
        (ctx 'get-guard-verification-theorem)
        ((er names) (acl2::chk-acceptable-verify-guards
-                    name ctx wrld state))
+                    name t ctx wrld state))
        (ens (acl2::ens state))
        ((mv clauses &)
         (acl2::guard-obligation-clauses

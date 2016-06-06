@@ -477,3 +477,9 @@ instead.</p>"
         (t
          (prog2$ (raise "vl-cw-obj is limited to 10 arguments.")
                  ps))))
+
+
+(define vl-print-msg ((x vl-msg-p) &key (ps 'ps))
+  (b* (((vl-msg x)))
+    (vl-fmt-aux x.msg 0 (length x.msg)
+                (vl-fmt-pair-args x.args))))

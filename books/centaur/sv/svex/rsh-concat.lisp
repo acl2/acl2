@@ -62,7 +62,7 @@
 (defthm 4vec-rsh-0
     (equal (4vec-rsh 0 x)
            (4vec-fix x))
-    :hints(("Goal" :in-theory (enable 4vec-rsh))))
+    :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core))))
 
 (defthm 4vec-rsh-of-rsh
   (implies (and (2vec-p sh1)
@@ -73,7 +73,7 @@
                   (4vec-rsh (2vec (+ (2vec->val sh1)
                                      (2vec->val sh2)))
                             x)))
-  :hints(("Goal" :in-theory (enable 4vec-rsh))))
+  :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core))))
 
 
 (defthmd equal-of-logapp
@@ -95,7 +95,7 @@
                     (4vec-rsh (2vec (- (2vec->val sh)
                                        (2vec->val w)))
                               y))))
-  :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat))))
+  :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-concat))))
 
 (defthmd equal-of-4vec-fix
   (equal (equal (4vec-fix x) (4vec-fix y))
@@ -276,7 +276,7 @@
            (svex-eval x env))
     :hints(("Goal" :in-theory (enable svex-apply svexlist-eval 4veclist-nth-safe))
            (and stable-under-simplificationp
-                '(:in-theory (enable 4vec-rsh)))))
+                '(:in-theory (enable 4vec-rsh 4vec-shift-core)))))
 
   (defret vars-of-match-rsh
     (implies (not (member v (svex-vars x)))
@@ -327,7 +327,7 @@
            (implies (and (>= sh w) (natp sh) (natp w))
                     (equal (4vec-rsh (2vec sh) (4vec-zero-ext (2vec w) x))
                            0))
-           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-zero-ext))
+           :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-zero-ext))
                   (logbitp-reasoning))))
 
   (defthm svex-rsh-correct

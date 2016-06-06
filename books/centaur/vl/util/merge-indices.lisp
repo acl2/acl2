@@ -32,13 +32,24 @@
 (include-book "defs")
 (local (include-book "arithmetic"))
 
-(define vl-match-contiguous-indices ((n maybe-natp         "Index to try to count up from.")
-                                     (x vl-maybe-nat-listp "List whose elements we are to collect."))
-  :returns (mv (range-end maybe-natp         :hyp :fguard)
-               (rest      vl-maybe-nat-listp :hyp :fguard))
+(deflist vl-maybe-integer-listp (x)
+  (maybe-integerp x)
+  :elementp-of-nil t
+  :true-listp t
+  :parents (utilities)
+  :rest
+  ((defrule integer-listp-when-no-nils-in-vl-maybe-integer-listp
+     (implies (and (not (member-equal nil x))
+                   (vl-maybe-integer-listp x))
+              (integer-listp x)))))
+
+(define vl-match-contiguous-indices ((n maybe-integerp         "Index to try to count up from.")
+                                     (x vl-maybe-integer-listp "List whose elements we are to collect."))
+  :returns (mv (range-end maybe-integerp         :hyp :fguard)
+               (rest      vl-maybe-integer-listp :hyp :fguard))
   :parents (vl-merge-contiguous-indices)
   :short "Identify one strictly increasing segment of a @(see
-vl-maybe-nat-listp)."
+vl-maybe-integer-listp)."
   :long "<p>We try to consume the leading portion of @('x') if it counts up
 from @('n').  For example:</p>
 
@@ -48,7 +59,7 @@ from @('n').  For example:</p>
     (mv 5 (10 11 12))
 })"
   :measure (len x)
-  (if (or (not (natp n))
+  (if (or (not (integerp n))
           (atom x)
           (not (equal (car x) (+ n 1))))
       (mv n x)
@@ -67,24 +78,24 @@ from @('n').  For example:</p>
 
   (defthm vl-match-contiguous-indices-monotonic-on-success
     (implies (and (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
-                  (force (maybe-natp n))
-                  (force (vl-maybe-nat-listp x)))
+                  (force (maybe-integerp n))
+                  (force (vl-maybe-integer-listp x)))
              (< n (mv-nth 0 (vl-match-contiguous-indices n x))))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm vl-match-contiguous-indices-exists-on-success
     (implies (and (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
-                  (force (maybe-natp n))
-                  (force (vl-maybe-nat-listp x)))
-             (natp (mv-nth 0 (vl-match-contiguous-indices n x))))))
+                  (force (maybe-integerp n))
+                  (force (vl-maybe-integer-listp x)))
+             (integerp (mv-nth 0 (vl-match-contiguous-indices n x))))))
 
 (define vl-merged-index-p (x)
   :parents (vl-merge-contiguous-indices)
   (or (not x)
-      (natp x)
+      (integerp x)
       (and (consp x)
-           (natp (car x))
-           (natp (cdr x))
+           (integerp (car x))
+           (integerp (cdr x))
            (< (car x) (cdr x)))))
 
 (deflist vl-merged-index-list-p (x)
@@ -92,9 +103,11 @@ from @('n').  For example:</p>
   :elementp-of-nil t
   :parents (vl-merge-contiguous-indices))
 
-(define vl-merge-contiguous-indices ((x vl-maybe-nat-listp))
+
+
+(define vl-merge-contiguous-indices ((x vl-maybe-integer-listp))
   :parents (utilities)
-  :short "Transform a @(see vl-maybe-nat-listp) by combining contiguous
+  :short "Transform a @(see vl-maybe-integer-listp) by combining contiguous
 sequences of indices into @('(low . high)') pairs."
   :long "<p>For example:</p>
 

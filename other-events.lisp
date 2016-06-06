@@ -6080,7 +6080,7 @@
 ; Names is a list of function symbols.  Collect the :logic ones.
 
   (cond ((null names) nil)
-        ((logicalp (car names) wrld)
+        ((logicp (car names) wrld)
          (cons (car names) (collect-logicals (cdr names) wrld)))
         (t (collect-logicals (cdr names) wrld))))
 
@@ -13158,7 +13158,7 @@
                         (cons
                          "~|The certificate for ~x0 lists the book-hash of ~
                           that book as ~x3.  But its book-hash is now ~
-                          computed to be ~x4.  See :DOC book-hash-mismatch."
+                          computed to be ~x4.~|See :DOC book-hash-mismatch."
                          (list (cons #\3 post-alist-book-hash)
                                (cons #\4 ev-lst-book-hash)))
                         :uncertified-okp
@@ -25350,7 +25350,7 @@
                      (intersection-eq (list f g)
                                       (global-val 'untouchable-fns wrld))))
                 ((and (not skip-checks-t)
-                      (not (logicalp f wrld)))
+                      (not (logicp f wrld)))
                  (cond ((null g)
                         (er soft ctx
                             "You must specify :SKIP-CHECKS T in order to use ~
@@ -25501,7 +25501,7 @@
                                            g))
                                      (t "")))))
                         ((and (not skip-checks-t)
-                              (not (logicalp g wrld)))
+                              (not (logicp g wrld)))
                          (er soft ctx
                              "Attachments must be function symbols in :LOGIC ~
                               mode~@0, but ~x1 is in :PROGRAM mode.~@2"
@@ -28067,7 +28067,7 @@
                   (getpropc fn 'formals t wrld)))
              (and (not (eq formals t)) ; (function-symbolp fn wrld)
                   (eql (length args) (length formals))))
-           (logicalp fn wrld))
+           (logicp fn wrld))
       (ev-fncall fn args state
                  nil ; latches
                  hard-error-returns-nilp aok))
@@ -28097,7 +28097,7 @@
                          fn
                          (length (getpropc fn 'formals t wrld))))
                    (t
-                    (assert (not (logicalp fn wrld)))
+                    (assert (not (logicp fn wrld)))
                     (msg "~x0 is not a logic-mode function symbol"
                          fn))))))
         (prog2$ (cw "~@0" msg)

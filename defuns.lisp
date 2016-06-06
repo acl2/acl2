@@ -4321,13 +4321,17 @@
    (chk-acceptable-verify-guards-formula-cmp name x ctx wrld
                                              (default-state-vars t))))
 
-(defun chk-acceptable-verify-guards-cmp (name ctx wrld state-vars)
+(defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
 
-; We check that name is acceptable input for verify-guards.  We return either
-; the list of names in the clique of name (if name and every peer in the clique
-; is :ideal and every subroutine of every peer is :common-lisp-compliant), the
-; symbol 'redundant (if name and every peer is :common-lisp-compliant), or
-; cause an error.
+; We check that name is acceptable input for verify-guards.  Normally rrp
+; ("return redundant p") is t.  In that case, we return either the list of
+; names in the clique of name (if name and every peer in the clique is :ideal
+; and every subroutine of every peer is :common-lisp-compliant), the symbol
+; 'redundant (if name and every peer is :common-lisp-compliant), or cause an
+; error.  But if rrp is nil then instead of returning 'redundant -- thus, name
+; is :common-lisp-compliant -- we return the list of names in the clique of
+; name, as in the :ideal case, but subject to the check for
+; :common-lisp-compliant subfunctions that we do in the :ideal case.
 
 ; One might wonder when two peers in a clique can have different symbol-classs,
 ; e.g., how is it possible (as implied above) for name to be :ideal but for one
@@ -4347,7 +4351,8 @@
                     "~x0 is not a symbol.  See :DOC verify-guards."
                     name)))))
    (cond
-    ((eq symbol-class :common-lisp-compliant)
+    ((and rrp
+          (eq symbol-class :common-lisp-compliant))
      (value-cmp 'redundant))
     ((getpropc name 'theorem nil wrld)
 
@@ -4366,23 +4371,27 @@
                 "~x0 is :program.  Only :logic functions can have their ~
                  guards verified.  See :DOC verify-guards."
                 name))
-       (:ideal
+       ((:ideal :common-lisp-compliant)
         (let* ((recp (getpropc name 'recursivep nil wrld))
                (names (cond
                        ((null recp)
                         (list name))
                        (t recp)))
-               (non-ideal-names (collect-non-ideals names wrld)))
-          (cond (non-ideal-names
+               (bad-names (if (eq symbol-class :ideal)
+                              (collect-non-ideals names wrld)
+                            (collect-programs names wrld))))
+          (cond (bad-names
                  (er-cmp ctx
                          "One or more of the mutually-recursive peers of ~x0 ~
-                          either was not defined in :logic mode or has ~
-                          already had its guards verified.  The offending ~
-                          function~#1~[ is~/s are~] ~&1.  We thus cannot ~
-                          verify the guards of ~x0.  This situation can arise ~
-                          only through redefinition."
+                          ~#1~[was not defined in :logic mode~/either was not ~
+                          defined in :logic mode or has already had its ~
+                          guards verified~].  The offending function~#2~[ ~
+                          is~/s are~] ~&2.  We thus cannot verify the guards ~
+                          of ~x0.  This situation can arise only through ~
+                          redefinition."
                          name
-                         non-ideal-names))
+                         (if (eq symbol-class :ideal) 1 0)
+                         bad-names))
                 (t
                  (er-progn-cmp
                   (chk-common-lisp-compliant-subfunctions-cmp
@@ -4412,9 +4421,9 @@
                                 see :DOC macro-aliases-table."
                                name fn)))))))))
 
-(defun chk-acceptable-verify-guards (name ctx wrld state)
+(defun chk-acceptable-verify-guards (name rrp ctx wrld state)
   (cmp-to-error-triple
-   (chk-acceptable-verify-guards-cmp name ctx wrld
+   (chk-acceptable-verify-guards-cmp name rrp ctx wrld
                                      (default-state-vars t))))
 
 (defun guard-obligation-clauses (x guard-debug ens wrld state)
@@ -4490,7 +4499,7 @@
 
       (mv cl-set cl-set-ttree))))
 
-(defun guard-obligation (x guard-debug ctx state)
+(defun guard-obligation (x rrp guard-debug ctx state)
   (let* ((wrld (w state))
          (namep (and (symbolp x)
                      (not (keywordp x))
@@ -4498,7 +4507,7 @@
     (er-let*-cmp
      ((y
        (cond (namep (chk-acceptable-verify-guards-cmp
-                     x ctx wrld (default-state-vars t)))
+                     x rrp ctx wrld (default-state-vars t)))
              (t (chk-acceptable-verify-guards-formula-cmp
                  nil x ctx wrld (default-state-vars t))))))
      (cond
@@ -4546,10 +4555,11 @@
        (mv 0 ; don't care
            state))))))
 
-(defmacro verify-guards-formula (x &key guard-debug &allow-other-keys)
+(defmacro verify-guards-formula (x &key rrp guard-debug &allow-other-keys)
   `(er-let*
     ((tuple (cmp-to-error-triple
-             (guard-obligation ',x ',guard-debug 'verify-guards-formula state))))
+             (guard-obligation ',x ',rrp ',guard-debug 'verify-guards-formula
+                               state))))
     (cond ((eq tuple :redundant)
            (value :redundant))
           (t
@@ -4937,7 +4947,7 @@
                        (eq (ld-skip-proofsp state) 'include-book-with-locals)
                        (eq (ld-skip-proofsp state) 'initialize-acl2))))
       (er-let*
-       ((names (chk-acceptable-verify-guards name ctx wrld state)))
+       ((names (chk-acceptable-verify-guards name t ctx wrld state)))
        (cond
         ((eq names 'redundant)
          (stop-redundant-event ctx state))

@@ -424,7 +424,7 @@
 ; functions, since they cannot call :program mode functions and hence there
 ; cannot be a subsidiary rebinding of **1*-as-raw* to t.
 
-               (if (logicalp fn w)
+               (if (logicp fn w)
                    nil
                  **1*-as-raw*))
               (*1*fn (*1*-symbol fn))
