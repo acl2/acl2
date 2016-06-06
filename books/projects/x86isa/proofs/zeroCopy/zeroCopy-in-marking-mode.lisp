@@ -621,24 +621,6 @@
   :g-bindings
   (gl::auto-bindings (:nat entry 64)))
 
-;; (def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
-;;   :hyp (and (equal (part-select source-entry :low 7 :width 1) 1)
-;;             (equal (part-select source-entry :low 0 :width 1) 1)
-;;             (equal (part-select destination-entry :low 7 :width 1) 1)
-;;             (equal (part-select destination-entry :low 0 :width 1) 1)
-;;             (unsigned-byte-p 64 source-entry)
-;;             (unsigned-byte-p 64 destination-entry))
-;;   :concl (equal (zf-spec
-;;                  (loghead 64
-;;                           (+
-;;                            -129
-;;                            (logand 129 (logior
-;;                                         (loghead 30 destination-entry)
-;;                                         (logand 3221225472 (loghead 32 source-entry)))))))
-;;                 1)
-;;   :g-bindings
-;;   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
-
 (def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
   :hyp (and (equal (part-select source-entry :low 7 :width 1) 1)
             (equal (part-select source-entry :low 0 :width 1) 1)
@@ -2900,51 +2882,53 @@
                             (mv-nth-1-las-to-pas-subset-p
                              disjoint-p-subset-p)))))
 
-(in-theory (e/d* ()
-                 (mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
-                  mv-nth-0-las-to-pas-subset-p
-                  (:type-prescription true-listp-mv-nth-1-las-to-pas)
-                  (:rewrite disjoint-p-all-translation-governing-addresses-subset-p)
-                  (:type-prescription rm-low-64-logand-logior-helper-1)
-                  (:type-prescription n64p$inline)
-                  (:definition strip-cars)
-                  (:type-prescription !ms$inline)
-                  (:rewrite consp-create-addr-bytes-alist-in-terms-of-len)
-                  (:rewrite bitops::signed-byte-p-monotonicity)
-                  (:linear mv-nth-1-gpr-sbb-spec-8)
-                  (:linear mv-nth-1-gpr-add-spec-8)
-                  (:linear mv-nth-1-gpr-adc-spec-8)
-                  (:rewrite strip-cars-addr-byte-alistp-is-canonical-address-listp)
-                  (:rewrite acl2::subsetp-member . 3)
-                  (:rewrite acl2::zp-open)
-                  (:type-prescription subsetp-equal)
-                  (:definition addr-byte-alistp)
-                  (:type-prescription acl2::|x < y  =>  0 < y-x|)
-                  (:linear mv-nth-1-gpr-xor-spec-8)
-                  (:type-prescription !rip$inline)
-                  (:linear acl2::index-of-<-len)
-                  (:type-prescription create-addr-bytes-alist)
-                  (:type-prescription x86-step-unimplemented)
-                  (:type-prescription strip-cars-addr-byte-alistp-is-canonical-address-listp)
-                  (:type-prescription !rgfi-size$inline)
-                  (:rewrite canonical-address-p-limits-thm-4)
-                  (:linear mv-nth-2-gpr-sbb-spec-8)
-                  (:linear mv-nth-2-gpr-add-spec-8)
-                  (:linear mv-nth-2-gpr-adc-spec-8)
-                  (:rewrite byte-ify-and-combine-bytes)
-                  (:rewrite bitops::basic-signed-byte-p-of-binary-minus)
-                  (:rewrite acl2::subsetp-member . 4)
-                  (:rewrite acl2::member-when-atom)
-                  (:linear mv-nth-2-gpr-xor-spec-8)
-                  (:type-prescription n08p$inline)
-                  (:rewrite cdr-strip-cars-is-strip-cars-cdr)
-                  (:linear ctri-is-n64p)
-                  (:type-prescription strip-cars)
-                  (:type-prescription !rgfi$inline)
-                  (:rewrite signed-byte-p-limits-thm)
-                  (:rewrite canonical-address-p-and-signed-byte-p-64p-limits-1)
-                  (:rewrite bitops::logbitp-of-loghead-out-of-bounds)
-                  (:type-prescription bitops::natp-part-install-width-low))))
+(def-ruleset rewire_dst_to_src-disable-more
+  '(mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
+    mv-nth-0-las-to-pas-subset-p
+    (:type-prescription true-listp-mv-nth-1-las-to-pas)
+    (:rewrite disjoint-p-all-translation-governing-addresses-subset-p)
+    (:type-prescription rm-low-64-logand-logior-helper-1)
+    (:type-prescription n64p$inline)
+    (:definition strip-cars)
+    (:type-prescription !ms$inline)
+    (:rewrite consp-create-addr-bytes-alist-in-terms-of-len)
+    (:rewrite bitops::signed-byte-p-monotonicity)
+    (:linear mv-nth-1-gpr-sbb-spec-8)
+    (:linear mv-nth-1-gpr-add-spec-8)
+    (:linear mv-nth-1-gpr-adc-spec-8)
+    (:rewrite strip-cars-addr-byte-alistp-is-canonical-address-listp)
+    (:rewrite acl2::subsetp-member . 3)
+    (:rewrite acl2::zp-open)
+    (:type-prescription subsetp-equal)
+    (:definition addr-byte-alistp)
+    (:type-prescription acl2::|x < y  =>  0 < y-x|)
+    (:linear mv-nth-1-gpr-xor-spec-8)
+    (:type-prescription !rip$inline)
+    (:linear acl2::index-of-<-len)
+    (:type-prescription create-addr-bytes-alist)
+    (:type-prescription x86-step-unimplemented)
+    (:type-prescription strip-cars-addr-byte-alistp-is-canonical-address-listp)
+    (:type-prescription !rgfi-size$inline)
+    (:rewrite canonical-address-p-limits-thm-4)
+    (:linear mv-nth-2-gpr-sbb-spec-8)
+    (:linear mv-nth-2-gpr-add-spec-8)
+    (:linear mv-nth-2-gpr-adc-spec-8)
+    (:rewrite byte-ify-and-combine-bytes)
+    (:rewrite bitops::basic-signed-byte-p-of-binary-minus)
+    (:rewrite acl2::subsetp-member . 4)
+    (:rewrite acl2::member-when-atom)
+    (:linear mv-nth-2-gpr-xor-spec-8)
+    (:type-prescription n08p$inline)
+    (:rewrite cdr-strip-cars-is-strip-cars-cdr)
+    (:linear ctri-is-n64p)
+    (:type-prescription strip-cars)
+    (:type-prescription !rgfi$inline)
+    (:rewrite signed-byte-p-limits-thm)
+    (:rewrite canonical-address-p-and-signed-byte-p-64p-limits-1)
+    (:rewrite bitops::logbitp-of-loghead-out-of-bounds)
+    (:type-prescription bitops::natp-part-install-width-low)))
+
+(local (in-theory (e/d* () (rewire_dst_to_src-disable-more))))
 
 (defthm and-i-thought-i-would-never-need-these-rules
   ;; Congruence rules and extra double-rewrites didn't take me very
@@ -2962,247 +2946,247 @@
                                           (mv-nth 2 (get-prefixes-alt start-rip-2 cnt-2 prefixes-2 x86))))
               (mv-nth 1 (get-prefixes-alt start-rip-1 cnt-1 prefixes-1 x86)))))
 
-(defun-nx source-PML4TE-and-program-no-interfere-p (x86)
-  ;; The PML4TE physical addresses are disjoint from the
-  ;; translation-governing addresses of the program.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-    x86)))
+;; (defun-nx source-PML4TE-and-program-no-interfere-p (x86)
+;;   ;; The PML4TE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the program.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+;;     x86)))
 
-(defun-nx source-PML4TE-itself-no-interfere-p (x86)
-  ;; The PML4TE physical addresses are disjoint from the
-  ;; translation-governing addresses of the PML4TE.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-    x86)))
+;; (defun-nx source-PML4TE-itself-no-interfere-p (x86)
+;;   ;; The PML4TE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the PML4TE.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;     x86)))
 
-(defun-nx source-PML4TE-and-stack-no-interfere-p-aux (x86)
-  (and
-   (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list
-                8
-                (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-               :r (cpl x86) x86))
-    (all-translation-governing-addresses
-     (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-     x86))
-   (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-               :w (cpl x86) x86))
-    (all-translation-governing-addresses
-     (create-canonical-address-list
-      8
-      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-     x86))))
+;; (defun-nx source-PML4TE-and-stack-no-interfere-p-aux (x86)
+;;   (and
+;;    (disjoint-p$
+;;     (mv-nth 1 (las-to-pas
+;;                (create-canonical-address-list
+;;                 8
+;;                 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;                :r (cpl x86) x86))
+;;     (all-translation-governing-addresses
+;;      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+;;      x86))
+;;    (disjoint-p$
+;;     (mv-nth 1 (las-to-pas
+;;                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+;;                :w (cpl x86) x86))
+;;     (all-translation-governing-addresses
+;;      (create-canonical-address-list
+;;       8
+;;       (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;      x86))))
 
-(defun-nx source-PDPTE-and-program-no-interfere-p (x86)
-  ;; The PDPTE physical addresses are disjoint from the
-  ;; translation-governing addresses of the program.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rdi* x86)
-                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-    x86)))
+;; (defun-nx source-PDPTE-and-program-no-interfere-p (x86)
+;;   ;; The PDPTE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the program.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rdi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+;;     x86)))
 
-(defun-nx source-PDPTE-itself-no-interfere-p (x86)
-  ;; The PDPTE physical addresses are disjoint from the
-  ;; translation-governing addresses of the PDPTE.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rdi* x86)
-                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (page-dir-ptr-table-entry-addr
-      (xr :rgf *rdi* x86)
-      (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-    x86)))
+;; (defun-nx source-PDPTE-itself-no-interfere-p (x86)
+;;   ;; The PDPTE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the PDPTE.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rdi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (page-dir-ptr-table-entry-addr
+;;       (xr :rgf *rdi* x86)
+;;       (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;     x86)))
 
-(defun-nx source-PDPTE-and-stack-no-interfere-p-aux (x86)
-  ;; The PDPTE physical addresses are disjoint from the
-  ;; translation-governing addresses of the PDPTE.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rdi* x86)
-                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-    x86)))
+;; (defun-nx source-PDPTE-and-stack-no-interfere-p-aux (x86)
+;;   ;; The PDPTE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the PDPTE.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rdi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+;;     x86)))
 
-(defun-nx source-PDPTE-and-source-PML4E-no-interfere-p (x86)
-  ;; The PDPTE physical addresses are disjoint from the
-  ;; translation-governing addresses of the PML4E.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rdi* x86)
-                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-    x86)))
+;; (defun-nx source-PDPTE-and-source-PML4E-no-interfere-p (x86)
+;;   ;; The PDPTE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the PML4E.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rdi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;     x86)))
 
-(defun-nx destination-PML4TE-and-program-no-interfere-p (x86)
-  ;; The PML4TE physical addresses are disjoint from the
-  ;; translation-governing addresses of the program.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-    x86)))
+;; (defun-nx destination-PML4TE-and-program-no-interfere-p (x86)
+;;   ;; The PML4TE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the program.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+;;     x86)))
 
-(defun-nx destination-PML4TE-itself-no-interfere-p (x86)
-  ;; The PML4TE physical addresses are disjoint from the
-  ;; translation-governing addresses of the PML4TE.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-    x86)))
+;; (defun-nx destination-PML4TE-itself-no-interfere-p (x86)
+;;   ;; The PML4TE physical addresses are disjoint from the
+;;   ;; translation-governing addresses of the PML4TE.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;     x86)))
 
-(defun-nx destination-PML4TE-and-stack-no-interfere-p-aux (x86)
-  (and
-   (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list
-                8
-                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-               :r (cpl x86) x86))
-    (all-translation-governing-addresses
-     (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-     x86))
-   (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
-    (all-translation-governing-addresses
-     (create-canonical-address-list
-      8
-      (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-     x86))))
+;; (defun-nx destination-PML4TE-and-stack-no-interfere-p-aux (x86)
+;;   (and
+;;    (disjoint-p$
+;;     (mv-nth 1 (las-to-pas
+;;                (create-canonical-address-list
+;;                 8
+;;                 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;                :r (cpl x86) x86))
+;;     (all-translation-governing-addresses
+;;      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+;;      x86))
+;;    (disjoint-p$
+;;     (mv-nth 1 (las-to-pas
+;;                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
+;;     (all-translation-governing-addresses
+;;      (create-canonical-address-list
+;;       8
+;;       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;      x86))))
 
-(defun-nx destination-PML4TE-and-source-PML4TE-no-interfere-p (x86)
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-    x86)))
+;; (defun-nx destination-PML4TE-and-source-PML4TE-no-interfere-p (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;     x86)))
 
-(defun-nx destination-PML4TE-and-source-PDPTE-no-interfere-p (x86)
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (page-dir-ptr-table-entry-addr
-      (xr :rgf *rdi* x86)
-      (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-    x86)))
+;; (defun-nx destination-PML4TE-and-source-PDPTE-no-interfere-p (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (page-dir-ptr-table-entry-addr
+;;       (xr :rgf *rdi* x86)
+;;       (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;     x86)))
 
-(defun-nx program-and-stack-no-interfere-p-aux (x86)
-  (disjoint-p$
-   (mv-nth 1
-           (las-to-pas
-            (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-            :w (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-    x86)))
+;; (defun-nx program-and-stack-no-interfere-p-aux (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1
+;;            (las-to-pas
+;;             (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+;;             :w (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+;;     x86)))
 
-(defun-nx destination-PDPTE-itself-no-interfere-p (x86)
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rsi* x86)
-                (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-              :r (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (page-dir-ptr-table-entry-addr
-      (xr :rgf *rsi* x86)
-      (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-    x86)))
+;; (defun-nx destination-PDPTE-itself-no-interfere-p (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rsi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;               :r (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (page-dir-ptr-table-entry-addr
+;;       (xr :rgf *rsi* x86)
+;;       (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;     x86)))
 
-(defun-nx destination-PDPTE-and-stack-no-interfere-p-aux (x86)
-  (and
-   (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list
-                8
-                (page-dir-ptr-table-entry-addr
-                 (xr :rgf *rsi* x86)
-                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-               :r (cpl x86) x86))
-    (all-translation-governing-addresses
-     (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
-     x86))
-   (disjoint-p$
-    (mv-nth 1 (las-to-pas
-               (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
-    (all-translation-governing-addresses
-     (create-canonical-address-list
-      8
-      (page-dir-ptr-table-entry-addr
-       (xr :rgf *rsi* x86)
-       (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-     x86))))
+;; (defun-nx destination-PDPTE-and-stack-no-interfere-p-aux (x86)
+;;   (and
+;;    (disjoint-p$
+;;     (mv-nth 1 (las-to-pas
+;;                (create-canonical-address-list
+;;                 8
+;;                 (page-dir-ptr-table-entry-addr
+;;                  (xr :rgf *rsi* x86)
+;;                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;                :r (cpl x86) x86))
+;;     (all-translation-governing-addresses
+;;      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
+;;      x86))
+;;    (disjoint-p$
+;;     (mv-nth 1 (las-to-pas
+;;                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
+;;     (all-translation-governing-addresses
+;;      (create-canonical-address-list
+;;       8
+;;       (page-dir-ptr-table-entry-addr
+;;        (xr :rgf *rsi* x86)
+;;        (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;      x86))))
 
 (def-gl-export remove-logext-from-ash-loghead-40-expr
   :hyp (unsigned-byte-p 64 n)
@@ -3567,68 +3551,68 @@
 ;; (acl2::why combine-mv-nth-2-las-to-pas-same-r-w-x-when-addresses-in-sequence)
 ;; (acl2::why mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free)
 
-(defun-nx destination-PDPTE-and-destination-PML4TE-no-interfere-p (x86)
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rsi* x86)
-                (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-              :w (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
-    x86)))
+;; (defun-nx destination-PDPTE-and-destination-PML4TE-no-interfere-p (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rsi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;               :w (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+;;     x86)))
 
-(defun-nx destination-PDPTE-and-source-PML4E-no-interfere-p (x86)
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rsi* x86)
-                (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-              :w (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
-    x86)))
+;; (defun-nx destination-PDPTE-and-source-PML4E-no-interfere-p (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rsi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;               :w (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
+;;     x86)))
 
-(defun-nx destination-PDPTE-and-source-PDPTE-no-interfere-p (x86)
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list
-               8
-               (page-dir-ptr-table-entry-addr
-                (xr :rgf *rsi* x86)
-                (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-              :w (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (page-dir-ptr-table-entry-addr
-      (xr :rgf *rdi* x86)
-      (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
-    x86)))
+;; (defun-nx destination-PDPTE-and-source-PDPTE-no-interfere-p (x86)
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list
+;;                8
+;;                (page-dir-ptr-table-entry-addr
+;;                 (xr :rgf *rsi* x86)
+;;                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;               :w (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (page-dir-ptr-table-entry-addr
+;;       (xr :rgf *rdi* x86)
+;;       (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
+;;     x86)))
 
-(defun-nx destination-PDPTE-and-program-no-interfere-p-aux (x86)
-  ;; We need these assumptions because the destination PDPTE is
-  ;; modified, and we need to make sure that this modification does
-  ;; not affect the program in any way.
-  (disjoint-p$
-   (mv-nth 1 (las-to-pas
-              (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
-              :x (cpl x86) x86))
-   (all-translation-governing-addresses
-    (create-canonical-address-list
-     8
-     (page-dir-ptr-table-entry-addr
-      (xr :rgf *rsi* x86)
-      (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-    x86)))
+;; (defun-nx destination-PDPTE-and-program-no-interfere-p-aux (x86)
+;;   ;; We need these assumptions because the destination PDPTE is
+;;   ;; modified, and we need to make sure that this modification does
+;;   ;; not affect the program in any way.
+;;   (disjoint-p$
+;;    (mv-nth 1 (las-to-pas
+;;               (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
+;;               :x (cpl x86) x86))
+;;    (all-translation-governing-addresses
+;;     (create-canonical-address-list
+;;      8
+;;      (page-dir-ptr-table-entry-addr
+;;       (xr :rgf *rsi* x86)
+;;       (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
+;;     x86)))
 
 (defthm xlate-equiv-memory-and-direct-map-p
   (implies (xlate-equiv-memory x86-1 x86-2)
@@ -4735,6 +4719,7 @@
            :do-not-induct t)))
 
 (defthmd rewire_dst_to_src-effects-46-to-58-instructions
+  ;; !!! FIXME: Speed this monster up.
   (implies
    (and
     (x86-state-okp x86)
@@ -6469,6 +6454,78 @@
            :do-not '(preprocess)
            :do-not-induct t)))
 
+(defthmd rewrite-to-destination-pml4-table-entry-addr
+  (implies
+   (and (x86-state-okp x86)
+        (destination-addresses-ok-p x86))
+
+   (equal
+    (logior (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+            (logand 4088
+                    (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
+    (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))))
+
+(defthmd rewrite-to-destination-page-dir-ptr-table-entry-addr
+  (implies
+   (and (x86-state-okp x86)
+        (destination-addresses-ok-p x86)
+        (destination-pml4te-ok-p x86))
+
+   (equal
+    (logior
+     (logand 4088
+             (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+     (ash
+      (loghead
+       40
+       (logtail
+        12
+        (combine-bytes
+         (mv-nth
+          1
+          (rb
+           (create-canonical-address-list
+            8
+            (logior
+             (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+             (logand 4088
+                     (loghead 28 (logtail 36 (xr :rgf *rsi* x86))))))
+           :r x86)))))
+      12))
+    (page-dir-ptr-table-entry-addr
+     (xr :rgf *rsi* x86)
+     (pdpt-base-addr (xr :rgf *rsi* x86) x86)))))
+
+(defthmd rewrite-to-source-page-dir-ptr-table-entry-addr
+  (implies
+   (and (x86-state-okp x86)
+        (source-addresses-ok-p x86)
+        (source-pml4te-ok-p x86))
+   (equal
+    (logior
+     (logand 4088
+             (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+     (ash
+      (loghead
+       40
+       (logtail
+        12
+        (combine-bytes
+         (mv-nth
+          1
+          (rb
+           (create-canonical-address-list
+            8
+            (logior
+             (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+             (logand 4088
+                     (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+           :r x86)))))
+      12))
+    (page-dir-ptr-table-entry-addr
+     (xr :rgf *rdi* x86)
+     (pdpt-base-addr (xr :rgf *rdi* x86) x86)))))
+
 (defthmd rewire_dst_to_src-effects
   (implies
    (and
@@ -6516,1009 +6573,1035 @@
     (stack-containing-return-address-and-rest-of-the-stack-no-interfere-p x86))
 
    (equal (x86-run (rewire_dst_to_src-clk) x86)
-          (XW
-           :RGF *RAX* 1
-           (XW
-            :RGF *RCX*
-            (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                    (LOGAND 4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-            (XW
-             :RGF *RDX*
-             (LOGAND
+          (xw
+           :rgf *rax* 1
+           (xw
+            :rgf *rcx*
+            (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))
+            ;; (logior (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+            ;;         (logand 4088
+            ;;                 (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
+            (xw
+             :rgf *rdx*
+             (logand
               4503598553628672
-              (LOGIOR
-               (LOGAND
+              (logior
+               (logand
                 -4503598553628673
-                (LOGEXT
+                (logext
                  64
-                 (COMBINE-BYTES
-                  (MV-NTH
+                 (combine-bytes
+                  (mv-nth
                    1
-                   (RB
-                    (CREATE-CANONICAL-ADDRESS-LIST
+                   (rb
+                    (create-canonical-address-list
                      8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (COMBINE-BYTES
-                          (MV-NTH
-                           1
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST
-                             8
-                             (LOGIOR
-                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                              (LOGAND 4088
-                                      (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                            :R X86)))))
-                       12)))
-                    :R X86)))))
-               (LOGAND
+                     (page-dir-ptr-table-entry-addr
+                      (xr :rgf *rsi* x86)
+                      (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+                     ;; (logior
+                     ;;  (logand 4088
+                     ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                     ;;  (ash
+                     ;;   (loghead
+                     ;;    40
+                     ;;    (logtail
+                     ;;     12
+                     ;;     (combine-bytes
+                     ;;      (mv-nth
+                     ;;       1
+                     ;;       (rb
+                     ;;        (create-canonical-address-list
+                     ;;         8
+                     ;;         (logior
+                     ;;          (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                     ;;          (logand 4088
+                     ;;                  (loghead 28 (logtail 36 (xr :rgf *rsi* x86))))))
+                     ;;        :r x86)))))
+                     ;;   12))
+                     )
+                    :r x86)))))
+               (logand
                 4503598553628672
-                (LOGEXT
+                (logext
                  64
-                 (COMBINE-BYTES
-                  (MV-NTH
+                 (combine-bytes
+                  (mv-nth
                    1
-                   (RB
-                    (CREATE-CANONICAL-ADDRESS-LIST
+                   (rb
+                    (create-canonical-address-list
                      8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (COMBINE-BYTES
-                          (MV-NTH
-                           1
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST
-                             8
-                             (LOGIOR
-                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                              (LOGAND 4088
-                                      (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                            :R X86)))))
-                       12)))
-                    :R X86)))))))
-             (XW
-              :RGF *RSP* (+ 8 (XR :RGF *RSP* X86))
-              (XW
-               :RGF *RSI* 0
-               (XW
-                :RGF *RDI*
-                (LOGAND
+                     (page-dir-ptr-table-entry-addr
+                      (xr :rgf *rdi* x86)
+                      (pdpt-base-addr (xr :rgf *rdi* x86) x86))
+                     ;; (logior
+                     ;;  (logand 4088
+                     ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                     ;;  (ash
+                     ;;   (loghead
+                     ;;    40
+                     ;;    (logtail
+                     ;;     12
+                     ;;     (combine-bytes
+                     ;;      (mv-nth
+                     ;;       1
+                     ;;       (rb
+                     ;;        (create-canonical-address-list
+                     ;;         8
+                     ;;         (logior
+                     ;;          (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                     ;;          (logand 4088
+                     ;;                  (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+                     ;;        :r x86)))))
+                     ;;   12))
+                     )
+                    :r x86)))))))
+             (xw
+              :rgf *rsp* (+ 8 (xr :rgf *rsp* x86))
+              (xw
+               :rgf *rsi* 0
+               (xw
+                :rgf *rdi*
+                (logand
                  4503598553628672
-                 (LOGEXT
+                 (logext
                   64
-                  (COMBINE-BYTES
-                   (MV-NTH
+                  (combine-bytes
+                   (mv-nth
                     1
-                    (RB
-                     (CREATE-CANONICAL-ADDRESS-LIST
+                    (rb
+                     (create-canonical-address-list
                       8
-                      (LOGIOR
-                       (LOGAND 4088
-                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                       (ASH
-                        (LOGHEAD
-                         40
-                         (LOGTAIL
-                          12
-                          (COMBINE-BYTES
-                           (MV-NTH
-                            1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST
-                              8
-                              (LOGIOR
-                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                               (LOGAND 4088
-                                       (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                             :R X86)))))
-                        12)))
-                     :R X86)))))
-                (XW
-                 :RGF *R8* 1099511627775
-                 (XW
-                  :RGF *R9*
-                  (LOGAND
+                      (page-dir-ptr-table-entry-addr
+                       (xr :rgf *rdi* x86)
+                       (pdpt-base-addr (xr :rgf *rdi* x86) x86))
+                      ;; (logior
+                      ;;  (logand 4088
+                      ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                      ;;  (ash
+                      ;;   (loghead
+                      ;;    40
+                      ;;    (logtail
+                      ;;     12
+                      ;;     (combine-bytes
+                      ;;      (mv-nth
+                      ;;       1
+                      ;;       (rb
+                      ;;        (create-canonical-address-list
+                      ;;         8
+                      ;;         (logior
+                      ;;          (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                      ;;          (logand 4088
+                      ;;                  (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+                      ;;        :r x86)))))
+                      ;;   12))
+                      )
+                     :r x86)))))
+                (xw
+                 :rgf *r8* 1099511627775
+                 (xw
+                  :rgf *r9*
+                  (logand
                    4503598553628672
-                   (LOGEXT
+                   (logext
                     64
-                    (COMBINE-BYTES
-                     (MV-NTH
+                    (combine-bytes
+                     (mv-nth
                       1
-                      (RB
-                       (CREATE-CANONICAL-ADDRESS-LIST
+                      (rb
+                       (create-canonical-address-list
                         8
-                        (LOGIOR
-                         (LOGAND 4088
-                                 (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                         (ASH
-                          (LOGHEAD
-                           40
-                           (LOGTAIL
-                            12
-                            (COMBINE-BYTES
-                             (MV-NTH
-                              1
-                              (RB
-                               (CREATE-CANONICAL-ADDRESS-LIST
-                                8
-                                (LOGIOR
-                                 (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                 (LOGAND
-                                  4088
-                                  (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                               :R X86)))))
-                          12)))
-                       :R X86)))))
-                  (XW
-                   :RIP 0
-                   (LOGEXT
+                        (page-dir-ptr-table-entry-addr
+                         (xr :rgf *rdi* x86)
+                         (pdpt-base-addr (xr :rgf *rdi* x86) x86))
+                        ;; (logior
+                        ;;  (logand 4088
+                        ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                        ;;  (ash
+                        ;;   (loghead
+                        ;;    40
+                        ;;    (logtail
+                        ;;     12
+                        ;;     (combine-bytes
+                        ;;      (mv-nth
+                        ;;       1
+                        ;;       (rb
+                        ;;        (create-canonical-address-list
+                        ;;         8
+                        ;;         (logior
+                        ;;          (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                        ;;          (logand
+                        ;;           4088
+                        ;;           (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+                        ;;        :r x86)))))
+                        ;;   12))
+                        )
+                       :r x86)))))
+                  (xw
+                   :rip 0
+                   (logext
                     64
-                    (COMBINE-BYTES
-                     (MV-NTH 1
-                             (RB (CREATE-CANONICAL-ADDRESS-LIST 8 (XR :RGF *RSP* X86))
-                                 :R X86))))
-                   (XW
-                    :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
-                    (!FLGI
-                     *CF*
-                     (BOOL->BIT
+                    (combine-bytes
+                     (mv-nth 1
+                             (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                                 :r x86))))
+                   (xw
+                    :undef 0 (+ 46 (nfix (xr :undef 0 x86)))
+                    (!flgi
+                     *cf*
+                     (bool->bit
                       (<
-                       (LOGAND
+                       (logand
                         4503598553628672
-                        (COMBINE-BYTES
-                         (MV-NTH
+                        (combine-bytes
+                         (mv-nth
                           1
-                          (RB
-                           (CREATE-CANONICAL-ADDRESS-LIST
+                          (rb
+                           (create-canonical-address-list
                             8
-                            (LOGIOR
-                             (LOGAND 4088
-                                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                             (ASH
-                              (LOGHEAD
+                            (logior
+                             (logand 4088
+                                     (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                             (ash
+                              (loghead
                                40
-                               (LOGTAIL
+                               (logtail
                                 12
-                                (COMBINE-BYTES
-                                 (MV-NTH
+                                (combine-bytes
+                                 (mv-nth
                                   1
-                                  (RB
-                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                  (rb
+                                   (create-canonical-address-list
                                     8
-                                    (LOGIOR
-                                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                     (LOGAND
+                                    (logior
+                                     (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                     (logand
                                       4088
-                                      (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                   :R X86)))))
+                                      (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                   :r x86)))))
                               12)))
-                           :R X86))))
-                       (LOGAND
+                           :r x86))))
+                       (logand
                         4503598553628672
-                        (LOGIOR
-                         (LOGAND
+                        (logior
+                         (logand
                           18442240475155922943
-                          (COMBINE-BYTES
-                           (MV-NTH
+                          (combine-bytes
+                           (mv-nth
                             1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST
+                            (rb
+                             (create-canonical-address-list
                               8
-                              (LOGIOR
-                               (LOGAND 4088
-                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                               (ASH
-                                (LOGHEAD
+                              (logior
+                               (logand 4088
+                                       (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                               (ash
+                                (loghead
                                  40
-                                 (LOGTAIL
+                                 (logtail
                                   12
-                                  (COMBINE-BYTES
-                                   (MV-NTH
+                                  (combine-bytes
+                                   (mv-nth
                                     1
-                                    (RB
-                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                    (rb
+                                     (create-canonical-address-list
                                       8
-                                      (LOGIOR
-                                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                       (LOGAND
+                                      (logior
+                                       (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                       (logand
                                         4088
-                                        (LOGHEAD
-                                         28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                     :R X86)))))
+                                        (loghead
+                                         28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                     :r x86)))))
                                 12)))
-                             :R X86))))
-                         (LOGAND
+                             :r x86))))
+                         (logand
                           4503598553628672
-                          (COMBINE-BYTES
-                           (MV-NTH
+                          (combine-bytes
+                           (mv-nth
                             1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST
+                            (rb
+                             (create-canonical-address-list
                               8
-                              (LOGIOR
-                               (LOGAND 4088
-                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                               (ASH
-                                (LOGHEAD
+                              (logior
+                               (logand 4088
+                                       (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                               (ash
+                                (loghead
                                  40
-                                 (LOGTAIL
+                                 (logtail
                                   12
-                                  (COMBINE-BYTES
-                                   (MV-NTH
+                                  (combine-bytes
+                                   (mv-nth
                                     1
-                                    (RB
-                                     (CREATE-CANONICAL-ADDRESS-LIST
+                                    (rb
+                                     (create-canonical-address-list
                                       8
-                                      (LOGIOR
-                                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                       (LOGAND
+                                      (logior
+                                       (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                       (logand
                                         4088
-                                        (LOGHEAD
-                                         28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                     :R X86)))))
+                                        (loghead
+                                         28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                     :r x86)))))
                                 12)))
-                             :R X86))))))))
-                     (!FLGI
-                      *PF*
-                      (PF-SPEC64
-                       (LOGHEAD
+                             :r x86))))))))
+                     (!flgi
+                      *pf*
+                      (pf-spec64
+                       (loghead
                         64
                         (+
-                         (LOGAND
+                         (logand
                           4503598553628672
-                          (LOGEXT
+                          (logext
                            64
-                           (COMBINE-BYTES
-                            (MV-NTH
+                           (combine-bytes
+                            (mv-nth
                              1
-                             (RB
-                              (CREATE-CANONICAL-ADDRESS-LIST
+                             (rb
+                              (create-canonical-address-list
                                8
-                               (LOGIOR
-                                (LOGAND 4088
-                                        (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                (ASH
-                                 (LOGHEAD
+                               (logior
+                                (logand 4088
+                                        (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                (ash
+                                 (loghead
                                   40
-                                  (LOGTAIL
+                                  (logtail
                                    12
-                                   (COMBINE-BYTES
-                                    (MV-NTH
+                                   (combine-bytes
+                                    (mv-nth
                                      1
-                                     (RB
-                                      (CREATE-CANONICAL-ADDRESS-LIST
+                                     (rb
+                                      (create-canonical-address-list
                                        8
-                                       (LOGIOR
-                                        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                        (LOGAND
+                                       (logior
+                                        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                        (logand
                                          4088
-                                         (LOGHEAD
-                                          28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                      :R X86)))))
+                                         (loghead
+                                          28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                      :r x86)))))
                                  12)))
-                              :R X86)))))
+                              :r x86)))))
                          (-
-                          (LOGAND
+                          (logand
                            4503598553628672
-                           (LOGIOR
-                            (LOGAND
+                           (logior
+                            (logand
                              -4503598553628673
-                             (LOGEXT
+                             (logext
                               64
-                              (COMBINE-BYTES
-                               (MV-NTH
+                              (combine-bytes
+                               (mv-nth
                                 1
-                                (RB
-                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                (rb
+                                 (create-canonical-address-list
                                   8
-                                  (LOGIOR
-                                   (LOGAND
+                                  (logior
+                                   (logand
                                     4088
-                                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                   (ASH
-                                    (LOGHEAD
+                                    (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                                   (ash
+                                    (loghead
                                      40
-                                     (LOGTAIL
+                                     (logtail
                                       12
-                                      (COMBINE-BYTES
-                                       (MV-NTH
+                                      (combine-bytes
+                                       (mv-nth
                                         1
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                        (rb
+                                         (create-canonical-address-list
                                           8
-                                          (LOGIOR
-                                           (LOGAND
-                                            -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                           (LOGAND
+                                          (logior
+                                           (logand
+                                            -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                           (logand
                                             4088
-                                            (LOGHEAD
-                                             28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                         :R X86)))))
+                                            (loghead
+                                             28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                         :r x86)))))
                                     12)))
-                                 :R X86)))))
-                            (LOGAND
+                                 :r x86)))))
+                            (logand
                              4503598553628672
-                             (LOGEXT
+                             (logext
                               64
-                              (COMBINE-BYTES
-                               (MV-NTH
+                              (combine-bytes
+                               (mv-nth
                                 1
-                                (RB
-                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                (rb
+                                 (create-canonical-address-list
                                   8
-                                  (LOGIOR
-                                   (LOGAND
+                                  (logior
+                                   (logand
                                     4088
-                                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                   (ASH
-                                    (LOGHEAD
+                                    (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                   (ash
+                                    (loghead
                                      40
-                                     (LOGTAIL
+                                     (logtail
                                       12
-                                      (COMBINE-BYTES
-                                       (MV-NTH
+                                      (combine-bytes
+                                       (mv-nth
                                         1
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                        (rb
+                                         (create-canonical-address-list
                                           8
-                                          (LOGIOR
-                                           (LOGAND
-                                            -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                           (LOGAND
+                                          (logior
+                                           (logand
+                                            -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                           (logand
                                             4088
-                                            (LOGHEAD
-                                             28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                         :R X86)))))
+                                            (loghead
+                                             28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                         :r x86)))))
                                     12)))
-                                 :R X86)))))))))))
-                      (!FLGI
-                       *AF*
-                       (SUB-AF-SPEC64
-                        (LOGAND
+                                 :r x86)))))))))))
+                      (!flgi
+                       *af*
+                       (sub-af-spec64
+                        (logand
                          4503598553628672
-                         (COMBINE-BYTES
-                          (MV-NTH
+                         (combine-bytes
+                          (mv-nth
                            1
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST
+                           (rb
+                            (create-canonical-address-list
                              8
-                             (LOGIOR
-                              (LOGAND 4088
-                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                              (ASH
-                               (LOGHEAD
+                             (logior
+                              (logand 4088
+                                      (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                              (ash
+                               (loghead
                                 40
-                                (LOGTAIL
+                                (logtail
                                  12
-                                 (COMBINE-BYTES
-                                  (MV-NTH
+                                 (combine-bytes
+                                  (mv-nth
                                    1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                   (rb
+                                    (create-canonical-address-list
                                      8
-                                     (LOGIOR
-                                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                      (LOGAND
+                                     (logior
+                                      (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                      (logand
                                        4088
-                                       (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                    :R X86)))))
+                                       (loghead 28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                    :r x86)))))
                                12)))
-                            :R X86))))
-                        (LOGAND
+                            :r x86))))
+                        (logand
                          4503598553628672
-                         (LOGIOR
-                          (LOGAND
+                         (logior
+                          (logand
                            18442240475155922943
-                           (COMBINE-BYTES
-                            (MV-NTH
+                           (combine-bytes
+                            (mv-nth
                              1
-                             (RB
-                              (CREATE-CANONICAL-ADDRESS-LIST
+                             (rb
+                              (create-canonical-address-list
                                8
-                               (LOGIOR
-                                (LOGAND 4088
-                                        (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                (ASH
-                                 (LOGHEAD
+                               (logior
+                                (logand 4088
+                                        (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                                (ash
+                                 (loghead
                                   40
-                                  (LOGTAIL
+                                  (logtail
                                    12
-                                   (COMBINE-BYTES
-                                    (MV-NTH
+                                   (combine-bytes
+                                    (mv-nth
                                      1
-                                     (RB
-                                      (CREATE-CANONICAL-ADDRESS-LIST
+                                     (rb
+                                      (create-canonical-address-list
                                        8
-                                       (LOGIOR
-                                        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                        (LOGAND
+                                       (logior
+                                        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                        (logand
                                          4088
-                                         (LOGHEAD
-                                          28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                      :R X86)))))
+                                         (loghead
+                                          28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                      :r x86)))))
                                  12)))
-                              :R X86))))
-                          (LOGAND
+                              :r x86))))
+                          (logand
                            4503598553628672
-                           (COMBINE-BYTES
-                            (MV-NTH
+                           (combine-bytes
+                            (mv-nth
                              1
-                             (RB
-                              (CREATE-CANONICAL-ADDRESS-LIST
+                             (rb
+                              (create-canonical-address-list
                                8
-                               (LOGIOR
-                                (LOGAND 4088
-                                        (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                (ASH
-                                 (LOGHEAD
+                               (logior
+                                (logand 4088
+                                        (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                (ash
+                                 (loghead
                                   40
-                                  (LOGTAIL
+                                  (logtail
                                    12
-                                   (COMBINE-BYTES
-                                    (MV-NTH
+                                   (combine-bytes
+                                    (mv-nth
                                      1
-                                     (RB
-                                      (CREATE-CANONICAL-ADDRESS-LIST
+                                     (rb
+                                      (create-canonical-address-list
                                        8
-                                       (LOGIOR
-                                        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                        (LOGAND
+                                       (logior
+                                        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                        (logand
                                          4088
-                                         (LOGHEAD
-                                          28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                      :R X86)))))
+                                         (loghead
+                                          28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                      :r x86)))))
                                  12)))
-                              :R X86)))))))
-                       (!FLGI
-                        *ZF* 1
-                        (!FLGI
-                         *SF*
-                         (SF-SPEC64
-                          (LOGHEAD
+                              :r x86)))))))
+                       (!flgi
+                        *zf* 1
+                        (!flgi
+                         *sf*
+                         (sf-spec64
+                          (loghead
                            64
                            (+
-                            (LOGAND
+                            (logand
                              4503598553628672
-                             (LOGEXT
+                             (logext
                               64
-                              (COMBINE-BYTES
-                               (MV-NTH
+                              (combine-bytes
+                               (mv-nth
                                 1
-                                (RB
-                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                (rb
+                                 (create-canonical-address-list
                                   8
-                                  (LOGIOR
-                                   (LOGAND
+                                  (logior
+                                   (logand
                                     4088
-                                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                   (ASH
-                                    (LOGHEAD
+                                    (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                   (ash
+                                    (loghead
                                      40
-                                     (LOGTAIL
+                                     (logtail
                                       12
-                                      (COMBINE-BYTES
-                                       (MV-NTH
+                                      (combine-bytes
+                                       (mv-nth
                                         1
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                        (rb
+                                         (create-canonical-address-list
                                           8
-                                          (LOGIOR
-                                           (LOGAND
-                                            -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                           (LOGAND
+                                          (logior
+                                           (logand
+                                            -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                           (logand
                                             4088
-                                            (LOGHEAD
-                                             28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                         :R X86)))))
+                                            (loghead
+                                             28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                         :r x86)))))
                                     12)))
-                                 :R X86)))))
+                                 :r x86)))))
                             (-
-                             (LOGAND
+                             (logand
                               4503598553628672
-                              (LOGIOR
-                               (LOGAND
+                              (logior
+                               (logand
                                 -4503598553628673
-                                (LOGEXT
+                                (logext
                                  64
-                                 (COMBINE-BYTES
-                                  (MV-NTH
+                                 (combine-bytes
+                                  (mv-nth
                                    1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                   (rb
+                                    (create-canonical-address-list
                                      8
-                                     (LOGIOR
-                                      (LOGAND
+                                     (logior
+                                      (logand
                                        4088
-                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                      (ASH
-                                       (LOGHEAD
+                                       (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                                      (ash
+                                       (loghead
                                         40
-                                        (LOGTAIL
+                                        (logtail
                                          12
-                                         (COMBINE-BYTES
-                                          (MV-NTH
+                                         (combine-bytes
+                                          (mv-nth
                                            1
-                                           (RB
-                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                           (rb
+                                            (create-canonical-address-list
                                              8
-                                             (LOGIOR
-                                              (LOGAND
-                                               -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                              (LOGAND
+                                             (logior
+                                              (logand
+                                               -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                              (logand
                                                4088
-                                               (LOGHEAD
-                                                28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                            :R X86)))))
+                                               (loghead
+                                                28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                            :r x86)))))
                                        12)))
-                                    :R X86)))))
-                               (LOGAND
+                                    :r x86)))))
+                               (logand
                                 4503598553628672
-                                (LOGEXT
+                                (logext
                                  64
-                                 (COMBINE-BYTES
-                                  (MV-NTH
+                                 (combine-bytes
+                                  (mv-nth
                                    1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                   (rb
+                                    (create-canonical-address-list
                                      8
-                                     (LOGIOR
-                                      (LOGAND
+                                     (logior
+                                      (logand
                                        4088
-                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                      (ASH
-                                       (LOGHEAD
+                                       (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                      (ash
+                                       (loghead
                                         40
-                                        (LOGTAIL
+                                        (logtail
                                          12
-                                         (COMBINE-BYTES
-                                          (MV-NTH
+                                         (combine-bytes
+                                          (mv-nth
                                            1
-                                           (RB
-                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                           (rb
+                                            (create-canonical-address-list
                                              8
-                                             (LOGIOR
-                                              (LOGAND
-                                               -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                              (LOGAND
+                                             (logior
+                                              (logand
+                                               -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                              (logand
                                                4088
-                                               (LOGHEAD
-                                                28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                            :R X86)))))
+                                               (loghead
+                                                28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                            :r x86)))))
                                        12)))
-                                    :R X86)))))))))))
-                         (!FLGI
-                          *OF*
-                          (OF-SPEC64
+                                    :r x86)))))))))))
+                         (!flgi
+                          *of*
+                          (of-spec64
                            (+
-                            (LOGAND
+                            (logand
                              4503598553628672
-                             (LOGEXT
+                             (logext
                               64
-                              (COMBINE-BYTES
-                               (MV-NTH
+                              (combine-bytes
+                               (mv-nth
                                 1
-                                (RB
-                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                (rb
+                                 (create-canonical-address-list
                                   8
-                                  (LOGIOR
-                                   (LOGAND
+                                  (logior
+                                   (logand
                                     4088
-                                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                   (ASH
-                                    (LOGHEAD
+                                    (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                   (ash
+                                    (loghead
                                      40
-                                     (LOGTAIL
+                                     (logtail
                                       12
-                                      (COMBINE-BYTES
-                                       (MV-NTH
+                                      (combine-bytes
+                                       (mv-nth
                                         1
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                        (rb
+                                         (create-canonical-address-list
                                           8
-                                          (LOGIOR
-                                           (LOGAND
-                                            -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                           (LOGAND
+                                          (logior
+                                           (logand
+                                            -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                           (logand
                                             4088
-                                            (LOGHEAD
-                                             28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                         :R X86)))))
+                                            (loghead
+                                             28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                         :r x86)))))
                                     12)))
-                                 :R X86)))))
+                                 :r x86)))))
                             (-
-                             (LOGAND
+                             (logand
                               4503598553628672
-                              (LOGIOR
-                               (LOGAND
+                              (logior
+                               (logand
                                 -4503598553628673
-                                (LOGEXT
+                                (logext
                                  64
-                                 (COMBINE-BYTES
-                                  (MV-NTH
+                                 (combine-bytes
+                                  (mv-nth
                                    1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                   (rb
+                                    (create-canonical-address-list
                                      8
-                                     (LOGIOR
-                                      (LOGAND
+                                     (logior
+                                      (logand
                                        4088
-                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                      (ASH
-                                       (LOGHEAD
+                                       (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                                      (ash
+                                       (loghead
                                         40
-                                        (LOGTAIL
+                                        (logtail
                                          12
-                                         (COMBINE-BYTES
-                                          (MV-NTH
+                                         (combine-bytes
+                                          (mv-nth
                                            1
-                                           (RB
-                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                           (rb
+                                            (create-canonical-address-list
                                              8
-                                             (LOGIOR
-                                              (LOGAND
-                                               -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                              (LOGAND
+                                             (logior
+                                              (logand
+                                               -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                              (logand
                                                4088
-                                               (LOGHEAD
-                                                28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                            :R X86)))))
+                                               (loghead
+                                                28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                            :r x86)))))
                                        12)))
-                                    :R X86)))))
-                               (LOGAND
+                                    :r x86)))))
+                               (logand
                                 4503598553628672
-                                (LOGEXT
+                                (logext
                                  64
-                                 (COMBINE-BYTES
-                                  (MV-NTH
+                                 (combine-bytes
+                                  (mv-nth
                                    1
-                                   (RB
-                                    (CREATE-CANONICAL-ADDRESS-LIST
+                                   (rb
+                                    (create-canonical-address-list
                                      8
-                                     (LOGIOR
-                                      (LOGAND
+                                     (logior
+                                      (logand
                                        4088
-                                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                      (ASH
-                                       (LOGHEAD
+                                       (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
+                                      (ash
+                                       (loghead
                                         40
-                                        (LOGTAIL
+                                        (logtail
                                          12
-                                         (COMBINE-BYTES
-                                          (MV-NTH
+                                         (combine-bytes
+                                          (mv-nth
                                            1
-                                           (RB
-                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                           (rb
+                                            (create-canonical-address-list
                                              8
-                                             (LOGIOR
-                                              (LOGAND
-                                               -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                              (LOGAND
+                                             (logior
+                                              (logand
+                                               -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                              (logand
                                                4088
-                                               (LOGHEAD
-                                                28 (LOGTAIL 36 (XR :RGF *RDI* X86))))))
-                                            :R X86)))))
+                                               (loghead
+                                                28 (logtail 36 (xr :rgf *rdi* x86))))))
+                                            :r x86)))))
                                        12)))
-                                    :R X86))))))))))
-                          (MV-NTH
+                                    :r x86))))))))))
+                          (mv-nth
                            2
-                           (RB
-                            (CREATE-CANONICAL-ADDRESS-LIST 8 (XR :RGF *RSP* X86))
-                            :R
-                            (MV-NTH
+                           (rb
+                            (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                            :r
+                            (mv-nth
                              2
-                             (LAS-TO-PAS
-                              (CREATE-CANONICAL-ADDRESS-LIST
-                               40 (+ 206 (XR :RIP 0 X86)))
-                              :X 0
-                              (MV-NTH
+                             (las-to-pas
+                              (create-canonical-address-list
+                               40 (+ 206 (xr :rip 0 x86)))
+                              :x 0
+                              (mv-nth
                                2
-                               (LAS-TO-PAS
-                                (CREATE-CANONICAL-ADDRESS-LIST
-                                 15 (+ 190 (XR :RIP 0 X86)))
-                                :X 0
-                                (MV-NTH
+                               (las-to-pas
+                                (create-canonical-address-list
+                                 15 (+ 190 (xr :rip 0 x86)))
+                                :x 0
+                                (mv-nth
                                  1
-                                 (WB
-                                  (CREATE-ADDR-BYTES-ALIST
-                                   (CREATE-CANONICAL-ADDRESS-LIST
+                                 (wb
+                                  (create-addr-bytes-alist
+                                   (create-canonical-address-list
                                     8
-                                    (LOGIOR
-                                     (LOGAND
-                                      4088
-                                      (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                     (ASH
-                                      (LOGHEAD
-                                       40
-                                       (LOGTAIL
-                                        12
-                                        (COMBINE-BYTES
-                                         (MV-NTH
-                                          1
-                                          (RB
-                                           (CREATE-CANONICAL-ADDRESS-LIST
-                                            8
-                                            (LOGIOR
-                                             (LOGAND
-                                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                             (LOGAND
-                                              4088
-                                              (LOGHEAD
-                                               28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                           :R X86)))))
-                                      12)))
-                                   (BYTE-IFY
+                                    (page-dir-ptr-table-entry-addr
+                                     (xr :rgf *rsi* x86)
+                                     (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+                                    ;; (logior
+                                    ;;  (logand
+                                    ;;   4088
+                                    ;;   (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                                    ;;  (ash
+                                    ;;   (loghead
+                                    ;;    40
+                                    ;;    (logtail
+                                    ;;     12
+                                    ;;     (combine-bytes
+                                    ;;      (mv-nth
+                                    ;;       1
+                                    ;;       (rb
+                                    ;;        (create-canonical-address-list
+                                    ;;         8
+                                    ;;         (logior
+                                    ;;          (logand
+                                    ;;           -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                    ;;          (logand
+                                    ;;           4088
+                                    ;;           (loghead
+                                    ;;            28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                    ;;        :r x86)))))
+                                    ;;   12))
+                                    )
+                                   (byte-ify
                                     8
-                                    (LOGIOR
-                                     (LOGAND
+                                    (logior
+                                     (logand
                                       18442240475155922943
-                                      (COMBINE-BYTES
-                                       (MV-NTH
+                                      (combine-bytes
+                                       (mv-nth
                                         1
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                        (rb
+                                         (create-canonical-address-list
                                           8
-                                          (LOGIOR
-                                           (LOGAND
-                                            4088
-                                            (LOGHEAD
-                                             32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                           (ASH
-                                            (LOGHEAD
-                                             40
-                                             (LOGTAIL
-                                              12
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB
-                                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                                  8
-                                                  (LOGIOR
-                                                   (LOGAND
-                                                    -4096
-                                                    (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                                   (LOGAND
-                                                    4088
-                                                    (LOGHEAD
-                                                     28
-                                                     (LOGTAIL
-                                                      36 (XR :RGF *RSI* X86))))))
-                                                 :R X86)))))
-                                            12)))
-                                         :R X86))))
-                                     (LOGAND
+                                          (page-dir-ptr-table-entry-addr
+                                           (xr :rgf *rsi* x86)
+                                           (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+                                          ;; (logior
+                                          ;;  (logand
+                                          ;;   4088
+                                          ;;   (loghead
+                                          ;;    32 (logtail 27 (xr :rgf *rsi* x86))))
+                                          ;;  (ash
+                                          ;;   (loghead
+                                          ;;    40
+                                          ;;    (logtail
+                                          ;;     12
+                                          ;;     (combine-bytes
+                                          ;;      (mv-nth
+                                          ;;       1
+                                          ;;       (rb
+                                          ;;        (create-canonical-address-list
+                                          ;;         8
+                                          ;;         (logior
+                                          ;;          (logand
+                                          ;;           -4096
+                                          ;;           (logext 64 (xr :ctr *cr3* x86)))
+                                          ;;          (logand
+                                          ;;           4088
+                                          ;;           (loghead
+                                          ;;            28
+                                          ;;            (logtail
+                                          ;;             36 (xr :rgf *rsi* x86))))))
+                                          ;;        :r x86)))))
+                                          ;;   12))
+                                          )
+                                         :r x86))))
+                                     (logand
                                       4503598553628672
-                                      (COMBINE-BYTES
-                                       (MV-NTH
+                                      (combine-bytes
+                                       (mv-nth
                                         1
-                                        (RB
-                                         (CREATE-CANONICAL-ADDRESS-LIST
+                                        (rb
+                                         (create-canonical-address-list
                                           8
-                                          (LOGIOR
-                                           (LOGAND
-                                            4088
-                                            (LOGHEAD
-                                             32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                           (ASH
-                                            (LOGHEAD
-                                             40
-                                             (LOGTAIL
-                                              12
-                                              (COMBINE-BYTES
-                                               (MV-NTH
-                                                1
-                                                (RB
-                                                 (CREATE-CANONICAL-ADDRESS-LIST
-                                                  8
-                                                  (LOGIOR
-                                                   (LOGAND
-                                                    -4096
-                                                    (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                                   (LOGAND
-                                                    4088
-                                                    (LOGHEAD
-                                                     28
-                                                     (LOGTAIL
-                                                      36 (XR :RGF *RDI* X86))))))
-                                                 :R X86)))))
-                                            12)))
-                                         :R X86)))))))
-                                  (MV-NTH
+                                          (page-dir-ptr-table-entry-addr
+                                           (xr :rgf *rdi* x86)
+                                           (pdpt-base-addr (xr :rgf *rdi* x86) x86))
+                                          ;; (logior
+                                          ;;  (logand
+                                          ;;   4088
+                                          ;;   (loghead
+                                          ;;    32 (logtail 27 (xr :rgf *rdi* x86))))
+                                          ;;  (ash
+                                          ;;   (loghead
+                                          ;;    40
+                                          ;;    (logtail
+                                          ;;     12
+                                          ;;     (combine-bytes
+                                          ;;      (mv-nth
+                                          ;;       1
+                                          ;;       (rb
+                                          ;;        (create-canonical-address-list
+                                          ;;         8
+                                          ;;         (logior
+                                          ;;          (logand
+                                          ;;           -4096
+                                          ;;           (logext 64 (xr :ctr *cr3* x86)))
+                                          ;;          (logand
+                                          ;;           4088
+                                          ;;           (loghead
+                                          ;;            28
+                                          ;;            (logtail
+                                          ;;             36 (xr :rgf *rdi* x86))))))
+                                          ;;        :r x86)))))
+                                          ;;   12))
+                                          )
+                                         :r x86)))))))
+                                  (mv-nth
                                    2
-                                   (LAS-TO-PAS
-                                    (CREATE-CANONICAL-ADDRESS-LIST
-                                     6 (+ 184 (XR :RIP 0 X86)))
-                                    :X 0
-                                    (MV-NTH
+                                   (las-to-pas
+                                    (create-canonical-address-list
+                                     6 (+ 184 (xr :rip 0 x86)))
+                                    :x 0
+                                    (mv-nth
                                      2
-                                     (RB
-                                      (CREATE-CANONICAL-ADDRESS-LIST
+                                     (rb
+                                      (create-canonical-address-list
                                        8
-                                       (LOGIOR
-                                        (LOGAND
+                                       (logior
+                                        (logand
                                          4088
-                                         (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                                        (ASH
-                                         (LOGHEAD
+                                         (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
+                                        (ash
+                                         (loghead
                                           40
-                                          (LOGTAIL
+                                          (logtail
                                            12
-                                           (COMBINE-BYTES
-                                            (MV-NTH
+                                           (combine-bytes
+                                            (mv-nth
                                              1
-                                             (RB
-                                              (CREATE-CANONICAL-ADDRESS-LIST
+                                             (rb
+                                              (create-canonical-address-list
                                                8
-                                               (LOGIOR
-                                                (LOGAND
-                                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                                (LOGAND
+                                               (logior
+                                                (logand
+                                                 -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                                (logand
                                                  4088
-                                                 (LOGHEAD
+                                                 (loghead
                                                   28
-                                                  (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                              :R X86)))))
+                                                  (logtail 36 (xr :rgf *rsi* x86))))))
+                                              :r x86)))))
                                          12)))
-                                      :R
-                                      (MV-NTH
+                                      :r
+                                      (mv-nth
                                        2
-                                       (LAS-TO-PAS
-                                        (CREATE-CANONICAL-ADDRESS-LIST
-                                         40 (+ 144 (XR :RIP 0 X86)))
-                                        :X 0
-                                        (MV-NTH
+                                       (las-to-pas
+                                        (create-canonical-address-list
+                                         40 (+ 144 (xr :rip 0 x86)))
+                                        :x 0
+                                        (mv-nth
                                          2
-                                         (LAS-TO-PAS
-                                          (CREATE-CANONICAL-ADDRESS-LIST
-                                           3 (+ 140 (XR :RIP 0 X86)))
-                                          :X 0
-                                          (MV-NTH
+                                         (las-to-pas
+                                          (create-canonical-address-list
+                                           3 (+ 140 (xr :rip 0 x86)))
+                                          :x 0
+                                          (mv-nth
                                            2
-                                           (RB
-                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                           (rb
+                                            (create-canonical-address-list
                                              8
-                                             (LOGIOR
-                                              (LOGAND
-                                               -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                              (LOGAND
+                                             (logior
+                                              (logand
+                                               -4096 (logext 64 (xr :ctr *cr3* x86)))
+                                              (logand
                                                4088
-                                               (LOGHEAD
-                                                28 (LOGTAIL 36 (XR :RGF *RSI* X86))))))
-                                            :R
-                                            (MV-NTH
+                                               (loghead
+                                                28 (logtail 36 (xr :rgf *rsi* x86))))))
+                                            :r
+                                            (mv-nth
                                              2
-                                             (LAS-TO-PAS
-                                              (CREATE-CANONICAL-ADDRESS-LIST
-                                               32 (+ 108 (XR :RIP 0 X86)))
-                                              :X 0
-                                              (MV-NTH
+                                             (las-to-pas
+                                              (create-canonical-address-list
+                                               32 (+ 108 (xr :rip 0 x86)))
+                                              :x 0
+                                              (mv-nth
                                                2
-                                               (LAS-TO-PAS
-                                                (CREATE-CANONICAL-ADDRESS-LIST
-                                                 18 (+ 86 (XR :RIP 0 X86)))
-                                                :X 0
-                                                (MV-NTH
+                                               (las-to-pas
+                                                (create-canonical-address-list
+                                                 18 (+ 86 (xr :rip 0 x86)))
+                                                :x 0
+                                                (mv-nth
                                                  2
-                                                 (RB
-                                                  (CREATE-CANONICAL-ADDRESS-LIST
+                                                 (rb
+                                                  (create-canonical-address-list
                                                    8
-                                                   (LOGIOR
-                                                    (LOGAND
+                                                   (logior
+                                                    (logand
                                                      4088
-                                                     (LOGHEAD
+                                                     (loghead
                                                       32
-                                                      (LOGTAIL
-                                                       27 (XR :RGF *RDI* X86))))
-                                                    (ASH
-                                                     (LOGHEAD
+                                                      (logtail
+                                                       27 (xr :rgf *rdi* x86))))
+                                                    (ash
+                                                     (loghead
                                                       40
-                                                      (LOGTAIL
+                                                      (logtail
                                                        12
-                                                       (COMBINE-BYTES
-                                                        (MV-NTH
+                                                       (combine-bytes
+                                                        (mv-nth
                                                          1
-                                                         (RB
-                                                          (CREATE-CANONICAL-ADDRESS-LIST
+                                                         (rb
+                                                          (create-canonical-address-list
                                                            8
-                                                           (LOGIOR
-                                                            (LOGAND
+                                                           (logior
+                                                            (logand
                                                              -4096
-                                                             (LOGEXT
-                                                              64 (XR :CTR *CR3* X86)))
-                                                            (LOGAND
+                                                             (logext
+                                                              64 (xr :ctr *cr3* x86)))
+                                                            (logand
                                                              4088
-                                                             (LOGHEAD
+                                                             (loghead
                                                               28
-                                                              (LOGTAIL
+                                                              (logtail
                                                                36
-                                                               (XR :RGF *RDI* X86))))))
-                                                          :R X86)))))
+                                                               (xr :rgf *rdi* x86))))))
+                                                          :r x86)))))
                                                      12)))
-                                                  :R
-                                                  (MV-NTH
+                                                  :r
+                                                  (mv-nth
                                                    2
-                                                   (LAS-TO-PAS
-                                                    (CREATE-CANONICAL-ADDRESS-LIST
-                                                     40 (+ 46 (XR :RIP 0 X86)))
-                                                    :X 0
-                                                    (MV-NTH
+                                                   (las-to-pas
+                                                    (create-canonical-address-list
+                                                     40 (+ 46 (xr :rip 0 x86)))
+                                                    :x 0
+                                                    (mv-nth
                                                      2
-                                                     (LAS-TO-PAS
-                                                      (CREATE-CANONICAL-ADDRESS-LIST
-                                                       4 (+ 38 (XR :RIP 0 X86)))
-                                                      :X 0
-                                                      (MV-NTH
+                                                     (las-to-pas
+                                                      (create-canonical-address-list
+                                                       4 (+ 38 (xr :rip 0 x86)))
+                                                      :x 0
+                                                      (mv-nth
                                                        2
-                                                       (RB
-                                                        (CREATE-CANONICAL-ADDRESS-LIST
+                                                       (rb
+                                                        (create-canonical-address-list
                                                          8
-                                                         (LOGIOR
-                                                          (LOGAND
+                                                         (logior
+                                                          (logand
                                                            -4096
-                                                           (LOGEXT
-                                                            64 (XR :CTR *CR3* X86)))
-                                                          (LOGAND
+                                                           (logext
+                                                            64 (xr :ctr *cr3* x86)))
+                                                          (logand
                                                            4088
-                                                           (LOGHEAD
+                                                           (loghead
                                                             28
-                                                            (LOGTAIL
+                                                            (logtail
                                                              36
-                                                             (XR :RGF *RDI* X86))))))
-                                                        :R
-                                                        (MV-NTH
+                                                             (xr :rgf *rdi* x86))))))
+                                                        :r
+                                                        (mv-nth
                                                          2
-                                                         (LAS-TO-PAS
-                                                          (CREATE-CANONICAL-ADDRESS-LIST
-                                                           25 (+ 13 (XR :RIP 0 X86)))
-                                                          :X 0
-                                                          (MV-NTH
+                                                         (las-to-pas
+                                                          (create-canonical-address-list
+                                                           25 (+ 13 (xr :rip 0 x86)))
+                                                          :x 0
+                                                          (mv-nth
                                                            2
-                                                           (LAS-TO-PAS
-                                                            (CREATE-CANONICAL-ADDRESS-LIST
+                                                           (las-to-pas
+                                                            (create-canonical-address-list
                                                              8
                                                              (+
-                                                              -24 (XR :RGF *RSP* X86)))
-                                                            :R 0
-                                                            (MV-NTH
+                                                              -24 (xr :rgf *rsp* x86)))
+                                                            :r 0
+                                                            (mv-nth
                                                              2
-                                                             (LAS-TO-PAS
-                                                              (CREATE-CANONICAL-ADDRESS-LIST
-                                                               5 (+ 8 (XR :RIP 0 X86)))
-                                                              :X 0
-                                                              (MV-NTH
+                                                             (las-to-pas
+                                                              (create-canonical-address-list
+                                                               5 (+ 8 (xr :rip 0 x86)))
+                                                              :x 0
+                                                              (mv-nth
                                                                1
-                                                               (WB
-                                                                (CREATE-ADDR-BYTES-ALIST
-                                                                 (CREATE-CANONICAL-ADDRESS-LIST
+                                                               (wb
+                                                                (create-addr-bytes-alist
+                                                                 (create-canonical-address-list
                                                                   8
-                                                                  (+
-                                                                   -24
-                                                                   (XR
-                                                                    :RGF *RSP* X86)))
-                                                                 (BYTE-IFY
+                                                                  (+ -24 (xr :rgf *rsp* x86)))
+                                                                 (byte-ify
                                                                   8
-                                                                  (XR :CTR *CR3* X86)))
-                                                                (MV-NTH
+                                                                  (xr :ctr *cr3* x86)))
+                                                                (mv-nth
                                                                  2
-                                                                 (LAS-TO-PAS
-                                                                  (CREATE-CANONICAL-ADDRESS-LIST
-                                                                   8 (XR :RIP 0 X86))
-                                                                  :X 0
-                                                                  X86))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                                 (las-to-pas
+                                                                  (create-canonical-address-list
+                                                                   8 (xr :rip 0 x86))
+                                                                  :x 0
+                                                                  x86))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
   :hints (("Goal"
            :expand ((:free (x) (hide x)))
@@ -7527,7 +7610,10 @@
                             (n1 (rewire_dst_to_src-clk-1-to-45))
                             (n2 (rewire_dst_to_src-clk-46-to-58)))
                  (:instance rewire_dst_to_src-effects-1-to-45-instructions)
-                 (:instance rewire_dst_to_src-effects-46-to-58-instructions))
+                 (:instance rewire_dst_to_src-effects-46-to-58-instructions)
+                 (:instance rewrite-to-destination-pml4-table-entry-addr)
+                 (:instance rewrite-to-destination-page-dir-ptr-table-entry-addr)
+                 (:instance rewrite-to-source-page-dir-ptr-table-entry-addr))
            :in-theory (union-theories
                        '(natp
                          (natp)
@@ -9605,17 +9691,20 @@
 ;;   :g-bindings
 ;;   (gl::auto-bindings (:mix (:nat source-entry 64) (:nat destination-entry 64))))
 
-#||
-
-(i-am-here)
-
+;; ======================================================================
 ;; ======================================================================
 
+(local (in-theory (e/d* (rewire_dst_to_src-disable
+                         rewire_dst_to_src-disable-more)
+                        (unsigned-byte-p
+                         signed-byte-p))))
+
+;; ======================================================================
 
 (encapsulate
   ()
 
-  (def-gl-export rb-and-rm-low-64-for-direct-map-helper
+  (def-gl-export rb-and-rm-low-64-for-direct-map-helper-1
     :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
               (n08p e) (n08p f) (n08p g) (n08p h))
     :concl (equal (logior a (ash b 8)
@@ -9639,16 +9728,54 @@
      (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
            (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
+  (def-gl-export rb-and-rm-low-64-for-direct-map-helper-2
+    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+              (n08p e) (n08p f) (n08p g) (n08p h))
+    :concl (equal (loghead
+                   64
+                   (logior a
+                           (ash b 8)
+                           (ash (logior c (ash d 8)) 16)
+                           (ash (logior e (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 32)))
+                  (logior a
+                          (ash b 8)
+                          (ash (logior c (ash d 8)) 16)
+                          (ash (logior e (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 32)))
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
   (defthm rb-and-rm-low-64-for-direct-map
     (implies (and
+              ;; Direct map.
               (equal
-               (mv-nth
-                1
-                (las-to-pas
-                 (create-canonical-address-list 8 direct-mapped-addr)
-                 r-w-x (cpl x86) x86))
+               (mv-nth 1
+                       (las-to-pas (create-canonical-address-list 8 direct-mapped-addr)
+                                   r-w-x (cpl x86)
+                                   x86))
                (addr-range 8 direct-mapped-addr))
-              (not (page-structure-marking-mode x86))
+              ;; The physical addresses corresponding to
+              ;; direct-mapped-addr to (+ 7 direct-mapped-addr) are
+              ;; disjoint from their own translation-governing
+              ;; addresses.
+              (disjoint-p$
+               (mv-nth 1
+                       (las-to-pas (create-canonical-address-list 8 direct-mapped-addr)
+                                   r-w-x (cpl x86)
+                                   (double-rewrite x86)))
+               (all-translation-governing-addresses
+                (create-canonical-address-list 8 direct-mapped-addr)
+                (double-rewrite x86)))
+              (not
+               (mv-nth 0
+                       (las-to-pas (create-canonical-address-list 8 direct-mapped-addr)
+                                   r-w-x (cpl x86)
+                                   x86)))
+              ;; !!
+              (physical-address-p direct-mapped-addr)
+              (canonical-address-p (+ 7 direct-mapped-addr))
+              ;; !!
               (not (programmer-level-mode x86))
               (x86p x86))
              (equal (combine-bytes
@@ -9656,152 +9783,272 @@
                       1
                       (rb (create-canonical-address-list 8 direct-mapped-addr) r-w-x x86)))
                     (rm-low-64 direct-mapped-addr x86)))
-    :hints (("Goal" :in-theory (e/d* (rb
-                                      rm-low-64
-                                      rm-low-32
-                                      read-from-physical-memory
-                                      rb-and-rm-low-64-for-direct-map-helper)
-                                     ()))))
+    :hints (("Goal"
+             :use ((:instance rewrite-read-from-physical-memory-to-rm-low-64
+                              (p-addrs (addr-range 8 direct-mapped-addr))
+                              (index direct-mapped-addr)
+                              (x86 x86))
+                   (:instance rb-and-rm-low-64-for-direct-map-helper-2
+                              (a (xr :mem      direct-mapped-addr  x86))
+                              (b (xr :mem (+ 1 direct-mapped-addr) x86))
+                              (c (xr :mem (+ 2 direct-mapped-addr) x86))
+                              (d (xr :mem (+ 3 direct-mapped-addr) x86))
+                              (e (xr :mem (+ 4 direct-mapped-addr) x86))
+                              (f (xr :mem (+ 5 direct-mapped-addr) x86))
+                              (g (xr :mem (+ 6 direct-mapped-addr) x86))
+                              (h (xr :mem (+ 7 direct-mapped-addr) x86))))
+             :in-theory (e/d* (rb
+                               disjoint-p$
+                               rm-low-64
+                               rm-low-32
+                               n08p
+                               unsigned-byte-p
+                               signed-byte-p)
+                              (rb-and-rm-low-64-for-direct-map-helper-2
+                               bitops::loghead-of-logior)))))
 
-  (in-theory (e/d () (rb-and-rm-low-64-for-direct-map-helper))))
+  (in-theory (e/d () (rb-and-rm-low-64-for-direct-map-helper-1
+                      rb-and-rm-low-64-for-direct-map-helper-2))))
 
 (defthm ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-  (b* ((p-addrs (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
-       (page-dir-ptr-table-entry (combine-bytes
-                                  (mv-nth 1
-                                          (rb
-                                           (create-canonical-address-list
-                                            8
-                                            (page-dir-ptr-table-entry-addr lin-addr base-addr))
-                                           :r x86))))
-       (value (combine-bytes bytes)))
-    (implies (and
-              ;; page-dir-ptr-table-entry-addr is directly mapped.
-              (equal
-               (mv-nth
-                1
-                (las-to-pas
-                 (create-canonical-address-list 8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
-                 :r (cpl x86) x86))
-               p-addrs)
-              (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-w-x cpl x86)))
-              (equal (page-present page-dir-ptr-table-entry)
-                     (page-present value))
-              (equal (page-read-write page-dir-ptr-table-entry)
-                     (page-read-write value))
-              (equal (page-user-supervisor page-dir-ptr-table-entry)
-                     (page-user-supervisor value))
-              (equal (page-execute-disable page-dir-ptr-table-entry)
-                     (page-execute-disable value))
-              (equal (page-size page-dir-ptr-table-entry)
-                     (page-size value))
-              ;; 1 G pages
-              (equal (page-size page-dir-ptr-table-entry) 1)
-              (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                     (part-select value :low 13 :high 29))
-              (equal (len bytes) (len p-addrs))
-              (byte-listp bytes)
-              (canonical-address-p lin-addr)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (not (page-structure-marking-mode x86))
-              (not (programmer-level-mode x86))
-              (x86p x86))
-             ;; ia32e-la-to-pa-page-dir-ptr-table returns the physical
-             ;; address corresponding to "lin-addr" after the PDPTE
-             ;; corresponding to this "lin-addr" has been modified ---
-             ;; the new PDPTE is "value".
-             (and (equal
-                   (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-w-x cpl
-                              (write-to-physical-memory p-addrs bytes x86)))
-                   nil)
-                  (equal (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
-                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl
-                                    (write-to-physical-memory p-addrs bytes x86)))
-                         (logior (loghead 30 lin-addr)
-                                 (ash (loghead 22 (logtail 30 value)) 30))))))
+  (implies (and
+            (equal p-addrs
+                   (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+            (equal
+             page-dir-ptr-table-entry
+             (combine-bytes
+              (mv-nth 1
+                      (rb (create-canonical-address-list
+                           8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                          r-w-x x86))))
+            (equal value (combine-bytes bytes))
+            (equal cpl (cpl x86))
+            ;; PDPTE is direct mapped.
+            (equal
+             (mv-nth
+              1
+              (las-to-pas (create-canonical-address-list
+                           8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                          r-w-x cpl x86))
+             p-addrs)
+            (not
+             (mv-nth
+              0
+              (las-to-pas (create-canonical-address-list
+                           8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                          r-w-x cpl x86)))
+            (disjoint-p$
+             (mv-nth
+              1
+              (las-to-pas (create-canonical-address-list
+                           8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                          r-w-x cpl x86))
+             (all-translation-governing-addresses
+              (create-canonical-address-list
+               8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+              x86))
+
+            (not
+             (mv-nth
+              0
+              (ia32e-la-to-pa-page-dir-ptr-table
+               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+               wp smep smap ac nxe r-w-x cpl x86)))
+            (equal (page-present page-dir-ptr-table-entry)
+                   (page-present value))
+            (equal (page-read-write page-dir-ptr-table-entry)
+                   (page-read-write value))
+            (equal (page-user-supervisor page-dir-ptr-table-entry)
+                   (page-user-supervisor value))
+            (equal (page-execute-disable page-dir-ptr-table-entry)
+                   (page-execute-disable value))
+            (equal (page-size page-dir-ptr-table-entry)
+                   (page-size value))
+            (equal (page-size page-dir-ptr-table-entry) 1)
+            (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+                   (part-select value :low 13 :high 29))
+            (equal (len bytes) (len p-addrs))
+            (byte-listp bytes)
+
+            ;; !!!
+            (canonical-address-p
+             (+ 7 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+            ;; !!!
+            (canonical-address-p lin-addr)
+            (physical-address-p base-addr)
+            (equal (loghead 12 base-addr) 0)
+            (x86p x86))
+           ;; ia32e-la-to-pa-page-dir-ptr-table returns the physical
+           ;; address corresponding to "lin-addr" after the PDPTE
+           ;; corresponding to this "lin-addr" has been modified ---
+           ;; the new PDPTE is "value".
+           (and (equal
+                 (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                            wp smep smap ac nxe r-w-x cpl
+                            (write-to-physical-memory p-addrs bytes x86)))
+                 nil)
+                (equal (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl
+                                  (write-to-physical-memory p-addrs bytes x86)))
+                       (logior (loghead 30 lin-addr)
+                               (ash (loghead 22 (logtail 30 value)) 30)))))
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance rewrite-wm-low-64-to-write-to-physical-memory
+                            (index (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                            (value (combine-bytes bytes)))
+                 (:instance mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                            (structure-type 2)
+                            (u/s-acc (logand u/s-acc
+                                             (page-user-supervisor (combine-bytes bytes))))
+                            (r/w-acc
+                             (logand r/w-acc
+                                     (page-read-write (combine-bytes bytes))))
+                            (x/d-acc (logand x/d-acc
+                                             (page-execute-disable (combine-bytes bytes))))
+                            (ignored 0)
+                            (cpl (cpl x86))
+                            (entry-1 (combine-bytes
+                                      (mv-nth 1
+                                              (rb (create-canonical-address-list
+                                                   8
+                                                   (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                                                  r-w-x x86))))
+                            (entry-2 (combine-bytes bytes))))
            :in-theory (e/d* (disjoint-p
                              member-p
-                             ia32e-la-to-pa-page-dir-ptr-table)
-                            (wb
+                             ia32e-la-to-pa-page-dir-ptr-table
+                             byte-ify-and-combine-bytes)
+                            (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                             wb
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
 (defthm ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-  (b* ((pml4-table-entry-addr (pml4-table-entry-addr lin-addr base-addr))
-       (pml4-table-entry (combine-bytes
-                          (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
-       (pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
-       (page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
-       (page-dir-ptr-table-entry
-        (combine-bytes
-         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
-       (p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
-       (value (combine-bytes bytes)))
-    (implies (and
-              ;; PML4E and PDPTE are direct mapped.
-              (equal
-               (mv-nth
-                1
-                (las-to-pas
-                 (create-canonical-address-list 8 pml4-table-entry-addr)
-                 :r (cpl x86) x86))
-               (addr-range 8 pml4-table-entry-addr))
-              (equal
-               (mv-nth
-                1
-                (las-to-pas
-                 (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r (cpl x86) x86))
-               p-addrs)
-              (disjoint-p (addr-range 8 pml4-table-entry-addr)
-                          (addr-range 8 page-dir-ptr-table-entry-addr))
-              (not (mv-nth 0 (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-
-              (equal (page-present page-dir-ptr-table-entry)
-                     (page-present value))
-              (equal (page-read-write page-dir-ptr-table-entry)
-                     (page-read-write value))
-              (equal (page-user-supervisor page-dir-ptr-table-entry)
-                     (page-user-supervisor value))
-              (equal (page-execute-disable page-dir-ptr-table-entry)
-                     (page-execute-disable value))
-              (equal (page-size page-dir-ptr-table-entry)
-                     (page-size value))
-              ;; 1 G pages
-              (equal (page-size page-dir-ptr-table-entry) 1)
-              (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                     (part-select value :low 13 :high 29))
-              (equal (len bytes) (len p-addrs))
-              (byte-listp bytes)
-              (canonical-address-p lin-addr)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (not (programmer-level-mode x86))
-              (not (page-structure-marking-mode x86))
-              (x86p x86))
-             ;; ia32e-la-to-pa-pml4-table returns the physical address
-             ;; corresponding to "lin-addr" after the PDPTE
-             ;; corresponding to this "lin-addr" has been modified ---
-             ;; the new PDPTE is "value".
-             (and (equal
-                   (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                              lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-                              (write-to-physical-memory p-addrs bytes x86)))
-                   nil)
-                  (equal (mv-nth 1 (ia32e-la-to-pa-pml4-table
-                                    lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-                                    (write-to-physical-memory p-addrs bytes x86)))
-                         (logior (loghead 30 lin-addr)
-                                 (ash (loghead 22 (logtail 30 value)) 30))))))
+  (implies
+   (and
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr base-addr))
+    (equal
+     pml4-table-entry
+     (combine-bytes
+      (mv-nth
+       1
+       (rb
+        (create-canonical-address-list 8 pml4-table-entry-addr)
+        r-w-x x86))))
+    (equal pdpt-base-addr
+           (ash (loghead 40 (logtail 12 pml4-table-entry))
+                12))
+    (equal
+     page-dir-ptr-table-entry-addr
+     (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
+    (equal
+     page-dir-ptr-table-entry
+     (combine-bytes
+      (mv-nth 1
+              (rb (create-canonical-address-list
+                   8 page-dir-ptr-table-entry-addr)
+                  r-w-x x86))))
+    (equal p-addrs
+           (addr-range 8 page-dir-ptr-table-entry-addr))
+    (equal value (combine-bytes bytes))
+    (equal cpl (cpl x86))
+    (equal
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 pml4-table-entry-addr)
+       r-w-x (cpl x86)
+       x86))
+     (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 pml4-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 pml4-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
+    (equal
+     (mv-nth 1
+             (las-to-pas (create-canonical-address-list
+                          8 page-dir-ptr-table-entry-addr)
+                         r-w-x (cpl x86)
+                         x86))
+     p-addrs)
+    (not
+     (mv-nth 0
+             (las-to-pas (create-canonical-address-list
+                          8 page-dir-ptr-table-entry-addr)
+                         r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth 1
+             (las-to-pas (create-canonical-address-list
+                          8 page-dir-ptr-table-entry-addr)
+                         r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list
+       8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not (mv-nth 0
+                 (ia32e-la-to-pa-pml4-table
+                  lin-addr base-addr
+                  wp smep smap ac nxe r-w-x cpl x86)))
+    (equal (page-present page-dir-ptr-table-entry)
+           (page-present value))
+    (equal (page-read-write page-dir-ptr-table-entry)
+           (page-read-write value))
+    (equal (page-user-supervisor page-dir-ptr-table-entry)
+           (page-user-supervisor value))
+    (equal (page-execute-disable page-dir-ptr-table-entry)
+           (page-execute-disable value))
+    (equal (page-size page-dir-ptr-table-entry)
+           (page-size value))
+    (equal (page-size page-dir-ptr-table-entry)
+           1)
+    (equal (part-select page-dir-ptr-table-entry
+                        :low 13
+                        :high 29)
+           (part-select value :low 13 :high 29))
+    (equal (len bytes) (len p-addrs))
+    (byte-listp bytes)
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    (canonical-address-p lin-addr)
+    (physical-address-p base-addr)
+    (equal (loghead 12 base-addr) 0)
+    (x86p x86))
+   (and
+    (equal
+     (mv-nth 0
+             (ia32e-la-to-pa-pml4-table
+              lin-addr
+              base-addr wp smep smap ac nxe r-w-x cpl
+              (write-to-physical-memory p-addrs bytes x86)))
+     nil)
+    (equal
+     (mv-nth 1
+             (ia32e-la-to-pa-pml4-table
+              lin-addr
+              base-addr wp smep smap ac nxe r-w-x cpl
+              (write-to-physical-memory p-addrs bytes x86)))
+     (logior (loghead 30 lin-addr)
+             (ash (loghead 22 (logtail 30 value))
+                  30)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -9814,66 +10061,94 @@
                              force (force))))))
 
 (defthm ia32e-la-to-pa-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-  (b* ((pml4-table-base-addr (pml4-table-base-addr x86))
-       (pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-       (pml4-table-entry
-        (combine-bytes
-         (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
-       (pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
-       (page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
-       (page-dir-ptr-table-entry
-        (combine-bytes
-         (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
-       (p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
-       (value (combine-bytes bytes)))
-    (implies (and
-              ;; PML4E and PDPTE are direct mapped.
-              (equal
-               (mv-nth
-                1
-                (las-to-pas
-                 (create-canonical-address-list 8 pml4-table-entry-addr)
-                 :r (cpl x86) x86))
-               (addr-range 8 pml4-table-entry-addr))
-              (equal
-               (mv-nth
-                1
-                (las-to-pas
-                 (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r (cpl x86) x86))
-               p-addrs)
-              (disjoint-p (addr-range 8 pml4-table-entry-addr)
-                          (addr-range 8 page-dir-ptr-table-entry-addr))
-              (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-              (equal (page-present page-dir-ptr-table-entry)
-                     (page-present value))
-              (equal (page-read-write page-dir-ptr-table-entry)
-                     (page-read-write value))
-              (equal (page-user-supervisor page-dir-ptr-table-entry)
-                     (page-user-supervisor value))
-              (equal (page-execute-disable page-dir-ptr-table-entry)
-                     (page-execute-disable value))
-              (equal (page-size page-dir-ptr-table-entry)
-                     (page-size value))
-              ;; 1 G pages
-              (equal (page-size page-dir-ptr-table-entry) 1)
-              (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-                     (part-select value :low 13 :high 29))
-              (equal (len bytes) (len p-addrs))
-              (byte-listp bytes)
-              (canonical-address-p lin-addr)
-              (not (programmer-level-mode x86))
-              (not (page-structure-marking-mode x86))
-              (x86p x86))
-             ;; ia32e-la-to-pa returns the physical address
-             ;; corresponding to "lin-addr" after the PDPTE
-             ;; corresponding to this "lin-addr" has been modified ---
-             ;; the new PDPTE is "value".
-             (and
-              (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                     nil)
-              (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                     (logior (loghead 30 lin-addr) (ash (loghead 22 (logtail 30 value)) 30))))))
+  (implies
+   (and
+    (equal cpl (cpl x86))
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pml4-table-entry
+           (combine-bytes
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
+    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+    (equal page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
+    (equal page-dir-ptr-table-entry
+           (combine-bytes
+            (mv-nth
+             1
+             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 r-w-x x86))))
+    (equal p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
+    (equal value (combine-bytes bytes))
+    (equal
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x (cpl x86) x86))
+     (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
+    (equal
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x (cpl x86)
+       x86))
+     p-addrs)
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    (equal (page-present page-dir-ptr-table-entry)
+           (page-present value))
+    (equal (page-read-write page-dir-ptr-table-entry)
+           (page-read-write value))
+    (equal (page-user-supervisor page-dir-ptr-table-entry)
+           (page-user-supervisor value))
+    (equal (page-execute-disable page-dir-ptr-table-entry)
+           (page-execute-disable value))
+    (equal (page-size page-dir-ptr-table-entry)
+           (page-size value))
+    (equal (page-size page-dir-ptr-table-entry) 1)
+    (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+           (part-select value :low 13 :high 29))
+    (equal (len bytes) (len p-addrs))
+    (byte-listp bytes)
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
+    (canonical-address-p lin-addr)
+    (x86p x86))
+   ;; ia32e-la-to-pa returns the physical address corresponding to
+   ;; "lin-addr" after the PDPTE corresponding to this "lin-addr" has
+   ;; been modified --- the new PDPTE is "value".
+   (and
+    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
+           nil)
+    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
+           (logior (loghead 30 lin-addr) (ash (loghead 22 (logtail 30 value)) 30)))))
   :hints (("Goal"
            :use ((:instance
                   ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
@@ -9901,36 +10176,70 @@
 (defthm ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
+    (equal cpl (cpl x86))
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
     (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
-    ;; PML4E and PDPTE are direct mapped.
+            (mv-nth
+             1
+             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
-      (las-to-pas
-       (create-canonical-address-list 8 pml4-table-entry-addr)
-       :r (cpl x86) x86))
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x (cpl x86) x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+
     (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
            (addr-range 8 page-dir-ptr-table-entry-addr))
     (disjoint-p
-     (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-     (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr)))
+     (mv-nth 1
+             (las-to-pas
+              (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+              r-w-x cpl x86))
+     (all-translation-governing-addresses (strip-cars addr-lst) x86))
+
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
     (equal (page-present page-dir-ptr-table-entry)
            (page-present (combine-bytes (strip-cdrs addr-lst))))
@@ -9946,37 +10255,30 @@
     (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
            (part-select (combine-bytes (strip-cdrs addr-lst)) :low 13 :high 29))
     (addr-byte-alistp addr-lst)
-    (equal (len addr-lst) 8)
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
-    (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
     (x86p x86))
-   ;; ia32e-la-to-pa returns the physical address
-   ;; corresponding to "lin-addr" after the PDPTE
-   ;; corresponding to this "lin-addr" has been modified ---
-   ;; the new PDPTE is "value".
    (and
     (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
            nil)
     (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
-           (logior (loghead 30 lin-addr) (ash (loghead
-                                               22
-                                               (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30)))))
-  :hints (("Goal"
-           :use ((:instance ia32e-la-to-pa-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-                            (bytes (strip-cdrs addr-lst))))
-           :do-not-induct t
-           :in-theory (e/d* (disjoint-p
-                             member-p
-                             wb)
-                            (ia32e-la-to-pa-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-                             member-p-strip-cars-of-remove-duplicate-keys
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
-                             bitops::logand-with-negated-bitmask
-                             (:meta acl2::mv-nth-cons-meta)
-                             not
-                             force (force))))))
+           (logior
+            (loghead 30 lin-addr)
+            (ash (loghead 22 (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30)))))
+  :hints
+  (("Goal"
+    :do-not-induct t
+    :in-theory (e/d*
+                (disjoint-p member-p wb)
+                (member-p-strip-cars-of-remove-duplicate-keys
+                 page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                 page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
+                 bitops::logand-with-negated-bitmask
+                 (:meta acl2::mv-nth-cons-meta)
+                 not force (force))))))
 
 (def-gl-export same-pml4-table-entry-addr-for-n-+-lin-addrs
   :hyp (and (physical-address-p pml4-table-base-addr)
@@ -10029,34 +10331,62 @@
 (defthm mv-nth-0-ia32e-la-to-pa-page-dir-ptr-table-for-same-1G-page
   (implies
    (and
-    (equal page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
+    (equal cpl (cpl x86))
+    (equal p-addrs
+           (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
     (equal page-dir-ptr-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                        r-w-x x86))))
     ;; PDPTE is direct mapped.
     (equal
      (mv-nth
       1
-      (las-to-pas
-       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
-     (addr-range 8 page-dir-ptr-table-entry-addr))
+      (las-to-pas (create-canonical-address-list
+                   8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                  r-w-x cpl x86))
+     p-addrs)
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list
+                   8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list
+                   8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list
+       8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
+      x86))
+    (not
+     (mv-nth
+      0
+      (ia32e-la-to-pa-page-dir-ptr-table
+       lin-addr base-addr u/s-acc r/w-acc x/d-acc
+       wp smep smap ac nxe r-w-x cpl x86)))
+
     (equal (page-size page-dir-ptr-table-entry) 1)
-    (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                    lin-addr pdpt-base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86)))
+
+    ;; !!!
+    (canonical-address-p
+     (+ 7 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+    ;; !!!
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
     ;; (equal (loghead 30 lin-addr) 0)
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
-    (physical-address-p pdpt-base-addr)
-    (equal (loghead 12 pdpt-base-addr) 0)
-    (not (page-structure-marking-mode x86))
+    (physical-address-p base-addr)
+    (equal (loghead 12 base-addr) 0)
     (x86p x86))
    (equal (mv-nth 0
                   (ia32e-la-to-pa-page-dir-ptr-table
-                   (+ n lin-addr) pdpt-base-addr u/s-acc r/w-acc x/d-acc
+                   (+ n lin-addr) base-addr u/s-acc r/w-acc x/d-acc
                    wp smep smap ac nxe r-w-x cpl x86))
           nil))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table)
@@ -10069,34 +10399,70 @@
 (defthm mv-nth-0-ia32e-la-to-pa-pml4-table-for-same-1G-page
   (implies
    (and
+    (equal cpl (cpl x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
+            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) r-w-x x86))))
     (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
+            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) r-w-x x86))))
     ;; PML4E and PDPTE are direct mapped.
     (equal
      (mv-nth
       1
-      (las-to-pas
-       (create-canonical-address-list 8 pml4-table-entry-addr)
-       :r (cpl x86) x86))
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x (cpl x86) x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86) x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                    lin-addr pml4-table-base-addr
-                    wp smep smap ac nxe r-w-x cpl x86)))
+                    lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86)))
+
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
+
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
     ;; (equal (loghead 30 lin-addr) 0)
@@ -10104,12 +10470,10 @@
     (unsigned-byte-p 30 n)
     (physical-address-p pml4-table-base-addr)
     (equal (loghead 12 pml4-table-base-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 0
-                  (ia32e-la-to-pa-pml4-table
-                   (+ n lin-addr) pml4-table-base-addr
-                   wp smep smap ac nxe r-w-x cpl x86))
+                  (ia32e-la-to-pa-pml4-table (+ n lin-addr) pml4-table-base-addr
+                                             wp smep smap ac nxe r-w-x cpl x86))
           nil))
   :hints (("Goal"
            :in-theory (e/d* (ia32e-la-to-pa-pml4-table)
@@ -10122,35 +10486,79 @@
 (defthm mv-nth-0-ia32e-la-to-pa-for-same-1G-page
   (implies
    (and
-    (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal cpl (cpl x86))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
     (equal pml4-table-entry
            (combine-bytes
             (mv-nth 1
                     (rb (create-canonical-address-list 8 pml4-table-entry-addr)
-                        :r x86))))
-    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+                        r-w-x x86))))
+    (equal pdpt-base-addr
+           (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
+            (mv-nth
+             1
+             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 r-w-x x86))))
     (equal
-     (mv-nth 1 (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr) :r (cpl x86) x86))
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
-     (mv-nth 1
-             (las-to-pas
-              (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-              :r (cpl x86) x86))
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 0 (ia32e-la-to-pa (+ n lin-addr) r-w-x cpl x86))
           nil))
@@ -10207,12 +10615,16 @@
 (defthmd open-mv-nth-0-las-to-pas-for-same-1G-page-general
   (implies
    (and
-    (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal cpl (cpl x86))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
-    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
+    (equal pdpt-base-addr
+           (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
@@ -10220,28 +10632,63 @@
             (mv-nth
              1
              (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r x86))))
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
-                  :r (cpl x86) x86))
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
     (natp m)
     (<= m *2^30*)
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 0 (las-to-pas
                      (create-canonical-address-list-alt iteration m lin-addr)
@@ -10265,12 +10712,16 @@
 (defthm open-mv-nth-0-las-to-pas-for-same-1G-page
   (implies
    (and
-    (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal cpl (cpl x86))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
-    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
+    (equal pdpt-base-addr
+           (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
@@ -10278,25 +10729,60 @@
             (mv-nth
              1
              (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r x86))))
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
-                  :r (cpl x86) x86))
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 0 (las-to-pas (create-canonical-address-list *2^30* lin-addr)
                                 r-w-x cpl x86))
@@ -10307,7 +10793,6 @@
                             (m *2^30*)))
            :in-theory (e/d* (create-canonical-address-list-alt-is-create-canonical-address-list)
                             (las-to-pas
-                             ;; open-mv-nth-0-las-to-pas
                              mv-nth-0-ia32e-la-to-pa-for-same-1G-page
                              not
                              pml4-table-base-addr
@@ -10319,31 +10804,53 @@
 (defthm mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table-for-same-1G-page
   (implies
    (and
+    (equal cpl (cpl x86))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
-    ;; PDPTE is direct mapped.
+            (mv-nth
+             1
+             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
     (equal (page-size page-dir-ptr-table-entry) 1)
-    (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                    lin-addr pdpt-base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86)))
+    (not (mv-nth 0
+                 (ia32e-la-to-pa-page-dir-ptr-table
+                  lin-addr
+                  pdpt-base-addr u/s-acc r/w-acc x/d-acc
+                  wp smep smap ac nxe r-w-x cpl x86)))
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
-    ;; (equal (loghead 30 lin-addr) 0)
+    ;; !!
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
     (physical-address-p pdpt-base-addr)
     (equal (loghead 12 pdpt-base-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 1
                   (ia32e-la-to-pa-page-dir-ptr-table
@@ -10367,42 +10874,80 @@
 (defthm mv-nth-1-ia32e-la-to-pa-pml4-table-for-same-1G-page
   (implies
    (and
+    (equal cpl (cpl x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
     (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
-    (equal page-dir-ptr-table-entry-addr (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
+    (equal page-dir-ptr-table-entry-addr
+           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
-    ;; PML4E and PDPTE are direct mapped.
+            (mv-nth
+             1
+             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
-      (las-to-pas
-       (create-canonical-address-list 8 pml4-table-entry-addr)
-       :r (cpl x86) x86))
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
     (equal (page-size page-dir-ptr-table-entry) 1)
-    (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                    lin-addr pml4-table-base-addr
-                    wp smep smap ac nxe r-w-x cpl x86)))
+    (not
+     (mv-nth 0
+             (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr
+                                        wp smep smap ac nxe r-w-x cpl x86)))
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
-    ;; (equal (loghead 30 lin-addr) 0)
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
     (physical-address-p pml4-table-base-addr)
     (equal (loghead 12 pml4-table-base-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 1
                   (ia32e-la-to-pa-pml4-table
@@ -10421,42 +10966,84 @@
                             (commutativity-of-+
                              not
                              pml4-table-entry-addr-to-c-program-optimized-form
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              pml4-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask)))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-for-same-1G-page
   (implies
    (and
+    (equal cpl (cpl x86))
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pml4-table-entry
            (combine-bytes
             (mv-nth 1
                     (rb (create-canonical-address-list 8 pml4-table-entry-addr)
-                        :r x86))))
-    (equal pdpt-base-addr
-           (ash (loghead 40 (logtail 12 pml4-table-entry))
-                12))
+                        r-w-x x86))))
+    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
-           (combine-bytes (mv-nth 1 (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr) :r x86))))
+           (combine-bytes
+            (mv-nth
+             1
+             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+                 r-w-x x86))))
     (equal
-     (mv-nth 1 (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr) :r (cpl x86) x86))
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
-     (mv-nth 1
-             (las-to-pas
-              (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-              :r (cpl x86) x86))
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 1 (ia32e-la-to-pa (+ n lin-addr) r-w-x cpl x86))
           (+ n
@@ -10472,6 +11059,7 @@
                             (commutativity-of-+
                              not
                              pml4-table-entry-addr-to-c-program-optimized-form
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              pml4-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask)))))
 
@@ -10489,12 +11077,16 @@
 (defthmd open-mv-nth-1-las-to-pas-for-same-1G-page-general
   (implies
    (and
-    (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal cpl (cpl x86))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
-    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
+    (equal pdpt-base-addr
+           (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
@@ -10502,29 +11094,64 @@
             (mv-nth
              1
              (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r x86))))
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
-                  :r (cpl x86) x86))
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
     (canonical-address-p (+ -1 lin-addr m))
     (natp m)
     (<= m *2^30*)
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 1 (las-to-pas
                      (create-canonical-address-list-alt iteration m lin-addr)
@@ -10546,7 +11173,6 @@
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
                              open-mv-nth-0-las-to-pas-for-same-1G-page-general
-                             ;; open-mv-nth-1-las-to-pas
                              mv-nth-1-ia32e-la-to-pa-for-same-1G-page)
                             (not
                              pml4-table-base-addr
@@ -10564,12 +11190,16 @@
 (defthm open-mv-nth-1-las-to-pas-for-same-1G-page
   (implies
    (and
-    (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal cpl (cpl x86))
+    (equal pml4-table-entry-addr
+           (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
     (equal pml4-table-entry
            (combine-bytes
-            (mv-nth 1 (rb (create-canonical-address-list 8 pml4-table-entry-addr) :r x86))))
-    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
+            (mv-nth 1
+                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
+                        r-w-x x86))))
+    (equal pdpt-base-addr
+           (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
@@ -10577,25 +11207,60 @@
             (mv-nth
              1
              (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r x86))))
+                 r-w-x x86))))
     (equal
      (mv-nth
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
-                  :r (cpl x86) x86))
+                  r-w-x (cpl x86)
+                  x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86) x86))
+       r-w-x (cpl x86)
+       x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    ;; !!
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    (equal (mv-nth 1 (las-to-pas
                      (create-canonical-address-list *2^30* lin-addr)
@@ -10626,19 +11291,33 @@
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl)))))
 
+(i-am-here)
+
+(acl2::why ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr)
+
+(defthm car-create-canonical-address-list-alt
+  (implies (and (canonical-address-p (+ addr iteration))
+                (natp iteration)
+                (< iteration count)
+                (posp count))
+           (equal (car (create-canonical-address-list-alt iteration count addr))
+                  (+ iteration addr)))
+  :hints (("Goal" :in-theory (e/d* (create-canonical-address-list-alt-is-create-canonical-address-list)
+                                   ()))))
+
 (defthmd las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
+  ;; Key Lemma!
   (implies
    (and
+    (equal cpl (cpl x86))
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pml4-table-entry
            (combine-bytes
             (mv-nth 1
                     (rb (create-canonical-address-list 8 pml4-table-entry-addr)
-                        :r x86))))
-    (equal pdpt-base-addr
-           (ash (loghead 40 (logtail 12 pml4-table-entry))
-                12))
+                        r-w-x x86))))
+    (equal pdpt-base-addr (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
@@ -10646,28 +11325,59 @@
             (mv-nth
              1
              (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r x86))))
+                 r-w-x x86))))
+
     (equal
      (mv-nth
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
-                  :r (cpl x86)
+                  r-w-x (cpl x86)
                   x86))
      (addr-range 8 pml4-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
+                  r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 pml4-table-entry-addr)
+      x86))
     (equal
      (mv-nth
       1
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86)
+       r-w-x (cpl x86)
        x86))
      (addr-range 8 page-dir-ptr-table-entry-addr))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86)))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+       r-w-x cpl x86))
+     (all-translation-governing-addresses
+      (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
+      x86))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+
     (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
            (addr-range 8 page-dir-ptr-table-entry-addr))
-    (disjoint-p
-     (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-     (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr)))
+
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+
     (equal (page-present page-dir-ptr-table-entry)
            (page-present (combine-bytes (strip-cdrs addr-lst))))
     (equal (page-read-write page-dir-ptr-table-entry)
@@ -10683,6 +11393,12 @@
            (part-select (combine-bytes (strip-cdrs addr-lst)) :low 13 :high 29))
     (addr-byte-alistp addr-lst)
     (equal (len addr-lst) 8)
+    ;; !!
+    (canonical-address-p pml4-table-entry-addr)
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    ;; !!
     (canonical-address-p lin-addr)
     (canonical-address-p (+ -1 lin-addr m))
     (natp m)
@@ -10690,7 +11406,6 @@
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
     (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
     (x86p x86))
    ;; las-to-pas returns the physical addresses corresponding to
    ;; linear addresses after the PDPTE corresponding to these linear
@@ -10721,8 +11436,7 @@
                         open-mv-nth-0-las-to-pas-for-same-1G-page-general
                         mv-nth-0-ia32e-la-to-pa-for-same-1G-page
                         mv-nth-1-ia32e-la-to-pa-for-same-1G-page)
-                       (mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode
-                        member-p-strip-cars-of-remove-duplicate-keys
+                       (member-p-strip-cars-of-remove-duplicate-keys
                         page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                         page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
                         bitops::logand-with-negated-bitmask
@@ -10731,65 +11445,7 @@
 
 (defthm las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
-   (and
-    (equal pml4-table-base-addr (pml4-table-base-addr x86))
-    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-    (equal pml4-table-entry
-           (combine-bytes
-            (mv-nth 1
-                    (rb (create-canonical-address-list 8 pml4-table-entry-addr)
-                        :r x86))))
-    (equal pdpt-base-addr
-           (ash (loghead 40 (logtail 12 pml4-table-entry)) 12))
-    (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
-    (equal page-dir-ptr-table-entry
-           (combine-bytes
-            (mv-nth
-             1
-             (rb (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-                 :r x86))))
-    (equal
-     (mv-nth
-      1
-      (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
-                  :r (cpl x86)
-                  x86))
-     (addr-range 8 pml4-table-entry-addr))
-    (equal
-     (mv-nth
-      1
-      (las-to-pas
-       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
-       :r (cpl x86)
-       x86))
-     (addr-range 8 page-dir-ptr-table-entry-addr))
-    (equal (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-    (disjoint-p
-     (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-     (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr)))
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-    (equal (page-present page-dir-ptr-table-entry)
-           (page-present (combine-bytes (strip-cdrs addr-lst))))
-    (equal (page-read-write page-dir-ptr-table-entry)
-           (page-read-write (combine-bytes (strip-cdrs addr-lst))))
-    (equal (page-user-supervisor page-dir-ptr-table-entry)
-           (page-user-supervisor (combine-bytes (strip-cdrs addr-lst))))
-    (equal (page-execute-disable page-dir-ptr-table-entry)
-           (page-execute-disable (combine-bytes (strip-cdrs addr-lst))))
-    (equal (page-size page-dir-ptr-table-entry)
-           (page-size (combine-bytes (strip-cdrs addr-lst))))
-    (equal (page-size page-dir-ptr-table-entry) 1)
-    (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-           (part-select (combine-bytes (strip-cdrs addr-lst)) :low 13 :high 29))
-    (addr-byte-alistp addr-lst)
-    (equal (len addr-lst) 8)
-    (canonical-address-p lin-addr)
-    (equal (loghead 30 lin-addr) 0)
-    (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
-    (x86p x86))
+   ...
    ;; las-to-pas returns the physical addresses corresponding to
    ;; linear addresses after the PDPTE corresponding to these linear
    ;; addresses have been modified --- the new PDPTE is (combine-bytes
@@ -10880,7 +11536,7 @@
       ;; 1G-aligned linear address
       (equal (loghead 30 lin-addr) 0)
       (not (programmer-level-mode x86))
-      (not (page-structure-marking-mode x86))
+      ;; (not (page-structure-marking-mode x86))
       (x86p x86))
      (equal (read-from-physical-memory
              (addr-range *2^30* (ash (loghead 22 (logtail 30 value)) 30))
@@ -10972,7 +11628,7 @@
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
     (not (programmer-level-mode x86))
-    (not (page-structure-marking-mode x86))
+    ;; (not (page-structure-marking-mode x86))
     (x86p x86))
    (and (equal (mv-nth 0 (rb (create-canonical-address-list *2^30* lin-addr)
                              r-w-x (mv-nth 1 (wb addr-lst x86)))) nil)
@@ -11022,7 +11678,17 @@
 
 (defthm rb-of-1G-in-terms-of-read-from-physical-memory
   (implies (and (not (programmer-level-mode x86))
-                (not (page-structure-marking-mode x86)))
+                ;; !! TODO: Include the following hyp in the final
+                ;; !! pre-conditions.
+                (disjoint-p
+                 (mv-nth
+                  1
+                  (las-to-pas
+                   (create-canonical-address-list *2^30* (xr :rgf *rdi* x86))
+                   :r (cpl x86) x86))
+                 (all-translation-governing-addresses
+                  (create-canonical-address-list *2^30* (xr :rgf *rdi* x86))
+                  x86)))
            (equal
             (mv-nth 1 (rb (create-canonical-address-list *2^30* (xr :rgf *rdi* x86)) :r x86))
             (read-from-physical-memory
@@ -11033,7 +11699,7 @@
   :hints (("Goal"
            :do-not '(preprocess)
            :do-not-induct t
-           :in-theory (e/d* (rb-wb-equal-in-system-level-non-marking-mode
+           :in-theory (e/d* (rb-wb-equal-in-system-level-mode
                              pos member-p subset-p
                              page-size
                              rb)
@@ -11290,4 +11956,4 @@
                              unsigned-byte-p
                              force (force))))))
 
-||#
+;; ======================================================================
