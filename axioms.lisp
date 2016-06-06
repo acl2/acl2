@@ -1420,6 +1420,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            integer-abs
            integer-range-p
            len
+           logicp ; forerly macro logicalp; preserving efficiency
            member-equal
            natp
            nfix

@@ -11292,7 +11292,7 @@
   (declare (xargs :guard (and (plist-worldp wrld)
                               (symbolp fn)
                               (function-symbolp fn wrld)
-                              (logicalp fn wrld))))
+                              (logicp fn wrld))))
   (let* ((names (getpropc fn 'recursivep nil wrld))
          (just (and names ; optimization
                     (getpropc fn 'justification nil wrld))))
@@ -12036,7 +12036,7 @@
 ; verified.  Of course, we only trust that the result is a theorem when the
 ; function is already guard-verified.
 
-                              (logicalp fn wrld))))
+                              (logicp fn wrld))))
   (let ((names (or (getpropc fn 'recursivep nil wrld)
                    (list fn))))
     (mv-let (cl-set ttree)
@@ -12224,7 +12224,7 @@
       (let ((fn (cadr lmi)))
         (cond ((not (and (symbolp fn)
                          (function-symbolp fn wrld)
-                         (logicalp fn (w state))))
+                         (logicp fn (w state))))
                (er@par soft ctx str lmi
                  (msg "~x0 is not a :logic-mode function symbol in the ~
                        current ACL2 logical world"
@@ -12779,7 +12779,7 @@
 (defun collect-non-logic-mode (alist wrld)
   (cond ((null alist) nil)
         ((and (function-symbolp (caar alist) wrld)
-              (logicalp (caar alist) wrld))
+              (logicp (caar alist) wrld))
          (collect-non-logic-mode (cdr alist) wrld))
         (t (cons (caar alist)
                  (collect-non-logic-mode (cdr alist) wrld)))))

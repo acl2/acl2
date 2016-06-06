@@ -2366,6 +2366,154 @@ created when we process their packages, etc.</p>"
    (solos (equal (consp solos) (if solos t nil))
           :name consp-of-vl-lucid-collect-solo-occs)))
 
+
+
+
+
+(define ints-from ((a integerp)
+                   (b integerp))
+  :guard (<= a b)
+  :measure (nfix (- (ifix b) (ifix a)))
+  :parents (utilities)
+  :short "@(call ints-from) enumerates the integers from @('[a, b)')."
+
+  (let ((a (lifix a))
+        (b (lifix b)))
+    (if (mbe :logic (zp (- b a))
+             :exec (= a b))
+        nil
+      (cons a (ints-from (+ 1 a) b))))
+
+  ///
+
+  (defthm true-listp-of-ints-from
+    (true-listp (ints-from a b))
+    :rule-classes :type-prescription)
+
+  (defthm integer-listp-of-ints-from
+    (integer-listp (ints-from a b)))
+
+  (defthm consp-of-ints-from
+    (equal (consp (ints-from a b))
+           (< (ifix a) (ifix b))))
+
+  (defthm ints-from-self
+    (equal (ints-from a a)
+           nil))
+
+  (defthm member-equal-ints-from
+    (iff (member-equal x (ints-from a b))
+         (and (integerp x)
+              (<= (ifix a) x)
+              (< x (ifix b)))))
+
+  ;; (defthm all-at-least-of-ints-from
+  ;;     (all-at-least (ints-from a b) a)
+  ;;     :hints(("Goal"
+  ;;             :use ((:functional-instance all-by-membership
+  ;;                                         (all-hyp  (lambda ()  t))
+  ;;                                         (all-list (lambda ()  (ints-from a b)))
+  ;;                                         (all      (lambda (x) (all-at-least x a)))
+  ;;                                         (pred     (lambda (x) (<= a x))))))))
+
+  (defthm no-duplicatesp-equal-of-ints-from
+    (no-duplicatesp-equal (ints-from a b)))
+
+
+  ;; (defthm empty-intersection-with-ints-from-when-too-small
+  ;;     (implies (and (all-less-than x max)
+  ;;                   (<= max a))
+  ;;              (not (intersectp-equal x (ints-from a b))))
+  ;;     :hints(("Goal"
+  ;;             :in-theory (disable empty-intersection-by-bounds)
+  ;;             :use ((:instance empty-intersection-by-bounds
+  ;;                              (x x)
+  ;;                              (x-max max)
+  ;;                              (y (ints-from a b))
+  ;;                              (y-min a))))))
+
+  ;; (defthm all-less-than-of-ints-from
+  ;;   (all-less-than (ints-from a b) b))
+
+  (local (include-book "centaur/misc/arith-equivs" :dir :system))
+
+  (deffixequiv ints-from)
+
+  (encapsulate
+   ()
+   (local (defun ind (k a b)
+            (declare (xargs :measure (nfix (- (ifix b) (ifix a)))))
+            (if (zp (- (ifix b) (ifix a)))
+                (list k a b)
+              (ind (+ -1 k) (+ 1 (ifix a)) b))))
+
+   (defthm take-of-ints-from
+     (equal (take k (ints-from a b))
+            (if (< (ifix k) (nfix (- (ifix b) (ifix a))))
+                (ints-from a (+ (ifix a) (ifix k)))
+              (append (ints-from a b)
+                      (replicate (- (ifix k) (nfix (- (ifix b) (ifix a)))) nil))))
+     :hints(("Goal"
+             :induct (ind k a b)
+             :in-theory (enable acl2::take-redefinition ints-from repeat))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable nfix repeat))))))
+
+
+  (encapsulate
+   ()
+   (local (defun ind (k a b)
+            (declare (xargs :measure (nfix (- (ifix b) (ifix a)))))
+            (if (zp (- (ifix b) (ifix a)))
+                (list k a b)
+              (ind (+ -1 k) (+ 1 (ifix a)) b))))
+
+   (defthm nthcdr-of-ints-from
+     (equal (nthcdr k (ints-from a b))
+            (if (< (nfix k) (nfix (- (ifix b) (ifix a))))
+                (ints-from (+ (ifix a) (nfix k)) b)
+              nil))
+     :hints(("Goal"
+             :induct (ind k a b)
+             :in-theory (enable ints-from))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable nfix))))))
+
+  (defthm len-of-ints-from
+    (equal (len (ints-from a b))
+           (nfix (- (ifix b) (ifix a))))
+    :hints(("Goal" :in-theory (enable ints-from))))
+
+  (defthm car-of-ints-from
+    (equal (car (ints-from a b))
+           (if (< (ifix a) (ifix b))
+               (ifix a)
+             nil))
+    :hints(("Goal" :in-theory (enable ints-from))))
+
+  (encapsulate
+   ()
+   (local (defun ind (n a b)
+            (declare (xargs :measure (nfix (- (ifix b) (ifix a)))))
+            (if (zp (- (ifix b) (ifix a)))
+                (list n a b)
+              (ind (+ -1 n) (+ 1 (ifix a)) b))))
+
+   (defthm nth-of-ints-from
+     (equal (nth n (ints-from a b))
+            (if (< (nfix n) (nfix (- (ifix b) (ifix a))))
+                (+ (ifix a) (nfix n))
+              nil))
+     :hints(("Goal"
+             :induct (ind n a b)
+             :do-not '(generalize fertilize)
+             :in-theory (enable nth ints-from)))))
+
+  (defthm setp-of-ints-from
+    (setp (ints-from a b))
+    :hints(("Goal" :in-theory (enable set::primitive-rules
+                                      << lexorder alphorder)))))
+
 ;; Performance BOZO - we would probably be better off using something like
 ;; sparse bitsets here, but that would require developing something like
 ;; nats-from that produces a sparse bitset.  That's fine but might take an hour
@@ -2373,7 +2521,7 @@ created when we process their packages, etc.</p>"
 
 (define vl-lucid-range->bits ((x vl-range-p))
   :guard (vl-range-resolved-p x)
-  :returns (bits (and (nat-listp bits)
+  :returns (bits (and (integer-listp bits)
                       (setp bits)))
   (b* (((vl-range x))
        (msb (vl-resolved->val x.msb))
@@ -2381,7 +2529,7 @@ created when we process their packages, etc.</p>"
        (min (min msb lsb))
        (max (max msb lsb)))
     ;; We add one to max because nats-from enumerates [a, b)
-    (nats-from min (+ 1 max))))
+    (ints-from min (+ 1 max))))
 
 (deflist vl-lucid-all-slices-p (x)
   :guard (vl-lucidocclist-p x)
@@ -2397,7 +2545,7 @@ created when we process their packages, etc.</p>"
 (define vl-lucid-resolved-slice->bits ((x vl-lucidocc-p))
   :guard (and (equal (vl-lucidocc-kind x) :slice)
               (vl-lucid-resolved-slice-p x))
-  :returns (indices (and (nat-listp indices)
+  :returns (indices (and (integer-listp indices)
                          (setp indices)))
   :prepwork ((local (in-theory (enable vl-lucid-resolved-slice-p))))
   (b* (((vl-lucidocc-slice x))
@@ -2406,7 +2554,7 @@ created when we process their packages, etc.</p>"
        (min (min msb lsb))
        (max (max msb lsb)))
     ;; We add one to max because nats-from enumerates [a, b)
-    (nats-from min (+ 1 max))))
+    (ints-from min (+ 1 max))))
 
 (deflist vl-lucid-all-slices-resolved-p (x)
   :guard (and (vl-lucidocclist-p x)
@@ -2416,7 +2564,7 @@ created when we process their packages, etc.</p>"
 (define vl-lucid-resolved-slices->bits ((x vl-lucidocclist-p))
   :guard (and (vl-lucid-all-slices-p x)
               (vl-lucid-all-slices-resolved-p x))
-  :returns (indices (and (nat-listp indices)
+  :returns (indices (and (integer-listp indices)
                          (setp indices)))
   (if (atom x)
       nil
@@ -2426,7 +2574,7 @@ created when we process their packages, etc.</p>"
 (define vl-lucid-valid-bits-for-datatype ((x  vl-datatype-p)
                                           (ss vl-scopestack-p))
   :returns (mv (simple-p booleanp :rule-classes :type-prescription)
-               (bits     (and (nat-listp bits)
+               (bits     (and (integer-listp bits)
                               (setp bits))))
   (b* (((mv err x) (vl-datatype-usertype-resolve x ss
                                                  :rec-limit 1000
@@ -2493,7 +2641,7 @@ created when we process their packages, etc.</p>"
                                       (ss   vl-scopestack-p))
   :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (mv (simple-p booleanp :rule-classes :type-prescription)
-               (bits     (and (nat-listp bits)
+               (bits     (and (integer-listp bits)
                               (setp bits))))
   (b* ((datatype-for-indexing
         (b* (((when (eq (tag item) :vl-vardecl))
@@ -2524,7 +2672,7 @@ created when we process their packages, etc.</p>"
                     (vl-print (car x))
                     (vl-print "]")))
         (x
-         (vl-print-nat x))
+         (vl-print x))
         (t
          (vl-print "NIL"))))
 
@@ -2539,7 +2687,7 @@ created when we process their packages, etc.</p>"
                  ps)
                (vl-pp-merged-index-list (cdr x)))))
 
-(define vl-lucid-pp-bits ((x (and (nat-listp x) (setp x))) &key (ps 'ps))
+(define vl-lucid-pp-bits ((x (and (integer-listp x) (setp x))) &key (ps 'ps))
   (b* (;; X are indices from low to high.
        ;; They need to be in that order for merging to work.  So merge them
        ;; in low to high order.
@@ -2550,11 +2698,12 @@ created when we process their packages, etc.</p>"
     (vl-pp-merged-index-list merged))
   :prepwork
   ((local (defthm l0
-            (implies (nat-listp x)
-                     (vl-maybe-nat-listp x))
-            :hints(("Goal" :induct (len x)))))))
+            (implies (integer-listp x)
+                     (vl-maybe-integer-listp x))
+            :hints(("Goal" :induct (len x))))))
+  )
 
-(define vl-lucid-summarize-bits ((x (and (nat-listp x)
+(define vl-lucid-summarize-bits ((x (and (integer-listp x)
                                          (setp x))))
   :returns (summary stringp :rule-classes :type-prescription)
   (with-local-ps (vl-lucid-pp-bits x))
@@ -2871,7 +3020,7 @@ whose arguments are not sensibly resolved.</p>"
 (define vl-lucid-slices-append-bits ((x vl-lucidocclist-p))
   :guard (and (vl-lucid-all-slices-p x)
               (vl-lucid-all-slices-resolved-p x))
-  :returns (bits nat-listp)
+  :returns (bits integer-listp)
   (if (atom x)
       nil
     (append (vl-lucid-resolved-slice->bits (car x))
@@ -2884,7 +3033,7 @@ whose arguments are not sensibly resolved.</p>"
   ((badbits  setp              "The set of multiply driven bits.")
    (occs     vl-lucidocclist-p "Occs which may or may not drive these bits.")
    &key (ps 'ps))
-  :guard (and (nat-listp badbits)
+  :guard (and (integer-listp badbits)
               (vl-lucid-all-slices-p occs)
               (vl-lucid-all-slices-resolved-p occs))
   (b* (((when (atom occs))

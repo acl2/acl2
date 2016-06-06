@@ -2255,6 +2255,11 @@ how VL module instances are translated.</p>"
         (mv (warn :type :vl-gatedelay->svex-fail
                   :msg "Complex gatedelay ~x0"
                   :args (list x))
+            nil))
+       ((when (< val 0))
+        (mv (warn :type :vl-gatedelay->svex-fail
+                  :msg "Negative gatedelay ~x0"
+                  :args (list x))
             nil)))
     (mv nil val)))
 

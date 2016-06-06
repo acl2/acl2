@@ -792,7 +792,8 @@ displays.  The module browser's web pages are responsible for defining the
        ;; See vl-extend-atts-with-linestart.  The attribute should say how far
        ;; to indent to.
        (indent (if (and (vl-expr-p (cdr look))
-                        (vl-expr-resolved-p (cdr look)))
+                        (vl-expr-resolved-p (cdr look))
+                        (<= 0 (vl-resolved->val (cdr look))))
                    (vl-resolved->val (cdr look))
                  0))
        (indent (max indent (vl-ps->autowrap-ind))))
@@ -1440,7 +1441,7 @@ displays.  The module browser's web pages are responsible for defining the
                                       (equal (vl-resolved->val msb)
                                              (vl-resolved->val lsb))))
                            (vl-ps-seq (vl-print-str "[")
-                                      (vl-print-nat (vl-resolved->val msb))
+                                      (vl-print (vl-resolved->val msb))
                                       (vl-print-str "]"))))
                        ;; Otherwise just print a normal range
                        (vl-pp-range x.range))
@@ -1776,7 +1777,8 @@ expression into a string."
     (cond
      ((and (hide (equal x.rise x.fall))
            (hide (equal x.fall x.high))
-           (vl-expr-resolved-p x.rise))
+           (vl-expr-resolved-p x.rise)
+           (<= 0 (vl-resolved->val x.rise)))
       ;; Almost always the delays should just be #3, etc.
       (vl-ps-seq
        (vl-print "#")

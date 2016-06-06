@@ -446,10 +446,12 @@ selects.</p>"
 
 (define vl-resolved->val ((x vl-expr-p))
   :guard (vl-expr-resolved-p x)
-  :returns (val natp :rule-classes :type-prescription)
+  :returns (val integerp :rule-classes :type-prescription)
   :short "Get the value from a resolved expression."
-  :long "<p>Guaranteed to return a natural number.</p>"
-  (vl-constint->value (vl-literal->val x))
+  (b* (((vl-constint x) (vl-literal->val x)))
+    (if (eq x.origsign :vl-signed)
+        (acl2::logext x.origwidth x.value)
+      x.value))
   :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p))))
 
 (deflist vl-exprlist-resolved-p (x)
@@ -458,7 +460,7 @@ selects.</p>"
 
 (defprojection vl-exprlist-resolved->vals ((x vl-exprlist-p))
   :guard (vl-exprlist-resolved-p x)
-  :returns (vals nat-listp)
+  :returns (vals integer-listp)
   (vl-resolved->val x))
 
 
@@ -1971,13 +1973,13 @@ throughout the expression, with repetition.  The resulting list may contain any
 
 
 
-(define vl-make-index ((n natp))
+(define vl-make-index ((n integerp))
   :short "Safely create a constant integer atom whose value is n."
   :long "<p>The expression we create doesn't have a type, because it would
 depend on the context.  In many cases it might suffice to use an integer type;
 in this case see @(see vl-make-integer).</p>"
   :returns (index vl-expr-p)
-  (let* ((value (lnfix n))
+  (let* ((value (lifix n))
          (width (+ 1 (integer-length value))))
     (if (<= width 31)
         ;; Prefer to make indices that look like plain decimal numbers, I
@@ -1988,12 +1990,12 @@ in this case see @(see vl-make-integer).</p>"
           :val (make-vl-constint :origwidth 32
                                  :origsign :vl-signed
                                  :wasunsized t
-                                 :value value)))
+                                 :value (acl2::loghead 32 value))))
       (hons-copy
        (make-vl-literal
         :val (make-vl-constint :origwidth width
                                :origsign :vl-signed
-                               :value value)))))
+                               :value (acl2::loghead width value))))))
   ///
   (defthm vl-expr-kind-of-vl-make-index
     (eq (vl-expr-kind (vl-make-index n)) :vl-literal))
@@ -2002,15 +2004,23 @@ in this case see @(see vl-make-integer).</p>"
     (vl-expr-resolved-p (vl-make-index n))
     :hints(("Goal" :in-theory (enable vl-expr-resolved-p))))
 
+  (local (defthm logext-of-greater-than-integer-length
+           (implies (and (posp n)
+                         (< (integer-length x) n))
+                    (equal (acl2::logext n x) (ifix x)))
+           :hints(("Goal" :in-theory (enable bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
+
+
   (defthm vl-resolved->val-of-vl-make-index
     (equal (vl-resolved->val (vl-make-index n))
-           (nfix n))
+           (ifix n))
     :hints(("Goal" :in-theory (enable vl-resolved->val))))
 
-  (deffixequiv vl-make-index :args ((n natp))))
+  (deffixequiv vl-make-index :args ((n integerp))))
 
 
-(define vl-make-integer ((n natp)
+(define vl-make-integer ((n integerp)
                          &key ((bits posp) '32))
   :guard (unsigned-byte-p bits n)
   :short "Safely create a well-typed constant integer atom whose value is n."
@@ -2022,7 +2032,7 @@ in this case see @(see vl-make-integer).</p>"
       :val (make-vl-constint :origwidth bits
                              :origsign :vl-signed
                              :wasunsized t
-                             :value value))))
+                             :value (acl2::loghead bits value)))))
   ///
   (defthm vl-expr-kind-of-vl-make-integer
     (eq (vl-expr-kind (vl-make-integer n :bits bits)) :vl-literal))
@@ -2033,10 +2043,10 @@ in this case see @(see vl-make-integer).</p>"
 
   (defthm vl-resolved->val-of-vl-make-integer
     (equal (vl-resolved->val (vl-make-integer n :bits bits))
-           (acl2::loghead (pos-fix bits) (nfix n)))
+           (acl2::logext (pos-fix bits) (nfix n)))
     :hints(("Goal" :in-theory (enable vl-resolved->val))))
 
-  (deffixequiv vl-make-integer :args ((n natp))))
+  (deffixequiv vl-make-integer :args ((n integerp))))
 
 
 
@@ -2395,7 +2405,7 @@ otherwise, it is a single-bit wide.</p>"
   (define vl-range-lsbidx ((x (and (vl-range-p x)
                                    (vl-range-resolved-p x))))
     :short "Extract the LSB (right) index from a resolved @(see vl-range)."
-    :returns (lsb natp :rule-classes :type-prescription)
+    :returns (lsb integerp :rule-classes :type-prescription)
     (b* (((vl-range x) x))
       (vl-resolved->val x.lsb)))
 
@@ -2404,14 +2414,14 @@ otherwise, it is a single-bit wide.</p>"
     :short "Extract the LSB (right) index from a resolved @(see
             vl-maybe-range); treats the empty range as @('[0:0]'),
             i.e., its LSB index is 0."
-    :returns (rsh natp :rule-classes :type-prescription)
+    :returns (rsh integerp :rule-classes :type-prescription)
     (b* (((unless x) 0))
       (vl-range-lsbidx x)))
 
   (define vl-range-msbidx ((x (and (vl-range-p x)
                                    (vl-range-resolved-p x))))
     :short "Extract the MSB (left) index from a resolved @(see vl-range)."
-    :returns (msb natp :rule-classes :type-prescription)
+    :returns (msb integerp :rule-classes :type-prescription)
     (b* (((vl-range x) x))
       (vl-resolved->val x.msb)))
 
@@ -2419,7 +2429,7 @@ otherwise, it is a single-bit wide.</p>"
                                          (vl-maybe-range-resolved-p x))))
     :short "Extract the MSB (left) index from a resolved @(see vl-maybe-range);
             treats the empty range as @('[0:0]'), i.e., its MSB is 0."
-    :returns (rsh natp :rule-classes :type-prescription)
+    :returns (rsh integerp :rule-classes :type-prescription)
     (b* (((unless x) 0))
       (vl-range-msbidx x)))
 
@@ -2427,7 +2437,7 @@ otherwise, it is a single-bit wide.</p>"
                                     (vl-range-resolved-p x))))
     :short "Extract the lesser of the @('msb') and @('lsb') of a resolved @(see
             vl-range)."
-    :returns (lowidx natp :rule-classes :type-prescription)
+    :returns (lowidx integerp :rule-classes :type-prescription)
     (min (vl-range-msbidx x) (vl-range-lsbidx x)))
 
   (define vl-maybe-range-lowidx ((x (and (vl-range-p x)
@@ -2435,7 +2445,7 @@ otherwise, it is a single-bit wide.</p>"
     :short "Extract the lesser of the @('msb') and @('lsb') of a resolved @(see
             vl-maybe-range); treats the empty range as @('[0:0]'), i.e., its
             low index is 0."
-    :returns (lowidx natp :rule-classes :type-prescription)
+    :returns (lowidx integerp :rule-classes :type-prescription)
     (if x (vl-range-msbidx x) 0))
 
   (define vl-range-revp ((x (and (vl-range-p x)
