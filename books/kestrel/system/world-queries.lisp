@@ -134,9 +134,10 @@
                                    (logicp fun w)
                                    (recursivep fun w)))
                          (w plist-worldp))
-  :returns (measure pseudo-termp)
-  :short "Measure expression of a logic-mode recursive function."
-  :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
+  :returns (measured-subset symbol-listp)
+  :short
+  "Subset of the formal arguments of the recursive function @('fun')
+  that occur in its @(see measure) expression."
   (access justification (getpropc fun 'justification nil w) :subset))
 
 (define well-founded-relation ((fun (and (function-namep fun w)
