@@ -43,7 +43,8 @@
   by replacing function variables with functions.
   Theorem instances are proved automatically,
   via automatically generated
-  <see topic='@(url functional-instantiation)'> functional instantiations</see>.
+  <see topic='@(url acl2::functional-instantiation)'> functional
+  instantiations</see>.
   </p>
 
   <p>
