@@ -16,8 +16,9 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
-(include-book "std/util/define" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/deflist-base" :dir :system)
 
 (local (set-default-parents world-queries))
 
@@ -60,6 +61,17 @@
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a macro."
   (and (symbolp x) (macro-symbolp x w)))
+
+(define logical-name-listp (names (w plist-worldp))
+  :returns (yes/no booleanp)
+  :short "Recognize @('nil')-terminated lists of logical names."
+  :long
+  "<p>
+  See @('logical-namep') in the ACL2 source code.
+  </p>"
+  (cond ((atom names) (eq names nil))
+        (t (and (logical-namep (car names) w)
+                (logical-name-listp (cdr names) w)))))
 
 (define definedp ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
@@ -217,3 +229,149 @@
   "List of full pathnames of all books currently included
   (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist w)))
+
+(std::deflist weak-tests-and-call-listp (x)
+  (weak-tests-and-call-p x)
+  :short "List of @('tests-and-call') records."
+  :long
+  "<p>
+  See the ACL2 source code for information on these records.
+  </p>"
+  :true-listp t
+  :elementp-of-nil nil)
+
+(std::deflist weak-tests-and-calls-listp (x)
+  (weak-tests-and-calls-p x)
+  :short "Lists of @('tests-and-calls') records."
+  :long
+  "<p>
+  See the ACL2 source code for information on these records.
+  </p>"
+  :true-listp t
+  :elementp-of-nil nil)
+
+(define induction-machine ((fun (and (function-namep fun w)
+                                     (logicp fun w)
+                                     (eql 1 (len (recursivep fun w)))))
+                           (w plist-worldp))
+  :returns (tests-and-calls-list weak-tests-and-calls-listp)
+  :short "Induction machine of a (singly) recursive function."
+  :long
+  "<p>
+  This is a list of @('tests-and-calls') records,
+  each of which contains zero or more recursive calls
+  along with the tests that lead to them.
+  </p>
+  <p>
+  This function only applies to singly recursive functions,
+  because induction is not directly supported for mutually recursive functions.
+  </p>"
+  (getpropc fun 'induction-machine nil w))
+
+(define recursive-calls ((fun (and (function-namep fun w)
+                                   (logicp fun w)
+                                   (eql 1 (len (recursivep fun w)))))
+                         (w plist-worldp))
+  :returns (calls-with-tests weak-tests-and-call-listp)
+  :short
+  "Recursive calls of a (singly) recursive function,
+  along with the controlling tests."
+  :long
+  "<p>
+  This is similar to the result of @(tsee induction-machine),
+  but each record has one recursive calls (instead of zero or more),
+  and there is exactly one record for each recursive call.
+  </p>"
+  (recursive-calls-aux2 (induction-machine fun w))
+
+  :prepwork
+
+  ((define recursive-calls-aux1 ((tests pseudo-term-listp)
+                                 (calls pseudo-term-listp))
+     :returns (calls-with-tests weak-tests-and-call-listp)
+     :parents (recursive-calls)
+     :short "First auxiliary function of @(tsee recursive-calls)."
+     :long
+     "<p>
+     Pair each call in @('calls') with the tests @('tests').
+     </p>"
+     (if (endp calls)
+         nil
+       (cons (make tests-and-call
+                   :tests tests
+                   :call (car calls))
+             (recursive-calls-aux1 tests (cdr calls)))))
+
+   (define recursive-calls-aux2
+     ((tests-and-calls-list weak-tests-and-calls-listp))
+     :returns (calls-with-tests weak-tests-and-call-listp)
+     :parents (recursive-calls)
+     :short "Second auxiliary function of @(tsee recursive-calls)."
+     :long
+     "<p>
+     Collect all the calls, with tests, from the induction machine.
+     </p>"
+     (if (endp tests-and-calls-list)
+         nil
+       (let* ((tests-and-calls (car tests-and-calls-list))
+              (tests (access tests-and-calls tests-and-calls :tests))
+              (calls (access tests-and-calls tests-and-calls :calls)))
+         (append (recursive-calls-aux1 tests calls)
+                 (recursive-calls-aux2 (cdr tests-and-calls-list))))))))
+
+(define pseudo-event-tuplep (x)
+  :returns (yes/no booleanp)
+  :short "True iff @('x') has the basic structure of an event tuple."
+  :long
+  "<p>
+  See &lsquo;event tuples&rsquo; in the ACL2 source code.
+  </p>
+  <p>
+  This function performs a very shallow check.
+  It should be extended to perform deeper checks.
+  </p>"
+  (consp x))
+
+(std::deflist pseudo-event-tuple-listp (x)
+  (pseudo-event-tuplep x)
+  :short
+  "Recognize lists of @('nil')-terminated lists
+  of values that satisfy @(tsee pseudo-event-tuplep)."
+  :true-listp t
+  :elementp-of-nil nil
+  :cheap t) ; because EVENT-TUPLEP is just CONSP for now
+
+(define pseudo-command-tuplep (x)
+  :returns (yes/no booleanp)
+  :short "True iff @('x') has the basic structure of a command tuple."
+  :long
+  "<p>
+  See &lsquo;command tuples&rsquo; in the ACL2 source code.
+  </p>
+  <p>
+  This function performs a very shallow check.
+  It should be extended to perform deeper checks.
+  </p>"
+  (consp x))
+
+(std::deflist pseudo-command-tuple-listp (x)
+  (pseudo-command-tuplep x)
+  :short
+  "Recognize lists of @('nil')-terminated lists
+  of values that satisfy @(tsee pseudo-command-tuplep)."
+  :true-listp t
+  :elementp-of-nil nil
+  :cheap t) ; because COMMAND-TUPLEP is just CONSP for now
+
+(define event-tuple-names ((evtup pseudo-event-tuplep))
+  :returns (names logical-name-listp)
+  :short "Names introduced by an event tuple."
+  :long
+  "<p>
+  Each event tuple introduces zero or more logical names in the @(see world).
+  See the description of event tuples in the ACL2 source code.
+  </p>"
+  (let ((namex (access-event-tuple-namex evtup)))
+    (cond ((equal namex 0) nil) ; no names
+          ((consp namex) namex) ; list of names
+          (t (list namex))))) ; single name
