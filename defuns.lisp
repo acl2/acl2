@@ -4555,11 +4555,10 @@
        (mv 0 ; don't care
            state))))))
 
-(defmacro verify-guards-formula (x &key rrp guard-debug &allow-other-keys)
-  `(er-let*
-    ((tuple (cmp-to-error-triple
-             (guard-obligation ',x ',rrp ',guard-debug 'verify-guards-formula
-                               state))))
+(defun verify-guards-formula-fn (x rrp guard-debug state)
+  (er-let* ((tuple (cmp-to-error-triple
+                    (guard-obligation x rrp guard-debug 'verify-guards-formula
+                                      state))))
     (cond ((eq tuple :redundant)
            (value :redundant))
           (t
@@ -4570,14 +4569,17 @@
                                                        (w state)))
                  (cl-set-ttree (cddr tuple)))
              (mv-let (col state)
-                     (prove-guard-clauses-msg (if (and (consp names)
-                                                       (eq (car names) :term))
-                                                  nil
-                                                names)
-                                              (cadr tuple) cl-set-ttree
-                                              displayed-goal t state)
-                     (declare (ignore col))
-                     (value :invisible)))))))
+               (prove-guard-clauses-msg (if (and (consp names)
+                                                 (eq (car names) :term))
+                                            nil
+                                          names)
+                                        (cadr tuple) cl-set-ttree
+                                        displayed-goal t state)
+               (declare (ignore col))
+               (value :invisible)))))))
+
+(defmacro verify-guards-formula (x &key rrp guard-debug &allow-other-keys)
+  `(verify-guards-formula-fn ',x ',rrp ',guard-debug state))
 
 (defun prove-guard-clauses (names hints otf-flg guard-debug ctx ens wrld state)
 
