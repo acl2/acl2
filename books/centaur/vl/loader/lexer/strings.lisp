@@ -424,6 +424,9 @@ printing.</p>"
        ((when (eql char2 #\\)) (mv #\\       (list echar1 echar2) (cddr echars)))
        ((when (eql char2 #\")) (mv #\"       (list echar1 echar2) (cddr echars)))
 
+       ;; [Jared] gross hack, I don't think this should be legal but VCS allows it
+       ((when (eql char2 #\/)) (mv #\/       (list echar1 echar2) (cddr echars)))
+
        ((when (vl-echar-digit-value echar2 8))
         (vl-read-octal-string-escape echars))
 
