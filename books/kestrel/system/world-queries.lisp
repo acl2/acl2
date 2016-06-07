@@ -15,8 +15,6 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
-(include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
 
@@ -130,8 +128,8 @@
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
-  (and (equal (stobjs-in fun w) (repeat (len (stobjs-in fun w)) nil))
-       (equal (stobjs-out fun w) (repeat (len (stobjs-out fun w)) nil))))
+  (and (equal (stobjs-in fun w) (make-list (len (stobjs-in fun w))))
+       (equal (stobjs-out fun w) (make-list (len (stobjs-out fun w))))))
 
 (define measure ((fun (and (function-namep fun w)
                            (logicp fun w)
