@@ -848,14 +848,23 @@ non-arguments pieces.</p>"
              ;; on.  It would be nice to prohibit the ifdef stuff, but I found
              ;; that to support certain code I needed it.  So, for now just
              ;; emit warnings about them.
-             (- (and (vl-is-compiler-directive-p name)
-                     (member-equal (string-fix name)
-                                   '("ifdef" "ifndef" "else"
-                                     "elsif" "endif"))
-                     (cw "Preprocessor warning (~f0): using `~s1 in a `define ~
-                          seems scary.~%"
-                         (vl-location-string (vl-echar->loc (car echars)))
-                         name)))
+             ;;
+             ;; [Jared] Hrmn, on further reflection I think we probably
+             ;; shouldn't be loudly warning about this.  If we ever rejigger
+             ;; the preprocessor to create proper warnings, we could add these
+             ;; warnings back in.  But for now they seem potentially too chatty
+             ;; and there's no nice way to turn them off.  Probably best to
+             ;; just be quiet for now.
+             ;;
+             ;; (- (and (vl-is-compiler-directive-p name)
+             ;;         (member-equal (string-fix name)
+             ;;                       '("ifdef" "ifndef" "else"
+             ;;                         "elsif" "endif"))
+             ;;         (cw "Preprocessor warning (~f0): using `~s1 in a `define ~
+             ;;              seems scary.~%"
+             ;;             (vl-location-string (vl-echar->loc (car echars)))
+             ;;             name)))
+
              ((mv successp text remainder)
               (vl-read-until-end-of-define remainder config))
              ((unless successp)
@@ -1125,6 +1134,113 @@ non-arguments pieces.</p>"
                                               
                                               
 
+(define vl-read-define-default-text
+  :parents (vl-read-default-text)
+  ((echars       vl-echarlist-p "Text starting just after the equal sign.")
+   (config       vl-loadconfig-p)
+   (starting-loc vl-location-p "Context for error messages."))
+  :returns
+  (mv (successp  booleanp :rule-classes :type-prescription)
+      (prefix    vl-echarlist-p :hyp (force (vl-echarlist-p echars)))
+      (remainder vl-echarlist-p :hyp (force (vl-echarlist-p echars))
+                 "On success this should start with a comma or endparen."))
+
+  ;; SystemVerilog-2012 page 640 says that "The default text may be explicitly
+  ;; specified to be empty by adding an = token after a formal argument name,
+  ;; followed by a comma (or a right parenthesis if it is the last argument in
+  ;; the argument list.)"  So, things like `define foo(a, b=) should be OK and
+  ;; we don't have to check for non-emptiness.
+
+  ;; BOZO SystemVerilog-2012 page 641, says that "Actual arguments and defaults
+  ;; shall not contain commas or right parenthesis characters outside matched
+  ;; pairs of left and right parentheses (), square brackets [], braces {},
+  ;; double quotes "", or an escaped identifier.
+  ;;
+  ;; We probably aren't handling all of this correctly yet and for that matter
+  ;; we should do a lot of testing to see what other Verilog tools handle and
+  ;; add suitable failtests/cosims that explore the corner cases.
+  ;;
+  ;; But for now, the following should at least be better than what we used to
+  ;; do (namely: die when we encountered an equal sign.)
+  (b* (((when (atom echars))
+        (mv (cw "Preprocessor error (~f0): EOF while reading define default text.~%"
+                (vl-location-string starting-loc))
+            nil echars))
+
+       (char1 (vl-echar->char (car echars)))
+
+       ((when (or (eql char1 #\,)
+                  (eql char1 #\))))
+        ;; Ran into a bare comma or ) character, so this seems like the end of
+        ;; this default-text, assuming we're smart enough to ignore string
+        ;; literals, etc.
+        (mv t nil echars))
+
+       ((when (eql char1 #\\))
+        ;; Maybe the start of an escaped identifier.
+        (b* (((mv name prefix1 remainder)
+              (vl-read-escaped-identifier echars))
+             ((unless name)
+              (mv (cw "Preprocessor error (~f0): stray backslash in define default argument?~%"
+                      (vl-location-string (vl-echar->loc (car echars))))
+                  nil echars))
+             ((mv okp prefix2 remainder)
+              (vl-read-define-default-text remainder config starting-loc))
+             ((unless okp)
+              ;; already warned
+              (mv nil nil echars)))
+          (mv t (append prefix1 prefix2) remainder)))
+
+       ((when (eql char1 #\"))
+        ;; Maybe the start of a string literal?
+        (b* (((mv string prefix1 remainder)
+              (vl-read-string echars (vl-lexstate-init config)))
+             ((unless string)
+              (mv (cw "Preprocessor error (~f0): unterminated string literal in define default argument?~%"
+                      (vl-location-string (vl-echar->loc (car echars))))
+                  nil echars))
+             ((mv okp prefix2 remainder)
+              (vl-read-define-default-text remainder config starting-loc))
+             ((unless okp)
+              ;; already warned
+              (mv nil nil echars)))
+          (mv t (append prefix1 prefix2) remainder)))
+
+       ;; Otherwise plausibly this is just an ordinary character that should
+       ;; become part of the text?
+       ((mv okp rest remainder)
+        (vl-read-define-default-text (cdr echars) config starting-loc))
+       ((unless okp)
+        (mv nil nil echars)))
+    (mv t (cons (car echars) rest) remainder))
+  ///
+  (defthm true-listp-of-vl-read-define-default-text-prefix
+    (true-listp (mv-nth 1 (vl-read-define-default-text echars config starting-loc)))
+    :rule-classes :type-prescription)
+
+  (local (defthm true-listp-cdr-when-consp
+           (implies (consp x)
+                    (equal (true-listp (cdr x))
+                           (true-listp x)))))
+
+  (defthm true-listp-of-vl-read-define-default-text-remainder
+    (equal (true-listp (mv-nth 2 (vl-read-define-default-text echars config starting-loc)))
+           (true-listp echars))
+    :rule-classes ((:rewrite)))
+
+  (defthm acl2-count-of-vl-read-define-default-text-weak
+    (<= (acl2-count (mv-nth 2 (vl-read-define-default-text echars config starting-loc)))
+        (acl2-count echars))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (defthm acl2-count-of-vl-read-define-default-text-strong
+    (implies (mv-nth 1 (vl-read-define-default-text echars config starting-loc))
+             (< (acl2-count (mv-nth 2 (vl-read-define-default-text echars config starting-loc)))
+                (acl2-count echars)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (disable (force))))))
+
 
 (define vl-parse-define-formal-arguments
   ;; Match list_of_formal_arguments, also eating the close paren and returning
@@ -1160,12 +1276,25 @@ non-arguments pieces.</p>"
        ;;          name1)
        ;;      nil nil))
 
-       (rest (vl-parse-define-formal-empty-default rest))
-       ;; BOZO implement support for equal signs, default values... but that is
-       ;; going to be nasty, complex rules about what's allowed.  For now just
-       ;; skip it.
-       (formal1 (make-vl-define-formal :name name1 :default ""))
+       ((mv ?ws rest) (vl-read-while-whitespace rest))
 
+       ((mv okp default rest)
+        (b* (((unless (and (consp rest)
+                           (eql (vl-echar->char (car rest)) #\=)))
+              ;; No equal sign --> no default value
+              (mv t nil rest))
+             (rest (cdr rest)) ;; Eat the equal sign
+             ((mv okp prefix rest)
+              (vl-read-define-default-text rest config starting-loc)))
+          (mv okp (vl-echarlist->string prefix) rest)))
+
+       ((unless okp)
+        ;; Already warned.
+        (mv nil nil nil))
+
+       ((mv ?ws rest) (vl-read-while-whitespace rest))
+
+       (formal1 (make-vl-define-formal :name name1 :default default))
        ((when (and (consp rest)
                    (eql (vl-echar->char (car rest)) #\))))
         ;; End of arguments, woohoo.  Eat final closing paren and we're done.
@@ -1277,7 +1406,8 @@ appropriately if @('activep') is set.</p>"
        (new-def  (make-vl-define :name    name
                                  :formals formals
                                  :body    (vl-echarlist->string body)
-                                 :loc     loc))
+                                 :loc     loc
+                                 :stickyp nil))
 
        (prev-def (vl-find-define name defines))
        (- (or (not prev-def)
@@ -1287,19 +1417,29 @@ appropriately if @('activep') is set.</p>"
                     ;; Don't warn, redefining it in exactly the same way, modulo
                     ;; whitespace.
                     t))
-              (cw "Preprocessor warning: redefining ~s0:~% ~
-                    - Was ~s1     // from ~f2~% ~
-                    - Now ~s3     // from ~f4~%"
-                  name
-                  old-str
-                  (vl-location-string (vl-define->loc prev-def))
-                  new-str
-                  (vl-location-string loc)))))
+                (cw (if (vl-define->stickyp prev-def)
+                        "Preprocessor warning: ignoring redefinition of ~s0:~% ~
+                           - Keeping  ~s1     // from ~f2~% ~
+                           - Ignoring ~s3     // from ~f4~%"
+                      "Preprocessor warning: redefining ~s0:~% ~
+                         - Was ~s1     // from ~f2~% ~
+                         - Now ~s3     // from ~f4~%")
+                    name
+                    old-str
+                    (vl-location-string (vl-define->loc prev-def))
+                    new-str
+                    (vl-location-string loc)))))
 
-       (defines  (if prev-def
-                     (vl-delete-define name defines)
-                   defines))
-       (defines  (vl-add-define new-def defines)))
+       (defines  (cond ((and prev-def
+                             (vl-define->stickyp prev-def))
+                        ;; Ignore the new definition, keep the old.
+                        defines)
+                       (prev-def
+                        ;; Not sticky so delete the old definition and add the new.
+                        (vl-add-define new-def (vl-delete-define name defines)))
+                       (t
+                        ;; No old definition, add the new one.
+                        (vl-add-define new-def defines)))))
 
     (mv t defines remainder))
 
@@ -1553,12 +1693,20 @@ there may well be mismatches left.</p>"
   (b* (((when (atom x))
         t)
        ((vl-define-formal x1) (car x))
-       (has-default-p (not (equal "" (str::trim x1.default))))
-       ((unless has-default-p)
+       ((unless x1.default)
         (cw "Preprocessor error (~f0): too few arguments to ~s1 (no ~
              default value for ~s2)."
             (vl-location-string loc) name x1.name)))
     (vl-check-remaining-formals-all-have-defaults (cdr x) name loc)))
+
+(defprojection vl-define-formallist->defaults ((x vl-define-formallist-p))
+  (vl-define-formal->default x))
+
+(local (defthm string-listp-of-vl-define-formallist->defaults
+         (implies (vl-check-remaining-formals-all-have-defaults formals name loc)
+                  (string-listp (vl-define-formallist->defaults formals)))
+         :hints(("Goal"
+                 :in-theory (enable vl-check-remaining-formals-all-have-defaults)))))
 
 (define vl-line-up-define-formals-and-actuals
   ((formals vl-define-formallist-p)
@@ -1604,7 +1752,8 @@ there may well be mismatches left.</p>"
        ;; is specified.
        ((vl-define-formal formal1) (car formals))
        (actual1 (str::trim (car actuals)))
-       (value1  (if (equal actual1 "")
+       (value1  (if (and (equal actual1 "")
+                         formal1.default)
                     (str::trim formal1.default)
                   actual1)))
     (mv t (cons (cons formal1.name value1) rest-subst))))

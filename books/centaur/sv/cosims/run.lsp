@@ -101,7 +101,18 @@
   #!vl
   (vl-load-svex "spec"
                 (make-vl-loadconfig
-                 :start-files (list (cat sv::*testname* "/spec.sv")))))
+                 :start-files (list (cat sv::*testname* "/spec.sv"))
+                 ;; See the Makefile, we provide +test_is_testname to support
+                 ;; $test$plusargs testing.
+                 :plusargs (list (cat "test_is_" sv::*testname*))
+                 :defines
+                 (b* (((mv warnings defines)
+                       (vl-parse-cmdline-defines (list "test_define=3")
+                                                 *vl-fakeloc*
+                                                 t)))
+                   (or (not warnings)
+                       (raise "Oops, warnings in parsing cmdline defines?"))
+                   defines))))
 
 (assert! *svex-design*)
 

@@ -207,7 +207,8 @@ formerly the \"location directive\" and printed a location.</p>")
         :vl-alias :vl-vardecl :vl-paramdecl :vl-fundecl :vl-taskdecl
         :vl-modinst :vl-gateinst :vl-always :vl-initial :vl-final
         :vl-typedef :vl-fwdtypedef :vl-assertion :vl-cassertion
-        :vl-property :vl-sequence :vl-import :vl-dpiimport :vl-dpiexport
+        :vl-property :vl-sequence :vl-clkdecl :vl-gclkdecl
+        :vl-import :vl-dpiimport :vl-dpiexport :vl-bind :vl-class
         :vl-genarray :vl-genbegin :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
        (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
       ((:vl-genvar)

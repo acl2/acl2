@@ -501,6 +501,35 @@ assign b = `foo(c /* blah, la, la */
 assign b =  c /* la, la */ +b ;"
  :defines (simple-test-defines nil))
 
+(preprocessor-basic-test
+ :input "`define foo(a,b=bar) a + b
+assign b = `foo(c);"
+ :output "
+assign b =  c + bar;"
+ :defines (simple-test-defines nil))
+
+(preprocessor-basic-test
+ :input "`define foo(a,b=bar) a + b
+assign b = `foo(c,d);"
+ :output "
+assign b =  c + d;"
+ :defines (simple-test-defines nil))
+
+(preprocessor-basic-test
+ :input "`define foo(a,b=\\foo,bar ) a + b
+assign b = `foo(c);"
+ :output "
+assign b =  c + \\foo,bar ;"
+ :defines (simple-test-defines nil))
+
+(preprocessor-basic-test
+ :input "`define foo(a,b=) a b
+assign b = `foo(c);"
+ :output "
+assign b =  c ;"
+ :defines (simple-test-defines nil))
+
+
 
 
 ;; Some tests of the new fancy define escape sequences for string/id construction

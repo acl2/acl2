@@ -76,10 +76,6 @@ FAILING_TEST_TARGETS := \
   task/ok \
   task2/ok \
   case_wilds/ok \
-  gates_bufif0/ok \
-  gates_bufif1/ok \
-  gates_notif0/ok \
-  gates_notif1/ok \
   gates_cmos/ok \
   gates_pmos/ok \
   gates_nmos/ok \
@@ -92,7 +88,9 @@ FAILING_TEST_TARGETS := \
   inst_size3/ok \
   inst_size4/ok \
   sqrt/ok \
-  udp_wide1/ok
+  udp_wide1/ok \
+  fns3/ok \
+  bind1/ok
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
@@ -126,7 +124,7 @@ print_tests :
 	 if [ -e no_ncv ]; then \
 		touch outputs.ncv.data; \
          else \
-		ncverilog $(NCV_FLAGS) -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\"; \
+		ncverilog $(NCV_FLAGS) -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\" +define+test_define=3 +test_is_$* ; \
 	 fi
 	@ls -l $*/outputs.ncv.data
 
@@ -141,7 +139,7 @@ print_tests :
 	 if [ -e no_vcs ]; then \
 		touch outputs.vcs.data; \
 	 else \
-		 vcs $(VCS_FLAGS) -sverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.vcs.data\" && ./simv; \
+		 vcs $(VCS_FLAGS) -sverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.vcs.data\" +define+test_define=3 +test_is_$* && ./simv; \
 	 fi
 	@ls -l $*/outputs.vcs.data
 

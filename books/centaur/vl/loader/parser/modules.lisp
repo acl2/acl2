@@ -77,14 +77,18 @@
                                               :vl-cassertion
                                               :vl-property
                                               :vl-sequence
+                                              :vl-clkdecl
+                                              :vl-gclkdecl
                                               :vl-dpiimport
                                               :vl-dpiexport
+                                              :vl-bind
+                                              :vl-class
                                               )))
        (warnings
         (if (not bad-item)
             warnings
           (fatal :type :vl-bad-module-item
-                 :msg "~a0: a module may not contain ~s1s."
+                 :msg "~a0: a module may not contain a ~s1."
                  :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
        ((vl-genblob c) (vl-sort-genelements items))
@@ -112,10 +116,14 @@
                     :typedefs    c.typedefs
                     :properties  c.properties
                     :sequences   c.sequences
+                    :clkdecls    c.clkdecls
+                    :gclkdecls   c.gclkdecls
                     :assertions  c.assertions
                     :cassertions c.cassertions
                     :dpiimports  c.dpiimports
                     :dpiexports  c.dpiexports
+                    :binds       c.binds
+                    :classes     c.classes
                     :atts        atts
                     :minloc      minloc
                     :maxloc      maxloc

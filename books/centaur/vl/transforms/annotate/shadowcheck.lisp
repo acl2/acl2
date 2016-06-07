@@ -1737,8 +1737,12 @@ explicit declarations.</p>")
        ((when (eq tag :vl-cassertion)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-property))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-sequence))   (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-clkdecl))    (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-gclkdecl))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-dpiexport))  (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-fwdtypedef)) (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-bind))       (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-class))      (mv st warnings)) ;; BOZO figure out what we want to do here.
        )
     (impossible)
     (mv st warnings)))

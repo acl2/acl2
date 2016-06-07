@@ -2208,6 +2208,77 @@ scopestacks.</p>"
 
 ||#
 
+
+; Our approach to elaboration can "accidentally" throw away modules that have problems.
+; To recognize this situation, gather up the names of 
+
+(defprojection vl-modulelist->orignames ((x vl-modulelist-p))
+  :returns (orignames string-listp)
+  (vl-module->origname x))
+
+(defprojection vl-interfacelist->orignames ((x vl-interfacelist-p))
+  :returns (orignames string-listp)
+  (vl-interface->origname x))
+
+(define vl-add-lost-module-warning ((x vl-module-p))
+  :returns (new-x vl-module-p)
+  (b* (((vl-module x))
+       (warnings x.warnings)
+       (warnings (fatal :type :vl-unreachable-module
+                        :msg "After elaboration ~s0 became unreachable. This ~
+                              is typically due to errors in the modules that ~
+                              instantiate it.  We will keep the ~
+                              pre-elaboration version of this module, but ~
+                              beware: this may not be entirely sensible."
+                        :args (list x.name))))
+    (change-vl-module x :warnings warnings)))
+
+(defprojection vl-add-lost-module-warnings ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-add-lost-module-warning x))
+
+(define vl-add-lost-interface-warning ((x vl-interface-p))
+  :returns (new-x vl-interface-p)
+  (b* (((vl-interface x))
+       (warnings x.warnings)
+       (warnings (fatal :type :vl-unreachable-interface
+                        :msg "After elaboration ~s0 became unreachable. This ~
+                              is typically due to errors in the modules that ~
+                              instantiate it.  We will keep the ~
+                              pre-elaboration version of this interface, but ~
+                              beware: this may not be entirely sensible."
+                        :args (list x.name))))
+    (change-vl-interface x :warnings warnings)))
+
+(defprojection vl-add-lost-interface-warnings ((x vl-interfacelist-p))
+  :returns (new-x vl-interfacelist-p)
+  (vl-add-lost-interface-warning x))
+
+(define vl-recover-modules-lost-from-elaboration (&key (pre  vl-design-p)
+                                                       (post vl-design-p))
+  :returns (new-x vl-design-p)
+  :prepwork ((local (include-book "../../util/arithmetic")))
+  (b* (((vl-design pre))
+       ((vl-design post))
+
+       (lost-mods
+        (b* ((old-modnames  (set::mergesort (vl-modulelist->names pre.mods)))
+             (new-modnames  (set::mergesort (vl-modulelist->orignames post.mods)))
+             (lost-modnames (set::difference old-modnames new-modnames))
+             (lost-mods     (vl::vl-keep-modules lost-modnames pre.mods)))
+          (vl-add-lost-module-warnings lost-mods)))
+
+       (lost-ifs
+        (b* ((old-ifnames     (set::mergesort (vl-interfacelist->names pre.interfaces)))
+             (new-ifnames     (set::mergesort (vl-interfacelist->orignames post.interfaces)))
+             (lost-ifnames    (set::difference old-ifnames new-ifnames))
+             (lost-interfaces (vl::vl-keep-interfaces lost-ifnames pre.interfaces)))
+          (vl-add-lost-interface-warnings lost-interfaces))))
+
+    (change-vl-design post
+                      :mods (append lost-mods post.mods)
+                      :interfaces (append lost-ifs post.interfaces))))
+
 ;; bozo why isn't this already defined?
 (local (defthm string-listp-of-append
          (implies (and (string-listp x)
@@ -2227,7 +2298,7 @@ scopestacks.</p>"
                       (implies (vl-scopedef-alist-p x)
                                (string-listp (acl2::alist-keys x)))
                       :hints(("Goal" :in-theory (enable vl-scopedef-alist-p))))))
-  
+
   (b* (;; Throw out modules that have problems with shadowed parameters.
        ;; We won't need this.
        ;; ((vl-design x) (vl-design-unparam-check x))
@@ -2299,10 +2370,17 @@ scopestacks.</p>"
         (vl-toplevel-default-signatures topmods warnings elabindex ledger))
 
        ((wmv warnings new-mods new-ifaces donelist elabindex ledger)
-        (vl-unparameterize-main-list top-sigs nil 1000 elabindex ledger)))
+        (vl-unparameterize-main-list top-sigs nil 1000 elabindex ledger))
+
+       (new-x (change-vl-design x
+                                :warnings warnings
+                                :mods new-mods
+                                :interfaces new-ifaces
+                                :packages new-packages)))
+
     (fast-alist-free donelist)
     (vl-free-namedb (vl-unparam-ledger->ndb ledger))
     (fast-alist-free (vl-unparam-ledger->instkeymap ledger))
     (vl-scopestacks-free)
-    (mv (change-vl-design x :warnings warnings :mods new-mods :interfaces new-ifaces :packages new-packages)
+    (mv (vl-recover-modules-lost-from-elaboration :pre x :post new-x)
         elabindex)))

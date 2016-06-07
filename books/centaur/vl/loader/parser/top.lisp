@@ -160,8 +160,8 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 
         (when (vl-is-token? :vl-kwd-bind)
           ;; bind_directive always starts with 'bind'
-          (return-raw
-           (vl-parse-error "Bind directives are not implemented.")))
+          (bind := (vl-parse-bind-directive atts))
+          (return (list bind)))
 
         (when (vl-is-token? :vl-kwd-config)
           ;; config_directive always starts with 'config'
@@ -180,6 +180,12 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
           ;; 'program' or 'extern program', but we don't support extern yet.
           (program := (vl-parse-program-declaration atts))
           (return (list program)))
+
+        (when (vl-is-token? :vl-kwd-class)
+          ;; after attribute instances, class_declaration starts with
+          ;; 'class' or 'extern class', but we don't support extern yet.
+          (class := (vl-parse-class-declaration atts))
+          (return (list class)))
 
         (when (vl-is-token? :vl-kwd-package)
           ;; after attribute instances, package_declaration starts with

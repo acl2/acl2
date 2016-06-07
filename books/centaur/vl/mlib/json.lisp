@@ -293,10 +293,11 @@ encoding.</p>"
                 (vl-println? "}"))))
 
 
-(defmacro def-vl-jp-list (type &key newlines)
+(defmacro def-vl-jp-list (type &key list-p newlines)
   (declare (xargs :guard (maybe-natp newlines)))
   (b* ((mksym-package-symbol 'vl::foo)
-       (list-p         (mksym 'vl- type 'list-p))
+       (list-p         (or list-p
+                           (mksym 'vl- type 'list-p)))
        (elem-print     (mksym 'vl-jp- type))
        (list-print-aux (mksym 'vl-jp- type 'list-aux))
        (list-print     (mksym 'vl-jp- type 'list))

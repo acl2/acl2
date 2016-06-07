@@ -319,6 +319,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 (def-vl-suppress-lint-warnings udp)
 (def-vl-suppress-lint-warnings interface)
 (def-vl-suppress-lint-warnings program)
+(def-vl-suppress-lint-warnings class)
 (def-vl-suppress-lint-warnings package)
 (def-vl-suppress-lint-warnings config)
 
@@ -330,6 +331,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
                       :udps       (vl-udplist-suppress-lint-warnings       x.udps)
                       :interfaces (vl-interfacelist-suppress-lint-warnings x.interfaces)
                       :programs   (vl-programlist-suppress-lint-warnings   x.programs)
+                      :classes    (vl-classlist-suppress-lint-warnings     x.classes)
                       :packages   (vl-packagelist-suppress-lint-warnings   x.packages)
                       :configs    (vl-configlist-suppress-lint-warnings    x.configs))))
 
@@ -376,6 +378,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 (def-vl-lint-ignoreall udp)
 (def-vl-lint-ignoreall interface)
 (def-vl-lint-ignoreall program)
+(def-vl-lint-ignoreall class)
 (def-vl-lint-ignoreall package)
 (def-vl-lint-ignoreall config)
 
@@ -394,5 +397,6 @@ either upper or lower case, treating - and _ as equivalent, and with or without
                       :udps       (vl-udplist-lint-ignoreall       x.udps       mashed-ignore-list)
                       :interfaces (vl-interfacelist-lint-ignoreall x.interfaces mashed-ignore-list)
                       :programs   (vl-programlist-lint-ignoreall   x.programs   mashed-ignore-list)
+                      :classes    (vl-classlist-lint-ignoreall     x.classes    mashed-ignore-list)
                       :packages   (vl-packagelist-lint-ignoreall   x.packages   mashed-ignore-list)
                       :configs    (vl-configlist-lint-ignoreall    x.configs    mashed-ignore-list))))

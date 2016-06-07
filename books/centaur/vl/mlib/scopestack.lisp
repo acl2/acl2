@@ -316,7 +316,8 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
 at the top level.  However, if we ever want to allow, e.g., nested modules,
 then we will need to extend this.</p>"
     '((design ()
-              (module :acc mods) udp interface program)))
+              (module :acc mods) udp interface program
+              (class :acc classes))))
 
   (defval *vl-scopes->portdecls*
     :parents (scopestack-constants)
@@ -1726,7 +1727,8 @@ be very cheap in the single-threaded case.</p>"
              (or (equal (tag def) :vl-module)
                  (equal (tag def) :vl-udp)
                  (equal (tag def) :vl-interface)
-                 (equal (tag def) :vl-program))))
+                 (equal (tag def) :vl-program)
+                 (equal (tag def) :vl-class))))
   :rule-classes ((:forward-chaining))
   :hints(("Goal"
           :use ((:instance tag-when-vl-scopedef-p-forward

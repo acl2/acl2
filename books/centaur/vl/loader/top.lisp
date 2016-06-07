@@ -906,6 +906,7 @@ will look for new modules.</p>"
        (design (vl-design-from-descriptions st.descs))
        (design (vl-apply-reportcard design st.reportcard))
        (design (change-vl-design design
+                                 :plusargs config.plusargs
                                  :warnings (append-without-guard (vl-parsestate->warnings st.pstate)
                                                                  (vl-design->warnings design))))
        (result (make-vl-loadresult :design   design

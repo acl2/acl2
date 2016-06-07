@@ -933,8 +933,12 @@ elements.")
     (:vl-genvar        ans) ;; no dependencies
     (:vl-property      (vl-property-immdeps x ans))
     (:vl-sequence      (vl-sequence-immdeps x ans))
+    (:vl-clkdecl       ans) ;; BOZO figure out what to do here -- also update module-immdeps!!
+    (:vl-gclkdecl      ans) ;; BOZO figure out what to do here -- also update module-immdeps!!
     (:vl-dpiimport     ans) ;; I don't think we care?
     (:vl-dpiexport     ans) ;; I don't think we care?
+    (:vl-bind          ans) ;; BOZO figure out what to do here -- also update module/interface-immdeps!!
+    (:vl-class         ans) ;; BOZO figure out what to do here -- also update module/package/interface-immdeps!!
     (:vl-assertion     (vl-assertion-top-immdeps x ans))
     (:vl-cassertion    (vl-cassertion-top-immdeps x ans))
     (otherwise         (vl-modport-immdeps x ans))))
@@ -1173,6 +1177,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-typedeflist-immdeps    x.typedefs   ans))
        (ans (vl-propertylist-immdeps   x.properties ans))
        (ans (vl-sequencelist-immdeps   x.sequences  ans))
+       ;; BOZO clkdecls, gclkdecls
        (ans (vl-assertionlist-immdeps  x.assertions ans))
        (ans (vl-cassertionlist-immdeps x.cassertions ans))
        (ans (vl-genelementlist-immdeps x.generates  ans)))
@@ -1256,6 +1261,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-typedeflist-immdeps    x.typedefs   ans))
        (ans (vl-propertylist-immdeps   x.properties ans))
        (ans (vl-sequencelist-immdeps   x.sequences  ans))
+       ;; BOZO clkdecls, gclkdecls
        (ans (vl-modinstlist-immdeps    x.modinsts   ans))
        (ans (vl-assignlist-immdeps     x.assigns    ans))
        (ans (vl-aliaslist-immdeps      x.aliases    ans))
@@ -1284,6 +1290,20 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
     (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
 
 (def-vl-immdeps*-list vl-programlist vl-program)
+
+(define vl-class-immdeps* ((x     vl-class-p)
+                           (graph vl-immdepgraph-p)
+                           &key
+                           ((ss vl-scopestack-p) 'ss))
+  :returns (new-graph vl-immdepgraph-p)
+  (declare (ignorable ss))
+  (b* (((vl-class x) (vl-class-fix x))
+       (ans (make-vl-immdeps))
+       ;; BOZO do stuff here if we ever implement classes
+       )
+    (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
+
+(def-vl-immdeps*-list vl-classlist vl-class)
 
 
 ;; Wrappers for top-level elements that we'd normally expect to see within some
@@ -1333,6 +1353,7 @@ through the entire design and do many name lookups.</p>"
                     (graph (vl-udplist-immdeps*       x.udps       graph))
                     (graph (vl-interfacelist-immdeps* x.interfaces graph))
                     (graph (vl-programlist-immdeps*   x.programs   graph))
+                    (graph (vl-classlist-immdeps*     x.classes    graph))
                     (graph (vl-packagelist-immdeps*   x.packages   graph))
                     (graph (vl-configlist-immdeps*    x.configs    graph))
                     (graph (vl-vardecllist-immdeps*   x.vardecls   graph))

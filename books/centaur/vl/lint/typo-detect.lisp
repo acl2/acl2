@@ -37,7 +37,7 @@
 (local (include-book "../util/osets"))
 
 (defxdoc typo-detection
-  :parents (use-set)
+  :parents (lucid)
   :short "We try to detect possible typos in wire names."
 
   :long "<p>Verilog implementations allow the use of implicit wires.  Because
@@ -609,6 +609,12 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
   (b* (((when (atom strs))
         nil)
        (name1      (car strs))
+       ((when (or (str::substrp "SDN" name1)
+                  (str::substrp "SDF" name1)))
+        ;; Some primitive modules have SDN/SDF and these look close
+        ;; enough alike that they cause a lot of problems, so suppress
+        ;; typo warnings about these particular substrings.
+        (typo-detect-aux (cdr strs) alist))
        (partition1 (typo-partition (explode name1)))
        (typos1     (typo-find-plausible-typos1 partition1 alist))
        ((when typos1)

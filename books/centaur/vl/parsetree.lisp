@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-02-16")
+  "VL Syntax 2016-07-26")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -1143,6 +1143,10 @@ arguments of gate instances and most arguments of module instances.  See our
               signed.  The @(see loader) DOES NOT do this cross-referencing
               automatically; instead the @(see portdecl-sign) transformation
               needs to be run.")
+
+   (default  vl-maybe-expr-p
+             "Certain kinds of ports (e.g., those in functions and tasks) can
+              have default values.")
 
    (nettype  vl-maybe-nettypename-p)
 
@@ -3364,6 +3368,121 @@ flops, and to set up other simulation events.  A simple example would be:</p>
   :elementp-of-nil nil)
 
 
+(defprod vl-clkskew
+  :short "Representation of a clock skew (clocking blocks)."
+  :tag :vl-clkskew
+  :layout :tree
+  ((delay vl-maybe-expr-p "Cycle delay amount, e.g., @('#3'), if applicable.")
+   (edge  vl-evatomtype-p "Edge indicator, or @(':vl-noedge') for edgeless skews."))
+  :long "<p>Clock skews are described in SystemVerilog-2012 Section 14.4.  They
+         indicate when a signal is to be sampled relative to a clocking event.
+         Some examples:</p>
+
+         @({
+              clocking @(posedge clk);
+                 input #3 foo;          // <-- skew is '#3'
+                 input negedge bar;     // <-- skew is 'negedge'
+                 input negedge #3 baz;  // <-- skew is both 'negedge #3'
+              endclocking
+         })
+
+         <p>Per 14.3 (page 304) input skews are implicitly ``negative'' in that
+         they say how far before the clock the signal should be sampled; output
+         skews are ``positive'' and refer to some time after the clock.</p>
+
+         <p>Instead of numbers, skews can also be @('posedge'), @('negedge'),
+         or @('edge'), which indicate that, e.g., that @('bar') above should be
+         sampled at the @('negedge') of @('clk').  I'm not sure what @('edge')
+         means or how these combine with delays, but Section 14.4 may be a good
+         starting place.</p>")
+
+(defoption vl-maybe-clkskew vl-clkskew)
+
+
+(defprod vl-clkassign
+  :short "Representation of a single clocking assignment (clocking blocks)."
+  :tag :vl-clkassign
+  :layout :tree
+  ((name   stringp :rule-classes :type-prescription
+           "Name of the wire being sampled or expression being named.")
+   (loc    vl-location-p
+           "Location of this clocking assignment.")
+   (inputp booleanp :rule-classes :type-prescription
+           "Indicates whether this is an @('input') or @('output') clocking
+            variable.  See below for notes on inouts.")
+   (rhs    vl-maybe-expr-p
+           "Expression to sample, or @('nil') if there is no such expression.
+            When provided, this might typically be a hierarchical reference to
+            some signal, but it could also be something more complex like a
+            concatenation.")
+   (skew   vl-maybe-clkskew-p
+           "Clock skew for when to sample this variable, if specified."))
+  :long "<p>Some examples:</p>
+         @({
+              clocking @(posedge clk);
+                 input #3 foo;                 // <-- clkassign with delay and no rhs
+                 output bar = top.sub.mybar;   // <-- clkassign with an rhs
+                 inout baz;                    // <-- two clkassigns, one input, one output
+              endclocking
+         })
+
+         <p>The SystemVerilog-2012 grammar allows @('inout')s here, but note
+         from Section 14.1 (page 303) that ``a clockvar whose
+         clocking_direction is inout shall behave as if it were two clockvars,
+         one input and one output, having the same name and same
+         clocking_signal.''  We take this approach in VL: when the parser
+         encounters an inout, we explicitly split it up into separate
+         input/output clkassigns.</p>")
+
+(fty::deflist vl-clkassignlist
+  :elt-type vl-clkassign)
+
+
+(defprod vl-clkdecl
+  :short "Representation of a (non-global) clocking block declaration."
+  :tag :vl-clkdecl
+  :layout :tree
+  ((defaultp booleanp :rule-classes :type-prescription
+             "Was the @('default') keyword provided?")
+   (name     maybe-stringp :rule-classes :type-prescription
+             "Name of the clocking block, if provided.  Per SystemVerilog-2012
+              14.3, only default clocking blocks can be unnamed.")
+   (event    vl-evatomlist-p
+             "The clocking event expression for this block.  Should always be
+              non-empty and is typically a single edge expression like
+              @('@(posedge clk)').")
+   ;; Things that come from clocking_items ---
+   (iskew      vl-maybe-clkskew-p
+               "Default input clocking skew, if applicable.")
+   (oskew      vl-maybe-clkskew-p
+               "Default output clocking skew, if applicable.")
+   (clkassigns vl-clkassignlist-p
+               "Clocking assignments like @('input #3 foo').")
+   (properties vl-propertylist-p
+               "Any properties declared in this block.")
+   (sequences  vl-sequencelist-p
+               "Any sequences declared in this block.")
+   ;; BOZO can also have let statements but we don't support those yet.
+   (loc        vl-location-p)
+   (atts       vl-atts-p)))
+
+(fty::deflist vl-clkdecllist
+  :elt-type vl-clkdecl)
+
+(defprod vl-gclkdecl
+  :short "Representation of a global clocking declaration."
+  :tag :vl-gclkdecl
+  :layout :tree
+  ((name maybe-stringp :rule-classes :type-prescription
+         "Name of the declaration, if one is provided.")
+   (event vl-evatomlist-p "The clocking event expression.")
+   (loc vl-location-p)
+   (atts vl-atts-p)))
+
+(fty::deflist vl-gclkdecllist
+  :elt-type vl-gclkdecl)
+
+
 ;; (defenum vl-taskporttype-p
 ;;   (:vl-unsigned
 ;;    :vl-signed
@@ -3892,6 +4011,92 @@ be non-sliceable, at least if it's an input.</p>"
 
 (fty::deflist vl-genvarlist :elt-type vl-genvar :elementp-of-nil nil)
 
+
+(defprod vl-bind
+  :layout :tree
+  :tag :vl-bind
+  :short "Representation of a bind directive."
+  ((scope maybe-stringp :rule-classes :type-prescription
+          "When non-NIL, this indicates the name of the module or interface to
+           insert the modinsts into.  Otherwise this is a simple bind directive
+           without a @('bind_target_scope') and should just refer to an
+           explicit instance.")
+   (addto vl-exprlist-p
+          "Possibly empty, in which case @('scope') should be provided and in
+           which case the modinst is to be inserted into all instances of the
+           indicated scope.  Alternately: a list of the particular instances
+           where modinst is to be added to.")
+   (modinsts vl-modinstlist-p
+             "The modinst(s) to be added to the target.")
+   (loc     vl-location-p)
+   (atts    vl-atts-p))
+  :long "<p>There are scoped and scopeless versions of bind directives.  From
+         SystemVerilog-2012:</p>
+
+         @({
+               bind_directive ::=
+                  'bind' bind_target_scope [ ':' bind_target_instance_list ] bind_instantiation ';'
+                | 'bind' bind_target_instance bind_instantiation ';'
+         })
+
+         <p>Note: our parser allows arbitrary expressions for the
+         @('bind_target_instance')s, which is perhaps too permissive, but the
+         SystemVerilog-2012 grammar appears to be incorrect: it says the rule
+         is:</p>
+
+         @({
+              bind_target_instance ::= hierarchical_identifier constant_bit_select
+         })
+
+         <p>But the examples in Section 23.11 clearly show targets that do not
+         have such selects.</p>")
+
+(fty::deflist vl-bindlist :elt-type vl-bind :elementp-of-nil nil)
+
+
+(defprod vl-class
+  :short "Representation of a single @('class')."
+  :tag :vl-class
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this class as a string.")
+
+   ;; We define classes here and make them modelements because they can occur
+   ;; within classes.  Fortunately it looks like you can't use generates inside
+   ;; of classes, so we should not need to make these mutually recursive with
+   ;; genelements or anything like that.
+
+   ;; ... bozo we don't actually implement these yet ...
+
+   (warnings vl-warninglist-p)
+   (loc      vl-location-p
+             ;; We sort of want these to have minloc/maxloc and their own comments,
+             ;; but we also want them to be ordinary modelements which only have a
+             ;; minloc, so blah they're gross right now.
+             )
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p)
+   (virtualp booleanp :rule-classes :type-prescription)
+   (lifetime vl-lifetime-p))
+  :long "BOZO incomplete stub -- we don't really support classes yet."
+  :extra-binder-names (minloc))
+
+(define vl-class->minloc ((x vl-class-p))
+  :parents (vl-class)
+  :enabled t
+  (vl-class->loc x))
+
+(fty::deflist vl-classlist :elt-type vl-class-p
+  :elementp-of-nil nil)
+
+(defprojection vl-classlist->names ((x vl-classlist-p))
+  :parents (vl-classlist-p)
+  :returns (names string-listp)
+  (vl-class->name x))
+
+
 (defsection modelements
   :parents nil
 
@@ -3917,8 +4122,12 @@ be non-sliceable, at least if it's an input.</p>"
       cassertion
       property
       sequence
+      clkdecl
+      gclkdecl
       dpiimport
-      dpiexport))
+      dpiexport
+      bind
+      class))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -4263,7 +4472,9 @@ initially kept in a big, mixed list.</p>"
      vl-property
      vl-sequence
      vl-dpiimport
-     vl-dpiexport))
+     vl-dpiexport
+     vl-bind
+     vl-class))
 
   (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
            (implies (and (vl-ctxelement-p x)
@@ -4307,6 +4518,8 @@ initially kept in a big, mixed list.</p>"
                  (equal (tag x) :vl-modport)
                  (equal (tag x) :vl-dpiimport)
                  (equal (tag x) :vl-dpiexport)
+                 (equal (tag x) :vl-bind)
+                 (equal (tag x) :vl-class)
                  ))
     :rule-classes (:forward-chaining)
     :hints(("Goal" :in-theory (enable tag-reasoning vl-ctxelement-p))))
@@ -4352,7 +4565,9 @@ initially kept in a big, mixed list.</p>"
         (:vl-property (vl-property->loc x))
         (:vl-sequence (vl-sequence->loc x))
         (:vl-dpiimport (vl-dpiimport->loc x))
-        (:vl-dpiexport (vl-dpiexport->loc x))))))
+        (:vl-dpiexport (vl-dpiexport->loc x))
+        (:vl-bind (vl-bind->loc x))
+        (:vl-class (vl-class->loc x))))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4619,11 +4834,26 @@ the type information between the variable and port declarations.</p>"
    (sequences   vl-sequencelist-p
                 "Sequence declarations for the module.")
 
+   (clkdecls    vl-clkdecllist-p
+                "(Non-global) clocking blocks for the module.")
+
+   (gclkdecls   vl-gclkdecllist-p
+                "Global clocking for this module, if any.  Note that
+                 SystemVerilog only allows a single global clocking, but we
+                 allow a list here because it makes things work much more
+                 smoothly with modelements.")
+
    (dpiimports  vl-dpiimportlist-p
                 "DPI imports for this module.")
 
    (dpiexports  vl-dpiexportlist-p
                 "DPI exports for this module.")
+
+   (binds       vl-bindlist-p
+                "Bind directives in this module.")
+
+   (classes     vl-classlist-p
+                "Classes declared within this module.")
 
    (parse-temps  vl-maybe-parse-temps-p
                  "Temporary stuff recorded by the parser, used to generate real
@@ -4921,6 +5151,7 @@ e.g., @('(01)') or @('(1?)')."
    (lifetime   vl-lifetime-p)
    (dpiimports vl-dpiimportlist-p)
    (dpiexports vl-dpiexportlist-p)
+   (classes    vl-classlist-p)
    (atts       vl-atts-p))
   :long "<p>BOZO we haven't finished out all the things that can go inside of
 packages.  Eventually there will be new fields here.</p>")
@@ -4965,6 +5196,10 @@ packages.  Eventually there will be new fields here.</p>")
    (dpiexports  vl-dpiexportlist-p)  ;; allowed via package_or_generate_item
    (properties  vl-propertylist-p)   ;; allowed via package_or_generate_item (assertion_item_declaration)
    (sequences   vl-sequencelist-p)   ;; allowed via package_or_generate_item (assertion_item_declaration)
+   (clkdecls    vl-clkdecllist-p)
+   (gclkdecls   vl-gclkdecllist-p)
+   (binds       vl-bindlist-p)
+   (classes     vl-classlist-p)
 
    ;; interface_or_generate_item ::= module_common_item
    (modinsts    vl-modinstlist-p     ;; allowed via module_common_item (interface_instantiation)
@@ -5050,32 +5285,6 @@ packages.  Eventually there will be new fields here.</p>")
   :returns (names string-listp)
   (vl-program->name x))
 
-(defprod vl-class
-  :short "Representation of a single @('class')."
-  :tag :vl-class
-  :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this class as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p)
-   (virtualp booleanp)
-   (lifetime vl-lifetime-p))
-  :long "BOZO incomplete stub -- we don't really support classes yet.")
-
-(fty::deflist vl-classlist :elt-type vl-class-p
-  :elementp-of-nil nil)
-
-(defprojection vl-classlist->names ((x vl-classlist-p))
-  :parents (vl-classlist-p)
-  :returns (names string-listp)
-  (vl-class->name x))
-
-
 
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
@@ -5099,9 +5308,11 @@ resulting from parsing some Verilog source code."
    (dpiexports vl-dpiexportlist-p  "Top-level DPI exports.")
    (fwdtypes   vl-fwdtypedeflist-p "Forward (incomplete) typedefs.")
    (typedefs   vl-typedeflist-p    "Regular (non-forward, complete) typedefs.")
+   (binds      vl-bindlist-p       "Top-level bind directives.")
    ;; BOZO lots of things still missing
    (warnings   vl-warninglist-p    "So-called \"floating\" warnings.")
    (comments   vl-commentmap-p     "So-called \"floating\" comments.")
+   (plusargs   string-listp        "List of plusargs (without + characters).")
    ))
 
 (defoption vl-maybe-design vl-design-p)

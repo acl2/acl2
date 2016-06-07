@@ -2082,12 +2082,39 @@ how VL module instances are translated.</p>"
            t nil
            '("out" "in" "ncontrol" "pcontrol")
            '(:vl-output :vl-input :vl-input :vl-input)))
-      ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
-        :vl-nmos :vl-rnmos :vl-pmos :vl-rpmos)
+      ((:vl-nmos :vl-rnmos :vl-pmos :vl-rpmos)
        (mv (if (eql nargs 3) nil (vmsg "Need 3 arguments for ~x0" type))
            t nil
            '("out" "in" "control")
            '(:vl-output :vl-input :vl-input)))
+      ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1)
+       (b* (((unless (eql nargs 3))
+             (mv (vmsg "Need 3 arguments for ~x0" type) nil nil nil nil))
+            (ins      '("data" "control"))
+            (svex-ins (vl-fixup-wide-gate-inputs (svex-vars-from-names ins)))
+            ((list data ctrl) svex-ins)
+            (rhs      (case type
+                        (:vl-bufif0
+                         (sv::svcall sv::? ctrl
+                                     (sv::svex-z)
+                                     (sv::svcall sv::unfloat data)))
+                        (:vl-bufif1
+                         (sv::svcall sv::? ctrl
+                                     (sv::svcall sv::unfloat data)
+                                     (sv::svex-z)))
+                        (:vl-notif0
+                         (sv::svcall sv::? ctrl
+                                     (sv::svex-z)
+                                     (sv::svcall sv::bitnot data)))
+                        (:vl-notif1
+                         (sv::svcall sv::? ctrl
+                                     (sv::svcall sv::bitnot data)
+                                     (sv::svex-z)))))
+            (assigns  (list (cons (svex-lhs-from-name "out")
+                                  (sv::make-driver :value rhs))))
+            (portnames (cons "out" ins))
+            (portdirs  (list :vl-output :vl-input :vl-input)))
+         (mv nil nil assigns portnames portdirs)))
       ((:vl-and :vl-nand :vl-or :vl-nor :vl-xor :vl-xnor)
        (if (< nargs 2)
            (mv (vmsg "Need 2 or more arguments for ~x0" type) nil nil nil nil)

@@ -58,7 +58,12 @@ FAILING_TEST_TARGETS := \
   iface26.svok \
   names4.svok names4.vok \
   names5.svok names5.vok \
-  names6.svok names6.vok
+  names6.svok names6.vok \
+  clocking2.svok \
+  clocking3.svok \
+  clocking4.svok \
+  clocking5.svok \
+  clocking6.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

@@ -1666,6 +1666,10 @@ expression into a string."
                      (vl-ps-seq (vl-print " ")
                                 (vl-pp-packeddimensionlist udims))
                    ps))
+               (if x.default
+                   (vl-ps-seq (vl-print " = ")
+                              (vl-pp-expr x.default))
+                 ps)
                (vl-println " ;"))))
 
 (define vl-pp-portdecllist ((x vl-portdecllist-p) &key (ps 'ps))
@@ -3886,6 +3890,167 @@ expression into a string."
                (vl-pp-dpiexportlist (cdr x)))))
 
 
+(define vl-pp-bind ((x vl-bind-p) (ss vl-scopestack-p) &key (ps 'ps))
+  (b* (((vl-bind x)))
+    (vl-ps-seq (vl-progindent)
+               (vl-ps-span "vl_key" (vl-print "bind "))
+               ;; Print everything up to bind_instantiation.  This depends on whether
+               ;; we are scoped or scopeless.
+               (if x.scope
+                   ;; For scoped we have:
+                   ;;   'bind' bind_target_scope [ ':' bind_target_instance_list ] bind_instantiation ';'
+                   (vl-ps-seq (vl-ps-span "vl_id"
+                                          (vl-print-str (vl-maybe-escape-identifier x.scope)))
+                              (if (atom x.addto)
+                                  ps
+                                (vl-ps-seq (vl-print " : ")
+                                           (vl-pp-exprlist x.addto))))
+                 ;; For scopeless we have:
+                 ;;   'bind' bind_target_instance bind_instantiation ';'
+                 (vl-pp-exprlist x.addto))
+               ;; Now just print the bind_instantiation part.
+               (if (and (consp x.modinsts)
+                        (atom (cdr x.modinsts)))
+                   (vl-pp-modinst (car x.modinsts) ss)
+                 (vl-println "// BOZO print multiple modinsts in a BIND?")))))
+
+(define vl-pp-bindlist ((x vl-bindlist-p) (ss vl-scopestack-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-bind (car x) ss)
+               (vl-pp-bindlist (cdr x) ss))))
+
+(define vl-pp-clkskew ((x vl-clkskew-p) &key (ps 'ps))
+  :prepwork ((local (in-theory (enable vl-evatomtype-p))))
+  :guard-hints(("Goal"
+                :in-theory (disable vl-evatomtype-p-of-vl-clkskew->edge)
+                :use ((:instance vl-evatomtype-p-of-vl-clkskew->edge))))
+  (b* (((vl-clkskew x)))
+    (vl-ps-seq
+     ;; Print the edge, if there is one
+     (if (eq x.edge :vl-noedge)
+         ps
+       (vl-ps-span "vl_key" (case x.edge
+                              (:vl-posedge (vl-print "posedge"))
+                              (:vl-negedge (vl-print "negedge"))
+                              (:vl-edge (vl-print "edge"))
+                              (otherwise (progn$ (impossible) ps)))))
+     ;; Space if there's an edge and a delay
+     (if (and (not (eq x.edge :vl-noedge))
+              x.delay)
+         (vl-print " ")
+       ps)
+     ;; Print the delay, if there is one
+     (if x.delay
+         (vl-pp-expr x.delay)
+       ps))))
+
+(define vl-pp-clkassign ((x vl-clkassign-p) &key (ps 'ps))
+  (b* (((vl-clkassign x)))
+    (vl-ps-seq (vl-progindent)
+               (vl-ps-span "vl_key"
+                           (if x.inputp
+                               (vl-print "  input ")
+                             (vl-print "  output ")))
+               (if x.skew
+                   (vl-pp-clkskew x.skew)
+                 ps)
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name)))
+               (if x.rhs
+                   (vl-ps-seq (vl-print " = ")
+                              (vl-pp-expr x.rhs))
+                 ps)
+               (vl-println "; "))))
+
+(define vl-pp-clkassignlist ((x vl-clkassignlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-clkassign (car x))
+               (vl-pp-clkassignlist (cdr x)))))
+
+(define vl-pp-clkdecl ((x vl-clkdecl-p) &key (ps 'ps))
+  (b* (((vl-clkdecl x)))
+    (vl-ps-seq (vl-progindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-print "  ")
+               (vl-ps-span "vl_key"
+                           (if x.defaultp (vl-print "default ") ps)
+                           (vl-print "clocking "))
+               (if x.name
+                   (vl-ps-span "vl_id"
+                               (vl-print-str (vl-maybe-escape-identifier x.name))
+                               (vl-print " "))
+                 ps)
+               (vl-pp-evatomlist x.event)
+               (vl-println ";")
+               (vl-progindent-block
+                (if x.iskew
+                    (vl-ps-seq (vl-progindent)
+                               (vl-print "  ")
+                               (vl-ps-span "vl_key" (vl-print "input "))
+                               (vl-pp-clkskew x.iskew)
+                               (vl-println ";"))
+                  ps)
+                (if x.oskew
+                    (vl-ps-seq (vl-progindent)
+                               (vl-print "  ")
+                               (vl-ps-span "vl_key" (vl-print "output "))
+                               (vl-pp-clkskew x.oskew)
+                               (vl-println ";"))
+                  ps)
+                (vl-pp-clkassignlist x.clkassigns)
+                (vl-pp-propertylist x.properties)
+                (vl-pp-sequencelist x.sequences))
+               (vl-ps-span "vl_key"
+                           (vl-println "endclocking")))))
+
+(define vl-pp-clkdecllist ((x vl-clkdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-clkdecl (car x))
+               (vl-pp-clkdecllist (cdr x)))))
+
+(define vl-pp-gclkdecl ((x vl-gclkdecl-p) &key (ps 'ps))
+  (b* (((vl-gclkdecl x)))
+    (vl-ps-seq (vl-progindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-print "  ")
+               (vl-ps-span "vl_key"
+                           (vl-print "global clocking "))
+               (if x.name
+                   (vl-ps-span "vl_id"
+                               (vl-print-str (vl-maybe-escape-identifier x.name))
+                               (vl-print " "))
+                 ps)
+               (vl-pp-evatomlist x.event)
+               (vl-println ";"))))
+
+(define vl-pp-gclkdecllist ((x vl-gclkdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-gclkdecl (car x))
+               (vl-pp-gclkdecllist (cdr x)))))
+
+
+(define vl-pp-class ((x vl-class-p) &key (ps 'ps))
+  (b* (((vl-class x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (if x.virtualp (vl-ps-span "vl_key" (vl-print "virtual ")) ps)
+               (vl-ps-span "vl_key" (vl-print "class "))
+               (vl-pp-lifetime x.lifetime)
+               (vl-print-modname x.name)
+               (vl-println " ;")
+               (vl-println " // BOZO implement vl-pp-class")
+               (vl-ps-span "vl_key" (vl-println "endclass"))
+               (vl-println ""))))
+
+(define vl-pp-classlist ((x vl-classlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-class (car x))
+               (vl-pp-classlist (cdr x)))))
+
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
   (let ((x (vl-modelement-fix x)))
     (case (tag x)
@@ -3909,8 +4074,12 @@ expression into a string."
       (:vl-genvar     (vl-pp-genvar x))
       (:vl-property   (vl-pp-property x))
       (:vl-sequence   (vl-pp-sequence x))
+      (:vl-clkdecl    (vl-pp-clkdecl x))
+      (:vl-gclkdecl   (vl-pp-gclkdecl x))
       (:vl-dpiimport  (vl-pp-dpiimport x))
       (:vl-dpiexport  (vl-pp-dpiexport x))
+      (:vl-bind       (vl-pp-bind x nil))
+      (:vl-class      (vl-pp-class x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
       (OTHERWISE (progn$ (impossible) ps)))))
@@ -4059,8 +4228,12 @@ expression into a string."
                (vl-pp-genelementlist x.generates)
                (vl-pp-propertylist x.properties)
                (vl-pp-sequencelist x.sequences)
+               (vl-pp-clkdecllist x.clkdecls)
+               (vl-pp-gclkdecllist x.gclkdecls)
                (vl-pp-assertionlist x.assertions)
-               (vl-pp-cassertionlist x.cassertions))))
+               (vl-pp-cassertionlist x.cassertions)
+               (vl-pp-bindlist x.binds ss)
+               (vl-pp-classlist x.classes))))
 
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")
@@ -4239,23 +4412,6 @@ module elements and its comments.</p>"
     (vl-ps-seq (vl-pp-program (car x))
                (vl-pp-programlist (cdr x)))))
 
-(define vl-pp-class ((x vl-class-p) &key (ps 'ps))
-  (b* (((vl-class x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (if x.virtualp (vl-ps-span "vl_key" (vl-print "virtual ")) ps)
-               (vl-ps-span "vl_key" (vl-print "class "))
-               (vl-pp-lifetime x.lifetime)
-               (vl-print-modname x.name)
-               (vl-println " ;")
-               (vl-println " // BOZO implement vl-pp-class")
-               (vl-ps-span "vl_key" (vl-println "endclass"))
-               (vl-println ""))))
-
-(define vl-pp-classlist ((x vl-classlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-class (car x))
-               (vl-pp-classlist (cdr x)))))
 
 
 (define vl-pp-design ((x vl-design-p) &key (ps 'ps))
@@ -4272,6 +4428,7 @@ module elements and its comments.</p>"
                (vl-pp-importlist x.imports)
                (vl-pp-dpiimportlist x.dpiimports)
                (vl-pp-dpiexportlist x.dpiexports)
+               (vl-pp-bindlist x.binds ss)
                (vl-pp-interfacelist x.interfaces ss)
                (vl-pp-modulelist x.mods ss)
                (vl-pp-udplist x.udps)
@@ -4324,7 +4481,7 @@ module elements and its comments.</p>"
        (vl-scopestack-case x
          :local (vl-pp-definition-scope-summary x.super)
          :otherwise (vl-print "[empty scopestack]"))))))
-                                                   
+
 
 (define vl-pp-scope-summary ((x vl-scopestack-p)
                              &key (ps 'ps))

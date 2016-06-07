@@ -129,3 +129,36 @@
         :system-verilog-2012 args))
   ///
   (getopt::defparser vl-parse-edition :predicate vl-edition-p))
+
+
+(define split-plusargs-exec ((args    string-listp)
+                             (acc     string-listp)
+                             (plusacc string-listp))
+  :parents (split-plusargs)
+  :returns (mv (acc     string-listp)
+               (plusacc string-listp))
+  (b* (((when (atom args))
+        (mv (string-list-fix acc)
+            (string-list-fix plusacc)))
+       ((cons first rest) args)
+       ((mv acc plusacc)
+        (if (and (< 0 (length first))
+                 (eql (char first 0) #\+))
+            (mv acc (cons (subseq first 1 nil) plusacc))
+          (mv (cons first acc) plusacc))))
+    (split-plusargs-exec rest acc plusacc)))
+
+(define split-plusargs ((args string-listp))
+  :short "Split command line arguments into plusargs and non-plusargs."
+  :returns
+  (mv (normal string-listp "Non-plusargs, in order.")
+      (plusargs string-listp "Plusargs, in order, with the leading plus
+                              characters removed."))
+  (b* (((mv acc plusacc) (split-plusargs-exec args nil nil)))
+    (mv (reverse acc) (reverse plusacc)))
+  ///
+  (assert!
+   (b* (((mv normal plusargs)
+         (split-plusargs (list "foo.v" "bar.v" "+xxx" "+yyy"))))
+     (and (equal normal (list "foo.v" "bar.v"))
+          (equal plusargs (list "xxx" "yyy"))))))

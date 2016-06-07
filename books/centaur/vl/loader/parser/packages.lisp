@@ -222,12 +222,13 @@
                                                                  ;; They are assertion_items, not assertion_item_declarations.
                                                                  :vl-dpiimport
                                                                  :vl-dpiexport
+                                                                 :vl-class
                                                                  )))
                           (warnings
                            (if (not bad-item)
                                warnings
                              (fatal :type :vl-bad-package-item
-                                    :msg "~a0: a package may not contain ~s1s."
+                                    :msg "~a0: a package may not contain a ~s1."
                                     :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
                           ((vl-genblob c) (vl-sort-genelements items)))
@@ -241,6 +242,7 @@
                                         :taskdecls c.taskdecls
                                         :typedefs c.typedefs
                                         :imports c.imports
+                                        :classes c.classes
                                         :dpiimports c.dpiimports
                                         :dpiexports c.dpiexports
                                         :warnings warnings

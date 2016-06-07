@@ -139,6 +139,11 @@ We basically don't want to complain about things like</p>
       ;; are okay to truncate.
       (and (vl-okay-to-truncate-expr width x.then ss)
            (vl-okay-to-truncate-expr width x.else ss))
+      :vl-call
+      ;; $test$plusargs always returns 0 or 1, but returns it as an integer, so
+      ;; it looks like it's 32 bits but we don't want to warn about it.
+      (vl-unary-syscall-p "$test$plusargs" x)
+
       :otherwise nil))
   ///
   (local (assert!
@@ -166,6 +171,9 @@ We basically don't want to complain about things like</p>
       (:otherwise nil))
     :vl-index
     (vl-unsized-index-p x ss)
+    :vl-call
+    ;; 0 or 1 as an integer -- basically like an unsized atom.
+    (vl-unary-syscall-p "$test$plusargs" x)
     :otherwise nil))
 
 (define vl-some-unsized-atom-p ((x  vl-exprlist-p)

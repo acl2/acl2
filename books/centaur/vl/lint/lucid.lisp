@@ -41,6 +41,7 @@
 (include-book "../util/cwtime")
 (include-book "../util/sum-nats")
 (include-book "../util/merge-indices")
+(include-book "typo-detect")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -3426,7 +3427,11 @@ doesn't have to recreate the default heuristics.</p>"
    (db         vl-luciddb-p)
    (genp       booleanp))
   :prepwork ((local (in-theory (enable tag-reasoning))))
-  :returns (warnings vl-warninglist-p)
+  :returns (mv (warnings vl-warninglist-p)
+               (possible-typop booleanp :rule-classes :type-prescription
+                               "Is this wire a typo-detection candidate?  (Our
+                                idea is to focus on wires that are introduced
+                                implicitly and either unset or unused.)"))
   (b* ((used     (vl-lucidocclist-fix used))
        (set      (vl-lucidocclist-fix set))
        (tag  (tag item))
@@ -3443,10 +3448,14 @@ doesn't have to recreate the default heuristics.</p>"
         ;; No uses and no sets of this variable.  It seems best, in this case,
         ;; to issue only a single warning about this spurious variable, rather
         ;; than separate unused/unset warnings.
-        (warn :type (vl-lucid-warning-type :vl-lucid-spurious)
-              :msg "~s0 ~w1 is never used or set anywhere. (~s2)"
-              :args (list vartype name
-                          (with-local-ps (vl-pp-scopestack-path ss)))))
+        (mv (warn :type (vl-lucid-warning-type :vl-lucid-spurious)
+                  :msg "~s0 ~w1 is never used or set anywhere. (~s2)"
+                  :args (list vartype name
+                              (with-local-ps (vl-pp-scopestack-path ss))))
+            ;; I don't think we want to regard this as a typo candidate either,
+            ;; since the goal of that is to find typos in wires that actually
+            ;; *are* being used or set.
+            nil))
 
        (used-solop (vl-lucid-some-solo-occp used))
        (set-solop  (vl-lucid-some-solo-occp set))
@@ -3454,7 +3463,7 @@ doesn't have to recreate the default heuristics.</p>"
         ;; The variable is both used and set in full somewhere, so there is
         ;; clearly nothing we need to warn about and we don't need to do any
         ;; further bit-level analysis.
-        warnings)
+        (mv warnings nil))
 
        ((mv simplep valid-bits)
         (vl-lucid-valid-bits-for-decl item ss))
@@ -3525,24 +3534,71 @@ doesn't have to recreate the default heuristics.</p>"
                 :args (list vartype name
                             (vl-lucid-summarize-bits unset-bits)
                             (with-local-ps (vl-pp-scopestack-path ss))
-                            item)))))
-    warnings))
+                            item))))
 
-(define vl-lucid-dissect-pair ((key vl-lucidkey-p)
-                               (val vl-lucidval-p)
+       (typop (and
+               ;; If the variable is totally unused, or totally unset, and is
+               ;; implicit, then it seems like a good chance that it might be a
+               ;; typo.
+               (or (atom used) (atom set))
+               (eq (tag item) :vl-vardecl)
+               (consp (assoc-equal "VL_IMPLICIT" (vl-vardecl->atts item))))))
+
+    (mv warnings typop)))
+
+(fty::defalist vl-typocandidates
+  :key-type vl-scopestack-p
+  :val-type string-listp
+  :short "Binds top-level module names to lists of wires that might be typos
+          inside them.")
+
+(define vl-add-typo-candidate ((ss      vl-scopestack-p     "Scope where this potential typo occurs.")
+                               (varname stringp             "Variable that we think may be misspelled.")
+                               (typos   vl-typocandidates-p "Fast alist to extend."))
+  :returns (new-typos vl-typocandidates-p)
+  (b* ((ss      (vl-scopestack-fix ss))
+       (varname (string-fix varname))
+       (typos   (vl-typocandidates-fix typos))
+       (old     (cdr (hons-get ss typos))))
+    (hons-acons ss (cons varname old) typos)))
+
+(define vl-scopestack->topname ((ss vl-scopestack-p))
+  ;; The top-level design element to blame, from the scopestack, for any
+  ;; warnings.  If there isn't any containing element, we'll just blame
+  ;; the whole :design.
+  :returns (key vl-reportcardkey-p)
+  (or (vl-scopestack-top-level-name ss)
+      :design))
+
+(define vl-lucid-dissect-pair ((key        vl-lucidkey-p)
+                               (val        vl-lucidval-p)
                                (reportcard vl-reportcard-p)
-                               (st  vl-lucidstate-p))
-  :returns (reportcard vl-reportcard-p)
+                               (st         vl-lucidstate-p)
+                               (typos      vl-typocandidates-p))
+  :returns (mv (reportcard vl-reportcard-p)
+               (typos      vl-typocandidates-p))
   (b* ((reportcard (vl-reportcard-fix reportcard))
+       (typos (vl-typocandidates-fix typos))
        ((vl-lucidstate st))
        ((vl-lucidkey key))
        ((vl-lucidval val))
-       (topname
-        ;; The top-level design element to blame, from the scopestack, for any
-        ;; warnings.  If there isn't any containing element, we'll just blame
-        ;; the whole :design.
-        (or (vl-scopestack-top-level-name key.scopestack)
-            :design))
+       (topname (vl-scopestack->topname key.scopestack))
+
+       (sequential-udp-p
+        ;; Stupid way to look this up -- it would be nicer to just look in the
+        ;; scopestack, but we turn modules into genblobs when we process them,
+        ;; and genblobs don't have atts for some reason...
+        (b* ((dfn (and (stringp topname)
+                       (vl-scopestack-find-definition topname key.scopestack))))
+          (and (eq (tag dfn) :vl-module)
+               (consp (assoc-equal "VL_SEQUENTIAL_UDP" (vl-module->atts dfn))))))
+
+       ((when sequential-udp-p)
+        ;; See vl-udp-to-module: we threw away everything in the UDP so we
+        ;; can't give any kind of sensible warnings.  So don't warn about
+        ;; anything here.
+        (mv reportcard typos))
+
        ((when val.errors)
         ;; We won't warn about anything else.
         (b* ((w (make-vl-warning
@@ -3552,12 +3608,14 @@ doesn't have to recreate the default heuristics.</p>"
                              val.errors)
                  :fatalp nil
                  :fn __function__)))
-          (vl-extend-reportcard topname w reportcard))))
+          (mv (vl-extend-reportcard topname w reportcard)
+              typos))))
+
     (case (tag key.item)
 
       (:vl-fundecl
        (b* (((when (vl-lucid-some-solo-occp val.used))
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Function ~w0 is never used. (~s1)"
                                 :args (list (vl-fundecl->name key.item)
@@ -3565,7 +3623,8 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-genvar
        ;; We'll do a particularly dumb analysis here and only see if the
@@ -3574,7 +3633,7 @@ doesn't have to recreate the default heuristics.</p>"
             (setp  (consp val.set))
             ((when (and usedp setp))
              ;; Everything's good.
-             reportcard)
+             (mv reportcard typos))
             (name (vl-genvar->name key.item))
             (path (with-local-ps (vl-pp-scopestack-path key.scopestack)))
             (w (cond ((and (not usedp) (not setp))
@@ -3595,14 +3654,15 @@ doesn't have to recreate the default heuristics.</p>"
                                        :args (list name path key.item)
                                        :fn __function__
                                        :fatalp nil)))))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-modport
        (b* (((unless st.modportsp)
              ;; Don't do any analysis of modports unless it's permitted.
-             reportcard)
+             (mv reportcard typos))
             ((when (vl-lucid-some-solo-occp val.used))
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Modport ~s0 is never used. (~s1)"
                                 :args (list (vl-modport->name key.item)
@@ -3610,11 +3670,12 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-dpiimport
        (b* (((when (vl-lucid-some-solo-occp val.used))
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "DPI imported function ~w0 is never used. (~s1)"
                                 :args (list (vl-dpiimport->name key.item)
@@ -3622,11 +3683,12 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-taskdecl
        (b* (((when (vl-lucid-some-solo-occp val.used))
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Task ~w0 is never used. (~s1)"
                                 :args (list (vl-taskdecl->name key.item)
@@ -3634,11 +3696,12 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-typedef
        (b* (((when (vl-lucid-some-solo-occp val.used))
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Type ~w0 is never used. (~s1)"
                                 :args (list (vl-typedef->name key.item)
@@ -3646,23 +3709,33 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-vardecl
-       (b* ((warnings (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set st.db st.generatesp)))
-         (vl-extend-reportcard-list topname warnings reportcard)))
+       (b* (((mv warnings possible-typop)
+             (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set st.db st.generatesp))
+            (typos (if possible-typop
+                       (vl-add-typo-candidate key.scopestack (vl-vardecl->name key.item) typos)
+                     typos)))
+         (mv (vl-extend-reportcard-list topname warnings reportcard)
+             typos)))
 
       (:vl-paramdecl
        (b* (((unless st.paramsp)
              ;; Don't do any analysis of parameters unless it's permitted.
-             reportcard)
-            (warnings (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set st.db st.generatesp)))
-         (vl-extend-reportcard-list topname warnings reportcard)))
+             (mv reportcard typos))
+            ((mv warnings ?possible-typop)
+             (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set st.db st.generatesp)))
+         (mv (vl-extend-reportcard-list topname warnings reportcard)
+             ;; We don't extend typos because we're looking for accidental
+             ;; wire name uses and don't expect them to be parameters
+             typos)))
 
       (:vl-interfaceport
        (b* (((when (or val.used val.set))
              ;; Used or set anywhere at all is good enough for an interface.
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-spurious
                                 :msg "Interface port ~w0 is never mentioned. (~s1)"
                                 :args (list (vl-interfaceport->name key.item)
@@ -3670,7 +3743,8 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (:vl-modinst
        (b* (((vl-modinst key.item))
@@ -3678,12 +3752,12 @@ doesn't have to recreate the default heuristics.</p>"
             ((unless (eq (tag mod) :vl-interface))
              ;; Something like a UDP or a module instance.  We have no
              ;; expectation that this should be used anywhere.
-             reportcard)
+             (mv reportcard typos))
             ;; Interface port.  We expect that this is at least used or set
             ;; somewhere.  It probably doesn't necessarily need to be both used
             ;; and set.
             ((when (or val.used val.set))
-             reportcard)
+             (mv reportcard typos))
             (w (make-vl-warning :type :vl-lucid-spurious
                                 :msg "Interface ~w0 is never mentioned. (~s1)"
                                 :args (list key.item.instname
@@ -3691,40 +3765,123 @@ doesn't have to recreate the default heuristics.</p>"
                                             key.item)
                                 :fn __function__
                                 :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+         (mv (vl-extend-reportcard topname w reportcard)
+             typos)))
 
       (otherwise
        ;; Other kinds of items include, for instance, modinsts, gateinsts,
        ;; generate statements, etc.  We don't have anything sensible to say
        ;; about those.
-       reportcard))))
+       (mv reportcard typos)))))
 
 (define vl-lucid-dissect-database ((db         vl-luciddb-p "Already shrunk.")
                                    (reportcard vl-reportcard-p)
-                                   (st         vl-lucidstate-p))
-  :returns (reportcard vl-reportcard-p)
+                                   (st         vl-lucidstate-p)
+                                   (typos      vl-typocandidates-p))
+  :returns (mv (reportcard vl-reportcard-p)
+               (typos      vl-typocandidates-p))
   :measure (vl-luciddb-count db)
-  (b* ((db (vl-luciddb-fix db))
+  (b* ((db    (vl-luciddb-fix db))
+       (typos (vl-typocandidates-fix typos))
        ((when (atom db))
-        (vl-reportcard-fix reportcard))
+        (mv (vl-reportcard-fix reportcard)
+            typos))
        ((cons key val) (car db))
-       (reportcard (vl-lucid-dissect-pair key val reportcard st)))
-    (vl-lucid-dissect-database (cdr db) reportcard st)))
+       ((mv reportcard typos) (vl-lucid-dissect-pair key val reportcard st typos)))
+    (vl-lucid-dissect-database (cdr db) reportcard st typos)))
 
 (define vl-lucid-dissect ((st vl-lucidstate-p))
-  :returns (reportcard vl-reportcard-p)
+  :returns (mv (reportcard vl-reportcard-p)
+               (typos      vl-typocandidates-p))
   (b* (((vl-lucidstate st))
        (copy (fast-alist-fork st.db nil))
        (-    (fast-alist-free copy)))
-    (vl-lucid-dissect-database copy nil st)))
+    (vl-lucid-dissect-database copy nil st nil)))
+
+
+(define vl-scopestack->flat-transitive-names-slow ((ss vl-scopestack-p))
+  ;; Collect a flat list of all names visible from some scope, so that we can
+  ;; check possible typos against them to see if they are heuristically
+  ;; similar.
+  :returns (names (and (string-listp names)
+                       (setp names)))
+  :measure (vl-scopestack-count ss)
+  :verify-guards nil
+  (vl-scopestack-case ss
+    :null nil
+    :global (set::mergesort (vl-scope-namespace ss.design ss.design))
+    :local (set::union (set::mergesort (vl-scope-namespace ss.top (vl-scopestack->design ss)))
+                       (vl-scopestack->flat-transitive-names-slow ss.super)))
+  :prepwork
+  ((local (defthm l0
+            (implies (vl-scopedef-alist-p x)
+                     (string-listp (alist-keys x)))
+            :hints(("Goal" :induct (len x))))))
+  ///
+  (verify-guards vl-scopestack->flat-transitive-names-slow)
+  (memoize 'vl-scopestack->flat-transitive-names-slow))
+
+;; (trace$ vl-possible-typo-warnings)
+;; (trace$ (vl-lucid-dissect-pair 
+;;          :entry (list 'vl-lucid-dissect-pair (with-local-ps (vl-pp-lucidkey key)))
+;;          :exit (b* (((list reportcard typos) values))
+;;                  (list 'vl-lucid-dissect-pair :typos (alist-vals typos)))))
+
+
+(define vl-possible-typo-warnings ((typo-alist alistp))
+  ;; Horrible old legacy code bridge
+  :guard (and (vl-string-keys-p typo-alist)
+              (vl-string-list-values-p typo-alist))
+  :returns (warnings vl-warninglist-p)
+  (b* (((when (atom typo-alist))
+        nil)
+       ((cons badwire good-alternatives) (car typo-alist))
+       (w (make-vl-warning
+           :type :vl-warn-possible-typo
+           :msg "Possible typo: implicit wire ~s0 looks like ~&1."
+           :args (list badwire good-alternatives)
+           :fn   __function__
+           :fatalp nil)))
+    (cons w (vl-possible-typo-warnings (cdr typo-alist)))))
+
+(define vl-lucid-typo-detect1
+  ((ss             vl-scopestack-p    "Scope where these possible typos occur.")
+   (possible-typos string-listp       "Names of suspiciously unused/unset implicit wires.")
+   (reportcard     vl-reportcard-p    "Reportcard to extend with actual warnings."))
+  :returns (reportcard vl-reportcard-p)
+  :verbosep t
+  (b* ((possible-typos (set::mergesort (string-list-fix possible-typos)))
+       (good-names (set::difference (vl-scopestack->flat-transitive-names-slow ss) possible-typos))
+       (typo-alist (typo-detect possible-typos good-names))
+       (warnings   (vl-possible-typo-warnings typo-alist))
+       (topname    (vl-scopestack->topname ss))
+       (reportcard (vl-extend-reportcard-list topname warnings reportcard)))
+    reportcard))
+
+;; (trace$ (vl-lucid-typo-detect
+;;          :entry (list 'vl-lucid-typo-detect (alist-vals candidates)
+;;                       :start-rc-len (len reportcard))
+;;          :exit (list 'vl-lucid-typo-detect
+;;                      :exit-rc-len (len value))))
+
+(define vl-lucid-typo-detect ((candidates vl-typocandidates-p "Already cleaned so we can recur through them.")
+                              (reportcard vl-reportcard-p     "So we can attach any real warnings."))
+  :returns (reportcard vl-reportcard-p)
+  :measure (len (vl-typocandidates-fix candidates))
+  (b* ((candidates (vl-typocandidates-fix candidates))
+       ((when (atom candidates))
+        (vl-reportcard-fix reportcard))
+       ((cons ss possible-typos) (car candidates))
+       (reportcard (vl-lucid-typo-detect1 ss possible-typos reportcard)))
+    (vl-lucid-typo-detect (cdr candidates) reportcard)))
 
 (define vl-design-lucid ((x vl-design-p)
                          &key
                          ((modportsp booleanp) 't)
                          ((paramsp booleanp) 't)
-                         ((generatesp booleanp) 't))
+                         ((generatesp booleanp) 't)
+                         ((typosp booleanp) 't))
   :returns (new-x vl-design-p)
-  :guard-debug t
   (b* ((x  (cwtime (hons-copy (vl-design-fix x))
                    :name vl-design-lucid-hons
                    :mintime 1))
@@ -3734,7 +3891,14 @@ doesn't have to recreate the default heuristics.</p>"
                                        :paramsp paramsp
                                        :generatesp generatesp)))
        (st (cwtime (vl-design-lucidcheck-main x ss st)))
-       (reportcard (cwtime (vl-lucid-dissect st))))
+       ((mv reportcard typo-candidates) (cwtime (vl-lucid-dissect st)))
+
+       (reportcard (b* (((unless typosp)
+                         reportcard)
+                        (typo-candidates (fast-alist-free (fast-alist-clean typo-candidates))))
+                     (cwtime (vl-lucid-typo-detect typo-candidates reportcard)))))
+
+    (clear-memoize-table 'vl-scopestack->flat-transitive-names-slow)
     (vl-scopestacks-free)
 
     ;; Just debugging
