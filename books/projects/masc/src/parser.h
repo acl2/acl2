@@ -465,6 +465,7 @@ public:
   char *getname();
   void displaySymDec(ostream& os);
   virtual bool isGlobal();
+  virtual bool isROM();
   virtual bool isConst();
   virtual int evalConst();
   virtual Sexpression *ACL2SymExpr();
@@ -517,6 +518,7 @@ public:
   virtual bool isConst();
   virtual int evalConst();
   virtual bool isArray();
+  virtual bool isArrayParam();
   virtual bool isStruct();
   bool isNumber();
   virtual bool isSubrange();
@@ -588,6 +590,7 @@ public:
   virtual bool isConst();
   virtual int evalConst(); 
   bool isArray();
+  bool isArrayParam();
   bool isStruct();
   bool isLimited();
   bool isInteger();
@@ -607,6 +610,7 @@ public:
   List<Expression> *args;
   FunCall(FunDef *f, List<Expression> *a);
   bool isArray();
+  bool isArrayParam();
   bool isStruct();
   bool isLimited();
   bool isInteger();
@@ -645,6 +649,7 @@ public:
   Expression *index;
   ArrayRef(Expression *a, Expression *i);
   bool isArray();
+  bool isArrayParam();
   bool isLimited();
   bool isInteger();
   Type* exprType();
@@ -669,6 +674,7 @@ public:
   char *field;
   StructRef(Expression *s, char *f);
   bool isArray();
+  bool isArrayParam();
   bool isLimited();
   bool isInteger();
   Type* exprType();
@@ -885,6 +891,7 @@ public:
   void CtoSDisplayDef(ostream& os, const char *prefix);
   Statement *CtoS2ndPass();
   bool isGlobal();
+  bool isROM();
   Sexpression *ACL2SymExpr();
 };
 

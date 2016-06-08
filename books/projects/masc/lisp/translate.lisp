@@ -181,7 +181,7 @@ are more than one).  The test of the IF is simply the test of the loop.
 
 ;; get-outs returns a list of the non-local variables that are written by
 ;; a sequence of bindings.  Since ASSERT is a dummy variable, it is not included
-;; unless it is the only variable in the list:
+;; in the list:
 
 (defun get-bound-vars (binds)
   (if (consp binds)
@@ -307,17 +307,14 @@ are more than one).  The test of the IF is simply the test of the loop.
     (> `(declare (xargs :measure (nfix (- ,var ,limit)))))
     (>= `(declare (xargs :measure (nfix (- ,var (1- ,limit))))))))
 
-;; The test of the IF of a loop function says that everything is an integer and the
-;; test of the for loop holds:
+;; The test of the IF of a loop function says that both the loop variable and the limit are
+;; integers and the test of the for loop holds:
 
-(defun loop-integerp-test (vars)
-  (if (consp vars)
-      (cons (list 'integerp (car vars))
-            (loop-integerp-test (cdr vars)))
-    ()))
-
-(defun loop-test (init test)
-  `(and ,@(loop-integerp-test (union-eq (get-vars init) (get-vars test))) ,test))
+(defun loop-test (test)
+  (let* ((comp (if (eql (car test) 'and) (cadr test) test))
+         (var (cadr comp))
+         (limit (caddr comp)))
+    `(and (integerp ,var) (integerp ,limit) ,test)))
 
 ;; Each of the main functions that generate ACL2 representations of statements or lists of 
 ;; statements takes two additional arguments, which are used in the naming of any auxiliary 
@@ -392,7 +389,7 @@ are more than one).  The test of the IF is simply the test of the loop.
         (mv-let (binds defs) (translate-list (cdr body) fname loops)
           (let* ((fname (make-loop-name fname (+ loops (length defs))))
                  (decl (loop-decl op var limit))
-                 (test (loop-test initval test))
+                 (test (loop-test test))
                  (ins (remove var (union-eq (union-eq (get-vars initval) (get-vars test)) (get-ins binds))))
                  (outs (union-eq (if localp () (list var)) (get-outs binds (get-locals (cdr body)))))
                  (params (remove var (union-eq ins outs)))
