@@ -180,6 +180,20 @@
 (assert-event (equal (check-user-term '(len x) (w state))
                      '(len x)))
 
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (check-user-term '(+ x y) (w state))
+                              '(binary-+ x y))))
+
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (check-user-term '(+ (len x) 55) (w state))
+               '(binary-+ (len x) '55))))
+
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (check-user-term '(let ((x 4)) (+ x (len y))) (w state))
+               '((lambda (x y) (binary-+ x (len y)))
+                 '4
+                 y))))
+
 (assert-event (msgp (check-user-term '(f x) (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -193,7 +207,33 @@
 (assert-event (equal (check-user-lambda-expr '(lambda (y) (len x)) (w state))
                      '(lambda (y) (len x))))
 
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (check-user-lambda-expr '(lambda (x y) (+ x y)) (w state))
+               '(lambda (x y) (binary-+ x y)))))
+
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (check-user-lambda-expr '(lambda (z) (+ (len x) 55)) (w state))
+               '(lambda (z) (binary-+ (len x) '55)))))
+
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (check-user-lambda-expr '(lambda (u) (let ((x 4)) (+ x (len y))))
+                                       (w state))
+               '(lambda (u)
+                  ((lambda (x y) (binary-+ x (len y)))
+                   '4
+                   y)))))
+
 (assert-event (msgp (check-user-lambda-expr '(lambda (x) (f x)) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (trans-macro 'list (w state))
+               ''nil)))
+
+(must-eval-to-t ; ASSERT-EVENT does not work here
+ (value (equal (trans-macro 'make-list (w state))
+               '(make-list-ac size 'nil 'nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
