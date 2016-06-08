@@ -110,9 +110,10 @@ fi
 set -e
 
 basename=${srcfile%.*}
-cppopts="-D__MASC__ -C"
+cppopts="-D__MASC__ -C -std=c++11"
 
-/usr/intel/bin/cpp $cppopts $incdirs $basename.cpp $basename.i;
+/usr/intel/pkgs/gcc/4.8.1/bin/cpp $cppopts $incdirs $basename.cpp $basename.i;
+#/usr/intel/bin/cpp $cppopts $incdirs $basename.cpp $basename.i;
 
 if [[ -z "$ctos" && -z "$acl2" && -z "$masc" ]]
 then

@@ -1,5 +1,5 @@
 export ACL2?=/nfs/pdx/disks/ccdo.val.work.238/valid/fvcoe/fvcoe_work.2/users/dmrussin/acl2
-export MASC?=/nfs/pdx/disks/ccdo.val.work.238/valid/fvcoe/fvcoe_work.2/users/dmrussin/masc
+export MASC?=/nfs/pdx/disks/ccdo.val.work.238/valid/fvcoe/fvcoe_work.2/users/dmrussin/acl2/books/projects/masc
 
 all:
 	(cd src; make all)
