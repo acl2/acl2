@@ -4,7 +4,9 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Alessandro Coglio (coglio@kestrel.edu)
+;          Eric Smith (eric.smith@kestrel.edu)
+;          Matt Kaufmann
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,6 +49,7 @@
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
+  :mode :logic
   :short "True iff @('x') is a symbol that names a function."
   (and (symbolp x) (function-symbolp x w)))
 
@@ -211,15 +214,25 @@
              nil
            (cons arg (macro-required-args-aux (cdr args)))))))))
 
+(define fundef-disabledp ((fun (function-namep fun (w state))) state)
+  :returns (yes/no booleanp)
+  :short "True iff the definition of the function @('fun') is disabled."
+  (member-equal `(:definition ,fun) (disabledp fun)))
+
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
   :short "True iff the definition of the function @('fun') is enabled."
-  (not (member-equal `(:definition ,fun) (disabledp fun))))
+  (not (fundef-disabledp fun state)))
+
+(define rune-disabledp ((rune (runep rune (w state))) state)
+  :returns (yes/no booleanp)
+  :short "True iff the @(see rune) @('rune') is disabled."
+  (member-equal rune (disabledp (cadr rune))))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
   :returns (yes/no booleanp)
   :short "True iff the @(see rune) @('rune') is enabled."
-  (not (member-equal rune (disabledp (cadr rune)))))
+  (not (rune-disabledp rune state)))
 
 (define included-books ((w plist-worldp))
   :returns (result string-listp)
