@@ -163,13 +163,13 @@ Symbol s_lognot("lognot");
 Symbol s_lognot1("lognot1");
 Symbol s_logxor("logxor");
 Symbol s_minus("-");
-Symbol s_mod("mod");
 Symbol s_mv("mv");
 Symbol s_mv_assign("mv-assign");
 Symbol s_nth("nth");
 Symbol s_null("null");
 Symbol s_plus("+");
 Symbol s_quote("quote");
+Symbol s_rem("rem");
 Symbol s_return("return");
 Symbol s_t("t");
 Symbol s_times("*");
@@ -210,6 +210,8 @@ bool SymDec::isConst() {return false;} // overridden by EnumConstDec and ConstDe
 int SymDec::evalConst() {assert(init); return init->evalConst();}
 
 bool SymDec::isGlobal() {return false;}
+
+bool SymDec::isROM() {return false;}
 
 Sexpression *SymDec::ACL2SymExpr() {// Sexpression for a reference to this symbol.
   assert(!"Undefined method: ACL2SymExpr");
@@ -846,6 +848,8 @@ int Expression::evalConst() { // virtual (overridden by constant expressions)
 
 bool Expression::isArray() {return false;} // virtual
 
+bool Expression::isArrayParam() {return false;} // virtual
+
 bool Expression::isStruct() {return false;} // virtual
 
 bool Expression::isNumber() {return !isArray() && !isStruct();}
@@ -1101,6 +1105,8 @@ int SymRef::evalConst() {
 
 bool SymRef::isArray() {return exprType()->isArrayType();}
 
+bool SymRef::isArrayParam() {return exprType()->isArrayParamType();}
+
 bool SymRef::isStruct() {return exprType()->isStructType();}
 
 bool SymRef::isLimited() {return exprType()->isLimitedType();}
@@ -1141,6 +1147,8 @@ FunCall::FunCall(FunDef *f, List<Expression> *a) : Expression() {func = f; args 
 Type* FunCall::exprType() {return func->returnType->derefType();}
 
 bool FunCall::isArray() {return exprType()->isArrayType();}
+
+bool FunCall::isArrayParam() {return exprType()->isArrayParamType();}
 
 bool FunCall::isStruct() {return exprType()->isStructType();}
 
@@ -1340,6 +1348,8 @@ Type* ArrayRef::exprType() {return ((ArrayType*)(array->exprType()))->getBaseTyp
 
 bool ArrayRef::isArray() {return exprType()->isArrayType();}
 
+bool ArrayRef::isArrayParam() {return exprType()->isArrayParamType();}
+
 bool ArrayRef::isLimited() {return exprType()->isLimitedType();}
 
 bool ArrayRef::isInteger() {return exprType()->isIntegerType();}
@@ -1363,8 +1373,11 @@ Expression *ArrayRef::CtoSExpr() {
 
 Sexpression *ArrayRef::ACL2Expr(bool isBV) {
   Sexpression *s;
-  if (array->isSymRef() && ((SymRef*)array)->symDec->isGlobal()) {
+  if (array->isSymRef() && ((SymRef*)array)->symDec->isROM()) {
     s = new Plist(&s_nth, index->ACL2Expr(), new Plist(((SymRef*)array)->symDec->sym));
+  }
+  else if (array->isSymRef() && ((SymRef*)array)->symDec->isGlobal()) {
+    s = new Plist(&s_ag, index->ACL2Expr(), new Plist(((SymRef*)array)->symDec->sym));
   }
   else {
     s = new Plist(&s_ag, index->ACL2Expr(), array->ACL2Expr());
@@ -1411,6 +1424,8 @@ Type* StructRef::exprType() {return ((StructType*)(base->exprType()))->fields->f
 
 bool StructRef::isArray() {return exprType()->isArrayType();}
 
+bool StructRef::isArrayParam() {return exprType()->isArrayParamType();}
+
 bool StructRef::isLimited() {return exprType()->isLimitedType();}
 
 bool StructRef::isInteger() {return exprType()->isIntegerType();}
@@ -1421,17 +1436,15 @@ void StructRef::displayNoParens(ostream& os) {
 }
 
 Sexpression *StructRef::ACL2Expr(bool isBV) {
-  // to do
-  assert(!"Expression cannot be converted to an S-expression");
-  return NULL;
+  Symbol *sym = ((StructType*)(base->exprType()))->fields->find(field)->sym;
+  Sexpression *s = new Plist(&s_ag, new Plist(&s_quote, sym), base->ACL2Expr());
+  return isBV ? s : exprType()->ACL2Eval(s);
 }
 
 Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
-  // to do
-  assert(!"Assigment to StructRef not yet implemented");
-  return NULL;
+  Symbol *sym = ((StructType*)(base->exprType()))->fields->find(field)->sym;
+  return base->ACL2Assign(new Plist(&s_as, new Plist(&s_quote, sym), rval, base->ACL2Expr()));
 }
-
 
 // class BitRef : public Expression
 // --------------------------------
@@ -1795,7 +1808,8 @@ Sexpression *PrefixExpr::ACL2Expr(bool isBV) {
          return new Plist(&s_bits, bv, new Integer(w - 1), &i_0);
        }
        else {
-         return bv;
+         return t->ACL2Eval(bv);
+         //?? return bv;
        }
     }
     else {
@@ -1933,7 +1947,7 @@ Sexpression *BinaryExpr::ACL2Expr(bool isBV) {
   if (!strcmp(op, "-")) ptr = &s_minus; else
   if (!strcmp(op, "*")) ptr = &s_times; else
   if (!strcmp(op, "/")) ptr = &s_floor; else
-  if (!strcmp(op, "%")) ptr = &s_mod; else
+  if (!strcmp(op, "%")) ptr = &s_rem; else
   if (!strcmp(op, "<<")) ptr = &s_ash; else
   if (!strcmp(op, ">>")) {ptr = &s_ash; sexpr2 = new Plist(&s_minus, sexpr2);} else
   if (!strcmp(op, "&")) ptr = &s_logand; else
@@ -2275,15 +2289,21 @@ Sexpression *VarDec::ACL2Expr() {
     if (!init) {
       val = new Plist();
     }
-    else if (isGlobal()) {
+    else if (isROM()) {
       val = new Plist(&s_quote, init->ACL2Expr());
     }
     else {
       val = init->ACL2ArrayExpr();
     }
   }
+  else if (init) {
+    val = type->derefType()->ACL2Assign(init);
+  }
+  else if (type->derefType()->isStructType()) {
+    val = new Plist();
+  }
   else {
-    val = init ? type->derefType()->ACL2Assign(init) : &i_0;
+    val = &i_0;
   }
   return new Plist(&s_declare, sym, val);
 }
@@ -2313,6 +2333,10 @@ bool ConstDec::isGlobal() {
     decs = decs->next;
   }
   return false;
+}
+
+bool ConstDec::isROM() {
+  return isGlobal() && type->isArrayType() && !type->isArrayParamType();
 }
 
 void ConstDec::CtoSDisplayDec(ostream& os) {
@@ -2739,8 +2763,7 @@ void MultipleAssignment::displaySimple(ostream& os) {
     os << "<";
   }
   else {
-    rval->display(os);
-    os << ".assign(";
+    os << "tie (";
   }
   lval[0]->display(os);
   os << ", ";
@@ -2755,11 +2778,11 @@ void MultipleAssignment::displaySimple(ostream& os) {
   }
   if (MASC) {
     os << "> = ";
-    rval->display(os);
   }
   else {
-    os << ")";
+    os << ") =";
   }
+  rval->display(os);
 }
 
 Statement *MultipleAssignment::subst(SymRef *var, Expression *val) {
