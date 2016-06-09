@@ -5093,9 +5093,7 @@
       clause
       ttree
       'non-nil ; collect CASE-SPLIT and immediate FORCE assumptions
-      (access rewrite-constant
-              (access prove-spec-var new-pspv :rewrite-constant)
-              :current-enabled-structure)
+      (ens-from-pspv new-pspv)
       wrld
       (access rewrite-constant
               (access prove-spec-var new-pspv :rewrite-constant)
@@ -5738,9 +5736,7 @@
    (t
     (let ((enabled-lmi-names
            (enabled-lmi-names
-            (access rewrite-constant
-                    (access prove-spec-var pspv :rewrite-constant)
-                    :current-enabled-structure)
+            (ens-from-pspv pspv)
             (cadr (assoc-eq :use
                             (access prove-spec-var pspv :hint-settings)))
             wrld)))

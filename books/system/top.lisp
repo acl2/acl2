@@ -33,6 +33,7 @@
 (include-book "legal-variablep")
 (include-book "merge-sort-term-order")
 (include-book "termp")
+(include-book "all-ffn-symbs-logic")
 
 ; The following is commented out only because we aren't currently motivated to
 ; put its functions into ACL2 system constant *system-verify-guards-alist*,

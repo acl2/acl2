@@ -1931,11 +1931,7 @@
                                            direction
                                            cross-fert-flg
                                            delete-lit-flg
-                                           (access rewrite-constant
-                                                   (access prove-spec-var
-                                                           pspv
-                                                           :rewrite-constant)
-                                                   :current-enabled-structure)
+                                           (ens-from-pspv pspv)
                                            wrld
                                            state
                                            nil)
