@@ -61,10 +61,9 @@ char yyfilenm[1024];
 "to_uint64"                 {return TO_UINT64;}
 "range"                     {return RANGE;}
 
-"mv"                        {return MV;}
+"tuple"                     {return TUPLE;}
 "array"                     {return ARRAY;}
-"elt"                       {return ELT;}
-"assign"                    {return ASSIGN;}
+"tie"                       {return TIE;}
 
 "sc_int"                    {return SC_INT;}
 "sc_bigint"                 {return SC_BIGINT;}

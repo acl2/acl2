@@ -31,6 +31,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (macro-symbolp 'append (w state)))
+
+(assert-event (not (macro-symbolp 'cons (w state))))
+
+(assert-event (not (macro-symbolp 'aaaaaaaaaa (w state))))
+
+(must-succeed*
+ (defmacro m (x) `(list ,x))
+ (assert-event (macro-symbolp 'm (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (function-namep 'len (w state)))
 
 (assert-event (not (function-namep 'cons-car-cdr (w state))))
@@ -60,6 +72,32 @@
 (assert-event (not (theorem-namep 8 (w state))))
 
 (assert-event (not (theorem-namep "car-cdr-elim" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (macro-namep 'append (w state)))
+
+(assert-event (not (macro-namep 'cons (w state))))
+
+(assert-event (not (macro-namep 'aaaaaaaaaa (w state))))
+
+(must-succeed*
+ (defmacro m (x) `(list ,x))
+ (assert-event (macro-namep 'm (w state))))
+
+(assert-event (not (macro-namep 5/3 (w state))))
+
+(assert-event (not (macro-namep "append" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (logical-name-listp '(append "ACL2" car-cdr-elim cons) (w state)))
+
+(assert-event (not (logical-name-listp '(1 2 3) (w state))))
+
+(assert-event (not (logical-name-listp '(cccccccc) (w state))))
+
+(assert-event (not (logical-name-listp "xyz" (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,6 +172,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(must-succeed*
+ (defun-nx f (x) (cons (list x) (list x)))
+ (assert-event (equal (body 'f nil (w state))
+                      '(return-last 'progn
+                                    (throw-nonexec-error 'f (cons x 'nil))
+                                    (cons (cons x 'nil) (cons x 'nil)))))
+ (assert-event (equal (unwrapped-nonexec-body 'f (w state))
+                      '(cons (cons x 'nil) (cons x 'nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (no-stobjs-p 'cons (w state)))
+
+(assert-event (no-stobjs-p 'len (w state)))
+
+(assert-event (not (no-stobjs-p 'guard-obligation (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert-event (no-stobjs-p 'f (w state))))
+
+(must-succeed*
+ (defun f (state) (declare (xargs :stobjs state)) state)
+ (assert-event (not (no-stobjs-p 'f (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (equal (measure 'len (w state)) '(acl2-count x)))
 
 (must-succeed*
@@ -147,6 +212,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (equal (measured-subset 'len (w state)) '(x)))
+
+(assert-event (equal (measured-subset 'binary-append (w state)) '(x)))
+
+(must-succeed*
+ (defun f (x)
+   (declare (xargs :measure (nfix (- 10 x))))
+   (if (and (natp x) (< x 10))
+       (f (1+ x))
+     nil))
+ (assert-event (equal (measured-subset 'f (w state)) '(x))))
+
+(must-succeed*
+ (defun f (x y z)
+   (declare (xargs :measure (nfix (- 10 y))))
+   (if (and (natp y) (< y 10))
+       (f x (1+ y) z)
+     (cons x z)))
+ (assert-event (equal (measured-subset 'f (w state)) '(y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (equal (well-founded-relation 'len (w state)) 'o<))
 
 (must-succeed*
@@ -156,6 +243,76 @@
        (f (1+ x))
      nil))
  (assert-event (equal (well-founded-relation 'f (w state)) 'o<)))
+
+(must-succeed*
+ ;; well-founded relation:
+ (defun o-p$ (x) (o-p x))
+ (defun o<$ (x y) (o< x y))
+ (defun id (x) x)
+ (defthm o<$-is-well-founded-relation
+   (and (implies (o-p$ x) (o-p (id x)))
+        (implies (and (o-p$ x)
+                      (o-p$ y)
+                      (o<$ x y))
+                 (o< (id x) (id y))))
+   :rule-classes :well-founded-relation)
+ ;; function using the well-founded relation just introduced:
+ (defun f (x)
+   (declare (xargs :well-founded-relation o<$))
+   (if (zp x)
+       nil
+     (f (1- x))))
+ ;; test:
+ (assert-event (equal (well-founded-relation 'f (w state)) 'o<$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (equal (ruler-extenders 'len (w state))
+                     '(mv-list return-last)))
+
+(must-succeed*
+ (defun f (x)
+   (declare (xargs :ruler-extenders (cons)))
+   (cons 3
+         (if (consp x)
+             (f (cdr x))
+           nil)))
+ (assert-event (equal (ruler-extenders 'f (w state))
+                      '(cons))))
+
+(must-succeed*
+ (defun f (x)
+   (declare (xargs :ruler-extenders :all))
+   (cons 3
+         (if (consp x)
+             (f (cdr x))
+           nil)))
+ (assert-event (equal (ruler-extenders 'f (w state))
+                      :all)))
+
+(must-succeed*
+ (defun fact (n)
+   (declare (xargs :ruler-extenders (:lambdas)))
+   (the (integer 1 *)
+        (if (posp n)
+            (* n (fact (1- n)))
+          1)))
+ (assert-event (equal (ruler-extenders 'fact (w state))
+                      '(:lambdas))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (equal (macro-required-args 'tthm (w state)) '(fn)))
+
+(assert-event (equal (macro-required-args 'list (w state)) nil))
+
+(must-succeed*
+ (defmacro m (a) `(list ,a))
+ (assert-event (equal (macro-required-args 'm (w state)) '(a))))
+
+(must-succeed*
+ (defmacro m (a &key b) `(list ,a ,(or b :default)))
+ (assert-event (equal (macro-required-args 'm (w state)) '(a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,3 +355,167 @@
                   (:rewrite :corollary (acl2-numberp (+ y x)))))
  (assert-event (not (rune-enabledp '(:rewrite th . 1) state)))
  (assert-event (not (rune-enabledp '(:rewrite th . 2) state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (string-listp (included-books (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (weak-tests-and-call-listp nil))
+
+(assert-event (weak-tests-and-call-listp (list (make tests-and-call
+                                                     :tests 1
+                                                     :call 2)
+                                               (make tests-and-call
+                                                     :tests "a"
+                                                     :call "b"))))
+
+(assert-event (not (weak-tests-and-call-listp 88)))
+
+(assert-event (not (weak-tests-and-call-listp (make tests-and-call
+                                                    :tests 1
+                                                    :call 2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (weak-tests-and-calls-listp nil))
+
+(assert-event (weak-tests-and-calls-listp (list (make tests-and-calls
+                                                      :tests 1
+                                                      :calls 2)
+                                                (make tests-and-calls
+                                                      :tests "a"
+                                                      :calls "b"))))
+
+(assert-event (not (weak-tests-and-calls-listp 88)))
+
+(assert-event (not (weak-tests-and-calls-listp (make tests-and-calls
+                                                     :tests 1
+                                                     :calls 2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (let ((im (induction-machine 'len (w state))))
+                (and (eql (len im) 2)
+                     (let ((im1 (first im)))
+                       (and (equal (access tests-and-calls im1 :tests)
+                                   '((consp x)))
+                            (equal (access tests-and-calls im1 :calls)
+                                   '((len (cdr x))))))
+                     (let ((im2 (second im)))
+                       (and (equal (access tests-and-calls im2 :tests)
+                                   '((not (consp x))))
+                            (equal (access tests-and-calls im2 :calls)
+                                   nil))))))
+
+(must-succeed*
+ (defun fib (n)
+   (if (zp n)
+       1
+     (if (eql n 1)
+         1
+       (+ (fib (- n 1))
+          (fib (- n 2))))))
+ (assert-event (let ((im (induction-machine 'fib (w state))))
+                 (and (eql (len im) 3)
+                      (let ((im1 (first im)))
+                        (and (equal (access tests-and-calls im1 :tests)
+                                    '((zp n)))
+                             (equal (access tests-and-calls im1 :calls)
+                                    nil)))
+                      (let ((im2 (second im)))
+                        (and (equal (access tests-and-calls im2 :tests)
+                                    '((not (zp n))
+                                      (eql n '1)))
+                             (equal (access tests-and-calls im2 :calls)
+                                    nil)))
+                      (let ((im3 (third im)))
+                        (and (equal (access tests-and-calls im3 :tests)
+                                    '((not (zp n))
+                                      (not (eql n '1))))
+                             (equal (access tests-and-calls im3 :calls)
+                                    '((fib (binary-+ '-1 n))
+                                      (fib (binary-+ '-2 n))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (let ((rc (recursive-calls 'len (w state))))
+                (and (eql (len rc) 1)
+                     (let ((rc1 (first rc)))
+                       (and  (equal (access tests-and-call rc1 :tests)
+                                    '((consp x)))
+                             (equal (access tests-and-call rc1 :call)
+                                    '(len (cdr x))))))))
+
+(must-succeed*
+ (defun fib (n)
+   (if (zp n)
+       1
+     (if (eql n 1)
+         1
+       (+ (fib (- n 1))
+          (fib (- n 2))))))
+ (assert-event (let ((rc (recursive-calls 'fib (w state))))
+                 (and (eql (len rc) 2)
+                      (let ((rc1 (first rc)))
+                        (and (equal (access tests-and-call rc1 :tests)
+                                    '((not (zp n))
+                                      (not (eql n '1))))
+                             (equal (access tests-and-call rc1 :call)
+                                    '(fib (binary-+ '-1 n)))))
+                      (let ((rc2 (second rc)))
+                        (and (equal (access tests-and-call rc2 :tests)
+                                    '((not (zp n))
+                                      (not (eql n '1))))
+                             (equal (access tests-and-call rc2 :call)
+                                    '(fib (binary-+ '-2 n)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+ (defun f (x) x)
+ (assert-event (pseudo-event-tuplep (cddr (nth 0 (w state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+ (defun f (x) x)
+ (assert-event (pseudo-event-tuple-listp (list (cddr (nth 0 (w state)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (pseudo-command-tuplep (cddr (nth 0 (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (pseudo-command-tuple-listp (list (cddr (nth 0 (w state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+ (defun f (x) x)
+ (assert-event (equal (event-tuple-names (cddr (nth 0 (w state))))
+                      '(f))))
+
+(must-succeed*
+ (defun f (x) x)
+ (verify-guards f)
+ (assert-event (equal (event-tuple-names (cddr (nth 0 (w state))))
+                      nil)))
+
+(must-succeed*
+ (mutual-recursion
+  (defun f (term)
+    (if (variablep term)
+        0
+      (if (fquotep term)
+          0
+        (1+ (f-lst (fargs term))))))
+  (defun f-lst (terms)
+    (if (endp terms)
+        0
+      (+ (f (car terms))
+         (f-lst (cdr terms))))))
+ (assert-event (equal (event-tuple-names (cddr (nth 0 (w state))))
+                      '(f f-lst))))

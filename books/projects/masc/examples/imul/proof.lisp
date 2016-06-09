@@ -24,7 +24,7 @@
 (defun all-bvecp (a m n)
   (declare (xargs :measure (nfix (- n m))))
   (if (and (natp m) (natp n) (< m n))
-      (and (bvecp (r m a) 64)
+      (and (bvecp (ag m a) 64)
            (all-bvecp a (1+ m) n))
     t))
 
@@ -35,7 +35,7 @@
                 (natp k)
                 (<= m k)
                 (< k n))                
-           (integerp (r k a)))
+           (integerp (ag k a)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm all-bvecp-bvecp
@@ -45,7 +45,7 @@
                 (natp k)
                 (<= m k)
                 (< k n))                
-           (bvecp (r k a) 64))
+           (bvecp (ag k a) 64))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm all-bvecp-leq
@@ -73,7 +73,7 @@
 (defun sum-simple (a k)
   (if (zp k)
       0
-    (bits (+ (r (1- k) a) (sum-simple a (1- k)))
+    (bits (+ (ag (1- k) a) (sum-simple a (1- k)))
           63 0)))
 
 (defthm bvecp-sum-simple
@@ -85,7 +85,7 @@
 (defun sum-range (a m n)
   (if (or (zp n) (<= n m))
       0
-    (+ (r (1- n) a) (sum-range a m (1- n)))))
+    (+ (ag (1- n) a) (sum-range a m (1- n)))))
 
 (defthm integerp-sum-range
   (implies (and (all-bvecp a m n)
@@ -105,7 +105,7 @@
           ("Subgoal *1/5" :in-theory (enable sum-range sum-simple)
                           :use ((:instance bits-bits-sum 
                                            (x (sum-range a 0 (+ -1 n))) 
-                                           (y (r (+ -1 n) a)) 
+                                           (y (ag (+ -1 n) a)) 
                                            (k 63) 
                                            (i 63)
                                            (j 0))))))
@@ -160,8 +160,8 @@
   (implies (and (natp k)
                 (natp j)
                 (< j k))
-           (equal (r j (booth-loop-0 k y35 a))
-                  (r j a))))
+           (equal (ag j (booth-loop-0 k y35 a))
+                  (ag j a))))
 
 (defthm booth-recursion-2
   (implies (and (natp y)
@@ -169,7 +169,7 @@
                 (natp j)
                 (<= k j)
                 (< j 17))
-           (equal (r j (booth-loop-0 k y35 a))
+           (equal (ag j (booth-loop-0 k y35 a))
                   (encode (bits y35 (+ (* 2 j) 2) (* 2 j)))))
   :hints (("Subgoal *1/3" :expand (:free (k) (booth-loop-0 k y35 a)))))
 
@@ -177,7 +177,7 @@
   (implies (and (bvecp y 32)
                 (natp k)
                 (< k 17))
-           (equal (r k (booth y))
+           (equal (ag k (booth y))
                   (cat (neg (theta k y)) 1 (abs (theta k y)) 2))))
 
 (in-theory (disable booth))
@@ -194,20 +194,20 @@
   (implies (and (natp j)
                 (natp k)
                 (< j k))
-           (equal (r j (partialproducts-loop-0 k x m21 pp))
-                  (r j pp))))
+           (equal (ag j (partialproducts-loop-0 k x m21 pp))
+                  (ag j pp))))
 
 (defthm partialproducts-recursion-2
   (implies (and (natp k)
                 (natp j)
                 (<= k j)
                 (< j 17))
-           (equal (r j (partialproducts-loop-0 k x m21 pp))
-                  (let ((row (case (bits (r j m21) 1 0)
+           (equal (ag j (partialproducts-loop-0 k x m21 pp))
+                  (let ((row (case (bits (ag j m21) 1 0)
                                (2 (bits (ash x 1) 32 0))
                                (1 x)
                                (t 0))))
-                    (bits (if1 (bitn (r j m21) 2)
+                    (bits (if1 (bitn (ag j m21) 2)
                                (lognot row)
                               row)
                           32 0))))
@@ -215,12 +215,12 @@
                           ((:free (pp) (partialproducts-loop-0 k x m21 pp))
                            (:free (pp) (partialproducts-loop-0 0 x m21 pp))))))
 
-(def-gl-thm partialproducts-lemma
+(acl2::def-gl-thm partialproducts-lemma
   :hyp (and (bvecp x 32)
             (bvecp y 32)
             (natp k)
             (< k 17))
-  :concl (equal (r k (partialproducts (booth y) x))
+  :concl (equal (ag k (partialproducts (booth y) x))
                 (bmux4 (theta k y) x 33))
   :g-bindings (gl::auto-bindings (:nat k 5) (:nat x 32) (:nat y 32)))
 
@@ -240,8 +240,8 @@
                 (< j k))
            (mv-let (sb psb) (align-loop-1 k bds sb0 psb0)
              (declare (ignore psb))
-             (equal (r j sb)
-                    (r j sb0)))))
+             (equal (ag j sb)
+                    (ag j sb0)))))
 
 (defthm sign-bits-recursion-2
   (implies (and (natp j)
@@ -249,8 +249,8 @@
                 (<= j k))
            (mv-let (sb psb) (align-loop-1 k bds sb0 psb0)
              (declare (ignore sb))
-             (equal (r j psb)
-                    (r j psb0)))))
+             (equal (ag j psb)
+                    (ag j psb0)))))
 
 (defthm sign-bits-recursion-3
   (implies (and (natp x)
@@ -259,10 +259,10 @@
                 (<= k j)
                 (< j 17))
            (mv-let (sb psb) (align-loop-1 k bds sb0 psb0)
-             (and (equal (r j sb)
-                         (bitn (r j bds) 2))
-                  (equal (r (1+ j) psb)
-                         (bitn (r j bds) 2)))))
+             (and (equal (ag j sb)
+                         (bitn (ag j bds) 2))
+                  (equal (ag (1+ j) psb)
+                         (bitn (ag j bds) 2)))))
   :hints (("Subgoal *1/3" :expand 
                           ((:free (j bds sb psb) (align-loop-1 j bds sb psb))))))
 
@@ -271,9 +271,9 @@
                 (natp k)
                 (< k 17))
            (mv-let (sb psb) (align-loop-1 0 (booth y) () ())
-             (and (equal (r k sb)
+             (and (equal (ag k sb)
                          (neg (theta k y)))
-                  (equal (r (1+ k) psb)
+                  (equal (ag (1+ k) psb)
                          (neg (theta k y)))))))
 
 (defthm align-recursion-1
@@ -281,34 +281,34 @@
                 (natp k)
                 (< j k))
            (let ((tble (align-loop-0 k pp psb sb tble0)))
-             (equal (r j tble)
-                    (r j tble0)))))
+             (equal (ag j tble)
+                    (ag j tble0)))))
 
 (defthm align-recursion-2
   (implies (and (natp k)
                 (natp j)
                 (<= k j)
                 (< j 17))
-           (equal (r j (align-loop-0 k pp psb sb tble0))
+           (equal (ag j (align-loop-0 k pp psb sb tble0))
                   (if (zp j)
-                      (bits (setbitn (setbitn (setbitn (setbits 0 67 (+ (* 2 j) 32) (* 2 j) (r j pp))
-                                                       67 33 (r j sb))
-                                              67 34 (r j sb))
-                                     67 35 (lognot1 (r j sb)))
+                      (bits (setbitn (setbitn (setbitn (setbits 0 67 (+ (* 2 j) 32) (* 2 j) (ag j pp))
+                                                       67 33 (ag j sb))
+                                              67 34 (ag j sb))
+                                     67 35 (lognot1 (ag j sb)))
                             63 0)
-                    (bits (setbitn (setbitn (setbitn (setbits 0 67 (+ (* 2 j) 32) (* 2 j) (r j pp))
-                                                     67 (- (* 2 j) 2) (r j psb))
-                                            67 (+ (* 2 j) 33) (lognot1 (r j sb)))
+                    (bits (setbitn (setbitn (setbitn (setbits 0 67 (+ (* 2 j) 32) (* 2 j) (ag j pp))
+                                                     67 (- (* 2 j) 2) (ag j psb))
+                                            67 (+ (* 2 j) 33) (lognot1 (ag j sb)))
                                    67 (+ (* 2 j) 34) 1)
                           63 0))))
   :hints (("subgoal *1/1" :expand ((:free (j bds sb psb) (align-loop-0 j pp psb sb tble0))))))
 
-(def-gl-thm align-lemma
+(acl2::def-gl-thm align-lemma
   :hyp (and (bvecp x 32)
             (bvecp y 32)
             (natp k)
             (< k 17))
-  :concl (equal (r k (align (booth y) (partialproducts (booth y) x)))
+  :concl (equal (ag k (align (booth y) (partialproducts (booth y) x)))
                 (bits (pp4p-theta k x y 33) 63 0))
   :g-bindings (gl::auto-bindings (:nat k 5) (:nat x 32) (:nat y 32)))
 
@@ -317,7 +317,7 @@
                 (bvecp y 32)
                 (natp k)
                 (< k 17))
-           (bvecp (r k (align (booth y) (partialproducts (booth y) x))) 64))
+           (bvecp (ag k (align (booth y) (partialproducts (booth y) x))) 64))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm all-bvecp-align
@@ -359,7 +359,7 @@
 ;; The compression tree consists of 7 4:2 compressors and 1 3:2 compressor.  The 
 ;; functionality of these components is proved automatically by gl:
 
-(def-gl-thm compress32-lemma
+(acl2::def-gl-thm compress32-lemma
   :hyp  (and (bvecp in0 64)
              (bvecp in1 64)
              (bvecp in2 64))
@@ -373,7 +373,7 @@
                                        (:nat in1 64)
                                        (:nat in2 64))))
 
-(def-gl-thm compress42-lemma
+(acl2::def-gl-thm compress42-lemma
   :hyp  (and (bvecp in0 64)
              (bvecp in1 64)
              (bvecp in2 64)
@@ -407,22 +407,22 @@
 
 (defun level3 (a2)
   (mv-let (temp-0 temp-1)
-           (compress42 (r 0 a2) (r 1 a2) (r 2 a2) (r 3 a2))
-           (s 1 temp-1 (s 0 temp-0 a2))))
+           (compress42 (ag 0 a2) (ag 1 a2) (ag 2 a2) (ag 3 a2))
+           (as 1 temp-1 (as 0 temp-0 a2))))
 
 ;; Level 3 combines the output of level 3 and the last array entry with a 3:2 compressor:
 
 (defun level4 (a3 in)
   (mv-let (temp-0 temp-1)
-          (compress32 (r 0 a3) (r 1 a3) (r 16 in))
-          (s 1 temp-1 (s 0 temp-0 ()))))
+          (compress32 (ag 0 a3) (ag 1 a3) (ag 16 in))
+          (as 1 temp-1 (as 0 temp-0 ()))))
 
 ;; The adder is applied to the output of the level 4:
 
 (defthm sum-rewrite
   (equal (sum in)
          (let ((comp (level4 (level3 (level2 (level1 in))) in)))
-           (bits (+ (r 0 comp) (r 1 comp)) 63 0))))
+           (bits (+ (ag 0 comp) (ag 1 comp)) 63 0))))
 
 (in-theory (disable sum))
 
@@ -488,11 +488,11 @@
 (in-theory (disable level3))
 
 (defthm level4-sum
-  (implies (and (bvecp (r 16 in) 64)
+  (implies (and (bvecp (ag 16 in) 64)
                 (all-bvecp a3 0 2))
-           (equal (bits (+ (r 16 in) (sum-range a3 0 2)) 63 0)
-                  (bits (+ (r 0 (level4 a3 in))
-                           (r 1 (level4 a3 in)))
+           (equal (bits (+ (ag 16 in) (sum-range a3 0 2)) 63 0)
+                  (bits (+ (ag 0 (level4 a3 in))
+                           (ag 1 (level4 a3 in)))
                          63 0)))
   :hints (("Goal" :expand ((:free (a m n) (sum-range a m n))))))
 
@@ -507,11 +507,11 @@
   :hints (("Goal" :in-theory (disable bits-bits-sum)
                   :use ((:instance bits-bits-sum 
                                    (x (sum-range (level3 (level2 (level1 in))) 0 2)) 
-                                   (y (r 16 in))
+                                   (y (ag 16 in))
                                    (i 63) (j 0) (k 63)) 
                         (:instance bits-bits-sum
                                    (x (sum-range in 0 16))
-                                   (y (r 16 in))
+                                   (y (ag 16 in))
                                    (i 63) (j 0) (k 63))))))
 
 (in-theory (disable sum-rewrite))

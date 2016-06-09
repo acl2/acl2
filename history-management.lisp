@@ -6307,10 +6307,10 @@
                            (pe ,logical-name)
                            (value '(value-triple :invisible))))))
 
-(defmacro gthm (fn &optional (clean-up-p 't))
-  `(value (untranslate (guard-theorem ,fn ,clean-up-p (w state) state)
-                       t
-                       (w state))))
+(defmacro gthm (fn &optional (simp-p 't) guard-debug)
+  `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
+                t
+                (w state)))
 
 (defmacro tthm (fn)
   `(let* ((fn ,fn)
@@ -12025,7 +12025,7 @@
           (merge-sort-length cl-set) nil nil))
         ens (match-free-override wrld) wrld state ttree)))))
 
-(defun guard-theorem (fn clean-up-p wrld state)
+(defun guard-theorem (fn simp-p guard-debug wrld state)
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
@@ -12041,7 +12041,7 @@
                    (list fn))))
     (mv-let (cl-set ttree)
       (guard-clauses-for-clique names
-                                nil              ; debug-p
+                                guard-debug
                                 :DO-NOT-SIMPLIFY ; ens
                                 wrld
                                 (f-get-global 'safe-mode state)
@@ -12049,7 +12049,7 @@
                                 nil)
 ; Note that ttree is assumption-free; see guard-clauses-for-clique.
       (let ((cl-set
-             (cond (clean-up-p
+             (cond (simp-p
                     (mv-let (cl-set ttree)
                       (clean-up-clause-set cl-set nil wrld ttree state)
                       (declare (ignore ttree)) ; assumption-free
@@ -12218,7 +12218,7 @@
                                           (if (= (length lmi) 2)
                                               t
                                             (caddr lmi))
-                                          wrld state)))
+                                          nil wrld state)))
                  (value@par (list term nil nil nil)))))))
      ((member-eq (car lmi) '(:termination-theorem :termination-theorem!))
       (let ((fn (cadr lmi)))
