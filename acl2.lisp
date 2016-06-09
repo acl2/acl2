@@ -2212,10 +2212,11 @@ You are using version ~s.~s.~s."
 ;                            DECLARATIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We use XARGS in DECLARE forms.  By making this proclamation, we
-; suppress compiler warnings.
+; We use XARGS and IRRELEVANT in DECLARE forms.  By making this proclamation,
+; we suppress compiler warnings.
 
 (declaim (declaration xargs))
+(declaim (declaration irrelevant))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            EXITING LISP
