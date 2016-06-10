@@ -1346,6 +1346,8 @@
 
 (defconst *system-verify-guards-alist*
 
+; Each member of each cdr below is of the form (fn . measured-subset).
+
 ; Each cdr was produced by evaluating
 ; (new-verify-guards-fns state)
 ; after including the book indicated in the car in a build with feature
@@ -1358,8 +1360,6 @@
 
 ; make -j 8 regression ACL2_BOOK_DIRS=system ACL2=<:acl2-devel version>
 
-; Each member of each cdr below is of the form (fn . measured-subset).
-
 ; Note that it is not necessary to do a full regression with an :acl2-devel
 ; executable; only the books in the keys of this alist need to be certified.
 
@@ -1367,6 +1367,8 @@
      (>=-LEN X)
      (ALIST-TO-DOUBLETS ALIST)
      (ALL->=-LEN LST)
+     (ALL-FFN-SYMBS TERM)
+     (ALL-FFN-SYMBS-LST LST)
      (ARGLISTP)
      (ARGLISTP1 LST)
      (ARITIES-OKP USER-TABLE)

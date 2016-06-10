@@ -11260,6 +11260,8 @@
 (mutual-recursion
 
 (defun all-ffn-symbs (term ans)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp ans))))
   (cond
    ((variablep term) ans)
    ((fquotep term) ans)
@@ -11270,7 +11272,9 @@
                                (t (add-to-set-eq (ffn-symb term) ans)))))))
 
 (defun all-ffn-symbs-lst (lst ans)
-  (cond ((null lst) ans)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-listp ans))))
+  (cond ((endp lst) ans)
         (t (all-ffn-symbs-lst (cdr lst)
                               (all-ffn-symbs (car lst) ans)))))
 
