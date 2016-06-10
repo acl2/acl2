@@ -118,11 +118,13 @@ individual characters, whereas @('strsubst') works on substrings.</p>"
                                 (stringp new)
                                 (stringp x))))
     (let ((oldl (mbe :logic (len (explode old))
-                     :exec (length old))))
+                     :exec (length old)))
+          (xl (mbe :logic (len (explode x))
+                   :exec (length x))))
       (if (zp oldl)
           (mbe :logic (str-fix x)
                :exec x)
-        (rchars-to-string (strsubst-aux old new x 0 (length x) oldl nil)))))
+        (rchars-to-string (strsubst-aux old new x 0 xl oldl nil)))))
 
   (local (in-theory (enable strsubst)))
 

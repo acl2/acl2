@@ -49,7 +49,9 @@
     (vl-ps-seq (vl-print (symbol-name x.type))
                (vl-println note)
                (vl-indent (vl-ps->autowrap-ind))
-               (vl-cw-obj x.msg x.args)
+               (if x.context
+                   (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
+                 (vl-cw-obj x.msg x.args))
                (vl-println ""))))
 
 (define vl-print-warning-html-mode ((x vl-warning-p) &key (ps 'ps))
@@ -68,7 +70,9 @@
      ;; We don't constrain the message size because it's hard to deal with
      ;; tag closing in html mode.
      (vl-print-markup " ")
-     (vl-cw-obj x.msg x.args)
+     (if x.context
+         (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
+       (vl-cw-obj x.msg x.args))
      (vl-println-markup "</li>"))))
 
 (define vl-print-warning ((x vl-warning-p) &key (ps 'ps))

@@ -1277,8 +1277,7 @@ because... (BOZO)</p>
        (- (sv::svstate-free svstate))
        ((unless expr)
         (mv (warn :type :vl-fundecl-to-svex-fail
-                  :msg "Function has no return value: ~s0 (at ~a1)"
-                  :args (list x.name x.loc))
+                  :msg "Function has no return value")
             (svex-x))))
     (mv (ok) expr))
   ///
