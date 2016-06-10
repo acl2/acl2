@@ -151,22 +151,24 @@
      (untranslate sterm iff-flg wrld))
     (t
      (or
-      (case-match tterm
-        (('if ('not &) & &)
-         (case-match sterm
-           (('if tst tbr fbr)
-            (case-match tst
-              (('not &) nil)
-              (('if & *nil* *t*) nil)
-              (& (directed-untranslate-rec uterm
-                                           tterm
-                                           (fcons-term* 'if
-                                                        (dumb-negate-lit tst)
-                                                        fbr
-                                                        tbr)
-                                           iff-flg wrld))))
-           (& nil)))
-        (& nil))
+      (and (not (member-eq (car uterm) ; handled elsewhere; avoid looping
+                           '(or and)))
+           (case-match tterm
+             (('if ('not &) & &)
+              (case-match sterm
+                (('if tst tbr fbr)
+                 (case-match tst
+                   (('not &) nil)
+                   (('if & *nil* *t*) nil)
+                   (& (directed-untranslate-rec uterm
+                                                tterm
+                                                (fcons-term* 'if
+                                                             (dumb-negate-lit tst)
+                                                             fbr
+                                                             tbr)
+                                                iff-flg wrld))))
+                (& nil)))
+             (& nil)))
       (and (ffn-symb-p tterm 'not)
            (case-match sterm
              (('if x *nil* *t*)

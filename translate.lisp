@@ -932,6 +932,7 @@
 ; 'absolute-event-number property for it -- then we return nil except in the
 ; boot-strap world.
 
+  (declare (xargs :guard (and (symbolp name) (plist-worldp wrld))))
   (cond ((global-val 'boot-strap-flg wrld) t)
         (t (getpropc name 'predefined nil wrld))))
 
