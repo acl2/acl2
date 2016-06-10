@@ -1154,6 +1154,9 @@ hints: $(filter hints/%, $(OK_CERTS))
 .PHONY: ihs
 ihs: $(filter ihs/%, $(OK_CERTS))
 
+.PHONY: kestrel
+kestrel: $(filter kestrel/%, $(OK_CERTS))
+
 .PHONY: make-event
 make-event: $(filter make-event/%, $(OK_CERTS))
 
@@ -1658,4 +1661,3 @@ TAGS : $(CERT_PL_SOURCES)
 # cert-flags instead of certify-book commands.  Alternately, maybe the scheme
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
-
