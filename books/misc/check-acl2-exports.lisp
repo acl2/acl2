@@ -111,6 +111,9 @@
     REWRITE
     TYPE-SET
     WATERFALL
+; The following are to be added to *acl2-exports*:
+    MFC-ANCESTORS MFC-AP MFC-CLAUSE MFC-RDEPTH MFC-RELIEVE-HYP MFC-RW MFC-RW+
+    MFC-TS MFC-TYPE-ALIST MFC-UNIFY-SUBST MFC-WORLD
     ))
 
 (defun missing-from-acl2-exports (wrld)
