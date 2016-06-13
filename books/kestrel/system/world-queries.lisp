@@ -4,9 +4,10 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Authors: Alessandro Coglio (coglio@kestrel.edu)
-;          Eric Smith (eric.smith@kestrel.edu)
-;          Matt Kaufmann
+; Authors:
+;   Alessandro Coglio (coglio@kestrel.edu)
+;   Eric Smith (eric.smith@kestrel.edu)
+;   Matt Kaufmann
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,8 +22,6 @@
 (include-book "std/util/deflist-base" :dir :system)
 
 (local (set-default-parents world-queries))
-
-(program)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,7 +48,6 @@
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
-  :mode :logic
   :short "True iff @('x') is a symbol that names a function."
   (and (symbolp x) (function-symbolp x w)))
 
@@ -65,17 +63,19 @@
 
 (define logical-name-listp (names (w plist-worldp))
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short "Recognize @('nil')-terminated lists of logical names."
   :long
   "<p>
   See @('logical-namep') in the ACL2 source code.
   </p>"
   (cond ((atom names) (eq names nil))
-        (t (and (logical-namep (car names) w)
+        (t (and (iff t (logical-namep (car names) w))
                 (logical-name-listp (cdr names) w)))))
 
 (define definedp ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
+  :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short
   "True iff the function @('fun') is defined,
   i.e. it has an @('unnormalized-body') property."
@@ -85,6 +85,7 @@
                                        (theorem-namep fun/thm w)))
                           (w plist-worldp))
   :returns (yes/no booleanp)
+  :guard-hints (("Goal" :in-theory (enable function-namep theorem-namep)))
   :short
   "True iff the function or theorem @('fun/thm') is @(tsee guard)-verified."
   (eq (symbol-class fun/thm w) :common-lisp-compliant))
@@ -92,7 +93,8 @@
 (define non-executablep ((fun (and (function-namep fun w)
                                    (definedp fun w)))
                          (w plist-worldp))
-  :returns (result (member result '(t nil :program)))
+  ;; :returns (result (member result '(t nil :program)))
+  :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short "The @(tsee non-executable) status of the defined function @('fun')."
   (getpropc fun 'non-executablep nil w))
 
@@ -100,6 +102,7 @@
                                           (non-executablep fun w)))
                                 (w plist-worldp))
   :returns (unwrapped-body pseudo-termp)
+  :prepwork ((program))
   :short
   "Body of a non-executable function,
   without the &ldquo;non-executable wrapper&rdquo;."
@@ -128,6 +131,7 @@
 
 (define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
@@ -139,6 +143,7 @@
                            (recursivep fun w)))
                  (w plist-worldp))
   :returns (measure pseudo-termp)
+  :prepwork ((program))
   :short "Measure expression of a logic-mode recursive function."
   :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
   (access justification (getpropc fun 'justification nil w) :measure))
@@ -148,6 +153,7 @@
                                    (recursivep fun w)))
                          (w plist-worldp))
   :returns (measured-subset symbol-listp)
+  :prepwork ((program))
   :short
   "Subset of the formal arguments of the recursive function @('fun')
   that occur in its @(see measure) expression."
@@ -158,6 +164,7 @@
                                          (recursivep fun w)))
                                (w plist-worldp))
   :returns (well-founded-relation symbolp)
+  :prepwork ((program))
   :short "Well-founded relation of a logic-mode recursive function."
   :long
   "<p>See @(see well-founded-relation-rule)
@@ -171,6 +178,7 @@
                          (w plist-worldp))
   :returns (ruler-extenders (or (symbol-listp ruler-extenders)
                                 (equal ruler-extenders :all)))
+  :prepwork ((program))
   :short
   "Ruler-extenders of a logic-mode recursive function
   (see @(see rulers) for background)."
@@ -195,7 +203,8 @@
         (macro-required-args-aux all-args))))
 
   :prepwork
-  ((define macro-required-args-aux ((args symbol-listp))
+  ((program)
+   (define macro-required-args-aux ((args symbol-listp))
      :returns (required-args symbol-listp)
      :parents (macro-required-args)
      :short "Auxiliary function of @(tsee macro-required-args)."
@@ -216,26 +225,31 @@
 
 (define fundef-disabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short "True iff the definition of the function @('fun') is disabled."
   (member-equal `(:definition ,fun) (disabledp fun)))
 
 (define fundef-enabledp ((fun (function-namep fun (w state))) state)
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short "True iff the definition of the function @('fun') is enabled."
   (not (fundef-disabledp fun state)))
 
 (define rune-disabledp ((rune (runep rune (w state))) state)
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short "True iff the @(see rune) @('rune') is disabled."
   (member-equal rune (disabledp (cadr rune))))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short "True iff the @(see rune) @('rune') is enabled."
   (not (rune-disabledp rune state)))
 
 (define included-books ((w plist-worldp))
-  :returns (result string-listp)
+  ;; :returns (result string-listp)
+  :verify-guards nil
   :short
   "List of full pathnames of all books currently included
   (directly or indirectly)."
@@ -266,6 +280,7 @@
                                      (eql 1 (len (recursivep fun w)))))
                            (w plist-worldp))
   :returns (tests-and-calls-list weak-tests-and-calls-listp)
+  :prepwork ((program))
   :short "Induction machine of a (singly) recursive function."
   :long
   "<p>
@@ -297,7 +312,9 @@
 
   :prepwork
 
-  ((define recursive-calls-aux1 ((tests pseudo-term-listp)
+  ((program)
+
+   (define recursive-calls-aux1 ((tests pseudo-term-listp)
                                  (calls pseudo-term-listp))
      :returns (calls-with-tests weak-tests-and-call-listp)
      :parents (recursive-calls)
@@ -376,6 +393,7 @@
 
 (define event-tuple-names ((evtup pseudo-event-tuplep))
   :returns (names logical-name-listp)
+  :prepwork ((program))
   :short "Names introduced by an event tuple."
   :long
   "<p>
