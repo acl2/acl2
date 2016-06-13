@@ -22,8 +22,6 @@
 
 (local (set-default-parents defun-sk-queries))
 
-(program)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defun-sk-queries
@@ -162,9 +160,9 @@
 (define defun-sk-check-signature (signature
                                   (witness symbolp)
                                   (args symbol-listp))
-  :returns (mv (yes/no booleanp)
-               (bound-vars symbol-listp)
-               (classicalp booleanp))
+  ;; :returns (mv (yes/no booleanp)
+  ;;              (bound-vars symbol-listp)
+  ;;              (classicalp booleanp))
   :short
   "Check the @(see signature)
   of the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -219,7 +217,11 @@
                                     (witness symbolp)
                                     (bound-vars symbol-listp)
                                     (args symbol-listp))
-  :returns (mv (yes/no booleanp) witness-body (strengthen booleanp))
+  :returns (mv (yes/no booleanp
+                       :hints (("Goal" :in-theory
+                                (enable defun-sk-check-signature-result))))
+               witness-body
+               (strengthen booleanp))
   :short
   "Check the local definition of the witness function
   in the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -259,6 +261,7 @@
                                           (args symbol-listp)
                                           witness-body)
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short
   "Check the (optional) strengthening theorem
   in the @(tsee encapsulate) of a @(tsee defun-sk) function."
@@ -287,6 +290,7 @@
                untrans-matrix
                (quantifier defun-sk-quantifier-p)
                (non-executable booleanp))
+  :verify-guards nil
   :short
   "Check the (non-local) definition of the @(tsee defun-sk) function
   in its @(tsee encapsulate),
@@ -374,9 +378,9 @@
                                      (quantifier defun-sk-quantifier-p)
                                      untrans-matrix
                                      (witness symbolp))
-  :returns (mv (yes/no booleanp)
-               (rewrite-name symbolp)
-               (rewrite-kind defun-sk-rewrite-kind-p))
+  ;; :returns (mv (yes/no booleanp)
+  ;;              (rewrite-name symbolp)
+  ;;              (rewrite-kind defun-sk-rewrite-kind-p))
   :short
   "Check the rewrite rule in the @('encapsulate')
   of a @(tsee defun-sk) function,
@@ -453,6 +457,7 @@
                                   (non-executable booleanp)
                                   (w plist-worldp))
   :returns (matrix pseudo-termp)
+  :prepwork ((program))
   :short
   "Retrieve the matrix of a @(tsee defun-sk) function,
   in <see topic='@(url term)'>translated form</see>."
@@ -517,6 +522,7 @@
 (define defun-sk-check ((fun (function-namep fun w))
                         (w plist-worldp))
   :returns (record? maybe-defun-sk-info-p)
+  :prepwork ((program))
   :short
   "Check if the function @('fun') is a @(tsee defun-sk) function."
   :long
