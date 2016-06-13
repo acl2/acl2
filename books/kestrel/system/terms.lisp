@@ -31,35 +31,7 @@
   :returns (fns symbol-listp)
   :short
   "Function symbols in a term, in reverse print order of first occurrence."
-  (all-fns1 term nil)
-
-  :prepwork
-
-  ((defines all-fns1/all-fns1-lst
-     :parents (all-fns)
-     :short "Auxiliary functions for @(tsee all-fns)."
-     :flag nil
-
-     (define all-fns1 ((term pseudo-termp) (ans symbol-listp))
-       :returns (ans1 symbol-listp)
-       :parents (all-fns)
-       :short "Auxiliary function for @(tsee all-fns)."
-       (cond ((variablep term) ans)
-             ((fquotep term) ans)
-             (t (let ((fn (ffn-symb term)))
-                  (if (symbolp fn)
-                      (all-fns1-lst (fargs term)
-                                    (add-to-set-eq fn ans))
-                    (all-fns1-lst (fargs term)
-                                  (all-fns1 (lambda-body fn) ans)))))))
-
-     (define all-fns1-lst ((terms pseudo-term-listp) (ans symbol-listp))
-       :returns (ans1 symbol-listp)
-       :parents (all-fns)
-       :short "Auxiliary function for @(tsee all-fns1)."
-       (cond ((endp terms) ans)
-             (t (all-fns1-lst (cdr terms)
-                              (all-fns1 (car terms) ans))))))))
+  (all-ffn-symbs term nil))
 
 (std::deflist legal-variable-listp (x)
   (legal-variablep x)
