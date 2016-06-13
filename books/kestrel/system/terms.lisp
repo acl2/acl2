@@ -19,8 +19,6 @@
 
 (local (set-default-parents term-manipulation))
 
-(program)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc term-manipulation
@@ -28,7 +26,7 @@
   :short "Utilities to manipulate <see topic='@(url term)'>terms</see>.")
 
 (define all-fns ((term pseudo-termp))
-  :returns (fns symbol-listp)
+  ;; :returns (fns symbol-listp)
   :short
   "Function symbols in a term, in reverse print order of first occurrence."
   (all-ffn-symbs term nil))
@@ -64,6 +62,7 @@
 
 (define lambda-expr-closedp ((lambd pseudo-lambda-expr-p))
   :returns (yes/no booleanp)
+  :verify-guards nil
   :short
   "True iff the lambda expression is closed, i.e. it has no free variables."
   (subsetp (all-vars (lambda-body lambd))
@@ -88,7 +87,9 @@
   :guard (or (symbolp pfun)
              (eql (len terms)
                   (len (lambda-formals pfun))))
-  :returns (term pseudo-termp)
+  ;; :returns (term pseudo-termp)
+  :guard-hints (("Goal" :in-theory (enable pseudo-functionp
+                                           pseudo-lambda-expr-p)))
   :short
   "Apply pseudo-function to list of pseudo-terms, obtaining a pseudo-term."
   :long
@@ -112,7 +113,8 @@
     `(apply-term ,pfun (list ,@terms))))
 
 (define apply-unary-to-terms ((pfun pseudo-functionp) (terms pseudo-term-listp))
-  :returns (applied-terms pseudo-term-listp)
+  ;; :returns (applied-terms pseudo-term-listp)
+  :verify-guards nil
   :short
   "Apply @('pfun'), as a unary function, to each of @('terms'),
   obtaining a list of corresponding terms."
@@ -123,7 +125,6 @@
 
 (defines term/terms-logicp
   :short "True iff term/terms is/are in logic mode."
-  :flag nil
 
   (define term-logicp ((term pseudo-termp) (w plist-worldp))
     :returns (yes/no booleanp)
@@ -149,12 +150,14 @@
 
 (define lambda-expr-logicp ((lambd pseudo-lambda-expr-p) (w plist-worldp))
   :returns (yes/no booleanp)
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambda-expr-p)))
   :short
   "True iff the lambda expression is in logic mode,
   i.e. its body is in logic mode."
   (term-logicp (lambda-body lambd) w))
 
 (defines term/terms-no-stobjs-p
+  :prepwork ((program))
   :short "True iff term/terms has/have no stobjs."
   :flag nil
 
@@ -191,6 +194,7 @@
 
 (define lambda-expr-no-stobjs-p ((lambd pseudo-lambda-expr-p) (w plist-worldp))
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short
   "True iff the lambda expression has no stobjs,
   i.e. its body has no stobjs."
@@ -198,7 +202,7 @@
 
 (defines term/terms-funs-guard-verified-p
   :short "True iff term/terms is/are guard-verified."
-  :flag nil
+  :verify-guards nil
 
   (define term-funs-guard-verified-p ((term pseudo-termp) (w plist-worldp))
     :returns (yes/no booleanp)
@@ -224,12 +228,14 @@
 (define lambda-expr-funs-guard-verified-p ((lambd pseudo-lambda-expr-p)
                                            (w plist-worldp))
   :returns (yes/no booleanp)
+  :verify-guards nil
   :short
   "True iff all the functions in the lambda expression is guard-verified."
   (term-funs-guard-verified-p (lambda-body lambd) w))
 
 (define lambda-expr-p (x (w plist-worldp))
   :returns (yes/no booleanp)
+  :verify-guards nil
   :short
   "True iff @('x') is a valid translated lambda expression."
   :long
@@ -249,6 +255,7 @@
 (define check-user-term (x (w plist-worldp))
   :returns (term/message (or (pseudo-termp term/message)
                              (msgp term/message)))
+  :prepwork ((program))
   :short
   "Check whether @('x') is an untranslated term that is valid for evaluation."
   :long
@@ -292,6 +299,7 @@
 (define check-user-lambda-expr (x (w plist-worldp))
   :returns (lambd/message (or (pseudo-lambda-expr-p lambd/message)
                               (msgp lambd/message)))
+  :prepwork ((program))
   :short
   "Check whether @('x') is
   an untranslated lambda expression that is valid for evaluation."
@@ -329,6 +337,7 @@
 
 (define trans-macro ((mac (macro-namep mac w)) (w plist-worldp))
   :returns (term pseudo-termp)
+  :prepwork ((program))
   :short "Translated term that a call to the macro translates to."
   :long
   "<p>
@@ -352,6 +361,7 @@
 
 (define term-guard-obligation ((term pseudo-termp) state)
   :returns (obligation pseudo-termp)
+  :prepwork ((program))
   :short "Formula expressing the guard obligation of the term."
   :long
   "<p>
