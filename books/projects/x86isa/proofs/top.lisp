@@ -77,7 +77,8 @@ in the system-level mode can be found in
   (local
    (encapsulate
      ()
-     ;; This is nowhere near finished right now.
+     ;; This is a beast --- takes ages to certify.  Maybe I should
+     ;; remove this from the regression?
      (local (include-book "zeroCopy/zeroCopy-in-marking-mode" :ttags :all)))))
 
 ;; ======================================================================
