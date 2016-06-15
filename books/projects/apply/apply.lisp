@@ -4,7 +4,7 @@
 
 ; Apply for Tame Functions in ACL2
 
-; This is a WORK IN PROGRESS!
+; This is a WORK IN PROGRESS! -- ALL COMMENTS SUSPECT!
 
 ; It is our intention EVENTUALLY to restrict make-applicable so that the
 ; following is true: any chronology certified with this book has the property
@@ -22,10 +22,77 @@
 (in-package "ACL2")
 
 ; -----------------------------------------------------------------
-; The Axioms about F-Classes and Apply$:  There aren't any!
+; Handling the Primitives
 
-(defstub f-classes-nonprim (fn) t)
+(include-book "apply-prim")
+
+; Reminders and Warnings: The above book defines apply$-primp, badge-prim, and
+; apply$-prim in :logic mode.  The first two are guard verified but apply$-prim
+; cannot be guard verified because it may well violate guards, e.g.,
+; (apply$-prim 'car (list 7)).  To use apply$-prim in a guard verified setting,
+; call it inside ec-call!  We also know via badge-prim-type that when
+; (apply$-primp fn) is true then (apply$-badgep (badge-prim fn)) and (cdddr
+; (badge-prim fn))=t.
+
+; The apply-prim book also defines the constant *badge-prim-falist* which is a
+; fast-alist with entries of the form (fn . (APPLY$-BADGE flg arity . T)).  One
+; should not hons-acons anything onto this object because that would steal the
+; hash table out from under the current value and slow down apply$-primp and
+; badge-prim which use hons-get to access this constant.
+
+; -----------------------------------------------------------------
+; The Axioms about Badge and Apply$
+
+; Badge-nonprim is constrained to return nil or an apply$-badgep.  The latter
+; is a non-cheap record structured with token name APPLY$-BADGE and accessors
+; :authorization-flg, :arity, and :ilks.  We abbreviate the :authorization-flg
+; value as flg.  Flg indicates whether the associated function, fn, is stobj-
+; and state-free and has been analyzed for appropriate use of second-order-like
+; arguments.  Flg is nil if fn returns multiple values -- the only thing
+; preventing it from being applicable.  In any case, arity is the arity of fn
+; and ilks is T or a list of flags NIL, :FN, and/or :EXPR corresponding to the
+; formals and indicating how they are used.  If the ilks is a list (c_1
+; ... c_arity), we say c_i is the ``ilk'' of the ith argument.  When ilks = T,
+; then each arg has ilk NIL, i.e., T is an abbreviation for a list of arity
+; NILs.
+
+; The reason we constrain badge-nonprim is so that we can verify guards for
+; tamep and apply$ without having to check these facts about badge-nonprim.
+
+(encapsulate
+  ((badge-nonprim (fn) t))
+  (local (defun badge-nonprim (fn)
+           (declare (ignore fn))
+           nil))
+  (defthm badge-nonprim-type
+    (or (null (badge-nonprim fn))
+        (apply$-badgep (badge-nonprim fn)))
+    :rule-classes
+    ((:forward-chaining
+      :corollary (implies (badge-nonprim fn)
+                          (apply$-badgep (badge-nonprim fn)))))))
+
+; Apply$-nonprim is totally unconstrained.
+
 (defstub apply$-nonprim (fn args) t)
+
+; ----------------------------------------------------------------- 
+
+; To make apply$ executable in the evaluation theory, do the following after
+; including this book into a version of ACL2 that supports execution of apply$.
+; Note that the instructions below include forms to be executed within the ACL2
+; loop and forms to be executed in raw Lisp.
+
+#||
+(defattach (badge-nonprim concrete-badge-nonprim)
+  :hints
+  (("Goal" :use concrete-badge-nonprim-type)))
+(defattach apply$-nonprim concrete-apply$-nonprim)
+(value :q) ; exit the ACL2 loop into raw Lisp.
+(setq *allow-concrete-execution-of-apply-stubs* t)
+(defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
+(lp)
+||#
 
 ; -----------------------------------------------------------------
 ; These two stubs are used as the ``default values'' of (apply$ fn args) and
@@ -35,104 +102,244 @@
 (defstub untame-ev$ (x a) t)
 
 ; -----------------------------------------------------------------
-; Handling the Primitives
+; The Role of Badge-Table
 
-(include-book "apply-prim")
+; The badge-table contains one entry named :badge-nonprim-structure whose value
+; is an object that associates APPLY$-BADGEs (see above) with certain function
+; symbols.  At the moment that structure is just a simple alist.  We might wish
+; to replace it by some sort of tree, property list, fast alist, etc.  Hence
+; the rather generic word ``structure'' in its name.
 
-; The Role of F-Classes-Table
+; Note: One reason to adopt a fast representation is that the concrete
+; functions that enable the top-level evaluation of tamep and apply$ access
+; this structure.  So its speed directly affects the execution speed of mapping
+; functions in raw Lisp.  However, a difficulty with structures that exploit
+; some kind of hidden backing store, like both user-managed worlds
+; (getprop/putprop/extend-world) and fast alists, is that when these structures
+; are updated inside encapsulates care must be taken to restore the backing
+; store before pass 2.  This is why, for example, we use
+; *badge-prim-falist* to get the badge of primitives but
+; :badge-nonprim-structure to get the badge of nonprimitives: the
+; former can safely be a fast alist because it's constant.  Furthermore, there
+; are many more primitives than nonprimitives right now so this makes apply$
+; pretty efficient.  However, we don't think of the battle for runtime
+; efficiency of apply$ as having been won yet -- it has hardly been fought!
+; Rather than fight this battle now we just punt and use a simple alist for
+; nonprimitives.  We experimented with a two-level alist, mapping a symbol's
+; first char to an alist mapping symbols to pairs, and got performance that was
+; sometimes worse than a simple alist (and sometimes better) making efficiency
+; hard to assess without some kind of data on the distribution of symbols
+; alphabetically.
 
-; The f-classes-table associates function names with their f-classes.  It is
-; not used directly by the logic.  It is used in the computation of the
-; f-classes of newly introduced functions.  See classify-formals.
+; Suppose fn has a non-nil badge, with components flg, arity, and ilks.  Then
 
-; Classify-formals can't use (f-classes fn) to find the classes of fn's formals
-; because f-classes is not always defined (it calls the defstub
-; f-classes-nonprim whose value is determined by the apply hyp, if any, for
-; fn).  So we need an easy way to recover the f-classes that are known and that
-; is what the table is.
+; (a) Fn is nonprimitive and ``applicable'' in the sense that word is defined
+;     below.
 
-; We could shorten the table by removing the primitives from it; that would
-; mean that to determine the f-classes of fn we'd first test (apply$-primp fn)
-; and, failing that test, then look in the table.  But that's the same amount
-; of work as looking in the full table, which is conceptually simpler.
+; (b) The arity of fn is arity, a natural number.
 
-(table f-classes-table nil
-       (append (pairlis-x2 (strip-cars *apply$-primitives*) t)
-               '((tamep . t)
-                 (tamep-functionp . t)
-                 (suitably-tamep-listp . t)
-                 (apply$ . (:fn nil))
-                 (ev$ . (:expr nil))))
-       :clear)
+; (c) If ilks is T, we know that fn is actually tame; otherwise, ilks is a
+;     list (c_1 ... c_n), where each c_i is nil, :fn, or :expr.
 
-; The tamep clique could have been included in the apply$ primitives.  But
-; doing so would have required declaring f-classes-nonprim and apply$-nonprim
-; inside apply-prim.lisp so we could define f-classes and hence the tamep
-; clique there.  But that obscures the development of apply unnecessarily and
-; we decided that it's better to handle the functions here.
+; (d) When ilks is a list, at least one c_i is not nil because when all the
+;     c_i are nil, fn is tame and we store a T instead of a list.
 
-(defun f-classes (fn)
+; The badge-table is not used directly by the logic.  It is used in the
+; computation of the badge of a newly introduced function.  See
+; classify-formals (which is the :program mode workhorse for analyzing
+; functions).  It is also used in the support for raw Lisp execution of
+; badge-nonprim.  See concrete-badge-nonprim in the ACL2 sources.
+
+; Raw lisp and :program mode functions like classify-formals can't use
+; (badge fn) to find the classes of fn's formals because badge is not
+; always executable; it calls the defstub badge-nonprim whose value is
+; determined by the apply hyp, if any, for fn.  So we need an easy, executable
+; way to recover the badge that are known, given the world.  We implement
+; that now.
+
+(defconst *generic-tame-badge-1*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
+(defconst *generic-tame-badge-2*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
+(defconst *generic-tame-badge-3*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
+(defconst *apply$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
+(defconst *ev$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
+
+(table badge-table
+       :badge-nonprim-structure
+       `((tamep . ,*generic-tame-badge-1*)
+         (tamep-functionp . ,*generic-tame-badge-1*)
+         (suitably-tamep-listp . ,*generic-tame-badge-2*)
+         (apply$ . ,*apply$-badge*)
+         (ev$ . (2 . ,*ev$-badge*))))
+
+(defun executable-badge (fn wrld)
+
+; There's nothing wrong with putting this in logic mode but we don't need it in
+; logic mode here.
+
+  (declare (xargs :mode :program))
   (cond
-   ((apply$-primp fn) t)
-   ((eq fn 'F-CLASSES) t)
-   ((eq fn 'TAMEP) t)
-   ((eq fn 'TAMEP-FUNCTIONP) t)
-   ((eq fn 'SUITABLY-TAMEP-LISTP) t)
-   ((eq fn 'APPLY$) '(:fn nil))
-   ((eq fn 'EV$) '(:expr nil))
-   (t (f-classes-nonprim fn))))
+   ((symbolp fn)
+    (let ((temp (hons-get fn *badge-prim-falist*)))
+      (cond
+       (temp (cdr temp))
+       (t (cdr
+           (assoc-eq
+            fn
+            (cdr
+             (assoc-eq :badge-nonprim-structure
+                       (table-alist 'badge-table wrld)))))))))
+   (t nil)))
+
+(defun badge (fn)
+  (declare (xargs :guard t))
+  (cond
+   ((apply$-primp fn) (badge-prim fn))
+   ((eq fn 'BADGE) *generic-tame-badge-1*)
+   ((eq fn 'TAMEP) *generic-tame-badge-1*)
+   ((eq fn 'TAMEP-FUNCTIONP) *generic-tame-badge-1*)
+   ((eq fn 'SUITABLY-TAMEP-LISTP) *generic-tame-badge-3*)
+   ((eq fn 'APPLY$) *apply$-badge*)
+   ((eq fn 'EV$) *ev$-badge*)
+   (t (badge-nonprim fn))))
+
+(in-theory (disable apply$-primp badge-prim))
+
+(defthm badge-type
+  (or (null (badge fn))
+      (apply$-badgep (badge fn)))
+;  :hints (("Goal" :use (badge-prim-type badge-nonprim-type)))
+  :rule-classes
+  ((:forward-chaining
+    :corollary (implies (badge fn)
+                        (apply$-badgep (badge fn))))))
+
+(in-theory (disable badge))
 
 ; -----------------------------------------------------------------
 ; Tameness
 
+; These functions are defined for speed, not clarity.  Aside from the obvious
+; logical requirements of tameness -- roughly speaking, every function is
+; either tame or is a mapping function supplied with quoted tame functions in
+; the right places -- we want (tamep x) to imply that x is either a symbol or a
+; true-listp, imply that every function call is supplied with the right number
+; of arguments (at least with respect to the arities reported by badge),
+; and we want it guard verified with a guard of t.
+
 (mutual-recursion
  (defun tamep (x)
-   (cond ((atom x) t)
-         ((fquotep x) t)
-         ((consp (car x)) ; lambda expr, all vanilla!
-          (and (tamep-functionp (car x))
-               (suitably-tamep-listp (cdr x) t)))
-         ((f-classes (car x))
-          (suitably-tamep-listp (cdr x) (f-classes (car x))))
+   (declare (xargs :measure (acl2-count x)
+                   :guard t
+                   :verify-guards nil
+                   ))
+   (cond ((atom x) (symbolp x))
+         ((eq (car x) 'quote)
+          (and (consp (cdr x))
+               (null (cddr x))))
+         ((symbolp (car x))
+          (let ((bdg (badge (car x))))
+            (cond
+             ((null bdg) nil)
+             ((eq (access apply$-badge bdg :ilks) t)
+              (suitably-tamep-listp (access apply$-badge bdg :arity)
+                                    nil
+                                    (cdr x)))
+             (t (suitably-tamep-listp (access apply$-badge bdg :arity)
+                                      (access apply$-badge bdg :ilks)
+                                      (cdr x))))))
+         ((consp (car x))
+          (let ((fn (car x)))
+            (and (eq (car fn) 'LAMBDA)
+                 (consp (cdr fn))
+                 (symbol-listp (cadr fn))
+                 (consp (cddr fn))
+                 (tamep (caddr fn))
+                 (null (cdddr fn))
+                 (suitably-tamep-listp (length (cadr fn))
+                                       nil
+                                       (cdr x)))))
          (t nil)))
 
  (defun tamep-functionp (fn)
+   (declare (xargs :measure (acl2-count fn)
+                   :guard t))
    (if (symbolp fn)
-       (eq (f-classes fn) t)
+       (let ((bdg (badge fn)))
+         (and bdg (eq (access apply$-badge bdg :ilks) t)))
        (and (consp fn)
             (eq (car fn) 'LAMBDA)
+            (consp (cdr fn))
+            (symbol-listp (lambda-formals fn))
+            (consp (cddr fn))
             (tamep (lambda-body fn)))))
 
- (defun suitably-tamep-listp (x flags)
+ (defun suitably-tamep-listp (n flags args)
 
-; Note that when we have exhausted x we must have exhausted flags.  That is
-; flags may be too short but may not be too long.  This is a delicate aspect of
-; the axiom we want for defining ev$.
+; We take advantage of the fact that (car nil) = (cdr nil) = nil.
 
+   (declare (xargs :measure (acl2-count args)
+                   :guard (and (natp n)
+                               (true-listp flags))))
    (cond
-    ((atom x) (atom flags)) 
-    ((atom flags)
-     (and (tamep (car x))
-          (suitably-tamep-listp (cdr x) flags)))
-    ((eq (car flags) :fn)
-     (and (quotep (car x))
-          (tamep-functionp (cadr (car x)))
-          (suitably-tamep-listp (cdr x) (cdr flags))))
-    ((eq (car flags) :expr)
-     (and (quotep (car x))
-          (tamep (cadr (car x)))
-          (suitably-tamep-listp (cdr x) (cdr flags))))
-    (t
-     (and (tamep (car x))
-          (suitably-tamep-listp (cdr x) (cdr flags))))))
+    ((zp n) (null args))
+    ((atom args) nil)
+    (t (and 
+        (let ((arg (car args)))
+          (case (car flags)
+            (:FN
+             (and (consp arg)
+                  (eq (car arg) 'QUOTE)
+                  (consp (cdr arg))
+                  (null (cddr arg))
+                  (tamep-functionp (cadr arg))))
+            (:EXPR
+             (and (consp arg)
+                  (eq (car arg) 'QUOTE)
+                  (consp (cdr arg))
+                  (null (cddr arg))
+                  (tamep (cadr arg))))
+            (otherwise
+             (tamep arg))))
+        (suitably-tamep-listp (- n 1) (cdr flags) (cdr args))))))
  )
 
-; We disable the executable counterparts of tamep because f-classes-nonprim is
+(verify-guards tamep
+  :hints
+  (("Goal" :use ((:instance badge-type (fn fn))
+                 (:instance badge-type (fn (car x)))))))
+
+; In order to verify the guards of the apply$ clique we need various properties
+; implied by tamep.  We prove them here.
+
+(defun suitably-tamep-listp-induction (n flags args)
+  (cond
+   ((zp n) (list flags args))
+   (t (suitably-tamep-listp-induction (- n 1) (cdr flags) (cdr args)))))
+
+(defthm suitably-tamep-listp-implicant-1
+  (implies (and (suitably-tamep-listp n flags args)
+                (natp n))
+           (and (true-listp args)
+                (equal (len args) n)))
+  :hints (("Goal" :induct (suitably-tamep-listp-induction n flags args)))
+  :rule-classes :forward-chaining)
+
+(defthm tamep-implicant-1
+  (implies (and (tamep x)
+                (consp x))
+           (true-listp x))
+  :hints (("Goal" :expand (tamep x)
+           :use ((:instance badge-type (fn (car x)))))))
+
+; We disable the executable counterparts of tamep because badge-nonprim is
 ; undefined, so running tamep on constants, such as (tamep '(CONS A B)) fails
 ; and introduces a HIDE.  However, expansion of the definitional axioms allow
-; us to use the f-classes axioms.  In a real implementation we would try to
-; make f-classes semi-executable under the hood by some kind of attachment that
-; accesses the f-classes-table.
+; us to use the badge properties from Applicablep hypotheses.
 
 (in-theory (disable (:executable-counterpart tamep)
                     (:executable-counterpart tamep-functionp)
@@ -141,63 +348,97 @@
 ; -----------------------------------------------------------------
 ; Definition of APPLY$ and EV$
 
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
+
 (defun ev$-measure (x a)
   (declare (ignore a))
-  (acl2-count x))
+  (llist (acl2-count x) 0))
+
+(defun ev$-list-measure (x a)
+  (declare (ignore a))
+  (llist (acl2-count x) 0))
 
 (defun apply$-measure (fn args)
   (cond
    ((consp fn)
-    (acl2-count fn))
+    (llist (acl2-count fn) 0))
    ((eq fn 'apply$)
-    (+ 1 (acl2-count (car args))))
+    (llist (+ 1 (acl2-count (car args))) 0))
    ((eq fn 'ev$)
-    (+ 1 (acl2-count (car args))))
-   (t 0)))
+    (llist (+ 1 (acl2-count (car args))) 0))
+   (t (llist 0 0))))
 
-(defun ev$-list-measure (x a)
-  (declare (ignore a))
-  (acl2-count x))
+(defun apply$-lambda-measure (fn args)
+  (declare (ignore args))
+  (llist (acl2-count (caddr fn)) 1))
 
 (mutual-recursion
  (defun APPLY$ (fn args)
-   (declare (xargs :measure (apply$-measure fn args)
+   (declare (xargs :guard (true-listp args)
+                   :guard-hints (("Goal" :do-not-induct t))
+                   :measure (apply$-measure fn args)
+                   :well-founded-relation l<
                    ))
    (cond
     ((consp fn)
-     (EV$ (lambda-body fn)
-          (pairlis$ (lambda-formals fn) args)))
+     (apply$-lambda fn args))
     ((apply$-primp fn)
-     (apply$-prim fn args))
+     (ec-call (apply$-prim fn args)))
 
 ; See note above about handling the tamep clique as a primitive versus handling
 ; it here.
 
-    ((eq fn 'F-CLASSES)
-     (f-classes (car args)))
+    ((eq fn 'BADGE)
+     (badge (car args)))
     ((eq fn 'TAMEP)
      (tamep (car args)))
     ((eq fn 'TAMEP-FUNCTIONP)
      (tamep-functionp (car args)))
     ((eq fn 'SUITABLY-TAMEP-LISTP)
-     (suitably-tamep-listp (car args) (cadr args)))
+     (ec-call (suitably-tamep-listp (car args) (cadr args) (caddr args))))
     ((eq fn 'APPLY$)
-     (if (tamep-functionp (car args))
-         (APPLY$ (car args) (cadr args))
+
+; The tamep-functionp test below prevents us from APPLY$ing 'APPLY$ except to
+; tame functions.  In particular, you can't apply$ 'apply$ to 'apply$.  We
+; discuss some ramifications of this in the Essay on Applying APPLY$ below.  A
+; cheaper version of this test that works (in the sense that allows both the
+; termination and guard proofs) would be (if (symbolp (car args)) (not
+; (member-eq (car args) '(apply$ ev$))) (consp (car args))) though that is less
+; succinct and might actually ruin the model (we haven't tried) because in the model
+; there are other symbols besides APPLY$ and EV$ you can't apply.  But the
+; reason we keep the full blown tamep-functionp test is more aesthetic: it
+; makes the apply$ ``applicablep hyp'' exactly analogous to the applicablep hyp
+; for user-defined mapping functions like COLLECT.
+
+     (if (tamep-functionp (car args)) ; [termination & model]
+         (ec-call (APPLY$ (car args) (cadr args)))
          (untame-apply$ fn args)))
     ((eq fn 'EV$)
-     (if (tamep (car args))
+     (if (tamep (car args)) ; [model] (not req'd for termination or guards)
          (EV$ (car args) (cadr args))
          (untame-apply$ fn args)))
     (t (apply$-nonprim fn args))))
 
+ (defun apply$-lambda (fn args)
+   (declare (xargs :guard (and (consp fn) (true-listp args))
+                   :guard-hints (("Goal" :do-not-induct t))
+                   :measure (apply$-lambda-measure fn args)
+                   :well-founded-relation l<
+                   ))
+   (EV$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
+        (ec-call
+         (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
+                   args))))
+
  (defun EV$ (x a)
-   (declare (xargs :measure (ev$-measure x a)))
+   (declare (xargs :guard t
+                   :measure (ev$-measure x a)
+                   :well-founded-relation l<))
    (cond
     ((not (tamep x))
      (untame-ev$ x a))
     ((variablep x)
-     (cdr (assoc x a)))
+     (ec-call (cdr (ec-call (assoc-equal x a)))))
     ((fquotep x)
      (cadr x))
     ((eq (car x) 'if)
@@ -218,13 +459,179 @@
              (EV$-LIST (cdr x) a)))))
 
  (defun EV$-LIST (x a)
-   (declare (xargs :measure (ev$-list-measure x a)))
+   (declare (xargs :guard t
+                   :measure (ev$-list-measure x a)
+                   :well-founded-relation l<))
    (cond
-    ((endp x) nil)
+    ((atom x) nil)
     (t (cons (EV$ (car x) a)
              (EV$-LIST (cdr x) a)))))
 
 )
+
+; I tried to put ``reasonable'' guards on the apply$ clique and it won't work.
+; For example, the reasonable guard on (ev$ x a) is that x is a pseudo-termp
+; and a is a symbol-alistp.  But consider the recursive call (ev$ (car args)
+; (cadr args)) in apply$.  The governing test (tamep (car args)) might give us
+; the former, but there's nothing that can give us the second because, when ev$
+; calls itself as it interprets an 'EV$ call, the second actual is the result
+; of a recursive evaluation.  So that not only makes the guard proof reflexive
+; but puts non-syntactic requirements on the args.
+
+; So I have decided to go with :guard t, except for apply$ where I insist
+; (true-listp args) and apply$-lambda where we additionally know that fn is a
+; cons (LAMBDA-expression).
+
+; Essay on Applying APPLY$
+
+; Suppose collect and collect* are defined as in chronology.lisp, i.e.,
+
+; (defun$ collect (lst fn)
+;   (cond ((endp lst) nil)
+;         (t (cons (apply$ fn (list (car lst)))
+;                  (collect (cdr lst) fn)))))
+
+; (defun collect* (lst fn)
+;   (if (endp lst)
+;       nil
+;       (cons (apply$ fn (car lst))
+;             (collect* (cdr lst) fn))))
+
+; (thm ; [1]
+;  (implies (applicablep collect)
+;           (equal (apply$ 'collect '((1 2 3) (lambda (x) (binary-+ '3 x))))
+;                  '(4 5 6))))
+
+; BTW: The applicablep hyp below is required because otherwise we don't know
+; COLLECT is untame.
+
+;  (thm ; [2]
+;   (implies (applicablep collect)
+;            (equal (apply$ 'apply$
+;                           '(collect ((1 2 3) (lambda (x) (binary-+ '3 x)))))
+;                   (untame-apply$
+;                    'apply$
+;                    '(collect ((1 2 3) (lambda (x) (binary-+ '3 x)))))))
+;   :hints
+;   (("Goal"
+;     :expand
+;     ((apply$ 'apply$
+;              '(collect ((1 2 3) (lambda (x) (binary-+ '3 x)))))))))
+
+; Note that [1] and [2] are sort of similar but [1] is more direct than [2].
+; One might wish that if we can reduce (apply$ 'collect ...) to a constant we
+; could reduce (apply$ 'apply$ '(collect ...)) to the same constant but that is
+; not true.  For what it is worth, we can do this:
+
+; (thm ; [3]
+;  (implies (applicablep collect)
+;           (equal (apply$ 'apply$
+;                          '((lambda (lst)
+;                              (collect lst '(lambda (x) (binary-+ '3 x))))
+;                            ((1 2 3))))
+;                  '(4 5 6)))
+;  :hints
+;  (("Goal" :expand ((apply$ 'apply$
+;                            '((lambda (lst)
+;                                (collect lst '(lambda (x) (binary-+ '3 x))))
+;                              ((1 2 3))))))))
+
+; One's reaction to [3] could be similar to the scene in "Six Days and Seven
+; Nights"... the plane has crashed on the beach of a deserted island...
+
+; Robin: Whoa. What happened?
+; Quinn: It crumpled the landing gear when we hit.
+; Robin: Well, aren't you gonna fix it? I mean can't we, can't we reattach
+;        it somehow?
+; Quinn: Sure, we'll, like, glue it back on.
+; Robin: Aren't you one of those guys?
+; Quinn: What guys?
+; Robin: Those guy guys, you know, those guys with skills.
+; Quinn: Skills?
+; Robin: Yeah. You send them into the wilderness with a pocket knife and a
+;        Q-tip and they build you a shopping mall. You can't do that?
+; Quinn: No, I can't do that, but I can do this:
+;        [Pops finger out of the side of his mouth]
+
+; The reason [3] is relevant is that it's really like [2] except we package the
+; collect and the tame lambda expression into a tame lambda and apply it
+; successfully.  Not exactly a shopping mall, but maybe a convenience store...
+
+; Perhaps more interestingly, we can do such things as
+
+; (thm ; [4]
+;  (implies (applicablep collect)
+;           (equal (collect* '(((1 2 3) (lambda (x) (binary-+ '3 x)))
+;                              ((10 20 30) (lambda (x) (binary-+ '3 x))))
+;                            'collect)
+;                  '((4 5 6) (13 23 33))))
+;  :hints (("Goal" :in-theory (disable (collect*)))))
+
+; [4] is interesting because we are mapping with a mapping function.  One might
+; think that since we can't apply$ a mapping function this wouldn't work.  But
+; it's more subtle.  The defun of collect* expands to introduce
+; (apply$ 'collect '((1 2 3) (lambda (x) (binary-+ '3 x)))).
+; Then the applicablep hyp for collect checks that its functional arg is tame,
+; so that expands to (collect '(1 2 3) '(lambda (x) (binary-+ '3 x))).
+
+; Now you might think, ``But why can't we force the expansion of the apply$ on
+; the untame collect to get an untame-apply error?''  The reason is that
+; there's no such clause in the defun of apply$.  The clause you're thinking
+; about only works for (apply$ 'apply$ ...) not (apply$ 'collect ...).  The
+; meaning of (apply$ 'collect ...) is, by the defun of apply$, whatever
+; apply$-nonprim says it is.
+
+; The Untamed Eval Saga
+
+; I have tried to remove the tamep test at the top of EV$.  It is easy to do if
+; one first changes APPLY$ so that it cannot handle fn = 'EV$.  (To be precise,
+; I also made it unable to handle fn = 'APPLY$.  I do not think (apply$ 'APPLY$
+; '(cons (1 2))) = (cons 1 2) is particularly useful, anyway.)  Then, just kill
+; the (not (tamep x)) clause at the top of EV$, eliminate the 'APPLY$ and 'EV$
+; cases below that, and change measure of APPLY$, EV$, and EV$-LIST to acl2-count
+; of the first arg.  Furthermore, if you do this, it is still possible to certify
+; chronology.lisp.
+
+; However, I have not been able to admit the ev! clique in the revised model,
+; or, if I did admit it, I could not prove that ev! is ev$.
+
+; To admit the ev! clique, first visit the same changes to apply! and ev! as
+; described above, eliminating the 'APPLY$ and 'EV$ cases.  The measures can
+; stay the same.  But you must also change the ``look-ahead'' tests, (consp
+; (cdr x)), guarding ev!'s handling of 'COLLECT, 'SUMLIST, etc., so that they
+; are (and (quotep (cad..dr x)) (tamep-functionp (cadr (cad..dr x)))).  This
+; should allow the clique to be admitted.
+
+; The ``look-ahead'' tests are necessary because otherwise ev! passes an
+; ev!-list result into apply! and the old apply!-measure no longer works.
+
+; THERE MAY BE A WAY to admit the modified clique with a different
+; measure, but I haven't found it.
+
+; But if the look-ahead tests are there in ev!, it makes ev! different from ev$
+; because ev! looks for a QUOTE on the functional argument and strips it off
+; (so it can terminate) but ev$ calls ev$-list on the arguments.  If there is
+; no QUOTE on the functional arg, ev! signals an error but ev$ evaluates.  It
+; could be that it evaluates to a tame function name.  If it does, we have to
+; prove that the untame-apply$/untame-ev$ signal is the same as calling the
+; tame function, which of course it's not.
+
+; So the model has the look ahead tests to insure termination and the actual
+; ev$ has the tamep test at the top to guarantee that the look ahead tests are
+; all true and to guarantee that the short-circuiting of the ev$-list is equal
+; to the ev$-list.
+
+; About the definition of APPLY$-LAMBDA:
+
+; The only reason we define APPLY$-LAMBDA is so that we can attach a concrete
+; executable counterpart to it.  We'd prefer not to have the function occur in
+; our proofs and so we always expand it away.
+
+(defthm apply$-lambda-opener
+  (equal (apply$-lambda fn args)
+         (EV$ (lambda-body fn)
+              (pairlis$ (lambda-formals fn)
+                        args))))
 
 ; About the definition of EV$:
 
@@ -291,11 +698,11 @@
     :rule-classes (:definition)))
 
  (defthm ev$-opener
-   (and (implies (variablep x)
+   (and (implies (symbolp x)
                  (equal (ev$ x a) (cdr (assoc x a))))
-        (equal (ev$ (cons 'quote args) a)
-               (car args))
-        (implies (force (suitably-tamep-listp args t))
+        (equal (ev$ (list 'quote obj) a)
+               obj)
+        (implies (force (suitably-tamep-listp 3 nil args))
                  (equal (ev$ (cons 'if args) a)
                         (if (ev$ (car args) a)
                             (ev$ (cadr args) a)
@@ -326,36 +733,38 @@
   (equal (apply$ (list 'LAMBDA vars body) args)
          (ev$ body (pairlis$ vars args))))
 
-(defthm f-classes-primitive
+(defthm apply$-primp-badge
   (implies (apply$-primp fn)
-           (equal (f-classes fn) t)))
+           (equal (badge fn)
+                  (badge-prim fn)))
+  :hints (("Goal" :in-theory (enable badge))))
 
-(defthm f-classes-f-classes
-  (equal (f-classes 'f-classes) t))
+(defthm badge-badge
+  (equal (badge 'badge) *generic-tame-badge-1*))
 
-(defthm f-classes-tamep
-  (equal (f-classes 'tamep) t))
+(defthm badge-tamep
+  (equal (badge 'tamep) *generic-tame-badge-1*))
 
-(defthm f-classes-tamep-functionp
-  (equal (f-classes 'tamep-functionp) t))
+(defthm badge-tamep-functionp
+  (equal (badge 'tamep-functionp) *generic-tame-badge-1*))
 
-(defthm f-classes-suitably-tamep-listp
-  (equal (f-classes 'suitably-tamep-listp) t))
+(defthm badge-suitably-tamep-listp
+  (equal (badge 'suitably-tamep-listp) *generic-tame-badge-3*))
 
-(defthm f-classes-apply$
-  (equal (f-classes 'apply$) '(:fn NIL)))
+(defthm badge-apply$
+  (equal (badge 'apply$) *apply$-badge*))
 
-(defthm f-classes-ev$
-  (equal (f-classes 'ev$) '(:expr NIL)))
+(defthm badge-ev$
+  (equal (badge 'ev$) *ev$-badge*))
 
 (defthm apply$-primitive
   (implies (apply$-primp fn)
            (equal (apply$ fn args)
                   (apply$-prim fn args))))
 
-(defthm apply$-f-classes
-  (equal (apply$ 'F-CLASSES args)
-         (f-classes (car args))))
+(defthm apply$-badge
+  (equal (apply$ 'BADGE args)
+         (badge (car args))))
 
 (defthm apply$-tamep
   (equal (apply$ 'TAMEP args)
@@ -367,10 +776,10 @@
 
 (defthm apply$-suitably-tamep-listp
   (equal (apply$ 'SUITABLY-TAMEP-LISTP args)
-         (suitably-tamep-listp (car args) (cadr args))))
+         (suitably-tamep-listp (car args) (cadr args) (caddr args))))
 
-(in-theory (disable f-classes
-                    (:executable-counterpart f-classes)
+(in-theory (disable badge
+                    (:executable-counterpart badge)
                     apply$
                     (:executable-counterpart apply$)))
 
@@ -381,22 +790,22 @@
 ; arguments.  Then the new defun$ will also do:
 
 ; (defun-sk applicablep-AP nil
-;   (forall (args) (and (equal (f-classes 'AP) t)
+;   (forall (args) (and (equal (badge 'AP) t)
 ;                       (equal (apply$ 'AP args)
 ;                              (ap (car args) (cadr args))))))
 
 ; (defthm apply$-AP
 ;   (implies (force (applicablep-AP))
-;            (and (equal (f-classes 'AP) t)
+;            (and (equal (badge 'AP) t)
 ;                 (equal (apply$ 'AP args)
 ;                        (ap (car args) (cadr args))))))
 
 ; (in-theory (disable applicablep-AP))
 
 ; which will mean that if we have the hypothesis (applicablep-AP), we will rewrite
-; (f-classes 'AP) to T and rewrite (apply$ 'AP args) to the appropriate call of
-; ap.  [Actually, instead of f-classes and apply$ above the defun-sk is about
-; f-classes-nonprim and apply$-nonprim.  But the snippet above is spiritually
+; (badge 'AP) to T and rewrite (apply$ 'AP args) to the appropriate call of
+; ap.  [Actually, instead of badge and apply$ above the defun-sk is about
+; badge-nonprim and apply$-nonprim.  But the snippet above is spiritually
 ; correct.]
 
 ; ----------------------------------------------------------------- 
@@ -552,31 +961,45 @@
        'applicablep-untranslate-preprocess)
 
 ; -----------------------------------------------------------------
-; The F-Classes Table:
+; The Badge Table:
 
-; In order to compute the f-classes of a new defun, we must be able to look up
-; the f-classes of all the pre-defined functions.  We will have apply
-; hypotheses telling us the relevant f-classes, but we need an easier way to
-; find f-classes than inspecting the defun-sk for the function's apply
+; The badge of a function fn is either nil (meaning fn is not analyzable or has
+; not been analyzed) or is an APPLY$-BADGE record as noted above.
+
+; In order to compute the badge of a new defun, we must be able to look up
+; the badge of all the already-defined functions.  We will have applicablep
+; hypotheses telling us the relevant badge, but we need an easier way to
+; find a badge than inspecting the defun-sk for the function's applicablep
 ; hypothesis.  So we maintain a table for that purpose.  Every time a new
-; function is introduced, we extend the table.
+; function is analyzed, we extend the table.
 
-; But first, we have to be able to compute the f-classes of a term from the
-; f-classes in the table.  Here is how we do that.
+; But first, we have to be able to compute the ilks, ci, of each formal vi in a
+; term from the badges in the table.  Here is how we do that.
 
-; Every formal has one of these flags assigned to it:
+; Every formal of every function with an assigned badge has one of these ilks:
 ; nil (meaning :vanilla)
 ; :fn
 ; :expr
-; :unknown
-; with the convention that if any formal is :unknown, they all are.
-; Furthermore, if all of the formals are :vanilla, then we assign the classes t
-; to it.
+; We enforce the convention that if the ilks of a badge is T then all formals
+; have ilk nil.
 
-; We never put :unknown into the table, so if a function has an :unknown
-; formal, the function just isn't in the table at all and any function that
-; calls it will inherit an :unknown classification.  Thus, the table entries
-; are always either t or lists of nil, :fn, and/or :expr flags.
+; We imagine a fourth ilk: :unknown, which we use in the code below.  If we
+; determine that a formal has ilk :unknown, then the entire function is
+; unanalyzable and no badge is generated or stored for it.  So no badge records
+; an :unknown ilk, but it is useful to think of every formal of every function
+; without a badge as having :unknown ilk.
+
+; If a function has an :unknown formal, the function just isn't in the table at
+; all and any function that calls it will inherit an :unknown classification.
+
+; Recall also the :authorization-flg of the apply$-badge record.  If that flag
+; is T, the function is known to APPLY$; if it is NIL, it means the function is
+; analyzable and the formals have the ilks indicated, but the function returns
+; multiple values and so cannot be known to APPLY$, which is single-valued.
+
+; TODO: Maybe we should change from the automatic inference of ilks to the
+; declaration of ilks by the user?  We implemented such a thing in v27x
+; sources.
 
 ; TODO: We don't deal with mutual recursion yet!
 
@@ -587,32 +1010,34 @@
 ; which treats all lambda formals as :vanilla.  I think I may be misclassifying
 ; some formals.  Provoke an oddity!
 
-; Let's assume that 
-; (a) body does not return multiple values,
-; (b) body does not use STATE or any stobj,
-; (c) every :fn slot and :expr slot of every function called in body is
-;     occupied by either a quoted constant or a formal variable, and
-; (d) body does not call any functions of :unknown classes.
+; Let's assume these ``pre-check conditions'' for fn:
 
-; We call these the pre-check conditions.
+; (a) body does not use STATE or any stobj,
 
-; Then to check that the ith formal, var, has class :fn we can proceed as
+; (b) every function called in body (except fn itself) has a badge (possibly
+; with :authorization-flg = nil), and
+
+; (c) every :FN slot and :EXPR slot of every function called in body is
+;     occupied by either a quoted constant naming an analyzed function or a
+;     formal variable, and
+
+; Then to check that the ith formal, var, has class :FN we can proceed as
 ; follows:
 
-;   let n1 be the number of times var occurs as the actual in a :fn slot.
+;   let n1 be the number of times var occurs as the actual in a :FN slot.
 ;   Let n2 be the number of times var occurs as the actual in the ith slot of a
 ;   recursive call.
 ;   Let n3 be the number of recursive calls.
 ;   Let k be the number of times var occurs in the body.
 
 ;   Then if n1 > 0, n2=n3, and n1+n2 = k then we know that var occurs at least
-;   once in a functional slot, it is always passed identically in recursion,
+;   once in a :FN slot, it is always passed identically in recursion,
 ;   and it occurs nowhere else.
 
-; The analogous check works for formals of class :expr.
+; The analogous check works for formals of class :EXPR.
 
-; To check that a formal is of class :vanilla, we check that every occurrence
-; is in a :vanilla slot.
+; To check that a formal is of class :VANILLA (nil), we check that every
+; occurrence is in a :vanilla slot.
 
 ; If any formal is not of one of the classes, it is :unknown.
 
@@ -637,77 +1062,115 @@
 ; eliminate the beta reductions, be sure to keep all the counts comparable.
 
 (mutual-recursion
- (defun all-special-slots-okp (fn flag term f-classes-alist)
+ (defun all-special-slots-okp (fn ilk term wrld)
    (declare (xargs :mode :program))
    (cond
     ((variablep term)
      t)
     ((fquotep term)
-     t)
-    ((or (eq flag :fn)
-         (eq flag :expr))
+     (cond
+      ((eq ilk :fn)
+       (let ((xfn (cadr term)))
+         (cond ((symbolp xfn)
+                (and (executable-badge xfn wrld)
+                     t))
+               (t
+                (and (consp xfn)
+                     (eq (car xfn) 'lambda)
+                     (consp (cdr xfn))
+                     (symbol-listp (cadr xfn))
+                     (consp (cddr xfn))
+                     (null (cdddr xfn))
+                     (termp (caddr xfn) wrld)
+                     (all-special-slots-okp fn nil (caddr xfn) wrld))))))
+      ((eq ilk :expr)
+       (let ((xexpr (cadr term)))
+         (and (termp xexpr wrld)
+              (all-special-slots-okp fn nil xexpr wrld))))
+      (t t)))
+    ((or (eq ilk :fn)
+         (eq ilk :expr))
      nil)
     ((flambdap (ffn-symb term)) ; See `Note about Lambda Applications' above
      (all-special-slots-okp
-      fn flag
+      fn ilk
       (subcor-var (lambda-formals (ffn-symb term))
                   (fargs term)
                   (lambda-body (ffn-symb term)))
-      f-classes-alist))
+      wrld))
     ((eq fn (ffn-symb term))
-     (all-special-slots-okp-list fn nil (fargs term) f-classes-alist))
-    (t (let ((pair (assoc (ffn-symb term) f-classes-alist)))
+     (all-special-slots-okp-list fn nil (fargs term) wrld))
+    (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
          (cond
-          ((null pair) nil)
-          ((eq (cdr pair) t)
-           (all-special-slots-okp-list fn nil (fargs term) f-classes-alist))
-          (t (all-special-slots-okp-list fn (cdr pair) (fargs term) f-classes-alist)))))))
+          ((null bdg) nil)
+          ((eq (access apply$-badge bdg :ilks) t)
+           (all-special-slots-okp-list fn nil (fargs term) wrld))
+          (t (all-special-slots-okp-list fn
+                                         (access apply$-badge bdg :ilks)
+                                         (fargs term)
+                                         wrld)))))))
 
- (defun all-special-slots-okp-list (fn flags terms f-classes-alist)
+ (defun all-special-slots-okp-list (fn ilks terms wrld)
    (cond
     ((endp terms) t)
-    (t (and (all-special-slots-okp fn (car flags) (car terms) f-classes-alist)
-            (all-special-slots-okp-list fn (cdr flags) (cdr terms) f-classes-alist))))))
+    (t (and (all-special-slots-okp fn
+                                   (car ilks)
+                                   (car terms)
+                                   wrld)
+            (all-special-slots-okp-list fn
+                                        (cdr ilks)
+                                        (cdr terms)
+                                        wrld))))))
 
-(defun pre-check-body-for-classify-formals (fn body f-classes-alist wrld)
+(defun pre-check-body-for-classify-formals (fn body wrld)
   (declare (xargs :mode :program))
+
+; You might think that checking that no stobjs are coming in then no stobjs are
+; coming out, but you'd be wrong: stobj creators.
+
   (and (all-nils (getprop fn 'stobjs-in nil 'current-acl2-world wrld))
-       (equal (length (getprop fn 'stobjs-out nil 'current-acl2-world wrld)) 1)
-       (null (car (getprop fn 'stobjs-out nil 'current-acl2-world wrld)))
-       (all-special-slots-okp fn :vanilla body f-classes-alist)))
+       (all-nils (getprop fn 'stobjs-out nil 'current-acl2-world wrld))
+       (all-special-slots-okp fn :vanilla body wrld)))
 
 (mutual-recursion
- (defun count-special-occurrences (fn var spec-flag flag term f-classes-alist)
+ (defun count-special-occurrences (fn var spec-ilk ilk term wrld)
    (declare (xargs :mode :program))
    (cond
     ((variablep term)
      (cond ((and (eq var term)
-                 (eq spec-flag flag))
+                 (eq spec-ilk ilk))
             1)
            (t 0)))
     ((fquotep term)
      0)
     ((flambdap (ffn-symb term)) ; See `Note about Lambda Applications' above
      (count-special-occurrences
-      fn var spec-flag flag
+      fn var spec-ilk ilk
       (subcor-var (lambda-formals (ffn-symb term))
                   (fargs term)
                   (lambda-body (ffn-symb term)))
-      f-classes-alist))
+      wrld))
     ((eq fn (ffn-symb term))
-     (count-special-occurrences-list fn var spec-flag nil (fargs term) f-classes-alist))
-    (t (let ((pair (assoc (ffn-symb term) f-classes-alist)))
+     (count-special-occurrences-list fn var spec-ilk nil
+                                     (fargs term)
+                                     wrld))
+    (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
          (cond
-          ((null pair) 0)
-          ((eq (cdr pair) t)
-           (count-special-occurrences-list fn var spec-flag nil (fargs term) f-classes-alist))
-          (t (count-special-occurrences-list fn var spec-flag (cdr pair) (fargs term) f-classes-alist)))))))  
+          ((null bdg) 0)
+          ((eq (access apply$-badge bdg :ilks) t)
+           (count-special-occurrences-list fn var spec-ilk nil
+                                           (fargs term)
+                                           wrld))
+          (t (count-special-occurrences-list fn var spec-ilk
+                                             (access apply$-badge bdg :ilks)
+                                             (fargs term)
+                                             wrld)))))))  
 
- (defun count-special-occurrences-list (fn var spec-flag flags terms f-classes-alist)
+ (defun count-special-occurrences-list (fn var spec-ilk ilks terms wrld)
    (cond
     ((endp terms) 0)
-    (t (+ (count-special-occurrences fn var spec-flag (car flags) (car terms) f-classes-alist)
-          (count-special-occurrences-list fn var spec-flag (cdr flags) (cdr terms) f-classes-alist))))))
+    (t (+ (count-special-occurrences fn var spec-ilk (car ilks) (car terms) wrld)
+          (count-special-occurrences-list fn var spec-ilk (cdr ilks) (cdr terms) wrld))))))
 
 (mutual-recursion
  (defun count-unchanged-formal (fn var i term)
@@ -773,9 +1236,9 @@
     (t (+ (count-occur var (car terms))
           (count-occur-list var (cdr terms)))))))
 
-(defun functional-formalp (fn var i term f-classes-alist)
+(defun functional-formalp (fn var i term wrld)
   (declare (xargs :mode :program))
-  (let ((n1 (count-special-occurrences fn var :fn nil term f-classes-alist))
+  (let ((n1 (count-special-occurrences fn var :fn nil term wrld))
         (n2 (count-unchanged-formal fn var i term))
         (n3 (count-calls fn term))
         (k (count-occur var term)))
@@ -783,9 +1246,9 @@
          (= n2 n3)
          (= (+ n1 n2) k))))
 
-(defun expressional-formalp (fn var i term f-classes-alist)
+(defun expressional-formalp (fn var i term wrld)
   (declare (xargs :mode :program))
-  (let ((n1 (count-special-occurrences fn var :expr nil term f-classes-alist))
+  (let ((n1 (count-special-occurrences fn var :expr nil term wrld))
         (n2 (count-unchanged-formal fn var i term))
         (n3 (count-calls fn term))
         (k (count-occur var term)))
@@ -793,39 +1256,40 @@
          (= n2 n3)
          (= (+ n1 n2) k))))
 
-(defun vanilla-formalp (fn var term f-classes-alist)
+(defun vanilla-formalp (fn var term wrld)
   (declare (xargs :mode :program))
-  (let ((n1 (count-special-occurrences fn var nil nil term f-classes-alist))
+  (let ((n1 (count-special-occurrences fn var nil nil term wrld))
         (k (count-occur var term)))
     (= n1 k)))
 
-(defun classify-formal (fn var i term f-classes-alist)
+(defun classify-formal (fn var i term wrld)
   (declare (xargs :mode :program))
   (cond
-   ((functional-formalp fn var i term f-classes-alist) :fn)
-   ((expressional-formalp fn var i term f-classes-alist) :expr)
-   ((vanilla-formalp fn var term f-classes-alist) nil)
+   ((functional-formalp fn var i term wrld) :fn)
+   ((expressional-formalp fn var i term wrld) :expr)
+   ((vanilla-formalp fn var term wrld) nil)
    (t :unknown)))
 
-(defun classify-formals1 (fn vars i term f-classes-alist)
+(defun classify-formals1 (fn vars i term wrld)
   (declare (xargs :mode :program))
   (cond
    ((endp vars) nil)
-   (t (cons (classify-formal fn (car vars) i term f-classes-alist)
-            (classify-formals1 fn (cdr vars) (+ 1 i) term f-classes-alist)))))
+   (t (cons (classify-formal fn (car vars) i term wrld)
+            (classify-formals1 fn (cdr vars)
+                               (+ 1 i)
+                               term wrld)))))
 
 (defun classify-formals (fn wrld)
   (declare (xargs :mode :program))
   (let ((body (body fn nil wrld))
-        (formals (formals fn wrld))
-        (f-classes-alist (table-alist 'f-classes-table wrld)))
+        (formals (formals fn wrld)))
     (cond
-     ((pre-check-body-for-classify-formals fn body f-classes-alist wrld)
-      (let ((flags (classify-formals1 fn formals 1 body f-classes-alist)))
+     ((pre-check-body-for-classify-formals fn body wrld)
+      (let ((ilks (classify-formals1 fn formals 1 body wrld)))
         (cond
-         ((member-eq :unknown flags) :unknown)
-         ((all-nils flags) t)
-         (t flags))))
+         ((member-eq :unknown ilks) :unknown)
+         ((all-nils ilks) t)
+         (t ilks))))
      (t :unknown))))
 
 ; -----------------------------------------------------------------
@@ -883,31 +1347,31 @@
 
 ; (defcong fn-equal equal (collect lst fn) 2)
 
-(defun defcong-fn-equal-equal-events (term i f-classes)
+(defun defcong-fn-equal-equal-events (term i c1-cn)
   (cond
-   ((endp f-classes) nil)
-   ((eq (car f-classes) :FN)
+   ((endp c1-cn) nil)
+   ((eq (car c1-cn) :FN)
     (cons `(defcong fn-equal equal ,term ,i)
-          (defcong-fn-equal-equal-events term (+ 1 i) (cdr f-classes))))
-   (t (defcong-fn-equal-equal-events term (+ 1 i) (cdr f-classes)))))
+          (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn))))
+   (t (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn)))))
 
 ; -----------------------------------------------------------------
 ; Creating the Applicablep Hypothesis for Fn
 
-; Given a fn whose f-classes are known (and not :unknown!), we can create the
+; Given a fn whose badge are known (and not :unknown!), we can create the
 ; Applicablep Hypothesis for fn with make-applicablep-event.  The three
 ; functions defined immediately below are just helpers for that function.
 
-(defun applicablep-tamep-hyps (formals f-classes var)
+(defun applicablep-tamep-hyps (ilks var)
   (declare (xargs :mode :program))
-  (cond ((endp formals) nil)
-        ((eq (car f-classes) :fn)
+  (cond ((endp ilks) nil)
+        ((eq (car ilks) :FN)
          (cons `(TAMEP-FUNCTIONP (CAR ,var))
-               (applicablep-tamep-hyps (cdr formals) (cdr f-classes) (list 'CDR var))))
-        ((eq (car f-classes) :expr)
+               (applicablep-tamep-hyps (cdr ilks) (list 'CDR var))))
+        ((eq (car ilks) :EXPR)
          (cons `(TAMEP (CAR ,var))
-               (applicablep-tamep-hyps (cdr formals) (cdr f-classes) (list 'CDR var))))
-        (t (applicablep-tamep-hyps (cdr formals) (cdr f-classes) (list 'CDR var)))))
+               (applicablep-tamep-hyps (cdr ilks) (list 'CDR var))))
+        (t (applicablep-tamep-hyps (cdr ilks) (list 'CDR var)))))
 
 (defun applicablep-actuals (formals var)
   (declare (xargs :mode :program))
@@ -916,21 +1380,30 @@
          (cons `(CAR ,var)
                (applicablep-actuals (cdr formals) (list 'CDR var))))))
 
-(defun applicablep-ARGS-instance (f-classes)
-  (cond ((endp f-classes) nil)
-        ((eq (car f-classes) :fn)
-         (cons 'EQUAL (applicablep-ARGS-instance (cdr f-classes))))
-        ((eq (car f-classes) :expr)
-         (cons 'T (applicablep-ARGS-instance (cdr f-classes))))
-        (t (cons nil (applicablep-ARGS-instance (cdr f-classes))))))
+(defun applicablep-ARGS-instance (ilks)
 
-(defun make-applicablep-event (fn formals f-classes)
+; This odd little function is used to generate an :instance hint.  Search below
+; for :instance to see the application.  But imagine that you wanted a concrete
+; list, e.g., '(x y z), of actuals satisfying the given ilks, e.g., (NIL :FN
+; :EXPR).  Then, for this example, a suitable list would be '(NIL EQUAL T).
+; (Indeed, so would '(NIL ZP NIL), but we just need some suitable list.)  We
+; generate it here.  Note that the resulting list will be QUOTEd, so we return
+; evgs here.
 
-; This function should only be called if f-classes is t or a list containing at
-; least one :FN or :EXPR flag.  It should not be called on :UNKNOWN or on a
-; list of nils.  This function returns a list of events that add the
-; appropriate defun-sk event for fn (if any) and then proves the necessary
-; rewrite rule.
+  (cond ((endp ilks) nil)
+        ((eq (car ilks) :fn)
+         (cons 'EQUAL (applicablep-ARGS-instance (cdr ilks))))
+        ((eq (car ilks) :expr)
+         (cons T (applicablep-ARGS-instance (cdr ilks))))
+        (t (cons NIL (applicablep-ARGS-instance (cdr ilks))))))
+
+(defun make-applicablep-event (fn formals bdg)
+
+; This function should not be called (access apply$-badge bdg
+; :authorization-flg) is nil!
+
+; This function returns a list of events that add the appropriate defun-sk
+; event for fn and then proves the necessary rewrite rule.
 
   (declare (xargs :mode :program))
   (let* ((name (make-applicablep-name fn))
@@ -946,39 +1419,46 @@
                       'string)
                      fn)))
     (cond
-     ((eq f-classes t)
+     ((null (access apply$-badge bdg :authorization-flg))
+      (er hard 'make-applicablep-event
+          "We attempted to introduce an APPLICABLEP-fn event for a function, ~
+           ~x0, whose badge has :authorization-flg = NIL!  This is an ~
+           implementation error."
+          fn))
+     ((eq (access apply$-badge bdg :ilks) t)
       `((defun-sk ,name ()
           (forall (args)
-            (and (equal (f-classes-nonprim ',fn) t)
+            (and (equal (badge-nonprim ',fn) ',bdg)
                  (equal (apply$-nonprim ',fn args)
                         (,fn ,@(applicablep-actuals formals 'args))))))
         (in-theory (disable ,name))
         (defthm ,rule-name
           (implies (force (Applicablep ,fn))
-                   (and (equal (f-classes ',fn) t)
+                   (and (equal (badge ',fn) ',bdg)
                         (equal (apply$ ',fn args)
                                (,fn ,@(applicablep-actuals formals 'args)))))
           :hints (("Goal" :use ,necc-name
-                   :expand ((:free (x) (HIDE (f-classes x))))
-                   :in-theory (e/d (f-classes apply$
+                   :expand ((:free (x) (HIDE (badge x))))
+                   :in-theory (e/d (badge apply$
                                     (:executable-counterpart applicablep-marker)
                                     (:executable-counterpart applicablep-listp))
                                    (,necc-name)))))))
      (t
-      (let* ((hyp-list (applicablep-tamep-hyps formals f-classes 'ARGS))
+      (let* ((hyp-list (applicablep-tamep-hyps (access apply$-badge bdg :ilks)
+                                               'ARGS))
              (hyp (if (null (cdr hyp-list))
                       (car hyp-list)
                       `(AND ,@hyp-list))))
         `((defun-sk ,name ()
             (forall (args)
               (implies ,hyp
-                       (and (equal (f-classes-nonprim ',fn) ',f-classes)
+                       (and (equal (badge-nonprim ',fn) ',bdg)
                             (equal (apply$-nonprim ',fn args)
                                    (,fn ,@(applicablep-actuals formals 'args)))))))
           (in-theory (disable ,name))
           (defthm ,rule-name
             (and (implies (force (Applicablep ,fn))
-                          (equal (f-classes ',fn) ',f-classes))
+                          (equal (badge ',fn) ',bdg))
                  (implies (and (force (Applicablep ,fn))
                                ,hyp)
                           (equal (apply$ ',fn args)
@@ -988,19 +1468,20 @@
 ; but the theorem above is essentially (and ... (forall (args) ...)) because
 ; the first conjunct is free of ARGS.  We had to write necc-name that way
 ; because of the requirements of defun-sk.  But now we have to extract the fact
-; that we know (Applicablep fn) --> (f-classes 'fn) = <whatever>, by instantiating
+; that we know (Applicablep fn) --> (badge 'fn) = <whatever>, by instantiating
 ; necc-name with a suitable ARGS that makes the right components suitably tame.
 
-; The first :instance below takes care of the f-classes conjunct and the second
+; The first :instance below takes care of the badge conjunct and the second
 ; takes care of the apply$ conjunct.
 
             :hints
             (("Goal"
               :use ((:instance ,necc-name
-                               (ARGS ',(applicablep-ARGS-instance f-classes)))
+                               (ARGS ',(applicablep-ARGS-instance
+                                        (access apply$-badge bdg :ilks))))
                     (:instance ,necc-name))
-              :expand ((:free (x) (HIDE (f-classes x))))
-              :in-theory (e/d (f-classes apply$
+              :expand ((:free (x) (HIDE (badge x))))
+              :in-theory (e/d (badge apply$
                                          (:executable-counterpart applicablep-marker)
                                          (:executable-counterpart applicablep-listp))
                               (,necc-name)))))))))))
@@ -1020,98 +1501,145 @@
        t (all-fnnames (body x nil wrld)) wrld
        (cons x ans)))))
 
-(defun remove-fns-with-known-f-classes (lst f-classes)
+(defun remove-fns-with-known-badge (lst wrld)
   (declare (xargs :mode :program))
   (cond
    ((null lst) nil)
-   ((assoc-eq (car lst) f-classes)
-    (remove-fns-with-known-f-classes (cdr lst) f-classes))
+   ((executable-badge (car lst) wrld)
+    (remove-fns-with-known-badge (cdr lst) wrld))
    (t (cons (car lst)
-            (remove-fns-with-known-f-classes (cdr lst) f-classes)))))
+            (remove-fns-with-known-badge (cdr lst) wrld)))))
 
 (defmacro make-applicable (fn)
   `(with-output
-    :off :all
-    :stack :push
-    :gag-mode nil
-    (make-event
-     (with-output
-      :stack :pop
-      (let ((fn ',fn)
-            (wrld (w state)))
-        (cond
-         ((and (symbolp fn)
-               (arity fn wrld)
-               (not (eq (getprop fn 'symbol-class nil 'current-acl2-world wrld)
-                        :PROGRAM))
-               (body fn nil wrld))
+     :off :all
+     :stack :push
+     :gag-mode nil
+     (make-event
+      (with-output
+        :stack :pop
+        (let ((fn ',fn)
+              (wrld (w state)))
           (cond
-           ((assoc-eq fn (table-alist 'f-classes-table  wrld))
-            (prog2$
-             (cw "~%~x0 is already applicable, with f-classes ~x1.~%"
-                 fn
-                 (cdr (assoc-eq fn (table-alist 'f-classes-table  wrld))))
-             (value '(value-triple :invisible))))
-           (t
+           ((and (symbolp fn)
+                 (arity fn wrld)
+                 (not (eq (getprop fn 'symbol-class nil 'current-acl2-world wrld)
+                          :PROGRAM))
+                 (body fn nil wrld))
+            (cond
+             ((executable-badge fn wrld)
+              (prog2$
+               (cw "~%~x0 is already applicable, with badge ~x1.~%"
+                   fn
+                   (executable-badge fn wrld))
+               (value '(value-triple :invisible))))
+             (t
 ; We know fn is a logic mode function symbol.
-            (let ((f-classes (classify-formals fn wrld)))
-              (cond
-               ((eq f-classes :UNKNOWN)
-                (let ((ancestral-fns
-                       (remove-fns-with-known-f-classes
-                        (ancestral-all-fnnames1 nil fn wrld nil)
-                        (table-alist 'f-classes-table wrld))))
-                  (cond
-                   ((null (cdr ancestral-fns))
-                    (er soft 'make-applicable
-                        "~x0 cannot be made applicable because of one of the ~
-                         following: (a) it returns multiple values, (b) it ~
-                         uses STATE or some other stobj (or the primordial ~
-                         state-like formal STATE-STATE), (c) it does not ~
-                         respect the syntactic conventions on the use of ~
-                         functional and/or expressional argument positions in ~
-                         its body (e.g., it uses one of its formals in both a ~
-                         functional slot and a vanilla slot)."
-                        fn))
-                   (t
-                    (er soft 'make-applicable
-                        "~x0 cannot be made applicable at this time because it ~
-                        (somehow) calls one or more functions that are not ~
-                        yet applicable.  You should try to make these other ~
-                        functions applicable first.  Of course, they may not ~
-                        satisfy our restrictions on applicability and so it ~
-                        may be impossible.  We recommend that you try to make ~
-                        each of the following functions applicable in the ~
-                        order they are listed: ~x1."
-                        fn ancestral-fns)))))
-               (t (value
-                   `(encapsulate
-                     nil
-                     ,@(make-applicablep-event fn (formals fn wrld) f-classes)
-                     (table f-classes-table
-                            ',fn ',f-classes :put)
-                     ,@(if (eq f-classes t)
-                           nil
-                           (defcong-fn-equal-equal-events (cons fn (formals fn wrld))
-                             1 f-classes))
-                     (with-output
-                      :stack :pop
-                      (value-triple (cw "~%~x0 is now applicable, with f-classes ~x1.~%~%"
-                                        ',fn ',f-classes)))))))))))
-         ((and (symbolp fn)
-               (arity fn wrld)
-               (null (body fn nil wrld)))
-          (er soft 'make-applicable
-              "~x0 is a declared function and cannot be made ~
+              (let ((ilks (classify-formals fn wrld)))
+                (cond
+                 ((eq ilks :UNKNOWN)
+                  (let ((ancestral-fns
+                         (remove-fns-with-known-badge
+                          (ancestral-all-fnnames1 nil fn wrld nil)
+                          wrld)))
+                    (cond
+                     ((null (cdr ancestral-fns))
+                      (er soft 'make-applicable
+                          "~x0 cannot be made applicable because of one of ~
+                           the following: (a) it returns multiple values, (b) ~
+                           it uses STATE or some other stobj (or the ~
+                           primordial state-like formal STATE-STATE), (c) it ~
+                           does not respect the syntactic conventions on the ~
+                           use of functional and/or expressional argument ~
+                           positions in its body (e.g., it uses a quoted ~
+                           LAMBDA expression whose body is not fully ~
+                           translated or it uses one of its formals in both a ~
+                           functional slot and a vanilla slot)."
+                          fn))
+                     (t
+                      (er soft 'make-applicable
+                          "~x0 cannot be made applicable at this time because ~
+                           it (somehow) calls one or more functions that are ~
+                           not yet applicable.  You should try to make these ~
+                           other functions applicable first.  Of course, they ~
+                           may not satisfy our restrictions on applicability ~
+                           and so it may be impossible.  We recommend that ~
+                           you try to make each of the following functions ~
+                           applicable in the order they are listed: ~x1."
+                          fn ancestral-fns)))))
+                 (t (let ((bdg (make apply$-badge
+                                     :authorization-flg
+                                     (equal (length (getprop fn 'stobjs-out nil 'current-acl2-world wrld))
+                                            1)
+                                     :arity (arity fn wrld)
+                                     :ilks ilks)))
+                      (cond
+                       ((null (access apply$-badge bdg :authorization-flg))
+                        (value
+                         `(encapsulate
+                            nil
+                            (table badge-table
+                                   :badge-nonprim-structure
+                                   (cons ',(cons fn bdg)
+                                         (cdr
+                                          (assoc :badge-nonprim-structure
+                                                 (table-alist 'badge-table
+                                                              world))))
+                                   :put)
+                            ,@(if (eq ilks t)
+                                  nil
+                                  (defcong-fn-equal-equal-events
+                                    (cons fn (formals fn wrld)) 1 ilks))
+                            (with-output
+                              :stack :pop
+                              (value-triple (cw "~%~x0 cannot be made ~
+                                                 applicable because it ~
+                                                 returns multiple values, but ~
+                                                 it otherwise satisfies the ~
+                                                 rules for applicable ~
+                                                 functions and so can be ~
+                                                 called in the body of a ~
+                                                 single-valued function that ~
+                                                 could be made applicable.  ~
+                                                 The badge of ~x0 is ~x1.~%~%"
+                                                ',fn ',bdg))))))
+                       (t
+                        (value
+                         `(encapsulate
+                            nil
+                            ,@(make-applicablep-event fn (formals fn wrld)
+                                                      bdg)
+                            (table badge-table
+                                   :badge-nonprim-structure
+                                   (cons ',(cons fn bdg)
+                                         (cdr
+                                          (assoc :badge-nonprim-structure
+                                                 (table-alist 'badge-table
+                                                              world))))
+                                   :put)
+                            ,@(if (eq ilks t)
+                                  nil
+                                  (defcong-fn-equal-equal-events
+                                    (cons fn (formals fn wrld)) 1 ilks))
+                            (with-output
+                              :stack :pop
+                              (value-triple (cw "~%~x0 is now applicable, ~
+                                                 with badge ~x1.~%~%"
+                                                ',fn ',bdg))))))))))))))
+           ((and (symbolp fn)
+                 (arity fn wrld)
+                 (null (body fn nil wrld)))
+            (er soft 'make-applicable
+                "~x0 is a declared function and cannot be made ~
               applicable.  Sorry!"
-              fn))
-         (t (er soft 'make-applicable
-                "Make-applicable should only be called on a defined logical ~
+                fn))
+           (t (er soft 'make-applicable
+                  "Make-applicable should only be called on a defined logical ~
                  function symbol.  It is not permitted to call it on a ~
                  non-symbol, a symbol that is not a function symbol, or a ~
                  function symbol in :PROGRAM mode.  ~x0 is an inappropriate ~
                  argument."
-                fn))))))))
+                  fn))))))))
 
 (defmacro defun$ (fn formals &rest rest)
   (let ( ;(body (car (last rest)))
@@ -1135,26 +1663,32 @@
 ; merely constrain lamb logically and attach an executable function to it.
 
 (encapsulate
- ((lamb (args body) t))
- (local
-  (defun lamb (args body)
-    (list 'lambda args body)))
- (defthm consp-lamb
-   (and (consp (lamb args body))
-        (true-listp (lamb args body)))
-   :rule-classes :type-prescription)
- (defthm car-lamb
-   (equal (car (lamb args body)) 'lambda))
+  ((lamb (args body) t))
+  (local
+   (defun lamb (args body)
+     (list 'lambda args body)))
+  (defthm consp-lamb
+    (and (consp (lamb args body))
+         (true-listp (lamb args body)))
+    :rule-classes :type-prescription)
+  (defthm consp-cdr-lamb
+    (consp (cdr (lamb args body))))
+  (defthm consp-cddr-lamb
+    (consp (cddr (lamb args body))))
+  (defthm cdddr-lamb
+    (equal (cdddr (lamb args body)) nil))
+  (defthm car-lamb
+    (equal (car (lamb args body)) 'lambda))
 
- (defthm lambda-formals-lamb
-   (equal (lambda-formals (lamb args body)) args))
+  (defthm lambda-formals-lamb
+    (equal (lambda-formals (lamb args body)) args))
 
- (defthm lambda-body-lamb
-   (equal (lambda-body (lamb args body)) body))
+  (defthm lambda-body-lamb
+    (equal (lambda-body (lamb args body)) body))
 
- (defthm lamb-reduction
-   (equal (apply$ (lamb vars body) args)
-          (ev$ body (pairlis$ vars args)))))
+  (defthm lamb-reduction
+    (equal (apply$ (lamb vars body) args)
+           (ev$ body (pairlis$ vars args)))))
 
 (defun xlamb (args body)
   (declare (xargs :guard t))
