@@ -64,7 +64,7 @@
   <a href='http://eptcs.web.cse.unsw.edu.au/paper.cgi?ACL22015.3'
   >ACL2 Workshop 2015 paper on SOFT</a>
   provides
-  and overview of the macros and some simple examples of their use,
+  an overview of the macros and some simple examples of their use,
   a description of the use of SOFT in program refinement,
   and a discussion of related and future work.
   The presentation of the Workshop talk is available
@@ -74,16 +74,64 @@
   @('[books]/kestrel/soft/workshop-paper-examples.lisp');
   the examples from the talk that are not in the paper are in
   @('[books]/kestrel/soft/workshop-talk-examples.lisp').
-  Some of the content of the paper and presentation
+  Some of the contents of the paper and presentation
   may become outdated as SOFT is extended and improved over time;
   this manual provides up-to-date information about SOFT.
   </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc function-variables
+(defxdoc soft-notions
 
   :parents (soft)
+
+  :short "Notions that the SOFT macros are based on."
+
+  :long
+
+  "<p>
+  The macros provided by SOFT are based on the notions
+  defined in the sub-topics below.
+  </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc soft-macros
+
+  :parents (soft)
+
+  :short "Macros provided by SOFT."
+
+  :long
+
+  "<p>
+  @(tsee defunvar),
+  @(tsee defun2),
+  @(tsee defchoose2), and
+  @(tsee defun-sk2)
+  are wrappers of existing events
+  that explicate function variable dependencies
+  and record additional information.
+  They set the stage for @(tsee defun-inst) and @(tsee defthm-inst).
+  </p>
+
+  <p>
+  @(tsee defun-inst) provides the ability to concisely generate functions,
+  and automatically prove their termination if recursive,
+  by specifying replacements of function variables.
+  </p>
+
+  <p>
+  @(tsee defthm-inst) provides the ability to
+  concisely generate and automatically prove theorems,
+  by specifying replacements of function variables.
+  </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc function-variables
+
+  :parents (soft-notions)
 
   :short "Notion of function variable."
 
@@ -97,8 +145,8 @@
 
   <p>
   A function variable is used in
-  <see topic='@(url second-order-function)'>second-order functions</see> and
-  <see topic='@(url second-order-theorem)'>second-order theorems</see>
+  <see topic='@(url second-order-functions)'>second-order functions</see> and
+  <see topic='@(url second-order-theorems)'>second-order theorems</see>
   as a placeholder for any function with the same arity.
   </p>")
 
@@ -106,7 +154,7 @@
 
 (defxdoc second-order-functions
 
-  :parents (soft)
+  :parents (soft-notions)
 
   :short "Notion of second-order function."
 
@@ -115,7 +163,7 @@
   "<p>
   A second-order function is an ACL2 function
   that <see topic='@(url function-variable-dependency)'>depends</see>
-  on one or more <see topic='@(url function-variable)'>function variables</see>
+  on one or more <see topic='@(url function-variables)'>function variables</see>
   and that is introduced via
   @(tsee defun2), @(tsee defchoose2), or @(tsee defun-sk2).
   These macros specify the function parameters of the second-order function,
@@ -134,7 +182,7 @@
 
 (defxdoc second-order-theorems
 
-  :parents (soft)
+  :parents (soft-notions)
 
   :short "Notion of second-order theorem."
 
@@ -142,8 +190,8 @@
 
   "<p>
   A second-order theorem is an ACL2 theorem
-  that <see topic='@(url function-variable-dependency)'>depends</see>
-  on one or more <see topic='@(url function-variable)'>function variables</see>.
+  that <see topic='@(url function-variable-dependency)'>depends</see> on
+  one or more <see topic='@(url function-variables)'>function variables</see>.
   A second-order theorem is introduced via @(tsee defthm);
   SOFT does not provide macros to introduce second-order theorems.
   </p>
@@ -161,7 +209,7 @@
 
 (defxdoc second-order-function-instances
 
-  :parents (soft)
+  :parents (soft-notions)
 
   :short "Notion of instance of a second-order function."
 
@@ -186,7 +234,8 @@
   in this case,
   @(tsee defun-inst) generates a termination proof for the new function
   that uses a <see topic='@(url acl2::functional-instantiation)'>functional
-  instance</see> of the termination theorem
+  instance</see> of the
+  <see topic='@(url termination-theorem)'>termination theorem</see>
   of the second-order function that is being instantiated.
   </p>")
 
@@ -194,7 +243,7 @@
 
 (defxdoc second-order-theorem-instances
 
-  :parents (soft)
+  :parents (soft-notions)
 
   :short "Notion of instance of a second-order theorem."
 
@@ -211,7 +260,7 @@
   </p>
 
   <p>
-  The new function is second-order if it still depends on function variables,
+  The new theorem is second-order if it still depends on function variables,
   otherwise it is first-order.
   @(tsee defthm-inst) generates a proof for the new theorem
   that uses a <see topic='@(url acl2::functional-instantiation)'>functional
@@ -222,14 +271,14 @@
 
 (defxdoc function-variable-dependency
 
-  :parents (soft)
+  :parents (soft-notions)
 
   :short "Notion of dependency of terms on function variables."
 
   :long
 
   "<p>
-  A @(see term) depends on
+  A <see topic='@(url acl2::term)'>term</see> @('term') depends on
   a <see topic='@(url function-variables)'>function variable</see> @('fvar')
   iff
   @('fvar') occurs in @('term')
@@ -238,8 +287,9 @@
   that occurs in @('term').
   </p>
 
+  <h4>Example</h4>
+
   <p>
-  <i>Example:</i>
   Given
   </p>
   @({
@@ -248,15 +298,14 @@
   (defun2 h[?f] (?f) (x) ...)
   })
   <p>
-  it is the case that @('(h[?f] (?g a))')
-  depends exactly on @('?g') and @('?f').
+  the term @('(h[?f] (?g a))') depends exactly on @('?g') and @('?f').
   </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc function-variable-instantiation
 
-  :parents (soft)
+  :parents (soft-notions)
 
   :short "Notion of function variable instantiation."
 
@@ -282,7 +331,8 @@
   </p>
 
   <p>
-  An instantiation as above is applied to a @(see term) @('term')
+  An instantiation as above is applied
+  to a <see topic='@(url acl2::term)'>term</see> @('term')
   by replacing each @('fvarI') with @('funI').
   This involves not only explicit occurrences of @('fvarI'),
   but also implicit occurrences as function parameters
@@ -293,8 +343,9 @@
   if they do not exist, the application of the instantiation fails.
   </p>
 
+  <h4>Example:</h4>
+
   <p>
-  <i>Example:</i>
   Given
   </p>
   @({
@@ -305,16 +356,16 @@
   (defun-inst h[consp] (h[?f] (?f . consp)))
   })
   <p>
-  @('((?f . consp) (?g . k[?f]))') is an instantiation,
-  and the result of applying it to @('(h[?f] (?g a))')
-  is @('(h[consp] (k[?f] a))').
+  the alist @('((?f . consp) (?g . k[?f]))') is an instantiation,
+  and the result of applying it to the term @('(h[?f] (?g a))')
+  is the term @('(h[consp] (k[?f] a))').
   </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defunvar
 
-  :parents (function-variables)
+  :parents (soft-macros function-variables)
 
   :short "Introduce function variable."
 
@@ -354,31 +405,33 @@
   @({
   (defstub fvar (* ... *) => *)
   })
-  <blockquote>
+
   <p>
   @('fvar') is introduced as an uninterpreted function with the given arity.
   </p>
-  </blockquote>
 
   <h3>Examples</h3>
 
-  @({
-  (defunvar ?f (*) => *)
-  })
-  <blockquote>
-  <p>
-  A unary function variable.
-  </p>
-  </blockquote>
+  <h4>Example 1</h4>
 
   @({
+  ;; A unary function variable:
+  (defunvar ?f (*) => *)
+  })
+
+  <h4>Example 2</h4>
+
+  @({
+  ;; A unary function variable:
+  (defunvar ?p (*) => *)
+  })
+
+  <h4>Example 3</h4>
+
+  @({
+  ;; A binary function variable:
   (defunvar ?g (* *) => *)
   })
-  <blockquote>
-  <p>
-  A binary function variable.
-  </p>
-  </blockquote>
 
   <h3>Naming Conventions</h3>
 
@@ -393,7 +446,7 @@
 
 (defxdoc defun2
 
-  :parents (second-order-functions)
+  :parents (soft-macros second-order-functions)
 
   :short
   "Introduce second-order function
@@ -433,8 +486,8 @@
   whose order is immaterial.
   These are the function parameters of @('sofun').
   They must be all and only the function variables that
-  the body, measure (if @('sofun') is recursive), and guard
-  of @('sofun') <see topic='@(url function-variable-dependency)>depend</see> on.
+  the body, measure (if recursive), and guard of @('sofun')
+  <see topic='@(url function-variable-dependency)'>depend</see> on.
   </p>
   </blockquote>
 
@@ -483,63 +536,53 @@
     declaration ... declaration
     body)
   })
-  <blockquote>
+
   <p>
   @('sofun') is introduced as a first-order function using @(tsee defun),
   removing the list of function parameters.
   </p>
-  </blockquote>
 
   <h3>Examples</h3>
 
+  <h4>Example 1</h4>
+
   @({
+  ;; A non-recursive function that applies four times
+  ;; its function parameter to its individual parameter:
   (defun2 quad[?f] (?f) (x)
     (?f (?f (?f (?f x)))))
   })
-  <blockquote>
-  <p>
-  A non-recursive function
-  that applies its function parameter to its individual parameter four times.
-  </p>
-  </blockquote>
+
+  <h4>Example 2</h4>
 
   @({
+  ;; A recursive predicate that recognizes NIL-terminated lists
+  ;; whose elements satisfy the predicate parameter:
   (defun2 all[?p] (?p) (l)
     (cond ((atom l) (null l))
           (t (and (?p (car l)) (all[?p] (cdr l))))))
   })
-  <blockquote>
-  <p>
-  A recursive predicate
-  that recognizes @('nil')-terminated lists
-  whose elements satisfy the predicate parameter.
-  </p>
-  </blockquote>
+
+  <h4>Example 3</h4>
 
   @({
+  ;; A recursive function that homomorphically lifts ?F
+  ;; to operate on NIL-terminated lists whose elements satisfy ?P:
   (defun2 map[?f][?p] (?f ?p) (l)
     (declare (xargs :guard (all[?p] l)))
     (cond ((endp l) nil)
           (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))
+  ;; The predicate parameter ?P only occurs in the guard, not in the body.
   })
-  <blockquote>
-  <p>
-  A recursive function that homomorphically lifts @('?f')
-  to operate on @('nil')-terminated lists whose elements satisfy @('?p').
-  The predicate parameter @('?p') only appears in the guard, not in the body.
-  </p>
-  </blockquote>
+
+  <h4>Example 4</h4>
 
   @({
+  ;; A generic folding function on values as binary trees:
   (defun2 fold[?f][?g] (?f ?g) (bt)
     (cond ((atom bt) (?f bt))
           (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
   })
-  <blockquote>
-  <p>
-  A generic folding function on values as binary trees.
-  </p>
-  </blockquote>
 
   <h3>Naming Conventions</h3>
 
@@ -558,7 +601,7 @@
 
 (defxdoc defchoose2
 
-  :parents (second-order-functions)
+  :parents (soft-macros second-order-functions)
 
   :short
   "Introduce second-order function
@@ -571,7 +614,7 @@
   @({
   (defchoose2 sofun (bvar1 ... bvarP) (fvar1 ... fvarN) (var1 ... varM)
     body
-    :strengthen ...)  ; default nil
+    :strengthen ...)
   })
 
   <h3>Inputs</h3>
@@ -589,10 +632,10 @@
 
   <p>
   @('(bvar1 ... bvarP)')
-  <p>
+  </p>
   <blockquote>
   <p>
-  A list of bound variables, as in @(tsee defchoose).
+  A list of bound variables (or a single variable), as in @(tsee defchoose).
   </p>
   </blockquote>
 
@@ -606,7 +649,7 @@
   whose order is immaterial.
   These are the function parameters of @('sofun').
   They must be all and only the function variables that the body of @('sofun')
-  <see topic='@(url function-variable-dependency)>depends</see> on.
+  <see topic='@(url function-variable-dependency)'>depends</see> on.
   </p>
   </blockquote>
 
@@ -615,7 +658,7 @@
   </p>
   <blockquote>
   <p>
-  A list of individual parameters of @('sofun'), as in @(tsee defun).
+  A list of individual parameters of @('sofun'), as in @(tsee defchoose).
   </p>
   </blockquote>
 
@@ -644,24 +687,21 @@
     body
     :strengthen ...)
   })
-  <blockquote>
+
   <p>
   @('sofun') is introduced as a first-order function using @(tsee defchoose),
   removing the list of function parameters.
   </p>
-  </blockquote>
 
   <h3>Examples</h3>
 
+  <h4>Example 1</h4>
+
   @({
+  ;; A function constrained to return a fixed point of ?F, if any exists:
   (defchoose2 fixpoint[?f] x (?f) ()
     (equal (?f x) x))
   })
-  <blockquote>
-  <p>
-  A function constrained to return a fixed point of @('?f'), if any exists.
-  </p>
-  </blockquote>
 
   <h3>Naming Conventions</h3>
 
@@ -674,7 +714,7 @@
 
 (defxdoc defun-sk2
 
-  :parents (second-order-functions)
+  :parents (soft-macros second-order-functions)
 
   :short
   "Introduce second-order function
@@ -718,7 +758,7 @@
   These are the function parameters of @('sofun').
   They must be all and only the function variables that
   the body and guard of @('sofun')
-  <see topic='@(url function-variable-dependency)>depend</see> on.
+  <see topic='@(url function-variable-dependency)'>depend</see> on.
   </p>
   </blockquote>
 
@@ -747,9 +787,9 @@
   <p>
   An option to customize the rewrite rule, as in @(tsee defun-sk).
   If a term is supplied,
-  it must <see topic='@(url function-variable-dependency)>depend</see> on
+  it must <see topic='@(url function-variable-dependency)'>depend</see> on
   the same function variables that
-  @('body') <see topic='@(url function-variable-dependency)>depends</see> on.
+  @('body') <see topic='@(url function-variable-dependency)'>depends</see> on.
   </p>
   </blockquote>
 
@@ -810,24 +850,21 @@
     :witness-dcls ...
     :strengthen ...)
   })
-  <blockquote>
+
   <p>
   @('sofun') is introduced as a first-order function using @(tsee defun-sk),
   removing the list of function parameters.
   </p>
-  </blockquote>
 
   <h3>Examples</h3>
 
+  <h4>Example 1</h4>
+
   @({
+  ;; A predicate that recognizes injective functions:
   (defun-sk2 injective[?f] (?f) ()
     (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
   })
-  <blockquote>
-  <p>
-  A predicate that recognizes injective functions.
-  </p>
-  </blockquote>
 
   <h3>Naming Conventions</h3>
 
@@ -840,7 +877,7 @@
 
 (defxdoc defun-inst
 
-  :parents (second-order-function-instances)
+  :parents (soft-macros second-order-function-instances)
 
   :short "Introduce function by instantiating a second-order functions."
 
@@ -890,16 +927,16 @@
   These are the function parameters of the instance @('fun') of @('sofun').
   They must be all and only the function variables that
   the body, measure (if recursive), and guard (if present)
-  of @('fun') <see topic='@(url function-variable-dependency)>depend</see> on.
+  of @('fun') <see topic='@(url function-variable-dependency)'>depend</see> on.
   (The guard is absent iff @('sofun') was introduced via @(tsee defchoose2).)
   </p>
   <p>
-  If the list of function parameters is present,
-  @('fun') is a second-order function;
-  otherwise, it is a first-order function.
+  If the list of function parameters is present, @('fun') is second-order;
+  otherwise, it is first-order.
   The function parameters @('fvar1'), ..., @('fvarN') of @('fun')
   are generally unrelated to the function parameters of @('sofun').
   </p>
+  </blockquote>
 
   <p>
   @('((ffvar1 . fun1) ... (ffvarM . funM))')
@@ -918,16 +955,17 @@
   </p>
   <blockquote>
   <p>
-  An optional flag to attempt or omit guard verification of @('fun').
+  An optional flag to attempt or omit the guard verification of @('fun').
   This may be present only if @('sofun') was introduced via @(tsee defun2).
   The default is @('t').
   </p>
   <p>
   In general it is not possible to verify the guards
   of an instance of a second-order function
-  from the guard theorem of the second-order function,
+  from the <see topic='@(url guard-theorem)'>guard theorem</see>
+  of the second-order function,
   because function variables have guard @('t')
-  but may be replaced with function with stricter guards.
+  but may be replaced with functions with stricter guards.
   Since @(tsee defun-inst) currently does not provide
   an option to supply guard verification hints for @('fun'),
   @(':verify-guards nil') may be used to defer
@@ -958,10 +996,10 @@
   This may be present only if @('sofun') was introduced via @(tsee defun-sk2).
   If present, it is passed to the @(tsee defun-sk) generated for @('fun').
   If a term is supplied,
-  it must <see topic='@(url function-variable-dependency)>depend</see> on
+  it must <see topic='@(url function-variable-dependency)'>depend</see> on
   the same function variables that the body of @('fun')
-  <see topic='@(url function-variable-dependency)>depends</see> on;
-  in particular, if @('fun') is a first-order function,
+  <see topic='@(url function-variable-dependency)'>depends</see> on;
+  in particular, if @('fun') is first-order,
   the term supplied as rewrite rule must not depend on any function variables.
   </p>
   </blockquote>
@@ -978,7 +1016,7 @@
     })
     <p>
     if @('sofun') was introduced via @(tsee defun2)
-    and @('fun') is a second-order function
+    and @('fun') is second-order
     (i.e. the list @('(fvar1 ... fvarN)') is present).
     The body, measure (if recursive), and guard of @('fun')
     are obtained by
@@ -988,7 +1026,9 @@
     If @('fun') is recursive,
     its termination proof uses
     a <see topic='@(url acl2::functional-instantiation)'>functional
-    instance</see> of the termination theorem of @('sofun').
+    instance</see> of the
+    <see topic='@(url termination-theorem)'>termination theorem</see>
+    of @('sofun').
     </p>
     </li>
     <li>
@@ -997,7 +1037,7 @@
     })
     <p>
     if @('sofun') was introduced via @(tsee defun2)
-    and @('fun') is a first-order function
+    and @('fun') is first-order
     (i.e. the list @('(fvar1 ... fvarN)') is absent).
     The body, measure (if recursive), and guard of @('fun')
     are obtained by
@@ -1007,7 +1047,9 @@
     If @('fun') is recursive,
     its termination proof uses
     a <see topic='@(url acl2::functional-instantiation)'>functional
-    instance</see> of the termination theorem of @('sofun').
+    instance</see> of the
+    <see topic='@(url termination-theorem)'>termination theorem</see>
+    of @('sofun').
     </p>
     </li>
     <li>
@@ -1016,7 +1058,7 @@
     })
     <p>
     if @('sofun') was introduced via @(tsee defchoose2)
-    and @('fun') is a second-order function
+    and @('fun') is second-order
     (i.e. the list @('(fvar1 ... fvarN)') is present).
     The body of @('fun')
     is obtained by
@@ -1031,7 +1073,7 @@
     })
     <p>
     if @('sofun') was introduced via @(tsee defchoose2)
-    and @('fun') is a first-order function
+    and @('fun') is first-order
     (i.e. the list @('(fvar1 ... fvarN)') is absent).
     The body of @('fun')
     is obtained by
@@ -1046,7 +1088,7 @@
     })
     <p>
     if @('sofun') was introduced via @(tsee defun-sk2)
-    and @('fun') is a second-order function
+    and @('fun') is second-order
     (i.e. the list @('(fvar1 ... fvarN)') is present).
     The body and guard of @('fun')
     are obtained by
@@ -1061,7 +1103,7 @@
     })
     <p>
     if @('sofun') was introduced via @(tsee defun-sk2)
-    and @('fun') is a first-order function
+    and @('fun') is first-order
     (i.e. the list @('(fvar1 ... fvarN)') is absent).
     The body and guard of @('fun')
     are obtained by
@@ -1074,99 +1116,96 @@
 
   <h3>Examples</h3>
 
+  <h4>Example 1</h4>
+
   @({
-  (defun2 quad[?f] (?f) (x) ; example from defun2 manual page
+  ;; Apply ?F four times to X:
+  (defun2 quad[?f] (?f) (x)
     (?f (?f (?f (?f x)))))
+
+  ;; Wrap a value into a singleton list:
   (defun wrap (x) (list x))
+
+  ;; Wrap a value four times:
   (defun-inst quad[wrap]
     (quad[?f] (?f . wrap)))
   })
-  <blockquote>
-  <p>
-  Given @('wrap') that wraps a value into a singleton list,
-  @('quad[wrap]') wraps a value four times.
-  </p>
-  </blockquote>
+
+  <h4>Example 2</h4>
 
   @({
-  (defun2 all[?p] (?p) (l) ; example from defun2 manual page
+  ;; Recognize NIL-terminated lists of values that satisfy ?P:
+  (defun2 all[?p] (?p) (l)
     (cond ((atom l) (null l))
           (t (and (?p (car l)) (all[?p] (cdr l))))))
+
+  ;; Recognize octets:
   (defun octetp (x) (and (natp x) (< x 256)))
+
+  ;; Recognize NIL-terminated lists of octets:
   (defun-inst all[octetp]
     (all[?p] (?p . octetp)))
   })
-  <blockquote>
-  <p>
-  Given @('octetp') that recognizes octets,
-  @('all[octetp]') recognizes @('nil')-terminated lists of octets.
-  </p>
-  </blockquote>
+
+  <h4>Example 3</h4>
 
   @({
-  (defun2 map[?f][?p] (?f ?p) (l) ; example from defun2 manual page
+  ;; Homomorphically lift ?F to on NIL-terminated lists of ?P values:
+  (defun2 map[?f][?p] (?f ?p) (l)
     (declare (xargs :guard (all[?p] l)))
     (cond ((endp l) nil)
           (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))
+
+  ;; Translate lists of octets to lists of characters:
   (defun-inst map[code-char][octetp]
     (map[?f][?p] (?f . code-char) (?p . octetp)))
+  ;; The replacement CODE-CHAR of ?F
+  ;; induces the replacement OCTETP of ?P,
+  ;; because the guard of CODE-CHAR is (equivalent to) OCTECTP.
+  ;; The creation of the MAP[CODE-CHAR][OCTETP] instance of MAP[?F][?P]
+  ;; needs the instance ALL[OCTETP) of ALL[?P] (in the guard),
+  ;; created as in the earlier example.
   })
-  <blockquote>
-  <p>
-  Given @('octetp') as in the earlier example,
-  and given @(tsee code-char) that translates octets to characters,
-  @('map[code-char][octetp]') translates
-  lists of octets to lists of characters.
-  The replacement @(tsee code-char) of @('?f')
-  induces the replacement @('octetp') of @('?p'),
-  because the guard of @(tsee code-char) is (equivalent to) @('octectp').
-  The creation of the @('map[code-char][octetp]') instance of @('map[?f][?p]')
-  needs the instance @('all[octetp]') of @('all[?p]') (in the guard),
-  created as in the earlier example.
-  </p>
-  </blockquote>
+
+  <h4>Example 4</h4>
 
   @({
-  (defun2 fold[?f][?g] (?f ?g) (bt) ; example from defun2 manual page
+  ;; Folding function on binary trees:
+  (defun2 fold[?f][?g] (?f ?g) (bt)
     (cond ((atom bt) (?f bt))
           (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
+
+  ;; Add up all the natural numbers in a tree, coercing other values to 0:
   (defun-inst fold[nfix][binary-+]
     (fold[?f][?g] (?f . nfix) (?g . binary-+)))
   })
-  <blockquote>
-  <p>
-  @('fold[nfix][binary-+]') adds up all the natural numbers in a tree,
-  coercing other values to 0.
-  </p>
-  </blockquote>
+
+  <h4>Example 5</h4>
 
   @({
-  (defchoose2 fixpoint[?f] x (?f) () ; example from defchoose2 manual page
+  ;; Return a fixed point of ?F, if any exists:
+  (defchoose2 fixpoint[?f] x (?f) ()
     (equal (?f x) x))
+
+  ;; Double a value:
   (defun twice (x) (* 2 (fix x)))
+
+  ;; Function constrained to return the (only) fixed point 0 of TWICE:
   (defun-inst fixpoint[twice]
     (fixpoint[?f] (?f . twice)))
   })
-  <blockquote>
-  <p>
-  Given @('twice') that doubles a value,
-  @('fixpoint[twice]') is a function constrained to return
-  the (only) fixed point 0 of @('twice').
-  </p>
-  </blockquote>
+
+  <h4>Example 6</h4>
 
   @({
-  (defun-sk2 injective[?f] (?f) () ; example from defun-sk2 manual page
+  ;; Recognize injective functions:
+  (defun-sk2 injective[?f] (?f) ()
     (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
+
+  ;; Recognize functions whose four-fold application is injective:
   (defun-inst injective[quad[?f]] (?f)
     (injective[?f] (?f . quad[?f])))
   })
-  <blockquote>
-  <p>
-  @('injective[quad[?f]]') recognizes functions
-  whose four-fold application is injective.
-  </p>
-  </blockquote>
 
   <h3>Naming Conventions</h3>
 
@@ -1187,7 +1226,7 @@
 
 (defxdoc defthm-2nd-order
 
-  :parents (second-order-theorems)
+  :parents (soft-macros second-order-theorems)
 
   :short "Introduce second-order theorem."
 
@@ -1278,69 +1317,67 @@
 
   <h3>Examples</h3>
 
+  <h4>Example 1</h4>
+
   @({
-  (defun2 map[?f][?p] (?f ?p) (l) ; example from defun2 manual page
+  ;; Homomorphically lift ?F to on NIL-terminated lists of ?P values:
+  (defun2 map[?f][?p] (?f ?p) (l)
     (declare (xargs :guard (all[?p] l)))
     (cond ((endp l) nil)
           (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))
+
+  ;; The homomorphic lifting of ?F to lists of ?P values
+  ;; preserves the length of the list,
+  ;; for every function ?F and predicate ?P:
   (defthm len-of-map[?f][?p]
     (equal (len (map[?f][?p] l)) (len l)))
   })
-  <blockquote>
-  <p>
-  The theorem shows that
-  the homomorphic lifting of @('?f') to lists of @('?p') values
-  preserves the length of the list,
-  for every function @('?f') and predicate @('?p').
-  </p>
-  </blockquote>
+
+  <h4>Example 2</h4>
 
   @({
-  (defun-sk2 injective[?f] (?f) () ; example from defun-sk2 manual page
+  ;; Recognize injective functions:
+  (defun-sk2 injective[?f] (?f) ()
     (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
+
+  ;; The four-fold application of an injective function is injective:
   (defthm injective[quad[?f]]-when-injective[?f]
     (implies (injective[?f]) (injective[quad[?f]]))
     :hints ...)
   })
-  <blockquote>
-  <p>
-  The theorem shows that the four-fold application of an injective function
-  is injective.
-  </p>
-  </blockquote>
+
+  <h4>Example 3</h4>
 
   @({
-  (defun2 fold[?f][?g] (?f ?g) (bt) ; example from defun2 manual page
+  ;; Folding function on binary trees:
+  (defun2 fold[?f][?g] (?f ?g) (bt)
     (cond ((atom bt) (?f bt))
           (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
+
+  ;; Abstract input/output relation:
   (defunvar ?io (* *) => *)
+
+  ;; Recognize functions ?F that satisfy the input/output relation on atoms:
   (defun-sk2 atom-io[?f][?io] (?f ?io) ()
     (forall x (implies (atom x) (?io x (?f x))))
     :rewrite :direct)
+
+  ;; Recognize functions ?G that satisfy
+  ;; the input/output relation on CONSP pairs
+  ;; when the arguments are valid outputs for the CAR and CDR components:
   (defun-sk2 consp-io[?g][?io] (?g ?io) ()
     (forall (x y1 y2)
             (implies (and (consp x) (?io (car x) y1) (?io (cdr x) y2))
                      (?io x (?g y1 y2))))
     :rewrite :direct)
+
+  ;; The generic folding function on binary trees
+  ;; satisfies the input/output relation
+  ;; when its function parameters satisfy the predicates just introduced:
   (defthm fold-io[?f][?g][?io]
     (implies (and (atom-io[?f][?io]) (consp-io[?g][?io]))
              (?io x (fold[?f][?g] x))))
   })
-  <blockquote>
-  <p>
-  Given @('?io') for an abstract input/output relation,
-  @('atom-io[?f][?io]') that recognizes functions @('?f')
-  that satisfy the input/output relation on @(see atom)s,
-  @('consp-io[?g][?io]') that recognizes functions @('?g')
-  that satisfy the input/output relation on @(tsee cons) pairs
-  when the arguments are valid outputs
-  for the @(tsee car) and @(tsee cdr) components,
-  the theorem shows that
-  the generic folding function on binary trees
-  satisfies the input/output relation
-  when its function parameters satisfy the predicates just introduced.
-  </p>
-  </blockquote>
 
   <h3>Naming Conventions</h3>
 
@@ -1361,7 +1398,7 @@
 
 (defxdoc defthm-inst
 
-  :parents (second-order-theorem-instances)
+  :parents (soft-macros second-order-theorem-instances)
 
   :short "Introduce theorem by instantiating a second-order theorem."
 
@@ -1405,7 +1442,7 @@
   <p>
   An <see topic='@(url function-variable-instantiation)'>instantiation</see>,
   which specifies how to generate @('thm') from @('sothm').
-  @('sothm') must <see topic='@(url function-variable-dependency)>depend</see>
+  @('sothm') must <see topic='@(url function-variable-dependency)'>depend</see>
   on at least the function variables @('fvar1'), ..., @('fvarN').
   </p>
   </blockquote>
@@ -1427,7 +1464,7 @@
     ... ; proof
     :rule-classes ...)
   })
-  <blockquote>
+
   <p>
   @('thm') is introduced as a theorem,
   whose formula @('formula') is obtained by
@@ -1440,50 +1477,64 @@
   its value is used for @('thm');
   otherwise, its value is copied from @('sothm').
   </p>
-  </blockquote>
 
   <h3>Examples</h3>
 
+  <h4>Example 1</h4>
+
   @({
-  (defun2 map[?f][?p] (?f ?p) (l) ; example from defun2 manual page
+  ;; Homomorphically lift ?F to on NIL-terminated lists of ?P values:
+  (defun2 map[?f][?p] (?f ?p) (l)
     (declare (xargs :guard (all[?p] l)))
     (cond ((endp l) nil)
           (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))
-  (defun-inst map[code-char][octetp] ; example from defun-inst manual page
+
+  ;; Translate lists of octets to lists of characters:
+  (defun-inst map[code-char][octetp]
     (map[?f][?p] (?f . code-char) (?p . octetp)))
-  (defthm len-of-map[?f][?p] ; example from defthm-2nd-order manual page
+
+  ;; The homomorphic lifting of ?F to lists of ?P values
+  ;; preserves the length of the list:
+  (defthm len-of-map[?f][?p]
     (equal (len (map[?f][?p] l)) (len l)))
+
+  ;; MAP[CODE-CHAR][OCTETP] preserves the length of the list:
   (defthm-inst len-of-map[code-char][octetp]
     (len-of-map[?f][?p] (?f . code-char) (?p . octetp)))
   })
-  <blockquote>
-  <p>
-  The theorem shows that @('map[code-char][octetp]')
-  preserves the length of the list.
-  </p>
-  </blockquote>
+
+  <h4>Example 2</h4>
 
   @({
-  (defun2 quad[?f] (?f) (x) ; example from defun2 manual page
+  ;; Apply ?F four times to X:
+  (defun2 quad[?f] (?f) (x)
     (?f (?f (?f (?f x)))))
-  (defun-sk2 injective[?f] (?f) () ; example from defun-sk2 manual page
+
+  ;; Recognize injective functions:
+  (defun-sk2 injective[?f] (?f) ()
     (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
-  (defun-inst injective[quad[?f]] (?f) ; example from defun-inst manual page
+
+  ;; Recognize functions whose four-fold application is injective:
+  (defun-inst injective[quad[?f]] (?f)
     (injective[?f] (?f . quad[?f])))
-  (defun wrap (x) (list x)) ; example from defun-inst manual page
-  (defthm ; example from defthm-2nd-order manual page
-    injective[quad[?f]]-when-injective[?f]
+
+  ;; Wrap a value into a singleton list:
+  (defun wrap (x) (list x))
+
+  ;; The four-fold application of an injective function is injective:
+  (defthm injective[quad[?f]]-when-injective[?f]
     (implies (injective[?f]) (injective[quad[?f]]))
     :hints ...)
-  (defun-inst injective[quad[wrap]] ; needed by defthm-inst below
+
+  ;; Needed by DEFTHM-INST below to apply its instantiation:
+  (defun-inst injective[quad[wrap]]
     (injective[quad[?f]] (?f . wrap)))
-  (defun-inst injective[wrap] ; needed by defthm-inst below
+
+  ;; Needed by DEFTHM-INST below to apply its instantiation:
+  (defun-inst injective[wrap]
     (injective[?f] (?f . wrap)))
+
+  ;; QUAD[WRAP] is injective if WRAP is:
   (defthm-inst injective[quad[wrap]]-when-injective[wrap]
     (injective[quad[?f]]-when-injective[?f] (?f . wrap)))
-  })
-  <blockquote>
-  <p>
-  The theorem shows that @('quad[wrap]') is injective if @('wrap') is.
-  </p>
-  </blockquote>")
+  })")
