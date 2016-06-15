@@ -7617,8 +7617,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                  "The following are :ideal mode functions that are not ~
                   non-executable.  We rely in oneify-cltl-code on the absence ~
                   of such functions in the boot-strap world (see the comment ~
-                  on check-none-ideal there).  These functions should have ~
-                  their guards verified: ~&0."
+                  on check-none-ideal there); moreover, we want system ~
+                  functions to execute efficiently, which might not be the ~
+                  case for an :ideal mode function.  These functions should ~
+                  have their guards verified: ~&0."
                  acc))))
    (t
     (let* ((trip (car trips))

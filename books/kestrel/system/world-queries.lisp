@@ -20,6 +20,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
+(include-book "system/kestrel" :dir :system)
 
 (local (set-default-parents world-queries))
 
@@ -63,7 +64,7 @@
 
 (define logical-name-listp (names (w plist-worldp))
   :returns (yes/no booleanp)
-  :prepwork ((program))
+  :verify-guards nil
   :short "Recognize @('nil')-terminated lists of logical names."
   :long
   "<p>
@@ -101,8 +102,8 @@
 (define unwrapped-nonexec-body ((fun (and (function-namep fun w)
                                           (non-executablep fun w)))
                                 (w plist-worldp))
-  :returns (unwrapped-body pseudo-termp)
-  :prepwork ((program))
+  ;; :returns (unwrapped-body pseudo-termp)
+  :verify-guards nil
   :short
   "Body of a non-executable function,
   without the &ldquo;non-executable wrapper&rdquo;."
@@ -131,7 +132,7 @@
 
 (define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
-  :prepwork ((program))
+  :verify-guards nil
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
@@ -142,8 +143,8 @@
                            (logicp fun w)
                            (recursivep fun w)))
                  (w plist-worldp))
-  :returns (measure pseudo-termp)
-  :prepwork ((program))
+  ;; :returns (measure pseudo-termp)
+  :verify-guards nil
   :short "Measure expression of a logic-mode recursive function."
   :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
   (access justification (getpropc fun 'justification nil w) :measure))
@@ -152,8 +153,8 @@
                                    (logicp fun w)
                                    (recursivep fun w)))
                          (w plist-worldp))
-  :returns (measured-subset symbol-listp)
-  :prepwork ((program))
+  ;; :returns (measured-subset symbol-listp)
+  :verify-guards nil
   :short
   "Subset of the formal arguments of the recursive function @('fun')
   that occur in its @(see measure) expression."
@@ -163,8 +164,8 @@
                                          (logicp fun w)
                                          (recursivep fun w)))
                                (w plist-worldp))
-  :returns (well-founded-relation symbolp)
-  :prepwork ((program))
+  ;; :returns (well-founded-relation symbolp)
+  :verify-guards nil
   :short "Well-founded relation of a logic-mode recursive function."
   :long
   "<p>See @(see well-founded-relation-rule)
@@ -176,16 +177,17 @@
                                    (logicp fun w)
                                    (recursivep fun w)))
                          (w plist-worldp))
-  :returns (ruler-extenders (or (symbol-listp ruler-extenders)
-                                (equal ruler-extenders :all)))
-  :prepwork ((program))
+  ;; :returns (ruler-extenders (or (symbol-listp ruler-extenders)
+  ;;                               (equal ruler-extenders :all)))
+  :verify-guards nil
   :short
   "Ruler-extenders of a logic-mode recursive function
   (see @(see rulers) for background)."
   (access justification (getpropc fun 'justification nil w) :ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac w)) (w plist-worldp))
-  :returns (required-args symbol-listp)
+  ;; :returns (required-args symbol-listp)
+  :verify-guards nil
   :short "Required arguments of the macro @('mac'), in order."
   :long
   "<p>
@@ -203,9 +205,9 @@
         (macro-required-args-aux all-args))))
 
   :prepwork
-  ((program)
-   (define macro-required-args-aux ((args symbol-listp))
-     :returns (required-args symbol-listp)
+  ((define macro-required-args-aux ((args symbol-listp))
+     ;; :returns (required-args symbol-listp)
+     :verify-guards nil
      :parents (macro-required-args)
      :short "Auxiliary function of @(tsee macro-required-args)."
      :long
@@ -279,8 +281,8 @@
                                      (logicp fun w)
                                      (eql 1 (len (recursivep fun w)))))
                            (w plist-worldp))
-  :returns (tests-and-calls-list weak-tests-and-calls-listp)
-  :prepwork ((program))
+  ;; :returns (tests-and-calls-list weak-tests-and-calls-listp)
+  :verify-guards nil
   :short "Induction machine of a (singly) recursive function."
   :long
   "<p>
@@ -298,7 +300,8 @@
                                    (logicp fun w)
                                    (eql 1 (len (recursivep fun w)))))
                          (w plist-worldp))
-  :returns (calls-with-tests weak-tests-and-call-listp)
+  ;; :returns (calls-with-tests weak-tests-and-call-listp)
+  :verify-guards nil
   :short
   "Recursive calls of a (singly) recursive function,
   along with the controlling tests."
@@ -312,9 +315,7 @@
 
   :prepwork
 
-  ((program)
-
-   (define recursive-calls-aux1 ((tests pseudo-term-listp)
+  ((define recursive-calls-aux1 ((tests pseudo-term-listp)
                                  (calls pseudo-term-listp))
      :returns (calls-with-tests weak-tests-and-call-listp)
      :parents (recursive-calls)
@@ -332,7 +333,10 @@
 
    (define recursive-calls-aux2
      ((tests-and-calls-list weak-tests-and-calls-listp))
-     :returns (calls-with-tests weak-tests-and-call-listp)
+     :returns (calls-with-tests
+               weak-tests-and-call-listp
+               :hints (("Goal" :in-theory (enable weak-tests-and-call-listp))))
+     :verify-guards nil
      :parents (recursive-calls)
      :short "Second auxiliary function of @(tsee recursive-calls)."
      :long
@@ -392,8 +396,8 @@
   :cheap t) ; because COMMAND-TUPLEP is just CONSP for now
 
 (define event-tuple-names ((evtup pseudo-event-tuplep))
-  :returns (names logical-name-listp)
-  :prepwork ((program))
+  ;; :returns (names (logical-name-listp names (w state)))
+  :verify-guards nil
   :short "Names introduced by an event tuple."
   :long
   "<p>
