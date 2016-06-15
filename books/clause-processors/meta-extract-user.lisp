@@ -1340,6 +1340,92 @@
    (iff a b)
    (implies a b)))
 
+;; BOZO Magic-ev-fncall should probably be moved into the system docs
+(defxdoc magic-ev-fncall
+  :parents (meta)
+  :short "Call the named function on the given arguments and return the value.  Can be assumed to work correctly in metafunctions and clause processors via @(see meta-extract)."
+  :long "<p>Invocation:</p>
+@({
+ (magic-ev-fncall fnname arglist state hard-error-returns-nilp aokp)
+ })
+
+<p>This calls the function named @('fnname') on the given @('arglist') and
+returns either @('(mv T error-msg)') (if, e.g., the function was not defined,
+the arity was wrong, or the guards were violated) or @('(mv NIL value)') on
+success.  In the case of a multiple-valued function the second return value is
+the list of values.</p>
+
+<p>If a hard error is encountered during execution and
+@('hard-error-returns-nilp') is nonnil, then the error is ignored and simply
+returns @('NIL') (which is the logical value of a call of @('HARD-ERROR')).  If
+@('hard-error-returns-nilp') is @('NIL') then the invocation returns @('(mv T
+error-msg)') where the message is the one produced by the hard error call.</p>
+
+<p>The @('aokp') argument controls whether attachments to constrained functions
+may be executed (see @(see defattach)).  If @('NIL'), then an error message is
+returned.</p>
+
+<p>When used in a clause-processor or metafunction, it can be assumed via a
+@(see meta-extract) hypothesis that magic-ev-fncall works correctly with
+respect to the evaluator, but only if @('hard-error-returns-nilp') is @('T')
+and @('aokp') is @('NIL').</p>")
+
+(defxdoc magic-ev
+  :parents (meta)
+  :short "Evaluate a term under a ground substitution using @(see magic-ev-fncall)."
+  :long "<p>Invocation:</p>
+@({
+ (magic-ev term alist state hard-error-returns-nilp aokp)
+ })
+
+<p>evaluates the given term under the alist mapping variables to values.
+Functions within the term are evaluated using @(see magic-ev-fncall) and the
+values returned are the same as for @(see magic-ev-fncall), that is,</p>
+@({
+ (mv NIL value)
+ })
+<p>on success or</p>
+@({
+ (mv T error-msg)
+ })
+<p>on failure.</p>")
+
+(defxdoc magic-ev-lst
+  :parents (magic-ev)
+  :short "Evaluate a list of terms using @(see magic-ev).")
+
+(defxdoc fn-get-def
+  :parents (meta-extract)
+  :short "Look up a function's definition from the world."
+  :long "<p>Invocation:</p>
+@({
+ (fn-get-def fnname state)
+ })
+<p>or equivalently,if @('world') is @('(w state)'),</p>
+@({
+ (fn-get-def-w fnname world)
+ })
+
+<p>produces @('(mv successp formals body)'), where if @('successp') is true,
+then @('(fnname . formals)') is equal to @('body') under evaluation.</p>
+
+<p>@('fn-get-def') can be assumed to work correctly in the context of
+metafunctions and clause processors via @(see meta-extract).</p>
+
+<p>The @(see def-meta-extract) macro supports @('fn-get-def') indirectly: we
+rewrite the @('successp') return value to a call of @('fn-check-def'), and
+@('def-meta-extract') provides a theorem that rewrites an evaluation of
+@('(fnname . args)') to the evaluation of @('body') under the pairing of
+@('formals') to @('args') when it can relieve the hypothesis</p>
+@({
+ (fn-check-def fnname state formals body).
+ })")
+
+(defpointer fn-check-def fn-get-def)
+
+
+
+
 (local
  ;; Set up a custom untranslate so that the xdoc will show the
  ;; mx-ev-meta-extract macros rather than their expanded forms.
@@ -1392,6 +1478,7 @@
 (def-meta-extract mx-ev mx-ev-lst)
 
 (defxdoc def-meta-extract
+  :parents (meta-extract)
   :short "Generate macros and theorems convenient for using @(see meta-extract) with a given evaluator."
   :long "<p>Using the @(see meta-extract) feature in proofs of meta rules and
 clause processors is fairly inconvenient when starting from scratch.
