@@ -456,8 +456,8 @@
                                   (bound-vars symbol-listp)
                                   (non-executable booleanp)
                                   (w plist-worldp))
-  :returns (matrix pseudo-termp)
-  :prepwork ((program))
+  ;; :returns (matrix pseudo-termp)
+  :verify-guards nil
   :short
   "Retrieve the matrix of a @(tsee defun-sk) function,
   in <see topic='@(url term)'>translated form</see>."
