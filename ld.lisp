@@ -2938,8 +2938,8 @@
                          (primitive-event-macros))
                   t ctx state)
                  (declare (ignore changedp))
-                 (value `((set-cbd ,(get-directory-of-file full-book-name))
-                          ,@fixed-cmds
+                 (value `((ld ',fixed-cmds
+                              :dir ,(get-directory-of-file full-book-name))
                           (maybe-install-acl2-defaults-table
                            ',(table-alist 'acl2-defaults-table wrld)
                            state)
