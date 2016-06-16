@@ -955,7 +955,7 @@ necessary when accessed.)</li>
 previously-defined bitstruct type.  The docstring is a string which may contain
 xdoc syntax.</p>
 
-<h5>Field Options</p>
+<h5>Field Options</h5>
 <ul>
 
 <li>@(':accessor'), @(':updater') -- override the default names
@@ -973,7 +973,7 @@ should be determined automatically anyway.</li>
 
 <li>@(':subfields') -- Indicates that accessors and updaters should be created
 for subfields of this field, and gives their subfield names.  See the section
-on subfields below.</li> </li>
+on subfields below.</li> </ul>
 
 <h5>Subfields</h5>
 

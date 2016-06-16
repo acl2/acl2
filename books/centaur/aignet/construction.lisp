@@ -981,6 +981,20 @@
     :rule-classes :type-prescription))
 
 (defsection gatesimp
+  :parents (aignet-construction)
+  :short "Structure encoding AIGNET construction settings for how much to try to
+          simplify and whether to use hashing"
+  :long "<p>A simple bit-encoded pair of @('level'), a natural number
+determining how hard to try to simplify new AND nodes, and @('hashp'), a
+Boolean value.  Created with @('(mk-gatesimp level hashp)'), field accessors
+are @('(gatesimp-level gatesimp)') and @('(gatesimp-hashp gatesimp)').</p>
+
+<p>The @('level') values correspond to the levels of simplification found in the paper:</p>
+<blockquote>
+R. Brummayer and A. Biere.  Local two-level And-Inverter Graph minimization
+without blowup.  Proc. MEMCIS 6 (2006): 32-38,
+</blockquote>
+<p>Values of @('level') greater than 4 are treated the same as level 4.</p>"
   (local (in-theory (disable len-update-nth)))
   (local (in-theory (enable* acl2::ihsext-recursive-redefs
                              acl2::ihsext-bounds-thms
@@ -1020,11 +1034,14 @@
     :hints(("Goal" :in-theory (enable mk-gatesimp)))
     :rule-classes :type-prescription))
 
-(define aignet-hash-and ((lit1 litp)
+(define aignet-hash-and ((lit1 litp "Literal to AND with lit2")
                          (lit2 litp)
-                         (gatesimp natp)
-                         strash
+                         (gatesimp natp "Configuration for how much simplification to try and whether to use hashing")
+                         (strash "Stobj containing the aignet's structural hash table")
                          aignet)
+  :parents (aignet-construction)
+  :short "Add an AND node to an AIGNET, or find a node already representing the required logical expression."
+  :long "<p>See @(see aignet-construction).</p>"
   (declare (type (integer 0 *) lit1)
            (type (integer 0 *) lit2)
            (type (integer 0 *) gatesimp)
@@ -1218,6 +1235,10 @@ to be done if non-<tt>NIL</tt>.</p>")
                         (gatesimp natp)
                         strash
                         aignet)
+  :parents (aignet-construction)
+  :short "Add a node to an AIGNET representing the OR of the given literals, or
+find a node already representing the required logical expression."
+  :long "<p>See @(see aignet-construction).</p>"
   :inline t
   :guard (and (fanin-litp f0 aignet)
               (fanin-litp f1 aignet))
