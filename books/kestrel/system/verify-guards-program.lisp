@@ -52,7 +52,7 @@
                  (skip-proofs
                   (verify-termination ,f
                     (declare (xargs :measure
-                                    (acl2-count ,(car (formals f wrld)))
+                                    (:? ,@(formals f wrld))
                                     :verify-guards nil)))))))
         (t `(skip-proofs (verify-termination ,f
                            (declare (xargs :verify-guards nil)))))))

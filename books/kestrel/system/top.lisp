@@ -22,7 +22,7 @@
 (include-book "minimize-ruler-extenders")
 (include-book "auto-termination")
 (include-book "ubi")
-(include-book "guards-program-mode")
+(include-book "verify-guards-program")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
