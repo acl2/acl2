@@ -73,7 +73,7 @@
   See @('logical-namep') in the ACL2 source code.
   </p>"
   (cond ((atom names) (eq names nil))
-        (t (and (iff t (logical-namep (car names) w))
+        (t (and (logical-namep (car names) w)
                 (logical-name-listp (cdr names) w)))))
 
 (define definedp ((fun (function-namep fun w)) (w plist-worldp))
