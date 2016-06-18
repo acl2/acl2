@@ -21,6 +21,8 @@
 <p>This doc topic will be updated in later commits...</p>"
   )
 
+(local (xdoc::set-default-parents gather-paging-structures))
+
 ;; ======================================================================
 
 ;; Some misc. lemmas:

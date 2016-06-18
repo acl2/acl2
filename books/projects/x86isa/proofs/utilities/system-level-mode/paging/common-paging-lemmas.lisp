@@ -11,6 +11,8 @@
                            signed-byte-p
                            xw-mem-and-wm-low-64-commute))))
 
+(local (xdoc::set-default-parents gather-paging-structures))
+
 ;; ======================================================================
 
 ;; Defining translation-governing-addresses of linear addresses:

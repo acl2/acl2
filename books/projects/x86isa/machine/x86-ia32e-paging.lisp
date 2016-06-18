@@ -18,6 +18,10 @@
   :short "Specification of IA-32e Paging"
   )
 
+(local (xdoc::set-default-parents ia32e-paging))
+
+;; ======================================================================
+
 (defthm loghead-zero-smaller
   (implies (and (equal (loghead n x) 0)
                 (natp n)

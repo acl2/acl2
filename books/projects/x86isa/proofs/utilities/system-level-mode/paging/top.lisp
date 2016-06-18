@@ -10,6 +10,16 @@
 
 (local (in-theory (e/d* () (unsigned-byte-p signed-byte-p))))
 
+(defsection reasoning-about-page-tables
+  :parents (marking-mode-top)
+
+  :long "<p>WORK IN PROGRESS...</p>
+
+<p>This doc topic will be updated in later commits...</p>"
+  )
+
+(local (xdoc::set-default-parents reasoning-about-page-tables))
+
 ;; ======================================================================
 
 ;; Some congruence rules about translation-governing-addresses:
