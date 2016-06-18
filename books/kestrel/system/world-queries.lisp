@@ -82,6 +82,15 @@
   :short
   "True iff the function @('fun') is defined,
   i.e. it has an @('unnormalized-body') property."
+  :long
+  "<p>
+  Note that built-in @(see program)-mode functions
+  do not have an @('unnormalized-body') property,
+  even though they have definitions.
+  However, since their defining bodies cannot be readily obtained,
+  they are not considered to be &ldquo;defined&rdquo;
+  from the perspective of the @(tsee definedp) system utility.
+  </p>"
   (not (eq t (getpropc fun 'unnormalized-body t w))))
 
 (define guard-verified-p ((fun/thm (or (function-namep fun/thm w)
