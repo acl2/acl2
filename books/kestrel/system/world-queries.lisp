@@ -147,8 +147,8 @@
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
-  (and (equal (stobjs-in fun w) (make-list (len (stobjs-in fun w))))
-       (equal (stobjs-out fun w) (make-list (len (stobjs-out fun w))))))
+  (and (all-nils (stobjs-in fun w))
+       (all-nils (stobjs-out fun w))))
 
 (define measure ((fun (and (function-namep fun w)
                            (logicp fun w)
