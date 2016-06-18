@@ -138,8 +138,16 @@
   <p>
   @(tsee unwrapped-nonexec-body) returns
   the unwrapped body of the non-executable function @('fun').
+  </p>
+  <p>
+  The code of this system utility defensively ensures that
+  the body of @('fun') has the form above.
   </p>"
-  (fourth (body fun nil w)))
+  (let ((body (body fun nil w)))
+    (if (throw-nonexec-error-p body fun (formals fun w))
+        (fourth (body fun nil w))
+      (raise "The body ~x0 of the non-executable function ~x1 ~
+             does not have the expected wrapper." body fun))))
 
 (define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
