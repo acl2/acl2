@@ -79,8 +79,8 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :short "For example: given a ranged enum item like @('foo[3:0]'), we create
           the parameters for @('foo3'), @('foo2'), @('foo1'), and @('foo0')."
   ((name     stringp)
-   (top      natp)
-   (bottom   natp)
+   (top      integerp)
+   (bottom   integerp)
    (nextval  vl-expr-p
              "We use an expression, instead of a constant, so that we can
               support enums where the values being assigned to an enum item
@@ -91,10 +91,10 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
    (loc      vl-location-p))
   :returns (mv (params      vl-paramdecllist-p)
                (new-nextval vl-expr-p))
-  :measure (abs (- (nfix top) (nfix bottom)))
-  (b* ((top (lnfix top))
-       (bottom (lnfix bottom))
-       (name1 (str::cat name (str::natstr top)))
+  :measure (abs (- (ifix top) (ifix bottom)))
+  (b* ((top (lifix top))
+       (bottom (lifix bottom))
+       (name1 (str::cat name (if (< top 0) "-" "") (str::natstr (abs top))))
        (first (make-vl-paramdecl
                :name name1
                :localp t

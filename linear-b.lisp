@@ -64,6 +64,47 @@
                                            '<=
                                            t
                                            nil))))
+            ((ts-subsetp ts *ts-one*)
+             (list
+              ;; 1 <= term
+              (add-linear-terms :lhs *1*
+                                :rhs term
+                                (base-poly ts-ttree
+                                           '<=
+                                           t
+                                           nil))
+              ;; term <= 1
+              (add-linear-terms :lhs term
+                                :rhs *1*
+                                (base-poly ts-ttree
+                                           '<=
+                                           t
+                                           nil))))
+            ((ts-subsetp ts *ts-bit*)
+             (list
+              ;; 0 <= term
+              (add-linear-terms :lhs *0*
+                                :rhs term
+                                (base-poly ts-ttree
+                                           '<=
+                                           t
+                                           nil))
+              ;; term <= 1
+              (add-linear-terms :lhs term
+                                :rhs *1*
+                                (base-poly ts-ttree
+                                           '<=
+                                           t
+                                           nil))))
+            ((ts-subsetp ts *ts-integer>1*)
+             (list
+              ;; 2 <= term
+              (add-linear-terms :lhs *2*
+                                :rhs term
+                                (base-poly ts-ttree
+                                           '<=
+                                           t
+                                           nil))))
             ((ts-subsetp ts *ts-positive-integer*)
              (list
               ;; 1 <= term
@@ -118,6 +159,16 @@
              (list
               ;; term <= 0
               (add-linear-terms :lhs term
+                                (base-poly ts-ttree
+                                           '<=
+                                           t
+                                           nil))))
+            ((ts-subsetp ts (ts-union *ts-non-positive-rational*
+                                      *ts-one*))
+             (list
+              ;; term <= 1
+              (add-linear-terms :lhs term
+                                :rhs *1*
                                 (base-poly ts-ttree
                                            '<=
                                            t
@@ -301,7 +352,7 @@
 ; The following test was taken from rewrite with a few modifications
 ; for the formals used.
 
-         ((and (logicalp (ffn-symb term) wrld) ; maybe fn is being admitted
+         ((and (logicp (ffn-symb term) wrld) ; maybe fn is being admitted
                (all-quoteps args)
                (enabled-xfnp (ffn-symb term) ens wrld)
 

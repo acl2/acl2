@@ -24,11 +24,17 @@ all
 collect-on
 collect-tips
 apply$2
+apply$2x
+apply$2xx
 russell
 foldr
+foldl
 collect-from-to
+collect*
 collect2
 recur-by-collect
+prow
+prow*
 collect-rev
 ||#
 
@@ -84,6 +90,9 @@ collect-rev
 ; ---
 ; Mapping Functions
 
+; Most of these functions are only introduced to show that we can justify their
+; applicability hyps in our model.
+
 (defun$ collect (lst fn)
   (cond ((endp lst) nil)
         (t (cons (apply$ fn (list (car lst)))
@@ -123,6 +132,14 @@ collect-rev
 (defun$ apply$2 (fn x y)
   (apply$ fn (list x y)))
 
+; These two functions illustrate getting further away from apply$.
+
+(defun$ apply$2x (fn x y)
+  (apply$2 fn x y))
+
+(defun$ apply$2xx (fn x y)
+  (apply$2x fn x y))
+
 ; A Russell-like function: The classic russell function would be
 
 ; (defun$ russell (fn)
@@ -148,6 +165,13 @@ collect-rev
               (list (car lst)
                     (foldr (cdr lst) fn init)))))
 
+(defun$ foldl (lst fn ans)
+  (if (endp lst)
+      ans
+      (foldl (cdr lst)
+             fn
+             (apply$ fn (list (car lst) ans)))))
+
 (defun$ collect-from-to (i max fn)
   (declare (xargs :measure (nfix (- (+ 1 (ifix max)) (ifix i)))))
   (let ((i (ifix i))
@@ -157,6 +181,12 @@ collect-rev
       nil)
      (t (cons (apply$ fn (list i))
               (collect-from-to (+ i 1) max fn))))))
+
+(defun$ collect* (lst fn)
+  (if (endp lst)
+      nil
+      (cons (apply$ fn (car lst))
+            (collect* (cdr lst) fn))))
 
 (defun$ collect2 (lst fn1 fn2)
   (if (endp lst)
@@ -171,6 +201,19 @@ collect-rev
       nil
       (cons (car lst)
 	    (recur-by-collect (collect (cdr lst) fn) fn))))
+
+(defun$ prow (lst fn)
+  (cond ((or (endp lst) (endp (cdr lst)))
+         nil)
+        (t (cons (apply$ fn (list (car lst) (cadr lst)))
+                 (prow (cdr lst) fn)))))
+
+(defun$ prow* (lst fn)
+  (declare (xargs :measure (len lst)))
+  (cond ((or (endp lst)
+             (endp (cdr lst)))
+         (apply$ fn (list lst lst)))
+        (t (prow* (prow lst fn) fn))))
 
 ; ---
 ; Tame Instances
@@ -295,7 +338,7 @@ collect-rev
                   (* const (sumlist lst (lamb (list v) body))))))
 
 (defthm lamb-x-x-is-identity
-  (implies (atom x)
+  (implies (symbolp x)
            (fn-equal (lamb (list x) x) 'identity))
   :hints (("Goal" :in-theory (enable fn-equal))))
 
@@ -308,6 +351,24 @@ collect-rev
             (* 2 (sumlist bbb 'identity))))
   :hints (("Goal" :do-not-induct t))
   :rule-classes nil)
+
+; A theorem showing that functions can be data, i.e., we can apply mapping functions
+; to mapping functions.
+
+(defthm collect*-collect-example
+  (implies (applicablep collect)
+           (equal (collect* '(((1 2 3) (lambda (x) (cons 'a x)))
+                              ((4 5 6 7) (lambda (z) (cons 'b z)))
+                              ((8 9) (lambda (y) (cons 'c y))))
+                            'collect)
+                  '(((a . 1)(a . 2)(a . 3))
+                    ((b . 4) (b . 5) (b . 6) (b . 7))
+                    ((c . 8) (c . 9)))))
+  :hints
+  (("Goal"
+    :in-theory
+    (disable (:executable-counterpart collect)
+             (:executable-counterpart collect*)))))
 
 ; A couple of nice foldr theorems
 

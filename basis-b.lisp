@@ -2124,6 +2124,108 @@
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
 
+(defun symbol-class (sym wrld)
+
+; The symbol-class of a symbol is one of three keywords:
+
+; :program                  - not defined within the logic
+; :ideal                 - defined in the logic but not known to be CL compliant
+; :common-lisp-compliant - defined in the logic and known to be compliant with
+;                          Common Lisp
+
+; Convention: We never print the symbol-classes to the user.  We would prefer
+; the user not to think about these classes per se.  It encourages a certain
+; confusion, we think, because users want everything to be
+; common-lisp-compliant and start thinking of it as a mode, sort of like "super
+; :logic" or something.  So we are keeping these names to ourselves by not
+; using them in error messages and documentation.  Typically used English
+; phrases are such and such is "compliant with Common Lisp" or "is not known to
+; be compliant with Common Lisp."
+
+; Historical Note: :Program function symbols were once called "red", :ideal
+; symbols were once called "blue", and :common-lisp-compliant symbols were once
+; called "gold."
+
+; Before we describe the storage scheme, let us make a few observations.
+; First, most function symbols have the :program symbol-class, because until
+; ACL2 is admitted into the logic, the overwhelming majority of the function
+; symbols will be system functions.  Second, all :logic function symbols have
+; symbol-class :ideal or :common-lisp-compliant.  Third, this function,
+; symbol-class, is most often applied to :logic function symbols, because most
+; often we use it to sweep through the function symbols in a term before
+; verify-guards.  Finally, theorem names are very rarely of interest here but
+; they are always either :ideal or (very rarely) :common-lisp-compliant.
+
+; Therefore, our storage scheme is that every :logic function will have a
+; symbol-class property that is either :ideal or :common-lisp-compliant.  We
+; will not store a symbol-class property for :program but just rely on the
+; absence of the property (and the fact that the symbol is recognized as a
+; function symbol) to default its symbol-class to :program.  Thus, system
+; functions take no space but are slow to answer.  Finally, theorems will
+; generally have no stored symbol-class (so it will default to :ideal for them)
+; but when it is stored it will be :common-lisp-compliant.
+
+; Note that the defun-mode of a symbol is actually determined by looking at its
+; symbol-class.  We only store the symbol-class.  That is more often the
+; property we need to look at.  But we believe it is simpler for the user to
+; think in terms of :mode and :verify-guards.
+
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
+  (or (getpropc sym 'symbol-class nil wrld)
+      (if (getpropc sym 'theorem nil wrld)
+          :ideal
+          :program)))
+
+(defmacro fdefun-mode (fn wrld)
+
+; Fn must be a symbol and a function-symbol of wrld.
+
+  `(if (eq (symbol-class ,fn ,wrld) :program)
+       :program
+       :logic))
+
+(defun logicp (fn wrld)
+
+; We assume that fn is not the name of a theorem (presumably it's a function
+; symbol), in order to avoid the use of symbol-class, which can check the
+; 'theorem property of fn.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+
+; We deliberately avoid adding the conjunct (function-symbolp fn), even though
+; we expect it to be true when we call logicp.  Otherwise we would incur more
+; proof obligations; indeed, guard verification would fail for arities-okp.
+
+                              (symbolp fn))))
+  (not (eq (getpropc fn 'symbol-class nil wrld)
+           :program)))
+
+(defmacro logicalp (fn wrld)
+; DEPRECATED in favor of logicp!
+  `(logicp ,fn ,wrld))
+
+(defmacro programp (fn wrld)
+
+; We assume that fn is not the name of a theorem (presumably it's a function
+; symbol), in order to avoid the use of symbol-class, which can check the
+; 'theorem property of fn.
+
+  `(not (logicp ,fn ,wrld)))
+
+(defun defun-mode (name wrld)
+
+; Only function symbols have defun-modes.  For all other kinds of names
+; e.g., package names and macro names, the "defun-mode" is nil.
+
+; Implementation Note:  We do not store the defun-mode of a symbol on the
+; property list of the symbol.  We compute the defun-mode from the symbol-class.
+
+  (cond ((and (symbolp name)
+              (function-symbolp name wrld))
+         (fdefun-mode name wrld))
+        (t nil)))
+
 (defun arities-okp (user-table w)
   (declare (xargs :guard (and (symbol-alistp user-table)
                               (plist-worldp-with-formals w))))
@@ -2131,6 +2233,7 @@
    ((endp user-table) t)
    (t (and (equal (arity (car (car user-table)) w)
                   (cdr (car user-table)))
+           (logicp (car (car user-table)) w)
            (arities-okp (cdr user-table) w)))))
 
 (defconst *user-defined-functions-table-keys*
@@ -2200,103 +2303,6 @@
                                 (access def-body def-body :hyp)
                                 (access def-body def-body :concl))))
         (t (getpropc fn 'unnormalized-body nil w))))
-
-(defun symbol-class (sym wrld)
-
-; The symbol-class of a symbol is one of three keywords:
-
-; :program                  - not defined within the logic
-; :ideal                 - defined in the logic but not known to be CL compliant
-; :common-lisp-compliant - defined in the logic and known to be compliant with
-;                          Common Lisp
-
-; Convention: We never print the symbol-classes to the user.  We would prefer
-; the user not to think about these classes per se.  It encourages a certain
-; confusion, we think, because users want everything to be
-; common-lisp-compliant and start thinking of it as a mode, sort of like "super
-; :logic" or something.  So we are keeping these names to ourselves by not
-; using them in error messages and documentation.  Typically used English
-; phrases are such and such is "compliant with Common Lisp" or "is not known to
-; be compliant with Common Lisp."
-
-; Historical Note: :Program function symbols were once called "red", :ideal
-; symbols were once called "blue", and :common-lisp-compliant symbols were once
-; called "gold."
-
-; Before we describe the storage scheme, let us make a few observations.
-; First, most function symbols have the :program symbol-class, because until
-; ACL2 is admitted into the logic, the overwhelming majority of the function
-; symbols will be system functions.  Second, all :logic function symbols have
-; symbol-class :ideal or :common-lisp-compliant.  Third, this function,
-; symbol-class, is most often applied to :logic function symbols, because most
-; often we use it to sweep through the function symbols in a term before
-; verify-guards.  Finally, theorem names are very rarely of interest here but
-; they are always either :ideal or (very rarely) :common-lisp-compliant.
-
-; Therefore, our storage scheme is that every :logic function will have a
-; symbol-class property that is either :ideal or :common-lisp-compliant.  We
-; will not store a symbol-class property for :program but just rely on the
-; absence of the property (and the fact that the symbol is recognized as a
-; function symbol) to default its symbol-class to :program.  Thus, system
-; functions take no space but are slow to answer.  Finally, theorems will
-; generally have no stored symbol-class (so it will default to :ideal for them)
-; but when it is stored it will be :common-lisp-compliant.
-
-; Note that the defun-mode of a symbol is actually determined by looking at its
-; symbol-class.  We only store the symbol-class.  That is more often the
-; property we need to look at.  But we believe it is simpler for the user to
-; think in terms of :mode and :verify-guards.
-
-  (declare (xargs :guard (and (symbolp sym)
-                              (plist-worldp wrld))))
-  (or (getpropc sym 'symbol-class nil wrld)
-      (if (getpropc sym 'theorem nil wrld)
-          :ideal
-          :program)))
-
-(defmacro fdefun-mode (fn wrld)
-
-; Fn must be a symbol and a function-symbol of wrld.
-
-  `(if (eq (symbol-class ,fn ,wrld) :program)
-       :program
-       :logic))
-
-(defmacro programp (fn wrld)
-  `(eq (symbol-class ,fn ,wrld) :program))
-
-(defmacro logicalp (fn wrld)
-  `(not (eq (symbol-class ,fn ,wrld) :program)))
-
-(mutual-recursion
-
-(defun program-termp (term wrld)
-  (cond ((variablep term) nil)
-        ((fquotep term) nil)
-        ((flambdap (ffn-symb term))
-         (or (program-termp (lambda-body (ffn-symb term)) wrld)
-             (program-term-listp (fargs term) wrld)))
-        ((programp (ffn-symb term) wrld) t)
-        (t (program-term-listp (fargs term) wrld))))
-
-(defun program-term-listp (lst wrld)
-  (cond ((null lst) nil)
-        (t (or (program-termp (car lst) wrld)
-               (program-term-listp (cdr lst) wrld)))))
-)
-
-(defun defun-mode (name wrld)
-
-; Only function symbols have defun-modes.  For all other kinds of names
-; e.g., package names and macro names, the "defun-mode" is nil.
-
-; Implementation Note:  We do not store the defun-mode of a symbol on the
-; property list of the symbol.  We compute the defun-mode from the symbol-class.
-
-  (cond ((and (symbolp name)
-              (function-symbolp name wrld))
-         (fdefun-mode name wrld))
-        (t nil)))
 
 ; Rockwell Addition: Consider the guard conjectures for a stobj-using
 ; function.  Every accessor and updater application will generate the

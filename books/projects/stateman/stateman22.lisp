@@ -6096,6 +6096,23 @@
    :rule-classes (:rewrite :type-prescription)))
 
 (local
+ (defthm logic-fnsp-distributed-difference-2
+   (implies (logic-fnsp term w)
+            (logic-fnsp (mv-nth 2 (distributed-difference term))
+                        w))
+   :hints (("Goal" :in-theory (enable distributed-difference)))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
+ (defthm logic-termp-distributed-difference-2
+   (implies (and (logic-termp term w)
+                 (arities-okp *stateman-arities* w)
+                 (mv-nth 0 (distributed-difference term)))
+            (logic-termp (mv-nth 2 (distributed-difference term))
+                           w))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
  (defthm termp-distributed-difference-3
    (implies (and (termp term w)
                  (arities-okp *stateman-arities* w)
@@ -6103,6 +6120,23 @@
             (termp (mv-nth 3 (distributed-difference term))
                    w))
    :hints (("Goal" :in-theory (enable distributed-difference)))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
+ (defthm logic-fnsp-distributed-difference-3
+   (implies (logic-fnsp term w)
+            (logic-fnsp (mv-nth 3 (distributed-difference term))
+                        w))
+   :hints (("Goal" :in-theory (enable distributed-difference)))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
+ (defthm logic-termp-distributed-difference-3
+   (implies (and (logic-termp term w)
+                 (arities-okp *stateman-arities* w)
+                 (mv-nth 0 (distributed-difference term)))
+            (logic-termp (mv-nth 3 (distributed-difference term))
+                         w))
    :rule-classes (:rewrite :type-prescription)))
 
 (local
@@ -6125,11 +6159,66 @@
                       find-smallest-inclusive-natp-upper-bound))))))
 
 (local
+ (defthm logic-fns-listp-ainni
+   (implies (and (termp term w)
+                 (logic-fnsp term w)
+                 (term-listp hyps w)
+                 (logic-fns-listp hyps w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fns-listp
+             (mv-nth 1 (ainni term hyps type-alist)) w))
+   :hints
+   (("Goal"
+     :in-theory (e/d (ainni)
+                     (tau-bounder-+
+                      tau-bounder-*
+                      tau-bounder-logand
+                      tau-bounder-logior
+                      tau-bounder-logxor
+                      tau-bounder-ash
+                      make-tau-interval
+                      find-largest-inclusive-natp-lower-bound
+                      find-smallest-inclusive-natp-upper-bound))))))
+
+(local
+ (defthm logic-term-listp-ainni
+   (implies (and (logic-termp term w)
+                 (logic-term-listp hyps w)
+                 (arities-okp *stateman-arities* w))
+            (logic-term-listp
+             (mv-nth 1 (ainni term hyps type-alist)) w))
+   :hints
+   (("Goal"
+     :in-theory (e/d (ainni)
+                     (tau-bounder-+
+                      tau-bounder-*
+                      tau-bounder-logand
+                      tau-bounder-logior
+                      tau-bounder-logxor
+                      tau-bounder-ash
+                      make-tau-interval
+                      find-largest-inclusive-natp-lower-bound
+                      find-smallest-inclusive-natp-upper-bound))))))
+
+(local
  (defthm termp-cons-term-IFIX
    (implies (and (termp term w)
                  (arities-okp *stateman-arities* w))
             (termp (cons-term-IFIX term) w))
    :hints (("Goal" :in-theory (enable cons-term-IFIX)))))
+
+(local
+ (defthm logic-fnsp-cons-term-IFIX
+   (implies (and (logic-fnsp term w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fnsp (cons-term-IFIX term) w))
+   :hints (("Goal" :in-theory (enable cons-term-IFIX)))))
+
+(local
+ (defthm logic-termp-cons-term-IFIX
+   (implies (and (logic-termp term w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (cons-term-IFIX term) w))))
 
 (local
  (defthm termp-meta-mod1-ainni
@@ -6141,10 +6230,44 @@
    :hints (("Goal" :in-theory (enable meta-mod1-ainni)))))
 
 (local
+ (defthm logic-fnsp-meta-mod1-ainni
+   (implies (and (termp term w)
+                 (logic-fnsp term w)
+                 (arities-okp *stateman-arities* w))
+            (and (logic-fnsp
+                  (mv-nth 0 (meta-mod1-ainni term k type-alist)) w)
+                 (logic-fns-listp
+                  (mv-nth 1 (meta-mod1-ainni term k type-alist)) w)))
+   :hints (("Goal" :in-theory (enable meta-mod1-ainni)))))
+
+(local
+ (defthm logic-termp-meta-mod1-ainni
+   (implies (and (logic-termp term w)
+                 (arities-okp *stateman-arities* w))
+            (and (logic-termp
+                  (mv-nth 0 (meta-mod1-ainni term k type-alist)) w)
+                 (logic-term-listp
+                  (mv-nth 1 (meta-mod1-ainni term k type-alist)) w)))
+   :hints (("Goal" :in-theory (enable meta-mod1-ainni)))))
+
+(local
  (defthm termp-mod-plus-meta-mod1
    (implies (and (termp term w)
                  (arities-okp *stateman-arities* w))
             (termp (mod-plus-meta-mod1 term k2) w))
+   :hints (("Goal" :in-theory (enable mod-plus-meta-mod1)))))
+
+(local
+ (defthm logic-fnsp-mod-plus-meta-mod1
+   (implies (logic-fnsp term w)
+            (logic-fnsp (mod-plus-meta-mod1 term k2) w))
+   :hints (("Goal" :in-theory (enable mod-plus-meta-mod1)))))
+
+(local
+ (defthm logic-termp-mod-plus-meta-mod1
+   (implies (and (logic-termp term w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (mod-plus-meta-mod1 term k2) w))
    :hints (("Goal" :in-theory (enable mod-plus-meta-mod1)))))
 
 (local
@@ -6156,25 +6279,78 @@
    :hints (("Goal" :in-theory (enable meta-mod1)))))
 
 (local
+ (defthm logic-fnsp-meta-mod1
+   (implies (and (termp term w)
+                 (logic-fnsp term w)
+                 (arities-okp *stateman-arities* w))
+            (and (logic-fnsp (mv-nth 0 (meta-mod1 term type-alist)) w)
+                 (logic-fns-listp (mv-nth 1 (meta-mod1 term type-alist)) w)))
+   :hints (("Goal" :in-theory (enable meta-mod1)))))
+
+(local
+ (defthm logic-termp-meta-mod1
+   (implies (and (logic-termp term w)
+                 (arities-okp *stateman-arities* w))
+            (and (logic-termp (mv-nth 0 (meta-mod1 term type-alist)) w)
+                 (logic-term-listp (mv-nth 1 (meta-mod1 term type-alist)) w)))
+   :hints (("Goal"
+            :in-theory (enable meta-mod1)))))
+
+(local
  (defthm termp-conjoin
    (implies (and (term-listp lst w)
                  (arities-okp *stateman-arities* w))
             (termp (conjoin lst) w))))
 
+(local
+ (defthm logic-fnsp-conjoin
+   (implies (and (logic-fns-listp lst w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fnsp (conjoin lst) w))))
+
+(local
+ (defthm logic-termp-conjoin
+   (implies (and (logic-term-listp lst w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (conjoin lst) w))))
+
 (defthm termp-meta-mod
   (implies (and (termp term w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-mod term mfc state) w))
+           (termp (meta-mod term mfc state) w)))
 
+(defthm logic-fnsp-meta-mod
+  (implies (and (termp term w)
+                (logic-fnsp term w)
+                (arities-okp *stateman-arities* w))
+           (logic-fnsp (meta-mod term mfc state) w)))
+
+(defthm logic-termp-meta-mod
+  (implies (and (logic-termp term w)
+                (arities-okp *stateman-arities* w))
+           (logic-termp (meta-mod term mfc state) w))
   :rule-classes nil)
 
 (local
- (defthm termp-bounded-address
+ (defthm term-listp-bounded-address
    (implies (and (termp x w)
-                 (arities-okp *stateman-arities* w)
-                 (not (zp n))
-                 (mv-nth 0 (bounded-address x n type-alist)))
+                 (arities-okp *stateman-arities* w))
             (term-listp (mv-nth 1 (bounded-address x n type-alist)) w))
+   :hints (("Goal" :in-theory (enable bounded-address)))))
+
+(local
+ (defthm logic-fns-listp-bounded-address
+   (implies (and (termp x w)
+                 (logic-fnsp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fns-listp (mv-nth 1 (bounded-address x n type-alist)) w))
+   :hints (("Goal" :in-theory (enable bounded-address)))))
+
+(local
+ (defthm logic-term-listp-bounded-address
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-term-listp (mv-nth 1 (bounded-address x n type-alist)) w))
    :hints (("Goal" :in-theory (enable bounded-address)))))
 
 (local
@@ -6185,14 +6361,50 @@
                    (term-listp b w)))))
 
 (local
- (defthm termp-perfectly-shadowedp
-   (implies (and (mv-nth 0 (perfectly-shadowedp a n hyps-a int-a st type-alist))
-                 (termp a w)
+ (defthm logic-fns-listp-union-equal
+   (implies (and (logic-fns-listp a w)
+                 (arities-okp *stateman-arities* w))
+            (equal (logic-fns-listp (union-equal a b) w)
+                   (logic-fns-listp b w)))))
+
+(local
+ (defthm logic-term-listp-union-equal
+   (implies (and (logic-term-listp a w)
+                 (arities-okp *stateman-arities* w))
+            (equal (logic-term-listp (union-equal a b) w)
+                   (logic-term-listp b w)))))
+
+(local
+ (defthm term-listp-perfectly-shadowedp
+   (implies (and (termp a w)
                  (arities-okp *stateman-arities* w)
                  (not (zp n))
                  (term-listp hyps-a w)
                  (termp st w))
             (term-listp (mv-nth 1 (perfectly-shadowedp a n hyps-a int-a st type-alist)) w))
+   :hints (("Goal" :in-theory (enable perfectly-shadowedp)))))
+
+(local
+ (defthm logic-fns-listp-perfectly-shadowedp
+   (implies (and (logic-fnsp a w)
+                 (arities-okp *stateman-arities* w)
+                 (not (zp n))
+                 (logic-fns-listp hyps-a w)
+                 (termp st w)
+                 (logic-fnsp st w))
+            (logic-fns-listp
+             (mv-nth 1 (perfectly-shadowedp a n hyps-a int-a st type-alist)) w))
+   :hints (("Goal" :in-theory (enable perfectly-shadowedp)))))
+
+(local
+ (defthm logic-term-listp-perfectly-shadowedp
+   (implies (and (mv-nth 0 (perfectly-shadowedp a n hyps-a int-a st type-alist))
+                 (logic-termp a w)
+                 (arities-okp *stateman-arities* w)
+                 (not (zp n))
+                 (logic-term-listp hyps-a w)
+                 (logic-termp st w))
+            (logic-term-listp (mv-nth 1 (perfectly-shadowedp a n hyps-a int-a st type-alist)) w))
    :hints (("Goal" :in-theory (enable perfectly-shadowedp)))))
 
 (local
@@ -6203,20 +6415,35 @@
    :hints
    (("Goal" :in-theory (enable find-assignment-to-scalar)))))
 
+(local
+ (defthm logic-fnsp-find-assignment-to-scalar
+   (implies (logic-fnsp x w)
+            (logic-fnsp (mv-nth 1 (find-assignment-to-scalar fn x)) w))
+   :hints
+   (("Goal" :in-theory (enable find-assignment-to-scalar)))))
+
+(local
+ (defthm logic-termp-find-assignment-to-scalar
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (mv-nth 1 (find-assignment-to-scalar fn x)) w))
+   :hints
+   (("Goal" :in-theory (enable find-assignment-to-scalar)))))
+
 ; Main:
-(defthm termp-meta-i
-  (implies (and (termp x w)
+(defthm logic-termp-meta-i
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-i x) w))
+           (logic-termp (meta-i x) w))
   :hints
   (("Goal" :in-theory (enable meta-i)))
   :rule-classes nil)
 
 ; Main:
-(defthm termp-meta-s
-  (implies (and (termp x w)
+(defthm logic-termp-meta-s
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-s x) w))
+           (logic-termp (meta-s x) w))
   :hints
   (("Goal" :in-theory (enable meta-s)))
   :rule-classes nil)
@@ -6230,6 +6457,22 @@
    (("Goal" :in-theory (enable add-hide)))))
 
 (local
+ (defthm logic-fnsp-add-hide
+   (implies (and (logic-fnsp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fnsp (add-hide hiddenp x) w))
+   :hints
+   (("Goal" :in-theory (enable add-hide)))))
+
+(local
+ (defthm logic-termp-add-hide
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (add-hide hiddenp x) w))
+   :hints
+   (("Goal" :in-theory (enable add-hide)))))
+
+(local
  (defthm termp-meta-binary-+-with-const
    (implies (and (termp x w)
                  (arities-okp *stateman-arities* w)
@@ -6239,12 +6482,48 @@
    (("Goal" :in-theory (enable meta-binary-+-with-const)))))
 
 (local
+ (defthm logic-fnsp-meta-binary-+-with-const
+   (implies (and (logic-fnsp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fnsp (meta-binary-+-with-const k x) w))
+   :hints
+   (("Goal" :in-theory (enable meta-binary-+-with-const)))))
+
+(local
+ (defthm logic-termp-meta-binary-+-with-const
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w)
+                 (acl2-numberp k))
+            (logic-termp (meta-binary-+-with-const k x) w))
+   :hints
+   (("Goal" :in-theory (enable meta-binary-+-with-const)))))
+
+(local
  (defthm termp-common-reference-address
    (implies (and (termp a w)
                  (termp b w)
-                 (arities-okp *stateman-arities* w)
                  (mv-nth 0 (common-reference-address a b)))
             (termp (mv-nth 2 (common-reference-address a b)) w))
+   :hints
+   (("Goal" :in-theory (enable common-reference-address)))))
+
+(local
+ (defthm logic-fnsp-common-reference-address
+   (implies (and (termp a w)
+                 (logic-fnsp a w)
+                 (termp b w)
+                 (logic-fnsp b w)
+                 (mv-nth 0 (common-reference-address a b)))
+            (logic-fnsp (mv-nth 2 (common-reference-address a b)) w))
+   :hints
+   (("Goal" :in-theory (enable common-reference-address)))))
+
+(local
+ (defthm logic-termp-common-reference-address
+   (implies (and (logic-termp a w)
+                 (logic-termp b w)
+                 (mv-nth 0 (common-reference-address a b)))
+            (logic-termp (mv-nth 2 (common-reference-address a b)) w))
    :hints
    (("Goal" :in-theory (enable common-reference-address)))))
 
@@ -6259,6 +6538,33 @@
    (("Goal" :in-theory (enable mx-rover)))))
 
 (local
+ (defthm logic-fnsp-mx-rover-1
+   (implies (and (termp a w)
+                 (logic-fnsp a w)
+                 (term-listp hyps1 w)
+                 (logic-fns-listp hyps1 w)
+                 (termp st w)
+                 (logic-fnsp st w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fns-listp
+             (mv-nth 1 (mx-rover a hyps1 int1 n st type-alist)) w))
+   :hints
+   (("Goal" :in-theory (e/d (mx-rover)
+                            (assoc-equal))))))
+
+(local
+ (defthm logic-termp-mx-rover-1
+   (implies (and (logic-termp a w)
+                 (logic-term-listp hyps1 w)
+                 (logic-termp st w)
+                 (arities-okp *stateman-arities* w))
+            (logic-term-listp
+             (mv-nth 1 (mx-rover a hyps1 int1 n st type-alist)) w))
+   :hints
+   (("Goal" :in-theory (e/d (mx-rover)
+                            (assoc-equal))))))
+
+(local
  (defthm termp-mx-rover-0
    (implies (and (termp a w)
                  (term-listp hyps1 w)
@@ -6267,7 +6573,35 @@
                  (mv-nth 0 (mx-rover a hyps1 int1 n st type-alist)))
             (termp (mv-nth 0 (mx-rover a hyps1 int1 n st type-alist)) w))
    :hints
-   (("Goal" :in-theory (enable mx-rover)))))
+   (("Goal" :in-theory (e/d (mx-rover)
+                            (assoc-equal))))))
+
+(local
+ (defthm logic-fnsp-mx-rover-0
+   (implies (and (termp a w)
+                 (logic-fnsp a w)
+                 (term-listp hyps1 w)
+                 (logic-fns-listp hyps1 w)
+                 (termp st w)
+                 (logic-fnsp st w)
+                 (arities-okp *stateman-arities* w)
+                 (mv-nth 0 (mx-rover a hyps1 int1 n st type-alist)))
+            (logic-fnsp (mv-nth 0 (mx-rover a hyps1 int1 n st type-alist)) w))
+   :hints
+   (("Goal" :in-theory (e/d (mx-rover)
+                            (assoc-equal))))))
+
+(local
+ (defthm logic-termp-mx-rover-0
+   (implies (and (logic-termp a w)
+                 (logic-term-listp hyps1 w)
+                 (logic-termp st w)
+                 (arities-okp *stateman-arities* w)
+                 (mv-nth 0 (mx-rover a hyps1 int1 n st type-alist)))
+            (logic-termp (mv-nth 0 (mx-rover a hyps1 int1 n st type-alist)) w))
+   :hints
+   (("Goal" :in-theory (e/d (mx-rover)
+                            (assoc-equal))))))
 
 (local
  (defthm term-listp-merge-term-order
@@ -6276,9 +6610,31 @@
             (term-listp (merge-term-order l1 l2) w))))
 
 (local
+ (defthm logic-fns-listp-merge-term-order
+   (implies (and (logic-fns-listp l1 w)
+                 (logic-fns-listp l2 w))
+            (logic-fns-listp (merge-term-order l1 l2) w))))
+
+(local
+ (defthm logic-term-listp-merge-term-order
+   (implies (and (logic-term-listp l1 w)
+                 (logic-term-listp l2 w))
+            (logic-term-listp (merge-term-order l1 l2) w))))
+
+(local
  (defthm term-listp-evens
    (implies (term-listp l w)
             (term-listp (evens l) w))))
+
+(local
+ (defthm logic-fns-listp-evens
+   (implies (logic-fns-listp l w)
+            (logic-fns-listp (evens l) w))))
+
+(local
+ (defthm logic-term-listp-evens
+   (implies (logic-term-listp l w)
+            (logic-term-listp (evens l) w))))
 
 (local
  (defthm term-listp-merge-sort-term-order
@@ -6286,25 +6642,55 @@
             (term-listp (merge-sort-term-order l) w))))
 
 (local
+ (defthm logic-fns-listp-merge-sort-term-order
+   (implies (logic-fns-listp l w)
+            (logic-fns-listp (merge-sort-term-order l) w))))
+
+(local
+ (defthm logic-term-listp-merge-sort-term-order
+   (implies (logic-term-listp l w)
+            (logic-term-listp (merge-sort-term-order l) w))))
+
+(local
  (defthm term-listp-meta-ash-ash1
    (implies (and (termp x w)
                  (arities-okp *stateman-arities* w))
             (term-listp (meta-ash-ash1 x) w))))
 
-; The following proof attempt loops if you just let xxxjoin expand. So
-; I disable it and expand it manually.
+(local
+ (defthm logic-fns-listp-meta-ash-ash1
+   (implies (logic-fnsp x w)
+            (logic-fns-listp (meta-ash-ash1 x) w))))
+
+(local
+ (defthm logic-term-listp-meta-ash-ash1
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-term-listp (meta-ash-ash1 x) w))))
+
 (local
  (defthm termp-xxxjoin
    (implies (and (term-listp lst w)
                  (arities-okp *stateman-arities* w)
                  (consp (cdr lst)))
             (termp (xxxjoin 'binary-+ lst) w))
-   :hints (("Goal" :induct (len lst)
-            :in-theory (disable xxxjoin))
-           ("Subgoal *1/1.2"
-            :expand ((XXXJOIN 'BINARY-+ LST)))
-           ("Subgoal *1/1.1"
-            :expand ((XXXJOIN 'BINARY-+ LST))))))
+   :hints (("Goal" :induct (len lst)))))
+
+(local
+ (defthm logic-fnsp-xxxjoin
+   (implies (and (logic-fns-listp lst w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fnsp (xxxjoin 'binary-+ lst) w))))
+
+; The following proof attempt loops if you just let xxxjoin expand.
+(local
+ (defthm logic-termp-xxxjoin
+   (implies (and (logic-term-listp lst w)
+                 (arities-okp *stateman-arities* w)
+                 (consp (cdr lst)))
+            (logic-termp (xxxjoin 'binary-+ lst) w))
+   :hints (("Goal"
+            :in-theory (disable xxxjoin)))))
 
 (local
  (defthm why-do-i-need-this
@@ -6322,7 +6708,7 @@
    (consp (meta-ash-ash1 x))))
 
 (local
- (defthm term-meta-ash-ash
+ (defthm termp-meta-ash-ash
    (implies (and (termp x w)
                  (arities-okp *stateman-arities* w))
             (termp (meta-ash-ash x) w))
@@ -6336,20 +6722,39 @@
             :in-theory (disable term-listp-meta-ash-ash1)
             :use (:instance term-listp-meta-ash-ash1)))))
 
-; Main:
-(defthm termp-meta-r
-  (implies (and (termp x w)
+(local
+ (defthm logic-fnsp-meta-ash-ash
+   (implies (and (logic-fnsp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fnsp (meta-ash-ash x) w))
+   :hints (("Goal"
+            :in-theory (e/d (meta-ash-ash)
+                            (logic-fns-listp-merge-sort-term-order))
+            :use (:instance logic-fns-listp-merge-sort-term-order
+                            (l (META-ASH-ASH1 X))
+                            (w w)))
+           ("Subgoal 1"
+            :in-theory (e/d ()
+                            (logic-fns-listp-meta-ash-ash1))
+            :use (:instance logic-fns-listp-meta-ash-ash1)))))
+
+(local
+ (defthm logic-termp-meta-ash-ash
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (meta-ash-ash x) w))))
+
+(defthm logic-termp-meta-r
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-r x mfc state) w))
-  :hints
-  (("Goal" :in-theory (enable meta-r)))
+           (logic-termp (meta-r x mfc state) w))
   :rule-classes nil)
 
 ; Main:
-(defthm termp-meta-<
-  (implies (and (termp x w)
+(defthm logic-termp-meta-<
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-< x mfc state) w))
+           (logic-termp (meta-< x mfc state) w))
   :hints
   (("Goal" :in-theory (enable meta-<)))
   :rule-classes nil)
@@ -6360,20 +6765,31 @@
                  (arities-okp *stateman-arities* w))
             (termp (delete-assignment-at-depth depth st) w))))
 
+(local
+ (defthm logic-fnsp-delete-assignment-at-depth
+   (implies (logic-fnsp st w)
+            (logic-fnsp (delete-assignment-at-depth depth st) w))))
+
+(local
+ (defthm logic-termp-delete-assignment-at-depth
+   (implies (and (logic-termp st w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (delete-assignment-at-depth depth st) w))))
+
 ; Main:
-(defthm termp-meta-!i
-  (implies (and (termp x w)
+(defthm logic-termp-meta-!i
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-!i x) w))
+           (logic-termp (meta-!i x) w))
   :hints
   (("Goal" :in-theory (enable meta-!i)))
   :rule-classes nil)
 
 ; Main:
-(defthm termp-meta-!s
-  (implies (and (termp x w)
+(defthm logic-termp-meta-!s
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-!s x) w))
+           (logic-termp (meta-!s x) w))
   :hints
   (("Goal" :in-theory (enable meta-!s)))
   :rule-classes nil)
@@ -6390,6 +6806,30 @@
    :rule-classes nil))
 
 (local
+ (defthm logic-fnsp-remove-all-hides1
+   (implies (if flg
+                (logic-fnsp x w)
+              (logic-fns-listp x w))
+            (if flg
+                (logic-fnsp (remove-all-hides1 flg depth x) w)
+              (logic-fns-listp (remove-all-hides1 flg depth x) w)))
+   :rule-classes nil))
+
+(local
+ (defthm logic-termp-remove-all-hides1
+   (implies (and (if flg
+                     (logic-termp x w)
+                   (logic-term-listp x w))
+                 (arities-okp *stateman-arities* w))
+            (if flg
+                (logic-termp (remove-all-hides1 flg depth x) w)
+              (logic-term-listp (remove-all-hides1 flg depth x) w)))
+   :hints (("Goal"
+            :use (termp-remove-all-hides1
+                  logic-fnsp-remove-all-hides1)))
+   :rule-classes nil))
+
+(local
  (defthm termp-remove-all-hides1-corollary
    (implies (and (termp x w)
                  (arities-okp *stateman-arities* w))
@@ -6398,23 +6838,61 @@
                                    (flg t))))))
 
 (local
+ (defthm logic-fnsp-remove-all-hides1-corollary
+   (implies (logic-fnsp x w)
+            (logic-fnsp (remove-all-hides1 t depth x) w))
+   :hints (("Goal" :use (:instance logic-fnsp-remove-all-hides1
+                                   (flg t))))))
+
+(local
+ (defthm logic-termp-remove-all-hides1-corollary
+   (implies (and (logic-termp x w)
+                 (arities-okp *stateman-arities* w))
+            (logic-termp (remove-all-hides1 t depth x) w))
+   :hints (("Goal" :use (:instance logic-termp-remove-all-hides1
+                                   (flg t))))))
+
+(local
  (defthm term-listp-find-assignment-to-vector1
    (implies (and (termp a w)
                  (not (zp n))
                  (term-listp hyps-a w)
                  (termp st w)
-                 (arities-okp *stateman-arities* w)
-                 (mv-nth 0 (find-assignment-to-vector1 a n hyps-a int-a st type-alist)))
+                 (arities-okp *stateman-arities* w))
             (term-listp (mv-nth 1 (find-assignment-to-vector1 a n hyps-a int-a st type-alist))
                         w))))
 
+(local
+ (defthm logic-fns-listp-find-assignment-to-vector1
+   (implies (and (logic-fnsp a w)
+                 (not (zp n))
+                 (logic-fns-listp hyps-a w)
+                 (termp st w)
+                 (logic-fnsp st w)
+                 (arities-okp *stateman-arities* w))
+            (logic-fns-listp
+             (mv-nth 1 (find-assignment-to-vector1 a n hyps-a int-a st type-alist))
+             w))))
+
+(local
+ (defthm logic-term-listp-find-assignment-to-vector1
+   (implies (and (logic-termp a w)
+                 (not (zp n))
+                 (logic-term-listp hyps-a w)
+                 (logic-termp st w)
+                 (arities-okp *stateman-arities* w))
+            (logic-term-listp
+             (mv-nth 1 (find-assignment-to-vector1 a n hyps-a int-a st type-alist))
+             w))))
+
 ; Main:
-(defthm termp-meta-!r
-  (implies (and (termp x w)
+(defthm logic-termp-meta-!r
+  (implies (and (logic-termp x w)
                 (arities-okp *stateman-arities* w))
-           (termp (meta-!r x mfc state) w))
+           (logic-termp (meta-!r x mfc state) w))
   :hints
-  (("Goal" :in-theory (enable meta-!r)))
+  (("Goal" :in-theory (e/d (meta-!r)
+                           (assoc-equal))))
   :rule-classes nil)
 
 ; -----------------------------------------------------------------
@@ -6426,7 +6904,7 @@
                   (stateman-eval (meta-mod term mfc state) alist)))
   :rule-classes
   ((:meta :trigger-fns (MOD)
-          :well-formedness-guarantee termp-meta-mod)))
+          :well-formedness-guarantee logic-termp-meta-mod)))
 
 (defthm meta-i-correct
   (implies (pseudo-termp term)
@@ -6435,7 +6913,7 @@
   :hints (("Goal" :expand ((:free (x) (hide x)))))
   :rule-classes
   ((:meta :trigger-fns (i)
-          :well-formedness-guarantee termp-meta-i)))
+          :well-formedness-guarantee logic-termp-meta-i)))
 
 (defthm meta-s-correct
   (implies (pseudo-termp term)
@@ -6444,7 +6922,7 @@
   :hints (("Goal" :expand ((:free (x) (hide x)))))
   :rule-classes
   ((:meta :trigger-fns (s)
-          :well-formedness-guarantee termp-meta-s)))
+          :well-formedness-guarantee logic-termp-meta-s)))
 
 (defthm meta-r-correct
   (implies (pseudo-termp term)
@@ -6463,7 +6941,7 @@
            ))
   :rule-classes
   ((:meta :trigger-fns (r)
-          :well-formedness-guarantee termp-meta-r)))
+          :well-formedness-guarantee logic-termp-meta-r)))
 
 (defthm meta-<-correct
   (implies (pseudo-termp term)
@@ -6493,7 +6971,7 @@
                                         tau-interval-hi))))
   :rule-classes
   ((:meta :trigger-fns (<)
-          :well-formedness-guarantee termp-meta-<)))
+          :well-formedness-guarantee logic-termp-meta-<)))
 
 (defthm meta-!i-correct
   (implies (pseudo-termp term)
@@ -6502,7 +6980,7 @@
   :hints (("Goal"
            :expand ((:free (x) (hide x)))))
   :rule-classes ((:meta :trigger-fns (!i)
-                        :well-formedness-guarantee termp-meta-!i)))
+                        :well-formedness-guarantee logic-termp-meta-!i)))
 
 (defthm meta-!s-correct
   (implies (pseudo-termp term)
@@ -6511,7 +6989,7 @@
   :hints (("Goal"
            :expand ((:free (x) (hide x)))))
   :rule-classes ((:meta :trigger-fns (!s)
-                        :well-formedness-guarantee termp-meta-!s)))
+                        :well-formedness-guarantee logic-termp-meta-!s)))
 
 (defthm meta-!r-correct
   (implies (pseudo-termp term)
@@ -6519,7 +6997,7 @@
                   (stateman-eval (meta-!r term mfc state) alist)))
   :hints (("Goal" :expand ((:free (x) (hide x)))))
   :rule-classes ((:meta :trigger-fns (!r)
-                        :well-formedness-guarantee termp-meta-!r)))
+                        :well-formedness-guarantee logic-termp-meta-!r)))
 
 (memoize 'memoizable-meta-r)
 (memoize 'memoizable-meta-!r)

@@ -21,6 +21,8 @@
 (include-book "world-queries")
 (include-book "minimize-ruler-extenders")
 (include-book "auto-termination")
+(include-book "ubi")
+(include-book "verify-guards-program")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

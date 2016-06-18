@@ -1191,9 +1191,13 @@ because... (BOZO)</p>
             nil)))
 
     (mv warnings nil
-        (make-vl-coretype :name :vl-logic
-                          :pdims dims
-                          :signedp (vl-arithclass-equiv class :vl-signed-int-class))))
+        (if (and (eql size 32)
+                 (vl-arithclass-equiv class :vl-signed-int-class))
+            (make-vl-coretype :name :vl-integer
+                              :signedp t)
+          (make-vl-coretype :name :vl-logic
+                            :pdims dims
+                            :signedp (vl-arithclass-equiv class :vl-signed-int-class)))))
   ///
   (defret vl-datatype-resolved-p-of-vl-implicitvalueparam-final-type
     (implies (not err)
@@ -1273,8 +1277,7 @@ because... (BOZO)</p>
        (- (sv::svstate-free svstate))
        ((unless expr)
         (mv (warn :type :vl-fundecl-to-svex-fail
-                  :msg "Function has no return value"
-                  :args (list x))
+                  :msg "Function has no return value")
             (svex-x))))
     (mv (ok) expr))
   ///

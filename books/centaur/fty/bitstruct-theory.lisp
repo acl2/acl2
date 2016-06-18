@@ -457,6 +457,20 @@
                   (part-install val x :width width2 :low (+ (nfix low2) (nfix low1)))))
   :hints ((logbitp-reasoning)))
 
+(defthm unsigned-byte-p-1-when-bitp
+  (implies (bitp x)
+           (unsigned-byte-p 1 x)))
+
+(defthm bitp-when-unsigned-byte-p-1
+  (implies (unsigned-byte-p 1 x)
+           (bitp x))
+  :hints(("Goal" :in-theory (enable unsigned-byte-p bitp))))
+
+(defthm part-select-width-1-type
+  (bitp (part-select x :low n :width 1))
+  :rule-classes :type-prescription)
+  
+
 
 
 

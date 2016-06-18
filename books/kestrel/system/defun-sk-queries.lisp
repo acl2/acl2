@@ -22,8 +22,6 @@
 
 (local (set-default-parents defun-sk-queries))
 
-(program)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defun-sk-queries
@@ -162,9 +160,9 @@
 (define defun-sk-check-signature (signature
                                   (witness symbolp)
                                   (args symbol-listp))
-  :returns (mv (yes/no booleanp)
-               (bound-vars symbol-listp)
-               (classicalp booleanp))
+  ;; :returns (mv (yes/no booleanp)
+  ;;              (bound-vars symbol-listp)
+  ;;              (classicalp booleanp))
   :short
   "Check the @(see signature)
   of the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -219,7 +217,11 @@
                                     (witness symbolp)
                                     (bound-vars symbol-listp)
                                     (args symbol-listp))
-  :returns (mv (yes/no booleanp) witness-body (strengthen booleanp))
+  :returns (mv (yes/no booleanp
+                       :hints (("Goal" :in-theory
+                                (enable defun-sk-check-signature-result))))
+               witness-body
+               (strengthen booleanp))
   :short
   "Check the local definition of the witness function
   in the @(tsee encapsulate) of a @(tsee defun-sk) function,
@@ -259,6 +261,7 @@
                                           (args symbol-listp)
                                           witness-body)
   :returns (yes/no booleanp)
+  :prepwork ((program))
   :short
   "Check the (optional) strengthening theorem
   in the @(tsee encapsulate) of a @(tsee defun-sk) function."
@@ -287,6 +290,7 @@
                untrans-matrix
                (quantifier defun-sk-quantifier-p)
                (non-executable booleanp))
+  :verify-guards nil
   :short
   "Check the (non-local) definition of the @(tsee defun-sk) function
   in its @(tsee encapsulate),
@@ -374,9 +378,9 @@
                                      (quantifier defun-sk-quantifier-p)
                                      untrans-matrix
                                      (witness symbolp))
-  :returns (mv (yes/no booleanp)
-               (rewrite-name symbolp)
-               (rewrite-kind defun-sk-rewrite-kind-p))
+  ;; :returns (mv (yes/no booleanp)
+  ;;              (rewrite-name symbolp)
+  ;;              (rewrite-kind defun-sk-rewrite-kind-p))
   :short
   "Check the rewrite rule in the @('encapsulate')
   of a @(tsee defun-sk) function,
@@ -452,7 +456,8 @@
                                   (bound-vars symbol-listp)
                                   (non-executable booleanp)
                                   (w plist-worldp))
-  :returns (matrix pseudo-termp)
+  ;; :returns (matrix pseudo-termp)
+  :verify-guards nil
   :short
   "Retrieve the matrix of a @(tsee defun-sk) function,
   in <see topic='@(url term)'>translated form</see>."
@@ -517,6 +522,7 @@
 (define defun-sk-check ((fun (function-namep fun w))
                         (w plist-worldp))
   :returns (record? maybe-defun-sk-info-p)
+  :prepwork ((program))
   :short
   "Check if the function @('fun') is a @(tsee defun-sk) function."
   :long
@@ -539,6 +545,7 @@
    (defun fun ...) ; or defun-nx
    (in-theory (disable (fun)))
    (defthm rewrite ...))
+   (extend-pe-table ...)
   })
   <p>
   where @('witness-signature') is the signature of the witness function,
@@ -552,17 +559,17 @@
        (witness (getprop fun 'constraint-lst nil 'current-acl2-world w))
        ((unless (function-namep witness w)) nil)
        (event (get-event witness w))
-       ((unless (and (or (tuplep 7 event)
-                         (tuplep 8 event))
+       ((unless (and (or (tuplep 8 event)
+                         (tuplep 9 event))
                      (eq (nth 0 event) 'encapsulate)
                      (equal (nth 2 event) '(local (in-theory '(implies))))
-                     (equal (nth (- (len event) 2) event)
+                     (equal (nth (- (len event) 3) event)
                             `(in-theory (disable (,fun))))))
         nil)
        (signatures (nth 1 event))
        (witness-def (nth 3 event))
-       (function-def (nth (- (len event) 3) event))
-       (rewrite (nth (1- (len event)) event))
+       (function-def (nth (- (len event) 4) event))
+       (rewrite (nth (- (len event) 2) event))
        ((unless (tuplep 1 signatures)) nil)
        (signature (car signatures))
        ((mv ok bound-vars classicalp)

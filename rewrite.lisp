@@ -4149,44 +4149,50 @@
    ((ts= ts *ts-zero*)
     (mv *0*
         (cons-tag-trees ts-ttree ttree)))
-   ((ts= ts *ts-one*)
 
-; This case coerces the term to '1.  We introduced this case when adding a new
-; type-set bit for the set {1}.  However, we considered skipping this case when
-; we found a failure for the book demo.lisp (which exists in three
-; subdirectories of the community books: models/jvm/m5/demo.lisp,
-; projects/symbolic/m5/demo.lisp, and books/workshops/2003/moore_vcg/support/),
-; for the lemma symbolic-computation.  However, that was the only problematic
-; book.  Moreover, consider the following generated subgoal for that proof
-; attempt.
+; After a new type-set bit for the set {1}, we considered adding a case for
+; (ts= ts *ts-one*), to return (mv *1* (cons-tag-trees ts-ttree ttree)) in that
+; case to coerce the term to '1.  However, some books failed.  For example, a
+; problem in community book books/demos/proofs/tightness-lemma-proof.lisp
+; simplifies to the following example.
 
-;   (IMPLIES (AND (ZP K)
-;                 (INTP (+ 1 K))
-;                 (< 0 (+ 1 K))
-;                 (ACL2-NUMBERP K))
-;            (EQUAL (INT-FIX (* 2
-;                               (INT-FIX (+ (FACTORIAL K)
-;                                           (* K (FACTORIAL K))))))
-;                   (INT-FIX (+ (* 2 (FACTORIAL K))
-;                               (* 2 K (FACTORIAL K))))))
+;   (defun i-from (n len)
+;     (cond ((zp len) nil)
+;           (t (cons n
+;                    (i-from (1+ n) (1- len))))))
+;   (defthm <-0-+-negative-1
+;     (iff (< 0 (+ (- y) x)) (< y x)))
+;   (defthm consp-i-from
+;     (equal (consp (i-from i len))
+;            (not (zp len))))
 
-; With this case included, that subgoal simplified to the following, which ACL2
-; fails to prove whether we include this case or not.  So the only problem with
-; this case is that it adds extra reasoning that sends the proof in a bad
-; direction; and we believe (but aren't sure) that it only does that for this
-; one (thrice-occurring) book among the community books.
+; The problem was presumably that under a proof by induction, obj-table was
+; replacing the goal
 
-;   (IMPLIES (AND (ZP K)
-;                 (INTP (+ 1 K))
-;                 (< 0 (+ 1 K))
-;                 (ACL2-NUMBERP K))
-;            (EQUAL 2 (INT-FIX (+ 2 (* 2 K)))))
+;   (IMPLIES (AND (NOT (ZP LEN)) (ZP (+ -1 LEN)))
+;            (CONSP (I-FROM I LEN)))
+
+; by the goal
+
+;   (IMPLIES (AND (NOT (ZP LEN)) (<= LEN 1))
+;            (CONSP (I-FROM I 1)))
+
+; and although the term (I-FROM I LEN) was a term to be expanded under
+; induction, (I-FROM I 1) was not.  We had 27 other failures that might have
+; been due to this same problem, but we didn't investigate them.  Instead, we
+; are omitting a case here for *ts-one*.
+
+; We have also had problems when including this (deleted) case, depending on
+; other heuristics involving *ts-one*, for the lemma symbolic-computation in
+; models/jvm/m5/demo.lisp, projects/symbolic/m5/demo.lisp, and
+; books/workshops/2003/moore_vcg/support/.  Sol Swords noticed that a
+; forward-chaining lemma, (implies (and (integerp (+ 1 k)) (acl2-numberp k))
+; (integerp k)), solves that problem; but without this case, we don't need that
+; lemma.
 
 ; For more discussion regarding *ts-one*, see the Essay on Strong Handling of
 ; *ts-one*.
 
-    (mv *1*
-        (cons-tag-trees ts-ttree ttree)))
    (t (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
         (cond
          (rune
@@ -4787,8 +4793,10 @@
 ;   are stored this way rather than as :subclass 'definition.
 
 ; 'meta - a rule justified by a metatheorem.  In this case, the lhs is the
-;   the metafunction symbol to be applied, and hyps is a function of one (term)
-;   argument that generates a hypothesis for the metatheorem.
+;   metafunction symbol to be applied, and hyps is a function of one (term)
+;   argument that generates a hypothesis for the metatheorem.  In this case the
+;   :heuristic-info is of the form (name fn thm-name1 hyp-fn thm-name2)
+;   . combined-arities-alist); see rewrite-with-lemma.
 
 ; Rockwell Addition: The recursivep property used to be the fn name if the
 ; fn in question was singly recursive.  Now it is a singleton list (fn).
@@ -11186,14 +11194,91 @@
         (and val ; optimization
              (member-eq fn val)))))
 
-(defun collect-bad-fn-arity-pairs (alist wrld)
+(defun collect-bad-fn-arity-info (alist wrld bad-arity-alist non-logic-fns)
   (cond
-   ((endp alist) nil)
-   ((equal (arity (car (car alist)) wrld)
-           (cdr (car alist)))
-    (collect-bad-fn-arity-pairs (cdr alist) wrld))
-   (t (cons (car alist)
-            (collect-bad-fn-arity-pairs (cdr alist) wrld)))))
+   ((endp alist)
+    (if (or bad-arity-alist non-logic-fns)
+        (cons (reverse bad-arity-alist) ; preserve original order
+              non-logic-fns)
+      nil))
+   (t (let ((arity (arity (car (car alist)) wrld)))
+        (collect-bad-fn-arity-info
+         (cdr alist)
+         wrld
+         (if (or (null arity) ; handled below
+                 (eql arity (cdr (car alist))))
+             bad-arity-alist
+           (cons (car alist) bad-arity-alist))
+         (if (or (null arity)
+                 (programp (car (car alist)) wrld))
+             (cons (car (car alist))
+                   non-logic-fns)
+           non-logic-fns))))))
+
+(defun bad-arities-msg (name token fn hyp-fn wf-thm-name1 wf-thm-name2
+                             bad-arity-info)
+  (msg
+   "The ~s0 ~x1 has a now-invalid well-formedness guarantee.  Its ~s2, ~x3, ~
+    ~#4~[was proved in ~x7 to return a ~x6~/and its corresponding hypothesis ~
+    metafunction, ~x5, were proved in ~x7 and ~x8 to return ~x6s~] under the ~
+    assumption that certain function symbols were in :logic mode and had ~
+    certain arities.  But that assumption is now invalid, presumably because of ~
+    redefinition.  ~@9We cannot trust the well-formedness guarantee."
+   (if (eq token :META)
+       "metatheorem"
+     "clause-processor correctness theorem")
+   name
+   (if (eq token :META)
+       (if fn
+           "metafunction"
+         "hypothesis metafunction")
+     "clause-processor")
+   (or fn hyp-fn)
+   (if (and fn hyp-fn) 1 0)
+   hyp-fn
+   (if (eq token :META)
+       'LOGIC-TERMP
+     'LOGIC-TERM-LIST-LISTP)
+   wf-thm-name1
+   wf-thm-name2
+   (let ((bad-arities-alist (car bad-arity-info))
+         (non-logic-fns (cdr bad-arity-info)))
+     (msg "~@0~@1"
+          (if (null bad-arities-alist)
+              ""
+            (msg "The following alist pairs function symbols with their ~
+                  assumed arities: ~X01.  Each symbol had the specified arity ~
+                  when ~x2 was proved but this is no longer the case.  "
+                 bad-arities-alist nil name))
+          (if (null non-logic-fns)
+              ""
+            (msg "The symbol~#0~[ ~x0 is no longer a :logic mode function ~
+                  symbol~/s ~&0 are no longer :logic mode function symbols~] ~
+                  even though this was the case when ~x2 was proved.  "
+                 non-logic-fns nil name))))))
+
+(mutual-recursion
+
+(defun all-ffn-symbs (term ans)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp ans))))
+  (cond
+   ((variablep term) ans)
+   ((fquotep term) ans)
+   (t (all-ffn-symbs-lst (fargs term)
+                         (cond ((flambda-applicationp term)
+                                (all-ffn-symbs (lambda-body (ffn-symb term))
+                                               ans))
+                               (t (add-to-set-eq (ffn-symb term) ans)))))))
+
+(defun all-ffn-symbs-lst (lst ans)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-listp ans))))
+  (cond ((endp lst) ans)
+        (t (all-ffn-symbs-lst (cdr lst)
+                              (all-ffn-symbs (car lst) ans)))))
+
+)
 
 (mutual-recursion
 
@@ -11606,7 +11691,7 @@
                     (cond
                      ((and
                        (or (flambdap fn)
-                           (logicalp fn wrld))
+                           (logicp fn wrld))
                        (all-quoteps rewritten-args)
                        (or
                         (flambda-applicationp term)
@@ -13379,10 +13464,10 @@
                     (mv step-limit nil term ttree))
                    (t
 
-; Skip termp checks if either we're told to via skip-meta-termp-checks or they
-; are unnecessary because of the meta fn (and its hyp-fn) have well-formedness
-; guarantees.  If we skip the checks because of guarantees, we must check the
-; arity assumptions.
+; Skip logic-termp checks if either we're told to via skip-meta-termp-checks
+; or they are unnecessary because of the meta fn (and its hyp-fn) have
+; well-formedness guarantees.  If we skip the checks because of guarantees, we
+; must check the arity assumptions.
 
                     (let* ((user-says-skip-termp-checkp
                             (skip-meta-termp-checks meta-fn wrld))
@@ -13391,41 +13476,30 @@
                            (not-skipped
                             (and (not user-says-skip-termp-checkp)
                                  (not well-formedness-guarantee)))
-                           (bad-arities
+                           (bad-arity-info
                             (if (and well-formedness-guarantee
                                      (not user-says-skip-termp-checkp))
-                                (collect-bad-fn-arity-pairs
+                                (collect-bad-fn-arity-info
                                  (cdr well-formedness-guarantee)
-                                 wrld)
+                                 wrld nil nil)
                               nil)))
                       (cond
-                       (bad-arities
+                       (bad-arity-info
                         (let ((name (nth 0 (car well-formedness-guarantee)))
                               (fn (nth 1 (car well-formedness-guarantee)))
-                              (hyp-fn (nth 3 (car well-formedness-guarantee))))
+                              (thm-name1
+                               (nth 2 (car well-formedness-guarantee)))
+                              (hyp-fn (nth 3 (car well-formedness-guarantee)))
+                              (thm-name2
+                               (nth 4 (car well-formedness-guarantee))))
                           (mv step-limit
                               (er hard 'rewrite-with-lemma
-                                  "The metatheorem ~x0 has a now-invalid ~
-                                   well-formedness guarantee.  Its ~
-                                   metafunction, ~x1, ~#2~[was proved to ~
-                                   return a TERMP~/and its corresponding ~
-                                   hypothesis metafunction, ~x3, were proved ~
-                                   to return TERMPs~] under the assumption ~
-                                   that certain function symbols had certain ~
-                                   arities.  But that assumption is now ~
-                                   invalid.  The following alist pairs ~
-                                   function symbols with their assumed ~
-                                   arities: ~X45.  These arities were valid ~
-                                   when ~x0 was proved but have since changed ~
-                                   (presumably by redefinition).   We cannot ~
-                                   trust the well-formedness guarantee."
-                                  name
-                                  fn
-                                  (if hyp-fn 1 0)
-                                  hyp-fn
-                                  bad-arities
-                                  nil)
+                                  "~@0"
+                                  (bad-arities-msg name :META fn hyp-fn
+                                                   thm-name1 thm-name2
+                                                   bad-arity-info))
                               term ttree)))
+; Check logic-termp by checking both termp and (not (program-termp)).
                        ((and not-skipped
                              (not (termp val wrld)))
                         (mv step-limit
@@ -13441,6 +13515,26 @@
                                  this runtime test altogether.  See :DOC ~
                                  well-formedness-guarantee."
                                 meta-fn val term)
+                            term ttree))
+                       ((and not-skipped
+                             (not (logic-termp val wrld)))
+                        (mv step-limit
+                            (er hard 'rewrite-with-lemma
+                                "The metafunction ~x0 produced the termp ~x1 ~
+                                 on the input term ~x2.  The proof of the ~
+                                 correctness of ~x0 establishes that the ~
+                                 quotations of these two s-expressions have ~
+                                 the same value, but our implementation ~
+                                 additionally requires that ~x0 produce a ~
+                                 term with no :program mode function symbols. ~
+                                 ~ The term produced has :program mode ~
+                                 function symbol~#3~[~/s~] ~&3.  You might ~
+                                 consider proving a well-formedness guarantee ~
+                                 to avoid this runtime test altogether.  See ~
+                                 :DOC well-formedness-guarantee."
+                                meta-fn val term
+                                (collect-programs (all-ffn-symbs val nil)
+                                                  wrld))
                             term ttree))
                        ((and not-skipped
                              (forbidden-fns-in-term
@@ -13499,46 +13593,37 @@
 ; (above) checked and caused an error if it is non-nil.  But that reasoning is
 ; faulty.  Suppose the user told us to skip the termp check on metafn's output
 ; but to do the check on hyp-fn's output.  Then the earlier binding of
-; bad-arities is nil but this binding may find something.
+; bad-arity-info is nil but this binding may find something.
 
-                                     (bad-arities
+                                     (bad-arity-info
                                       (if (and
                                            well-formedness-guarantee
                                            (not user-says-skip-termp-checkp))
-                                          (collect-bad-fn-arity-pairs
+                                          (collect-bad-fn-arity-info
                                            (cdr well-formedness-guarantee)
-                                           wrld)
+                                           wrld nil nil)
                                         nil)))
                                 (cond
-                                 (bad-arities
+                                 (bad-arity-info
                                   (let ((name
                                          (nth 0
                                               (car well-formedness-guarantee)))
                                         (hyp-fn
                                          (nth 3
+                                              (car well-formedness-guarantee)))
+                                        (thm-name2
+                                         (nth 4
                                               (car well-formedness-guarantee))))
                                     (mv step-limit
                                         (er hard 'rewrite-with-lemma
-                                            "The metatheorem ~x0 has a ~
-                                             now-invalid well-formedness ~
-                                             guarantee.  Its hypothesis ~
-                                             metafunction, ~x1, was proved to ~
-                                             return a TERMP under the ~
-                                             assumption that certain function ~
-                                             symbols had certain arities.  ~
-                                             But that assumption is now ~
-                                             invalid.  The following alist ~
-                                             pairs function symbols with ~
-                                             their assumed arities: ~X23.  ~
-                                             These arities were valid when ~
-                                             ~x0 was proved but have since ~
-                                             changed (presumably by ~
-                                             redefinition).   We cannot trust ~
-                                             the well-formedness guarantee."
-                                            name
-                                            hyp-fn
-                                            bad-arities
-                                            nil)
+                                            "~@0"
+                                            (bad-arities-msg name
+                                                             :META
+                                                             nil ; fn
+                                                             hyp-fn
+                                                             thm-name2
+                                                             nil
+                                                             bad-arity-info))
                                         term ttree)))
                                  ((and not-skipped
                                        (not (termp evaled-hyp wrld)))
@@ -13558,9 +13643,35 @@
                                           hyp-fn evaled-hyp term)
                                       term ttree))
                                  ((and not-skipped
+                                       (not (logic-termp evaled-hyp wrld)))
+                                  (mv step-limit
+                                      (er hard 'rewrite-with-lemma
+                                          "The hypothesis metafunction ~x0 ~
+                                           produced the termp ~x1 on the ~
+                                           input term ~x2.  The proof of the ~
+                                           correctness of ~x0 establishes ~
+                                           that the quotations of these two ~
+                                           s-expressions have the same value, ~
+                                           but our implementation ~
+                                           additionally requires that ~x0 ~
+                                           produce a term with no :program ~
+                                           mode function symbols.  The term ~
+                                           produced has :program mode ~
+                                           function symbol~#3~[~/~s] ~&3.  ~
+                                           You might consider proving a ~
+                                           well-formedness guarantee to avoid ~
+                                           this runtime test altogether.  See ~
+                                           :DOC well-formedness-guarantee."
+                                          hyp-fn evaled-hyp term
+                                          (collect-programs
+                                           (all-ffn-symbs evaled-hyp nil)
+                                           wrld))
+                                      term ttree))
+                                 ((and not-skipped
                                        (forbidden-fns-in-term
                                         evaled-hyp
-                                        (access rewrite-constant rcnst :forbidden-fns)))
+                                        (access rewrite-constant rcnst
+                                                :forbidden-fns)))
                                   (mv step-limit
                                       (er hard 'rewrite-with-lemma
                                           "The hypothesis metafunction ~x0 ~
@@ -13578,7 +13689,8 @@
                                           hyp-fn evaled-hyp term
                                           (forbidden-fns-in-term
                                            evaled-hyp
-                                           (access rewrite-constant rcnst :forbidden-fns)))
+                                           (access rewrite-constant rcnst
+                                                   :forbidden-fns)))
                                       term ttree))
                                  (t
                                   (let* ((vars (all-vars term))
@@ -13624,11 +13736,13 @@
                                                meta-implicit-hypothesis), ~
                                                whose use of synp is illegal ~
                                                because ~@2"
-                                              meta-fn term bad-synp-hyp-msg-extra)
+                                              meta-fn term
+                                              bad-synp-hyp-msg-extra)
                                           term ttree))
                                      (t
                                       (sl-let
-                                       (relieve-hyps-ans failure-reason unify-subst
+                                       (relieve-hyps-ans failure-reason
+                                                         unify-subst
                                                          ttree)
                                        (rewrite-entry
                                         (relieve-hyps

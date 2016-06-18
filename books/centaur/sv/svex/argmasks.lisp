@@ -1121,7 +1121,7 @@ about.</p>"
                                    hide-past-second-arg)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                  4vec-rsh))
+                                  4vec-rsh 4vec-shift-core))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))
                  ))
           (bitops::logbitp-reasoning)))
@@ -1146,7 +1146,7 @@ shifts instead of right shifts.</p>"
                                    hide-past-second-arg)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                  4vec-lsh))
+                                  4vec-lsh 4vec-shift-core))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
           (bitops::logbitp-reasoning)))
 
@@ -1187,7 +1187,7 @@ shifts instead of right shifts.</p>"
                                    hide-past-third-arg)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                  4vec-concat 4vec-rsh 4vec-zero-ext 4vec-part-select))))
+                                  4vec-concat 4vec-rsh 4vec-shift-core 4vec-zero-ext 4vec-part-select))))
           (bitops::logbitp-reasoning)))
 
 
@@ -1244,7 +1244,7 @@ shifts instead of right shifts.</p>"
                                    hide-past-third-arg)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                  4vec-concat 4vec-rsh 4vec-zero-ext 4vec-part-install))))
+                                  4vec-concat 4vec-rsh 4vec-shift-core 4vec-zero-ext 4vec-part-install))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-case-splits
                                            bitops::logbitp-of-const-split

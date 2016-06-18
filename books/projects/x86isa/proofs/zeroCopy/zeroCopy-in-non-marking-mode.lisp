@@ -2329,7 +2329,7 @@
   :hyp (and (canonical-address-p lin-addr)
             (equal (loghead 30 lin-addr) 0))
   :concl (canonical-address-p (+ -1 *2^30* lin-addr))
-  :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64))))
+  :g-bindings (gl::auto-bindings (:nat lin-addr 64)))
 
 (defthm open-mv-nth-1-las-to-pas-for-same-1G-page
   (implies

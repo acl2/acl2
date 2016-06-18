@@ -688,8 +688,13 @@
   ;; gl/always-equal-prep.lisp.  So, for now, I'll leave this in place, even
   ;; though I think we shouldn't need this???
 
-  (defthm bitp-of-bool->bit
-    (bitp (bool->bit x)))
+  ;; [Matt K. mod 5/2016 (type-set bit for {1}):] It appears that the theorem
+  ;; in centaur/gl/always-equal-prep.lisp whose proof was failing is
+  ;; always-equal-ss-under-hyp-correct.  I've fixed it simply by enabling
+  ;; (:type-prescription acl2::bool->bit$inline).
+
+; (defthm bitp-of-bool->bit
+;   (bitp (bool->bit x)))
 
   ;; (defthm bool->bit-bound
   ;;   (< (bool->bit x) 2)

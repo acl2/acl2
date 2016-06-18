@@ -9,6 +9,11 @@
 
 (verify-termination plist-worldp-with-formals)
 
+(defthm plist-worldp-with-formals-forward-to-plist-worldp
+  (implies (plist-worldp-with-formals wrld)
+           (plist-worldp wrld))
+  :rule-classes :forward-chaining)
+
 (verify-termination arity
   (declare (xargs :guard (and (or (and (consp fn)
                                        (consp (cdr fn))
@@ -233,4 +238,15 @@
                 (assoc fn user-table))
            (equal (arity fn w) (cdr (assoc fn user-table)))))
 
+(defthm arities-okp-implies-logicp
+  (implies (and (arities-okp user-table w)
+                (assoc fn user-table))
+           (logicp fn w)))
+
 (in-theory (disable arity arities-okp))
+
+(verify-termination logic-fnsp) ; and guards
+(verify-termination logic-termp) ; and guards
+(verify-termination logic-term-listp) ; and guards
+(verify-termination logic-fns-list-listp) ; and guards
+(verify-termination logic-term-list-listp) ; and guards

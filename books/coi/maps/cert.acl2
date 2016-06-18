@@ -28,4 +28,5 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(ld "map-defpkg.lsp")
+#!ACL2 (in-package "ACL2")
+(include-book "portcullis")

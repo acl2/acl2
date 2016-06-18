@@ -2135,35 +2135,6 @@
                                (t (princ$ steps channel state)))
                          (newline channel state)))))))))
 
-(defun print-rules-summary (state)
-  (let ((acc-ttree (f-get-global 'accumulated-ttree state)))
-    (mv-let
-     (col state)
-     (io? summary nil (mv col state)
-          (acc-ttree)
-          (let ((channel (proofs-co state)))
-            (cond ((member-eq 'rules
-                              (f-get-global 'inhibited-summary-types
-                                            state))
-                   (mv 0 state))
-                  (t
-                   (let ((runes (merge-sort-runes
-                                 (all-runes-in-ttree acc-ttree nil))))
-                     (fmt1 "Rules: ~y0~|"
-                           (list (cons #\0 runes))
-                           0 channel state nil)))))
-          :default-bindings ((col 0)))
-     (declare (ignore col))
-     (pprogn (f-put-global 'accumulated-ttree nil state)
-
-; Since we've already printed the appropriate rules, there is no need to print
-; them again the next time we want to print rules.  That is why we set the
-; accumulated-ttree to nil here.  If we ever want certify-book, say, to be able
-; to print rules when it fails, then we should use a stack of ttrees rather
-; than a single accumulated-ttree.
-
-             state))))
-
 #+acl2-rewrite-meter
 (defun merge-cdr-> (l1 l2)
   (cond ((null l1) l2)
@@ -2558,17 +2529,18 @@
          (cons (car lst) (filter-atoms flg (cdr lst))))
         (t (filter-atoms flg (cdr lst)))))
 
-(defun print-runes-summary (ttree channel state)
+(defun print-runes-summary (ttree state)
   (let ((runes (merge-sort-runes (all-runes-in-ttree ttree nil))))
     (pprogn (put-event-data 'rules runes state)
             (io? summary nil state
-                 (runes channel)
-                 (mv-let (col state)
-                   (fmt1 "Rules: ~y0~|"
-                         (list (cons #\0 runes))
-                         0 channel state nil)
-                   (declare (ignore col))
-                   state)))))
+                 (runes)
+                 (let ((channel (proofs-co state)))
+                   (mv-let (col state)
+                     (fmt1 "Rules: ~y0~|"
+                           (list (cons #\0 runes))
+                           0 channel state nil)
+                     (declare (ignore col))
+                     state))))))
 
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
@@ -2601,7 +2573,7 @@
          (cl-proc-fns (clause-processor-fns cl-proc-hints)))
     (sort-symbol-listp cl-proc-fns)))
 
-(defun print-hint-events-summary (ttree channel state)
+(defun print-hint-events-summary (ttree state)
   (flet ((make-rune-like-objs (kwd lst)
                               (and lst ; optimization for common case
                                    (pairlis$ (make-list (length lst)
@@ -2615,29 +2587,31 @@
                         (make-rune-like-objs :USE use-lst))))
       (pprogn (put-event-data 'hint-events lst state)
               (cond (lst (io? summary nil state
-                              (lst channel)
-                              (mv-let (col state)
-                                (fmt1 "Hint-events: ~y0~|"
-                                      (list (cons #\0 lst))
-                                      0 channel state nil)
-                                (declare (ignore col))
-                                state)))
+                              (lst)
+                              (let ((channel (proofs-co state)))
+                                (mv-let (col state)
+                                  (fmt1 "Hint-events: ~y0~|"
+                                        (list (cons #\0 lst))
+                                        0 channel state nil)
+                                  (declare (ignore col))
+                                  state))))
                     (t state))))))
 
 (defun print-splitter-rules-summary-1 (cl-id clauses
                                              case-split immed-forced if-intro
-                                             channel state)
+                                             state)
 
 ; The caller (or its caller, etc.) must take responsibility for surrounding
 ; this call with any necessary io? wrapper.
 
-  (mv-let
-    (col state)
-    (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
-          (list
-           (cons #\0 (if cl-id "note" "rules"))
-           (cons #\1
-                 (if cl-id
+  (let ((channel (proofs-co state)))
+    (mv-let
+      (col state)
+      (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+            (list
+             (cons #\0 (if cl-id "note" "rules"))
+             (cons #\1
+                   (if cl-id
 
 ; Since we are printing during a proof (see comment above) but not already
 ; printing the clause-id, we do so now.  This is redundant if (f-get-global
@@ -2647,34 +2621,34 @@
 ; We leave it to waterfall-msg1 to track print-time, so we avoid calling
 ; waterfall-print-clause-id.
 
-                     (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
-                          (tilde-@-clause-id-phrase cl-id)
-                          (length clauses)
-                          clauses)
-                   ""))
-           (cons #\2 (if cl-id "." ":"))
-           (cons #\3
-                 (cond
-                  (case-split (msg "  case-split: ~y0"
-                                   case-split))
-                  (t "")))
-           (cons #\4
-                 (cond
-                  (immed-forced (msg "  immed-forced: ~y0"
-                                     immed-forced))
-                  (t "")))
-           (cons #\5
-                 (cond
-                  (if-intro (msg "  if-intro: ~y0"
-                                 if-intro))
-                  (t ""))))
-          0 channel state nil)
-    (declare (ignore col))
-    (cond ((and cl-id (gag-mode))
-           (newline channel state))
-          (t state))))
+                       (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                            (tilde-@-clause-id-phrase cl-id)
+                            (length clauses)
+                            clauses)
+                     ""))
+             (cons #\2 (if cl-id "." ":"))
+             (cons #\3
+                   (cond
+                    (case-split (msg "  case-split: ~y0"
+                                     case-split))
+                    (t "")))
+             (cons #\4
+                   (cond
+                    (immed-forced (msg "  immed-forced: ~y0"
+                                       immed-forced))
+                    (t "")))
+             (cons #\5
+                   (cond
+                    (if-intro (msg "  if-intro: ~y0"
+                                   if-intro))
+                    (t ""))))
+            0 channel state nil)
+      (declare (ignore col))
+      (cond ((and cl-id (gag-mode))
+             (newline channel state))
+            (t state)))))
 
-(defun print-splitter-rules-summary (cl-id clauses ttree channel state)
+(defun print-splitter-rules-summary (cl-id clauses ttree state)
 
 ; When cl-id is nil, we are printing for the summary; so clauses is ignored,
 ; and we need here to use a suitable wrapper (io? summary ...).  Otherwise we
@@ -2688,22 +2662,22 @@
         (immed-forced (merge-sort-runes
                        (tagged-objects 'splitter-immed-forced ttree))))
     (cond ((or if-intro case-split immed-forced)
-           (pprogn
-            (cond (cl-id (newline channel state))
-                  (t (put-event-data 'splitter-rules
-                                     (list case-split immed-forced if-intro)
-                                     state)))
-            (cond
-             (cl-id ; printing during a proof
+           (cond
+            (cl-id ; printing during a proof
+             (pprogn
+              (newline (proofs-co state) state)
               (with-output-lock
                (print-splitter-rules-summary-1
-                cl-id clauses case-split immed-forced if-intro channel state)))
-             (t ; printing for the summary
+                cl-id clauses case-split immed-forced if-intro state))))
+            (t ; printing for the summary
+             (pprogn
+              (put-event-data 'splitter-rules
+                              (list case-split immed-forced if-intro)
+                              state)
               (io? summary nil state
-                   (cl-id clauses case-split immed-forced if-intro channel)
+                   (cl-id clauses case-split immed-forced if-intro)
                    (print-splitter-rules-summary-1
-                    cl-id clauses case-split immed-forced if-intro channel
-                    state))))))
+                    cl-id clauses case-split immed-forced if-intro state))))))
           (cl-id state)
           (t (put-event-data 'splitter-rules nil state)))))
 
@@ -2713,22 +2687,20 @@
 ; are responsible for adding such wrappers.  With this structure, the
 ; subroutines can (and are) also responsible for calling put-event-data outside
 ; such (io? ...) wrappers, so that put-event-data is not called again during
-; proof reply (via :pso and related utilities).
+; proof replay (via :pso and related utilities).
 
-  (let ((channel (proofs-co state))
-        (inhibited-summary-types (f-get-global 'inhibited-summary-types
+  (let ((inhibited-summary-types (f-get-global 'inhibited-summary-types
                                                state)))
     (pprogn
      (cond ((member-eq 'rules inhibited-summary-types)
             state)
-           (t (print-runes-summary acc-ttree channel state)))
+           (t (print-runes-summary acc-ttree state)))
      (cond ((member-eq 'hint-events inhibited-summary-types)
             state)
-           (t (print-hint-events-summary acc-ttree channel state)))
+           (t (print-hint-events-summary acc-ttree state)))
      (cond ((member-eq 'splitter-rules inhibited-summary-types)
             state)
-           (t (print-splitter-rules-summary nil nil acc-ttree channel
-                                            state)))
+           (t (print-splitter-rules-summary nil nil acc-ttree state)))
 
 ; Since we've already printed from the accumulated-ttree, there is no need to
 ; print again the next time we want to print rules or hint-events.  That is why
@@ -3030,13 +3002,6 @@
 (defmacro with-prover-step-limit (limit form
                                         &optional (actual-form 'nil
                                                                actual-form-p))
-
-; Warning: Do not attempt to move the extra flag argument to the normal last
-; position one might expect of an optional argument, without considering the
-; need to change several functions (e.g., chk-embedded-event-form,
-; elide-locals-rec, and destructure-expansion) that currently treat
-; with-prover-step-limit as with-output is treated: expecting the event form to
-; be in the last position.
 
 ; See the Essay on Step-limits.
 
@@ -3672,10 +3637,6 @@
 
 ; Form should evaluate to an error triple.
 
-; We assign to saved-output-reversed, rather than binding it, so that saved
-; output for gag-mode replay (using pso or psog) is available outside the scope
-; of with-ctx-summarized.
-
   `(state-global-let*
     ((accumulated-ttree nil)
      (gag-state nil)
@@ -3685,8 +3646,7 @@
      (saved-output-p
       (not (member-eq 'PROVE
                       (f-get-global 'inhibit-output-lst state)))))
-    (pprogn (f-put-global 'saved-output-reversed nil state)
-            (with-prover-step-limit! :START ,form))))
+    (with-prover-step-limit! :START ,form)))
 
 (defun attachment-alist (fn wrld)
   (let ((prop (getpropc fn 'attachment nil wrld)))
@@ -4148,28 +4108,11 @@
               (erp val state)
               (save-event-state-globals
                (mv-let (erp val state)
-                       (pprogn
-                        (push-io-record
-                         :ctx
-                         (list 'mv-let
-                               '(col state)
-                               '(fmt "Output replay for: "
-                                     nil (standard-co state) state nil)
-                               (list 'mv-let
-                                     '(col state)
-                                     (list 'fmt-ctx
-                                           (list 'quote ctx)
-                                           'col
-                                           '(standard-co state)
-                                           'state)
-                                     '(declare (ignore col))
-                                     '(newline (standard-co state) state)))
-                         state)
-                        (er-progn
-                         (xtrans-eval-state-fn-attachment
-                          (initialize-event-user ',ctx ',body)
-                          ctx)
-                         ,body))
+                       (er-progn
+                        (xtrans-eval-state-fn-attachment
+                         (initialize-event-user ',ctx ',body)
+                         ctx)
+                        ,body)
                        (pprogn
                         (print-summary erp
                                        (equal saved-wrld (w state))
@@ -6364,10 +6307,10 @@
                            (pe ,logical-name)
                            (value '(value-triple :invisible))))))
 
-(defmacro gthm (fn)
-  `(value (untranslate (guard-theorem ,fn (w state) state)
-                       t
-                       (w state))))
+(defmacro gthm (fn &optional (simp-p 't) guard-debug)
+  `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
+                t
+                (w state)))
 
 (defmacro tthm (fn)
   `(let* ((fn ,fn)
@@ -8290,7 +8233,7 @@
 (defun default-ruler-extenders (wrld)
   (default-ruler-extenders-from-table (table-alist 'acl2-defaults-table wrld)))
 
-(defun get-ruler-extenders-lst (symbol-class lst ctx state)
+(defun get-ruler-extenders-lst (symbol-class lst ctx wrld state)
 
 ; This function returns a list in 1:1 correspondence with lst containing the
 ; user's specified :RULER-EXTENDERS (or *no-ruler-extenders* if no
@@ -8304,9 +8247,8 @@
   (cond
    ((eq symbol-class :program)
     (value (make-list (length lst) :initial-element *no-ruler-extenders*)))
-   (t (let ((wrld (w state)))
-        (get-ruler-extenders2 lst (default-ruler-extenders wrld) ctx wrld
-                              state)))))
+   (t (get-ruler-extenders2 lst (default-ruler-extenders wrld) ctx wrld
+                            state))))
 
 (defun get-hints1 (edcls)
 
@@ -9664,25 +9606,6 @@
            (and (body fn nil wrld)
                 t))))
 
-(mutual-recursion
-
-(defun all-ffn-symbs (term ans)
-  (cond
-   ((variablep term) ans)
-   ((fquotep term) ans)
-   (t (all-ffn-symbs-lst (fargs term)
-                         (cond ((flambda-applicationp term)
-                                (all-ffn-symbs (lambda-body (ffn-symb term))
-                                               ans))
-                               (t (add-to-set-eq (ffn-symb term) ans)))))))
-
-(defun all-ffn-symbs-lst (lst ans)
-  (cond ((null lst) ans)
-        (t (all-ffn-symbs-lst (cdr lst)
-                              (all-ffn-symbs (car lst) ans)))))
-
-)
-
 (defconst *unknown-constraints*
 
 ; This value must not be a function symbol, because functions may need to
@@ -10820,6 +10743,10 @@
                     (pairlis$ (lambda-formals (ffn-symb term))
                               (sublis-var-lst alist (fargs term)))
                     (all-calls-lst names (fargs term) alist ans)))
+        ((and (eq (ffn-symb term) 'return-last)
+              (quotep (fargn term 1))
+              (eq (unquote (fargn term 1)) 'mbe1-raw))
+         (all-calls names (fargn term 3) alist ans))
         (t (all-calls-lst names
                           (fargs term)
                           alist
@@ -11039,8 +10966,8 @@
          (all-calls names (fargn body 1) alist nil)
          branch-result)))))
    ((and (eq (ffn-symb body) 'return-last)
-              (quotep (fargn body 1))
-              (eq (unquote (fargn body 1)) 'mbe1-raw))
+         (quotep (fargn body 1))
+         (eq (unquote (fargn body 1)) 'mbe1-raw))
 
 ; It is sound to treat return-last as a macro for logic purposes.  We do so for
 ; (return-last 'mbe1-raw exec logic) both for induction and for termination.
@@ -11365,7 +11292,7 @@
   (declare (xargs :guard (and (plist-worldp wrld)
                               (symbolp fn)
                               (function-symbolp fn wrld)
-                              (logicalp fn wrld))))
+                              (logicp fn wrld))))
   (let* ((names (getpropc fn 'recursivep nil wrld))
          (just (and names ; optimization
                     (getpropc fn 'justification nil wrld))))
@@ -11965,7 +11892,140 @@
 ; That completes the generation of the guard clauses.  We will prove
 ; them with prove.
 
-(defun guard-theorem (fn wrld state)
+(defun remove-built-in-clauses (cl-set ens oncep-override wrld state ttree)
+
+; We return two results.  The first is a subset of cl-set obtained by deleting
+; all built-in-clauseps and the second is the accumulated ttrees for the
+; clauses we deleted.
+
+  (cond
+   ((null cl-set) (mv nil ttree))
+   (t (mv-let
+       (built-in-clausep ttree1)
+       (built-in-clausep
+
+; We added defun-or-guard-verification as the caller arg of the call of
+; built-in-clausep below.  This addition is a little weird because there is no
+; such function as defun-or-guard-verification; the caller argument is only
+; used in trace reporting by forward-chaining.  If we wanted to be more precise
+; about who is responsible for this call, we'd have to change a bunch of
+; functions because this function is called by clean-up-clause-set which is in
+; turn called by prove-termination, guard-obligation-clauses, and
+; verify-valid-std-usage (which is used in the non-standard defun-fn1).  We
+; just didn't think it mattered so much as to to warrant changing all those
+; functions.
+
+        'defun-or-guard-verification
+        (car cl-set) ens oncep-override wrld state)
+
+; Ttree is known to be 'assumption free.
+
+       (mv-let
+        (new-set ttree)
+        (remove-built-in-clauses (cdr cl-set) ens oncep-override wrld state
+                                 (cons-tag-trees ttree1 ttree))
+        (cond (built-in-clausep (mv new-set ttree))
+              (t (mv (cons (car cl-set) new-set) ttree))))))))
+
+(defun length-exceedsp (lst n)
+  (cond ((null lst) nil)
+        ((= n 0) t)
+        (t (length-exceedsp (cdr lst) (1- n)))))
+
+(defconst *half-length-initial-built-in-clauses*
+  (floor (length *initial-built-in-clauses*)
+         2))
+
+(defun clean-up-clause-set (cl-set ens wrld ttree state)
+
+; Warning: The set of clauses returned by this function only implies the input
+; set.  They are thought to be equivalent only if the input set contains no
+; tautologies.  See the caution in subsumption-replacement-loop.
+
+; Note: ens can be nil or an enabled structure.  If ens is nil, then we
+; consider only the rules specified by *initial-built-in-clauses* to be
+; enabled.
+
+; This function removes subsumed clauses from cl-set, does replacement (e.g.,
+; if the set includes the clauses {~q p} and {q p} replace them both with {p}),
+; and removes built-in clauses.  It returns two results, the cleaned up clause
+; set and a ttree justifying the deletions and extending ttree.  The returned
+; ttree is 'assumption free (provided the incoming ttree is also) because all
+; necessary splitting is done internally.
+
+; Bishop Brock has pointed out that it is unclear what is the best order in
+; which to do these two checks.  Subsumption-replacement first and then
+; built-in clauses?  Or vice versa?  We do a very trivial analysis here to
+; order the two.  Bishop is not to blame for this trivial analysis!
+
+; Suppose there are n clauses in the initial cl-set.  Suppose there are b
+; built-in clauses.  The cost of the subsumption-replacement loop is roughly
+; n*n and that of the built-in check is n*b.  Contrary to all common sense let
+; us suppose that the subsumption-replacement loop eliminates redundant clauses
+; at the rate, r, so that if we do the subsumption- replacement loop first at a
+; cost of n*n we are left with n*r clauses.  Note that the worst case for r is
+; 1 and the smaller r is, the better; if r were 1/100 it would mean that we
+; could expect subsumption-replacement to pare down a set of 1000 clauses to
+; just 10.  More commonly perhaps, r is just below 1, e.g., 99 out of 100
+; clauses are unaffected.  To make the analysis possible, let's assume that
+; built-in clauses crop up at the same rate!  So,
+
+; n^2 + bnr   = cost of doing subsumption-replacement first  = sub-first
+
+; bn + (nr)^2 = cost of doing built-in clauses first         = bic-first
+
+; Observe that when r=1 the two costs are the same, as they should be.  But
+; generally, r can be expected to be slightly less than 1.
+
+; Here is an example.  Let n = 10, b = 100 and r = 99/100.  In this example we
+; have only a few clauses to consider but lots of built in clauses, and we have
+; a realistically low expectation of hits.  The cost of sub-first is 1090 but
+; the cost of bic-first is 1098.  So we should do sub-first.
+
+; On the other hand, if n=100, b=20, and r=99/100 we see sub-first costs 11980
+; but bic-first costs 11801, so we should do built-in clauses first.  This is a
+; more common case.
+
+; In general, we should do built-in clauses first when sub-first exceeds
+; bic-first.
+
+; n^2 + bnr >= bn + (nr)^2  = when we should do built-in clauses first
+
+; Solving we get:
+
+; n > b/(1+r).
+
+; Indeed, if n=50 and b=100 and r=99/100 we see the costs of the two equal
+; at 7450.
+
+  (cond
+   ((let ((sr-limit (sr-limit wrld)))
+      (and sr-limit (> (length cl-set) sr-limit)))
+    (pstk
+     (remove-built-in-clauses
+      cl-set ens (match-free-override wrld) wrld state
+      (add-to-tag-tree 'sr-limit t ttree))))
+   ((length-exceedsp cl-set
+                     (if ens
+                         (global-val 'half-length-built-in-clauses wrld)
+                       *half-length-initial-built-in-clauses*))
+    (mv-let (cl-set ttree)
+            (pstk
+             (remove-built-in-clauses cl-set ens
+                                      (match-free-override wrld)
+                                      wrld state ttree))
+            (mv (pstk
+                 (subsumption-replacement-loop
+                  (merge-sort-length cl-set) nil nil))
+                ttree)))
+   (t (pstk
+       (remove-built-in-clauses
+        (pstk
+         (subsumption-replacement-loop
+          (merge-sort-length cl-set) nil nil))
+        ens (match-free-override wrld) wrld state ttree)))))
+
+(defun guard-theorem (fn simp-p guard-debug wrld state)
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
@@ -11976,19 +12036,26 @@
 ; verified.  Of course, we only trust that the result is a theorem when the
 ; function is already guard-verified.
 
-                              (logicalp fn wrld))))
+                              (logicp fn wrld))))
   (let ((names (or (getpropc fn 'recursivep nil wrld)
                    (list fn))))
     (mv-let (cl-set ttree)
       (guard-clauses-for-clique names
-                                nil              ; debug-p
+                                guard-debug
                                 :DO-NOT-SIMPLIFY ; ens
                                 wrld
                                 (f-get-global 'safe-mode state)
                                 (gc-off state)
                                 nil)
-      (declare (ignore ttree)) ; assumption-free (see guard-clauses-for-clique)
-      (termify-clause-set cl-set))))
+; Note that ttree is assumption-free; see guard-clauses-for-clique.
+      (let ((cl-set
+             (cond (simp-p
+                    (mv-let (cl-set ttree)
+                      (clean-up-clause-set cl-set nil wrld ttree state)
+                      (declare (ignore ttree)) ; assumption-free
+                      cl-set))
+                   (t cl-set))))
+        (termify-clause-set cl-set)))))
 
 (defun guard-or-termination-theorem-msg (kwd args coda)
   (declare (xargs :guard (and (member-eq kwd '(:gthm :tthm))
@@ -12053,7 +12120,8 @@
 ; (3) (:theorem formula),
 ; (4) (:instance lmi . substn),
 ; (5) (:functional-instance lmi . substn),
-; (6) (:guard-theorem fn-symb) for fn-symb a guard-verified function symbol, or
+; (6) (:guard-theorem fn-symb) or (:guard-theorem fn-symb clean-up-flg)
+;     for fn-symb a guard-verified function symbol, or
 ; (7) (:termination-theorem fn-symb) or (:termination-theorem! fn-symb)
 ;     for fn-symb a :logic mode function symbol,
 
@@ -12086,10 +12154,15 @@
                  "it is an atom that is not a symbol"))))
      ((and (member-eq (car lmi) atomic-lmi-cars)
            (not (and (true-listp lmi)
-                     (= (length lmi) 2))))
+                     (or (= (length lmi) 2)
+                         (and (eq (car lmi) :guard-theorem)
+                              (= (length lmi) 3))))))
       (er@par soft ctx str lmi
-        (msg "this ~x0 lemma instance is not a true list of length 2"
-             (car lmi))))
+        (msg "this ~x0 lemma instance is not a true list of length 2~@1"
+             (car lmi)
+             (if (eq (car lmi) :guard-theorem)
+                 " or 3"
+               ""))))
      ((eq (car lmi) :theorem)
       (er-let*@par
        ((term (translate@par (cadr lmi) t t t ctx wrld state)))
@@ -12141,13 +12214,17 @@
                        current ACL2 logical world"
                       fn)))
               (t
-               (let ((term (guard-theorem fn wrld state)))
+               (let ((term (guard-theorem fn
+                                          (if (= (length lmi) 2)
+                                              t
+                                            (caddr lmi))
+                                          nil wrld state)))
                  (value@par (list term nil nil nil)))))))
      ((member-eq (car lmi) '(:termination-theorem :termination-theorem!))
       (let ((fn (cadr lmi)))
         (cond ((not (and (symbolp fn)
                          (function-symbolp fn wrld)
-                         (logicalp fn (w state))))
+                         (logicp fn (w state))))
                (er@par soft ctx str lmi
                  (msg "~x0 is not a :logic-mode function symbol in the ~
                        current ACL2 logical world"
@@ -12702,7 +12779,7 @@
 (defun collect-non-logic-mode (alist wrld)
   (cond ((null alist) nil)
         ((and (function-symbolp (caar alist) wrld)
-              (logicalp (caar alist) wrld))
+              (logicp (caar alist) wrld))
          (collect-non-logic-mode (cdr alist) wrld))
         (t (cons (caar alist)
                  (collect-non-logic-mode (cdr alist) wrld)))))

@@ -81,6 +81,7 @@
 
 (defconst *acl2-exports-exclusions*
   '(*UNTROUBLESOME-CHARACTERS*
+    ACTIVE-OR-NON-RUNEP ; to be added to *acl2-exports*
     ADD-DIVE-INTO-MACRO
     BDD
     BOOK-HASH
@@ -92,7 +93,14 @@
     DIVE-INTO-MACROS-TABLE
     ERROR1
     FIND-RULES-OF-RUNE
+    INCOMPATIBLE! ; to be added to *acl2-exports*
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
+    LOGIC-FNS-LIST-LISTP ; to be added to *acl2-exports*
+    LOGIC-FNS-LISTP ; to be added to *acl2-exports*
+    LOGIC-FNSP ; to be added to *acl2-exports*
+    LOGIC-TERM-LIST-LISTP ; to be added to *acl2-exports*
+    LOGIC-TERM-LISTP ; to be added to *acl2-exports*
+    LOGIC-TERMP ; to be added to *acl2-exports*
     LOOP-STOPPER
     MBE1
     NON-LINEAR-ARITHMETIC
@@ -103,6 +111,9 @@
     REWRITE
     TYPE-SET
     WATERFALL
+; The following are to be added to *acl2-exports*:
+    MFC-ANCESTORS MFC-AP MFC-CLAUSE MFC-RDEPTH MFC-RELIEVE-HYP MFC-RW MFC-RW+
+    MFC-TS MFC-TYPE-ALIST MFC-UNIFY-SUBST MFC-WORLD
     ))
 
 (defun missing-from-acl2-exports (wrld)

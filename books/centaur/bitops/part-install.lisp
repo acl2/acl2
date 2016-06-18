@@ -274,7 +274,10 @@ some value.")
   ;; [Shilpi]: Prove theorems about over-lapping bit portions of
   ;; select and install?
 
-  )
+  (defthmd part-install-in-terms-of-logapp
+    (equal (part-install val x :width width :low low)
+           (logapp low x (logapp width val (logtail (+ (nfix low) (nfix width)) x))))
+    :hints ((logbitp-reasoning))))
 
 
 ;; ======================================================================

@@ -670,6 +670,18 @@
                          ))
 
             (defret ,(intern-in-package-of-symbol
+                          (cat (symbol-name field.accessor) "-OF-" (symbol-name field.updater))
+                          x.name)
+                  (equal (,field.accessor ,new-x)
+                         (,field.fix ,field.name))
+                  :hints(("Goal" :in-theory (e/d (,field.accessor)
+                                                 (,field.updater))) ;; allow the fixing to cancel
+                         (and stable-under-simplificationp
+                              '(:in-theory (enable ,field.updater)))
+                         ;; (bitstruct-logbitp-reasoning)
+                         ))
+
+            (defret ,(intern-in-package-of-symbol
                       (cat (symbol-name field.updater) "-EQUIV-UNDER-MASK")
                       x.name)
               (,x.equiv-under-mask ,new-x ,x.xvar
@@ -943,7 +955,7 @@ necessary when accessed.)</li>
 previously-defined bitstruct type.  The docstring is a string which may contain
 xdoc syntax.</p>
 
-<h5>Field Options</p>
+<h5>Field Options</h5>
 <ul>
 
 <li>@(':accessor'), @(':updater') -- override the default names
@@ -961,7 +973,7 @@ should be determined automatically anyway.</li>
 
 <li>@(':subfields') -- Indicates that accessors and updaters should be created
 for subfields of this field, and gives their subfield names.  See the section
-on subfields below.</li> </li>
+on subfields below.</li> </ul>
 
 <h5>Subfields</h5>
 
@@ -1013,13 +1025,7 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
 
 
 (logic)
-(defthm unsigned-byte-p-1-when-bitp
-  (implies (bitp x)
-           (unsigned-byte-p 1 x)))
 
-(defthm bitp-when-unsigned-byte-p-1
-  (implies (unsigned-byte-p 1 x)
-           (bitp x)))
 
 
 

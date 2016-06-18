@@ -266,20 +266,21 @@
                       (adjust-rdepth rdepth) step-limit ens wrld state ttree))
                     ((programp fn wrld)
 
-; Why is the above test here?  We do not allow :program mode fns in theorems.
-; However, the prover can be called during definitions, and in particular we
-; wind up with the call (SYMBOL-BTREEP NIL) when trying to admit the following
-; definition.
+; We formerly thought this case was possible during admission of recursive
+; definitions.  Best if it's not!  So we cause an error; if we ever hit this
+; case, we can think about whether allowing :program mode functions into the
+; prover processes is problematic.  Our concern about :program mode functions
+; in proofs has led us in May 2016 to change the application of meta functions
+; and clause-processors to insist that the result is free of :program mode
+; function symbols.
 
-;  (defun symbol-btreep (x)
-;    (if x
-;        (and (true-listp x)
-;             (symbolp (car x))
-;             (symbol-btreep (caddr x))
-;             (symbol-btreep (cdddr x)))
-;      t))
-
-                     (mv step-limit (cons-term fn expanded-args) ttree))
+                     (mv step-limit
+;                        (cons-term fn expanded-args)
+                         (er hard! 'expand-abbreviations
+                             "Implementation error: encountered :program mode ~
+                              function symbol, ~x0"
+                             fn)
+                         ttree))
                     (t
                      (mv-let
                       (erp val latches)
@@ -2220,6 +2221,11 @@
          (non-term-listp-msg (car l) w)))
    (t (non-term-list-listp-msg (cdr l) w))))
 
+(defun all-ffn-symbs-lst-lst (lst ans)
+  (cond ((null lst) ans)
+        (t (all-ffn-symbs-lst-lst (cdr lst)
+                                  (all-ffn-symbs-lst (car lst) ans)))))
+
 (defun eval-clause-processor (clause term stobjs-out verified-p pspv ctx state)
 
 ; Verified-p is either nil, t, or a well-formedness-guarantee of the form
@@ -2284,51 +2290,57 @@
                               (not-skipped
                                (and (not user-says-skip-termp-checkp)
                                     (not well-formedness-guarantee)))
-                              (bad-arities
+                              (bad-arity-info
                                (if (and well-formedness-guarantee
                                         (not user-says-skip-termp-checkp))
-                                   (collect-bad-fn-arity-pairs
+                                   (collect-bad-fn-arity-info
                                     (cdr well-formedness-guarantee)
-                                    original-wrld)
+                                    original-wrld nil nil)
                                  nil)))
                          (cond
-                          (bad-arities
+                          (bad-arity-info
                            (let ((name (nth 0 (car well-formedness-guarantee)))
                                  (fn (nth 1 (car well-formedness-guarantee)))
                                  (thm-name1
                                   (nth 2 (car well-formedness-guarantee))))
-                             (mv (msg
-                                  "The clause processor correctness theorem ~
-                                   ~x0 has a now-invalid well-formedness ~
-                                   guarantee.  Its clause processor ~x1 was ~
-                                   proved in ~x2 to return a TERM-LIST-LISTP ~
-                                   under the assumption that certain function ~
-                                   symbols had certain arities.  But that ~
-                                   assumption is now invalid.  The following ~
-                                   alist pairs function symbols with their ~
-                                   assumed arities: ~X34.  These arities were ~
-                                   valid when ~x0 and ~x2 were proved but ~
-                                   have since changed (presumably by ~
-                                   redefinition).   We cannot trust the ~
-                                   well-formedness guarantee."
+                             (mv (bad-arities-msg 
                                   name
+                                  :CLAUSE-PROCESSOR
                                   fn
+                                  nil ; hyp-fn
                                   thm-name1
-                                  bad-arities
-                                  nil)
+                                  nil ; wf-thm-name2
+                                  bad-arity-info)
                                  nil state)))
                           ((and not-skipped
-                                (not (term-list-listp val original-wrld)))
-                           (mv (msg
-                                "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did ~
-                                 not evaluate to a list of clauses, but ~
-                                 instead to~|~%  ~Y23~%~@4"
-                                term nil
-                                val nil
-                                (non-term-list-listp-msg
-                                 val original-wrld))
-                               nil
-                               state))
+                                (not (logic-term-list-listp val
+                                                            original-wrld)))
+                           (cond
+                            ((not (term-list-listp val original-wrld))
+                             (mv (msg
+                                  "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did ~
+                                   not evaluate to a list of clauses, but ~
+                                   instead to~|~%  ~Y23~%~@4"
+                                  term nil
+                                  val nil
+                                  (non-term-list-listp-msg
+                                   val original-wrld))
+                                 nil
+                                 state))
+                            (t
+                             (mv (msg
+                                  "The :CLAUSE-PROCESSOR hint~|~%  ~
+                                   ~Y01~%evaluated to a list of clauses,~%  ~
+                                   ~Y23,~%which however has a call of the ~
+                                   following :program mode ~
+                                   function~#4~[~/s~]:~|~&4."
+                                  term nil
+                                  val nil
+                                  (collect-programs
+                                   (all-ffn-symbs-lst-lst val nil)
+                                   original-wrld))
+                                 nil
+                                 state))))
                           ((and not-skipped
                                 (forbidden-fns-in-term-list-list
                                  val
@@ -2386,7 +2398,7 @@
          '(set-waterfall-parallelism-hacks-enabled t))
         nil))
    (t
-    (let ((wrld (w state))
+    (let ((original-wrld (w state))
           (cl-term (subst-var (kwote clause) 'clause term)))
       (mv-let
        (erp trans-result)
@@ -2427,55 +2439,61 @@
                   (t
                    (let* ((user-says-skip-termp-checkp
                            (skip-meta-termp-checks
-                            (ffn-symb term) wrld))
+                            (ffn-symb term) original-wrld))
                           (well-formedness-guarantee
                            (if (consp verified-p)
                                verified-p
-                               nil))
+                             nil))
                           (not-skipped
                            (and (not user-says-skip-termp-checkp)
                                 (not well-formedness-guarantee)))
-                          (bad-arities (if (and well-formedness-guarantee
-                                                (not user-says-skip-termp-checkp))
-                                           (collect-bad-fn-arity-pairs
-                                            (cdr well-formedness-guarantee)
-                                            wrld)
-                                           nil)))
+                          (bad-arity-info
+                           (if (and well-formedness-guarantee
+                                    (not user-says-skip-termp-checkp))
+                               (collect-bad-fn-arity-info
+                                (cdr well-formedness-guarantee)
+                                original-wrld nil nil)
+                             nil)))
                      (cond
-                      (bad-arities
+                      (bad-arity-info
                        (let ((name (nth 0 (car well-formedness-guarantee)))
                              (fn (nth 1 (car well-formedness-guarantee)))
                              (thm-name1 (nth 2 (car well-formedness-guarantee))))
-                         (mv (msg
-                              "The clause processor correctness theorem ~x0 ~
-                               has a now-invalid well-formedness guarantee.  ~
-                               Its clause processor ~x1 was proved in ~x2 to ~
-                               return a TERM-LIST-LISTP under the assumption ~
-                               that certain function symbols had certain ~
-                               arities.  But that assumption is now invalid.  ~
-                               The following alist pairs function symbols ~
-                               with their assumed arities: ~X34.  These ~
-                               arities were valid when ~x0 and ~x2 were ~
-                               proved but have since changed (presumably by ~
-                               redefinition). We cannot trust the ~
-                               well-formedness guarantee."
+                         (mv (bad-arities-msg 
                               name
+                              :CLAUSE-PROCESSOR
                               fn
+                              nil ; hyp-fn
                               thm-name1
-                              bad-arities
-                              nil)
+                              nil ; wf-thm-name2
+                              bad-arity-info)
                              nil)))
                       ((and not-skipped
-                            (not (term-list-listp val wrld)))
-                       (mv (msg
-                            "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did not ~
-                             evaluate to a list of clauses, but instead ~
-                             to~|~%  ~Y23~%~@4"
-                            term nil
-                            val nil
-                            (non-term-list-listp-msg
-                             val wrld))
-                           nil))
+                            (not (logic-term-list-listp val original-wrld)))
+                       (cond
+                        ((not (term-list-listp val original-wrld))
+                         (mv (msg
+                              "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did not ~
+                               evaluate to a list of clauses, but instead ~
+                               to~|~%  ~Y23~%~@4"
+                              term nil
+                              val nil
+                              (non-term-list-listp-msg
+                               val original-wrld))
+                             nil))
+                        (t
+                         (mv (msg
+                              "The :CLAUSE-PROCESSOR hint~|~%  ~
+                               ~Y01~%evaluated to a list of clauses,~%  ~
+                               ~Y23,~%which however has a call of the ~
+                               following :program mode ~
+                               function~#4~[~/s~]:~|~&4."
+                              term nil
+                              val nil
+                              (collect-programs
+                               (all-ffn-symbs-lst-lst val nil)
+                               original-wrld))
+                             nil))))
                       ((and not-skipped
                             (forbidden-fns-in-term-list-list
                              val
@@ -3790,8 +3808,7 @@
       (cond
        ((or (gag-mode)
             (f-get-global 'raw-proof-format state))
-        (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
-                                      state))
+        (print-splitter-rules-summary cl-id clauses ttree state))
        (t state))
       (cond
        (gag-mode state)
@@ -4054,7 +4071,7 @@
 ;                    state
 ;                    (cl-id ttree clauses)
 ;                    (print-splitter-rules-summary
-;                     cl-id clauses ttree (proofs-co state) state)
+;                     cl-id clauses ttree state)
 ;                    :io-marker cl-id)
                 )))
       (increment-timer@par 'print-time state)
@@ -5076,9 +5093,7 @@
       clause
       ttree
       'non-nil ; collect CASE-SPLIT and immediate FORCE assumptions
-      (access rewrite-constant
-              (access prove-spec-var new-pspv :rewrite-constant)
-              :current-enabled-structure)
+      (ens-from-pspv new-pspv)
       wrld
       (access rewrite-constant
               (access prove-spec-var new-pspv :rewrite-constant)
@@ -5721,9 +5736,7 @@
    (t
     (let ((enabled-lmi-names
            (enabled-lmi-names
-            (access rewrite-constant
-                    (access prove-spec-var pspv :rewrite-constant)
-                    :current-enabled-structure)
+            (ens-from-pspv pspv)
             (cadr (assoc-eq :use
                             (access prove-spec-var pspv :hint-settings)))
             wrld)))
@@ -9287,51 +9300,70 @@
                            :direction :output
                            :if-exists :append
                            :if-does-not-exist :create)
-                      (let ((*print-pretty* nil)
-                            (*package* (find-package-fast "ACL2"))
-                            (*readtable* *acl2-readtable*)
-                            (*print-escape* t)
-                            *print-level*
-                            *print-length*)
-                        (prin1 term str)
-                        (terpri str)
-                        (force-output str))))
+        (let ((*print-pretty* nil)
+              (*package* (find-package-fast "ACL2"))
+              (*readtable* *acl2-readtable*)
+              (*print-escape* t)
+              *print-level*
+              *print-length*)
+          (prin1 term str)
+          (terpri str)
+          (force-output str))))
     (progn$
      (initialize-brr-stack state)
      (initialize-fc-wormhole-sites)
-     (er-let* ((ttree1 (prove-loop (list (list term))
-                                   (change prove-spec-var pspv
-                                           :user-supplied-term term
-                                           :orig-hints hints)
-                                   hints ens wrld ctx state)))
-       (er-progn
-        (chk-assumption-free-ttree ttree1 ctx state)
-        (let ((byes (tagged-objects :bye ttree1)))
-          (cond
-           (byes
-            (pprogn
+     (pprogn
+      (f-put-global 'saved-output-reversed nil state)
+      (push-io-record
+       :ctx
+       (list 'mv-let
+             '(col state)
+             '(fmt "Output replay for: "
+                   nil (standard-co state) state nil)
+             (list 'mv-let
+                   '(col state)
+                   (list 'fmt-ctx
+                         (list 'quote ctx)
+                         'col
+                         '(standard-co state)
+                         'state)
+                   '(declare (ignore col))
+                   '(newline (standard-co state) state)))
+       state)
+      (er-let* ((ttree1 (prove-loop (list (list term))
+                                    (change prove-spec-var pspv
+                                            :user-supplied-term term
+                                            :orig-hints hints)
+                                    hints ens wrld ctx state)))
+        (er-progn
+         (chk-assumption-free-ttree ttree1 ctx state)
+         (let ((byes (tagged-objects :bye ttree1)))
+           (cond
+            (byes
+             (pprogn
 
 ; The use of ~*1 below instead of just ~&1 forces each of the defthm forms
 ; to come out on a new line indented 5 spaces.  As is already known with ~&1,
 ; it can tend to scatter the items randomly -- some on the left margin and others
 ; indented -- depending on where each item fits flat on the line first offered.
 
-             (io? prove nil state
-                  (wrld byes)
-                  (fms "To complete this proof you could try to admit the ~
+              (io? prove nil state
+                   (wrld byes)
+                   (fms "To complete this proof you could try to admit the ~
                         following event~#0~[~/s~]:~|~%~*1~%See the discussion ~
                         of :by hints in :DOC hints regarding the ~
                         name~#0~[~/s~] displayed above."
-                       (list (cons #\0 byes)
-                             (cons #\1
-                                   (list ""
-                                         "~|~     ~q*."
-                                         "~|~     ~q*,~|and~|"
-                                         "~|~     ~q*,~|~%"
-                                         (make-defthm-forms-for-byes
-                                          byes wrld))))
-                       (proofs-co state)
-                       state
-                       (term-evisc-tuple nil state)))
-             (silent-error state)))
-           (t (value ttree1))))))))))
+                        (list (cons #\0 byes)
+                              (cons #\1
+                                    (list ""
+                                          "~|~     ~q*."
+                                          "~|~     ~q*,~|and~|"
+                                          "~|~     ~q*,~|~%"
+                                          (make-defthm-forms-for-byes
+                                           byes wrld))))
+                        (proofs-co state)
+                        state
+                        (term-evisc-tuple nil state)))
+              (silent-error state)))
+            (t (value ttree1)))))))))))
+

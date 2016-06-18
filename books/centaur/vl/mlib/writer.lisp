@@ -452,14 +452,16 @@ displays.  The module browser's web pages are responsible for defining the
         ;; mainly because things like foo[32'd5] is a lot uglier than foo[5].
         ;; But we might eventually want to think hard about whether this is
         ;; really okay.
-        (vl-ps-span "vl_int" (vl-print-nat x.value))))
+        (vl-ps-span "vl_int"
+                    (vl-print-nat (acl2::logext 32 x.value)))))
 
     (vl-ps-span "vl_int"
                 (vl-print-nat x.origwidth)
                 (if (eq x.origsign :vl-signed)
-                    (vl-print-str "'sd")
-                  (vl-print-str "'d"))
-                (vl-print-nat x.value))))
+                    (vl-ps-seq (vl-print-str "'sd")
+                               (vl-print-nat (acl2::logext x.origwidth x.value)))
+                  (vl-ps-seq (vl-print-str "'d")
+                             (vl-print-nat x.value))))))
 
 (define vl-pp-weirdint ((x vl-value-p) &key (ps 'ps))
   :guard (vl-value-case x :vl-weirdint)
@@ -792,7 +794,8 @@ displays.  The module browser's web pages are responsible for defining the
        ;; See vl-extend-atts-with-linestart.  The attribute should say how far
        ;; to indent to.
        (indent (if (and (vl-expr-p (cdr look))
-                        (vl-expr-resolved-p (cdr look)))
+                        (vl-expr-resolved-p (cdr look))
+                        (<= 0 (vl-resolved->val (cdr look))))
                    (vl-resolved->val (cdr look))
                  0))
        (indent (max indent (vl-ps->autowrap-ind))))
@@ -1019,7 +1022,7 @@ displays.  The module browser's web pages are responsible for defining the
     :measure (two-nats-measure (vl-casttype-count x) 10)
     (vl-casttype-case x
       :type (vl-pp-datatype x.type)
-      :size (vl-pp-expr x.size)
+      :size (vl-ps-seq (vl-print "(") (vl-pp-expr x.size) (vl-print ")"))
       :signedness (vl-ps-span "vl_key"
                               (if x.signedp
                                   (vl-print "signed")
@@ -1440,7 +1443,7 @@ displays.  The module browser's web pages are responsible for defining the
                                       (equal (vl-resolved->val msb)
                                              (vl-resolved->val lsb))))
                            (vl-ps-seq (vl-print-str "[")
-                                      (vl-print-nat (vl-resolved->val msb))
+                                      (vl-print (vl-resolved->val msb))
                                       (vl-print-str "]"))))
                        ;; Otherwise just print a normal range
                        (vl-pp-range x.range))
@@ -1776,7 +1779,8 @@ expression into a string."
     (cond
      ((and (hide (equal x.rise x.fall))
            (hide (equal x.fall x.high))
-           (vl-expr-resolved-p x.rise))
+           (vl-expr-resolved-p x.rise)
+           (<= 0 (vl-resolved->val x.rise)))
       ;; Almost always the delays should just be #3, etc.
       (vl-ps-seq
        (vl-print "#")

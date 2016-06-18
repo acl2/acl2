@@ -424,7 +424,7 @@
 ; functions, since they cannot call :program mode functions and hence there
 ; cannot be a subsidiary rebinding of **1*-as-raw* to t.
 
-               (if (logicalp fn w)
+               (if (logicp fn w)
                    nil
                  **1*-as-raw*))
               (*1*fn (*1*-symbol fn))
@@ -932,6 +932,7 @@
 ; 'absolute-event-number property for it -- then we return nil except in the
 ; boot-strap world.
 
+  (declare (xargs :guard (and (symbolp name) (plist-worldp wrld))))
   (cond ((global-val 'boot-strap-flg wrld) t)
         (t (getpropc name 'predefined nil wrld))))
 
@@ -4423,7 +4424,7 @@
     (mv-let ignore ignorable type)
     (flet ignore ignorable type) ; for each individual definition in the flet
     (defmacro ignore ignorable type xargs)
-    (defuns ignore ignorable type optimize xargs)))
+    (defuns ignore ignorable irrelevant type optimize xargs)))
 
 ; The following list gives the names of binders that permit at most
 ; one documentation string among their declarations.  If this list is
@@ -4440,6 +4441,7 @@
 (defconst *dcl-explanation-alist*
   '((ignore "(IGNORE v1 ... vn) and (IGNORABLE v1 ... vn), where the vi are ~
              introduced in the immediately superior lexical environment")
+    (irrelevant "(IRRELEVANT v1 ... vn)")
     (type "(TYPE type v1 ... vn), as described on pg 158 of CLTL")
     (xargs "(XARGS :key1 :val1 ... :keyn :valn), where each :keyi is a ~
             keyword (e.g., :GUARD or :HINTS)")))
@@ -4465,7 +4467,7 @@
 ; given to the tilde-* fmt directive will print out the conjunction of
 ; the explanations for each of the symbols.
 
-  (let ((syms
+  (let ((syms ; accommodate a single phrase for ignore and ignorable
          (cond ((member-eq 'ignorable syms)
                 (let ((syms (remove1-eq 'ignorable syms)))
                   (if (member-eq 'ignore syms)
@@ -4543,20 +4545,23 @@
                                      Your OPTIMIZE declaration, ~x0, does not ~
                                      meet this requirement."
                                     entry))))
-                  ((ignore ignorable)
+                  ((ignore ignorable irrelevant)
                    (cond ((subsetp (cdr entry) vars)
                           (value-cmp nil))
                          (t (er-cmp ctx
                                     "The variables of an ~x0 declaration must ~
-                                     be introduced in the immediately ~
-                                     superior lexical environment, but ~&1, ~
-                                     which ~#1~[is~/are~] said to be ~
-                                     ~#2~[ignored~/ignorable~] in ~x3, ~
-                                     ~#1~[is~/are~] not bound immediately ~
-                                     above the declaration.  See :DOC declare."
+                                     be introduced in the ~#1~[immediately ~
+                                     superior lexical ~
+                                     environment~/surrounding DEFUN form~]; ~
+                                     but ~&2, which ~#2~[is~/are~] said to be ~
+                                     ~#3~[ignored~/ignorable~/irrelevant~] in ~
+                                     ~x4, ~#2~[is~/are~] not.  See :DOC ~
+                                     declare."
                                     dcl
+                                    (if (eq dcl 'irrelevant) 1 0)
                                     (set-difference-equal (cdr entry) vars)
-                                    (if (eq dcl 'ignore) 0 1)
+                                    (if (eq dcl 'ignore) 0
+                                      (if (eq dcl 'ignorable) 1 2))
                                     entry))))
                   (type
                    (cond
@@ -9272,6 +9277,68 @@
 (defmacro all-fnnames-lst (lst)
   `(all-fnnames1 t ,lst nil))
 
+(mutual-recursion
+
+(defun logic-fnsp (term wrld)
+
+; We check for the absence of calls (f ...) in term for which the symbol-class
+; of f is :program.  If f is a term (not merely a pseudo-term), that's
+; equivalent to saying that every function symbol called in term is in :logic
+; mode, i.e., has a 'symbol-class property of :ideal or :common-lisp-compliant.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (pseudo-termp term))))
+  (cond ((mbe :logic (atom term)
+              :exec (variablep term))
+         t)
+        ((fquotep term) t)
+        ((flambdap (ffn-symb term))
+         (and (logic-fnsp (lambda-body (ffn-symb term)) wrld)
+              (logic-fns-listp (fargs term) wrld)))
+        ((programp (ffn-symb term) wrld) nil)
+        (t (logic-fns-listp (fargs term) wrld))))
+
+(defun logic-fns-listp (lst wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (pseudo-term-listp lst))))
+  (cond ((endp lst) t)
+        (t (and (logic-fnsp (car lst) wrld)
+                (logic-fns-listp (cdr lst) wrld)))))
+)
+
+(defun logic-termp (x wrld)
+
+; Warning: Checks in rewrite-with-lemma, eval-clause-processor, and
+; eval-clause-processor@par check logical-termp by separately checking termp
+; and (not (program-termp ...)).  If you change logical-termp, consider whether
+; it's also necessary to modify those checks.
+
+  (declare (xargs :guard (plist-worldp-with-formals wrld)))
+  (and (termp x wrld)
+       (logic-fnsp x wrld)))
+
+(defun logic-term-listp (x w)
+
+; We could define this recursively, but proofs about logical-termp can involve
+; program-termp and hence its mutual-recursion nest-mate, program-term-listp.
+; So we here we avoid introducing a second recursion.
+
+  (declare (xargs :guard (plist-worldp-with-formals w)))
+  (and (term-listp x w)
+       (logic-fns-listp x w)))
+
+(defun logic-fns-list-listp (x wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (pseudo-term-list-listp x))))
+  (cond ((endp x) t)
+        (t (and (logic-fns-listp (car x) wrld)
+                (logic-fns-list-listp (cdr x) wrld)))))
+
+(defun logic-term-list-listp (x w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
+  (and (term-list-listp x w)
+       (logic-fns-list-listp x w)))
+
 (defun translate-cmp (x stobjs-out logic-modep known-stobjs ctx w state-vars)
 
 ; See translate.  Here we return a context-message pair; see the Essay on
@@ -9285,7 +9352,7 @@
           (cond (erp ; erp is a ctx and val is a msg
                  (mv erp val))
                 ((and logic-modep
-                      (program-termp val w))
+                      (not (logic-fnsp val w)))
                  (er-cmp ctx
                          "Function symbols of mode :program are not allowed ~
                           in the present context.  Yet, the function ~

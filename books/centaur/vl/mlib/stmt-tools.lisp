@@ -846,7 +846,9 @@ process them.</p>"
   :parents (vl-delaycontrol-p)
   :short "Recognizer for simple delays by some natural-number amount."
   :inline t
-  (vl-expr-resolved-p (vl-delaycontrol->value x)))
+  (b* ((val (vl-delaycontrol->value x)))
+    (and (vl-expr-resolved-p val)
+         (<= 0 (vl-resolved->val val)))))
 
 (define vl-simpledelaycontrol->ticks ((x (and (vl-delaycontrol-p x)
                                               (vl-simpledelaycontrol-p x))))

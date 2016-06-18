@@ -29,6 +29,11 @@
                  (append x y x y x y x y x y))
          :time-limit 5/4))
 
+(must-fail-pi
+ (prove$ '(equal (append (append x y) x y x y x y x y)
+                 (append x y x y x y x y x y))
+         :step-limit 1000))
+
 ; ; Returns (mv nil nil state); all options are used.
 (must-fail-pi
  (prove$ '(and (equal (append (append x y) x y x y x y x y)

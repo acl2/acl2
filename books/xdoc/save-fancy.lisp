@@ -185,7 +185,8 @@
   (b* ((short    (or (cdr (assoc :short topic)) ""))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv short-rchars state) (preprocess-main short name topics-fal base-pkg state nil))
+       ((mv short-rchars state)
+        (preprocess-main short name topics-fal nil base-pkg state nil))
        (short-str (str::rchars-to-string short-rchars))
        ((mv err &) (parse-xml short-str))
        (state
@@ -214,7 +215,8 @@
   (b* ((long     (or (cdr (assoc :long topic)) ""))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv long-rchars state) (preprocess-main long name topics-fal base-pkg state nil))
+       ((mv long-rchars state)
+        (preprocess-main long name topics-fal nil base-pkg state nil))
        (long-str (str::rchars-to-string long-rchars))
        ((mv err &) (parse-xml long-str))
        (state
@@ -464,22 +466,34 @@
        (state       (oslib::copy! source-path target-path :recursive t)))
     (copy-resource-dirs resdir (cdr resource-dirs-alist) state)))
 
-(defun prepare-fancy-dir (dir state)
+(defun prepare-fancy-dir (dir logo-image state)
   (b* (((unless (stringp dir))
-        (prog2$ (er hard? 'prepare-fancy-dir
-                    "Dir must be a string, but is: ~x0.~%" dir)
-                state))
+        (er hard? 'prepare-fancy-dir "Dir must be a string, but is: ~x0.~%" dir)
+        state)
 
        (dir-system     (acl2::f-get-global 'acl2::system-books-dir state))
        (xdoc-dir       (oslib::catpath dir-system "xdoc"))
        (xdoc/fancy     (oslib::catpath xdoc-dir "fancy"))
 
        (- (cw "; Preparing directory ~s0.~%" dir))
-       (state          (time$ (oslib::rmtree! dir)
-                              :msg ";; Removing old directory: ~st sec, ~sa bytes.~%"))
+       (state (time$ (oslib::rmtree! dir)
+                     :msg ";; Removing old directory: ~st sec, ~sa bytes.~%"))
 
-       (state          (time$ (oslib::copy! xdoc/fancy dir :recursive t)
-                              :msg ";; Copying xdoc/fancy files: ~st sec, ~sa bytes.~%"))
+       (state (time$ (oslib::copy! xdoc/fancy dir :recursive t)
+                     :msg ";; Copying xdoc/fancy files: ~st sec, ~sa bytes.~%"))
+
+       (state (if (not logo-image)
+                  state
+                (time$ (b* ((dir/xdoc-logo.png (oslib::catpath dir "xdoc-logo.png"))
+                            ((mv error state)
+                             (oslib::copy-file logo-image dir/xdoc-logo.png
+                                               :overwrite t))
+                            ((when error)
+                             (er hard? 'prepare-fancy-dir
+                                 "Error copying logo image: ~@0" error)
+                             state))
+                         state)
+                       :msg ";; Installing custom logo: ~st sec, ~sa bytes.~%")))
 
        (- (cw "; Copying resource directories.~%"))
        (resdir              (oslib::catpath dir "res"))
@@ -513,8 +527,8 @@
         state))
     state))
 
-(defun save-fancy (all-topics dir zip-p state)
-  (b* ((state (prepare-fancy-dir dir state))
+(defun save-fancy (all-topics dir zip-p logo-image state)
+  (b* ((state (prepare-fancy-dir dir logo-image state))
        (state (save-json-files all-topics dir state))
        (state (if zip-p
                   (run-fancy-zip dir state)

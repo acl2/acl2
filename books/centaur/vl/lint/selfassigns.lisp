@@ -71,12 +71,13 @@ assign {foo, bar} = {baz, foo};
 (local (xdoc::set-default-parents selfassigns))
 
 (define vl-selfassign-bit ((name stringp)
-                           (index natp))
+                           (index integerp))
   :returns (bit stringp :rule-classes :type-prescription)
-  (cat name "[" (natstr index) "]"))
+  (b* ((index (lifix index)))
+    (cat name "[" (if (< index 0) "-" "") (natstr (abs index)) "]")))
 
 (define vl-selfassign-bits-from-indices ((name stringp)
-                                         (bits nat-listp))
+                                         (bits integer-listp))
   :returns (bits string-listp)
   (if (atom bits)
       nil
@@ -87,16 +88,16 @@ assign {foo, bar} = {baz, foo};
 (local (include-book "std/basic/arith-equivs" :dir :system))
 
 (define vl-selfassign-bits ((name stringp)
-                            (low  natp)
-                            (high natp))
+                            (low  integerp)
+                            (high integerp))
   :guard (<= low high)
-  :measure (nfix (- (nfix high) (nfix low)))
+  :measure (nfix (- (ifix high) (ifix low)))
   :returns (bits string-listp)
-  (if (mbe :logic (zp (- (nfix high) (nfix low)))
+  (if (mbe :logic (zp (- (ifix high) (ifix low)))
            :exec (eql high low))
       (list (vl-selfassign-bit name low))
     (cons (vl-selfassign-bit name low)
-          (vl-selfassign-bits name (+ (lnfix low) 1) high))))
+          (vl-selfassign-bits name (+ (lifix low) 1) high))))
 
 (defines vl-expr-approx-bits
   :short "Collect strings representing (approximately) the individual bits of

@@ -79,7 +79,7 @@
 
 ; ------------------ Making Flat Indexes ------------------------
 
-(defun index-add-topic (x topics-fal index-pkg state acc)
+(defun index-add-topic (x topics-fal disable-autolinking-p index-pkg state acc)
 
 ; X is a single topic entry in the xdoc table.  Index-pkg says the base package
 ; for symbols seen from the index.
@@ -98,7 +98,9 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<index_body>" acc))
        (acc   (cons #\Newline acc))
-       ((mv acc state) (preprocess-main short name topics-fal base-pkg state acc))
+       ((mv acc state)
+        (preprocess-main short name topics-fal disable-autolinking-p base-pkg
+                         state acc))
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "</index_body>" acc))
        (acc   (cons #\Newline acc))
@@ -106,17 +108,21 @@
        (acc   (cons #\Newline acc)))
       (mv acc state)))
 
-(defun index-add-topics (x topics-fal index-pkg state acc)
+(defun index-add-topics (x topics-fal disable-autolinking-p index-pkg state
+                           acc)
 
 ; X is a list of topics.  Index-pkg says the base package for these symbols.
 
   (b* (((when (atom x))
         (mv acc state))
        ((mv acc state)
-        (index-add-topic (car x) topics-fal index-pkg state acc)))
-    (index-add-topics (cdr x) topics-fal index-pkg state acc)))
+        (index-add-topic (car x) topics-fal disable-autolinking-p index-pkg
+                         state acc)))
+    (index-add-topics (cdr x) topics-fal disable-autolinking-p index-pkg state
+                      acc)))
 
-(defun index-topics (x title topics-fal index-pkg state acc)
+(defun index-topics (x title topics-fal disable-autolinking-p index-pkg state
+                       acc)
 
 ; X is a list of topics.  Generate <index>...</index> for these topics and
 ; add to acc.
@@ -125,7 +131,8 @@
        (acc (str::revappend-chars title acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (cons #\Newline acc))
-       ((mv acc state) (index-add-topics x topics-fal index-pkg state acc))
+       ((mv acc state) (index-add-topics x topics-fal disable-autolinking-p
+                                         index-pkg state acc))
        (acc (str::revappend-chars "</index>" acc))
        (acc (cons #\Newline acc)))
       (mv acc state)))
@@ -212,9 +219,7 @@
 
        ((mv short-acc state)
         (preprocess-main short name
-                         (if disable-autolinking-p
-                             nil
-                           topics-fal)
+                         topics-fal disable-autolinking-p
                          base-pkg state nil))
        (short-str  (str::rchars-to-string short-acc))
 
@@ -242,9 +247,7 @@
 
        ((mv long-acc state)
         (preprocess-main long name
-                         (if disable-autolinking-p
-                             nil
-                           topics-fal)
+                         topics-fal disable-autolinking-p
                          base-pkg state nil))
        (long-str (str::rchars-to-string long-acc))
        ((mv err &) (parse-xml long-str))
@@ -289,8 +292,9 @@
        ((mv acc state)
         (if (not children-topics)
             (mv acc state)
-          (index-topics children-topics "Subtopics" topics-fal base-pkg state acc)))
-
+          (index-topics children-topics "Subtopics"
+                        topics-fal disable-autolinking-p
+                        base-pkg state acc)))
        (acc    (str::revappend-chars "</topic>" acc))
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "</page>" acc))

@@ -48,12 +48,6 @@
           strategy for assigning types to warnings, but the basic goal is to be
           able to use these types to filter out or group up similar warnings.")
 
-   (fatalp booleanp :rule-classes :type-prescription
-           "Indicates whether this error is so severe that the module ought to
-            be thrown away and not subjected to further translation.  See the
-            general discussion in @(see warnings) for more information on how
-            this is used.")
-
    (msg  stringp :rule-classes :type-prescription
          "A more detailed message describing what went wrong.  This string
           should be acceptable to @(see vl-fmt); it is similar to the \"format
@@ -70,7 +64,15 @@
        "A symbol, intended to be the name of the function that caused the
         warning.  This is intended to be useful for VL debugging, to help make
         the source of the warning more apparent.  Only good discipline (and
-        handy macros) ensure that this is correctly reported.")))
+        handy macros) ensure that this is correctly reported.")
+
+   (fatalp booleanp :rule-classes :type-prescription
+           "Indicates whether this error is so severe that the module ought to
+            be thrown away and not subjected to further translation.  See the
+            general discussion in @(see warnings) for more information on how
+            this is used.")
+
+   (context "Context object for this warning; should be NIL or printable with \"~a\".")))
 
 (fty::deflist vl-warninglist
   :elt-type vl-warning-p
@@ -422,10 +424,9 @@ particular interest.</p>"
 (define vl-warning-add-ctx ((x vl-warning-p)
                             (ctx))
   :returns (new-x vl-warning-p)
-  (b* (((vl-warning x)))
-    (change-vl-warning x
-                       :msg "~a0: ~@1"
-                       :args (list ctx (vl-msg x.msg x.args)))))
+  (b* (((vl-warning x))
+       ((when x.context) (vl-warning-fix x)))
+    (change-vl-warning x :context ctx)))
 
 (defprojection vl-warninglist-add-ctx ((x vl-warninglist-p)
                                        (ctx))

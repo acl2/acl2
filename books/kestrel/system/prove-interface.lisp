@@ -44,13 +44,21 @@
        (declare (ignore val)) ; ttree
        (value (null erp))))))
 
+(defmacro convert-soft-error-to-value (form val)
+  `(let ((val ,val))
+     (mv-let (erp val2 state)
+       ,form
+       (cond (erp (value val))
+             (t (value val2))))))
+
 (defmacro prove$ (term &key
                        hints otf-flg
                        (with-output '(:off :all :gag-mode nil))
-                       time-limit)
+                       time-limit
+                       step-limit)
 
 ; All of the arguments except :with-output are evaluated.  The result is
-; (mv nil t state) if the proof is successful, otherwise (mv nil t state).
+; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
 
 ; There is no :step-limit option because, unfortunately, step-limit failures
 ; cause an error that isn't "soft", hence can't be "caught".  This may change
@@ -62,8 +70,11 @@
                  form))
          (form (if time-limit
                    `(with-prover-time-limit ,time-limit ,form)
+                 form))
+         (form (if step-limit
+                   `(with-prover-step-limit ,step-limit ,form)
                  form)))
-    form))
+    `(convert-soft-error-to-value ,form nil)))
 
 (defxdoc prove$
   :parents (kestrel-system-utilities system-utilities)
@@ -77,5 +88,6 @@
          hints
          otf-flg
          with-output ; :off, :all, :gag-mode, or the default, nil
+         step-limit
          time-limit)
  })")

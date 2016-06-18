@@ -28,13 +28,4 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(ld "dtree-defpkg.lsp")
-
-;(include-book "../bags/bag-pkg")
-(ld "../bags/bag-defpkg.lsp")
-
-;(include-book "../osets/sets-pkg")
-(ld "../osets/set-defpkg.lsp")
-
-;(include-book "../paths/path-pkg")
-(ld "../paths/path-defpkg.lsp")
+#!ACL2 (include-book "portcullis")

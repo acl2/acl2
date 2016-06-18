@@ -453,127 +453,8 @@
 ; prove the justification theorems for each termination machine and
 ; the measures supplied/guessed.
 
-(defun remove-built-in-clauses (cl-set ens oncep-override wrld state ttree)
-
-; We return two results.  The first is a subset of cl-set obtained by deleting
-; all built-in-clauseps and the second is the accumulated ttrees for the
-; clauses we deleted.
-
-  (cond
-   ((null cl-set) (mv nil ttree))
-   (t (mv-let
-       (built-in-clausep ttree1)
-       (built-in-clausep
-
-; We added defun-or-guard-verification as the caller arg of the call of
-; built-in-clausep below.  This addition is a little weird because there is no
-; such function as defun-or-guard-verification; the caller argument is only
-; used in trace reporting by forward-chaining.  If we wanted to be more precise
-; about who is responsible for this call, we'd have to change a bunch of
-; functions because this function is called by clean-up-clause-set which is in
-; turn called by prove-termination, guard-obligation-clauses, and
-; verify-valid-std-usage (which is used in the non-standard defun-fn1).  We
-; just didn't think it mattered so much as to to warrant changing all those
-; functions.
-
-        'defun-or-guard-verification
-        (car cl-set) ens oncep-override wrld state)
-
-; Ttree is known to be 'assumption free.
-
-       (mv-let
-        (new-set ttree)
-        (remove-built-in-clauses (cdr cl-set) ens oncep-override wrld state
-                                 (cons-tag-trees ttree1 ttree))
-        (cond (built-in-clausep (mv new-set ttree))
-              (t (mv (cons (car cl-set) new-set) ttree))))))))
-
-(defun length-exceedsp (lst n)
-  (cond ((null lst) nil)
-        ((= n 0) t)
-        (t (length-exceedsp (cdr lst) (1- n)))))
-
-(defun clean-up-clause-set (cl-set ens wrld ttree state)
-
-; Warning: The set of clauses returned by this function only implies the input
-; set.  They are thought to be equivalent only if the input set contains no
-; tautologies.  See the caution in subsumption-replacement-loop.
-
-; This function removes subsumed clauses from cl-set, does replacement (e.g.,
-; if the set includes the clauses {~q p} and {q p} replace them both with {p}),
-; and removes built-in clauses.  It returns two results, the cleaned up clause
-; set and a ttree justifying the deletions and extending ttree.  The returned
-; ttree is 'assumption free (provided the incoming ttree is also) because all
-; necessary splitting is done internally.
-
-; Bishop Brock has pointed out that it is unclear what is the best order in
-; which to do these two checks.  Subsumption-replacement first and then
-; built-in clauses?  Or vice versa?  We do a very trivial analysis here to
-; order the two.  Bishop is not to blame for this trivial analysis!
-
-; Suppose there are n clauses in the initial cl-set.  Suppose there are b
-; built-in clauses.  The cost of the subsumption-replacement loop is roughly
-; n*n and that of the built-in check is n*b.  Contrary to all common sense let
-; us suppose that the subsumption-replacement loop eliminates redundant clauses
-; at the rate, r, so that if we do the subsumption- replacement loop first at a
-; cost of n*n we are left with n*r clauses.  Note that the worst case for r is
-; 1 and the smaller r is, the better; if r were 1/100 it would mean that we
-; could expect subsumption-replacement to pare down a set of 1000 clauses to
-; just 10.  More commonly perhaps, r is just below 1, e.g., 99 out of 100
-; clauses are unaffected.  To make the analysis possible, let's assume that
-; built-in clauses crop up at the same rate!  So,
-
-; n^2 + bnr   = cost of doing subsumption-replacement first  = sub-first
-
-; bn + (nr)^2 = cost of doing built-in clauses first         = bic-first
-
-; Observe that when r=1 the two costs are the same, as they should be.  But
-; generally, r can be expected to be slightly less than 1.
-
-; Here is an example.  Let n = 10, b = 100 and r = 99/100.  In this example we
-; have only a few clauses to consider but lots of built in clauses, and we have
-; a realistically low expectation of hits.  The cost of sub-first is 1090 but
-; the cost of bic-first is 1098.  So we should do sub-first.
-
-; On the other hand, if n=100, b=20, and r=99/100 we see sub-first costs 11980
-; but bic-first costs 11801, so we should do built-in clauses first.  This is a
-; more common case.
-
-; In general, we should do built-in clauses first when sub-first exceeds
-; bic-first.
-
-; n^2 + bnr >= bn + (nr)^2  = when we should do built-in clauses first
-
-; Solving we get:
-
-; n > b/(1+r).
-
-; Indeed, if n=50 and b=100 and r=99/100 we see the costs of the two equal
-; at 7450.
-
-  (cond
-   ((let ((sr-limit (sr-limit wrld)))
-      (and sr-limit (> (length cl-set) sr-limit)))
-    (pstk
-     (remove-built-in-clauses
-      cl-set ens (match-free-override wrld) wrld state
-      (add-to-tag-tree 'sr-limit t ttree))))
-   ((length-exceedsp cl-set (global-val 'half-length-built-in-clauses wrld))
-    (mv-let (cl-set ttree)
-            (pstk
-             (remove-built-in-clauses cl-set ens
-                                      (match-free-override wrld)
-                                      wrld state ttree))
-            (mv (pstk
-                 (subsumption-replacement-loop
-                  (merge-sort-length cl-set) nil nil))
-                ttree)))
-   (t (pstk
-       (remove-built-in-clauses
-        (pstk
-         (subsumption-replacement-loop
-          (merge-sort-length cl-set) nil nil))
-        ens (match-free-override wrld) wrld state ttree)))))
+; Moved remove-built-in-clauses and clean-up-clause-set to
+; history-management.lisp.
 
 ; Formerly, we defined measure-clauses-for-clique and some of its supporting
 ; functions here.  But we moved them to history-management.lisp in order to
@@ -4440,13 +4321,17 @@
    (chk-acceptable-verify-guards-formula-cmp name x ctx wrld
                                              (default-state-vars t))))
 
-(defun chk-acceptable-verify-guards-cmp (name ctx wrld state-vars)
+(defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
 
-; We check that name is acceptable input for verify-guards.  We return either
-; the list of names in the clique of name (if name and every peer in the clique
-; is :ideal and every subroutine of every peer is :common-lisp-compliant), the
-; symbol 'redundant (if name and every peer is :common-lisp-compliant), or
-; cause an error.
+; We check that name is acceptable input for verify-guards.  Normally rrp
+; ("return redundant p") is t.  In that case, we return either the list of
+; names in the clique of name (if name and every peer in the clique is :ideal
+; and every subroutine of every peer is :common-lisp-compliant), the symbol
+; 'redundant (if name and every peer is :common-lisp-compliant), or cause an
+; error.  But if rrp is nil then instead of returning 'redundant -- thus, name
+; is :common-lisp-compliant -- we return the list of names in the clique of
+; name, as in the :ideal case, but subject to the check for
+; :common-lisp-compliant subfunctions that we do in the :ideal case.
 
 ; One might wonder when two peers in a clique can have different symbol-classs,
 ; e.g., how is it possible (as implied above) for name to be :ideal but for one
@@ -4466,7 +4351,8 @@
                     "~x0 is not a symbol.  See :DOC verify-guards."
                     name)))))
    (cond
-    ((eq symbol-class :common-lisp-compliant)
+    ((and rrp
+          (eq symbol-class :common-lisp-compliant))
      (value-cmp 'redundant))
     ((getpropc name 'theorem nil wrld)
 
@@ -4485,23 +4371,27 @@
                 "~x0 is :program.  Only :logic functions can have their ~
                  guards verified.  See :DOC verify-guards."
                 name))
-       (:ideal
+       ((:ideal :common-lisp-compliant)
         (let* ((recp (getpropc name 'recursivep nil wrld))
                (names (cond
                        ((null recp)
                         (list name))
                        (t recp)))
-               (non-ideal-names (collect-non-ideals names wrld)))
-          (cond (non-ideal-names
+               (bad-names (if (eq symbol-class :ideal)
+                              (collect-non-ideals names wrld)
+                            (collect-programs names wrld))))
+          (cond (bad-names
                  (er-cmp ctx
                          "One or more of the mutually-recursive peers of ~x0 ~
-                          either was not defined in :logic mode or has ~
-                          already had its guards verified.  The offending ~
-                          function~#1~[ is~/s are~] ~&1.  We thus cannot ~
-                          verify the guards of ~x0.  This situation can arise ~
-                          only through redefinition."
+                          ~#1~[was not defined in :logic mode~/either was not ~
+                          defined in :logic mode or has already had its ~
+                          guards verified~].  The offending function~#2~[ ~
+                          is~/s are~] ~&2.  We thus cannot verify the guards ~
+                          of ~x0.  This situation can arise only through ~
+                          redefinition."
                          name
-                         non-ideal-names))
+                         (if (eq symbol-class :ideal) 1 0)
+                         bad-names))
                 (t
                  (er-progn-cmp
                   (chk-common-lisp-compliant-subfunctions-cmp
@@ -4531,9 +4421,9 @@
                                 see :DOC macro-aliases-table."
                                name fn)))))))))
 
-(defun chk-acceptable-verify-guards (name ctx wrld state)
+(defun chk-acceptable-verify-guards (name rrp ctx wrld state)
   (cmp-to-error-triple
-   (chk-acceptable-verify-guards-cmp name ctx wrld
+   (chk-acceptable-verify-guards-cmp name rrp ctx wrld
                                      (default-state-vars t))))
 
 (defun guard-obligation-clauses (x guard-debug ens wrld state)
@@ -4609,7 +4499,7 @@
 
       (mv cl-set cl-set-ttree))))
 
-(defun guard-obligation (x guard-debug ctx state)
+(defun guard-obligation (x rrp guard-debug ctx state)
   (let* ((wrld (w state))
          (namep (and (symbolp x)
                      (not (keywordp x))
@@ -4617,7 +4507,7 @@
     (er-let*-cmp
      ((y
        (cond (namep (chk-acceptable-verify-guards-cmp
-                     x ctx wrld (default-state-vars t)))
+                     x rrp ctx wrld (default-state-vars t)))
              (t (chk-acceptable-verify-guards-formula-cmp
                  nil x ctx wrld (default-state-vars t))))))
      (cond
@@ -4665,10 +4555,10 @@
        (mv 0 ; don't care
            state))))))
 
-(defmacro verify-guards-formula (x &key guard-debug &allow-other-keys)
-  `(er-let*
-    ((tuple (cmp-to-error-triple
-             (guard-obligation ',x ',guard-debug 'verify-guards-formula state))))
+(defun verify-guards-formula-fn (x rrp guard-debug state)
+  (er-let* ((tuple (cmp-to-error-triple
+                    (guard-obligation x rrp guard-debug 'verify-guards-formula
+                                      state))))
     (cond ((eq tuple :redundant)
            (value :redundant))
           (t
@@ -4679,14 +4569,17 @@
                                                        (w state)))
                  (cl-set-ttree (cddr tuple)))
              (mv-let (col state)
-                     (prove-guard-clauses-msg (if (and (consp names)
-                                                       (eq (car names) :term))
-                                                  nil
-                                                names)
-                                              (cadr tuple) cl-set-ttree
-                                              displayed-goal t state)
-                     (declare (ignore col))
-                     (value :invisible)))))))
+               (prove-guard-clauses-msg (if (and (consp names)
+                                                 (eq (car names) :term))
+                                            nil
+                                          names)
+                                        (cadr tuple) cl-set-ttree
+                                        displayed-goal t state)
+               (declare (ignore col))
+               (value :invisible)))))))
+
+(defmacro verify-guards-formula (x &key rrp guard-debug &allow-other-keys)
+  `(verify-guards-formula-fn ',x ',rrp ',guard-debug state))
 
 (defun prove-guard-clauses (names hints otf-flg guard-debug ctx ens wrld state)
 
@@ -5056,7 +4949,7 @@
                        (eq (ld-skip-proofsp state) 'include-book-with-locals)
                        (eq (ld-skip-proofsp state) 'initialize-acl2))))
       (er-let*
-       ((names (chk-acceptable-verify-guards name ctx wrld state)))
+       ((names (chk-acceptable-verify-guards name t ctx wrld state)))
        (cond
         ((eq names 'redundant)
          (stop-redundant-event ctx state))
@@ -5500,6 +5393,18 @@
                   (fourth (car lst)))
                  (get-ignorables (cdr lst))))))
 
+(defun irrelevant-vars (dcls)
+  (cond ((null dcls) nil)
+        ((eq (caar dcls) 'irrelevant)
+         (append (cdar dcls) (irrelevant-vars (cdr dcls))))
+        (t  (irrelevant-vars (cdr dcls)))))
+
+(defun get-irrelevants (lst)
+  (cond ((null lst) nil)
+        (t (cons (irrelevant-vars
+                  (fourth (car lst)))
+                 (get-irrelevants (cdr lst))))))
+
 (defun chk-all-stobj-names (lst msg ctx wrld state)
 
 ; Cause an error if any element of lst is not a legal stobj name in wrld.
@@ -5682,14 +5587,14 @@
 ; We determine whether lst is a plausible cdr for a DECLARE form.  Ignoring the
 ; order of presentation and the number of occurrences of each element
 ; (including 0), we ensure that lst is of the form (... (TYPE ...) ... (IGNORE
-; ...) ... (IGNORABLE ...) ... (XARGS ... :key val ...) ...)  where the :keys
-; are our xarg keys (members of *xargs-keywords*).
+; ...) ... (IGNORABLE ...) ... (IRRELEVANT ...) ... (XARGS ... :key val ...)
+; ...)  where the :keys are our xarg keys (members of *xargs-keywords*).
 
   (declare (xargs :guard t))
   (cond ((atom lst) (null lst))
         ((and (consp (car lst))
               (true-listp (car lst))
-              (or (member-eq (caar lst) '(type ignore ignorable))
+              (or (member-eq (caar lst) '(type ignore ignorable irrelevant))
                   (and (eq (caar lst) 'xargs)
                        (keyword-value-listp (cdar lst))
                        (subsetp-eq (evens (cdar lst)) *xargs-keywords*))))
@@ -5738,7 +5643,7 @@
 ; between the formals and the body of a DEFUN.  We return a duplicate-free list
 ; of all the "field names" used in lst, where 'comment indicates a string.  Our
 ; answer is a subset of the union of the values of '(comment type ignore
-; ignorable) and *xargs-keywords*.
+; ignorable irrelevant) and *xargs-keywords*.
 
   (declare (xargs :guard (plausible-dclsp lst)))
   (cond ((endp lst) nil)
@@ -5765,7 +5670,7 @@
   (declare (xargs :guard (and (symbol-listp fields)
                               (plausible-dclsp1 lst))))
   (cond ((endp lst) nil)
-        ((member-eq (caar lst) '(type ignore ignorable))
+        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
          (cond ((member-eq (caar lst) fields) (strip-dcls1 fields (cdr lst)))
                (t (cons (car lst) (strip-dcls1 fields (cdr lst))))))
         (t
@@ -5777,10 +5682,10 @@
 (defun strip-dcls (fields lst)
 
 ; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
-; i.e., a subset of the union of the values of '(comment type ignore ignorable)
-; and *xargs-keywords*.  We copy lst deleting any part of it that specifies a
-; value for one of the fields named, where 'comment denotes a string.  The
-; result satisfies plausible-dclsp.
+; i.e., a subset of the union of the values of '(comment type ignore ignorable
+; irrelevant) and *xargs-keywords*.  We copy lst deleting any part of it that
+; specifies a value for one of the fields named, where 'comment denotes a
+; string.  The result satisfies plausible-dclsp.
 
   (declare (xargs :guard (and (symbol-listp fields)
                               (plausible-dclsp lst))))
@@ -5807,7 +5712,7 @@
   (declare (xargs :guard (and (symbol-listp field-names)
                               (plausible-dclsp1 lst))))
   (cond ((endp lst) nil)
-        ((member-eq (caar lst) '(type ignore ignorable))
+        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
          (if (member-eq (caar lst) field-names)
              (cons (cdar lst) (fetch-dcl-fields1 field-names (cdr lst)))
            (fetch-dcl-fields1 field-names (cdr lst))))
@@ -5829,10 +5734,10 @@
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
 ; between the formals and the body of a DEFUN.  Field-name is either in the
-; list (comment type ignore ignorable) or is one of the symbols in the list
-; *xargs-keywords*.  We return the list of the contents of all fields with that
-; name.  We assume we will find at most one specification per XARGS entry for a
-; given keyword.
+; list (comment type ignore ignorable irrelevant) or is one of the symbols in
+; the list *xargs-keywords*.  We return the list of the contents of all fields
+; with that name.  We assume we will find at most one specification per XARGS
+; entry for a given keyword.
 
 ; For example, if field-name is :GUARD and there are two XARGS among the
 ; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
@@ -7058,8 +6963,84 @@
 (defun tilde-*-irrelevant-formals-msg (slots)
   (list "" "~@*" "~@* and the " "~@* the " (tilde-*-irrelevant-formals-msg1 slots)))
 
+(defun missing-irrelevant-slots1 (irrelevant-slots irrelevants-alist acc)
+
+; Recall that a slot has the form (fn n . var); see
+; irrelevant-non-lambda-slots-clique.
+
+  (cond ((endp irrelevant-slots) acc)
+        (t (missing-irrelevant-slots1
+            (cdr irrelevant-slots)
+            irrelevants-alist
+            (if (member-eq (cddr (car irrelevant-slots))               ; var
+                           (cdr (assoc-eq (car (car irrelevant-slots)) ; fn
+                                          irrelevants-alist)))
+                acc
+              (cons (car irrelevant-slots) acc))))))
+
+(defun missing-irrelevant-slots (irrelevant-slots irrelevants-alist)
+  (cond ((null irrelevant-slots) ; common case
+         nil)
+        ((null irrelevants-alist) ; common case
+         irrelevant-slots)
+        (t (missing-irrelevant-slots1 irrelevant-slots irrelevants-alist
+                                      nil))))
+
+(defun find-slot (fn var irrelevant-slots)
+  (cond ((endp irrelevant-slots) nil)
+        ((let ((slot (car irrelevant-slots))) ; (fn n . var)
+           (or (and (eq fn (car slot))
+                    (eq var (cddr slot))))))
+        (t (find-slot fn var (cdr irrelevant-slots)))))
+
+(defun bogus-irrelevants-alist2 (irrelevant-slots fn vars)
+  (cond ((endp vars) nil)
+        ((find-slot fn (car vars) irrelevant-slots)
+         (bogus-irrelevants-alist2 irrelevant-slots fn (cdr vars)))
+        (t
+         (cons (car vars)
+               (bogus-irrelevants-alist2 irrelevant-slots fn (cdr vars))))))
+
+(defun bogus-irrelevants-alist1 (irrelevant-slots irrelevants-alist acc)
+
+; Recall that a slot has the form (fn n . var); see
+; irrelevant-non-lambda-slots-clique.
+
+  (cond ((endp irrelevants-alist) acc)
+        (t (bogus-irrelevants-alist1
+            irrelevant-slots
+            (cdr irrelevants-alist)
+            (let ((bogus-vars
+                   (bogus-irrelevants-alist2 irrelevant-slots
+                                             (caar irrelevants-alist)
+                                             (cdar irrelevants-alist))))
+              (if bogus-vars
+                  (acons (caar irrelevants-alist)
+                         bogus-vars
+                         acc)
+                acc))))))
+
+(defun bogus-irrelevants-alist (irrelevant-slots irrelevants-alist)
+  (cond ((null irrelevant-slots) ; common case
+         nil)
+        ((null irrelevants-alist) ; common case
+         irrelevant-slots)
+        (t (bogus-irrelevants-alist1 irrelevant-slots irrelevants-alist nil))))
+
+(defun tilde-*-bogus-irrelevants-alist-msg1 (alist)
+  (cond ((endp alist) nil)
+        (t (cons (cons "formal~#0~[~/s~] ~&0 of ~x1"
+                       (list (cons #\0 (cdar alist))
+                             (cons #\1 (caar alist))))
+                 (tilde-*-bogus-irrelevants-alist-msg1 (cdr alist))))))
+
+(defun tilde-*-bogus-irrelevants-alist-msg (alist)
+  (list "" "~@*" "~@*; and the " "~@*; the "
+        (tilde-*-bogus-irrelevants-alist-msg1 alist)))
+
 (defun chk-irrelevant-formals (fns arglists guards split-types-terms measures
-                                   ignores ignorables bodies ctx state)
+                                   ignores ignorables irrelevants-alist bodies
+                                   ctx state)
   (let ((irrelevant-formals-ok
          (cdr (assoc-eq :irrelevant-formals-ok
                         (table-alist 'acl2-defaults-table (w state))))))
@@ -7074,20 +7055,45 @@
               fns arglists guards split-types-terms measures ignores ignorables
               bodies)))
         (cond
-         ((null irrelevant-slots) (value nil))
-         ((eq irrelevant-formals-ok :warn)
-          (pprogn
-           (warning$ ctx ("Irrelevant-formals")
-                    "The ~*0 ~#1~[is~/are~] irrelevant.  See :DOC ~
-                     irrelevant-formals."
-                    (tilde-*-irrelevant-formals-msg irrelevant-slots)
-                    (if (cdr irrelevant-slots) 1 0))
-           (value nil)))
-         (t (er soft ctx
-                "The ~*0 ~#1~[is~/are~] irrelevant.  See :DOC ~
-                 irrelevant-formals."
-                (tilde-*-irrelevant-formals-msg irrelevant-slots)
-                (if (cdr irrelevant-slots) 1 0)))))))))
+         ((and (null irrelevant-slots)
+               (null irrelevants-alist)) ; optimize for common case
+          (value nil))
+         (t
+          (let ((bogus-irrelevants-alist ; declared irrelevant but not
+                 (bogus-irrelevants-alist irrelevant-slots irrelevants-alist))
+                (missing-irrelevant-slots ; irrelevant but not declared
+                 (missing-irrelevant-slots irrelevant-slots
+                                           irrelevants-alist)))
+            (cond
+             ((and (null bogus-irrelevants-alist)
+                   (null missing-irrelevant-slots))
+              (value nil))
+             (t
+              (let ((msg (msg
+                          "~@0~@1See :DOC irrelevant-formals."
+                          (if missing-irrelevant-slots
+                              (msg "The ~*0 ~#1~[is~/are~] irrelevant but not ~
+                                    declared to be irrelevant.  "
+                                   (tilde-*-irrelevant-formals-msg
+                                    missing-irrelevant-slots)
+                                   (if (cdr missing-irrelevant-slots) 1 0))
+                            "")
+                          (if bogus-irrelevants-alist
+                              (msg "The ~*0 ~#1~[is~/are~] falsely declared ~
+                                    irrelevant.  "
+                                   (tilde-*-bogus-irrelevants-alist-msg
+                                    bogus-irrelevants-alist)
+                                   (if (or (cdr bogus-irrelevants-alist)
+                                           (cddr (car bogus-irrelevants-alist)))
+                                       1
+                                     0))
+                            ""))))
+                (cond
+                 ((eq irrelevant-formals-ok :warn)
+                  (pprogn
+                   (warning$ ctx ("Irrelevant-formals") "~@0" msg)
+                   (value nil)))
+                 (t (er soft ctx "~@0" msg))))))))))))))
 
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)
 
@@ -7553,6 +7559,12 @@
                   as ~x2 and ~x3 are the only legal values for this key."
                  lst key t nil)))))
 
+(defun get-irrelevants-alist (fives)
+  (cond ((null fives) nil)
+        (t (acons (caar fives)
+                  (irrelevant-vars (fourth (car fives)))
+                  (get-irrelevants-alist (cdr fives))))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -7593,7 +7605,7 @@
                                     ctx wrld2
                                     state))
       (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
-                                                    ctx state))
+                                                    ctx wrld2 state))
       (rel (get-unambiguous-xargs-flg
             :WELL-FOUNDED-RELATION
             fives
@@ -7808,7 +7820,8 @@
                    (assumep (mv nil nil state))
                    (t
                     (let ((ignores (get-ignores fives))
-                          (ignorables (get-ignorables fives)))
+                          (ignorables (get-ignorables fives))
+                          (irrelevants-alist (get-irrelevants-alist fives)))
                       (er-progn
                        (chk-free-and-ignored-vars-lsts names
                                                        arglists
@@ -7825,6 +7838,7 @@
                                                measures
                                                ignores
                                                ignorables
+                                               irrelevants-alist
                                                bodies ctx state)
                        (chk-mutual-recursion names bodies ctx
                                              state)))))
