@@ -1,6 +1,8 @@
 ; Kestrel's Contributions to the ACL2 System Code
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016
+;   Kestrel Institute (http://www.kestrel.edu)
+;   Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
