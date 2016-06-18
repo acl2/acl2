@@ -251,7 +251,9 @@ programmer-level mode.</p>" )
                   (mv-nth 1 (wb addr-bytes-alst (write-user-rflags flags mask x86)))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (write-user-rflags)
-                            (wb force (force))))))
+                            (acl2::loghead-identity
+                             mv-nth-1-wb-and-!flgi-commute
+                             wb force (force))))))
 
 (defthm flgi-wb-in-programmer-level-mode
   (implies (programmer-level-mode x86)

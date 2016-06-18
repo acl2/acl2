@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "common-system-level-utils")
-(include-book "paging-lib/common-paging-lemmas")
+(include-book "paging/common-paging-lemmas")
 (include-book "gl-lemmas")
 (include-book "clause-processors/find-subterms" :dir :system)
 
@@ -700,7 +700,7 @@
 
 (local
  (defthm translation-governing-addresses-and-write-to-physical-memory
-   ;; TO-DO: This already exists in paging-lib/paging-top.
+   ;; This lemma already exists in paging/top.
    (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs x86))
                  (physical-address-listp p-addrs))
             (equal

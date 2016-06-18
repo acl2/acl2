@@ -1244,6 +1244,23 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl x86)))
                     (xr fld index x86))))
 
+  (defthm xr-fault-ia32e-la-to-pa-page-table
+    (implies (not (mv-nth 0
+                          (ia32e-la-to-pa-page-table
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-w-x cpl x86)))
+             (equal (xr :fault index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-table
+                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                 wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (force
+                                      (force)
+                                      (:definition not)
+                                      (:meta acl2::mv-nth-cons-meta))))))
+
   (defthm xr-ia32e-la-to-pa-page-table-in-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))
                   (not (equal fld :fault)))
@@ -1534,6 +1551,23 @@ accesses.</p>
                                  x86)))
                     (xr fld index x86))))
 
+  (defthm xr-fault-ia32e-la-to-pa-page-directory
+    (implies (not (mv-nth 0
+                          (ia32e-la-to-pa-page-directory
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-w-x cpl x86)))
+             (equal (xr :fault index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-directory
+                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                 wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (force
+                                      (force)
+                                      (:definition not)
+                                      (:meta acl2::mv-nth-cons-meta))))))
+
   (defthm xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))
                   (not (equal fld :fault)))
@@ -1788,6 +1822,7 @@ accesses.</p>
     (mv t 0 x86))
 
   ///
+
   (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table
     :hyp t
     :bound *physical-address-size*
@@ -1823,6 +1858,23 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl
                                  x86)))
                     (xr fld index x86))))
+
+  (defthm xr-fault-ia32e-la-to-pa-page-dir-ptr-table
+    (implies (not (mv-nth 0
+                          (ia32e-la-to-pa-page-dir-ptr-table
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-w-x cpl x86)))
+             (equal (xr :fault index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-dir-ptr-table
+                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                 wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (force
+                                      (force)
+                                      (:definition not)
+                                      (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-and-ia32e-la-to-pa-page-dir-ptr-table-in-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))
@@ -2045,6 +2097,21 @@ accesses.</p>
                                  x86)))
                     (xr fld index x86))))
 
+  (defthm xr-fault-ia32e-la-to-pa-pml4-table
+    (implies (not (mv-nth 0
+                          (ia32e-la-to-pa-pml4-table
+                           lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+             (equal (xr :fault index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-pml4-table
+                                 lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (force
+                                      (force)
+                                      (:definition not)
+                                      (:meta acl2::mv-nth-cons-meta))))))
+
   (defthm xr-and-ia32e-la-to-pa-pml4-table-in-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))
                   (not (equal fld :fault)))
@@ -2195,6 +2262,16 @@ accesses.</p>
                                  lin-addr r-w-x cpl x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-fault-ia32e-la-to-pa
+    (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+             (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (force
+                                      (force)
+                                      (:definition not)
+                                      (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-and-ia32e-la-to-pa-in-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))

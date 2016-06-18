@@ -9,7 +9,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* (rb-rb-subset) ())))
+(local (in-theory (e/d* (rb-rb-subset) (mv-nth-1-wb-and-!flgi-commute))))
 
 ;; ======================================================================
 
@@ -606,6 +606,7 @@
                                                   11))))))))))))))))))))))))))))))))
                   0 X86))))))))))
   :hints (("Goal"
+           :do-not '(preprocess)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
 
                              gpr-and-spec-4
@@ -637,6 +638,7 @@
                              subset-p
                              signed-byte-p)
                             (wb-remove-duplicate-writes
+                             mv-nth-1-wb-and-!flgi-commute
                              create-canonical-address-list)))))
 
 (defthm effects-copyData-loop-base-destination-address-projection-original
@@ -648,7 +650,8 @@
                   (source-bytes k dst-addr x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
-                            (loop-clk-base
+                            (mv-nth-1-wb-and-!flgi-commute
+                             loop-clk-base
                              rb-rb-split-reads
                              take-and-rb
                              (loop-clk-base)

@@ -76,6 +76,15 @@
 (defun-nx pml4-table-base-addr (x86)
   (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
 
+(defthm-usb n52p-of-pml4-table-base-addr
+  :hyp (x86p x86)
+  :bound 52
+  :concl (pml4-table-base-addr x86))
+
+(defthm pml4-table-base-addr-and-mv-nth-1-wb
+  (equal (pml4-table-base-addr (mv-nth 1 (wb addr-lst x86)))
+         (pml4-table-base-addr x86)))
+
 (defun-nx page-dir-ptr-table-base-addr (lin-addr x86)
   (ash (loghead 40
                 (logtail 12

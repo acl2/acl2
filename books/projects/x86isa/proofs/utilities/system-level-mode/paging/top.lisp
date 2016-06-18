@@ -173,13 +173,13 @@
 
 (defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa
   (implies (and (canonical-address-p lin-addr)
-                (disjoint-p (translation-governing-addresses lin-addr (double-rewrite x86)) p-addrs))
+                (disjoint-p p-addrs (translation-governing-addresses lin-addr (double-rewrite x86))))
            (equal (read-from-physical-memory p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
 
 (defthm read-from-physical-memory-and-mv-nth-2-las-to-pas
-  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs (double-rewrite x86)) p-addrs)
+  (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs (double-rewrite x86)))
                 (canonical-address-listp l-addrs))
            (equal (read-from-physical-memory p-addrs (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
                   (read-from-physical-memory p-addrs x86)))
@@ -793,8 +793,8 @@
 
 ;; ======================================================================
 
-;; !! TODO: Check if the following three rules make things slow during
-;; !! symbolic simulation.
+;; Lemmas to aid in inferring disjointness of las-to-pas and
+;; translation-governing addresses:
 
 (defun get-subterms-if-match (n match-fn terms)
   (declare (xargs :guard (and (natp n)
@@ -912,6 +912,32 @@
                      (lin-addr (car l-addrs-subset))
                      (l-addrs l-addrs))))))
 
+(defthm disjoint-p-las-to-pas-subset-p-and-all-translation-governing-addresses-subsets
+  ;; Very similar to
+  ;; mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs (but
+  ;; less general because it applies only during instruction fetches
+  ;; and hence, it is less expensive).
+  (implies
+   (and
+    (syntaxp (not (eq l-addrs-1-subset l-addrs-2)))
+    (bind-free (find-l-addrs-from-program-at-or-program-at-alt-term
+                'disjoint-p-las-to-pas-subset-p-and-all-translation-governing-addresses
+                'l-addrs-1 mfc state)
+               (l-addrs-1))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas l-addrs-1 :x cpl (double-rewrite x86)))
+     (all-translation-governing-addresses l-addrs-2 (double-rewrite x86)))
+    (subset-p l-addrs-1-subset l-addrs-1)
+    (not (mv-nth 0 (las-to-pas l-addrs-1 :x cpl (double-rewrite x86)))))
+   (disjoint-p (mv-nth 1 (las-to-pas l-addrs-1-subset :x cpl x86))
+               (all-translation-governing-addresses l-addrs-2 x86)))
+  :hints (("Goal" :in-theory (e/d* () (mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs))
+           :use ((:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                            (other-p-addrs (all-translation-governing-addresses l-addrs-2 x86))
+                            (r-w-x :x)
+                            (l-addrs l-addrs-1)
+                            (l-addrs-subset l-addrs-1-subset))))))
+
 (defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
   ;; This rule is tailored to rewrite terms of the form to t
 
@@ -963,51 +989,256 @@
                                     all-translation-governing-addresses)
                                    ()))))
 
-;; (defthm disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p-1
-;;   ;; Follows from MV-NTH-1-LAS-TO-PAS-SUBSET-P-DISJOINT-FROM-OTHER-P-ADDRS.
+(defun get-both-l-addrs
+  (match-fn l-addrs-subset-1 l-addrs-subset-2 term-1 term-2)
+  ;; (get-both-l-addrs
+  ;;  'las-to-pas
+  ;;  '(create-canonical-address-list 4 rgf)
+  ;;  '(create-canonical-address-list 4 start-rip)
+  ;;  '(mv-nth 1 (las-to-pas '(create-canonical-address-list 4 rgf) r-w-x cpl (double-rewrite x86)))
+  ;;  '(mv-nth 1 (las-to-pas '(create-canonical-address-list 20 start-rip) r-w-x cpl (double-rewrite x86))))
+  (if (and (consp term-1)
+           (consp (cdr term-1))
+           (consp (cddr term-1))
+           (consp (caddr term-1))
+           (consp term-2)
+           (consp (cdr term-2))
+           (consp (cddr term-2))
+           (consp (caddr term-2)))
+      (b* ((fn-1 (car (caddr term-1)))
+           (fn-2 (car (caddr term-2)))
+           ;; (- (cw "~%fn-1: ~x0 and fn-2: ~x1~%" fn-1 fn-2))
+           ((when (or (not (equal fn-1 fn-2))
+                      (and (equal fn-1 fn-2)
+                           (not (equal fn-1 match-fn)))))
+            ;; (cw "~%~x0 and ~x1 unequal or match-fn ~x2 not found.~%" fn-1 fn-2 match-fn)
+            nil)
+           (l-addrs-1 (second (caddr term-1)))
+           (l-addrs-2 (second (caddr term-2)))
+           ((when (and (equal `(quote ,l-addrs-subset-1) l-addrs-1)
+                       (equal `(quote ,l-addrs-subset-2) l-addrs-2)))
+            ;; (cw "~%l-addrs-subsets: ~x0 and ~x1~%~% l-addrs: ~x2 and ~x3~%~%"
+            ;;     `(quote ,l-addrs-subset-1) `(quote ,l-addrs-subset-2) l-addrs-1 l-addrs-2)
+            ;; (cw "~% equal-1 ~x0~%~% equal-2: ~x1~%~%"
+            ;;     (equal `(quote ,l-addrs-subset-1) l-addrs-1)
+            ;;     (equal `(quote ,l-addrs-subset-2) l-addrs-2))
+            ;; Both l-addrs shouldn't be equal to their subsets,
+            ;; though one of them can be.
+            nil))
+        `(((l-addrs-1 . ,l-addrs-1)
+           (l-addrs-2 . ,l-addrs-2))))
+    nil))
 
-;;   ;; This rule is tailored to rewrite terms of the form
+(defun find-both-l-addrs-from-disjoint-p$-of-las-to-pas-aux
+  (l-addrs-subset-1 l-addrs-subset-2 calls)
+  ;; The first alist below will be weeded out by
+  ;; the syntaxp in the theorem.
 
-;;   ;; (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
-;;   ;;             (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
+  ;; (find-both-l-addrs-from-disjoint-p$-of-las-to-pas-aux
+  ;;  '(create-canonical-address-list 4 rgf)
+  ;;  '(create-canonical-address-list 4 start-rip)
+  ;;  '((disjoint-p
+  ;;     (mv-nth 1 (las-to-pas '(create-canonical-address-list 20 start-rip) r-w-x cpl x86))
+  ;;     (mv-nth 1 (las-to-pas '(create-canonical-address-list 20 start-rip) r-w-x cpl x86)))
+  ;;    (disjoint-p
+  ;;     (mv-nth 1 (las-to-pas '(create-canonical-address-list 4 rgf) r-w-x cpl x86))
+  ;;     (mv-nth 1 (las-to-pas '(create-canonical-address-list 20 start-rip) r-w-x cpl x86)))
+  ;;    (disjoint-p (mv-nth 1 (las-to-pas a b c)) a)
+  ;;    (disjoint-p b a)
+  ;;    (disjoint-p (mv-nth 1 (las-to-pas 1 2 43)) (mv-nth 1 (las-to-pas 9 8 7)))))
+  (if (endp calls)
+      nil
+    (append (get-both-l-addrs
+             'las-to-pas l-addrs-subset-1 l-addrs-subset-2
+             (second (car calls)) (third (car calls)))
+            (find-both-l-addrs-from-disjoint-p$-of-las-to-pas-aux
+             l-addrs-subset-1 l-addrs-subset-2
+             (cdr calls)))))
 
-;;   ;; where l-addrs-subset is a subset of l-addrs, and l-addrs is of
-;;   ;; the form (create-canonical-address-list ...).
+(defun find-both-l-addrs-from-disjoint-p$-of-las-to-pas
+  (l-addrs-subset-1 l-addrs-subset-2 mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-lst 'disjoint-p$ (acl2::mfc-clause mfc)))
+       ((when (not calls)) nil))
+    (find-both-l-addrs-from-disjoint-p$-of-las-to-pas-aux
+     l-addrs-subset-1 l-addrs-subset-2 calls)))
 
-;;   ;; This comes in useful during instruction fetches, where given that
-;;   ;; a top-level hypothesis states that the program's
-;;   ;; translation-governing addresses are disjoint from the physical
-;;   ;; addresses, we have to infer that the same is the case for a
-;;   ;; single instruction. Note that this rule is sort of a special
-;;   ;; instance of
-;;   ;; DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P,
-;;   ;; which is much more expensive/general rule.
+(defthm two-mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas
+  ;; This rule is tailored to rewrite terms of the form to t
 
-;;   (implies
-;;    (and
-;;     (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
-;;                 'all-translation-governing-addresses 'l-addrs mfc state)
-;;                (l-addrs))
-;;     ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs)))
-;;     (disjoint-p
-;;      (all-translation-governing-addresses l-addrs (double-rewrite x86))
-;;      (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-;;     (subset-p l-addrs-subset l-addrs)
-;;     (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
-;;    (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
-;;                (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
-;;   :hints
-;;   (("Goal"
-;;     :use ((:instance disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-;;                      (l-addrs l-addrs)
-;;                      (l-addrs-subset l-addrs-subset)
-;;                      (other-p-addrs (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-;;                      (other-p-addrs-subset (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))))
-;;     :in-theory (e/d* (subset-p
-;;                       member-p
-;;                       disjoint-p-append-1
-;;                       las-to-pas
-;;                       all-translation-governing-addresses)
-;;                      ()))))
+  ;; (disjoint-p
+  ;;  (mv-nth 1 (las-to-pas l-addrs-subset-1 r-w-x-1 cpl-1 x86))
+  ;;  (mv-nth 1 (las-to-pas l-addrs-subset-2 r-w-x-2 cpl-2 x86)))
+
+  ;; where l-addrs-subset-1 is a subset of l-addrs-1, l-addrs-subset-2
+  ;; is a subset of l-addrs-2, and l-addrs-1 and l-addrs-2 are of the
+  ;; form (create-canonical-address-list ...).
+  (implies
+   (and
+    ;; What if I remove this syntaxp so that I can also infer
+    ;; (disjoint-p x y) from (disjoint-p$ x y)? I'll need to change
+    ;; get-both-l-addrs... Will this rule be terribly expensive then?
+    (syntaxp (not (equal l-addrs-subset-1 l-addrs-subset-2)))
+    (bind-free (find-both-l-addrs-from-disjoint-p$-of-las-to-pas
+                l-addrs-subset-1 l-addrs-subset-2 mfc state)
+               (l-addrs-1 l-addrs-2))
+    ;; (syntaxp (not (cw "~%~% !!! l-addrs-1: ~x0 ~% !!! l-addrs-2: ~x0~%~%" l-addrs-1 l-addrs-2)))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 (double-rewrite x86))))
+    (subset-p l-addrs-subset-1 l-addrs-1)
+    (subset-p l-addrs-subset-2 l-addrs-2)
+    (not (mv-nth 0 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))
+    (not (mv-nth 0 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86))))
+   (disjoint-p
+    (mv-nth 1 (las-to-pas l-addrs-subset-1 r-w-x-1 cpl-1 x86))
+    (mv-nth 1 (las-to-pas l-addrs-subset-2 r-w-x-2 cpl-2 x86))))
+  :hints (("Goal" :do-not-induct t
+           :use ((:instance mv-nth-1-las-to-pas-subset-p
+                            (l-addrs l-addrs-1)
+                            (l-addrs-subset l-addrs-subset-1)
+                            (r-w-x r-w-x-1)
+                            (cpl cpl-1))
+                 (:instance mv-nth-1-las-to-pas-subset-p
+                            (l-addrs l-addrs-2)
+                            (l-addrs-subset l-addrs-subset-2)
+                            (r-w-x r-w-x-2)
+                            (cpl cpl-2))
+                 (:instance disjoint-p-subset-p
+                            (x (mv-nth 1 (las-to-pas l-addrs-1 r-w-x-1 cpl-1 x86)))
+                            (y (mv-nth 1 (las-to-pas l-addrs-2 r-w-x-2 cpl-2 x86)))
+                            (a (mv-nth 1 (las-to-pas l-addrs-subset-1 r-w-x-1 cpl-1 x86)))
+                            (b (mv-nth 1 (las-to-pas l-addrs-subset-2 r-w-x-2 cpl-2 x86)))))
+           :in-theory (e/d* (disjoint-p$)
+                            (mv-nth-1-las-to-pas-subset-p
+                             disjoint-p-subset-p)))))
+
+(defthmd infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
+  (implies (and
+            (disjoint-p
+             x
+             (open-qword-paddr-list
+              (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+            (true-listp x)
+            (canonical-address-listp l-addrs))
+           (disjoint-p
+            x
+            (all-translation-governing-addresses l-addrs x86)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance all-translation-governing-addresses-subset-of-paging-structures)
+                 (:instance disjoint-p-subset-p
+                            (x x)
+                            (y (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+                            (a x)
+                            (b (all-translation-governing-addresses l-addrs x86))))
+           :in-theory (e/d* (disjoint-p-commutative)
+                            (all-translation-governing-addresses-subset-of-paging-structures
+                             disjoint-p-subset-p))))
+  :rule-classes :rewrite)
+
+(defthm infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-both-disjoint-p-and-disjoint-p$
+  (implies (and
+            (disjoint-p$
+             x
+             (open-qword-paddr-list
+              (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+            (true-listp x)
+            (canonical-address-listp l-addrs))
+           (disjoint-p
+            x
+            (all-translation-governing-addresses l-addrs x86)))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p$
+                                    infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses)
+                                   ())))
+  :rule-classes :rewrite)
+
+(defun find-first-arg-of-disjoint-p$-when-second-arg-matches-aux
+  (arg-1-var arg-2 calls)
+  ;; (find-first-arg-of-disjoint-p$-when-second-arg-matches-aux
+  ;;  'x
+  ;;  'y
+  ;;  '((disjoint-p a y)
+  ;;    (disjoint-p b z)
+  ;;    (disjoint-p c y)))
+  (if (endp calls)
+      nil
+    (append
+     (if (equal (third (car calls)) arg-2)
+         `(((,arg-1-var . ,(second (car calls)))))
+       nil)
+     (find-first-arg-of-disjoint-p$-when-second-arg-matches-aux
+      arg-1-var arg-2 (cdr calls)))))
+
+(defun find-first-arg-of-disjoint-p$-when-second-arg-matches
+  (arg-1-var arg-2 mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((calls (acl2::find-calls-lst 'disjoint-p$ (acl2::mfc-clause mfc)))
+       ((when (not calls)) nil))
+    (find-first-arg-of-disjoint-p$-when-second-arg-matches-aux
+     arg-1-var arg-2 calls)))
+
+(defthm infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$
+  (implies (and (bind-free
+                 (find-first-arg-of-disjoint-p$-when-second-arg-matches
+                  'x
+                  '(open-qword-paddr-list
+                    (gather-all-paging-structure-qword-addresses x86))
+                  mfc state)
+                 (x))
+                (subset-p y x)
+                (disjoint-p$
+                 x
+                 (open-qword-paddr-list
+                  (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
+           (disjoint-p
+            y
+            (open-qword-paddr-list
+             (gather-all-paging-structure-qword-addresses x86))))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p$
+                                    disjoint-p
+                                    subset-p
+                                    infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses)
+                                   ())))
+  :rule-classes :rewrite)
+
+(defthm infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-both-disjoint-p-and-disjoint-p$-and-subset-p
+  ;; Less general (and less expensive) than
+  ;; infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-both-disjoint-p-and-disjoint-p$
+  ;; because this rule applies only during instruction fetches.
+  (implies
+   (and
+    (bind-free (find-l-addrs-from-program-at-or-program-at-alt-term
+                'infer-disjointness
+                'l-addrs mfc state)
+               (l-addrs))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86)))
+     (open-qword-paddr-list
+      (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+    (not (mv-nth 0 (las-to-pas l-addrs :x cpl (double-rewrite x86))))
+    (subset-p l-addrs-subset-1 l-addrs)
+    (subset-p l-addrs-subset-2 l-addrs)
+    (canonical-address-listp l-addrs))
+   (disjoint-p
+    (mv-nth 1 (las-to-pas l-addrs-subset-1 :x cpl x86))
+    (all-translation-governing-addresses l-addrs-subset-2 x86)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p$
+                             subset-p)
+                            ())
+           :use ((:instance infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
+                            (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86)))
+                            (l-addrs l-addrs-subset))
+                 (:instance disjoint-p-subset-p
+                            (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86)))
+                            (y (all-translation-governing-addresses l-addrs x86))
+                            (a (mv-nth 1 (las-to-pas l-addrs-subset-1 :x cpl x86)))
+                            (b (all-translation-governing-addresses l-addrs-subset-2 x86))))))
+
+  :rule-classes :rewrite)
 
 ;; ======================================================================

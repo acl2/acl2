@@ -2828,7 +2828,7 @@
 
 ;; ----------------------------------------------------------------------
 
-(defun-nx direct-map-p (x86)
+(defun-nx direct-mapped-paging-entries-p (x86)
   ;; Direct map for paging structures, specifically source and
   ;; destination PML4E and PDPTE.
   (and
@@ -2947,7 +2947,7 @@
 (defthm rewire_dst_to_src-after-the-copy-source-p-addrs-open
   (implies (and (equal cpl (cpl x86))
                 (rewire_dst_to_src-assumptions x86)
-                (direct-map-p x86))
+                (direct-mapped-paging-entries-p x86))
 
            (equal
             (mv-nth 1 (las-to-pas (create-canonical-address-list
@@ -3010,7 +3010,7 @@
 
 (defthm rewire_dst_to_src-after-the-copy-destination==source
   (implies (and (rewire_dst_to_src-assumptions x86)
-                (direct-map-p x86)
+                (direct-mapped-paging-entries-p x86)
                 (more-non-interference-assumptions x86))
            (equal
             ;; Destination, after the copy:

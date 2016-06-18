@@ -1185,15 +1185,14 @@ memory.</li>
            (equal (mv-nth 1 (las-to-pas nil r-w-x cpl x86)) nil)
            (equal (mv-nth 2 (las-to-pas nil r-w-x cpl x86)) x86)))
 
-    (defthm xr-las-to-pas
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :fault)))
-               (equal (xr fld index
-                          (mv-nth 2
-                                  (las-to-pas
-                                   l-addrs r-w-x cpl x86)))
-                      (xr fld index x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+    (local
+     (defthm xr-las-to-pas
+       (implies
+        (and (not (equal fld :mem))
+             (not (equal fld :fault)))
+        (equal (xr fld index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+               (xr fld index x86)))
+       :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
     (make-event
      (generate-xr-over-write-thms
@@ -1204,21 +1203,18 @@ memory.</li>
       (acl2::formals 'las-to-pas (w state))
       :output-index 2))
 
-    (local (in-theory (e/d () (xr-las-to-pas))))
+    (defthm flgi-las-to-pas
+      (equal (flgi index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+             (flgi index x86))
+      :hints (("Goal" :in-theory (e/d* (flgi) (force (force))))))
 
-    ;; (defthm las-to-pas-xw-values
-    ;;   (implies (and (not (equal fld :mem))
-    ;;                 (not (equal fld :rflags))
-    ;;                 (not (equal fld :fault))
-    ;;                 (not (equal fld :ctr))
-    ;;                 (not (equal fld :msr))
-    ;;                 (not (equal fld :programmer-level-mode))
-    ;;                 (not (equal fld :page-structure-marking-mode)))
-    ;;            (and
-    ;;             (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
-    ;;                    (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-    ;;             (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
-    ;;                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
+    (defthm xr-fault-las-to-pas
+      (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
+               (equal (xr :fault 0 (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                      (xr :fault 0 x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (local (in-theory (e/d () (xr-las-to-pas))))
 
     ;; The following two make-events generate a bunch of rules that
     ;; together say the same thing as las-to-pas-xw-values, but these
@@ -1250,18 +1246,6 @@ memory.</li>
                        (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
                        (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
-
-    ;; (defthm las-to-pas-xw-state
-    ;;   (implies (and (not (equal fld :mem))
-    ;;                 (not (equal fld :rflags))
-    ;;                 (not (equal fld :fault))
-    ;;                 (not (equal fld :ctr))
-    ;;                 (not (equal fld :msr))
-    ;;                 (not (equal fld :programmer-level-mode))
-    ;;                 (not (equal fld :page-structure-marking-mode)))
-    ;;            (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw fld index value x86)))
-    ;;                   (xw fld index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
-    ;;   :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     ;; The following make-event generate a bunch of rules that
     ;; together say the same thing as las-to-pas-xw-state, but these
@@ -1911,13 +1895,6 @@ memory.</li>
 
   ;; Relating wb and xr/xw in the system-level mode:
 
-  ;; (defthm xr-wb-in-system-level-mode
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
-  ;;                   (xr fld index x86)))
-  ;;   :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
-
   ;; The following make-events generate a bunch of rules that together
   ;; say the same thing as xr-wb-in-system-level-mode but
   ;; these rules are more efficient than
@@ -1931,21 +1908,17 @@ memory.</li>
     (acl2::formals 'wb (w state))
     :output-index 1))
 
-  ;; (defthm wb-xw-in-system-level-mode
-  ;;   ;; Keep the state updated by wb inside all other nests of writes.
-  ;;   (implies (and (not (equal fld :mem))
-  ;;                 (not (equal fld :rflags))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :seg-visible))
-  ;;                 (not (equal fld :msr))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :programmer-level-mode))
-  ;;                 (not (equal fld :page-structure-marking-mode)))
-  ;;            (and (equal (mv-nth 0 (wb addr-lst (xw fld index value x86)))
-  ;;                        (mv-nth 0 (wb addr-lst x86)))
-  ;;                 (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
-  ;;                        (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
-  ;;   :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory force (force))))))
+  (defthm xr-fault-wb-in-system-level-marking-mode
+    (implies
+     (not (mv-nth 0 (las-to-pas (strip-cars addr-lst)
+                                :w (cpl x86) (double-rewrite x86))))
+     (equal (xr :fault 0 (mv-nth 1 (wb addr-lst x86)))
+            (xr :fault 0 x86)))
+    :hints
+    (("Goal" :do-not-induct t
+      :in-theory (e/d* (wb)
+                       ((:meta acl2::mv-nth-cons-meta)
+                        force (force))))))
 
   ;; The following make-events generate a bunch of rules that together
   ;; say the same thing as wb-xw-in-system-level-mode, but these rules
@@ -1980,15 +1953,23 @@ memory.</li>
                          (xw :rflags 0 value (mv-nth 1 (wb addr-lst x86))))))
     :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
 
+  ;; (defthm mv-nth-1-wb-and-!flgi-commute
+  ;;   (implies (and (not (equal index *ac*))
+  ;;                 (not (programmer-level-mode x86))
+  ;;                 (not (page-structure-marking-mode x86)))
+  ;;            (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
+  ;;                   (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
+  ;;   :hints (("Goal" :in-theory (e/d* (!flgi
+  ;;                                     rflags-slice-ac-simplify
+  ;;                                     !flgi-open-to-xw-rflags)
+  ;;                                    (force (force))))))
+
   (defthm mv-nth-1-wb-and-!flgi-commute
-    (implies (and (not (equal index *ac*))
-                  (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86)))
+    (implies (not (equal index *ac*))
              (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
                     (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
-    :hints (("Goal" :in-theory (e/d* (!flgi
-                                      rflags-slice-ac-simplify
-                                      !flgi-open-to-xw-rflags)
+    :hints (("Goal" :in-theory (e/d* (!flgi rflags-slice-ac-simplify
+                                            !flgi-open-to-xw-rflags)
                                      (force (force))))))
 
   (defthm mv-nth-1-wb-and-!flgi-undefined-commute

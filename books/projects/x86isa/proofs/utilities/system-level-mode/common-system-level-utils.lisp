@@ -238,6 +238,8 @@
 
 ;; ======================================================================
 
+;; Size of (combine-bytes (mv-nth 1 (rb ...))) in system-level mode:
+
 (defthm unsigned-byte-p-of-combine-bytes-and-rb-in-system-level-mode
   (implies (and (syntaxp (quotep m))
                 (syntaxp (quotep n))
@@ -253,8 +255,9 @@
             (combine-bytes (mv-nth 1 (rb (create-canonical-address-list n lin-addr) r-w-x x86)))))
   :hints (("Goal" :in-theory (e/d* () (rb)))))
 
-
 ;; ======================================================================
+
+;; Lemmas about program-at:
 
 (defthm program-at-pop-x86-oracle-in-system-level-mode
   (implies (not (programmer-level-mode x86))
@@ -318,6 +321,9 @@
 
 ;; ======================================================================
 
+;; Lemmas about ia32e-la-to-pa and las-to-pas when an error is
+;; encountered:
+
 (defthm mv-nth-1-ia32e-la-to-pa-when-error
   (implies (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)) 0))
@@ -331,6 +337,9 @@
   :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
 
 ;; ======================================================================
+
+;; r-w-x field is irrelevant for address translation if no errors are
+;; encountered:
 
 (defthmd r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-table-when-no-errors
   (implies (and (not (mv-nth 0

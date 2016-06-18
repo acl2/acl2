@@ -9,6 +9,17 @@
 
 ;; ======================================================================
 
+;; For use in marking-mode-top.lisp:
+
+(def-gl-export canonical-address-p-of-lin-addr+7
+  :hyp (and (canonical-address-p lin-addr)
+            (equal (loghead 3 lin-addr) 0))
+  :concl (canonical-address-p (+ 7 lin-addr))
+  :g-bindings
+  (gl::auto-bindings (:mix (:nat lin-addr 64))))
+
+;; ======================================================================
+
 ;; For use in gather-paging-structures-thms.lisp:
 
 (def-gl-export pml4-table-entry-addr-and-gather-pml4-table-qword-addresses-helper-1
