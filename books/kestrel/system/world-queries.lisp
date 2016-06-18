@@ -47,7 +47,7 @@
 (define macro-symbolp ((sym symbolp) (w plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff the symbol @('sym') names a macro."
-  (not (eq (getpropc sym 'macro-args t w) t)))
+  (not (eq t (getpropc sym 'macro-args t w))))
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
@@ -72,7 +72,7 @@
   "<p>
   See @('logical-namep') in the ACL2 source code.
   </p>"
-  (cond ((atom names) (eq names nil))
+  (cond ((atom names) (null names))
         (t (and (logical-namep (car names) w)
                 (logical-name-listp (cdr names) w)))))
 
