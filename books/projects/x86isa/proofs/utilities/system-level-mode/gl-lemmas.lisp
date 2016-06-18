@@ -16,7 +16,7 @@
             (equal (loghead 3 lin-addr) 0))
   :concl (canonical-address-p (+ 7 lin-addr))
   :g-bindings
-  (gl::auto-bindings (:mix (:nat lin-addr 64))))
+  (gl::auto-bindings (:nat lin-addr 64)))
 
 ;; ======================================================================
 

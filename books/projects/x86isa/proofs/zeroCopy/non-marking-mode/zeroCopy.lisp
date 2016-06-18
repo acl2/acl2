@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utilities/system-level-mode/non-marking-mode-top")
+(include-book "system-level-mode/non-marking-mode-top" :dir :proof-utils)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
