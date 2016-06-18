@@ -218,7 +218,6 @@
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp))
      ;; :returns (required-args symbol-listp)
-     :verify-guards nil
      :parents (macro-required-args)
      :short "Auxiliary function of @(tsee macro-required-args)."
      :long
@@ -232,7 +231,7 @@
      (if (endp args)
          nil
        (let ((arg (car args)))
-         (if (eql (char (symbol-name arg) 0) #\&)
+         (if (lambda-keywordp arg)
              nil
            (cons arg (macro-required-args-aux (cdr args)))))))))
 
