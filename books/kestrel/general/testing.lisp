@@ -119,7 +119,3 @@
 
   (defmacro must-fail-local (&rest args)
     `(local (must-fail ,@args))))
-
-; for backward compatibility (remove eventually):
-(defmacro must-fail$ (&rest args)
-  `(must-fail-local ,@args))
