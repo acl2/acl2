@@ -104,7 +104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection must-fail$
+(defsection must-fail-local
 
   :parents (kestrel-general-utilities errors)
 
@@ -115,7 +115,11 @@
   This is useful to overcome the problem discussed in the caveat
   in the documentation of @(tsee must-fail).
   </p>
-  @(def must-fail$)"
+  @(def must-fail-local)"
 
-  (defmacro must-fail$ (&rest args)
+  (defmacro must-fail-local (&rest args)
     `(local (must-fail ,@args))))
+
+; for backward compatibility (remove eventually):
+(defmacro must-fail$ (&rest args)
+  `(must-fail-local ,@args))
