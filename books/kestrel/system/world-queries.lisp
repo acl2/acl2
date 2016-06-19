@@ -47,7 +47,7 @@
 (define macro-symbolp ((sym symbolp) (w plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff the symbol @('sym') names a macro."
-  (not (eq (getpropc sym 'macro-args t w) t)))
+  (not (eq t (getpropc sym 'macro-args t w))))
 
 (define function-namep (x (w plist-worldp))
   :returns (yes/no booleanp)
@@ -72,8 +72,8 @@
   "<p>
   See @('logical-namep') in the ACL2 source code.
   </p>"
-  (cond ((atom names) (eq names nil))
-        (t (and (iff t (logical-namep (car names) w))
+  (cond ((atom names) (null names))
+        (t (and (logical-namep (car names) w)
                 (logical-name-listp (cdr names) w)))))
 
 (define definedp ((fun (function-namep fun w)) (w plist-worldp))
@@ -82,6 +82,15 @@
   :short
   "True iff the function @('fun') is defined,
   i.e. it has an @('unnormalized-body') property."
+  :long
+  "<p>
+  Note that built-in @(see program)-mode functions
+  do not have an @('unnormalized-body') property,
+  even though they have definitions.
+  Since their translated bodies are not stored,
+  they are not considered to be &ldquo;defined&rdquo;
+  from the perspective of the @(tsee definedp) system utility.
+   </p>"
   (not (eq t (getpropc fun 'unnormalized-body t w))))
 
 (define guard-verified-p ((fun/thm (or (function-namep fun/thm w)
@@ -129,8 +138,16 @@
   <p>
   @(tsee unwrapped-nonexec-body) returns
   the unwrapped body of the non-executable function @('fun').
+  </p>
+  <p>
+  The code of this system utility defensively ensures that
+  the body of @('fun') has the form above.
   </p>"
-  (fourth (body fun nil w)))
+  (let ((body (body fun nil w)))
+    (if (throw-nonexec-error-p body fun (formals fun w))
+        (fourth (body fun nil w))
+      (raise "The body ~x0 of the non-executable function ~x1 ~
+             does not have the expected wrapper." body fun))))
 
 (define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
   :returns (yes/no booleanp)
@@ -138,8 +155,8 @@
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
-  (and (equal (stobjs-in fun w) (make-list (len (stobjs-in fun w))))
-       (equal (stobjs-out fun w) (make-list (len (stobjs-out fun w))))))
+  (and (all-nils (stobjs-in fun w))
+       (all-nils (stobjs-out fun w))))
 
 (define measure ((fun (and (function-namep fun w)
                            (logicp fun w)
@@ -209,7 +226,6 @@
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp))
      ;; :returns (required-args symbol-listp)
-     :verify-guards nil
      :parents (macro-required-args)
      :short "Auxiliary function of @(tsee macro-required-args)."
      :long
@@ -223,7 +239,7 @@
      (if (endp args)
          nil
        (let ((arg (car args)))
-         (if (eql (char (symbol-name arg) 0) #\&)
+         (if (lambda-keywordp arg)
              nil
            (cons arg (macro-required-args-aux (cdr args)))))))))
 

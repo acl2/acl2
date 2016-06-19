@@ -30,7 +30,21 @@
   that takes multiple forms
   and uses default options."
 
-  :long "@(def must-succeed*)"
+  :long
+  "<p>
+  The forms must be
+  <see topic='@(url embedded-event-form)'>embedded event forms</see>,
+  because they are put into a @(tsee progn)
+  so that earlier forms can affect later forms in the sequence.
+  This is a difference with @(tsee must-succeed),
+  whose form is required to return
+  an <see topic='@(url error-triple)'>error triple</see>
+  without necessarily being an embedded event form;
+  since @(tsee must-succeed) takes only one form,
+  there is no issue of earlier forms affecting later forms
+  as in @(tsee must-succeed*).
+  </p>
+  @(def must-succeed*)"
 
   (defmacro must-succeed* (&rest forms)
     `(must-succeed (progn ,@forms))))
@@ -52,6 +66,11 @@
   the @(':with-output-off') and @(':check-expansion') options
   of @(tsee must-succeed).
   The remaining arguments are the forms.
+  </p>
+  <p>
+  As in @(tsee must-succeed*), the forms must be
+  <see topic='@(url embedded-event-form)'>embedded event forms</see>.
+  See the discussion for @(tsee must-succeed*) in this regard.
   </p>
   @(def must-succeed**)"
 
@@ -85,7 +104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection must-fail$
+(defsection must-fail-local
 
   :parents (kestrel-general-utilities errors)
 
@@ -96,7 +115,11 @@
   This is useful to overcome the problem discussed in the caveat
   in the documentation of @(tsee must-fail).
   </p>
-  @(def must-fail$)"
+  @(def must-fail-local)"
 
-  (defmacro must-fail$ (&rest args)
+  (defmacro must-fail-local (&rest args)
     `(local (must-fail ,@args))))
+
+; for backward compatibility (remove eventually):
+(defmacro must-fail$ (&rest args)
+  `(must-fail-local ,@args))
