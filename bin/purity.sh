@@ -33,6 +33,7 @@ $basecmd \
   --author='Matt Kaufmann <kaufmann@matts-mbp.attlocal.net>' \
   --author='Matt Kaufmann <kaufmann@Matts-MBP.attlocal.net>' \
   --author="Matt Kaufmann <kaufmann@Matts-MacBook-Pro.local>" \
+  --author="Matt Kaufmann <kaufmann@Matts-MBP.home>" \
   | grep -v '^[a-z0-9]\{40\}' \
   | grep -v '^books/' \
   > /tmp/git-log-matt.txt

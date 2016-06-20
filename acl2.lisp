@@ -2345,24 +2345,52 @@ You are using version ~s.~s.~s."
 ; So starting with Version_2.6 we put the constants here, since this file
 ; (acl2.lisp) is not compiled and hence is only loaded once.
 
-; A slight complication is that *slashable-array* uses *slashable-chars*, which
-; in turn is used in the definition of function some-slashable.  (There are
-; other such examples, but we'll focus on that one.)  So, defconst
-; *slashable-chars* needs to be defined in the ACL2 loop even though, as of
-; Version_2.5, it was used in the definition of *slashable-array*, which we
-; want to include in the present file.  So we inline the defconsts below.
-
 (defconstant *slashable-array*
+
+; The list below comes from evaluating the following form in the supported
+; Lisps (Allegro CL, CCL, CMUCL, GCL, LispWorks, SBCL) and taking the union.
+; A similar form is found in check-slashable.
+
+;   (loop for i from 0 to 255
+;         when (let ((str (coerce (list (code-char i)
+;                                       #\A #\B
+;                                       (code-char i)
+;                                       #\U #\V
+;                                       (code-char i))
+;                                 'string)))
+;                (not (eq (ignore-errors (read-from-string str))
+;                         (intern str "CL-USER"))))
+;         collect i)
+
+; Our use of the form above is justified by the following paragraph from the
+; ANSI standard (also quoted in may-need-slashes-fn).
+
+;    When printing a symbol, the printer inserts enough single escape and/or
+;    multiple escape characters (backslashes and/or vertical-bars) so that if
+;    read were called with the same *readtable* and with *read-base* bound to
+;    the current output base, it would return the same symbol (if it is not
+;    apparently uninterned) or an uninterned symbol with the same print name
+;    (otherwise).
+
   (let ((ar (make-array 256 :initial-element nil)))
-    (dolist (ch
-
-; Inline *slashable-chars*; see the comment above.
-
-             '(#\Newline #\Page #\Space #\" #\# #\' #\( #\) #\, #\: #\; #\\ #\`
-               #\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m #\n #\o #\p
-               #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z #\|))
-            (setf (aref ar (char-code ch))
-                  t))
+    (loop for i in
+          '(0 1 2 3 4 5 6 7
+              8 9 10 11 12 13 14 15 16 17 18 19 20 21
+              22 23 24 25 26 27 28 29 30 31 32 34 35
+              39 40 41 44 58 59 92 96 97 98 99 100 101
+              102 103 104 105 106 107 108 109 110 111
+              112 113 114 115 116 117 118 119 120 121
+              122 124 127 128 129 130 131 132 133 134
+              135 136 137 138 139 140 141 142 143 144
+              145 146 147 148 149 150 151 152 153 154
+              155 156 157 158 159 160 168 170 175 178
+              179 180 181 184 185 186 188 189 190 224
+              225 226 227 228 229 230 231 232 233 234
+              235 236 237 238 239 240 241 242 243 244
+              245 246 248 249 250 251 252 253 254 255)
+          do
+          (setf (aref ar i)
+                t))
     ar))
 
 (defconstant *suspiciously-first-numeric-array*
