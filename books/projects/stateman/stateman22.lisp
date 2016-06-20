@@ -6136,7 +6136,7 @@
                  (arities-okp *stateman-arities* w)
                  (mv-nth 0 (distributed-difference term)))
             (logic-termp (mv-nth 3 (distributed-difference term))
-                           w))
+                         w))
    :rule-classes (:rewrite :type-prescription)))
 
 (local
@@ -6157,14 +6157,6 @@
                       make-tau-interval
                       find-largest-inclusive-natp-lower-bound
                       find-smallest-inclusive-natp-upper-bound))))))
-
-(local
- (defthm arities-okp-implies-not-programp
-   (implies (and (arities-okp alist w)
-                 (assoc-eq fn alist))
-            (not (equal (fgetprop fn 'symbol-class nil w)
-                        :program)))
-   :hints (("Goal" :in-theory (enable arities-okp)))))
 
 (local
  (defthm logic-fns-listp-ainni

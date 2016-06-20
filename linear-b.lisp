@@ -352,7 +352,7 @@
 ; The following test was taken from rewrite with a few modifications
 ; for the formals used.
 
-         ((and (logicalp (ffn-symb term) wrld) ; maybe fn is being admitted
+         ((and (logicp (ffn-symb term) wrld) ; maybe fn is being admitted
                (all-quoteps args)
                (enabled-xfnp (ffn-symb term) ens wrld)
 

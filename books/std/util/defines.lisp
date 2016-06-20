@@ -884,7 +884,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
   :long "<p>@('defret-mutual') uses flag-function-based induction to prove
 theorems about a mutual recursion created using @(see defines).  See also @(see
-make-flag) for information about the approach.</p>
+acl2::make-flag) for information about the approach.</p>
 
 <p>@('defret-mutual') is mostly just a wrapper around the flag defthm macro
 created for the mutual recursion.  It generates the individual theorems within

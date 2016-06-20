@@ -6307,10 +6307,10 @@
                            (pe ,logical-name)
                            (value '(value-triple :invisible))))))
 
-(defmacro gthm (fn &optional (clean-up-p 't))
-  `(value (untranslate (guard-theorem ,fn ,clean-up-p (w state) state)
-                       t
-                       (w state))))
+(defmacro gthm (fn &optional (simp-p 't) guard-debug)
+  `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
+                t
+                (w state)))
 
 (defmacro tthm (fn)
   `(let* ((fn ,fn)
@@ -11292,7 +11292,7 @@
   (declare (xargs :guard (and (plist-worldp wrld)
                               (symbolp fn)
                               (function-symbolp fn wrld)
-                              (logicalp fn wrld))))
+                              (logicp fn wrld))))
   (let* ((names (getpropc fn 'recursivep nil wrld))
          (just (and names ; optimization
                     (getpropc fn 'justification nil wrld))))
@@ -12025,7 +12025,7 @@
           (merge-sort-length cl-set) nil nil))
         ens (match-free-override wrld) wrld state ttree)))))
 
-(defun guard-theorem (fn clean-up-p wrld state)
+(defun guard-theorem (fn simp-p guard-debug wrld state)
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
@@ -12036,12 +12036,12 @@
 ; verified.  Of course, we only trust that the result is a theorem when the
 ; function is already guard-verified.
 
-                              (logicalp fn wrld))))
+                              (logicp fn wrld))))
   (let ((names (or (getpropc fn 'recursivep nil wrld)
                    (list fn))))
     (mv-let (cl-set ttree)
       (guard-clauses-for-clique names
-                                nil              ; debug-p
+                                guard-debug
                                 :DO-NOT-SIMPLIFY ; ens
                                 wrld
                                 (f-get-global 'safe-mode state)
@@ -12049,7 +12049,7 @@
                                 nil)
 ; Note that ttree is assumption-free; see guard-clauses-for-clique.
       (let ((cl-set
-             (cond (clean-up-p
+             (cond (simp-p
                     (mv-let (cl-set ttree)
                       (clean-up-clause-set cl-set nil wrld ttree state)
                       (declare (ignore ttree)) ; assumption-free
@@ -12218,13 +12218,13 @@
                                           (if (= (length lmi) 2)
                                               t
                                             (caddr lmi))
-                                          wrld state)))
+                                          nil wrld state)))
                  (value@par (list term nil nil nil)))))))
      ((member-eq (car lmi) '(:termination-theorem :termination-theorem!))
       (let ((fn (cadr lmi)))
         (cond ((not (and (symbolp fn)
                          (function-symbolp fn wrld)
-                         (logicalp fn (w state))))
+                         (logicp fn (w state))))
                (er@par soft ctx str lmi
                  (msg "~x0 is not a :logic-mode function symbol in the ~
                        current ACL2 logical world"
@@ -12779,7 +12779,7 @@
 (defun collect-non-logic-mode (alist wrld)
   (cond ((null alist) nil)
         ((and (function-symbolp (caar alist) wrld)
-              (logicalp (caar alist) wrld))
+              (logicp (caar alist) wrld))
          (collect-non-logic-mode (cdr alist) wrld))
         (t (cons (caar alist)
                  (collect-non-logic-mode (cdr alist) wrld)))))

@@ -259,6 +259,16 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                 :parser getopt::parse-string
                 :merge cons)
 
+   (defines     string-listp
+               :longname "define"
+               :alias #\D
+               :argname "VAR"
+                "Set up definitions to use before parsing begins.  Equivalent
+                 to putting `define VAR 1 at the top of your Verilog file.
+                 You can give this option multiple times."
+                :parser getopt::parse-string
+                :merge cons)
+
    (cclimit     natp
                 :argname "N"
                 "Limit for the const check.  This is a beta feature that is not
@@ -697,7 +707,8 @@ shown.</p>"
                     :start-files   config.start-files
                     :search-path   config.search-path
                     :search-exts   config.search-exts
-                    :include-dirs  config.include-dirs))
+                    :include-dirs  config.include-dirs
+                    :defines       (vl-make-initial-defines config.defines)))
        (- (or (not config.debug)
               (cw "Load configuration: ~x0~%" loadconfig)))
 

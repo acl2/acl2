@@ -8592,10 +8592,11 @@
                                   theorem~#2~[~/s~], named ~&2, ~
                                   ~#2~[is~/are~] incompatible with the ~
                                   current world.  In particular, the ~
-                                  ~#2~[theorem makes~/theorems make~] invalid ~
-                                  assumptions about the arities of the ~
-                                  following function symbol~#3~[~/s~] ~
-                                  possibly introduced by the ~s4: ~&3."
+                                  ~#2~[theorem assumes~/theorems assume~] ~
+                                  that relevant functions are in :logic mode, ~
+                                  but :program mode function symbol~#3~[ ~&3 ~
+                                  is~/s ~&3 are~] perhaps introduced by the ~
+                                  ~s4, ~&3."
                                  token
                                  name
                                  (if hyp-fn

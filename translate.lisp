@@ -424,7 +424,7 @@
 ; functions, since they cannot call :program mode functions and hence there
 ; cannot be a subsidiary rebinding of **1*-as-raw* to t.
 
-               (if (logicalp fn w)
+               (if (logicp fn w)
                    nil
                  **1*-as-raw*))
               (*1*fn (*1*-symbol fn))
@@ -932,6 +932,7 @@
 ; 'absolute-event-number property for it -- then we return nil except in the
 ; boot-strap world.
 
+  (declare (xargs :guard (and (symbolp name) (plist-worldp wrld))))
   (cond ((global-val 'boot-strap-flg wrld) t)
         (t (getpropc name 'predefined nil wrld))))
 
@@ -4423,7 +4424,7 @@
     (mv-let ignore ignorable type)
     (flet ignore ignorable type) ; for each individual definition in the flet
     (defmacro ignore ignorable type xargs)
-    (defuns ignore ignorable type optimize xargs)))
+    (defuns ignore ignorable irrelevant type optimize xargs)))
 
 ; The following list gives the names of binders that permit at most
 ; one documentation string among their declarations.  If this list is
@@ -4440,6 +4441,7 @@
 (defconst *dcl-explanation-alist*
   '((ignore "(IGNORE v1 ... vn) and (IGNORABLE v1 ... vn), where the vi are ~
              introduced in the immediately superior lexical environment")
+    (irrelevant "(IRRELEVANT v1 ... vn)")
     (type "(TYPE type v1 ... vn), as described on pg 158 of CLTL")
     (xargs "(XARGS :key1 :val1 ... :keyn :valn), where each :keyi is a ~
             keyword (e.g., :GUARD or :HINTS)")))
@@ -4465,7 +4467,7 @@
 ; given to the tilde-* fmt directive will print out the conjunction of
 ; the explanations for each of the symbols.
 
-  (let ((syms
+  (let ((syms ; accommodate a single phrase for ignore and ignorable
          (cond ((member-eq 'ignorable syms)
                 (let ((syms (remove1-eq 'ignorable syms)))
                   (if (member-eq 'ignore syms)
@@ -4543,20 +4545,23 @@
                                      Your OPTIMIZE declaration, ~x0, does not ~
                                      meet this requirement."
                                     entry))))
-                  ((ignore ignorable)
+                  ((ignore ignorable irrelevant)
                    (cond ((subsetp (cdr entry) vars)
                           (value-cmp nil))
                          (t (er-cmp ctx
                                     "The variables of an ~x0 declaration must ~
-                                     be introduced in the immediately ~
-                                     superior lexical environment, but ~&1, ~
-                                     which ~#1~[is~/are~] said to be ~
-                                     ~#2~[ignored~/ignorable~] in ~x3, ~
-                                     ~#1~[is~/are~] not bound immediately ~
-                                     above the declaration.  See :DOC declare."
+                                     be introduced in the ~#1~[immediately ~
+                                     superior lexical ~
+                                     environment~/surrounding DEFUN form~]; ~
+                                     but ~&2, which ~#2~[is~/are~] said to be ~
+                                     ~#3~[ignored~/ignorable~/irrelevant~] in ~
+                                     ~x4, ~#2~[is~/are~] not.  See :DOC ~
+                                     declare."
                                     dcl
+                                    (if (eq dcl 'irrelevant) 1 0)
                                     (set-difference-equal (cdr entry) vars)
-                                    (if (eq dcl 'ignore) 0 1)
+                                    (if (eq dcl 'ignore) 0
+                                      (if (eq dcl 'ignorable) 1 2))
                                     entry))))
                   (type
                    (cond

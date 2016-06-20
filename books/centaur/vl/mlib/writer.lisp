@@ -452,14 +452,16 @@ displays.  The module browser's web pages are responsible for defining the
         ;; mainly because things like foo[32'd5] is a lot uglier than foo[5].
         ;; But we might eventually want to think hard about whether this is
         ;; really okay.
-        (vl-ps-span "vl_int" (vl-print-nat x.value))))
+        (vl-ps-span "vl_int"
+                    (vl-print-nat (acl2::logext 32 x.value)))))
 
     (vl-ps-span "vl_int"
                 (vl-print-nat x.origwidth)
                 (if (eq x.origsign :vl-signed)
-                    (vl-print-str "'sd")
-                  (vl-print-str "'d"))
-                (vl-print-nat x.value))))
+                    (vl-ps-seq (vl-print-str "'sd")
+                               (vl-print-nat (acl2::logext x.origwidth x.value)))
+                  (vl-ps-seq (vl-print-str "'d")
+                             (vl-print-nat x.value))))))
 
 (define vl-pp-weirdint ((x vl-value-p) &key (ps 'ps))
   :guard (vl-value-case x :vl-weirdint)

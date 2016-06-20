@@ -42,7 +42,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %token INT UINT INT64 UINT64 BOOL
 %token TO_UINT TO_UINT64 RANGE
 %token WAIT FOR IF ELSE WHILE DO SWITCH CASE DEFAULT BREAK CONTINUE RETURN ASSERT
-%token ARRAY ELT MV ASSIGN
+%token ARRAY TUPLE TIE
 %token SC_INT SC_BIGINT SC_FIXED SC_UINT SC_BIGUINT SC_UFIXED
 %token <s> RSHFT_ASSIGN LSHFT_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN MOD_ASSIGN
 %token <s> AND_ASSIGN XOR_ASSIGN OR_ASSIGN
@@ -59,7 +59,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %type <sfl> struct_field_list
 %type <ecd> enum_const_dec
 %type <ecdl> enum_const_dec_list
-%type <exp> expression constant integer boolean symbol_ref funcall array_param_ref 
+%type <exp> expression constant integer boolean symbol_ref funcall 
 %type <exp> array_or_bit_ref subrange array_init case_label
 %type <exp> primary_expression postfix_expression prefix_expression mult_expression add_expression
 %type <exp> arithmetic_expression rel_expression eq_expression and_expression xor_expression ior_expression
@@ -239,10 +239,10 @@ register_type
   ;
 
 array_param_type
-  : ARRAY '<' arithmetic_expression ',' type_spec '>'   
+  : ARRAY '<' type_spec ',' arithmetic_expression '>'   
     {
-      if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new ArrayType($3, $5);
+      if ($5->isConst() && $5->evalConst() > 0) {
+        $$ = new ArrayType($5, $3);
       }
       else {
         yyerror("Non-constant array dimension");
@@ -278,9 +278,9 @@ enum_const_dec
   ;
 
 mv_type
-  : MV '<' type_spec ',' type_spec '>'                              {$$ = new MvType(2, $3, $5);}
-  | MV '<' type_spec ',' type_spec ',' type_spec '>'                {$$ = new MvType(3, $3, $5, $7);}
-  | MV '<' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9);}
+  : TUPLE '<' type_spec ',' type_spec '>'                              {$$ = new MvType(2, $3, $5);}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec '>'                {$$ = new MvType(3, $3, $5, $7);}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9);}
   ;
 
 //*************************************************************************************
@@ -354,16 +354,11 @@ funcall
 
 postfix_expression
   : primary_expression
-  | array_param_ref
   | array_or_bit_ref
   | struct_ref
   | subrange
   | to_uint_expression
   | to_uint64_expression
-  ;
-
-array_param_ref
-  : postfix_expression '.' ELT '[' expression ']'  {$$ = new ArrayParamRef((SymRef*)$1, $5);}
   ;
 
 // In order to distinguish between a bit reference and a (syntactically equivalent) array 
@@ -372,7 +367,10 @@ array_param_ref
 array_or_bit_ref
   : postfix_expression '[' expression ']'
     {
-      if ($1->isArray()) {
+      if ($1->isArrayParam()) {
+        $$ = new ArrayParamRef((SymRef*)$1, $3);
+      }
+        else if ($1->isArray()) {
         $$ = new ArrayRef($1, $3);
       }
       else {
@@ -550,6 +548,8 @@ untyped_var_dec
     {$$ = new VarDec($1, NULL); symTab->push((VarDec*)$$);}
   | ID '=' expression
     {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
+  | ID '=' array_init
+    {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
   | ID '[' arithmetic_expression ']' 
     {
       if ($3->isConst() && $3->evalConst() > 0) {
@@ -595,6 +595,8 @@ const_dec
 
 untyped_const_dec
   : ID '=' expression
+    {$$ = new ConstDec($1, NULL, $3); symTab->push((ConstDec*)$$);}
+  | ID '=' array_init
     {$$ = new ConstDec($1, NULL, $3); symTab->push((ConstDec*)$$);}
   | ID '[' arithmetic_expression ']' '=' array_init
     {
@@ -696,8 +698,8 @@ inc_op
   ;
 
 multiple_assignment
-  : postfix_expression '.' ASSIGN '(' nontrivial_expr_list ')'
-    {$$ = new MultipleAssignment((FunCall*)$1, $5);}
+  : TIE '(' nontrivial_expr_list ')' '=' postfix_expression
+    {$$ = new MultipleAssignment((FunCall*)$6, $3);}
   ;
 
 assertion
