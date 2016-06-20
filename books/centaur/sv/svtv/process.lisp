@@ -1322,7 +1322,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (implies (and (syntaxp (and (quotep skips)
                                 (not (equal skips ''nil))))
                   (not (member signal skips)))
-             (equal (assoc signal (svtv-run svtv inalist :skip skips))
+             (equal (assoc signal (svtv-run svtv inalist :skip skips :boolvars boolvars :quiet quiet))
                     (assoc signal (svtv-run svtv inalist))))
  :hints(("Goal" :in-theory (enable svtv-run)))))
 
