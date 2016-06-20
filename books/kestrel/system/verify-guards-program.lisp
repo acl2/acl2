@@ -48,7 +48,8 @@
 ;   verify-guards-program could include keyword option :ld-redefinition-action
 ;   with value '(:warn! . :overwrite), as in :redef!.  BUT oops, we don't want
 ;   to redefined functions like ev!  So maybe use FLET above where they're
-;   called.
+;   called.  NOTE: Matt has tentative solution using new state global
+;   'verify-termination-program-with-raw-code.
 
 ; - Deal with the comment in verify-termination-forms-with-measures.  Better
 ;   yet: avoid the :OR by checking for measures and then always laying down the
@@ -87,14 +88,17 @@
        ctx wrld state-vars
        (mv-let (erp tbody)
          (translate-cmp (car forms)
-                        t         ; stobjs-out
-                        nil       ; logic-modep
-                        t         ; known-stobjs
+                        t   ; stobjs-out
+                        nil ; logic-modep
+                        t   ; known-stobjs
                         ctx wrld state-vars)
-         (cond (erp (er hard ctx
-                        "Surprise: Translate failed for body of ~x0!"
-                        (car fns)))
-               (t (all-ffn-symbs tbody acc))))))))
+         (cond
+          (erp (er hard ctx
+                   "Surprise: Translate failed for body of ~x0!"
+                   (car fns)))
+          (t (all-ffn-symbs tbody
+                            (all-ffn-symbs (guard (car fns) nil wrld)
+                                           acc)))))))))
 
 (defun all-ffn-symbs-mut-rec-logic (names wrld acc)
   (cond ((endp names) acc)
@@ -102,7 +106,8 @@
             (cdr names)
             wrld
             (all-ffn-symbs (body (car names) nil wrld)
-                           acc)))))
+                           (all-ffn-symbs (guard (car names) nil wrld)
+                                          acc))))))
 
 (defun immediate-supps (fn old-fns wrld ctx state-vars)
   (cond
@@ -112,7 +117,9 @@
       (cond ((cdr recp)
              (mv recp (all-ffn-symbs-mut-rec-logic recp wrld old-fns)))
             (t
-             (mv nil (all-ffn-symbs (body fn nil wrld) old-fns))))))
+             (mv nil (all-ffn-symbs (body fn nil wrld)
+                                    (all-ffn-symbs (guard fn nil wrld)
+                                                   old-fns)))))))
    (t (let* ((defs (recover-defs-lst fn wrld))
              (sibs (strip-cars defs)))
         (mv sibs
@@ -312,8 +319,8 @@
   (defun f3 (x) x)
   (defun f4p (x)
     (declare (xargs :mode :program))
-    (list (f1p x) (f2p x) (f3 x)))
-  (verify-guards-program f4p :print t))
+    (list (f1p x) (f2p x) (f3 x))))
+(verify-guards-program f4p :print t))
 
 ; No measure guessed:
 (progn
@@ -326,8 +333,8 @@
         (list x y))))
   (defun f6p (x y)
     (declare (xargs :mode :program))
-    (list (f4p x) (f5p x y)))
-  (verify-guards-program f6p :print t))
+    (list (f4p x) (f5p x y))))
+(verify-guards-program f6p :print t)
 
 ; Guard verification fails for f7p:
 (defun f7p (x)
