@@ -7666,6 +7666,62 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
         be added to *initial-global-table*:~%~s~%"
        bad))))
 
+(defun check-slashable ()
+
+; First check that certain obviously slashable characters are marked as such.
+
+  (let ((bad
+         (loop for char in
+               '(#\Newline #\Page #\Space #\Tab #\" #\# #\' #\( #\) #\, #\:
+                 #\; #\\ #\`
+                 #\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m #\n
+                 #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z #\|)
+               when (not (svref *slashable-array* (char-code char)))
+               collect (char-code char))))
+    (when bad
+      (interface-er
+       "The character code~#0~[~/s~] ~&0 must be associated with T in ~
+        *slashable-array*."
+       bad)))
+
+; Next check that *slashable-chars* and *slashable-array* specify the same set
+; of slashable characters.
+
+  (let ((bad ; quadratic below, but 256^2 isn't big
+         (loop for i from 0 to 255
+               when (not (iff (member (code-char i) *slashable-chars*)
+                              (svref *slashable-array* i)))
+               collect i)))
+    (when bad
+      (interface-er
+       "Each character code in the list ~x0 is marked as slashable in exactly ~
+        one of *slashable-array* and *slashable-chars*; but those two ~
+        structures are supposed to represent the same set of slashable ~
+        characters."
+       bad)))
+
+; Finally, check that the set specified in *slashable-array* is sufficient for
+; the current host Lisp.  See *slashable-array* for a comment on why this check
+; is appropriate.
+
+  (let ((bad
+         (loop for i from 0 to 255
+               when (let ((str (coerce (list (code-char i)
+                                             #\A #\B
+                                             (code-char i)
+                                             #\U #\V
+                                             (code-char i))
+                                       'string)))
+                      (and (not (eq (ignore-errors (read-from-string str))
+                                    (intern str "ACL2")))
+                           (not (svref *slashable-array* i))))
+               collect i)))
+    (when bad
+      (interface-er
+       "Each character code in the list ~x0 needs to be marked as slashable ~
+        in both *slashable-array* and *slashable-chars*."
+       bad))))
+
 (defun-one-output check-acl2-initialization ()
   (check-built-in-constants)
   (check-out-instantiablep (w *the-live-state*))
@@ -7674,6 +7730,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (or (plist-worldp-with-formals (w *the-live-state*))
       (error "The initial ACL2 world does not satisfy ~
               plist-worldp-with-formals!"))
+  (check-slashable)
   nil)
 
 (defun set-initial-cbd ()
