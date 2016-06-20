@@ -35,13 +35,15 @@
   The forms must be
   <see topic='@(url embedded-event-form)'>embedded event forms</see>,
   because they are put into a @(tsee progn)
-  so that earlier forms can affect later forms in the sequence.
+  so that earlier forms are evaluated
+  before considering later forms in the sequence.
   This is a difference with @(tsee must-succeed),
   whose form is required to return
   an <see topic='@(url error-triple)'>error triple</see>
   without necessarily being an embedded event form;
   since @(tsee must-succeed) takes only one form,
-  there is no issue of earlier forms affecting later forms
+  there is no issue of earlier forms being evaluated
+  before considering later forms
   as in @(tsee must-succeed*).
   </p>
   @(def must-succeed*)"
