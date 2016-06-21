@@ -467,7 +467,7 @@
 
 ; It was an oversight that a symbol with a symbol-name of "*" has always been
 ; considered a constant rather than a variable.  The intention was to view "*"
-; as a delimeter -- thus, even "**" is probably OK for a constant since the
+; as a delimiter -- thus, even "**" is probably OK for a constant since the
 ; empty string is delimited.  But it doesn't seem important to change this
 ; now.  If we do make such a change, consider the following (at least).
 

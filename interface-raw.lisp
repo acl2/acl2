@@ -1960,7 +1960,7 @@
                                             (f-get-global
                                              'program-fns-with-raw-code
                                              *the-live-state*))))
-              (fail_program-only-safe
+              (fail_program-only
 
 ; At one time we put down a form here that throws to the tag 'raw-ev-fncall:
 
@@ -1977,27 +1977,25 @@
 ; example the use of program-fns-with-raw-code in
 ; workshops/2007/dillinger-et-al/code/hacker.lisp), and in general we'd have to
 ; add yet another event and deal with whether the event should be local to
-; books.  Instead, we have decided to cause a raw Lisp error, which is always
-; legitimate (after all, Lisp might cause a resource error).
+; books.  Instead, we have decided to cause a hard error, which is always
+; legitimate (after all, Lisp might cause a resource error).  Note that we are
+; dealing only with :program mode functions here, so we don't need to be
+; concerned about the kind of error produced when evaluating terms on behalf of
+; the rewriter.  Nevertheless, we use hard! to minimize the chance that
+; somehow, in a way we don't currently envision, this call of fn will be
+; considered to have a value of nil.  If we become truly paranoid about this
+; issue, we could follow (er hard! ...) below with a call of error.
 
-               `(error "~%~a~%"
-                       (fms-to-string
-                        "~@0~%~@1"
-                        (list (cons #\0 (program-only-er-msg
-                                         ',fn (list ,@formals) t))
-                              (cons #\1 "~%Note: If you have a reason to ~
-                                        prefer an ACL2 error here instead of ~
-                                        a hard Lisp error, please contact the ~
-                                        ACL2 implementors."))
-                        :evisc-tuple
-                        (abbrev-evisc-tuple *the-live-state*)
-                        :fmt-control-alist
-                        (list (cons 'fmt-hard-right-margin
-                                    (f-get-global 'fmt-hard-right-margin
-                                                  *the-live-state*))
-                              (cons 'fmt-soft-right-margin
-                                    (f-get-global 'fmt-soft-right-margin
-                                                  *the-live-state*))))))
+               `(progn
+                  (save-ev-fncall-guard-er ',fn
+                                           ',guard
+                                           (stobjs-in ',fn (w *the-live-state*))
+                                           (list ,@formals))
+                  (er hard! 'program-only
+                    "~@0"
+                    (program-only-er-msg ',fn
+                                         (list ,@formals)
+                                         ,safe-form))))
               (early-exit-code-main
                (let ((cl-compliant-code-guard-not-t
 
@@ -2129,9 +2127,16 @@
                                  (t
                                   `((,guard-checking-is-really-on-form
                                      ,fail_guard))))))))
-                 (if cl-compliant-p-optimization
-                     (assert$ (not guard-is-t) ; already handled way above
-                              (list cl-compliant-code-guard-not-t))
+                 (cond
+                  (cl-compliant-p-optimization
+                   (assert$ (not guard-is-t) ; already handled way above
+                            (list cl-compliant-code-guard-not-t)))
+                  (program-only
+                   (list `(when (or ,safe-form
+                                    ,@(and (not guard-is-t)
+                                           `((not ,*1*guard))))
+                            ,fail_program-only)))
+                  (t
                    (let ((cond-clauses
                           `(,@(and (eq defun-mode :logic)
 
@@ -2184,27 +2189,17 @@
                                (cond
                                 (boot-strap-p
                                  `((,safe-form
-                                    ,(cond
-                                      (program-only
-                                       fail_program-only-safe)
-                                      (t
-                                       `(return-from ,*1*fn ,*1*body))))
+                                    (return-from ,*1*fn ,*1*body))
                                    ,@(and
                                       invariant-risk
                                       `((t (return-from ,*1*fn ,*1*body))))))
-                                (program-only
-                                 `((,safe-form
-                                    ,fail_program-only-safe)
-                                   ((member-eq ,guard-checking-on-form
-                                               '(:none :all))
-                                    (return-from ,*1*fn ,*1*body))))
                                 (t `(((or (member-eq
                                            ,guard-checking-on-form
                                            '(:none :all))
                                           ,safe-form)
                                       (return-from ,*1*fn ,*1*body)))))))))
                      (and cond-clauses
-                          (list (cons 'cond cond-clauses)))))))
+                          (list (cons 'cond cond-clauses))))))))
               (early-exit-code
                (and early-exit-code-main
                     (cond ((and invariant-risk

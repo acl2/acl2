@@ -162,12 +162,11 @@
 (defun program-only-er-msg (fn args safe-mode)
   (msg
    "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' and hence has special raw Lisp code.  This call is ~
-    illegal because program-only functions are only allowed to invoke their ~
-    raw Lisp code, but in this case there was an attempt to invoke executable ~
-    counterpart code ~#1~[because of guard-checking (see :DOC ~
-    guard-evaluation-table)~/because it is being called under a ``safe mode'' ~
-    that is used, for example, during macroexpansion~]."
+    ``program-only,'' presumably because it has special raw Lisp code.  This ~
+    call is illegal because program-only functions must invoke their raw Lisp ~
+    code, but ~#1~[the guard is always checked for such a function and fails ~
+    in this case~/this call is under a ``safe mode'' that is used, for ~
+    example, during macroexpansion, and prohibits the use of raw Lisp code~]."
    (cons fn args)
    (if safe-mode 1 0)))
 

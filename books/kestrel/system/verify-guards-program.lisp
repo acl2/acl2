@@ -14,7 +14,8 @@
 
 ; - For each system utility used below, either document it in :doc
 ;   system-utilities or replace it below with a corresponding documented system
-;   utility.
+;   utility.  For example, we could use function-namep in
+;   verify-guards-program-forms.
 
 ; - Perhaps store functions in a table when they are "guard-verified" in this
 ;   sense, and insist that all supporters (ancestors) are in that table before
@@ -299,6 +300,7 @@
                             '(defttag t)
                             '(set-temp-touchable-vars t state)
                             '(set-temp-touchable-fns t state)
+                            '(assign verify-termination-on-raw-program-okp t)
                             (verify-guards-program-forms ',fn (w state)))
                      :ld-error-action :error
                      ,@(and print-p `(:ld-pre-eval-print ,print)))
