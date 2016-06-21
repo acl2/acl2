@@ -25,14 +25,18 @@
 
   :parents (kestrel-general-utilities errors)
 
-  :short
-  "A variant of @(tsee must-succeed)
-  that takes multiple forms
-  and uses default options."
+  :short "A variant of @(tsee must-succeed) that takes multiple forms."
 
   :long
-  "<p>
-  The forms must be
+  "@({
+  (must-succeed* form1
+                 ...
+                 formN
+                 :with-output-off ...
+                 :check-expansion ...)
+  })
+  <p>
+  The @('N') forms must be
   <see topic='@(url embedded-event-form)'>embedded event forms</see>,
   because they are put into a @(tsee progn)
   so that earlier forms are evaluated
@@ -46,40 +50,31 @@
   before considering later forms
   as in @(tsee must-succeed*).
   </p>
+  <p>
+  The forms may be followed by
+  @(':with-output-off') and/or @(':check-expansion'),
+  as in @(tsee must-succeed).
+  </p>
   @(def must-succeed*)"
 
-  (defmacro must-succeed* (&rest forms)
-    `(must-succeed (progn ,@forms))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-succeed**
-
-  :parents (kestrel-general-utilities errors)
-
-  :short
-  "A variant of @(tsee must-succeed)
-  that takes multiple forms
-  and explicit options."
-
-  :long
-  "<p>
-  The first two arguments are
-  the @(':with-output-off') and @(':check-expansion') options
-  of @(tsee must-succeed).
-  The remaining arguments are the forms.
-  </p>
-  <p>
-  As in @(tsee must-succeed*), the forms must be
-  <see topic='@(url embedded-event-form)'>embedded event forms</see>.
-  See the discussion for @(tsee must-succeed*) in this regard.
-  </p>
-  @(def must-succeed**)"
-
-  (defmacro must-succeed** (with-output-off check-expansion &rest forms)
-    `(must-succeed (progn ,@forms)
-                   :with-output-off ,with-output-off
-                   :check-expansion ,check-expansion)))
+  (defmacro must-succeed* (&rest args)
+    (mv-let (erp forms options)
+      (partition-rest-and-keyword-args args
+                                       '(:with-output-off :check-expansion))
+      (if erp
+          '(er hard?
+               'must-succeed*
+               "The arguments of MUST-SUCCEED* must be zero or more forms ~
+               followed by the options :WITH-OUTPUT-OFF and :CHECK-EXPANSION.")
+        (let ((with-output-off-pair (assoc :with-output-off options))
+              (check-expansion-pair (assoc :check-expansion options)))
+          `(must-succeed (progn ,@forms)
+                         ,@(if with-output-off-pair
+                               `(:with-output-off ,(cdr with-output-off-pair))
+                             nil)
+                         ,@(if check-expansion-pair
+                               `(:check-expansion ,(cdr check-expansion-pair))
+                             nil)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
