@@ -17632,11 +17632,48 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *slashable-chars*
 
-; This constant is inlined in the definition of *slashable-array*.
+; This list must contain exactly the characters whose codes are associated with
+; T in *slashable-array*, so that the #+acl2-loop-only and #-acl2-loop-only
+; code in may-need-slashes-fn are consistent.  This is checked at build time by
+; the function check-slashable.
 
-  '(#\Newline #\Page #\Space #\" #\# #\' #\( #\) #\, #\: #\; #\\ #\`
-    #\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m #\n #\o #\p
-    #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z #\|))
+  (list (CODE-CHAR 0) (CODE-CHAR 1) (CODE-CHAR 2) (CODE-CHAR 3)
+        (CODE-CHAR 4) (CODE-CHAR 5) (CODE-CHAR 6) (CODE-CHAR 7)
+        (CODE-CHAR 8) (CODE-CHAR 9) (CODE-CHAR 10) (CODE-CHAR 11)
+        (CODE-CHAR 12) (CODE-CHAR 13) (CODE-CHAR 14) (CODE-CHAR 15)
+        (CODE-CHAR 16) (CODE-CHAR 17) (CODE-CHAR 18) (CODE-CHAR 19)
+        (CODE-CHAR 20) (CODE-CHAR 21) (CODE-CHAR 22) (CODE-CHAR 23)
+        (CODE-CHAR 24) (CODE-CHAR 25) (CODE-CHAR 26) (CODE-CHAR 27)
+        (CODE-CHAR 28) (CODE-CHAR 29) (CODE-CHAR 30) (CODE-CHAR 31)
+        (CODE-CHAR 32) (CODE-CHAR 34) (CODE-CHAR 35) (CODE-CHAR 39)
+        (CODE-CHAR 40) (CODE-CHAR 41) (CODE-CHAR 44) (CODE-CHAR 58)
+        (CODE-CHAR 59) (CODE-CHAR 92) (CODE-CHAR 96) (CODE-CHAR 97)
+        (CODE-CHAR 98) (CODE-CHAR 99) (CODE-CHAR 100) (CODE-CHAR 101)
+        (CODE-CHAR 102) (CODE-CHAR 103) (CODE-CHAR 104) (CODE-CHAR 105)
+        (CODE-CHAR 106) (CODE-CHAR 107) (CODE-CHAR 108) (CODE-CHAR 109)
+        (CODE-CHAR 110) (CODE-CHAR 111) (CODE-CHAR 112) (CODE-CHAR 113)
+        (CODE-CHAR 114) (CODE-CHAR 115) (CODE-CHAR 116) (CODE-CHAR 117)
+        (CODE-CHAR 118) (CODE-CHAR 119) (CODE-CHAR 120) (CODE-CHAR 121)
+        (CODE-CHAR 122) (CODE-CHAR 124) (CODE-CHAR 127) (CODE-CHAR 128)
+        (CODE-CHAR 129) (CODE-CHAR 130) (CODE-CHAR 131) (CODE-CHAR 132)
+        (CODE-CHAR 133) (CODE-CHAR 134) (CODE-CHAR 135) (CODE-CHAR 136)
+        (CODE-CHAR 137) (CODE-CHAR 138) (CODE-CHAR 139) (CODE-CHAR 140)
+        (CODE-CHAR 141) (CODE-CHAR 142) (CODE-CHAR 143) (CODE-CHAR 144)
+        (CODE-CHAR 145) (CODE-CHAR 146) (CODE-CHAR 147) (CODE-CHAR 148)
+        (CODE-CHAR 149) (CODE-CHAR 150) (CODE-CHAR 151) (CODE-CHAR 152)
+        (CODE-CHAR 153) (CODE-CHAR 154) (CODE-CHAR 155) (CODE-CHAR 156)
+        (CODE-CHAR 157) (CODE-CHAR 158) (CODE-CHAR 159) (CODE-CHAR 160)
+        (CODE-CHAR 168) (CODE-CHAR 170) (CODE-CHAR 175) (CODE-CHAR 178)
+        (CODE-CHAR 179) (CODE-CHAR 180) (CODE-CHAR 181) (CODE-CHAR 184)
+        (CODE-CHAR 185) (CODE-CHAR 186) (CODE-CHAR 188) (CODE-CHAR 189)
+        (CODE-CHAR 190) (CODE-CHAR 224) (CODE-CHAR 225) (CODE-CHAR 226)
+        (CODE-CHAR 227) (CODE-CHAR 228) (CODE-CHAR 229) (CODE-CHAR 230)
+        (CODE-CHAR 231) (CODE-CHAR 232) (CODE-CHAR 233) (CODE-CHAR 234)
+        (CODE-CHAR 235) (CODE-CHAR 236) (CODE-CHAR 237) (CODE-CHAR 238)
+        (CODE-CHAR 239) (CODE-CHAR 240) (CODE-CHAR 241) (CODE-CHAR 242)
+        (CODE-CHAR 243) (CODE-CHAR 244) (CODE-CHAR 245) (CODE-CHAR 246)
+        (CODE-CHAR 248) (CODE-CHAR 249) (CODE-CHAR 250) (CODE-CHAR 251)
+        (CODE-CHAR 252) (CODE-CHAR 253) (CODE-CHAR 254) (CODE-CHAR 255)))
 
 (defun some-slashable (l)
   (declare (xargs :guard (character-listp l)))
@@ -17790,13 +17827,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun may-need-slashes-fn (x print-base)
 
 ; We determine if the string x, a symbol name or symbol-package name, should be
-; printed using |..|.  The main ideas are to escape lower-case characters and
-; to avoid the possibility of reading the printed result back in as a number
+; printed using |..|.  The main ideas are to escape characters as necessary,
+; including lower-case characters and certain others such as #\Tab, and to
+; avoid the possibility of reading the printed result back in as a number
 ; instead of a symbol.
 
-; More precisely: This function should return true if x represents a potential
-; number, and ideally only if that is the case (in order to avoid needless use
-; of |..|).  The notion of "potential number" is discussed below.  We perhaps
+; In particular, this function should return true if x represents a potential
+; number.  The notion of "potential number" is discussed below.  We perhaps
 ; escape more than necessary if print-base is 2, 4, or 8; the Common Lisp spec
 ; may not be clear on this, and anyhow it's simplest to be conservative and
 ; treat those bases as we treat base 10.
