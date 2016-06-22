@@ -22,6 +22,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
+(include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "system/kestrel" :dir :system)
 
 (local (set-default-parents world-queries))
@@ -423,6 +424,44 @@
   See the description of event tuples in the ACL2 source code.
   </p>"
   (let ((namex (access-event-tuple-namex evtup)))
+    (cond ((equal namex 0) nil) ; no names
+          ((consp namex) namex) ; list of names
+          (t (list namex))))) ; single name
+
+(std::deflist pseudo-event-landmark-listp (x)
+  (pseudo-event-landmarkp x)
+  :short "Recognize @('nil')-terminated lists of event landmarks."
+  :long
+  "<p>
+  See @('pseudo-event-landmarkp')
+  in @('[books]/system/pseudo-good-worldp.lisp').
+  </p>"
+  :true-listp t
+  :elementp-of-nil nil)
+
+(std::deflist pseudo-command-landmark-listp (x)
+  (pseudo-command-landmarkp x)
+  :short "Recognize @('nil')-terminated lists of command landmarks."
+  :long
+  "<p>
+  See @('pseudo-command-landmarkp')
+  in @('[books]/system/pseudo-good-worldp.lisp').
+  </p>"
+  :true-listp t
+  :elementp-of-nil nil)
+
+(define event-landmark-names ((event pseudo-event-landmarkp))
+  ;; :returns (names string-or-symbol-listp)
+  :verify-guards nil
+  :short "Names introduced by an event landmark."
+  :long
+  "<p>
+  Each event landmark introduces zero or more names into the @(see world).
+  See @('pseudo-event-landmarkp')
+  in @('[books]/system/pseudo-good-worldp.lisp'),
+  and the description of event tuples in the ACL2 source code.
+  </p>"
+  (let ((namex (access-event-tuple-namex event)))
     (cond ((equal namex 0) nil) ; no names
           ((consp namex) namex) ; list of names
           (t (list namex))))) ; single name
