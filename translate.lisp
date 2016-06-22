@@ -85,6 +85,7 @@
 (table default-hints-table nil nil :clear)
 
 (defun macro-args (x w)
+  (declare (xargs :guard (and (symbolp x) (plist-worldp w))))
   (getpropc x 'macro-args
             '(:error "We thought macro-args was only called if there were ~
                       (zero or more) macro-args.")
@@ -5689,6 +5690,10 @@
 ; some additional requirements as explained in a comment in
 ; throw-nonexec-error-p.
 
+  (declare (xargs :guard (and (pseudo-termp targ1)
+                              (pseudo-termp targ2)
+                              (symbolp name)
+                              (symbol-listp formals))))
   (and (quotep targ1)
        (eq (unquote targ1) 'progn)
        (ffn-symb-p targ2 'throw-nonexec-error)
@@ -5710,6 +5715,9 @@
 ; argument of throw-non-exec-error be (cons v1 (cons v2 ... (cons vk nil)
 ; ...)), where formals is (v1 v2 ... vk).
 
+  (declare (xargs :guard (and (pseudo-termp body)
+                              (symbolp name)
+                              (symbol-listp formals))))
   (and (ffn-symb-p body 'return-last)
        (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
 

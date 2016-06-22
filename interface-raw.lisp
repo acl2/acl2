@@ -1949,7 +1949,11 @@
                (and trace-rec-for-none
                     logic-recursive-p
                     (eq defun-mode :logic)))
-              (program-only (and program-p ; optimization
+              (program-only (and program-p
+
+; Note that because of state global verify-termination-on-raw-program-okp, the
+; test for program-p above is not merely an optimization.
+
                                  (member-eq fn
 
 ; If this test becomes an issue, we might consider reimplementing the

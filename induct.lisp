@@ -2228,6 +2228,7 @@
 ; understood to be implicitly conjoined and we therefore produce a
 ; conjunction expressed as (if cl1 cl2 nil).
 
+  (declare (xargs :guard (pseudo-term-list-listp clauses)))
   (cond ((null clauses) *t*)
         ((null (cdr clauses)) (disjoin (car clauses)))
         (t (mcons-term* 'if

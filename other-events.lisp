@@ -23825,6 +23825,13 @@
                   caller or to memoize its attachment (see :DOC defattach)."
                  str key))
             ((and inline
+
+; The test below isn't right if a built-in function with raw Lisp code has been
+; promoted to logic mode after assigning state global
+; 'verify-termination-on-raw-program-okp to t.  However, that assignment may
+; only be done with a trust tag, and the documentation warns that doing this
+; promotion could be unsound.  So we don't worry about that case here.
+
                   (if (eq key-class :program)
                       (member-eq key *primitive-program-fns-with-raw-code*)
                     (member-eq key *primitive-logic-fns-with-raw-code*)))
