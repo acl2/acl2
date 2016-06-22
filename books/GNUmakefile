@@ -345,7 +345,7 @@ OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 
-# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+# We use "{...}" delimiters to avoid errors in version 3.80 of make.
 ${info Excluding books that need ACL2(h) [...]}
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
@@ -384,7 +384,7 @@ endif
 
 ifeq ($(ACL2_HAS_ANSI), )
 
-# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+# We use "{...}" delimiters to avoid errors in version 3.80 of make.
 ${info Excluding books that need ANSI Common Lisp [...]}
 OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
 
