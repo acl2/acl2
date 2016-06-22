@@ -467,7 +467,7 @@
 
 ; It was an oversight that a symbol with a symbol-name of "*" has always been
 ; considered a constant rather than a variable.  The intention was to view "*"
-; as a delimeter -- thus, even "**" is probably OK for a constant since the
+; as a delimiter -- thus, even "**" is probably OK for a constant since the
 ; empty string is delimited.  But it doesn't seem important to change this
 ; now.  If we do make such a change, consider the following (at least).
 
@@ -3886,6 +3886,14 @@
 
 ; See the Essay on STOBJS-IN and STOBJS-OUT.
 
+; Note that even though the guard implies (not (member-eq fn
+; *stobjs-out-invalid*)), we keep the member-eq test in the code in case
+; stobjs-out is called from a :program-mode function, since in that case the
+; guard may not hold.
+
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w)
+                              (not (member-eq fn *stobjs-out-invalid*)))))
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))

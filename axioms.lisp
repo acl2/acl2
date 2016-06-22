@@ -13219,6 +13219,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
+    (verify-termination-on-raw-program-okp . nil)
     (walkabout-alist . nil)
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold
@@ -20043,6 +20044,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     print-gv-defaults
     global-enabled-structure
     cert-data
+    verify-termination-on-raw-program-okp
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,

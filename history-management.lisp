@@ -6727,12 +6727,15 @@
     (cond
      ((and reclassifyingp
            (not (consp reclassifyingp)))
-      (cond ((member-eq name
-                        (f-get-global 'program-fns-with-raw-code state))
+      (cond ((and (not (f-get-global 'verify-termination-on-raw-program-okp
+                                     state))
+                  (member-eq name
+                             (f-get-global 'program-fns-with-raw-code state)))
              (er soft ctx
                  "The function ~x0 must remain in :PROGRAM mode, because it ~
                   has been marked as a function that has special raw Lisp ~
-                  code."
+                  code.  To avoid this error, see :DOC ~
+                  verify-termination-on-raw-program-okp."
                  name))
             (t (value :reclassifying-overwrite))))
      ((and attachment-alist

@@ -7396,14 +7396,22 @@
               (not (global-val 'boot-strap-flg (w state)))
               (not (f-get-global 'redundant-with-raw-code-okp state))
               (let ((recp (getpropc (car names) 'recursivep nil wrld))
-                    (bad-fns (if (eq (symbol-class (car names) wrld)
-                                     :program)
-                                 (f-get-global
-                                  'program-fns-with-raw-code
-                                  state)
-                               (f-get-global
-                                'logic-fns-with-raw-code
-                                state))))
+                    (bad-fns
+
+; The test below isn't right if a built-in function with raw Lisp code has been
+; promoted to logic mode after assigning state global
+; 'verify-termination-on-raw-program-okp to t.  However, that assignment may
+; only be done with a trust tag, and the documentation warns that doing this
+; promotion could be unsound.  So we don't worry about that case here.
+
+                     (if (eq (symbol-class (car names) wrld)
+                             :program)
+                         (f-get-global
+                          'program-fns-with-raw-code
+                          state)
+                       (f-get-global
+                        'logic-fns-with-raw-code
+                        state))))
                 (if recp
                     (intersectp-eq recp bad-fns)
                   (member-eq (car names) bad-fns))))
