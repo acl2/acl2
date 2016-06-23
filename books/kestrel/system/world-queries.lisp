@@ -122,7 +122,7 @@
   without the &ldquo;non-executable wrapper&rdquo;."
   :long
   "<p>
-  @(tsee defun-nx) wraps the body of the function @('fun') being defined
+  @(tsee Defun-nx) wraps the body of the function @('fun') being defined
   in a wrapper that has
   the following <see topic='@(url term)'>translated</see> form:
   </p>
@@ -138,7 +138,7 @@
   the submitted body (once translated) must be wrapped like that.
   </p>
   <p>
-  @(tsee unwrapped-nonexec-body) returns
+  @(tsee Unwrapped-nonexec-body) returns
   the unwrapped body of the non-executable function @('fun').
   </p>
   <p>
@@ -345,7 +345,9 @@
 
 (std::deflist pseudo-tests-and-call-listp (x)
   (pseudo-tests-and-callp x)
-  :short "@('nil')-terminated lists of well-formed @('tests-and-call') records."
+  :short
+  "Recognize @('nil')-terminated lists of
+  well-formed @('tests-and-call') records."
   :true-listp t
   :elementp-of-nil nil)
 
