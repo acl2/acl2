@@ -166,7 +166,7 @@
           fn recursivep))
      (t (let* ((fns (list fn))
                (body (body fn nil wrld))
-               (ruler-extenders 
+               (ruler-extenders
                 (init-ruler-extenders fn (ruler-extenders fn wrld) body)))
           (min-old-ruler-extenders-1 fns
                                      body
@@ -267,7 +267,7 @@
 
 (defxdoc minimize-ruler-extenders
   :parents (kestrel-system-utilities system-utilities)
-  :short "Minimize the ruler-extenders necessary to admit a definition"
+  :short "Minimize the ruler-extenders necessary to admit a definition."
   :long "<p>@('Minimize-ruler-extenders') is really two utilities.  The first,
  which we call MIN_NEW below, admits a proposed @(tsee defun) or @(tsee defund)
  form by declaring a minimal set of @(see ruler-extenders).  This MIN_NEW
