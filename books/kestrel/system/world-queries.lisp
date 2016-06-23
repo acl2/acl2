@@ -297,16 +297,6 @@
   </p>"
   (getpropc fun 'induction-machine nil w))
 
-(std::deflist weak-tests-and-call-listp (x)
-  (weak-tests-and-call-p x)
-  :short "List of @('tests-and-call') records."
-  :long
-  "<p>
-  See the ACL2 source code for information on these records.
-  </p>"
-  :true-listp t
-  :elementp-of-nil nil)
-
 (define pseudo-tests-and-callp (x)
   :returns (yes/no booleanp)
   :short "Recognize well-formed @('tests-and-call') records."

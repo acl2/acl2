@@ -420,23 +420,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (weak-tests-and-call-listp nil))
-
-(assert-event (weak-tests-and-call-listp (list (make tests-and-call
-                                                     :tests 1
-                                                     :call 2)
-                                               (make tests-and-call
-                                                     :tests "a"
-                                                     :call "b"))))
-
-(assert-event (not (weak-tests-and-call-listp 88)))
-
-(assert-event (not (weak-tests-and-call-listp (make tests-and-call
-                                                    :tests 1
-                                                    :call 2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-event (pseudo-tests-and-call-listp nil))
 
 (assert-event (pseudo-tests-and-call-listp (list (make tests-and-call
