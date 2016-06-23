@@ -370,64 +370,6 @@
          (append (recursive-calls-aux1 tests calls)
                  (recursive-calls-aux2 (cdr tests-and-calls-list))))))))
 
-(define pseudo-event-tuplep (x)
-  :returns (yes/no booleanp)
-  :short "True iff @('x') has the basic structure of an event tuple."
-  :long
-  "<p>
-  See &lsquo;event tuples&rsquo; in the ACL2 source code.
-  </p>
-  <p>
-  This function performs a very shallow check.
-  It should be extended to perform deeper checks.
-  </p>"
-  (consp x))
-
-(std::deflist pseudo-event-tuple-listp (x)
-  (pseudo-event-tuplep x)
-  :short
-  "Recognize lists of @('nil')-terminated lists
-  of values that satisfy @(tsee pseudo-event-tuplep)."
-  :true-listp t
-  :elementp-of-nil nil
-  :cheap t) ; because EVENT-TUPLEP is just CONSP for now
-
-(define pseudo-command-tuplep (x)
-  :returns (yes/no booleanp)
-  :short "True iff @('x') has the basic structure of a command tuple."
-  :long
-  "<p>
-  See &lsquo;command tuples&rsquo; in the ACL2 source code.
-  </p>
-  <p>
-  This function performs a very shallow check.
-  It should be extended to perform deeper checks.
-  </p>"
-  (consp x))
-
-(std::deflist pseudo-command-tuple-listp (x)
-  (pseudo-command-tuplep x)
-  :short
-  "Recognize lists of @('nil')-terminated lists
-  of values that satisfy @(tsee pseudo-command-tuplep)."
-  :true-listp t
-  :elementp-of-nil nil
-  :cheap t) ; because COMMAND-TUPLEP is just CONSP for now
-
-(define event-tuple-names ((evtup pseudo-event-tuplep))
-  ;; :returns (names (logical-name-listp names (w state)))
-  :verify-guards nil
-  :short "Names introduced by an event tuple."
-  :long
-  "<p>
-  Each event tuple introduces zero or more logical names in the @(see world).
-  See the description of event tuples in the ACL2 source code.
-  </p>"
-  (let ((namex (access-event-tuple-namex evtup)))
-    (cond ((equal namex 0) nil) ; no names
-          ((consp namex) namex) ; list of names
-          (t (list namex))))) ; single name
-
 (std::deflist pseudo-event-landmark-listp (x)
   (pseudo-event-landmarkp x)
   :short "Recognize @('nil')-terminated lists of event landmarks."
