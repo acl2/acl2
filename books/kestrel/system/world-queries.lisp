@@ -276,6 +276,26 @@
   (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist w)))
 
+(define induction-machine ((fun (and (function-namep fun w)
+                                     (logicp fun w)
+                                     (eql 1 (len (recursivep fun w)))))
+                           (w plist-worldp))
+  ;; :returns (machine (pseudo-induction-machinep fun machine))
+  :verify-guards nil
+  :short "Induction machine of a (singly) recursive function."
+  :long
+  "<p>
+  This is a list of @('tests-and-calls') records
+  (see the ACL2 source code for information on these records),
+  each of which contains zero or more recursive calls
+  along with the tests that lead to them.
+  </p>
+  <p>
+  This function only applies to singly recursive functions,
+  because induction is not directly supported for mutually recursive functions.
+  </p>"
+  (getpropc fun 'induction-machine nil w))
+
 (std::deflist weak-tests-and-call-listp (x)
   (weak-tests-and-call-p x)
   :short "List of @('tests-and-call') records."
@@ -285,35 +305,6 @@
   </p>"
   :true-listp t
   :elementp-of-nil nil)
-
-(std::deflist weak-tests-and-calls-listp (x)
-  (weak-tests-and-calls-p x)
-  :short "Lists of @('tests-and-calls') records."
-  :long
-  "<p>
-  See the ACL2 source code for information on these records.
-  </p>"
-  :true-listp t
-  :elementp-of-nil nil)
-
-(define induction-machine ((fun (and (function-namep fun w)
-                                     (logicp fun w)
-                                     (eql 1 (len (recursivep fun w)))))
-                           (w plist-worldp))
-  ;; :returns (tests-and-calls-list weak-tests-and-calls-listp)
-  :verify-guards nil
-  :short "Induction machine of a (singly) recursive function."
-  :long
-  "<p>
-  This is a list of @('tests-and-calls') records,
-  each of which contains zero or more recursive calls
-  along with the tests that lead to them.
-  </p>
-  <p>
-  This function only applies to singly recursive functions,
-  because induction is not directly supported for mutually recursive functions.
-  </p>"
-  (getpropc fun 'induction-machine nil w))
 
 (define recursive-calls ((fun (and (function-namep fun w)
                                    (logicp fun w)
@@ -351,7 +342,7 @@
              (recursive-calls-aux1 tests (cdr calls)))))
 
    (define recursive-calls-aux2
-     ((tests-and-calls-list weak-tests-and-calls-listp))
+     ((tests-and-calls-list pseudo-tests-and-calls-listp))
      :returns (calls-with-tests
                weak-tests-and-call-listp
                :hints (("Goal" :in-theory (enable weak-tests-and-call-listp))))

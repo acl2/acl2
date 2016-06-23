@@ -362,40 +362,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (weak-tests-and-call-listp nil))
-
-(assert-event (weak-tests-and-call-listp (list (make tests-and-call
-                                                     :tests 1
-                                                     :call 2)
-                                               (make tests-and-call
-                                                     :tests "a"
-                                                     :call "b"))))
-
-(assert-event (not (weak-tests-and-call-listp 88)))
-
-(assert-event (not (weak-tests-and-call-listp (make tests-and-call
-                                                    :tests 1
-                                                    :call 2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (weak-tests-and-calls-listp nil))
-
-(assert-event (weak-tests-and-calls-listp (list (make tests-and-calls
-                                                      :tests 1
-                                                      :calls 2)
-                                                (make tests-and-calls
-                                                      :tests "a"
-                                                      :calls "b"))))
-
-(assert-event (not (weak-tests-and-calls-listp 88)))
-
-(assert-event (not (weak-tests-and-calls-listp (make tests-and-calls
-                                                     :tests 1
-                                                     :calls 2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-event (let ((im (induction-machine 'len (w state))))
                 (and (eql (len im) 2)
                      (let ((im1 (first im)))
@@ -440,6 +406,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (weak-tests-and-call-listp nil))
+
+(assert-event (weak-tests-and-call-listp (list (make tests-and-call
+                                                     :tests 1
+                                                     :call 2)
+                                               (make tests-and-call
+                                                     :tests "a"
+                                                     :call "b"))))
+
+(assert-event (not (weak-tests-and-call-listp 88)))
+
+(assert-event (not (weak-tests-and-call-listp (make tests-and-call
+                                                    :tests 1
+                                                    :call 2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (let ((rc (recursive-calls 'len (w state))))
                 (and (eql (len rc) 1)
                      (let ((rc1 (first rc)))
@@ -475,33 +458,19 @@
 
 (must-succeed*
  (defun f (x) x)
- (assert-event (pseudo-event-tuplep (cddr (nth 0 (w state))))))
+ (assert-event (pseudo-event-landmark-listp (list (cddr (nth 0 (w state)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun f (x) x)
- (assert-event (pseudo-event-tuple-listp (list (cddr (nth 0 (w state)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (pseudo-command-tuplep (cddr (nth 0 (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (pseudo-command-tuple-listp (list (cddr (nth 0 (w state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (defun f (x) x)
- (assert-event (equal (event-tuple-names (cddr (nth 0 (w state))))
+ (assert-event (equal (event-landmark-names (cddr (nth 0 (w state))))
                       '(f))))
 
 (must-succeed*
  (defun f (x) x)
  (verify-guards f)
- (assert-event (equal (event-tuple-names (cddr (nth 0 (w state))))
+ (assert-event (equal (event-landmark-names (cddr (nth 0 (w state))))
                       nil)))
 
 (must-succeed*
@@ -517,5 +486,5 @@
         0
       (+ (f (car terms))
          (f-lst (cdr terms))))))
- (assert-event (equal (event-tuple-names (cddr (nth 0 (w state))))
+ (assert-event (equal (event-landmark-names (cddr (nth 0 (w state))))
                       '(f f-lst))))
