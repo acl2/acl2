@@ -1,4 +1,4 @@
-; Terms
+; Term Utilities
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains utilities for manipulating ACL2 terms.
+; This file contains utilities for ACL2 terms.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,13 +17,13 @@
 (include-book "std/util/defines" :dir :system)
 (include-book "kestrel/system/world-queries" :dir :system)
 
-(local (set-default-parents term-manipulation))
+(local (set-default-parents term-utilities))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc term-manipulation
+(defxdoc term-utilities
   :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities to manipulate <see topic='@(url term)'>terms</see>.")
+  :short "Utilities related to <see topic='@(url term)'>terms</see>.")
 
 (define all-fns ((term pseudo-termp))
   ;; :returns (fns symbol-listp)
