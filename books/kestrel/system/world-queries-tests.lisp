@@ -363,7 +363,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event (let ((im (induction-machine 'len (w state))))
-                (and (eql (len im) 2)
+                (and (pseudo-induction-machinep 'len im)
+                     (eql (len im) 2)
                      (let ((im1 (first im)))
                        (and (equal (access tests-and-calls im1 :tests)
                                    '((consp x)))
@@ -384,7 +385,8 @@
        (+ (fib (- n 1))
           (fib (- n 2))))))
  (assert-event (let ((im (induction-machine 'fib (w state))))
-                 (and (eql (len im) 3)
+                 (and (pseudo-induction-machinep 'fib im)
+                      (eql (len im) 3)
                       (let ((im1 (first im)))
                         (and (equal (access tests-and-calls im1 :tests)
                                     '((zp n)))
@@ -406,6 +408,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (pseudo-tests-and-callp (make tests-and-call
+                                            :tests '((f x))
+                                            :call ''3)))
+
+(assert-event (not (pseudo-tests-and-callp (make tests-and-call
+                                                 :tests "a"
+                                                 :call 2))))
+
+(assert-event (not (pseudo-tests-and-callp 88)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (weak-tests-and-call-listp nil))
 
 (assert-event (weak-tests-and-call-listp (list (make tests-and-call
@@ -423,8 +437,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (pseudo-tests-and-call-listp nil))
+
+(assert-event (pseudo-tests-and-call-listp (list (make tests-and-call
+                                                       :tests '((f x))
+                                                       :call '(g y z))
+                                                 (make tests-and-call
+                                                       :tests '('3 x)
+                                                       :call ''#\a))))
+
+(assert-event (not (pseudo-tests-and-call-listp (list (make tests-and-call
+                                                            :tests 1
+                                                            :call 2)
+                                                      (make tests-and-call
+                                                            :tests "a"
+                                                            :call "b")))))
+
+(assert-event (not (pseudo-tests-and-call-listp 88)))
+
+(assert-event (not (pseudo-tests-and-call-listp (make tests-and-call
+                                                      :tests 1
+                                                      :call 2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (let ((rc (recursive-calls 'len (w state))))
-                (and (eql (len rc) 1)
+                (and (pseudo-tests-and-call-listp rc)
+                     (eql (len rc) 1)
                      (let ((rc1 (first rc)))
                        (and  (equal (access tests-and-call rc1 :tests)
                                     '((consp x)))
@@ -440,7 +479,8 @@
        (+ (fib (- n 1))
           (fib (- n 2))))))
  (assert-event (let ((rc (recursive-calls 'fib (w state))))
-                 (and (eql (len rc) 2)
+                 (and (pseudo-tests-and-call-listp rc)
+                      (eql (len rc) 2)
                       (let ((rc1 (first rc)))
                         (and (equal (access tests-and-call rc1 :tests)
                                     '((not (zp n))

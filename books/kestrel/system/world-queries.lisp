@@ -22,6 +22,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "system/kestrel" :dir :system)
 
@@ -306,11 +307,53 @@
   :true-listp t
   :elementp-of-nil nil)
 
+(define pseudo-tests-and-callp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize well-formed @('tests-and-call') records."
+  :long
+  "<p>
+  A @('tests-and-call') record is defined as
+  </p>
+  @({
+  (defrec tests-and-call (tests call) nil)
+  })
+  <p>
+  (see the ACL2 source code).
+  </p>
+  <p>
+  In a well-formed @('tests-and-call') record,
+  @('tests') must be a list of terms and
+  @('call') must be a term.
+  </p>
+  <p>
+  This recognizer is analogous to @('pseudo-tests-and-callsp')
+  in @('[books]/system/pseudo-good-worldp.lisp')
+  for @('tests-and-calls') records.
+  </p>"
+  (case-match x
+    (('tests-and-call tests call)
+     (and (pseudo-term-listp tests)
+          (pseudo-termp call)))
+    (& nil))
+
+  ///
+
+  (defrule weak-tests-and-call-p-when-pseudo-tests-and-callp
+    (implies (pseudo-tests-and-callp x)
+             (weak-tests-and-call-p x))
+    :rule-classes nil))
+
+(std::deflist pseudo-tests-and-call-listp (x)
+  (pseudo-tests-and-callp x)
+  :short "@('nil')-terminated lists of well-formed @('tests-and-call') records."
+  :true-listp t
+  :elementp-of-nil nil)
+
 (define recursive-calls ((fun (and (function-namep fun w)
                                    (logicp fun w)
                                    (eql 1 (len (recursivep fun w)))))
                          (w plist-worldp))
-  ;; :returns (calls-with-tests weak-tests-and-call-listp)
+  ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
   :verify-guards nil
   :short
   "Recursive calls of a (singly) recursive function,
@@ -327,7 +370,7 @@
 
   ((define recursive-calls-aux1 ((tests pseudo-term-listp)
                                  (calls pseudo-term-listp))
-     :returns (calls-with-tests weak-tests-and-call-listp)
+     ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
      :parents (recursive-calls)
      :short "First auxiliary function of @(tsee recursive-calls)."
      :long
@@ -343,9 +386,7 @@
 
    (define recursive-calls-aux2
      ((tests-and-calls-list pseudo-tests-and-calls-listp))
-     :returns (calls-with-tests
-               weak-tests-and-call-listp
-               :hints (("Goal" :in-theory (enable weak-tests-and-call-listp))))
+     ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
      :verify-guards nil
      :parents (recursive-calls)
      :short "Second auxiliary function of @(tsee recursive-calls)."
