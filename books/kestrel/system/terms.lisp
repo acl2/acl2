@@ -1,4 +1,4 @@
-; Terms
+; Term Utilities
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains utilities for manipulating ACL2 terms.
+; This file contains utilities for ACL2 terms.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,13 +17,13 @@
 (include-book "std/util/defines" :dir :system)
 (include-book "kestrel/system/world-queries" :dir :system)
 
-(local (set-default-parents term-manipulation))
+(local (set-default-parents term-utilities))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc term-manipulation
+(defxdoc term-utilities
   :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities to manipulate <see topic='@(url term)'>terms</see>.")
+  :short "Utilities related to <see topic='@(url term)'>terms</see>.")
 
 (define all-fns ((term pseudo-termp))
   ;; :returns (fns symbol-listp)
@@ -49,10 +49,11 @@
   in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  @('x') must be a @('nil')-terminated list of exactly three elements,
+  Check whether @('x') is
+  a @('nil')-terminated list of exactly three elements,
   whose first element is the symbol @('lambda'),
-  whose second element is a list of symbols,
-  and whose third element is a pseudo-term.
+  whose second element is a list of symbols, and
+  whose third element is a pseudo-term.
   </p>"
   (and (true-listp x)
        (eql (len x) 3)
@@ -75,7 +76,7 @@
   in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  @('x') must be a symbol or a pseudo-lambda-expression.
+  Check whether @('x')is a symbol or a pseudo-lambda-expression.
   These are the possible values of the first element of
   a pseudo-term that is not a variable or a quoted constant
   (i.e. a pseudo-term that is a function application).
@@ -240,7 +241,7 @@
   "True iff @('x') is a valid translated lambda expression."
   :long
   "<p>
-  @('x') must be a @('nil')-terminated list of exactly three elements,
+  Check whether @('x') is a @('nil')-terminated list of exactly three elements,
   whose first element is the symbol @('lambda'),
   whose second element is a list of legal variable symbols without duplicates,
   and whose third element is a valid translated term.
@@ -307,7 +308,8 @@
   "<p>
   An untranslated lambda expression is
   a lambda expression as entered by the user.
-  @('x') must a @('nil')-terminated list of exactly three elements,
+  This function checks whether @('x')is
+  a @('nil')-terminated list of exactly three elements,
   whose first element is the symbol @('lambda'),
   whose second element is a list of legal variable symbols without duplicates,
   and whose third element is an untranslated term that is valid for evaluation.
