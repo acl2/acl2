@@ -15,7 +15,6 @@
 (in-package "ACL2")
 
 (include-book "alists")
-(include-book "ensure")
 (include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
