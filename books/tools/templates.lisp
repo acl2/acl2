@@ -104,18 +104,20 @@ At each atom in the tree:
 
 <li> We check whether the car of the tree is a repetition operator, of the form
   @({
-    (:@proj <subtemplates-name> subforms)
+    (:@proj <subtemplates-name> subform)
    })
   or
   @({
-    (:@append <subtemplates-name> subforms)
+    (:@append <subtemplates-name> . subforms)
    })
 
   If so, we first look up the subtemplates-name in the @('subsubsts') field of
   our substitution.  The value should be a list of other substitution objects.
   These substitutions are each applied to subforms.  For the @(':@proj') case,
-  the results are consed into a list; for the @(':@append') case, appended
-  together.  These are then appended to the cdr and recursively substituted.</li>
+  the subform is expanded with to each subtemplate and the results are consed
+  into a list; for the @(':@append') case, all subforms are expanded with each
+  subtemplate and the results are appended together.  In either case, the
+  resulting list is appended to the cdr and recursively substituted.</li>
 
 <li> We check whether the car of the tree is bound in splice-alist, and if so
     we append its corresponding value to the recursive substitution of the
@@ -322,7 +324,7 @@ defthm would disappear.</p>
          (b* (((cons subtemp-name subforms) (cdar tree))
               (subtemplates (cdr (assoc subtemp-name subst.subsubsts)))
               (sub-res (if (eq (caar tree) :@proj)
-                           (template-proj subforms subtemplates)
+                           (template-proj (car subforms) subtemplates)
                          (template-append subforms subtemplates)))
               ((mv & ans) (template-subst-rec (append sub-res (cdr tree)) subst)))
            (mv t ans)))
