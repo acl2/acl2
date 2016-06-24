@@ -1,4 +1,4 @@
-; Terms -- Tests
+; Term Utilities -- Tests
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;

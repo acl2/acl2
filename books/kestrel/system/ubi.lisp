@@ -67,7 +67,7 @@
 (defxdoc ubi
   :parents (kestrel-system-utilities history system-utilities)
   :short "Undo back up to longest initial segment containing only calls of
- certain symbols, including @(tsee defpkg) and @(tsee include-book)"
+ certain symbols, including @(tsee defpkg) and @(tsee include-book)."
   :long "<p>The following example explains how @(':ubi') works.  We start up
  ACL2 and submit the following @(see command)s.</p>
 
@@ -134,7 +134,7 @@
  ACL2 !>:ubi
 
  There is nothing to undo, since all commands after the boot-strap are
- DEFUN, DEFPKG, INCLUDE-BOOK, XDOC, ADD-INCLUDE-BOOK-DIR or 
+ DEFUN, DEFPKG, INCLUDE-BOOK, XDOC, ADD-INCLUDE-BOOK-DIR or
  ADD-INCLUDE-BOOK-DIR! commands.
  ACL2 !>
  })
