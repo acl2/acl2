@@ -1,4 +1,4 @@
-; System Utilities
+; Non-Normalized Definition Installation Event -- Tests
 ;
 ; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,28 +8,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides some system utilities.
+; This file contains tests for the non-normalized definition installation event
+; in install-not-norm-event.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
-(include-book "auto-termination")
-(include-book "defun-sk-queries")
-(include-book "directed-untranslate")
-(include-book "event-forms")
 (include-book "install-not-norm-event")
-(include-book "minimize-ruler-extenders")
-(include-book "prove-interface")
-(include-book "terms")
-(include-book "ubi")
-(include-book "verify-guards-program")
-(include-book "world-queries")
+(include-book "kestrel/general/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc kestrel-system-utilities
+(assert-event
+ (equal (mv-list 2 (install-not-norm-event 'f nil))
+        '(f$not-normalized (install-not-normalized f))))
 
-  :parents (kestrel-books)
-
-  :short "Some system utilities.")
+(assert-event
+ (equal (mv-list 2 (install-not-norm-event 'g t))
+        '(g$not-normalized (local (install-not-normalized g)))))
