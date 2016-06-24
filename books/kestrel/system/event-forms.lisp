@@ -20,7 +20,7 @@
 
 (define pseudo-event-formp (x)
   :returns (yes/no booleanp)
-  :parents (kestrel-system-utilities)
+  :parents (kestrel-system-utilities system-utilities)
   :short
   "True iff @('x') has the basic structure of an event form."
   :long
@@ -46,7 +46,7 @@
 
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
-  :parents (pseudo-event-formp)
+  :parents (pseudo-event-formp system-utilities)
   :short
   "True iff @('x') is a @('nil')-terminated list
   each of whose elements has the
