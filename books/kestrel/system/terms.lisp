@@ -54,8 +54,8 @@
   :verify-guards nil
   :short
   "True iff the lambda expression is closed, i.e. it has no free variables."
-  (subsetp (all-vars (lambda-body lambd))
-           (lambda-formals lambd)))
+  (subsetp-eq (all-vars (lambda-body lambd))
+              (lambda-formals lambd)))
 
 (define pseudo-functionp (x)
   :returns (yes/no booleanp)
