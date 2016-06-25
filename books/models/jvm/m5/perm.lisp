@@ -1,9 +1,3 @@
-#|
-; Certification instructions:
-(certify-book "perm")
-JSM June, 2000
-|#
-
 (in-package "ACL2")
 
 (defun del (x y)

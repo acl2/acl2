@@ -18,50 +18,91 @@
 ; factorial on M5.
 
 #|
-; Certification Instructions.
-
-(include-book "utilities")
-
-(certify-book "idemo" 1)
-
-J Moore
-
 Here is the Java for an iterative factorial method.
 
 class IDemo {
 
-  public static int ifact(int n){
-    int temp = 1;
-    while (0<n) {
-	temp = n*temp;
-	n = n-1;
+    public static int ifact(int n) {
+        int temp = 1;
+        while (0<n) {
+            temp = n*temp;
+	    n = n-1;
+        }
+        return temp;
     }
-    return temp;
-  }
- }
+
+    public static void main(Strig[] args) {
+        ifact(8);
+    }
+}
 
 The corresponding bytecode for ifact is shown below.
 
-Method int ifact(int)
-   0 iconst_1
-   1 istore_1
-   2 goto 13
-   5 iload_0
-   6 iload_1
-   7 imul
-   8 istore_1
-   9 iload_0
-  10 iconst_1
-  11 isub
-  12 istore_0
-  13 iload_0
-  14 ifgt 5
-  17 iload_1
-  18 ireturn
+Compiled from "IDemo.java"
+class IDemo {
+  IDemo();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
 
+  public static int ifact(int);
+    Code:
+       0: iconst_1
+       1: istore_1
+       2: iconst_0
+       3: iload_0
+       4: if_icmpge     18
+       7: iload_0
+       8: iload_1
+       9: imul
+      10: istore_1
+      11: iload_0
+      12: iconst_1
+      13: isub
+      14: istore_0
+      15: goto          2
+      18: iload_1
+      19: ireturn
+
+  public static void main(java.lang.String[]);
+    Code:
+       0: bipush        8
+       2: invokestatic  #2                  // Method ifact:(I)I
+       5: pop
+       6: return
+}
 |#
 
 (in-package "M5")
+(include-book "utilities")
+
+(include-book "classes/IDemo")
+
+(defconst *IDemo-class-table-in-tagged-form*
+ (make-class-def
+  (list
+    *IDemo*)))
+
+(defconst *IDemo-main*
+  (method-program
+    (bound? "main:([Ljava/lang/String;)V" (class-decl-methods *IDemo*))))
+
+(defun IDemo-ms ()
+  (make-state
+   (make-tt (push (make-frame 0
+                              nil
+                              nil
+                              *IDemo-main*
+                              'UNLOCKED
+                              "IDemo")
+                  nil))
+   nil
+   *IDemo-class-table-in-tagged-form*
+   *default-m5-options*))
+
+(defun IDemo ()
+  (m5_load (IDemo-ms)))
 
 ; Note that we have not shown a main program for our IDemo
 ; class.  We make one up below.  The initial state is only used to
@@ -77,115 +118,135 @@ Method int ifact(int)
              0
              nil
              nil
-             '((ICONST\_4)
-               (ICONST\_4)
-               (IADD)
-               (INVOKESTATIC "IDemo" "ifact" 1)
-               (HALT))
-             'UNLOCKED
+             '((bipush 8)
+               (invokestatic 2) ; IDemo.ifact:(I)I
+               (pop)
+               (return))
+             'unlocked
              "IDemo")
             nil)
-           'SCHEDULED
+           'scheduled
            nil))))
 
 (defconst *IDemo-heap*
-  '((0 . (("java.lang.Class"
-           ("<name>" . "java.lang.Object"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (1 . (("java.lang.Class"
-           ("<name>" . "ARRAY"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (2 . (("java.lang.Class"
-           ("<name>" . "java.lang.Thread"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (3 . (("java.lang.Class"
-           ("<name>" . "java.lang.String"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (4 . (("java.lang.Class"
-           ("<name>" . "java.lang.Class"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (5 . (("java.lang.Class"
-           ("<name>" . "IDemo"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))))
+  '((0 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Object"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (1 . (("java/lang/Class" ("<sfields>") ("<name>" . "[Ljava/lang/Object;"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (2 . (("java/lang/Class" ("<sfields>") ("<name>" . "[C"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (3 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (4 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/String"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (5 . (("java/lang/Class" ("<sfields>") ("<name>" . "[Ljava/lang/String;"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (6 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Class"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (7 . (("java/lang/Class" ("<sfields>") ("<name>" . "IDemo"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))))
 
 (defconst *IDemo-class-table*
-  '(("java.lang.Object"
-     NIL
-     ("monitor" "mcount" "wait-set")
-     NIL
-     NIL
-     (("<init>" NIL NIL (RETURN)))
-     (REF 0))
-    ("ARRAY"
-     ("java.lang.Object")
-     (("<array>" . *ARRAY*))
-     NIL
-     NIL
-     NIL
-     (REF 1))
-    ("java.lang.Thread"
-     ("java.lang.Object")
-     NIL
-     NIL
-     NIL
-     (("run" NIL NIL (RETURN))
-      ("start" NIL NIL NIL)
-      ("stop" NIL NIL NIL)
-      ("<init>" NIL NIL (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+  '(("java/lang/Object"
+     ()
+     (NIL)
+     #x00000021                                                 ; PUBLIC SUPER
+     ()
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (RETURN)))
+     (REF 0))
+    ("[Ljava/lang/Object;"
+     ("java/lang/Object")
+     ()
+     0
+     ()
+     ()
+     (REF 1))
+    ("[C"
+     ("java/lang/Object")
+     ()
+     0
+     ()
+     ()
      (REF 2))
-    ("java.lang.String"
-     ("java.lang.Object")
-     ("strcontents")
-     NIL
-     NIL
-     (("<init>" NIL NIL
+    ("java/lang/Thread"
+     ("java/lang/Object")
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+     #x00000021                                                 ; PUBLIC SUPER
+     ()
+     (("run:()V" #x00000001                                     ; PUBLIC
+       (RETURN))
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 3))
-    ("java.lang.Class"
-     ("java.lang.Object")
-     NIL
-     NIL
-     NIL
-     (("<init>" NIL NIL
+    ("java/lang/String"
+     ("java/lang/Object")
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+     (
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
+     )
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 4))
-    ("IDemo"
-     ("java.lang.Object")
-     NIL
-     NIL
-     NIL
-     (("<init>" NIL NIL
+    ("[Ljava/lang/String;"
+     ("[Ljava/lang/Object;" "java/lang/Object")
+     ()
+     0
+     ()
+     ()
+     (REF 5))
+    ("java/lang/Class"
+     ("java/lang/Object")
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+     ()
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL 1)
+       (RETURN)))
+     (REF 6))
+    ("IDemo"
+     ("java/lang/Object")
+     (nil
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (methodref "IDemo" "ifact:(I)I" 1)                       ; 2
+       (class (ref 7) "IDemo")                                  ; 3
+       (class (ref 0) "java/lang/Object")                       ; 4
+       (utf8)                                                   ; 5
+       (utf8)                                                   ; 6
+       (utf8)                                                   ; 7
+       (utf8)                                                   ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (name-and-type "<init>:()V")                             ; 16
+       (name-and-type "ifact:(I)I")                             ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
+      )
+     #x00000020                                                 ; SUPER
+     ()
+     (("<init>:()V" #x00000000                                  ;
+       (ALOAD\_0)
+       (INVOKESPECIAL 1)
        (RETURN))
-      ("ifact" (INT) NIL
+      ("ifact:(I)I" #x00000009                                  ; PUBLIC STATIC
        (ICONST\_1)
        (ISTORE\_1)
-       (GOTO 11)
+       (ICONST\_0)
+       (ILOAD\_0)
+       (IF\_ICMPGE 14)
        (ILOAD\_0)
        (ILOAD\_1)
        (IMUL)
@@ -194,16 +255,26 @@ Method int ifact(int)
        (ICONST\_1)
        (ISUB)
        (ISTORE\_0)
-       (ILOAD\_0)
-       (IFGT -9)
+       (GOTO -13)
        (ILOAD\_1)
-       (IRETURN)))
-     (REF 5))))
+       (IRETURN))
+      ("main:([Ljava/lang/String;)V" #x00000009                 ; PUBLIC STATIC
+       (BIPUSH 8)
+       (INVOKESTATIC 2)
+       (POP)
+       (RETURN)))
+     (REF 7))))
 
 (defconst *IDemo-state*
   (make-state *IDemo-thread-table*
               *IDemo-heap*
-              *IDemo-class-table*))
+              *IDemo-class-table*
+              *default-m5-options*))
+
+(defthm idemo-state-is-idemo
+  (equal (IDemo)
+         *IDemo-state*)
+  :rule-classes nil)
 
 ; The Mathematical Function
 
@@ -219,17 +290,17 @@ Method int ifact(int)
 ; A Schedule that Runs fact to Completion
 
 ; This subroutine computes a schedule suitable for starting at the
-; (ILOAD_0) at pc 13, which we consider the "top" of the loop.  The
+; (ICONST_0) at pc 2, which we consider the "top" of the loop.  The
 ; schedule drives the machine to (but not through) the (IRETURN).
 
 (defun ifact-loop-sched (th n)
   (if (zp n)
-      (repeat th 3)
-    (append (repeat th 10)
+      (repeat th 4)
+    (append (repeat th 12)
             (ifact-loop-sched th (- n 1)))))
 
 (defun ifact-sched (th n)
-  (append (repeat th 4)
+  (append (repeat th 3)
           (ifact-loop-sched th n)
           (repeat th 1)))
 
@@ -238,7 +309,7 @@ Method int ifact(int)
 ; This schedule executes main to termination.
 
 (defun imain-sched (th)
-  (append (repeat th 3)
+  (append (repeat th 1)
           (ifact-sched th 8)))
 
 (defthm isample-execution
@@ -258,11 +329,11 @@ Method int ifact(int)
     (ifactorial (- n 1) (int-fix (* n temp)))))
 
 (defconst *ifact-def*
-  (lookup-method "ifact" "IDemo" *IDemo-class-table*))
+  (bound? "ifact:(I)I" (class-decl-methods (bound? "IDemo" *IDemo-class-table*))))
 
 (defun poised-at-ifact-loop (th s n)
   (and (equal (status th s) 'SCHEDULED)
-       (equal (pc (top-frame th s)) 13)
+       (equal (pc (top-frame th s)) 2)
        (equal (program (top-frame th s)) (method-program *ifact-def*))
        (equal n (nth 0 (locals (top-frame th s))))
        (intp n)
@@ -278,7 +349,7 @@ Method int ifact(int)
        th
        (make-thread
         (push
-         (make-frame 13
+         (make-frame 2
                      (update-nth 0 (- n 1)
                                  (update-nth 1 (int-fix
                                                 (* n
@@ -294,7 +365,8 @@ Method int ifact(int)
         (rref th s))
        (thread-table s))
       (heap s)
-      (class-table s))
+      (class-table s)
+      (options s))
      (- n 1))))
 
 (defthm ifact-loop-is-correct
@@ -302,7 +374,7 @@ Method int ifact(int)
            (equal
             (run (ifact-loop-sched th n) s)
             (modify th s
-             :pc 18
+             :pc 19
              :locals
              (if (zp n)
                  (locals (top-frame th s))
@@ -323,11 +395,10 @@ Method int ifact(int)
            :induct (ifact-loop-induction-hint th s n))))
 
 (defun poised-to-invoke-ifact (th s n)
-  (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(invokestatic "IDemo" "ifact" 1))
+  (and (poised-to-invokestatic th s "IDemo" "ifact:(I)I" 1)
        (equal n (top (stack (top-frame th s))))
        (intp n)
-       (equal (lookup-method "ifact" "IDemo" (class-table s))
+       (equal (bound? "ifact:(I)I" (class-decl-methods (bound? "IDemo" (class-table s))))
               *ifact-def*)))
 
 (defthm ifact-is-correct
@@ -357,4 +428,3 @@ Method int ifact(int)
                     :stack
                     (push (int-fix (factorial n))
                           (pop (stack (top-frame th s))))))))
-

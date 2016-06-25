@@ -1,3 +1,1 @@
 (include-book "models/jvm/m5/m5" :dir :system)
-
-(certify-book "utilities" ? t)

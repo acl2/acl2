@@ -18,7 +18,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
 |#
 
 ;; The book is included to get the class file in.
-(include-book "../m5/demo")
+(include-book "models/jvm/m5/jvm-fact-setup" :dir :system)
 (include-book "ordinals/ordinals" :dir :system)
 
 ;; Here is the definition of mathematical factorial function, referred to as
@@ -69,7 +69,8 @@ method referred to in "Inductive Assertions and Operational Semantics".
   (declare (xargs :measure (acl2-count k)))
   (cond ((zp k) t)
         ((and (equal (pc (top cs)) 11)
-              (equal (program (top cs)) (cdddr *fact-def*))
+              (equal (program (top cs)) (method-program *fact-def*))
+              (equal (cur-class (top cs)) "Demo")
               (equal (sync-flg (top cs)) 'UNLOCKED)
               (intp (nth 0 (locals (top cs))))
               (equal (+ n0 (- k)) (- (nth 0 (locals (top cs))) 1))
@@ -91,8 +92,11 @@ method referred to in "Inductive Assertions and Operational Semantics".
                 (int-fix (fact n0))))
         (t
          (let ((n (nth 0 (locals (top-frame (th) s)))))
-           (and (equal (program (top-frame (th) s)) (cdddr *fact-def*))
-                (equal (lookup-method "fact" "Demo" (class-table s))
+           (and (equal (program (top-frame (th) s)) (method-program *fact-def*))
+                (equal (cur-class (top-frame (th) s)) "Demo")
+                (equal (retrieve-cp-entry "Demo" 2 (class-table s))
+                       '(methodref "Demo" "fact:(I)I" 1))
+                (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s))))
                        *fact-def*)
                 (equal (sync-flg (top-frame (th) s)) 'UNLOCKED)
                 (intp n0)
@@ -154,10 +158,13 @@ method referred to in "Inductive Assertions and Operational Semantics".
         (equal (pc (top-frame (th) s)) 0)
         (equal (locals (top-frame (th) s)) (list n0))
         (equal (program (top-frame (th) s))
-               (cdddr *fact-def*))
+               (method-program *fact-def*))
+        (equal (cur-class (top-frame (th) s)) "Demo")
+        (equal (retrieve-cp-entry "Demo" 2 (class-table s))
+               '(methodref "Demo" "fact:(I)I" 1))
         (equal (status (th) s) 'scheduled)
         (equal (sync-flg (top-frame (th) s)) 'unlocked)
-        (equal (lookup-method "fact" "Demo" (class-table s))
+        (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s))))
                *fact-def*)
         (equal (sdepth (call-stack (th) s)) d0)))
 

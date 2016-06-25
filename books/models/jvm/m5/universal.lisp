@@ -52,95 +52,102 @@ thus run the "universal program" according to the schedule generated
 by the schedule-generator and then look at the top of thread zero's
 active operand stack.
 
-To recertify:
-
-(include-book "utilities")
-
-(certify-book "universal" 1)
-
 Sun Jun 30 23:21:06 2002
 
 |#
 
 (in-package "M5")
+(include-book "utilities")
 
 (defconst *universal-state*
   '(((0 ((0 NIL NIL
-            ((INVOKESTATIC "Universal" "universal" 0)
+            ((INVOKESTATIC 2)
              (POP)
              (RETURN))
             JVM::UNLOCKED "Universal"))
         SCHEDULED NIL))
-    ((0 ("java.lang.Class" ("<name>" . "java.lang.Object"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (1 ("java.lang.Class" ("<name>" . "ARRAY"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (2 ("java.lang.Class" ("<name>" . "java.lang.Thread"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (3 ("java.lang.Class" ("<name>" . "java.lang.String"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (4 ("java.lang.Class" ("<name>" . "java.lang.Class"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (5 ("java.lang.Class" ("<name>" . "Universal"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0))))
-    (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
-      NIL NIL (("<init>" NIL NIL (RETURN)))
-      (REF 0))
-     ("ARRAY" ("java.lang.Object")
-      (("<array>" . *ARRAY*))
-      NIL NIL NIL (REF 1))
-     ("java.lang.Thread"
-      ("java.lang.Object")
-      NIL NIL NIL
-      (("run" NIL NIL (RETURN))
-       ("start" NIL NIL NIL)
-       ("stop" NIL NIL NIL)
-       ("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+    ((0 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Object"))
+        ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
+     (1 ("java/lang/Class" ("<sfields>") ("<name>" . "[C"))
+        ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
+     (2 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Thread"))
+        ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
+     (3 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/String"))
+        ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
+     (4 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Class"))
+        ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0)))
+     (5 ("java/lang/Class" ("<sfields>") ("<name>" . "Universal"))
+        ("java/lang/Object" ("<monitor>" . 0) ("mcount" . 0))))
+    (("java/lang/Object"
+      ()
+      (NIL)
+      #x00000021                                                 ; PUBLIC SUPER
+      ()
+      (("<init>:()V" #x00000001                                  ; PUBLIC
+        (RETURN)))
+       (REF 0))
+      ("[C"
+       ("java/lang/Object")
+       ()
+       0
+       ()
+       ()
+       (REF 1))
+     ("java/lang/Thread"
+      ("java/lang/Object")
+      (NIL
+       (METHODREF "java/lang/Object" "<init>:()V" 0))
+      #x00000021                                                 ; PUBLIC SUPER
+      ()
+      (("run:()V" #x00000001                                     ; PUBLIC
+        (RETURN))
+       ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+       ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+       ("<init>:()V" #x00000001                                  ; PUBLIC
+        (ALOAD_0)
+        (INVOKESPECIAL 1)
         (RETURN)))
       (REF 2))
-     ("java.lang.String"
-      ("java.lang.Object")
-      ("strcontents")
-      NIL NIL
-      (("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+     ("java/lang/String"
+      ("java/lang/Object")
+      (NIL
+       (METHODREF "java/lang/Object" "<init>:()V" 0))
+      #x00000031                                                 ; PUBLIC FINAL SUPER
+      (
+       ("value:[C" #x00000012)                                   ; PRIVATE FINAL
+      )
+      (("<init>:()V" #x00000001                                  ; PUBLIC
+        (ALOAD_0)
+        (INVOKESPECIAL 1)
         (RETURN)))
       (REF 3))
-     ("java.lang.Class" ("java.lang.Object")
-      NIL NIL NIL
-      (("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+     ("java/lang/Class"
+      ("java/lang/Object")
+      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+      #x00000031                                                 ; PUBLIC FINAL SUPER
+      ()
+      (("<init>:()V" #x00000001                                  ; PUBLIC
+        (ALOAD_0)
+        (INVOKESPECIAL 1)
         (RETURN)))
       (REF 4))
-     ("Universal" ("java.lang.Object")
-      NIL NIL NIL
-      (("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+     ("Universal" ("java/lang/Object")
+      (NIL
+       (METHODREF "java/lang/Object" "<init>:()V" 0) ; 1
+       (METHODREF "Universal" "universal:()I" 0)) ; 2
+      #x00000020                                                 ; SUPER
+      ()
+      (("<init>:()V" #x00000001                                  ; PUBLIC
+        (ALOAD_0)
+        (INVOKESPECIAL 1)
         (RETURN))
-       ("universal" NIL NIL
+       ("universal:()I" #x00000001                               ; PUBLIC
         (ICONST_0)
         (ICONST_1)
         (IADD)
-        (GOTO -2))
-       ("main" (|JAVA.LANG.STRING[]|)
-        NIL
-        (INVOKESTATIC "Universal" "universal" 0)
-        (POP)
-        (RETURN)))
-      (REF 5)))))
+        (GOTO -2)))
+      (REF 5)))
+    DEFAULT-M5-OPTIONS))
 
 ; Here is the code array of the method "universal":
 
@@ -223,10 +230,10 @@ Sun Jun 30 23:21:06 2002
            :in-theory (enable zp))))
 
 (defun poised-to-invoke-universal (th s i)
-  (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal" 0))
-       (equal (lookup-method "universal" "Universal" (class-table s))
-              '("universal" NIL NIL
+  (and (poised-to-invokestatic th s "Universal" "universal:()I" 0)
+       (equal (bound? "universal:()I"
+                      (class-decl-methods (bound? "Universal" (class-table s))))
+              '("universal:()I" #x00000001                                 ; PUBLIC
                 (ICONST_0)
                 (ICONST_1)
                 (IADD)

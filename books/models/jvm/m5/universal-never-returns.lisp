@@ -1,11 +1,5 @@
-#|
-Certification:
-(include-book "universal")
-(certify-book "universal-never-returns" 1)
-J Moore
-Aug 2, 2002
-|#
 (in-package "M5")
+(include-book "universal")
 
 ; Some people leap to the conclusion that because ACL2 is a logic of
 ; total functions we can only deal with total programs.  That is, of
@@ -96,7 +90,8 @@ Aug 2, 2002
       (CADDDR (ASSOC-EQUAL TH (THREAD-TABLE S))))
      (THREAD-TABLE S))
     (HEAP S)
-    (CLASS-TABLE S))))
+    (CLASS-TABLE S)
+    (OPTIONS S))))
   :hints (("Goal" :in-theory (enable inside-universalp))))
 
 (defthm poised-to-invoke-universal-never-returns

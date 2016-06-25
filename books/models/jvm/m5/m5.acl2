@@ -12,6 +12,7 @@
                JVM::AASTORE
                JVM::ACONST_NULL
                JVM::ALOAD
+               JVM::ALOAD_W
                JVM::ALOAD_0
                JVM::ALOAD_1
                JVM::ALOAD_2
@@ -20,6 +21,7 @@
                JVM::ARETURN
                JVM::ARRAYLENGTH
                JVM::ASTORE
+               JVM::ASTORE_W
                JVM::ASTORE_0
                JVM::ASTORE_1
                JVM::ASTORE_2
@@ -29,18 +31,78 @@
                JVM::BIPUSH
                JVM::CALOAD
                JVM::CASTORE
+               JVM::CHECKCAST
+               JVM::D2F
+               JVM::D2I
+               JVM::D2L
+               JVM::DADD
+               JVM::DALOAD
+               JVM::DASTORE
+               JVM::DCMPG
+               JVM::DCMPL
+               JVM::DCONST_0
+               JVM::DCONST_1
+               JVM::DDIV
+               JVM::DLOAD
+               JVM::DLOAD_W
+               JVM::DLOAD_0
+               JVM::DLOAD_1
+               JVM::DLOAD_2
+               JVM::DLOAD_3
+               JVM::DMUL
+               JVM::DNEG
+               JVM::DREM
+               JVM::DRETURN
+               JVM::DSTORE
+               JVM::DSTORE_W
+               JVM::DSTORE_0
+               JVM::DSTORE_1
+               JVM::DSTORE_2
+               JVM::DSTORE_3
+               JVM::DSUB
                JVM::DUP
                JVM::DUP_X1
                JVM::DUP_X2
                JVM::DUP2
                JVM::DUP2_X1
                JVM::DUP2_X2
+               JVM::F2D
+               JVM::F2I
+               JVM::F2L
+               JVM::FADD
+               JVM::FALOAD
+               JVM::FASTORE
+               JVM::FCMPG
+               JVM::FCMPL
+               JVM::FCONST_0
+               JVM::FCONST_1
+               JVM::FCONST_2
+               JVM::FDIV
+               JVM::FLOAD
+               JVM::FLOAD_W
+               JVM::FLOAD_0
+               JVM::FLOAD_1
+               JVM::FLOAD_2
+               JVM::FLOAD_3
+               JVM::FMUL
+               JVM::FNEG
+               JVM::FREM
+               JVM::FRETURN
+               JVM::FSTORE
+               JVM::FSTORE_W
+               JVM::FSTORE_0
+               JVM::FSTORE_1
+               JVM::FSTORE_2
+               JVM::FSTORE_3
+               JVM::FSUB
                JVM::GETFIELD
                JVM::GETSTATIC
                JVM::GOTO
                JVM::GOTO_W
                JVM::I2B
                JVM::I2C
+               JVM::I2D
+               JVM::I2F
                JVM::I2L
                JVM::I2S
                JVM::IADD
@@ -72,7 +134,9 @@
                JVM::IFNONNULL
                JVM::IFNULL
                JVM::IINC
+               JVM::IINC_W
                JVM::ILOAD
+               JVM::ILOAD_W
                JVM::ILOAD_0
                JVM::ILOAD_1
                JVM::ILOAD_2
@@ -89,6 +153,7 @@
                JVM::ISHL
                JVM::ISHR
                JVM::ISTORE
+               JVM::ISTORE_W
                JVM::ISTORE_0
                JVM::ISTORE_1
                JVM::ISTORE_2
@@ -98,6 +163,8 @@
                JVM::IXOR
                JVM::JSR
                JVM::JSR_W
+               JVM::L2D
+               JVM::L2F
                JVM::L2I
                JVM::LADD
                JVM::LALOAD
@@ -111,18 +178,21 @@
                JVM::LDC2_W
                JVM::LDIV
                JVM::LLOAD
+               JVM::LLOAD_W
                JVM::LLOAD_0
                JVM::LLOAD_1
                JVM::LLOAD_2
                JVM::LLOAD_3
                JVM::LMUL
                JVM::LNEG
+	       JVM::LOOKUPSWITCH
                JVM::LOR
                JVM::LREM
                JVM::LRETURN
                JVM::LSHL
                JVM::LSHR
                JVM::LSTORE
+               JVM::LSTORE_W
                JVM::LSTORE_0
                JVM::LSTORE_1
                JVM::LSTORE_2
@@ -141,11 +211,13 @@
                JVM::PUTFIELD
                JVM::PUTSTATIC
                JVM::RET
+               JVM::RET_W
                JVM::RETURN
                JVM::SALOAD
                JVM::SASTORE
                JVM::SIPUSH
                JVM::SWAP
+	       JVM::TABLESWITCH
                ASSOC-EQUAL LEN NTH ZP SYNTAXP
                QUOTEP FIX NFIX E0-ORDINALP E0-ORD-<)
              (union-eq *acl2-exports*

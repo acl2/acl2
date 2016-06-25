@@ -35,7 +35,7 @@ class Job extends Thread {
 }
 
 class Apprentice {
-    public static void main(String[] args) {
+    public static void main(/*String[] args*/) {
 
         Container container = new Container();
 
@@ -141,14 +141,14 @@ version.
  several useful suggestions for simplifying his original code.  The most
  important was to rearrange the code sequence
     (load job1)
-    (invokevirtual "Job" "start" 0)
+    (invokevirtual "Job" "start:()V" 0)
     (load job2)
-    (invokevirtual "Job" "start" 0)
+    (invokevirtual "Job" "start:()V" 0)
  to
     (load job2)
     (load job1)
-    (invokevirtual "Job" "start" 0)
-    (invokevirtual "Job" "start" 0)
+    (invokevirtual "Job" "start:()V" 0)
+    (invokevirtual "Job" "start:()V" 0)
  In retrospect this is not a big deal and could be easily dealt with.
  But at the time I was doing the proof I just couldn't stand the
  idea of carrying more invariants further into the ``pre-*s1*'' state.
@@ -292,8 +292,40 @@ Sun Jul 15 14:17:26 2001
 |#
 
 (in-package "M5")
+(include-book "classes/Apprentice")
+(include-book "classes/Container")
+(include-book "classes/Job")
 
-(include-book "apprentice-state")
+; The material below is the output of jvm2acl2 on Apprentice.java.
+
+(defconst *Apprentice-class-table*
+ (make-class-def
+  (list
+    *Apprentice*
+    *Container*
+    *Job*)))
+
+(defconst *Apprentice-main*
+  (method-program
+    (bound? "main:()V"
+;    (bound? "main:([Ljava/lang/String;)V"
+            (class-decl-methods (bound? "Apprentice" *Apprentice-class-table*)))))
+
+(defun Apprentice-ms ()
+  (make-state
+   (make-tt (push (make-frame 0
+                              nil
+                              nil
+                              *Apprentice-main*
+                              'UNLOCKED
+                              "Apprentice")
+                  nil))
+   nil
+   *Apprentice-class-table*
+   *default-m5-options*))
+
+(defun Apprentice ()
+  (m5_load (Apprentice-ms)))
 
 (defconst *a0* (Apprentice))
 
@@ -303,7 +335,7 @@ Sun Jul 15 14:17:26 2001
 ; It is known that the Container will be at (REF 8).
 
 (defun counter (s)
-  (gf "Container" "counter" 8 (heap s)))
+  (gf "Container" "counter:I" 8 (heap s)))
 
 (defun rel (c1 c2)
   (or (equal c2 c1)
@@ -317,50 +349,65 @@ Sun Jul 15 14:17:26 2001
 
 (defconst *java.lang.Thread.<init>*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKESPECIAL "java.lang.Object" "<init>" 0) ;;;  1
+    (INVOKESPECIAL 1)                             ;;;  1 java.lang.Object.<init>:()V
     (RETURN)))                                    ;;;  4
 
 (defconst *Apprentice.main*
-  '((NEW "Container")                             ;;;  0
+  '((NEW 2)                                       ;;;  0 class Container
     (DUP)                                         ;;;  3
-    (INVOKESPECIAL "Container" "<init>" 0)        ;;;  4
+    (INVOKESPECIAL 3)                             ;;;  4 Container.<init>:()V
+    (ASTORE_0)                                    ;;;  7
+    (NEW 4)                                       ;;;  8 class Job
+    (DUP)                                         ;;; 11
+    (INVOKESPECIAL 5)                             ;;; 12 Job.<init>:()V
+    (ASTORE_1)                                    ;;; 15
+    (ALOAD_1)                                     ;;; 16
+    (ALOAD_0)                                     ;;; 17
+    (INVOKEVIRTUAL 6)                             ;;; 18 Job.setref:(LContainer;)V
+    (ALOAD_1)                                     ;;; 21
+    (INVOKEVIRTUAL 7)                             ;;; 22 java.lang.Thread.start:()V
+    (GOTO -17)))                                  ;;; 25
+#|
+(defconst *Apprentice.main*
+  '((NEW 2)                                       ;;;  0 class Container
+    (DUP)                                         ;;;  3
+    (INVOKESPECIAL 3)                             ;;;  4 Container.<init>:()V
     (ASTORE_1)                                    ;;;  7
-    (GOTO 3)                                      ;;;  8
-    (NEW "Job")                                   ;;; 11
-    (DUP)                                         ;;; 14
-    (INVOKESPECIAL "Job" "<init>" 0)              ;;; 15
-    (ASTORE_2)                                    ;;; 18
-    (ALOAD_2)                                     ;;; 19
-    (ALOAD_1)                                     ;;; 20
-    (INVOKEVIRTUAL "Job" "setref" 1)              ;;; 21
-    (ALOAD_2)                                     ;;; 24
-    (INVOKEVIRTUAL "java.lang.Thread" "start" 0)  ;;; 25
-    (GOTO -17)))                                  ;;; 28
-
+    (NEW 4)                                       ;;;  8 class Job
+    (DUP)                                         ;;; 11
+    (INVOKESPECIAL 5)                             ;;; 12 Job.<init>:()V
+    (ASTORE_2)                                    ;;; 15
+    (ALOAD_2)                                     ;;; 16
+    (ALOAD_1)                                     ;;; 17
+    (INVOKEVIRTUAL 6)                             ;;; 18 Job.setref:(LContainer;)V
+    (ALOAD_2)                                     ;;; 21
+    (INVOKEVIRTUAL 7)                             ;;; java.lang.Thread.start:()V
+    (GOTO -17)))                                  ;;; 25
+|#
 (defconst *Container.<init>*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKESPECIAL "java.lang.Object" "<init>" 0) ;;;  1
+    (INVOKESPECIAL 1)                             ;;;  1 java.lang.Object.<init>:()V
     (RETURN)))                                    ;;;  4
 
 (defconst *Job.<init>*
   '((ALOAD_0)                                     ;;;  0
-    (INVOKESPECIAL "java.lang.Thread" "<init>" 0) ;;;  1
+    (INVOKESPECIAL 1)                             ;;;  1 java.lang.Thread.<init>:()V
     (RETURN)))                                    ;;;  4
 
 (defconst *Job.incr*
   '((ALOAD_0)                                     ;;;  0
-    (GETFIELD "Job" "objref")                     ;;;  1
-    (ASTORE_1)                                    ;;;  4
-    (ALOAD_1)                                     ;;;  5
+    (GETFIELD 2)                                  ;;;  1 Job.objref:LContainer;
+    (DUP)                                         ;;;  4
+    (ASTORE_1)                                    ;;;  5
     (MONITORENTER)                                ;;;  6
     (ALOAD_0)                                     ;;;  7
-    (GETFIELD "Job" "objref")                     ;;;  8
+    (GETFIELD 2)                                  ;;;  8 Job.objref:LContainer;
     (ALOAD_0)                                     ;;; 11
-    (GETFIELD "Job" "objref")                     ;;; 12
-    (GETFIELD "Container" "counter")              ;;; 15
+    (GETFIELD 2)                                  ;;; 12 Job.objref:LContainer;
+    (GETFIELD 3)                                  ;;; 15 Container.counter:I
     (ICONST_1)                                    ;;; 18
     (IADD)                                        ;;; 19
-    (PUTFIELD "Container" "counter")              ;;; 20
+    (PUTFIELD 3)                                  ;;; 20 Container.counter:I
     (ALOAD_1)                                     ;;; 23
     (MONITOREXIT)                                 ;;; 24
     (GOTO 8)                                      ;;; 25
@@ -375,15 +422,14 @@ Sun Jul 15 14:17:26 2001
 (defconst *Job.setref*
   '((ALOAD_0)                                     ;;;  0
     (ALOAD_1)                                     ;;;  1
-    (PUTFIELD "Job" "objref")                     ;;;  2
+    (PUTFIELD 2)                                  ;;;  2 ; Job.objref:LContainer;
     (RETURN)))                                    ;;;  5
 
 (defconst *Job.run*
-  '((GOTO 3)                                      ;;;  0
-    (ALOAD_0)                                     ;;;  3
-    (INVOKEVIRTUAL "Job" "incr" 0)                ;;;  4
-    (POP)                                         ;;;  7
-    (GOTO -5)))                                   ;;;  8
+  '((ALOAD_0)                                     ;;;  0
+    (INVOKEVIRTUAL 4)                             ;;;  1 Job.incr:()LJob;
+    (POP)                                         ;;;  4
+    (GOTO -5)))                                   ;;;  5
 
 ; Some of these constants are identical, e.g.,
 ; *java.lang.Thread.<init>* is equal to *Container.<init>*.
@@ -399,44 +445,60 @@ Sun Jul 15 14:17:26 2001
 
 (defun program1 (class method)
   (cond
-   ((equal class "java.lang.Object")
+   ((equal class "java/lang/Object")
     (cond
-     ((equal method "<init>")
+     ((equal method "<init>:()V")
       *java.lang.Object.<init>*)
      (t nil)))
-   ((equal class "java.lang.Thread")
+   ((equal class "java/lang/Thread")
     (cond
-     ((equal method "<init>")
+     ((equal method "<init>:()V")
       *java.lang.Thread.<init>*)
      (t nil)))
    ((equal class "Apprentice")
     (cond
-     ((equal method "main")
+     ((equal method "main:()V")
+;     ((equal method "main:([Ljava/lang/String;)V")
       *Apprentice.main*)
      (t nil)))
    ((equal class "Container")
     (cond
-     ((equal method "<init>")
+     ((equal method "<init>:()V")
       *Container.<init>*)
      (t nil)))
    ((equal class "Job")
     (cond
-     ((equal method "<init>")
+     ((equal method "<init>:()V")
       *Job.<init>*)
-     ((equal method "incr")
+     ((equal method "incr:()LJob;")
       *Job.incr*)
-     ((equal method "setref")
+     ((equal method "setref:(LContainer;)V")
       *Job.setref*)
-     ((equal method "run")
+     ((equal method "run:()V")
       *Job.run*)
      (t nil)))
    (t nil)))
 
+(defun check-program1 (class method)
+  (equal (program1 class method)
+         (method-program (bound? method (class-decl-methods (bound? class (class-table *a0*)))))))
+
+(defthm check-program1-all
+  (and
+    (check-program1 "java.lang.Object" "<init>:()V")
+    (check-program1 "java.lang.Thread" "<init>:()V")
+    (check-program1 "Apprentice" "main:()V")
+;    (check-program1 "Apprentice" "main:([Ljava/lang/String;)V")
+    (check-program1 "Container" "<init>:()V")
+    (check-program1 "Job" "<init>:()V")
+    (check-program1 "Job" "incr:()LJob;")
+    (check-program1 "Job" "setref:(LContainer;)V")
+    (check-program1 "Job" "run:()V"))
+  :rule-classes ())
+
 (defun programp (frame class method)
   (let ((const (program1 class method)))
-    (and (equal (cur-class frame)
-                (cond ((equal class "Apprentice") nil)
-                      (t class)))
+    (and (equal (cur-class frame) class)
          (equal (program frame) const))))
 
 (defthm next-inst-from-programp
@@ -447,6 +509,10 @@ Sun Jul 15 14:17:26 2001
                   (index-into-program pc
                                       (program1 class method)))))
 
+(defthm cur-class-from-programp
+  (implies (programp frame class method)
+           (equal (cur-class frame) class)))
+
 ; Details: In the defthm above, class and method and pc will always be
 ; constant.  Generally (program frame) will be undetermined, but
 ; (programp frame "..." "...") will be settled by some case of the
@@ -454,19 +520,16 @@ Sun Jul 15 14:17:26 2001
 ; (program frame) by (program1 class method), which will then compute.
 ; Then index-to-program will compute.
 
-(defthm programp-list
+(defthm programp-make-frame
   (implies (syntaxp (and (quotep program)
                          (quotep class)
                          (quotep method)))
-           (equal (programp (list pc locals stack program sync-flg cur-class)
+           (equal (programp (make-frame pc locals stack program sync-flg cur-class)
                             class
                             method)
                   (let ((const (program1 class method)))
-                    (and (equal cur-class
-                                (cond ((equal class "Apprentice") nil)
-                                      (t class)))
-                         (equal program const)))))
-  :hints (("Goal" :in-theory (enable program cur-class))))
+                    (and (equal cur-class class)
+                         (equal program const))))))
 
 ; Details: Programp is disabled but I want it to compute if the
 ; program of the frame is a constant.  (Typically class and method are
@@ -497,19 +560,17 @@ Sun Jul 15 14:17:26 2001
                 (equal (cur-class frame1) cur-class)
                 (not (equal class1 class2)))
            (not (programp
-                 (list pc locals stack (PROGRAM frame1) sync-flg cur-class)
+                 (make-frame pc locals stack (PROGRAM frame1) sync-flg cur-class)
                  class2
-                 method2)))
-  :hints (("Goal" :in-theory (enable program cur-class))))
+                 method2))))
 
 (defthm programp-mx-3
   (implies (and (programp frame1 class1 method1)
                 (equal (cur-class frame1) cur-class))
            (programp
-                 (list pc locals stack (PROGRAM frame1) sync-flg cur-class)
+                 (make-frame pc locals stack (PROGRAM frame1) sync-flg cur-class)
                  class1
-                 method1))
-  :hints (("Goal" :in-theory (enable program cur-class))))
+                 method1)))
 
 (defthm programp-mx-4
   (implies (and (programp frame1 class1 method1)
@@ -520,10 +581,9 @@ Sun Jul 15 14:17:26 2001
                 (equal (cur-class frame1) cur-class)
                 (not (equal method1 method2)))
            (not (programp
-                 (list pc locals stack (PROGRAM frame1) sync-flg cur-class)
+                 (make-frame pc locals stack (PROGRAM frame1) sync-flg cur-class)
                  class1
-                 method2)))
-  :hints (("Goal" :in-theory (enable program))))
+                 method2))))
 
 ; Details: It just goes on and on doesn't it?
 
@@ -540,7 +600,7 @@ Sun Jul 15 14:17:26 2001
   (let ((pc      (pc frame))
         (flg     (sync-flg frame)))
     (and
-     (programp frame "java.lang.Object" "<init>")
+     (programp frame "java/lang/Object" "<init>:()V")
      (equal flg 'UNLOCKED)
      (equal pc 0))))
 
@@ -548,7 +608,7 @@ Sun Jul 15 14:17:26 2001
   (let ((pc      (pc frame))
         (flg     (sync-flg frame)))
     (and
-     (programp frame "java.lang.Thread" "<init>")
+     (programp frame "java/lang/Thread" "<init>:()V")
      (equal flg 'UNLOCKED)
      (or (equal pc 0)
          (equal pc 1)
@@ -558,7 +618,7 @@ Sun Jul 15 14:17:26 2001
   (let ((pc      (pc frame))
         (flg     (sync-flg frame)))
     (and
-     (programp frame "Container" "<init>")
+     (programp frame "Container" "<init>:()V")
      (equal flg 'UNLOCKED)
      (or (equal pc 0)
          (equal pc 1)
@@ -568,7 +628,7 @@ Sun Jul 15 14:17:26 2001
   (let ((pc      (pc frame))
         (flg     (sync-flg frame)))
     (and
-     (programp frame "Job" "<init>")
+     (programp frame "Job" "<init>:()V")
      (equal flg 'UNLOCKED)
      (or (equal pc 0)
          (equal pc 1)
@@ -580,7 +640,7 @@ Sun Jul 15 14:17:26 2001
         (stack   (stack frame))
         (flg     (sync-flg frame)))
     (and
-     (programp frame "Job" "setref")
+     (programp frame "Job" "setref:(LContainer;)V")
      (equal locals `((REF ,i) (REF 8)))
      (equal flg 'UNLOCKED)
      (case pc
@@ -602,10 +662,13 @@ Sun Jul 15 14:17:26 2001
          (locals    (locals frame))
          (stack     (stack frame))
          (flg       (sync-flg frame))
-         (container (nth 1 locals))
-         (job       (nth 2 locals)))
+         (container (nth 0 locals))
+         (job       (nth 1 locals)))
+;         (container (nth 1 locals))
+;         (job       (nth 2 locals)))
     (and
-     (programp frame "Apprentice" "main")
+     (programp frame "Apprentice" "main:()V")
+;     (programp frame "Apprentice" "main:([Ljava/lang/String;)V")
      (equal flg 'UNLOCKED)
      (case pc
        (0 (and (not suspendedp)
@@ -622,39 +685,36 @@ Sun Jul 15 14:17:26 2001
                (equal stack nil)))
        (11 (and (not suspendedp)
                 (equal container '(REF 8))
-                (equal stack nil)))
-       (14 (and (not suspendedp)
-                (equal container '(REF 8))
                 (equal stack `((REF ,i)))))
-       (15 (and (not suspendedp)
+       (12 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal stack `((REF ,i) (REF ,i)))))
-       (18 (and (or (not suspendedp)
-                    (equal suspendedp 18))
+       (15 (and (or (not suspendedp)
+                    (equal suspendedp 15))
                 (equal container '(REF 8))
                 (equal stack `((REF ,i)))))
-       (19 (and (not suspendedp)
+       (16 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack nil)))
-       (20 (and (not suspendedp)
+       (17 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack `((REF ,i)))))
-       (21 (and (not suspendedp)
+       (18 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack `((REF 8) (REF ,i)))))
-       (24 (and (or (not suspendedp)
-                    (equal suspendedp 24))
+       (21 (and (or (not suspendedp)
+                    (equal suspendedp 21))
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack nil)))
-       (25 (and (not suspendedp)
+       (22 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack `((REF ,i)))))
-       (28 (and (not suspendedp)
+       (25 (and (not suspendedp)
                 (equal container '(REF 8))
                 (equal job `(REF ,i))
                 (equal stack nil)))
@@ -683,41 +743,41 @@ Sun Jul 15 14:17:26 2001
          (equal status 'SCHEDULED)
          (equal rref nil)
          (cond ((endp cs) nil)
-               ((programp (frame0 cs) "java.lang.Object" "<init>")
+               ((programp (frame0 cs) "java/lang/Object" "<init>:()V")
                 (cond
-                 ((programp (frame1 cs) "java.lang.Thread" "<init>")
+                 ((programp (frame1 cs) "java/lang/Thread" "<init>:()V")
                   (and (good-java.lang.Object.<init>-frame (frame0 cs))
                        (not (endp (cdr cs)))
                        (good-java.lang.Thread.<init>-frame (frame1 cs))
                        (not (endp (cddr cs)))
                        (good-Job.<init>-frame (frame2 cs))
                        (not (endp (cdddr cs)))
-                       (good-main-frame i (frame3 cs) 18)))
-                 ((programp (frame1 cs) "Container" "<init>")
+                       (good-main-frame i (frame3 cs) 15)))
+                 ((programp (frame1 cs) "Container" "<init>:()V")
                   (and (good-java.lang.Object.<init>-frame (frame0 cs))
                        (not (endp (cdr cs)))
                        (good-container.<init>-frame (frame1 cs))
                        (not (endp (cddr cs)))
                        (good-main-frame i (frame2 cs) 7)))
                  (t nil)))
-               ((programp (frame0 cs) "java.lang.Thread" "<init>")
+               ((programp (frame0 cs) "java/lang/Thread" "<init>:()V")
                 (and (good-java.lang.Thread.<init>-frame (frame0 cs))
                      (not (endp (cdr cs)))
                      (good-Job.<init>-frame (frame1 cs))
                      (not (endp (cddr cs)))
-                     (good-main-frame i (frame2 cs) 18)))
-               ((programp (frame0 cs) "Container" "<init>")
+                     (good-main-frame i (frame2 cs) 15)))
+               ((programp (frame0 cs) "Container" "<init>:()V")
                 (and (good-container.<init>-frame (frame0 cs))
                      (not (endp (cdr cs)))
                      (good-main-frame i (frame1 cs) 7)))
-               ((programp (frame0 cs) "Job" "<init>")
+               ((programp (frame0 cs) "Job" "<init>:()V")
                 (and (good-Job.<init>-frame (frame0 cs))
                      (not (endp (cdr cs)))
-                     (good-main-frame i (frame1 cs) 18)))
-               ((programp (frame0 cs) "Job" "setref")
+                     (good-main-frame i (frame1 cs) 15)))
+               ((programp (frame0 cs) "Job" "setref:(LContainer;)V")
                 (and (good-Job.setref-frame i (frame0 cs))
                      (not (endp (cdr cs)))
-                     (good-main-frame i (frame1 cs) 24)))
+                     (good-main-frame i (frame1 cs) 21)))
                (t (good-main-frame i (frame0 cs) nil))))))
 
 (defun good-objrefs (threads heap-pairs except-last-flg)
@@ -730,7 +790,7 @@ Sun Jul 15 14:17:26 2001
 
 ; We walk down both threads and heap-pairs.  They must be the same
 ; length.  Let the car of threads be (i call-stack status rref) and
-; let the car of heap-pairs be (j . (("Job" ("objref" . ref0)) ...)).
+; let the car of heap-pairs be (j . (("Job" ("objref:LContainer;" . ref0)) ...)).
 ; Then we insist that
 
 ; * (+ i 8) = j (the thread number is 8 less than the heap address of the
@@ -754,16 +814,12 @@ Sun Jul 15 14:17:26 2001
              (equal obj
                     (if (and (endp (cdr heap-pairs))
                              except-last-flg)
-                        '(("Job" ("objref" . 0))
-                          ("java.lang.Thread")
-                          ("java.lang.Object" ("monitor" . 0)
-                                              ("mcount" . 0)
-                                              ("wait-set" . 0)))
-                      '(("Job" ("objref" . (REF 8)))
-                        ("java.lang.Thread")
-                        ("java.lang.Object" ("monitor" . 0)
-                                            ("mcount" . 0)
-                                            ("wait-set" . 0)))))
+                        '(("Job" ("objref:LContainer;" . (REF -1)))
+                          ("java/lang/Thread")
+                          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+                      '(("Job" ("objref:LContainer;" . (REF 8)))
+                        ("java/lang/Thread")
+                        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
              (good-objrefs (cdr threads)
                            (cdr heap-pairs)
                            except-last-flg))))))
@@ -775,38 +831,22 @@ Sun Jul 15 14:17:26 2001
 
 (defun standard-heap-prefixp (heap)
   (standard-heap-prefixp1
-   '((0 ("java.lang.Class" ("<name>" . "java.lang.Object"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (1 ("java.lang.Class" ("<name>" . "ARRAY"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (2 ("java.lang.Class" ("<name>" . "java.lang.Thread"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (3 ("java.lang.Class" ("<name>" . "java.lang.String"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (4 ("java.lang.Class" ("<name>" . "java.lang.Class"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (5 ("java.lang.Class" ("<name>" . "Apprentice"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (6 ("java.lang.Class" ("<name>" . "Container"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0)))
-     (7 ("java.lang.Class" ("<name>" . "Job"))
-        ("java.lang.Object" ("monitor" . 0)
-         ("mcount" . 0)
-         ("wait-set" . 0))))
+   '((0 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Object"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (1 ("java/lang/Class" ("<sfields>") ("<name>" . "[C"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (2 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Thread"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (3 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/String"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (4 ("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Class"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (5 ("java/lang/Class" ("<sfields>") ("<name>" . "Apprentice"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (6 ("java/lang/Class" ("<sfields>") ("<name>" . "Container"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+     (7 ("java/lang/Class" ("<sfields>") ("<name>" . "Job"))
+        ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
    heap))
 
 (defun main-pc (cs)
@@ -815,26 +855,26 @@ Sun Jul 15 14:17:26 2001
 ; the pc in the main frame?  The main frame may be suspended,
 ; of course.
 
-  (cond ((programp (frame0 cs) "java.lang.Object" "<init>")
+  (cond ((programp (frame0 cs) "java/lang/Object" "<init>:()V")
          (cond
-          ((programp (frame1 cs) "java.lang.Thread" "<init>")
+          ((programp (frame1 cs) "java/lang/Thread" "<init>:()V")
 
 ; The main frame is suspended waiting for the Job.<init>.
 
-           18)
+           15)
           (t
 ; Otherwise, the only way we could be in Object.<init> is if the main
 ; frame is suspended waiting for Container.<init>.
 
            7)))
-        ((programp (frame0 cs) "java.lang.Thread" "<init>")
-         18)
-        ((programp (frame0 cs) "Container" "<init>")
+        ((programp (frame0 cs) "java/lang/Thread" "<init>:()V")
+         15)
+        ((programp (frame0 cs) "Container" "<init>:()V")
          7)
-        ((programp (frame0 cs) "Job" "<init>")
-         18)
-        ((programp (frame0 cs) "Job" "setref")
-         24)
+        ((programp (frame0 cs) "Job" "<init>:()V")
+         15)
+        ((programp (frame0 cs) "Job" "setref:(LContainer;)V")
+         21)
         (t (pc (frame0 cs)))))
 
 (defun good-heap (tt heap)
@@ -842,7 +882,7 @@ Sun Jul 15 14:17:26 2001
 ; Tt is the thread table of a state and heap is the heap.  We
 ; determine whether the heap is consistent with the thread table.  We
 ; assume we know that thread 0 is good wrt the length of heap.  We do
-; not enforce here any of the monitor/mcount invariants on (REF 8) in
+; not enforce here any of the <monitor>/<mcount> invariants on (REF 8) in
 ; the heap, because they are entirely determined by the details of the
 ; Job threads.
 
@@ -866,11 +906,13 @@ Sun Jul 15 14:17:26 2001
                (null (nthcdr 9 heap))))
        (8 (and (consp (nthcdr 8 heap))
                (equal (car (nth 8 heap)) 8)
-               (null (nthcdr 9 heap))))
-       (11 (and (consp (nthcdr 8 heap))
-                (equal (car (nth 8 heap)) 8)
-                (good-objrefs (cdr tt) (nthcdr 9 heap) nil)))
-       (14 (and (equal (car (nth 8 heap)) 8)
+               (good-objrefs (cdr tt) (nthcdr 9 heap) nil)))
+       (11 (and (equal (car (nth 8 heap)) 8)
+                (consp (nthcdr 9 heap))
+                (good-objrefs (cdr tt)
+                              (nthcdr 9 heap)
+                              t)))
+       (12 (and (equal (car (nth 8 heap)) 8)
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
@@ -880,17 +922,17 @@ Sun Jul 15 14:17:26 2001
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
                               t)))
+       (16 (and (equal (car (nth 8 heap)) 8)
+                (consp (nthcdr 9 heap))
+                (good-objrefs (cdr tt)
+                              (nthcdr 9 heap)
+                              t)))
+       (17 (and (equal (car (nth 8 heap)) 8)
+                (consp (nthcdr 9 heap))
+                (good-objrefs (cdr tt)
+                              (nthcdr 9 heap)
+                              t)))
        (18 (and (equal (car (nth 8 heap)) 8)
-                (consp (nthcdr 9 heap))
-                (good-objrefs (cdr tt)
-                              (nthcdr 9 heap)
-                              t)))
-       (19 (and (equal (car (nth 8 heap)) 8)
-                (consp (nthcdr 9 heap))
-                (good-objrefs (cdr tt)
-                              (nthcdr 9 heap)
-                              t)))
-       (20 (and (equal (car (nth 8 heap)) 8)
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
@@ -899,23 +941,18 @@ Sun Jul 15 14:17:26 2001
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
-                              t)))
-       (24 (and (equal (car (nth 8 heap)) 8)
-                (consp (nthcdr 9 heap))
-                (good-objrefs (cdr tt)
-                              (nthcdr 9 heap)
-; If we are suspended at 24 and frame0 is really the active setref,
+; If we are suspended at 21 and frame0 is really the active setref,
 ; then the flag is t if we're at pc 5 in setref and is nil otherwise.
-; If we are active at 24, the flag is nil.
+; If we are active at 21, the flag is nil.
 
-                              (if (equal (pc frame0) 24) nil
+                              (if (equal (pc frame0) 21) nil
                                 (not (equal (pc frame0) 5))))))
-       (25 (and (equal (car (nth 8 heap)) 8)
+       (22 (and (equal (car (nth 8 heap)) 8)
                 (consp (nthcdr 9 heap))
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
                               nil)))
-       (28 (and (consp (nthcdr 8 heap))
+       (25 (and (consp (nthcdr 8 heap))
                 (equal (car (nth 8 heap)) 8)
                 (good-objrefs (cdr tt)
                               (nthcdr 9 heap)
@@ -945,7 +982,7 @@ Sun Jul 15 14:17:26 2001
         (stack (stack frame))
         (flg   (sync-flg frame)))
     (and
-     (programp frame "Job" "run")
+     (programp frame "Job" "run:()V")
      (equal locals `((REF ,(+ 8 th))))
      (equal flg 'UNLOCKED)
      (if activep
@@ -953,12 +990,11 @@ Sun Jul 15 14:17:26 2001
        t)
      (case pc
        (0 (and activep (equal stack nil)))
-       (3 (and activep (equal stack nil)))
-       (4 (and activep (equal stack `((REF ,(+ 8 th))))))
-       (7 (if activep
+       (1 (and activep (equal stack `((REF ,(+ 8 th))))))
+       (4 (if activep
               (equal stack `((REF ,(+ 8 th))))
             (equal stack nil)))
-       (8 (and activep (equal stack nil)))
+       (5 (and activep (equal stack nil)))
        (t nil)))))
 
 (defun good-incr-frame (th frame counter monitor mcount)
@@ -973,7 +1009,7 @@ Sun Jul 15 14:17:26 2001
         (flg   (sync-flg frame))
         (self `(REF ,(+ 8 th))))
     (and
-     (programp frame "Job" "incr")
+     (programp frame "Job" "incr:()LJob;")
      (equal flg 'UNLOCKED)
      (case pc
        (0 (and (equal locals `(,self))
@@ -985,12 +1021,10 @@ Sun Jul 15 14:17:26 2001
        (4 (and (equal locals `(,self))
                (equal stack '((REF 8)))
                (not (object-lockedp th monitor mcount))))
-       (5 (and (equal locals
-                      `(,self (REF 8)))
-               (equal stack nil)
+       (5 (and (equal locals `(,self))
+               (equal stack '((REF 8) (REF 8)))
                (not (object-lockedp th monitor mcount))))
-       (6 (and (equal locals
-                      `(,self (REF 8)))
+       (6 (and (equal locals `(,self (REF 8)))
                (equal stack '((REF 8)))
                (not (object-lockedp th monitor mcount))))
        (7 (and (equal locals
@@ -1064,7 +1098,7 @@ Sun Jul 15 14:17:26 2001
                 (and (good-run-frame th (frame0 cs) t monitor mcount)
                      (null (cdr cs))))
                ((endp cs) nil)
-               ((programp (frame0 cs) "Job" "incr")
+               ((programp (frame0 cs) "Job" "incr:()LJob;")
                 (and (good-incr-frame th (frame0 cs) counter monitor mcount)
                      (not (endp (frame0 cs)))
                      (good-run-frame th (frame1 cs) nil monitor mcount)))
@@ -1092,15 +1126,15 @@ Sun Jul 15 14:17:26 2001
      (alistp tt)
      (equal (thread-no thread0) 0)
      (good-thread0 thread0 i)
-     (if (<= main-pc 8)
+     (if (< main-pc 8)
          (equal (cdr tt) nil)
          (good-threads 1 (cdr tt) counter monitor mcount
-                       (and (<= 14 main-pc) (< main-pc 28)))))))
+                       (and (<= 11 main-pc) (< main-pc 25)))))))
 
 (defun good-state (s)
-  (let ((counter (gf "Container" "counter" 8 (heap s)))
-        (monitor (gf "java.lang.Object" "monitor" 8 (heap s)))
-        (mcount (gf "java.lang.Object" "mcount" 8 (heap s))))
+  (let ((counter (gf "Container" "counter:I" 8 (heap s)))
+        (monitor (gf "java/lang/Object" "<monitor>" 8 (heap s)))
+        (mcount (gf "java/lang/Object" "<mcount>" 8 (heap s))))
     (and (good-class-table (class-table s))
          (good-thread-table (thread-table s)
                             (- (len (heap s)) 1)
@@ -1125,31 +1159,6 @@ Sun Jul 15 14:17:26 2001
 (include-book "arithmetic/top-with-meta" :dir :system)
 
 (in-theory (disable acl2::equal-constant-+))
-
-(defthm states
-  (and (equal (thread-table (make-state tt h c)) tt)
-       (equal (heap (make-state tt h c)) h)
-       (equal (class-table (make-state tt h c)) c)))
-
-; I'm not sure if this is needed...
-
-(defthm states2
-  (and (equal (thread-table (list tt h c)) tt)
-       (equal (heap (list tt h c)) h)
-       (equal (class-table (list tt h c)) c)))
-
-(in-theory (disable make-state thread-table heap class-table))
-
-(defthm frames
-  (and
-   (equal (pc (make-frame pc l s prog sync-flg cur-class)) pc)
-   (equal (locals (make-frame pc l s prog sync-flg cur-class)) l)
-   (equal (stack (make-frame pc l s prog sync-flg cur-class)) s)
-   (equal (program (make-frame pc l s prog sync-flg cur-class)) prog)
-   (equal (sync-flg (make-frame pc l s prog sync-flg cur-class)) sync-flg)
-   (equal (cur-class (make-frame pc l s prog sync-flg cur-class)) cur-class)))
-
-(in-theory (disable make-frame pc locals stack program sync-flg cur-class))
 
 (defthm len-bind
   (implies (alistp alist)
@@ -1188,6 +1197,7 @@ Sun Jul 15 14:17:26 2001
       (AASTORE (EXECUTE-AASTORE INST TH S))
       (ACONST_NULL (EXECUTE-ACONST_NULL INST TH S))
       (ALOAD (EXECUTE-ALOAD INST TH S))
+      (ALOAD_W (EXECUTE-ALOAD INST TH S))
       (ALOAD_0 (EXECUTE-ALOAD_X INST TH S 0))
       (ALOAD_1 (EXECUTE-ALOAD_X INST TH S 1))
       (ALOAD_2 (EXECUTE-ALOAD_X INST TH S 2))
@@ -1196,6 +1206,7 @@ Sun Jul 15 14:17:26 2001
       (ARETURN (EXECUTE-ARETURN INST TH S))
       (ARRAYLENGTH (EXECUTE-ARRAYLENGTH INST TH S))
       (ASTORE (EXECUTE-ASTORE INST TH S))
+      (ASTORE_W (EXECUTE-ASTORE INST TH S))
       (ASTORE_0 (EXECUTE-ASTORE_X INST TH S 0))
       (ASTORE_1 (EXECUTE-ASTORE_X INST TH S 1))
       (ASTORE_2 (EXECUTE-ASTORE_X INST TH S 2))
@@ -1205,6 +1216,7 @@ Sun Jul 15 14:17:26 2001
       (BIPUSH (EXECUTE-BIPUSH INST TH S))
       (CALOAD (EXECUTE-CALOAD INST TH S))
       (CASTORE (EXECUTE-CASTORE INST TH S))
+      (CHECKCAST (EXECUTE-CHECKCAST INST TH S))
       (D2F (EXECUTE-D2F INST TH S))
       (D2I (EXECUTE-D2I INST TH S))
       (D2L (EXECUTE-D2L INST TH S))
@@ -1217,6 +1229,7 @@ Sun Jul 15 14:17:26 2001
       (DCONST_1 (EXECUTE-DCONST_1 INST TH S))
       (DDIV (EXECUTE-DDIV INST TH S))
       (DLOAD (EXECUTE-DLOAD INST TH S))
+      (DLOAD_W (EXECUTE-DLOAD INST TH S))
       (DLOAD_0 (EXECUTE-DLOAD_X INST TH S 0))
       (DLOAD_1 (EXECUTE-DLOAD_X INST TH S 1))
       (DLOAD_2 (EXECUTE-DLOAD_X INST TH S 2))
@@ -1226,6 +1239,7 @@ Sun Jul 15 14:17:26 2001
       (DREM (EXECUTE-DREM INST TH S))
       (DRETURN (EXECUTE-DRETURN INST TH S))
       (DSTORE (EXECUTE-DSTORE INST TH S))
+      (DSTORE_W (EXECUTE-DSTORE INST TH S))
       (DSTORE_0 (EXECUTE-DSTORE_X INST TH S 0))
       (DSTORE_1 (EXECUTE-DSTORE_X INST TH S 1))
       (DSTORE_2 (EXECUTE-DSTORE_X INST TH S 2))
@@ -1250,6 +1264,7 @@ Sun Jul 15 14:17:26 2001
       (FCONST_2 (EXECUTE-FCONST_2 INST TH S))
       (FDIV (EXECUTE-FDIV INST TH S))
       (FLOAD (EXECUTE-FLOAD INST TH S))
+      (FLOAD_W (EXECUTE-FLOAD INST TH S))
       (FLOAD_0 (EXECUTE-FLOAD_X INST TH S 0))
       (FLOAD_1 (EXECUTE-FLOAD_X INST TH S 1))
       (FLOAD_2 (EXECUTE-FLOAD_X INST TH S 2))
@@ -1259,6 +1274,7 @@ Sun Jul 15 14:17:26 2001
       (FREM (EXECUTE-FREM INST TH S))
       (FRETURN (EXECUTE-FRETURN INST TH S))
       (FSTORE (EXECUTE-FSTORE INST TH S))
+      (FSTORE_W (EXECUTE-FSTORE INST TH S))
       (FSTORE_0 (EXECUTE-FSTORE_X INST TH S 0))
       (FSTORE_1 (EXECUTE-FSTORE_X INST TH S 1))
       (FSTORE_2 (EXECUTE-FSTORE_X INST TH S 2))
@@ -1303,7 +1319,9 @@ Sun Jul 15 14:17:26 2001
       (IFNONNULL (EXECUTE-IFNONNULL INST TH S))
       (IFNULL (EXECUTE-IFNULL INST TH S))
       (IINC (EXECUTE-IINC INST TH S))
+      (IINC_W (EXECUTE-IINC INST TH S))
       (ILOAD (EXECUTE-ILOAD INST TH S))
+      (ILOAD_W (EXECUTE-ILOAD INST TH S))
       (ILOAD_0 (EXECUTE-ILOAD_X INST TH S 0))
       (ILOAD_1 (EXECUTE-ILOAD_X INST TH S 1))
       (ILOAD_2 (EXECUTE-ILOAD_X INST TH S 2))
@@ -1320,6 +1338,7 @@ Sun Jul 15 14:17:26 2001
       (ISHL (EXECUTE-ISHL INST TH S))
       (ISHR (EXECUTE-ISHR INST TH S))
       (ISTORE (EXECUTE-ISTORE INST TH S))
+      (ISTORE_W (EXECUTE-ISTORE INST TH S))
       (ISTORE_0 (EXECUTE-ISTORE_X INST TH S 0))
       (ISTORE_1 (EXECUTE-ISTORE_X INST TH S 1))
       (ISTORE_2 (EXECUTE-ISTORE_X INST TH S 2))
@@ -1344,18 +1363,21 @@ Sun Jul 15 14:17:26 2001
       (LDC2_W (EXECUTE-LDC2_W INST TH S))
       (LDIV (EXECUTE-LDIV INST TH S))
       (LLOAD (EXECUTE-LLOAD INST TH S))
+      (LLOAD_W (EXECUTE-LLOAD INST TH S))
       (LLOAD_0 (EXECUTE-LLOAD_X INST TH S 0))
       (LLOAD_1 (EXECUTE-LLOAD_X INST TH S 1))
       (LLOAD_2 (EXECUTE-LLOAD_X INST TH S 2))
       (LLOAD_3 (EXECUTE-LLOAD_X INST TH S 3))
       (LMUL (EXECUTE-LMUL INST TH S))
       (LNEG (EXECUTE-LNEG INST TH S))
+      (LOOKUPSWITCH (EXECUTE-LOOKUPSWITCH INST TH S))
       (LOR (EXECUTE-LOR INST TH S))
       (LREM (EXECUTE-LREM INST TH S))
       (LRETURN (EXECUTE-LRETURN INST TH S))
       (LSHL (EXECUTE-LSHL INST TH S))
       (LSHR (EXECUTE-LSHR INST TH S))
       (LSTORE (EXECUTE-LSTORE INST TH S))
+      (LSTORE_W (EXECUTE-LSTORE INST TH S))
       (LSTORE_0 (EXECUTE-LSTORE_X INST TH S 0))
       (LSTORE_1 (EXECUTE-LSTORE_X INST TH S 1))
       (LSTORE_2 (EXECUTE-LSTORE_X INST TH S 2))
@@ -1374,11 +1396,13 @@ Sun Jul 15 14:17:26 2001
       (PUTFIELD (EXECUTE-PUTFIELD INST TH S))
       (PUTSTATIC (EXECUTE-PUTSTATIC INST TH S))
       (RET (EXECUTE-RET INST TH S))
+      (RET_W (EXECUTE-RET INST TH S))
       (RETURN (EXECUTE-RETURN INST TH S))
       (SALOAD (EXECUTE-SALOAD INST TH S))
       (SASTORE (EXECUTE-SASTORE INST TH S))
       (SIPUSH (EXECUTE-SIPUSH INST TH S))
       (SWAP (EXECUTE-SWAP INST TH S))
+      (TABLESWITCH (EXECUTE-TABLESWITCH INST TH S))
       (HALT S)
       (OTHERWISE S))))
   :hints (("Goal"
@@ -1404,18 +1428,73 @@ Sun Jul 15 14:17:26 2001
       EXECUTE-BIPUSH
       EXECUTE-CALOAD
       EXECUTE-CASTORE
+      EXECUTE-CHECKCAST
+      EXECUTE-D2F
+      EXECUTE-D2I
+      EXECUTE-D2L
+      EXECUTE-DADD
+      EXECUTE-DALOAD
+      EXECUTE-DASTORE
+      EXECUTE-DCMPG
+      EXECUTE-DCMPL
+      EXECUTE-DCONST_0
+      EXECUTE-DCONST_1
+      EXECUTE-DDIV
+      EXECUTE-DLOAD_X
+      EXECUTE-DLOAD_X
+      EXECUTE-DLOAD_X
+      EXECUTE-DLOAD_X
+      EXECUTE-DMUL
+      EXECUTE-DNEG
+      EXECUTE-DREM
+      EXECUTE-DRETURN
+      EXECUTE-DSTORE
+      EXECUTE-DSTORE_X
+      EXECUTE-DSTORE_X
+      EXECUTE-DSTORE_X
+      EXECUTE-DSTORE_X
+      EXECUTE-DSUB
       EXECUTE-DUP
       EXECUTE-DUP_X1
       EXECUTE-DUP_X2
       EXECUTE-DUP2
       EXECUTE-DUP2_X1
       EXECUTE-DUP2_X2
+      EXECUTE-F2D
+      EXECUTE-F2I
+      EXECUTE-F2L
+      EXECUTE-FADD
+      EXECUTE-FALOAD
+      EXECUTE-FASTORE
+      EXECUTE-FCMPG
+      EXECUTE-FCMPL
+      EXECUTE-FCONST_0
+      EXECUTE-FCONST_1
+      EXECUTE-FCONST_2
+      EXECUTE-FDIV
+      EXECUTE-FLOAD
+      EXECUTE-FLOAD_X
+      EXECUTE-FLOAD_X
+      EXECUTE-FLOAD_X
+      EXECUTE-FLOAD_X
+      EXECUTE-FMUL
+      EXECUTE-FNEG
+      EXECUTE-FREM
+      EXECUTE-FRETURN
+      EXECUTE-FSTORE
+      EXECUTE-FSTORE_X
+      EXECUTE-FSTORE_X
+      EXECUTE-FSTORE_X
+      EXECUTE-FSTORE_X
+      EXECUTE-FSUB
       EXECUTE-GETFIELD
       EXECUTE-GETSTATIC
       EXECUTE-GOTO
       EXECUTE-GOTO_W
       EXECUTE-I2B
       EXECUTE-I2C
+      EXECUTE-I2D
+      EXECUTE-I2F
       EXECUTE-I2L
       EXECUTE-I2S
       EXECUTE-IADD
@@ -1473,6 +1552,8 @@ Sun Jul 15 14:17:26 2001
       EXECUTE-IXOR
       EXECUTE-JSR
       EXECUTE-JSR_W
+      EXECUTE-L2D
+      EXECUTE-L2F
       EXECUTE-L2I
       EXECUTE-LADD
       EXECUTE-LALOAD
@@ -1492,6 +1573,7 @@ Sun Jul 15 14:17:26 2001
       EXECUTE-LLOAD_X
       EXECUTE-LMUL
       EXECUTE-LNEG
+      EXECUTE-LOOKUPSWITCH
       EXECUTE-LOR
       EXECUTE-LREM
       EXECUTE-LRETURN
@@ -1520,7 +1602,8 @@ Sun Jul 15 14:17:26 2001
       EXECUTE-SALOAD
       EXECUTE-SASTORE
       EXECUTE-SIPUSH
-      EXECUTE-SWAP))))
+      EXECUTE-SWAP
+      EXECUTE-TABLESWITCH))))
 
 (in-theory (disable do-inst))
 
@@ -1571,16 +1654,12 @@ Sun Jul 15 14:17:26 2001
                            (<= (+ 8 j) i)
                            (<= i (+ 7 j (len heap))))
                       (if (and flg2 (equal i (+ 7 j (len heap))))
-                          (cons i '(("Job"  ("objref" . 0))
-                                    ("java.lang.Thread")
-                                    ("java.lang.Object" ("monitor" . 0)
-                                     ("mcount" . 0)
-                                     ("wait-set" . 0))))
-                        (cons i '(("Job" ("objref" REF 8))
-                                  ("java.lang.Thread")
-                                  ("java.lang.Object" ("monitor" . 0)
-                                   ("mcount" . 0)
-                                   ("wait-set" . 0)))))
+                          (cons i '(("Job"  ("objref:LContainer;" . (REF -1)))
+                                    ("java/lang/Thread")
+                                    ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+                        (cons i '(("Job" ("objref:LContainer;" REF 8))
+                                  ("java/lang/Thread")
+                                  ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))))
                     nil)))
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
 
@@ -1593,17 +1672,15 @@ Sun Jul 15 14:17:26 2001
    (good-objrefs
     tt
     (bind (- (+ 8 (len heap) j) 1)
-          '(("Job" ("objref" REF 8))
-            ("java.lang.Thread")
-            ("java.lang.Object" ("monitor" . 0)
-             ("mcount" . 0)
-             ("wait-set" . 0)))
+          '(("Job" ("objref:LContainer;" REF 8))
+            ("java/lang/Thread")
+            ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
           heap)
     nil))
   :rule-classes nil
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
 
-; This lemma establishes that when setref writes to the "objref" field,
+; This lemma establishes that when setref writes to the "objref:LContainer;" field,
 ; we can convert the ``except last'' flag of good-objrefs from t to nil.
 
 (defthm good-objrefs-setref
@@ -1614,11 +1691,9 @@ Sun Jul 15 14:17:26 2001
            (good-objrefs
             tt
             (bind delta
-                  '(("Job" ("objref" REF 8))
-                    ("java.lang.Thread")
-                    ("java.lang.Object" ("monitor" . 0)
-                     ("mcount" . 0)
-                     ("wait-set" . 0)))
+                  '(("Job" ("objref:LContainer;" REF 8))
+                    ("java/lang/Thread")
+                    ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                   heap)
             nil))
   :hints (("Goal" :use ((:instance good-objrefs-setref-gen (j 1))))))
@@ -1638,24 +1713,12 @@ Sun Jul 15 14:17:26 2001
                         (list 'REF (+ delta (len heap))))
                   tt)
             (bind (+ delta (len heap))
-                  '(("Job" ("objref" . 0))
-                    ("java.lang.Thread")
-                    ("java.lang.Object" ("monitor" . 0)
-                     ("mcount" . 0)
-                     ("wait-set" . 0)))
+                  '(("Job" ("objref:LContainer;" . (REF -1)))
+                    ("java/lang/Thread")
+                    ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
                   heap)
             t))
   :hints (("Goal" :in-theory (disable good-incr-frame good-run-frame))))
-
-; This undoes something added to m5.lisp.  I might just remove the disables
-; there.
-
-; This undoes another disable in m5.  Maybe just delete that one.
-
-(in-theory (enable make-state thread-table heap class-table))
-(in-theory (enable make-frame pc locals stack
-                   ;program
-                   sync-flg cur-class))
 
 (defthm good-threads-new-thread
   (implies (and (integerp j)
@@ -1666,20 +1729,20 @@ Sun Jul 15 14:17:26 2001
            (good-threads j
                          (bind (+ j (len heap))
                                (list
-                                `((0
-                                   ((REF ,(+ delta (len heap))))
-                                   NIL
-                                   ,*Job.run*
-                                   UNLOCKED
-                                   "Job"))
-                                'UNSCHEDULED
-                                (list 'REF (+ delta (len heap))))
+;                              (make-thread
+                                 (list
+                                   (make-frame
+                                     0
+                                     `((REF ,(+ delta (len heap))))
+                                     NIL
+                                     *Job.run*
+                                     'UNLOCKED
+                                     "Job"))
+                                  'UNSCHEDULED
+                                  (list 'REF (+ delta (len heap))))
                                tt)
                          c m mc t))
-  :hints (("Goal" :in-theory (disable good-incr-frame
-                                      ;good-run-frame
-                                      ))))
-
+  :hints (("Goal" :in-theory (disable good-incr-frame))))
 
 (defthm rreftothread-good-threads
   (implies (and (good-threads j tt c m mc flg1)
@@ -1711,16 +1774,17 @@ Sun Jul 15 14:17:26 2001
 ; the length of the thread table.
 
 (defthm len-thread-table-len-heap
-  (implies (and (good-threads 1 (cdar s) c m mc flg1)
-                (good-objrefs (cdar s)
-                              (CDDDDR (CDDDDR (CDADR S)))
+  (implies (and (good-threads 1 (cdr (thread-table s)) c m mc flg1)
+                (good-objrefs (cdr (thread-table s))
+                              (CDDDDR (CDDDDR (CDR (heap S))))
                               flg2))
-           (equal (len (cdar s))
-                  (len (CDDDDR (CDDDDR (CDADR S))))))
-  :hints (("Goal" :use ((:instance len-thread-table-len-heap-gen
+           (equal (len (cdr (thread-table s)))
+                  (len (CDDDDR (CDDDDR (CDR (heap S)))))))
+  :hints (("Goal" :in-theory (enable thread-table heap)
+                  :use ((:instance len-thread-table-len-heap-gen
                                    (j 1)
-                                   (tt (cdar s))
-                                   (heap (CDDDDR (CDDDDR (CDADR S)))))))))
+                                   (tt (cdr (thread-table s)))
+                                   (heap (CDDDDR (CDDDDR (CDR (heap S))))))))))
 
 (defthm good-objrefs-new-schedule
   (implies (and (good-threads j tt c m mc flg1)
@@ -1903,7 +1967,7 @@ Sun Jul 15 14:17:26 2001
 ; because th is a variable, it is replaced everywhere by <monitor>.  I
 ; don't want that to happen because its harder for me to read.  So I
 ; shut off object-lockedp after proving this little theorem.
-; Object-lockedp was invented just to hide the (equal th monitor).
+; Object-lockedp was invented just to hide the (equal th <monitor>).
 
 (defthm object-lockedp-opener-1
   (implies (equal th thmon)
@@ -1921,30 +1985,30 @@ Sun Jul 15 14:17:26 2001
 ; Free-var below prevents frequent tries.
 
 (defthm assoc-equal-non-nil
-  (implies (and (equal (car (assoc-equal free-th (cdar s))) th)
+  (implies (and (equal (car (assoc-equal free-th (cdr (thread-table s)))) th)
                 (syntaxp (equal free-th th))
                 (equal free-th th)
                 (integerp th))
-           (assoc-equal th (cdar s))))
+           (assoc-equal th (cdr (thread-table s)))))
 
-(defthm lookup-method-incr
+(defthm lookup-methodref-incr
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
-           (equal (lookup-method "incr" class ct)
-                  '("incr" NIL NIL
+           (equal (lookup-methodref "incr:()LJob;" class ct)
+                  '("Job" . ("incr:()LJob;" #x00000001 ; PUBLIC
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref")
+                    (GETFIELD 2) ; Job.objref:LContainer;
+                    (DUP)
                     (ASTORE_1)
-                    (ALOAD_1)
                     (MONITORENTER)
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref")
+                    (GETFIELD 2) ; Job.objref:LContainer;
                     (ALOAD_0)
-                    (GETFIELD "Job" "objref")
-                    (GETFIELD "Container" "counter")
+                    (GETFIELD 2) ; Job.objref:LContainer;
+                    (GETFIELD 3) ; Container.counter:I
                     (ICONST_1)
                     (IADD)
-                    (PUTFIELD "Container" "counter")
+                    (PUTFIELD 3) ; Container.counter:I
                     (ALOAD_1)
                     (MONITOREXIT)
                     (GOTO 8)
@@ -1954,20 +2018,19 @@ Sun Jul 15 14:17:26 2001
                     (ALOAD_2)
                     (ATHROW)
                     (ALOAD_0)
-                    (ARETURN)))))
+                    (ARETURN))))))
 
-(defthm lookup-method-run
+(defthm lookup-methodref-run
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
-           (equal (lookup-method "run" class ct)
-                  '("run" NIL NIL
-                    (GOTO 3)
+           (equal (lookup-methodref "run:()V" class ct)
+                  '("Job" . ("run:()V" #x00000001 ; PUBLIC
                     (ALOAD_0)
-                    (INVOKEVIRTUAL "Job" "incr" 0)
+                    (INVOKEVIRTUAL 4) ; Job.incr:()LJob;
                     (POP)
-                    (GOTO -5)))))
+                    (GOTO -5))))))
 
-(in-theory (disable lookup-method))
+(in-theory (disable lookup-methodref))
 
 (defthm good-threads-step-over-monitorenter-lemma1
   (implies
@@ -2061,12 +2124,12 @@ Sun Jul 15 14:17:26 2001
   (equal (bind i v1 (bind i v2 lst))
          (bind i v1 lst)))
 
-(defthm lookup-method-in-good-class-table
+(defthm lookup-methodref-in-good-class-table
   (implies (and (syntaxp (and (quotep class)
                               (quotep method)))
                 (good-class-table ct))
-           (equal (lookup-method class method ct)
-                  (lookup-method class method (class-table *a0*))))
+           (equal (lookup-methodref class method ct)
+                  (lookup-methodref class method (class-table *a0*))))
   :hints (("Goal" :in-theory (enable good-class-table))))
 
 ; (acl2::divert)
@@ -2086,9 +2149,9 @@ Sun Jul 15 14:17:26 2001
                 (good-thread th
                              'SCHEDULED
                              (assoc-equal th (thread-table s))
-                             (gf "Container" "counter" 8 (heap s))
-                             (gf "java.lang.Object" "monitor" 8 (heap s))
-                             (gf "java.lang.Object" "mcount" 8 (heap s))))
+                             (gf "Container" "counter:I" 8 (heap s))
+                             (gf "java/lang/Object" "<monitor>" 8 (heap s))
+                             (gf "java/lang/Object" "<mcount>" 8 (heap s))))
            (good-state (step th s)))
   :rule-classes nil
   :hints
@@ -2105,9 +2168,9 @@ Sun Jul 15 14:17:26 2001
                 (good-thread th
                              'SCHEDULED
                              (assoc-equal th (thread-table s))
-                             (gf "Container" "counter" 8 (heap s))
-                             (gf "java.lang.Object" "monitor" 8 (heap s))
-                             (gf "java.lang.Object" "mcount" 8 (heap s))))
+                             (gf "Container" "counter:I" 8 (heap s))
+                             (gf "java/lang/Object" "<monitor>" 8 (heap s))
+                             (gf "java/lang/Object" "<mcount>" 8 (heap s))))
            (or (equal (counter s) nil)
                (rel (counter s) (counter (step th s)))))
   :rule-classes nil
@@ -2165,15 +2228,15 @@ Sun Jul 15 14:17:26 2001
            (:instance assoc-equal-th-cdr-thread-table
                       (tt (cdr (thread-table s)))
                       (j 1)
-                      (c (gf "Container" "counter" 8 (heap s)))
-                      (m (gf "java.lang.Object" "monitor" 8 (heap s)))
-                      (mc (gf "java.lang.Object" "mcount" 8 (heap s)))
+                      (c (gf "Container" "counter:I" 8 (heap s)))
+                      (m (gf "java/lang/Object" "<monitor>" 8 (heap s)))
+                      (mc (gf "java/lang/Object" "<mcount>" 8 (heap s)))
                       (flg1
                        (case (main-pc
                               (thread-call-stack
                                (car (thread-table s))))
-                         (11 nil)
-                         (28 nil)
+                         (8 nil)
+                         (25 nil)
                          (otherwise t))
                        ))
            :in-theory (cons 'good-state (disable good-threads
@@ -2200,35 +2263,35 @@ Sun Jul 15 14:17:26 2001
                 (<= 1 th)
                 (<= th (- (len (heap s)) 9)))
            (good-thread th
-                        (if (and (<= 14 (main-pc
+                        (if (and (<= 11 (main-pc
                                          (thread-call-stack
                                           (car (thread-table s)))))
                                  (< (main-pc
                                      (thread-call-stack
                                       (car (thread-table s))))
-                                    28)
+                                    25)
                                  (equal th (- (len (heap s)) 9)))
                             'UNSCHEDULED
                           'SCHEDULED)
                         (assoc-equal th (thread-table s))
-                        (gf "Container" "counter" 8 (heap s))
-                        (gf "java.lang.Object" "monitor" 8 (heap s))
-                        (gf "java.lang.Object" "mcount" 8 (heap s))))
+                        (gf "Container" "counter:I" 8 (heap s))
+                        (gf "java/lang/Object" "<monitor>" 8 (heap s))
+                        (gf "java/lang/Object" "<mcount>" 8 (heap s))))
   :rule-classes nil
   :hints (("Goal" :use
            (:instance good-threads-all-lemma
                       (tt (cdr (thread-table s)))
                       (j 1)
-                      (c (gf "Container" "counter" 8 (heap s)))
-                      (m (gf "java.lang.Object" "monitor" 8 (heap s)))
-                      (mc (gf "java.lang.Object" "mcount" 8 (heap s)))
-                      (flg1 (and (<= 14 (main-pc
+                      (c (gf "Container" "counter:I" 8 (heap s)))
+                      (m (gf "java/lang/Object" "<monitor>" 8 (heap s)))
+                      (mc (gf "java/lang/Object" "<mcount>" 8 (heap s)))
+                      (flg1 (and (<= 11 (main-pc
                                          (thread-call-stack
                                           (car (thread-table s)))))
                                  (< (main-pc
                                      (thread-call-stack
                                       (car (thread-table s))))
-                                    28))))
+                                    25))))
            :in-theory (cons 'good-state (disable good-threads
                                                  good-thread
                                                  good-thread0
@@ -2295,96 +2358,7 @@ Sun Jul 15 14:17:26 2001
 ; Appendix 1.  Heap Size
 
 ; Here are a couple of nice lemmas I proved but don't need.  They
-; address the heap size and the relation between it and the counter
-; allocation.
-
-(defthm len-bind-weak
-  (<= (len a) (len (bind x v a)))
-  :rule-classes :linear)
-
-(include-book "ordinals/e0-ordinal" :dir :system)
-
-(encapsulate
- nil
- (local
-  (defun makemultiarray-fn (fn car-counts cdr-counts s ac)
-    (declare
-     (xargs :measure
-            (if (equal fn 'makemultiarray2)
-                (cons (len (cons car-counts cdr-counts))
-                      (natural-sum (cons car-counts cdr-counts)))
-              (cons (+ 1 (len cdr-counts))
-                    (natural-sum cdr-counts)))
-            :well-founded-relation e0-ord-<))
-
-    (if (equal fn 'makemultiarray2)
-        (if
-         (zp car-counts)
-         (mv (heap s) ac)
-         (mv-let
-          (new-addr new-heap)
-          (makemultiarray-fn 'makemultiarray car-counts cdr-counts s ac)
-          (makemultiarray-fn 'makemultiarray2
-                             (- car-counts 1)
-                             cdr-counts
-                             (make-state (thread-table s)
-                                         new-heap (class-table s))
-                             (cons (list 'ref new-addr) ac))))
-      (if (<= (len cdr-counts) 1)
-          (mv (len (heap s))
-              (bind (len (heap s))
-                    (makearray 't_ref
-                               (car cdr-counts)
-                               (init-array 't_ref (car cdr-counts))
-                               (class-table s))
-                    (heap s)))
-          (mv-let (heap-prime lst-of-refs)
-                  (makemultiarray-fn 'makemultiarray2
-                                     (car cdr-counts)
-                                     (cdr cdr-counts)
-                                     s nil)
-                  (let* ((obj (makearray 't_ref
-                                         (car cdr-counts)
-                                         lst-of-refs (class-table s)))
-                         (new-addr (len heap-prime))
-                         (new-heap (bind new-addr obj heap-prime)))
-                    (mv new-addr new-heap)))))))
-
- (local
-  (defthm mv-nth-1
-    (equal (mv-nth 1 x) (cadr x))))
-
- (local
-  (defthm len-makemultiarray-fn
-    (<= (len (heap s))
-        (if (equal fn 'makemultiarray2)
-            (len (car (makemultiarray-fn fn car-counts cdr-counts s ac)))
-          (len (cadr (makemultiarray-fn fn car-counts cdr-counts s ac)))))
-    :rule-classes nil))
-
- (local
-  (defthm makemultiarray-fn-is-makemultiarray
-    (equal (makemultiarray-fn fn car-counts cdr-counts s ac)
-           (if (equal fn 'makemultiarray2)
-               (makemultiarray2 car-counts cdr-counts s ac)
-             (makemultiarray cdr-counts s)))))
-
- (defthm makemultiarray-len
-   (and (<= (len (heap s))
-            (len (car (makemultiarray2 car-counts cdr-counts s ac))))
-        (<= (len (heap s))
-            (len (mv-nth 1 (makemultiarray cdr-counts s)))))
-   :rule-classes :linear
-   :hints (("Goal" :use ((:instance len-makemultiarray-fn
-                                    (fn 'makemultiarray2))
-                         (:instance len-makemultiarray-fn
-                                    (fn 'makemultiarray)))))))
-
-(defthm heap-len-grows-monotonically
-  (<= (len (heap s))
-      (len (heap (step th s))))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable step do-inst))))
+; address the relation between the heap size and the counter allocation.
 
 (defthm null-counter-means-heap-len-8
   (implies (good-state s)
@@ -2550,122 +2524,111 @@ Sun Jul 15 14:17:26 2001
                           thread2-frame3-cur-class))
      thread2-scheduled-flg
      thread2-rref))
- ((0 ("java.lang.Class" ("<name>" . "java.lang.Object"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (1 ("java.lang.Class" ("<name>" . "ARRAY"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (2 ("java.lang.Class" ("<name>" . "java.lang.Thread"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (3 ("java.lang.Class" ("<name>" . "java.lang.String"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (4 ("java.lang.Class" ("<name>" . "java.lang.Class"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (5 ("java.lang.Class" ("<name>" . "Apprentice"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (6 ("java.lang.Class" ("<name>" . "Container"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
-  (7 ("java.lang.Class" ("<name>" . "Job"))
-     ("java.lang.Object" ("monitor" . 0)
-                         ("mcount" . 0)
-                         ("wait-set" . 0)))
+ ((0 ("java/lang/Class" ("<name>" . "java/lang/Object"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (1 ("java/lang/Class" ("<name>" . "[C"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (2 ("java/lang/Class" ("<name>" . "java/lang/Thread"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (3 ("java/lang/Class" ("<name>" . "java/lang/String"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (4 ("java/lang/Class" ("<name>" . "java/lang/Class"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (5 ("java/lang/Class" ("<name>" . "Apprentice"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (6 ("java/lang/Class" ("<name>" . "Container"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
+  (7 ("java/lang/Class" ("<name>" . "Job"))
+     ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
   (8 counter)
   (9 job1)
   (10 job2)
   (11 job3))
- (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
+ (("java/lang/Object" NIL ()
                       NIL
-                      NIL (("<init>" NIL NIL (RETURN)))
+                      NIL (("<init>:()V" NIL
+                            (RETURN)))
                       (REF 0))
-  ("ARRAY" ("java.lang.Object")
-           (("<array>" . *ARRAY*))
+  ("[C" ("java/lang/Object")
+           NIL
            NIL NIL NIL (REF 1))
-  ("java.lang.Thread"
-       ("java.lang.Object")
+  ("java/lang/Thread"
+       ("java/lang/Object")
        NIL NIL NIL
-       (("run" NIL NIL (RETURN))
-        ("start" NIL NIL NIL)
-        ("stop" NIL NIL NIL)
-        ("<init>" NIL NIL (ALOAD_0)
-                  (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (("run:()V" NIL (RETURN))
+        ("start:()V" NIL NIL)
+        ("stop:()V" NIL NIL)
+        ("<init>:()V" NIL
+                  (ALOAD_0)
+                  (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
                   (RETURN)))
        (REF 2))
-  ("java.lang.String"
-       ("java.lang.Object")
-       ("strcontents")
+  ("java/lang/String"
+       ("java/lang/Object")
+       ("value:[C")
        NIL NIL
-       (("<init>" NIL NIL (ALOAD_0)
-                  (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (("<init>:()V" NIL (ALOAD_0)
+                  (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
                   (RETURN)))
        (REF 3))
-  ("java.lang.Class"
-       ("java.lang.Object")
+  ("java/lang/Class"
+       ("java/lang/Object")
        NIL NIL NIL
-       (("<init>" NIL NIL (ALOAD_0)
-                  (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (("<init>:()V" NIL (ALOAD_0)
+                  (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
                   (RETURN)))
        (REF 4))
-  ("Apprentice" ("java.lang.Object")
+  ("Apprentice" ("java/lang/Object")
                 NIL NIL NIL
-                (("<init>" NIL NIL (ALOAD_0)
-                           (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+                (("<init>:()V" NIL (ALOAD_0)
+                           (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
                            (RETURN))
-                 ("main" (|JAVA.LANG.STRING[]|)
-                         NIL (NEW "Container")
+                 ("main:()V" NIL
+;                 ("main:([Ljava/lang/String;)V" NIL
+                         (NEW "Container")
                          (DUP)
-                         (INVOKESPECIAL "Container" "<init>" 0)
+                         (INVOKESPECIAL "Container" "<init>:()V" 0)
                          (ASTORE_1)
-                         (GOTO 3)
                          (NEW "Job")
                          (DUP)
-                         (INVOKESPECIAL "Job" "<init>" 0)
+                         (INVOKESPECIAL "Job" "<init>:()V" 0)
                          (ASTORE_2)
                          (ALOAD_2)
                          (ALOAD_1)
-                         (INVOKEVIRTUAL "Job" "setref" 1)
+                         (INVOKEVIRTUAL "Job" "setref:(LContainer;)V" 1)
                          (ALOAD_2)
-                         (INVOKEVIRTUAL "java.lang.Thread" "start" 0)
+                         (INVOKEVIRTUAL "java/lang/Thread" "start:()V" 0)
                          (GOTO -17)))
                 (REF 5))
-  ("Container" ("java.lang.Object")
-               ("counter")
+  ("Container" ("java/lang/Object")
+               ("counter:I")
                NIL NIL
-               (("<init>" NIL NIL (ALOAD_0)
-                          (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+               (("<init>:()V" NIL
+                          (ALOAD_0)
+                          (INVOKESPECIAL "java/lang/Object" "<init>:()V" 0)
                           (RETURN)))
                (REF 6))
-  ("Job" ("java.lang.Thread" "java.lang.Object")
-         ("objref")
+  ("Job" ("java/lang/Thread" "java/lang/Object")
+         ("objref:LContainer;")
          NIL NIL
-         (("<init>" NIL NIL (ALOAD_0)
-                    (INVOKESPECIAL "java.lang.Thread" "<init>" 0)
+         (("<init>:()V" NIL
+                    (ALOAD_0)
+                    (INVOKESPECIAL "java/lang/Thread" "<init>:()V" 0)
                     (RETURN))
-          ("incr" NIL NIL (ALOAD_0)
-                  (GETFIELD "Job" "objref")
+          ("incr:()LJob;" NIL
+                  (ALOAD_0)
+                  (GETFIELD "Job" "objref:LContainer;")
+                  (DUP)
                   (ASTORE_1)
-                  (ALOAD_1)
                   (MONITORENTER)
                   (ALOAD_0)
-                  (GETFIELD "Job" "objref")
+                  (GETFIELD "Job" "objref:LContainer;")
                   (ALOAD_0)
-                  (GETFIELD "Job" "objref")
-                  (GETFIELD "Container" "counter")
+                  (GETFIELD "Job" "objref:LContainer;")
+                  (GETFIELD "Container" "counter:I")
                   (ICONST_1)
                   (IADD)
-                  (PUTFIELD "Container" "counter")
+                  (PUTFIELD "Container" "counter:I")
                   (ALOAD_1)
                   (MONITOREXIT)
                   (GOTO 8)
@@ -2676,14 +2639,14 @@ Sun Jul 15 14:17:26 2001
                   (ATHROW)
                   (ALOAD_0)
                   (ARETURN))
-          ("setref" (CONTAINER)
-                    NIL (ALOAD_0)
+          ("setref:(LContainer;)V" NIL
+                    (ALOAD_0)
                     (ALOAD_1)
-                    (PUTFIELD "Job" "objref")
+                    (PUTFIELD "Job" "objref:LContainer;")
                     (RETURN))
-          ("run" NIL NIL (GOTO 3)
+          ("run:()V" NIL
                  (ALOAD_0)
-                 (INVOKEVIRTUAL "Job" "incr" 0)
+                 (INVOKEVIRTUAL "Job" "incr:()LJob;" 0)
                  (POP)
                  (GOTO -5)))
          (REF 7)))))

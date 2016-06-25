@@ -5,229 +5,10 @@
 ; Fixed arithmetic work by Robert Krug <rkrug@cs.utexas.edu>
 ; Support for Arrays by Hanbing Liu <hbl@cs.utexas.edu>
 ; Support for Floating Point by Dmitry Nadezhin <dmitry.nadezhin@gmail.com>
-;
-; $Id: m5.lisp,v 1.1 2001/07/10 17:37:06 george Exp $
-
-#|
-
-(defpkg "LABEL" '(nil t))
-(defpkg "JVM" '(nil t))
-
-(DEFPKG "M5"
-  (set-difference-equal
-   (union-eq '(JVM::SCHEDULED
-               JVM::UNSCHEDULED
-               JVM::REF
-               JVM::LOCKED
-               JVM::S_LOCKED
-               JVM::UNLOCKED
-               JVM::AALOAD
-               JVM::AASTORE
-               JVM::ACONST_NULL
-               JVM::ALOAD
-               JVM::ALOAD_0
-               JVM::ALOAD_1
-               JVM::ALOAD_2
-               JVM::ALOAD_3
-               JVM::ANEWARRAY
-               JVM::ARETURN
-               JVM::ARRAYLENGTH
-               JVM::ASTORE
-               JVM::ASTORE_0
-               JVM::ASTORE_1
-               JVM::ASTORE_2
-               JVM::ASTORE_3
-               JVM::BALOAD
-               JVM::BASTORE
-               JVM::BIPUSH
-               JVM::CALOAD
-               JVM::CASTORE
-               JVM::D2F
-               JVM::D2I
-               JVM::D2L
-               JVM::DADD
-               JVM::DALOAD
-               JVM::DASTORE
-               JVM::DCMPG
-               JVM::DCMPL
-               JVM::DCONST_0
-               JVM::DCONST_1
-               JVM::DDIV
-               JVM::DLOAD
-               JVM::DLOAD_0
-               JVM::DLOAD_1
-               JVM::DLOAD_2
-               JVM::DLOAD_3
-               JVM::DMUL
-               JVM::DNEG
-               JVM::DREM
-               JVM::DRETURN
-               JVM::DSTORE
-               JVM::DSTORE_0
-               JVM::DSTORE_1
-               JVM::DSTORE_2
-               JVM::DSTORE_3
-               JVM::DSUB
-               JVM::DUP
-               JVM::DUP_X1
-               JVM::DUP_X2
-               JVM::DUP2
-               JVM::DUP2_X1
-               JVM::DUP2_X2
-               JVM::F2D
-               JVM::F2I
-               JVM::F2L
-               JVM::FADD
-               JVM::FALOAD
-               JVM::FASTORE
-               JVM::FCMPG
-               JVM::FCMPL
-               JVM::FCONST_0
-               JVM::FCONST_1
-               JVM::FCONST_2
-               JVM::FDIV
-               JVM::FLOAD
-               JVM::FLOAD_0
-               JVM::FLOAD_1
-               JVM::FLOAD_2
-               JVM::FLOAD_3
-               JVM::FMUL
-               JVM::FNEG
-               JVM::FREM
-               JVM::FRETURN
-               JVM::FSTORE
-               JVM::FSTORE_0
-               JVM::FSTORE_1
-               JVM::FSTORE_2
-               JVM::FSTORE_3
-               JVM::FSUB
-               JVM::GETFIELD
-               JVM::GETSTATIC
-               JVM::GOTO
-               JVM::GOTO_W
-               JVM::I2B
-               JVM::I2C
-               JVM::I2D
-               JVM::I2F
-               JVM::I2L
-               JVM::I2S
-               JVM::IADD
-               JVM::IALOAD
-               JVM::IAND
-               JVM::IASTORE
-               JVM::ICONST_M1
-               JVM::ICONST_0
-               JVM::ICONST_1
-               JVM::ICONST_2
-               JVM::ICONST_3
-               JVM::ICONST_4
-               JVM::ICONST_5
-               JVM::IDIV
-               JVM::IF_ACMPEQ
-               JVM::IF_ACMPNE
-               JVM::IF_ICMPEQ
-               JVM::IF_ICMPGE
-               JVM::IF_ICMPGT
-               JVM::IF_ICMPLE
-               JVM::IF_ICMPLT
-               JVM::IF_ICMPNE
-               JVM::IFEQ
-               JVM::IFGE
-               JVM::IFGT
-               JVM::IFLE
-               JVM::IFLT
-               JVM::IFNE
-               JVM::IFNONNULL
-               JVM::IFNULL
-               JVM::IINC
-               JVM::ILOAD
-               JVM::ILOAD_0
-               JVM::ILOAD_1
-               JVM::ILOAD_2
-               JVM::ILOAD_3
-               JVM::IMUL
-               JVM::INEG
-               JVM::INSTANCEOF
-               JVM::INVOKESPECIAL
-               JVM::INVOKESTATIC
-               JVM::INVOKEVIRTUAL
-               JVM::IOR
-               JVM::IREM
-               JVM::IRETURN
-               JVM::ISHL
-               JVM::ISHR
-               JVM::ISTORE
-               JVM::ISTORE_0
-               JVM::ISTORE_1
-               JVM::ISTORE_2
-               JVM::ISTORE_3
-               JVM::ISUB
-               JVM::IUSHR
-               JVM::IXOR
-               JVM::JSR
-               JVM::JSR_W
-               JVM::L2D
-               JVM::L2F
-               JVM::L2I
-               JVM::LADD
-               JVM::LALOAD
-               JVM::LAND
-               JVM::LASTORE
-               JVM::LCMP
-               JVM::LCONST_0
-               JVM::LCONST_1
-               JVM::LDC
-               JVM::LDC_W
-               JVM::LDC2_W
-               JVM::LDIV
-               JVM::LLOAD
-               JVM::LLOAD_0
-               JVM::LLOAD_1
-               JVM::LLOAD_2
-               JVM::LLOAD_3
-               JVM::LMUL
-               JVM::LNEG
-               JVM::LOR
-               JVM::LREM
-               JVM::LRETURN
-               JVM::LSHL
-               JVM::LSHR
-               JVM::LSTORE
-               JVM::LSTORE_0
-               JVM::LSTORE_1
-               JVM::LSTORE_2
-               JVM::LSTORE_3
-               JVM::LSUB
-               JVM::LUSHR
-               JVM::LXOR
-               JVM::MONITORENTER
-               JVM::MONITOREXIT
-               JVM::MULTIANEWARRAY
-               JVM::NEW
-               JVM::NEWARRAY
-               JVM::NOP
-               JVM::POP
-               JVM::POP2
-               JVM::PUTFIELD
-               JVM::PUTSTATIC
-               JVM::RET
-               JVM::RETURN
-               JVM::SALOAD
-               JVM::SASTORE
-               JVM::SIPUSH
-               JVM::SWAP
-               ASSOC-EQUAL LEN NTH ZP SYNTAXP
-               QUOTEP FIX NFIX E0-ORDINALP E0-ORD-<)
-             (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*))
-   '(PC PROGRAM PUSH POP RETURN REVERSE STEP ++)))
-
-(certify-book "m5" 3)
-
-J & George
-|#
 
 (in-package "M5")
+(include-book "rtl/rel11/lib/excps" :dir :system)
+
 
 ; -----------------------------------------------------------------------------
 ; Utilities
@@ -235,6 +16,10 @@ J & George
 (defun push (obj stack) (cons obj stack))
 (defun top (stack) (car stack))
 (defun pop (stack) (cdr stack))
+
+(defun push2 (obj stack) (push nil (push obj stack)))
+(defun top2 (stack) (top (pop stack)))
+(defun pop2 (stack) (pop (pop stack)))
 
 (defun popn (n stack)
   (if (zp n)
@@ -308,6 +93,12 @@ J & George
 (defun char-fix (x)
   (u-fix x 16))
 
+(defun float-fix (x)
+  (u-fix x 32))
+
+(defun double-fix (x)
+  (u-fix x 64))
+
 (defun 6-bit-fix (x)
   (u-fix x 6))
 
@@ -332,9 +123,6 @@ J & George
 ;; longBitsToDouble and doubleToRawLongBits methods. Hence JVM implementation
 ;; might be a little different with respect to NaNs. The M5 model chooses some
 ;; concrete treatment of NaN.
-
-;; We shall include "rtl/rel11/lib/excps" when ACL2(r) can certify it.
-(include-book "rtl/rel11/support/excps" :dir :system)
 
 (defconst *mxcsr*
   (rtl::set-flag (rtl::imsk)
@@ -416,7 +204,10 @@ J & George
                    result))))
 
 (defun fpneg (x f)
-  (fpsub (rtl::zencode 1 f) x f))
+; Experiments show that this operation naively flips sign of floating-point representation.
+; It doesn't treat NaNs in a special way.
+  (logxor (expt 2 (+ (rtl::expw f) (rtl::sigw f))) x))
+;  (fpsub (rtl::zencode 1 f) x f))  old version propagated NaNs.
 
 (defun fpsqrt (x f)
   (mv-let (result flags)
@@ -424,18 +215,23 @@ J & George
           (declare (ignore flags))
           result))
 
-(defun bits2fp (x f)
-  (let ((x (u-fix x (+ 1 (rtl::expw f) (rtl::sigw f)))))
-       (if (rtl::nanp x f) (rtl::qnanize x f) x)))
-
 ; -----------------------------------------------------------------------------
 ; States
 
-(defun make-state (thread-table heap class-table)
-  (list thread-table heap class-table))
+(defun make-state (thread-table heap class-table options)
+  (list thread-table heap class-table options))
 (defun thread-table (s) (nth 0 s))
-(defun heap        (s) (nth 1 s))
+(defun heap (s) (nth 1 s))
 (defun class-table (s) (nth 2 s))
+(defun options (s) (nth 3 s))
+
+(defthm states
+  (and (equal (thread-table (make-state tt h c o)) tt)
+       (equal (heap (make-state tt h c o)) h)
+       (equal (class-table (make-state tt h c o)) c)
+       (equal (options (make-state tt h c o)) o)))
+
+(in-theory (disable make-state thread-table heap class-table options))
 
 (defun make-thread (call-stack status rref)
   (list call-stack status rref))
@@ -455,85 +251,132 @@ J & George
 ; The class table of a state is an alist.  Each entry in a class table is
 ; a "class declaration" and is of the form
 
-;   (class-name super-class-names fields defs)
+;   (class-name super-class-names cp flags fields methods href)
 
 ; Note that the definition below of the Thread class includes a 'run' method,
 ;  which most applications will override.  The definition is consistent
 ;  with the default run method provided by the Thread class [O'Reily]
 
-(defun make-class-decl (name superclasses fields sfields cp methods href)
-  (list name superclasses fields sfields cp methods href))
+(defun make-class-decl (name superclasses cp flags fields methods href)
+  (list name superclasses cp flags fields methods href))
 
 (defun class-decl-name (dcl)
   (nth 0 dcl))
 (defun class-decl-superclasses (dcl)
   (nth 1 dcl))
-(defun class-decl-fields (dcl)
-  (nth 2 dcl))
-(defun class-decl-sfields (dcl)
-  (nth 3 dcl))
 (defun class-decl-cp (dcl)
+  (nth 2 dcl))
+(defun class-decl-flags (dcl)
+  (nth 3 dcl))
+(defun class-decl-fields (dcl)
   (nth 4 dcl))
 (defun class-decl-methods (dcl)
   (nth 5 dcl))
 (defun class-decl-heapref (dcl)
   (nth 6 dcl))
 
-(defun base-class-def ()
-   (list (make-class-decl "java.lang.Object"
-                          nil
-                          '("monitor" "mcount" "wait-set")
-                          '()
-                          '()
-                          '(("<init>" () nil (RETURN)))
-                          '(REF -1))
-         (make-class-decl "ARRAY"
-                          '("java.lang.Object")
-                          '(("<array>" . *ARRAY*))
-                          '()
-                          '()
-                          '()
-                          '(REF -1))
-         (make-class-decl "java.lang.Thread"
-                          '("java.lang.Object")
-                          '()
-                          '()
-                          '()
-                          '(("run" () nil
-                             (RETURN))
-                            ("start" () nil ())
-                            ("stop" () nil ())
-                            ("<init>" ()
-                                      nil
-                                      (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>" 0)
-                                      (return)))
-                          '(REF -1))
-         (make-class-decl "java.lang.String"
-                          '("java.lang.Object")
-                          '("strcontents")
-                          '()
-                          '()
-                          '(("<init>" ()
-                                      nil
-                                      (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>" 0)
-                                      (return)))
-                          '(REF -1))
-         (make-class-decl "java.lang.Class"
-                          '("java.lang.Object")
-                          '()
-                          '()
-                          '()
-                          '(("<init>" ()
-                                     nil
-                                     (aload_0)
-                                     (invokespecial "java.lang.Object" "<init>" 0)
-                                     (return)))
-                          '(REF -1))))
+(defconst *java.lang.Object-fake*
+  (make-class-decl
+    "java/lang/Object"
+    '()
+    '(nil)
+     #x00000021                                                ;  ACC_PUBLIC ACC_SUPER
+    '()
+    '(("<init>:()V" #x00000001                                 ;  ACC_PUBLIC
+       (return)))
+    '(ref -1)))
 
-(defun make-class-def (list-of-class-decls)
-   (append (base-class-def) list-of-class-decls))
+(defconst *java.lang.Thread-fake*
+  (make-class-decl
+    "java/lang/Thread"
+    '("java/lang/Object")
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
+     #x00000021                                                 ; PUBLIC SUPER
+    '()
+    '(("run:()V" #x00000001                                     ; PUBLIC
+       (return))
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
+       (aload_0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
+       (return)))
+    '(ref -1)))
+
+; Fake java.lang.String with fields like JDK 8
+(defconst *java.lang.String-fake8*
+  (make-class-decl
+    "java/lang/String"
+    '("java/lang/Object")
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+    '(
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
+     )
+    '(("<init>:()V" #x00000001                                  ; PUBLIC
+       (aload_0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
+       (return)))
+    '(ref -1)))
+
+; Fake java.lang.String with fields like JDK 9
+(defconst *java.lang.String-fake9*
+  (make-class-decl
+    "java/lang/String"
+    '("java/lang/Object")
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+    '(
+      ("value:[B" #x00000012)                                   ; PRIVATE FINAL
+      ("coder:B" #x00000012)                                    ; PRIVATE FINAL
+     )
+    '(("<init>:()V" #x00000001                                  ; PUBLIC
+       (aload_0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
+       (return)))
+    '(ref -1)))
+
+(defconst *java.lang.Class-fake*
+  (make-class-decl
+    "java/lang/Class"
+    '("java/lang/Object")
+    '(nil
+      (methodref "java/lang/Object" "<init>:()V" 0)) ; 1
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+    '()
+    '(("<init>:()V" #x00000001                                  ; PUBLIC
+       (aload_0)
+       (invokespecial 1) ; java/lang/Object.<init>:()V
+       (return)))
+    '(ref -1)))
+
+(defun base-class-def ()
+   (list *java.lang.Object-fake*
+         *java.lang.Thread-fake*
+         *java.lang.String-fake8*
+         *java.lang.Class-fake*))
+
+(defconst *default-m5-options*
+  'DEFAULT-M5-OPTIONS)
+
+(defund is-big-endian (options)
+  (case options
+    (UTF16-BIG-ENDIAN 1)
+    (UTF16-LITTLE-ENDIAN 0)
+    (otherwise 0)))
+
+(defund byte-strings-p (options)
+  (case options
+    (UTF16-BIG-ENDIAN t)
+    (UTF16-LITTLE-ENDIAN t)
+    (otherwise nil)))
+
+(defund desired-assertion-status (options)
+  (declare (ignore options))
+  0)
 
 ; -----------------------------------------------------------------------------
 ; A Constant Pool
@@ -542,57 +385,81 @@ J & George
 
 ; A constant pool is a list of entries.  Each entry is either:
 ;
+;  '(CLASS (REF -1) classname)
+;       Classname is a string with JVM class name.
+;       It is resolved to a heap reference to an instance of java/lang/Class.
+;       Once it is resolved, its reference is placed as the second element
+;       (displacing the null ref currently there).
+;
 ;  '(DOUBLE n)
 ;       Where n is a 64-bit unsigned number, bit representation of double
 ;
-;  '(FLOAT n)
-;       Where n is a 32-bit unsigned number, bit representation of float
+;  '(FIELDREF classname name-and-type size)
+;       Classname is a string with JVM class name.
+;       Name-and-type contains name and type descriptor separated by ':'.
+;       Size is 2 for long and double fields, 1 otherwise.
 ;
-;  '(INT n)
+;  '(FLOAT n)
+;       Where n is a 32-bit unsigned number, bit representation of float.
+;
+;  '(INTEGER n)
 ;       Where n is a 32-bit number, in the range specified by the JVM spec
 ;
-;  '(LONG n)
-;       Where n is a 64-bit number, in the range specified by the JVM spec
+;  '(INTERFACE-METHODREF classname name-and-type size)
+;       Classname is a string with JVM class name.
+;       Name-and-type contains name and type descriptor separated by ':'.
+;       Size is a sum of size of formal parameters.
 ;
-;  '(STRING (REF -1) "Hello, World!")
-;       The 3rd element (a string) is resolved to a heap reference the
-;       first time it is used.  Once it is resolved, its reference is placed
-;       as the second element (displacing the null ref currently there).
-
-(defun cp-make-double-entry (n)
-  (list 'DOUBLE (bits2fp n (rtl::dp))))
-
-(defun cp-make-float-entry (n)
-  (list 'FLOAT (bits2fp n (rtl::sp))))
-
-(defun cp-make-int-entry (n)
-  (list 'INT (int-fix n)))
-
-(defun cp-make-long-entry (n)
-  (list 'LONG (long-fix n)))
-
-(defun cp-make-string-entry (str)
-  (list 'STRING '(REF -1) str))
-
-(defun cp-string-resolved? (entry)
-  (not (equal (cadr (caddr entry)) -1)))
+;  '(INVOKE-DYNAMIC)
+;       A dummy entry.
+;
+;  '(LONG n)
+;       Where n is a 64-bit number, in the range specified by the JVM spec.
+;
+;  '(METHOD-HANDLE)
+;       A dummy entry.
+;
+;  '(METHOD-TYPE)
+;       A dummy entry.
+;
+;  '(METHODREF classname name-and-type nformals)
+;       Classname is a string with JVM class name.
+;       Name-and-type contains name and type descriptor separated by ':'.
+;       Size is a sum of size of formal parameters.
+;
+;  '(NAME-AND-TYPE name-and-type)
+;       Name-and-type is a string containing name of a member and
+;       its JVM type descriptor separated by ':' character.
+;
+;  '(STRING (REF -1) 72 101 108 108 111 44 32 87 111 114 108 100 33) ; "Hello, World!"
+;       Elements from 3rd to the end are UTF16 char codes of a String.
+;       They are resolved to a heap reference during preprocssing.
+;       The reference is placed as the second element
+;       (displacing the null ref currently there).
+;
+;  '(UTF8)
+;       A dummy entry.
 
 (defun retrieve-cp (class-name class-table)
   (class-decl-cp (bound? class-name class-table)))
 
-(defun update-ct-string-ref (class idx newval ct)
+(defun retrieve-cp-entry (class-name idx class-table)
+  (nth idx (retrieve-cp class-name class-table)))
+
+(defun update-ct-ref (class idx newval ct)
   (let* ((class-entry (bound? class ct))
-         (oldstrval (caddr (nth idx (retrieve-cp class ct))))
-         (newstrentry (list 'STRING newval oldstrval))
+         (cpentry (nth idx (retrieve-cp class ct)))
+         (oldstrval (cddr cpentry))
+         (newstrentry (list* (car cpentry) newval oldstrval))
          (new-cp (update-nth idx
                               newstrentry
                               (class-decl-cp class-entry)))
          (new-class-entry
           (make-class-decl (class-decl-name class-entry)
                            (class-decl-superclasses class-entry)
-                           (class-decl-fields class-entry)
-                           (class-decl-sfields class-entry)
                            new-cp
+                           (class-decl-flags class-entry)
+                           (class-decl-fields class-entry)
                            (class-decl-methods class-entry)
                            (class-decl-heapref class-entry))))
         (bind class (cdr new-class-entry) ct)))
@@ -649,16 +516,16 @@ J & George
   (let* ((class (bound? class-name class-table))
         (psupers (class-decl-superclasses class))
         (supers (cons class-name psupers)))
-       (or (in-list "java.lang.Thread" supers)
-           (in-list "java.lang.ThreadGroup" supers))))
+       (or (in-list "java/lang/Thread" supers)
+           (in-list "java/lang/ThreadGroup" supers))))
 
 ; ----------------------------------------------------------------------------
 ; Helper functions for locking and unlocking objects
 
 ; lock-object and unlock-object will obtain a lock on an instance
 ;  of an object, using th as the locking id (a thread owns a lock).  If th
-;  already has a lock on an object, then the mcount of the object is
-;  incremented.  Likewise if you unlock an object with mcount > 0, then
+;  already has a lock on an object, then the <mcount> of the object is
+;  incremented.  Likewise if you unlock an object with <mcount> > 0, then
 ;  the lock will be decremented.  Note:  you must make sure that th can
 ;  and should get the lock, since this function will blindly go ahead and
 ;  get the lock
@@ -666,47 +533,48 @@ J & George
 (defun lock-object (th obj-ref heap)
   (let* ((obj-ref-num (cadr obj-ref))
          (instance (binding (cadr obj-ref) heap))
-         (obj-fields (binding "java.lang.Object" instance))
-         (new-mcount (+ 1 (binding "mcount" obj-fields)))
+         (obj-fields (binding "java/lang/Object" instance))
+         (new-mcount (+ 1 (binding "<mcount>" obj-fields)))
          (new-obj-fields
-            (bind "monitor" th
-               (bind "mcount" new-mcount obj-fields)))
-         (new-object (bind "java.lang.Object" new-obj-fields instance)))
+            (bind "<monitor>" th
+               (bind "<mcount>" new-mcount obj-fields)))
+         (new-object (bind "java/lang/Object" new-obj-fields instance)))
      (bind obj-ref-num new-object heap)))
 
 (defun unlock-object (th obj-ref heap)
   (let* ((obj-ref-num (cadr obj-ref))
          (instance (binding (cadr obj-ref) heap))
-         (obj-fields (binding "java.lang.Object" instance))
-         (old-mcount (binding "mcount" obj-fields))
+         (obj-fields (binding "java/lang/Object" instance))
+         (old-mcount (binding "<mcount>" obj-fields))
          (new-mcount (ACL2::max 0 (- old-mcount 1)))
          (new-monitor (if (zp new-mcount)
                           0
                           th))
          (new-obj-fields
-            (bind "monitor" new-monitor
-               (bind "mcount" new-mcount obj-fields)))
-         (new-object (bind "java.lang.Object" new-obj-fields instance)))
+            (bind "<monitor>" new-monitor
+               (bind "<mcount>" new-mcount obj-fields)))
+         (new-object (bind "java/lang/Object" new-obj-fields instance)))
      (bind obj-ref-num new-object heap)))
 
 ; objectLockable? is used to determine if th can unlock instance.  This
-;  occurs when either mcount is zero (nobody has a lock), or mcount is
-;  greater than zero, but monitor is equal to th.  This means that th
+;  occurs when either <mcount> is zero (nobody has a lock), or <mcount> is
+;  greater than zero, but <monitor> is equal to th.  This means that th
 ;  already has a lock on the object, and when the object is locked yet again,
-;  monitor will remain the same, but mcount will be incremented.
+;  <monitor> will remain the same, but <mcount> will be incremented.
 ;
 ; objectUnLockable? determins if a thread can unlock an object (ie if it
 ;  has a lock on that object)
 (defun objectLockable? (instance th)
-  (let* ((obj-fields (binding "java.lang.Object" instance))
-         (monitor (binding "monitor" obj-fields))
-         (mcount (binding "mcount" obj-fields)))
-    (or (zp mcount)
-        (equal monitor th))))
+  (let* ((obj-fields (binding "java/lang/Object" instance))
+         (monitor (binding "<monitor>" obj-fields))
+         (mcount (binding "<mcount>" obj-fields)))
+    (and instance
+         (or (zp mcount)
+             (equal monitor th)))))
 
 (defun objectUnLockable? (instance th)
-  (let* ((obj-fields (binding "java.lang.Object" instance))
-         (monitor (binding "monitor" obj-fields)))
+  (let* ((obj-fields (binding "java/lang/Object" instance))
+         (monitor (binding "<monitor>" obj-fields)))
       (equal monitor th)))
 
 ; -----------------------------------------------------------------------------
@@ -722,7 +590,41 @@ J & George
 (defun stack   (frame) (nth 2 frame))
 (defun program (frame) (nth 3 frame))
 (defun sync-flg (frame) (nth 4 frame))
+; The class in which the current method is defined is the current class (See JLS 2.6).
 (defun cur-class (frame) (nth 5 frame))
+
+(defthm frames
+  (and
+   (equal (pc (make-frame pc l s prog sync-flg cur-class)) pc)
+   (equal (locals (make-frame pc l s prog sync-flg cur-class)) l)
+   (equal (stack (make-frame pc l s prog sync-flg cur-class)) s)
+   (equal (program (make-frame pc l s prog sync-flg cur-class)) prog)
+   (equal (sync-flg (make-frame pc l s prog sync-flg cur-class)) sync-flg)
+   (equal (cur-class (make-frame pc l s prog sync-flg cur-class)) cur-class)))
+
+(in-theory
+ (disable make-frame pc locals stack program sync-flg cur-class))
+
+; -----------------------------------------------------------------------------
+; Field Declarations
+
+; The fields component of a class declaration is a list of field definitions.
+; A field definition is a list of the form
+
+; (name-and-type flags . program)
+
+; We never build these declarations but just enter list constants for them,
+
+; flags is bitmask representing access_flags of the method
+
+; The accessors for fields are:
+
+(defun field-name-and-type (f)
+  (nth 0 f))
+(defun field-flags (f)
+  (nth 1 f))
+(defun field-isStatic? (f)
+  (logbitp 3 (field-flags f)))
 
 ; -----------------------------------------------------------------------------
 ; Method Declarations
@@ -730,37 +632,44 @@ J & George
 ; The methods component of a class declaration is a list of method definitions.
 ; A method definition is a list of the form
 
-; (name formals sync-status . program)
+; (name-and-type flags . program)
 
 ; We never build these declarations but just enter list constants for them,
 
 ; Note the similarity to our old notion of a program definition.  We
 ; will use strings to name methods now.
 
-; sync-status is 't' if the method is synchronized, 'nil' if not
+; flags is bitmask representing access_flags of the method
+
+; Suppose that the first four entires of constant pool of an example class are:
+;  nil                                ; 0
+;  (fieldref  "Point" "x:I" 1)        ; 1
+;  (fieldref  "Point" "y:I" 1)        ; 2
+;  (methodref "Point" "move:(II)I" 2) ; 3
 
 ; Method definitions will be constructed by expressions such as:
 ; (Note:  all of the symbols below are understood to be in the pkg "JVM".)
 
-; ("move" (dx dy) nil
-;   (load this)
-;   (load this)
-;   (getfield "Point" "x")
-;   (load dx)
+; ("move:(II)I" nil
+;   (iload this)
+;   (iload this)
+;   (getfield 1) ; x:I
+;   (iload dx)
+;   (iadd)
+;   (putfield 1) ; x:I  this.x = this.x + dx;
+;   (iload :this)
+;   (iload :this)
+;   (getfield 2) ; y:I
+;   (iload dy)
 ;   (add)
-;   (putfield "Point" "x")    ; this.x = this.x + dx;
-;   (load :this)
-;   (load :this)
-;   (getfield "Point" "y")
-;   (load dy)
-;   (add)
-;   (putfield "Point" "y")    ; this.y = this.y + dy;
+;   (putfield 2) ; y:I  this.y = this.y + dy;
 ;   (push 1)
-;   (xreturn)))               ; return 1;
+;   (ireturn)))               ; return 1;
 
-; Provided this method is defined in the class "Point" it can be invoked by
+; Provided this method is defined in the class "Point" it can be invoked
+; from another method of this class by
 
-;   (invokevirtual "Point" "move" 2)
+;   (invokevirtual 3) ; Point.move:(II)I
 
 ; This assumes that the stack, at the time of invocation, contains an
 ; reference to an object of type "Point" and two numbers, dx and dy.
@@ -777,17 +686,16 @@ J & George
 
 ; The accessors for methods are:
 
-(defun method-name (m)
+(defun method-name-and-type (m)
   (nth 0 m))
-(defun method-formals (m)
+(defun method-flags (m)
   (nth 1 m))
-(defun method-sync (m)
-  (nth 2 m))
 (defun method-program (m)
-  (cdddr m))
+  (cddr m))
+(defun method-sync (m)
+  (logbitp 5 (method-flags m)))
 (defun method-isNative? (m)
-  (equal '(NIL)
-         (method-program m)))
+  (logbitp 8 (method-flags m)))
 
 ; The Standard Modify
 
@@ -857,7 +765,10 @@ J & George
           (list 'heap s))
         (if (suppliedp :class-table args)
             (actual :class-table args)
-          (list 'class-table s))))
+          (list 'class-table s))
+        (if (suppliedp :options args)
+            (actual :options args)
+          (list 'options s))))
 
 ; -----------------------------------------------------------------------------
 ; Helper functions related to building instances of objects
@@ -865,24 +776,50 @@ J & George
 (defun deref (ref heap)
   (binding (cadr ref) heap))
 
-(defun field-value (class-name field-name instance)
-  (binding field-name
+(defun obj-class (obj)
+  (caar obj))
+
+(defun field-value (class-name field-name-and-type instance)
+  (binding field-name-and-type
            (binding class-name instance)))
 
-(defun build-class-field-bindings (field-names)
-  (if (endp field-names)
+(defun set-instance-field (class-name field-name-and-type value instance)
+  (bind class-name
+        (bind field-name-and-type value
+              (binding class-name instance))
+        instance))
+
+(defund field-initial-value (field-name-and-type)
+  (if (or (search ":L" field-name-and-type)  ; object instance
+          (search ":[" field-name-and-type)) ; array instance
+      '(REF -1)
+    0))
+
+;(defund field-long-or-double (field-name-and-type)
+;  (or (search ":J" field-name-and-type)
+;      (search ":D" field-name-and-type)))
+
+(defun build-class-field-bindings (fields is-static)
+  (if (endp fields)
       nil
-    (cons (cons (car field-names) 0)
-          (build-class-field-bindings (cdr field-names)))))
+    (let* ((field (car fields))
+           (name-and-type (field-name-and-type field)))
+      (if (equal (field-isStatic? field) is-static)
+          (cons (cons name-and-type (field-initial-value name-and-type))
+                (build-class-field-bindings (cdr fields) is-static))
+        (build-class-field-bindings (cdr fields) is-static)))))
 
 (defun build-class-object-field-bindings ()
-  '(("monitor" . 0) ("monitor-count" . 0) ("wait-set" . nil)))
+  '(("<monitor>" . 0) ("<mcount>" . 0)))
 
 (defun build-immediate-instance-data (class-name class-table)
   (cons class-name
-      (build-class-field-bindings
-       (class-decl-fields
-        (bound? class-name class-table)))))
+      (if (equal class-name "java/lang/Object")
+          (build-class-object-field-bindings)
+          (build-class-field-bindings
+           (class-decl-fields
+            (bound? class-name class-table))
+           nil))))
 
 (defun build-an-instance (class-names class-table)
   (if (endp class-names)
@@ -890,52 +827,76 @@ J & George
     (cons (build-immediate-instance-data (car class-names) class-table)
           (build-an-instance (cdr class-names) class-table))))
 
-(defun build-class-data (sfields)
-  (cons "java.lang.Class"
-        (build-class-field-bindings
-         (cons "<name>" sfields))))
+; Layout in a heap of a Class object
+; (("java/lang/Class"
+;   ("<sfields>" (sf1 . sv1) ... (sfn . svn)) ; static fields of class "class.name"
+;   ("<name>" . "class.name")
+;   (cf1 . cv1) ; instance fields of "java.lang.Class"
+;   ...
+;   (cfm . cvm))
+;  ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
 
-(defun build-a-class-instance (sfields class-table)
-    (list (build-class-data sfields)
-          (build-immediate-instance-data "java.lang.Object" class-table)))
+(defun static-field-value (class-name field-name-and-type s)
+  (let* ((class-ref (class-decl-heapref
+                     (bound? class-name (class-table s))))
+         (instance (deref class-ref (heap s)))
+         (sfields (cadar instance)))
+    (binding field-name-and-type (cdr sfields))))
 
+(defun set-static-field (field-name-and-type value instance)
+  (let ((sfields (cadar instance)))
+    (cons
+      (list*
+        (obj-class instance)
+        (cons (car sfields)
+              (bind field-name-and-type value (cdr sfields)))
+        (cddar instance))
+      (cdr instance))))
+
+(defun build-a-class-instance (class class-table)
+  (let ((new-object (build-an-instance '("java/lang/Class" "java/lang/Object")
+                                       class-table)))
+       (cons
+         (list*
+           (obj-class new-object)
+           (cons "<sfields>"
+                 (build-class-field-bindings
+                  (class-decl-fields (bound? class class-table))
+                  t))
+           (cons "<name>"
+                 class)
+           (cdar new-object))
+         (cdr new-object))))
 
 ; -----------------------------------------------------------------------------
 ; Arrays
 
-(defun value-of (obj)
-  (cdr obj))
-
-(defun superclasses-of (class ct)
-  (class-decl-superclasses (bound? class ct)))
-
-(defun array-content (array)
-  (value-of (field-value "ARRAY" "<array>" array)))
+; Layout in a heap of array object int[] = {101, 102, 103 }
+; (("[I" 3 101 102 103)
+;  ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0)))
 
 (defun array-type (array)
-  (nth 0 (array-content array)))
+  (caar array))
 
 (defun array-bound (array)
-  (nth 1 (array-content array)))
+  (cadar array))
 
 (defun array-data (array)
-  (nth 2 (array-content array)))
+  (cddar array))
 
 (defun element-at (index array)
   (nth index (array-data array)))
 
 (defun makearray (type bound data class-table)
-  (cons (list "ARRAY"
-              (cons "<array>" (cons '*array* (list type bound data))))
-        (build-an-instance
-         (superclasses-of "ARRAY" class-table)
-         class-table)))
+  (declare (ignore class-table))
+  (list (list* type bound data)
+        (cons "java/lang/Object" (build-class-object-field-bindings))))
 
-(defun set-element-at (value index array class-table)
-  (makearray (array-type array)
-             (array-bound array)
-             (update-nth index value (array-data array))
-             class-table))
+(defun set-element-at (value index array)
+  (list* (list* (array-type array)
+                (array-bound array)
+                (update-nth index value (array-data array)))
+         (cdr array)))
 
 (defun primitive-type (type)
   (cond ((equal type 'T_BYTE) t)
@@ -959,6 +920,28 @@ J & George
         ((equal atype-num 11) 'T_LONG)
         (t nil)))
 
+(defun atype-to-type (atype-num)
+  (cond ((equal atype-num 4) "[Z")
+        ((equal atype-num 5) "[C")
+        ((equal atype-num 6) "[F")
+        ((equal atype-num 7) "[D")
+        ((equal atype-num 8) "[B")
+        ((equal atype-num 9) "[S")
+        ((equal atype-num 10) "[I")
+        ((equal atype-num 11) "[J")
+        (t nil)))
+
+(defun identifier-to-type (ident)
+  (cond ((equal ident 'T_BOOLEAN) "[Z")
+        ((equal ident 'T_CHAR) "[C")
+        ((equal ident 'T_FLOAT) "[F")
+        ((equal ident 'T_DOUBLE) "[D")
+        ((equal ident 'T_BYTE) "[B")
+        ((equal ident 'T_SHORT) "[S")
+        ((equal ident 'T_INT) "[I")
+        ((equal ident 'T_LONG) "[J")
+        (t nil)))
+
 (defun identifier-to-atype (ident)
   (cond ((equal ident 'T_BOOLEAN) 4)
         ((equal ident 'T_CHAR) 5)
@@ -970,65 +953,71 @@ J & George
         ((equal ident 'T_LONG) 11)
         (t nil)))
 
-(defun default-value1 (type)
-  (if (primitive-type type)
-      0
-      nil))
+; "[C" -> "[[C"
+(defund array-type-of (element-type)
+  (concatenate 'string "[" element-type))
 
-(defun init-array (type count)
+; "[[C" -> "[C"
+(defund element-type (array-type)
+  (subseq array-type 1 (length array-type)))
+
+(defund array-initial-value (array-type)
+  (case (char array-type 1)
+    (#\[ '(ref -1))
+    (#\L '(ref -1))
+    (otherwise 0)))
+
+(defun init-array (initial-value count)
   (if (zp count)
       nil
-      (cons (default-value1 type) (init-array type (- count 1)))))
+      (cons initial-value (init-array initial-value (- count 1)))))
 
-; The following measure is due to J
-(defun natural-sum (lst)
-  (cond ((endp lst) 0)
-        (t (+ (nfix (car lst)) (natural-sum (cdr lst))))))
-
-(include-book "ordinals/lexicographic-ordering" :dir :system)
+(defun makemultiarray-measure (car-counts cdr-counts)
+   (cons
+    (cons 1 (1+ (len cdr-counts)))
+    (nfix car-counts)))
 
 (mutual-recursion
 
   ; makemultiarray2 :: num, counts, s, ac --> [refs]
-  (defun makemultiarray2 (car-counts cdr-counts s ac)
-    (declare (xargs :measure (acl2::llist
-                              (len (cons car-counts cdr-counts))
-                              (natural-sum (cons car-counts cdr-counts)))
-                    :well-founded-relation acl2::l<))
+  (defun makemultiarray2 (type car-counts cdr-counts s ac)
+    (declare (xargs :measure (makemultiarray-measure car-counts cdr-counts)))
     (if (zp car-counts)
         (mv (heap s) ac)
         (mv-let (new-addr new-heap)
-                (makemultiarray cdr-counts s)
-                (makemultiarray2 (- car-counts 1)
+                (makemultiarray type cdr-counts s)
+                (makemultiarray2 type
+                                 (- car-counts 1)
                                  cdr-counts
                                  (make-state (thread-table s)
                                              new-heap
-                                             (class-table s))
+                                             (class-table s)
+                                             (options s))
                                  (cons (list 'REF new-addr) ac)))))
 
   ; makemultiarray :: [counts], s --> addr, new-heap
-  (defun makemultiarray (counts s)
-    (declare (xargs :measure (acl2::llist (+ 1 (len counts))
-                                          (natural-sum counts))
-                    :well-founded-relation acl2::l<))
+  (defun makemultiarray (type counts s)
+    (declare (xargs :measure (makemultiarray-measure 0 counts)))
     (if (<= (len counts) 1)
 
         ; "Base case"  Handles initializing the final dimension
         (mv (len (heap s))
             (bind (len (heap s))
-                  (makearray 'T_REF
+                  (makearray type
                              (car counts)
-                             (init-array 'T_REF (car counts))
+                             (init-array (array-initial-value type)
+                                         (car counts))
                              (class-table s))
                   (heap s)))
 
         ; "Recursive Case"
         (mv-let (heap-prime lst-of-refs)
-                (makemultiarray2 (car counts)
+                (makemultiarray2 (element-type type)
+                                 (car counts)
                                  (cdr counts)
                                  s
                                  nil)
-                (let* ((obj (makearray 'T_REF
+                (let* ((obj (makearray type
                                        (car counts)
                                        lst-of-refs
                                        (class-table s)))
@@ -1044,16 +1033,18 @@ J & George
   (case (op-code inst)
     (AALOAD             1)
     (AASTORE            1)
-    (ACONST_NULL                1)
-    (ALOAD                      2)
+    (ACONST_NULL        1)
+    (ALOAD              2)
+    (ALOAD_W            4)
     (ALOAD_0            1)
     (ALOAD_1            1)
     (ALOAD_2            1)
     (ALOAD_3            1)
     (ANEWARRAY          3)
     (ARETURN            1)
-    (ARRAYLENGTH                1)
+    (ARRAYLENGTH        1)
     (ASTORE             2)
+    (ASTORE_W           4)
     (ASTORE_0           1)
     (ASTORE_1           1)
     (ASTORE_2           1)
@@ -1063,6 +1054,7 @@ J & George
     (BIPUSH             2)
     (CALOAD             1)
     (CASTORE            1)
+    (CHECKCAST          3)
     (D2F                1)
     (D2I                1)
     (D2L                1)
@@ -1075,6 +1067,7 @@ J & George
     (DCONST_1           1)
     (DDIV               1)
     (DLOAD              2)
+    (DLOAD_W            4)
     (DLOAD_0            1)
     (DLOAD_1            1)
     (DLOAD_2            1)
@@ -1084,12 +1077,13 @@ J & George
     (DREM               1)
     (DRETURN            1)
     (DSTORE             2)
+    (DSTORE_W           4)
     (DSTORE_0           1)
     (DSTORE_1           1)
     (DSTORE_2           1)
     (DSTORE_3           1)
     (DSUB               1)
-    (DUP                        1)
+    (DUP                1)
     (DUP_X1             1)
     (DUP_X2             1)
     (DUP2               1)
@@ -1109,6 +1103,7 @@ J & George
     (FCONST_2           1)
     (FDIV               1)
     (FLOAD              2)
+    (FLOAD_W            4)
     (FLOAD_0            1)
     (FLOAD_1            1)
     (FLOAD_2            1)
@@ -1118,6 +1113,7 @@ J & George
     (FREM               1)
     (FRETURN            1)
     (FSTORE             2)
+    (FSTORE_W           4)
     (FSTORE_0           1)
     (FSTORE_1           1)
     (FSTORE_2           1)
@@ -1125,17 +1121,17 @@ J & George
     (FSUB               1)
     (GETFIELD           3)
     (GETSTATIC          3)
-    (GOTO                       3)
+    (GOTO               3)
     (GOTO_W             5)
-    (I2B                        1)
-    (I2C                        1)
-    (I2D                        1)
-    (I2F                        1)
-    (I2L                        1)
-    (I2S                        1)
-    (IADD                       1)
+    (I2B                1)
+    (I2C                1)
+    (I2D                1)
+    (I2F                1)
+    (I2L                1)
+    (I2S                1)
+    (IADD               1)
     (IALOAD             1)
-    (IAND                       1)
+    (IAND               1)
     (IASTORE            1)
     (ICONST_M1          1)
     (ICONST_0           1)
@@ -1144,7 +1140,7 @@ J & George
     (ICONST_3           1)
     (ICONST_4           1)
     (ICONST_5           1)
-    (IDIV                       1)
+    (IDIV               1)
     (IF_ACMPEQ          3)
     (IF_ACMPNE          3)
     (IF_ICMPEQ          3)
@@ -1153,93 +1149,224 @@ J & George
     (IF_ICMPLE          3)
     (IF_ICMPLT          3)
     (IF_ICMPNE          3)
-    (IFEQ                       3)
-    (IFGE                       3)
-    (IFGT                       3)
-    (IFLE                       3)
-    (IFLT                       3)
-    (IFNE                       3)
+    (IFEQ               3)
+    (IFGE               3)
+    (IFGT               3)
+    (IFLE               3)
+    (IFLT               3)
+    (IFNE               3)
     (IFNONNULL          3)
     (IFNULL             3)
-    (IINC                       3)
-    (ILOAD                      2)
+    (IINC               3)
+    (IINC_W             6)
+    (ILOAD              2)
+    (ILOAD_W            4)
     (ILOAD_0            1)
     (ILOAD_1            1)
     (ILOAD_2            1)
     (ILOAD_3            1)
-    (IMUL                       1)
-    (INEG                       1)
+    (IMUL               1)
+    (INEG               1)
     (INSTANCEOF         3)
-    (INVOKESPECIAL              3)
-    (INVOKESTATIC               3)
-    (INVOKEVIRTUAL              3)
-    (IOR                        1)
-    (IREM                       1)
+    (INVOKESPECIAL      3)
+    (INVOKESTATIC       3)
+    (INVOKEVIRTUAL      3)
+    (IOR                1)
+    (IREM               1)
     (IRETURN            1)
-    (ISHL                       1)
-    (ISHR                       1)
+    (ISHL               1)
+    (ISHR               1)
     (ISTORE             2)
+    (ISTORE_W           4)
     (ISTORE_0           1)
     (ISTORE_1           1)
     (ISTORE_2           1)
     (ISTORE_3           1)
-    (ISUB                       1)
-    (IUSHR                      1)
-    (IXOR                       1)
-    (JSR                        3)
-    (JSR_W                      5)
-    (L2D                        1)
-    (L2F                        1)
-    (L2I                        1)
-    (LADD                       1)
+    (ISUB               1)
+    (IUSHR              1)
+    (IXOR               1)
+    (JSR                3)
+    (JSR_W              5)
+    (L2D                1)
+    (L2F                1)
+    (L2I                1)
+    (LADD               1)
     (LALOAD             1)
-    (LAND                       1)
+    (LAND               1)
     (LASTORE            1)
-    (LCMP                       1)
+    (LCMP               1)
     (LCONST_0           1)
     (LCONST_1           1)
-    (LDC                        2)
-    (LDC_W                      3)
+    (LDC                2)
+    (LDC_W              3)
     (LDC2_W             3)
-    (LDIV                       1)
-    (LLOAD                      2)
+    (LDIV               1)
+    (LLOAD              2)
+    (LLOAD_W            4)
     (LLOAD_0            1)
     (LLOAD_1            1)
     (LLOAD_2            1)
     (LLOAD_3            1)
-    (LMUL                       1)
-    (LNEG                       1)
-    (LOR                        1)
-    (LREM                       1)
+    (LMUL               1)
+    (LNEG               1)
+    (LOOKUPSWITCH       (arg1 inst))
+    (LOR                1)
+    (LREM               1)
     (LRETURN            1)
-    (LSHL                       1)
-    (LSHR                       1)
+    (LSHL               1)
+    (LSHR               1)
     (LSTORE             2)
+    (LSTORE_W           4)
     (LSTORE_0           1)
     (LSTORE_1           1)
     (LSTORE_2           1)
     (LSTORE_3           1)
-    (LSUB                       1)
-    (LUSHR                      1)
-    (LXOR                       1)
-    (MONITORENTER               1)
-    (MONITOREXIT                1)
+    (LSUB               1)
+    (LUSHR              1)
+    (LXOR               1)
+    (MONITORENTER       1)
+    (MONITOREXIT        1)
     (MULTIANEWARRAY     4)
-    (NEW                        3)
+    (NEW                3)
     (NEWARRAY           2)
-    (NOP                        1)
-    (POP                        1)
-    (POP2                       1)
+    (NOP                1)
+    (POP                1)
+    (POP2               1)
     (PUTFIELD           3)
     (PUTSTATIC          3)
-    (RET                        2)
+    (RET                2)
+    (RET_W              4)
     (RETURN             1)
     (SALOAD             1)
     (SASTORE            1)
     (SIPUSH             3)
-    (SWAP                       1)
+    (SWAP               1)
+    (TABLESWITCH        (arg1 inst))
     (t 1)))
 
+; -----------------------------------------------------------------------------
+; Instruction helpers
+
+(defun bind-formals (n stack)
+  (if (zp n)
+      nil
+    (cons (top stack)
+          (bind-formals (- n 1) (pop stack)))))
+
+; Retirns a cons pair (class . method) if method is found or nil otherwise
+(defun lookup-methodref-in-superclasses (name-and-type classes class-table)
+  (cond ((endp classes) nil)
+        (t (let* ((class-name (car classes))
+                  (class-decl (bound? class-name class-table))
+                  (method (bound? name-and-type (class-decl-methods class-decl))))
+             (if method
+                 (cons class-name method)
+                (lookup-methodref-in-superclasses name-and-type (cdr classes)
+                                                 class-table))))))
+
+(defun lookup-methodref (name-and-type class-name class-table)
+  (lookup-methodref-in-superclasses name-and-type
+                                    (cons class-name
+                                          (class-decl-superclasses
+                                           (bound? class-name class-table)))
+                                    class-table))
+
+(defun lookup-method (name-and-type class-name class-table)
+  (cdr (lookup-methodref name-and-type class-name class-table)))
+
+(defun invoke-instance-method (nformals class-name method-name-and-type method-decl
+          inst-length th s)
+  (let* ((obj-ref (top (popn nformals (stack (top-frame th s)))))
+         (instance (deref obj-ref (heap s)))
+         (prog (method-program method-decl))
+         (s1 (modify th s
+                     :pc (+ inst-length (pc (top-frame th s)))
+                     :stack (popn (+ nformals 1)
+                                  (stack (top-frame th s)))))
+         (tThread (rrefToThread obj-ref (thread-table s))))
+    (cond
+     ((method-isNative? method-decl)
+      (cond ((and (equal class-name "java/lang/Object")
+                  (equal method-name-and-type "getClass:()Ljava/lang/Class;"))
+             (modify th s1
+                     :stack (push (class-decl-heapref
+                                    (bound? (obj-class instance) (class-table s)))
+                                  (stack (top-frame th s1)))))
+            ((and (equal class-name "java/lang/Object")
+                  (equal method-name-and-type "hashCode:()I"))
+             (modify th s1
+                     :stack (push (int-fix (cadr obj-ref))
+                                  (stack (top-frame th s1)))))
+            ((and (equal class-name "java/lang/Object")
+                  (equal method-name-and-type "clone:()Ljava/lang/Object;"))
+             (modify th s1
+                     :stack (push (list 'ref (len (heap s)))
+                                  (stack (top-frame th s)))
+                     :heap (bind (len (heap s)) instance (heap s))))
+            ((and (equal class-name "java/lang/Thread")
+                  (equal method-name-and-type "start:()V")
+                  tThread)
+             (modify tThread s1 :status 'SCHEDULED))
+            ((and (equal class-name "java/lang/Thread")
+                  (equal method-name-and-type "stop:()V")
+                  tThread)
+             (modify tThread s1
+                     :status 'UNSCHEDULED))
+            (t s)))
+     ((and (method-sync method-decl)
+           (objectLockable? instance th))
+      (modify th s1
+              :call-stack
+              (push (make-frame 0
+                                (reverse
+                                 (bind-formals (+ nformals 1)
+                                               (stack (top-frame th s))))
+                                nil
+                                prog
+                                'LOCKED
+                                class-name)
+                    (call-stack th s1))
+              :heap (lock-object th obj-ref (heap s))))
+     ((method-sync method-decl)
+      s)
+     (t
+      (modify th s1
+              :call-stack
+              (push (make-frame 0
+                                (reverse
+                                 (bind-formals (+ nformals 1)
+                                               (stack (top-frame th s))))
+                                nil
+                                prog
+                                'UNLOCKED
+                                class-name)
+                    (call-stack th s1)))))))
+
+(defun return-stk (ret-stack th s)
+  (let* ((cs (call-stack th s))
+         (top-frame (top cs))
+         (ret-frame (top (pop cs)))
+         (obj-ref (nth 0 (locals top-frame)))
+         (sync-status (sync-flg top-frame))
+         (class (cur-class top-frame))
+         (ret-ref (class-decl-heapref (bound? class (class-table s))))
+         (new-heap (cond ((and (equal sync-status 'LOCKED)
+                               (deref obj-ref (heap s)))
+                          (unlock-object th obj-ref (heap s)))
+                         ((and (equal sync-status 'S_LOCKED)
+                               (deref ret-ref (heap s)))
+                          (unlock-object th ret-ref (heap s)))
+                         (t (heap s)))))
+    (modify th s
+            :call-stack (push (make-frame
+                                (pc ret-frame)
+                                (locals ret-frame)
+                                ret-stack
+                                (program ret-frame)
+                                (sync-flg ret-frame)
+                                (cur-class ret-frame))
+                               (pop (pop cs)))
+            :heap new-heap)))
 
 ; =============================================================================
 ; JVM INSTRUCTIONS BEGIN HERE
@@ -1263,16 +1390,16 @@ J & George
 (defun execute-AASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array)
+                            (heap s)))
+       s)))
 
 ; -----------------------------------------------------------------------------
 ; (ACONST_NULL) Instruction
@@ -1307,12 +1434,15 @@ J & George
 ; (ANEWARRAY) Instruction
 
 (defun execute-ANEWARRAY (inst th s)
-  (let* ((type 'T_REF)
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe))
          (count (top (stack (top-frame th s))))
          (addr (len (heap s)))
-         (obj (makearray type
+         (obj (makearray (array-type-of type)
                          count
-                         (init-array type count)
+                         (init-array '(ref -1) count)
                          (class-table s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -1327,21 +1457,9 @@ J & George
 
 (defun execute-ARETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (stack (top-frame th s))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push val (stack (top-frame th s1))))))
+  (let* ((cs (call-stack th s))
+         (val (top (stack (top cs)))))
+    (return-stk (push val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (ARRAYLENGTH) Instruction
@@ -1385,7 +1503,7 @@ J & George
          (arrayref (top (pop (stack (top-frame th s)))))
          (array (deref arrayref (heap s)))
          (element (if (equal (array-type array)
-                             'T_BOOLEAN)
+                             "[Z") ; boolean[]
                       (ubyte-fix (element-at index array))
                       (byte-fix (element-at index array)))))
         (modify th s
@@ -1400,19 +1518,19 @@ J & George
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
          (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s)))
          (element (if (equal (array-type (deref arrayref (heap s)))
-                             'T_BYTE)
+                             "[B") ; byte[]
                       (byte-fix value)
                       (u-fix value 1))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at element
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at element index array)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (BIPUSH const) Instruction
@@ -1441,16 +1559,29 @@ J & George
 (defun execute-CASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at (char-fix value)
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at (char-fix value) index array)
+                            (heap s)))
+        s)))
+
+; -----------------------------------------------------------------------------
+; (CHECKCAST) Instruction - check whether object is of given type
+; No operation in M5 model.
+
+(defun execute-CHECKCAST (inst th s)
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe)))
+    (declare (ignore type))
+    (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (D2F) Instruction - convert double to float
@@ -1458,10 +1589,10 @@ J & George
 (defun execute-D2F (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (fp2fp (top (pop (stack (top-frame th s))))
+          :stack (push (fp2fp (top2 (stack (top-frame th s)))
                               (rtl::dp)
                               (rtl::sp))
-                       (pop (pop (stack (top-frame th s)))))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (D2I) Instruction - convert double to int
@@ -1469,10 +1600,10 @@ J & George
 (defun execute-D2I (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (fp2int (top (pop (stack (top-frame th s))))
+          :stack (push (fp2int (top2 (stack (top-frame th s)))
                                (rtl::dp)
                                32)
-                       (pop (pop (stack (top-frame th s)))))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (D2L) Instruction - convert double to long
@@ -1480,11 +1611,10 @@ J & George
 (defun execute-D2L (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fp2int (top (pop (stack (top-frame th s))))
-                                     (rtl::dp)
-                                     64)
-                             (pop (pop (stack (top-frame th s))))))))
+          :stack (push2 (fp2int (top2 (stack (top-frame th s)))
+                                (rtl::dp)
+                                64)
+                        (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (DADD) Instruction - add double
@@ -1492,12 +1622,10 @@ J & George
 (defun execute-DADD (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                         (fpadd (top (popn 3 (stack (top-frame th s))))
-                                (top (pop (stack (top-frame th s))))
-                                (rtl::dp))
-                         (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpadd (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DALOAD) Instruction - load double from array
@@ -1508,50 +1636,49 @@ J & George
          (array (deref arrayref (heap s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (element-at index array)
-                                   (pop (pop (stack (top-frame th s)))))))))
+                :stack (push2 (element-at index array)
+                              (pop (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (DASTORE) Instruction - store into double array
 
 (defun execute-DASTORE (inst th s)
-  (let* ((value (top (pop (stack (top-frame th s)))))
-         (index (top (pop (pop (stack (top-frame th s))))))
-         (arrayref (top (popn 3 (stack (top-frame th s))))))
+  (let* ((value (top2 (stack (top-frame th s))))
+         (index (top (pop2 (stack (top-frame th s)))))
+         (arrayref (top (pop (pop2 (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (popn 4 (stack (top-frame th s)))
+                :stack (pop (pop (pop2 (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (DCMPG) Instruction - compare double
 
 (defun execute-DCMPG (inst th s)
-  (let* ((val2 (top (pop (stack (top-frame th s)))))
-         (val1 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s)))))
          (result (fpcmp val1 val2 (rtl::dp) +1)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push result
-                             (popn 4 (stack (top-frame th s)))))))
+                             (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (DCMPL) Instruction - compare double
 
 (defun execute-DCMPL (inst th s)
-  (let* ((val2 (top (pop (stack (top-frame th s)))))
-         (val1 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s)))))
          (result (fpcmp val1 val2 (rtl::dp) -1)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push result
-                             (popn 4 (stack (top-frame th s)))))))
+                             (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (DCONST_0) Instruction - push double 0.0
@@ -1559,8 +1686,7 @@ J & George
 (defun execute-DCONST_0 (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push #x0000000000000000 (stack (top-frame th s))))))
+          :stack (push2 #x0000000000000000 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DCONST_1) Instruction - push double 1.0
@@ -1568,8 +1694,7 @@ J & George
 (defun execute-DCONST_1 (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push #x3ff0000000000000 (stack (top-frame th s))))))
+          :stack (push2 #x3ff0000000000000 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DDIV) Instruction - divide double
@@ -1577,12 +1702,10 @@ J & George
 (defun execute-DDIV (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                         (fpdiv (top (popn 3 (stack (top-frame th s))))
-                                (top (pop (stack (top-frame th s))))
-                                (rtl::dp))
-                         (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpdiv (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DLOAD idx) Instruction - load double from local variable
@@ -1590,10 +1713,9 @@ J & George
 (defun execute-DLOAD (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth (arg1 inst)
-                                  (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth (arg1 inst)
+                             (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DLOAD_X) Instruction - load double from local variable
@@ -1602,9 +1724,8 @@ J & George
 (defun execute-DLOAD_X (inst th s n)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth n (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth n (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DMUL) Instruction - multiply double
@@ -1612,11 +1733,10 @@ J & George
 (defun execute-DMUL (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fpmul (top (popn 3 (stack (top-frame th s))))
-                                    (top (pop (stack (top-frame th s))))
-                                    (rtl::dp))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpmul (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DNEG) Instruction - negate double
@@ -1624,9 +1744,8 @@ J & George
 (defun execute-DNEG (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fpneg (top (pop (stack (top-frame th s)))) (rtl::dp))
-                             (popn 2 (stack (top-frame th s)))))))
+          :stack (push2 (fpneg (top2 (stack (top-frame th s))) (rtl::dp))
+                        (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (DREM) Instruction - remainder double
@@ -1634,32 +1753,19 @@ J & George
 (defun execute-DREM (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fprem (top (popn 3 (stack (top-frame th s))))
-                                    (top (pop (stack (top-frame th s))))
-                                    (rtl::dp))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fprem (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DRETURN) Instruction - return double from method
 
 (defun execute-DRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (pop (stack (top-frame th s)))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push 0 (push val (stack (top-frame th s1)))))))
+  (let* ((cs (call-stack th s))
+         (val (top2 (stack (top cs)))))
+    (return-stk (push2 val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (DSTORE idx) Instruction - store double into local variable
@@ -1668,9 +1774,9 @@ J & George
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth (arg1 inst)
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DSTORE_X) Instruction - store double long into local variable
@@ -1680,9 +1786,9 @@ J & George
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth n
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (DSUB) Instruction
@@ -1690,11 +1796,10 @@ J & George
 (defun execute-DSUB (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fpsub (top (popn 3 (stack (top-frame th s))))
-                                    (top (pop (stack (top-frame th s))))
-                                    (rtl::dp))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (fpsub (top2 (pop2 (stack (top-frame th s))))
+                               (top2 (stack (top-frame th s)))
+                               (rtl::dp))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (DUP) Instruction
@@ -1722,8 +1827,8 @@ J & George
 (defun execute-DUP_X2 (inst th s)
   (let* ((val1 (top (stack (top-frame th s))))
          (val2 (top (pop (stack (top-frame th s)))))
-         (val3 (top (popn 2 (stack (top-frame th s)))))
-         (stack_prime (popn 3 (stack (top-frame th s)))))
+         (val3 (top (pop (pop (stack (top-frame th s))))))
+         (stack_prime (pop (pop (pop (stack (top-frame th s)))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push val1
@@ -1751,8 +1856,8 @@ J & George
 (defun execute-DUP2_X1 (inst th s)
   (let* ((val1 (top (stack (top-frame th s))))
          (val2 (top (pop (stack (top-frame th s)))))
-         (val3 (top (popn 2 (stack (top-frame th s)))))
-         (stack_prime (popn 3 (stack (top-frame th s)))))
+         (val3 (top (pop (pop (stack (top-frame th s))))))
+         (stack_prime (pop (pop (pop (stack (top-frame th s)))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push val1
@@ -1767,9 +1872,9 @@ J & George
 (defun execute-DUP2_X2 (inst th s)
   (let* ((val1 (top (stack (top-frame th s))))
          (val2 (top (pop (stack (top-frame th s)))))
-         (val3 (top (popn 2 (stack (top-frame th s)))))
-         (val4 (top (popn 3 (stack (top-frame th s)))))
-         (stack_prime (popn 4 (stack (top-frame th s)))))
+         (val3 (top (pop (pop (stack (top-frame th s))))))
+         (val4 (top (pop (pop (pop (stack (top-frame th s)))))))
+         (stack_prime (pop (pop (pop (pop (stack (top-frame th s))))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push val1
@@ -1785,11 +1890,10 @@ J & George
 (defun execute-F2D (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fp2fp (top (stack (top-frame th s)))
-                                    (rtl::sp)
-                                    (rtl::dp))
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (fp2fp (top (stack (top-frame th s)))
+                               (rtl::sp)
+                               (rtl::dp))
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (F2I) Instruction - convert float to long
@@ -1808,11 +1912,10 @@ J & George
 (defun execute-F2L (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (fp2int (top (stack (top-frame th s)))
-                                     (rtl::sp)
-                                     64)
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (fp2int (top (stack (top-frame th s)))
+                                (rtl::sp)
+                                64)
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (FADD) Instruction - add float
@@ -1843,16 +1946,16 @@ J & George
 (defun execute-FASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (FCMPG) Instruction - compare float
@@ -1970,21 +2073,9 @@ J & George
 
 (defun execute-FRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (stack (top-frame th s))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push val (stack (top-frame th s1))))))
+  (let* ((cs (call-stack th s))
+         (val (top (stack (top cs)))))
+    (return-stk (push val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (FSTORE idx) Instruction - store float into local variable
@@ -2021,43 +2112,38 @@ J & George
                        (pop (pop (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
-; (GETFIELD "class" "field" ?long-flag?) Instruction
+; (GETFIELD "class" "field" size) Instruction
 
 (defun execute-GETFIELD (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag  (arg3 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag  (> (nth 3 cpe) 1))
          (instance (deref (top (stack (top-frame th s))) (heap s)))
-         (field-value (field-value class-name field-name instance)))
+         (field-value (field-value class-name field-name-and-type instance)))
     (modify th s
             :pc (+ (inst-length inst) (pc (top-frame th s)))
             :stack (if long-flag
-                       (push 0 (push field-value
-                                     (pop (stack (top-frame th s)))))
-                       (push field-value
-                             (pop (stack (top-frame th s))))))))
+                       (push2 field-value (pop (stack (top-frame th s))))
+                       (push field-value (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
-; (GETSTATIC "class" "field" ?long-flag?) Instruction
-
-(defun static-field-value (class-name field-name s)
-  (let* ((class-ref (class-decl-heapref
-                     (bound? class-name (class-table s))))
-         (instance (deref class-ref (heap s))))
-    (field-value "java.lang.Class" field-name instance)))
+; (GETSTATIC "class" "field" size) Instruction
 
 (defun execute-GETSTATIC (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag (arg3 inst))
-         (class-ref (class-decl-heapref
-                     (bound? class-name (class-table s))))
-         (instance (deref class-ref (heap s)))
-         (field-value (field-value "java.lang.Class" field-name instance)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag  (> (nth 3 cpe) 1))
+         (field-value (static-field-value class-name field-name-and-type s)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
-                           (push 0 (push field-value (stack (top-frame th s))))
+                           (push2 field-value (stack (top-frame th s)))
                            (push field-value (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
@@ -2098,10 +2184,9 @@ J & George
 (defun execute-I2D (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (int2fp (top (stack (top-frame th s)))
-                                     (rtl::dp))
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (int2fp (top (stack (top-frame th s)))
+                                (rtl::dp))
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (I2F) Instruction - int to float conversion
@@ -2119,9 +2204,8 @@ J & George
 (defun execute-I2L (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (long-fix (top (stack (top-frame th s))))
-                             (pop (stack (top-frame th s)))))))
+          :stack (push2 (long-fix (top (stack (top-frame th s))))
+                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (I2S) Instruction - int to short narrowing conversion
@@ -2171,16 +2255,16 @@ J & George
 (defun execute-IASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (ICONST_X) Instruction - push a certain constant onto the stack
@@ -2432,14 +2516,18 @@ J & George
 ; (INSTANCEOF) Instruction
 
 (defun execute-INSTANCEOF (inst th s)
-  (let* ((ref (top (stack (top-frame th s))))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe))
+         (ref (top (stack (top-frame th s))))
          (obj (deref ref (heap s)))
-         (obj-class (caar obj))
+         (obj-class (obj-class obj))
          (obj-supers (cons obj-class (class-decl-superclasses
                       (bound? obj-class (class-table s)))))
          (value (if (nullrefp ref)
                     0
-                    (if (member-equal (arg1 inst) obj-supers)
+                    (if (member-equal type obj-supers)
                         1
                         0))))
         (modify th s
@@ -2473,21 +2561,9 @@ J & George
 
 (defun execute-IRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (stack (top-frame th s))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push val (stack (top-frame th s1))))))
+  (let* ((cs (call-stack th s))
+         (val (top (stack (top cs)))))
+    (return-stk (push val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (ISHL) Instruction
@@ -2601,130 +2677,93 @@ J & George
 ; -----------------------------------------------------------------------------
 ; (INVOKESPECIAL "class" "name" n) Instruction
 
-(defun class-name-of-ref (ref heap)
-  (car (car (deref ref heap))))
-
-(defun bind-formals (n stack)
-  (if (zp n)
-      nil
-    (cons (top stack)
-          (bind-formals (- n 1) (pop stack)))))
-
-(defun lookup-method-in-superclasses (name classes class-table)
-  (cond ((endp classes) nil)
-        (t (let* ((class-name (car classes))
-                  (class-decl (bound? class-name class-table))
-                  (method (bound? name (class-decl-methods class-decl))))
-             (if method
-                 method
-                (lookup-method-in-superclasses name (cdr classes)
-                                               class-table))))))
-
-(defun lookup-method (name class-name class-table)
-  (lookup-method-in-superclasses name
-                                 (cons class-name
-                                       (class-decl-superclasses
-                                        (bound? class-name class-table)))
-                                 class-table))
-
 (defun execute-INVOKESPECIAL (inst th s)
-  (let* ((method-name (arg2 inst))
-         (nformals (arg3 inst))
-         (obj-ref (top (popn nformals (stack (top-frame th s)))))
-         (instance (deref obj-ref (heap s)))
-         (obj-class-name (arg1 inst))
-         (closest-method
-          (lookup-method method-name
-                         obj-class-name
-                         (class-table s)))
-         (prog (method-program closest-method))
-         (s1 (modify th s
-                     :pc (+ (inst-length inst) (pc (top-frame th s)))
-                     :stack (popn (+ nformals 1)
-                                  (stack (top-frame th s)))))
-         (tThread (rrefToThread obj-ref (thread-table s))))
-    (cond
-     ((method-isNative? closest-method)
-      (cond ((equal method-name "start")
-             (modify tThread s1 :status 'SCHEDULED))
-            ((equal method-name "stop")
-             (modify tThread s1
-                     :status 'UNSCHEDULED))
-            (t s)))
-     ((and (method-sync closest-method)
-           (objectLockable? instance th))
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'LOCKED
-                                (arg1 inst))
-                    (call-stack th s1))
-              :heap (lock-object th obj-ref (heap s))))
-     ((method-sync closest-method)
-      s)
-     (t
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'UNLOCKED
-                                (arg1 inst))
-                    (call-stack th s1)))))))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (method-name-and-type (nth 2 cpe))
+         (nformals (nth 3 cpe))
+         (class-name (nth 1 cpe))
+         (class-decl (bound? class-name (class-table s)))
+         (method (bound? method-name-and-type (class-decl-methods class-decl))))
+        (invoke-instance-method nformals
+                                class-name
+                                method-name-and-type
+                                method
+                                (inst-length inst)
+                                th
+                                s)))
 
 ; -----------------------------------------------------------------------------
 ; (INVOKESTATIC "class" "name" n) Instruction
 
 (defun execute-INVOKESTATIC (inst th s)
-  (let* ((class (arg1 inst))
-         (method-name (arg2 inst))
-         (nformals (arg3 inst))
-         (obj-ref (class-decl-heapref (bound? class (class-table s))))
-         (instance (deref obj-ref (heap s)))
-         (closest-method
-          (lookup-method method-name
-                         (arg1 inst)
-                         (class-table s)))
-         (prog (method-program closest-method))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class (nth 1 cpe))
+         (method-name-and-type (nth 2 cpe))
+         (nformals (nth 3 cpe))
+         (class-decl (bound? class (class-table s)))
+         (class-ref (class-decl-heapref class-decl))
+         (class-instance (deref class-ref (heap s)))
+         (method-decl (bound? method-name-and-type (class-decl-methods class-decl)))
+         (prog (method-program method-decl))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
-     ((method-isNative? closest-method)
-      (cond ((equal method-name "doubleToRawLongBits")
+     ((method-isNative? method-decl)
+      (cond ((and (equal class "java/lang/Object")
+                  (equal method-name-and-type "registerNatives:()V"))
+             s1)
+            ((and (equal class "java/lang/Class")
+                  (equal method-name-and-type "registerNatives:()V"))
+             s1)
+            ((and (equal class "java/lang/Class")
+                  (equal method-name-and-type "getPrimitiveClass:(Ljava/lang/String;)Ljava/lang/Class;"))
              (modify th s1
-                     :stack (push (long-fix (top (stack (top-frame th s))))
+                     :stack (push '(ref -1)      ; TODO return primitive class instead of null
                                   (stack (top-frame th s1)))))
-            ((equal method-name "floatToRawIntBits")
+            ((and (equal class "java/lang/Class")
+                  (equal method-name-and-type "desiredAssertionStatus0:(Ljava/lang/Class;)Z"))
+             (modify th s1
+                     :stack (push (desired-assertion-status (options s))
+                                  (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/Double")
+                  (equal method-name-and-type "doubleToRawLongBits:(D)J"))
+             (modify th s1
+                     :stack (push2 (long-fix (top2 (stack (top-frame th s))))
+                                   (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/Float")
+                  (equal method-name-and-type "floatToRawIntBits:(F)I"))
              (modify th s1
                      :stack (push (int-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((equal method-name "intBitsToFloat")
+            ((and (equal class "java/lang/Float")
+                  (equal method-name-and-type "intBitsToFloat:(I)F"))
              (modify th s1
-                     :stack (push (bits2fp (top (stack (top-frame th s)))
-                                           (rtl::sp))
+                     :stack (push (float-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((equal method-name "longBitsToDouble")
+            ((and (equal class "java/lang/Double")
+                  (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
-                     :stack (push (bits2fp (top (stack (top-frame th s)))
-                                           (rtl::dp))
-                                  (stack (top-frame th s1)))))
-            ((equal method-name "sqrt")
+                     :stack (push2 (double-fix (top2 (stack (top-frame th s))))
+                                   (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/StrictMath")
+                  (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
-                     :stack (push (fpsqrt (top (stack (top-frame th s)))
+                     :stack (push2 (fpsqrt (top2 (stack (top-frame th s)))
                                            (rtl::dp))
+                                   (stack (top-frame th s1)))))
+            ((and (equal class "java/lang/StringUTF16")
+                  (equal method-name-and-type "isBigEndian()Z"))
+             (modify th s1
+                     :stack (push (is-big-endian (options s))
                                   (stack (top-frame th s1)))))
             (t s)))
-     ((and (method-sync closest-method)
-           (objectLockable? instance th))
+     ((and (method-sync method-decl)
+           (objectLockable? class-instance th))
       (modify th s1
               :call-stack
               (push (make-frame 0
@@ -2734,10 +2773,10 @@ J & George
                                 nil
                                 prog
                                 'S_LOCKED
-                                (arg1 inst))
+                                class)
                     (call-stack th s1))
-              :heap (lock-object th obj-ref (heap s))))
-     ((method-sync closest-method)
+              :heap (lock-object th class-ref (heap s))))
+     ((method-sync method-decl)
       s)
      (t
       (modify th s1
@@ -2749,64 +2788,36 @@ J & George
                                 nil
                                 prog
                                 'UNLOCKED
-                                (arg1 inst))
+                                class)
                     (call-stack th s1)))))))
 
 ; -----------------------------------------------------------------------------
 ; (INVOKEVIRTUAL "class" "name" n) Instruction
 
+(defun class-name-of-ref (ref heap)
+  (car (car (deref ref heap))))
+
 (defun execute-INVOKEVIRTUAL (inst th s)
-  (let* ((method-name (arg2 inst))
-         (nformals (arg3 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (method-name-and-type (nth 2 cpe))
+         (nformals (nth 3 cpe))
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
-         (instance (deref obj-ref (heap s)))
          (obj-class-name (class-name-of-ref obj-ref (heap s)))
-         (closest-method
-          (lookup-method method-name
-                         obj-class-name
-                         (class-table s)))
-         (prog (method-program closest-method))
-         (s1 (modify th s
-                     :pc (+ (inst-length inst) (pc (top-frame th s)))
-                     :stack (popn (+ nformals 1)
-                                  (stack (top-frame th s)))))
-         (tThread (rrefToThread obj-ref (thread-table s))))
-    (cond
-     ((method-isNative? closest-method)
-      (cond ((equal method-name "start")
-             (modify tThread s1 :status 'SCHEDULED))
-            ((equal method-name "stop")
-             (modify tThread s1
-                     :status 'UNSCHEDULED))
-            (t s)))
-     ((and (method-sync closest-method)
-           (objectLockable? instance th))
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'LOCKED
-                                (arg1 inst))
-                    (call-stack th s1))
-              :heap (lock-object th obj-ref (heap s))))
-     ((method-sync closest-method)
-      s)
-     (t
-      (modify th s1
-              :call-stack
-              (push (make-frame 0
-                                (reverse
-                                 (bind-formals (+ nformals 1)
-                                               (stack (top-frame th s))))
-                                nil
-                                prog
-                                'UNLOCKED
-                                (arg1 inst))
-                    (call-stack th s1)))))))
+         (closest-methodref
+          (lookup-methodref method-name-and-type
+                            obj-class-name
+                            (class-table s)))
+         (closest-class (car closest-methodref))
+         (closest-method (cdr closest-methodref)))
+        (invoke-instance-method nformals
+                                closest-class
+                                method-name-and-type
+                                closest-method
+                                (inst-length inst)
+                                th
+                                s)))
 
 ; -----------------------------------------------------------------------------
 ; (L2D) Instruction - long to double conversion
@@ -2814,10 +2825,9 @@ J & George
 (defun execute-L2D (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (int2fp (top (pop (stack (top-frame th s))))
-                                     (rtl::dp))
-                             (pop (pop (stack (top-frame th s))))))))
+          :stack (push2 (int2fp (top2 (stack (top-frame th s)))
+                                (rtl::dp))
+                        (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (L2F) Instruction - long to float narrowing conversion
@@ -2825,9 +2835,9 @@ J & George
 (defun execute-L2F (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (int2fp (top (pop (stack (top-frame th s))))
+          :stack (push (int2fp (top2 (stack (top-frame th s)))
                                (rtl::sp))
-                       (pop (pop (stack (top-frame th s)))))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (L2I) Instruction - long to int narrowing conversion
@@ -2835,20 +2845,19 @@ J & George
 (defun execute-L2I (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push (int-fix (top (pop (stack (top-frame th s)))))
-                       (pop (pop (stack (top-frame th s)))))))
+          :stack (push (int-fix (top2 (stack (top-frame th s))))
+                       (pop2 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (LADD) Instruction - Add to longs from the top of the stack
 
 (defun execute-LADD (inst th s)
-  (let* ((val1 (top (pop (stack (top-frame th s)))))
-         (val2 (top (popn 3 (stack (top-frame th s))))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s))))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (long-fix (+ val1 val2))
-                                   (popn 4 (stack (top-frame th s))))))))
+                :stack (push2 (long-fix (+ val1 val2))
+                              (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LALOAD) Instruction
@@ -2859,38 +2868,36 @@ J & George
          (array (deref arrayref (heap s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (element-at index array)
-                                   (pop (pop (stack (top-frame th s)))))))))
+                :stack (push2 (element-at index array)
+                              (pop (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LAND) Instruction
 
 (defun execute-LAND (inst th s)
-  (let* ((val1 (top (pop (stack (top-frame th s)))))
-         (val2 (top (popn 3 (stack (top-frame th s))))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s))))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push 0
-                             (push (logand val1 val2)
-                                   (popn 4 (stack (top-frame th s))))))))
+                :stack (push2 (logand val1 val2)
+                              (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LASTORE) Instruction
 
 (defun execute-LASTORE (inst th s)
-  (let* ((value (top (pop (stack (top-frame th s)))))
-         (index (top (pop (pop (stack (top-frame th s))))))
-         (arrayref (top (popn 3 (stack (top-frame th s))))))
+  (let* ((value (top2 (stack (top-frame th s))))
+         (index (top (pop2 (stack (top-frame th s)))))
+         (arrayref (top (pop (pop2 (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (popn 4 (stack (top-frame th s)))
+                :stack (pop (pop (pop2 (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at value
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at value index array)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (LCMP) Instruction - compare two longs
@@ -2899,15 +2906,15 @@ J & George
 ;                      val1 < val2 --> -1
 
 (defun execute-LCMP (inst th s)
-  (let* ((val2 (top (pop (stack (top-frame th s)))))
-         (val1 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val2 (top2 (stack (top-frame th s))))
+         (val1 (top2 (pop2 (stack (top-frame th s)))))
          (result (cond ((> val1 val2) 1)
                        ((< val1 val2) -1)
                        (t 0))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push result
-                             (popn 4 (stack (top-frame th s)))))))
+                             (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LCONST_X) Instruction - push a certain long constant onto the stack
@@ -2916,23 +2923,16 @@ J & George
 (defun execute-LCONST_X (inst th s n)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push n (stack (top-frame th s))))))
+          :stack (push2 n (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LDC) Instruction
 
-(defun set-instance-field (class-name field-name value instance)
-  (bind class-name
-        (bind field-name value
-              (binding class-name instance))
-        instance))
-
 (defun execute-LDC (inst th s)
-  (let* ((class (cur-class (top-frame th s)))
-         (cp (retrieve-cp class (class-table s)))
-         (entry (nth (arg1 inst) cp))
-         (value (cadr entry)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (value (cadr cpe)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (push value (stack (top-frame th s))))))
@@ -2941,13 +2941,13 @@ J & George
 ; (LDC2_W) Instruction
 
 (defun execute-LDC2_W (inst th s)
-  (let* ((class (cur-class (top-frame th s)))
-         (cp (retrieve-cp class (class-table s)))
-         (entry (nth (arg1 inst) cp))
-         (value (cadr entry)))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (value (cadr cpe)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
-                :stack (push value (stack (top-frame th s))))))
+                :stack (push2 value (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (LDIV) Instruction
@@ -2955,12 +2955,10 @@ J & George
 (defun execute-LDIV (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                         (long-fix
-                            (truncate (top (popn 3 (stack (top-frame th s))))
-                                      (top (pop (stack (top-frame th s))))))
-                       (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (long-fix
+                         (truncate (top2 (pop2 (stack (top-frame th s))))
+                                   (top2 (stack (top-frame th s)))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LLOAD idx) Instruction - Push a long local onto the stack
@@ -2968,10 +2966,9 @@ J & George
 (defun execute-LLOAD (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth (arg1 inst)
-                                  (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth (arg1 inst)
+                             (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LLOAD_X) Instruction - Push a long local onto the stack
@@ -2980,9 +2977,8 @@ J & George
 (defun execute-LLOAD_X (inst th s n)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (nth n (locals (top-frame th s)))
-                             (stack (top-frame th s))))))
+          :stack (push2 (nth n (locals (top-frame th s)))
+                        (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LMUL) Instruction
@@ -2990,11 +2986,10 @@ J & George
 (defun execute-LMUL (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (ulong-fix
-                              (* (top (pop (stack (top-frame th s))))
-                                 (top (popn 3 (stack (top-frame th s))))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (ulong-fix
+                         (* (top2 (pop2 (stack (top-frame th s))))
+                            (top2 (stack (top-frame th s)))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LNEG) Instruction
@@ -3002,14 +2997,26 @@ J & George
 ;         the negation of the most negative int is itself
 
 (defun execute-LNEG (inst th s)
-  (let* ((result (if (equal (top (pop (stack (top-frame th s))))
+  (let* ((result (if (equal (top2 (stack (top-frame th s)))
                             *most-negative-long*)
                      *most-negative-long*
-                     (- (top (pop (stack (top-frame th s))))))))
+                     (- (top2 (stack (top-frame th s)))))))
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push result (popn 2 (stack (top-frame th s))))))))
+          :stack (push2 result (pop2 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (LOOKUPSWITCH) Instruction
+
+(defun execute-LOOKUPSWITCH (inst th s)
+  (let* ((default (arg2 inst))
+         (pairs (nthcdr 2 inst))
+         (key (top (stack (top-frame th s))))
+         (pair (bound? key pairs))
+         (offset (if pair (cdr pair) default)))
+    (modify th s
+            :pc (+ offset (pc (top-frame th s)))
+            :stack (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; (LOR) Instruction
@@ -3017,72 +3024,56 @@ J & George
 (defun execute-LOR (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (logior (top (pop (stack (top-frame th s))))
-                                     (top (popn 3 (stack (top-frame th s)))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (logior (top2 (pop2 (stack (top-frame th s))))
+                                (top2 (stack (top-frame th s))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LREM) Instruction
 
 (defun execute-LREM (inst th s)
-  (let* ((val1 (top (pop (stack (top-frame th s)))))
-         (val2 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop2 (stack (top-frame th s)))))
+         (val2 (top2 (stack (top-frame th s))))
          (result (- val1 (* (truncate val1 val2) val2))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push result
-                                 (popn 4 (stack (top-frame th s))))))))
+              :stack (push2 result
+                            (pop2 (pop2 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LRETURN) Instruction - return a long
 
 (defun execute-LRETURN (inst th s)
   (declare (ignore inst))
-  (let* ((val (top (pop (stack (top-frame th s)))))
-         (obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s))))
-         (s1 (modify th s
-                     :call-stack (pop (call-stack th s))
-                     :heap new-heap)))
-    (modify th s1
-            :stack (push 0 (push val (stack (top-frame th s1)))))))
+  (let* ((cs (call-stack th s))
+         (val (top2 (stack (top cs)))))
+    (return-stk (push2 val (stack (top (pop cs)))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (LSHL) Instruction
 
 (defun execute-LSHL (inst th s)
-  (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
          (result (shl val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push (long-fix result)
-                                 (popn 3 (stack (top-frame th s))))))))
+              :stack (push2 (long-fix result)
+                            (pop2 (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LSHR) Instruction
 
 (defun execute-LSHR (inst th s)
-  (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
          (result (shr val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push (long-fix result)
-                                 (popn 3 (pop (stack (top-frame th s)))))))))
+              :stack (push2 (long-fix result)
+                            (pop2 (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LSTORE idx) Instruction - store a long into the locals
@@ -3091,9 +3082,9 @@ J & George
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth (arg1 inst)
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LSTORE_X) Instruction - store a long into the locals
@@ -3103,9 +3094,9 @@ J & George
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :locals (update-nth n
-                               (top (pop (stack (top-frame th s))))
-                               (locals (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+                              (top2 (stack (top-frame th s)))
+                              (locals (top-frame th s)))
+          :stack (pop2 (stack (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (LSUB) Instruction
@@ -3113,11 +3104,9 @@ J & George
 (defun execute-LSUB (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push
-                        (ulong-fix (- (top (popn 3 (stack (top-frame th s))))
-                                      (top (pop (stack (top-frame th s))))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (ulong-fix (- (top2 (pop2 (stack (top-frame th s))))
+                                      (top2 (stack (top-frame th s)))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (LUSHR) Instruction
@@ -3128,15 +3117,14 @@ J & George
     (shr val1 shft)))
 
 (defun execute-LUSHR (inst th s)
-  (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
+  (let* ((val1 (top2 (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
          (result (lushr val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push 0
-                           (push (long-fix result)
-                                 (popn 3 (stack (top-frame th s))))))))
+              :stack (push2 (long-fix result)
+                            (pop2 (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
 ; (LXOR) Instruction
@@ -3144,10 +3132,9 @@ J & George
 (defun execute-LXOR (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (push 0
-                       (push (logxor (top (pop (stack (top-frame th s))))
-                                     (top (popn 3 (stack (top-frame th s)))))
-                             (popn 4 (stack (top-frame th s)))))))
+          :stack (push2 (logxor (top2 (pop2 (stack (top-frame th s))))
+                                (top2 (stack (top-frame th s))))
+                        (pop2 (pop2 (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (MONITORENTER) Instruction
@@ -3181,10 +3168,14 @@ J & George
 ; (MULTIANEWARRAY) Instruction
 
 (defun execute-MULTIANEWARRAY (inst th s)
-  (let* ((dimentions (arg1 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (type (nth 2 cpe))
+         (dimentions (arg2 inst))
          (counts (reverse (take dimentions (stack (top-frame th s))))))
         (mv-let (addr new-heap)
-                (makemultiarray counts s)
+                (makemultiarray type counts s)
             (modify th s
                     :pc (+ (inst-length inst) (pc (top-frame th s)))
                     :stack (push (list 'REF addr)
@@ -3195,9 +3186,14 @@ J & George
 ; (NEW "class") Instruction
 
 (defun execute-NEW (inst th s)
-  (let* ((class-name (arg1 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 2 cpe))
          (class-table (class-table s))
-         (closest-method (lookup-method "run" class-name class-table))
+         (closest-methodref (lookup-methodref "run:()V" class-name class-table))
+         (closest-class (car closest-methodref))
+         (closest-method (cdr closest-methodref))
          (prog (method-program closest-method))
          (new-object (build-an-instance
                       (cons class-name
@@ -3220,7 +3216,7 @@ J & George
                               nil
                               prog
                               'UNLOCKED
-                              class-name)
+                              closest-class)
                   nil)
                  'UNSCHEDULED
                  (list 'REF new-address)
@@ -3231,12 +3227,12 @@ J & George
 ; (NEWARRAY) Instruction
 
 (defun execute-NEWARRAY (inst th s)
-  (let* ((type (arg1 inst))
+  (let* ((atype (arg1 inst))
          (count (top (stack (top-frame th s))))
          (addr (len (heap s)))
-         (obj (makearray type
+         (obj (makearray (identifier-to-type atype)
                          count
-                         (init-array type count)
+                         (init-array 0 count)
                          (class-table s))))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -3267,60 +3263,68 @@ J & George
 (defun execute-POP2 (inst th s)
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
-          :stack (popn 2 (stack (top-frame th s)))))
+          :stack (pop (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
-; (PUTFIELD "class" "field" ?long-flag?) Instruction
+; (PUTFIELD "class" "field" size) Instruction
 
 (defun execute-PUTFIELD (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag  (arg3 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag (> (nth 3 cpe) 1))
          (value (if long-flag
-                    (top (pop (stack (top-frame th s))))
-                    (top (stack (top-frame th s)))))
-         (instance (if long-flag
-                       (deref (top (popn 2 (stack (top-frame th s)))) (heap s))
-                       (deref (top (pop (stack (top-frame th s)))) (heap s))))
-         (address (cadr (if long-flag
-                            (top (popn 2 (stack (top-frame th s))))
-                            (top (pop (stack (top-frame th s))))))))
+                    (top2 (stack (top-frame th s)))
+                  (top (stack (top-frame th s)))))
+         (ref (if long-flag
+                  (top (pop2 (stack (top-frame th s))))
+                (top (pop (stack (top-frame th s))))))
+         (instance (deref ref (heap s)))
+         (address (cadr ref)))
+    (if instance
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
-                           (popn 3 (stack (top-frame th s)))
+                           (pop (pop2 (stack (top-frame th s))))
                            (pop (pop (stack (top-frame th s)))))
                 :heap (bind address
                             (set-instance-field class-name
-                                                field-name
+                                                field-name-and-type
                                                 value
                                                 instance)
-                            (heap s)))))
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
-; (PUTSTATIC "class" "field" ?long-flag?) Instruction
+; (PUTSTATIC "class" "field" size) Instruction
 
 (defun execute-PUTSTATIC (inst th s)
-  (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag (arg3 inst))
+  (let* ((cpe (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 inst)
+                                 (class-table s)))
+         (class-name (nth 1 cpe))
+         (field-name-and-type (nth 2 cpe))
+         (long-flag (> (nth 3 cpe) 1))
          (class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (value (if long-flag
-                    (top (pop (stack (top-frame th s))))
+                    (top2 (stack (top-frame th s)))
                     (top (stack (top-frame th s)))))
          (instance (deref class-ref (heap s))))
+    (if instance
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
-                           (popn 2 (stack (top-frame th s)))
+                           (pop2 (stack (top-frame th s)))
                            (pop (stack (top-frame th s))))
                 :heap (bind (cadr class-ref)
-                            (set-instance-field "java.lang.Class"
-                                                field-name
-                                                value
-                                                instance)
-                            (heap s)))))
+                            (set-static-field field-name-and-type
+                                              value
+                                              instance)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (RET) Instruction
@@ -3335,18 +3339,8 @@ J & George
 
 (defun execute-RETURN (inst th s)
   (declare (ignore inst))
-  (let* ((obj-ref (nth 0 (locals (top-frame th s))))
-         (sync-status (sync-flg (top-frame th s)))
-         (class (cur-class (top-frame th s)))
-         (ret-ref (class-decl-heapref (bound? class (class-table s))))
-         (new-heap (cond ((equal sync-status 'LOCKED)
-                          (unlock-object th obj-ref (heap s)))
-                         ((equal sync-status 'S_LOCKED)
-                          (unlock-object th ret-ref (heap s)))
-                         (t (heap s)))))
-    (modify th s
-            :call-stack (pop (call-stack th s))
-            :heap new-heap)))
+  (let ((cs (call-stack th s)))
+    (return-stk (stack (top (pop cs))) th s)))
 
 ; -----------------------------------------------------------------------------
 ; (SALOAD) Instruction
@@ -3366,16 +3360,16 @@ J & George
 (defun execute-SASTORE (inst th s)
   (let* ((value (top (stack (top-frame th s))))
          (index (top (pop (stack (top-frame th s)))))
-         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+         (arrayref (top (pop (pop (stack (top-frame th s))))))
+         (array (deref arrayref (heap s))))
+    (if array
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (pop (pop (pop (stack (top-frame th s)))))
                 :heap (bind (cadr arrayref)
-                            (set-element-at (short-fix value)
-                                            index
-                                            (deref arrayref (heap s))
-                                            (class-table s))
-                            (heap s)))))
+                            (set-element-at (short-fix value) index array)
+                            (heap s)))
+        s)))
 
 ; -----------------------------------------------------------------------------
 ; (SIPUSH const) Instruction
@@ -3397,6 +3391,20 @@ J & George
               :stack (push val2
                            (push val1
                               (pop (pop (stack (top-frame th s)))))))))
+
+; -----------------------------------------------------------------------------
+; (TABLESWITCH) Instruction
+
+(defun execute-TABLESWITCH (inst th s)
+  (let* ((default (arg2 inst))
+         (low (arg3 inst))
+         (offsets (nthcdr 3 inst))
+         (index (top (stack (top-frame th s))))
+         (offset (or (and (>= index low) (nth (- index low) offsets))
+                     default)))
+    (modify th s
+            :pc (+ offset (pc (top-frame th s)))
+            :stack (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
 ; Putting it all together
@@ -3421,6 +3429,7 @@ J & George
     (AASTORE        (execute-AASTORE inst th s))
     (ACONST_NULL    (execute-ACONST_NULL inst th s))
     (ALOAD          (execute-ALOAD inst th s))
+    (ALOAD_W        (execute-ALOAD inst th s))
     (ALOAD_0        (execute-ALOAD_X inst th s 0))
     (ALOAD_1        (execute-ALOAD_X inst th s 1))
     (ALOAD_2        (execute-ALOAD_X inst th s 2))
@@ -3429,6 +3438,7 @@ J & George
     (ARETURN        (execute-ARETURN inst th s))
     (ARRAYLENGTH    (execute-ARRAYLENGTH inst th s))
     (ASTORE         (execute-ASTORE inst th s))
+    (ASTORE_W       (execute-ASTORE inst th s))
     (ASTORE_0       (execute-ASTORE_X inst th s 0))
     (ASTORE_1       (execute-ASTORE_X inst th s 1))
     (ASTORE_2       (execute-ASTORE_X inst th s 2))
@@ -3438,6 +3448,7 @@ J & George
     (BIPUSH         (execute-BIPUSH inst th s))
     (CALOAD         (execute-CALOAD inst th s))
     (CASTORE        (execute-CASTORE inst th s))
+    (CHECKCAST      (execute-CHECKCAST inst th s))
     (D2F            (execute-D2F inst th s))
     (D2I            (execute-D2I inst th s))
     (D2L            (execute-D2L inst th s))
@@ -3450,6 +3461,7 @@ J & George
     (DCONST_1       (execute-DCONST_1 inst th s))
     (DDIV           (execute-DDIV inst th s))
     (DLOAD          (execute-DLOAD inst th s))
+    (DLOAD_W        (execute-DLOAD inst th s))
     (DLOAD_0        (execute-DLOAD_X inst th s 0))
     (DLOAD_1        (execute-DLOAD_X inst th s 1))
     (DLOAD_2        (execute-DLOAD_X inst th s 2))
@@ -3459,6 +3471,7 @@ J & George
     (DREM           (execute-DREM inst th s))
     (DRETURN        (execute-DRETURN inst th s))
     (DSTORE         (execute-DSTORE inst th s))
+    (DSTORE_W       (execute-DSTORE inst th s))
     (DSTORE_0       (execute-DSTORE_X inst th s 0))
     (DSTORE_1       (execute-DSTORE_X inst th s 1))
     (DSTORE_2       (execute-DSTORE_X inst th s 2))
@@ -3483,6 +3496,7 @@ J & George
     (FCONST_2       (execute-FCONST_2 inst th s))
     (FDIV           (execute-FDIV inst th s))
     (FLOAD          (execute-FLOAD inst th s))
+    (FLOAD_W        (execute-FLOAD inst th s))
     (FLOAD_0        (execute-FLOAD_X inst th s 0))
     (FLOAD_1        (execute-FLOAD_X inst th s 1))
     (FLOAD_2        (execute-FLOAD_X inst th s 2))
@@ -3492,6 +3506,7 @@ J & George
     (FREM           (execute-FREM inst th s))
     (FRETURN        (execute-FRETURN inst th s))
     (FSTORE         (execute-FSTORE inst th s))
+    (FSTORE_W       (execute-FSTORE inst th s))
     (FSTORE_0       (execute-FSTORE_X inst th s 0))
     (FSTORE_1       (execute-FSTORE_X inst th s 1))
     (FSTORE_2       (execute-FSTORE_X inst th s 2))
@@ -3536,7 +3551,9 @@ J & George
     (IFNONNULL      (execute-IFNONNULL inst th s))
     (IFNULL         (execute-IFNULL inst th s))
     (IINC           (execute-IINC inst th s))
+    (IINC_W         (execute-IINC inst th s))
     (ILOAD          (execute-ILOAD inst th s))
+    (ILOAD_W        (execute-ILOAD inst th s))
     (ILOAD_0        (execute-ILOAD_X inst th s 0))
     (ILOAD_1        (execute-ILOAD_X inst th s 1))
     (ILOAD_2        (execute-ILOAD_X inst th s 2))
@@ -3553,6 +3570,7 @@ J & George
     (ISHL           (execute-ISHL inst th s))
     (ISHR           (execute-ISHR inst th s))
     (ISTORE         (execute-ISTORE inst th s))
+    (ISTORE_W       (execute-ISTORE inst th s))
     (ISTORE_0       (execute-ISTORE_X inst th s 0))
     (ISTORE_1       (execute-ISTORE_X inst th s 1))
     (ISTORE_2       (execute-ISTORE_X inst th s 2))
@@ -3577,18 +3595,21 @@ J & George
     (LDC2_W         (execute-LDC2_W inst th s))
     (LDIV           (execute-LDIV inst th s))
     (LLOAD          (execute-LLOAD inst th s))
+    (LLOAD_W        (execute-LLOAD inst th s))
     (LLOAD_0        (execute-LLOAD_X inst th s 0))
     (LLOAD_1        (execute-LLOAD_X inst th s 1))
     (LLOAD_2        (execute-LLOAD_X inst th s 2))
     (LLOAD_3        (execute-LLOAD_X inst th s 3))
     (LMUL           (execute-LMUL inst th s))
     (LNEG           (execute-LNEG inst th s))
+    (LOOKUPSWITCH   (execute-LOOKUPSWITCH inst th s))
     (LOR            (execute-LOR inst th s))
     (LREM           (execute-LREM inst th s))
     (LRETURN        (execute-LRETURN inst th s))
     (LSHL           (execute-LSHL inst th s))
     (LSHR           (execute-LSHR inst th s))
     (LSTORE         (execute-LSTORE inst th s))
+    (LSTORE_W       (execute-LSTORE inst th s))
     (LSTORE_0       (execute-LSTORE_X inst th s 0))
     (LSTORE_1       (execute-LSTORE_X inst th s 1))
     (LSTORE_2       (execute-LSTORE_X inst th s 2))
@@ -3607,11 +3628,13 @@ J & George
     (PUTFIELD       (execute-PUTFIELD inst th s))
     (PUTSTATIC      (execute-PUTSTATIC inst th s))
     (RET            (execute-RET inst th s))
+    (RET_W          (execute-RET inst th s))
     (RETURN         (execute-RETURN inst th s))
     (SALOAD         (execute-SALOAD inst th s))
     (SASTORE        (execute-SASTORE inst th s))
     (SIPUSH         (execute-SIPUSH inst th s))
     (SWAP           (execute-SWAP inst th s))
+    (TABLESWITCH    (execute-TABLESWITCH inst th s))
     (HALT           s)
     (otherwise s)))
 
@@ -3776,9 +3799,8 @@ J & George
 ; resolving class tables
 ;
 (defun assemble_method (method)
-  (append (list (method-name method)
-                (method-formals method)
-                (method-sync method))
+  (append (list (method-name-and-type method)
+                (method-flags method))
           (resolve_basic_block (method-program method))))
 
 (defun assemble_methods (methods)
@@ -3790,9 +3812,9 @@ J & George
 (defun assemble_class (class)
   (make-class-decl (class-decl-name class)
                    (class-decl-superclasses class)
-                   (class-decl-fields class)
-                   (class-decl-sfields class)
                    (class-decl-cp class)
+                   (class-decl-flags class)
+                   (class-decl-fields class)
                    (assemble_methods (class-decl-methods class))
                    (class-decl-heapref class)))
 
@@ -3805,80 +3827,521 @@ J & George
 (defun assemble_state (s)
   (make-state (assemble_thread_table (thread-table s))
               (heap s)
-              (assemble_class_table (class-table s))))
+              (assemble_class_table (class-table s))
+              (options s)))
+
+; -----------------------------------------------------------------------------
+; Linking.
+; Top function of linking is link-class-table.
+; It preprocesses a list of class-decls into linked class-table.
+;
+; The first class-decl in the list must be java/lang/Object .
+; All class-decls in the list must have distinct class-names.
+; All other class-decls must have nonempty direct superclass name and
+; a class-decl of supercalls must precede it in the list.
+; If superclass not found link-class-table returns a string with error message
+; instead of a class-table.
+;
+; After superclasses chains are ready the linking preprocessor searches for all
+; references of array types in classfiles and builds automatically all
+; mentioned array types together with their superclasses chains.
+;
+; Then link-class-table scans instructions of all methods in the class table
+; and resolves fieldrefs in instructions GETFIELD, GETSTATIC, PUTFIELD, PUTSTATIC
+; and methodrefs in instructions INVOKESPECIAL, INVOKESTATIC, INVOKEVIRTUAL .
+; Only classname in fieldrefs and methodsrefs might be modified, name-and-type
+; is kept unchanged. If class-decl with classname contains field or method whose name-and-type is
+; exactly name-and-type of fieldref or methodref, it remains unchanged.
+; Otherwise it is replaced by a name of closest superclass, where field or
+; method is found. If search fails then classname is replaced by a diagnostic
+; string.
+; Notice that static linking is insufficent for INVOKEVIRTUAL instruction.
+; It seraches for overwriting methods in run-time.
+
+(defun classref->type (classref)
+  (if (equal (char classref 0) #\[)
+      classref
+      (concatenate 'string "L" classref ";")))
+
+(defun make-array-type (elem-type count)
+  (if (zp count)
+      elem-type
+      (make-array-type (array-type-of elem-type) (1- count))))
+
+(defun name-and-type->type (name-and-type)
+  (subseq name-and-type
+          (1+ (position #\: name-and-type))
+          (length name-and-type)))
+
+(defun unpack-param-types-loop (params i st j ans)
+  (declare (xargs :measure (if (natp j) (nfix (- (length params) j)) 0)))
+  (cond ((or (not (natp j)) (>= j (length params)))
+         (reverse ans))
+        ((and (not st) (equal (char params j) #\[))
+         (unpack-param-types-loop params i nil (1+ j) ans))
+        ((and (not st) (equal (char params j) #\L))
+         (unpack-param-types-loop params i t (1+ j) ans))
+        ((or (not st) (equal (char params j) #\;))
+         (unpack-param-types-loop params (1+ j) nil (1+ j)
+                                  (cons (subseq params i (1+ j)) ans)))
+        (t (unpack-param-types-loop params i t (1+ j) ans))))
+
+(defun unpack-param-types (params)
+  (unpack-param-types-loop params 0 nil 0 nil))
+
+(defun unpack-method-type (type)
+  (let ((pos (position #\) type)))
+       (cons (subseq type (1+ pos) (length type))
+             (unpack-param-types (subseq type 1 pos)))))
+
+; Functions below collect types from classrefs, fieldsrefs, methodrefs among classtable
+
+(defun collect-type (type types)
+  (if (member-equal type types) types (cons type types)))
+
+(defun collect-types-in-list (type-list types)
+  (if (endp type-list)
+      types
+      (collect-types-in-list
+        (cdr type-list)
+        (collect-type (car type-list) types))))
+
+(defun collect-type-in-classref (classref types)
+  (collect-type (classref->type classref) types))
+
+(defun collect-types-in-superclasses (superclasses types)
+  (if (endp superclasses)
+      types
+      (collect-types-in-superclasses
+        (cdr superclasses)
+        (collect-type-in-classref (car superclasses) types))))
+
+(defun collect-types-in-name-and-type (name-and-type types)
+  (let* ((type (name-and-type->type name-and-type)))
+    (if (equal (char type 0) #\()
+        (collect-types-in-list (unpack-method-type type) types)
+      (collect-type type types))))
+
+(defun collect-types-in-constant-pool (cp types)
+  (if (endp cp)
+      types
+      (collect-types-in-constant-pool
+        (cdr cp)
+        (let ((cpe (car cp)))
+          (case (car cpe)
+            (class (collect-type-in-classref (caddr cpe) types))
+            (name-and-type (collect-types-in-name-and-type (cadr cpe) types))
+            (otherwise types))))))
+
+(defun collect-types-in-fields (fields types)
+  (if (endp fields)
+      types
+      (collect-types-in-fields
+        (cdr fields)
+        (collect-type (name-and-type->type (caar fields)) types))))
+
+(defun collect-array-types-in-instr (instr cp types)
+  (case (car instr)
+    (ANEWARRAY      (let ((cpe (nth (arg1 instr) cp)))
+                      (collect-type (array-type-of (nth 2 cpe)) types)))
+    (NEWARRAY       (collect-type (identifier-to-type (arg1 instr)) types))
+    (otherwise types)))
+
+(defun collect-array-types-in-program (instrs cp types)
+  (if (endp instrs)
+      types
+    (collect-array-types-in-program
+     (cdr instrs)
+     cp
+     (collect-array-types-in-instr
+      (let ((instr (car instrs)))
+        (if (isLabeledInst? instr) (cdr instr) instr))
+      cp
+      types))))
+
+(defun collect-types-in-methods (methods cp types)
+  (if (endp methods)
+      types
+    (collect-types-in-methods
+     (cdr methods)
+     cp
+     (let ((method (car methods)))
+       (collect-types-in-list
+        (unpack-method-type
+         (name-and-type->type (method-name-and-type method)))
+        (collect-array-types-in-program
+         (method-program method)
+         cp
+         types))))))
+
+(defun collect-types-in-classes (classes types)
+  (if (endp classes)
+      types
+    (collect-types-in-classes
+     (cdr classes)
+     (let ((class (car classes)))
+       (collect-type-in-classref
+        (class-decl-name class)
+        (collect-types-in-superclasses
+         (class-decl-superclasses class)
+         (collect-types-in-constant-pool
+          (class-decl-cp class)
+          (collect-types-in-fields
+           (class-decl-fields class)
+           (collect-types-in-methods
+            (class-decl-methods class)
+            (class-decl-cp class)
+            types)))))))))
+
+; arrays is a map form elem-type to its maximal array dimension
+
+(defun collect-arrays-loop (types arrays)
+  (if (endp types)
+      arrays
+      (collect-arrays-loop
+        (cdr types)
+        (let ((type (car types)))
+             (if (equal (char type 0) #\[)
+                 (let* ((pos (search "[" type :from-end t))
+                        (elem (subseq type (1+ pos) (length type)))
+                        (dim (binding elem arrays)))
+                       (if (and pos (or (not dim) (>= pos dim)))
+                           (bind elem (1+ pos) arrays)
+                           arrays))
+                 arrays)))))
+
+(defun collect-arrays (list-of-class-decls)
+  (collect-arrays-loop (collect-types-in-classes list-of-class-decls nil) nil))
+
+(defun link-superclasses-loop (list-of-class-decls ans)
+  (if (endp list-of-class-decls)
+      (if (atom ans) ans (reverse ans))
+      (let* ((this-cl (car list-of-class-decls))
+             (thisclass (class-decl-name this-cl))
+             (superclass (car (class-decl-superclasses this-cl)))
+             (super-cl (bound? superclass ans)))
+            (if (bound? thisclass ans)
+                (concatenate 'string "LinkageError: " thisclass) ; Duplicate class
+                (if super-cl
+                    (link-superclasses-loop
+                      (cdr list-of-class-decls)
+                      (cons
+                        (make-class-decl
+                          thisclass
+                          (cons superclass
+                            (class-decl-superclasses super-cl))
+                          (class-decl-cp this-cl)
+                          (class-decl-flags this-cl)
+                          (class-decl-fields this-cl)
+                          (class-decl-methods this-cl)
+                          '(ref -1))
+                        ans))
+                     (concatenate 'string "NoClassDefFoundError: " superclass))))))
+
+(defun propagate-superclasses-in-arrays (superclasses dim arrays)
+  (if (endp superclasses)
+       arrays
+       (propagate-superclasses-in-arrays
+         (cdr superclasses)
+         dim
+         (let* ((supertype (classref->type (car superclasses)))
+                (old-dim (nfix (binding supertype arrays))))
+               (bind supertype (max dim old-dim) arrays)))))
+
+(defun propagate-superarrays (class-table arrays)
+  (if (endp class-table)
+      arrays
+      (propagate-superarrays
+        (cdr class-table)
+        (let* ((class (car class-table))
+               (class-name (class-decl-name class))
+               (superclasses (class-decl-superclasses class))
+               (dim (binding (classref->type class-name)
+                             arrays)))
+                (if (posp dim)
+                    (propagate-superclasses-in-arrays superclasses dim arrays)
+                    arrays)))))
+
+(defun append-array-decls (elem-type superelem-type dim class-table)
+  (if (posp dim)
+      (let ((class-table (if (> dim 1)
+                             (append-array-decls elem-type
+                                                 superelem-type
+                                                 (1- dim)
+                                                 class-table)
+                             class-table)))
+           (cons (make-class-decl
+                   (make-array-type elem-type dim)
+                   (let ((superclass
+                           (cond (superelem-type
+                                  (make-array-type superelem-type dim))
+                                 ((> dim 1)
+                                  (make-array-type "Ljava/lang/Object;" (1- dim)))
+                                 (t "java/lang/Object"))))
+                        (cons superclass
+                              (class-decl-superclasses (bound? superclass class-table))))
+                   ()
+                   0
+                   ()
+                   ()
+                   '(ref -1))
+                 class-table))
+       class-table))
+
+(defun make-arrays-loop (class-table arrays ans)
+  (if (endp class-table)
+      (reverse ans)
+      (make-arrays-loop
+        (cdr class-table)
+        arrays
+        (let* ((class (car class-table))
+               (class-name (class-decl-name class))
+               (superclass-name (car (class-decl-superclasses class)))
+               (elem-type (classref->type class-name))
+               (superelem-type (classref->type superclass-name))
+               (dim (binding elem-type arrays)))
+              (append-array-decls elem-type superelem-type dim (cons class ans))))))
+
+(defun make-basic-array-decls (elems arrays class-table)
+  (if (endp elems)
+      class-table
+      (make-basic-array-decls
+        (cdr elems)
+        arrays
+        (append-array-decls
+          (car elems)
+          nil
+          (binding (car elems) arrays)
+          class-table))))
+
+(defun make-arrays (class-table arrays)
+  (let ((arrays (propagate-superarrays class-table arrays)))
+       (make-arrays-loop
+         (cdr class-table)
+         arrays
+         (make-basic-array-decls
+           '("Ljava/lang/Object;" "Z" "B" "C" "S" "I" "J" "F" "D")
+           arrays
+           (list (car class-table))))))
+
+(defun link-superclasses (list-of-class-decls)
+  (let ((first-cl (first list-of-class-decls)))
+       (if (equal (class-decl-name first-cl) "java/lang/Object")
+           (if (class-decl-superclasses first-cl)
+               "ClassFormatError: java/lang/Object"
+               (let ((class-table (link-superclasses-loop
+                                   (cdr list-of-class-decls)
+                                   (list first-cl))))
+                    (if (consp class-table)
+                         (make-arrays class-table (collect-arrays list-of-class-decls))
+                         class-table)))
+          "NoClassDefFoundError: java/lang/Object")))
+
+(defun resolve-field-in-superclasses (name-and-type classes class-table)
+  (if (endp classes)
+       nil
+      (let* ((class-name (car classes))
+             (class-decl (bound? class-name class-table)))
+        (if (bound? name-and-type (class-decl-fields class-decl))
+            class-name
+          (resolve-field-in-superclasses name-and-type
+                                         (cdr classes)
+                                         class-table)))))
+
+(defun resolve-class (class-name class-table)
+  (if (bound? class-name class-table)
+      class-name
+    (concatenate 'string "NoClassDefFoundError: " class-name)))
+
+(defun resolve-field (class-name name-and-type class-table)
+  (let ((class (bound? class-name class-table)))
+       (if class
+           (let ((resolved-class
+                  (resolve-field-in-superclasses
+                    name-and-type
+                    (cons class-name (class-decl-superclasses class))
+                    class-table)))
+                (or resolved-class
+                    (concatenate 'string "NoSuchFieldError: "
+                               class-name " " name-and-type)))
+           (concatenate 'string "NoClassDefFoundError: " class-name))))
+
+(defun resolve-method (class-name name-and-type class-table)
+  (let ((class (bound? class-name class-table)))
+       (if class
+           (let ((methodref
+                   (lookup-methodref name-and-type class-name class-table)))
+                (if methodref
+                    (car methodref)
+                    (concatenate 'string "NoSuchMethodError: "
+                                 class-name " "  name-and-type)))
+           (concatenate 'string "NoClassDefFoundError: " class-name))))
+
+(defun link-constantpool (cp class-table)
+  (if (endp cp)
+      cp
+    (let ((cpe (car cp)))
+      (cons (case (car cpe)
+              (class
+               (list (car cpe)
+                     (cadr cpe)
+                     (resolve-class (caddr cpe) class-table)))
+              (fieldref
+               (list* (car cpe)
+                      (resolve-field (cadr cpe) (caddr cpe) class-table)
+                      (cddr cpe)))
+              (interface-methodref
+               (list* (car cpe)
+                      (resolve-method (cadr cpe) (caddr cpe) class-table)
+                      (cddr cpe)))
+              (methodref
+               (list* (car cpe)
+                      (resolve-method (cadr cpe) (caddr cpe) class-table)
+                      (cddr cpe)))
+              (otherwise cpe))
+            (link-constantpool (cdr cp) class-table)))))
+
+(defun link-class-list-loop (class-decls class-table)
+  (if (endp class-decls)
+      class-decls
+      (let ((class (car class-decls)))
+           (cons
+             (make-class-decl
+               (class-decl-name class)
+               (class-decl-superclasses class)
+               (link-constantpool (class-decl-cp class) class-table)
+               (class-decl-flags class)
+               (class-decl-fields class)
+               (class-decl-methods class)
+               '(ref -1))
+             (link-class-list-loop (cdr class-decls) class-table)))))
+
+(defun link-class-list (class-table)
+  (link-class-list-loop class-table class-table))
+
+(defun link-class-table (list-of-class-decls)
+  (link-class-list
+    (link-superclasses list-of-class-decls)))
+
+(defun make-class-def (list-of-class-decls)
+   (link-class-table
+     (append (base-class-def) list-of-class-decls)))
 
 ; -----------------------------------------------------------------------------
 ; load_class_library: a utility for populating the heap with Class and
 ;                     String objects
 
+(defund chars-to-bytes (chars is-big-endian)
+  (if (endp chars)
+      nil
+      (if (equal is-big-endian 0)
+          (cons (byte-fix (car chars))
+                (cons (byte-fix (shr (car chars) 8))
+                      (chars-to-bytes (cdr chars) is-big-endian)))
+          (cons (byte-fix (shr (car chars) 8))
+                (cons (byte-fix (car chars))
+                      (chars-to-bytes (cdr chars) is-big-endian))))))
+
 (defun make-string-obj (class cpentry s idx)
   (let* ((new-object (build-an-instance
-                      (cons "java.lang.String"
+                      (cons "java/lang/String"
                             (class-decl-superclasses
-                             (bound? "java.lang.String" (class-table s))))
+                             (bound? "java/lang/String" (class-table s))))
                      (class-table s)))
-         (stuffed-obj (set-instance-field "java.lang.String"
-                                          "strcontents"
-                                          (caddr cpentry)
-                                          new-object))
-         (new-address (len (heap s))))
-        (modify th s
-                :heap (bind new-address stuffed-obj (heap s))
-                :class-table (update-ct-string-ref
+         (array-address (len (heap s)))
+         (new-address (1+ array-address))
+         (chars (cddr cpentry))
+         (char-array (if (byte-strings-p (options s))
+                         (makearray "[B"
+                                    (* 2 (len chars))
+                                    (chars-to-bytes chars
+                                                    (is-big-endian (options s)))
+                                    (class-table s))
+                         (makearray "[C"
+                                    (len chars)
+                                    chars
+                                    (class-table s))))
+         (stuffed-obj (if (byte-strings-p (options s))
+                          (set-instance-field
+                            "java/lang/String"
+                            "value:[B"
+                            (list 'REF array-address)
+                            (set-instance-field "java/lang/String"
+                                                "coder:B"
+                                                1
+                                                new-object))
+                          (set-instance-field "java/lang/String"
+                                              "value:[C"
+                                              (list 'REF array-address)
+                                              new-object)))
+         (new-heap (bind new-address
+                         stuffed-obj
+                         (bind array-address
+                               char-array
+                               (heap s)))))
+        (modify 0 s
+                :heap new-heap
+                :class-table (update-ct-ref
                               class
                               idx
                               (list 'REF new-address)
                               (class-table s)))))
 
-
-(defun resolve-string-constants (class cp s idx)
+(defun resolve-constants (class cp s idx)
   (cond ((endp cp) s)
         ((equal (caar cp) 'STRING)
-         (resolve-string-constants class
-                                   (cdr cp)
-                                   (make-string-obj class (car cp) s idx)
-                                   (+ idx 1)))
-        (t (resolve-string-constants class (cdr cp) s (+ idx 1)))))
+         (resolve-constants class
+                            (cdr cp)
+                            (make-string-obj class (car cp) s idx)
+                            (+ idx 1)))
+        ((equal (caar cp) 'CLASS)
+         (let ((ct (update-ct-ref class
+                                  idx
+                                  (class-decl-heapref (bound? (caddar cp) (class-table s)))
+                                  (class-table s))))
+           (resolve-constants
+             class
+             (cdr cp)
+             (modify 0 s :class-table ct)
+             (+ idx 1))))
+        (t (resolve-constants class (cdr cp) s (+ idx 1)))))
 
-
-(defun gen_class_obj (class s)
-  (let* ((new-state (resolve-string-constants class
-                                             (retrieve-cp class (class-table s))
-                                             s
-                                             0))
-         (new-heap (heap new-state))
-         (new-ct (class-table new-state))
-         (new-object (build-a-class-instance
-                      (class-decl-sfields (bound? class new-ct))
-                      new-ct))
-         (stuffed-obj (set-instance-field "java.lang.Class"
-                                          "<name>"
-                                          class
-                                          new-object))
-         (new-address (len new-heap))
-         (old-class-ent (bound? class new-ct))
-         (new-class-ent
-          (make-class-decl (class-decl-name old-class-ent)
-                           (class-decl-superclasses old-class-ent)
-                           (class-decl-fields old-class-ent)
-                           (class-decl-sfields old-class-ent)
-                           (class-decl-cp old-class-ent)
-                           (class-decl-methods old-class-ent)
-                           (list 'REF new-address)))
-         (new-class-table (bind class
-                                (cdr new-class-ent)
-                                new-ct)))
-        (make-state (thread-table s)
-                    (bind new-address stuffed-obj new-heap)
-                    new-class-table)))
-
-(defun ld_class_lib (classes s)
+(defun gen-class-objs (classes s)
   (if (endp classes)
       s
-      (ld_class_lib (cdr classes) (gen_class_obj (car classes) s))))
+      (let* ((class-decl (car classes))
+             (class (class-decl-name class-decl))
+             (new-object (build-a-class-instance class (class-table s)))
+             (new-address (len (heap s)))
+             (new-class-decl
+               (make-class-decl (class-decl-name class-decl)
+                                (class-decl-superclasses class-decl)
+                                (class-decl-cp class-decl)
+                                (class-decl-flags class-decl)
+                                (class-decl-fields class-decl)
+                                (class-decl-methods class-decl)
+                                (list 'REF new-address))))
+        (gen-class-objs
+          (cdr classes)
+          (make-state (thread-table s)
+                      (bind new-address new-object (heap s))
+                      (bind class (cdr new-class-decl) (class-table s))
+                      (options s))))))
+
+(defun resolve-constants-all (classes s)
+  (if (endp classes)
+      s
+      (let ((class-decl (car classes)))
+        (resolve-constants-all
+          (cdr classes)
+          (resolve-constants (class-decl-name class-decl)
+                             (class-decl-cp class-decl)
+                             s
+                             0)))))
 
 (defun load_class_library (s)
-  (ld_class_lib (strip-cars (class-table s)) s))
+  (let ((s1 (gen-class-objs (class-table s) s)))
+    (resolve-constants-all (class-table s1) s1)))
 
 ; -----------------------------------------------------------------------------
 ; m5_load: both load and resolve a given state

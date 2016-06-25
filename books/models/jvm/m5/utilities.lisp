@@ -15,16 +15,6 @@
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
-#|
-; Certification Instructions.
-
-(include-book "m5")
-
-(certify-book "utilities" 1)
-
-J Moore
-|#
-
 (in-package "M5")
 
 ; Here we develop the general theory for proving things about the
@@ -109,31 +99,6 @@ J Moore
 
 ; Structures
 
-(defthm states
-  (and (equal (thread-table (make-state tt h c)) tt)
-       (equal (heap (make-state tt h c)) h)
-       (equal (class-table (make-state tt h c)) c)))
-
-(in-theory (disable make-state thread-table heap class-table))
-
-(defthm frames
-  (and
-   (equal (pc (make-frame pc l s prog sync-flg cur-class))
-          pc)
-   (equal (locals (make-frame pc l s prog sync-flg cur-class))
-          l)
-   (equal (stack (make-frame pc l s prog sync-flg cur-class))
-          s)
-   (equal (program (make-frame pc l s prog sync-flg cur-class))
-          prog)
-   (equal (sync-flg (make-frame pc l s prog sync-flg cur-class))
-          sync-flg)
-   (equal (cur-class (make-frame pc l s prog sync-flg cur-class))
-          cur-class)))
-
-(in-theory
- (disable make-frame pc locals stack program sync-flg cur-class))
-
 (defthm stacks
   (and (equal (top (push x s)) x)
        (equal (pop (push x s)) s)))
@@ -195,7 +160,7 @@ J Moore
               (run sched (step th s))))
   :hints (("Goal" :in-theory (disable step))))
 
-;(in-theory (enable top pop push lookup-method))
+;(in-theory (enable top pop push lookup-method lookup-methodref))
 
 ; Step Stuff
 
@@ -207,7 +172,21 @@ J Moore
                     s)))
   :hints (("Goal" :in-theory (disable do-inst))))
 
+(defthm consp-inst
+  (implies (op-code inst)
+           (consp inst)))
+
 (in-theory (disable step))
+
+; poised-to-invoke
+
+(defun poised-to-invokestatic (th s class method nformals)
+  (and (equal (status th s) 'scheduled)
+       (equal (op-code (next-inst th s)) 'invokestatic)
+       (equal (retrieve-cp-entry (cur-class (top-frame th s))
+                                 (arg1 (next-inst th s))
+                                 (class-table s))
+              (list 'methodref class method nformals))))
 
 ; Clocks
 

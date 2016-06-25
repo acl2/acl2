@@ -21,7 +21,7 @@ I initialize my ACL2 shell by connecting to this directory and doing:
                                               0
                                               nil
                                               (push n nil)
-                                              '((INVOKESTATIC "Demo" "fact" 1))
+                                              '((INVOKESTATIC "Demo" "fact:(I)I" 1))
                                               'UNLOCKED
                                               "Demo")
                                              nil)
@@ -52,7 +52,7 @@ The third command will run that bytecode on 5 and print 120.
 
 Now enter your ACL2 shell.
 
-(lookup-method "fact" "Demo" *demo-class-table*)
+(lookup-method "fact:(I)I" "Demo" *demo-class-table*)
 
 will display the M5 bytecode corresponding to the fact method just shown.
 

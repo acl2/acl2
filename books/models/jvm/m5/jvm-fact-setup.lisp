@@ -19,142 +19,121 @@
 ; for factorial on M5.
 
 #|
-; Certification Instructions.
-
-(include-book "utilities")
-
-(certify-book "jvm-fact-setup" 1)
-
-J Moore
-
 Here is the Java for a factorial method.
 
 class Demo {
 
-  static int ans;
+    static int ans;
 
-  public static int fact(int n){
-    if (n>0)
-      {return n*fact(n-1);}
-    else return 1;
-  }
+    public static int fact(int n) {
+        if (n>0)
+            return n*fact(n-1);
+        else
+            return 1;
+    }
 
-  public static void main(String[] args){
-  int k = 4;
-  ans = fact(k+1);
-  return;
-  }
- }
+    /* Dummy main method */
+
+    public static void main() {
+        int k = 4;
+        ans = fact(k+1);
+    }
+
+    /* This main method is not simulated */
+    /* because our M5 model does not support the */
+    /* native methods necessary to support IO. */
+
+    public static void main(String[] args) {
+        int n = Integer.parseInt(args[0], 10);
+        System.out.println(fact(n));
+    }
+}
 
 If you put this into Demo.java and run
 
 % javac Demo.java
-% javap -o Demo
+% javap -c Demo
 
 you get the following:
 
-Compiled from Demo.java
-synchronized class Demo extends java.lang.Object
-    /* ACC_SUPER bit set */
-{
-    static int ans;
-    public static int fact(int);
-    public static void main(java.lang.String[]);
-    Demo();
+Compiled from "Demo.java"
+class Demo {
+  static int ans;
+
+  Demo();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public static int fact(int);
+    Code:
+       0: iload_0
+       1: ifle          13
+       4: iload_0
+       5: iload_0
+       6: iconst_1
+       7: isub
+       8: invokestatic  #2                  // Method fact:(I)I
+      11: imul
+      12: ireturn
+      13: iconst_1
+      14: ireturn
+
+  public static void main();
+    Code:
+       0: iconst_4
+       1: istore_0
+       2: iload_0
+       3: iconst_1
+       4: iadd
+       5: invokestatic  #2                  // Method fact:(I)I
+       8: putstatic     #3                  // Field ans:I
+      11: return
+
+  public static void main(java.lang.String[]);
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: aaload
+       3: bipush        10
+       5: invokestatic  #4                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;I)I
+       8: istore_1
+       9: getstatic     #5                  // Field java/lang/System.out:Ljava/io/PrintStream;
+      12: iload_1
+      13: invokestatic  #2                  // Method fact:(I)I
+      16: invokevirtual #6                  // Method java/io/PrintStream.println:(I)V
+      19: return
 }
 
-Method int fact(int)
-   0 iload_0
-   1 ifle 13
-   4 iload_0
-   5 iload_0
-   6 iconst_1
-   7 isub
-   8 invokestatic #5 <Method int fact(int)>
-  11 imul
-  12 ireturn
-  13 iconst_1
-  14 ireturn
-
-Method void main(java.lang.String[])
-   0 iconst_4
-   1 istore_1
-   2 iload_1
-   3 iconst_1
-   4 iadd
-   5 invokestatic #5 <Method int fact(int)>
-   8 putstatic #4 <Field int ans>
-  11 return
-
-Method Demo()
-   0 aload_0
-   1 invokespecial #3 <Method java.lang.Object()>
-   4 return
-
-Below is the output of jvm2acl2 for M5.
+The output of jvm2acl2 for M5 is in classes/Demo.
 
 |#
 
 (in-package "M5")
+(include-book "utilities")
+(include-book "classes/Demo")
 
 (defconst *Demo-class-table-in-tagged-form*
  (make-class-def
   (list
-    (make-class-decl
-     "Demo"
-     '("java.lang.Object")
-     '()
-     '("ans")
-     '()
-     (list
-      '("<init>" () nil
-        (aload_0)
-        (invokespecial "java.lang.Object" "<init>" 0)
-        (return))
-      '("fact" (int) nil
-        (iload_0)
-        (ifle LABEL::TAG_0)
-        (iload_0)
-        (iload_0)
-        (iconst_1)
-        (isub)
-        (invokestatic "Demo" "fact" 1)
-        (imul)
-        (ireturn)
-        (LABEL::TAG_0 iconst_1)
-        (ireturn))
-      '("main" (java.lang.String[]) nil
-        (iconst_4)
-        (istore_1)
-        (iload_1)
-        (iconst_1)
-        (iadd)
-        (invokestatic "Demo" "fact" 1)
-        (putstatic "Demo" "ans" nil)
-        (return)))
-     '(REF -1)))))
+    *Demo*)))
 
 (defconst *Demo-main*
-  '((iconst_4)
-    (istore_1)
-    (iload_1)
-    (iconst_1)
-    (iadd)
-    (invokestatic "Demo" "fact" 1)
-    (putstatic "Demo" "ans" nil)
-    (return)))
+  (method-program (bound? "main:()V" (class-decl-methods *Demo*))))
 
 (defun Demo-ms ()
   (make-state
    (make-tt (push (make-frame 0
-                              nil
-                              nil
+                              ()
+                              ()
                               *Demo-main*
-                              'UNLOCKED
+                              'unlocked
                               "Demo")
                   nil))
    nil
-   *Demo-class-table-in-tagged-form*))
+   *Demo-class-table-in-tagged-form*
+   *default-m5-options*))
 
 (defun Demo ()
   (m5_load (Demo-ms)))
@@ -163,98 +142,164 @@ Below is the output of jvm2acl2 for M5.
 #|
 (((0 ((0 NIL NIL
          ((ICONST_4)
-          (ISTORE_1)
-          (ILOAD_1)
+          (ISTORE_0)
+          (ILOAD_0)
           (ICONST_1)
           (IADD)
-          (INVOKESTATIC "Demo" "fact" 1)
-          (PUTSTATIC "Demo" "ans" NIL)
+          (INVOKESTATIC 2)
+          (PUTSTATIC 3)
           (RETURN))
          UNLOCKED "Demo"))
      SCHEDULED NIL))
- ((0 ("java.lang.Class" ("<name>" . "java.lang.Object"))
-     ("java.lang.Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
-  (1 ("java.lang.Class" ("<name>" . "ARRAY"))
-     ("java.lang.Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
-  (2 ("java.lang.Class" ("<name>" . "java.lang.Thread"))
-     ("java.lang.Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
-  (3 ("java.lang.Class" ("<name>" . "java.lang.String"))
-     ("java.lang.Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
-  (4 ("java.lang.Class" ("<name>" . "java.lang.Class"))
-     ("java.lang.Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0)))
-  (5 ("java.lang.Class" ("<name>" . "Demo")
-      ("ans" . 0))
-     ("java.lang.Object" ("monitor" . 0)
-      ("mcount" . 0)
-      ("wait-set" . 0))))
- (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
-   NIL NIL (("<init>" NIL NIL (RETURN)))
-   (REF 0))
-  ("ARRAY" ("java.lang.Object")
-   (("<array>" . *ARRAY*))
-   NIL NIL NIL (REF 1))
-  ("java.lang.Thread"
-   ("java.lang.Object")
-   NIL NIL NIL
-   (("run" NIL NIL (RETURN))
-    ("start" NIL NIL NIL)
-    ("stop" NIL NIL NIL)
-    ("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
-     (RETURN)))
-   (REF 2))
-  ("java.lang.String"
-   ("java.lang.Object")
-   ("strcontents")
-   NIL NIL
-   (("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
-     (RETURN)))
-   (REF 3))
-  ("java.lang.Class" ("java.lang.Object")
-   NIL NIL NIL
-   (("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
-     (RETURN)))
-   (REF 4))
-  ("Demo" ("java.lang.Object")
-   NIL ("ans")
-   NIL
-   (("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
-     (RETURN))
-    ("fact" (INT)
-     NIL (ILOAD_0)
-     (IFLE 12)
-     (ILOAD_0)
-     (ILOAD_0)
-     (ICONST_1)
-     (ISUB)
-     (INVOKESTATIC "Demo" "fact" 1)
-     (IMUL)
-     (IRETURN)
-     (ICONST_1)
-     (IRETURN))
-    ("main" (|JAVA.LANG.STRING[]|)
-     NIL (ICONST_4)
-     (ISTORE_1)
-     (ILOAD_1)
-     (ICONST_1)
-     (IADD)
-     (INVOKESTATIC "Demo" "fact" 1)
-     (PUTSTATIC "Demo" "ans" NIL)
-     (RETURN)))
-   (REF 5))))
+ ((0 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "java/lang/Object"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (1 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "[Ljava/lang/Object;"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (2 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "[C"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (3 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "java/lang/Thread"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (4 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "java/lang/String"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (5 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "[Ljava/lang/String;"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (6 ("java/lang/Class" ("<sfields>")
+                        ("<name>" . "java/lang/Class"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0)))
+  (7 ("java/lang/Class" ("<sfields>" ("ans:I" . 0))
+                        ("<name>" . "Demo"))
+     ("java/lang/Object" ("<monitor>" . 0)
+                         ("<mcount>" . 0))))
+ (("java/lang/Object" NIL (NIL)
+                      33 NIL (("<init>:()V" 1 (RETURN)))
+                      (REF 0))
+  ("[Ljava/lang/Object;" ("java/lang/Object")
+                         NIL 0 NIL NIL (REF 1))
+  ("[C" ("java/lang/Object")
+        NIL 0 NIL NIL (REF 2))
+  ("java/lang/Thread" ("java/lang/Object")
+                      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+                      33 NIL
+                      (("run:()V" 1 (RETURN))
+                       ("start:()V" 289)
+                       ("stop:()V" 273)
+                       ("<init>:()V" 1 (ALOAD_0)
+                                     (INVOKESPECIAL 1)
+                                     (RETURN)))
+                      (REF 3))
+  ("java/lang/String" ("java/lang/Object")
+                      (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+                      49 (("value:[C" 18))
+                      (("<init>:()V" 1 (ALOAD_0)
+                                     (INVOKESPECIAL 1)
+                                     (RETURN)))
+                      (REF 4))
+  ("[Ljava/lang/String;" ("[Ljava/lang/Object;" "java/lang/Object")
+                         NIL 0 NIL NIL (REF 5))
+  ("java/lang/Class" ("java/lang/Object")
+                     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+                     49 NIL
+                     (("<init>:()V" 1 (ALOAD_0)
+                                    (INVOKESPECIAL 1)
+                                    (RETURN)))
+                     (REF 6))
+  ("Demo" ("java/lang/Object")
+          (NIL (METHODREF "java/lang/Object" "<init>:()V" 0)
+               (METHODREF "Demo" "fact:(I)I" 1)
+               (FIELDREF "Demo" "ans:I" 1)
+               (METHODREF "NoClassDefFoundError: java/lang/Integer"
+                          "parseInt:(Ljava/lang/String;I)I" 2)
+               (FIELDREF "NoClassDefFoundError: java/lang/System"
+                         "out:Ljava/io/PrintStream;" 1)
+               (METHODREF "NoClassDefFoundError: java/io/PrintStream"
+                          "println:(I)V" 1)
+               (CLASS (REF 7) "Demo")
+               (CLASS (REF 0) "java/lang/Object")
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (NAME-AND-TYPE "<init>:()V")
+               (NAME-AND-TYPE "fact:(I)I")
+               (NAME-AND-TYPE "ans:I")
+               (CLASS NIL
+                      "NoClassDefFoundError: java/lang/Integer")
+               (NAME-AND-TYPE "parseInt:(Ljava/lang/String;I)I")
+               (CLASS NIL
+                      "NoClassDefFoundError: java/lang/System")
+               (NAME-AND-TYPE "out:Ljava/io/PrintStream;")
+               (CLASS NIL
+                      "NoClassDefFoundError: java/io/PrintStream")
+               (NAME-AND-TYPE "println:(I)V")
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8)
+               (UTF8))
+          32 (("ans:I" 8))
+          (("<init>:()V" 0 (ALOAD_0)
+                         (INVOKESPECIAL 1)
+                         (RETURN))
+           ("fact:(I)I" 9 (ILOAD_0)
+                        (IFLE 12)
+                        (ILOAD_0)
+                        (ILOAD_0)
+                        (ICONST_1)
+                        (ISUB)
+                        (INVOKESTATIC 2)
+                        (IMUL)
+                        (IRETURN)
+                        (ICONST_1)
+                        (IRETURN))
+           ("main:()V" 9 (ICONST_4)
+                       (ISTORE_0)
+                       (ILOAD_0)
+                       (ICONST_1)
+                       (IADD)
+                       (INVOKESTATIC 2)
+                       (PUTSTATIC 3)
+                       (RETURN))
+           ("main:([Ljava/lang/String;)V" 9 (ALOAD_0)
+                                          (ICONST_0)
+                                          (AALOAD)
+                                          (BIPUSH 10)
+                                          (INVOKESTATIC 4)
+                                          (ISTORE_1)
+                                          (GETSTATIC 5)
+                                          (ILOAD_1)
+                                          (INVOKESTATIC 2)
+                                          (INVOKEVIRTUAL 6)
+                                          (RETURN)))
+          (REF 7)))
+ DEFAULT-M5-OPTIONS)
 |#
 
 ; But in the paper we discuss it component by component and
@@ -272,12 +317,12 @@ Below is the output of jvm2acl2 for M5.
              nil
              nil
              '((ICONST\_4)
-               (ISTORE\_1)
-               (ILOAD\_1)
+               (ISTORE\_0)
+               (ILOAD\_0)
                (ICONST\_1)
                (IADD)
-               (INVOKESTATIC "Demo" "fact" 1)
-               (PUTSTATIC "Demo" "ans" NIL)
+               (INVOKESTATIC 2) ; Demo.fact:(I)I
+               (PUTSTATIC 3) ; Demo.ans:I
                (RETURN))
              'UNLOCKED
              "Demo")
@@ -286,127 +331,185 @@ Below is the output of jvm2acl2 for M5.
            nil))))
 
 (defconst *Demo-heap*
-  '((0 . (("java.lang.Class"
-           ("<name>" . "java.lang.Object"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (1 . (("java.lang.Class"
-           ("<name>" . "ARRAY"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (2 . (("java.lang.Class"
-           ("<name>" . "java.lang.Thread"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (3 . (("java.lang.Class"
-           ("<name>" . "java.lang.String"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (4 . (("java.lang.Class"
-           ("<name>" . "java.lang.Class"))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))
-    (5 . (("java.lang.Class"
-           ("<name>" . "Demo")
-           ("ans" . 0))
-          ("java.lang.Object"
-           ("monitor" . 0)
-           ("mcount" . 0)
-           ("wait-set" . 0))))))
+  '((0 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Object"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (1 . (("java/lang/Class" ("<sfields>") ("<name>" . "[Ljava/lang/Object;"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (2 . (("java/lang/Class" ("<sfields>") ("<name>" . "[C"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (3 . (("java/lang/Class"  ("<sfields>") ("<name>" . "java/lang/Thread"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (4 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/String"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (5 . (("java/lang/Class" ("<sfields>") ("<name>" . "[Ljava/lang/String;"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (6 . (("java/lang/Class" ("<sfields>") ("<name>" . "java/lang/Class"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))
+    (7 . (("java/lang/Class"
+           ("<sfields>"
+            ("ans:I" . 0))
+           ("<name>" . "Demo"))
+          ("java/lang/Object" ("<monitor>" . 0) ("<mcount>" . 0))))))
 
 (defconst *Demo-class-table*
-  '(("java.lang.Object"
-     NIL
-     ("monitor" "mcount" "wait-set")
-     NIL
-     NIL
-     (("<init>" NIL NIL (RETURN)))
-     (REF 0))
-    ("ARRAY"
-     ("java.lang.Object")
-     (("<array>" . *ARRAY*))
-     NIL
-     NIL
-     NIL
-     (REF 1))
-    ("java.lang.Thread"
-     ("java.lang.Object")
-     NIL
-     NIL
-     NIL
-     (("run" NIL NIL (RETURN))
-      ("start" NIL NIL NIL)
-      ("stop" NIL NIL NIL)
-      ("<init>" NIL NIL (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+  '(("java/lang/Object"
+     ()
+     (NIL)
+     #x00000021                                                 ; PUBLIC SUPER
+     ()
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (RETURN)))
+     (REF 0))
+    ("[Ljava/lang/Object;"
+     ("java/lang/Object")
+     ()
+     0
+     ()
+     ()
+     (REF 1))
+    ("[C"
+     ("java/lang/Object")
+     ()
+     0
+     ()
+     ()
      (REF 2))
-    ("java.lang.String"
-     ("java.lang.Object")
-     ("strcontents")
-     NIL
-     NIL
-     (("<init>" NIL NIL
+    ("java/lang/Thread"
+     ("java/lang/Object")
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+     #x00000021                                                 ; PUBLIC SUPER
+     ()
+     (("run:()V" #x00000001                                     ; PUBLIC
+       (RETURN))
+      ("start:()V" #x00000121)                                  ; PUBLIC SYNCHRONIZED NATIVE
+      ("stop:()V" #x00000111)                                   ; PUBLIC FINAL NATIVE
+      ("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 3))
-    ("java.lang.Class"
-     ("java.lang.Object")
-     NIL
-     NIL
-     NIL
-     (("<init>" NIL NIL
+    ("java/lang/String"
+     ("java/lang/Object")
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+     (
+      ("value:[C" #x00000012)                                   ; PRIVATE FINAL
+     )
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL 1)
        (RETURN)))
      (REF 4))
-    ("Demo"
-     ("java.lang.Object")
-     NIL
-     ("ans")
-     NIL
-     (("<init>" NIL NIL
+    ("[Ljava/lang/String;"
+     ("[Ljava/lang/Object;" "java/lang/Object")
+     ()
+     0
+     ()
+     ()
+     (REF 5))
+    ("java/lang/Class"
+     ("java/lang/Object")
+     (NIL (METHODREF "java/lang/Object" "<init>:()V" 0))
+     #x00000031                                                 ; PUBLIC FINAL SUPER
+     ()
+     (("<init>:()V" #x00000001                                  ; PUBLIC
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL 1)
+       (RETURN)))
+     (REF 6))
+    ("Demo"
+     ("java/lang/Object")
+     (nil
+       (methodref "java/lang/Object" "<init>:()V" 0)            ; 1
+       (methodref "Demo" "fact:(I)I" 1)                         ; 2
+       (fieldref "Demo" "ans:I" 1)                              ; 3
+       (methodref "NoClassDefFoundError: java/lang/Integer" "parseInt:(Ljava/lang/String;I)I" 2) ; 4
+       (fieldref "NoClassDefFoundError: java/lang/System" "out:Ljava/io/PrintStream;" 1) ; 5
+       (methodref "NoClassDefFoundError: java/io/PrintStream" "println:(I)V" 1) ; 6
+       (class (ref 7) "Demo")                                   ; 7
+       (class (ref 0) "java/lang/Object")                       ; 8
+       (utf8)                                                   ; 9
+       (utf8)                                                   ; 10
+       (utf8)                                                   ; 11
+       (utf8)                                                   ; 12
+       (utf8)                                                   ; 13
+       (utf8)                                                   ; 14
+       (utf8)                                                   ; 15
+       (utf8)                                                   ; 16
+       (utf8)                                                   ; 17
+       (utf8)                                                   ; 18
+       (utf8)                                                   ; 19
+       (utf8)                                                   ; 20
+       (utf8)                                                   ; 21
+       (name-and-type "<init>:()V")                             ; 22
+       (name-and-type "fact:(I)I")                              ; 23
+       (name-and-type "ans:I")                                  ; 24
+       (class nil "NoClassDefFoundError: java/lang/Integer")    ; 25
+       (name-and-type "parseInt:(Ljava/lang/String;I)I")        ; 26
+       (class nil "NoClassDefFoundError: java/lang/System")     ; 27
+       (name-and-type "out:Ljava/io/PrintStream;")              ; 28
+       (class nil "NoClassDefFoundError: java/io/PrintStream")  ; 29
+       (name-and-type "println:(I)V")                           ; 30
+       (utf8)                                                   ; 31
+       (utf8)                                                   ; 32
+       (utf8)                                                   ; 33
+       (utf8)                                                   ; 34
+       (utf8)                                                   ; 35
+       (utf8)                                                   ; 36
+       (utf8)                                                   ; 37
+       (utf8)                                                   ; 38
+       (utf8)                                                   ; 39
+       (utf8)                                                   ; 40
+       (utf8)                                                   ; 41
+      )
+     #x00000020                                                 ; SUPER
+     (
+       ("ans:I" #x00000008)                                     ; STATIC
+     )
+     (("<init>:()V" #x00000000                                  ;
+       (ALOAD\_0)
+       (INVOKESPECIAL 1)
        (RETURN))
-      ("fact" (INT) NIL
+      ("fact:(I)I" #x00000009                                   ; PUBLIC STATIC
        (ILOAD\_0)
        (IFLE 12)
        (ILOAD\_0)
        (ILOAD\_0)
        (ICONST\_1)
        (ISUB)
-       (INVOKESTATIC "Demo" "fact" 1)
+       (INVOKESTATIC 2) ; Demo.fact:(I)I
        (IMUL)
        (IRETURN)
        (ICONST\_1)
        (IRETURN))
-      ("main" (|JAVA.LANG.STRING[]|) NIL
-       (ICONST\_4)
-       (ISTORE\_1)
-       (ILOAD\_1)
-       (ICONST\_1)
+      ("main:()V" #x00000009                                    ; PUBLIC STATIC
+       (ICONST_4)
+       (ISTORE_0)
+       (ILOAD_0)
+       (ICONST_1)
        (IADD)
-       (INVOKESTATIC "Demo" "fact" 1)
-       (PUTSTATIC "Demo" "ans" NIL)
+       (INVOKESTATIC 2) ; Demo.fact:(I)I
+       (PUTSTATIC 3) ; Demo.ans:I
+       (RETURN))
+      ("main:([Ljava/lang/String;)V" #x00000009                 ; PUBLIC STATIC
+       (ALOAD_0)
+       (ICONST_0)
+       (AALOAD)
+       (BIPUSH 10)
+       (INVOKESTATIC 4) ; NoClassDefFoundError: java.lang.Integer.parseInt:(Ljava/lang/String;I)I
+       (ISTORE_1)
+       (GETSTATIC 5) ; NoClassDefFoundError: java.lang.System.out:Ljava/io/PrintStream;
+       (ILOAD_1)
+       (INVOKESTATIC 2) ; Demo.fact:(I)I
+       (INVOKEVIRTUAL 6)
        (RETURN)))
-     (REF 5))))
+     (REF 7))))
 
 (defconst *Demo-state*
   (make-state *demo-thread-table*
               *demo-heap*
-              *demo-class-table*))
+              *demo-class-table*
+              *default-m5-options*))
 
 (defthm demo-state-is-demo
   (equal (Demo)
@@ -454,7 +557,7 @@ Below is the output of jvm2acl2 for M5.
           (repeat th 2)))
 
 (defthm sample-execution
-  (equal (static-field-value "Demo" "ans"
+  (equal (static-field-value "Demo" "ans:I"
                              (run (main-sched 0) *Demo-state*))
          120)
   :rule-classes nil)
@@ -476,7 +579,7 @@ Below is the output of jvm2acl2 for M5.
      (format t "Schedule length:  ~a.~%" (len sched))
      (time
       (static-field-value
-       "Demo" "ans"
+       "Demo" "ans:I"
        (run sched
             (make-state
              (list
@@ -488,8 +591,8 @@ Below is the output of jvm2acl2 for M5.
                        (list n)
                        nil
                        '((ILOAD\_0)
-                         (INVOKESTATIC "Demo" "fact" 1)
-                         (PUTSTATIC "Demo" "ans" NIL)
+                         (INVOKESTATIC 2) ;  Demo.fact:(I)I
+                         (PUTSTATIC 3) ; Demo.ans:I
                          (RETURN))
                        'UNLOCKED
                        "Demo")
@@ -497,7 +600,8 @@ Below is the output of jvm2acl2 for M5.
                      'SCHEDULED
                      nil)))
              *demo-heap*
-             *demo-class-table*)))))))
+             *demo-class-table*
+             *default-m5-options*)))))))
 ; Allocate additional bignum space
 (si::allocate 'lisp::bignum 400 t)
 T
@@ -512,25 +616,29 @@ T
 ; Proving Fact Correct
 
 (defconst *fact-def*
-  '("fact" (INT) NIL
-    (ILOAD_0)                         ;;;  0
-    (IFLE 12)                         ;;;  1
-    (ILOAD_0)                         ;;;  4
-    (ILOAD_0)                         ;;;  5
-    (ICONST_1)                        ;;;  6
-    (ISUB)                            ;;;  7
-    (INVOKESTATIC "Demo" "fact" 1)    ;;;  8
-    (IMUL)                            ;;; 11
-    (IRETURN)                         ;;; 12
-    (ICONST_1)                        ;;; 13
-    (IRETURN)))                       ;;; 14
+      '("fact:(I)I" #x00000009                                   ; PUBLIC STATIC
+        ; line_number #6
+        (iload_0)                                                ; 0
+        (ifle 12)                                                ; 1
+        ; line_number #7
+        (iload_0)                                                ; 4
+        (iload_0)                                                ; 5
+        (iconst_1)                                               ; 6
+        (isub)                                                   ; 7
+        (invokestatic 2)                                         ; 8
+        (imul)                                                   ; 11
+        (ireturn)                                                ; 12
+        ; line_number #9
+        (iconst_1)                                               ; 13
+        (ireturn)))                                              ; 14
 
 (defun poised-to-invoke-fact (th s n)
-  (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(invokestatic "Demo" "fact" 1))
+  (and (poised-to-invokestatic th s "Demo" "fact:(I)I" 1)
+       (equal (retrieve-cp-entry "Demo" 2 (class-table s))
+              '(methodref "Demo" "fact:(I)I" 1))
        (equal n (top (stack (top-frame th s))))
        (intp n)
-       (equal (lookup-method "fact" "Demo" (class-table s))
+       (equal (bound? "fact:(I)I" (class-decl-methods (bound? "Demo" (class-table s))))
               *fact-def*)))
 
 (defun induction-hint (th s n)
@@ -563,7 +671,8 @@ T
         (rref th s))
        (thread-table s))
       (heap s)
-      (class-table s))
+      (class-table s)
+      (options s))
      (- n 1))))
 
 ; The make-state in the induction-hint above is equivalent to
@@ -587,39 +696,31 @@ T
   (implies (and (poised-to-invoke-fact th s n)
                 (not (zp n)))
            (equal (run (repeat th 7) s)
-                  (MAKE-STATE
-                   (BIND
-                    TH
-                    (LIST
-                     (PUSH
-                      (MAKE-FRAME 8 (LIST N)
-                                  (PUSH (+ -1 N) (PUSH N NIL))
-                                  '((ILOAD_0)
-                                    (IFLE 12)
-                                    (ILOAD_0)
-                                    (ILOAD_0)
-                                    (ICONST_1)
-                                    (ISUB)
-                                    (INVOKESTATIC "Demo" "fact" 1)
-                                    (IMUL)
-                                    (IRETURN)
-                                    (ICONST_1)
-                                    (IRETURN))
-                                  'UNLOCKED
-                                  "Demo")
-                      (PUSH
-                       (MAKE-FRAME
-                        (+ 3
-                           (PC (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                        (LOCALS (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S)))))
-                        (POP (STACK (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                        (PROGRAM (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S)))))
-                        (SYNC-FLG (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S)))))
-                        (CUR-CLASS (TOP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                       (POP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))))
-                     'SCHEDULED
-                     (CADDDR (ASSOC-EQUAL TH (THREAD-TABLE S))))
-                    (THREAD-TABLE S))
-                   (HEAP S)
-                   (CLASS-TABLE S))))
+                  (make-state                 ;;; (run (repeat th 7) s)
+                   (bind
+                    th
+                    (make-thread
+                     (push
+                      (make-frame
+                       8
+                       (list n)
+                       (push (+ -1 n)
+                             (push n
+                                   nil))
+                       (method-program *fact-def*)
+                       'UNLOCKED
+                       "Demo")
+                      (push (make-frame (+ 3 (pc (top (call-stack th s))))
+                                        (locals (top (call-stack th s)))
+                                        (pop (stack (top (call-stack th s))))
+                                        (program (top (call-stack th s)))
+                                        (sync-flg (top (call-stack th s)))
+                                        (cur-class (top (call-stack th s))))
+                            (pop (call-stack th s))))
+                     'scheduled
+                     (rref th s))
+                    (thread-table s))
+                   (heap s)
+                   (class-table s)
+                   (options s))))
   :rule-classes nil)
