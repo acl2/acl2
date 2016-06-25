@@ -171,8 +171,7 @@
     :long
     "<p>
     A term containing functions in @('*stobjs-out-invalid*')
-    (on which @(tsee no-stobjs-p) causes an error),
-    which currently are just @(tsee if) and @(tsee return-last),
+    (on which @(tsee no-stobjs-p) would cause a guard violation),
     is regarded as having no stobjs,
     if all its other functions have no stobjs.
     </p>"
