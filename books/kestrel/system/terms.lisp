@@ -27,8 +27,7 @@
 
 (define all-fns ((term pseudo-termp))
   ;; :returns (fns symbol-listp)
-  :short
-  "Function symbols in a term, in reverse print order of first occurrence."
+  :short "Function symbols in a term."
   (all-ffn-symbs term nil))
 
 (std::deflist legal-variable-listp (x)
