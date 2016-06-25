@@ -30,17 +30,6 @@
   :short "Function symbols in a term."
   (all-ffn-symbs term nil))
 
-(std::deflist legal-variable-listp (x)
-  (legal-variablep x)
-  :short
-  "True iff @('x') is a @('nil')-terminated list of legal variable names."
-  :long
-  "<p>
-  See @('legal-variablep') in the ACL2 source code.
-  </p>"
-  :true-listp t
-  :elementp-of-nil nil)
-
 (define pseudo-lambda-expr-p (x)
   :returns (yes/no booleanp)
   :short
@@ -247,8 +236,7 @@
   (and (true-listp x)
        (eql (len x) 3)
        (eq (first x) 'lambda)
-       (legal-variable-listp (second x))
-       (no-duplicatesp (second x))
+       (arglistp (second x))
        (termp (third x) w)))
 
 (define check-user-term (x (w plist-worldp))
@@ -327,10 +315,8 @@
         `("~x0 does not consist of exactly three elements." (#\0 . ,x)))
        ((unless (eq (first x) 'lambda))
         `("~x0 does not start with LAMBDA." (#\0 . ,x)))
-       ((unless (legal-variable-listp (second x)))
+       ((unless (arglistp (second x)))
         `("~x0 does not have valid formal parameters." (#\0 . ,x)))
-       ((unless (no-duplicatesp (second x)))
-        `("~x0 has duplicate formal parameters." (#\0 . ,x)))
        (term/message (check-user-term (third x) w))
        ((when (msgp term/message)) term/message))
     `(lambda ,(second x) ,term/message)))
