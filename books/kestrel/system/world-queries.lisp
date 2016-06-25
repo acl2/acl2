@@ -152,11 +152,17 @@
              does not have the expected wrapper." body fun))))
 
 (define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
+  :guard (not (member-eq fun *stobjs-out-invalid*))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
+  :long
+  "<p>
+  The guard condition that @('fun') is not in @('*stobjs-out-invalid*')
+  is copied from @('stobjs-out').
+  </p>"
   (and (all-nils (stobjs-in fun w))
        (all-nils (stobjs-out fun w))))
 
