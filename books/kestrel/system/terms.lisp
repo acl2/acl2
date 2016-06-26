@@ -359,8 +359,10 @@
   Note also that if the macro has optional arguments,
   its translation with non-default values for these arguments
   may yield different terms.
-  Furthermore, if the macro is sensitive to the type of its arguments,
-  calls with non-symbol arguments may yield different terms.
+  Furthermore, if the macro is sensitive
+  to the &ldquo;shape&rdquo; of its arguments,
+  calls with argument that are not the required formal arguments
+  may yield different terms.
   </p>"
   (check-user-term (cons mac (macro-required-args mac w)) w))
 
