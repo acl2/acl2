@@ -18,6 +18,7 @@
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
 (include-book "event-forms")
+(include-book "fresh-names")
 (include-book "install-not-norm-event")
 (include-book "minimize-ruler-extenders")
 (include-book "prove-interface")
