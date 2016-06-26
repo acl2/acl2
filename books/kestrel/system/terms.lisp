@@ -64,7 +64,8 @@
   in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  Check whether @('x')is a symbol or a pseudo-lambda-expression.
+  Check whether @('x')is a symbol or a
+  <see topic='@(url pseudo-lambda-expr-p)'>pseudo-lambda-expression</see>.
   These are the possible values of the first element of
   a pseudo-term that is not a variable or a quoted constant
   (i.e. a pseudo-term that is a function application).
@@ -80,7 +81,9 @@
   :guard-hints (("Goal" :in-theory (enable pseudo-functionp
                                            pseudo-lambda-expr-p)))
   :short
-  "Apply pseudo-function to list of pseudo-terms, obtaining a pseudo-term."
+  "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+  to list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
+  obtaining a pseudo-term."
   :long
   "<p>
   If the pseudo-function is a lambda expression,
@@ -91,7 +94,9 @@
 
 (defsection apply-term*
   :short
-  "Apply pseudo-function to pseudo-terms, obtaining a pseudo-term."
+  "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+  to <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
+  obtaining a pseudo-term."
   :long
   "<p>
   If the pseudo-function is a lambda expression,
@@ -252,7 +257,8 @@
   If the translation succeeds, the translated term is returned.
   Otherwise, a structured error message is returned (printable with @('~@')).
   These two possible outcomes can be distinguished by the fact that
-  the former is a pseudo-termp while the latter is not.
+  the former is a <see topic='@(url pseudo-termp)'>pseudo-term</see>
+  while the latter is not.
   </p>
   <p>
   The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
