@@ -236,13 +236,16 @@
   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
   whose first element is the symbol @('lambda'),
   whose second element is a list of legal variable symbols without duplicates,
-  and whose third element is a valid translated term.
+  and whose third element is a valid translated term
+  whose free variables are all among the ones in the second element.
   </p>"
   (and (true-listp x)
        (eql (len x) 3)
        (eq (first x) 'lambda)
        (arglistp (second x))
-       (termp (third x) w)))
+       (termp (third x) w)
+       (subsetp-eq (all-vars (third x))
+                   (second x))))
 
 (define check-user-term (x (w plist-worldp))
   :returns (term/message (or (pseudo-termp term/message)
