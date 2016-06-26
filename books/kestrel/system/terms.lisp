@@ -345,7 +345,7 @@
   :long
   "<p>
   This function translates a call to the macro
-  that only includes the required arguments,
+  that only includes its required formal arguments,
   returning the resulting translated term.
   </p>
   <p>
@@ -359,6 +359,8 @@
   Note also that if the macro has optional arguments,
   its translation with non-default values for these arguments
   may yield different terms.
+  Furthermore, if the macro is sensitive to the type of its arguments,
+  calls with non-symbol arguments may yield different terms.
   </p>"
   (check-user-term (cons mac (macro-required-args mac w)) w))
 
