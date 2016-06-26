@@ -201,6 +201,14 @@
     :returns (yes/no booleanp)
     :parents (term/terms-funs-guard-verified-p)
     :short "True iff all the functions in the term are guard-verified."
+    :long
+    "<p>
+    Note that if @('term') includes @(tsee mbe),
+    @('nil') is returned
+    if any function inside the @(':logic') component of @(tsee mbe)
+    is not guard-verified,
+    even when @('term') could otherwise be fully guard-verified.
+    </p>"
     (or (variablep term)
         (fquotep term)
         (and (terms-funs-guard-verified-p (fargs term) w)
