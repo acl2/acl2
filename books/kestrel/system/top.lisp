@@ -14,6 +14,7 @@
 
 (in-package "ACL2")
 
+(include-book "applicability-conditions")
 (include-book "auto-termination")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
