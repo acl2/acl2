@@ -22,6 +22,7 @@
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
 (include-book "minimize-ruler-extenders")
+(include-book "numbered-names")
 (include-book "prove-interface")
 (include-book "terms")
 (include-book "ubi")
