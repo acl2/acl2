@@ -10890,14 +10890,17 @@
 ;                                   (if (nth 2 values) 'must-be-false! nil)
 ;                                   (decode-tau-alist (nth 3 values) nil))))
 
-(defmacro recursivep (fn wrld)
+(defmacro recursivep (fn def-body-p wrld)
 
-; Experiments show a slight speedup in Allegro CL (perhaps a half percent on a
-; very small run) if we make this a macro.
+; Experiments showed (when def-body-p was implicitly always t) a slight speedup
+; in Allegro CL (perhaps a half percent on a very small run) by making this a
+; macro.
 
-  `(access def-body
-          (def-body ,fn ,wrld)
-          :recursivep))
+  (declare (xargs :guard (booleanp def-body-p)))
+  (cond (def-body-p `(access def-body
+                             (def-body ,fn ,wrld)
+                             :recursivep))
+        (t `(getpropc ,fn 'recursivep nil ,wrld))))
 
 (defun find-first-acceptable-domain (actual-dom acceptable-domains)
 

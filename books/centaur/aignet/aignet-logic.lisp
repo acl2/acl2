@@ -1079,7 +1079,7 @@ as follows:</p>
 the @('new') argument is a currently bound variable and the @('orig') argument
 is a variable that needs a binding.</p>
 
-<p>See also @(see aignet-extension-binding-inverse) for a similar macro that
+<p>See also @(see aignet-extension-bind-inverse) for a similar macro that
 instead binds a new aignet given an invocation of some function that finds a
 suffix.</p>"
 
