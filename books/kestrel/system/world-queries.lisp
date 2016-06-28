@@ -168,7 +168,7 @@
 
 (define measure ((fun (and (function-namep fun w)
                            (logicp fun w)
-                           (recursivep fun w)))
+                           (recursivep fun nil w)))
                  (w plist-worldp))
   ;; :returns (measure pseudo-termp)
   :verify-guards nil
@@ -178,7 +178,7 @@
 
 (define measured-subset ((fun (and (function-namep fun w)
                                    (logicp fun w)
-                                   (recursivep fun w)))
+                                   (recursivep fun nil w)))
                          (w plist-worldp))
   ;; :returns (measured-subset symbol-listp)
   :verify-guards nil
@@ -189,7 +189,7 @@
 
 (define well-founded-relation ((fun (and (function-namep fun w)
                                          (logicp fun w)
-                                         (recursivep fun w)))
+                                         (recursivep fun nil w)))
                                (w plist-worldp))
   ;; :returns (well-founded-relation symbolp)
   :verify-guards nil
@@ -202,7 +202,7 @@
 
 (define ruler-extenders ((fun (and (function-namep fun w)
                                    (logicp fun w)
-                                   (recursivep fun w)))
+                                   (recursivep fun nil w)))
                          (w plist-worldp))
   ;; :returns (ruler-extenders (or (symbol-listp ruler-extenders)
   ;;                               (equal ruler-extenders :all)))
@@ -285,7 +285,7 @@
 
 (define induction-machine ((fun (and (function-namep fun w)
                                      (logicp fun w)
-                                     (eql 1 (len (recursivep fun w)))))
+                                     (eql 1 (len (recursivep fun nil w)))))
                            (w plist-worldp))
   ;; :returns (machine (pseudo-induction-machinep fun machine))
   :verify-guards nil
@@ -349,7 +349,7 @@
 
 (define recursive-calls ((fun (and (function-namep fun w)
                                    (logicp fun w)
-                                   (eql 1 (len (recursivep fun w)))))
+                                   (eql 1 (len (recursivep fun nil w)))))
                          (w plist-worldp))
   ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
   :verify-guards nil
