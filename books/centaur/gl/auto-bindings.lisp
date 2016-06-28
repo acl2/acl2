@@ -52,7 +52,7 @@ shape-specs) in an easy way.  Here is an example:</p>
                 (:mix (:nat a-bus 128)                 ; }  g-numbers whose indices are interleaved,
                       (:nat b-bus 128)                 ; }  27 to 414 -- see below
                       (:rev (:seq (:nat c-bus 64)      ; } 
-                                  (:nat dummy 63))))   ; }
+                                  (:skip 64))))   ; }
                 (:rev (:nat fixup-bits 4))       ; g-number with indices 420-415
                 ))
 })
@@ -76,6 +76,7 @@ without having to update a bunch of indices.</li>
     (:bool var)  -- expands to a g-boolean shape-specifier
     (:int var n) -- expands to a g-integer with n bits (signed 2's complement)
     (:nat var n) -- equivalent to (:int var (+ 1 n))
+    (:skip n)    -- takes up space in a :mix, but doesn't generate bindings.
 })
 
 <p>The @(':rev') command reverses the order of the bits produced by directives inside it.</p>
@@ -84,7 +85,22 @@ without having to update a bunch of indices.</li>
 Currently we only allow mix to contain elements that are all the same size.</p>
 
 <p>The @(':seq') and @(':mix') commands can be nested to produce complicated
-interleavings.</p>")
+interleavings.</p>
+
+<p>The @(':skip') command can be used to pad out a @(':mix') command so as to
+interleave a shorter variable with part of a longer variable.  E.g.:</p>
+@({
+ (:mix (:int a 7)
+       (:seq (:int b 4) (:skip 3)))
+ })
+<p>produces</p>
+@({
+ ((A (:G-NUMBER (0 2 4 6 8 9 10)))
+  (B (:G-NUMBER (1 3 5 7))))
+ })
+<p>That is, the first part of @('a') is mixed with @('b') but once the bits of
+@('b') run out, the rest of the bits of @('a') are simply in sequence.</p>
+")
 
 (defxdoc flex-bindings
   :parents (reference shape-specs)
@@ -154,6 +170,7 @@ mentioned in the auto-bindings.</p>")
      (:bool 1)
      (:int (third x))
      (:rev (auto-bind-len (cadr x)))
+     (:skip (second x))
      (t   (ab-sum (auto-bind-len-list (cdr x))))))
  (defun auto-bind-len-list (x)
    (if (atom x)
@@ -198,6 +215,10 @@ mentioned in the auto-bindings.</p>")
        (:rev (cond ((= (len x) 2)
                     (list :rev (auto-bind-xlate (cadr x) inside-mix-p)))
                    (t (er hard? 'auto-bind-xlate "Auto-binding is invalid: ~x0" x))))
+       (:skip (if (and (= (len x) 2)
+                       (natp (second x)))
+                  x
+                (er hard? 'auto-bind-xlate "Auto-binding is invalid: ~x0" x)))
        (otherwise
         (er hard? 'auto-bind-xlate "Auto-binding has unrecognized type: ~x0" x)))))
 
@@ -280,6 +301,7 @@ mentioned in the auto-bindings.</p>")
             (* by (len (cdr x))))) ;; how much to increment within each entry
      (:seq (auto-bind-generate-seq
             (cdr x) free-idx by))
+     (:skip nil)
      (otherwise
       (er hard? 'auto-bind-generate "Should never happen: not translated: ~x0" x))))
 
@@ -297,6 +319,39 @@ mentioned in the auto-bindings.</p>")
                                      (+ (* by (auto-bind-len (car x))) free-idx)
                                      by)))))
 
+(mutual-recursion
+ (defun auto-bind-skips (x free-idx by)
+   ;; Returns a list of skipped indices.
+   (case (car x)
+     ((:bool :int) nil)
+     (:rev (let ((len (auto-bind-len (cadr x))))
+             (auto-bind-skips (cadr x) (+ free-idx (* by (1- len))) (- by))))
+     (:mix (auto-bind-skips-mix
+            (cdr x) ;; entries
+            free-idx ;; starting index
+            by ;; how much to increment the starting index of each entry
+            (* by (len (cdr x))))) ;; how much to increment within each entry
+     (:seq (auto-bind-skips-seq
+            (cdr x) free-idx by))
+     (:skip (numlist free-idx by (cadr x)))
+     (otherwise
+      (er hard? 'auto-bind-generate "Should never happen: not translated: ~x0" x))))
+
+ (defun auto-bind-skips-mix (x free-idx interleave-by inner-by)
+   (if (atom x)
+       nil
+     (append (auto-bind-skips (car x) free-idx inner-by)
+             (auto-bind-skips-mix (cdr x) (+ free-idx interleave-by) interleave-by inner-by))))
+
+ (defun auto-bind-skips-seq (x free-idx by)
+   (if (atom x)
+       nil
+     (append (auto-bind-skips (car x) free-idx by)
+             (auto-bind-skips-seq (cdr x)
+                                  (+ (* by (auto-bind-len (car x))) free-idx)
+                                  by)))))
+
+
 #||
 (auto-bind-generate '(:int a 5) 0 2)
 (auto-bind-generate '(:bool b 1) 0 1)
@@ -311,7 +366,50 @@ mentioned in the auto-bindings.</p>")
           
   
 (auto-bind-generate-mix '((:int a 5) (:int b 5) (:int c 5)) 0 1 3)
+
+
+(auto-bind-generate
+ '(:mix (:int a 20)
+        (:seq (:skip 4) (:int b 13) (:skip 3)))
+ 0 1)
+
+(auto-bind-skips
+ '(:mix (:int a 20)
+        (:seq (:skip 4) (:int b 13) (:skip 3)))
+ 0 1)
+        
 ||#
+
+(defun auto-bind-index-map (n skiptable len offset acc)
+  (if (mbe :logic (zp (- (nfix len) (nfix n)))
+           :exec (eql n len))
+      acc
+    (if (hons-get n skiptable)
+        (auto-bind-index-map (1+ (lnfix n)) skiptable len (1+ offset) acc)
+      (auto-bind-index-map (1+ (lnfix n)) skiptable len offset
+                           (hons-acons n (- n offset) acc)))))
+
+
+      
+(defun auto-bind-remap-indices-list (x indexmap)
+  (b* (((when (atom x)) nil)
+       (look (hons-get (car x) indexmap))
+       ((unless look)
+        (er hard? 'auto-bind-remap-index-list
+            "Auto-bindings programming error: skipped index is present in auto-bindings")))
+    (cons (cdr look)
+          (auto-bind-remap-indices-list (cdr x) indexmap))))
+
+(defun auto-bind-remap-indices-table (x indexmap)
+  (if (atom x)
+      nil
+    (cons (cons (caar x) (auto-bind-remap-indices-list (cdar x) indexmap))
+          (auto-bind-remap-indices-table (cdr x) indexmap))))
+
+
+       
+    
+
 
 
 
@@ -383,6 +481,7 @@ mentioned in the auto-bindings.</p>")
      ((:bool :int)
       (b* (((list type var) x))
         (list (list type var))))
+     (:skip nil)
      (otherwise (auto-bindings-list-collect-arrange (cdr x)))))
  (defun auto-bindings-list-collect-arrange (x)
    (if (atom x)
@@ -409,8 +508,14 @@ mentioned in the auto-bindings.</p>")
   ;; independently in the index ordering.
   (b* ((xlated-bindings (auto-bind-xlate-list auto-bindings nil))
        (auto-alist (auto-bind-generate-seq xlated-bindings start 1))
+       (skips (auto-bind-skips-seq xlated-bindings start 1))
+       (skiptable (make-fast-alist (pairlis$ skips nil)))
+       (indexmap (auto-bind-index-map 0 skiptable
+                                      (Ab-sum (auto-bind-len-list xlated-bindings))
+                                      0 nil))
+       (auto-alist-remapped (auto-bind-remap-indices-table auto-alist indexmap))
        (arrange-list (or arrange-list (auto-bindings-list-collect-arrange xlated-bindings))))
-    (flex-bindings-arrange arrange-list auto-alist)))
+    (flex-bindings-arrange arrange-list auto-alist-remapped)))
 
 (defmacro flex-bindings (auto-bindings &key arrange (start '0))
   `(flex-bindings-fn ',auto-bindings ',arrange ,start))
@@ -450,6 +555,10 @@ mentioned in the auto-bindings.</p>")
                (:nat fixup-bits 4)         ; g-number with indices 413-417
                )
 
+
+(auto-bindings (:mix (:nat foo 20)
+                     (:seq (:skip 7) (:nat bar 9) (:skip 4))))
+
 (auto-bindings                          ; expands to:
                 (:nat opcode 8)                        ; g-number with indices 0-8
                 (:int multiplier 16)                   ; g-number with indices 9-24
@@ -484,6 +593,4 @@ mentioned in the auto-bindings.</p>")
                 (:int a a-nonoverlap a-overlap a-exp a-sign a-upper)
                 (:int b b-overlap b-nonoverlap b-exp b-sign b-upper)))
 
-(auto-bindings
- :declare ((a (
 ||#

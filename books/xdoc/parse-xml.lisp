@@ -208,7 +208,7 @@
 (defun skip-declaration (x n xl start-n)
   ;; Read through ?>
   "Returns (MV ERR N NIL)"
-  (b* (((when (>= (- n 1) xl))
+  (b* (((when (>= (+ 1 n) xl))
         (mv (str::cat "<? ... ?> declaration never closes." *nls*
                       "Nearby text: {" (error-context x start-n xl) "}" *nls*)
             n nil))
@@ -220,7 +220,7 @@
 (defun skip-entity-stuff (x n xl start-n)
   ;; Read through ]>
   "Returns (MV ERR N NIL)"
-  (b* (((when (>= (- n 1) xl))
+  (b* (((when (>= (+ 1 n) xl))
         (mv (str::cat "<! ... ]> declaration never closes." *nls*
                       "Nearby text: {" (error-context x start-n xl) "}" *nls*)
             n nil))
