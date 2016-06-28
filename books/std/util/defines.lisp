@@ -565,7 +565,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
             (collect-returnspec-flag-thms (cdr gutslist) world))))
 
 (defun returnspec-mrec-default-default-hint (fnname id world)
-  (let ((fns (acl2::recursivep fnname world)))
+  (let ((fns (acl2::recursivep fnname t world)))
     (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
          (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
          `(:computed-hint-replacement

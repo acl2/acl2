@@ -512,7 +512,7 @@ For example, @('natp-of-foo').</dd>
      name)))
 
 (defun returnspec-default-default-hint (fnname id world)
-  (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+  (and (eql (len (acl2::recursivep fnname t world)) 1) ;; singly recursive
        (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
          (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
               (cond ((not pool-lst)

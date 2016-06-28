@@ -1167,7 +1167,7 @@
   ;; to expand calls of the function immediately after inducting.
   ;;
   ;; (replace with set-deffixequiv-default-hints to use in deffixequiv proofs.)
-  (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+  (and (eql (len (acl2::recursivep fnname t world)) 1) ;; singly recursive
        (eql 0 (acl2::access acl2::clause-id id :forcing-round))
        (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst))
               (formals (fgetprop fnname 'formals nil world)))
@@ -1206,7 +1206,7 @@
   ;; expanding calls.
   (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
        (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
-       (let* ((fns (acl2::recursivep fnname world))
+       (let* ((fns (acl2::recursivep fnname t world))
               (expand-hints (just-expand-cp-parse-hints
                              (just-expand-mrec-expanders fns world)
                              world)))
@@ -1220,7 +1220,7 @@
   (declare (Xargs :mode :program))
   (if (atom fnnames)
       nil
-    (append (recursivep (car fnnames) world)
+    (append (recursivep (car fnnames) t world)
             (all-fns-in-cliques (cdr fnnames) world))))
 
 (defun just-expand-mrec-multi-hint (fnnames id wait-til-stablep world)
