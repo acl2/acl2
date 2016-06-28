@@ -34,16 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (legal-variable-listp nil))
-
-(assert-event (legal-variable-listp '(x y z)))
-
-(assert-event (not (legal-variable-listp '(t a))))
-
-(assert-event (not (legal-variable-listp '(*c*))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-event (not (pseudo-lambda-expr-p "abc")))
 
 (assert-event (not (pseudo-lambda-expr-p (cons 3 6))))

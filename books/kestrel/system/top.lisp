@@ -14,11 +14,15 @@
 
 (in-package "ACL2")
 
+(include-book "applicability-conditions")
 (include-book "auto-termination")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
 (include-book "event-forms")
+(include-book "fresh-names")
+(include-book "install-not-norm-event")
 (include-book "minimize-ruler-extenders")
+(include-book "numbered-names")
 (include-book "prove-interface")
 (include-book "terms")
 (include-book "ubi")

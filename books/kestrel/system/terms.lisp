@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributor: Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,20 +28,8 @@
 
 (define all-fns ((term pseudo-termp))
   ;; :returns (fns symbol-listp)
-  :short
-  "Function symbols in a term, in reverse print order of first occurrence."
+  :short "Function symbols in a term."
   (all-ffn-symbs term nil))
-
-(std::deflist legal-variable-listp (x)
-  (legal-variablep x)
-  :short
-  "True iff @('x') is a @('nil')-terminated list of legal variable names."
-  :long
-  "<p>
-  See @('legal-variablep') in the ACL2 source code.
-  </p>"
-  :true-listp t
-  :elementp-of-nil nil)
 
 (define pseudo-lambda-expr-p (x)
   :returns (yes/no booleanp)
@@ -66,8 +55,8 @@
   :verify-guards nil
   :short
   "True iff the lambda expression is closed, i.e. it has no free variables."
-  (subsetp (all-vars (lambda-body lambd))
-           (lambda-formals lambd)))
+  (subsetp-eq (all-vars (lambda-body lambd))
+              (lambda-formals lambd)))
 
 (define pseudo-functionp (x)
   :returns (yes/no booleanp)
@@ -76,7 +65,8 @@
   in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  Check whether @('x')is a symbol or a pseudo-lambda-expression.
+  Check whether @('x')is a symbol or a
+  <see topic='@(url pseudo-lambda-expr-p)'>pseudo-lambda-expression</see>.
   These are the possible values of the first element of
   a pseudo-term that is not a variable or a quoted constant
   (i.e. a pseudo-term that is a function application).
@@ -92,7 +82,9 @@
   :guard-hints (("Goal" :in-theory (enable pseudo-functionp
                                            pseudo-lambda-expr-p)))
   :short
-  "Apply pseudo-function to list of pseudo-terms, obtaining a pseudo-term."
+  "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+  to list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
+  obtaining a pseudo-term."
   :long
   "<p>
   If the pseudo-function is a lambda expression,
@@ -103,7 +95,9 @@
 
 (defsection apply-term*
   :short
-  "Apply pseudo-function to pseudo-terms, obtaining a pseudo-term."
+  "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+  to <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
+  obtaining a pseudo-term."
   :long
   "<p>
   If the pseudo-function is a lambda expression,
@@ -171,8 +165,7 @@
     :long
     "<p>
     A term containing functions in @('*stobjs-out-invalid*')
-    (on which @(tsee no-stobjs-p) causes an error),
-    which currently are just @(tsee if) and @(tsee return-last),
+    (on which @(tsee no-stobjs-p) would cause a guard violation),
     is regarded as having no stobjs,
     if all its other functions have no stobjs.
     </p>"
@@ -209,6 +202,14 @@
     :returns (yes/no booleanp)
     :parents (term/terms-funs-guard-verified-p)
     :short "True iff all the functions in the term are guard-verified."
+    :long
+    "<p>
+    Note that if @('term') includes @(tsee mbe),
+    @('nil') is returned
+    if any function inside the @(':logic') component of @(tsee mbe)
+    is not guard-verified,
+    even when @('term') could otherwise be fully guard-verified.
+    </p>"
     (or (variablep term)
         (fquotep term)
         (and (terms-funs-guard-verified-p (fargs term) w)
@@ -244,14 +245,16 @@
   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
   whose first element is the symbol @('lambda'),
   whose second element is a list of legal variable symbols without duplicates,
-  and whose third element is a valid translated term.
+  and whose third element is a valid translated term
+  whose free variables are all among the ones in the second element.
   </p>"
   (and (true-listp x)
        (eql (len x) 3)
        (eq (first x) 'lambda)
-       (legal-variable-listp (second x))
-       (no-duplicatesp (second x))
-       (termp (third x) w)))
+       (arglistp (second x))
+       (termp (third x) w)
+       (subsetp-eq (all-vars (third x))
+                   (second x))))
 
 (define check-user-term (x (w plist-worldp))
   :returns (term/message (or (pseudo-termp term/message)
@@ -266,7 +269,8 @@
   If the translation succeeds, the translated term is returned.
   Otherwise, a structured error message is returned (printable with @('~@')).
   These two possible outcomes can be distinguished by the fact that
-  the former is a pseudo-termp while the latter is not.
+  the former is a <see topic='@(url pseudo-termp)'>pseudo-term</see>
+  while the latter is not.
   </p>
   <p>
   The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
@@ -329,10 +333,8 @@
         `("~x0 does not consist of exactly three elements." (#\0 . ,x)))
        ((unless (eq (first x) 'lambda))
         `("~x0 does not start with LAMBDA." (#\0 . ,x)))
-       ((unless (legal-variable-listp (second x)))
+       ((unless (arglistp (second x)))
         `("~x0 does not have valid formal parameters." (#\0 . ,x)))
-       ((unless (no-duplicatesp (second x)))
-        `("~x0 has duplicate formal parameters." (#\0 . ,x)))
        (term/message (check-user-term (third x) w))
        ((when (msgp term/message)) term/message))
     `(lambda ,(second x) ,term/message)))
@@ -344,7 +346,7 @@
   :long
   "<p>
   This function translates a call to the macro
-  that only includes the required arguments,
+  that only includes its required formal arguments,
   returning the resulting translated term.
   </p>
   <p>
@@ -357,6 +359,10 @@
   <p>
   Note also that if the macro has optional arguments,
   its translation with non-default values for these arguments
+  may yield different terms.
+  Furthermore, if the macro is sensitive
+  to the &ldquo;shape&rdquo; of its arguments,
+  calls with argument that are not the required formal arguments
   may yield different terms.
   </p>"
   (check-user-term (cons mac (macro-required-args mac w)) w))
