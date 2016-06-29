@@ -459,7 +459,16 @@ made from privilege level 3.</sf>"
     (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
       (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-lst x86)))
              (alignment-checking-enabled-p x86))
-      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ())))))
+      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ()))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-2-rb
+      (equal (alignment-checking-enabled-p (mv-nth 2 (rb l-addrs r-w-x x86)))
+             (alignment-checking-enabled-p x86))
+      :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-2-las-to-pas
+      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+             (alignment-checking-enabled-p x86))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
     ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.

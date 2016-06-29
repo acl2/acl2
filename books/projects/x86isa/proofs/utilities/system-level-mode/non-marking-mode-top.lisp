@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "common-system-level-utils")
-(include-book "paging-lib/common-paging-lemmas")
+(include-book "paging/common-paging-lemmas")
 (include-book "gl-lemmas")
 (include-book "clause-processors/find-subterms" :dir :system)
 
@@ -15,7 +15,7 @@
 
 ;; ======================================================================
 
-(defsection non-marking-mode-utils
+(defsection non-marking-mode-top
   :parents (proof-utilities)
 
   :short "Reasoning in the system-level non-marking mode"
@@ -25,7 +25,7 @@
 <p>This doc topic will be updated in later commits...</p>"
   )
 
-(local (xdoc::set-default-parents non-marking-mode-utils))
+(local (xdoc::set-default-parents non-marking-mode-top))
 
 ;; ----------------------------------------------------------------------
 ;; Debugging:
@@ -628,9 +628,9 @@
 
 ;; ======================================================================
 
-(defthmd las-to-pas-subset-p-in-non-marking-mode
+(defthmd  mv-nth-0-las-to-pas-subset-p-in-non-marking-mode
   ;; This is a pretty expensive rule --- a more general version of
-  ;; las-to-pas-subset-p-with-l-addrs-from-bind-free.
+  ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
   (implies (and (bind-free
                  (find-l-addrs-from-fn 'las-to-pas 'l-addrs mfc state)
                  (l-addrs))
@@ -642,7 +642,7 @@
                   nil))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
-(defthm las-to-pas-subset-p-with-l-addrs-from-bind-free-in-non-marking-mode
+(defthm  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free-in-non-marking-mode
   ;; This rule will help in fetching instructions.
   (implies (and (bind-free
                  (find-l-addrs-from-fn 'program-at 'l-addrs mfc state)
@@ -700,7 +700,7 @@
 
 (local
  (defthm translation-governing-addresses-and-write-to-physical-memory
-   ;; TO-DO: This already exists in paging-lib/paging-top.
+   ;; This lemma already exists in paging/top.
    (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs x86))
                  (physical-address-listp p-addrs))
             (equal

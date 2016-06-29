@@ -140,7 +140,7 @@
        (single-inductionp (equal pool-lst '(1)))
        ((unless (or top-levelp single-inductionp))
         nil)
-       ((when (and top-levelp (acl2::recursivep fn world)))
+       ((when (and top-levelp (acl2::recursivep fn t world)))
         `(:computed-hint-replacement t
           :induct (,fn . ,(fgetprop fn 'acl2::formals t world))))
        ((unless stable-under-simplificationp)
@@ -319,7 +319,7 @@
 
 
 (defun deffixequiv-mutual-default-default-hint (fnname id world)
-  (let ((fns (acl2::recursivep fnname world)))
+  (let ((fns (acl2::recursivep fnname t world)))
     (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
          (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
          `(:computed-hint-replacement

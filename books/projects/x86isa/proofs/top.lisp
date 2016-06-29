@@ -9,75 +9,61 @@
 (include-book "utilities/programmer-level-mode/top" :ttags :all)
 (include-book "utilities/system-level-mode/top" :ttags :all)
 
-;; Program proofs:
+;; Proofs of correctness of various x86 programs: We exclude these
+;; from the x86isa documentation.
 
-(defsection code-proofs
-  :parents (X86ISA)
-  :short "Verification of various x86 programs"
-  :long "<p>Detailed documentation topic coming soon!</p>
+;; [Shilpi]: There are name clashes in these two factorial books.  The
+;; empty encapsulates below avoid this name clash problem while
+;; ensuring that the books get built as a part of the
+;; regression. Another way to ensure that these books get built is to
+;; rely on cert.pl's dependency scanner and put these include-books in
+;; a multi-line comment or something.
 
-<p>The <b>factorial program</b> has been proved correct using two methods:</p>
+;; ----------------------------------------------------------------------
+;; Application Programs:
 
-<ol>
-<li>Inductive Assertions: See book @('factorial/fact-inductive-assertions.lisp').</li>
-<li>Wormhole Abstraction: See book @('factorial/fact-wormhole-abstraction.lisp').</li>
-</ol>
+;; The factorial program has been proved correct using two methods:
+;; inductive assertions and wormhole abstraction.
+(local
+ (encapsulate
+   ()
+   (local (include-book "factorial/fact-inductive-assertions" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
 
-<p>The proof of correctness of the <b>wordCount program</b> can be found in
-@('wordCount/wc.lisp').</p>
+;; The proof of correctness of a population count program was done
+;; using the GL bit-blasting framework.
+(local
+ (encapsulate
+   ()
+   (local (include-book "popcount/popcount" :ttags :all))))
 
-<p>The proof of correctness of a simple <b>array copy sub-routine</b> can be
-found in @('dataCopy/dataCopy.lisp').</p>
+(local
+ (encapsulate
+   ()
+   (local (include-book "wordCount/wc" :ttags :all))))
 
-<p>The proof of correctness of a <b>population count program</b> can
-be found in @('popcount/popcount.lisp'). This proof was done using the
-@(see GL::GL) symbolic simulation framework.</p>
+;; Proof of correctness of a simple array copy sub-routine:
+(local
+ (encapsulate
+   ()
+   (local (include-book "dataCopy/dataCopy" :ttags :all))))
 
-<p>The proof of correctness of a simple <b>zero-copy sub-routine</b>
-in the system-level mode can be found in
-@('zeroCopy/zeroCopy-in-non-marking-mode.lisp').</p>"
+;; ----------------------------------------------------------------------
+;; System Program:
 
-  ;; [Shilpi]: There are name clashes in these two factorial books.  The
-  ;; empty encapsulates below avoid this name clash problem while
-  ;; ensuring that the books get built as a part of the
-  ;; regression. Another way to ensure that these books get built is to
-  ;; rely on cert.pl's dependency scanner and put these include-books in
-  ;; a multi-line comment or something.
+;; The zeroCopy program has been proved correct in both the marking
+;; and non-marking mode of the x86 model.
 
-  (local
-   (encapsulate
-     ()
-     (local (include-book "factorial/fact-inductive-assertions" :ttags :all))))
-
-  (local
-   (encapsulate
-     ()
-     (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
-
-  (local
-   (encapsulate
-     ()
-     (local (include-book "popcount/popcount" :ttags :all))))
-
-  (local
-   (encapsulate
-     ()
-     (local (include-book "wordCount/wc" :ttags :all))))
-
-  (local
-   (encapsulate
-     ()
-     (local (include-book "dataCopy/dataCopy" :ttags :all))))
-
-  (local
-   (encapsulate
-     ()
-     (local (include-book "zeroCopy/zeroCopy-in-non-marking-mode" :ttags :all))))
-
-  (local
-   (encapsulate
-     ()
-     ;; This is nowhere near finished right now.
-     (local (include-book "zeroCopy/zeroCopy-in-marking-mode" :ttags :all)))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "zeroCopy/non-marking-mode/zeroCopy" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "zeroCopy/marking-mode/zeroCopy" :ttags :all))))
 
 ;; ======================================================================

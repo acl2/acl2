@@ -152,17 +152,23 @@
              does not have the expected wrapper." body fun))))
 
 (define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
+  :guard (not (member-eq fun *stobjs-out-invalid*))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
   "True iff the function @('fun') has no
   input or output <see topic='@(url stobj)'>stobjs</see>."
+  :long
+  "<p>
+  The guard condition that @('fun') is not in @('*stobjs-out-invalid*')
+  is copied from @('stobjs-out').
+  </p>"
   (and (all-nils (stobjs-in fun w))
        (all-nils (stobjs-out fun w))))
 
 (define measure ((fun (and (function-namep fun w)
                            (logicp fun w)
-                           (recursivep fun w)))
+                           (recursivep fun nil w)))
                  (w plist-worldp))
   ;; :returns (measure pseudo-termp)
   :verify-guards nil
@@ -172,7 +178,7 @@
 
 (define measured-subset ((fun (and (function-namep fun w)
                                    (logicp fun w)
-                                   (recursivep fun w)))
+                                   (recursivep fun nil w)))
                          (w plist-worldp))
   ;; :returns (measured-subset symbol-listp)
   :verify-guards nil
@@ -183,7 +189,7 @@
 
 (define well-founded-relation ((fun (and (function-namep fun w)
                                          (logicp fun w)
-                                         (recursivep fun w)))
+                                         (recursivep fun nil w)))
                                (w plist-worldp))
   ;; :returns (well-founded-relation symbolp)
   :verify-guards nil
@@ -196,7 +202,7 @@
 
 (define ruler-extenders ((fun (and (function-namep fun w)
                                    (logicp fun w)
-                                   (recursivep fun w)))
+                                   (recursivep fun nil w)))
                          (w plist-worldp))
   ;; :returns (ruler-extenders (or (symbol-listp ruler-extenders)
   ;;                               (equal ruler-extenders :all)))
@@ -279,7 +285,7 @@
 
 (define induction-machine ((fun (and (function-namep fun w)
                                      (logicp fun w)
-                                     (eql 1 (len (recursivep fun w)))))
+                                     (eql 1 (len (recursivep fun nil w)))))
                            (w plist-worldp))
   ;; :returns (machine (pseudo-induction-machinep fun machine))
   :verify-guards nil
@@ -343,7 +349,7 @@
 
 (define recursive-calls ((fun (and (function-namep fun w)
                                    (logicp fun w)
-                                   (eql 1 (len (recursivep fun w)))))
+                                   (eql 1 (len (recursivep fun nil w)))))
                          (w plist-worldp))
   ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
   :verify-guards nil

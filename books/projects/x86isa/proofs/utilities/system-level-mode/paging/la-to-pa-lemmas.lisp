@@ -68,6 +68,21 @@
                                    ())))
   :rule-classes :congruence)
 
+(defthm xlate-equiv-memory-and-programmer-level-mode-cong
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (xr :programmer-level-mode 0 x86-1)
+                  (xr :programmer-level-mode 0 x86-2)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-in-programmer-level-mode-implies-equal-states
+  (implies (and (xlate-equiv-memory x86-1 x86-2)
+                (programmer-level-mode x86-1))
+           (equal x86-1 x86-2))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ())))
+  :rule-classes nil)
+
 ;; ======================================================================
 
 ;; Lemmas about ia32e-la-to-pa:
@@ -112,17 +127,215 @@
                                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86-2))))
   :rule-classes :congruence)
 
+(local
+ (encapsulate
+   ()
+
+   (local (in-theory (e/d* ()
+                           (loghead-of-non-integerp
+                            (:t ctri-is-n64p)
+                            acl2::ash-0
+                            (:t bitops::logtail-natp)
+                            unsigned-byte-p-of-logtail))))
+
+   (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-1G-pages
+     (implies
+      (and
+       ;; (equal (page-present
+       ;;         (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+       ;;        1)
+       (equal
+        (page-size (rm-low-64
+                    (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+        0)
+       (equal
+        (page-size
+         (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86))
+                    x86))
+        1))
+      (all-mem-except-paging-structures-equal
+       (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+       x86))
+     :hints (("Goal"
+
+              :in-theory (e/d* (ia32e-la-to-pa
+                                ia32e-la-to-pa-pml4-table
+                                ia32e-la-to-pa-page-dir-ptr-table)
+                               (bitops::logand-with-negated-bitmask
+                                accessed-bit
+                                dirty-bit
+                                force (force)
+                                not)))))
+
+   (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-2M-and-4K-pages
+     (implies
+      (and
+       ;; (equal
+       ;;  (page-present
+       ;;   (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+       ;;  1)
+       (equal
+        (page-size
+         (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+        0)
+       ;; (equal
+       ;;  (page-present
+       ;;   (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
+       ;;  1)
+       ;; (equal
+       ;;  (page-present
+       ;;   (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr) (page-directory-base-addr (logext 48 lin-addr) x86)) x86))
+       ;;  1)
+       )
+      (all-mem-except-paging-structures-equal
+       (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+       x86))
+     :hints (("Goal"
+
+              :in-theory (e/d* (ia32e-la-to-pa
+                                ia32e-la-to-pa-pml4-table
+                                ia32e-la-to-pa-page-dir-ptr-table)
+                               (bitops::logand-with-negated-bitmask
+                                accessed-bit
+                                dirty-bit
+                                force (force)
+                                not)))))
+
+   ;; (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-pml4-page-not-present
+   ;;   (implies
+   ;;    (equal (page-present
+   ;;            (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+   ;;           0)
+   ;;    (all-mem-except-paging-structures-equal
+   ;;     (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   ;;     x86))
+   ;;   :hints (("Goal"
+
+   ;;            :in-theory (e/d* (ia32e-la-to-pa
+   ;;                              ia32e-la-to-pa-pml4-table)
+   ;;                             (bitops::logand-with-negated-bitmask
+   ;;                              accessed-bit
+   ;;                              dirty-bit
+   ;;                              force (force)
+   ;;                              not)))))
+
+   (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-pml4-page-size=1
+     (implies
+      (equal (page-size
+              (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+             1)
+      (all-mem-except-paging-structures-equal
+       (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+       x86))
+     :hints (("Goal"
+
+              :in-theory (e/d* (ia32e-la-to-pa
+                                ia32e-la-to-pa-pml4-table
+                                paging-entry-no-page-fault-p
+                                page-fault-exception)
+                               (bitops::logand-with-negated-bitmask
+                                accessed-bit
+                                dirty-bit
+                                force (force)
+                                not)))))
+
+   ;; (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-page-not-present
+   ;;   (implies
+   ;;    (and
+   ;;     (equal
+   ;;      (page-size
+   ;;       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
+   ;;      0)
+   ;;     ;; (equal
+   ;;     ;;  (page-present
+   ;;     ;;   (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
+   ;;     ;;  0)
+   ;;     )
+   ;;    (all-mem-except-paging-structures-equal
+   ;;     (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   ;;     x86))
+   ;;   :hints (("Goal"
+
+   ;;            :in-theory (e/d* (ia32e-la-to-pa
+   ;;                              ia32e-la-to-pa-pml4-table
+   ;;                              ia32e-la-to-pa-page-dir-ptr-table)
+   ;;                             (bitops::logand-with-negated-bitmask
+   ;;                              accessed-bit
+   ;;                              dirty-bit
+   ;;                              force (force)
+   ;;                              not)))))
+
+   ;; (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-pdpte-ps=0-and-pd-pp=0
+   ;;   (implies
+   ;;    (and
+   ;;     (equal
+   ;;      (page-size
+   ;;       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
+   ;;      0)
+   ;;     ;; (equal
+   ;;     ;;  (page-present
+   ;;     ;;   (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr) (page-directory-base-addr (logext 48 lin-addr) x86)) x86))
+   ;;     ;;  0)
+   ;;     )
+   ;;    (all-mem-except-paging-structures-equal
+   ;;     (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   ;;     x86))
+   ;;   :hints (("Goal"
+
+   ;;            :in-theory (e/d* (ia32e-la-to-pa
+   ;;                              ia32e-la-to-pa-pml4-table
+   ;;                              ia32e-la-to-pa-page-dir-ptr-table
+   ;;                              ia32e-la-to-pa-page-directory)
+   ;;                             (bitops::logand-with-negated-bitmask
+   ;;                              accessed-bit
+   ;;                              dirty-bit
+   ;;                              force (force)
+   ;;                              not)))))
+   ))
+
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa
   (all-mem-except-paging-structures-equal
    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
    (double-rewrite x86))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
-                                    ia32e-la-to-pa-pml4-table)
-                                   (bitops::logand-with-negated-bitmask
-                                    accessed-bit
-                                    dirty-bit
-                                    force (force)
-                                    not)))))
+  :hints (("Goal"
+           :cases ((and
+                    ;; (equal (page-present
+                    ;;         (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                    ;;        1)
+                    (equal
+                     (page-size (rm-low-64
+                                 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                     0)
+                    (equal
+                     (page-size
+                      (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86))
+                                 x86))
+                     1))
+
+                   (and
+                    ;; (equal
+                    ;;  (page-present
+                    ;;   (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                    ;;  1)
+                    (equal
+                     (page-size
+                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
+                     0)
+                    ;; (equal
+                    ;;  (page-present
+                    ;;   (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
+                    ;;  1)
+                    ;; (equal
+                    ;;  (page-present
+                    ;;   (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr) (page-directory-base-addr (logext 48 lin-addr) x86)) x86))
+                    ;;  1)
+                    ))
+           :in-theory (e/d* ()
+                            (bitops::logand-with-negated-bitmask
+                             accessed-bit
+                             dirty-bit
+                             force (force)
+                             not)))))
 
 (defthm all-mem-except-paging-structures-equal-with-two-mv-nth-2-ia32e-la-to-pa-cong
   (implies (all-mem-except-paging-structures-equal x86-1 x86-2)
