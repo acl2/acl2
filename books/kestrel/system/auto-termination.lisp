@@ -2,6 +2,8 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Thanks to Eric Smith for the idea leading to this tool.
+
 ;;; TO DO:
 
 ; - Support DEFINE.
