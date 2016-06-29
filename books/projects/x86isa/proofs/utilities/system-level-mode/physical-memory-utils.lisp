@@ -506,3 +506,163 @@
            :in-theory (e/d* (member-p) ()))))
 
 ;; ======================================================================
+
+;; Relationship between wm-low-64 and write-to-physical-memory, and
+;; rm-low-64 and read-from-physical-memory:
+
+(defthmd rewrite-wm-low-64-to-write-to-physical-memory
+  (implies (not (programmer-level-mode x86))
+	   (equal (wm-low-64 index value x86)
+		  (write-to-physical-memory (addr-range 8 index) (byte-ify 8 value) x86)))
+  :hints (("Goal"
+	   :in-theory (e/d* (write-to-physical-memory
+			     wm-low-64
+			     wm-low-32
+			     byte-ify)
+			    ()))))
+(encapsulate
+  ()
+
+  ;; Rewriting read-from-physical-memory to rm-low-64:
+
+  (local
+   (defthm loghead-n-ash-x-m-where-m>=n
+     (implies (and (natp n)
+                   (natp m)
+                   (<= n m))
+              (equal (loghead n (ash x m))
+                     0))
+     :hints (("Goal" :in-theory
+              (e/d* (ihsext-inductions ihsext-recursive-redefs)
+                    ())))))
+
+  (local
+   (defthm logtail-n-memi-where-n>=8
+     (implies (and (x86p x86)
+                   (natp n)
+                   (<= 8 n))
+              (equal (logtail n (xr :mem index x86)) 0))
+     :hints (("Goal" :in-theory
+              (e/d* (ihsext-inductions ihsext-recursive-redefs)
+                    ())))))
+
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-1
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (rm-low-64 index x86))
+                     (xr :mem index x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-2
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (logtail 8 (rm-low-64 index x86)))
+                     (xr :mem (1+ index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-3
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (logtail 16 (rm-low-64 index x86)))
+                     (xr :mem (+ 2 index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-4
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (logtail 24 (rm-low-64 index x86)))
+                     (xr :mem (+ 3 index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-5
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (logtail 32 (rm-low-64 index x86)))
+                     (xr :mem (+ 4 index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-6
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (logtail 40 (rm-low-64 index x86)))
+                     (xr :mem (+ 5 index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-7
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (loghead 8 (logtail 48 (rm-low-64 index x86)))
+                     (xr :mem (+ 6 index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+  (local
+   (defthm rewrite-read-from-physical-memory-to-rm-low-64-helper-8
+     (implies (and (not (programmer-level-mode x86))
+                   (physical-address-p index)
+                   (x86p x86))
+              (equal (logtail 56 (rm-low-64 index x86))
+                     (xr :mem (+ 7 index) x86)))
+     :hints (("Goal" :in-theory (e/d* (rm-low-64
+                                       rm-low-32)
+                                      ())))))
+
+  (local
+   (defthmd rewrite-read-from-physical-memory-to-rm-low-64-helper
+     (implies (and (physical-address-p index)
+                   (equal p-addrs
+                          (list index (+ 1 index)
+                                (+ 2 index)
+                                (+ 3 index)
+                                (+ 4 index)
+                                (+ 5 index)
+                                (+ 6 index)
+                                (+ 7 index)))
+                   (not (programmer-level-mode x86))
+                   (x86p x86))
+              (equal (read-from-physical-memory p-addrs x86)
+                     (byte-ify 8 (rm-low-64 index x86))))
+     :hints (("Goal"
+              :do-not-induct t
+              :in-theory (e/d* (read-from-physical-memory
+                                byte-ify)
+                               ())))))
+
+  (defthmd rewrite-read-from-physical-memory-to-rm-low-64
+    (implies (and (equal p-addrs (addr-range 8 index))
+                  (physical-address-p index)
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (read-from-physical-memory p-addrs x86)
+                    (byte-ify 8 (rm-low-64 (car p-addrs) x86))))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance rewrite-read-from-physical-memory-to-rm-low-64-helper
+                              (index (car p-addrs))))
+             :in-theory (e/d* (create-physical-address-list
+                               physical-address-listp
+                               unsigned-byte-p)
+                              ())))))
+
+;; ======================================================================
