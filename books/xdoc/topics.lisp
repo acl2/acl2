@@ -60,7 +60,8 @@ for ACL2</a>.  ACL2 Workshop 2014.  EPTCS 152.  Pages 9-25.
 </blockquote>
 
 <p>See <i>Building the Manual</i> under @(see acl2::books-certification) for
-information on building the ACL2+Books manual.</p>
+information on building the ACL2+Books manual.  See @(see testing) for easy
+instructions for how to test your XDOC strings.</p>
 
 
 <p>To use XDOC to document your own books, the first step is:</p>
@@ -1676,5 +1677,41 @@ all is well, you should see the logo below:</p>
 <img src='res/centaur/centaur-logo.png'/>")
 
 (add-resource-directory "centaur" "centaur")
+
+(defxdoc testing
+  :short "Testing new or revised XDOC strings"
+  :long "<p>Contributors to the XDOC manual should check that their XDOC
+ strings are well-formed.  This topic shows an easy way to check
+ well-formedness of XDOC strings, without the need to build the manual.  Also
+ discussed is a way to check for the absence of broken links by building the
+ manual.</p>
+
+ <p>To test a topic, first submit a suitable @(tsee in-package) form if
+ necessary, and then to test your topic named, say, @('FOO'):</p>
+
+ @({
+ (include-book \"xdoc/top\" :dir :system)
+ (defxdoc ...) ; or whatever form you have that includes an XDOC string
+ :doc foo ; a bit noisy and slow the first time, but could do this twice
+ })
+
+ <p>The output should be free of obvious errors.  Otherwise, you can use the
+ error message to debug the error; then submit your form and @(':doc foo')
+ again.</p>
+
+ <p>Checking for broken links requires you to build the manual; for
+ instructions, see the section ``Building the manual'' in the topic @(see
+ acl2::books-certification).  This build will create a file
+ @('books/doc/top.cert.out').  Search in that file for the word ``broken'' and
+ you will find the following report of a broken link:</p>
+
+ @({
+ ;;; ACL2____SOME-BROKEN-LINK:
+ ;;;    from ACL2-DOC
+ })
+
+ <p>If any other broken links are reported, you can modify the parent topic
+ (e.g., @('ACL2-DOC') just above &mdash; but please leave that one in place!)
+ to fix the indicated broken link.</p>")
 
 (defpointer build-the-manual xdoc)

@@ -13849,7 +13849,7 @@
                      (not (equal (access rewrite-rule lemma :rhs) *nil*)))
                  (or (flambdap (ffn-symb term)) ; hence not on fnstack
                      (not (being-openedp (ffn-symb term) fnstack
-                                         (recursivep (ffn-symb term) wrld)))
+                                         (recursivep (ffn-symb term) t wrld)))
                      (not (ffnnamep (ffn-symb term)
                                     (access rewrite-rule lemma :rhs)))))
             (let ((lhs (access rewrite-rule lemma :lhs))

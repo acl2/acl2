@@ -189,7 +189,7 @@ instantiate other data-structure modules.  Interfaces are treated as a
 combination of struct variable and module instance.</p>
 
 <p>This approach to array indexing also lets us deal straightforwardly with
-instance arrays; see @(see vl-portinfo-instarray-nested-alias) for details.</p>
+instance arrays; see @(see vl-instarray-nested-alias) for details.</p>
 
 <h3>Scopes</h3>
 
@@ -3607,7 +3607,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
               ((acl2::just-expand-mrec-default-hint 'std::fnname id nil world)
                (and stable-under-simplificationp
                     `(:in-theory (e/d (sv::svarlist-addr-p-by-badguy)
-                                      ,(acl2::recursivep 'std::fnname world))))))
+                                      ,(acl2::recursivep 'std::fnname t world))))))
              (local (in-theory (disable sv::svarlist-addr-p-when-subsetp-equal
                                         acl2::subsetp-member
                                         acl2::consp-under-iff-when-true-listp
