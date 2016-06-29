@@ -241,9 +241,8 @@
                   (append (cdr x) y))))
 
 (defthm car-of-append
-  (implies (consp x)
-           (equal (car (append x y))
-                  (car x))))
+  (equal (car (append x y))
+         (if (consp x) (car x) (car y))))
 
 (defthm consp-append
   (implies (consp x)
