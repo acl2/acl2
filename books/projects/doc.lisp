@@ -11,7 +11,7 @@
 (include-book "leftist-trees/top")
 (include-book "quadratic-reciprocity/euler")
 (include-book "sidekick/server")
-(include-book "x86isa/top")
+(include-book "x86isa/doc")
 
 (defxdoc projects
   :parents (top)

@@ -31,21 +31,20 @@
         ((symbolp (car x))
          (let ((arity (arity (car x) w)))
            (and arity
-                (true-listp (cdr x))
-                (eql (length (cdr x)) arity)
-                (term-listp (cdr x) w))))
+                (term-listp (cdr x) w)
+                (eql (length (cdr x)) arity))))
         ((and (consp (car x))
               (true-listp (car x))
               (eq (car (car x)) 'lambda)
-              (equal 3 (length (car x)))
+              (eql 3 (length (car x)))
               (arglistp (cadr (car x)))
               (termp (caddr (car x)) w)
               (null (set-difference-eq
                      (all-vars (caddr (car x)))
                      (cadr (car x))))
               (term-listp (cdr x) w)
-              (equal (length (cadr (car x)))
-                     (length (cdr x))))
+              (eql (length (cadr (car x)))
+                   (length (cdr x))))
          t)
         (t nil)))
 
@@ -85,6 +84,7 @@
 (table default-hints-table nil nil :clear)
 
 (defun macro-args (x w)
+  (declare (xargs :guard (and (symbolp x) (plist-worldp w))))
   (getpropc x 'macro-args
             '(:error "We thought macro-args was only called if there were ~
                       (zero or more) macro-args.")
@@ -162,12 +162,11 @@
 (defun program-only-er-msg (fn args safe-mode)
   (msg
    "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' and hence has special raw Lisp code.  This call is ~
-    illegal because program-only functions are only allowed to invoke their ~
-    raw Lisp code, but in this case there was an attempt to invoke executable ~
-    counterpart code ~#1~[because of guard-checking (see :DOC ~
-    guard-evaluation-table)~/because it is being called under a ``safe mode'' ~
-    that is used, for example, during macroexpansion~]."
+    ``program-only,'' presumably because it has special raw Lisp code.  This ~
+    call is illegal because program-only functions must invoke their raw Lisp ~
+    code, but ~#1~[the guard is always checked for such a function and fails ~
+    in this case~/this call is under a ``safe mode'' that is used, for ~
+    example, during macroexpansion, and prohibits the use of raw Lisp code~]."
    (cons fn args)
    (if safe-mode 1 0)))
 
@@ -5690,6 +5689,10 @@
 ; some additional requirements as explained in a comment in
 ; throw-nonexec-error-p.
 
+  (declare (xargs :guard (and (pseudo-termp targ1)
+                              (pseudo-termp targ2)
+                              (symbolp name)
+                              (symbol-listp formals))))
   (and (quotep targ1)
        (eq (unquote targ1) 'progn)
        (ffn-symb-p targ2 'throw-nonexec-error)
@@ -5711,6 +5714,9 @@
 ; argument of throw-non-exec-error be (cons v1 (cons v2 ... (cons vk nil)
 ; ...)), where formals is (v1 v2 ... vk).
 
+  (declare (xargs :guard (and (pseudo-termp body)
+                              (symbolp name)
+                              (symbol-listp formals))))
   (and (ffn-symb-p body 'return-last)
        (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
 

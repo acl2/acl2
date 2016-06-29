@@ -1,4 +1,4 @@
-; Terms -- Tests
+; Term Utilities -- Tests
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -31,16 +31,6 @@
 
 (assert-event (equal (all-fns '((lambda (x y) (f x y)) (g '1) (h x x)))
                      '(h g f)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (legal-variable-listp nil))
-
-(assert-event (legal-variable-listp '(x y z)))
-
-(assert-event (not (legal-variable-listp '(t a))))
-
-(assert-event (not (legal-variable-listp '(*c*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

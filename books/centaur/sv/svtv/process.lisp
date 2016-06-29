@@ -1322,7 +1322,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (implies (and (syntaxp (and (quotep skips)
                                 (not (equal skips ''nil))))
                   (not (member signal skips)))
-             (equal (assoc signal (svtv-run svtv inalist :skip skips))
+             (equal (assoc signal (svtv-run svtv inalist :skip skips :boolvars boolvars :quiet quiet))
                     (assoc signal (svtv-run svtv inalist))))
  :hints(("Goal" :in-theory (enable svtv-run)))))
 
@@ -1387,7 +1387,8 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
          (raise "Illegal argumen to svtv-easy-bindings: ~x0" (car x)))
         ((or (eq (caar x) :nat)
              (eq (caar x) :int)
-             (eq (caar x) :bool))
+             (eq (caar x) :bool)
+             (eq (caar x) :skip))
          (cons (car x) (svtv-easy-bindings-main (cdr x) svtv)))
         ((or (eq (caar x) :mix)
              (eq (caar x) :seq))

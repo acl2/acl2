@@ -22,37 +22,43 @@
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail$ (defthm th (natp (1+ x)))))
+ (must-fail-local (defthm th (natp (1+ x)))))
 
 (must-succeed*
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail$ (defthm th (natp (1+ x))) :with-output-off nil))
+ (must-fail-local (defthm th (natp (1+ x))) :with-output-off nil))
 
 (must-succeed*
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail$ (defthm th (natp (1+ x)))
-             :with-output-off (summary)
-             :check-expansion t))
+ (must-fail-local (defthm th (natp (1+ x)))
+                  :with-output-off (summary)
+                  :check-expansion t))
 
-(must-succeed**
- nil ; :with-output-off
- t ; :check-expansion
+(must-succeed*
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail$ (defthm th (natp (1+ x)))))
+ (must-fail-local (defthm th (natp (1+ x))))
+ :with-output-off nil
+ :check-expansion t)
 
-(must-succeed**
- (summary) ; :with-output-off
- nil ; :check-expansion
+(must-succeed*
  (defun f (x) x)
  (must-fail (defun f (x) (cons x x)))
  (defun g (x y) (f (cons x y)))
- (must-fail$ (defthm th (natp (1+ x)))))
+ (must-fail-local (defthm th (natp (1+ x))))
+ :with-output-off (summary))
+
+(must-succeed*
+ (defun f (x) x)
+ (must-fail (defun f (x) (cons x x)))
+ (defun g (x y) (f (cons x y)))
+ (must-fail-local (defthm th (natp (1+ x))))
+ :check-expansion t)
 
 (must-succeed*
  (defun f (x) x)

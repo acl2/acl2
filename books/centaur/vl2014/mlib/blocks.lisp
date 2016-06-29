@@ -105,7 +105,7 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
 
     (local (defun my-default-hint (fnname id clause world)
              (declare (xargs :mode :program))
-             (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+             (and (eql (len (acl2::recursivep fnname t world)) 1) ;; singly recursive
                   (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
                     (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
                          (cond ((not pool-lst)

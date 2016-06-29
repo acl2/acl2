@@ -24,6 +24,9 @@
 
 (in-package "ACL2")
 
+; The following is for strip-cadrs, used in access-event-tuple-namex.
+(include-book "verified-termination-and-guards")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination def-body)
@@ -52,49 +55,16 @@
 
 (verify-termination logical-namep)
 
-; For verify-guards, needs to add this guard for logical-namep:
-
-; (declare (xargs :guard (and (symbolp name) (plist-worldp wrld))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(verify-termination stobjs-out)
-
-; Consider replacing stobjs-out with the following definition, to support guard
-; verification.
-
-#||
-(defun stobjs-out (fn w)
-
-; Warning: keep this in sync with get-stobjs-out-for-declare-form.
-
-; See the Essay on STOBJS-IN and STOBJS-OUT.
-
-; Note that even though the guard implies (not (member-eq fn
-; *stobjs-out-invalid*)), we keep the member-eq test in the code in case
-; stobjs-out is called from a :program-mode function, since in that case the
-; guard may not hold.
-
-  (declare (xargs :guard (and (symbolp fn)
-                              (plist-worldp w)
-                              (not (member-eq fn *stobjs-out-invalid*)))))
-  (cond ((eq fn 'cons)
-; We call this function on cons so often we optimize it.
-         '(nil))
-        ((member-eq fn *stobjs-out-invalid*)
-         (er hard! 'stobjs-out
-             "Implementation error: Attempted to find stobjs-out for ~x0."
-             fn))
-        (t (getpropc fn 'stobjs-out '(nil) w))))
-||#
+; Guard verification would require a guard specifying something about the
+; layout of the known-package-alist.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination macro-args)
+(verify-termination stobjs-out) ; and guards
 
-; For verify-guards, need to add this guard to macro-args:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (declare (xargs :guard (and (symbolp x) (plist-worldp w))))
+(verify-termination macro-args) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,39 +73,33 @@
 ; For verify-guards, need to add a suitable guard to signature-fns.  The
 ; comment in signature-fns starts with "Assuming that signatures has been
 ; approved by chk-signatures"; unfortunately, chk-signatures modifies state.  A
-; solution could be to defined chk-signatures in terms of a suitable
-; chk-signatures-cmp.
+; solution could be to define chk-signatures in terms of a suitable
+; chk-signatures-cmp.  But then several subfunctions would need -cmp versions;
+; is it worth the effort?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination access-event-tuple-namex)
 
-; Guard verification would require a suitable guard.  We know that the input is
-; an event-tuple, but there seems to be no predicate such as event-tuple-p.
+; Guard verification would require not only guard verification for
+; signature-fns, but also a suitable guard for access-event-tuple-namex.  We
+; know that the input is an event-tuple, but there seems to be no predicate
+; such as event-tuple-p.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination termify-clause-set)
+(verify-termination termify-clause-set (declare (xargs :verify-guards nil)))
+(verify-guards termify-clause-set)
 
-; Consider replacing termify-clause-set with the following definition, to
-; support guard verification.  Then the following two events suceed in place of
-; the one just above:
-; (verify-termination termify-clause-set (declare (xargs :verify-guards nil)))
-; (verify-guards termify-clause-set)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#||
-(defun termify-clause-set (clauses)
+(verify-termination formalized-varlistp) ; and guards
 
-; This function is similar to termify-clause except that it converts a
-; set of clauses into an equivalent term.  The set of clauses is
-; understood to be implicitly conjoined and we therefore produce a
-; conjunction expressed as (if cl1 cl2 nil).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (declare (xargs :guard (pseudo-term-list-listp clauses)))
-  (cond ((null clauses) *t*)
-        ((null (cdr clauses)) (disjoin (car clauses)))
-        (t (mcons-term* 'if
-                        (disjoin (car clauses))
-                        (termify-clause-set (cdr clauses))
-                        *nil*))))
-||#
+(verify-termination throw-nonexec-error-p1) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination throw-nonexec-error-p) ; and guards
+

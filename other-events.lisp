@@ -23825,6 +23825,13 @@
                   caller or to memoize its attachment (see :DOC defattach)."
                  str key))
             ((and inline
+
+; The test below isn't right if a built-in function with raw Lisp code has been
+; promoted to logic mode after assigning state global
+; 'verify-termination-on-raw-program-okp to t.  However, that assignment may
+; only be done with a trust tag, and the documentation warns that doing this
+; promotion could be unsound.  So we don't worry about that case here.
+
                   (if (eq key-class :program)
                       (member-eq key *primitive-program-fns-with-raw-code*)
                     (member-eq key *primitive-logic-fns-with-raw-code*)))
@@ -24025,6 +24032,48 @@
 
 )
 
+(mutual-recursion
+
+(defun print-gv-substitute-p1 (bound term alist acc)
+
+; Bound is a natural number, and alist pairs each variable in term with a
+; term.  Acc accumulates an alist that associates each variable occurring in
+; term with nil at the first occurrence and t afterwards.  We return the
+; resulting acc, except that if any variable occurring twice (or more) in term
+; is associated in alist with a term whose cons-count exceeds bound, then we
+; return t.
+
+  (cond ((variablep term)
+         (let ((pair (assoc-eq term acc)))
+           (cond ((null pair)
+                  (acons term nil acc))
+                 ((null (cdr pair))
+                  (if (eql (cons-count-bounded-ac (cdr (assoc-eq term alist))
+                                                  0 bound)
+                           bound)
+                      t
+                    (put-assoc-eq term t acc)))
+                 (t acc))))
+        ((fquotep term) acc)
+        (t (print-gv-substitute-p1-lst bound (fargs term) alist acc))))
+
+(defun print-gv-substitute-p1-lst (bound termlist alist acc)
+  (cond ((endp termlist) acc)
+        (t (let ((acc (print-gv-substitute-p1 bound (car termlist) alist acc)))
+             (cond ((eq acc t) t)
+                   (t (print-gv-substitute-p1-lst bound (cdr termlist) alist
+                                                  acc)))))))
+)
+
+(defun print-gv-substitute-p (substitute tguard vars args)
+  (cond ((natp substitute)
+         (not (eq (print-gv-substitute-p1 substitute
+                                          tguard
+                                          (pairlis$ vars args)
+                                          nil)
+                  t)))
+        (t substitute)))
+
 (defun print-gv-form (guard-fn guard tguard vars args ignorable substitute ctx
                                state)
 
@@ -24033,22 +24082,25 @@
 ; translated form.
 
   (let ((wrld (w state)))
-    (cond
-     (substitute
-      (er-let* ((tguard (if (null tguard)
-                            (translate guard '(nil) nil t ctx wrld state)
-                          (value tguard))))
-        (value (untranslate (fsubcor-var vars args tguard) t wrld))))
-     (t
-      (let ((guard (if tguard
-                       (untranslate tguard t wrld)
-                     guard)))
-        (value `(flet ((,guard-fn
-                        ,vars
-                        ,@(and ignorable
-                               `((declare (ignorable ,@vars))))
-                        ,guard))
-                  (,guard-fn ,@(untranslate-lst args nil wrld)))))))))
+    (er-let* ((tguard (if (and substitute ; if false, we don't need tguard
+                               (null tguard))
+                          (translate guard '(nil) nil t ctx wrld state)
+                        (value tguard))))
+      (cond
+       ((print-gv-substitute-p substitute tguard vars args)
+        (assert$
+         tguard
+         (value (untranslate (fsubcor-var vars args tguard) t wrld))))
+       (t
+        (let ((guard (if tguard
+                         (untranslate tguard t wrld)
+                       guard)))
+          (value `(flet ((,guard-fn
+                          ,vars
+                          ,@(and ignorable
+                                 `((declare (ignorable ,@vars))))
+                          ,guard))
+                    (,guard-fn ,@(untranslate-lst args nil wrld))))))))))
 
 (defun print-gv-conjunct (guard-fn formals conjuncts args index
                                    len-all-conjuncts fn substitute ctx state)
@@ -24086,24 +24138,33 @@
                                index len-all-conjuncts form))))))))))
 
 (defun print-gv1 (fn-guard-stobjsin-args conjunct substitute ctx state)
-  (let* ((wrld (w state))
-         (fn (nth 0 fn-guard-stobjsin-args))
-         (guard (nth 1 fn-guard-stobjsin-args))
-         (args (apply-user-stobj-alist-or-kwote
-                (user-stobj-alist state)
-                (nth 3 fn-guard-stobjsin-args)
-                nil))
-         (formals (formals fn wrld))
-         (guard-fn (add-suffix-to-fn fn "{GUARD}")))
+  (cond
+   ((not (or (booleanp substitute)
+             (natp substitute)))
+    (er soft 'print-gv
+        "The :substitute keyword argument of PRINT-GV must evaluate to T, ~
+         NIL, or a natural number."
+        substitute))
+   (t
+    (let* ((wrld (w state))
+           (fn (nth 0 fn-guard-stobjsin-args))
+           (guard (nth 1 fn-guard-stobjsin-args))
+           (args (apply-user-stobj-alist-or-kwote
+                  (user-stobj-alist state)
+                  (nth 3 fn-guard-stobjsin-args)
+                  nil))
+           (formals (formals fn wrld))
+           (guard-fn (add-suffix-to-fn fn "{GUARD}")))
 
 ; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
 ; need it.
 
-    (if conjunct
-        (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
-          (print-gv-conjunct guard-fn formals conjuncts args 1
-                             (length conjuncts) fn substitute ctx state))
-      (print-gv-form guard-fn guard nil formals args t substitute ctx state))))
+      (if conjunct
+          (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
+            (print-gv-conjunct guard-fn formals conjuncts args 1
+                               (length conjuncts) fn substitute ctx state))
+        (print-gv-form guard-fn guard nil formals args t substitute ctx
+                       state))))))
 
 (defun print-gv-fn (evisc-tuple conjunct substitute state)
   (prog2$
@@ -24165,9 +24226,11 @@
                  "Illegal value for :conjunct (must be Boolean): ~x0"
                  conjunct))
             ((not (or (booleanp substitute)
+                      (natp substitute)
                       (eq substitute :restore)))
              (er soft ctx
-                 "Illegal value for :conjunct (must be Boolean): ~x0"
+                 "Illegal value for :conjunct (must be Boolean or a natural ~
+                  number): ~x0"
                  substitute))
             (t (let* ((alist (f-get-global 'print-gv-defaults state))
                       (alist (cond ((not evisc-tuple-p)

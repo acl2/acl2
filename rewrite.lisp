@@ -5607,26 +5607,27 @@
         (t (and (dumb-occur-lst (car args) top-clause)
                 (all-args-occur-in-top-clausep (cdr args) top-clause)))))
 
-(defun cons-count-bounded-ac (x i)
+(defun cons-count-bounded-ac (x i max)
 
-; We accumulate into i the number of conses in x, bounding our result by
-; (fn-count-evg-max-val), which should not be less than i.  We choose
-; (fn-count-evg-max-val) as our bound simply because that bound is used in the
-; similar computation of fn-count-evg.
+; We accumulate into i the number of conses in x, bounding our result by max,
+; which should not be less than i.
 
-  (declare (type (signed-byte 30) i))
+  (declare (type (signed-byte 30) i max))
   (the (signed-byte 30)
-    (cond ((atom x) i)
-          (t (let ((i (cons-count-bounded-ac (cdr x) i)))
-               (declare (type (signed-byte 30) i))
-               (cond ((>= i (fn-count-evg-max-val))
-                      (fn-count-evg-max-val))
-                     (t
-                      (cons-count-bounded-ac (car x) (1+f i)))))))))
+       (cond ((atom x) i)
+             (t (let ((i (cons-count-bounded-ac (cdr x) i max)))
+                  (declare (type (signed-byte 30) i))
+                  (cond ((>= i max) max)
+                        (t (cons-count-bounded-ac (car x) (1+f i) max))))))))
 
 (defun cons-count-bounded (x)
+
+; We return the number of conses in x, except we bound our result by
+; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
+; because that bound is used in the similar computation of fn-count-evg.
+
   (the (signed-byte 30)
-    (cons-count-bounded-ac x 0)))
+    (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
 
 (mutual-recursion
 
@@ -13849,7 +13850,7 @@
                      (not (equal (access rewrite-rule lemma :rhs) *nil*)))
                  (or (flambdap (ffn-symb term)) ; hence not on fnstack
                      (not (being-openedp (ffn-symb term) fnstack
-                                         (recursivep (ffn-symb term) wrld)))
+                                         (recursivep (ffn-symb term) t wrld)))
                      (not (ffnnamep (ffn-symb term)
                                     (access rewrite-rule lemma :rhs)))))
             (let ((lhs (access rewrite-rule lemma :lhs))

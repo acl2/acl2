@@ -1221,7 +1221,7 @@
    ((endp fns) (mv all-fns bdd-rules-alist))
    (t (mv-let (new-fns nondef-rules def-rules)
               (bdd-rules-alist1
-               (recursivep (car fns) wrld)
+               (recursivep (car fns) t wrld)
                (append (getpropc (car fns) 'lemmas nil wrld)
                        (extra-rules-for-bdds (car fns) wrld))
                ens

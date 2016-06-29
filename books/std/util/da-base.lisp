@@ -848,14 +848,14 @@ fty::deftranssum).</p>"
     (da-patbind-find-used-vars (car form) varstrs
                                (da-patbind-find-used-vars (cdr form) varstrs acc))))
 
-(defun da-patbind-alist-to-bindings (vars valist target)
+(defun da-patbind-alist-to-bindings (vars valist target extra-args)
   (if (atom vars)
       nil
     (let* ((accessor (cdr (assoc-equal (symbol-name (car vars)) valist)))
-           (call     (list accessor target))     ;; (taco->shell foo)
+           (call     (list* accessor target extra-args))     ;; (taco->shell foo extra-args)
            (binding  (list (car vars) call))) ;; (x.foo (taco->shell foo))
       (cons binding
-            (da-patbind-alist-to-bindings (cdr vars) valist target)))))
+            (da-patbind-alist-to-bindings (cdr vars) valist target extra-args)))))
 
 ;; notes: fields-accs is now a mapping from field names to accessors.
 ;; Defaggregate itself just needs the field names because it always generates
@@ -863,7 +863,7 @@ fty::deftranssum).</p>"
 ;; context where the accessors are various different sorts of things.
 (defun da-patbind-fn (name fields-accs args forms rest-expr)
   (b* (((mv kwd-alist args)
-        (extract-keywords `(da-patbind-fn ',name) '(:quietp) args nil))
+        (extract-keywords `(da-patbind-fn ',name) '(:quietp :extra-args) args nil))
        ;; allow ((binder name)) abbrev for ((binder name) name)
        (forms (if (and (not forms)
                        (tuplep 1 args)
@@ -893,7 +893,8 @@ fty::deftranssum).</p>"
               (cw "Note: not introducing any ~x0 field bindings for ~x1, ~
                    since none of its fields appear to be used.~%" name var)))
 
-       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist var)))
+       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist var
+                                               (cdr (assoc :extra-args kwd-alist)))))
     (if (eq var (car forms))
         ;; No need to rebind: this actually turns out to matter for some
         ;; expansion heuristics in the svex library (3vec-fix), which is

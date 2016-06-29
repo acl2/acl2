@@ -135,13 +135,11 @@ endif
 # ACL2 includes support for hash cons, function memoization, and
 # applicative hash tables (see :doc hons-and-memoization).  In order
 # to avoid including those features, you can try commenting out the
-# following line, or supply "ACL2_HONS=" on the command line, or set
-# environment variable ACL2_HONS to the empty string.  We do not claim
-# to support such builds.  However, you are welcome to try, and there
-# is a reasonable chance that you will succeed in building a usable
-# executable.
+# following line.  We do not claim to support such builds.  However,
+# you are welcome to try, and there is a reasonable chance that you
+# will succeed in building a usable executable.
 
-ACL2_HONS ?= h
+ACL2_HONS := h
 
 # The variable ACL2_REAL should be defined for the non-standard
 # version and not for the standard version.  Non-standard ACL2 images

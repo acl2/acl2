@@ -106,7 +106,7 @@ This book contains proofs of two theorems of Euclid:
 
 "Our definition of primality is based on the following function, which computes
  the least divisor of a natural number @('n') that is greater than or equal to @('k').
- (In the book @(see mersenne), in which we are concerned with efficiency, we shall
+ (In the book @('mersenne'), in which we are concerned with efficiency, we shall
  introduce an equivalent version that checks for divisors only up to @('sqrt(n)').)
  @(def least-divisor)
  @(thm least-divisor-divides)
