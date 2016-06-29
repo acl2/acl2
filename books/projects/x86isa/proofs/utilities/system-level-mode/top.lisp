@@ -6,6 +6,5 @@
 ;; This is the top-level book to include when reasoning about code in
 ;; the system-level mode.
 
-(include-book "non-marking-mode-utils" :ttags :all)
-(include-book "marking-mode-utils" :ttags :all)
-(include-book "symbolic-simulation-in-marking-mode" :ttags :all)
+(include-book "non-marking-mode-top" :ttags :all)
+(include-book "marking-mode-top" :ttags :all)

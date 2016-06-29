@@ -11,7 +11,34 @@
 
 ;; ======================================================================
 
+(defthmd multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p
+  (implies (and (equal (loghead 3 index) 0)
+                (mult-8-qword-paddr-listp addrs)
+                (physical-address-p index))
+           (equal (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
+                  (not (member-p index addrs))))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p member-p) ()))))
+
+(in-theory (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
+                ()))
+
+;; ======================================================================
+
 ;; Some lemmas about page-table-entry-no-page-fault-p:
+
+(defthm page-present=0-and-paging-entry-no-page-fault-p
+  (implies (equal (page-present entry) 0)
+           (equal
+            (mv-nth
+             0
+             (paging-entry-no-page-fault-p
+              structure-type lin-addr entry u-s-acc r/w-acc x/d-acc wp
+              smep smap ac nxe r-w-x cpl x86 ignored))
+            t))
+  :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
+                                    page-fault-exception
+                                    page-present)
+                                   ()))))
 
 (defthm gather-all-paging-structure-qword-addresses-paging-entry-no-page-fault-p
   (equal (gather-all-paging-structure-qword-addresses
@@ -67,7 +94,12 @@
                             (xlate-equiv-structures
                              bitops::logand-with-negated-bitmask
                              bitops::logior-equal-0
-                             not))
+                             not
+                             (:t n01p-page-user-supervisor)
+                             (:t n01p-page-present)
+                             (:t n01p-page-read-write)
+                             acl2::loghead-identity
+                             unsigned-byte-p-of-logtail))
            :use ((:instance xlate-equiv-entries-and-page-size
                             (e-1 (loghead 64 e-1))
                             (e-2 (loghead 64 e-2)))
@@ -114,7 +146,13 @@
                             (e-2 (loghead 64 e-2))
                             (n 13)))
            :in-theory (e/d* (paging-entry-no-page-fault-p
-                             page-fault-exception)
+                             page-fault-exception
+                             not
+                             (:t n01p-page-user-supervisor)
+                             (:t n01p-page-present)
+                             (:t n01p-page-read-write)
+                             acl2::loghead-identity
+                             unsigned-byte-p-of-logtail)
                             (bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force)))))
@@ -159,40 +197,6 @@
                                    ()))))
 
 ;; ======================================================================
-
-;; Defining another equivalence relation: xlate-equiv-memory:
-
-(define xlate-equiv-memory (x86-1 x86-2)
-  :non-executable t
-  :guard (and (x86p x86-1) (x86p x86-2))
-
-  (if (and (equal (xr :programmer-level-mode 0 x86-1) nil)
-           (equal (xr :programmer-level-mode 0 x86-2) nil))
-
-      (and (xlate-equiv-structures x86-1 x86-2)
-           (all-mem-except-paging-structures-equal x86-1 x86-2))
-
-    (equal x86-1 x86-2))
-  ///
-  (defequiv xlate-equiv-memory)
-
-  (defthm xlate-equiv-memory-refines-xlate-equiv-structures
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (xlate-equiv-structures x86-1 x86-2))
-    :rule-classes :refinement)
-
-  (defthm xlate-equiv-memory-refines-all-mem-except-paging-structures-equal
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (all-mem-except-paging-structures-equal x86-1 x86-2))
-    :rule-classes :refinement))
-
-(defthm multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p
-  (implies (and (equal (loghead 3 index) 0)
-                (mult-8-qword-paddr-listp addrs)
-                (physical-address-p index))
-           (equal (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
-                  (not (member-p index addrs))))
-  :hints (("Goal" :in-theory (e/d* (disjoint-p member-p) ()))))
 
 (defthm xlate-equiv-structures-and-xlate-equiv-entries-rm-low-64-with-page-table-entry-addr
   (implies (and (bind-free
@@ -521,6 +525,18 @@
                              xlate-equiv-structures)
                             ()))))
 
+(defthm gather-all-paging-structure-qword-addresses-with-xlate-equiv-memory-cong
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (gather-all-paging-structure-qword-addresses x86-1)
+                  (gather-all-paging-structure-qword-addresses x86-2)))
+  :hints
+  (("Goal"
+    :use ((:instance gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
+                     (x86 x86-1)
+                     (x86-equiv x86-2)))
+    :in-theory (e/d* (xlate-equiv-memory) ())))
+  :rule-classes :congruence)
+
 (defthm gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa-page-table
   (equal (gather-all-paging-structure-qword-addresses
           (mv-nth 2 (ia32e-la-to-pa-page-table
@@ -564,5 +580,6 @@
                             (y (mv-nth 2 (ia32e-la-to-pa-page-table
                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                           wp smep smap ac nxe r-w-x cpl x86))))))))
+
 
 ;; ======================================================================
