@@ -16,8 +16,10 @@
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-(local (in-theory (e/d () (wb-remove-duplicate-writes
-                           byte-ify-and-combine-bytes))))
+(local (in-theory (e/d ()
+                       (wb-remove-duplicate-writes
+                        mv-nth-1-wb-and-!flgi-commute
+                        byte-ify-and-combine-bytes))))
 
 ;; ======================================================================
 

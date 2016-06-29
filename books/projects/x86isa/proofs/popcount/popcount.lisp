@@ -379,6 +379,17 @@
 
 (gl::gl-set-uninterpreted create-undef)
 
+;; We could not use GL to prove such theorems on the earlier version
+;; of our X86 model. GL needed to create large linear lists
+;; (corresponding to the logical representation of our X86 state) in
+;; order to symbolically execute functions that take the state as an
+;; input. These lists were so large that creating them resulted in
+;; unavoidable stack overflows.
+
+;; However, on our current model with abstract stobjs, a sparse
+;; logical representation of state makes symbolic execution by GL
+;; possible.
+
 ;; (ACL2::must-fail
 ;;  (def-gl-thm x86-popcount-correct
 ;;    :hyp (and (natp n)
@@ -424,62 +435,18 @@
               (x86 (!rgfi *rsp* *2^30* x86))
               (count 300)
               (x86 (x86-run count x86)))
-             (and (equal (rgfi *rax* x86)
-                         (if (equal n 5666001387520)
-                             8
-                           (logcount n)))
-                  (equal flg nil)
-                  (equal (rip x86)
-                         (+ 1 halt-address))))
+           (and (equal (rgfi *rax* x86)
+                       (if (equal n 5666001387520)
+                           8
+                         (logcount n)))
+                (equal flg nil)
+                (equal (rip x86)
+                       (+ 1 halt-address))))
   :g-bindings
   `((n   (:g-number ,(gl-int 0 1 65))))
   :n-counterexamples 3
   :abort-indeterminate t
   :exec-ctrex nil
-  :rule-classes nil)
-
-;; We could not use GL to prove such theorems on the earlier version
-;; of our X86 model. GL needed to create large linear lists
-;; (corresponding to the logical representation of our X86 state) in
-;; order to symbolically execute functions that take the state as an
-;; input. These lists were so large that creating them resulted in
-;; unavoidable stack overflows.
-
-;; However, on our current model with abstract stobjs, a sparse
-;; logical representation of state makes symbolic execution by GL
-;; possible.
-
-(def-gl-thm x86-popcount-generalized-stack-pointer
-  :hyp (and (natp n)
-            (< n (expt 2 64))
-            (not (equal n 5666001387520))
-            (natp rsp)
-            (or (and (<= 0 rsp)
-                     (< rsp #x400600))
-                (and (< #x400686 rsp)
-                     (< rsp *2^30*))))
-  :concl (b* ((start-address #x400600)
-              (halt-address #x400686)
-              (x86 (!programmer-level-mode t (create-x86)))
-              ((mv flg x86)
-               (init-x86-state
-                nil start-address halt-address
-                nil nil nil 0
-                *popcount/popcount-64-bug-binary*
-                x86))
-              (x86 (!rgfi *rdi* n x86))
-              (x86 (!rgfi *rsp* rsp x86))
-              (count 300)
-              (x86 (x86-run count x86)))
-             (and (equal (rgfi *rax* x86)
-                         (logcount n))
-                  (equal flg nil)
-                  (equal (rip x86)
-                         (+ 1 halt-address))
-                  (equal (caar (ms x86)) 'X86-HLT)))
-  :g-bindings
-  `((n   (:g-number ,(gl-int 0 3 65)))
-    (rsp (:g-number ,(gl-int 1 3 49))))
   :rule-classes nil)
 
 (def-gl-thm x86-popcount-32-correct
@@ -498,15 +465,48 @@
               (x86 (!rgfi *rsp* *2^30* x86))
               (count 300)
               (x86 (x86-run count x86)))
-             (and (equal (rgfi *rax* x86)
-                         (logcount n))
-                  (equal flg nil)
-                  (equal (rip x86)
-                         (+ 1 halt-address))
-                  (equal (caar (ms x86)) 'X86-HLT)))
+           (and (equal (rgfi *rax* x86)
+                       (logcount n))
+                (equal flg nil)
+                (equal (rip x86)
+                       (+ 1 halt-address))
+                (equal (caar (ms x86)) 'X86-HLT)))
   :g-bindings
   `((n    (:g-number ,(gl-int 0 1 33))))
   :exec-ctrex nil
   :rule-classes nil)
+
+;; (def-gl-thm x86-popcount-generalized-stack-pointer
+;;   :hyp (and (natp n)
+;;             (< n (expt 2 64))
+;;             (not (equal n 5666001387520))
+;;             (natp rsp)
+;;             (or (and (<= 0 rsp)
+;;                      (< rsp #x400600))
+;;                 (and (< #x400686 rsp)
+;;                      (< rsp *2^30*))))
+;;   :concl (b* ((start-address #x400600)
+;;               (halt-address #x400686)
+;;               (x86 (!programmer-level-mode t (create-x86)))
+;;               ((mv flg x86)
+;;                (init-x86-state
+;;                 nil start-address halt-address
+;;                 nil nil nil 0
+;;                 *popcount/popcount-64-bug-binary*
+;;                 x86))
+;;               (x86 (!rgfi *rdi* n x86))
+;;               (x86 (!rgfi *rsp* rsp x86))
+;;               (count 300)
+;;               (x86 (x86-run count x86)))
+;;              (and (equal (rgfi *rax* x86)
+;;                          (logcount n))
+;;                   (equal flg nil)
+;;                   (equal (rip x86)
+;;                          (+ 1 halt-address))
+;;                   (equal (caar (ms x86)) 'X86-HLT)))
+;;   :g-bindings
+;;   `((n   (:g-number ,(gl-int 0 3 65)))
+;;     (rsp (:g-number ,(gl-int 1 3 49))))
+;;   :rule-classes nil)
 
 ;; ======================================================================
