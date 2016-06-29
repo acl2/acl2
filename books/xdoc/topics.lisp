@@ -1699,6 +1699,12 @@ all is well, you should see the logo below:</p>
  error message to debug the error; then submit your form and @(':doc foo')
  again.</p>
 
+ <p>An experimental feature (the second ``NEW'' feature in the @(see xdoc)
+ documentation) avoids the need to invoke @(':doc') explicitly.  In brief: you
+ can simply include community-book @('xdoc/debug'), for example by putting its
+ include-book form in your acl2-customization file (see @(see
+ acl2::acl2-customization)).</p>
+
  <p>Checking for broken links requires you to build the manual; for
  instructions, see the section ``Building the manual'' in the topic @(see
  acl2::books-certification).  This build will create a file

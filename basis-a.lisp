@@ -514,7 +514,7 @@
 
 (defun arglistp (lst)
   (and (arglistp1 lst)
-       (no-duplicatesp lst)))
+       (no-duplicatesp-eq lst)))
 
 (defun find-first-bad-arg (args)
 
