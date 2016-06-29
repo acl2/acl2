@@ -8585,7 +8585,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro deftheory (&whole event-form name expr)
+(defmacro deftheory (&whole event-form name expr &key redundant-okp ctx)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8597,7 +8597,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote name)
         (list 'quote expr)
         'state
+        (list 'quote redundant-okp)
+        (list 'quote ctx)
         (list 'quote event-form)))
+
+(defmacro defthy (name &rest args)
+  `(deftheory ,name ,@args :redundant-okp t :ctx (defthy . ,name)))
 
 (defmacro deftheory-static (name theory)
   `(make-event

@@ -189,7 +189,7 @@ instantiate other data-structure modules.  Interfaces are treated as a
 combination of struct variable and module instance.</p>
 
 <p>This approach to array indexing also lets us deal straightforwardly with
-instance arrays; see @(see vl-instarray-nested-alias) for details.</p>
+instance arrays; see @(see vl-instarray-nested-aliases) for details.</p>
 
 <h3>Scopes</h3>
 
