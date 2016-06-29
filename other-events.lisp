@@ -1048,6 +1048,8 @@
             (list 'quote name)
             (list 'quote expr)
             'state
+            (list 'quote redundant-okp)
+            (list 'quote ctx)
             (list 'quote event-form)))
     (defmacro in-theory (&whole event-form expr)
       (list 'in-theory-fn
@@ -3063,7 +3065,11 @@
 
   (list 'theory-fn name 'world))
 
-(defun deftheory-fn (name expr state event-form)
+(defun redundant-deftheory-p (name runic-theory wrld)
+  (equal (getpropc name 'theory t wrld)
+         runic-theory))
+
+(defun deftheory-fn (name expr state redundant-okp ctx event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -3139,41 +3145,48 @@
   (when-logic
    "DEFTHEORY"
    (with-ctx-summarized
-    (if (output-in-infixp state) event-form (cons 'deftheory name))
+    (cond ((output-in-infixp state) event-form)
+          (ctx)
+          (t (cons 'deftheory name)))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'deftheory name expr))))
       (er-progn
        (chk-all-but-new-name name ctx nil wrld state)
-       (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
-                                           state))
-                 (theory0 (translate-in-theory-hint expr nil ctx wrld1 state)))
-         (mv-let (theory theory-augmented-ignore)
+       (er-let* ((theory0 (translate-in-theory-hint expr nil ctx wrld state)))
+         (cond
+          ((and redundant-okp
+                (redundant-deftheory-p name theory0 wrld))
+           (stop-redundant-event ctx state))
+          (t
+           (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
+                                               state)))
+             (mv-let (theory theory-augmented-ignore)
 
 ; The following call is similar to the one in update-current-theory.  But here,
 ; our aim is just to create an appropriate theory, without extending the
 ; world.
 
-                 (extend-current-theory
-                  (global-val 'current-theory wrld)
-                  theory0
-                  :none
-                  wrld)
-                 (declare (ignore theory-augmented-ignore))
-                 (let ((wrld2 (putprop name 'theory theory wrld1)))
+               (extend-current-theory
+                (global-val 'current-theory wrld)
+                theory0
+                :none
+                wrld)
+               (declare (ignore theory-augmented-ignore))
+               (let ((wrld2 (putprop name 'theory theory wrld1)))
 
 ; Note:  We do not permit DEFTHEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
 
-                   (install-event (length theory)
-                                  event-form
-                                  'deftheory
-                                  name
-                                  nil
-                                  nil
-                                  nil ; global theory is unchanged
-                                  nil
-                                  wrld2 state)))))))))
+                 (install-event (length theory)
+                                event-form
+                                'deftheory
+                                name
+                                nil
+                                nil
+                                nil ; global theory is unchanged
+                                nil
+                                wrld2 state))))))))))))
 
 ; And now we move on to the in-theory event, in which we process a theory
 ; expression into a theory and then load it into the global enabled
