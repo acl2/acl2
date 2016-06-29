@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "alists")
+(include-book "define-sk")
 (include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
