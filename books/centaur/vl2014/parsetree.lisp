@@ -4408,8 +4408,8 @@ are:</p>
            expression representation allows us to directly represent @('$') as
            a @(see vl-keyguts) atom, so in case of ranges like @('##[1:$]'),
            @('right') is just the expression for @('$').  Other examples:
-           @('right') is @('nil') in @('##5'), @('20') in @('##[10:20]), @('$')
-           in @('##[*]), and @('$') in @('##[+]).  Supposed to be a constant
+           @('right') is @('nil') in @('##5'), @('20') in @('##[10:20]'), @('$')
+           in @('##[*]'), and @('$') in @('##[+]').  Supposed to be a constant
            expression that produces a non-negative integer value that is at
            least as large as @('left')."))
 

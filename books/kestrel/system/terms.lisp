@@ -65,7 +65,7 @@
   in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  Check whether @('x')is a symbol or a
+  Check whether @('x') is a symbol or a
   <see topic='@(url pseudo-lambda-expr-p)'>pseudo-lambda-expression</see>.
   These are the possible values of the first element of
   a pseudo-term that is not a variable or a quoted constant
