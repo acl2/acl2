@@ -24,7 +24,7 @@
 
 (defxdoc term-utilities
   :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities related to <see topic='@(url term)'>terms</see>.")
+  :short "Utilities related to @(see term)s.")
 
 (define all-fns ((term pseudo-termp))
   ;; :returns (fns symbol-listp)
