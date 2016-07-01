@@ -12,62 +12,19 @@
 ; a tool to mimic second-order functions and theorems
 ; in the first-order logic of ACL2.
 
-; The code in this file is meant to be simple.
-; Its efficiency can be improved if needed.
-; The code is experimental and has undergone limited testing.
 ; Some possible improvements/extensions are discussed at the end of the file.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "SOFT")
 
-(include-book "std/alists/top" :dir :system)
-(include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/system/world-queries" :dir :system)
+(include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; For now SOFT assumes that the default DEFUN mode is :LOGIC.
-; The second-order functions introduced using SOFT are in logic mode.
-
-(logic)
-
-; The guards in this file will be verified in the future.
 
 (set-verify-guards-eagerness 0)
 
-; Make the BODY system utility usable in logic mode.
-
-(verify-termination acl2::latest-body) ; called by BODY
-(verify-termination acl2::def-body) ; called by BODY
-(verify-termination acl2::body)
-
-; The JUSTIFICATION property of a recursive function is a record
-; called JUSTIFICATION that has the form
-; (SUBSET . ((SUBVERSIVE-P . (MP . REL)) (MEASURE . RULER-EXTENDERS)));
-; see (DEFREC JUSTIFICATION ...) in the ACL2 sources.
-; In that record,
-; REL is the well-founded relation (a symbol)
-; and MEASURE is the measure (a term).
-
-(define justification ((fun symbolp) (w plist-worldp))
-  (getprop fun 'acl2::justification nil 'acl2::current-acl2-world w))
-
-(define wfrel ((fun symbolp) (w plist-worldp))
-  (cddr (caddr (justification fun w))))
-
-(define fmeasure ((fun symbolp) (w plist-worldp))
-  (car (cadddr (justification fun w))))
-
-; Logic-mode simplified version of the GUARD system utility.
-
-(define fguard ((fun symbolp) (w plist-worldp))
-  (getprop fun 'acl2::guard acl2::*T* 'acl2::current-acl2-world w))
-
-; Logic-mode simplified version of the FORMULA system utility.
-
-(define tformula ((thm symbolp) (w plist-worldp))
-  (getprop thm 'acl2::theorem nil 'acl2::current-acl2-world w))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Check that all the symbols in a list are names of functions.
 
@@ -445,9 +402,12 @@
 ; may not reference function variables in their well-founded relations.
 
 (define funvars-of-defun ((fun symbolp) (w plist-worldp))
+  :mode :program
   (let* ((body (acl2::body fun nil w))
-         (measure (fmeasure fun w))
-         (guard (fguard fun w))
+         (measure (if (acl2::recursivep fun nil w)
+                      (acl2::measure fun w)
+                    nil))
+         (guard (guard fun nil w))
          (body-funvars (funvars-of-term body w))
          (measure-funvars (funvars-of-term measure w)) ; NIL if no measure
          (guard-funvars (funvars-of-term guard w)))
@@ -465,7 +425,8 @@
 ; may reference function variables in their formulas.
 
 (define funvars-of-defthm ((thm symbolp) (w plist-worldp))
-  (funvars-of-term (tformula thm w) w))
+  :mode :program ; calls FORMULA
+  (funvars-of-term (formula thm nil w) w))
 
 ; When a second-order function, or an instance thereof, is introduced,
 ; its function parameters must be
@@ -481,6 +442,7 @@
    (w plist-worldp))
   :guard (or (funvar-setp fparams w) ; if FUN is 2nd-order
              (null fparams))         ; if FUN is 1st-order
+  :mode :program ; calls FUNVARS-OF-DEFUN
   (let ((funvars (case kind
                    (plain (funvars-of-defun fun w))
                    (choice (funvars-of-defchoose fun w))
@@ -500,11 +462,12 @@
 ; (see the possible improvements/extensions at the end of this file).
 
 (define check-wfrel-o< ((fun symbolp) (w plist-worldp))
-  (let ((wfrel (wfrel fun w)))
-    (cond ((null wfrel) t) ; FUN is not recursive
-          ((eq wfrel 'acl2::o<) t)
-          (t (raise "~x0 must use O< as well-founded relation, not ~x1.~%"
-                    fun wfrel)))))
+  (if (acl2::recursivep fun nil w)
+      (let ((wfrel (acl2::well-founded-relation fun w)))
+        (or (eq wfrel 'acl2::o<)
+            (raise "~x0 must use O< as well-founded relation, not ~x1.~%"
+                   fun wfrel)))
+    t))
 
 ; When a quantifier second-order function, or an instance thereof,
 ; is introduced with a custom rewrite rule in :REWRITE,
@@ -513,8 +476,9 @@
 
 (define check-qrewrite-rule-funvars
   ((fun symbolp) (quant quantifierp) (w plist-worldp))
+  :mode :program ; calls FORMULA
   (let* ((rule-name (defun-sk-rewrite-rule-name fun quant))
-         (rule-body (tformula rule-name w))
+         (rule-body (formula rule-name nil w))
          (fun-body (acl2::body fun nil w)))
     (set-equiv (funvars-of-term rule-body w)
                (funvars-of-term fun-body w))))
@@ -743,7 +707,8 @@
 ; A theorem may reference function variables in its formula.
 
 (define funvars-of-theorem ((thm symbolp) (w plist-worldp))
-  (funvars-of-term (tformula thm w) w))
+  :mode :program ; calls FORMUAL
+  (funvars-of-term (formula thm nil w) w))
 
 ; A second-order theorem is mimicked by a (first-order) theorem
 ; that depends on one or more function variables,
@@ -751,6 +716,7 @@
 ; A theorem is second-order iff it depends on one or more function variables.
 
 (define sothmp ((sothm symbolp) (w plist-worldp))
+  :mode :program ; calls FUNVARS-OF-THEOREM
   (not (null (funvars-of-theorem sothm w))))
 
 ; When a second-order function or theorem is instantiated,
@@ -973,6 +939,7 @@
 
   (define ext-fun-subst-function
     ((fun symbolp) (fsbs fun-substp) (w plist-worldp))
+    :mode :program ; calls FORMULA
     (cond
      ((assoc fun fsbs) fsbs) ; pair already present
      ((sofunp fun w)
@@ -992,7 +959,8 @@
                     ;; the 2nd-order functions in the matrix of FUN
                     ;; are the same as in the rewrite rule of FUN:
                     (quant (sofun-quantifier fun w))
-                    (body (tformula (defun-sk-rewrite-rule-name fun quant) w)))
+                    (body
+                     (formula (defun-sk-rewrite-rule-name fun quant) nil w)))
                (ext-fun-subst-term body fsbs w))))))
      (t fsbs)))) ; FUN is not a 2nd-order function
 
@@ -1139,13 +1107,14 @@
 ; where SOTHM is a 2nd-order theorem
 ; and ((F1 . G1) ... (Fm . Gm)) is an instantiation:
 (define check-sothm-inst (sothm-inst (w plist-worldp))
+  :mode :program ; calls SOTHMP
   (and (true-listp sothm-inst)
        (>= (len sothm-inst) 2)
        (sothmp (car sothm-inst) w)
        (funvar-instp (cdr sothm-inst) w)))
 
 (define defthm-inst-event (thm sothm-inst rest (w plist-worldp))
-  :mode :program ; calls EXT-FUN-SUBST-TERM
+  :mode :program ; calls EXT-FUN-SUBST-TERM and FORMULA
   (b* (;; THM is the name of the new theorem:
        ((unless (symbolp thm)) (raise "~x0 must be a name." thm))
        ;; after THM there is (SOTHM (F1 . G1) ... (Fm . Gm)):
@@ -1162,7 +1131,7 @@
                 among function variable that ~x1 depends on."
                inst sothm))
        ;; apply ((F1 . G1) ... (Fm . Gm)) to the formula of SOTHM:
-       (sothm-formula (tformula sothm w))
+       (sothm-formula (formula sothm nil w))
        (thm-formula (fun-subst-term inst sothm-formula w))
        ;; construct the proof from the instantiation:
        (fsbs (ext-fun-subst-term sothm-formula inst w))
@@ -1313,14 +1282,16 @@
 ; when SOFUN is a plain second-order function:
 (define defun-inst-plain-events
   ((fun symbolp) fparams sofun inst (options true-listp) (w plist-worldp))
-  :mode :program ; calls EXT-FUN-SUBST-TERM
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (plain-sofunp sofun w))
+  :mode :program ; calls EXT-FUN-SUBST-TERM and GUARD and FORMULA
   (b* (;; retrieve body, measure, and guard of SOFUN:
        (sofun-body (acl2::body sofun nil w))
-       (sofun-measure (fmeasure sofun w))
-       (sofun-guard (fguard sofun w))
+       (sofun-measure (if (acl2::recursivep sofun nil w)
+                          (acl2::measure sofun w)
+                        nil))
+       (sofun-guard (guard sofun nil w))
        ;; extend instantiation with (SOFUN . FUN) if SOFUN is recursive
        ;; (so that recursive calls to SOFUN can be properly replaced with FUN)
        ;; and apply it to the body of SOFUN:
@@ -1331,7 +1302,7 @@
        (fun-guard (fun-subst-term inst sofun-guard w))
        ;; construct the termination proof from the instantiation, if recursive:
        (sofun-tt-name (sofun-termination-theorem-name sofun))
-       (sofun-tt-formula (tformula sofun-tt-name w)) ; could be NIL
+       (sofun-tt-formula (formula sofun-tt-name nil w)) ; could be NIL
        (fsbs (ext-fun-subst-term sofun-tt-formula inst w))
        (fun-tt-proof (sothm-inst-proof sofun-tt-name fsbs w))
        ;; :HINTS of FUN if recursive, otherwise NIL:
@@ -1402,6 +1373,7 @@
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (quant-sofunp sofun w))
+  :mode :program ; calls FORMULA
   (b* (;; retrieve bound variables and quantifier of SOFUN:
        (bound-vars (sofun-bound-vars sofun w))
        (1bvarp (= (len bound-vars) 1))
@@ -1426,7 +1398,7 @@
                          (let* ((fsbs (acons sofun fun inst))
                                 (rule-name (defun-sk-rewrite-rule-name
                                              sofun (sofun-quantifier sofun w)))
-                                (term (tformula rule-name w)))
+                                (term (formula rule-name nil w)))
                            (fun-subst-term fsbs term w)))))))
        ;; kind of rewrite rule for FUN:
        (qrkind (case rewrite
@@ -1434,7 +1406,7 @@
                  (:direct 'direct)
                  (otherwise 'term)))
        ;; apply instantiation to the guard of SOFUN:
-       (sofun-guard (fguard sofun w))
+       (sofun-guard (guard sofun nil w))
        (fun-guard (fun-subst-term inst sofun-guard w))
        ;; :WITNESS-DCLS for FUN:
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
@@ -1548,8 +1520,6 @@
 ;   via macros that correspond to
 ;   DEFUND, DEFN, DEFND, DEFUN-NX, DEFUND-NX, DEFINE, DEFPUN, DEFP,
 ;   and MUTUAL-RECURSION.
-; - Support the introduction of second-order theorems
-;   via a macro that corresponds to DEFTHMD.
 ; - Support the :THM-NAME option in DEFUN-SK2,
 ;   and in DEFUN-INST when applied to a quantifier function.
 ; - Allow instantiations to map function variable names to LAMBDA terms,
