@@ -22,8 +22,6 @@
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
-(set-verify-guards-eagerness 0)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Check that all the symbols in a list are names of functions.
@@ -60,6 +58,7 @@
 
 (define defchoose-body ((fun symbolp) (w plist-worldp))
   :guard (defchoose-axiom fun w)
+  :verify-guards nil
   (let ((axiom (defchoose-axiom fun w)))
     (if (eq (acl2::fn-symb axiom) 'acl2::implies) ; form 1
         (acl2::fargn axiom 1)
@@ -77,6 +76,7 @@
 (define defchoose-strongp ; value of :STRENGTHEN
   ((fun symbolp) (w plist-worldp))
   :guard (defchoose-axiom fun w)
+  :verify-guards nil
   (let ((axiom (defchoose-axiom fun w)))
     (and (eq (acl2::fn-symb axiom) 'acl2::if) ; not form 1
          (let ((if-test (acl2::fargn axiom 1)))
@@ -110,6 +110,7 @@
 ; in the form of a boolean flag that is true when there was one bound variable.
 
 (define defun-sk-matrix ((fun symbolp) (1bvarp booleanp) (w plist-worldp))
+  :verify-guards nil
   (let* ((body (acl2::body fun nil w))
          (core (if (eq (car body) 'acl2::return-last)
                    (acl2::fargn body 3)
@@ -136,6 +137,7 @@
 ; if it has 2 constraints, :STRENGTHEN was NIL.
 
 (define defun-sk-strongp ((fun symbolp) (w plist-worldp))
+  :verify-guards nil
   (let* ((witness (defun-sk-witness-name fun w))
          (constraint-lst
           (getprop witness
@@ -148,6 +150,7 @@
 ; The :BOGUS-DEFUN-HINTS-OK setting is in the ACL2-DEFAULTS-TABLE.
 
 (define get-bogus-defun-hints-ok ((w plist-worldp))
+  :verify-guards nil
   (let ((table (table-alist 'acl2::acl2-defaults-table w)))
     (cdr (assoc-eq :bogus-defun-hints-ok table))))
 
@@ -176,12 +179,14 @@
                                               (funvar-typep acl2::val)))
 
 (define funvarp (funvar (w plist-worldp))
+  :verify-guards nil
   (let ((table (table-alist 'function-variables w)))
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
 
 (define funvar-type (funvar (w plist-worldp))
   :guard (funvarp funvar w)
+  :verify-guards nil
   (let ((table (table-alist 'function-variables w)))
     (cdr (assoc-eq funvar table))))
 
@@ -214,12 +219,14 @@
 
 (define funvar-listp ; may be empty or have duplicates
   (funvars (w plist-worldp))
+  :verify-guards nil
   (if (atom funvars)
       (null funvars)
     (and (funvarp (car funvars) w)
          (funvar-listp (cdr funvars) w))))
 
 (define funvar-setp (funvars (w plist-worldp))
+  :verify-guards nil
   (and (funvar-listp funvars w)
        funvars
        (no-duplicatesp funvars)))
@@ -270,12 +277,14 @@
       (eq qrkind 'term)))
 
 (define plain-sofun-infop (info (w plist-worldp))
+  :verify-guards nil
   (and (true-listp info)
        (= (len info) 2)
        (sofun-kindp (first info))
        (funvar-setp (second info) w)))
 
 (define choice-sofun-infop (info (w plist-worldp))
+  :verify-guards nil
   (and (true-listp info)
        (= (len info) 3)
        (sofun-kindp (first info))
@@ -283,6 +292,7 @@
        (bound-varsp (third info))))
 
 (define quant-sofun-infop (info (w plist-worldp))
+  :verify-guards nil
   (and (true-listp info)
        (= (len info) 5)
        (sofun-kindp (first info))
@@ -292,6 +302,7 @@
        (qrewrite-kindp (fifth info))))
 
 (define sofun-infop (info (w plist-worldp))
+  :verify-guards nil
   (or (plain-sofun-infop info w)
       (choice-sofun-infop info w)
       (quant-sofun-infop info w)))
@@ -301,12 +312,14 @@
               (sofun-infop acl2::val world)))
 
 (define sofunp (sofun (w plist-worldp))
+  :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (and (symbolp sofun)
          (not (null (assoc-eq sofun table))))))
 
 (define sofun-kind (sofun (w plist-worldp))
   :guard (sofunp sofun w)
+  :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (first (cdr (assoc-eq sofun table)))))
 
@@ -324,22 +337,26 @@
 
 (define sofun-fparams (sofun (w plist-worldp))
   :guard (sofunp sofun w)
+  :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (second (cdr (assoc-eq sofun table)))))
 
 (define sofun-bound-vars (sofun (w plist-worldp))
   :guard (or (choice-sofunp sofun w)
              (quant-sofunp sofun w))
+  :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (third (cdr (assoc-eq sofun table)))))
 
 (define sofun-quantifier (sofun (w plist-worldp))
   :guard (quant-sofunp sofun w)
+  :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (fourth (cdr (assoc-eq sofun table)))))
 
 (define sofun-qrewrite-kind (sofun (w plist-worldp))
   :guard (quant-sofunp sofun w)
+  :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (fifth (cdr (assoc-eq sofun table)))))
 
@@ -350,9 +367,8 @@
 ; However, currently SOFT does not support the :THM-NAME option (see below),
 ; and so the names are always the default ones.
 
-(defun defun-sk-rewrite-rule-name (fun quant)
-  (declare (xargs :guard (and (symbolp fun)
-                              (quantifierp quant))))
+(define defun-sk-rewrite-rule-name ((fun symbolp) (quant quantifierp))
+  :verify-guards nil
   (let* ((fun-name (symbol-name fun))
          (suffix (case quant (forall "-NECC") (exists "-SUFF")))
          (rule-name (string-append fun-name suffix)))
@@ -368,6 +384,7 @@
 ; (the list may contain duplicates).
 
 (defines funvars-of-term/terms
+  :verify-guards nil
 
   (define funvars-of-term ((term pseudo-termp) (w plist-worldp))
     (if (or (acl2::variablep term)
@@ -419,6 +436,7 @@
 ; may reference function variables in their defining bodies.
 
 (define funvars-of-defchoose ((fun symbolp) (w plist-worldp))
+  :verify-guards nil
   (funvars-of-term (defchoose-body fun w) w))
 
 ; Second-order theorems and their instances
@@ -462,6 +480,7 @@
 ; (see the possible improvements/extensions at the end of this file).
 
 (define check-wfrel-o< ((fun symbolp) (w plist-worldp))
+  :verify-guards nil
   (if (acl2::recursivep fun nil w)
       (let ((wfrel (acl2::well-founded-relation fun w)))
         (or (eq wfrel 'acl2::o<)
@@ -539,6 +558,7 @@
 ; i.e. the behavior is undefined from the perspective of SOFT.
 
 (define defun2-event (sofun fparams rest (w plist-worldp))
+  :verify-guards nil
   (b* (((unless (symbolp sofun))
         (raise "~x0 must be a name." sofun))
        ((unless (funvar-setp fparams w))
@@ -598,6 +618,7 @@
 
 (define defchoose2-event
   (sofun bvars fparams params body options (w plist-worldp))
+  :verify-guards nil
   (b* (((unless (symbolp sofun))
         (raise "~x0 must be a name." sofun))
        ((unless (or (symbolp bvars)
@@ -659,6 +680,7 @@
 ; but relies on DEFUN-SK to check the keyed options and the matrix of the body.
 
 (define defun-sk2-event (sofun fparams params body options (w plist-worldp))
+  :verify-guards nil
   (b* (((unless (symbolp sofun))
         (raise "~x0 must be a name." sofun))
        ((unless (funvar-setp fparams w))
@@ -750,12 +772,14 @@
 ; and whose values are all function symbols.
 
 (define funvar-instp (inst (w plist-worldp))
+  :verify-guards nil
   (and (fun-substp inst)
        inst
        (funvar-listp (alist-keys inst) w)
        (function-symbol-listp (alist-vals inst) w)))
 
 (define funvar-inst-listp (insts (w plist-worldp))
+  :verify-guards nil
   (if (atom insts)
       (null insts)
     (and (funvar-instp (car insts) w)
@@ -773,6 +797,7 @@
 ; accessed by treating instantiations equivalent according to ALIST-EQUIV.
 
 (define sof-instancesp (instmap (w plist-worldp))
+  :verify-guards nil
   (and (alistp instmap)
        (funvar-inst-listp (alist-keys instmap) w)
        (symbol-listp (alist-vals instmap))))
@@ -781,6 +806,7 @@
   (inst instmap (w plist-worldp))
   :guard (and (funvar-instp inst w)
               (sof-instancesp instmap w))
+  :verify-guards nil
   (if (endp instmap)
       nil
     (let ((pair (car instmap)))
@@ -794,6 +820,7 @@
               (sof-instancesp instmap w)
               ;; must not be already in map:
               (null (get-sof-instance inst instmap w)))
+  :verify-guards nil
   (declare (ignore w)) ; only used in guard
   (acons inst fun instmap))
 
@@ -806,6 +833,7 @@
 (define sof-instances ; instances of SOFUN (NIL if none)
   (sofun (w plist-worldp))
   :guard (sofunp sofun w)
+  :verify-guards nil
   (let ((table (table-alist 'sof-instances w)))
     (cdr (assoc-eq sofun table))))
 
@@ -841,6 +869,7 @@
 
 (define fun-subst-function
   ((fsbs fun-substp) (fun symbolp) (w plist-worldp))
+  :verify-guards nil
   (let ((pair (assoc-eq fun fsbs)))
     (if pair ; FUN is a key of FSBS
         (cdr pair)
@@ -858,6 +887,7 @@
         fun)))) ; FUN is a function variable or 1st-order function
 
 (defines fun-subst-term/terms
+  :verify-guards nil
 
   (define fun-subst-term
     ((fsbs fun-substp) (term pseudo-termp) (w plist-worldp))
@@ -984,6 +1014,7 @@
 ; does not catch these witnesses.
 
 (define sothm-inst-pairs ((fsbs fun-substp) (w plist-worldp))
+  :verify-guards nil
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
@@ -1046,6 +1077,7 @@
 ;   so no fact is used in the proof.
 
 (define sothm-inst-facts ((fsbs fun-substp) (w plist-worldp))
+  :verify-guards nil
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
@@ -1071,6 +1103,7 @@
 
 (define sothm-inst-proof
   ((sothm symbolp) (fsbs fun-substp) (w plist-worldp))
+  :verify-guards nil
   `(:instructions
     ((:use (:functional-instance ,sothm ,@(sothm-inst-pairs fsbs w)))
      (:repeat (:then (:use ,@(sothm-inst-facts fsbs w)) :prove)))))
@@ -1272,6 +1305,7 @@
 ; where SOFUN is a 2nd-order function
 ; and ((F1 . G1) ... (Fm . Gm)) is an instantiation:
 (define check-sofun-inst (sofun-inst (w plist-worldp))
+  :verify-guards nil
   (and (true-listp sofun-inst)
        (>= (len sofun-inst) 2)
        (sofunp (car sofun-inst) w)
@@ -1344,6 +1378,7 @@
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (choice-sofunp sofun w))
+  :verify-guards nil
   (b* (;; retrieve bound variables of SOFUN:
        (bound-vars (sofun-bound-vars sofun w))
        ;; apply instantiation to body of SOFUN:
