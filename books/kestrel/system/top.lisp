@@ -26,6 +26,7 @@
 (include-book "prove-interface")
 (include-book "terms")
 (include-book "ubi")
+(include-book "user-interface")
 (include-book "verify-guards-program")
 (include-book "world-queries")
 

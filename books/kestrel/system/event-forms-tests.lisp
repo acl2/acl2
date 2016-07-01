@@ -15,7 +15,6 @@
 (in-package "ACL2")
 
 (include-book "event-forms")
-(include-book "kestrel/general/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

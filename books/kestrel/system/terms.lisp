@@ -15,8 +15,8 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/defines" :dir :system)
 (include-book "kestrel/system/world-queries" :dir :system)
+(include-book "std/util/defines" :dir :system)
 
 (local (set-default-parents term-utilities))
 
@@ -24,7 +24,7 @@
 
 (defxdoc term-utilities
   :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities related to <see topic='@(url term)'>terms</see>.")
+  :short "Utilities related to @(see term)s.")
 
 (define all-fns ((term pseudo-termp))
   ;; :returns (fns symbol-listp)

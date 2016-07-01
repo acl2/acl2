@@ -20,11 +20,10 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
-(include-book "std/util/deflist-base" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "system/kestrel" :dir :system)
+(include-book "system/pseudo-good-worldp" :dir :system)
 
 (local (set-default-parents world-queries))
 
@@ -32,7 +31,7 @@
 
 (defxdoc world-queries
   :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities to query <see topic='@(url world)'>worlds</see>."
+  :short "Utilities to query @(see world)s."
   :long
   "<p>
   These complement the world query utilities
@@ -156,8 +155,7 @@
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
-  "True iff the function @('fun') has no
-  input or output <see topic='@(url stobj)'>stobjs</see>."
+  "True iff the function @('fun') has no input or output @(see stobj)s."
   :long
   "<p>
   The guard condition that @('fun') is not in @('*stobjs-out-invalid*')
