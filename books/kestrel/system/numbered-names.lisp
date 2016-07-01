@@ -17,7 +17,8 @@
 
 (in-package "ACL2")
 
-(include-book "std/strings/top" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
+(include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

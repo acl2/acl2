@@ -255,7 +255,7 @@ to try.</p>")
   :parents (best-aig)
   :short "Top-level function for choosing the best AIGs from a list of AIG
           lists."
-  ((x "An AIG List List, say @('(L1 L2 ... Ln)'.  These should each be
+  ((x "An AIG List List, say @('(L1 L2 ... Ln)').  These should each be
        non-empty."))
   :returns (best "An AIG List, say @('(B1 B2 ... Bn)'), where each @('Bi') is
                   the best AIG from the corresponding @('Li').")
