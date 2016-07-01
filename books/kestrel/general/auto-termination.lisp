@@ -399,7 +399,7 @@
                     (t (some-member-subsumes+ init-subsumes-count
                                               (cdr cl-set) cl
                                               old-formals old-subset
-                                              new-formals unify-subst)))))))))) 
+                                              new-formals unify-subst))))))))))
 
 (defun clause-set-subsumes+-1 (init-subsumes-count cl-set1 cl-set2
                                                    old-formals old-subset
@@ -751,7 +751,7 @@
         *auto-termination-fns*))
 
 (defxdoc with-auto-termination
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-general-utilities)
   :short "Re-use an existing termination proof automatically."
   :long "<p>The following (admittedly, contrived) example shows how to use this
  utility.  First define:</p>
