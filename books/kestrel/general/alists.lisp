@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/defalist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

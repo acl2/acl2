@@ -20,7 +20,6 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/top" :dir :system)
 (include-book "kestrel/system/event-forms" :dir :system)
 
 (local (set-default-parents user-interface))

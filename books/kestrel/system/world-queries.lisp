@@ -20,11 +20,10 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
-(include-book "std/util/deflist-base" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "system/kestrel" :dir :system)
+(include-book "system/pseudo-good-worldp" :dir :system)
 
 (local (set-default-parents world-queries))
 

@@ -17,8 +17,9 @@
 (in-package "ACL2")
 
 (include-book "kestrel/system/event-forms" :dir :system)
-(include-book "kestrel/system/prove-interface" :dir :system)
 (include-book "kestrel/system/fresh-names" :dir :system)
+(include-book "kestrel/system/prove-interface" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 
 (local (set-default-parents applicability-conditions))
 
