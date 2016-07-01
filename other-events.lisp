@@ -1048,6 +1048,8 @@
             (list 'quote name)
             (list 'quote expr)
             'state
+            (list 'quote redundant-okp)
+            (list 'quote ctx)
             (list 'quote event-form)))
     (defmacro in-theory (&whole event-form expr)
       (list 'in-theory-fn
@@ -3063,7 +3065,11 @@
 
   (list 'theory-fn name 'world))
 
-(defun deftheory-fn (name expr state event-form)
+(defun redundant-deftheory-p (name runic-theory wrld)
+  (equal (getpropc name 'theory t wrld)
+         runic-theory))
+
+(defun deftheory-fn (name expr state redundant-okp ctx event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -3139,41 +3145,48 @@
   (when-logic
    "DEFTHEORY"
    (with-ctx-summarized
-    (if (output-in-infixp state) event-form (cons 'deftheory name))
+    (cond ((output-in-infixp state) event-form)
+          (ctx)
+          (t (cons 'deftheory name)))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'deftheory name expr))))
       (er-progn
        (chk-all-but-new-name name ctx nil wrld state)
-       (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
-                                           state))
-                 (theory0 (translate-in-theory-hint expr nil ctx wrld1 state)))
-         (mv-let (theory theory-augmented-ignore)
+       (er-let* ((theory0 (translate-in-theory-hint expr nil ctx wrld state)))
+         (cond
+          ((and redundant-okp
+                (redundant-deftheory-p name theory0 wrld))
+           (stop-redundant-event ctx state))
+          (t
+           (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
+                                               state)))
+             (mv-let (theory theory-augmented-ignore)
 
 ; The following call is similar to the one in update-current-theory.  But here,
 ; our aim is just to create an appropriate theory, without extending the
 ; world.
 
-                 (extend-current-theory
-                  (global-val 'current-theory wrld)
-                  theory0
-                  :none
-                  wrld)
-                 (declare (ignore theory-augmented-ignore))
-                 (let ((wrld2 (putprop name 'theory theory wrld1)))
+               (extend-current-theory
+                (global-val 'current-theory wrld)
+                theory0
+                :none
+                wrld)
+               (declare (ignore theory-augmented-ignore))
+               (let ((wrld2 (putprop name 'theory theory wrld1)))
 
 ; Note:  We do not permit DEFTHEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
 
-                   (install-event (length theory)
-                                  event-form
-                                  'deftheory
-                                  name
-                                  nil
-                                  nil
-                                  nil ; global theory is unchanged
-                                  nil
-                                  wrld2 state)))))))))
+                 (install-event (length theory)
+                                event-form
+                                'deftheory
+                                name
+                                nil
+                                nil
+                                nil ; global theory is unchanged
+                                nil
+                                wrld2 state))))))))))))
 
 ; And now we move on to the in-theory event, in which we process a theory
 ; expression into a theory and then load it into the global enabled
@@ -24032,6 +24045,48 @@
 
 )
 
+(mutual-recursion
+
+(defun print-gv-substitute-p1 (bound term alist acc)
+
+; Bound is a natural number, and alist pairs each variable in term with a
+; term.  Acc accumulates an alist that associates each variable occurring in
+; term with nil at the first occurrence and t afterwards.  We return the
+; resulting acc, except that if any variable occurring twice (or more) in term
+; is associated in alist with a term whose cons-count exceeds bound, then we
+; return t.
+
+  (cond ((variablep term)
+         (let ((pair (assoc-eq term acc)))
+           (cond ((null pair)
+                  (acons term nil acc))
+                 ((null (cdr pair))
+                  (if (eql (cons-count-bounded-ac (cdr (assoc-eq term alist))
+                                                  0 bound)
+                           bound)
+                      t
+                    (put-assoc-eq term t acc)))
+                 (t acc))))
+        ((fquotep term) acc)
+        (t (print-gv-substitute-p1-lst bound (fargs term) alist acc))))
+
+(defun print-gv-substitute-p1-lst (bound termlist alist acc)
+  (cond ((endp termlist) acc)
+        (t (let ((acc (print-gv-substitute-p1 bound (car termlist) alist acc)))
+             (cond ((eq acc t) t)
+                   (t (print-gv-substitute-p1-lst bound (cdr termlist) alist
+                                                  acc)))))))
+)
+
+(defun print-gv-substitute-p (substitute tguard vars args)
+  (cond ((natp substitute)
+         (not (eq (print-gv-substitute-p1 substitute
+                                          tguard
+                                          (pairlis$ vars args)
+                                          nil)
+                  t)))
+        (t substitute)))
+
 (defun print-gv-form (guard-fn guard tguard vars args ignorable substitute ctx
                                state)
 
@@ -24040,22 +24095,25 @@
 ; translated form.
 
   (let ((wrld (w state)))
-    (cond
-     (substitute
-      (er-let* ((tguard (if (null tguard)
-                            (translate guard '(nil) nil t ctx wrld state)
-                          (value tguard))))
-        (value (untranslate (fsubcor-var vars args tguard) t wrld))))
-     (t
-      (let ((guard (if tguard
-                       (untranslate tguard t wrld)
-                     guard)))
-        (value `(flet ((,guard-fn
-                        ,vars
-                        ,@(and ignorable
-                               `((declare (ignorable ,@vars))))
-                        ,guard))
-                  (,guard-fn ,@(untranslate-lst args nil wrld)))))))))
+    (er-let* ((tguard (if (and substitute ; if false, we don't need tguard
+                               (null tguard))
+                          (translate guard '(nil) nil t ctx wrld state)
+                        (value tguard))))
+      (cond
+       ((print-gv-substitute-p substitute tguard vars args)
+        (assert$
+         tguard
+         (value (untranslate (fsubcor-var vars args tguard) t wrld))))
+       (t
+        (let ((guard (if tguard
+                         (untranslate tguard t wrld)
+                       guard)))
+          (value `(flet ((,guard-fn
+                          ,vars
+                          ,@(and ignorable
+                                 `((declare (ignorable ,@vars))))
+                          ,guard))
+                    (,guard-fn ,@(untranslate-lst args nil wrld))))))))))
 
 (defun print-gv-conjunct (guard-fn formals conjuncts args index
                                    len-all-conjuncts fn substitute ctx state)
@@ -24093,24 +24151,33 @@
                                index len-all-conjuncts form))))))))))
 
 (defun print-gv1 (fn-guard-stobjsin-args conjunct substitute ctx state)
-  (let* ((wrld (w state))
-         (fn (nth 0 fn-guard-stobjsin-args))
-         (guard (nth 1 fn-guard-stobjsin-args))
-         (args (apply-user-stobj-alist-or-kwote
-                (user-stobj-alist state)
-                (nth 3 fn-guard-stobjsin-args)
-                nil))
-         (formals (formals fn wrld))
-         (guard-fn (add-suffix-to-fn fn "{GUARD}")))
+  (cond
+   ((not (or (booleanp substitute)
+             (natp substitute)))
+    (er soft 'print-gv
+        "The :substitute keyword argument of PRINT-GV must evaluate to T, ~
+         NIL, or a natural number."
+        substitute))
+   (t
+    (let* ((wrld (w state))
+           (fn (nth 0 fn-guard-stobjsin-args))
+           (guard (nth 1 fn-guard-stobjsin-args))
+           (args (apply-user-stobj-alist-or-kwote
+                  (user-stobj-alist state)
+                  (nth 3 fn-guard-stobjsin-args)
+                  nil))
+           (formals (formals fn wrld))
+           (guard-fn (add-suffix-to-fn fn "{GUARD}")))
 
 ; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
 ; need it.
 
-    (if conjunct
-        (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
-          (print-gv-conjunct guard-fn formals conjuncts args 1
-                             (length conjuncts) fn substitute ctx state))
-      (print-gv-form guard-fn guard nil formals args t substitute ctx state))))
+      (if conjunct
+          (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
+            (print-gv-conjunct guard-fn formals conjuncts args 1
+                               (length conjuncts) fn substitute ctx state))
+        (print-gv-form guard-fn guard nil formals args t substitute ctx
+                       state))))))
 
 (defun print-gv-fn (evisc-tuple conjunct substitute state)
   (prog2$
@@ -24172,9 +24239,11 @@
                  "Illegal value for :conjunct (must be Boolean): ~x0"
                  conjunct))
             ((not (or (booleanp substitute)
+                      (natp substitute)
                       (eq substitute :restore)))
              (er soft ctx
-                 "Illegal value for :conjunct (must be Boolean): ~x0"
+                 "Illegal value for :conjunct (must be Boolean or a natural ~
+                  number): ~x0"
                  substitute))
             (t (let* ((alist (f-get-global 'print-gv-defaults state))
                       (alist (cond ((not evisc-tuple-p)

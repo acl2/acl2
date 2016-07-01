@@ -7,7 +7,8 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
-(local (in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+(local (in-theory (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
+                       (unsigned-byte-p signed-byte-p))))
 
 ;; ======================================================================
 

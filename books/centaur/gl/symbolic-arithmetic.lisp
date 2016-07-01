@@ -248,7 +248,7 @@ for computing:</p>
   (declare (xargs :mode :program))
   (and (not (acl2::access acl2::clause-id id :pool-lst))
        (let ((formals (formals fn world)))
-         (append (and (recursivep fn world)
+         (append (and (recursivep fn t world)
                       `(:induct (,fn . ,formals)))
                  `(:expand ((,fn . ,formals))
                    :in-theory (disable (:d ,fn)))))))

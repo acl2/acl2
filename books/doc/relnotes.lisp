@@ -2174,7 +2174,7 @@ found in the change log.</p>")
 
  <h5>New Documentation</h5>
 
- <p>The @(see cowles), @(see arithmetic-1), and @(see rtl) libraries now
+ <p>The @('cowles'), @(see arithmetic-1), and @(see rtl) libraries now
  have some XDOC documentation.</p>
 
  <p>There are now some preliminary recommendations for @(see best-practices) for
@@ -2996,7 +2996,7 @@ found in the change log.</p>")
  Mechanically Checked Proof of a Multiprocessor Result via a Uniprocessor
  View</i> by J Moore, in Formal Methods in System Design, March 1999.</p>
 
- <p>A new book, @('demos/patterned-congruences.lisp) demonstrates @(see
+ <p>A new book, @('demos/patterned-congruences.lisp') demonstrates @(see
  patterned-congruence) rules.</p>
 
 
