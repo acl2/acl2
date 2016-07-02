@@ -353,6 +353,36 @@
 (def-b*-binder match
   :parents (b*-binders regex)
   :short "@(see b*) binder for regular expression matching."
+  :long "<p>Match a string against a regular expression and optionally bind the
+matching portion to a variable and the substring matches to other
+variables.</p>
+
+<p>The way to tell if the string matched is to check whether the variable for
+the full match is set to a non-nil value (which then must be a string).</p>
+
+<p>Syntax:</p>
+@({
+ (b* (((match my-regex
+              :e                ;; extended regex (default), or :b for basic, :f for fixed string
+              :i                ;; denotes case insensitive match
+              :full matchvar    ;; (optional) bind matchvar to the substring matching the full regex
+              :substrs (a b)    ;; (optional) bind a and b to the substring matches (ordered)
+              :error-msg errvar ;; (optional) bind any error message from parsing the regex to errvar
+           )
+        string-to-match)
+       ((unless matchvar)
+         ;; did not match
+        ...))
+     (list matchvar a b))
+ })
+
+<p>If my-regex is a literal string, then the regular expression will be parsed
+at macroexpansion time, and matching will be done at runtime with @(see
+do-regex-match-precomp); otherwise, the parsing and matching are both done at
+runtime with @(see do-regex-match).  The @(':error-msg') option only makes
+sense in the second case, because the errors only come from regular expression
+parsing; if the regular expression is parsed at macroexpansion time, then any
+error from that parsing becomes a hard error during macroexpansion.</p>"
   :decls ((declare (xargs :guard (and (consp forms)
                                       (not (cdr forms))
                                       (true-listp args)))))
