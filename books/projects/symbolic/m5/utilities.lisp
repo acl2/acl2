@@ -1,4 +1,5 @@
 ; Copyright (C) 2001 J Strother Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This book is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
