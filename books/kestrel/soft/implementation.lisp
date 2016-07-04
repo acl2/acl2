@@ -208,11 +208,17 @@
          (defstub ,funvar ,arguments => *)
          (table function-variables ',funvar '(,arguments ,'acl2::=> *)))))
 
-(defmacro acl2::defunvar (funvar arguments arrow result)
+(defmacro defunvar (funvar arguments arrow result)
   `(make-event (defunvar-event ',funvar ',arguments ',arrow ',result)))
 
-(defmacro acl2::show-defunvar (funvar arguments arrow result)
+(defmacro show-defunvar (funvar arguments arrow result)
   `(defunvar-event ',funvar ',arguments ',arrow ',result))
+
+(defmacro acl2::defunvar (&rest args)
+  `(defunvar ,@args))
+
+(defmacro acl2::show-defunvar (&rest args)
+  `(show-defunvar ,@args))
 
 ; A second-order function or theorem depends on
 ; a set of one or more function variables.
@@ -579,11 +585,17 @@
                                                       ',fparams
                                                       (w state)))))))
 
-(defmacro acl2::defun2 (sofun fparams &rest rest)
+(defmacro defun2 (sofun fparams &rest rest)
   `(make-event (defun2-event ',sofun ',fparams ',rest (w state))))
 
-(defmacro acl2::show-defun2 (sofun fparams &rest rest)
+(defmacro show-defun2 (sofun fparams &rest rest)
   `(defun2-event ',sofun ',fparams ',rest (w state)))
+
+(defmacro acl2::defun2 (&rest args)
+  `(defun2 ,@args))
+
+(defmacro acl2::show-defun2 (&rest args)
+  `(show-defun2 ,@args))
 
 ; The name of the termination theorem of a recursive second-order function
 ; is obtained by adding -T to the name of the function.
@@ -638,14 +650,20 @@
                                                  ',fparams
                                                  (w state))))))
 
-(defmacro acl2::defchoose2 (sofun bvars fparams vars body &rest options)
+(defmacro defchoose2 (sofun bvars fparams vars body &rest options)
   `(make-event
     (defchoose2-event
       ',sofun ',bvars ',fparams ',vars ',body ',options (w state))))
 
-(defmacro acl2::show-defchoose2 (sofun bvars fparams vars body &rest options)
+(defmacro show-defchoose2 (sofun bvars fparams vars body &rest options)
   `(defchoose2-event
      ',sofun ',bvars ',fparams ',vars ',body ',options (w state)))
+
+(defmacro acl2::defchoose2 (&rest args)
+  `(defchoose2 ,@args))
+
+(defmacro acl2::show-defchoose2 (&rest args)
+  `(show-defchoose2 ,@args))
 
 ; The macro DEFUN-SK2 introduces a quantifier second-order function.
 ; DEFUN-SK2 has the form
@@ -720,12 +738,18 @@
                                                     ',quant
                                                     (w state))))))
 
-(defmacro acl2::defun-sk2 (sofun fparams params body &rest options)
+(defmacro defun-sk2 (sofun fparams params body &rest options)
   `(make-event
     (defun-sk2-event ',sofun ',fparams ',params ',body ',options (w state))))
 
-(defmacro acl2::show-defun-sk2 (sofun fparams params body &rest options)
+(defmacro show-defun-sk2 (sofun fparams params body &rest options)
   `(defun-sk2-event ',sofun ',fparams ',params ',body ',options (w state)))
+
+(defmacro acl2::defun-sk2 (&rest args)
+  `(defun-sk2 ,@args))
+
+(defmacro acl2::show-defun-sk2 (&rest args)
+  `(show-defun-sk2 ,@args))
 
 ; A theorem may reference function variables in its formula.
 
@@ -1173,12 +1197,18 @@
       ;; generate event (REST is RULE-CLASSES, if present):
       `(defthm ,thm ,thm-formula ,@thm-proof ,@rest)))
 
-(defmacro acl2::defthm-inst (thm uqfvars-or-sothminst &rest rest)
+(defmacro defthm-inst (thm uqfvars-or-sothminst &rest rest)
   `(make-event
     (defthm-inst-event ',thm ',uqfvars-or-sothminst ',rest (w state))))
 
-(defmacro acl2::show-defthm-inst (thm uqfvars-or-sothminst &rest rest)
+(defmacro show-defthm-inst (thm uqfvars-or-sothminst &rest rest)
   `(defthm-inst-event ',thm ',uqfvars-or-sothminst ',rest (w state)))
+
+(defmacro acl2::defthm-inst (&rest args)
+  `(defthm-inst ,@args))
+
+(defmacro acl2::show-defthm-inst (&rest args)
+  `(show-defthm-inst ,@args))
 
 ; The macro DEFUN-INST introduces an instance of a second-order function.
 ; DEFUN-INST has the form
@@ -1530,12 +1560,18 @@
                                                  ',fparams
                                                  (w state))))))
 
-(defmacro acl2::defun-inst (fun fparams-or-sofuninst &rest rest)
+(defmacro defun-inst (fun fparams-or-sofuninst &rest rest)
   `(make-event
     (defun-inst-event ',fun ',fparams-or-sofuninst ',rest (w state))))
 
-(defmacro acl2::show-defun-inst (fun fparams-or-sofuninst &rest rest)
+(defmacro show-defun-inst (fun fparams-or-sofuninst &rest rest)
   `(defun-inst-event ',fun ',fparams-or-sofuninst ',rest (w state)))
+
+(defmacro acl2::defun-inst (&rest args)
+  `(defun-inst ,@args))
+
+(defmacro acl2::show-defun-inst (&rest args)
+  `(show-defun-inst ,@args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
