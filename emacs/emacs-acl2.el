@@ -938,7 +938,7 @@ command for the proof-checker.  Causes an error if one is already
 at the top."
   (interactive)
   (let ((addr (find-address)))
-    (end-of-buffer)
+    (goto-char (point-max))
     (if (null addr)
 	(error "Null address.")
       (insert (prin1-to-string (cons 'dive addr))))))
@@ -951,7 +951,7 @@ moves to the end of the buffer and plops down the appropriate DV
 command for the proof-checker. Causes an error if one is already at the top."
   (interactive)
   (let ((addr (find-address)))
-    (end-of-buffer)
+    (goto-char (point-max))
     (if (null addr)
 	(error "Null address.")
       (insert (prin1-to-string (cons 'dv addr))))))

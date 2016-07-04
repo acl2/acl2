@@ -1,4 +1,5 @@
-; Copyright (C) 2001 J Strother Moore
+; Copyright (C) 2001, Regents of the University of Texas
+; Written by J Strother Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This book proves the correctness of a recursive static method
