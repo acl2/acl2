@@ -6676,20 +6676,20 @@
            (not (boundp name))
          t)))
 
-(defun-one-output chk-virgin2 (name new-type wrld)
-  (cond ((virginp name new-type) nil)
+(defun-one-output chk-virgin2 (name new-type ctx wrld state)
+  (cond ((virginp name new-type) (value nil))
         ((f-get-global 'boot-strap-flg *the-live-state*)
 
 ; The test above is equivalent to (global-val 'boot-strap-flg wrld).
 
-         (setf (get name '*predefined*) t))
+         (value (setf (get name '*predefined*) t)))
 
 ; A name regains its true virginity the moment we decide to give it a
 ; 'redefined property, which only happens just after the user has said that
 ; it's OK to redefine it.
 
         ((getpropc name 'redefined nil wrld)
-         nil)
+         (value nil))
         (t
          (let ((reason
                 (cond ((not (symbolp name)) "it is not a symbol")
@@ -6730,7 +6730,7 @@
                         (t ; (member-eq new-type '(const stobj
 ;                       stobj-live-var t))
                          str)))))
-           (interface-er
+           (er soft ctx
             "It is illegal to define ~x0 because ~@1 in raw Common Lisp.~@2"
             name
             reason
