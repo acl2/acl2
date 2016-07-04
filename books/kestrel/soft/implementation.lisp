@@ -199,12 +199,13 @@
         (raise "~x0 must be a name." funvar))
        ((unless (*-listp arguments))
         (raise "~x0 must be a list (* ... *)." arguments))
-       ((unless (eq arrow 'acl2::=>))
+       ((unless (and (symbolp arrow)
+                     (equal (symbol-name arrow) "=>")))
         (raise "~x0 must be the arrow =>." arrow))
        ((unless (eq result 'acl2::*))
         (raise "~x0 must be *." result)))
       `(progn
-         (defstub ,funvar ,arguments ,'acl2::=> *)
+         (defstub ,funvar ,arguments => *)
          (table function-variables ',funvar '(,arguments ,'acl2::=> *)))))
 
 (defmacro acl2::defunvar (funvar arguments arrow result)
