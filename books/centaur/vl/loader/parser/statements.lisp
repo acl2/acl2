@@ -760,7 +760,8 @@
    (type  vl-casetype-p)
    (expr  vl-expr-p)
    (items vl-caselist-p)
-   (atts  vl-atts-p))
+   (atts  vl-atts-p)
+   (casekey (or (vl-token-p casekey) (not casekey))))
   :long "<p>This either returns a statement or @('nil') for failure.  The only
          reason it can fail is that more than one @('default') statement was
          provided.</p>"
@@ -769,7 +770,11 @@
         (vl-filter-parsed-caseitemlist items))
        ((when (> (len defaults) 1))
         ;; More than one default statement, fail!
-        nil))
+        nil)
+       (casekey (cond ((not casekey) nil)
+                      ((eq (vl-token->type casekey) :vl-kwd-inside) :inside)
+                      ((eq (vl-token->type casekey) :vl-kwd-matches) :matches)
+                      (t nil))))
     (make-vl-casestmt :check    check
                       :casetype type
                       :test     expr
@@ -777,7 +782,8 @@
                       :default  (if defaults
                                     (car defaults)
                                   (make-vl-nullstmt))
-                      :atts     atts)))
+                      :atts     atts
+                      :casekey casekey)))
 
 (defparser vl-parse-1+-id=expr-pairs (type varp)
   :guard (and (vl-datatype-p type)
@@ -1107,13 +1113,11 @@
          (test :s= (vl-parse-expression)) ;; bozo why do we need :s= here??
          (:= (vl-match-token :vl-rparen))
 
-         (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
-                    (vl-is-token? :vl-kwd-matches))
-           (return-raw (vl-parse-error "BOZO not yet implemented: case ... matches ...")))
-
-         (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
-                    (vl-is-token? :vl-kwd-inside))
-           (return-raw (vl-parse-error "BOZO not yet implemented: case ... inside ...")))
+         (casekey := (if (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                              (or (vl-is-token? :vl-kwd-inside)
+                                  (vl-is-token? :vl-kwd-matches)))
+                         (vl-match)
+                       (mv nil nil tokstream)))
 
          (items := (vl-parse-1+-case-items))
          (:= (vl-match-token :vl-kwd-endcase))
@@ -1121,7 +1125,7 @@
           ;; Per Verilog-2005, Section 9.5 (page 127) the default statement is
           ;; optional but at most one default statement is permitted.  This
           ;; same restriction is kept SystemVerilog, Section 12.5 (Page 270).
-          (let ((stmt (vl-make-case-statement check type test items atts)))
+          (let ((stmt (vl-make-case-statement check type test items atts casekey)))
             (if (not stmt)
                 (vl-parse-error "Multiple defaults cases in case statement.")
               (mv nil stmt tokstream))))))
