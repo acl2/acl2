@@ -18,7 +18,7 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/system/world-queries" :dir :system)
+(include-book "kestrel/system/defun-sk-queries" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
@@ -82,70 +82,12 @@
          (let ((if-test (acl2::fargn axiom 1)))
            (not (eq (acl2::fn-symb if-test) 'acl2::true-listp)))))) ; not form 2
 
-; The quantified formula of a DEFUN-SK is in prenex normal form;
-; the matrix of this prenex normal form is the term
-; after the quantifier and bound variables.
-; Experiments suggest that
-; the matrix of a DEFUN-SK
-; can be extracted from the defining body of the function
-; (as returned by the BODY system utility),
-; which has the form (RETURN-LAST ... ... CORE) or just CORE,
-; where CORE has one of the following forms:
-; 1. If there is one bound variable, the form is
-;      ((LAMBDA (...) MATRIX) ...).
-; 2. If there are two or more bound variables, the form is
-;      ((LAMBDA (...) ((LAMBDA (...) MATRIX) ...)) ...).
-; These two forms are ambiguous under certain conditions:
-;   (DEFUN-SK FUN (FREE-VARS)
-;     (FORALL/EXISTS MV (LET ((BV1 (MV-NTH 0 MV))
-;                             ...
-;                             (BVn (MV-NTH n-1 MV)))
-;                         TERM)))
-; internally looks the same as
-;   (DEFUN-SK FUN (FREE-VARS)
-;     (FORALL/EXISTS (BV1 ... BVn) TERM)).
-; The two forms are unambiguous if it is known
-; whether the DEFUN-SK has either one or more than one bound variables:
-; this information is passed to the following code
-; in the form of a boolean flag that is true when there was one bound variable.
-
-(define defun-sk-matrix ((fun symbolp) (1bvarp booleanp) (w plist-worldp))
-  :verify-guards nil
-  (let* ((body (acl2::body fun nil w))
-         (core (if (eq (car body) 'acl2::return-last)
-                   (acl2::fargn body 3)
-                 body))
-         (lamb (acl2::fn-symb core)))
-    (if 1bvarp
-        (acl2::lambda-body lamb) ; form 1
-      (let* ((nested-app (acl2::lambda-body lamb))
-             (nested-lamb (acl2::fn-symb nested-app)))
-        (acl2::lambda-body nested-lamb)))))
-
 ; Experiments suggest that
 ; the name of the witness of a function introduced via DEFUN-SK
 ; is the CONSTRAINT-LST of the function.
 
 (define defun-sk-witness-name ((fun symbolp) (w plist-worldp))
   (getprop fun 'acl2::constraint-lst nil 'acl2::current-acl2-world w))
-
-; Experiments suggest that
-; to determine whether a DEFUN-SK
-; is introduced with :STRENGTHEN set to T or not,
-; the CONSTRAINT-LST of the witness can be inspected:
-; if it has 3 constraints, :STRENGTHEN was T;
-; if it has 2 constraints, :STRENGTHEN was NIL.
-
-(define defun-sk-strongp ((fun symbolp) (w plist-worldp))
-  :verify-guards nil
-  (let* ((witness (defun-sk-witness-name fun w))
-         (constraint-lst
-          (getprop witness
-                   'acl2::constraint-lst
-                   nil
-                   'acl2::current-acl2-world
-                   w)))
-    (= (len constraint-lst) 3)))
 
 ; The :BOGUS-DEFUN-HINTS-OK setting is in the ACL2-DEFAULTS-TABLE.
 
@@ -1440,12 +1382,13 @@
                   (null fparams))         ; FUN is 1st-order
               (quant-sofunp sofun w))
   :mode :program ; calls FORMULA
-  (b* (;; retrieve bound variables and quantifier of SOFUN:
+  (b* (;; retrieve DEFUN-SK-specific constituents of SOFUN:
+       (sofun-info (acl2::defun-sk-check sofun w))
+       ;; retrieve bound variables and quantifier of SOFUN:
        (bound-vars (sofun-bound-vars sofun w))
-       (1bvarp (= (len bound-vars) 1))
        (quant (sofun-quantifier sofun w))
        ;; apply instantiation to the matrix of SOFUN:
-       (sofun-matrix (defun-sk-matrix sofun 1bvarp w))
+       (sofun-matrix (acl2::defun-sk-info->matrix sofun-info))
        (fun-matrix (fun-subst-term inst sofun-matrix w))
        ;; the value of :REWRITE for FUN
        ;; is determined from the supplied value (if any),
@@ -1488,7 +1431,7 @@
       ;; generated list of events:
       `((defun-sk ,fun ,(acl2::formals sofun w)
           (,quant ,bound-vars ,fun-matrix)
-          :strengthen ,(defun-sk-strongp sofun w)
+          :strengthen ,(acl2::defun-sk-info->strengthen sofun-info)
           :quant-ok t
           :rewrite ,rewrite
           :witness-dcls (,wit-dcl)
