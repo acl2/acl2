@@ -1,3 +1,7 @@
+; Copyright (C) 2003, Regents of the University of Texas
+; Written by J Strother Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Use of Tail-Recursion to Propagate Inductive Assertions
 ; J Strother Moore
 ; February 26, 2003

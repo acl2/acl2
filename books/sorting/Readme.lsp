@@ -80,8 +80,8 @@ case it might be good to go the equisort2 route.
 )
  (:PERMISSION
   "Sorting
- Copyright (C) 2008 by:
- J Moore <moore@cs.utexas.edu>
+ Copyright (C) 2001, Regents of the University of Texas
+ Written by J Moore <moore@cs.utexas.edu>
 
  License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 "))
