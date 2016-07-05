@@ -15,8 +15,10 @@
 (in-package "ACL2")
 
 (include-book "alists")
+(include-book "auto-termination")
 (include-book "define-sk")
 (include-book "testing")
+(include-book "ubi")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

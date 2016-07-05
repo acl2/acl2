@@ -7087,7 +7087,7 @@
 ; frames until we find one binding var-name.  We return the value with which
 ; var-name is paired, or else nil if no binding is found.
 
-  (cond ((null stack) nil)
+  (cond ((endp stack) nil)
         (t (let ((temp (assoc-eq var-name (cdar stack))))
              (cond (temp (cdr temp))
                    (t (lookup-brr-stack var-name (cdr stack))))))))

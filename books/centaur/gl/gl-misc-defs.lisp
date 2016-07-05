@@ -31,6 +31,7 @@
 (in-package "ACL2")
 
 (include-book "ihs/basic-definitions" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 
 ; cert_param: (non-acl2r)
 
@@ -219,9 +220,21 @@
 
   (table gl::preferred-defs 'logcons$inline 'logcons-for-gl)
 
+  (defun ensure-negative (x)
+    (declare (xargs :guard (integerp x)))
+    (if (<= 0 x)
+        (lognot x)
+      x))
+
+  (defthm ensure-negative-when-negative
+    (implies (acl2::negp x)
+             (equal (ensure-negative x) x)))
+
   (defthmd logtail-for-gl
     (equal (logtail pos i)
-           (ash i (- (nfix pos)))))
+           (if (zp pos)
+               (ifix i)
+             (ash i (ensure-negative (- (pos-fix pos)))))))
 
   (table gl::preferred-defs 'logtail$inline 'logtail-for-gl)
 

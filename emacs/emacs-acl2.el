@@ -2,26 +2,21 @@
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
-; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; This file contains some emacs stuff for ACL2 users.  It is intended
 ; to work both with GNU Emacs and XEmacs.
@@ -943,7 +938,7 @@ command for the proof-checker.  Causes an error if one is already
 at the top."
   (interactive)
   (let ((addr (find-address)))
-    (end-of-buffer)
+    (goto-char (point-max))
     (if (null addr)
 	(error "Null address.")
       (insert (prin1-to-string (cons 'dive addr))))))
@@ -956,7 +951,7 @@ moves to the end of the buffer and plops down the appropriate DV
 command for the proof-checker. Causes an error if one is already at the top."
   (interactive)
   (let ((addr (find-address)))
-    (end-of-buffer)
+    (goto-char (point-max))
     (if (null addr)
 	(error "Null address.")
       (insert (prin1-to-string (cons 'dv addr))))))

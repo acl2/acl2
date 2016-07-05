@@ -2567,6 +2567,11 @@ case statements.</p>")
   :short "Indicates whether this is a @('begin/end'), @('fork/join'),
           @('fork/join_any'), or @('fork/join_none') statement.")
 
+(defenum vl-casekey-p
+  (:inside
+   :matches
+   nil))
+
 (deftypes statements
   :short "Representation of a statement."
 
@@ -2786,7 +2791,9 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                   @('unique0'), @('priority'), or none.")
       (atts      vl-atts-p
                  "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
-                  with this statement."))
+                  with this statement.")
+      (casekey   vl-casekey-p
+        "Extra keyword: :inside, :matches, or none"))
      :long "<p>Case statements are discussed in the Verilog-2005 standard,
             Section 9.5 (page 127), and in the SystemVerilog-2012 standard in
             Section 12.5 (page 270).</p>

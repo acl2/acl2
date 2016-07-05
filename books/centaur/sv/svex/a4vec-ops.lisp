@@ -33,6 +33,7 @@
 (include-book "aig-arith")
 (include-book "4vmask")
 (include-book "std/util/defrule" :dir :system)
+(include-book "centaur/bitops/limited-shifts" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -1675,163 +1676,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                 '(:bdd (:vars nil))))))
 
 
-(define logcollapse ((position natp)
-                     (x integerp))
-  :short "OR together all the bits of x at position or above, collapsing them
-into the single bit at position."
 
-  :long "<p>This operation helps avoid catastrophically large shifts in
-computing, e.g., concatenations with symbolic widths.  When there is a
-care-mask of width w, then we can collapse all the bits at w and above into the
-bit at w, because the presence of those upper bits means that the shift is
-longer than we care about.</p>
-
-<p>There is a large potential for off-by-one errors when thinking about this
-function.  It may help to start with the fact that @('(logcollapse 0 x)')
-collapses all bits of x into a single bit.  In general, @('(logcollapse n x)')
-results in at most n+1 bits.</p>"
-  (b* ((position (lnfix position)))
-    (logior (loghead position x)
-            (ash (b-not (bool->bit (eql 0 (logtail position x)))) position))))
-
-(local
- (defsection masked-shifts
-
-   (local (defthm loghead-when-logtail-is-0
-            (implies (equal 0 (logtail n x))
-                     (equal (loghead n x) (ifix x)))
-            :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logtail**
-                                               acl2::ihsext-inductions)))))
-
-   (local (defthm ash-integer-length-greater
-            (implies (natp x)
-                     (< x (ash 1 (integer-length x))))
-            :hints(("Goal" :in-theory (enable* acl2::ash**
-                                               acl2::integer-length**
-                                               acl2::ihsext-inductions)))
-            :rule-classes :linear))
-
-   (local (defthm logior-of-nats-greater
-            (implies (and (natp x) (natp y))
-                     (<= x (logior x y)))
-            :hints(("Goal" :in-theory (enable* acl2::logior**
-                                               acl2::ihsext-inductions)))
-            :rule-classes :linear))
-
-   (defthm logcollapse-greater-when-greater
-     (implies (and (natp m)
-                   (integerp i)
-                   (<= m i))
-              (<= m
-                  (logcollapse (integer-length m) i)))
-     :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
-
-   (local (defthm logtail-integer-length-when-less
-            (implies (and (integerp m)
-                          (natp i)
-                          (< i m))
-                     (equal (logtail (integer-length m) i) 0))
-            :hints(("Goal" :in-theory (enable* acl2::logtail**
-                                               acl2::integer-length**
-                                               acl2::ihsext-inductions)
-                    :induct (logand m i)))))
-
-   (defthm logcollapse-equal-when-less
-     (implies (and (integerp m)
-                   (natp i)
-                   (< i m))
-              (equal (logcollapse (integer-length m) i)
-                     i))
-     :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
-
-
-   ;; Example.  Suppose our mask is #xab and we are computing (concat n a b).
-   ;; Whenever n is greater than or equal the length of the mask, 8, the answer is
-   ;; just a, as far as we're concerned.  We can transform n however we like as
-   ;; long as we preserve its value when less than 8, and we leave it >= 8 if it
-   ;; is >= 8.  In particular, we can logcollapse it in such a way that this
-   ;; holds: i.e., to the length of 8, or the length of the length of the mask.
-
-   (defthm loghead-of-ash-greater
-     (implies (and (natp i)
-                   (integerp j)
-                   (<= i j))
-              (equal (loghead i (ash x j))
-                     0))
-     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::ash**
-                                        acl2::ihsext-inductions))))
-
-   (local (defun mask-equiv-ind (mask x y)
-            (if (zp mask)
-                (list x y)
-              (mask-equiv-ind (logcdr mask) (logcdr x) (logcdr y)))))
-
-   (defthm maskedvals-equiv-when-logheads-equiv
-     (implies (and (natp mask)
-                   (equal (loghead (integer-length mask) x)
-                          (loghead (integer-length mask) y)))
-              (equal (equal (logand mask x)
-                            (logand mask y))
-                     t))
-     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logand**
-                                        acl2::integer-length**)
-             :induct (mask-equiv-ind mask x y))))
-
-   (defthm maskedvals-equiv-when-logheads-equiv-logior
-     (implies (and (natp mask)
-                   (equal (loghead (integer-length mask) x)
-                          (loghead (integer-length mask) y)))
-              (equal (equal (logior (lognot mask) x)
-                            (logior (lognot mask) y))
-                     t))
-     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logior** acl2::lognot**
-                                        acl2::integer-length**)
-             :induct (mask-equiv-ind mask x y))))
-
-
-   (defthm mask-ash-of-logcollapse
-     (implies (and (natp mask)
-                   (natp shift))
-              (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
-                                                      shift)))
-                     (logand mask (ash x shift))))
-     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
-
-   (defthm mask-ash-of-logcollapse
-     (implies (and (natp mask)
-                   (natp shift))
-              (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
-                                                      shift)))
-                     (logand mask (ash x shift))))
-     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
-
-   (defthm logior-mask-ash-of-logcollapse
-     (implies (and (natp mask)
-                   (natp shift))
-              (equal (logior (lognot mask) (ash x (logcollapse (integer-length (integer-length mask))
-                                                               shift)))
-                     (logior (lognot mask) (ash x shift))))
-     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
-
-   (defthm mask-logapp-of-logcollapse
-     (implies (and (natp mask)
-                   (natp width))
-              (equal (logand mask (logapp (logcollapse (integer-length (integer-length mask))
-                                                       width)
-                                          x y))
-                     (logand mask (logapp width x y))))
-     :hints (("goal" :cases ((<= (integer-length mask) width)))))
-
-   (defthm logior-mask-logapp-of-logcollapse
-     (implies (and (natp mask)
-                   (natp width))
-              (equal (logior (lognot mask) (logapp (logcollapse (integer-length (integer-length mask))
-                                                                width)
-                                                   x y))
-                     (logior (lognot mask) (logapp width x y))))
-     :hints (("goal" :cases ((<= (integer-length mask) width)))))
-
-   ))
 
 
 (local (encapsulate nil
@@ -1852,8 +1697,8 @@ results in at most n+1 bits.</p>"
   ///
   (defthm aig-logcollapse-ns-correct
     (equal (aig-list->s (aig-logcollapse-ns n x) env)
-           (logcollapse n (aig-list->s x env)))
-    :hints(("Goal" :in-theory (enable logcollapse)))))
+           (bitops::logcollapse n (aig-list->s x env)))
+    :hints(("Goal" :in-theory (enable bitops::logcollapse bool->bit)))))
 
 
 
@@ -2600,6 +2445,25 @@ results in at most n+1 bits.</p>"
   
 
 
+(local (defthm logand-of-logext-integer-length
+         (implies (<= 0 (ifix mask))
+                  (equal (logand mask (logext (+ 1 (integer-length mask)) x))
+                         (logand mask x)))
+         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                            bitops::ihsext-recursive-redefs)
+                 :induct (logand mask x)
+                 :do-not-induct t))))
+
+(local (defthm logext-of-integer-length-mask-under-logior
+         (implies (<= 0 (ifix mask))
+                  (equal (logior (lognot mask)
+                                 (logext (+ 1 (integer-length mask)) x))
+                         (logior (lognot mask) x)))
+         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                            bitops::ihsext-recursive-redefs)
+                 :induct (logand mask x)
+                 :do-not-induct t))))
+
 (define a4vec-concat ((w    a4vec-p  "Width argument to the concat.")
                       (x    a4vec-p  "Low bits to concatenate.")
                       (y    a4vec-p  "High bits to concatenate.")
@@ -2644,15 +2508,6 @@ creating enormous vectors when given a huge @('width') argument.</p>"
                ;; Nonsensical concatenation width.  Just return all Xes.
                (a4vec-x)))
   ///
-
-  (local (defthm logand-of-logext-integer-length
-           (implies (<= 0 (ifix mask))
-                    (equal (logand mask (logext (+ 1 (integer-length mask)) x))
-                           (logand mask x)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)
-                   :induct (logand mask x)
-                   :do-not-induct t))))
 
   (local (defthm logapp-formulation
            (implies (natp n)
@@ -2852,7 +2707,7 @@ optimization to avoid problems due to large masks.</p>"
                                   (y true-listp)
                                   ;; (max-len (equal max-len (max (len x) (len y))))
                                   (width posp))
-  ;; (logext width (logapp pos x (ash y (- pos))))
+   ;; (logext width (logapp pos x (ash y (- pos))))
   :ruler-extenders :all
   :measure (len rev-pos)
   (b* ((rev-pos (llist-fix rev-pos))
@@ -2955,6 +2810,15 @@ optimization to avoid problems due to large masks.</p>"
                               (x true-listp)
                               (y true-listp)
                               (width posp))
+  :parents (a4vec-part-install)
+  :short "Symbolic function that replaces @('pos') lower bits of @('y') with bits of @('x')."
+  :long "<p>Symbolically computes:</p>
+@({
+ (logext width (logapp pos x (logtail pos y)))
+ })
+
+<p>where all variables except @('width') are symbolic.  I.e., it replaces the
+lowermost @('pos') bits of @('y') with the corresponding bits of @('x').</p>"
   (b* ((width (lposfix width))
        (same-signp (hons-equal (aig-sign-s x)
                                (aig-sign-s y)))
@@ -3563,6 +3427,7 @@ provides special optimization to avoid problems due to large masks.</p>"
                ;; X/Z bits in shift amount, just return all Xes.
                (a4vec-x)))
   ///
+
   (defthm a4vec-lsh-correct
     (4vec-mask-equiv (a4vec-eval (a4vec-lsh amt x mask) env)
                      (4vec-lsh (a4vec-eval amt env)

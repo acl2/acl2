@@ -846,19 +846,21 @@ because... (BOZO)</p>
                                  (test sv::svex-p)
                                  (size natp)
                                  (casetype vl-casetype-p)
+                                 (casekey vl-casekey-p)
                                  (ss vl-scopestack-p)
                                  (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (cond sv::svex-p))
   (if (atom x)
       (mv nil (svex-int 0))
-    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size casetype ss scopes))
+    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size casetype casekey ss scopes))
          ((wmv warnings first &) (vl-expr-to-svex-selfdet (car x) (lnfix size) ss scopes)))
     (mv warnings
         (sv::svcall sv::bitor
-                      (case (vl-casetype-fix casetype)
-                        ((nil) (sv::svcall sv::== test first))
-                        (otherwise (sv::svcall sv::==?? test first)))
+                    (if (or (vl-casetype-fix casetype)
+                            (vl-casekey-fix casekey))
+                        (sv::svcall sv::==?? test first)
+                      (sv::svcall sv::== test first))
                       rest))))
   ///
   (defret vars-of-vl-caseexprs->svex-test
@@ -989,7 +991,7 @@ because... (BOZO)</p>
              ((wmv warnings test-svex &)
               (vl-expr-to-svex-selfdet x.test size ss scopes))
              ((wmv ok2 warnings ans)
-              (vl-caselist->svstmts x.caselist size test-svex default x.casetype ss scopes nonblockingp fnname)))
+              (vl-caselist->svstmts x.caselist size test-svex default x.casetype x.casekey ss scopes nonblockingp fnname)))
           (mv (and ok1 ok2) warnings ans))
 
         :vl-callstmt
@@ -1043,6 +1045,7 @@ because... (BOZO)</p>
                                 (test sv::svex-p)
                                 (default sv::svstmtlist-p)
                                 (casetype vl-casetype-p)
+                                (casekey vl-casekey-p)
                                 (ss vl-scopestack-p)
                                 (scopes vl-elabscopes-p)
                                 (nonblockingp)
@@ -1059,10 +1062,10 @@ because... (BOZO)</p>
          ((when (atom x))
           (mv t nil (sv::svstmtlist-fix default)))
          ((cons tests stmt) (car x))
-         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default casetype ss scopes nonblockingp fnname))
+         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default casetype casekey ss scopes nonblockingp fnname))
          ((wmv ok2 warnings first) (vl-stmt->svstmts stmt ss scopes nonblockingp fnname))
          ((wmv warnings test)
-          (vl-caseexprs->svex-test tests test size casetype ss scopes)))
+          (vl-caseexprs->svex-test tests test size casetype casekey ss scopes)))
       (mv (and ok1 ok2)
           warnings
           (list (sv::make-svstmt-if :cond test :then first :else rest)))))
