@@ -244,7 +244,7 @@
   "Start up another shell."
   (interactive)
   (switch-to-buffer
-   (make-comint (concat "shell-" 
+   (make-comint (concat "shell-"
 			(number-to-string
 			 (setq number-of-other-shells
 			       (+ 1 number-of-other-shells))))
@@ -677,7 +677,7 @@ then also ignore case if that argument is positive, else do not ignore case."
 (define-key ctl-t-keymap "q" 'approx-compare-windows)
 
 (defun my-lisp-mode-hook ()
-  (setq indent-tabs-mode nil)   
+  (setq indent-tabs-mode nil)
   (setq comment-column 0)
   (turn-on-auto-fill)
   (setq save-buffer-coding-system 'iso-8859-1)
@@ -913,7 +913,7 @@ beginning of the string that was processed."
 ; This is for use with the PP command.
 (define-key ctl-t-keymap "\C-d" 'dive-manual)
 
-; The rest of the functions in this section support \C-t d and \C-t \C-d. 
+; The rest of the functions in this section support \C-t d and \C-t \C-d.
 
 (defvar *acl2-pc-dive-syntax-table* nil)
 
