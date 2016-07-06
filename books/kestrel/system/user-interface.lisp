@@ -77,6 +77,29 @@
               :on error
               ,form))))
 
+(defun control-screen-output-and-maybe-replay (verbose event-p form)
+  (cond ((booleanp verbose)
+         (control-screen-output verbose form))
+        (t
+         (let ((form-nil (control-screen-output nil form))
+               (form-t (control-screen-output t form)))
+           (cond
+            (event-p
+             `(make-event
+               '(:or ,form-nil
+                     (with-output
+                       :off :all
+                       :on error
+                       :stack :push
+                       (progn
+                         (value-triple (cw "~%===== VERBOSE REPLAY: =====~|"))
+                         (with-output :stack :pop ,form-t))))))
+            (t `(mv-let (erp val state)
+                  ,form-nil
+                  (cond (erp (prog2$ (cw "~%===== VERBOSE REPLAY: =====~|")
+                                     ,form-t))
+                        (t (value val))))))))))
+
 (defsection cw-event
   :short "Event form of @(tsee cw)."
   :long
