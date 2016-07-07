@@ -324,7 +324,7 @@ looking like this:</p>
 })
 
 <p>But this isn't a valid <see topic='@(url acl2::rewrite)'>rewrite</see> rule
-becuase of the @(see if) in the conclusion!</p>
+because of the @(see if) in the conclusion!</p>
 
 <p>In short: for guard verification we generally want to use something like
 @('if') or <see topic='@(url acl2::impliez)'>impliez</see> instead of
@@ -834,7 +834,7 @@ so execution differences don't matter.</p>")
        (witness-dcls
         ;; The ordering here is somewhat subtle.
         (append
-         ;; As in define, put stobj names first becuase they give us stobj-p
+         ;; As in define, put stobj names first because they give us stobj-p
          ;; guards, which may be useful and probably can't depend on anything
          ;; else.
          (and stobj-names
