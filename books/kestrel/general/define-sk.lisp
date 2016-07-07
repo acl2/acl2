@@ -362,8 +362,8 @@ that this rewriting of @('implies') is done only in the function's body, not in
 the @('-necc') theorem where it would ruin the <see topic='@(url
 acl2::rewrite)'>rewrite</see> rule.</p>
 
-<p>Is this safe?  There's of course no logical difference between implies and
-impliez, but there certainly is a big difference in the execution, viz
+<p>Is this safe?  There's of course no logical difference between @('implies')
+and @('impliez'), but there certainly is a big difference in the execution, viz
 evaluation order.  Fortunately, this difference will not matter for what we are
 trying to do: we're only changing @('implies') to @('if') in code that follows
 a call of the @('-witness') function.  This code can never be reached in real
