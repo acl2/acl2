@@ -88,20 +88,20 @@
     CHECK-SUM
     COMP-GCL
     CONSTRAINT-INFO ; to be added to *acl2-exports*
-    COUNT ; defined in books/coi/bags/basic.lisp
-    DEFTHY ; to be added to *acl2-exports*
+    COUNT           ; defined in books/coi/bags/basic.lisp
+    DEFTHY          ; to be added to *acl2-exports*
     DEFUN-MODE
     DIVE-INTO-MACROS-TABLE
     ERROR1
     FIND-RULES-OF-RUNE
-    INCOMPATIBLE! ; to be added to *acl2-exports*
-    INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
-    LOGIC-FNS-LIST-LISTP ; to be added to *acl2-exports*
-    LOGIC-FNS-LISTP ; to be added to *acl2-exports*
-    LOGIC-FNSP ; to be added to *acl2-exports*
+    INCOMPATIBLE!         ; to be added to *acl2-exports*
+    INTERSECTP            ; defined in books/finite-set-theory/osets/outer.lisp
+    LOGIC-FNS-LIST-LISTP  ; to be added to *acl2-exports*
+    LOGIC-FNS-LISTP       ; to be added to *acl2-exports*
+    LOGIC-FNSP            ; to be added to *acl2-exports*
     LOGIC-TERM-LIST-LISTP ; to be added to *acl2-exports*
-    LOGIC-TERM-LISTP ; to be added to *acl2-exports*
-    LOGIC-TERMP ; to be added to *acl2-exports*
+    LOGIC-TERM-LISTP      ; to be added to *acl2-exports*
+    LOGIC-TERMP           ; to be added to *acl2-exports*
     LOOP-STOPPER
     MBE1
     NON-LINEAR-ARITHMETIC
@@ -115,6 +115,61 @@
 ; The following are to be added to *acl2-exports*:
     MFC-ANCESTORS MFC-AP MFC-CLAUSE MFC-RDEPTH MFC-RELIEVE-HYP MFC-RW MFC-RW+
     MFC-TS MFC-TYPE-ALIST MFC-UNIFY-SUBST MFC-WORLD
+; Some of the following might be added to *acl2-exports*, but perhaps not; they
+; come from defpointers to system-utilities.
+    BODY
+    CONJOIN
+    CONS-COUNT-BOUNDED
+    CONS-TERM
+    DEFINED-CONSTANT
+    DEFTHY
+    DISJOIN
+    DISJOIN2
+    ENABLED-NUMEP
+    ENABLED-RUNEP
+    FARGN
+    FARGS
+    FCONS-TERM
+    FCONS-TERM*
+    FDEFUN-MODE
+    FFN-SYMB
+    FFN-SYMB-P
+    FFNNAMEP
+    FFNNAMEP-LST
+    FLAMBDA-APPLICATIONP
+    FLAMBDAP
+    FN-SYMB
+    FORMALS
+    FQUOTEP
+    GENVAR
+    GET-BRR-LOCAL
+    GET-EVENT
+    GET-SKIPPED-PROOFS-P
+    IMPLICATE
+    LAMBDA-APPLICATIONP
+    LAMBDA-BODY
+    LAMBDA-FORMALS
+    LOGICP
+    MAKE-LAMBDA
+    MERGE-SORT-LEXORDER
+    NVARIABLEP
+    PRETTYIFY-CLAUSE
+    PROGRAMP
+    RECURSIVEP
+    STOBJS-IN
+    STOBJS-OUT
+    SUBCOR-VAR
+    SUBLIS-VAR
+    SUBST-EXPR
+    SUBST-VAR
+    SYMBOL-CLASS
+    TRANS-EVAL
+    TRANSLATE
+    TRANSLATE-CMP
+    TRANSLATE1
+    TRANSLATE1-CMP
+    TRANSLATE11
+    VARIABLEP
     ))
 
 (defun missing-from-acl2-exports (wrld)
