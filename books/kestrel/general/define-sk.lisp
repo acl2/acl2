@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc define-sk
-  :parents (std/util defun-sk kestrel-general-utilities)
+  :parents (std/util defun-sk acl2::kestrel-general-utilities)
   :short "A very fine alternative to @(see defun-sk)."
   :long "<h3>Introduction</h3>
 
@@ -323,12 +323,12 @@ looking like this:</p>
                  t)))
 })
 
-<p>But this isn't a valid @(see rewrite) rule becuase of the @(see if) in the
-conclusion!</p>
+<p>But this isn't a valid <see topic='@(url acl2::rewrite)'>rewrite</see> rule
+becuase of the @(see if) in the conclusion!</p>
 
 <p>In short: for guard verification we generally want to use something like
-@('if') or @(see impliez) instead of @('implies'), but to get good rewrite
-rules we need to use @('implies').</p>
+@('if') or <see topic='@(url acl2::impliez)'>impliez</see> instead of
+@('implies'), but to get good rewrite rules we need to use @('implies').</p>
 
 
 <h3>Solution</h3>
@@ -359,7 +359,8 @@ defun) that we submit will look something like this:</p>
 <p>This will generally help to make guard verification more straightforward
 because you'll be able to assume the hyps hold during the conclusion.  But note
 that this rewriting of @('implies') is done only in the function's body, not in
-the @('-necc') theorem where it would ruin the @(see rewrite) rule.</p>
+the @('-necc') theorem where it would ruin the <see topic='@(url
+acl2::rewrite)'>rewrite</see> rule.</p>
 
 <p>Is this safe?  There's of course no logical difference between implies and
 impliez, but there certainly is a big difference in the execution, viz
