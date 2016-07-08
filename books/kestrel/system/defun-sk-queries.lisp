@@ -556,7 +556,7 @@
   and @('rewrite') is the associated rewrite rule.
   </p>"
   (b* ((args (formals fun w))
-       (witness (getprop fun 'constraint-lst nil 'current-acl2-world w))
+       (witness (getpropc fun 'constraint-lst nil w))
        ((unless (function-namep witness w)) nil)
        (event (get-event witness w))
        ((unless (and (or (tuplep 8 event)
