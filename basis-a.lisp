@@ -2554,6 +2554,21 @@
                     (fmt-tilde-s1 s (1+f i) maximum (1+f col)
                                   channel state)))))))))
 
+(defun fmt-tilde-cap-s1 (s i maximum col channel state)
+  (declare (type (signed-byte 30) i maximum col)
+           (type string s))
+  (the2s
+   (signed-byte 30)
+   (cond ((not (< i maximum))
+          (mv col state))
+         (t
+          (let ((c (charf s i)))
+            (declare (type character c))
+            (pprogn
+             (princ$ c channel state)
+             (fmt-tilde-cap-s1 s (1+f i) maximum (1+f col)
+                               channel state)))))))
+
 (defun fmt-var (s alist i maximum)
   (declare (type (signed-byte 30) i maximum)
            (type string s))
@@ -2567,6 +2582,9 @@
                  i (char s (+f i 2)) alist s)))))
 
 (defun splat-atom (x print-base print-radix indent col channel state)
+
+; See also splat-atom!, which ignores margins.
+
   (let* ((sz (flsz-atom x print-base print-radix 0 state))
          (too-bigp (> (+ col sz) (fmt-hard-right-margin state))))
     (pprogn (if too-bigp
@@ -2576,6 +2594,15 @@
             (prin1$ x channel state)
             (mv (if too-bigp (+ indent sz) (+ col sz))
                 state))))
+
+(defun splat-atom! (x print-base print-radix col channel state)
+
+; See also splat-atom, which takes account of margins by possibly printing
+; newlines.
+
+  (pprogn (prin1$ x channel state)
+          (mv (flsz-atom x print-base print-radix col state)
+              state)))
 
 ; Splat, below, prints out an arbitrary ACL2 object flat, introducing
 ; the single-gritch notation for quote and breaking lines between lexemes
@@ -3049,6 +3076,46 @@
                            (cons #\1 str))
                      0 10 col channel state nil)))))))))))
 
+(defun fmt-tilde-cap-s (s col channel state)
+
+; This variant of fmt-tilde-s avoids printing newlines during the printing of
+; s.
+
+  (declare (type (signed-byte 30) col))
+  (the2s
+   (signed-byte 30)
+   (cond
+    ((acl2-numberp s)
+     (splat-atom! s (print-base) (print-radix) col channel state))
+    ((stringp s)
+     (fmt-tilde-cap-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+                       channel state))
+    (t
+     (let ((str (symbol-name s)))
+       (cond
+        ((keywordp s)
+         (cond
+          ((needs-slashes str state)
+           (splat-atom! s (print-base) (print-radix) col channel state))
+          (t (fmt0 ":~S0" (list (cons #\0 str)) 0 4 col channel state nil))))
+        ((symbol-in-current-package-p s state)
+         (cond
+          ((needs-slashes str state)
+           (splat-atom! s (print-base) (print-radix) col channel state))
+          (t (fmt-tilde-cap-s1 str 0
+                               (the-fixnum! (length str) 'fmt-tilde-s)
+                               col channel state))))
+        (t
+         (let ((p (symbol-package-name s)))
+           (cond
+            ((or (needs-slashes p state)
+                 (needs-slashes str state))
+             (splat-atom! s (print-base) (print-radix) col channel state))
+            (t (fmt0 "~S0::~S1"
+                     (list (cons #\0 p)
+                           (cons #\1 str))
+                     0 10 col channel state nil)))))))))))
+
 (defun fmt0 (s alist i maximum col channel state evisc-tuple)
   (declare (type (signed-byte 30) i maximum col)
            (type string s))
@@ -3396,6 +3463,12 @@
                    (mv-letc (col state)
                             (fmt-tilde-s (fmt-var s alist i maximum) col
                                          channel state)
+                            (fmt0 s alist (+f i 3) maximum col channel
+                                  state evisc-tuple))))
+             (#\S (maybe-newline
+                   (mv-letc (col state)
+                            (fmt-tilde-cap-s (fmt-var s alist i maximum) col
+                                             channel state)
                             (fmt0 s alist (+f i 3) maximum col channel
                                   state evisc-tuple))))
              (#\Space (let ((fmt-hard-right-margin
