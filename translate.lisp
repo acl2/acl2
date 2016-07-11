@@ -3398,7 +3398,7 @@
 ; Even though translate insists that the second argument of synp is quoted, can
 ; we really guarantee that every termp given to untranslate came through
 ; translate?  Not necessarily; for example, maybe substitution was performed
-; for some reason (say, in the proof-checker one replaces the quoted argument
+; for some reason (say, in the proof-builder one replaces the quoted argument
 ; by a variable known to be equal to it).
 
                 (quotep (fargn term 2)))
@@ -5222,6 +5222,7 @@
 ; We determine whether the function fn (possibly a lambda-expression)
 ; is used as a function in term.
 
+  (declare (xargs :guard (pseudo-termp term)))
   (cond ((variablep term) nil)
         ((fquotep term) nil)
         ((flambda-applicationp term)
@@ -5232,9 +5233,8 @@
         (t (ffnnamep-lst fn (fargs term)))))
 
 (defun ffnnamep-lst (fn l)
-  (declare (xargs :guard (and (symbolp fn)
-                              (pseudo-term-listp l))))
-  (if (null l)
+  (declare (xargs :guard (pseudo-term-listp l)))
+  (if (endp l)
       nil
     (or (ffnnamep fn (car l))
         (ffnnamep-lst fn (cdr l)))))

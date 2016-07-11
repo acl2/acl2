@@ -286,7 +286,7 @@
           times-expt-2-16-mod-m31 ; only used by GCL ;
           show-poly-lst ; for system debugging ;
           brr-prompt ; argument of set-ld-prompt ;
-          proof-checker-cl-proc
+          proof-builder-cl-proc
           ext-ancestors-attachments ; called by memoize-fn ;
           tree-occur-eq ; called by #-acl2-loop-only definition
 ; The following are hidden by wormholes, e.g., ;

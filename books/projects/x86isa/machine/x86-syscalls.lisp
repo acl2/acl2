@@ -99,7 +99,7 @@ under a suitable extra hypothesis about the oracle.</p>
 <p>Here are some details about our implementation, where \"top-level
   evaluation\" and \"during reasoning\", also known as \"impure\" and
   \"pure\" evaluation \(respectively\), partition evaluation into that
-  done outside or inside the prover \(or proof-checker\),
+  done outside or inside the prover \(or proof-builder\),
   respectively.  Below, we use \"attach\" in quotes to refer to
   changing a definition.  In our case we probably will avoid
   defattach, in part at least to avoid complicating the defattach

@@ -1913,7 +1913,7 @@
 ; at hand to illustrate the danger of careless substitution with
 ; remove-trivial-equivalences and fertilize-clause, we can imagine that such
 ; dangers exist.  Finally support for pequivs is provided in the function
-; geneqv-at-subterm-top, used in the proof-checker, but is not provided in the
+; geneqv-at-subterm-top, used in the proof-builder, but is not provided in the
 ; code the warns about missing opportunities for the use of double-rewrite
 ; (e.g., double-rewrite-opportunities).
 
@@ -6584,7 +6584,7 @@
                       (nth-update " the result of the nth/update rewriter")
                       (multiply-alists2 " the product of two polys")
                       (forced-assumption " a forced assumption")
-                      (proof-checker " proof-checker top level")
+                      (proof-builder " proof-builder top level")
                       (otherwise (er hard 'tilde-@-bkptr-phrase
                                      "When ~x0 calls ~x1 we get an unrecognized ~
                                       bkptr, ~x2."
@@ -7629,7 +7629,7 @@
 
 (defun ts< (x y)
 
-; This is just a heuristic order for the type-alist command (proof-checker and
+; This is just a heuristic order for the type-alist command (proof-builder and
 ; break-rewrite).  First comes t, then non-nil, then nil, and finally we sort
 ; by type inclusion.
 

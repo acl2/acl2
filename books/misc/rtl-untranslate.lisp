@@ -269,7 +269,7 @@
 ; Even though translate insists that the second argument of synp is quoted, can
 ; we really guarantee that every termp given to rtl-untrans came through
 ; translate?  Not necessarily; for example, maybe substitution was performed
-; for some reason (say, in the proof-checker one replaces the quoted argument
+; for some reason (say, in the proof-builder one replaces the quoted argument
 ; by a variable known to be equal to it).
 
                 (quotep (fargn term 2)))
@@ -645,7 +645,7 @@
            (cdr (assoc 'sigs-btree (table-alist 'rtl-tbl world))))))
 
 ; Finally, we deal with the right-assoc-macros-table, so that DV and numeric
-; dive commands will work in the proof-checker.
+; dive commands will work in the proof-builder.
 
 (defun expand-address-cat (car-addr raw-term term wrld)
   (declare (ignore term wrld))

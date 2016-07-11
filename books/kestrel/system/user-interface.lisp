@@ -77,6 +77,64 @@
               :on error
               ,form))))
 
+(define control-screen-output-and-maybe-replay
+  ((verbose "t or nil, else indicates replay on failure")
+   (event-p "make an event when true")
+   (form (pseudo-event-formp form)))
+  :short
+  "Variant of @(tsee control-screen-output) that can replay a failure verbosely"
+  :long
+  "<p>Usage:</p>
+
+  @({
+  (control-screen-output-and-maybe-replay verbose event-p form)
+  })
+
+  <p>where @('verbose') is not evaluated.</p>
+
+  <p>If @('verbose') is @('t') or @('nil'), this is just @(tsee
+  control-screen-output).  Otherwise, @('(control-screen-output nil form)') is
+  evaluated, and then if evaluation fails, @('(control-screen-output t form)')
+  is subsequently evaluated so that the failure can be seen with more
+  output.</p>
+
+  <p>The value of @(':event-p') is relevant when the value of @(':verbose') is
+  not @('t') or @('nil').  There are two cases.</p>
+
+  <ul>
+
+  <li>For @(':event-p t'), the call of
+  @('control-screen-output-and-maybe-replay') can go into a book, but @('form')
+  must be a legal event form (see @(see embedded-event-form)).</li>
+
+  <li>For @(':event-p nil'), the call of
+  @('control-screen-output-and-maybe-replay') cannot go into a book, but
+  @('form') need not be a legal event form.</li>
+
+  </ul>"
+  
+  (cond ((booleanp verbose)
+         (control-screen-output verbose form))
+        (t
+         (let ((form-nil (control-screen-output nil form))
+               (form-t (control-screen-output t form)))
+           (cond
+            (event-p
+             `(make-event
+               '(:or ,form-nil
+                     (with-output
+                       :off :all
+                       :on error
+                       :stack :push
+                       (progn
+                         (value-triple (cw "~%===== VERBOSE REPLAY: =====~|"))
+                         (with-output :stack :pop ,form-t))))))
+            (t `(mv-let (erp val state)
+                  ,form-nil
+                  (cond (erp (prog2$ (cw "~%===== VERBOSE REPLAY: =====~|")
+                                     ,form-t))
+                        (t (value val))))))))))
+
 (defsection cw-event
   :short "Event form of @(tsee cw)."
   :long

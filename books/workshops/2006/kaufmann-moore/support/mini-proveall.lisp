@@ -36,10 +36,10 @@
         (true-listp (rev x))
         :rule-classes (:REWRITE :GENERALIZE))
 
-; Here we test the proof-checker using the same theorem as the one that
+; Here we test the proof-builder using the same theorem as the one that
 ; follows (but not storing it as a :rewrite rule).
 
-      (defthm rev-app-proof-checker
+      (defthm rev-app-proof-builder
         (equal (rev (app a b)) (app (rev b) (rev a)))
         :rule-classes nil
         :instructions

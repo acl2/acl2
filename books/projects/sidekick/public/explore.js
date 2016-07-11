@@ -281,7 +281,7 @@ function format_commands(cmds)
   	    tbl += "<img src='icons/session-undo.png'/>";
 	    tbl += "</a>";
 	    tbl += "</td>";
-	    // Showing the numbers seems useful for command-line proof-checker users because they can
+	    // Showing the numbers seems useful for command-line proof-builder users because they can
 	    // say where to undo through, but it seems less useful for the web interface and I don't
 	    // at all like the jarring way that the numbers are ordered.  If we simply reversed the
 	    // indices and had the new commands have the highest numbers, there would be far greater
