@@ -32,8 +32,8 @@
 
 (in-package "ACL2")
 (include-book "uchar")
-(include-book "utf8-table35")
 (include-book "utf8-table36")
+(include-book "utf8-table37")
 (include-book "utf8-encode")
 (include-book "partition")
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -83,7 +83,7 @@
 
 
 ;; The conversion into UTF-8 was pretty straightforward.  Unfortunately, the
-;; conversion from UTF-8 is much more complicated, becuase we have to deal with
+;; conversion from UTF-8 is much more complicated, because we have to deal with
 ;; lists of bytes rather than atomic code points.
 ;;
 ;; Assume for now that we are given a single UTF-8 encoded character.  This
@@ -98,9 +98,9 @@
            (type (unsigned-byte 8) x2))
   (and (mbt (unsigned-byte-p 8 x1))
        (mbt (unsigned-byte-p 8 x2))
-       (utf8-table35-byte-1/2? x1)
-       (utf8-table35-trailing-byte? x2)
-       (utf8-table36-bytes-2? (list x1 x2))))
+       (utf8-table36-byte-1/2? x1)
+       (utf8-table36-trailing-byte? x2)
+       (utf8-table37-bytes-2? (list x1 x2))))
 
 (defund utf8-combine2 (x1 x2)
   (declare (type (unsigned-byte 8) x1)
@@ -120,8 +120,8 @@
           (let ((test (if (utf8-combine2-guard x1 x2)
                           (let ((result (utf8-combine2 x1 x2)))
                             (and (uchar? result)
-                                 (utf8-table35-ok? result (list x1 x2))
                                  (utf8-table36-ok? result (list x1 x2))
+                                 (utf8-table37-ok? result (list x1 x2))
                                  (equal (uchar=>utf8 result)
                                         (list x1 x2))))
                         t)))
@@ -142,8 +142,8 @@
                         (integerp j) (<= 0 j) (<= j x2)
                         (utf8-combine2-guard x1 j))
                    (and (uchar? (utf8-combine2 x1 j))
-                        (utf8-table35-ok? (utf8-combine2 x1 j) (list x1 j))
                         (utf8-table36-ok? (utf8-combine2 x1 j) (list x1 j))
+                        (utf8-table37-ok? (utf8-combine2 x1 j) (list x1 j))
                         (equal (uchar=>utf8 (utf8-combine2 x1 j))
                                (list x1 j))))))
 
@@ -154,8 +154,8 @@
                         (integerp j) (<= 0 j) (< j 256)
                         (utf8-combine2-guard i j))
                    (and (uchar? (utf8-combine2 i j))
-                        (utf8-table35-ok? (utf8-combine2 i j) (list i j))
                         (utf8-table36-ok? (utf8-combine2 i j) (list i j))
+                        (utf8-table37-ok? (utf8-combine2 i j) (list i j))
                         (equal (uchar=>utf8 (utf8-combine2 i j))
                                (list i j))))
           :hints(("Goal" :in-theory (enable utf8-combine2-guard)))))
@@ -165,8 +165,8 @@
  (local (defthm lemma3
           (implies (utf8-combine2-guard x1 x2)
                    (and (uchar? (utf8-combine2 x1 x2))
-                        (utf8-table35-ok? (utf8-combine2 x1 x2) (list x1 x2))
                         (utf8-table36-ok? (utf8-combine2 x1 x2) (list x1 x2))
+                        (utf8-table37-ok? (utf8-combine2 x1 x2) (list x1 x2))
                         (equal (uchar=>utf8 (utf8-combine2 x1 x2))
                                (list x1 x2))))
           :hints(("Goal"
@@ -178,13 +178,13 @@
    (implies (utf8-combine2-guard x1 x2)
             (uchar? (utf8-combine2 x1 x2))))
 
- (defthm utf8-table35-ok?-of-utf8-combine2
-   (implies (utf8-combine2-guard x1 x2)
-            (utf8-table35-ok? (utf8-combine2 x1 x2) (list x1 x2))))
-
  (defthm utf8-table36-ok?-of-utf8-combine2
    (implies (utf8-combine2-guard x1 x2)
             (utf8-table36-ok? (utf8-combine2 x1 x2) (list x1 x2))))
+
+ (defthm utf8-table37-ok?-of-utf8-combine2
+   (implies (utf8-combine2-guard x1 x2)
+            (utf8-table37-ok? (utf8-combine2 x1 x2) (list x1 x2))))
 
  (defthm uchar=>utf8-of-utf8-combine2
    (implies (utf8-combine2-guard x1 x2)
@@ -201,14 +201,14 @@
   (and (mbt (unsigned-byte-p 8 x1))
        (mbt (unsigned-byte-p 8 x2))
        (mbt (unsigned-byte-p 8 x3))
-       (utf8-table35-byte-1/3? x1)
-       (utf8-table35-trailing-byte? x2)
-       (utf8-table35-trailing-byte? x3)
+       (utf8-table36-byte-1/3? x1)
+       (utf8-table36-trailing-byte? x2)
+       (utf8-table36-trailing-byte? x3)
        (let ((bytes (list x1 x2 x3)))
-         (or (utf8-table36-bytes-3? bytes)
-             (utf8-table36-bytes-4? bytes)
-             (utf8-table36-bytes-5? bytes)
-             (utf8-table36-bytes-6? bytes)))))
+         (or (utf8-table37-bytes-3? bytes)
+             (utf8-table37-bytes-4? bytes)
+             (utf8-table37-bytes-5? bytes)
+             (utf8-table37-bytes-6? bytes)))))
 
 (defund utf8-combine3 (x1 x2 x3)
   (declare (type (unsigned-byte 8) x1)
@@ -233,8 +233,8 @@
           (let ((test (if (utf8-combine3-guard x1 x2 x3)
                           (let ((result (utf8-combine3 x1 x2 x3)))
                             (and (uchar? result)
-                                 (utf8-table35-ok? result (list x1 x2 x3))
                                  (utf8-table36-ok? result (list x1 x2 x3))
+                                 (utf8-table37-ok? result (list x1 x2 x3))
                                  (equal (uchar=>utf8 (utf8-combine3 x1 x2 x3))
                                         (list x1 x2 x3))))
                         t)))
@@ -263,9 +263,9 @@
                         (integerp k) (<= 0 k) (<= k x3)
                         (utf8-combine3-guard x1 x2 k))
                    (and (uchar? (utf8-combine3 x1 x2 k))
-                        (utf8-table35-ok? (utf8-combine3 x1 x2 k)
-                                          (list x1 x2 k))
                         (utf8-table36-ok? (utf8-combine3 x1 x2 k)
+                                          (list x1 x2 k))
+                        (utf8-table37-ok? (utf8-combine3 x1 x2 k)
                                           (list x1 x2 k))
                         (equal (uchar=>utf8 (utf8-combine3 x1 x2 k))
                                (list x1 x2 k))))))
@@ -277,9 +277,9 @@
                         (integerp k) (<= 0 k) (< k 256)
                         (utf8-combine3-guard x1 j k))
                    (and (uchar? (utf8-combine3 x1 j k))
-                        (utf8-table35-ok? (utf8-combine3 x1 j k)
-                                          (list x1 j k))
                         (utf8-table36-ok? (utf8-combine3 x1 j k)
+                                          (list x1 j k))
+                        (utf8-table37-ok? (utf8-combine3 x1 j k)
                                           (list x1 j k))
                         (equal (uchar=>utf8 (utf8-combine3 x1 j k))
                                (list x1 j k))))
@@ -293,9 +293,9 @@
                         (integerp k) (<= 0 k) (< k 256)
                         (utf8-combine3-guard i j k))
                    (and (uchar? (utf8-combine3 i j k))
-                        (utf8-table35-ok? (utf8-combine3 i j k)
-                                          (list i j k))
                         (utf8-table36-ok? (utf8-combine3 i j k)
+                                          (list i j k))
+                        (utf8-table37-ok? (utf8-combine3 i j k)
                                           (list i j k))
                         (equal (uchar=>utf8 (utf8-combine3 i j k))
                                (list i j k))))
@@ -306,9 +306,9 @@
  (local (defthm lemma4
           (implies (utf8-combine3-guard x1 x2 x3)
                    (and (uchar? (utf8-combine3 x1 x2 x3))
-                        (utf8-table35-ok? (utf8-combine3 x1 x2 x3)
-                                          (list x1 x2 x3))
                         (utf8-table36-ok? (utf8-combine3 x1 x2 x3)
+                                          (list x1 x2 x3))
+                        (utf8-table37-ok? (utf8-combine3 x1 x2 x3)
                                           (list x1 x2 x3))
                         (equal (uchar=>utf8 (utf8-combine3 x1 x2 x3))
                                (list x1 x2 x3))))
@@ -320,13 +320,13 @@
    (implies (utf8-combine3-guard x1 x2 x3)
             (uchar? (utf8-combine3 x1 x2 x3))))
 
- (defthm utf8-table35-ok?-of-utf8-combine3
-   (implies (utf8-combine3-guard x1 x2 x3)
-            (utf8-table35-ok? (utf8-combine3 x1 x2 x3) (list x1 x2 x3))))
-
  (defthm utf8-table36-ok?-of-utf8-combine3
    (implies (utf8-combine3-guard x1 x2 x3)
             (utf8-table36-ok? (utf8-combine3 x1 x2 x3) (list x1 x2 x3))))
+
+ (defthm utf8-table37-ok?-of-utf8-combine3
+   (implies (utf8-combine3-guard x1 x2 x3)
+            (utf8-table37-ok? (utf8-combine3 x1 x2 x3) (list x1 x2 x3))))
 
  (defthm uchar=>utf8-of-utf8-combine3
    (implies (utf8-combine3-guard x1 x2 x3)
@@ -349,14 +349,14 @@
         (mbt (unsigned-byte-p 8 x2))
         (mbt (unsigned-byte-p 8 x3))
         (mbt (unsigned-byte-p 8 x4))
-        (utf8-table35-byte-1/4? x1)
-        (utf8-table35-trailing-byte? x2)
-        (utf8-table35-trailing-byte? x3)
-        (utf8-table35-trailing-byte? x4)
+        (utf8-table36-byte-1/4? x1)
+        (utf8-table36-trailing-byte? x2)
+        (utf8-table36-trailing-byte? x3)
+        (utf8-table36-trailing-byte? x4)
         (let ((bytes (list x1 x2 x3 x4)))
-          (or (utf8-table36-bytes-7? bytes)
-              (utf8-table36-bytes-8? bytes)
-              (utf8-table36-bytes-9? bytes)))))
+          (or (utf8-table37-bytes-7? bytes)
+              (utf8-table37-bytes-8? bytes)
+              (utf8-table37-bytes-9? bytes)))))
 
  (defund utf8-combine4 (x1 x2 x3 x4)
    (declare (type (unsigned-byte 8) x1)
@@ -381,8 +381,8 @@
           (let ((test (if (utf8-combine4-guard x1 x2 x3 x4)
                           (let ((result (utf8-combine4 x1 x2 x3 x4)))
                             (and (uchar? result)
-                                 (utf8-table35-ok? result (list x1 x2 x3 x4))
                                  (utf8-table36-ok? result (list x1 x2 x3 x4))
+                                 (utf8-table37-ok? result (list x1 x2 x3 x4))
                                  (equal (uchar=>utf8
                                          (utf8-combine4 x1 x2 x3 x4))
                                         (list x1 x2 x3 x4))))
@@ -423,9 +423,9 @@
                         (integerp m) (<= 0 m) (<= m x4)
                         (utf8-combine4-guard x1 x2 x3 m))
                    (and (uchar? (utf8-combine4 x1 x2 x3 m))
-                        (utf8-table35-ok? (utf8-combine4 x1 x2 x3 m)
-                                          (list x1 x2 x3 m))
                         (utf8-table36-ok? (utf8-combine4 x1 x2 x3 m)
+                                          (list x1 x2 x3 m))
+                        (utf8-table37-ok? (utf8-combine4 x1 x2 x3 m)
                                           (list x1 x2 x3 m))
                         (equal (uchar=>utf8 (utf8-combine4 x1 x2 x3 m))
                                (list x1 x2 x3 m))))))
@@ -437,9 +437,9 @@
                         (integerp m) (<= 0 m) (< m 256)
                         (utf8-combine4-guard x1 x2 k m))
                    (and (uchar? (utf8-combine4 x1 x2 k m))
-                        (utf8-table35-ok? (utf8-combine4 x1 x2 k m)
-                                          (list x1 x2 k m))
                         (utf8-table36-ok? (utf8-combine4 x1 x2 k m)
+                                          (list x1 x2 k m))
+                        (utf8-table37-ok? (utf8-combine4 x1 x2 k m)
                                           (list x1 x2 k m))
                         (equal (uchar=>utf8 (utf8-combine4 x1 x2 k m))
                                (list x1 x2 k m))))
@@ -453,9 +453,9 @@
                         (integerp m) (<= 0 m) (< m 256)
                         (utf8-combine4-guard x1 j k m))
                    (and (uchar? (utf8-combine4 x1 j k m))
-                        (utf8-table35-ok? (utf8-combine4 x1 j k m)
-                                          (list x1 j k m))
                         (utf8-table36-ok? (utf8-combine4 x1 j k m)
+                                          (list x1 j k m))
+                        (utf8-table37-ok? (utf8-combine4 x1 j k m)
                                           (list x1 j k m))
                         (equal (uchar=>utf8 (utf8-combine4 x1 j k m))
                                (list x1 j k m))))
@@ -470,9 +470,9 @@
                         (integerp m) (<= 0 m) (< m 256)
                         (utf8-combine4-guard i j k m))
                    (and (uchar? (utf8-combine4 i j k m))
-                        (utf8-table35-ok? (utf8-combine4 i j k m)
-                                          (list i j k m))
                         (utf8-table36-ok? (utf8-combine4 i j k m)
+                                          (list i j k m))
+                        (utf8-table37-ok? (utf8-combine4 i j k m)
                                           (list i j k m))
                         (equal (uchar=>utf8 (utf8-combine4 i j k m))
                                (list i j k m))))
@@ -496,9 +496,9 @@
  (local (defthm lemma5-for-utf8-combine4-guard
           (implies (utf8-combine4-guard x1 x2 x3 x4)
                    (and (uchar? (utf8-combine4 x1 x2 x3 x4))
-                        (utf8-table35-ok? (utf8-combine4 x1 x2 x3 x4)
-                                          (list x1 x2 x3 x4))
                         (utf8-table36-ok? (utf8-combine4 x1 x2 x3 x4)
+                                          (list x1 x2 x3 x4))
+                        (utf8-table37-ok? (utf8-combine4 x1 x2 x3 x4)
                                           (list x1 x2 x3 x4))
                         (equal (uchar=>utf8 (utf8-combine4 x1 x2 x3 x4))
                                (list x1 x2 x3 x4))))
@@ -512,14 +512,14 @@
    (implies (utf8-combine4-guard x1 x2 x3 x4)
             (uchar? (utf8-combine4 x1 x2 x3 x4))))
 
- (defthm utf8-table35-ok?-of-utf8-combine4
-   (implies (utf8-combine4-guard x1 x2 x3 x4)
-            (utf8-table35-ok? (utf8-combine4 x1 x2 x3 x4)
-                              (list x1 x2 x3 x4))))
-
  (defthm utf8-table36-ok?-of-utf8-combine4
    (implies (utf8-combine4-guard x1 x2 x3 x4)
             (utf8-table36-ok? (utf8-combine4 x1 x2 x3 x4)
+                              (list x1 x2 x3 x4))))
+
+ (defthm utf8-table37-ok?-of-utf8-combine4
+   (implies (utf8-combine4-guard x1 x2 x3 x4)
+            (utf8-table37-ok? (utf8-combine4 x1 x2 x3 x4)
                               (list x1 x2 x3 x4))))
 
  (defthm uchar=>utf8-of-utf8-combine4
@@ -542,7 +542,7 @@
                               (<= (len x) 4))))
   (and (mbt (unsigned-byte-listp 8 x))
        (case (len x)
-         (1 (if (utf8-table35-byte-1/1? (first x))
+         (1 (if (utf8-table36-byte-1/1? (first x))
                 (first x)
               nil))
          (2 (let ((x1 (first x))
@@ -604,64 +604,64 @@
   (local (include-book "std/lists/len" :dir :system))
 
   (local (defthm lemma1
-           (implies (utf8-table35-byte-1/1? x)
-                    (utf8-table35-ok? x (list x)))
-           :hints(("Goal" :in-theory (enable unsigned-byte-p
-                                             uchar?
-                                             utf8-table35-ok?
-                                             utf8-table35-row-1?
-                                             utf8-table35-codepoint-1?
-                                             utf8-table35-byte-1/1?)))))
-
-  (local (defthm lemma2
-           (implies (and (equal (len x) 1)
-                         (true-listp x)
-                         (utf8-table35-byte-1/1? (first x)))
-                    (utf8-table35-ok? (first x) x))))
-
-  (local (defthm lemma3
-           (implies (utf8-table35-byte-1/1? x)
+           (implies (utf8-table36-byte-1/1? x)
                     (utf8-table36-ok? x (list x)))
            :hints(("Goal" :in-theory (enable unsigned-byte-p
                                              uchar?
                                              utf8-table36-ok?
                                              utf8-table36-row-1?
                                              utf8-table36-codepoint-1?
-                                             utf8-table36-bytes-1?
-                                             utf8-table35-byte-1/1?)))))
+                                             utf8-table36-byte-1/1?)))))
+
+  (local (defthm lemma2
+           (implies (and (equal (len x) 1)
+                         (true-listp x)
+                         (utf8-table36-byte-1/1? (first x)))
+                    (utf8-table36-ok? (first x) x))))
+
+  (local (defthm lemma3
+           (implies (utf8-table36-byte-1/1? x)
+                    (utf8-table37-ok? x (list x)))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p
+                                             uchar?
+                                             utf8-table37-ok?
+                                             utf8-table37-row-1?
+                                             utf8-table37-codepoint-1?
+                                             utf8-table37-bytes-1?
+                                             utf8-table36-byte-1/1?)))))
 
   (local (defthm lemma4
            (implies (and (equal (len x) 1)
                          (true-listp x)
-                         (utf8-table35-byte-1/1? (first x)))
-                    (utf8-table36-ok? (first x) x))))
+                         (utf8-table36-byte-1/1? (first x)))
+                    (utf8-table37-ok? (first x) x))))
 
-  (local (defthm lemma5-for-utf8-table35-byte-1/1?
-           (implies (utf8-table35-byte-1/1? x)
+  (local (defthm lemma5-for-utf8-table36-byte-1/1?
+           (implies (utf8-table36-byte-1/1? x)
                     (uchar? x))
-           :hints(("Goal" :in-theory (enable utf8-table35-byte-1/1?
+           :hints(("Goal" :in-theory (enable utf8-table36-byte-1/1?
                                              uchar?)))))
 
   (local (defthm lemma6
-           (implies (utf8-table35-byte-1/1? x)
+           (implies (utf8-table36-byte-1/1? x)
                     (equal (uchar=>utf8 x)
                            (list x)))
            :hints(("Goal" :in-theory (enable uchar=>utf8
-                                             utf8-table35-byte-1/1?)))))
+                                             utf8-table36-byte-1/1?)))))
 
   (defthm uchar?-of-utf8-char=>uchar
     (implies (utf8-char=>uchar x)
              (uchar? (utf8-char=>uchar x)))
     :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
 
-  (defthm utf8-table35-okp-of-utf8-char=>uchar
-    (implies (utf8-char=>uchar x)
-             (utf8-table35-ok? (utf8-char=>uchar x) x))
-    :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
-
   (defthm utf8-table36-okp-of-utf8-char=>uchar
     (implies (utf8-char=>uchar x)
              (utf8-table36-ok? (utf8-char=>uchar x) x))
+    :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
+
+  (defthm utf8-table37-okp-of-utf8-char=>uchar
+    (implies (utf8-char=>uchar x)
+             (utf8-table37-ok? (utf8-char=>uchar x) x))
     :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
 
   (defthm uchar=>utf8-of-utf8-char=>uchar
@@ -742,47 +742,47 @@
 ;; exists some partitioning of the bytes in the file which results in a UTF-8
 ;; string.  Below, we provide an algorithm to identify such partitions.
 ;;
-;; First, we show that the 1st Byte entries in Table 3-5 are distinct.  That
+;; First, we show that the 1st Byte entries in Table 3-6 are distinct.  That
 ;; is, given any x as input, x either matches none of the acceptable 1st Byte
 ;; patterns, or it matches exactly one of them.  Because of this, we can use
 ;; the 1st Byte to determine how many bytes we need to read total.
 
-(defun utf8-table35-expected-length (x)
-  "Given that x is allegedly the first byte of a UTF-8 sequence, use Table 3-5
+(defun utf8-table36-expected-length (x)
+  "Given that x is allegedly the first byte of a UTF-8 sequence, use Table 3-6
    to determine how long this sequence is expected to be."
   (declare (type (unsigned-byte 8) x))
-  (cond ((utf8-table35-byte-1/1? x) 1)
-        ((utf8-table35-byte-1/2? x) 2)
-        ((utf8-table35-byte-1/3? x) 3)
-        ((utf8-table35-byte-1/4? x) 4)
+  (cond ((utf8-table36-byte-1/1? x) 1)
+        ((utf8-table36-byte-1/2? x) 2)
+        ((utf8-table36-byte-1/3? x) 3)
+        ((utf8-table36-byte-1/4? x) 4)
         (t nil)))
 
-(defthm utf8-table35-ok?-when-not-expected-length
-  (implies (not (equal (utf8-table35-expected-length (first x))
+(defthm utf8-table36-ok?-when-not-expected-length
+  (implies (not (equal (utf8-table36-expected-length (first x))
                        (len x)))
-           (not (utf8-table35-ok? cp x)))
-  :hints(("Goal" :in-theory (enable utf8-table35-ok?
-                                    utf8-table35-rows
-                                    utf8-table35-bytes
-                                    utf8-table35-expected-length))))
+           (not (utf8-table36-ok? cp x)))
+  :hints(("Goal" :in-theory (enable utf8-table36-ok?
+                                    utf8-table36-rows
+                                    utf8-table36-bytes
+                                    utf8-table36-expected-length))))
 
-(defthm utf8-table35-expected-length-when-utf8-table35-ok?
-  (implies (utf8-table35-ok? cp x)
-           (equal (utf8-table35-expected-length (first x))
+(defthm utf8-table36-expected-length-when-utf8-table36-ok?
+  (implies (utf8-table36-ok? cp x)
+           (equal (utf8-table36-expected-length (first x))
                   (len x))))
 
-(defthm utf8-table35-expected-length-when-utf8-char=>uchar
+(defthm utf8-table36-expected-length-when-utf8-char=>uchar
   (implies (utf8-char=>uchar x)
-           (equal (utf8-table35-expected-length (car x))
+           (equal (utf8-table36-expected-length (car x))
                   (len x)))
   :hints(("Goal"
           :in-theory (enable utf8-char=>uchar
-                             utf8-table35-expected-length
+                             utf8-table36-expected-length
                              utf8-combine2-guard
                              utf8-combine3-guard
                              utf8-combine4-guard
-                             utf8-table35-bytes)
-          :expand ((utf8-table35-expected-length (car x))))))
+                             utf8-table36-bytes)
+          :expand ((utf8-table36-expected-length (car x))))))
 
 
 
@@ -799,7 +799,7 @@
    UTF-8 string."
   (declare (xargs :guard (unsigned-byte-listp 8 x)))
   (if (consp x)
-      (let ((len1 (utf8-table35-expected-length (car x))))
+      (let ((len1 (utf8-table36-expected-length (car x))))
         (if (or (not len1)
                 (not (utf8-char? (take len1 x))))
             ;; Failed; the first byte doesn't match anything.
@@ -816,7 +816,7 @@
            (unsigned-byte-listp 8 x))
   :hints(("Goal"
           :in-theory (e/d (utf8-partition)
-                          (utf8-table35-expected-length)))))
+                          (utf8-table36-expected-length)))))
 
 (defthm nat-listp-when-utf8-partition
   (implies (mv-nth 0 (utf8-partition x))
@@ -837,7 +837,7 @@
                 (mv-nth 0 (utf8-partition x)))
            (mv-nth 0 (utf8-partition (append a x))))
   :hints(("Goal"
-          :in-theory (disable utf8-table35-expected-length)
+          :in-theory (disable utf8-table36-expected-length)
           :expand (utf8-partition (append a x)))))
 
 (defthm sum-list-of-sizes-of-utf8-partition
@@ -846,13 +846,13 @@
                   (len x)))
   :hints(("Goal"
           :in-theory (e/d (utf8-partition)
-                          (utf8-table35-expected-length)))))
+                          (utf8-table36-expected-length)))))
 
 (defthm nat-listp-of-mv-nth-1-of-utf8-partition
   (implies (mv-nth 0 (utf8-partition x))
            (nat-listp (mv-nth 1 (utf8-partition x))))
   :hints(("Goal" :in-theory (e/d (utf8-partition)
-                                 (utf8-table35-expected-length)))))
+                                 (utf8-table36-expected-length)))))
 
 
 
@@ -880,18 +880,18 @@
                   (equal (equal (len x) 0)
                          (equal x nil)))))
 
-(local (defthm utf8-table35-expected-length-when-partition-creates-utf8-string
+(local (defthm utf8-table36-expected-length-when-partition-creates-utf8-string
          (implies (and (consp x)
                        (consp sizes)
                        (utf8-string? (partition sizes x)))
-                  (equal (utf8-table35-expected-length (car x))
+                  (equal (utf8-table36-expected-length (car x))
                          (car sizes)))
          :hints(("Goal"
-                 :in-theory (disable utf8-table35-expected-length
-                                     utf8-table35-expected-length-when-utf8-char=>uchar
+                 :in-theory (disable utf8-table36-expected-length
+                                     utf8-table36-expected-length-when-utf8-char=>uchar
                                      utf8-char?-of-take-when-partition-creates-utf8-string)
                  :use ((:instance utf8-char?-of-take-when-partition-creates-utf8-string)
-                       (:instance utf8-table35-expected-length-when-utf8-char=>uchar
+                       (:instance utf8-table36-expected-length-when-utf8-char=>uchar
                                   (x (take (car sizes) x))))))))
 
 (defthm utf8-partition-successful-when-any-valid-partitioning-exists
@@ -972,7 +972,7 @@
        (if (equal x nil)
            (reverse acc)
          'fail)
-     (let ((len1 (utf8-table35-expected-length (car x))))
+     (let ((len1 (utf8-table36-expected-length (car x))))
        (if (not len1)
            'fail
          (let ((first (utf8-char=>uchar (take len1 x))))
@@ -997,7 +997,7 @@
 
         ((in-range? (the-fixnum x1) 194 223)
          ;; Expected length 2.  (We excluded 192,193 because they are not
-         ;; permitted under Table 3-6.)
+         ;; permitted under Table 3-7.)
          (let ((x1-rest (rest x)))
            (if (not (consp x1-rest))
                'fail
@@ -1048,7 +1048,7 @@
                    'fail)))))))
 
         ((in-range? (the-fixnum x1) 240 244)
-         ;; Expected length 4.  We only accept 240-244 because of Table 3-6.
+         ;; Expected length 4.  We only accept 240-244 because of Table 3-7.
          (let ((x1-rest (rest x)))
            (if (not (consp x1-rest))
                'fail
@@ -1115,8 +1115,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine2-guard
                                     utf8-combine2
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine2))))))
 
 (local (defthm terrible-lemma-3
@@ -1131,8 +1131,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine3-guard
                                     utf8-combine3
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine3
                                   (x1 224)))))))
 
@@ -1154,8 +1154,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine3-guard
                                     utf8-combine3
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine3))))))
 
 (local (defthm terrible-lemma-5
@@ -1170,8 +1170,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine3-guard
                                     utf8-combine3
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine3
                                   (x1 237)))))))
 
@@ -1191,8 +1191,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine4-guard
                                     utf8-combine4
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine4
                                   (x1 240)))))))
 
@@ -1218,8 +1218,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine4-guard
                                     utf8-combine4
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine4))))))
 
 (local (defthm terrible-lemma-8
@@ -1238,8 +1238,8 @@
          :hints(("Goal"
                  :in-theory (enable utf8-combine4-guard
                                     utf8-combine4
-                                    utf8-table35-bytes
-                                    utf8-table36-bytes)
+                                    utf8-table36-bytes
+                                    utf8-table37-bytes)
                  :use ((:instance uchar?-of-utf8-combine4
                                   (x1 244)))))))
 
@@ -1250,8 +1250,8 @@
           :do-not-induct t
           :in-theory (e/d (unsigned-byte-listp
                            utf8-char=>uchar
-                           utf8-table35-bytes
                            utf8-table36-bytes
+                           utf8-table37-bytes
                            utf8-combine2
                            utf8-combine3
                            utf8-combine4
@@ -1367,7 +1367,7 @@
                   :in-theory (e/d (utf8=>ustring-fast
                                    utf8-partition
                                    utf8-char=>uchar)
-                                  (utf8-table35-expected-length))
+                                  (utf8-table36-expected-length))
                   :induct (utf8=>ustring-fast x acc)))))
 
  (defthm utf8=>ustring-fast-of-nil

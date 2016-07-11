@@ -5462,7 +5462,7 @@
             (t (get-declared-stobj-names (cdr edcls) ctx wrld state)))))
         (t (get-declared-stobj-names (cdr edcls) ctx wrld state))))
 
-(defun get-stobjs-in-lst (lst ctx wrld state)
+(defun get-stobjs-in-lst (lst defun-mode ctx wrld state)
 
 ; Lst is a list of ``fives'' as computed in chk-acceptable-defuns.
 ; Each element is of the form (fn args "doc" edcls body).  We know the
@@ -5486,7 +5486,17 @@
                         (cond ((and (member-eq 'state formals)
                                     (not (member-eq 'state dcl-stobj-names)))
                                (er-progn
-                                (chk-state-ok ctx wrld state)
+                                (cond
+                                 ((and (eq defun-mode :logic)
+                                       (function-symbolp fn wrld))
+
+; In this case, we skip the polite check that state can be a formal without
+; declaring it a stobj.  This way, verify-termination can succeed in the case
+; that the original :program mode defininition was evaluated in a world with
+; state-ok but the current definition is not.
+
+                                  (value nil))
+                                 (t (chk-state-ok ctx wrld state)))
                                 (value (cons 'state dcl-stobj-names))))
                               (t (value dcl-stobj-names)))))
 
@@ -5503,6 +5513,7 @@
                        fn
                        formals))
                   (t (er-let* ((others (get-stobjs-in-lst (cdr lst)
+                                                          defun-mode
                                                           ctx wrld state)))
 
 ; Note: Wrld is irrelevant below because dcl-stobj-namesx is not T so
@@ -7509,11 +7520,11 @@
 ; as requested by Daron Vroon for ACL2s purposes.
 
   (er-let*
-   ((stobjs-in-lst (get-stobjs-in-lst fives ctx wrld state))
-    (defun-mode (get-unambiguous-xargs-flg :MODE
+   ((defun-mode (get-unambiguous-xargs-flg :MODE
                                            fives
                                            (default-defun-mode wrld)
                                            ctx state))
+    (stobjs-in-lst (get-stobjs-in-lst fives defun-mode ctx wrld state))
     (non-executablep
      (get-unambiguous-xargs-flg :NON-EXECUTABLE fives nil ctx state))
     (verify-guards (get-unambiguous-xargs-flg :VERIFY-GUARDS

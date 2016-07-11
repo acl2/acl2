@@ -228,7 +228,7 @@
                 (partitionp p2))
            (<= (len p2)
                (len p1)))
-  ;; hint found from inside the proof-checker loop
+  ;; hint found from inside the proof-builder loop
   :hints (("Goal" :expand (len p1)))
   :rule-classes nil)
 

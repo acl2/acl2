@@ -4780,9 +4780,9 @@
 ; of the third result are irrelevant.  We know that only-immediatep = 'non-nil
 ; is used only in waterfall-step to do CASE-SPLITs and immediate FORCEs.  We
 ; know that only-immediatep = nil is used for forcing-round applications and in
-; the proof checker.  When CASE-SPLIT type assumptions are collected with
+; the proof-builder.  When CASE-SPLIT type assumptions are collected with
 ; only-immediatep = nil, then they are given the semantics of FORCE rather
-; than CASE-SPLIT.  This could happen in the proof checker, but it is thought
+; than CASE-SPLIT.  This could happen in the proof-builder, but it is thought
 ; not to happen otherwise.
 
 ; In the case that only-immediatep is nil: we strip all assumptions out of

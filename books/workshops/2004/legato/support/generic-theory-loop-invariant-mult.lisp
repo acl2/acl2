@@ -219,7 +219,7 @@
 ; this proof would again go through; but other proofs would fail (see the
 ; comment in obj-table).  For possible evidence that this is a fragile proof,
 ; note that I was able to get a rewrite-stack overflow when messing around in
-; the proof-checker.
+; the proof-builder.
 
            :cases ((equal j 1)))))
 

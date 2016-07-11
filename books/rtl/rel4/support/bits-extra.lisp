@@ -381,7 +381,7 @@
                        0                     j)
                   (- (expt 2 i) (expt 2 j))))
   ;; The following hint is very weird!!  It can't be on Goal or Goal'.  The
-  ;; idea came from a proof-checker proof.  I should investigate....
+  ;; idea came from a proof-builder proof.  I should investigate....
   :hints (("Goal''" :in-theory (enable cat expt)))
   :rule-classes nil)
 
