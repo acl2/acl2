@@ -25,7 +25,7 @@
    (local booleanp "Make the event form local or not."))
   :returns (mv (f$not-normalized symbolp)
                (event-form pseudo-event-formp))
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-system-utilities system-utilities install-not-normalized)
   :short
   "Generate event form for
   <see topic='@(url install-not-normalized)'
