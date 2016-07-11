@@ -5933,7 +5933,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (event         "4" nil nil nil)
     (summary       "4" nil nil nil)
 ;   (chronology    "5" t   nil nil)
-    (proof-checker "6" nil nil nil)
+    (proof-builder "6" nil nil nil)
     (history       "t" t   t   t)
     (temporary     "t" t   t   t)
     (query         "q" t   t   t)))

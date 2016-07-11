@@ -1031,7 +1031,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 (defmacro eval-g-prove-f-i
   (thmname eval oldeval
-           &key (output '(:off (warning warning! observation prove acl2::proof-checker
+           &key (output '(:off (warning warning! observation prove acl2::proof-builder
                                         acl2::history event  proof-tree))))
   `(with-output ,@output
                 (make-event (eval-g-prove-f-i-fn ',eval ',oldeval ',thmname))))
@@ -1301,7 +1301,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 (defmacro make-g-world
   (fns ev
        &key (output
-             '(:off (warning warning! observation prove acl2::proof-checker
+             '(:off (warning warning! observation prove acl2::proof-builder
                              acl2::history event proof-tree)
                     :summary (acl2::form)
                     :gag-mode nil)))
@@ -1336,7 +1336,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 (defmacro make-geval
   (geval fns &key (output '(:off (warning warning! observation prove
-                                          acl2::proof-checker
+                                          acl2::proof-builder
                                           acl2::history event proof-tree)
                                  :summary (acl2::form)
                                  :gag-mode nil)))

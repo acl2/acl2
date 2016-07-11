@@ -3398,7 +3398,7 @@
 ; Even though translate insists that the second argument of synp is quoted, can
 ; we really guarantee that every termp given to untranslate came through
 ; translate?  Not necessarily; for example, maybe substitution was performed
-; for some reason (say, in the proof-checker one replaces the quoted argument
+; for some reason (say, in the proof-builder one replaces the quoted argument
 ; by a variable known to be equal to it).
 
                 (quotep (fargn term 2)))

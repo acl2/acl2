@@ -982,16 +982,16 @@
     "bdd"
     "other-processes"
     "induct"
-    "proof-checker-pkg"
+    "proof-builder-pkg"
     "doc"
     "history-management"
     "prove"
     "defuns"
-    "proof-checker-a"
+    "proof-builder-a"
     "defthm"
     "other-events"
     "ld"
-    "proof-checker-b"
+    "proof-builder-b"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last
@@ -2117,7 +2117,7 @@ You are using version ~s.~s.~s."
               (let ((source (make-pathname :name name
                                            :type *lisp-extension*)))
                 (load source)
-                (or (equal name "proof-checker-pkg")
+                (or (equal name "proof-builder-pkg")
                     (progn
                       (compile-file source)
                       (load-compiled
@@ -2193,8 +2193,8 @@ You are using version ~s.~s.~s."
                        *compiled-file-extension*)))
       (dolist (name *acl2-files*)
         (or (equal name "defpkgs")
-            (if (equal name "proof-checker-pkg")
-                (load "proof-checker-pkg.lisp")
+            (if (equal name "proof-builder-pkg")
+                (load "proof-builder-pkg.lisp")
               (load-compiled (make-pathname :name name
                                             :type extension)))))
       (load "defpkgs.lisp")

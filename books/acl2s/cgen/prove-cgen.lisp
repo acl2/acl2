@@ -25,7 +25,7 @@
                           ''(summary)
                         ;;shut everything except error
                         ''(warning warning! observation prove
-                                  proof-checker event history
+                                  proof-builder event history
                                   proof-tree summary)))) 
                     
 ;doesnt work on an make-event

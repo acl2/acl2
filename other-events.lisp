@@ -22211,14 +22211,14 @@
                      ,@final-dcls-and-strings
                      ,body))))))))))
 
-; Start code for :pl and proof-checker show-rewrites command.
+; Start code for :pl and proof-builder show-rewrites command.
 
 (defrec sar ; single-applicable-rewrite
   ((lemma . alist) (index . equiv))
   nil)
 
 ; Here's the idea.  Both showing and using of rewrites benefits from knowing
-; which hypotheses are irrelevant.  But when rewriting in the proof-checker, we
+; which hypotheses are irrelevant.  But when rewriting in the proof-builder, we
 ; will try to do more, namely relieve all the hyps by instantiating free
 ; variables.  So we avoid doing any instantiation in forming the sar record.
 ; Actually, if we knew that rewriting were to be done with the empty
@@ -22409,7 +22409,7 @@
                          (not-flg atm)
                          (strip-not hyp)
 
-; Again, we avoid rewriting in this proof-checker code.
+; Again, we avoid rewriting in this proof-builder code.
 
                          (cond
                           (not-flg
@@ -22467,7 +22467,7 @@
         (t (mv-let
             (relieve-hyp-ans new-unify-subst ttree)
 
-; We avoid rewriting in this proof-checker code, so new-ttree = ttree.
+; We avoid rewriting in this proof-builder code, so new-ttree = ttree.
 
             (pc-relieve-hyp rune (car hyps) unify-subst type-alist wrld
                             state ens ttree)
@@ -22568,7 +22568,7 @@
                                    enabled-only-flg equiv pl-p state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
-; when we are calling it on behalf of the proof-checker.
+; when we are calling it on behalf of the proof-builder.
 
   (let ((enabledp (enabled-numep nume ens))
         (subst-rhs (sublis-var unify-subst rhs))
@@ -22676,7 +22676,7 @@
                                      enabled-only-flg pl-p w state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
-; when we are calling it on behalf of the proof-checker.
+; when we are calling it on behalf of the proof-builder.
 
   (cond
    ((null app-rules)
@@ -22809,7 +22809,7 @@
                                         all-hyps geneqv pl-p state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
-; when we are calling it on behalf of the proof-checker.
+; when we are calling it on behalf of the proof-builder.
 
   (let ((name (and (symbolp rule-id) rule-id))
         (index (and (integerp rule-id) (< 0 rule-id) rule-id))
@@ -22857,7 +22857,7 @@
        (hyps-type-alist all-hyps ens w state)
        (declare (ignore ttree))
        (cond
-        (flg ; contradiction in hyps, so we are in the proof-checker
+        (flg ; contradiction in hyps, so we are in the proof-builder
          (assert$
           (not pl-p)
           (fms "*** Contradiction in the hypotheses! ***~%The S command ~
@@ -23062,7 +23062,7 @@
             (hyps-type-alist all-hyps ens wrld state)
             (declare (ignore ttree))
             (cond
-             (flg ; contradiction, so hyps is non-nil: we are in proof-checker
+             (flg ; contradiction, so hyps is non-nil: we are in proof-builder
               (fms "*** Contradiction in the hypotheses! ***~%The S command ~
                     should complete this goal.~|"
                    nil (standard-co state) state nil))
@@ -23072,7 +23072,7 @@
                  state))))))
         (t
 
-; Presumably we are inside the proof-checker, since pl2-fn has already checked
+; Presumably we are inside the proof-builder, since pl2-fn has already checked
 ; term.
 
          (fms "Type-prescription rules are associated with function symbols ~
@@ -25859,7 +25859,7 @@
                    state
                    (term-evisc-tuple nil state)))
          (er-let*
-          ((ttree1 (cond (instructions (proof-checker nil ugoal goal nil
+          ((ttree1 (cond (instructions (proof-builder nil ugoal goal nil
                                                       instructions wrld state))
                          (t (prove goal
                                    (make-pspv ens wrld state
@@ -26041,7 +26041,7 @@
           (er-let*
            ((ttree (cond
                     (instructions
-                     (proof-checker nil ugoal goal nil instructions
+                     (proof-builder nil ugoal goal nil instructions
                                     wrld state))
                     (t
                      (prove goal

@@ -1212,7 +1212,7 @@
      :NX (:REWRITE LEMMA-3A)
      :TOP (:DV 1)
      (:REWRITE ACL2::COMMUTATIVITY-2-OF-M-+)
-     (:DIVE 2) ; changed by Matt K. for v2-9 due to proof-checker DV fix for binops
+     (:DIVE 2) ; changed by Matt K. for v2-9 due to proof-builder DV fix for binops
      (:REWRITE ACL2::COMMUTATIVITY-2-OF-M-+)
      :TOP (:USE LEMMA-3K))))
 

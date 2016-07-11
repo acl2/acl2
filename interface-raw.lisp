@@ -2691,7 +2691,7 @@
                       (nth-update " the result of the nth/update rewriter")
                       (multiply-alists2 " the product of two polys")
                       (forced-assumption " a forced assumption")
-                      (proof-checker " proof-checker top level")
+                      (proof-builder " proof-builder top level")
                       (otherwise (er hard 'tilde-@-bkptr-string
                                      "When ~x0 calls ~x1 we get an unrecognized ~
                                       bkptr, ~x2."
