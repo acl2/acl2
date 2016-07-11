@@ -33,56 +33,6 @@
          (function-symbol-listp (cdr syms) w))))
 
 ; Experiments suggest that
-; the body of a DEFCHOOSE can be extracted from the DEFCHOOSE-AXIOM property,
-; which has one of the following forms:
-; 1. If there is one bound variable and :STRENGTHEN is NIL, the form is
-;      (IMPLIES BODY ...).
-; 2. If there are two or more bound variables and :STRENGTHEN is NIL,
-;    the form is
-;      (IF (TRUE-LISTP ...)
-;          (IMPLIES BODY ...)
-;        ...).
-; 3. If there is one bound variable and :STRENGTHEN is T, the form is
-;      (IF (IMPLIES BODY ...)
-;          ...
-;        ...).
-; 4. If there are two or more bound variables and :STRENGTHEN is T, the form is
-;      (IF (IF (TRUE-LISTP ...)
-;              (IMPLIES BODY ...)
-;            ...)
-;        ...).
-; From the form of DEFCHOOSE-AXIOM, the value of :STRENGTHEN can be determined.
-
-(define defchoose-axiom ((fun symbolp) (w plist-worldp))
-  (getprop fun 'acl2::defchoose-axiom nil 'acl2::current-acl2-world w))
-
-(define defchoose-body ((fun symbolp) (w plist-worldp))
-  :guard (defchoose-axiom fun w)
-  :verify-guards nil
-  (let ((axiom (defchoose-axiom fun w)))
-    (if (eq (acl2::fn-symb axiom) 'acl2::implies) ; form 1
-        (acl2::fargn axiom 1)
-      (let ((if-test (acl2::fargn axiom 1)))
-        (case (acl2::fn-symb if-test)
-          (true-listp ; form 2
-           (let ((if-then (acl2::fargn axiom 2)))
-             (acl2::fargn if-then 1)))
-          (implies ; form 3
-           (acl2::fargn if-test 1))
-          (otherwise ; form 4
-           (let ((nested-if-then (acl2::fargn if-test 2)))
-             (acl2::fargn nested-if-then 1))))))))
-
-(define defchoose-strongp ; value of :STRENGTHEN
-  ((fun symbolp) (w plist-worldp))
-  :guard (defchoose-axiom fun w)
-  :verify-guards nil
-  (let ((axiom (defchoose-axiom fun w)))
-    (and (eq (acl2::fn-symb axiom) 'acl2::if) ; not form 1
-         (let ((if-test (acl2::fargn axiom 1)))
-           (not (eq (acl2::fn-symb if-test) 'acl2::true-listp)))))) ; not form 2
-
-; Experiments suggest that
 ; the name of the witness of a function introduced via DEFUN-SK
 ; is the CONSTRAINT-LST of the function.
 
@@ -385,8 +335,8 @@
 ; may reference function variables in their defining bodies.
 
 (define funvars-of-defchoose ((fun symbolp) (w plist-worldp))
-  :verify-guards nil
-  (funvars-of-term (defchoose-body fun w) w))
+  :mode :program ; calls DEFCHOOSE-BODY
+  (funvars-of-term (acl2::defchoose-body fun w) w))
 
 ; Second-order theorems and their instances
 ; may reference function variables in their formulas.
@@ -950,7 +900,7 @@
            (fsbs (acons fun funinst fsbs))) ; extend FSBS
           (case (sofun-kind fun w)
             (plain (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
-            (choice (ext-fun-subst-term (defchoose-body fun w) fsbs w))
+            (choice (ext-fun-subst-term (acl2::defchoose-body fun w) fsbs w))
             (quant
              (let* ((fsbs (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
                     ;; the 2nd-order functions in the matrix of FUN
@@ -1351,11 +1301,11 @@
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (choice-sofunp sofun w))
-  :verify-guards nil
+  :mode :program ; calls DEFCHOOSE-BODY and DEFCHOOSE-STRENGTHEN
   (b* (;; retrieve bound variables of SOFUN:
        (bound-vars (sofun-bound-vars sofun w))
        ;; apply instantiation to body of SOFUN:
-       (sofun-body (defchoose-body sofun w))
+       (sofun-body (acl2::defchoose-body sofun w))
        (fun-body (fun-subst-term inst sofun-body w))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
@@ -1369,7 +1319,7 @@
       ;; generated list of events:
       `((defchoose ,fun ,bound-vars ,(acl2::formals sofun w)
           ,fun-body
-          :strengthen ,(defchoose-strongp sofun w)
+          :strengthen ,(acl2::defchoose-strengthen sofun w)
           ,@options)
         ,@table-event)))
 
