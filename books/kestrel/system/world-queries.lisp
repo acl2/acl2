@@ -435,3 +435,120 @@
     (cond ((equal namex 0) nil) ; no names
           ((consp namex) namex) ; list of names
           (t (list namex))))) ; single name
+
+(define defchoosep ((fun (function-namep fun w)) (w plist-worldp))
+  ;; :returns (axiom pseudo-termp)
+  :short
+  "Check if the function @('fun') was introduced via @(tsee defchoose),
+  returning the function's constraining axiom if the check succeeds."
+  :long
+  "<p>
+  A function introduced via @(tsee defchoose) is recognizable
+  by the presence of the @('defchoose-axiom') property,
+  which is the axiom that constrains the function.
+  </p>"
+  (getpropc fun 'defchoose-axiom nil w)
+  :guard-hints (("Goal" :in-theory (enable function-namep))))
+
+(define defchoose-bound-vars ((fun (and (function-namep fun w)
+                                        (defchoosep fun w)))
+                              (w plist-worldp))
+  :returns (bound-vars symbol-listp)
+  :prepwork ((program))
+  :short
+  "Bound variables of the function @('fun') introduced via @(tsee defchoose)."
+  :long
+  "<p>
+  The bound variables are in the third element of the @(tsee defchoose) event,
+  which is either a single bound variable
+  or a non-empty list of bound variables.
+  </p>"
+  (let* ((event (get-event fun w))
+         (bound-var/bound-vars (third event)))
+    (if (symbolp bound-var/bound-vars)
+        (list bound-var/bound-vars)
+      bound-var/bound-vars)))
+
+(define defchoose-strengthen ((fun (and (function-namep fun w)
+                                        (defchoosep fun w)))
+                              (w plist-worldp))
+  :returns (t/nil booleanp)
+  :prepwork ((program))
+  :short
+  "Value of the @(':strengthen') option
+  of the function @('fun') introduced via @(tsee defchoose)."
+  :long
+  "<p>
+  If explicitly supplied, the value of the @(':strengthen') option
+  is the last element of the @(tsee defchoose) event,
+  which consists of seven element in this case.
+  If not explicitly supplied,
+  the value of the @(':strengthen') option is @('nil'),
+  and the @(tsee defchoose) event consists of five elements only.
+  </p>"
+  (let ((event (get-event fun w)))
+    (if (eql (len event) 5)
+        nil
+      (car (last event)))))
+
+(define defchoose-untrans-body ((fun (and (function-namep fun w)
+                                          (defchoosep fun w)))
+                                (w plist-worldp))
+  :prepwork ((program))
+  :short
+  "Body of the function @('fun') introduced via @(tsee defchoose),
+  in <see topic='@(url term)'>untranslated form</see>."
+  :long
+  "<p>
+  The untranslated body, as supplied by the user,
+  is the fifth element of the @(tsee defchoose) event.
+  </p>"
+  (fifth (get-event fun w)))
+
+(define defchoose-body ((fun (and (function-namep fun w)
+                                  (defchoosep fun w)))
+                        (w plist-worldp))
+  :returns (body pseudo-termp)
+  :prepwork ((program))
+  :short
+  "Body of the function @('fun') introduced via @(tsee defchoose),
+  in <see topic='@(url term)'>translated form</see>."
+  :long
+  "<p>
+  The body @('body') is extracted from the constraining axiom of @('fun'),
+  which has one of the following forms
+  (see @('defchoose-constraint') in the ACL2 source code):
+  </p>
+  <ul>
+    <li>
+    @('(implies body ...)'),
+    if @(':strengthen') is @('nil')
+    and @('fun') has one bound variable.
+    </li>
+    <li>
+    @('(if ... (implies body ...) nil)'),
+    if @('strengthen') is @('nil')
+    and @('fun') has more than one bound variable.
+    </li>
+    <li>
+    @('(if (implies body ...) ... nil)'),
+    if @(':strengthen') is @('t')
+    and @('fun') has one bound variable.
+    </li>
+    <li>
+    @('(if (if ... (implies body ...) nil) ... nil)'),
+    if @('strengthen') is @('t')
+    and @('fun') has more than one bound variable.
+    </li>
+  </ul>"
+  (b* ((axiom (defchoosep fun w))
+       (strengthen (defchoose-strengthen fun w))
+       (bound-vars (defchoose-bound-vars fun w))
+       (one-bound-var (eql (len bound-vars) 1)))
+    (if strengthen
+        (if one-bound-var
+            (second (second axiom))
+          (second (third (second axiom))))
+      (if one-bound-var
+          (second axiom)
+        (second (third axiom))))))

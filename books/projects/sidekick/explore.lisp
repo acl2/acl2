@@ -48,7 +48,7 @@
             state))
 
        ;; BOZO seems like we also need to do something with abbreviations, see
-       ;; P-BODY in proof-checker-b.lisp
+       ;; P-BODY in proof-builder-b.lisp
        (hyps         (acl2::hyps t))
        (conc         (acl2::conc t))
        (current-addr (acl2::current-addr t))
@@ -216,7 +216,7 @@ exit
 
 ;;   (when-goals-trip
 ;;    (value `(do-all-no-prompt (hyps ,@args)
-;;                              (lisp (io? proof-checker nil state
+;;                              (lisp (io? proof-builder nil state
 ;;                                         nil
 ;;                                         (fms0 "~%The current subterm is:~%")))
 ;;                              p))))
@@ -266,9 +266,9 @@ exit
 ;;                             instructions)
 ;;   (if (and raw-term-supplied-p (eq raw-term nil))
 ;;       '(pprogn
-;;         (io? proof-checker nil state
+;;         (io? proof-builder nil state
 ;;              nil
-;;              (fms0 "It is not permitted to enter the interactive proof-checker ~
+;;              (fms0 "It is not permitted to enter the interactive proof-builder ~
 ;;                     with a goal of NIL!  If you really MEANT to do such a ~
 ;;                     thing, (VERIFY 'NIL).~%"))
 ;;                (value :invisible))
@@ -322,7 +322,7 @@ exit
 ;;       (erp instr state)
 ;;       (if (consp instr-list)
 ;;           (pprogn (if pc-print-prompt-and-instr-flg
-;;                       (io? proof-checker nil state
+;;                       (io? proof-builder nil state
 ;;                            (col instr-list)
 ;;                            (fms0 "~y0~|"
 ;;                                  (list (cons #\0
@@ -337,12 +337,12 @@ exit
 ;;       (cond
 ;;        (erp ; read error
 ;;         (pprogn
-;;          (io? proof-checker nil state nil
+;;          (io? proof-builder nil state nil
 ;;               (fms0
 ;;                "~|~%~
 ;;                 /----------------------------------------------------\\~%~
 ;;                 |        NOTE: Read error -- input discarded.        |~%~
-;;                 | Submit EXIT if you want to exit the proof-checker. |~%~
+;;                 | Submit EXIT if you want to exit the proof-builder. |~%~
 ;;                 \\----------------------------------------------------/~%"))
 ;;          (pc-main-loop instr-list quit-conditions last-value
 ;;                        pc-print-prompt-and-instr-flg state)))

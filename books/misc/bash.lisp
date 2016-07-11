@@ -21,7 +21,7 @@
      ((thints (translate-hints
                name-tree
 
-; Keep the following in sync with the definition of the proof-checker :bash
+; Keep the following in sync with the definition of the proof-builder :bash
 ; command.
 
                (append
@@ -255,7 +255,7 @@ Then:
 
 <h3>More details</h3>
 
-<p>This utility is similar to the @(see proof-checker)'s <tt>bash</tt> command,
+<p>This utility is similar to the @(see proof-builder)'s <tt>bash</tt> command,
 but for use in the top-level loop.  The input term can have user-level syntax;
 it need not be translated.  The output is an error triple <tt>(mv nil termlist
 state)</tt> such that either <tt>termlist</tt> is a one-element list containing

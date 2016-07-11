@@ -7432,7 +7432,7 @@
 ; ; Thus ends the dead code devoted to disambiguation.
 ;
 
-; Now we stub out the proof checker's sense of "instructions."
+; Now we stub out the proof-builder's sense of "instructions."
 
 (defun primitive-instructionp (instr state)
   (let* ((cmd (car (make-official-pc-instr instr)))
@@ -9742,7 +9742,7 @@
           (er-let*
            ((ttree1 (cond
                      (instructions
-                      (proof-checker nil (untranslate goal t wrld)
+                      (proof-builder nil (untranslate goal t wrld)
                                      goal nil instructions
                                      wrld state))
                      (t (prove goal
@@ -11414,14 +11414,14 @@
                                       (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
-; proof-checker, and then absent-mindedly somehow suffixed "-std" on to the
+; proof-builder, and then absent-mindedly somehow suffixed "-std" on to the
 ; car, defthm, of that form.
 
                                           (er soft ctx
                                               ":INSTRUCTIONS are not supported for ~
                                         defthm-std events.")
                                         (value nil))
-                                      (proof-checker name term
+                                      (proof-builder name term
                                                      tterm classes instructions
                                                      wrld1 state)))
                                     (t (prove tterm

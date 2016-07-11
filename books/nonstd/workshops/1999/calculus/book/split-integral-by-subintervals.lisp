@@ -67,7 +67,7 @@
 
 ;;; Note that mesh-make-partition is among the lemmas needed to finish
 ;;; off the proof of split-integral-by-subintervals, discovered in the
-;;; proof-checker. Although originally proved in
+;;; proof-builder. Although originally proved in
 ;;; riemann-sum-approximates-integral-1.lisp, it has been moved to
 ;;; integral-rcfn-lemmas.lisp
 
@@ -103,7 +103,7 @@
                      mesh integral-rcfn riemann-rcfn partitionp)))))
 
 ;;; Lemmas discovered attempting to prove
-;;; split-integral-by-subintervals in the proof-checker by
+;;; split-integral-by-subintervals in the proof-builder by
 ;;; backchaining through rewrite rules:
 
 (defthm car-append
@@ -150,7 +150,7 @@
 (in-theory (disable last))
 
 ;;; Gross!  Once I got the proof of split-integral-by-subintervals
-;;; through the proof-checker, I could not replay it directly as the
+;;; through the proof-builder, I could not replay it directly as the
 ;;; defthm shown below.  I found that there was a term (i-small (mesh
 ;;; ...)) that was apparently being rewritten to (i-small (max ...)),
 ;;; which reduced to (i-small (if ...)).  Hence, the following lemma:

@@ -106,16 +106,16 @@
 
 (defun acl2::colon-xdoc-initialized (state)
 
-; This interface function was added by Matt K. so that the proof-checker can
+; This interface function was added by Matt K. so that the proof-builder can
 ; determine if xdoc is ready to go.  If we only use the ld-keyword-aliases to
 ; determine that xdoc is available, then events will be submitted when xdoc is
-; invoked from within the proof-checker (see colon-xdoc-init).  This would
-; cause a weird complaint about make-event when exiting the proof-checker.
+; invoked from within the proof-builder (see colon-xdoc-init).  This would
+; cause a weird complaint about make-event when exiting the proof-builder.
 
 ; In general, it seems best only to submit events at the top-level of the ACL2
 ; loop, so that ACL2 can handle them properly, for example laying down
 ; command-markers appropriately.  This interface function can be used by other
-; applications (besides the proof-checker) in order to avoid calling xdoc when
+; applications (besides the proof-builder) in order to avoid calling xdoc when
 ; this would create events.
 
 ; This function is in the ACL2 package so that it can be run even when the

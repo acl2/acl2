@@ -54,9 +54,9 @@ other-processes.lisp
 other-releases.html
 parallel.lisp
 parallel-raw.lisp
-proof-checker-a.lisp
-proof-checker-b.lisp
-proof-checker-pkg.lisp
+proof-builder-a.lisp
+proof-builder-b.lisp
+proof-builder-pkg.lisp
 prove.lisp
 # README.md -- not distributed (github file)
 rewrite.lisp
