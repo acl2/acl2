@@ -32,13 +32,6 @@
     (and (function-symbolp (car syms) w)
          (function-symbol-listp (cdr syms) w))))
 
-; Experiments suggest that
-; the name of the witness of a function introduced via DEFUN-SK
-; is the CONSTRAINT-LST of the function.
-
-(define defun-sk-witness-name ((fun symbolp) (w plist-worldp))
-  (getprop fun 'acl2::constraint-lst nil 'acl2::current-acl2-world w))
-
 ; The :BOGUS-DEFUN-HINTS-OK setting is in the ACL2-DEFAULTS-TABLE.
 
 (define get-bogus-defun-hints-ok ((w plist-worldp))
@@ -931,15 +924,17 @@
 ; does not catch these witnesses.
 
 (define sothm-inst-pairs ((fsbs fun-substp) (w plist-worldp))
-  :verify-guards nil
+  :mode :program ; calls DEFUN-SK-CHECK
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
            (1st (car pair))
            (2nd (cdr pair)))
       (if (quant-sofunp 1st w)
-          (let ((1st-wit (defun-sk-witness-name 1st w))
-                (2nd-wit (defun-sk-witness-name 2nd w)))
+          (let ((1st-wit (acl2::defun-sk-info->witness
+                          (acl2::defun-sk-check 1st w)))
+                (2nd-wit (acl2::defun-sk-info->witness
+                          (acl2::defun-sk-check 2nd w))))
             (cons (list 1st 2nd) ; pair from FSBS
                   (cons (list 1st-wit 2nd-wit) ; pair of witnesses
                         (sothm-inst-pairs (cdr fsbs) w))))
@@ -1020,7 +1015,7 @@
 
 (define sothm-inst-proof
   ((sothm symbolp) (fsbs fun-substp) (w plist-worldp))
-  :verify-guards nil
+  :mode :program ; calls SOTHM-INST-PAIRS
   `(:instructions
     ((:use (:functional-instance ,sothm ,@(sothm-inst-pairs fsbs w)))
      (:repeat (:then (:use ,@(sothm-inst-facts fsbs w)) :prove)))))
