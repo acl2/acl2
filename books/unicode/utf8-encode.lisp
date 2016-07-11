@@ -31,8 +31,8 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
-(include-book "utf8-table35")
 (include-book "utf8-table36")
+(include-book "utf8-table37")
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/typed-lists/signed-byte-listp" :dir :system))  ;; for the-fixnum
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -57,7 +57,7 @@
 ;;
 ;; We now introduce the function uchar=>utf8, which, as its name suggests will
 ;; take any uchar and return to us the corresponding byte sequence in UTF-8.
-;; This function is based on Table 3-5, and is in essence a straightforward
+;; This function is based on Table 3-6, and is in essence a straightforward
 ;; translation of this table, based on shifting the bits of the codepoints into
 ;; the correct locations for our output bytes.
 
@@ -110,7 +110,7 @@
 
 
 ;; Now we would like to show that our encoding function actually respects the
-;; constraints of Tables 3-5 and 3-6 which we formalized above.
+;; constraints of Tables 3-6 and 3-7 which we formalized above.
 ;;
 ;; How can we prove something like this?  I have no deep insight about why the
 ;; table is written as it is, it all seems rather random/arbitrary.  Rather
@@ -128,8 +128,8 @@
  (local (defun test-uchar=>utf8 (i)
           (declare (xargs :guard (natp i)))
           (and (if (uchar? i)
-                   (and (utf8-table36-ok? i (uchar=>utf8 i))
-                        (utf8-table35-ok? i (uchar=>utf8 i)))
+                   (and (utf8-table37-ok? i (uchar=>utf8 i))
+                        (utf8-table36-ok? i (uchar=>utf8 i)))
                  t)
                (or (zp i)
                    (test-uchar=>utf8 (1- i))))))
@@ -150,8 +150,8 @@
                         (natp j)
                         (<= j i)
                         (uchar? j))
-                   (and (utf8-table35-ok? j (uchar=>utf8 j))
-                        (utf8-table36-ok? j (uchar=>utf8 j))))))
+                   (and (utf8-table36-ok? j (uchar=>utf8 j))
+                        (utf8-table37-ok? j (uchar=>utf8 j))))))
 
  ;; Finally, by instantiation of the above theorem, we can show that all of the
  ;; integers in the range [0, #x10ffff] satisfy our property, and then trivially
@@ -164,20 +164,20 @@
 
  (local (defthm lemma2
           (implies (uchar? x)
-                   (and (utf8-table35-ok? x (uchar=>utf8 x))
-                        (utf8-table36-ok? x (uchar=>utf8 x))))
+                   (and (utf8-table36-ok? x (uchar=>utf8 x))
+                        (utf8-table37-ok? x (uchar=>utf8 x))))
           :hints(("Goal"
                   :use (:instance lemma
                                   (i #x10FFFF)
                                   (j x))))))
 
- (defthm utf8-table35-ok?-of-uchar=>utf8-when-uchar?
-   (implies (uchar? x)
-            (utf8-table35-ok? x (uchar=>utf8 x))))
-
  (defthm utf8-table36-ok?-of-uchar=>utf8-when-uchar?
    (implies (uchar? x)
-            (utf8-table36-ok? x (uchar=>utf8 x)))))
+            (utf8-table36-ok? x (uchar=>utf8 x))))
+
+ (defthm utf8-table37-ok?-of-uchar=>utf8-when-uchar?
+   (implies (uchar? x)
+            (utf8-table37-ok? x (uchar=>utf8 x)))))
 
 
 
