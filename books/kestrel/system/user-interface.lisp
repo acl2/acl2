@@ -112,7 +112,7 @@
   @('form') need not be a legal event form.</li>
 
   </ul>"
-  
+
   (cond ((booleanp verbose)
          (control-screen-output verbose form))
         (t
