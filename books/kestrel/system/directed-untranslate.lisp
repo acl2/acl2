@@ -4,6 +4,75 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc directed-untranslate
+  :parents (kestrel-system-utilities system-utilities)
+  :short "Create a user-level form that reflects a given user-level form's
+ structure."
+  :long "<p>See @(see term) for relevant background about user-level ``terms''
+ and actual ``translated'' terms.</p>
+
+ @({
+ Example Form:
+ (directed-untranslate
+  '(and a (if b c nil))         ; uterm
+  '(if a (if b c 'nil) 'nil)    ; tterm
+  '(if a2 (if b2 c2 'nil) 'nil) ; sterm, a form to be untranslated
+  nil
+  (w state))
+ })
+
+ <p>The returned value from the example above is:</p>
+
+ @({
+ (AND A2 (IF B2 C2 NIL))
+ })
+
+ <p>Compare this with the value returned by calling the system function
+ @('untranslate') instead on the final three arguments:</p>
+
+ @({
+ ACL2 !>(untranslate '(if a2 (if b2 c2 'nil) 'nil) nil (w state))
+ (AND A2 B2 C2)
+ ACL2 !>
+ })
+
+ <p>The original structure of the given ``uterm'', @('(and a (if b c nil))'),
+ has been preserved by @('directed-untranslate'), but not by @('untranslate').
+ Thus, @('directed-untranslate') may be particularly useful when a given form,
+ @('uterm'), translates to a term, @('tterm'), which in turn simplifies to a
+ related term, @('sterm'), and your goal is to untranslate @('sterm') in a way
+ that preserves structure from @('uterm').</p>
+
+ @({
+ General Form:
+ (directed-untranslate uterm tterm sterm iff-flg wrld)
+ })
+
+ <p>where:</p>
+
+ <ul>
+
+ <li>@('uterm') is an untranslated form that translates to the term,
+ @('tterm');</li>
+
+ <li>@('sterm') is a term, which might share a lot of structure with
+ @('tterm') (intuitively, we may think of @('sterm') as a simplified version
+ of @('tterm'));</li>
+
+ <li>@('iff-flg') is a Boolean; and</li>
+
+ <li>@('wrld') is a logical @('world'), typically @('(w state)').</li>
+
+ </ul>
+
+ <p>The returned form is an untranslated form whose translation is provably
+ equal to @('sterm'), except that if @('iff-flg') is true then these need only
+ be Boolean equivalent rather than equal.  The goal is that the shared
+ structure between @('tterm') and @('sterm') is reflected in similar sharing
+ between @('uterm') and the returned form.</p>")
+
 (program)
 
 (defun check-du-inv-fn (uterm tterm wrld)
