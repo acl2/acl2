@@ -74,10 +74,10 @@
   (or (symbolp x)
       (pseudo-lambda-expr-p x)))
 
-(define apply-term ((pfun pseudo-functionp) (terms pseudo-term-listp))
-  :guard (or (symbolp pfun)
+(define apply-term ((fn pseudo-functionp) (terms pseudo-term-listp))
+  :guard (or (symbolp fn)
              (eql (len terms)
-                  (len (lambda-formals pfun))))
+                  (len (lambda-formals fn))))
   ;; :returns (term pseudo-termp)
   :guard-hints (("Goal" :in-theory (enable pseudo-functionp
                                            pseudo-lambda-expr-p)))
@@ -90,8 +90,8 @@
   If the pseudo-function is a lambda expression,
   a beta reduction is performed.
   </p>"
-  (cond ((symbolp pfun) (cons-term pfun terms))
-        (t (subcor-var (lambda-formals pfun) terms (lambda-body pfun)))))
+  (cond ((symbolp fn) (cons-term fn terms))
+        (t (subcor-var (lambda-formals fn) terms (lambda-body fn)))))
 
 (defsection apply-term*
   :short
@@ -104,24 +104,24 @@
   a beta reduction is performed.
   </p>
   @(def apply-term*)"
-  (defmacro apply-term* (pfun &rest terms)
-    `(apply-term ,pfun (list ,@terms))))
+  (defmacro apply-term* (fn &rest terms)
+    `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((pfun pseudo-functionp) (terms pseudo-term-listp))
+(define apply-unary-to-terms ((fn pseudo-functionp) (terms pseudo-term-listp))
   ;; :returns (applied-terms pseudo-term-listp)
   :verify-guards nil
   :short
-  "Apply @('pfun'), as a unary function, to each of @('terms'),
+  "Apply @('fn'), as a unary function, to each of @('terms'),
   obtaining a list of corresponding terms."
   (if (endp terms)
       nil
-    (cons (apply-term* pfun (car terms))
-          (apply-unary-to-terms pfun (cdr terms)))))
+    (cons (apply-term* fn (car terms))
+          (apply-unary-to-terms fn (cdr terms)))))
 
 (defines term/terms-logicp
   :short "True iff term/terms is/are in logic mode."
 
-  (define term-logicp ((term pseudo-termp) (w plist-worldp))
+  (define term-logicp ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no booleanp)
     :parents (term/terms-logicp)
     :short
@@ -129,34 +129,34 @@
     i.e. all its functions are in logic mode."
     (or (variablep term)
         (fquotep term)
-        (and (terms-logicp (fargs term) w)
+        (and (terms-logicp (fargs term) wrld)
              (let ((fn (ffn-symb term)))
                (if (symbolp fn)
-                   (logicp fn w)
-                 (term-logicp (lambda-body fn) w))))))
+                   (logicp fn wrld)
+                 (term-logicp (lambda-body fn) wrld))))))
 
-  (define terms-logicp ((terms pseudo-term-listp) (w plist-worldp))
+  (define terms-logicp ((terms pseudo-term-listp) (wrld plist-worldp))
     :returns (yes/no booleanp)
     :parents (term/terms-logicp)
     :short "True iff all the terms are in logic mode."
     (or (endp terms)
-        (and (term-logicp (car terms) w)
-             (terms-logicp (cdr terms) w)))))
+        (and (term-logicp (car terms) wrld)
+             (terms-logicp (cdr terms) wrld)))))
 
-(define lambda-expr-logicp ((lambd pseudo-lambda-expr-p) (w plist-worldp))
+(define lambda-expr-logicp ((lambd pseudo-lambda-expr-p) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambda-expr-p)))
   :short
   "True iff the lambda expression is in logic mode,
   i.e. its body is in logic mode."
-  (term-logicp (lambda-body lambd) w))
+  (term-logicp (lambda-body lambd) wrld))
 
 (defines term/terms-no-stobjs-p
   :prepwork ((program))
   :short "True iff term/terms has/have no stobjs."
   :flag nil
 
-  (define term-no-stobjs-p ((term pseudo-termp) (w plist-worldp))
+  (define term-no-stobjs-p ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no booleanp)
     :parents (term/terms-no-stobjs-p)
     :short
@@ -171,36 +171,37 @@
     </p>"
     (or (variablep term)
         (fquotep term)
-        (and (terms-no-stobjs-p (fargs term) w)
+        (and (terms-no-stobjs-p (fargs term) wrld)
              (let ((fn (ffn-symb term)))
                (if (symbolp fn)
                    (or (member fn *stobjs-out-invalid*)
-                       (no-stobjs-p fn w))
-                 (term-no-stobjs-p (lambda-body fn) w))))))
+                       (no-stobjs-p fn wrld))
+                 (term-no-stobjs-p (lambda-body fn) wrld))))))
 
-  (define terms-no-stobjs-p ((terms pseudo-term-listp) (w plist-worldp))
+  (define terms-no-stobjs-p ((terms pseudo-term-listp) (wrld plist-worldp))
     :returns (yes/no booleanp)
     :parents (term/terms-no-stobjs-p)
     :short "True iff all the terms have no stobjs."
     (or (endp terms)
-        (and (term-no-stobjs-p (car terms) w)
-             (terms-no-stobjs-p (cdr terms) w)))))
+        (and (term-no-stobjs-p (car terms) wrld)
+             (terms-no-stobjs-p (cdr terms) wrld)))))
 
-(define lambda-expr-no-stobjs-p ((lambd pseudo-lambda-expr-p) (w plist-worldp))
+(define lambda-expr-no-stobjs-p
+  ((lambd pseudo-lambda-expr-p) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :prepwork ((program))
   :short
   "True iff the lambda expression has no stobjs,
   i.e. its body has no stobjs."
-  (term-no-stobjs-p (lambda-body lambd) w))
+  (term-no-stobjs-p (lambda-body lambd) wrld))
 
-(defines term/terms-funs-guard-verified-p
+(defines term/terms-fns-guard-verified-p
   :short "True iff term/terms is/are guard-verified."
   :verify-guards nil
 
-  (define term-funs-guard-verified-p ((term pseudo-termp) (w plist-worldp))
+  (define term-fns-guard-verified-p ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no booleanp)
-    :parents (term/terms-funs-guard-verified-p)
+    :parents (term/terms-fns-guard-verified-p)
     :short "True iff all the functions in the term are guard-verified."
     :long
     "<p>
@@ -212,30 +213,30 @@
     </p>"
     (or (variablep term)
         (fquotep term)
-        (and (terms-funs-guard-verified-p (fargs term) w)
+        (and (terms-fns-guard-verified-p (fargs term) wrld)
              (let ((fn (ffn-symb term)))
                (if (symbolp fn)
-                   (guard-verified-p fn w)
-                 (term-funs-guard-verified-p (lambda-body fn) w))))))
+                   (guard-verified-p fn wrld)
+                 (term-fns-guard-verified-p (lambda-body fn) wrld))))))
 
-  (define terms-funs-guard-verified-p ((terms pseudo-term-listp)
-                                       (w plist-worldp))
+  (define terms-fns-guard-verified-p ((terms pseudo-term-listp)
+                                       (wrld plist-worldp))
     :returns (yes/no booleanp)
-    :parents (term/terms-funs-guard-verified-p)
+    :parents (term/terms-fns-guard-verified-p)
     :short "True iff all the functions in the terms are guard-verified."
     (or (endp terms)
-        (and (term-funs-guard-verified-p (car terms) w)
-             (terms-funs-guard-verified-p (cdr terms) w)))))
+        (and (term-fns-guard-verified-p (car terms) wrld)
+             (terms-fns-guard-verified-p (cdr terms) wrld)))))
 
-(define lambda-expr-funs-guard-verified-p ((lambd pseudo-lambda-expr-p)
-                                           (w plist-worldp))
+(define lambda-expr-fns-guard-verified-p ((lambd pseudo-lambda-expr-p)
+                                           (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
   "True iff all the functions in the lambda expression is guard-verified."
-  (term-funs-guard-verified-p (lambda-body lambd) w))
+  (term-fns-guard-verified-p (lambda-body lambd) wrld))
 
-(define lambda-expr-p (x (w plist-worldp))
+(define lambda-expr-p (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
@@ -252,11 +253,11 @@
        (eql (len x) 3)
        (eq (first x) 'lambda)
        (arglistp (second x))
-       (termp (third x) w)
+       (termp (third x) wrld)
        (subsetp-eq (all-vars (third x))
                    (second x))))
 
-(define check-user-term (x (w plist-worldp))
+(define check-user-term (x (wrld plist-worldp))
   :returns (term/message (or (pseudo-termp term/message)
                              (msgp term/message)))
   :prepwork ((program))
@@ -296,12 +297,12 @@
                     '((:stobjs-out . :stobjs-out))
                     t
                     __function__
-                    w
+                    wrld
                     (default-state-vars nil))
     (declare (ignore ctx bindings))
     term/message))
 
-(define check-user-lambda-expr (x (w plist-worldp))
+(define check-user-lambda-expr (x (wrld plist-worldp))
   :returns (lambd/message (or (pseudo-lambda-expr-p lambd/message)
                               (msgp lambd/message)))
   :prepwork ((program))
@@ -335,11 +336,11 @@
         `("~x0 does not start with LAMBDA." (#\0 . ,x)))
        ((unless (arglistp (second x)))
         `("~x0 does not have valid formal parameters." (#\0 . ,x)))
-       (term/message (check-user-term (third x) w))
+       (term/message (check-user-term (third x) wrld))
        ((when (msgp term/message)) term/message))
     `(lambda ,(second x) ,term/message)))
 
-(define trans-macro ((mac (macro-namep mac w)) (w plist-worldp))
+(define trans-macro ((mac (macro-namep mac wrld)) (wrld plist-worldp))
   :returns (term pseudo-termp)
   :prepwork ((program))
   :short "Translated term that a call to the macro translates to."
@@ -365,7 +366,7 @@
   calls with argument that are not the required formal arguments
   may yield different terms.
   </p>"
-  (check-user-term (cons mac (macro-required-args mac w)) w))
+  (check-user-term (cons mac (macro-required-args mac wrld)) wrld))
 
 (define term-guard-obligation ((term pseudo-termp) state)
   :returns (obligation pseudo-termp)

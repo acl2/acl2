@@ -136,7 +136,7 @@
    (enabled booleanp "Leave the theorem enabled or not.")
    (rule-classes true-listp "Rule classes for the theorem.")
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
-   (w plist-worldp))
+   (wrld plist-worldp))
   :guard (or rule-classes enabled)
   :returns (mv (thm-name symbolp)
                (thm-event-form pseudo-event-formp))
@@ -159,7 +159,7 @@
        (name (applicability-condition->name app-cond))
        (formula (applicability-condition->formula app-cond))
        (hints (applicability-condition->hints app-cond))
-       (thm-name (fresh-name-in-world-with-$s name names-to-avoid w))
+       (thm-name (fresh-name-in-world-with-$s name names-to-avoid wrld))
        (thm-event-form `(,defthm/defthmd ,thm-name
                           ,formula
                           :hints ,hints
@@ -175,7 +175,7 @@
    (enableds boolean-listp "Leave the theorems enabled or not.")
    (rule-classess "Rule classes for the theorems.")
    (names-to-avoid "Avoid these as theorem names.")
-   (w plist-worldp))
+   (wrld plist-worldp))
   :guard (and (eql (len locals) (len app-conds))
               (eql (len enableds) (len app-conds))
               (eql (len rule-classess) (len app-conds)))
@@ -210,7 +210,7 @@
                                                 (car enableds)
                                                 (car rule-classess)
                                                 names-to-avoid
-                                                w))
+                                                wrld))
                 (new-names-to-avoid (cons thm-name names-to-avoid))
                 ((mv names-to-thm-names thm-event-forms)
                  (applicability-condition-events (cdr app-conds)
@@ -218,7 +218,7 @@
                                                  (cdr enableds)
                                                  (cdr rule-classess)
                                                  new-names-to-avoid
-                                                 w)))
+                                                 wrld)))
              (mv (acons (applicability-condition->name (car app-conds))
                         thm-name
                         names-to-thm-names)
