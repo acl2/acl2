@@ -81,6 +81,7 @@
   ((verbose "t or nil, else indicates replay on failure")
    (event-p "make an event when true")
    (form (pseudo-event-formp form)))
+  :returns (new-form pseudo-event-formp :hyp (pseudo-event-formp form))
   :short
   "Variant of @(tsee control-screen-output) that can replay a failure verbosely"
   :long
