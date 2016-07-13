@@ -12245,7 +12245,7 @@
                    "there is no known formula associated with this rune")))))
      (t (er@par soft ctx str lmi
           "is not a symbol, a rune in the current logical world, or a list ~
-           whose first element is ~v0."
+           whose first element is ~v2"
           (list* :INSTANCE :FUNCTIONAL-INSTANCE atomic-lmi-cars))))))
 
 (defun@par translate-use-hint1 (arg ctx wrld state)

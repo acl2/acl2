@@ -16,6 +16,29 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc write-list
+  :parents (io)
+  :short "Write a list to a file"
+  :long "@({
+ Example Forms:
+
+ (write-list '(a b c) \"foo\" 'top-level state)
+ (write-list '(a b c) '(\"foo\") 'top-level state) ; as above, but quietly
+
+ General Form:
+
+ (write-list list x ctx state)
+ })
+
+ <p>where all arguments are evaluated (since @('write-list') is a function, not
+ a macro).  @('List') is a true-list; @('x') is a filename or a list of length
+ 1 containing a filename; and @('ctx') is a context (see @(see ctx)).  If
+ @('x') is a filename then a message of the form @('\"Writing file [x]\"') is
+ printed to @(see standard-co); but in the case that @('x') is a list
+ containing a filename, no such message is printed.</p>")
+
 (program)
 
 (set-state-ok t)
@@ -62,22 +85,28 @@
     state))
 
 (defun write-list-body-fn (bangp)
-  `(mv-let (channel state)
-           ,(if bangp
-                '(open-output-channel! fname :character state)
-              '(open-output-channel fname :character state))
-           (if channel
-               (mv-let
-                (col state)
-                (fmt1 "Writing file ~x0~%" (list (cons #\0 fname))
-                      0 (standard-co state) state nil)
-                (declare (ignore col))
-                (let ((state (write-objects list channel state)))
-                  (pprogn (close-output-channel channel state)
-                          (value :invisible))))
-             (er soft ctx
-                 "Unable to open file ~s0 for :character output."
-                 fname))))
+  `(mv-let (fname quietp)
+     (cond ((consp fname)
+            (mv (car fname) t))
+           (t (mv fname nil)))
+     (mv-let (channel state)
+       ,(if bangp
+            '(open-output-channel! fname :character state)
+          '(open-output-channel fname :character state))
+       (if channel
+           (mv-let
+             (col state)
+             (cond (quietp (mv 0 state))
+                   (t (fmt1 "Writing file ~x0~%"
+                            (list (cons #\0 fname))
+                            0 (standard-co state) state nil)))
+             (declare (ignore col))
+             (let ((state (write-objects list channel state)))
+               (pprogn (close-output-channel channel state)
+                       (value :invisible))))
+         (er soft ctx
+             "Unable to open file ~s0 for :character output."
+             fname)))))
 
 (defmacro write-list-body (bangp)
   (write-list-body-fn bangp))
@@ -86,23 +115,6 @@
 ; printed without any formatting.
 (defun write-list (list fname ctx state)
   (write-list-body nil))
-
-(defmacro write-list! (list fname ctx &optional ttag)
-
-; A non-nil ttag must be supplied, of course, unless there is already an active
-; ttag at the point where write-list! is called.
-
-  (let ((trans-eval-form `(trans-eval '(let ((list ,list)
-                                             (fname ,fname)
-                                             (ctx ,ctx))
-                                         ,(write-list-body-fn t))
-                                      ,ctx
-                                      state)))
-
-    `(er-progn ,(if ttag
-                    `(progn (defttag ,ttag) (progn! ,trans-eval-form))
-                  trans-eval-form)
-               (value :invisible))))
 
 ; (Downcase form) causes the execution of form but where printing is in
 ; :downcase mode.  Form must return an error triple.
