@@ -480,28 +480,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun latest-event-landmark (w)
-   (declare (xargs :guard (plist-worldp w)))
-   (if (endp w)
+ (defun latest-event-landmark (wrld)
+   (declare (xargs :guard (plist-worldp wrld)))
+   (if (endp wrld)
        nil
-     (let ((triple (car w)))
+     (let ((triple (car wrld)))
        (if (eq (car triple) 'event-landmark)
            (cddr triple)
-         (latest-event-landmark (cdr w))))))
+         (latest-event-landmark (cdr wrld))))))
  (assert-event
   (pseudo-event-landmark-listp (list (latest-event-landmark (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun latest-command-landmark (w)
-   (declare (xargs :guard (plist-worldp w)))
-   (if (endp w)
+ (defun latest-command-landmark (wrld)
+   (declare (xargs :guard (plist-worldp wrld)))
+   (if (endp wrld)
        nil
-     (let ((triple (car w)))
+     (let ((triple (car wrld)))
        (if (eq (car triple) 'command-landmark)
            (cddr triple)
-         (latest-command-landmark (cdr w))))))
+         (latest-command-landmark (cdr wrld))))))
  (assert-event
   (pseudo-command-landmark-listp (list (latest-command-landmark (w state))))))
 
