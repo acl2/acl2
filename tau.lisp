@@ -10892,6 +10892,8 @@
 
 (defmacro recursivep (fn def-body-p wrld)
 
+; Fn should be a :logic-mode function symbol of wrld.
+
 ; Experiments showed (when def-body-p was implicitly always t) a slight speedup
 ; in Allegro CL (perhaps a half percent on a very small run) by making this a
 ; macro.
