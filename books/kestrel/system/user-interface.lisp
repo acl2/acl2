@@ -78,11 +78,13 @@
               ,form))))
 
 (define control-screen-output-and-maybe-replay
-  ((verbose "t or nil, else indicates replay on failure")
-   (event-p "make an event when true")
+  ((verbose "@('T') or @('nil'), else indicates replay on failure.")
+   (event-p "Make an event when true.")
    (form (pseudo-event-formp form)))
+  :returns (new-form pseudo-event-formp :hyp (pseudo-event-formp form))
   :short
-  "Variant of @(tsee control-screen-output) that can replay a failure verbosely"
+  "Variant of @(tsee control-screen-output)
+  that can replay a failure verbosely."
   :long
   "<p>Usage:</p>
 
@@ -112,7 +114,7 @@
   @('form') need not be a legal event form.</li>
 
   </ul>"
-  
+
   (cond ((booleanp verbose)
          (control-screen-output verbose form))
         (t
