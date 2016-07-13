@@ -135,22 +135,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (terms-funs-guard-verified-p '(cons (len a) '3) (w state)))
+(assert-event (terms-fns-guard-verified-p '(cons (len a) '3) (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert-event (not (terms-funs-guard-verified-p '(zp (f '4)) (w state)))))
+ (assert-event (not (terms-fns-guard-verified-p '(zp (f '4)) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (lambda-expr-funs-guard-verified-p '(lambda (a) (cons (len a) '3)) (w state)))
+ (lambda-expr-fns-guard-verified-p '(lambda (a) (cons (len a) '3)) (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
  (assert-event
-  (not (lambda-expr-funs-guard-verified-p '(lambda (x) (zp (f '4)))
-                                          (w state)))))
+  (not (lambda-expr-fns-guard-verified-p '(lambda (x) (zp (f '4)))
+                                         (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
