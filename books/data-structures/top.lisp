@@ -15,7 +15,7 @@
 
 (defxdoc data-structures
   :parents (macro-libraries)
-  :short "The @('books/data-structures') library'"
+  :short "The @('books/data-structures') library"
   :long "<p>Also see @(see std).  The @('books/data-structures') library is
  much older, much smaller, and less maintained than the @('std') library.</p>")
 
