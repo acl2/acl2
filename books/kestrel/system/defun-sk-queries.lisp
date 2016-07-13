@@ -26,7 +26,7 @@
 
 (defxdoc defun-sk-queries
 
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-system-utilities system-utilities defun-sk)
 
   :short "Utilities to query @(tsee defun-sk) functions."
 
@@ -281,7 +281,7 @@
       :rule-classes nil)))
 
 (define defun-sk-check-function-def (function-def
-                                     (fun symbolp)
+                                     (fn symbolp)
                                      (args symbol-listp)
                                      (witness symbolp)
                                      witness-body
@@ -300,7 +300,7 @@
   :long
   "<p>
   The definition must have one of the following forms,
-  where @('fun') is the @(tsee defun-sk) function,
+  where @('fn') is the @(tsee defun-sk) function,
   @('arg1'), ..., @('argN') are the formal arguments
   of the witness and @(tsee defun-sk) functions,
   @('bvar1'), ..., @('bvarM') are the variables bound by the quantifier,
@@ -312,7 +312,7 @@
   <ul>
   <li>
     @({
-    (defun fun (arg1 ... argN) declares
+    (defun fn (arg1 ... argN) declares
       (let ((bvar1 (witness arg1 ... argN))) matrix))
     })
     <p>
@@ -321,7 +321,7 @@
   </li>
   <li>
     @({
-    (defun-nx fun (arg1 ... argN) declares
+    (defun-nx fn (arg1 ... argN) declares
       (let ((bvar1 (witness arg1 ... argN))) matrix))
     })
     <p>
@@ -330,7 +330,7 @@
   </li>
   <li>
     @({
-    (defun fun (arg1 ... argN) declares
+    (defun fn (arg1 ... argN) declares
       (mv-let (bvar1 ... bvarM) (witness arg1 ... argN) matrix))
     })
     <p>
@@ -339,7 +339,7 @@
   </li>
   <li>
     @({
-    (defun-nx fun (arg1 ... argN) declares
+    (defun-nx fn (arg1 ... argN) declares
       (mv-let (bvar1 ... bvarM) (witness arg1 ... argN) matrix))
     })
     <p>
@@ -355,7 +355,7 @@
   (flet
    ((fail () (mv nil nil 'exists nil)))
    (case-match function-def
-     ((defun/defun-nx !fun !args . declares-body)
+     ((defun/defun-nx !fn !args . declares-body)
       (b* (((unless (or (eq defun/defun-nx 'defun)
                         (eq defun/defun-nx 'defun-nx))) (fail))
            (non-executable (eq defun/defun-nx 'defun-nx))
@@ -373,7 +373,7 @@
      (& (fail)))))
 
 (define defun-sk-check-rewrite-rule (rewrite
-                                     (fun symbolp)
+                                     (fn symbolp)
                                      (args symbol-listp)
                                      (quantifier defun-sk-quantifier-p)
                                      untrans-matrix
@@ -392,10 +392,10 @@
   @({
   (defthm name formula
     :hints ((&quot;Goal&quot;
-            :use (witness fun) :in-theory (theory 'minimal-theory))))
+            :use (witness fn) :in-theory (theory 'minimal-theory))))
   })
   <p>
-  where @('fun') is the @(tsee defun-sk) function,
+  where @('fn') is the @(tsee defun-sk) function,
   @('witness') is the witness function,
   and @('formula') has one of the following forms,
   where @('arg1'), ..., @('argN') are the formal arguments
@@ -406,20 +406,20 @@
   <ul>
   <li>
     <p>
-    @('(implies matrix (fun arg1 ... argN))')
+    @('(implies matrix (fn arg1 ... argN))')
     if the quantifier is <see topic='@(url exists)'>existential</see>.
     </p>
   </li>
   <li>
     <p>
-    @('(implies (not matrix) (not (fun arg1 ... argN)))')
+    @('(implies (not matrix) (not (fn arg1 ... argN)))')
     if the quantifier is <see topic='@(url forall)'>universal</see>
     and @(':rewrite') is either @(':default') or exactly this formula.
     </p>
   </li>
   <li>
     <p>
-    @('(implies (fun arg1 ... argN) matrix)')
+    @('(implies (fn arg1 ... argN) matrix)')
     if the quantifier is <see topic='@(url forall)'>universal</see>
     and @(':rewrite') is either @(':direct') or exactly this formula.
     </p>
@@ -436,26 +436,26 @@
    (case-match rewrite
      (('defthm name formula
         ':hints (('"Goal"
-                  ':use (!witness !fun)
+                  ':use (!witness !fn)
                   ':in-theory ('theory ('quote 'minimal-theory)))))
       (cond ((eq quantifier 'exists)
              (cond ((equal formula
-                           `(implies ,untrans-matrix (,fun ,@args)))
+                           `(implies ,untrans-matrix (,fn ,@args)))
                     (mv t name :default))
                    (t (fail))))
             ((equal formula
-                    `(implies (not ,untrans-matrix) (not (,fun ,@args))))
+                    `(implies (not ,untrans-matrix) (not (,fn ,@args))))
              (mv t name :default))
             ((equal formula
-                    `(implies (,fun ,@args) ,untrans-matrix))
+                    `(implies (,fn ,@args) ,untrans-matrix))
              (mv t name :direct))
             (t (mv t name :custom))))
      (& (fail)))))
 
-(define defun-sk-retrieve-matrix ((fun (function-namep fun w))
+(define defun-sk-retrieve-matrix ((fn (function-namep fn wrld))
                                   (bound-vars symbol-listp)
                                   (non-executable booleanp)
-                                  (w plist-worldp))
+                                  (wrld plist-worldp))
   ;; :returns (matrix pseudo-termp)
   :verify-guards nil
   :short
@@ -501,11 +501,11 @@
   </ul>
   <p>
   This @('defun-sk-retrieve-matrix') function should only be called
-  when @('fun') is known to be a @(tsee defun-sk) function,
-  as the code assumes without checking that the body of @('fun')
+  when @('fn') is known to be a @(tsee defun-sk) function,
+  as the code assumes without checking that the body of @('fn')
   has one of the forms above.
   </p>"
-  (let* ((body (body fun nil w))
+  (let* ((body (body fn nil wrld))
          (core (if non-executable
                    (car (last body))
                  body)))
@@ -513,18 +513,18 @@
         (case-match core
           (((& & matrix) . &) matrix)
           (& (raise "Unexpected body ~x0 of @(tsee defun-sk) function ~x1."
-                    body fun)))
+                    body fn)))
       (case-match core
         (((& & ((& & matrix) . &)) . &) matrix)
         (& (raise "Unexpected body ~x0 of @(tsee defun-sk) function ~x1."
-                  body fun))))))
+                  body fn))))))
 
-(define defun-sk-check ((fun (function-namep fun w))
-                        (w plist-worldp))
+(define defun-sk-check ((fn (function-namep fn wrld))
+                        (wrld plist-worldp))
   :returns (record? maybe-defun-sk-info-p)
   :prepwork ((program))
   :short
-  "Check if the function @('fun') is a @(tsee defun-sk) function."
+  "Check if the function @('fn') is a @(tsee defun-sk) function."
   :long
   "<p>
   If successful, return its @(tsee defun-sk)-specific constituents;
@@ -542,8 +542,8 @@
    (local (in-theory '(implies)))
    (local (defchoose witness ...))
    (defthm witness-strengthening ...) ; optionally present
-   (defun fun ...) ; or defun-nx
-   (in-theory (disable (fun)))
+   (defun fn ...) ; or defun-nx
+   (in-theory (disable (fn)))
    (defthm rewrite ...))
    (extend-pe-table ...)
   })
@@ -552,19 +552,19 @@
   @('witness') is the witness function,
   @('witness-strengthening') is the strengthening theorem
   (present iff @(':strengthen') is @('t')),
-  @('fun') is the @(tsee defun-sk) function,
+  @('fn') is the @(tsee defun-sk) function,
   and @('rewrite') is the associated rewrite rule.
   </p>"
-  (b* ((args (formals fun w))
-       (witness (getpropc fun 'constraint-lst nil w))
-       ((unless (function-namep witness w)) nil)
-       (event (get-event witness w))
+  (b* ((args (formals fn wrld))
+       (witness (getpropc fn 'constraint-lst nil wrld))
+       ((unless (function-namep witness wrld)) nil)
+       (event (get-event witness wrld))
        ((unless (and (or (tuplep 8 event)
                          (tuplep 9 event))
                      (eq (nth 0 event) 'encapsulate)
                      (equal (nth 2 event) '(local (in-theory '(implies))))
                      (equal (nth (- (len event) 3) event)
-                            `(in-theory (disable (,fun))))))
+                            `(in-theory (disable (,fn))))))
         nil)
        (signatures (nth 1 event))
        (witness-def (nth 3 event))
@@ -588,13 +588,13 @@
         nil)
        ((mv ok untrans-matrix quantifier non-executable)
         (defun-sk-check-function-def
-         function-def fun args witness witness-body bound-vars))
+         function-def fn args witness witness-body bound-vars))
        ((unless ok) nil)
        ((mv ok rewrite-name rewrite-kind)
         (defun-sk-check-rewrite-rule
-         rewrite fun args quantifier untrans-matrix witness))
+         rewrite fn args quantifier untrans-matrix witness))
        ((unless ok) nil)
-       (matrix (defun-sk-retrieve-matrix fun bound-vars non-executable w)))
+       (matrix (defun-sk-retrieve-matrix fn bound-vars non-executable wrld)))
     (defun-sk-info quantifier
                    bound-vars
                    matrix
