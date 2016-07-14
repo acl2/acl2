@@ -7755,7 +7755,7 @@
 (defun interpret-term-as-well-formedness-guarantee-thm (token fn thm)
 
 ; Token must be :META or :CLAUSE-PROCESSOR.  In the former case,
-; thm is a term (actually a theorem) and we interpret it as 
+; thm is a term (actually a theorem) and we interpret it as
 
 ; (IMPLIES (AND (LOGIC-TERMP tvar wvar)
 ;               (ARITIES-OKP '((fn1 . k1) ...) wvar))

@@ -3413,18 +3413,18 @@
 ;   $ cat sub.lisp
 ;   ; (defpkg "FOO" nil)
 ;   ; (certify-book "sub" 1)
-;   
+;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defun f2 (x) x)
 ;   $ cat top.lisp
 ;   (in-package "ACL2")
-;   
+;
 ;   (include-book "sub")
-;   
+;
 ;   (defmacro my-def ()
 ;     `(defun f (,(intern$ "X" "FOO")) ,(intern$ "X" "FOO")))
-;   
+;
 ;   (my-def)
 ;   $
 
@@ -3651,7 +3651,7 @@
                                      installed-wrld))
                   (mv nil nil) ; nothing to do
                 (convert-type-prescription-to-term cert-data-tp ens
-                                             
+
 ; We use the installed world (the one before cleansing started) for efficient
 ; handling of large mutual recursion nests.
 
@@ -6207,13 +6207,13 @@
 ;                           ((and (eq symbol-class :ideal)
 ;                                 (eq (symbol-class name wrld)
 ;                                     :common-lisp-compliant))
-; 
+;
 ; ; We have returned 'redundant in this case, but we now realize that doing so
 ; ; could be problematic.  Consider a book with the following events.  If the
 ; ; second definition of foo is redundant on the first pass of certify-book,
 ; ; then bar will produce an error on the second pass because foo is not
 ; ; :common-lisp-compliant at that time.
-; 
+;
 ; ;   (local
 ; ;    (defun foo (x)
 ; ;      (declare (xargs :guard t :verify-guards t))
@@ -6226,10 +6226,10 @@
 ; ;   (defun bar (x)
 ; ;     (declare (xargs :guard t))
 ; ;     (foo x))
-; 
+;
 ; ; Out of courtesy, given this change to long-standing behavior, we print an
 ; ; explanatory message.
-; 
+;
 ;                            (msg "it is not redundant to provide a new ~
 ;                                  definition that specifies the removal of ~
 ;                                  guard-verified status."))

@@ -1607,22 +1607,22 @@
 ; where:
 
 ;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
-;;; 
+;;;
 ;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
 ;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
 ;;; ; 'formals properties in wrld0 may be more efficient.
-;;; 
+;;;
 ;;;   (cond ((endp fns) wrld)
 ;;;         (t (initialize-invariant-risk-1
 ;;;             (cdr fns)
 ;;;             (if (member-eq 'state
-;;; 
+;;;
 ;;; ; For robustness we do not call formals here, because it causes an error in
 ;;; ; the case that it is not given a known function symbol, as can happen (for
 ;;; ; example) with a member of the list *primitive-program-fns-with-raw-code*.
 ;;; ; In that case, the following getprop will return nil, in which case the
 ;;; ; above member-eq test is false, which works out as expected.
-;;; 
+;;;
 ;;;                            (getprop (car fns) 'formals nil wrld0))
 ;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
 ;;;               wrld)
@@ -10784,7 +10784,7 @@
   ((cmds pre-alist-sysfile . pre-alist-abs)
    (post-alist-sysfile . post-alist-abs)
    (expansion-alist . cert-data)
-   . 
+   .
 
 ; The :pcert-info field is used for provisional certification.  Its value is
 ; either an expansion-alist that has not had locals elided (as per elide-locals
@@ -13704,7 +13704,7 @@
                                 defaxioms-okp
                                 skip-proofs-okp
                                 ctx state)
-  
+
   (let ((er-str "The ~x0 argument of include-book must be ~v1.  The value ~x2 ~
                  is thus illegal.  See :DOC include-book."))
     (cond
@@ -28301,7 +28301,7 @@
                  nil ; portcullisp
                  (f-get-global 'in-local-flg state)
                  in-encapsulatep
-                 nil))) 
+                 nil)))
               (expansion1b
                (value (or expansion1a
 

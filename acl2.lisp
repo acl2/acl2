@@ -158,7 +158,7 @@
 ;   #   (defparameter cl-user::*acl2-optimize-form*
 ;   #     '(OPTIMIZE (COMPILATION-SPEED 0) (DEBUG 0) (SPEED 0) (SPACE 0)
 ;   #                (SAFETY 3)))
-;   # 
+;   #
 
 ;   # Now start CCL and evaluate:
 

@@ -1650,7 +1650,7 @@
                              action
                            :return!))
                        alist))))
-                 
+
     #-acl2-loop-only
     (cond (*load-compiled-stack*
            (error "It is illegal to call LD while loading a compiled book, in ~

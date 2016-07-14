@@ -2487,7 +2487,7 @@
   (cond ((atom lmi) lmi)
         ((member-eq (car lmi) '(:theorem
                                 :termination-theorem
-                                :termination-theorem! 
+                                :termination-theorem!
                                 :guard-theorem))
          (cadr lmi))
         ((or (eq (car lmi) :instance)
@@ -2500,7 +2500,7 @@
    ((atom lmi) nil)
    ((eq (car lmi) '(:theorem
                     :termination-theorem
-                    :termination-theorem! 
+                    :termination-theorem!
                     :guard-theorem))
     nil)
    ((eq (car lmi) :instance)
@@ -10706,7 +10706,7 @@
                      (union-equal new-event-names event-names)
                      (union-equal new-new-entries new-entries)))))))))))))
 
-; We are trying to define termination-theorem-clauses, but for that, we need 
+; We are trying to define termination-theorem-clauses, but for that, we need
 ; termination-machines.  The latter was originally defined in defuns.lisp, but
 ; we move it and supporting definitions here.
 

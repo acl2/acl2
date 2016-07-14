@@ -18836,7 +18836,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (return-from getenv$
                  (let ((val (and (stringp str) (getenv$-raw str))))
                    (value (and (not (bad-lisp-stringp val))
-  
+
 ; It isn't clear that it is possible to get a bad string from getenv$-raw, but
 ; we check above and return nil if we happen to obtain such a string.
 

@@ -209,7 +209,7 @@
   #+ccl
   '(ccl::rdtsc)
   #+sbcl
-  '(multiple-value-bind 
+  '(multiple-value-bind
       (t1 t2)
       (sb-impl::read-cycle-counter)
     (declare (fixnum t1 t2))
@@ -226,7 +226,7 @@
   #+ccl
   '(ccl::rdtsc64)
   #+sbcl
-  '(multiple-value-bind 
+  '(multiple-value-bind
     (t1 t2)
     (sb-impl::read-cycle-counter)
     (declare (fixnum t1 t2))
@@ -1064,7 +1064,7 @@
                               #-gcl
                               (function-lambda-expression fn))))
                (cond (lam (assert (or (eq (car lam) 'lambda)
-                                      #+sbcl 
+                                      #+sbcl
                                       (eq (car lam) 'SB-INT::NAMED-LAMBDA)))
                           lam)
                      (quiet-p nil)
@@ -2048,7 +2048,7 @@
                              :max-pt-size (max pt-size old.max-pt-size)
                              :max-mt-size (max mt-size old.max-mt-size)
                              :avg-pt-size (/ (+ pt-size (* old.avg-pt-size
-                                                           old.num-clears)) 
+                                                           old.num-clears))
                                              new.num-clears)
                              :avg-mt-size (/ (+ mt-size (* old.avg-mt-size
                                                            old.num-clears))
