@@ -11539,7 +11539,7 @@
                  (33  (mv t   nil nil tau-alist  tau-alist))  ; contradiction!
                  (34  (mv nil nil t   tau-alist  tau-alist )) ; mbf!
                  (36  (mv t   nil nil tau-alist  tau-alist))  ; contradiction!
-                 (otherwise 
+                 (otherwise
                   (mv (er hard 'tau-term
                           "Unexpected combination of Booleans resulting from ~
                            assuming the term ~x0 both true and false.  Those ~

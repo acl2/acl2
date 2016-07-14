@@ -1244,9 +1244,9 @@
 ;                 (ACL2-NUMBERP J)
 ;                 ...)
 ;            ...)
-; 
+;
 ;   By case analysis we reduce the conjecture to
-; 
+;
 ;   Subgoal 3'
 ;   (IMPLIES (AND (< I -1)
 ;                 (ACL2-NUMBERP J)
@@ -2303,7 +2303,7 @@
                                  (fn (nth 1 (car well-formedness-guarantee)))
                                  (thm-name1
                                   (nth 2 (car well-formedness-guarantee))))
-                             (mv (bad-arities-msg 
+                             (mv (bad-arities-msg
                                   name
                                   :CLAUSE-PROCESSOR
                                   fn
@@ -2459,7 +2459,7 @@
                        (let ((name (nth 0 (car well-formedness-guarantee)))
                              (fn (nth 1 (car well-formedness-guarantee)))
                              (thm-name1 (nth 2 (car well-formedness-guarantee))))
-                         (mv (bad-arities-msg 
+                         (mv (bad-arities-msg
                               name
                               :CLAUSE-PROCESSOR
                               fn
@@ -5682,7 +5682,7 @@
 ; comment above about the purpose being to provide a warning.)
 
                                 :termination-theorem
-                                :termination-theorem! 
+                                :termination-theorem!
                                 :guard-theorem
 
 ; Through Version_7.1 we warned when using a functional instance of an enabled
