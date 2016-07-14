@@ -1260,7 +1260,7 @@
 
 ; Return a future whose closure, when executed, will execute the given form, x.
 ; Note that (future x) macroexpands to (mt-future x).
-  
+
   `(cond
     (#-skip-resource-availability-test
      (not (futures-resources-available))

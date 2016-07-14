@@ -374,7 +374,7 @@
   (cond ((symbolp x)
          (cond
           ((getpropc (deref-macro-name x macro-aliases)
-                     'runic-mapping-pairs nil wrld) 
+                     'runic-mapping-pairs nil wrld)
            t)
           (t (not (eq (getpropc x 'theory t wrld) t)))))
         ((and (consp x)

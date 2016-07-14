@@ -4479,7 +4479,7 @@
 
 (defmacro defrec (name field-lst cheap &optional recog-name)
 
-; Warning: If when cheap = nil, the car of a record is no longer name, then 
+; Warning: If when cheap = nil, the car of a record is no longer name, then
 ; consider changing the definition or use of record-type.
 
 ; A recognizer with guard t has is defined using recog-name, if supplied; else,
@@ -5332,7 +5332,7 @@
                   :updater-name updater-name
                   :length-name length-name
                   :resize-name resize-name
-                  :resizable resizable) 
+                  :resizable resizable)
             (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
 
