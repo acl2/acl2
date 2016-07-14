@@ -1244,9 +1244,9 @@
 ;                 (ACL2-NUMBERP J)
 ;                 ...)
 ;            ...)
-; 
+;
 ;   By case analysis we reduce the conjecture to
-; 
+;
 ;   Subgoal 3'
 ;   (IMPLIES (AND (< I -1)
 ;                 (ACL2-NUMBERP J)
@@ -2303,7 +2303,7 @@
                                  (fn (nth 1 (car well-formedness-guarantee)))
                                  (thm-name1
                                   (nth 2 (car well-formedness-guarantee))))
-                             (mv (bad-arities-msg 
+                             (mv (bad-arities-msg
                                   name
                                   :CLAUSE-PROCESSOR
                                   fn
@@ -2459,7 +2459,7 @@
                        (let ((name (nth 0 (car well-formedness-guarantee)))
                              (fn (nth 1 (car well-formedness-guarantee)))
                              (thm-name1 (nth 2 (car well-formedness-guarantee))))
-                         (mv (bad-arities-msg 
+                         (mv (bad-arities-msg
                               name
                               :CLAUSE-PROCESSOR
                               fn
@@ -4780,9 +4780,9 @@
 ; of the third result are irrelevant.  We know that only-immediatep = 'non-nil
 ; is used only in waterfall-step to do CASE-SPLITs and immediate FORCEs.  We
 ; know that only-immediatep = nil is used for forcing-round applications and in
-; the proof checker.  When CASE-SPLIT type assumptions are collected with
+; the proof-builder.  When CASE-SPLIT type assumptions are collected with
 ; only-immediatep = nil, then they are given the semantics of FORCE rather
-; than CASE-SPLIT.  This could happen in the proof checker, but it is thought
+; than CASE-SPLIT.  This could happen in the proof-builder, but it is thought
 ; not to happen otherwise.
 
 ; In the case that only-immediatep is nil: we strip all assumptions out of
@@ -5682,7 +5682,7 @@
 ; comment above about the purpose being to provide a warning.)
 
                                 :termination-theorem
-                                :termination-theorem! 
+                                :termination-theorem!
                                 :guard-theorem
 
 ; Through Version_7.1 we warned when using a functional instance of an enabled

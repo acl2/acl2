@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "applicability-conditions")
+(include-book "defchoose-queries")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
 (include-book "event-forms")

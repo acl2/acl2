@@ -511,7 +511,7 @@
                                  REMOVE-LAMBDAS-LST
                                  REMOVE-LAMBDAS UNPRETTYIFY
                                  UNPRETTYIFY/ADD-HYPS-TO-PAIRS VERIFY
-                                 PROOF-CHECKER PRINT-PC-STATE PRINT-GOAL
+                                 PROOF-BUILDER PRINT-PC-STATE PRINT-GOAL
                                  PRINT-DEFTHM STATE-FROM-INSTRUCTIONS
                                  STATE-STACK-FROM-INSTRUCTIONS
                                  PRINT-UNPROVED-GOALS-MESSAGE VERIFY-FN

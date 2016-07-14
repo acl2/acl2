@@ -146,18 +146,18 @@
  (set-numbered-name-index-end "}")
  (set-numbered-name-index-wildcard "*")
 
- (add-numbered-name-in-use 'fun 4)
- (add-numbered-name-in-use 'fun 1)
- (assert-event (equal (max-numbered-name-index-in-use 'fun (w state)) 4))
+ (add-numbered-name-in-use 'fn 4)
+ (add-numbered-name-in-use 'fn 1)
+ (assert-event (equal (max-numbered-name-index-in-use 'fn (w state)) 4))
 
- (add-numbered-name-in-use 'fun 3)
- (assert-event (equal (max-numbered-name-index-in-use 'fun (w state)) 4))
+ (add-numbered-name-in-use 'fn 3)
+ (assert-event (equal (max-numbered-name-index-in-use 'fn (w state)) 4))
 
- (add-numbered-name-in-use 'fun 9)
- (assert-event (equal (max-numbered-name-index-in-use 'fun (w state)) 9))
+ (add-numbered-name-in-use 'fn 9)
+ (assert-event (equal (max-numbered-name-index-in-use 'fn (w state)) 9))
 
- (add-numbered-name-in-use 'ffun 12)
- (assert-event (equal (max-numbered-name-index-in-use 'fun (w state)) 9)))
+ (add-numbered-name-in-use 'ffn 12)
+ (assert-event (equal (max-numbered-name-index-in-use 'fn (w state)) 9)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

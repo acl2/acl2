@@ -3838,7 +3838,7 @@ Allow redefinition (even of system functions) without undoing.")
 
 (defun retrieve-printer (term)
   (print-default-command-header)
-  (pprinc "Re-enter proof-checker state")
+  (pprinc "Re-enter proof-builder state")
   (if (cadr term)
       (ppformat " named ~s." (cadr term))
       (pprinc "."))

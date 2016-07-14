@@ -84,8 +84,9 @@ convenient foreign-function interface.''
 
 Here is an easy way to obtain and build the latest version (generally
 recommended) for Linux (or another OS; see below) running on an x86 or
-x86-64.  First execute the following shell command to create
-a <code>ccl</code> directory, but substituting
+x86-64.  First stand in any directory, though you might want to stand
+in a fresh directory.  Then execute the following shell command to create
+a new <code>ccl</code> subdirectory, but substituting
 for <code>linuxx86</code>, if appropriate, any of
 <code>darwinx86</code> (which we use for modern Macs), <code>freebsdx86</code>,
 <code>solarisx86</code>, <code>windows</code>, <code>darwinppc</code>,
@@ -111,6 +112,7 @@ replace "<code>./lx86cl64</code>" by a suitable executable; e.g., for
 
 <hr>
 <pre>
+cd ccl
 ./lx86cl64
 (rebuild-ccl :full t)
 (quit)

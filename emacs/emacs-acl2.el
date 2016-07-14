@@ -2,26 +2,21 @@
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
-; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; This file contains some emacs stuff for ACL2 users.  It is intended
 ; to work both with GNU Emacs and XEmacs.
@@ -109,11 +104,11 @@
   ; "meta-x run-acl2" starts up acl2 as an inferior process in emacs.  You may
   ;      have better luck simply issuing your ACL2 command in an ordinary
   ;      (emacs) shell.
-; ACL2 proof-checker support
+; ACL2 proof-builder support
   ; "control-t d" prints an appropriate DV command at the end of the current
   ;      buffer, suitable for diving to subexpression after printing with
-  ;      proof-checker "th" or "p" command and then positioning cursor on that
-  ;      subexpression.  See ACL2 documentation for PROOF-CHECKER.
+  ;      proof-builder "th" or "p" command and then positioning cursor on that
+  ;      subexpression.  See ACL2 documentation for PROOF-BUILDER.
   ; "control-t control-d" is like "control-t d" above, but for DIVE instead
   ;      (used with "pp" instead of "p")
 ; Load other tools
@@ -249,7 +244,7 @@
   "Start up another shell."
   (interactive)
   (switch-to-buffer
-   (make-comint (concat "shell-" 
+   (make-comint (concat "shell-"
 			(number-to-string
 			 (setq number-of-other-shells
 			       (+ 1 number-of-other-shells))))
@@ -682,7 +677,7 @@ then also ignore case if that argument is positive, else do not ignore case."
 (define-key ctl-t-keymap "q" 'approx-compare-windows)
 
 (defun my-lisp-mode-hook ()
-  (setq indent-tabs-mode nil)   
+  (setq indent-tabs-mode nil)
   (setq comment-column 0)
   (turn-on-auto-fill)
   (setq save-buffer-coding-system 'iso-8859-1)
@@ -907,7 +902,7 @@ beginning of the string that was processed."
   t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; ACL2 proof-checker support
+;;; ACL2 proof-builder support
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Insert  DV  command that gets to subexpression at the cursor.
@@ -918,7 +913,7 @@ beginning of the string that was processed."
 ; This is for use with the PP command.
 (define-key ctl-t-keymap "\C-d" 'dive-manual)
 
-; The rest of the functions in this section support \C-t d and \C-t \C-d. 
+; The rest of the functions in this section support \C-t d and \C-t \C-d.
 
 (defvar *acl2-pc-dive-syntax-table* nil)
 
@@ -939,11 +934,11 @@ beginning of the string that was processed."
 the expression beginning at the margin, assuming that the point
 is properly inside the margin (otherwise causes an error), then
 moves to the end of the buffer and plops down the appropriate DIVE
-command for the proof-checker.  Causes an error if one is already
+command for the proof-builder.  Causes an error if one is already
 at the top."
   (interactive)
   (let ((addr (find-address)))
-    (end-of-buffer)
+    (goto-char (point-max))
     (if (null addr)
 	(error "Null address.")
       (insert (prin1-to-string (cons 'dive addr))))))
@@ -953,10 +948,10 @@ at the top."
 the expression beginning at the margin, assuming that the point
 is properly inside the margin (otherwise causes an error), then
 moves to the end of the buffer and plops down the appropriate DV
-command for the proof-checker. Causes an error if one is already at the top."
+command for the proof-builder. Causes an error if one is already at the top."
   (interactive)
   (let ((addr (find-address)))
-    (end-of-buffer)
+    (goto-char (point-max))
     (if (null addr)
 	(error "Null address.")
       (insert (prin1-to-string (cons 'dv addr))))))

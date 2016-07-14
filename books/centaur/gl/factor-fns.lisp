@@ -294,7 +294,7 @@
 
 (defmacro factor-fn (fn)
   `(with-output
-    :off (warning warning! observation prove acl2::proof-checker
+    :off (warning warning! observation prove acl2::proof-builder
                   acl2::history event  proof-tree)
     (make-event
      (let* ((world (w state))

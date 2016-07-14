@@ -288,10 +288,7 @@
 (defun-inst consp-io[g]
   (consp-io[?g] (?g . g)))
 
-(defthm member-of-append
-  (iff (member e (append y1 y2))
-       (or (member e y1)
-           (member e y2))))
+; member-of-append is already included here
 
 (defthm consp-io[g]-lemma
   (implies (and (consp x)

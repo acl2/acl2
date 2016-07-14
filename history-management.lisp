@@ -2487,7 +2487,7 @@
   (cond ((atom lmi) lmi)
         ((member-eq (car lmi) '(:theorem
                                 :termination-theorem
-                                :termination-theorem! 
+                                :termination-theorem!
                                 :guard-theorem))
          (cadr lmi))
         ((or (eq (car lmi) :instance)
@@ -2500,7 +2500,7 @@
    ((atom lmi) nil)
    ((eq (car lmi) '(:theorem
                     :termination-theorem
-                    :termination-theorem! 
+                    :termination-theorem!
                     :guard-theorem))
     nil)
    ((eq (car lmi) :instance)
@@ -6650,33 +6650,28 @@
 ; We now develop the most trivial event we have: deflabel.  It
 ; illustrates the basic structure of our event code.
 
-(defun chk-virgin (name new-type wrld)
-
-; Although this function axiomatically always returns the
-; value t, it sometimes causes an error.
-
-
-  #+acl2-loop-only
-  (declare (ignore name new-type wrld))
+(defun chk-virgin (name new-type ctx wrld state)
   #-acl2-loop-only
-  (chk-virgin2 name new-type wrld)
-  t)
+  (chk-virgin2 name new-type ctx wrld state)
+  #+acl2-loop-only
+  (declare (ignore name new-type ctx wrld))
+  #+acl2-loop-only
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (mv (or erp val) nil state)))
 
 (defun chk-boot-strap-redefineable-namep (name ctx wrld state)
   (cond ((global-val 'boot-strap-pass-2 wrld)
          (value nil))
         ((not (member-eq name (global-val 'chk-new-name-lst wrld)))
          (er soft ctx
-             "The name ~x0 is already in use and is not among those ~
-              expected by chk-boot-strap-redefineable-namep to be redundantly defined ~
-              during initialization. If you wish it to be, add ~x0 to ~
-              the global-val setting of 'chk-new-name-lst in ~
+             "The name ~x0 is already in use and is not among those expected ~
+              by chk-boot-strap-redefineable-namep to be redundantly defined ~
+              during initialization. If you wish it to be, add ~x0 to the ~
+              global-val setting of 'chk-new-name-lst in ~
               primordial-world-globals."
              name))
-        ((not (chk-virgin name t wrld))
-         (er soft ctx
-             "Not a virgin name:  ~x0." name))
-        (t (value nil))))
+        (t (chk-virgin name t ctx wrld state))))
 
 (defun maybe-coerce-overwrite-to-erase (old-type new-type mode)
   (cond ((and (eq old-type 'function)
@@ -7145,10 +7140,8 @@
                        (eq (car new-type) 'function))
                   'function)
                  (t new-type))))
-      (cond ((not (chk-virgin name actual-new-type w))
-             (er soft ctx
-                 "Not a virgin name for type ~x0:  ~x1." new-type name))
-            (t (value w)))))
+      (er-progn (chk-virgin name actual-new-type ctx w state)
+                (value w))))
    ((and (f-get-global 'boot-strap-flg state)
          (not (global-val 'boot-strap-pass-2 w))
          (or (not reclassifyingp)
@@ -10713,7 +10706,7 @@
                      (union-equal new-event-names event-names)
                      (union-equal new-new-entries new-entries)))))))))))))
 
-; We are trying to define termination-theorem-clauses, but for that, we need 
+; We are trying to define termination-theorem-clauses, but for that, we need
 ; termination-machines.  The latter was originally defined in defuns.lisp, but
 ; we move it and supporting definitions here.
 
@@ -12252,7 +12245,7 @@
                    "there is no known formula associated with this rune")))))
      (t (er@par soft ctx str lmi
           "is not a symbol, a rune in the current logical world, or a list ~
-           whose first element is ~v0."
+           whose first element is ~v2"
           (list* :INSTANCE :FUNCTIONAL-INSTANCE atomic-lmi-cars))))))
 
 (defun@par translate-use-hint1 (arg ctx wrld state)

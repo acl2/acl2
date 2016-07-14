@@ -5933,7 +5933,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (event         "4" nil nil nil)
     (summary       "4" nil nil nil)
 ;   (chronology    "5" t   nil nil)
-    (proof-checker "6" nil nil nil)
+    (proof-builder "6" nil nil nil)
     (history       "t" t   t   t)
     (temporary     "t" t   t   t)
     (query         "q" t   t   t)))
@@ -18834,7 +18834,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (live-state-p state)
     (return-from getenv$
-                 (value (and (stringp str) (getenv$-raw str)))))
+                 (let ((val (and (stringp str) (getenv$-raw str))))
+                   (value (and (not (bad-lisp-stringp val))
+
+; It isn't clear that it is possible to get a bad string from getenv$-raw, but
+; we check above and return nil if we happen to obtain such a string.
+
+                               val)))))
   (read-acl2-oracle state))
 
 (defun setenv$ (str val)
@@ -20067,6 +20073,54 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (save-def
+(defun-one-output bad-lisp-stringp (x)
+  (cond
+   ((not (simple-string-p x))
+    (cons "The strings of ACL2 must be simple strings, but ~x0 is not simple."
+          (list (cons #\0 x))))
+   (t
+    (do ((i 0 (1+ i)))
+        ((= i (length x)))
+        (declare (type fixnum i))
+        (let ((ch (char (the string x) i)))
+          (cond
+           ((legal-acl2-character-p ch) nil)
+           (t (let ((code (char-code ch)))
+                (cond ((not (< code 256))
+                       (return
+                        (cons "The strings of ACL2 may contain only ~
+                               characters whose char-code does not exceed ~
+                               255.  The object CLTL displays as ~s0 has ~
+                               char-code ~x1 and hence is not one of those."
+                              (list (cons #\0 (coerce (list ch)
+                                                      'string))
+                                    (cons #\1 (char-code ch))))))
+                      ((eql (the character ch)
+                            (the character (code-char code)))
+
+; We allow the canonical character with code less than 256 in a string, even
+; the character #\Null (for example) or any such character that may not be a
+; legal-acl2-character-p, because in a string (unlike as a character object)
+; the character will be printed in a way that can be read back in, not using a
+; print name that may not be standard across all Lisps.
+
+                       nil)
+                      (t
+                       (return
+                        (cons "ACL2 strings may contain only characters ~
+                               without attributes.  The character with ~
+                               char-code ~x0 that CLTL displays as ~s1 is not ~
+                               the same as the character that is the value of ~
+                               ~x2."
+                              (list (cons #\0 code)
+                                    (cons #\1 (coerce (list ch)
+                                                      'string))
+                                    (cons #\2 `(code-char
+                                                ,code)))))))))))))))
+)
+
+#-acl2-loop-only
+(save-def
 (defun-one-output bad-lisp-objectp (x)
 
 ; This routine does a root and branch exploration of x and guarantees that x is
@@ -20227,51 +20281,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                    *the-live-state*))))))))))))
                 (t nil))))))
         ((stringp x)
-         (cond
-          ((not (simple-string-p x))
-           (cons "The strings of ACL2 must be simple strings, but ~x0 is not ~
-                  simple."
-                 (list (cons #\0 x))))
-          (t
-           (do ((i 0 (1+ i)))
-               ((= i (length x)))
-               (declare (type fixnum i))
-               (let ((ch (char (the string x) i)))
-                 (cond
-                  ((legal-acl2-character-p ch) nil)
-                  (t (let ((code (char-code ch)))
-                       (cond ((not (< code 256))
-                              (return
-                               (cons "The strings of ACL2 may contain only ~
-                                      characters whose char-code does not ~
-                                      exceed 255.  The object CLTL displays ~
-                                      as ~s0 has char-code ~x1 and hence is ~
-                                      not one of those."
-                                     (list (cons #\0 (coerce (list ch)
-                                                             'string))
-                                           (cons #\1 (char-code ch))))))
-                             ((eql (the character ch)
-                                   (the character (code-char code)))
-
-; We allow the canonical character with code less than 256 in a string, even
-; the character #\Null (for example) or any such character that may not be a
-; legal-acl2-character-p, because in a string (unlike as a character object)
-; the character will be printed in a way that can be read back in, not using a
-; print name that may not be standard across all Lisps.
-
-                              nil)
-                             (t
-                              (return
-                               (cons "ACL2 strings may contain only ~
-                                      characters without attributes.  The ~
-                                      character with char-code ~x0 that CLTL ~
-                                      displays as ~s1 is not the same as the ~
-                                      character that is the value of ~x2."
-                                     (list (cons #\0 code)
-                                           (cons #\1 (coerce (list ch)
-                                                             'string))
-                                           (cons #\2 `(code-char
-                                                       ,code)))))))))))))))
+         (bad-lisp-stringp x))
         ((characterp x)
          (cond ((legal-acl2-character-p x) nil)
                (t
@@ -20299,6 +20309,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              CLTL displays as ~s0 is thus illegal in ACL2."
             (list (cons #\0 (format nil "~s" x)))))))
 )
+
+#-acl2-loop-only
+(defun chk-bad-lisp-stringp (namestring filename)
+  (let ((msg (bad-lisp-stringp namestring)))
+    (cond (msg (interface-er
+                "Illegal absolute pathname computed for ~x0:~%~@1"
+                filename msg))
+          (t nil))))
 
 #-acl2-loop-only
 (defun-one-output chk-bad-lisp-object (x)

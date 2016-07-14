@@ -40,7 +40,7 @@ system $prepper . " > " . $prepped_smt_file;
 open(OUTP, "> $ACL2_cmd_file") or die("Cannot open $ACL2_cmd_file for writing\n");
 if ($verbosity < 4) {
     # Inihibit ACL2 proof output
-    print OUTP "(set-inhibit-output-lst '(error warning warning! observation prove proof-checker event expansion summary proof-tree))";
+    print OUTP "(set-inhibit-output-lst '(error warning warning! observation prove proof-builder event expansion summary proof-tree))";
 }
 print OUTP "(translate-smt-file \"" . $prepped_smt_file . "\" \"" . $ACL2_smt_file . "\" \"" . 
         $ACL2_out_file . "\" state)";

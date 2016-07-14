@@ -25,8 +25,8 @@
   :parents (acl2::kestrel-books acl2::macro-libraries)
 
   :short
-  "SOFT (&lsquo;Second-Order Functions and Theorems&rsquo;),
-  a tool to mimic second-order functions and theorems
+  "SOFT (&lsquo;Second-Order Functions and Theorems&rsquo;)
+  is a tool to mimic second-order functions and theorems
   in the first-order logic of ACL2."
 
   :long

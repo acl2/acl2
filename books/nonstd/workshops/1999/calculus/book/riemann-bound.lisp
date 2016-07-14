@@ -140,7 +140,7 @@
                                                  ;paritionp-forward-to-consp
                                                  )
                            ;; The following list of rules was derived
-                           ;; by doing the proof in the proof-checker.
+                           ;; by doing the proof in the proof-builder.
                            '((:DEFINITION NOT)
                              (:FORWARD-CHAINING PARTITIONP-FORWARD-TO-REALP-CAR)
                              (:FORWARD-CHAINING REALP-LAST-ELEMENT-OF-PARTITION)
