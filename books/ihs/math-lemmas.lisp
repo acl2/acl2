@@ -260,7 +260,7 @@ simple theorems for inequalities.</p>"
   :parents (math-lemmas ihs-math)
   :short "A theory of EXPT which is compatible with the ALGEBRA theories."
   :long "<p>This theory contains :TYPE-PRESCRIPTIONS, simpification,
-  normalization and selected :LINEAR rules for @(see EXPT.)  This theory will
+  normalization and selected :LINEAR rules for @(tsee EXPT).  This theory will
   not be useful unless the @(see integerp-algebra) theory, or something similar
   is ENABLEd.</p>"
 
