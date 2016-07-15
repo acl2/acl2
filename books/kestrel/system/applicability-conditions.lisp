@@ -32,9 +32,9 @@
   that must hold for certain processes to apply."
   :long
   "<p>
-  For instance, transforming a function into a new function
-  according to some criteria may be subject to conditions
-  that must hold (i.e. must be proved as theorems)
+  For instance,
+  transforming a function into a new function according to some criteria
+  may be subject to conditions that must hold (i.e. must be proved as theorems)
   for the transformation to successfully take place.
   </p>")
 
@@ -42,7 +42,8 @@
   :short
   "Records to describe and manipulate applicability conditions."
   ((name "Name of the applicability condition." symbolp)
-   (formula  "The statement of the applicability condition (a term).")
+   (formula  "The statement of the applicability condition
+             (an untranslated @(see term)).")
    (hints "Hints to prove the applicability condition (possibly @('nil')).")))
 
 (std::deflist applicability-condition-listp (x)
