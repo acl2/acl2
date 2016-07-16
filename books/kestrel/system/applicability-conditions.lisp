@@ -32,9 +32,9 @@
   that must hold for certain processes to apply."
   :long
   "<p>
-  For instance, transforming a function into a new function
-  according to some criteria may be subject to conditions
-  that must hold (i.e. must be proved as theorems)
+  For instance,
+  transforming a function into a new function according to some criteria
+  may be subject to conditions that must hold (i.e. must be proved as theorems)
   for the transformation to successfully take place.
   </p>")
 
@@ -42,7 +42,8 @@
   :short
   "Records to describe and manipulate applicability conditions."
   ((name "Name of the applicability condition." symbolp)
-   (formula  "The statement of the applicability condition (a term).")
+   (formula  "The statement of the applicability condition
+             (an untranslated @(see term)).")
    (hints "Hints to prove the applicability condition (possibly @('nil')).")))
 
 (std::deflist applicability-condition-listp (x)
@@ -56,13 +57,14 @@
   "Stop with an error message,
   due to a failure related to applicability conditions."
   :long "@(def applicability-condition-fail)"
-  (defmacro applicability-condition-fail (message &rest arguments)
+  (defmacro applicability-condition-fail (context message &rest arguments)
     (declare (xargs :guard (and (true-listp arguments)
                                 (<= (len arguments) 10))))
-    `(er hard? 'applicability-condition ,message ,@arguments)))
+    `(er hard? ,context ,message ,@arguments)))
 
 (define prove-applicability-condition ((app-cond applicability-condition-p)
                                        (verbose booleanp)
+                                       (ctx "Context for errors.")
                                        state)
   :returns (mv (yes/no booleanp)
                state)
@@ -93,12 +95,14 @@
        ((mv erp yes/no state) (prove$ formula :hints hints))
        ((when erp)
         (applicability-condition-fail
-         "Error ~x0 when attempting to prove ~
-         applicability condition ~x1:~%~x2~|."
+         ctx
+         "Prover error ~x0 when attempting to prove ~
+          applicability condition ~x1:~%~x2~|."
          erp name formula)
         (mv nil state))
        ((unless yes/no)
         (applicability-condition-fail
+         ctx
          "The applicability condition ~x0 fails:~%~x1~|"
          name formula)
         (mv nil state))
@@ -109,6 +113,7 @@
 (define prove-applicability-conditions
   ((app-conds applicability-condition-listp)
    (verbose booleanp)
+   (ctx "Context for errors.")
    state)
   :returns (mv (yes/no booleanp)
                state)
@@ -127,8 +132,9 @@
   (cond ((endp app-conds) (mv t state))
         (t (b* ((app-cond (car app-conds))
                 ((mv & state)
-                 (prove-applicability-condition app-cond verbose state)))
-             (prove-applicability-conditions (cdr app-conds) verbose state)))))
+                 (prove-applicability-condition app-cond verbose ctx state)))
+             (prove-applicability-conditions
+              (cdr app-conds) verbose ctx state)))))
 
 (define applicability-condition-event
   ((app-cond applicability-condition-p)

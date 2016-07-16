@@ -39,10 +39,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail (make-event (applicability-condition-fail "error")))
+(must-fail (make-event (applicability-condition-fail 'context "error")))
 
-(must-fail (make-event (applicability-condition-fail "error ~x0 and ~x1"
-                                                     #\a "bb")))
+(must-fail (make-event (applicability-condition-fail
+                        'context  "error ~x0 and ~x1" #\a "bb")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,7 +51,8 @@
                                              :name 'false
                                              :formula '(equal x y)
                                              :hints nil)
-                                            nil
+                                            nil ; verbose
+                                            'context
                                             state)))
 
 (must-fail-local
@@ -59,7 +60,8 @@
                                              :name 'false
                                              :formula '(equal x y)
                                              :hints nil)
-                                            t
+                                            t ; verbose
+                                            'context
                                             state)))
 
 (must-succeed*
@@ -69,7 +71,8 @@
                                               :name 'need-hints
                                               :formula '(equal (f x) x)
                                               :hints nil)
-                                             nil
+                                             nil ; verbose
+                                             'context
                                              state))))
 
 (must-succeed*
@@ -79,7 +82,8 @@
                                               :name 'need-hints
                                               :formula '(equal (f x) x)
                                               :hints nil)
-                                             t
+                                             t ; verbose
+                                             'context
                                              state))))
 
 (must-eval-to-t
@@ -88,7 +92,8 @@
                                    :name 'true
                                    :formula '(equal x x)
                                    :hints nil)
-                                  nil
+                                  nil ; verbose
+                                  'context
                                   state)
    (value result)))
 
@@ -98,7 +103,8 @@
                                    :name 'true
                                    :formula '(equal x x)
                                    :hints nil)
-                                  t
+                                  t ; verbose
+                                  'context
                                   state)
    (value result)))
 
@@ -110,7 +116,8 @@
                                     :name 'true
                                     :formula '(equal (f x) x)
                                     :hints '(("Goal" :in-theory (enable f))))
-                                   nil
+                                   nil ; verbose
+                                   'context
                                    state)
     (value result))))
 
@@ -122,7 +129,8 @@
                                     :name 'true
                                     :formula '(equal (f x) x)
                                     :hints '(("Goal" :in-theory (enable f))))
-                                   t
+                                   t ; verbose
+                                   'context
                                    state)
     (value result))))
 
@@ -137,12 +145,16 @@
                                                     :name 'false
                                                     :formula '(equal x y)
                                                     :hints nil))
-                                             nil
+                                             nil ; verbose
+                                             'context
                                              state)))
 
 (must-eval-to-t
  (mv-let (result state)
-   (prove-applicability-conditions nil nil state)
+   (prove-applicability-conditions nil
+                                   nil ; verbose
+                                   'context
+                                   state)
    (value result)))
 
 (must-succeed*
@@ -158,7 +170,8 @@
                                            :formula '(equal (f x) x)
                                            :hints '(("Goal"
                                                      :in-theory (enable f)))))
-                                    nil
+                                    nil ; verbose
+                                    'context
                                     state)
     (value result))))
 
