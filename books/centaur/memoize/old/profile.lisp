@@ -149,7 +149,7 @@
  <li>@('forget') (default: @('nil')) is passed as the @(':forget') argument for
  each generated call of @(tsee profile); and</li>
 
- <li>('pkg'), when supplied, is a package name or list of package names to us
+ <li>@('pkg'), when supplied, is a package name or list of package names to use
  in place of the default, which is the list of names of all packages known to
  ACL2 except for packages @('\"ACL2-INPUT-CHANNEL\"'),
  @('\"ACL2-OUTPUT-CHANNEL\"'), @('\"COMMON-LISP\"'), and @('\"KEYWORD\"').</li>

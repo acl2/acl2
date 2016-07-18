@@ -633,7 +633,8 @@ manual with others, you should read about @(see deploying-manuals).</li>
 })
 
 <p>The only (required) argument to the @('save') command is the name of a
-directory where the want the manual to go.  As might be expected:</p>
+directory where the want the manual to go.  All arguments are evaluated.
+As might be expected:</p>
 
 <ul>
 
