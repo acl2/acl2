@@ -110,5 +110,5 @@
            ;; Now remove all shadowed topics before doing anything more.
            ((mv & & state) (assign acl2::writes-okp t))
            (- (acl2::tshell-ensure))
-           (state (save-fancy all-xdoc-topics ,dir ',zip-p ',logo-image state)))
+           (state (save-fancy all-xdoc-topics ,dir ,zip-p ,logo-image state)))
         (value '(value-triple :invisible))))))
