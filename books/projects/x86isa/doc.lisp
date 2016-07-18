@@ -331,15 +331,12 @@
 
 (defxdoc Contributors
   :parents (x86isa)
-  :short "Authorship Details and Acknowledgements"
+  :short "Authorship Details and Acknowledgments"
   :long "<h5>Original Authors</h5>
  <p>Shilpi Goel, Warren A. Hunt, Jr., and Matt Kaufmann</p>
 
  <p>Questions or Suggestions? Email Shilpi:
  <tt>shigoel@cs.utexas.edu</tt></p>
-
- <p>This material is based upon work supported by DARPA under Contract
-   No. N66001-10-2-4087.</p>
 
  <h5>Contributors to the x86 ISA Model</h5>
 
@@ -364,7 +361,13 @@
  resolving the resulting guard proof obligations about the paging
  specification functions.</p>
 
- <h5>Acknowledgements</h5>
+ <h5>Acknowledgments</h5>
+
+ <p>This material is based upon work supported by DARPA under Contract
+   No. N66001-10-2-4087.</p>
+
+ <p>This material is based upon work supported by the National Science
+  Foundation under Grant Number CNS-1525472.</p>
 
  <p>Thanks to the folks at <a href=\"http://www.centtech.com\">Centaur
  Technology</a> \(Anna Slobodova, Jared Davis, and Sol Swords\) for
@@ -476,35 +479,35 @@
   (if (endp op-table)
       ""
     (b* ((t-entry           (car op-table))
-         (ins-name          (car (cdr t-entry)))
-         (semantic-fn-name  (cdr (cdr t-entry)))
-         (t-opcode-info     (car t-entry))
-         (t-opcode          (car t-opcode-info))
-         (opcode-string     (cond
-                             ((n04p t-opcode)
-                              (string-append "0" (str::natstr16 t-opcode)))
-                             ((n08p t-opcode)
-                              (str::natstr16 t-opcode))
-                             ((n12p t-opcode)
-                              (string-append "0" (str::natstr16 t-opcode)))
-                             (t
-                              (str::natstr16 t-opcode))))
-         (opcode-extns      (cdr t-opcode-info))
-         (opcode-extns      (if (equal (car opcode-extns) :nil)
-                                'NONE
-                              opcode-extns))
+	 (ins-name          (car (cdr t-entry)))
+	 (semantic-fn-name  (cdr (cdr t-entry)))
+	 (t-opcode-info     (car t-entry))
+	 (t-opcode          (car t-opcode-info))
+	 (opcode-string     (cond
+			     ((n04p t-opcode)
+			      (string-append "0" (str::natstr16 t-opcode)))
+			     ((n08p t-opcode)
+			      (str::natstr16 t-opcode))
+			     ((n12p t-opcode)
+			      (string-append "0" (str::natstr16 t-opcode)))
+			     (t
+			      (str::natstr16 t-opcode))))
+	 (opcode-extns      (cdr t-opcode-info))
+	 (opcode-extns      (if (equal (car opcode-extns) :nil)
+				'NONE
+			      opcode-extns))
 
-         (table-info-string
-          (fms-to-string
-           "Opcode: ~s0 Extension: ~y1 ~t3 Instruction: ~s2~%~t3 Semantic Function: ~s4~%~%"
-           (list (cons #\0 opcode-string)
-                 (cons #\1 opcode-extns)
-                 (cons #\2 ins-name)
-                 (cons #\3 '8)
-                 (cons #\4 semantic-fn-name)))))
-        (string-append
-         table-info-string
-         (print-implemented-opcodes-table (cdr op-table))))))
+	 (table-info-string
+	  (fms-to-string
+	   "Opcode: ~s0 Extension: ~y1 ~t3 Instruction: ~s2~%~t3 Semantic Function: ~s4~%~%"
+	   (list (cons #\0 opcode-string)
+		 (cons #\1 opcode-extns)
+		 (cons #\2 ins-name)
+		 (cons #\3 '8)
+		 (cons #\4 semantic-fn-name)))))
+	(string-append
+	 table-info-string
+	 (print-implemented-opcodes-table (cdr op-table))))))
 
 (defsection implemented-opcodes
   :parents (x86-instructions)
@@ -514,8 +517,8 @@
 
  @(`
    (:code (print-implemented-opcodes-table
-           (reverse
-            (table-alist 'implemented-opcodes-table (w state)))))
+	   (reverse
+	    (table-alist 'implemented-opcodes-table (w state)))))
 `)
 
 ")
