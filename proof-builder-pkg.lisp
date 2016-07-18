@@ -20,4 +20,8 @@
 
 (in-package "ACL2")
 
+; The "PC" in the package name, "ACL2-PC", stands for "proof-checker", which is
+; the former name of the proof-builder.  We use the legacy package name for
+; backward compatibility.
+
 (defpkg "ACL2-PC" nil)

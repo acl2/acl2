@@ -20,11 +20,10 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
-(include-book "std/util/deflist-base" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "system/kestrel" :dir :system)
+(include-book "system/pseudo-good-worldp" :dir :system)
 
 (local (set-default-parents world-queries))
 
@@ -32,41 +31,41 @@
 
 (defxdoc world-queries
   :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities to query <see topic='@(url world)'>worlds</see>."
+  :short "Utilities to query @(see world)s."
   :long
   "<p>
   These complement the world query utilities
   in the <see topic='@(url system-utilities)'>built-in system utilities</see>.
   </p>")
 
-(define theorem-symbolp ((sym symbolp) (w plist-worldp))
+(define theorem-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short
   "True iff the symbol @('sym') names a theorem,
   i.e. it has a @('theorem') property."
-  (not (eq t (getpropc sym 'theorem t w))))
+  (not (eq t (getpropc sym 'theorem t wrld))))
 
-(define macro-symbolp ((sym symbolp) (w plist-worldp))
+(define macro-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff the symbol @('sym') names a macro."
-  (not (eq t (getpropc sym 'macro-args t w))))
+  (not (eq t (getpropc sym 'macro-args t wrld))))
 
-(define function-namep (x (w plist-worldp))
+(define function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a function."
-  (and (symbolp x) (function-symbolp x w)))
+  (and (symbolp x) (function-symbolp x wrld)))
 
-(define theorem-namep (x (w plist-worldp))
+(define theorem-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a theorem."
-  (and (symbolp x) (theorem-symbolp x w)))
+  (and (symbolp x) (theorem-symbolp x wrld)))
 
-(define macro-namep (x (w plist-worldp))
+(define macro-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a macro."
-  (and (symbolp x) (macro-symbolp x w)))
+  (and (symbolp x) (macro-symbolp x wrld)))
 
-(define logical-name-listp (names (w plist-worldp))
+(define logical-name-listp (names (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short "Recognize @('nil')-terminated lists of logical names."
@@ -75,14 +74,14 @@
   See @('logical-namep') in the ACL2 source code.
   </p>"
   (cond ((atom names) (null names))
-        (t (and (logical-namep (car names) w)
-                (logical-name-listp (cdr names) w)))))
+        (t (and (logical-namep (car names) wrld)
+                (logical-name-listp (cdr names) wrld)))))
 
-(define definedp ((fun (function-namep fun w)) (w plist-worldp))
+(define definedp ((fn (function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short
-  "True iff the function @('fun') is defined,
+  "True iff the function @('fn') is defined,
   i.e. it has an @('unnormalized-body') property."
   :long
   "<p>
@@ -93,28 +92,28 @@
   they are not considered to be &ldquo;defined&rdquo;
   from the perspective of the @(tsee definedp) system utility.
    </p>"
-  (not (eq t (getpropc fun 'unnormalized-body t w))))
+  (not (eq t (getpropc fn 'unnormalized-body t wrld))))
 
-(define guard-verified-p ((fun/thm (or (function-namep fun/thm w)
-                                       (theorem-namep fun/thm w)))
-                          (w plist-worldp))
+(define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
+                                      (theorem-namep fn/thm wrld)))
+                          (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable function-namep theorem-namep)))
   :short
-  "True iff the function or theorem @('fun/thm') is @(tsee guard)-verified."
-  (eq (symbol-class fun/thm w) :common-lisp-compliant))
+  "True iff the function or theorem @('fn/thm') is @(tsee guard)-verified."
+  (eq (symbol-class fn/thm wrld) :common-lisp-compliant))
 
-(define non-executablep ((fun (and (function-namep fun w)
-                                   (definedp fun w)))
-                         (w plist-worldp))
+(define non-executablep ((fn (and (function-namep fn wrld)
+                                  (definedp fn wrld)))
+                         (wrld plist-worldp))
   ;; :returns (result (member result '(t nil :program)))
   :guard-hints (("Goal" :in-theory (enable function-namep)))
-  :short "The @(tsee non-executable) status of the defined function @('fun')."
-  (getpropc fun 'non-executablep nil w))
+  :short "The @(tsee non-executable) status of the defined function @('fn')."
+  (getpropc fn 'non-executablep nil wrld))
 
-(define unwrapped-nonexec-body ((fun (and (function-namep fun w)
-                                          (non-executablep fun w)))
-                                (w plist-worldp))
+(define unwrapped-nonexec-body ((fn (and (function-namep fn wrld)
+                                         (non-executablep fn wrld)))
+                                (wrld plist-worldp))
   ;; :returns (unwrapped-body pseudo-termp)
   :verify-guards nil
   :short
@@ -122,13 +121,13 @@
   without the &ldquo;non-executable wrapper&rdquo;."
   :long
   "<p>
-  @(tsee Defun-nx) wraps the body of the function @('fun') being defined
+  @(tsee Defun-nx) wraps the body of the function @('fn') being defined
   in a wrapper that has
   the following <see topic='@(url term)'>translated</see> form:
   </p>
   @({
     (return-last 'progn
-                 (throw-nonexec-error 'fun
+                 (throw-nonexec-error 'fn
                                       (cons arg1 ... (cons argN 'nil)...))
                  body)
   })
@@ -139,58 +138,57 @@
   </p>
   <p>
   @(tsee Unwrapped-nonexec-body) returns
-  the unwrapped body of the non-executable function @('fun').
+  the unwrapped body of the non-executable function @('fn').
   </p>
   <p>
   The code of this system utility defensively ensures that
-  the body of @('fun') has the form above.
+  the body of @('fn') has the form above.
   </p>"
-  (let ((body (body fun nil w)))
-    (if (throw-nonexec-error-p body fun (formals fun w))
-        (fourth (body fun nil w))
+  (let ((body (body fn nil wrld)))
+    (if (throw-nonexec-error-p body fn (formals fn wrld))
+        (fourth (body fn nil wrld))
       (raise "The body ~x0 of the non-executable function ~x1 ~
-             does not have the expected wrapper." body fun))))
+             does not have the expected wrapper." body fn))))
 
-(define no-stobjs-p ((fun (function-namep fun w)) (w plist-worldp))
-  :guard (not (member-eq fun *stobjs-out-invalid*))
+(define no-stobjs-p ((fn (function-namep fn wrld)) (wrld plist-worldp))
+  :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
-  "True iff the function @('fun') has no
-  input or output <see topic='@(url stobj)'>stobjs</see>."
+  "True iff the function @('fn') has no input or output @(see stobj)s."
   :long
   "<p>
-  The guard condition that @('fun') is not in @('*stobjs-out-invalid*')
+  The guard condition that @('fn') is not in @('*stobjs-out-invalid*')
   is copied from @('stobjs-out').
   </p>"
-  (and (all-nils (stobjs-in fun w))
-       (all-nils (stobjs-out fun w))))
+  (and (all-nils (stobjs-in fn wrld))
+       (all-nils (stobjs-out fn wrld))))
 
-(define measure ((fun (and (function-namep fun w)
-                           (logicp fun w)
-                           (recursivep fun nil w)))
-                 (w plist-worldp))
+(define measure ((fn (and (function-namep fn wrld)
+                          (logicp fn wrld)
+                          (recursivep fn nil wrld)))
+                 (wrld plist-worldp))
   ;; :returns (measure pseudo-termp)
   :verify-guards nil
   :short "Measure expression of a logic-mode recursive function."
   :long "<p>See @(see xargs) for a discussion of the @(':measure') keyword.</p>"
-  (access justification (getpropc fun 'justification nil w) :measure))
+  (access justification (getpropc fn 'justification nil wrld) :measure))
 
-(define measured-subset ((fun (and (function-namep fun w)
-                                   (logicp fun w)
-                                   (recursivep fun nil w)))
-                         (w plist-worldp))
+(define measured-subset ((fn (and (function-namep fn wrld)
+                                  (logicp fn wrld)
+                                  (recursivep fn nil wrld)))
+                         (wrld plist-worldp))
   ;; :returns (measured-subset symbol-listp)
   :verify-guards nil
   :short
-  "Subset of the formal arguments of the recursive function @('fun')
+  "Subset of the formal arguments of the recursive function @('fn')
   that occur in its @(see measure) expression."
-  (access justification (getpropc fun 'justification nil w) :subset))
+  (access justification (getpropc fn 'justification nil wrld) :subset))
 
-(define well-founded-relation ((fun (and (function-namep fun w)
-                                         (logicp fun w)
-                                         (recursivep fun nil w)))
-                               (w plist-worldp))
+(define well-founded-relation ((fn (and (function-namep fn wrld)
+                                        (logicp fn wrld)
+                                        (recursivep fn nil wrld)))
+                               (wrld plist-worldp))
   ;; :returns (well-founded-relation symbolp)
   :verify-guards nil
   :short "Well-founded relation of a logic-mode recursive function."
@@ -198,21 +196,21 @@
   "<p>See @(see well-founded-relation-rule)
   for a discussion of well-founded relations in ACL2,
   including the @(':well-founded-relation') rule class.</p>"
-  (access justification (getpropc fun 'justification nil w) :rel))
+  (access justification (getpropc fn 'justification nil wrld) :rel))
 
-(define ruler-extenders ((fun (and (function-namep fun w)
-                                   (logicp fun w)
-                                   (recursivep fun nil w)))
-                         (w plist-worldp))
+(define ruler-extenders ((fn (and (function-namep fn wrld)
+                                  (logicp fn wrld)
+                                  (recursivep fn nil wrld)))
+                         (wrld plist-worldp))
   ;; :returns (ruler-extenders (or (symbol-listp ruler-extenders)
   ;;                               (equal ruler-extenders :all)))
   :verify-guards nil
   :short
   "Ruler-extenders of a logic-mode recursive function
   (see @(see rulers) for background)."
-  (access justification (getpropc fun 'justification nil w) :ruler-extenders))
+  (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
 
-(define macro-required-args ((mac (macro-namep mac w)) (w plist-worldp))
+(define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
   ;; :returns (required-args symbol-listp)
   :verify-guards nil
   :short "Required arguments of the macro @('mac'), in order."
@@ -224,7 +222,7 @@
   which are the required arguments,
   and possibly ends with a symbol starting with @('&') followed by more symbols.
   </p>"
-  (let ((all-args (macro-args mac w)))
+  (let ((all-args (macro-args mac wrld)))
     (if (null all-args)
         nil
       (if (eq (car all-args) '&whole)
@@ -251,17 +249,17 @@
              nil
            (cons arg (macro-required-args-aux (cdr args)))))))))
 
-(define fundef-disabledp ((fun (function-namep fun (w state))) state)
+(define fundef-disabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no booleanp)
   :prepwork ((program))
-  :short "True iff the definition of the function @('fun') is disabled."
-  (member-equal `(:definition ,fun) (disabledp fun)))
+  :short "True iff the definition of the function @('fn') is disabled."
+  (member-equal `(:definition ,fn) (disabledp fn)))
 
-(define fundef-enabledp ((fun (function-namep fun (w state))) state)
+(define fundef-enabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no booleanp)
   :prepwork ((program))
-  :short "True iff the definition of the function @('fun') is enabled."
-  (not (fundef-disabledp fun state)))
+  :short "True iff the definition of the function @('fn') is enabled."
+  (not (fundef-disabledp fn state)))
 
 (define rune-disabledp ((rune (runep rune (w state))) state)
   :returns (yes/no booleanp)
@@ -275,19 +273,19 @@
   :short "True iff the @(see rune) @('rune') is enabled."
   (not (rune-disabledp rune state)))
 
-(define included-books ((w plist-worldp))
+(define included-books ((wrld plist-worldp))
   ;; :returns (result string-listp)
   :verify-guards nil
   :short
   "List of full pathnames of all books currently included
   (directly or indirectly)."
-  (strip-cars (global-val 'include-book-alist w)))
+  (strip-cars (global-val 'include-book-alist wrld)))
 
-(define induction-machine ((fun (and (function-namep fun w)
-                                     (logicp fun w)
-                                     (eql 1 (len (recursivep fun nil w)))))
-                           (w plist-worldp))
-  ;; :returns (machine (pseudo-induction-machinep fun machine))
+(define induction-machine ((fn (and (function-namep fn wrld)
+                                    (logicp fn wrld)
+                                    (eql 1 (len (recursivep fn nil wrld)))))
+                           (wrld plist-worldp))
+  ;; :returns (machine (pseudo-induction-machinep fn machine))
   :verify-guards nil
   :short "Induction machine of a (singly) recursive function."
   :long
@@ -301,7 +299,7 @@
   This function only applies to singly recursive functions,
   because induction is not directly supported for mutually recursive functions.
   </p>"
-  (getpropc fun 'induction-machine nil w))
+  (getpropc fn 'induction-machine nil wrld))
 
 (define pseudo-tests-and-callp (x)
   :returns (yes/no booleanp)
@@ -347,10 +345,10 @@
   :true-listp t
   :elementp-of-nil nil)
 
-(define recursive-calls ((fun (and (function-namep fun w)
-                                   (logicp fun w)
-                                   (eql 1 (len (recursivep fun nil w)))))
-                         (w plist-worldp))
+(define recursive-calls ((fn (and (function-namep fn wrld)
+                                  (logicp fn wrld)
+                                  (eql 1 (len (recursivep fn nil wrld)))))
+                         (wrld plist-worldp))
   ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
   :verify-guards nil
   :short
@@ -362,7 +360,7 @@
   but each record has one recursive calls (instead of zero or more),
   and there is exactly one record for each recursive call.
   </p>"
-  (recursive-calls-aux2 (induction-machine fun w))
+  (recursive-calls-aux2 (induction-machine fn wrld))
 
   :prepwork
 

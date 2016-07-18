@@ -17,8 +17,9 @@
 (in-package "ACL2")
 
 (include-book "kestrel/system/event-forms" :dir :system)
-(include-book "kestrel/system/prove-interface" :dir :system)
 (include-book "kestrel/system/fresh-names" :dir :system)
+(include-book "kestrel/system/prove-interface" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 
 (local (set-default-parents applicability-conditions))
 
@@ -31,9 +32,9 @@
   that must hold for certain processes to apply."
   :long
   "<p>
-  For instance, transforming a function into a new function
-  according to some criteria may be subject to conditions
-  that must hold (i.e. must be proved as theorems)
+  For instance,
+  transforming a function into a new function according to some criteria
+  may be subject to conditions that must hold (i.e. must be proved as theorems)
   for the transformation to successfully take place.
   </p>")
 
@@ -41,7 +42,8 @@
   :short
   "Records to describe and manipulate applicability conditions."
   ((name "Name of the applicability condition." symbolp)
-   (formula  "The statement of the applicability condition (a term).")
+   (formula  "The statement of the applicability condition
+             (an untranslated @(see term)).")
    (hints "Hints to prove the applicability condition (possibly @('nil')).")))
 
 (std::deflist applicability-condition-listp (x)
@@ -55,13 +57,14 @@
   "Stop with an error message,
   due to a failure related to applicability conditions."
   :long "@(def applicability-condition-fail)"
-  (defmacro applicability-condition-fail (message &rest arguments)
+  (defmacro applicability-condition-fail (context message &rest arguments)
     (declare (xargs :guard (and (true-listp arguments)
                                 (<= (len arguments) 10))))
-    `(er hard? 'applicability-condition ,message ,@arguments)))
+    `(er hard? ,context ,message ,@arguments)))
 
 (define prove-applicability-condition ((app-cond applicability-condition-p)
                                        (verbose booleanp)
+                                       (ctx "Context for errors.")
                                        state)
   :returns (mv (yes/no booleanp)
                state)
@@ -92,12 +95,14 @@
        ((mv erp yes/no state) (prove$ formula :hints hints))
        ((when erp)
         (applicability-condition-fail
-         "Error ~x0 when attempting to prove ~
-         applicability condition ~x1:~%~x2~|."
+         ctx
+         "Prover error ~x0 when attempting to prove ~
+          applicability condition ~x1:~%~x2~|."
          erp name formula)
         (mv nil state))
        ((unless yes/no)
         (applicability-condition-fail
+         ctx
          "The applicability condition ~x0 fails:~%~x1~|"
          name formula)
         (mv nil state))
@@ -108,6 +113,7 @@
 (define prove-applicability-conditions
   ((app-conds applicability-condition-listp)
    (verbose booleanp)
+   (ctx "Context for errors.")
    state)
   :returns (mv (yes/no booleanp)
                state)
@@ -126,8 +132,9 @@
   (cond ((endp app-conds) (mv t state))
         (t (b* ((app-cond (car app-conds))
                 ((mv & state)
-                 (prove-applicability-condition app-cond verbose state)))
-             (prove-applicability-conditions (cdr app-conds) verbose state)))))
+                 (prove-applicability-condition app-cond verbose ctx state)))
+             (prove-applicability-conditions
+              (cdr app-conds) verbose ctx state)))))
 
 (define applicability-condition-event
   ((app-cond applicability-condition-p)
@@ -135,7 +142,7 @@
    (enabled booleanp "Leave the theorem enabled or not.")
    (rule-classes true-listp "Rule classes for the theorem.")
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
-   (w plist-worldp))
+   (wrld plist-worldp))
   :guard (or rule-classes enabled)
   :returns (mv (thm-name symbolp)
                (thm-event-form pseudo-event-formp))
@@ -158,7 +165,7 @@
        (name (applicability-condition->name app-cond))
        (formula (applicability-condition->formula app-cond))
        (hints (applicability-condition->hints app-cond))
-       (thm-name (fresh-name-in-world-with-$s name names-to-avoid w))
+       (thm-name (fresh-name-in-world-with-$s name names-to-avoid wrld))
        (thm-event-form `(,defthm/defthmd ,thm-name
                           ,formula
                           :hints ,hints
@@ -174,7 +181,7 @@
    (enableds boolean-listp "Leave the theorems enabled or not.")
    (rule-classess "Rule classes for the theorems.")
    (names-to-avoid "Avoid these as theorem names.")
-   (w plist-worldp))
+   (wrld plist-worldp))
   :guard (and (eql (len locals) (len app-conds))
               (eql (len enableds) (len app-conds))
               (eql (len rule-classess) (len app-conds)))
@@ -209,7 +216,7 @@
                                                 (car enableds)
                                                 (car rule-classess)
                                                 names-to-avoid
-                                                w))
+                                                wrld))
                 (new-names-to-avoid (cons thm-name names-to-avoid))
                 ((mv names-to-thm-names thm-event-forms)
                  (applicability-condition-events (cdr app-conds)
@@ -217,7 +224,7 @@
                                                  (cdr enableds)
                                                  (cdr rule-classess)
                                                  new-names-to-avoid
-                                                 w)))
+                                                 wrld)))
              (mv (acons (applicability-condition->name (car app-conds))
                         thm-name
                         names-to-thm-names)

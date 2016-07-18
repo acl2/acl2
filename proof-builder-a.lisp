@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 
-; PC globals are those that can be changed from inside the proof-checker's
+; PC globals are those that can be changed from inside the proof-builder's
 ; interactive loop, and whose values we want saved.  Note that state-stack can
 ; also be changed outside the interactive loop (by use of :instruction), so we
 ; need to be careful.  We'll manage this by keeping state-stack as a PC global,
@@ -49,7 +49,7 @@
     (pc-assign old-ss nil)
     (pc-assign state-stack nil)
     (pc-assign next-pc-enabled-array-suffix 0)
-    (pc-assign pc-depth 0) ; for the proof-checker-cl-proc clause-processor
+    (pc-assign pc-depth 0) ; for the proof-builder-cl-proc clause-processor
     (assign in-verify-flg nil))))
 
 (defmacro state-stack ()
@@ -347,7 +347,7 @@
 (defun print-no-change-fn (str alist col state)
   (declare (xargs :guard (or (stringp str)
                              (null str))))
-  (io? proof-checker nil state
+  (io? proof-builder nil state
        (col alist str)
        (mv-let (col state)
          (let ((channel (proofs-co state)))
@@ -449,7 +449,7 @@
 (defun toggle-pc-macro-fn (name new-tp state)
   (let ((tp (pc-command-type name)))
     (if (null tp)
-        (print-no-change3 "The command ~x0 is not a proof-checker command."
+        (print-no-change3 "The command ~x0 is not a proof-builder command."
                           (list (cons #\0 name)))
       (case tp
             (macro (if (or (null new-tp) (equal (symbol-name new-tp) "ATOMIC-MACRO"))
@@ -457,7 +457,7 @@
                      (if (equal (symbol-name new-tp) "MACRO")
                          (print-no-change3 "~x0 is already a non-atomic macro."
                                            (list (cons #\0 name)))
-                       (print-no-change3 "You can't change a proof-checker macro ~
+                       (print-no-change3 "You can't change a proof-builder macro ~
                                           to have type ~x0."
                                          (list (cons #\0 new-tp))))))
             (atomic-macro (if (or (null new-tp) (equal (symbol-name new-tp) "MACRO"))
@@ -465,10 +465,10 @@
                             (if (equal (symbol-name new-tp) "ATOMIC-MACRO")
                                 (print-no-change3 "~x0 is already an atomic macro."
                                                   (list (cons #\0 name)))
-                              (print-no-change3 "You can't change a proof-checker atomic macro ~
+                              (print-no-change3 "You can't change a proof-builder atomic macro ~
                                                  to have type ~x0."
                                                 (list (cons #\0 new-tp))))))
-            (otherwise (print-no-change3 "You can't change the type of a proof-checker ~x0 command."
+            (otherwise (print-no-change3 "You can't change the type of a proof-builder ~x0 command."
                                          (list (cons #\0 tp))))))))
 
 (defun pc-meta-or-macro-defun (raw-name name formals doc body)
@@ -548,7 +548,7 @@
 ; This function does not print a new line before or after the prompt.  It
 ; assumes that we're in column 0.
 
-  (io? proof-checker nil (mv col state)
+  (io? proof-builder nil (mv col state)
        ()
        (let ((chan (proofs-co state)))
          (with-output-forced
@@ -593,7 +593,7 @@
     nil))
 
 (defun print-all-goals-proved-message (state)
-  (io? proof-checker nil state
+  (io? proof-builder nil state
        nil
        (pprogn
         (print-no-change "There are no unproved goals!")
@@ -645,7 +645,7 @@
 ; Here goal is a goal in the existing pc-state and goals is the goals in the
 ; new pc-state.  old-goals is the goals in the existing pc-state.
 
-; Warning: This function should be called under (io? proof-checker ...).
+; Warning: This function should be called under (io? proof-builder ...).
 
   (let* ((name (access goal goal :goal-name))
          (new-names (goal-names goals))
@@ -920,7 +920,7 @@
                                  :local-tag-tree
                                  local-ttree)
                                 state))))
-                           (pprogn (io? proof-checker nil state
+                           (pprogn (io? proof-builder nil state
                                         (instr goal-name)
                                         (fms0 "~|AHA!  A contradiction has ~
                                                been discovered in the ~
@@ -932,7 +932,7 @@
                                               (list (cons #\0 goal-name)
                                                     (cons #\0 instr))
                                               0 nil))
-                                   (io? proof-checker nil state
+                                   (io? proof-builder nil state
                                         (goals)
                                         (maybe-print-proved-goal-message
                                          (car goals) goals (cdr goals) state))
@@ -966,7 +966,7 @@
                                      (pprogn
                                       (cond
                                        (forced-goals
-                                        (io? proof-checker nil state
+                                        (io? proof-builder nil state
                                              (forced-goals)
                                              (fms0
                                               "~|~%NOTE (forcing):  Creating ~
@@ -979,7 +979,7 @@
                                                      (zero-one-or-more
                                                       (length forced-goals)))))))
                                        (t state))
-                                      (io? proof-checker nil state
+                                      (io? proof-builder nil state
                                            (new-goals goals)
                                            (maybe-print-proved-goal-message
                                             (car goals) goals new-goals state))
@@ -995,7 +995,7 @@
     (if (and pc-print-macroexpansion-flg
              (not (eq (car instr) (make-official-pc-command 'lisp)))
              (not (equal instr (make-official-pc-instr raw-instr))))
-        (io? proof-checker nil state
+        (io? proof-builder nil state
              (pc-print-macroexpansion-flg instr)
              (fms0 ">> ~x0~|" (list (cons #\0 instr)) 0
                    (if (and (consp pc-print-macroexpansion-flg)
@@ -1024,7 +1024,7 @@
    (erp instr state)
    (pc-macroexpand raw-instr state)
    (if erp
-       (pprogn (io? proof-checker nil state
+       (pprogn (io? proof-builder nil state
                     (raw-instr)
                     (fms0 "~%Macroexpansion of instruction ~x0 failed!~%"
                           (list (cons #\0 raw-instr))))
@@ -1036,8 +1036,8 @@
            (meta
             (cond ((and (not (f-get-global 'in-verify-flg state))
                         (not (getpropc (car instr) 'predefined nil (w state))))
-                   (er soft 'proof-checker
-                       "You may only invoke a user-defined proof-checker meta ~
+                   (er soft 'proof-builder
+                       "You may only invoke a user-defined proof-builder meta ~
                         command, such as ~x0, when you are inside the ~
                         interactive ~x1 loop."
                        (car instr)
@@ -1126,13 +1126,13 @@
 
 (defconst *pc-complete-signal* 'acl2-pc-complete)
 
-(defun print-re-entering-proof-checker (eof-p state)
-  (io? proof-checker nil state (eof-p)
+(defun print-re-entering-proof-builder (eof-p state)
+  (io? proof-builder nil state (eof-p)
        (fms0
         "~|~%~
          /-----------------------------------------------------------\\~%~
-         | Note: Re-entering the proof-checker after ~s0 |~%~
-         | Submit EXIT if you want to exit the proof-checker.        |~%~
+         | Note: Re-entering the proof-builder after ~s0 |~%~
+         | Submit EXIT if you want to exit the proof-builder.        |~%~
          \\-----------------------------------------------------------/~%"
         (list (cons #\0 (cond (eof-p
                                "end of file.   ")
@@ -1169,7 +1169,7 @@
       (erp instr state)
       (if (consp instr-list)
           (pprogn (if pc-print-prompt-and-instr-flg
-                      (io? proof-checker nil state
+                      (io? proof-builder nil state
                            (col instr-list)
                            (fms0 "~y0~|"
                                  (list (cons #\0
@@ -1186,10 +1186,10 @@
 ; Read-object encountered end-of-file, presumably because a control-d was
 ; issued.  Note that raw Lisp errors are not handled here, but rather, in
 ; ld-read-eval-print, where a (verify) command is re-issued (to get back into
-; the proof-checker) instead of taking input from the user.
+; the proof-builder) instead of taking input from the user.
 
         (pprogn
-         (print-re-entering-proof-checker t state)
+         (print-re-entering-proof-builder t state)
          (pc-main-loop instr-list quit-conditions last-value
                        pc-print-prompt-and-instr-flg state)))
        (t (mv-let
@@ -1275,7 +1275,7 @@
 
 ; It is tempting to assert (eq (f-get-global 'in-verify-flg state) nil).  But
 ; we can get here by way of calling state-from-instructions, which is used to
-; replay proof-checker commands upon exit, and where in-verify-flg is already
+; replay proof-builder commands upon exit, and where in-verify-flg is already
 ; true.
 
                  state))
@@ -1341,7 +1341,7 @@
           ((print-base 10)
            (print-radix nil)
            (inhibit-output-lst
-            (remove1-eq 'proof-checker
+            (remove1-eq 'proof-builder
                         (f-get-global 'inhibit-output-lst state))))
           (pc-top raw-term event-name rule-classes
                   (append instructions *standard-oi*)
@@ -1361,7 +1361,7 @@
            (cond
             (bad-fn
              (er soft 'verify
-                 "The current proof-checker session was begun in an ACL2 world ~
+                 "The current proof-builder session was begun in an ACL2 world ~
                 with function symbol ~x0, but that function symbol no longer ~
                 exists."
                  bad-fn))
@@ -1370,7 +1370,7 @@
               ((print-base 10)
                (print-radix nil)
                (inhibit-output-lst
-                (remove1-eq 'proof-checker
+                (remove1-eq 'proof-builder
                             (f-get-global 'inhibit-output-lst state))))
               (pprogn
                (f-put-global 'in-verify-flg ld-level state)
@@ -1382,10 +1382,10 @@
              (t (mv erp val state))))))))
 
 (defun print-unproved-goals-message (goals state)
-  (io? proof-checker nil state
+  (io? proof-builder nil state
        (goals)
        (fms0 "~%There ~#0~[is~/are~] ~x1 unproved goal~#0~[~/s~] from replay ~
-              of instructions.  To enter the proof-checker state that exists ~
+              of instructions.  To enter the proof-builder state that exists ~
               at this point, type (VERIFY).~%"
              (list (cons #\0 goals)
                    (cons #\1 (length goals))))))
@@ -1393,9 +1393,9 @@
 (defun state-stack-from-instructions
   (raw-term event-name rule-classes instructions replay-flg quit-conditions state)
   (if replay-flg
-      (pprogn (io? proof-checker nil state
+      (pprogn (io? proof-builder nil state
                    nil
-                   (fms0 "~|~%Entering the proof-checker....~%~%"))
+                   (fms0 "~|~%Entering the proof-builder....~%~%"))
               (er-progn (pc-top raw-term event-name rule-classes
                                 instructions quit-conditions nil state)
                         (value (state-stack))))
@@ -1410,7 +1410,7 @@
           state))
 
 (defun print-pc-defthm (ev state)
-  (io? proof-checker nil state
+  (io? proof-builder nil state
        (ev)
        (fms0 "~|~Y01"
              (list (cons #\0 ev)
@@ -1418,7 +1418,7 @@
 
 (defmacro print-pc-goal (&optional goal)
   `(let ((goal ,(or goal '(car (access pc-state (car (state-stack)) :goals)))))
-     (io? proof-checker nil state
+     (io? proof-builder nil state
           (goal)
           (if goal
               (fms0
@@ -1443,7 +1443,7 @@
 
 (defmacro print-pc-state (&optional pc-state)
   `(let ((pc-state ,(or pc-state '(car (state-stack)))))
-     (io? proof-checker nil state
+     (io? proof-builder nil state
           (pc-state)
           (if pc-state
               (fms0
@@ -1460,7 +1460,7 @@
                 (cons #\4 (access pc-state pc-state :tag-tree))))
             (fms0 "~%No state in CAR of state-stack.~|")))))
 
-(defun proof-checker
+(defun proof-builder
   (event-name raw-term term rule-classes instructions wrld state)
   ;; I'm only including wrld in the arglist because J has it there.
   ;; **** Be sure that in-verify-flg is untouchable, for soundness here (or
@@ -1484,9 +1484,9 @@
             ;; could perhaps (declare (ignore erp)), but for now I'll abort upon error
             (if erp
                 (pprogn
-                 (io? proof-checker nil state
+                 (io? proof-builder nil state
                       nil
-                      (fms0 "~%~%Replay of proof-checker instructions ~
+                      (fms0 "~%~%Replay of proof-builder instructions ~
                              aborted.~%"))
                         (if (f-get-global 'in-verify-flg state)
                             (mv *pc-complete-signal* nil state)
@@ -1509,9 +1509,9 @@
   (declare (xargs :guard (symbolp event-name)))
   (if (and raw-term-supplied-p (eq raw-term nil))
       '(pprogn
-        (io? proof-checker nil state
+        (io? proof-builder nil state
              nil
-             (fms0 "It is not permitted to enter the interactive proof-checker ~
+             (fms0 "It is not permitted to enter the interactive proof-builder ~
                     with a goal of NIL!  If you really MEANT to do such a ~
                     thing, (VERIFY 'NIL).~%"))
                (value :invisible))
@@ -1533,7 +1533,7 @@
                                (cadr name) name)
                         ""))))
 
-; Finally, here is some stuff that is needed not only for the proof-checker but
+; Finally, here is some stuff that is needed not only for the proof-builder but
 ; also for :pl.
 
 (mutual-recursion

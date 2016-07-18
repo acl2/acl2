@@ -1422,7 +1422,7 @@ found in the change log.</p>")
 
  <p>The ACL2 @(see Sidekick) is an experimental and very preliminary graphical
  add-on to ACL2.  It currently features a session viewer, theory linter, a
- horribly primitive interface to the @(see proof-checker), and a slick
+ horribly primitive interface to the @(see proof-builder), and a slick
  <i>Lookup</i> feature that can show you documentation and other information
  about various symbols.</p>
 
@@ -2996,7 +2996,7 @@ found in the change log.</p>")
  Mechanically Checked Proof of a Multiprocessor Result via a Uniprocessor
  View</i> by J Moore, in Formal Methods in System Design, March 1999.</p>
 
- <p>A new book, @('demos/patterned-congruences.lisp) demonstrates @(see
+ <p>A new book, @('demos/patterned-congruences.lisp') demonstrates @(see
  patterned-congruence) rules.</p>
 
 

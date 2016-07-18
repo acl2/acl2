@@ -1,3 +1,7 @@
+; Copyright (C) 2001, Regents of the University of Texas
+; Written by J Strother Moore and George Porter
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; M5.lisp
 ; J Strother Moore <moore@cs.utexas.edu>
 ; George Porter <george@cs.utexas.edu>

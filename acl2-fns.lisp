@@ -1637,13 +1637,16 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+cltl2 `(ignore-errors ,x)
   #-cltl2 x)
 
-(defmacro safe-open (&rest args)
-  (let ((filename (gensym)))
-    `(our-ignore-errors
-      (let ((,filename ; avoid evaluating first argument twice
-             ,(car args)))
-        (ensure-directories-exist ,filename)
-        (open ,filename ,@(cdr args))))))
+(defmacro safe-open (filename &rest args &key direction &allow-other-keys)
+  (assert (member direction ; might later support :io and :probe
+                  '(:input :output)
+                  :test #'eq))
+  `(our-ignore-errors
+    (progn ,@(when (eq direction :output)
+               `((ensure-directories-exist ,filename)))
+           (open ,filename ,@args))))
+
+(defvar *check-namestring* t)
 
 (defun our-truename (filename &optional namestringp)
 
@@ -1673,35 +1676,39 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (when (pathnamep filename)
     (setq filename (namestring filename)))
-  (let ((truename
-         (cond
-          #+allegro
-          ((fboundp 'excl::pathname-resolve-symbolic-links)
-           (ignore-errors
-            (qfuncall excl::pathname-resolve-symbolic-links
-                      filename)))
-          #+(and gcl (not cltl2))
-          ((fboundp 'si::stat) ; try to avoid some errors
-           (and (or (qfuncall si::stat filename)
+  (let* ((truename
+          (cond
+           #+allegro
+           ((fboundp 'excl::pathname-resolve-symbolic-links)
+            (ignore-errors
+              (qfuncall excl::pathname-resolve-symbolic-links
+                        filename)))
+           #+(and gcl (not cltl2))
+           ((fboundp 'si::stat) ; try to avoid some errors
+            (and (or (qfuncall si::stat filename)
 
 ; But filename might be a directory, in which case the si::stat call above
 ; could return nil; so we try again.
 
-                    (and (or (equal filename "")
-                             (not (eql (char filename (1- (length filename)))
-                                       #\/)))
-                         (qfuncall si::stat
-                                   (concatenate 'string filename "/"))))
-                (truename filename)))
-          #+(and gcl (not cltl2))
-          (t (truename filename))
-          #-(and gcl (not cltl2))
-          (t
+                     (and (or (equal filename "")
+                              (not (eql (char filename (1- (length filename)))
+                                        #\/)))
+                          (qfuncall si::stat
+                                    (concatenate 'string filename "/"))))
+                 (truename filename)))
+           #+(and gcl (not cltl2))
+           (t (truename filename))
+           #-(and gcl (not cltl2))
+           (t
 
 ; Here we also catch the case of #+allegro if
 ; excl::pathname-resolve-symbolic-links is not defined.
 
-           (ignore-errors (truename filename))))))
+            (ignore-errors (truename filename)))))
+         (namestring (and truename (namestring truename))))
+    (when (and namestring
+               *check-namestring*) ; always true unless a ttag is used
+      (qfuncall chk-bad-lisp-stringp namestring filename))
     (cond ((null namestringp)
            truename)
           ((null truename)
@@ -1717,7 +1724,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
                          (list "  ~@0" (cons #\0 namestringp))
                        "")))))
-          (t (namestring truename)))))
+          (t namestring))))
 
 (defun our-pwd ()
 

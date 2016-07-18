@@ -2442,6 +2442,13 @@
 
 ; Warning: This function should be called under (io? prove ...).
 
+  (declare (xargs
+
+; Avoid blow-up from (skip-proofs (verify-termination ...)), which otherwise
+; takes a long time (e.g., when executed on behalf of community books utility
+; verify-guards-program).
+
+            :normalize nil))
   (cond
    ((and (gag-mode)
          (or (eq (gag-mode-evisc-tuple state) t)

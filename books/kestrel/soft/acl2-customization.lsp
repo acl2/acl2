@@ -18,4 +18,6 @@
 
 (ld "package.lsp")
 
+(reset-prehistory)
+
 (in-package "SOFT")

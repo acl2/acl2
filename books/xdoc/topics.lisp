@@ -83,16 +83,16 @@ that your manual is automatically regenerated when you build your project.</p>
 
 <h3>New Features</h3>
 
-<p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
-supports @(see katex-integration) for writing LaTeX-like formulas like
+<p>XDOC now supports @(see katex-integration) for writing LaTeX-like formulas
+like
 @($
 \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) < \\frac{n^2}{k}
 $)
 within your documentation.</p>
 
-<p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
-documentation, you can now optionally have XDOC topics automatically displayed
-as you submit new @(see defxdoc) forms&mdash;just add:</p>
+<p>When writing documentation, you can now optionally have XDOC topics
+automatically displayed as you submit new @(see defxdoc) forms&mdash;just
+add:</p>
 
 @({
  (include-book \"xdoc/debug\" :dir :system)
@@ -633,7 +633,8 @@ manual with others, you should read about @(see deploying-manuals).</li>
 })
 
 <p>The only (required) argument to the @('save') command is the name of a
-directory where the want the manual to go.  As might be expected:</p>
+directory where the want the manual to go.  All arguments are evaluated.
+As might be expected:</p>
 
 <ul>
 
@@ -1699,7 +1700,7 @@ all is well, you should see the logo below:</p>
  error message to debug the error; then submit your form and @(':doc foo')
  again.</p>
 
- <p>An experimental feature (the second ``NEW'' feature in the @(see xdoc)
+ <p>A XDOC feature (the second ``NEW'' feature in the @(see xdoc)
  documentation) avoids the need to invoke @(':doc') explicitly.  In brief: you
  can simply include community-book @('xdoc/debug'), for example by putting its
  include-book form in your acl2-customization file (see @(see

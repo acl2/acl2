@@ -15,7 +15,7 @@
 (in-package "ACL2")
 
 (include-book "applicability-conditions")
-(include-book "auto-termination")
+(include-book "defchoose-queries")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
 (include-book "event-forms")
@@ -25,7 +25,7 @@
 (include-book "numbered-names")
 (include-book "prove-interface")
 (include-book "terms")
-(include-book "ubi")
+(include-book "user-interface")
 (include-book "verify-guards-program")
 (include-book "world-queries")
 

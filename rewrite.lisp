@@ -1355,7 +1355,7 @@
                         (t (mv (equal-mod-alist2 (cadr (cdr pair))
                                                  (cddr (cdr pair))
                                                  term
-                                                 term-alist) 
+                                                 term-alist)
                                alist))))
                  ((null term-alist) ; optimization
                   (mv (equal term (cdr pair))
@@ -1913,7 +1913,7 @@
 ; at hand to illustrate the danger of careless substitution with
 ; remove-trivial-equivalences and fertilize-clause, we can imagine that such
 ; dangers exist.  Finally support for pequivs is provided in the function
-; geneqv-at-subterm-top, used in the proof-checker, but is not provided in the
+; geneqv-at-subterm-top, used in the proof-builder, but is not provided in the
 ; code the warns about missing opportunities for the use of double-rewrite
 ; (e.g., double-rewrite-opportunities).
 
@@ -6584,7 +6584,7 @@
                       (nth-update " the result of the nth/update rewriter")
                       (multiply-alists2 " the product of two polys")
                       (forced-assumption " a forced assumption")
-                      (proof-checker " proof-checker top level")
+                      (proof-builder " proof-builder top level")
                       (otherwise (er hard 'tilde-@-bkptr-phrase
                                      "When ~x0 calls ~x1 we get an unrecognized ~
                                       bkptr, ~x2."
@@ -7087,7 +7087,7 @@
 ; frames until we find one binding var-name.  We return the value with which
 ; var-name is paired, or else nil if no binding is found.
 
-  (cond ((null stack) nil)
+  (cond ((endp stack) nil)
         (t (let ((temp (assoc-eq var-name (cdar stack))))
              (cond (temp (cdr temp))
                    (t (lookup-brr-stack var-name (cdr stack))))))))
@@ -7629,7 +7629,7 @@
 
 (defun ts< (x y)
 
-; This is just a heuristic order for the type-alist command (proof-checker and
+; This is just a heuristic order for the type-alist command (proof-builder and
 ; break-rewrite).  First comes t, then non-nil, then nil, and finally we sort
 ; by type inclusion.
 
@@ -9445,36 +9445,36 @@
 ; abstained from doing anything else on the laptop during the run.  So the
 ; differences you see are real, up to GC time.  All the runs were conducted
 ; sequentially in the same image.
-; 
+;
 ; The first configuration, A, is as reported in the Stateman paper (by J Moore)
 ; at the 2015 ACL2 Workshop.  The relevant fact is that sublis-var1 is memoized
 ; when the substitution is nil and the term has a HIDE on it.  Three runs were
 ; done to see if the time would stabilize.  The time reported in the paper was
 ; 275 seconds.
-; 
+;
 ; ; A runs:
 ; ; 388.94 seconds realtime, 382.18 seconds runtime
 ; ; 265.68 seconds realtime, 262.71 seconds runtime
 ; ; 274.68 seconds realtime, 272.27 seconds runtime
-; 
+;
 ; The next configuration is the same as A except that here, sublis-var1 is not
 ; memoized.  So here you see the extra cost of the sublis-var nil calls.
-; 
+;
 ; ; B runs:
 ; ; 485.81 seconds realtime, 482.91 seconds runtime
 ; ; 494.81 seconds realtime, 491.70 seconds runtime
-; 
+;
 ; The next configuration is with the change described above, as follows: we
 ; replaced the pairlis$ call with the variable, alist, and replaced each
 ; (sublis-var nil X) call in rewrite-with-lemma by the corresponding X.  Note
 ; that sublis-var is not memoized here either.
-; 
+;
 ; ; C runs:
 ; ; 281.10 seconds realtime, 278.37 seconds runtime
 ; ; 284.11 seconds realtime, 281.30 seconds runtime
-; 
+;
 ; So eliminating the call has about the same effect on time as memoizing it.
-; 
+;
 ; The final experiment leaves memoization on (for sublis-var1 with nil
 ; substitution and a term beginning with HIDE) but also includes the
 ; modifications described above, that is, to avoid the (sublis-var nil ...)

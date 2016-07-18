@@ -108,11 +108,22 @@
        ;; ifix
        (xbits (bfr-ite-bss-fn xintp xrn nil))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
-       (resbits (bfr-logapp-uss 1 nbits xbits ybits)))
+       (resbits (bfr-logapp-russ (acl2::rev nbits) xbits ybits)))
     (mk-g-number (list-fix resbits))))
 
 
 (in-theory (disable (g-logapp-of-numbers)))
+
+(local (defthm depends-on-of-append
+         (implies (and (not (pbfr-list-depends-on k p x))
+                       (not (pbfr-list-depends-on k p y)))
+                  (not (pbfr-list-depends-on k p (append x y))))
+         :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
+
+(local (defthm depends-on-of-rev
+         (implies (not (pbfr-list-depends-on k p x))
+                  (not (pbfr-list-depends-on k p (acl2::Rev x))))
+         :hints(("Goal" :in-theory (enable acl2::rev pbfr-list-depends-on)))))
 
 (defthm deps-of-g-logapp-of-numbers
   (implies (and (not (gobj-depends-on k p n))
@@ -292,7 +303,7 @@
         (gret (g-apply 'int-set-sign (gl-list negp y))))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
        (ylen (bfr-integer-length-s ybits))
-       (resbits (bfr-logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
+       (resbits (bfr-logapp-russ (acl2::rev ylen) ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
     (gret (mk-g-number (list-fix resbits))))
   ///
   (def-hyp-congruence g-int-set-sign-of-number)

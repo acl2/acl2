@@ -49,7 +49,7 @@
 
 (defmacro define-pc-primitive (raw-name formals &rest body)
 
-; Define-pc-primitive defines a new primitive for the proof-checker.  That
+; Define-pc-primitive defines a new primitive for the proof-builder.  That
 ; primitive is always a function returning (mv pc-state state), where the
 ; (pc-value state-stack) has not been changed for state.
 
@@ -123,7 +123,7 @@
 (define-pc-meta lisp (form)
   (cond ((not (f-get-global 'in-verify-flg state))
          (er soft 'acl2-pc::lisp
-             "You may only invoke the proof-checker LISP command when ~
+             "You may only invoke the proof-builder LISP command when ~
               you are inside the interactive loop."))
         ((and (symbolp form)
               (or (eq form t)
@@ -222,7 +222,7 @@
           (er-let* ((event-name
                      (if event-name
                          (value event-name)
-                       (pprogn (io? proof-checker nil state
+                       (pprogn (io? proof-builder nil state
                                     nil
                                     (fms0 "Please supply an event name (or :A to ~
                                    abort)~%>> "))
@@ -230,7 +230,7 @@
                                 ((infixp nil))
                                 (read-object *standard-oi* state))))))
             (if (eq event-name :a)
-                (pprogn (io? proof-checker nil state
+                (pprogn (io? proof-builder nil state
                              nil
                              (fms0 "~|Exit aborted.~%"))
                         (mv nil nil state))
@@ -278,7 +278,7 @@
 
                             (if (or erp (null (car stobjs-out/vals)))
                                 (if (eq (cdr stobjs-out/vals) t)
-                                    (pprogn (io? proof-checker nil state
+                                    (pprogn (io? proof-builder nil state
                                                  nil
                                                  (fms0 "~|Exit aborted.~%"))
                                             (mv nil nil state))
@@ -287,7 +287,7 @@
 
 ; Otherwise, we have an incomplete proof.
 
-                (pprogn (io? proof-checker nil state
+                (pprogn (io? proof-builder nil state
                              (instructions event-name-and-types-and-raw-term
                                            state-stack)
                              (fms0 "~%Not exiting, as there remain unproved ~
@@ -299,7 +299,7 @@
                                          (cons #\1 (caddr event-name-and-types-and-raw-term))
                                          (cons #\2 instructions))))
                         (mv nil nil state))))))
-      (pprogn (io? proof-checker nil state
+      (pprogn (io? proof-builder nil state
                    nil
                    (fms0 "~|Exiting....~%"))
               (mv *pc-complete-signal* nil state)))))
@@ -316,7 +316,7 @@
           (pprogn (print-no-change "Already at the start.")
                   (mv nil nil state))
         (pprogn (pc-assign old-ss state-stack)
-                (io? proof-checker nil state
+                (io? proof-builder nil state
                      (state-stack m)
                      (fms0 "~|Undoing:  ~y0~|"
                            (list (cons #\0
@@ -327,7 +327,7 @@
                            (nthcdr m state-stack))
                 (if (consp (cdr (state-stack)))
                     state
-                  (io? proof-checker nil state
+                  (io? proof-builder nil state
                        nil
                        (fms0 "Back to the start.~%")))
                 (mv nil t state))))))
@@ -335,7 +335,7 @@
 (define-pc-meta restore ()
   (let ((old-ss (pc-value old-ss)))
     (if (null old-ss)
-        (pprogn (io? proof-checker nil state
+        (pprogn (io? proof-builder nil state
                      nil
                      (fms0 "~%Nothing to restore from!~%"))
                 (mv nil nil state))
@@ -348,11 +348,11 @@
   (if (null indexed-instrs)
       state
     (if (null (caar indexed-instrs))
-        (io? proof-checker nil state
+        (io? proof-builder nil state
              (indexed-instrs)
              (fms0 (car (cdar indexed-instrs))
                    (cdr (cdar indexed-instrs))))
-      (pprogn (io? proof-checker nil state
+      (pprogn (io? proof-builder nil state
                    (indexed-instrs)
                    (fms0 "~|~x0. ~y1~|"
                          (list (cons #\0 (caar indexed-instrs))
@@ -453,7 +453,7 @@
 
 (define-pc-help commands (&optional n evisc-p)
   (if (and n (not (and (integerp n) (> n 0))))
-      (io? proof-checker nil state
+      (io? proof-builder nil state
            (n)
            (fms0 "*** The first optional argument to the COMMANDS command must ~
                   be a positive integer, but ~x0 is not.~|"
@@ -709,7 +709,7 @@
   `(translate-abb ,x ,abbreviations ,(or ctx ''trans0) state))
 
 (defun p-body (conc current-addr abbreviations state)
-  (io? proof-checker nil state
+  (io? proof-builder nil state
        (abbreviations current-addr conc)
        (fms0 "~|~y0~|"
              (list (cons #\0 (untrans0 (fetch-term conc current-addr)
@@ -722,7 +722,7 @@
 
 (define-pc-help pp ()
   (when-goals
-   (io? proof-checker nil state
+   (io? proof-builder nil state
         (state-stack)
         (fms0 "~|~y0~|"
               (list (cons #\0 (fetch-term (conc t) (current-addr t))))))))
@@ -742,7 +742,7 @@
                               (> ndigits 0))))
   (if (null indexed-hyps)
       state
-    (pprogn (io? proof-checker nil state
+    (pprogn (io? proof-builder nil state
                  (abbreviations ndigits indexed-hyps)
                  (fms0 "~c0. ~y1~|"
                        (list (cons #\0 (cons (caar indexed-hyps) ndigits))
@@ -761,7 +761,7 @@
 (defun print-hyps-top (indexed-hyps abbreviations state)
   (declare (xargs :guard (eqlable-alistp indexed-hyps)))
   (if (null indexed-hyps)
-      (io? proof-checker nil state
+      (io? proof-builder nil state
            nil
            (fms0 "~|There are no top-level hypotheses.~|"))
     (print-hyps indexed-hyps (if (some-> (strip-cars indexed-hyps) 9) 2 1)
@@ -770,7 +770,7 @@
 (defun print-governors-top (indexed-hyps abbreviations state)
   (declare (xargs :guard (eqlable-alistp indexed-hyps)))
   (if (null indexed-hyps)
-      (io? proof-checker nil state
+      (io? proof-builder nil state
            nil
            (fms0 "~|There are no governors.~|"))
     (print-hyps indexed-hyps (if (some-> (strip-cars indexed-hyps) 9) 2 1)
@@ -805,7 +805,7 @@
      (cond
       ((not (or (eq hyps-indices t) (bounded-integer-listp 1 len-hyps hyps-indices)))
        (pprogn
-        (io? proof-checker nil state
+        (io? proof-builder nil state
              (len-hyps hyps-indices)
              (fms0 "~|Bad hypothesis-list argument to HYPS, ~X0n.  The ~
                     hypothesis-list argument should either be T or should be a ~
@@ -817,7 +817,7 @@
         (value :fail)))
       ((not (or (eq govs-indices t) (bounded-integer-listp 1 len-govs govs-indices)))
        (pprogn
-        (io? proof-checker nil state
+        (io? proof-builder nil state
              (len-govs govs-indices)
              (fms0 "~|Bad governors-list argument to HYPS,~%  ~X0n.~%The ~
                     governors-list argument should either be T or should be a ~
@@ -829,7 +829,7 @@
         (value :fail)))
       ((and (null hyps-indices) (null govs-indices))
        (pprogn
-        (io? proof-checker nil state
+        (io? proof-builder nil state
              nil
              (fms0 "~|You have specified no printing of either hypotheses or ~
                     governors!  Perhaps you should read the documentation for ~
@@ -848,10 +848,10 @@
           (if hyps-indices
               (pprogn
                (if (eq hyps-indices t)
-                   (io? proof-checker nil state
+                   (io? proof-builder nil state
                         nil
                         (fms0 "~|*** Top-level hypotheses:~|"))
-                 (io? proof-checker nil state
+                 (io? proof-builder nil state
                       nil
                       (fms0 "~|*** Specified top-level hypotheses:~|")))
                (print-hyps-top hyps-to-print abbs state))
@@ -859,10 +859,10 @@
           (if govs-indices
               (pprogn
                (if (eq govs-indices t)
-                   (io? proof-checker nil state
+                   (io? proof-builder nil state
                         nil
                         (fms0 "~|~%*** Governors:~|"))
-                 (io? proof-checker nil state
+                 (io? proof-builder nil state
                       nil
                       (fms0 "~|~%*** Specified governors:~|")))
                (print-governors-top govs-to-print abbs state))
@@ -1030,12 +1030,12 @@
                                         (cons #\1 ?-exprs)))
                                  (mv t nil state))
                               (pprogn
-                               (io? proof-checker nil state
+                               (io? proof-builder nil state
                                     nil
                                     (fms0 "~|***** Now entering the theorem ~
                                            prover *****~|"))
                                (translate-hints+
-                                'proof-checker
+                                'proof-builder
                                 un-?-hints
                                 (default-hints prover-call-wrld)
                                 comm
@@ -1054,7 +1054,7 @@
                                      prover-call-pc-ens
                                      prover-call-wrld
                                      comm state)
-                                    (pprogn (io? proof-checker nil state
+                                    (pprogn (io? proof-builder nil state
                                                  nil
                                                  (fms0 "~%"))
                                             (if prover-call-erp
@@ -1188,7 +1188,7 @@
                      (add-string-val-pair-to-string-val-alist
                       "Goal"
                       :do-not-induct
-                      'proof-checker
+                      'proof-builder
                       hints)))
                    :otf-flg t))
     (pprogn (print-no-change
@@ -1222,7 +1222,7 @@
 (define-pc-atomic-macro split ()
   (value '(:prove :hints
                   (("Goal"
-                    :do-not-induct proof-checker
+                    :do-not-induct proof-builder
                     :do-not '(generalize eliminate-destructors
                                          fertilize eliminate-irrelevance)
                     :in-theory (theory 'minimal-theory))))))
@@ -1283,13 +1283,13 @@
   (if (null vars)
       state
     (pprogn
-     (io? proof-checker nil state
+     (io? proof-builder nil state
           nil
           (fms0 "~%"))
      (let ((pair (assoc-equal (car vars) abbreviations)))
        (if (null pair)
            ;; then this pair is junk
-           (io? proof-checker nil state
+           (io? proof-builder nil state
                 (vars)
                 (fms0 "*** ~x0 does not abbreviate a term.~|"
                       (list (cons #\0 (car vars)))))
@@ -1298,11 +1298,11 @@
                                     nil
                                     (delete-assoc-eq (car pair) abbreviations))))
            (pprogn
-            (io? proof-checker nil state
+            (io? proof-builder nil state
                  (pair)
                  (fms0 "(? ~x0) is an abbreviation for:~%~ ~ "
                        (list (cons #\0 (car pair)))))
-            (io? proof-checker nil state
+            (io? proof-builder nil state
                  (untrans-1)
                  (fms0 "~y0~|"
                        (list (cons #\0 untrans-1))
@@ -1310,10 +1310,10 @@
             (if (equal untrans-1 untrans-2)
                 state
               (pprogn
-               (io? proof-checker nil state
+               (io? proof-builder nil state
                     nil
                     (fms0 "i.e. for~%~ ~ "))
-               (io? proof-checker nil state
+               (io? proof-builder nil state
                     (untrans-2)
                     (fms0 "~y0~|"
                           (list (cons #\0 untrans-2))
@@ -1322,7 +1322,7 @@
 
 (define-pc-help show-abbreviations (&rest vars)
   (if (null (abbreviations t))
-      (io? proof-checker nil state
+      (io? proof-builder nil state
            nil
            (fms0 "~|There are currently no abbreviations.~%"))
     (print-abbreviations (or vars (strip-cars (abbreviations t))) (abbreviations t) state)))
@@ -1562,7 +1562,7 @@
         (not (member-eq (car term) '(car cdr))))
     (er hard 'car/cdr^n
         "Illegal call: ~x0.~|If you encountered this call in the ~
-         proof-checker, please contact the ACL2 implemntors."
+         proof-builder, please contact the ACL2 implemntors."
         `(car/cdr^n ,n ,term)))
    (t (car/cdr^n (1- n) (fargn term 1)))))
 
@@ -2085,7 +2085,7 @@
             state))
        ((fquotep term)
         (let ((new-addr (reverse acc)))
-          (pprogn (io? proof-checker nil state
+          (pprogn (io? proof-builder nil state
                        (new-addr orig-addr)
                        (fms0 "~|NOTE:  truncating current address from ~x0 to ~
                               ~x1.  See explanation at end of help for X ~
@@ -2335,21 +2335,21 @@
      (let ((raw-term (or raw-term t)))
        (value `(prove :hints
                       (("Goal" :induct ,raw-term
-                        :do-not-induct proof-checker
+                        :do-not-induct proof-builder
                         :do-not *do-not-processes*))))))))
 
 (defun print-on-separate-lines (vals evisc-tuple chan state)
   (declare (xargs :guard (true-listp vals)))
   (if (null vals)
       (newline chan state)
-    (pprogn (io? proof-checker nil state
+    (pprogn (io? proof-builder nil state
                  (evisc-tuple chan vals)
                  (fms "~x0" (list (cons #\0 (car vals))) chan state
                       evisc-tuple))
             (print-on-separate-lines (cdr vals) evisc-tuple chan state))))
 
 (define-pc-help goals ()
-  (io? proof-checker nil state
+  (io? proof-builder nil state
        (state-stack)
        (when-goals
         (print-on-separate-lines (goal-names (goals t)) nil (proofs-co state)
@@ -2376,7 +2376,7 @@
               (if (or (< (length stobjs-out) 2)
                       (car stobjs-out)
                       (cadr stobjs-out))
-                  (pprogn (io? proof-checker nil state
+                  (pprogn (io? proof-builder nil state
                                (vals success-expr)
                                (fms0 "~|WARNING -- evaluation of ~
                                       `success-expr' argument to ~
@@ -2431,7 +2431,7 @@
                            (pprogn (print-no-change
                                     "SEQUENCE failed, with protection on.  ~
                                      Reverting back to existing state of the ~
-                                     proof-checker.~|")
+                                     proof-builder.~|")
                                    ;; **** consider improving message above, say by printing
                                    ;; entire instruction with appropriate evisceration
                                    (pc-assign state-stack saved-ss)
@@ -2477,7 +2477,7 @@
 
   (when-goals-trip
    (value `(do-all-no-prompt (hyps ,@args)
-                             (lisp (io? proof-checker nil state
+                             (lisp (io? proof-builder nil state
                                         nil
                                         (fms0 "~%The current subterm is:~%")))
                              p))))
@@ -2503,7 +2503,7 @@
    ((null (cdr goals))
     (print-no-change2 "The current goal is the only unproved goal."))
    ((null name)
-    (pprogn (io? proof-checker nil state
+    (pprogn (io? proof-builder nil state
                  (goals)
                  (fms0 "~|Now proving ~X0n.~%"
                        (list (cons #\0 (access goal (cadr goals) :goal-name))
@@ -2597,7 +2597,7 @@
    (let ((conc (conc t))
          (current-addr (current-addr t))
          (stars (intern$ "***" (f-get-global 'current-package state))))
-     (io? proof-checker nil state
+     (io? proof-builder nil state
           (state-stack current-addr conc stars)
           (fms0 "~|~y0~|"
                 (list (cons #\0
@@ -2635,7 +2635,7 @@
 ;; prover IO.
 (define-pc-bind quiet
   (inhibit-output-lst
-   (union-eq '(prove proof-checker proof-tree warning observation)
+   (union-eq '(prove proof-builder proof-tree warning observation)
              (f-get-global 'inhibit-output-lst state))))
 
 (define-pc-bind noise
@@ -2677,7 +2677,7 @@
         (mv-let
          (erp val state)
          (er soft 'if-not-proved
-             "The proof-checker's atomic macro IF-NOT-PROVED requires the ~
+             "The proof-builder's atomic macro IF-NOT-PROVED requires the ~
               indicated goal to be the current goal.  However, the current ~
               goal is ~p0 while the first argument to IF-NOT-PROVED is ~p1."
              (goal-name t)
@@ -2747,7 +2747,7 @@
                   equiv w)
                  (if found-hyp
                      (pprogn
-                      (io? proof-checker nil state
+                      (io? proof-builder nil state
                            (found-hyp)
                            (fms0 "Using hypothesis #~x0.~%"
                                  (list (cons #\0 found-hyp))))
@@ -2945,7 +2945,7 @@
               (if (or erp
                       (not (eq val (caar alist))))
                   (pprogn
-                   (io? proof-checker nil state
+                   (io? proof-builder nil state
                         (alist)
                         (fms0 "~|A substitution must be an alist whose CARs ~
                                are variables, but the entry ~x0 violates this ~
@@ -2958,7 +2958,7 @@
 (defun translate-subst-abb (sub abbreviations state)
   (cond
    ((not (true-listp sub))
-    (pprogn (io? proof-checker nil state
+    (pprogn (io? proof-builder nil state
                  (sub)
                  (fms0 "~|A substitution must be a true (null-terminated) ~
                         list, but~%~x0 is not.~|"
@@ -2966,7 +2966,7 @@
             (mv t nil state)))
    ((not (and (symbol-alistp sub)
               (single-valued-symbolp-alistp sub)))
-    (pprogn (io? proof-checker nil state
+    (pprogn (io? proof-builder nil state
                  (sub)
                  (fms0 "~|A substitution must be an alist of pairs without ~
                         duplicate keys, but ~x0 is not.~|"
@@ -2980,7 +2980,7 @@
               (mv-let (erp val state)
                       (translate-subst-abb1 sub abbreviations state)
                       (if erp
-                          (pprogn (io? proof-checker nil state
+                          (pprogn (io? proof-builder nil state
                                        (val sub erp)
                                        (fms0 erp (cons (cons #\s sub) val)))
                                   (mv t nil state))
@@ -2995,7 +2995,7 @@
 
 (define-pc-primitive rewrite (&optional rule-id raw-sub instantiate-free)
 
-; Warning: Keep this in sync with the proof-checker apply-linear command.
+; Warning: Keep this in sync with the proof-builder apply-linear command.
 
   (mv-let
    (erp sub state)
@@ -3083,7 +3083,7 @@
                       (let ((extra-alist (alist-difference-eq unify-subst
                                                               alist)))
                         (if extra-alist
-                            (io? proof-checker nil state
+                            (io? proof-builder nil state
                                  (abbreviations extra-alist sub
                                                 lemma-id)
                                  (fms0 "~|Rewriting with ~x0 under the ~
@@ -3100,13 +3100,13 @@
                                                         extra-alist
                                                         abbreviations
                                                         state)))))
-                          (io? proof-checker nil state
+                          (io? proof-builder nil state
                                (lemma-id)
                                (fms0 "~|Rewriting with ~x0.~|"
                                      (list (cons #\0 lemma-id))))))
                       (let ((runes (all-runes-in-ttree ttree2 nil)))
                         (if runes
-                            (io? proof-checker nil state
+                            (io? proof-builder nil state
                                  (runes)
                                  (fms0 "~|--NOTE-- Using the following runes ~
                                         in addition to the indicated rule:~%  ~
@@ -3162,7 +3162,7 @@
 
 (define-pc-primitive apply-linear (&optional rule-id raw-sub instantiate-free)
 
-; Warning: Keep this in sync with the proof-checker rewrite command.
+; Warning: Keep this in sync with the proof-builder rewrite command.
 
   (mv-let
    (erp sub state)
@@ -3247,7 +3247,7 @@
                       (let ((extra-alist (alist-difference-eq unify-subst
                                                               alist)))
                         (if extra-alist
-                            (io? proof-checker nil state
+                            (io? proof-builder nil state
                                  (abbreviations extra-alist sub
                                                 lemma-id)
                                  (fms0 "~|Apply linear rule ~x0 under the ~
@@ -3264,13 +3264,13 @@
                                                         extra-alist
                                                         abbreviations
                                                         state)))))
-                          (io? proof-checker nil state
+                          (io? proof-builder nil state
                                (lemma-id)
                                (fms0 "~|Applying linear rule ~x0.~|"
                                      (list (cons #\0 lemma-id))))))
                       (let ((runes (all-runes-in-ttree ttree2 nil)))
                         (if runes
-                            (io? proof-checker nil state
+                            (io? proof-builder nil state
                                  (runes)
                                  (fms0 "~|--NOTE-- Using the following runes ~
                                         in addition to the indicated rule:~%  ~
@@ -3316,7 +3316,7 @@
                              (xdoc ',name)
                            (pprogn
                             (fms0 "Note: Using built-in :doc command.  To use ~
-                                   :xdoc command, exit the proof-checker and ~
+                                   :xdoc command, exit the proof-builder and ~
                                    run :doc in the top-level loop.~|~%")
                             (doc ',name))))))
           (t (value `(lisp (doc ',name)))))))
@@ -3329,7 +3329,7 @@
                            (list (cons #\0 name)))
           (value :fail)))
         (t (let ((name (if (equal (symbol-name name) "ALL")
-                           'proof-checker-commands
+                           'proof-builder-commands
                          (make-official-pc-command (or name 'help)))))
              (value `(doc ,name))))))
 
@@ -3337,7 +3337,7 @@
   (term type-alist geneqv iff-flg wrld rcnst old-ttree pot-lst normalize-flg
         rewrite-flg ens state repeat backchain-limit step-limit)
 
-; This function may be called with a pot-lst of nil in the proof-checker, but
+; This function may be called with a pot-lst of nil in the proof-builder, but
 ; need not be can figure out a good way to do linear there.  Also, note that
 ; rcnst can be anything (and is ignored) if rewrite-flg is not set.
 
@@ -3350,7 +3350,7 @@
                   (if rewrite-flg
                       (let ((gstack nil))
                         (rewrite-entry
-                         (rewrite nterm nil 'proof-checker)
+                         (rewrite nterm nil 'proof-builder)
                          :pequiv-info nil
                          :rdepth (rewrite-stack-limit wrld)
                          :step-limit step-limit
@@ -3519,7 +3519,7 @@
                                                      ttree))
                                     flg))
                         (pprogn
-                         (io? proof-checker nil state
+                         (io? proof-builder nil state
                               nil
                               (fms0 "~|Goal proved:  Contradiction in the ~
                                      hypotheses!~|"))
@@ -3563,7 +3563,7 @@
                            (value nil))
                          (pprogn
                           (if erp
-                              (io? proof-checker nil state
+                              (io? proof-builder nil state
                                    nil
                                    (fms0 "~|Note: Ignoring the above theory ~
                                           invariant error.  Proceeding...~|"))
@@ -3601,11 +3601,11 @@
                                      :local-tag-tree new-ttree)
                                     state)))))))))))))))))))))))))))
 
-;; The proof-checker's enabled state will be either the global enabled
-;; state or else a local one.  The proof-checker command :IN-THEORY
+;; The proof-builder's enabled state will be either the global enabled
+;; state or else a local one.  The proof-builder command :IN-THEORY
 ;; takes zero or one arguments, the former specifying ``use the global
 ;; enabled state'' and the latter specifying ``create a local enabled
-;; state from the current proof-checker enabled state by evaluating
+;; state from the current proof-builder enabled state by evaluating
 ;; the theory form that is given.''  This is an easy design to
 ;; implement:  we'll use NIL in the pc-ens component of the pc-state
 ;; to mean that we should use the global state, and otherwise we'll
@@ -3613,9 +3613,9 @@
 ;; A subtlety is that (in-theory (current-theory :here)) is not quite
 ;; equivalent to (in-theory).  The difference is that the former
 ;; stores a copy of the current global enabled state in the current
-;; proof-checker state, and that's what will stay there even if the
+;; proof-builder state, and that's what will stay there even if the
 ;; global state is changed, while the latter stores NIL in the current
-;; proof-checker state, which means that we'll use whatever is the
+;; proof-builder state, which means that we'll use whatever is the
 ;; current global enabled state at the time.
 
 ;; I expect that this design will be pretty robust, in the sense that
@@ -3681,7 +3681,7 @@
                  (mv (change-pc-state pc-state :pc-ens new-pc-ens2)
                      state))))))))
       (if (null pc-ens)
-          (print-no-change2 "The proof-checker enabled/disabled state is ~
+          (print-no-change2 "The proof-builder enabled/disabled state is ~
                              already set to agree with the global state, so ~
                              your IN-THEORY command is redundant.")
         (mv (change-pc-state pc-state :pc-ens nil)
@@ -3882,7 +3882,7 @@
                           originally enter VERIFY using an event name.")
       (if (assoc-eq name (ss-alist))
           (pprogn (unsave-fn name state)
-                  (io? proof-checker nil state
+                  (io? proof-builder nil state
                        (name)
                        (fms0 "~|~x0 removed from saved state-stack alist.~%"
                              (list (cons #\0 name)))))
@@ -3908,7 +3908,7 @@
           "You are apparently already inside the VERIFY interactive loop.  It is ~
            illegal to enter such a loop recursively."))
      ((null ss-alist)
-      (pprogn (io? proof-checker nil state
+      (pprogn (io? proof-builder nil state
                    nil
                    (fms0 "Sorry -- there is no saved interactive proof to ~
                           re-enter! Perhaps you meant (VERIFY) rather than ~
@@ -3917,7 +3917,7 @@
      ((null name)
       (if (equal (length ss-alist) 1)
           (retrieve-fn (caar ss-alist) state)
-        (pprogn (io? proof-checker nil state
+        (pprogn (io? proof-builder nil state
                      (ss-alist)
                      (fms0 "Please specify an interactive verification to ~
                             re-enter.  Your options are ~&0.~%(Pick one of the ~
@@ -3952,7 +3952,7 @@
                     (pc-assign state-stack saved-ss)
                     (show-retrieved-goal saved-ss state)
                     (verify))
-          (pprogn (io? proof-checker nil state
+          (pprogn (io? proof-builder nil state
                        (name)
                        (fms0 "~|Sorry -- There is no interactive proof saved ~
                               under the name ~x0.~|"
@@ -3970,7 +3970,7 @@
 
 (defmacro print-conc (&optional acl2::goal)
   `(let ((goal ,(or goal '(car (access pc-state (car (state-stack)) :goals)))))
-     (io? proof-checker nil state
+     (io? proof-builder nil state
           (goal)
           (if goal
               (fms0
@@ -4026,7 +4026,7 @@
       ((member-eq var state-vars)
        (er soft :generalize
            "The variable ~x0 already appears in the current goals of ~
-            the proof-checker state, and hence is not legal as a ~
+            the proof-builder state, and hence is not legal as a ~
             generalization variable."
            var))
       ((or (variablep var) (gen-var-marker var))
@@ -4140,7 +4140,7 @@
 (define-pc-atomic-macro use (&rest args)
   (value `(prove :hints
                  (("Goal" :use ,args
-                   :do-not-induct proof-checker
+                   :do-not-induct proof-builder
                    :do-not *do-not-processes*))
                  :otf-flg t)))
 
@@ -4148,7 +4148,7 @@
   (value `(:prove :hints
                   (("Goal"
                     :clause-processor (,@cl-proc-hints)
-                    :do-not-induct proof-checker
+                    :do-not-induct proof-builder
                     :do-not *do-not-processes*))
                   :otf-flg t)))
 
@@ -4177,7 +4177,7 @@
                    (add-string-val-pair-to-string-val-alist
                     "Goal"
                     :do-not-induct
-                    'proof-checker
+                    'proof-builder
                     hints)
                    :otf-flg t))
     (pprogn (print-no-change
@@ -4324,7 +4324,7 @@
 (define-pc-atomic-macro elim ()
   (value (list :prove :otf-flg t
                :hints
-               '(("Goal" :do-not-induct proof-checker
+               '(("Goal" :do-not-induct proof-builder
                   :do-not (set-difference-eq *do-not-processes*
                                              '(eliminate-destructors)))))))
 
@@ -4400,11 +4400,11 @@
        (prog2$
         (and fc-report-flg (restore-fc-report-settings))
         (if flg
-            (io? proof-checker nil state
+            (io? proof-builder nil state
                  nil
                  (fms0 "*** Contradiction in the hypotheses! ***~%The S ~
                         command should complete this goal.~|"))
-          (io? proof-checker nil state
+          (io? proof-builder nil state
                (hyps-type-alist w)
                (pprogn
                 (fms0 "~|Current type-alist, including forward chaining:~%")
@@ -4593,7 +4593,7 @@
                       (cdr current-goal-name)
                       (cdr goals) nil nil))
         (pprogn
-         (io? proof-checker nil state
+         (io? proof-builder nil state
               (current-goal-name removed-goals)
               (if removed-goals
                   (fms0 "~|Conjoining the following goals into the current ~
@@ -4626,7 +4626,7 @@
          `(sequence
            ((do-all ,@instrs)
             (quiet (wrap1 ,goal-names))
-            (lisp (io? proof-checker nil state
+            (lisp (io? proof-builder nil state
                        ()
                        (let ((new-current-goal-name
                               (access goal (car (goals)) :goal-name))
@@ -4682,11 +4682,11 @@
                   (list (access goal (car goals) :conc)))
           (goals-to-clause-list (cdr goals)))))
 
-(defun proof-checker-clause-list (state)
+(defun proof-builder-clause-list (state)
   (goals-to-clause-list (goals)))
 
-(defun proof-checker-cl-proc (cl instr-list state)
-  (let ((ctx 'proof-checker-cl-proc))
+(defun proof-builder-cl-proc (cl instr-list state)
+  (let ((ctx 'proof-builder-cl-proc))
     (cond
      ((null cl)
       (er soft ctx
@@ -4708,11 +4708,11 @@
                            (t (chk-inhibit-output-lst (caddar instr-list)
                                                       :instructions
                                                       state))))
-                    (t (value (union-eq '(prove proof-tree proof-checker)
+                    (t (value (union-eq '(prove proof-tree proof-builder)
                                         (f-get-global 'inhibit-output-lst
                                                       state))))))
                   (outputp (value (not (subsetp-eq
-                                        '(prove proof-checker proof-tree)
+                                        '(prove proof-builder proof-tree)
                                         new-inhibit-output-lst)))))
           (state-global-let*
            ((inhibit-output-lst new-inhibit-output-lst)
@@ -4724,7 +4724,7 @@
                            (io? prove nil state
                                 (new-pc-depth)
                                 (fms0 "~|~%[[~x0> Executing ~
-                                            proof-checker instructions]]~%~%"
+                                            proof-builder instructions]]~%~%"
                                       (list (cons #\0 new-pc-depth)))))
                           (t state))
                     (pc-assign next-pc-enabled-array-suffix
@@ -4745,7 +4745,7 @@
                       (cond (outputp (io? prove nil state
                                           (new-pc-depth)
                                           (fms0 "~|~%[[<~x0 Completed ~
-                                                 proof-checker ~
+                                                 proof-builder ~
                                                  instructions]]~%"
                                                 (list (cons #\0 new-pc-depth)))))
                             (t state))
@@ -4761,7 +4761,7 @@
                                (pprogn
                                 (io? error nil state
                                      (name)
-                                     (fms0 "~%Saving proof-checker error ~
+                                     (fms0 "~%Saving proof-builder error ~
                                             state; see :DOC instructions.  To ~
                                             retrieve:~|~x0"
                                            (list (cons #\0 `(retrieve ,name)))))
@@ -4770,15 +4770,15 @@
                                     "The above :INSTRUCTIONS hint failed.  ~
                                      For a discussion of ``failed'', follow ~
                                      the link to the SEQUENCE command under ~
-                                     :DOC proof-checker-commands."))))
-                            (t (value (proof-checker-clause-list
+                                     :DOC proof-builder-commands."))))
+                            (t (value (proof-builder-clause-list
                                        state)))))))
             (cond (erp (silent-error state))
                   (t (value clause-list)))))))))))
 
 #+acl2-loop-only
 (define-trusted-clause-processor
-  proof-checker-cl-proc
+  proof-builder-cl-proc
   nil)
 
 #+acl2-loop-only
@@ -4787,7 +4787,7 @@
                           :instructions
                           (list :clause-processor
                                 (list :function
-                                      'proof-checker-cl-proc
+                                      'proof-builder-cl-proc
                                       :hint
                                       (kwote val)))
                           keyword-alist))

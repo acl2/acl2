@@ -15,7 +15,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,7 +25,7 @@
 
 (define fresh-name-in-world-with-$s ((name symbolp)
                                      (names-to-avoid symbol-listp)
-                                     (w plist-worldp))
+                                     (wrld plist-worldp))
   :returns (fresh-name symbolp)
   :prepwork ((program))
   :parents (fresh-names)
@@ -38,7 +38,7 @@
   If @('name') is already new and not among the names to avoid,
   it is left unchanged.
   </p>"
-  (if (or (logical-namep name w)
+  (if (or (logical-namep name wrld)
           (member name names-to-avoid))
-      (fresh-name-in-world-with-$s (packn (list name '$)) names-to-avoid w)
+      (fresh-name-in-world-with-$s (packn (list name '$)) names-to-avoid wrld)
     name))

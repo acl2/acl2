@@ -1,0 +1,3 @@
+;; Certification instructions for portcullis.lisp
+
+(ld "package.lsp")

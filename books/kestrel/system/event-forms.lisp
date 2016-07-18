@@ -14,7 +14,8 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,7 +47,7 @@
 
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
-  :parents (pseudo-event-formp system-utilities)
+  :parents (pseudo-event-formp)
   :short
   "True iff @('x') is a @('nil')-terminated list
   each of whose elements has the

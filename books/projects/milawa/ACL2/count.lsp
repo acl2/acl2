@@ -17,7 +17,7 @@
 (set-verify-guards-eagerness 2)
 
 ; Can't do anything about the ttag notes, but this clears up some output.
-(set-inhibit-output-lst '(error warning warning! observation prove proof-checker event expansion summary proof-tree))
+(set-inhibit-output-lst '(error warning warning! observation prove proof-builder event expansion summary proof-tree))
 
 (defun symbol-to-nat-alistp (x)
   (declare (xargs :guard t))

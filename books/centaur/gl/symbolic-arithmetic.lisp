@@ -146,7 +146,7 @@ for computing:</p>
     (if (and (consp (car x))
              (eql (len (car x)) 2)
              (symbolp (caar x))
-             (member (cadar x) '(n i p b u s)))
+             (member (cadar x) '(n i p b u s ru rs)))
         (defsymbolic-check-formals (cdr x))
       (er hard? 'defsymbolic-check-formals
           "Bad formal: ~x0" (car x)))))
@@ -157,7 +157,7 @@ for computing:</p>
     (if (and (consp (car x))
              (>= (len (car x)) 2)
              (symbolp (caar x))
-             (member (cadar x) '(n i p b u s))
+             (member (cadar x) '(n i p b u s ru rs))
              (or (member (cadar x) '(n i))
                  (eql (len (car x)) 3)))
         (defsymbolic-check-returns (cdr x))
@@ -174,7 +174,9 @@ for computing:</p>
                   (p `(acl2::pos-fix ,(caar x)))
                   (b `(bfr-eval ,(caar x) env))
                   (u `(bfr-list->u ,(caar x) env))
-                  (s `(bfr-list->s ,(caar x) env))))
+                  (s `(bfr-list->s ,(caar x) env))
+                  (ru `(bfr-list->u (acl2::rev ,(caar x)) env))
+                  (rs `(bfr-list->s (acl2::rev ,(caar x)) env))))
           (defsymbolic-formals-pair-with-evals (cdr x)))))
 
 (defun defsymbolic-define-formals (x)
@@ -184,8 +186,7 @@ for computing:</p>
             (n `(,(caar x) natp))
             (i `(,(caar x) integerp))
             (p `(,(caar x) posp))
-            (u `(,(caar x) true-listp))
-            (s `(,(caar x) true-listp))
+            ((u s ru rs) `(,(caar x) true-listp))
             (t (caar x)))
           (defsymbolic-define-formals (cdr x)))))
 
@@ -196,8 +197,7 @@ for computing:</p>
               (n `((natp ,(caar x))))
               (i `((integerp ,(caar x))))
               (p `((posp ,(caar x))))
-              (u `((true-listp ,(caar x))))
-              (s `((true-listp ,(caar x)))))
+              ((u s ru rs) `((true-listp ,(caar x)))))
             (defsymbolic-guards (cdr x)))))
 
 (defun defsymbolic-define-returns1 (x)
@@ -229,6 +229,10 @@ for computing:</p>
               (u `((equal (bfr-list->u ,(caar x) env)
                           ,(sublis formal-evals (third (car x))))))
               (s `((equal (bfr-list->s ,(caar x) env)
+                          ,(sublis formal-evals (third (car x))))))
+              (ru `((equal (bfr-list->u (acl2::rev ,(caar x)) env)
+                          ,(sublis formal-evals (third (car x))))))
+              (rs `((equal (bfr-list->s (acl2::rev ,(caar x)) env)
                           ,(sublis formal-evals (third (car x)))))))
             (defsymbolic-return-specs (cdr x) formal-evals))))
 
@@ -237,7 +241,7 @@ for computing:</p>
       nil
     (append (case (cadar x)
               (b `((not (pbfr-depends-on varname param ,(caar x)))))
-              ((u s) `((not (pbfr-list-depends-on varname param ,(caar x))))))
+              ((u s ru rs) `((not (pbfr-list-depends-on varname param ,(caar x))))))
             (defsymbolic-not-depends-on (cdr x)))))
 
 (defun induct/expand-fn (fn id world)
@@ -1118,7 +1122,9 @@ for computing:</p>
 
 (define s-take ((n natp) (x true-listp))
   (b* (((when (zp n)) (bfr-sterm nil))
-       ((mv first rest &) (first/rest/end x)))
+       ((mv first rest end) (first/rest/end x))
+       ((when (and end (eq first nil)))
+        '(nil)))
     (bfr-ucons first (s-take (1- n) rest)))
   ///
   (defthm deps-of-s-take
@@ -1133,19 +1139,39 @@ for computing:</p>
              :in-theory (enable* acl2::ihsext-recursive-redefs)))))
 
 
-
-(defsymbolic bfr-logapp-uss ((w n)
-                             (n u)
-                             (x s)
-                             (y s))
-  :returns (app s (logapp (* n w) x y))
-  :prepwork ((local (in-theory (enable logcons)))
+(defsymbolic bfr-logapp-russ ((n ru)
+                              (x s)
+                              (y s))
+  :returns (app s (logapp n x y))
+  :prepwork ((local (in-theory (enable logcons acl2::rev)))
              (local (defthm logapp-loghead-logtail
                       (implies (equal z (logapp w1 (logtail w x) y))
                                (equal (logapp w (loghead w x) z)
                                       (logapp (+ (nfix w) (nfix w1)) x y)))
                       :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
-                                                         bitops::ihsext-inductions))))))
+                                                         bitops::ihsext-inductions)))))
+             (local (defthm loghead-of-len-of-bfr-list
+                      (implies (<= (len lst) (nfix n))
+                               (equal (loghead n (bfr-list->u lst env))
+                                      (bfr-list->u lst env)))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions
+                                                         (:i nthcdr))
+                              :induct (nthcdr n lst)
+                              :expand ((bfr-list->u lst env)
+                                       (:free (x) (loghead n x)))))))
+             (local (defthm logapp-1-is-plus-ash
+                      (equal (logapp n x 1)
+                             (+ (ash 1 (nfix n)) (loghead n x)))
+                      :hints(("Goal" :in-theory (enable logapp bitops::ash-is-expt-*-x)))))
+             (local (defthm bfr-list->u-of-append
+                      (Equal (bfr-list->u (append a b) env)
+                             (logapp (len a)
+                                     (bfr-list->u a env)
+                                     (bfr-list->u b env)))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions
+                                                         append))))))
   (if (atom n)
       (llist-fix y)
     (if (b* (((mv x1 & xend) (first/rest/end x))
@@ -1156,11 +1182,39 @@ for computing:</p>
         (llist-fix x)
       (bfr-ite-bss
        (car n)
-       (bfr-logapp-nus (lnfix w) (s-take w x)
-                       (bfr-logapp-uss
-                        (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
-                        y))
-       (bfr-logapp-uss (ash (lnfix w) 1) (cdr n) x y)))))
+       (b* ((w (ash 1 (len (cdr n)))))
+         (bfr-logapp-nus w (s-take w x)
+                         (bfr-logapp-russ (cdr n) (bfr-logtail-ns w x) y)))
+       (bfr-logapp-russ (cdr n) x y)))))
+    
+
+;; (defsymbolic bfr-logapp-uss ((w n)
+;;                              (n u)
+;;                              (x s)
+;;                              (y s))
+;;   :returns (app s (logapp (* n w) x y))
+;;   :prepwork ((local (in-theory (enable logcons)))
+;;              (local (defthm logapp-loghead-logtail
+;;                       (implies (equal z (logapp w1 (logtail w x) y))
+;;                                (equal (logapp w (loghead w x) z)
+;;                                       (logapp (+ (nfix w) (nfix w1)) x y)))
+;;                       :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+;;                                                          bitops::ihsext-inductions))))))
+;;   (if (atom n)
+;;       (llist-fix y)
+;;     (if (b* (((mv x1 & xend) (first/rest/end x))
+;;              ((mv y1 & yend) (first/rest/end y)))
+;;           (and xend
+;;                yend
+;;                (equal x1 y1)))
+;;         (llist-fix x)
+;;       (bfr-ite-bss
+;;        (car n)
+;;        (bfr-logapp-nus (lnfix w) (s-take w x)
+;;                        (bfr-logapp-uss
+;;                         (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
+;;                         y))
+;;        (bfr-logapp-uss (ash (lnfix w) 1) (cdr n) x y)))))
 
 
 

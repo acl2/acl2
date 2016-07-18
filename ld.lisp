@@ -1067,7 +1067,7 @@
                       (cond ((and (eql (f-get-global 'ld-level state) 1)
                                   (eql in-verify-flg 1))
                              (pprogn
-                              (print-re-entering-proof-checker nil state)
+                              (print-re-entering-proof-builder nil state)
                               (mv nil nil nil '(verify) state)))
                             (t (ld-read-command state)))))
              (t (ld-read-command state))))
@@ -1650,7 +1650,7 @@
                              action
                            :return!))
                        alist))))
-                 
+
     #-acl2-loop-only
     (cond (*load-compiled-stack*
            (error "It is illegal to call LD while loading a compiled book, in ~
@@ -3454,10 +3454,10 @@
         (true-listp (rev x))
         :rule-classes (:REWRITE :GENERALIZE))
 
-; Here we test the proof-checker using the same theorem as the one that
+; Here we test the proof-builder using the same theorem as the one that
 ; follows (but not storing it as a :rewrite rule).
 
-      (defthm rev-app-proof-checker
+      (defthm rev-app-proof-builder
         (equal (rev (app a b)) (app (rev b) (rev a)))
         :rule-classes nil
         :instructions

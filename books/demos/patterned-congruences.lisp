@@ -357,8 +357,8 @@
 #+skip ; only for interactive use
 (trace-pequivs nil)
 
-; Rewriting in the proof-checker comprehends patterned congruences:
-(defthm test-1-proof-checker
+; Rewriting in the proof-builder comprehends patterned congruences:
+(defthm test-1-proof-builder
   (iff (f1 3 (f2 z 8) (cons u u))
        (f1 3 z (cons u u)))
   :instructions ((:dv 1 2)
@@ -1362,7 +1362,7 @@
        (f9 3 (car v) z (cons u u) (cdr v)))
   :rule-classes nil)
 
-(defthm test-10-proof-checker
+(defthm test-10-proof-builder
   (iff (f9 3 (car v) (f2 z 8) (cons u u) (cdr v))
        (f9 3 (car v) z (cons u u) (cdr v)))
   :instructions ((:dv 1 3)

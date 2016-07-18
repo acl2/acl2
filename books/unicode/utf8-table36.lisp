@@ -36,8 +36,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
-
-
+(local (in-theory (disable signed-byte-p)))
 (local (defthm signed-byte-p-resolver
          (implies (and (integerp n)
                        (<= 1 n)
@@ -47,19 +46,16 @@
                   (signed-byte-p n x))
          :hints(("Goal" :in-theory (enable signed-byte-p)))))
 
-;; UTF-8 sequences are also required to satisfy the informal constraints as
-;; established in Table 3-6, which we recreate below:
+
+
+;; UTF-8 sequences are required to satisfy the informal constraints imposed by
+;; Table 3-6, which we recreate below:
 ;;
-;;  Row   Code Points          1st Byte    2nd Byte    3rd Byte    4th Byte
-;;  1     U+0000..U+007F       00..7F
-;;  2     U+0080..U+07FF       C2..DF      80..BF
-;;  3     U+0800..U+0FFF       E0          A0..BF      80..BF
-;;  4     U+1000..U+CFFF       E1..EC      80..BF      80..BF
-;;  5     U+D000..U+D7FF       ED          80..9F      80..BF
-;;  6     U+E000..U+FFFF       EE..EF      80..BF      80..BF
-;;  7     U+10000..U+3FFFF     F0          90..BF      80..BF      80..BF
-;;  8     U+40000..U+FFFFF     F1..F3      80..BF      80..BF      80..BF
-;;  9     U+100000..U+10FFFF   F4          80..8F      80..BF      80..BF
+;;  Row   Scalar Value                1st Byte  2nd Byte  3rd Byte  4th Byte
+;;  1     00000000 0xxxxxxx           0xxxxxxx
+;;  2     00000yyy yyxxxxxx           110yyyyy  10xxxxxx
+;;  3     zzzzyyyy yyxxxxxx           1110zzzz  10yyyyyy  10xxxxxx
+;;  4     000uuuuu zzzzyyyy yyxxxxx   11110uuu  10uuzzzz  10yyyyyy  10xxxxxx
 ;;
 ;; To ensure that these constraints are respected by our UTF-8 functions, we
 ;; formalize the constraints of this table rigorously below.
@@ -69,202 +65,107 @@
 ;; the Unicode standard.  In particular, one should check that our copy of
 ;; Table 3-6 above is an accurate copy of Table 3-6 from the Standard, and
 ;; should also convince themselves that the functions below accurately capture
-;; the meaning of these ranges.
+;; the meaning of matching these bit patterns.
 
 
-;; We begin by explaining what codepoints are acceptable entries for each row.
-;; Note that the code points accepted by each row are subsumed by the later
-;; rows, i.e., any codepoint which is acceptable under row 1 is also acceptable
-;; under row 2 by simply letting yyyyy = 00000.  We do nothing to try to
-;; require least row constraints, since these are handled by Table 3-6.
+
+;; We begin by explaining which code points are acceptable entries for each row
+;; (i.e., in the "scalar value" column).  Note that the code points accepted by
+;; each row are subsumed by the later rows, i.e., any codepoint which is
+;; acceptable under row 1 is also acceptable under row 2 by simply letting
+;; yyyyy = 00000.  We do nothing to try to require least row constraints, since
+;; these are handled by Table 3-7.
 
 (defund utf8-table36-codepoint-1? (x)
-  "Return true iff x matches U+0000..U+007F, i.e., if it could be a
-   codepoint for Row 1 in Table 3-6."
+  "Return true iff x matches 0xxxxxxx, i.e., if it could be a codepoint for
+   Row 1 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) 0 #x7F)))
+       (in-range? (the-fixnum x) 0 #x7F))) ; match 0xxxxxxx
 
 (defund utf8-table36-codepoint-2? (x)
-  "Return true iff x matches U+0080..U+07FF, i.e., if it could be a
+  "Return true iff x matches 00000yyy yyxxxxxx, i.e., if it could be a
    codepoint for Row 2 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #x80 #x7FF)))
+       (in-range? (the-fixnum x) 0 #x7FF))) ; match 00000yyy yyxxxxxx
 
 (defund utf8-table36-codepoint-3? (x)
-  "Return true iff x matches U+0800..U+0FFF, i.e., if it could be a
+  "Return true iff x matches zzzzyyyy yyxxxxxx, i.e., if it could be a
    codepoint for Row 3 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #x800 #xFFF)))
+       (in-range? (the-fixnum x) 0 #xFFFF))) ; match zzzzyyyy yyxxxxxx
 
 (defund utf8-table36-codepoint-4? (x)
-  "Return true iff x matches U+1000..U+CFFF, i.e., if it could be a
-   codepoint for Row 4 in Table 3-6."
+  "Return true iff x matches 000uuuuu zzzzyyyy yyxxxxxx, i.e., if it could
+   be a codepoint for Row 4 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #x1000 #xCFFF)))
-
-(defund utf8-table36-codepoint-5? (x)
-  "Return true iff x matches U+D000..U+D7FF, i.e., if it could be a
-   codepoint for Row 5 in Table 3-6."
-  (declare (xargs :guard (uchar? x)))
-  (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #xD000 #xD7FF)))
-
-(defund utf8-table36-codepoint-6? (x)
-  "Return true iff x matches U+E000..U+FFFF, i.e., if it could be a
-   codepoint for Row 6 in Table 3-6."
-  (declare (xargs :guard (uchar? x)))
-  (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #xE000 #xFFFF)))
-
-(defund utf8-table36-codepoint-7? (x)
-  "Return true iff x matches U+10000..U+3FFFF, i.e., if it could be a
-   codepoint for Row 7 in Table 3-6."
-  (declare (xargs :guard (uchar? x)))
-  (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #x10000 #x3FFFF)))
-
-(defund utf8-table36-codepoint-8? (x)
-  "Return true iff x matches U+40000..U+FFFFF, i.e., if it could be a
-   codepoint for Row 8 in Table 3-6."
-  (declare (xargs :guard (uchar? x)))
-  (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #x40000 #xFFFFF)))
-
-(defund utf8-table36-codepoint-9? (x)
-  "Return true iff x matches U+100000..U+10FFFF, i.e., if it could be a
-   codepoint for Row 9 in Table 3-6."
-  (declare (xargs :guard (uchar? x)))
-  (and (mbt (uchar? x))
-       (in-range? (the-fixnum x) #x100000 #x10FFFF)))
+       (in-range? (the-fixnum x) 0 #x1FFFFF))) ; match 000uuuuu zzzzyyyy yyxxxxxx
 
 (deftheory utf8-table36-codepoints
   '(utf8-table36-codepoint-1?
     utf8-table36-codepoint-2?
     utf8-table36-codepoint-3?
-    utf8-table36-codepoint-4?
-    utf8-table36-codepoint-5?
-    utf8-table36-codepoint-6?
-    utf8-table36-codepoint-7?
-    utf8-table36-codepoint-8?
-    utf8-table36-codepoint-9?))
+    utf8-table36-codepoint-4?))
 
 
 
-;; We now enumerate the valid entries for the bytes of each row in Table 3-6.
-;; For example, utf8-table36-bytes-4? ensures that x is a sequence of bytes
-;; which matches row 4 in Table 3-6.
+;; We now rigorously explain what the valid entries are for the "Byte" columns
+;; in the table.  Note that we really only have five bit patterns to consider:
+;; one for each row in the 1st Byte column, and the pattern 10xxxxxx which is
+;; used universally for all trailing bytes.
 
-(defund utf8-table36-bytes-1? (x)
-  "Return true iff x matches the bytes in Row 1 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 1))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 1))
-       (<= (the-fixnum (first x)) #x7F)))
+(defund utf8-table36-byte-1/1? (x)
+  "Return true iff x matches 0xxxxxxx, i.e., it is the first byte of a one-
+   byte UTF-8 sequence, as specified by Table 3-6."
+  (declare (type (unsigned-byte 8) x))
+  (and (mbt (unsigned-byte-p 8 x))
+       (in-range? (the-fixnum x) 0 #x7F))) ; match 0xxxxxxx
 
-(defund utf8-table36-bytes-2? (x)
-  "Return true iff x matches the bytes in Row 2 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 2))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 2))
-       (in-range? (the-fixnum (first x))  #xC2 #xDF)
-       (in-range? (the-fixnum (second x)) #x80 #xBF)))
+(defund utf8-table36-byte-1/2? (x)
+  "Return true iff x matches 110yyyyy, i.e., if it is the first byte of a
+   two-byte UTF-8 sequence, as specified by Table 3-6."
+  (declare (type (unsigned-byte 8) x))
+  (and (mbt (unsigned-byte-p 8 x))
+       (in-range? (the-fixnum x) #xC0 #xDF))) ; match 110yyyyy
 
-(defund utf8-table36-bytes-3? (x)
-  "Return true iff x matches the bytes in Row 3 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (= (the-fixnum (first x)) #xE0)
-       (in-range? (the-fixnum (second x)) #xA0 #xBF)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)))
+(defund utf8-table36-byte-1/3? (x)
+  "Return true iff x matches 1110zzzz, i.e., if it is the first byte of a
+   three-byte UTF-8 sequence, as specified by Table 3-6."
+  (declare (type (unsigned-byte 8) x))
+  (and (mbt (unsigned-byte-p 8 x))
+       (in-range? (the-fixnum x) #xE0 #xEF))) ; match 1110zzzz
 
-(defund utf8-table36-bytes-4? (x)
-  "Return true iff x matches the bytes in Row 4 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (in-range? (the-fixnum (first x))  #xE1 #xEC)
-       (in-range? (the-fixnum (second x)) #x80 #xBF)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)))
+(defund utf8-table36-byte-1/4? (x)
+  "Return true iff x matches 11110uuu, i.e., if it is the first byte of a
+   four-byte UTF-8 sequence, as specified by Table 3-6."
+  (declare (type (unsigned-byte 8) x))
+  (and (mbt (unsigned-byte-p 8 x))
+       (in-range? (the-fixnum x) #xF0 #xF7))) ; match 11110uuu
 
-(defund utf8-table36-bytes-5? (x)
-  "Return true iff x matches the bytes in Row 5 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (= (the-fixnum (first x)) #xED)
-       (in-range? (the-fixnum (second x)) #x80 #x9F)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)))
-
-(defund utf8-table36-bytes-6? (x)
-  "Return true iff x matches the bytes in Row 6 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (in-range? (the-fixnum (first x))  #xEE #xEF)
-       (in-range? (the-fixnum (second x)) #x80 #xBF)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)))
-
-(defund utf8-table36-bytes-7? (x)
-  "Return true iff x matches the bytes in Row 7 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 4))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 4))
-       (= (the-fixnum (first x)) #xF0)
-       (in-range? (the-fixnum (second x)) #x90 #xBF)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)
-       (in-range? (the-fixnum (fourth x)) #x80 #xBF)))
-
-(defund utf8-table36-bytes-8? (x)
-  "Return true iff x matches the bytes in Row 8 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 4))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 4))
-       (in-range? (the-fixnum (first x))  #xF1 #xF3)
-       (in-range? (the-fixnum (second x)) #x80 #xBF)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)
-       (in-range? (the-fixnum (fourth x)) #x80 #xBF)))
-
-(defund utf8-table36-bytes-9? (x)
-  "Return true iff x matches the bytes in Row 9 of Table 3-6."
-  (declare (xargs :guard (and (unsigned-byte-listp 8 x)
-                              (equal (len x) 4))))
-  (and (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 4))
-       (= (the-fixnum (first x)) #xF4)
-       (in-range? (the-fixnum (second x)) #x80 #x8F)
-       (in-range? (the-fixnum (third x))  #x80 #xBF)
-       (in-range? (the-fixnum (fourth x)) #x80 #xBF)))
+(defund utf8-table36-trailing-byte? (x)
+  "Return true iff x matches 10xxxxxx, i.e., if it is a trailing byte in
+   any of the rows in Table 3-6."
+  (declare (type (unsigned-byte 8) x))
+  (and (mbt (unsigned-byte-p 8 x))
+       (in-range? (the-fixnum x) #x80 #xBF))) ; match 10xxxxxx
 
 (deftheory utf8-table36-bytes
-  '(utf8-table36-bytes-1?
-    utf8-table36-bytes-2?
-    utf8-table36-bytes-3?
-    utf8-table36-bytes-4?
-    utf8-table36-bytes-5?
-    utf8-table36-bytes-6?
-    utf8-table36-bytes-7?
-    utf8-table36-bytes-8?
-    utf8-table36-bytes-9?))
+  '(utf8-table36-byte-1/1?
+    utf8-table36-byte-1/2?
+    utf8-table36-byte-1/3?
+    utf8-table36-byte-1/4?
+    utf8-table36-trailing-byte?))
 
 
 
-;; We now merge our codepoint checking and byte-sequence checking functions, to
-;; create complete checks for entire rows of Table 3-6.  For example,
-;; utf8-table-36-row-4? checks to ensure that a codepoint and byte sequence are
-;; valid under Row 4 of Table 3-6.
+
+;; We now combine our individual cell checking functions (codepoint and byte
+;; matching) into checks of full rows.  In particular, we write functions which
+;; answer the question, given some codepoint and byte sequence, do these match
+;; a particular row of Table 3-6?
 
 (defund utf8-table36-row-1? (cp x)
   "True iff cp is a codepoint and x is a byte sequence which match the
@@ -272,11 +173,19 @@
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 1))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 1))
-       (utf8-table36-codepoint-1? cp)
-       (utf8-table36-bytes-1? x)))
+  (and
+   ;; input checking (these can be inferred from guards)
+   (mbt (uchar? cp))
+   (mbt (unsigned-byte-listp 8 x))
+   (mbt (equal (len x) 1))
+
+   ;; check that the codepoint/bytes are acceptable
+   (utf8-table36-codepoint-1? cp)
+   (utf8-table36-byte-1/1? (first x))
+
+   ;; check that the codepoint/bytes correspond as expected
+   (= (the-fixnum cp)
+      (the-fixnum (first x)))))
 
 (defund utf8-table36-row-2? (cp x)
   "True iff cp is a codepoint and x is a byte sequence which match the
@@ -284,118 +193,124 @@
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 2))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 2))
-       (utf8-table36-codepoint-2? cp)
-       (utf8-table36-bytes-2? x)))
+  (and
+   ;; input checking (these can be inferred from guards)
+   (mbt (uchar? cp))
+   (mbt (unsigned-byte-listp 8 x))
+   (mbt (equal (len x) 2))
+
+   ;; check that the codepoint/bytes are acceptable
+   (utf8-table36-codepoint-2? cp)
+   (utf8-table36-byte-1/2? (first x))
+   (utf8-table36-trailing-byte? (second x))
+
+   ;; check that the codepoint/bytes correspond as expected
+   (mbe :logic (let ((000yyyyy (logand (first x) #x1F))
+                     (00xxxxxx (logand (second x) #x3F)))
+                 (equal (logior (ash 000yyyyy 6)
+                                00xxxxxx)
+                        cp))
+        :exec  (let ((000yyyyy (the-fixnum
+                                (logand (the-fixnum (first x)) #x1F)))
+                     (00xxxxxx (the-fixnum
+                                (logand (the-fixnum (second x)) #x3F))))
+                 (= (the-fixnum
+                     (logior (the-fixnum (ash (the-fixnum 000yyyyy) 6))
+                             (the-fixnum 00xxxxxx)))
+                    (the-fixnum cp))))))
 
 (defund utf8-table36-row-3? (cp x)
   "True iff cp is a codepoint and x is a byte sequence which match the
-   third row of Table 3-6."
+   third row in Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 3))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (utf8-table36-codepoint-3? cp)
-       (utf8-table36-bytes-3? x)))
+  (and
+   ;; input checking (these can be inferred from guards)
+   (mbt (uchar? cp))
+   (mbt (unsigned-byte-listp 8 x))
+   (mbt (equal (len x) 3))
+
+   ;; check that the codepoint/bytes are acceptable
+   (utf8-table36-codepoint-3? cp)
+   (utf8-table36-byte-1/3? (first x))
+   (utf8-table36-trailing-byte? (second x))
+   (utf8-table36-trailing-byte? (third x))
+
+   ;; check that the codepoint/bytes correspond as expected
+   (mbe :logic (let ((0000zzzz (logand (first x) #x0F))
+                     (00yyyyyy (logand (second x) #x3F))
+                     (00xxxxxx (logand (third x) #x3F)))
+                 (equal (logior (ash 0000zzzz 12)
+                                (ash 00yyyyyy 6)
+                                00xxxxxx)
+                        cp))
+        :exec (let ((0000zzzz (the-fixnum (logand (the-fixnum (first x)) #x0F)))
+                    (00yyyyyy (the-fixnum (logand (the-fixnum (second x)) #x3F)))
+                    (00xxxxxx (the-fixnum (logand (the-fixnum (third x)) #x3F))))
+                (= (the-fixnum
+                    (logior (the-fixnum (ash (the-fixnum 0000zzzz) 12))
+                            (the-fixnum (ash (the-fixnum 00yyyyyy) 6))
+                            (the-fixnum 00xxxxxx)))
+                   (the-fixnum cp))))))
 
 (defund utf8-table36-row-4? (cp x)
   "True iff cp is a codepoint and x is a byte sequence which match the
-   fourth row of Table 3-6."
-  (declare (xargs :guard (and (uchar? cp)
-                              (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (utf8-table36-codepoint-4? cp)
-       (utf8-table36-bytes-4? x)))
-
-(defund utf8-table36-row-5? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the
-   fifth row of Table 3-6."
-  (declare (xargs :guard (and (uchar? cp)
-                              (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (utf8-table36-codepoint-5? cp)
-       (utf8-table36-bytes-5? x)))
-
-(defund utf8-table36-row-6? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the
-   sixth row of Table 3-6."
-  (declare (xargs :guard (and (uchar? cp)
-                              (unsigned-byte-listp 8 x)
-                              (equal (len x) 3))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 3))
-       (utf8-table36-codepoint-6? cp)
-       (utf8-table36-bytes-6? x)))
-
-(defund utf8-table36-row-7? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the
-   seventh row of Table 3-6."
+   third row in Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 4))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 4))
-       (utf8-table36-codepoint-7? cp)
-       (utf8-table36-bytes-7? x)))
+  (and
+   ;; input checking (these can be inferred from guards)
+   (mbt (uchar? cp))
+   (mbt (unsigned-byte-listp 8 x))
+   (mbt (equal (len x) 4))
 
-(defund utf8-table36-row-8? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the
-   eighth row of Table 3-6."
-  (declare (xargs :guard (and (uchar? cp)
-                              (unsigned-byte-listp 8 x)
-                              (equal (len x) 4))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 4))
-       (utf8-table36-codepoint-8? cp)
-       (utf8-table36-bytes-8? x)))
+   ;; check that the codepoint/bytes are acceptable
+   (utf8-table36-codepoint-4? cp)
+   (utf8-table36-byte-1/4? (first x))
+   (utf8-table36-trailing-byte? (second x))
+   (utf8-table36-trailing-byte? (third x))
+   (utf8-table36-trailing-byte? (fourth x))
 
-(defund utf8-table36-row-9? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the
-   ninth row of Table 3-6."
-  (declare (xargs :guard (and (uchar? cp)
-                              (unsigned-byte-listp 8 x)
-                              (equal (len x) 4))))
-  (and (mbt (uchar? cp))
-       (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 4))
-       (utf8-table36-codepoint-9? cp)
-       (utf8-table36-bytes-9? x)))
+   ;; check that the codepoint/bytes correspond as expected
+   (mbe :logic (let ((00000uuu (logand (first x)  #x07))
+                     (00uuzzzz (logand (second x) #x3F))
+                     (00yyyyyy (logand (third x)  #x3F))
+                     (00xxxxxx (logand (fourth x) #x3F)))
+                 (equal (logior (ash 00000uuu 18)
+                                (ash 00uuzzzz 12)
+                                (ash 00yyyyyy 6)
+                                00xxxxxx)
+                        cp))
+        :exec (let ((00000uuu (the-fixnum (logand (the-fixnum (first x)) #x07)))
+                    (00uuzzzz (the-fixnum (logand (the-fixnum (second x)) #x3F)))
+                    (00yyyyyy (the-fixnum (logand (the-fixnum (third x)) #x3F)))
+                    (00xxxxxx (the-fixnum (logand (the-fixnum (fourth x)) #x3F))))
+                (= (the-fixnum
+                    (logior (the-fixnum (ash (the-fixnum 00000uuu) 18))
+                            (the-fixnum (ash (the-fixnum 00uuzzzz) 12))
+                            (the-fixnum (ash (the-fixnum 00yyyyyy) 6))
+                            (the-fixnum 00xxxxxx)))
+                   (the-fixnum cp))))))
 
 (deftheory utf8-table36-rows
   '(utf8-table36-row-1?
     utf8-table36-row-2?
     utf8-table36-row-3?
-    utf8-table36-row-4?
-    utf8-table36-row-5?
-    utf8-table36-row-6?
-    utf8-table36-row-7?
-    utf8-table36-row-8?
-    utf8-table36-row-9?))
+    utf8-table36-row-4?))
 
-(local (defthm utf8-table36-length-lemmas
-         (and (implies (utf8-table36-row-1? cp x) (equal (len x) 1))
-              (implies (utf8-table36-row-2? cp x) (equal (len x) 2))
-              (implies (utf8-table36-row-3? cp x) (equal (len x) 3))
-              (implies (utf8-table36-row-4? cp x) (equal (len x) 3))
-              (implies (utf8-table36-row-5? cp x) (equal (len x) 3))
-              (implies (utf8-table36-row-6? cp x) (equal (len x) 3))
-              (implies (utf8-table36-row-7? cp x) (equal (len x) 4))
-              (implies (utf8-table36-row-8? cp x) (equal (len x) 4))
-              (implies (utf8-table36-row-9? cp x) (equal (len x) 4)))
-         :hints(("Goal" :in-theory (enable utf8-table36-rows)))))
+
+;; Finally, we combine our row checking functions into a single, universal
+;; check to ensure that a codepoint and a sequence of bytes are acceptable
+;; under table 3-6.
+
+(defthm utf8-table36-length-lemmas
+  (and (implies (utf8-table36-row-1? cp x) (equal (len x) 1))
+       (implies (utf8-table36-row-2? cp x) (equal (len x) 2))
+       (implies (utf8-table36-row-3? cp x) (equal (len x) 3))
+       (implies (utf8-table36-row-4? cp x) (equal (len x) 4)))
+  :hints(("Goal" :in-theory (enable utf8-table36-rows))))
 
 (defund utf8-table36-ok? (cp x)
   "True iff cp is a codepoint and x is a byte sequence which match some
@@ -407,39 +322,10 @@
   (mbe :logic (or (utf8-table36-row-1? cp x)
                   (utf8-table36-row-2? cp x)
                   (utf8-table36-row-3? cp x)
-                  (utf8-table36-row-4? cp x)
-                  (utf8-table36-row-5? cp x)
-                  (utf8-table36-row-6? cp x)
-                  (utf8-table36-row-7? cp x)
-                  (utf8-table36-row-8? cp x)
-                  (utf8-table36-row-9? cp x))
+                  (utf8-table36-row-4? cp x))
        :exec (case (len x)
                (1 (utf8-table36-row-1? cp x))
                (2 (utf8-table36-row-2? cp x))
-               (3 (or (utf8-table36-row-3? cp x)
-                      (utf8-table36-row-4? cp x)
-                      (utf8-table36-row-5? cp x)
-                      (utf8-table36-row-6? cp x)))
-               (4 (or (utf8-table36-row-7? cp x)
-                      (utf8-table36-row-8? cp x)
-                      (utf8-table36-row-9? cp x)))
-               (otherwise nil))))
-
-(defthm len-of-bytes-when-utf8-table36-ok?
-  (implies (utf8-table36-ok? cp x)
-           (and (<= 1 (len x))
-                (<= (len x) 4)))
-  :rule-classes :linear
-  :hints(("Goal" :in-theory (enable utf8-table36-ok?))))
-
-(defthm uchar?-of-codepoint-when-utf8-table36-ok?
-  (implies (utf8-table36-ok? cp x)
-           (uchar? cp))
-  :hints(("Goal" :in-theory (enable utf8-table36-ok?
-                                    utf8-table36-rows))))
-
-(defthm unsigned-byte-listp-of-bytes-when-utf8-table36-ok?
-  (implies (utf8-table36-ok? cp x)
-           (unsigned-byte-listp 8 x))
-  :hints(("Goal" :in-theory (enable utf8-table36-ok?
-                                    utf8-table36-rows))))
+               (3 (utf8-table36-row-3? cp x))
+               (4 (utf8-table36-row-4? cp x))
+               (t nil))))

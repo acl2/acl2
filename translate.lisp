@@ -337,10 +337,10 @@
 ; :program-mode function, then the :exec code of that mbe call is evaluated,
 ; not the :logic code.  Our approach is basically as follows.  Globally,
 ; **1*-as-raw* is nil.  But we arrange the following, and explain below.
-; 
+;
 ; (a) The *1* code for an invariant-risk :program mode function binds
 ;     **1*-as-raw* to t.
-; 
+;
 ; (b) The *1* code for an mbe call reduces to its :exec code when **1*-as-raw*
 ;     is true.
 ;
@@ -360,7 +360,7 @@
 ; To see why we need (c), consider the following example.
 
 ;   (defstobj st (fld :type integer :initially 0))
-;   
+;
 ;   (defun lgc (st)
 ;     (declare (xargs :mode :logic
 ;                     :stobjs st
@@ -369,7 +369,7 @@
 ;                         (update-fld 3 st))
 ;          :exec (prog2$ (cw "@@@EXEC@@@~%")
 ;                        (update-fld 4 st))))
-;   
+;
 ;   (defun foo (state st)
 ;     (declare (xargs :mode :program :stobjs (state st)))
 ;     (let ((st (update-fld 7 st)))
@@ -3161,7 +3161,7 @@
                  associated with ~x0 in the table, ~x1, to obtain a custom ~
                  guard error message.  Consider modifying that table entry; ~
                  see :doc set-guard-msg."
-                fn 
+                fn
                 'guard-msg-table)
          "")))
 
@@ -3398,7 +3398,7 @@
 ; Even though translate insists that the second argument of synp is quoted, can
 ; we really guarantee that every termp given to untranslate came through
 ; translate?  Not necessarily; for example, maybe substitution was performed
-; for some reason (say, in the proof-checker one replaces the quoted argument
+; for some reason (say, in the proof-builder one replaces the quoted argument
 ; by a variable known to be equal to it).
 
                 (quotep (fargn term 2)))
@@ -5222,6 +5222,7 @@
 ; We determine whether the function fn (possibly a lambda-expression)
 ; is used as a function in term.
 
+  (declare (xargs :guard (pseudo-termp term)))
   (cond ((variablep term) nil)
         ((fquotep term) nil)
         ((flambda-applicationp term)
@@ -5232,9 +5233,8 @@
         (t (ffnnamep-lst fn (fargs term)))))
 
 (defun ffnnamep-lst (fn l)
-  (declare (xargs :guard (and (symbolp fn)
-                              (pseudo-term-listp l))))
-  (if (null l)
+  (declare (xargs :guard (pseudo-term-listp l)))
+  (if (endp l)
       nil
     (or (ffnnamep fn (car l))
         (ffnnamep-lst fn (cdr l)))))
@@ -6197,15 +6197,15 @@
 ; that stobj has a child stobj that is :non-memoizable.
 
 ;   (in-package "ACL2")
-;   
+;
 ;   (defstobj kid1 fld1)
-;   
+;
 ;   (defstobj kid2 fld2)
-;   
+;
 ;   (defstobj mom
 ;     (kid1-field :type kid1)
 ;     (kid2-field :type kid2))
-;   
+;
 ;   (defun mom.update-fld1 (val mom)
 ;     (declare (xargs :stobjs mom))
 ;     (stobj-let
@@ -6213,7 +6213,7 @@
 ;      (kid1)
 ;      (update-fld1 val kid1)
 ;      mom))
-;   
+;
 ;   (defun mom.fld1 (mom)
 ;     (declare (xargs :stobjs mom))
 ;     (stobj-let
@@ -6221,7 +6221,7 @@
 ;      (val)
 ;      (fld1 kid1)
 ;      val))
-;   
+;
 ;   (defun test ()
 ;     (with-local-stobj
 ;      mom
@@ -6232,17 +6232,17 @@
 ;                     (val2 (mom.fld1 mom)))
 ;                (mv (equal val1 val2) mom))
 ;              val)))
-;   
+;
 ;   (defthm true-prop
 ;     (not (test))
 ;     :rule-classes nil)
-;   
+;
 ;   (memoize 'mom.fld1)
-;   
+;
 ;   (defthm false-prop
 ;     (test)
 ;     :rule-classes nil)
-;   
+;
 ;   (defthm contradiction
 ;     nil
 ;     :hints (("Goal" :in-theory nil

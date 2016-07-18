@@ -3413,18 +3413,18 @@
 ;   $ cat sub.lisp
 ;   ; (defpkg "FOO" nil)
 ;   ; (certify-book "sub" 1)
-;   
+;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defun f2 (x) x)
 ;   $ cat top.lisp
 ;   (in-package "ACL2")
-;   
+;
 ;   (include-book "sub")
-;   
+;
 ;   (defmacro my-def ()
 ;     `(defun f (,(intern$ "X" "FOO")) ,(intern$ "X" "FOO")))
-;   
+;
 ;   (my-def)
 ;   $
 
@@ -3651,7 +3651,7 @@
                                      installed-wrld))
                   (mv nil nil) ; nothing to do
                 (convert-type-prescription-to-term cert-data-tp ens
-                                             
+
 ; We use the installed world (the one before cleansing started) for efficient
 ; handling of large mutual recursion nests.
 
@@ -5462,7 +5462,7 @@
             (t (get-declared-stobj-names (cdr edcls) ctx wrld state)))))
         (t (get-declared-stobj-names (cdr edcls) ctx wrld state))))
 
-(defun get-stobjs-in-lst (lst ctx wrld state)
+(defun get-stobjs-in-lst (lst defun-mode ctx wrld state)
 
 ; Lst is a list of ``fives'' as computed in chk-acceptable-defuns.
 ; Each element is of the form (fn args "doc" edcls body).  We know the
@@ -5486,7 +5486,17 @@
                         (cond ((and (member-eq 'state formals)
                                     (not (member-eq 'state dcl-stobj-names)))
                                (er-progn
-                                (chk-state-ok ctx wrld state)
+                                (cond
+                                 ((and (eq defun-mode :logic)
+                                       (function-symbolp fn wrld))
+
+; In this case, we skip the polite check that state can be a formal without
+; declaring it a stobj.  This way, verify-termination can succeed in the case
+; that the original :program mode defininition was evaluated in a world with
+; state-ok but the current definition is not.
+
+                                  (value nil))
+                                 (t (chk-state-ok ctx wrld state)))
                                 (value (cons 'state dcl-stobj-names))))
                               (t (value dcl-stobj-names)))))
 
@@ -5503,6 +5513,7 @@
                        fn
                        formals))
                   (t (er-let* ((others (get-stobjs-in-lst (cdr lst)
+                                                          defun-mode
                                                           ctx wrld state)))
 
 ; Note: Wrld is irrelevant below because dcl-stobj-namesx is not T so
@@ -6196,13 +6207,13 @@
 ;                           ((and (eq symbol-class :ideal)
 ;                                 (eq (symbol-class name wrld)
 ;                                     :common-lisp-compliant))
-; 
+;
 ; ; We have returned 'redundant in this case, but we now realize that doing so
 ; ; could be problematic.  Consider a book with the following events.  If the
 ; ; second definition of foo is redundant on the first pass of certify-book,
 ; ; then bar will produce an error on the second pass because foo is not
 ; ; :common-lisp-compliant at that time.
-; 
+;
 ; ;   (local
 ; ;    (defun foo (x)
 ; ;      (declare (xargs :guard t :verify-guards t))
@@ -6215,10 +6226,10 @@
 ; ;   (defun bar (x)
 ; ;     (declare (xargs :guard t))
 ; ;     (foo x))
-; 
+;
 ; ; Out of courtesy, given this change to long-standing behavior, we print an
 ; ; explanatory message.
-; 
+;
 ;                            (msg "it is not redundant to provide a new ~
 ;                                  definition that specifies the removal of ~
 ;                                  guard-verified status."))
@@ -7509,11 +7520,11 @@
 ; as requested by Daron Vroon for ACL2s purposes.
 
   (er-let*
-   ((stobjs-in-lst (get-stobjs-in-lst fives ctx wrld state))
-    (defun-mode (get-unambiguous-xargs-flg :MODE
+   ((defun-mode (get-unambiguous-xargs-flg :MODE
                                            fives
                                            (default-defun-mode wrld)
                                            ctx state))
+    (stobjs-in-lst (get-stobjs-in-lst fives defun-mode ctx wrld state))
     (non-executablep
      (get-unambiguous-xargs-flg :NON-EXECUTABLE fives nil ctx state))
     (verify-guards (get-unambiguous-xargs-flg :VERIFY-GUARDS
