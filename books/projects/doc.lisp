@@ -12,6 +12,7 @@
 (include-book "quadratic-reciprocity/euler")
 (include-book "sidekick/server")
 (include-book "x86isa/doc")
+(include-book "farray/farray")
 
 (defxdoc projects
   :parents (top)

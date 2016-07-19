@@ -4099,8 +4099,7 @@
 
 (in-theory (disable memp-aux))
 
-;; Mechanism to disable abstract stobj functions (via rulesets): these
-;; functions are globally disabled in x86-row-wow-thms.lisp.
+;; Mechanism to disable abstract stobj functions (via rulesets):
 
 (defun disable-abs-stobj-fns-fn (x86-model)
   (cond ((endp x86-model)

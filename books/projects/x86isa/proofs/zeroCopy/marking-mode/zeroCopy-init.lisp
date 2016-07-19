@@ -981,7 +981,7 @@
                    (create-canonical-address-list
                     8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
                    :r (cpl x86) x86)))
-   ;; PML4TE is has P = 1 (i.e., it is present).
+   ;; PML4TE has P = 1 (i.e., it is present).
    (equal
     (loghead
      1
@@ -996,6 +996,19 @@
           (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
          :r x86)))))
     1)
+   ;; PML4TE has PS = 0.
+   (equal
+    (part-select
+     (combine-bytes
+      (mv-nth
+       1
+       (rb
+        (create-canonical-address-list
+         8
+         (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
+        :r x86)))
+     :low 7 :width 1)
+    0)
    ;; The destination PML4TE physical addresses are disjoint from
    ;; their own translation-governing addresses.
    (disjoint-p$

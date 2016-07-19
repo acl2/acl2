@@ -1637,13 +1637,14 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+cltl2 `(ignore-errors ,x)
   #-cltl2 x)
 
-(defmacro safe-open (&rest args)
-  (let ((filename (gensym)))
-    `(our-ignore-errors
-      (let ((,filename ; avoid evaluating first argument twice
-             ,(car args)))
-        (ensure-directories-exist ,filename)
-        (open ,filename ,@(cdr args))))))
+(defmacro safe-open (filename &rest args &key direction &allow-other-keys)
+  (assert (member direction ; might later support :io and :probe
+                  '(:input :output)
+                  :test #'eq))
+  `(our-ignore-errors
+    (progn ,@(when (eq direction :output)
+               `((ensure-directories-exist ,filename)))
+           (open ,filename ,@args))))
 
 (defvar *check-namestring* t)
 

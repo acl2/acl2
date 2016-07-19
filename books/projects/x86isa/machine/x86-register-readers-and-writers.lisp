@@ -917,25 +917,33 @@ values.</p>"
   )
 
 (encapsulate
- ( ((create-undef *) => *) )
+  ( ((create-undef *) => *) )
 
- (local
-  (defun create-undef (x)
-    (nfix x)))
+  (local
+   (defun create-undef (x)
+     (nfix x)))
 
- (defthm natp-create-undef
-   (natp (create-undef x)))
+  (defthm natp-create-undef
+    (natp (create-undef x))))
 
- )
+(define unsafe-!undef (v x86)
 
-(define safe-!undef (v x86)
-  ;; We will make !undef untouchable (in x86-row-wow-thms.lisp, after
-  ;; proving all row/wow thms in terms of !undef; note that
-  ;; safe-!undef is enabled and not untouchable) and will use
-  ;; safe-!undef instead.  This function is smashed in raw Lisp --- if
-  ;; called during evaluation, it causes an error.  It can be safely
-  ;; used during proof attempts.
-  :inline nil
+  :long " <p>Note that @('unsafe-!undef') is enabled, not untouchable,
+  and non-executable.  It can be used in proof attempts but not during
+  execution.</p>
+
+ <p>@('unsafe-!undef') should be used judiciously because updating the
+  @('undef') field with a value it held previously might contaminate
+  our 'pool of undefined values', i.e., @(see undef-read) might then
+  produce a call of @('create-undef') that collides with a previous
+  call of @('create-undef'), which would make the result of an
+  equality test between them equal instead of indeterminate.</p>
+
+  <p>An example of an acceptable use of @('unsafe-!undef') is to
+  specify the @('undef') field in a final x86 state during a proof
+  attempt.</p>"
+
+  :non-executable t
   :enabled t
   :returns (x86 x86p :hyp :guard)
   :parents (undef-read)
@@ -949,8 +957,8 @@ values.</p>"
 
   (b* ((undef-seed (nfix (undef x86)))
        (new-unknown (create-undef undef-seed))
-       (x86 (safe-!undef (1+ undef-seed) x86)))
-      (mv new-unknown x86)))
+       (x86 (!undef (1+ undef-seed) x86)))
+    (mv new-unknown x86)))
 
 (define undef-read (x86)
   ;; TO-DO@Shilpi: I'll need to add more args to this function if I
@@ -968,11 +976,17 @@ values.</p>"
 
   <p>The accessor and updater functions of the @('undef') field are
   untouchable so that the only way to create a new seed for unknowns
-  is via this function.  These functions have been made untouchable
-  after various RoW/WoW lemmas have been proved about them \(see @(see
-  x86-RoW-WoW-thms)\).</p>"
+  is via this function.</p>"
 
   (undef-read-logic x86))
+
+;; We make the following two functions untouchable so that they cannot
+;; be used on their own outside function undef-read-logic.
+
+(push-untouchable
+ (!undef
+  !undef$inline)
+ t)
 
 ;; ======================================================================
 
@@ -1119,7 +1133,10 @@ values.</p>"
 
 (define undef-flg-logic (x86)
   :enabled t
+  :prepwork ((local (in-theory (e/d* () (undef-read)))))
   :parents (!flgi-undefined)
+  :returns (mv (unknown natp :rule-classes :type-prescription)
+               (x86     x86p :hyp (x86p x86)))
   (undef-read x86))
 
 (define undef-flg (x86)
@@ -1129,15 +1146,19 @@ values.</p>"
   ;; LOGAND that might create bignums, potentially.
   :inline nil
   :enabled t
+  :prepwork ((local (in-theory (e/d* () (undef-flg-logic)))))
+  :returns (mv (unknown-bit bitp :rule-classes :type-prescription)
+               (x86         x86p :hyp (x86p x86)))
   :parents (!flgi-undefined)
   (b* (((mv val x86)
         (undef-flg-logic x86)))
-      (mv (n01 val) x86)))
+    (mv (n01 val) x86)))
 
 (define !flgi-undefined
   ((flg :type (member #.*cf* #.*pf* #.*af* #.*zf* #.*sf* #.*of*))
    x86)
 
+  :prepwork ((local (in-theory (e/d* () (undef-flg)))))
   :inline t
   :parents (x86-register-readers-and-writers characterizing-undefined-behavior)
 
@@ -1261,6 +1282,8 @@ using the @(see undef-read) function.</p>"
         x86)))
 
   ///
+
+  (local (in-theory (e/d (undef-read) ())))
 
   (defthm xr-write-user-rflags
     (implies (and (not (equal fld :rflags))
