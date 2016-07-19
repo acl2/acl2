@@ -8711,6 +8711,16 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (let ((os-file (pathname-unix-to-os file state)))
     (state-global-let*
      ((print-circle (f-get-global 'print-circle-files state))
+
+; The use of with-output-object-channel-sharing below will fail in Lisps that
+; allow compilation, like Allegro CL and unlike CCL, when we are inside a
+; binding of writes-okp to nil, as within a call of
+; protect-system-state-globals (e.g., when inside make-event expansion or
+; perhaps evaluation of a clause-processor hint).  It's sad to see an event
+; fail for that reason, such as (make-event (er-progn (comp t) (value
+; '(value-triple nil)))).  So here we bind writes-okp to t.
+
+      (writes-okp t)
       (serialize-character (f-get-global 'serialize-character-system state)))
      (with-print-controls
       :defaults
@@ -8897,6 +8907,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (let ((os-file (pathname-unix-to-os file state)))
     (state-global-let*
      ((print-circle (f-get-global 'print-circle-files state))
+      (writes-okp t) ; see comment on this binding in compile-uncompiled-defuns
       (serialize-character (f-get-global 'serialize-character-system state)))
      (with-print-controls
       :defaults
