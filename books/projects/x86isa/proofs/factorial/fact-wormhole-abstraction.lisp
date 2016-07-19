@@ -240,7 +240,7 @@
 
 (defun-nx whatever-it-is (x86)
   (let* ((x86-3 (x86-run 3 x86))
-         (x86 (safe-!undef (undef x86-3) x86))
+         (x86 (unsafe-!undef (undef x86-3) x86))
          (x86 (!rflags (rflags x86-3) x86)))
     x86))
 

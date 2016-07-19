@@ -903,7 +903,7 @@
   ;; Similar to rb-wb-disjoint-in-system-level-mode
   (implies (and (disjoint-p
                  p-addrs
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
                 (disjoint-p p-addrs
                             (all-translation-governing-addresses
                              (strip-cars addr-lst) (double-rewrite x86)))

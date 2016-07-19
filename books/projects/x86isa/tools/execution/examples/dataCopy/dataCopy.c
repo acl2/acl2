@@ -20,9 +20,9 @@ void printIntArray (int* x, int n) {
 int main () {
 
   int i;
-  int src[1024], dst[1024], numElems;
-  numElems = 1024;
-  
+  int src[1048576], dst[1048576], numElems; // 2^20, segfault after that.
+  numElems = 1048576;
+
   // Source initialization:
   for (i = 0; i < numElems; i++)
     src[i] = i;
@@ -32,7 +32,7 @@ int main () {
   printf("\nValue at end address of the source: %llu\n", (uint64_t)*(src+numElems-1));
 
   printf("\nSome elements of source before data copy:\n");
-  printIntArray (src, 5);
+  printIntArray (src, 20);
 
   printf("\nNumber of elements to copy: %d\n", numElems);
   copyData(src, dst, numElems);
@@ -42,8 +42,8 @@ int main () {
   printf("\nValue at end address of the destination: %llu\n", (uint64_t)*(dst+numElems-1));
 
   printf("\nSome elements of source after data copy:\n");
-  printIntArray (src, 5);
+  printIntArray (src, 20);
   printf("\nSome elements of destination after data copy:\n");
-  printIntArray (dst, 5);
+  printIntArray (dst, 20);
 
 }

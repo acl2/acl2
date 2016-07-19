@@ -502,6 +502,7 @@
        (if (eq (car triple) 'command-landmark)
            (cddr triple)
          (latest-command-landmark (cdr wrld))))))
+ (comp t) ; seems to be needed for Allegro CL (but isn't for LispWorks; hmm...)
  (assert-event
   (pseudo-command-landmark-listp (list (latest-command-landmark (w state))))))
 
