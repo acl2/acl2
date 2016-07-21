@@ -84,7 +84,7 @@ theories, etc. to your books.  Basic examples:</p>
       (defthm bad-theorem nil))    ;;   (unless we can prove NIL!)
 
     (must-succeed                  ;; causes an error
-      (set-gag-mode 42))           ;;   (because 42 isn't a gag mode)
+      (set-cbd 17))                ;;   (because 17 isn't a string)
 })
 
 <p>See also @(see must-fail).</p>
@@ -98,9 +98,8 @@ theories, etc. to your books.  Basic examples:</p>
                    )
 })
 
-<p>The @('form') should typically be a form that returns an @(see
-error-triple), which is true for most top-level ACL2 events and other high
-level commands.</p>
+<p>The @('form') should evaluate to an @(see error-triple), which is true for
+most top-level ACL2 events and other high level commands.</p>
 
 <p>The @('form') is submitted in a @(see make-event), which has a number of
 consequences.  Most importantly, when @('form') is an event like a @(see
