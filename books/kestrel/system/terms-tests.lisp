@@ -161,59 +161,121 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (check-user-term 3 (w state))
-                     ''3))
+(assert-event (equal (mv-list 2 (check-user-term 3 (w state)))
+                     '('3 (nil))))
 
-(assert-event (equal (check-user-term 'x (w state))
-                     'x))
+(assert-event (equal (mv-list 2 (check-user-term 'x (w state)))
+                     '(x (nil))))
 
-(assert-event (equal (check-user-term '(len x) (w state))
-                     '(len x)))
+(assert-event (equal (mv-list 2 (check-user-term '(len x) (w state)))
+                     '((len x) (nil))))
+
+(assert-event (equal (mv-list 2 (check-user-term '(mv x y z) (w state)))
+                     '((cons x (cons y (cons z 'nil))) (nil nil nil))))
+
+(assert-event (equal (mv-list 2 (check-user-term 'state (w state)))
+                     '(state (state))))
+
+(assert-event (equal (mv-list 2 (check-user-term '(mv state 1) (w state)))
+                     '((cons state (cons '1 'nil)) (state nil))))
+
+(must-succeed*
+ (defstobj s)
+ (assert-event (equal (mv-list 2 (check-user-term '(mv s 0 state) (w state)))
+                      '((cons s (cons '0 (cons state 'nil))) (s nil state)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (check-user-term '(+ x y) (w state))
-                              '(binary-+ x y))))
+ (value (equal (mv-list 2 (check-user-term '(+ x y) (w state)))
+               '((binary-+ x y) (nil)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (check-user-term '(+ (len x) 55) (w state))
-               '(binary-+ (len x) '55))))
+ (value (equal (mv-list 2 (check-user-term '(+ (len x) 55) (w state)))
+               '((binary-+ (len x) '55) (nil)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (check-user-term '(let ((x 4)) (+ x (len y))) (w state))
-               '((lambda (x y) (binary-+ x (len y)))
-                 '4
-                 y))))
+ (value
+  (equal (mv-list 2 (check-user-term '(let ((x 4)) (+ x (len y))) (w state)))
+         '(((lambda (x y) (binary-+ x (len y))) '4 y) (nil)))))
 
-(assert-event (msgp (check-user-term '(f x) (w state))))
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-term '(f x) (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (check-user-lambda-expr '(lambda (x) 3) (w state))
-                     '(lambda (x) '3)))
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       "(lambda (x) x)" (w state))))))
 
-(assert-event (equal (check-user-lambda-expr '(lambda (x) x) (w state))
-                     '(lambda (x) x)))
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda (x) x . more) (w state))))))
 
-(assert-event (equal (check-user-lambda-expr '(lambda (y) (len x)) (w state))
-                     '(lambda (y) (len x))))
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda (x) x y) (w state))))))
+
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda (x)) (w state))))))
+
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambdaa (x) x) (w state))))))
+
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda "x" x) (w state))))))
+
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda (x x) x) (w state))))))
+
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda (x "y") x) (w state))))))
+
+(assert-event
+ (equal (mv-list 2 (check-user-lambda-expr '(lambda (x) 3) (w state)))
+        '((lambda (x) '3) (nil))))
+
+(assert-event
+ (equal (mv-list 2 (check-user-lambda-expr '(lambda (x) x) (w state)))
+        '((lambda (x) x) (nil))))
+
+(assert-event
+ (equal (mv-list 2 (check-user-lambda-expr '(lambda (y) (len x)) (w state)))
+        '((lambda (y) (len x)) (nil))))
+
+(assert-event
+ (equal (mv-list 2 (check-user-lambda-expr
+                    '(lambda (x y) (mv x y z)) (w state)))
+        '((lambda (x y) (cons x (cons y (cons z 'nil)))) (nil nil nil))))
+
+(assert-event
+ (equal (mv-list 2 (check-user-lambda-expr '(lambda (state) state) (w state)))
+        '((lambda (state) state) (state))))
+
+(assert-event
+ (equal (mv-list 2 (check-user-lambda-expr
+                    '(lambda (state) (mv state 1)) (w state)))
+        '((lambda (state) (cons state (cons '1 'nil))) (state nil))))
+
+(must-succeed*
+ (defstobj s)
+ (assert-event (equal (mv-list 2 (check-user-lambda-expr
+                                  '(lambda (state s) (mv s 0 state)) (w state)))
+                      '((lambda (state s) (cons s (cons '0 (cons state 'nil))))
+                        (s nil state)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (check-user-lambda-expr '(lambda (x y) (+ x y)) (w state))
-               '(lambda (x y) (binary-+ x y)))))
+ (value (equal (mv-list 2 (check-user-lambda-expr
+                           '(lambda (x y) (+ x y)) (w state)))
+               '((lambda (x y) (binary-+ x y)) (nil)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (check-user-lambda-expr '(lambda (z) (+ (len x) 55)) (w state))
-               '(lambda (z) (binary-+ (len x) '55)))))
+ (value (equal (mv-list 2 (check-user-lambda-expr
+                           '(lambda (z) (+ (len x) 55)) (w state)))
+               '((lambda (z) (binary-+ (len x) '55)) (nil)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (check-user-lambda-expr '(lambda (u) (let ((x 4)) (+ x (len y))))
-                                       (w state))
-               '(lambda (u)
-                  ((lambda (x y) (binary-+ x (len y)))
-                   '4
-                   y)))))
+ (value (equal (mv-list 2 (check-user-lambda-expr
+                           '(lambda (u) (let ((x 4)) (+ x (len y)))) (w state)))
+               '((lambda (u) ((lambda (x y) (binary-+ x (len y))) '4 y))
+                 (nil)))))
 
-(assert-event (msgp (check-user-lambda-expr '(lambda (x) (f x)) (w state))))
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+                                       '(lambda (x) (f x)) (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
