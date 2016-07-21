@@ -52,21 +52,11 @@
   :true-listp t
   :elementp-of-nil nil)
 
-(defsection applicability-condition-fail
-  :short
-  "Stop with an error message,
-  due to a failure related to applicability conditions."
-  :long "@(def applicability-condition-fail)"
-  (defmacro applicability-condition-fail (context message &rest arguments)
-    (declare (xargs :guard (and (true-listp arguments)
-                                (<= (len arguments) 10))))
-    `(er hard? ,context ,message ,@arguments)))
-
 (define prove-applicability-condition ((app-cond applicability-condition-p)
                                        (verbose booleanp)
-                                       (ctx "Context for errors.")
                                        state)
-  :returns (mv (yes/no booleanp)
+  :returns (mv (t/msg (or (eq t/msg t)
+                          (msgp t/msg)))
                state)
   :prepwork ((program))
   :short
@@ -75,13 +65,13 @@
   "<p>
   If successful, return @('t').
   If unsuccessful or if an error occurs during the proof attempt,
-  stop with an error message.
+  return a structured error message (printable with @('~@')).
   </p>
   <p>
   If the @('verbose') argument is @('t'),
   also print a progress message to indicate that
   the proof of the applicability condition is being attempted,
-  and then that it has been proved.
+  and then to indicate the outcome of the attempt.
   </p>
   <p>
   Parentheses are printed around the progress message
@@ -92,30 +82,32 @@
        (hints (applicability-condition->hints app-cond))
        ((run-when verbose)
         (cw "(Proving applicability condition ~x0:~%~x1~|" name formula))
-       ((mv erp yes/no state) (prove$ formula :hints hints))
-       ((when erp)
-        (applicability-condition-fail
-         ctx
-         "Prover error ~x0 when attempting to prove ~
-          applicability condition ~x1:~%~x2~|."
-         erp name formula)
-        (mv nil state))
-       ((unless yes/no)
-        (applicability-condition-fail
-         ctx
-         "The applicability condition ~x0 fails:~%~x1~|"
-         name formula)
-        (mv nil state))
-       ((run-when verbose)
-        (cw "Done.)~%~%")))
-    (mv t state)))
+       ((mv erp yes/no state) (prove$ formula :hints hints)))
+    (cond (erp (b* (((run-when verbose)
+                     (cw "Prover error.)~%~%")))
+                 (mv `("Prover error ~x0 ~
+                        when attempting to prove ~
+                        the applicability condition ~x1:~%~x2~|"
+                       (#\0 . ,erp)
+                       (#\1 . ,name)
+                       (#\2 . ,formula))
+                     state)))
+          (yes/no (b* (((run-when verbose)
+                        (cw "Done.)~%~%")))
+                    (mv t state)))
+          (t (b* (((run-when verbose)
+                   (cw "Failed.)~%~%")))
+               (mv `("The applicability condition ~x0 fails:~%~x1~|"
+                     (#\0 . ,name)
+                     (#\1 . ,formula))
+                   state))))))
 
 (define prove-applicability-conditions
   ((app-conds applicability-condition-listp)
    (verbose booleanp)
-   (ctx "Context for errors.")
    state)
-  :returns (mv (yes/no booleanp)
+  :returns (mv (t/msg (or (eq t/msg t)
+                          (msgp t/msg)))
                state)
   :prepwork ((program))
   :short "Try to prove a list of applicability conditions, one after the other."
@@ -123,7 +115,7 @@
   "<p>
   If successful, return @('t').
   If unsuccessful or if an error occurs during a proof attempt,
-  stop with an error message.
+  return a structured error message (printable with @('~@')).
   </p>
   <p>
   If the @('verbose') argument is @('t'),
@@ -131,10 +123,12 @@
   </p>"
   (cond ((endp app-conds) (mv t state))
         (t (b* ((app-cond (car app-conds))
-                ((mv & state)
-                 (prove-applicability-condition app-cond verbose ctx state)))
-             (prove-applicability-conditions
-              (cdr app-conds) verbose ctx state)))))
+                ((mv t/msg state)
+                 (prove-applicability-condition app-cond verbose state)))
+             (if (eq t/msg t)
+                 (prove-applicability-conditions
+                  (cdr app-conds) verbose state)
+               (mv t/msg state))))))
 
 (define applicability-condition-event
   ((app-cond applicability-condition-p)

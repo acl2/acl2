@@ -39,128 +39,121 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail (make-event (applicability-condition-fail 'context "error")))
-
-(must-fail (make-event (applicability-condition-fail
-                        'context  "error ~x0 and ~x1" #\a "bb")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-fail-local
- (make-event (prove-applicability-condition (make-applicability-condition
-                                             :name 'false
-                                             :formula '(equal x y)
-                                             :hints nil)
-                                            nil ; verbose
-                                            'context
-                                            state)))
-
-(must-fail-local
- (make-event (prove-applicability-condition (make-applicability-condition
-                                             :name 'false
-                                             :formula '(equal x y)
-                                             :hints nil)
-                                            t ; verbose
-                                            'context
-                                            state)))
-
-(must-succeed*
- (defund f (x) x)
- (must-fail-local
-  (make-event (prove-applicability-condition (make-applicability-condition
-                                              :name 'need-hints
-                                              :formula '(equal (f x) x)
-                                              :hints nil)
-                                             nil ; verbose
-                                             'context
-                                             state))))
-
-(must-succeed*
- (defund f (x) x)
- (must-fail-local
-  (make-event (prove-applicability-condition (make-applicability-condition
-                                              :name 'need-hints
-                                              :formula '(equal (f x) x)
-                                              :hints nil)
-                                             t ; verbose
-                                             'context
-                                             state))))
+(must-eval-to-t
+ (mv-let (t/msg state)
+   (prove-applicability-condition (make-applicability-condition
+                                   :name 'false
+                                   :formula '(equal x y)
+                                   :hints nil)
+                                  nil ; verbose
+                                  state)
+   (value (msgp t/msg))))
 
 (must-eval-to-t
- (mv-let (result state)
+ (mv-let (t/msg state)
+   (prove-applicability-condition (make-applicability-condition
+                                   :name 'false
+                                   :formula '(equal x y)
+                                   :hints nil)
+                                  t ; verbose
+                                  state)
+   (value (msgp t/msg))))
+
+(must-succeed*
+ (defund f (x) x)
+ (must-eval-to-t
+  (mv-let (t/msg state)
+    (prove-applicability-condition (make-applicability-condition
+                                    :name 'need-hints
+                                    :formula '(equal (f x) x)
+                                    :hints nil)
+                                   nil ; verbose
+                                   state)
+    (value (msgp t/msg)))))
+
+(must-succeed*
+ (defund f (x) x)
+ (must-eval-to-t
+  (mv-let (t/msg state)
+    (prove-applicability-condition (make-applicability-condition
+                                    :name 'need-hints
+                                    :formula '(equal (f x) x)
+                                    :hints nil)
+                                   t ; verbose
+                                   state)
+    (value (msgp t/msg)))))
+
+(must-eval-to-t
+ (mv-let (t/msg state)
    (prove-applicability-condition (make-applicability-condition
                                    :name 'true
                                    :formula '(equal x x)
                                    :hints nil)
                                   nil ; verbose
-                                  'context
                                   state)
-   (value result)))
+   (value (eq t/msg t))))
 
 (must-eval-to-t
- (mv-let (result state)
+ (mv-let (t/msg state)
    (prove-applicability-condition (make-applicability-condition
                                    :name 'true
                                    :formula '(equal x x)
                                    :hints nil)
                                   t ; verbose
-                                  'context
                                   state)
-   (value result)))
+   (value (eq t/msg t))))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (result state)
+  (mv-let (t/msg state)
     (prove-applicability-condition (make-applicability-condition
                                     :name 'true
                                     :formula '(equal (f x) x)
                                     :hints '(("Goal" :in-theory (enable f))))
                                    nil ; verbose
-                                   'context
                                    state)
-    (value result))))
+    (value (eq t/msg t)))))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (result state)
+  (mv-let (t/msg state)
     (prove-applicability-condition (make-applicability-condition
                                     :name 'true
                                     :formula '(equal (f x) x)
                                     :hints '(("Goal" :in-theory (enable f))))
                                    t ; verbose
-                                   'context
                                    state)
-    (value result))))
+    (value (eq t/msg t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail-local
- (make-event (prove-applicability-conditions (list (make-applicability-condition
-                                                    :name 'true
-                                                    :formula '(equal x x)
-                                                    :hints nil)
-                                                   (make-applicability-condition
-                                                    :name 'false
-                                                    :formula '(equal x y)
-                                                    :hints nil))
-                                             nil ; verbose
-                                             'context
-                                             state)))
+(must-eval-to-t
+ (mv-let (t/msg state)
+   (prove-applicability-conditions (list (make-applicability-condition
+                                          :name 'true
+                                          :formula '(equal x x)
+                                          :hints nil)
+                                         (make-applicability-condition
+                                          :name 'false
+                                          :formula '(equal x y)
+                                          :hints nil))
+                                   nil ; verbose
+                                   state)
+   (value (msgp t/msg))))
 
 (must-eval-to-t
- (mv-let (result state)
+ (mv-let (t/msg state)
    (prove-applicability-conditions nil
                                    nil ; verbose
-                                   'context
                                    state)
-   (value result)))
+   (value (eq t/msg t))))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (result state)
+  (mv-let (t/msg state)
     (prove-applicability-conditions (list (make-applicability-condition
                                            :name 'true
                                            :formula '(equal x x)
@@ -171,9 +164,8 @@
                                            :hints '(("Goal"
                                                      :in-theory (enable f)))))
                                     nil ; verbose
-                                    'context
                                     state)
-    (value result))))
+    (value (eq t/msg t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
