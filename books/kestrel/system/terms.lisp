@@ -273,13 +273,13 @@
   Otherwise, a structured error message is returned (printable with @('~@')),
   along with @('nil') as output stobjs.
   These two possible outcomes can be distinguished by the fact that
-  the former is a <see topic='@(url pseudo-termp)'>pseudo-term</see>
-  while the latter is not.
+  the former yields a <see topic='@(url pseudo-termp)'>pseudo-term</see>
+  while the latter does not.
   </p>
   <p>
   The &lsquo;output stobjs&rsquo; of a term are the analogous
   of the @(tsee stobjs-out) property of a function,
-  namely a list of symbols that is like a &ldquo;mask&rsquo; for the result.
+  namely a list of symbols that is like a &ldquo;mask&rdquo; for the result.
   A @('nil') in the list means that
   the corresponding result is a non-stobj value,
   while the name of a stobj in the list means that
@@ -303,7 +303,7 @@
   </p>
   <p>
   If @('translate1-cmp') is successful,
-  it should return updated bindings that associate @(':stobjs-out')
+  it returns updated bindings that associate @(':stobjs-out')
   to the output stobjs of the term.
   </p>
   <p>
