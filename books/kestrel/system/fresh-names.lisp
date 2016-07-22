@@ -40,5 +40,5 @@
   </p>"
   (if (or (logical-namep name wrld)
           (member name names-to-avoid))
-      (fresh-name-in-world-with-$s (packn (list name '$)) names-to-avoid wrld)
+      (fresh-name-in-world-with-$s (add-suffix name "$") names-to-avoid wrld)
     name))
