@@ -37,9 +37,7 @@
   also return the name @('fn$not-normalized')
   of the theorem that installs the non-normalized definition.
   </p>"
-  (b* ((fn$not-normalized (intern-in-package-of-symbol
-                           (symbol-name (packn (list fn '$not-normalized)))
-                           fn))
+  (b* ((fn$not-normalized (install-not-normalized-name fn))
        (event-form (if local
                        `(local (install-not-normalized ,fn))
                      `(install-not-normalized ,fn))))
