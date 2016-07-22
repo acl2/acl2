@@ -804,7 +804,7 @@
     (:rewrite acl2::nfix-when-not-natp)
     (:rewrite acl2::nfix-when-natp)
     (:rewrite constant-upper-bound-of-logior-for-naturals)
-    (:linear combine-bytes-size-for-rm64-programmer-level-mode)
+    ;; (:linear combine-bytes-size-for-rm64-programmer-level-mode)
     (:rewrite acl2::natp-when-integerp)
     (:rewrite acl2::natp-when-gte-0)
     (:rewrite 4k-aligned-physical-address-helper)
@@ -1409,6 +1409,34 @@
      (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
            (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
+  (def-gl-export rm64-direct-map-helper
+    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+              (n08p e) (n08p f) (n08p g) (n08p h))
+    :concl (equal
+            (logior
+             a 
+             (ash (logior 
+                   b 
+                   (ash (logior
+                         c 
+                         (ash (logior
+                               d
+                               (ash (logior
+                                     e 
+                                     (ash (logior f (ash (logior g (ash h 8)) 8))
+                                          8))
+                                    8))
+                              8))
+                        8))
+                  8))
+            (logior a (ash b 8) 
+                    (ash (logior c (ash d 8)) 16)
+                    (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32)))
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
   (defthm rb-and-rm-low-64-for-direct-map
     (implies (and
               (equal
@@ -1433,7 +1461,8 @@
                                       rb-and-rm-low-64-for-direct-map-helper)
                                      ()))))
 
-  (in-theory (e/d () (rb-and-rm-low-64-for-direct-map-helper))))
+  (in-theory (e/d () (rb-and-rm-low-64-for-direct-map-helper
+                      rm64-direct-map-helper))))
 
 (defthm ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   (b* ((p-addrs (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))

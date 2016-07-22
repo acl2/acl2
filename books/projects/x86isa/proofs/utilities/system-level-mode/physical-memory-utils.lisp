@@ -435,8 +435,7 @@
                             (write-to-physical-memory
                              nth
                              force
-                             (force)
-                             rm32-rb-system-level-mode-proof-helper
+                             (force)                             
                              member-p-cons
                              acl2::commutativity-of-logior
                              mv-nth-2-rcl-spec-16
