@@ -68,10 +68,13 @@
 
 ;; Normalizing memory reads:
 
-(local
- (defthm dumb-integerp-of-mem-rewrite
-   (implies (x86p x86)
-            (integerp (xr :mem index x86)))))
+;; (local
+;;  (defthm dumb-integerp-of-mem-rewrite
+;;    (implies (x86p x86)
+;;             (integerp (xr :mem index x86)))))
+
+;; All these functions open up to rb.
+(in-theory (e/d (rm16 rm32 rm64) ()))
 
 (defthm mv-nth-2-rb-in-system-level-non-marking-mode
   (implies (and (not (page-structure-marking-mode x86))
@@ -88,81 +91,6 @@
                   (mv-nth 2 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
-(defthm rm08-to-rb
-  (implies (and (x86p x86)
-                (force (canonical-address-p lin-addr)))
-           (equal (rm08 lin-addr r-w-x x86)
-                  (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 1 lin-addr) r-w-x x86))
-                       (result (combine-bytes bytes)))
-                    (mv flg result x86))))
-  :hints (("Goal"
-           :use ((:instance rb-and-rm08-in-programmer-level-mode (addr lin-addr)))
-           :in-theory (e/d* (rm08 rb ifix)
-                            (rb-1 signed-byte-p
-                                  unsigned-byte-p
-                                  force (force))))))
-
-(defthm rm16-to-rb
-  ;; Why don't we need (x86p x86) here?
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (canonical-address-p (+ 1 lin-addr))))
-           (equal (rm16 lin-addr r-w-x x86)
-                  (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 2 lin-addr) r-w-x x86))
-                       (result (combine-bytes bytes)))
-                    (mv flg result x86))))
-  :hints (("Goal"
-           :in-theory (e/d* (rm16 rm08 ifix)
-                            (cons-equal
-                             signed-byte-p
-                             unsigned-byte-p
-                             bitops::logior-equal-0
-                             (:meta acl2::mv-nth-cons-meta)
-                             force (force))))))
-
-(defthm rm32-to-rb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (canonical-address-p (+ 3 lin-addr)))
-                (x86p x86))
-           (equal (rm32 lin-addr r-w-x x86)
-                  (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 4 lin-addr) r-w-x x86))
-                       (result (combine-bytes bytes)))
-                    (mv flg result x86))))
-  :hints (("Goal"
-           :in-theory (e/d* (rm32 rm08)
-                            (signed-byte-p
-                             unsigned-byte-p
-                             bitops::logior-equal-0
-                             force (force))))))
-
-(defthm rm64-to-rb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (canonical-address-p (+ 7 lin-addr)))
-                (force (x86p x86)))
-           (equal (rm64 lin-addr r-w-x x86)
-                  (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 8 lin-addr) r-w-x x86))
-                       (result (combine-bytes bytes)))
-                    (mv flg result x86))))
-  :hints (("Goal"
-           :expand ((create-canonical-address-list 8 lin-addr)
-                    (create-canonical-address-list 7 (+ 1 lin-addr))
-                    (create-canonical-address-list 6 (+ 2 lin-addr))
-                    (create-canonical-address-list 5 (+ 3 lin-addr)))
-           :in-theory (e/d* (rm64)
-                            ((:linear bitops::logior-<-0-linear-2)
-                             (:linear ash-monotone-2)
-                             (:rewrite bitops::ash-<-0)
-                             (:rewrite acl2::natp-when-integerp)
-                             cons-equal
-                             signed-byte-p
-                             unsigned-byte-p
-                             bitops::logior-equal-0
-                             (:meta acl2::mv-nth-cons-meta)
-                             force (force))))))
-
 (defthm mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
            (equal (mv-nth 0 (rb l-addrs r-w-x x86))
@@ -173,62 +101,8 @@
 
 ;; Normalizing memory writes:
 
-(defthm wm08-to-wb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (unsigned-byte-p 8 byte)))
-           (equal (wm08 lin-addr byte x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list 1 lin-addr)
-                       (list byte))
-                      x86)))
-  :hints (("Goal" :in-theory (e/d* (wm08 wvm08 wb)
-                                   (signed-byte-p
-                                    unsigned-byte-p
-                                    force (force))))))
-
-(defthm wm16-to-wb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (canonical-address-p (1+ lin-addr))))
-           (equal (wm16 lin-addr word x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list 2 lin-addr)
-                       (byte-ify 2 word))
-                      x86)))
-  :hints (("Goal" :in-theory (e/d* (wm16 wb byte-ify)
-                                   (signed-byte-p
-                                    unsigned-byte-p
-                                    force (force))))))
-
-(defthm wm32-to-wb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (canonical-address-p (+ 3 lin-addr))))
-           (equal (wm32 lin-addr dword x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list 4 lin-addr)
-                       (byte-ify 4 dword))
-                      x86)))
-  :hints (("Goal" :in-theory (e/d* (wm32 wb byte-ify)
-                                   (signed-byte-p
-                                    unsigned-byte-p
-                                    force (force))))))
-
-(defthm wm64-to-wb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (canonical-address-p (+ 7 lin-addr))))
-           (equal (wm64 lin-addr qword x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list 8 lin-addr)
-                       (byte-ify 8 qword))
-                      x86)))
-  :hints (("Goal"
-           :expand ((create-canonical-address-list 8 lin-addr)
-                    (create-canonical-address-list 7 (+ 1 lin-addr))
-                    (create-canonical-address-list 6 (+ 2 lin-addr))
-                    (create-canonical-address-list 5 (+ 3 lin-addr)))
-           :in-theory (e/d* (wm64 wb byte-ify)
-                            (signed-byte-p
-                             unsigned-byte-p
-                             force (force))))))
+;; All these functions open up to wb.
+(in-theory (e/d (wm16 wm32 wm64) ()))
 
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))

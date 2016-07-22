@@ -13,6 +13,144 @@
 
 ;; ======================================================================
 
+;; Various lemmas for the guard proofs of rm* functions
+
+(def-gl-export rm16-guard-proof-helper
+  :hyp (and (n08p a)
+            (n08p b))
+  :concl (< (logior a (ash b 8)) *2^16*)
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8)))
+  :rule-classes :linear)
+
+(def-gl-export rb-and-rvm32-helper
+  :hyp (and (n08p a)
+            (n08p b)
+            (n16p c))
+  :concl (equal (logior a (ash b 8) (ash c 16))
+                (logior a (ash (logior b (ash c 8)) 8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8)) (:nat c 16))
+  :rule-classes :linear)
+
+(def-gl-export rm32-guard-proof-helper
+  :hyp (and (n08p a)
+            (n08p b)
+            (n08p c)
+            (n08p d))
+  :concl (<
+          (logior a
+                  (ash (logior b
+                               (ash (logior c (ash d 8)) 8))
+                       8))
+          *2^32*)
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
+  :rule-classes :linear)
+
+(def-gl-export rb-and-rvm64-helper
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f) (n08p g) (n08p h))
+  :concl (equal
+          (logior a (ash b 8)
+                  (ash (logior c (ash d 8)) 16)
+                  (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
+          (logior a
+                  (ash (logior
+                        b
+                        (ash (logior
+                              c
+                              (ash (logior
+                                    d
+                                    (ash (logior
+                                          e
+                                          (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 8)) 8))
+                             8))
+                       8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
+(def-gl-export rm64-guard-proof-helper
+  :hyp (and (n32p a) (n32p b))
+  :concl (< (logior a (ash b 32)) *2^64*)
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 32) (:nat b 32)))
+  :rule-classes :linear)
+
+(in-theory (e/d ()                
+                (rm16-guard-proof-helper
+                 rb-and-rvm32-helper                
+                 rm32-guard-proof-helper
+                 rb-and-rvm64-helper
+                 rm64-guard-proof-helper)))
+
+(def-gl-export rm32-rb-system-level-mode-proof-helper
+  :hyp (and (n08p a)
+            (n08p b)
+            (n08p c)
+            (n08p d))
+  :concl (equal (logior a (ash b 8) (ash (logior c (ash d 8)) 16))
+                (logior a (ash (logior b (ash (logior c (ash d 8)) 8)) 8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8))))
+
+;; (def-gl-export rm64-in-system-level-mode-guard-proof-helper
+;;   :hyp (and (n08p a)
+;;             (n08p b)
+;;             (n08p c)
+;;             (n08p d)
+;;             (n08p e)
+;;             (n08p f)
+;;             (n08p g)
+;;             (n08p h))
+;;   :concl (< (logior a
+;;                     (ash b 8)
+;;                     (ash (logior c (ash d 8)) 16)
+;;                     (ash (logior
+;;                           e (ash f 8)
+;;                           (ash (logior g (ash h 8)) 16)) 32))
+;;             *2^64*)
+;;   :g-bindings (gl::auto-bindings
+;;                (:mix (:nat a 8)
+;;                      (:nat b 8)
+;;                      (:nat c 8)
+;;                      (:nat d 8)
+;;                      (:nat e 8)
+;;                      (:nat f 8)
+;;                      (:nat g 8)
+;;                      (:nat h 8))))
+
+(def-gl-export rm64-to-rb-in-system-level-mode-helper
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f) (n08p g) (n08p h))
+  :concl (equal
+          (logior a
+                  (ash (logior b (ash (logior c (ash d 8)) 8)) 8)
+                  (ash (logior e (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 32))
+          (logior
+           a
+           (ash (logior
+                 b
+                 (ash (logior
+                       c
+                       (ash (logior d
+                                    (ash
+                                     (logior e
+                                             (ash
+                                              (logior f
+                                                      (ash (logior g (ash h 8)) 8)) 8)) 8)) 8)) 8)) 8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
 (def-gl-export rm64-in-system-level-mode-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
@@ -22,12 +160,18 @@
             (n08p f)
             (n08p g)
             (n08p h))
-  :concl (< (logior a
-                    (ash b 8)
-                    (ash (logior c (ash d 8)) 16)
-                    (ash (logior
-                          e (ash f 8)
-                          (ash (logior g (ash h 8)) 16)) 32))
+  :concl (< (logior
+             a
+             (ash (logior
+                   b
+                   (ash (logior
+                         c
+                         (ash (logior d
+                                      (ash
+                                       (logior e
+                                               (ash
+                                                (logior f
+                                                        (ash (logior g (ash h 8)) 8)) 8)) 8)) 8)) 8)) 8))
             *2^64*)
   :g-bindings (gl::auto-bindings
                (:mix (:nat a 8)
