@@ -258,24 +258,38 @@
                    (second x))))
 
 (define check-user-term (x (wrld plist-worldp))
-  :returns (term/message (or (pseudo-termp term/message)
-                             (msgp term/message)))
+  :returns (mv (term/message (or (pseudo-termp term/message)
+                                 (msgp term/message)))
+               (stobjs-out symbol-listp))
   :prepwork ((program))
   :short
   "Check whether @('x') is an untranslated term that is valid for evaluation."
   :long
   "<p>
-  An untranslated term is a term as entered by the user.
+  An untranslated @(see term) is a term as entered by the user.
   This function checks @('x') by attempting to translate it.
-  If the translation succeeds, the translated term is returned.
-  Otherwise, a structured error message is returned (printable with @('~@')).
+  If the translation succeeds, the translated term is returned,
+  along with the output @(see stobj)s of the term (see below for details).
+  Otherwise, a structured error message is returned (printable with @('~@')),
+  along with @('nil') as output stobjs.
   These two possible outcomes can be distinguished by the fact that
-  the former is a <see topic='@(url pseudo-termp)'>pseudo-term</see>
-  while the latter is not.
+  the former yields a <see topic='@(url pseudo-termp)'>pseudo-term</see>
+  while the latter does not.
+  </p>
+  <p>
+  The &lsquo;output stobjs&rsquo; of a term are the analogous
+  of the @(tsee stobjs-out) property of a function,
+  namely a list of symbols that is like a &ldquo;mask&rdquo; for the result.
+  A @('nil') in the list means that
+  the corresponding result is a non-stobj value,
+  while the name of a stobj in the list means that
+  the corresponding result is the named stobj.
+  The list is a singleton, unless the term returns
+  <see topic='@(url mv)'>multiple values</see>.
   </p>
   <p>
   The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
-  passed to @('translate1-cmp')
+  passed to @('translate1-cmp') as bindings
   mean that the term is checked to be valid for evaluation.
   This is stricter than checking the term to be valid for use in a theorem,
   and weaker than checking the term to be valid
@@ -288,7 +302,12 @@
   should coincide.
   </p>
   <p>
-  This function does not terminate
+  If @('translate1-cmp') is successful,
+  it returns updated bindings that associate @(':stobjs-out')
+  to the output stobjs of the term.
+  </p>
+  <p>
+  The @(tsee check-user-term) function does not terminate
   if the translation expands an ill-behaved macro that does not terminate.
   </p>"
   (mv-let (ctx term/message bindings)
@@ -299,19 +318,23 @@
                     __function__
                     wrld
                     (default-state-vars nil))
-    (declare (ignore ctx bindings))
-    term/message))
+    (declare (ignore ctx))
+    (if (pseudo-termp term/message)
+        (mv term/message
+            (cdr (assoc :stobjs-out bindings)))
+      (mv term/message nil))))
 
 (define check-user-lambda-expr (x (wrld plist-worldp))
-  :returns (lambd/message (or (pseudo-lambda-expr-p lambd/message)
-                              (msgp lambd/message)))
+  :returns (mv (lambd/message (or (pseudo-lambda-expr-p lambd/message)
+                                  (msgp lambd/message)))
+               (stobjs-out symbol-listp))
   :prepwork ((program))
   :short
   "Check whether @('x') is
   an untranslated lambda expression that is valid for evaluation."
   :long
   "<p>
-  An untranslated lambda expression is
+  An untranslated @(see lambda) expression is
   a lambda expression as entered by the user.
   This function checks whether @('x')is
   a @('nil')-terminated list of exactly three elements,
@@ -320,25 +343,33 @@
   and whose third element is an untranslated term that is valid for evaluation.
   </p>
   <p>
-  If the check succeeds, the translated lambda expression is returned.
+  If the check succeeds, the translated lambda expression is returned,
+  along with the output @(see stobj)s of the body of the lambda expression
+  (see @(tsee check-user-term) for an explanation
+  of the output stobjs of a term).
   Otherwise, a possibly structured error message is returned
-  (printable with @('~@')).
+  (printable with @('~@')),
+  along with @('nil') as output stobjs.
   </p>
   <p>
-  This function does not terminate
+  The @(tsee check-user-lambda-expr) function does not terminate
   if @(tsee check-user-term) does not terminate.
   </p>"
   (b* (((unless (true-listp x))
-        `("~x0 is not a NIL-terminated list." (#\0 . ,x)))
+        (mv `("~x0 is not a NIL-terminated list." (#\0 . ,x))
+            nil))
        ((unless (eql (len x) 3))
-        `("~x0 does not consist of exactly three elements." (#\0 . ,x)))
+        (mv `("~x0 does not consist of exactly three elements." (#\0 . ,x))
+            nil))
        ((unless (eq (first x) 'lambda))
-        `("~x0 does not start with LAMBDA." (#\0 . ,x)))
+        (mv `("~x0 does not start with LAMBDA." (#\0 . ,x))
+            nil))
        ((unless (arglistp (second x)))
-        `("~x0 does not have valid formal parameters." (#\0 . ,x)))
-       (term/message (check-user-term (third x) wrld))
-       ((when (msgp term/message)) term/message))
-    `(lambda ,(second x) ,term/message)))
+        (mv `("~x0 does not have valid formal parameters." (#\0 . ,x))
+            nil))
+       ((mv term/message stobjs-out) (check-user-term (third x) wrld))
+       ((when (msgp term/message)) (mv term/message nil)))
+    (mv `(lambda ,(second x) ,term/message) stobjs-out)))
 
 (define trans-macro ((mac (macro-namep mac wrld)) (wrld plist-worldp))
   :returns (term pseudo-termp)
@@ -366,7 +397,10 @@
   calls with argument that are not the required formal arguments
   may yield different terms.
   </p>"
-  (check-user-term (cons mac (macro-required-args mac wrld)) wrld))
+  (mv-let (term stobjs-out)
+    (check-user-term (cons mac (macro-required-args mac wrld)) wrld)
+    (declare (ignore stobjs-out))
+    term))
 
 (define term-guard-obligation ((term pseudo-termp) state)
   :returns (obligation pseudo-termp)

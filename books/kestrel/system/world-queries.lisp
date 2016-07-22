@@ -150,6 +150,26 @@
       (raise "The body ~x0 of the non-executable function ~x1 ~
              does not have the expected wrapper." body fn))))
 
+(define number-of-results ((fn (function-namep fn wrld))
+                           (wrld plist-worldp))
+  :guard (not (member-eq fn *stobjs-out-invalid*))
+  ;; :returns (n posp)
+  :short "Number of values returned by a function."
+  :long
+  "<p>
+  This is 1, unless the function uses @(tsee mv)
+  (directly, or indirectly by calling another function that does)
+  to return multiple values.
+  </p>
+  <p>
+  The number of results of the function
+  is the length of its output @(see stobj) list.
+  But the function must not be in @('*stobjs-out-invalid*'),
+  because in that case the number of its results depends on how it is called.
+  </p>"
+  (len (stobjs-out fn wrld))
+  :guard-hints (("Goal" :in-theory (enable function-namep))))
+
 (define no-stobjs-p ((fn (function-namep fn wrld)) (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (yes/no booleanp)

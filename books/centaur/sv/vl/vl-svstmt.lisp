@@ -867,6 +867,17 @@ because... (BOZO)</p>
     (implies (sv::svarlist-addr-p (sv::svex-vars test))
              (sv::svarlist-addr-p (sv::svex-vars cond)))))
 
+(defconst *vl-no-op-system-functions*
+  '("$display" "$displayb" "$displayo" "$displayh"
+    "$monitor" "$monitorb" "$monitoro" "$monitorh"
+    "$strobe" "$strobeb" "$strobeo" "$strobeh"
+    "$write" "$writeb" "$writeo" "$writeh"
+    "$fdisplay" "$fdisplayb" "$fdisplayo" "$fdisplayh"
+    "$fmonitor" "$fmonitorb" "$fmonitoro" "$fmonitorh"
+    "$fstrobe" "$fstrobeb" "$fstrobeo" "$fstrobeh"
+    "$fwrite" "$fwriteb" "$fwriteo" "$fwriteh"
+    "$monitoroff" "$monitoron"))
+
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
   (define vl-stmt->svstmts ((x vl-stmt-p)
@@ -891,7 +902,7 @@ because... (BOZO)</p>
         (b* (((unless (or (eq x.type :vl-blocking)
                           (and nonblockingp
                                (eq x.type :vl-nonblocking))))
-              (fail (warn :type :vl-stmt-unsupported
+              (fail (fatal :type :vl-stmt-unsupported
                           :msg "Assignment type not supported: ~a0"
                           :args (list x))))
              (warnings (if x.ctrl
@@ -953,7 +964,7 @@ because... (BOZO)</p>
         :vl-blockstmt
         (b* (((unless (or (vl-blocktype-equiv x.blocktype :vl-beginend)
                           (<= (len x.stmts) 1)))
-              (fail (warn :type :vl-stmt-unsupported
+              (fail (fatal :type :vl-stmt-unsupported
                           :msg "We don't support fork/join block statements: ~a0"
                           :args (list x))))
              ;; (warnings (if (or (consp x.vardecls)
@@ -996,9 +1007,11 @@ because... (BOZO)</p>
 
         :vl-callstmt
         (b* (((when (and x.systemp
-                         (equal x.id (vl-idscope "$display"))))
+                         (vl-idscope-p x.id)
+                         (member-equal (vl-idscope->name x.id)
+                                       *vl-no-op-system-functions*)))
               (mv t warnings nil)))
-          (fail (warn :type :vl-stmt-unsupported
+          (fail (fatal :type :vl-stmt-unsupported
                       :msg "Statement type not supported: ~a0"
                       :args (list x))))
         :vl-returnstmt
@@ -1017,6 +1030,22 @@ because... (BOZO)</p>
         (mv t warnings (list (sv::make-svstmt-jump :type :break)))
         :vl-continuestmt
         (mv t warnings (list (sv::make-svstmt-jump :type :continue)))
+
+        :vl-timingstmt
+        (b* (((unless (eq (tag x.ctrl) :vl-delaycontrol))
+              (fail (fatal :type :vl-stmt-unsupported
+                           :msg "~s0 control statement unsupported: ~a0"
+                           :args (list (if (eq (tag x.ctrl) :vl-eventcontrol)
+                                           "Event"
+                                         "Repeat")
+                                       x))))
+             ((wmv ok warnings substmts)
+              (vl-stmt->svstmts x.body ss scopes nonblockingp fnname)))
+          (mv ok
+              (warn :type :vl-delay-ignored
+                    :msg "Ignoring delay control on statment ~a1"
+                    :args (list x))
+              substmts))
 
         :otherwise
         (fail (warn :type :vl-stmt-unsupported

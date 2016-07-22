@@ -183,6 +183,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-event (eql (number-of-results 'cons (w state))
+                   1))
+
+(assert-event (eql (number-of-results 'len (w state))
+                   1))
+
+(must-succeed*
+ (defun f (x) (mv x (list x)))
+ (assert-event (eql (number-of-results 'f (w state))
+                    2)))
+
+(must-succeed*
+ (defun f (x) (mv x (list x) (list x x)))
+ (assert-event (eql (number-of-results 'f (w state))
+                    3)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-event (no-stobjs-p 'cons (w state)))
 
 (assert-event (no-stobjs-p 'len (w state)))
@@ -502,6 +520,7 @@
        (if (eq (car triple) 'command-landmark)
            (cddr triple)
          (latest-command-landmark (cdr wrld))))))
+ (comp t) ; seems to be needed for Allegro CL (but isn't for LispWorks; hmm...)
  (assert-event
   (pseudo-command-landmark-listp (list (latest-command-landmark (w state))))))
 
