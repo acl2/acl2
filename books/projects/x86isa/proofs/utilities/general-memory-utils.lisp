@@ -17,6 +17,8 @@
 
 (local (xdoc::set-default-parents general-memory-utils))
 
+(in-theory (e/d* (rm08-to-rb wm08-to-wb) ()))
+
 ;; ===================================================================
 
 ;; Some lemmas for constructing a number from its constituent parts:
@@ -321,19 +323,12 @@
 
   ///
 
-  (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/alists/top" :dir :system))
 
   (defthm assoc-list-and-cons
     (implies (not (member-p ax cx))
              (equal (assoc-list cx (cons (cons ax ay) term))
                     (assoc-list cx term))))
-
-  (defthm assoc-list-and-create-addr-bytes-alist
-    (implies (and (true-listp y)
-                  (equal (len x) (len y))
-                  (no-duplicates-p x))
-             (equal (assoc-list x (create-addr-bytes-alist x y))
-                    y)))
 
   (defthm assoc-and-append-with-list-cons
     (implies (not (equal ax cx))
@@ -345,12 +340,28 @@
              (equal (assoc-list cx (append term (list (cons ax ay))))
                     (assoc-list cx term))))
 
+  (defthm assoc-list-and-create-addr-bytes-alist
+    (implies (and (true-listp x)
+                  (true-listp y)
+                  (equal (len x) (len y))
+                  (no-duplicates-p x))
+             (equal (assoc-list x (create-addr-bytes-alist x y))
+                    y))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (append-and-create-addr-bytes-alist
+                                      cons-and-create-addr-bytes-alist
+                                      append-and-addr-byte-alistp)))))
+
   (defthm assoc-list-of-rev-of-create-addr-bytes-alist
     (implies (and (true-listp y)
                   (equal (len x) (len y))
                   (no-duplicates-p x))
              (equal (assoc-list x (acl2::rev (create-addr-bytes-alist x y)))
-                    y))))
+                    y))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (append-and-create-addr-bytes-alist
+                                      cons-and-create-addr-bytes-alist
+                                      append-and-addr-byte-alistp))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -533,28 +544,6 @@
 
 (defthm create-canonical-address-list-of-0
   (equal (create-canonical-address-list 0 addr) nil))
-
-(defthm car-create-canonical-address-list
-  (implies (and (canonical-address-p addr)
-                (posp count))
-           (equal (car (create-canonical-address-list count addr))
-                  addr)))
-
-(defthm cdr-create-canonical-address-list
-  (implies (and (canonical-address-p addr)
-                (posp count))
-           (equal (cdr (create-canonical-address-list count addr))
-                  (create-canonical-address-list (1- count) (1+ addr)))))
-
-(defthm consp-of-create-canonical-address-list
-  (implies (and (canonical-address-p addr)
-                (natp count)
-                (< 0 count))
-           (consp (create-canonical-address-list count addr)))
-  :hints (("Goal" :in-theory (e/d (create-canonical-address-list
-                                   canonical-address-p
-                                   signed-byte-p)
-                                  ()))))
 
 (defthm member-p-canonical-address-p-canonical-address-listp
   (implies (member-p e (create-canonical-address-list n prog-addr))
@@ -807,20 +796,7 @@
    (implies (signed-byte-p 64 x)
             (equal (n64-to-i64 (loghead 64 x))
                    x))
-   :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ()))))
-
- )
-
-(defthmd create-canonical-address-list-split
-  (implies (and (canonical-address-p addr)
-                (canonical-address-p (+ k addr))
-                (natp j)
-                (natp k))
-           (equal (create-canonical-address-list (+ k j) addr)
-                  (append (create-canonical-address-list k addr)
-                          (create-canonical-address-list j (+ k addr)))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p)
-                                   ()))))
+   :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ())))))
 
 ;; ======================================================================
 
@@ -876,52 +852,50 @@
     :rule-classes (:rewrite :forward-chaining)))
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "std/lists/reverse" :dir :system))
+  (local (include-book "std/lists/reverse" :dir :system))
 
- (defthm member-p-and-strip-cars-of-remove-duplicate-keys
-   (implies (member-p a (strip-cars xs))
-            (member-p a (strip-cars (remove-duplicate-keys xs)))))
+  (defthm member-p-and-strip-cars-of-remove-duplicate-keys
+    (implies (member-p a (strip-cars xs))
+             (member-p a (strip-cars (remove-duplicate-keys xs)))))
 
- (defthm member-p-and-remove-duplicate-keys-and-car
-   (implies (consp xs)
-            (member-p (car (car (remove-duplicate-keys xs)))
-                      (strip-cars xs))))
+  (defthm member-p-and-remove-duplicate-keys-and-car
+    (implies (consp xs)
+             (member-p (car (car (remove-duplicate-keys xs)))
+                       (strip-cars xs))))
 
- (defthm consp-remove-duplicate-keys
-   (implies (consp (remove-duplicate-keys xs))
-            (consp xs))
-   :rule-classes :forward-chaining)
+  (defthm consp-remove-duplicate-keys
+    (implies (consp (remove-duplicate-keys xs))
+             (consp xs))
+    :rule-classes :forward-chaining)
 
- (defthm subset-p-strip-cars-and-remove-duplicate-keys
-   (subset-p (strip-cars (cdr (remove-duplicate-keys xs)))
-             (strip-cars xs))
-   :hints (("Goal" :in-theory (e/d (subset-p) ()))))
+  (defthm subset-p-strip-cars-and-remove-duplicate-keys
+    (subset-p (strip-cars (cdr (remove-duplicate-keys xs)))
+              (strip-cars xs))
+    :hints (("Goal" :in-theory (e/d (subset-p) ()))))
 
- (defthm member-p-strip-cars-of-remove-duplicate-keys
-   ;; implies, equal, or iff?
-   (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
-            (member-p a (strip-cars xs)))
-   :rule-classes (:forward-chaining :rewrite))
+  (defthm member-p-strip-cars-of-remove-duplicate-keys
+    ;; implies, equal, or iff?
+    (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
+             (member-p a (strip-cars xs)))
+    :rule-classes (:forward-chaining :rewrite))
 
- (defthm member-p-strip-cars-remove-duplicate-keys-and-rev
-   ;; implies, equal, or iff?
-   (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
-            (member-p a (strip-cars (acl2::rev xs))))
-   :rule-classes (:forward-chaining :rewrite))
+  (defthm member-p-strip-cars-remove-duplicate-keys-and-rev
+    ;; implies, equal, or iff?
+    (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
+             (member-p a (strip-cars (acl2::rev xs))))
+    :rule-classes (:forward-chaining :rewrite))
 
- (defthm canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
-   (implies (and (subset-p addresses (strip-cars (remove-duplicate-keys addr-lst)))
-                 (addr-byte-alistp addr-lst))
-            (canonical-address-listp addresses))
-   :hints (("Goal" :in-theory (e/d* (subset-p
-                                     canonical-address-listp
-                                     addr-byte-alistp)
-                                    ())))
-   :rule-classes :forward-chaining)
-
- )
+  (defthm canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
+    (implies (and (subset-p addresses (strip-cars (remove-duplicate-keys addr-lst)))
+                  (addr-byte-alistp addr-lst))
+             (canonical-address-listp addresses))
+    :hints (("Goal" :in-theory (e/d* (subset-p
+                                      canonical-address-listp
+                                      addr-byte-alistp)
+                                     ())))
+    :rule-classes :forward-chaining))
 
 ;; ======================================================================
 
@@ -933,7 +907,6 @@
                   (assoc-list xs term1)))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
-
 (defthm assoc-list-append-and-rev-lemma-helper-1
   (implies (and (canonical-address-listp x)
                 (byte-listp y)
@@ -941,7 +914,6 @@
                 (equal (len x) (len y)))
            (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist x y)) term))
                   y)))
-
 
 (defthm assoc-list-append-and-rev-lemma-helper-2
   (implies (and (canonical-address-listp a)
@@ -951,8 +923,6 @@
            (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist a b)) term))
                   (assoc-list x term)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
-
-
 
 ;; (defthm assoc-list-append-and-rev-lemma
 ;;   ;; Bad lemma --- can cause stack overflows and looping.
@@ -1021,8 +991,12 @@
                           (create-canonical-address-list (len bytes) lin-addr)
                           bytes)
                          x86)))
-   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory)
-                                   (acl2::mv-nth-cons-meta))))))
+   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory wb wm08 wvm08)
+                                   (acl2::mv-nth-cons-meta
+                                    wm08-to-wb
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp))))))
 
 (defthm write-bytes-to-memory-is-wb-in-programmer-level-mode
   (implies (and (canonical-address-p (+ (len bytes) lin-addr))

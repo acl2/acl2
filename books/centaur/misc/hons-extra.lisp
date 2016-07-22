@@ -227,7 +227,7 @@
 
 (defxdoc fast-alists-free-on-exit
   :parents (fast-alists)
-  :short "Concisely call ~ilc[fast-alist-free-on-exit] for several alists."
+  :short "Concisely call @(tsee fast-alist-free-on-exit) for several alists."
   :long "<p>For example:</p>
 
 @({

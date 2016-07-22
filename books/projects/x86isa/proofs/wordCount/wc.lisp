@@ -1,7 +1,7 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
-;;  There are a lot of similar-looking theorems here that I plan to
+;; There are a lot of similar-looking theorems here that I plan to
 ;; generate and prove automatically in the future.
 
 (in-package "X86ISA")
@@ -562,7 +562,16 @@
                              write-user-rflags)
 
                             (wb-remove-duplicate-writes
-                             force (force))))))
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             default-+-2
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 ;; ----------------------------------------------------------------------
 ;; Main: before the call to the GC procedure: Projection Theorems:
@@ -700,7 +709,10 @@
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
                   (byte-ify 4 0)))
-  :hints (("Goal" :in-theory (e/d* () ()))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-to-gc-variables-nc
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -709,7 +721,11 @@
                              (create-canonical-address-list 4 (+ -20 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0))))
+                  (byte-ify 4 0)))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-to-gc-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -718,7 +734,11 @@
                              (create-canonical-address-list 4 (+ -24 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0))))
+                  (byte-ify 4 0)))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-to-gc-variables-nl
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -727,7 +747,11 @@
                              (create-canonical-address-list 4 (+ -28 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0))))
+                  (byte-ify 4 0)))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 ;;======================================================================
 ;; --------------------------------------------------------------------
@@ -743,175 +767,175 @@
 ;; env-assumptions:
 
 (encapsulate
- ()
+  ()
 
- (local (in-theory (e/d* (take nthcdr) ())))
+  (local (in-theory (e/d* (take nthcdr) ())))
 
- (local
-  (encapsulate
-   ()
+  (local
+   (encapsulate
+     ()
 
-   (local (include-book "std/lists/take" :dir :system))
+     (local (include-book "std/lists/take" :dir :system))
 
-   (local
-    (defthm len-grab-bytes-when-string-non-empty-helper-1
-      (implies (and (byte-listp bytes-of-obj)
-                    (< obj-offset (len bytes-of-obj))
-                    (< 0 (len bytes-of-obj)))
-               (and (byte-listp (nthcdr obj-offset bytes-of-obj))
-                    (< 0 (len (nthcdr obj-offset bytes-of-obj)))))))
+     (local
+      (defthm len-grab-bytes-when-string-non-empty-helper-1
+        (implies (and (byte-listp bytes-of-obj)
+                      (< obj-offset (len bytes-of-obj))
+                      (< 0 (len bytes-of-obj)))
+                 (and (byte-listp (nthcdr obj-offset bytes-of-obj))
+                      (< 0 (len (nthcdr obj-offset bytes-of-obj)))))))
 
-   (local
-    (defthm len-grab-bytes-when-string-non-empty-helper-2
-      (implies (and (byte-listp bytes-of-obj)
-                    (< obj-offset (len bytes-of-obj))
-                    (< 0 (len bytes-of-obj)))
-               (byte-listp (take 1 (nthcdr obj-offset
-                                           bytes-of-obj))))
-      :hints (("Goal" :in-theory (e/d* () (take-byte-listp))
-               :use ((:instance take-byte-listp
-                                (xs (nthcdr obj-offset bytes-of-obj))
-                                (n 1)))))))
+     (local
+      (defthm len-grab-bytes-when-string-non-empty-helper-2
+        (implies (and (byte-listp bytes-of-obj)
+                      (< obj-offset (len bytes-of-obj))
+                      (< 0 (len bytes-of-obj)))
+                 (byte-listp (take 1 (nthcdr obj-offset
+                                             bytes-of-obj))))
+        :hints (("Goal" :in-theory (e/d* () (take-byte-listp))
+                 :use ((:instance take-byte-listp
+                                  (xs (nthcdr obj-offset bytes-of-obj))
+                                  (n 1)))))))
 
-   (defthmd len-grab-bytes-when-string-non-empty
-     (implies (and (byte-listp bytes-of-obj)
-                   (< obj-offset (len bytes-of-obj))
-                   (< 0 (len bytes-of-obj)))
-              (and (nthcdr obj-offset bytes-of-obj)
-                   (< 0 (len (nthcdr obj-offset bytes-of-obj)))
-                   (byte-listp (nthcdr obj-offset bytes-of-obj))
-                   (take 1 (nthcdr obj-offset bytes-of-obj))
-                   (true-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
-                   (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
+     (defthmd len-grab-bytes-when-string-non-empty
+       (implies (and (byte-listp bytes-of-obj)
+                     (< obj-offset (len bytes-of-obj))
+                     (< 0 (len bytes-of-obj)))
+                (and (nthcdr obj-offset bytes-of-obj)
+                     (< 0 (len (nthcdr obj-offset bytes-of-obj)))
+                     (byte-listp (nthcdr obj-offset bytes-of-obj))
+                     (take 1 (nthcdr obj-offset bytes-of-obj))
+                     (true-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
+                     (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
 
-                   (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))
-                   (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)
-                   (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))
-                   (true-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))
-                   (unsigned-byte-p 8 (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))))
-     :hints (("Goal" :in-theory (e/d* (grab-bytes
-                                       unsigned-byte-p)
-                                      (len-grab-bytes-when-string-non-empty-helper-2))
-              :use ((:instance len-grab-bytes-when-string-non-empty-helper-2)))))
+                     (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))
+                     (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)
+                     (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))
+                     (true-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))
+                     (unsigned-byte-p 8 (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))))
+       :hints (("Goal" :in-theory (e/d* (grab-bytes
+                                         unsigned-byte-p)
+                                        (len-grab-bytes-when-string-non-empty-helper-2))
+                :use ((:instance len-grab-bytes-when-string-non-empty-helper-2)))))
 
-   )) ;; End of local encapsulate
+     )) ;; End of local encapsulate
 
- (defthm byte-listp-of-bytes-of-obj-from-environment-assumptions
-   (b* ((file-des-field (read-x86-file-des 0 x86))
-        (obj-name (cdr (assoc :name file-des-field)))
-        (obj-contents-field (read-x86-file-contents obj-name x86))
-        (obj-contents (cdr (assoc :contents obj-contents-field)))
-        (bytes-of-obj (string-to-bytes obj-contents)))
-       (implies
-        ;; (and (file-descriptor-fieldp file-des-field)
-        ;;      (file-contents-fieldp obj-contents-field))
-        (and (env-assumptions x86)
-             (x86p x86))
-        (byte-listp bytes-of-obj)))
-   :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                    (take nthcdr)))))
+  (defthm byte-listp-of-bytes-of-obj-from-environment-assumptions
+    (b* ((file-des-field (read-x86-file-des 0 x86))
+         (obj-name (cdr (assoc :name file-des-field)))
+         (obj-contents-field (read-x86-file-contents obj-name x86))
+         (obj-contents (cdr (assoc :contents obj-contents-field)))
+         (bytes-of-obj (string-to-bytes obj-contents)))
+      (implies
+       ;; (and (file-descriptor-fieldp file-des-field)
+       ;;      (file-contents-fieldp obj-contents-field))
+       (and (env-assumptions x86)
+            (x86p x86))
+       (byte-listp bytes-of-obj)))
+    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                     (take nthcdr)))))
 
 
- (defthm byte-listp-and-consp-of-take-from-environment-assumptions
-   (b* ((file-des-field (read-x86-file-des 0 x86))
-        (obj-offset (cdr (assoc :offset file-des-field)))
-        (obj-name (cdr (assoc :name file-des-field)))
-        (obj-contents-field (read-x86-file-contents obj-name x86))
-        (obj-contents (cdr (assoc :contents obj-contents-field)))
-        (bytes-of-obj (string-to-bytes obj-contents)))
-       (implies
-        ;; (and (file-descriptor-fieldp file-des-field)
-        ;;      (file-contents-fieldp obj-contents-field))
-        (and (env-assumptions x86)
-             (x86p x86))
-        (and (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
-             (consp (take 1 (nthcdr obj-offset bytes-of-obj))))))
-   :hints (("Goal" :in-theory (e/d* (env-assumptions)
-                                    (take nthcdr)))))
+  (defthm byte-listp-and-consp-of-take-from-environment-assumptions
+    (b* ((file-des-field (read-x86-file-des 0 x86))
+         (obj-offset (cdr (assoc :offset file-des-field)))
+         (obj-name (cdr (assoc :name file-des-field)))
+         (obj-contents-field (read-x86-file-contents obj-name x86))
+         (obj-contents (cdr (assoc :contents obj-contents-field)))
+         (bytes-of-obj (string-to-bytes obj-contents)))
+      (implies
+       ;; (and (file-descriptor-fieldp file-des-field)
+       ;;      (file-contents-fieldp obj-contents-field))
+       (and (env-assumptions x86)
+            (x86p x86))
+       (and (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
+            (consp (take 1 (nthcdr obj-offset bytes-of-obj))))))
+    :hints (("Goal" :in-theory (e/d* (env-assumptions)
+                                     (take nthcdr)))))
 
- (defthm byte-listp-of-grab-bytes-from-environment-assumptions
-   (b* ((file-des-field (read-x86-file-des 0 x86))
-        (obj-offset (cdr (assoc :offset file-des-field)))
-        (obj-name (cdr (assoc :name file-des-field)))
-        (obj-contents-field (read-x86-file-contents obj-name x86))
-        (obj-contents (cdr (assoc :contents obj-contents-field)))
-        (bytes-of-obj (string-to-bytes obj-contents)))
-       (implies
-        ;; (and (file-descriptor-fieldp file-des-field)
-        ;;      (file-contents-fieldp obj-contents-field))
-        (and (env-assumptions x86)
-             (x86p x86))
-        (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
-   :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                    (take nthcdr)))))
+  (defthm byte-listp-of-grab-bytes-from-environment-assumptions
+    (b* ((file-des-field (read-x86-file-des 0 x86))
+         (obj-offset (cdr (assoc :offset file-des-field)))
+         (obj-name (cdr (assoc :name file-des-field)))
+         (obj-contents-field (read-x86-file-contents obj-name x86))
+         (obj-contents (cdr (assoc :contents obj-contents-field)))
+         (bytes-of-obj (string-to-bytes obj-contents)))
+      (implies
+       ;; (and (file-descriptor-fieldp file-des-field)
+       ;;      (file-contents-fieldp obj-contents-field))
+       (and (env-assumptions x86)
+            (x86p x86))
+       (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
+    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                     (take nthcdr)))))
 
- (defthm non-nil-grab-bytes-of-take-1-from-environment-assumptions
-   (b* ((file-des-field (read-x86-file-des 0 x86))
-        (obj-offset (cdr (assoc :offset file-des-field)))
-        (obj-name (cdr (assoc :name file-des-field)))
-        (obj-contents-field (read-x86-file-contents obj-name x86))
-        (obj-contents (cdr (assoc :contents obj-contents-field)))
-        (bytes-of-obj (string-to-bytes obj-contents)))
-       (implies
-        ;; (and (file-descriptor-fieldp file-des-field)
-        ;;      (file-contents-fieldp obj-contents-field)
-        ;;      (< obj-offset (len bytes-of-obj)))
-        (and (env-assumptions x86)
-             (x86p x86))
-        (and (nthcdr obj-offset bytes-of-obj)
-             (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
-   :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                    (take nthcdr acl2::take-of-1 acl2::take-of-zero)))))
+  (defthm non-nil-grab-bytes-of-take-1-from-environment-assumptions
+    (b* ((file-des-field (read-x86-file-des 0 x86))
+         (obj-offset (cdr (assoc :offset file-des-field)))
+         (obj-name (cdr (assoc :name file-des-field)))
+         (obj-contents-field (read-x86-file-contents obj-name x86))
+         (obj-contents (cdr (assoc :contents obj-contents-field)))
+         (bytes-of-obj (string-to-bytes obj-contents)))
+      (implies
+       ;; (and (file-descriptor-fieldp file-des-field)
+       ;;      (file-contents-fieldp obj-contents-field)
+       ;;      (< obj-offset (len bytes-of-obj)))
+       (and (env-assumptions x86)
+            (x86p x86))
+       (and (nthcdr obj-offset bytes-of-obj)
+            (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
+    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                     (take nthcdr acl2::take-of-1 acl2::take-of-zero)))))
 
- (defthm len-of-grab-bytes-take-1-from-environment-assumptions
-   (b* ((file-des-field (read-x86-file-des 0 x86))
-        (obj-offset (cdr (assoc :offset file-des-field)))
-        (obj-name (cdr (assoc :name file-des-field)))
-        (obj-contents-field (read-x86-file-contents obj-name x86))
-        (obj-contents (cdr (assoc :contents obj-contents-field)))
-        (bytes-of-obj (string-to-bytes obj-contents)))
-       (implies
-        ;; (and (file-descriptor-fieldp file-des-field)
-        ;;      (file-contents-fieldp obj-contents-field)
-        ;;      (< obj-offset (len bytes-of-obj)))
-        (and (env-assumptions x86)
-             (x86p x86))
-        (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)))
-   :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                    (take nthcdr acl2::take-of-zero acl2::take-of-1)))))
+  (defthm len-of-grab-bytes-take-1-from-environment-assumptions
+    (b* ((file-des-field (read-x86-file-des 0 x86))
+         (obj-offset (cdr (assoc :offset file-des-field)))
+         (obj-name (cdr (assoc :name file-des-field)))
+         (obj-contents-field (read-x86-file-contents obj-name x86))
+         (obj-contents (cdr (assoc :contents obj-contents-field)))
+         (bytes-of-obj (string-to-bytes obj-contents)))
+      (implies
+       ;; (and (file-descriptor-fieldp file-des-field)
+       ;;      (file-contents-fieldp obj-contents-field)
+       ;;      (< obj-offset (len bytes-of-obj)))
+       (and (env-assumptions x86)
+            (x86p x86))
+       (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)))
+    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                     (take nthcdr acl2::take-of-zero acl2::take-of-1)))))
 
- (defthm n08p-of-car-grab-bytes-from-environment-assumptions
-   (b* ((file-des-field (read-x86-file-des 0 x86))
-        (obj-offset (cdr (assoc :offset file-des-field)))
-        (obj-name (cdr (assoc :name file-des-field)))
-        (obj-contents-field (read-x86-file-contents obj-name x86))
-        (obj-contents (cdr (assoc :contents obj-contents-field)))
-        (bytes-of-obj (string-to-bytes obj-contents)))
-       (implies
-        ;; (and (file-descriptor-fieldp file-des-field)
-        ;;      (file-contents-fieldp obj-contents-field)
-        ;;      (< obj-offset (len bytes-of-obj)))
-        (and (env-assumptions x86)
-             (x86p x86))
-        (unsigned-byte-p 8 (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))))
-   :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                    (take nthcdr acl2::take-of-1 acl2::take-of-zero)))))
+  (defthm n08p-of-car-grab-bytes-from-environment-assumptions
+    (b* ((file-des-field (read-x86-file-des 0 x86))
+         (obj-offset (cdr (assoc :offset file-des-field)))
+         (obj-name (cdr (assoc :name file-des-field)))
+         (obj-contents-field (read-x86-file-contents obj-name x86))
+         (obj-contents (cdr (assoc :contents obj-contents-field)))
+         (bytes-of-obj (string-to-bytes obj-contents)))
+      (implies
+       ;; (and (file-descriptor-fieldp file-des-field)
+       ;;      (file-contents-fieldp obj-contents-field)
+       ;;      (< obj-offset (len bytes-of-obj)))
+       (and (env-assumptions x86)
+            (x86p x86))
+       (unsigned-byte-p 8 (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))))
+    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                     (take nthcdr acl2::take-of-1 acl2::take-of-zero)))))
 
- (defthm len-of-nthcdr-of-object-from-environment-assumptions
-   (implies (and (file-descriptor-fieldp (read-x86-file-des 0 x86))
-                 (equal obj-offset (cdr (assoc :offset (read-x86-file-des 0 x86))))
-                 (equal obj-name (cdr (assoc :name (read-x86-file-des 0 x86))))
-                 (equal obj-contents-field (read-x86-file-contents obj-name x86))
-                 (file-contents-fieldp obj-contents-field)
-                 (equal obj-contents (cdr (assoc :contents obj-contents-field)))
-                 (equal bytes-of-obj (string-to-bytes obj-contents))
-                 (< obj-offset (len bytes-of-obj)))
-            (< 0 (len (nthcdr obj-offset bytes-of-obj))))
-   :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                    (take nthcdr acl2::take-of-zero acl2::take-of-1))))
-   :rule-classes (:linear :rewrite))
+  (defthm len-of-nthcdr-of-object-from-environment-assumptions
+    (implies (and (file-descriptor-fieldp (read-x86-file-des 0 x86))
+                  (equal obj-offset (cdr (assoc :offset (read-x86-file-des 0 x86))))
+                  (equal obj-name (cdr (assoc :name (read-x86-file-des 0 x86))))
+                  (equal obj-contents-field (read-x86-file-contents obj-name x86))
+                  (file-contents-fieldp obj-contents-field)
+                  (equal obj-contents (cdr (assoc :contents obj-contents-field)))
+                  (equal bytes-of-obj (string-to-bytes obj-contents))
+                  (< obj-offset (len bytes-of-obj)))
+             (< 0 (len (nthcdr obj-offset bytes-of-obj))))
+    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                     (take nthcdr acl2::take-of-zero acl2::take-of-1))))
+    :rule-classes (:linear :rewrite))
 
- ) ;; End of encapsulate
+  ) ;; End of encapsulate
 
 (local (in-theory (e/d* () (acl2::take-of-1 acl2::take-of-zero take nthcdr))))
 
@@ -1110,8 +1134,7 @@
                                     (!FLGI *SF* 0
                                            (!FLGI *OF* 0 X86))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (
-                             syscall-read
+           :in-theory (e/d* (syscall-read
                              syscall-read-logic
                              x86-syscall-read
                              syscall-write
@@ -1161,8 +1184,16 @@
                              ;; Flags
                              write-user-rflags)
 
-                            (wb-remove-duplicate-writes
-                             force (force))))))
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 ;; ----------------------------------------------------------------------
 ;; Call GC + GC Procedure: Projection Theorems:
@@ -1407,7 +1438,17 @@
                              effects-call-gc-ms-projection
                              effects-call-gc-fault-projection
                              loop-preconditions)
-                            (x86-run-plus)))))
+                            (x86-run-plus
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 (defthm effects-eof-encountered
 
@@ -2094,7 +2135,17 @@
                              loop-preconditions
 
                              gc-clk-no-eof)
-                            (x86-run-plus)))))
+                            (x86-run-plus
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 ;;----------------------------------------------------------------------
 ;; EOF Not Encountered: Projection Theorems:
@@ -2192,7 +2243,12 @@
                            :contents (read-x86-file-contents
                                       (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
                                       x86))))))))))))
-  :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp))
+           :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-eof-not-encountered-prelim-gc-byte-projection-size
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2210,7 +2266,10 @@
            :in-theory (e/d* (remove-loghead-from-byte-ify
                              combine-bytes-and-byte-ify-inequality-lemma)
                             (effects-eof-not-encountered-prelim
-                             n08p-of-car-grab-bytes-from-environment-assumptions)))))
+                             n08p-of-car-grab-bytes-from-environment-assumptions
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp)))))
 
 (defthmd effects-eof-not-encountered-prelim-word-state-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2338,7 +2397,6 @@
   :hints (("Goal" :in-theory (e/d* (x86-run-plus-1)
                                    (x86-run-plus)))))
 
-
 (defthmd programmer-level-mode-permissions-dont-matter
   ;; [Shilpi]: This thing won't be true once I incorporate the
   ;; memory-permissions map into the programmer-level mode, unless I make sure
@@ -2349,16 +2407,26 @@
            (equal (mv-nth 1 (rb addresses :x x86))
                   (mv-nth 1 (rb addresses :r x86))))
   :hints (("Goal" :in-theory (e/d* (rb rm08)
-                                   (rb-1-accumulator-thm)))
-          ("Subgoal *1/6"
-           :use ((:instance rb-1-accumulator-thm
-                            (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
-                            (addresses (cdr addresses))
-                            (r-w-x :x))
-                 (:instance rb-1-accumulator-thm
-                            (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
-                            (addresses (cdr addresses))
-                            (r-w-x :r))))))
+                                   (rb-1-accumulator-thm
+                                    rm08-to-rb
+                                    (:meta acl2::mv-nth-cons-meta))))
+          (if
+              ;; Apply to all subgoals under a top-level induction.
+              (and (consp (car id))
+                   (< 1 (len (car id))))
+              '(:in-theory (e/d* (rb rm08)
+                                 (rm08-to-rb
+                                  rb-1-accumulator-thm
+                                  (:meta acl2::mv-nth-cons-meta)))
+                           :use ((:instance rb-1-accumulator-thm
+                                            (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
+                                            (addresses (cdr addresses))
+                                            (r-w-x :x))
+                                 (:instance rb-1-accumulator-thm
+                                            (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
+                                            (addresses (cdr addresses))
+                                            (r-w-x :r))))
+            nil)))
 
 (defthmd effects-newline-encountered-limited
 
@@ -2477,7 +2545,17 @@
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
-                            (x86-run-plus)))))
+                            (x86-run-plus
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 (defthmd effects-newline-encountered-1
 
@@ -2755,7 +2833,11 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (combine-bytes (word-state x86 (x86-run (gc-clk-newline) x86)))
-                  *out*)))
+                  *out*))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-newline-encountered-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2774,7 +2856,9 @@
                   (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
-                              (force (force))))))
+                              (append-and-create-addr-bytes-alist
+                               cons-and-create-addr-bytes-alist
+                               append-and-addr-byte-alistp)))))
 
 (defthmd effects-newline-encountered-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2790,7 +2874,11 @@
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (nw x86 (x86-run (gc-clk-newline) x86))
-                  (nw x86 x86))))
+                  (nw x86 x86)))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-newline-encountered-variables-nw-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2809,7 +2897,9 @@
                   (loghead 32 (+ 1 (combine-bytes (nl x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
-                              (force (force))))))
+                              (append-and-create-addr-bytes-alist
+                               cons-and-create-addr-bytes-alist
+                               append-and-addr-byte-alistp)))))
 
 (defthmd effects-newline-encountered-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2928,7 +3018,17 @@
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
-                            (x86-run-plus)))))
+                            (x86-run-plus
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 (defthmd effects-space-encountered-1
 
@@ -3192,7 +3292,11 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
            (equal (combine-bytes (word-state x86 (x86-run (gc-clk-space) x86)))
-                  *out*)))
+                  *out*))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-space-encountered-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3210,7 +3314,9 @@
                   (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
-                              (force (force))))))
+                              (append-and-create-addr-bytes-alist
+                               cons-and-create-addr-bytes-alist
+                               append-and-addr-byte-alistp)))))
 
 (defthmd effects-space-encountered-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3358,7 +3464,17 @@
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
-                            (x86-run-plus)))))
+                            (x86-run-plus
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 (defthmd effects-tab-encountered-1
 
@@ -3623,7 +3739,11 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (equal (combine-bytes (word-state x86 (x86-run (gc-clk-tab) x86)))
-                  *out*)))
+                  *out*))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp)))))
 
 (defthmd effects-tab-encountered-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3641,7 +3761,9 @@
                   (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
-                              (force (force))))))
+                              (append-and-create-addr-bytes-alist
+                               cons-and-create-addr-bytes-alist
+                               append-and-addr-byte-alistp)))))
 
 (defthmd effects-tab-encountered-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3687,45 +3809,45 @@
 ;;**********************************************************************
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "arithmetic-5/top" :dir :system))
+  (local (include-book "arithmetic-5/top" :dir :system))
 
- (defthm effects-newline-not-encountered-helper-1
-   (implies (and (not (equal char *newline*)) ;; 10
-                 (unsigned-byte-p 8 char))
-            (equal (equal (loghead 32 (+ -10 (logext 32 char))) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead) ()))))
+  (defthm effects-newline-not-encountered-helper-1
+    (implies (and (not (equal char *newline*)) ;; 10
+                  (unsigned-byte-p 8 char))
+             (equal (equal (loghead 32 (+ -10 (logext 32 char))) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead) ()))))
 
- (defthm effects-newline-not-encountered-helper-2
-   (implies (and (not (equal char *newline*)) ;; 10
-                 (unsigned-byte-p 32 char))
-            (equal (equal (loghead 32 (+ -10 char)) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead) ()))))
+  (defthm effects-newline-not-encountered-helper-2
+    (implies (and (not (equal char *newline*)) ;; 10
+                  (unsigned-byte-p 32 char))
+             (equal (equal (loghead 32 (+ -10 char)) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead) ()))))
 
- (defthm effects-space-not-encountered-helper-1
-   (implies (and (not (equal char *space*)) ;; 32
-                 (unsigned-byte-p 8 char))
-            (equal (equal (loghead 32 (+ -32 (logext 32 char))) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead) ()))))
+  (defthm effects-space-not-encountered-helper-1
+    (implies (and (not (equal char *space*)) ;; 32
+                  (unsigned-byte-p 8 char))
+             (equal (equal (loghead 32 (+ -32 (logext 32 char))) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead) ()))))
 
- (defthm effects-space-not-encountered-helper-2
-   (implies (and (not (equal char *space*)) ;; 32
-                 (unsigned-byte-p 32 char))
-            (equal (equal (loghead 32 (+ -32 char)) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead) ()))))
+  (defthm effects-space-not-encountered-helper-2
+    (implies (and (not (equal char *space*)) ;; 32
+                  (unsigned-byte-p 32 char))
+             (equal (equal (loghead 32 (+ -32 char)) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead) ()))))
 
- (defthm effects-tab-not-encountered-helper-1
-   (implies (and (not (equal char *tab*)) ;; 9
-                 (unsigned-byte-p 8 char))
-            (equal (equal (loghead 32 (+ -9 (logext 32 char))) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead) ()))))
+  (defthm effects-tab-not-encountered-helper-1
+    (implies (and (not (equal char *tab*)) ;; 9
+                  (unsigned-byte-p 8 char))
+             (equal (equal (loghead 32 (+ -9 (logext 32 char))) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead) ()))))
 
- (defthm effects-tab-not-encountered-helper-2
-   (implies (and (not (equal char *tab*)) ;; 9
-                 (unsigned-byte-p 32 char))
-            (equal (equal (loghead 32 (+ -9 char)) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead) ())))))
+  (defthm effects-tab-not-encountered-helper-2
+    (implies (and (not (equal char *tab*)) ;; 9
+                  (unsigned-byte-p 32 char))
+             (equal (equal (loghead 32 (+ -9 char)) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead) ())))))
 
 (defthmd effects-other-char-encountered-state-out-limited
   ;;  callq <gc>
@@ -3937,7 +4059,17 @@
                              x86-run-plus-1)
                             (x86-run-plus
                              byte-ify
-                             (byte-ify))))))
+                             (byte-ify)
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 (local
  (defthm combine-bytes-with-byte-ify-4-inequality-lemma
@@ -4254,7 +4386,18 @@
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    (:rewrite disjoint-p-append-2)
+                                    (:definition subset-p)
+                                    (:rewrite subset-p-of-append-1)
+                                    (:rewrite rb-wb-disjoint)
+                                    (:rewrite disjoint-p-subset-p)
+                                    (:rewrite member-p-strip-cars-of-remove-duplicate-keys)
+                                    (:definition strip-cars)
+                                    (:rewrite subset-p-of-append-2)
+                                    (:rewrite member-p-append)
+                                    (:rewrite consp-create-addr-bytes-alist)
+                                    (:rewrite member-p-and-strip-cars-of-remove-duplicate-keys))))))
 
 (defthmd effects-other-char-encountered-state-out-rsp-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4267,8 +4410,19 @@
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-out) x86))
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info
+                                    (:rewrite disjoint-p-append-2)
+                                    (:definition subset-p)
+                                    (:rewrite subset-p-of-append-1)
+                                    (:rewrite rb-wb-disjoint)
+                                    (:rewrite disjoint-p-subset-p)
+                                    (:rewrite member-p-strip-cars-of-remove-duplicate-keys)
+                                    (:definition strip-cars)
+                                    (:rewrite subset-p-of-append-2)
+                                    (:rewrite member-p-append)
+                                    (:rewrite consp-create-addr-bytes-alist)
+                                    (:rewrite member-p-and-strip-cars-of-remove-duplicate-keys))))))
 
 (defthmd x86p-effects-other-char-encountered-state-out
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4296,7 +4450,160 @@
                 (equal (ia32_efer-slice :ia32_efer-lma
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86))) 1)))
   :hints (("Goal"
-           :in-theory (e/d* () (word-state combine-bytes))
+           :in-theory (e/d* ()
+                            (word-state
+                             combine-bytes
+                             (:rewrite disjoint-p-append-2)
+                             (:definition subset-p)
+                             (:rewrite subset-p-of-append-1)
+                             (:rewrite rb-wb-disjoint)
+                             (:rewrite disjoint-p-subset-p)
+                             (:rewrite member-p-strip-cars-of-remove-duplicate-keys)
+                             (:definition strip-cars)
+                             (:rewrite subset-p-of-append-2)
+                             (:rewrite member-p-append)
+                             (:rewrite consp-create-addr-bytes-alist)
+                             (:rewrite member-p-and-strip-cars-of-remove-duplicate-keys)
+                             (:definition acl2::take-redefinition)
+                             (:rewrite acl2::car-nthcdr)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:type-prescription nthcdr-true-listp)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::take-of-len-free)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite consp-create-addr-bytes-alist-in-terms-of-len)
+                             (:rewrite wb-not-consp-addr-lst)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite acl2::take-when-atom)
+                             (:definition binary-append)
+                             (:rewrite acl2::zp-when-gt-0)
+                             (:definition assoc-equal)
+                             (:rewrite default-+-2)
+                             (:rewrite default-+-1)
+                             (:type-prescription string-to-bytes)
+                             (:rewrite acl2::zp-open)
+                             (:rewrite acl2::zp-when-integerp)
+                             (:rewrite default-<-2)
+                             (:rewrite cdr-create-canonical-address-list)
+                             (:definition create-canonical-address-list)
+                             (:rewrite canonical-address-p-limits-thm-3)
+                             (:rewrite acl2::equal-of-booleans-rewrite)
+                             (:rewrite acl2::cdr-of-append-when-consp)
+                             (:rewrite consp-of-create-canonical-address-list)
+                             (:rewrite default-<-1)
+                             (:type-prescription consp-append)
+                             (:linear member-p-pos-value)
+                             (:linear member-p-pos-1-value)
+                             (:linear acl2::index-of-<-len)
+                             (:rewrite loghead-of-non-integerp)
+                             (:rewrite acl2::loghead-identity)
+                             (:rewrite car-create-canonical-address-list)
+                             (:rewrite acl2::append-atom-under-list-equiv)
+                             (:rewrite loghead-zero-smaller)
+                             (:type-prescription nfix)
+                             (:rewrite acl2::car-of-append)
+                             (:type-prescription acl2::|x < y  =>  0 < -x+y|)
+                             (:rewrite bitops::basic-unsigned-byte-p-of-+)
+                             (:rewrite unsigned-byte-p-of-combine-bytes)
+                             (:rewrite acl2::equal-constant-+)
+                             (:rewrite rb-returns-byte-listp)
+                             (:rewrite wb-returns-x86p)
+                             (:rewrite consp-byte-ify)
+                             (:type-prescription natp-combine-bytes)
+                             (:rewrite rb-wb-subset)
+                             (:rewrite strip-cars-of-create-addr-bytes-alist)
+                             (:rewrite zf-spec-thm)
+                             (:linear acl2::loghead-upper-bound)
+                             (:type-prescription bitops::logtail-natp)
+                             (:rewrite acl2::nth-implies-consp-nthcdr)
+                             (:type-prescription acl2::bool->bit$inline)
+                             (:type-prescription acl2::logext-type)
+                             (:type-prescription rb-returns-byte-listp)
+                             (:type-prescription rb-returns-true-listp)
+                             (:rewrite acl2::logtail-identity)
+                             (:definition put-assoc-equal)
+                             (:type-prescription addr-byte-alistp-create-addr-bytes-alist)
+                             (:rewrite acl2::logext-identity)
+                             (:rewrite acl2::consp-of-append)
+                             (:type-prescription n08p-element-of-byte-listp)
+                             (:rewrite len-of-rb-in-system-level-mode)
+                             (:type-prescription consp-create-addr-bytes-alist)
+                             (:meta acl2::mv-nth-cons-meta)
+                             (:definition las-to-pas)
+                             (:rewrite last-is-eof-but-first-is-not-eof-=>-at-least-two-elements)
+                             (:type-prescription byte-listp-append)
+                             (:rewrite len-of-nthcdr-byte-listp)
+                             (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
+                             (:definition page-structure-marking-mode$inline)
+                             (:type-prescription true-listp)
+                             (:rewrite bitops::logbitp-nonzero-of-bit)
+                             (:rewrite bitops::logbitp-when-bitmaskp)
+                             (:rewrite bitops::logsquash-cancel)
+                             (:rewrite bitops::normalize-logbitp-when-mods-equal)
+                             (:rewrite bitops::logbitp-of-negative-const)
+                             (:rewrite bitops::logbitp-of-mask)
+                             (:rewrite bitops::logbitp-of-const)
+                             (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
+                             (:meta bitops::open-logbitp-of-const-lite-meta)
+                             (:rewrite bitops::logsquash-of-loghead-zero)
+                             (:type-prescription nth-of-nat-listp-within-bounds)
+                             (:rewrite create-canonical-address-list-1)
+                             (:type-prescription last)
+                             (:type-prescription byte-listp-of-string-to-bytes)
+                             (:rewrite xr-page-structure-marking-mode-mv-nth-1-wb)
+                             (:rewrite canonical-address-p-limits-thm-1)
+                             (:rewrite canonical-address-p-limits-thm-0)
+                             (:type-prescription file-contents-fieldp-implies-stringp-contents)
+                             (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-mode)
+                             (:rewrite len-of-rb-in-programmer-level-mode)
+                             (:type-prescription acl2::|x < y  =>  0 < y-x|)
+                             (:type-prescription unsigned-byte-p)
+                             (:type-prescription file-contents-fieldp)
+                             (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                             (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode)
+                             (:rewrite xr-ia32e-la-to-pa)
+                             (:type-prescription consp-create-addr-bytes-alist-in-terms-of-len)
+                             (:definition last)
+                             (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+                             (:rewrite xr-programmer-level-mode-mv-nth-1-wb)
+                             (:rewrite xr-seg-visible-mv-nth-1-wb)
+                             (:rewrite bitops::logand-with-negated-bitmask)
+                             (:rewrite bitops::logand-with-bitmask)
+                             (:rewrite rationalp-implies-acl2-numberp)
+                             (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+                             (:rewrite logand-redundant)
+                             (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                             (:type-prescription zp)
+                             (:type-prescription msri-is-n64p)
+                             (:type-prescription true-listp-create-addr-bytes-alist)
+                             (:type-prescription booleanp)
+                             (:linear len-of-nthcdr-of-object-from-environment-assumptions)
+                             (:linear unsigned-byte-p-of-combine-bytes)
+                             (:linear size-of-combine-bytes)
+                             (:type-prescription rflags-is-n32p)
+                             (:type-prescription seg-visiblei-is-n16p)
+                             (:type-prescription booleanp-page-structure-marking-mode-type)
+                             (:type-prescription acl2::bitmaskp$inline)
+                             (:rewrite acl2::difference-unsigned-byte-p)
+                             (:type-prescription subset-p)
+                             (:type-prescription signed-byte-p)
+                             (:type-prescription bitp)
+                             (:type-prescription bitops::ash-natp-type)
+                             (:rewrite acl2::ifix-when-not-integerp)
+                             (:rewrite acl2::ifix-when-integerp)
+                             (:linear msri-is-n64p)
+                             (:rewrite unsigned-byte-p-of-logtail)
+                             (:rewrite subset-p-cdr-y)
+                             (:type-prescription acl2::expt-type-prescription-positive)
+                             (:type-prescription acl2::expt-type-prescription-nonzero)
+                             (:type-prescription acl2::expt-type-prescription-integerp)
+                             (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
+                             (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
+                             (:rewrite bitops::signed-byte-p-monotonicity)
+                             (:linear rflags-is-n32p)
+                             (:rewrite unsigned-byte-p-of-loghead)
+                             (:rewrite acl2::unsigned-byte-p-loghead)))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-rip-projection
@@ -4308,7 +4615,150 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-out) x86)) (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   ((:definition acl2::take-redefinition)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:rewrite default-+-2)
+                                    (:definition assoc-equal)
+                                    (:definition binary-append)
+                                    (:rewrite default-+-1)
+                                    (:rewrite acl2::zp-open)
+                                    (:rewrite acl2::zp-when-integerp)
+                                    (:type-prescription consp-append)
+                                    (:rewrite default-<-2)
+                                    (:rewrite cdr-create-canonical-address-list)
+                                    (:definition create-canonical-address-list)
+                                    (:rewrite acl2::cdr-of-append-when-consp)
+                                    (:rewrite canonical-address-p-limits-thm-3)
+                                    (:rewrite acl2::equal-of-booleans-rewrite)
+                                    (:rewrite consp-of-create-canonical-address-list)
+                                    (:rewrite default-<-1)
+                                    (:rewrite wb-not-consp-addr-lst)
+                                    (:rewrite consp-create-addr-bytes-alist)
+                                    (:linear member-p-pos-value)
+                                    (:linear member-p-pos-1-value)
+                                    (:linear acl2::index-of-<-len)
+                                    (:definition combine-bytes)
+                                    (:rewrite acl2::append-atom-under-list-equiv)
+                                    (:rewrite acl2::ash-0)
+                                    (:rewrite car-create-canonical-address-list)
+                                    (:rewrite acl2::zip-open)
+                                    (:rewrite loghead-of-non-integerp)
+                                    (:rewrite acl2::loghead-identity)
+                                    (:rewrite rb-wb-subset)
+                                    (:rewrite loghead-zero-smaller)
+                                    (:type-prescription acl2::|x < y  =>  0 < -x+y|)
+                                    (:type-prescription nfix)
+                                    (:rewrite acl2::car-of-append)
+                                    (:type-prescription consp-create-addr-bytes-alist)
+                                    (:rewrite subset-p-of-append-2)
+                                    (:rewrite acl2::equal-constant-+)
+                                    (:rewrite acl2::nth-implies-consp-nthcdr)
+                                    (:linear unsigned-byte-p-of-combine-bytes)
+                                    (:linear size-of-combine-bytes)
+                                    (:rewrite consp-byte-ify)
+                                    (:type-prescription rb-returns-true-listp)
+                                    (:type-prescription n08p-element-of-byte-listp)
+                                    (:rewrite bitops::basic-unsigned-byte-p-of-+)
+                                    (:type-prescription unsigned-byte-p)
+                                    (:rewrite unsigned-byte-p-of-combine-bytes)
+                                    (:rewrite subset-p-two-create-canonical-address-lists-general)
+                                    (:type-prescription true-listp)
+                                    (:type-prescription rb-returns-byte-listp)
+                                    (:rewrite acl2::consp-of-append)
+                                    (:rewrite last-is-eof-but-first-is-not-eof-=>-at-least-two-elements)
+                                    (:rewrite len-of-rb-in-system-level-mode)
+                                    (:rewrite len-of-nthcdr-byte-listp)
+                                    (:type-prescription nth-of-nat-listp-within-bounds)
+                                    (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                                    (:type-prescription byte-listp-of-string-to-bytes)
+                                    (:type-prescription last)
+                                    (:definition las-to-pas)
+                                    (:type-prescription bitops::logtail-natp)
+                                    (:type-prescription file-contents-fieldp-implies-stringp-contents)
+                                    (:type-prescription acl2::bool->bit$inline)
+                                    (:rewrite right-shift-to-logtail)
+                                    (:meta acl2::mv-nth-cons-meta)
+                                    (:type-prescription acl2::|x < y  =>  0 < y-x|)
+                                    (:rewrite subset-p-cons-2)
+                                    (:rewrite disjoint-p-subset-p)
+                                    (:type-prescription subset-p)
+                                    (:type-prescription acl2::logext-type)
+                                    (:rewrite len-of-rb-in-programmer-level-mode)
+                                    (:rewrite zf-spec-thm)
+                                    (:rewrite acl2::logext-identity)
+                                    (:rewrite acl2::logtail-identity)
+                                    (:linear acl2::loghead-upper-bound)
+                                    (:rewrite create-canonical-address-list-1)
+                                    (:definition put-assoc-equal)
+                                    (:type-prescription file-contents-fieldp)
+                                    (:type-prescription zip)
+                                    (:type-prescription ifix)
+                                    (:rewrite subset-p-cdr-y)
+                                    (:definition bitops::part-select-width-low$inline)
+                                    (:type-prescription consp-create-addr-bytes-alist-in-terms-of-len)
+                                    (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
+                                    (:definition last)
+                                    (:rewrite bitops::logsquash-cancel)
+                                    (:rewrite bitops::logbitp-nonzero-of-bit)
+                                    (:rewrite bitops::logsquash-of-loghead-zero)
+                                    (:rewrite bitops::logbitp-when-bitmaskp)
+                                    (:rewrite rationalp-implies-acl2-numberp)
+                                    (:rewrite bitops::normalize-logbitp-when-mods-equal)
+                                    (:rewrite bitops::logbitp-of-negative-const)
+                                    (:rewrite bitops::logbitp-of-mask)
+                                    (:rewrite bitops::logbitp-of-const)
+                                    (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
+                                    (:meta bitops::open-logbitp-of-const-lite-meta)
+                                    (:rewrite negative-logand-to-positive-logand-with-integerp-x)
+                                    (:rewrite bitops::logtail-of-0-i)
+                                    (:rewrite canonical-address-p-limits-thm-1)
+                                    (:rewrite canonical-address-p-limits-thm-0)
+                                    (:rewrite bitops::logand-with-negated-bitmask)
+                                    (:rewrite bitops::logand-with-bitmask)
+                                    (:rewrite xr-!flgi-undefined)
+                                    (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+                                    (:rewrite logand-redundant)
+                                    (:type-prescription true-listp-create-addr-bytes-alist)
+                                    (:type-prescription booleanp)
+                                    (:linear len-of-nthcdr-of-object-from-environment-assumptions)
+                                    (:type-prescription zp)
+                                    (:type-prescription seg-visiblei-is-n16p)
+                                    (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode)
+                                    (:type-prescription natp)
+                                    (:rewrite acl2::difference-unsigned-byte-p)
+                                    (:type-prescription rflags-is-n32p)
+                                    (:type-prescription bitops::ash-natp-type)
+                                    (:rewrite acl2::ifix-when-not-integerp)
+                                    (:rewrite acl2::ifix-when-integerp)
+                                    (:definition page-structure-marking-mode$inline)
+                                    (:rewrite not-member-p-canonical-address-listp-when-disjoint-p)
+                                    (:type-prescription signed-byte-p)
+                                    (:type-prescription booleanp-page-structure-marking-mode-type)
+                                    (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-mode)
+                                    (:type-prescription acl2::bitmaskp$inline)
+                                    (:rewrite unsigned-byte-p-of-logtail)
+                                    (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
+                                    (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
+                                    (:rewrite bitops::signed-byte-p-monotonicity)
+                                    (:linear rflags-is-n32p)
+                                    (:type-prescription bitp)
+                                    (:rewrite unsigned-byte-p-of-loghead)
+                                    (:type-prescription acl2::expt-type-prescription-positive)
+                                    (:type-prescription acl2::expt-type-prescription-nonzero)
+                                    (:type-prescription acl2::expt-type-prescription-integerp)
+                                    (:rewrite acl2::unsigned-byte-p-loghead)
+                                    word-state
+                                    subset-p)))))
 
 (defthmd effects-other-char-encountered-state-out-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4320,9 +4770,9 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :ms 0 (x86-run (gc-clk-otherwise-out) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   subset-p
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info
+                                    subset-p)))))
 
 (defthmd effects-other-char-encountered-state-out-fault-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4333,7 +4783,25 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-out) x86)) nil))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
 
 (defthmd effects-other-char-encountered-state-out-program-projection
   (implies (and (loop-preconditions addr x86)
@@ -4350,7 +4818,23 @@
                                effects-eof-not-encountered-prelim-program-projection
                                effects-eof-not-encountered-prelim-x86p-projection
                                loop-preconditions-weird-rbp-rsp)
-                              (word-state))
+                              (word-state
+                               (:definition acl2::take-redefinition)
+                               (:rewrite las-to-pas-values-and-!flgi)
+                               (:rewrite acl2::car-nthcdr)
+                               (:definition nth)
+                               (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                               (:type-prescription nthcdr-true-listp)
+                               (:rewrite acl2::take-of-too-many)
+                               (:rewrite acl2::take-of-len-free)
+                               (:type-prescription file-descriptor-fieldp)
+                               (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                               (:definition las-to-pas)
+                               (:rewrite acl2::take-when-atom)
+                               (:rewrite default-+-2)
+                               (:rewrite acl2::zp-when-gt-0)
+                               (:definition binary-append)
+                               (:definition assoc-equal)))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-env-assumptions-projection
@@ -4368,7 +4852,23 @@
                         effects-eof-not-encountered-prelim-programmer-level-mode-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        (word-state
-                        subset-p)))
+                        subset-p
+                        (:definition acl2::take-redefinition)
+                        (:rewrite las-to-pas-values-and-!flgi)
+                        (:rewrite acl2::car-nthcdr)
+                        (:definition nth)
+                        (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                        (:type-prescription nthcdr-true-listp)
+                        (:rewrite acl2::take-of-too-many)
+                        (:rewrite acl2::take-of-len-free)
+                        (:type-prescription file-descriptor-fieldp)
+                        (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                        (:definition las-to-pas)
+                        (:rewrite acl2::take-when-atom)
+                        (:rewrite default-+-2)
+                        (:rewrite acl2::zp-when-gt-0)
+                        (:definition binary-append)
+                        (:definition assoc-equal))))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp)
                                      (word-state subset-p))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
@@ -4383,7 +4883,25 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-out) x86))
                   (xr :programmer-level-mode 0 x86)))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
 
 (defthmd effects-other-char-encountered-state-out-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4395,7 +4913,25 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (alignment-checking-enabled-p (x86-run (gc-clk-otherwise-out) x86))
                   (alignment-checking-enabled-p x86)))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
 
 (defthmd effects-other-char-encountered-state-out-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4407,7 +4943,25 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :os-info 0 (x86-run (gc-clk-otherwise-out) x86))
                   (xr :os-info 0 x86)))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
 
 (defthm loop-preconditions-other-char-encountered-state-out
   (implies (and (loop-preconditions addr x86)
@@ -4444,7 +4998,25 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (input (x86-run (gc-clk-otherwise-out) x86))
                   (input x86)))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
 
 (defthmd effects-other-char-encountered-state-out-offset-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4456,7 +5028,25 @@
                 (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (offset (x86-run (gc-clk-otherwise-out) x86))
                   (+ 1 (offset x86))))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
 
 ;;----------------------------------------------------------------------
 ;; Other Char Encountered (State = OUT): Delta Variable Theorems:
@@ -4473,6 +5063,33 @@
            (equal (combine-bytes (word-state x86 (x86-run (gc-clk-otherwise-out) x86)))
                   *in*))
   :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
+                             (:definition acl2::take-redefinition)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::car-nthcdr)
+                             (:type-prescription consp-append)
+                             (:type-prescription xw)
+                             (:type-prescription nthcdr-true-listp)
+                             (:definition binary-append)
+                             (:rewrite acl2::take-of-len-free)
+                             (:rewrite acl2::take-when-atom)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite effects-other-char-encountered-state-out)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite default-+-2)
+                             (:rewrite acl2::zp-when-gt-0)))
            :use ((:instance effects-other-char-encountered-state-out-rbp-projection)
                  (:instance effects-other-char-encountered-state-out)))))
 
@@ -4502,7 +5119,33 @@
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-otherwise-out) x86)))
                   (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
-                                   (force (force)))
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    force (force)))
            :use ((:instance effects-other-char-encountered-state-out)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -4532,7 +5175,33 @@
            (equal (combine-bytes (nw x86 (x86-run (gc-clk-otherwise-out) x86)))
                   (loghead 32 (+ 1 (combine-bytes (nw x86 x86))))))
   :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
-                                   (force (force)))
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    force (force)))
            :use ((:instance effects-other-char-encountered-state-out)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -4562,7 +5231,33 @@
            (equal (nl x86 (x86-run (gc-clk-otherwise-out) x86))
                   (nl x86 x86)))
   :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
-                                   (force (force)))
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    force (force)))
            :use ((:instance effects-other-char-encountered-state-out)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -4788,7 +5483,17 @@
                              remove-loghead-from-combine-bytes)
                             (x86-run-plus
                              byte-ify
-                             (byte-ify))))))
+                             (byte-ify)
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix)))))
 
 (local
  (defthmd combine-bytes-and-byte-ify-inequality-lemma-for-n=4
@@ -5139,7 +5844,33 @@
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-rsp-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5153,7 +5884,33 @@
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-rsp-projection-new
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5178,7 +5935,33 @@
            (x86p (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-msri-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5192,7 +5975,35 @@
                                                            (x86-run (gc-clk-otherwise-in) x86))) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx*
                                                            (x86-run (gc-clk-otherwise-in) x86))) 1)))
-  :hints (("Goal" :in-theory (e/d* () (combine-bytes word-state))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (combine-bytes
+                                    word-state
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-rip-projection
@@ -5205,7 +6016,35 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-in) x86))
                   (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    subset-p
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5218,7 +6057,33 @@
            (equal (xr :ms 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-fault-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5231,7 +6096,33 @@
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-program-projection
   (implies (and (loop-preconditions addr x86) (equal len-wc (len *wc*))
@@ -5248,7 +6139,33 @@
                                effects-eof-not-encountered-prelim-program-projection
                                effects-eof-not-encountered-prelim-x86p-projection
                                loop-preconditions-weird-rbp-rsp)
-                              (word-state))
+                              (word-state
+                               append-and-create-addr-bytes-alist
+                               cons-and-create-addr-bytes-alist
+                               append-and-addr-byte-alistp
+                               negative-logand-to-positive-logand-with-integerp-x
+                               las-to-pas-values-and-!flgi
+                               las-to-pas
+                               get-prefixes-opener-lemma-group-1-prefix
+                               get-prefixes-opener-lemma-group-2-prefix
+                               get-prefixes-opener-lemma-group-3-prefix
+                               get-prefixes-opener-lemma-group-4-prefix
+                               (:definition acl2::take-redefinition)
+                               (:definition nth)
+                               (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                               (:rewrite acl2::take-of-too-many)
+                               (:rewrite acl2::car-nthcdr)
+                               (:type-prescription consp-append)
+                               (:type-prescription xw)
+                               (:type-prescription nthcdr-true-listp)
+                               (:definition binary-append)
+                               (:rewrite acl2::take-of-len-free)
+                               (:rewrite acl2::take-when-atom)
+                               (:type-prescription file-descriptor-fieldp)
+                               (:rewrite effects-other-char-encountered-state-out)
+                               (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                               (:rewrite default-+-2)
+                               (:rewrite acl2::zp-when-gt-0)))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-env-assumptions-projection
@@ -5266,7 +6183,33 @@
                         effects-eof-not-encountered-prelim-programmer-level-mode-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        (word-state
-                        subset-p)))
+                        subset-p
+                        append-and-create-addr-bytes-alist
+                        cons-and-create-addr-bytes-alist
+                        append-and-addr-byte-alistp
+                        negative-logand-to-positive-logand-with-integerp-x
+                        las-to-pas-values-and-!flgi
+                        las-to-pas
+                        get-prefixes-opener-lemma-group-1-prefix
+                        get-prefixes-opener-lemma-group-2-prefix
+                        get-prefixes-opener-lemma-group-3-prefix
+                        get-prefixes-opener-lemma-group-4-prefix
+                        (:definition acl2::take-redefinition)
+                        (:definition nth)
+                        (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                        (:rewrite acl2::take-of-too-many)
+                        (:rewrite acl2::car-nthcdr)
+                        (:type-prescription consp-append)
+                        (:type-prescription xw)
+                        (:type-prescription nthcdr-true-listp)
+                        (:definition binary-append)
+                        (:rewrite acl2::take-of-len-free)
+                        (:rewrite acl2::take-when-atom)
+                        (:type-prescription file-descriptor-fieldp)
+                        (:rewrite effects-other-char-encountered-state-out)
+                        (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                        (:rewrite default-+-2)
+                        (:rewrite acl2::zp-when-gt-0))))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp)
                                      (word-state
                                       subset-p))
@@ -5284,8 +6227,34 @@
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-in) x86))
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5299,7 +6268,33 @@
                   (alignment-checking-enabled-p x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-os-info-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5311,7 +6306,35 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :os-info 0 (x86-run (gc-clk-otherwise-in) x86))
                   (xr :os-info 0 x86)))
-  :hints (("Goal" :in-theory (e/d* () (word-state loop-preconditions-forward-chain-addresses-info)))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthm loop-preconditions-other-char-encountered-state-in-pre
   (implies (and (loop-preconditions addr x86)
@@ -5350,7 +6373,33 @@
                   (input x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-offset-projection-pre
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5364,7 +6413,33 @@
                   (+ 1 (offset x86))))
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
-                                    loop-preconditions-forward-chain-addresses-info)))))
+                                    loop-preconditions-forward-chain-addresses-info
+                                    append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
 
 (defthm loop-preconditions-other-char-encountered-state-in
   (implies (and (loop-preconditions addr x86)
@@ -5374,7 +6449,8 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))
-  :hints (("Goal":use ((:instance loop-preconditions-other-char-encountered-state-in-pre)))))
+  :hints (("Goal"
+           :use ((:instance loop-preconditions-other-char-encountered-state-in-pre)))))
 
 (defthmd effects-other-char-encountered-state-in-input-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5386,7 +6462,8 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (input (x86-run (gc-clk-otherwise-in) x86))
                   (input x86)))
-  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-input-projection-pre)))))
+  :hints (("Goal"
+           :use ((:instance effects-other-char-encountered-state-in-input-projection-pre)))))
 
 (defthmd effects-other-char-encountered-state-in-offset-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5415,6 +6492,33 @@
            (equal (word-state x86 (x86-run (gc-clk-otherwise-in) x86))
                   (word-state x86 x86)))
   :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
+                             (:definition acl2::take-redefinition)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::car-nthcdr)
+                             (:type-prescription consp-append)
+                             (:type-prescription xw)
+                             (:type-prescription nthcdr-true-listp)
+                             (:definition binary-append)
+                             (:rewrite acl2::take-of-len-free)
+                             (:rewrite acl2::take-when-atom)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite effects-other-char-encountered-state-out)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite default-+-2)
+                             (:rewrite acl2::zp-when-gt-0)))
            :use ((:instance effects-other-char-encountered-state-in)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -5428,7 +6532,35 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (word-state (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (word-state x86 xxx)))
-  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
+  :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
+                             (:definition acl2::take-redefinition)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::car-nthcdr)
+                             (:type-prescription consp-append)
+                             (:type-prescription xw)
+                             (:type-prescription nthcdr-true-listp)
+                             (:definition binary-append)
+                             (:rewrite acl2::take-of-len-free)
+                             (:rewrite acl2::take-when-atom)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite effects-other-char-encountered-state-out)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite default-+-2)
+                             (:rewrite acl2::zp-when-gt-0)))
+           :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nc
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5441,7 +6573,33 @@
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-otherwise-in) x86)))
                   (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
-                                   (force (force)))
+                                   (append-and-create-addr-bytes-alist
+                                    cons-and-create-addr-bytes-alist
+                                    append-and-addr-byte-alistp
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    force (force)))
            :use ((:instance effects-other-char-encountered-state-in)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -5455,7 +6613,35 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nc (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nc x86 xxx)))
-  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
+  :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
+                             (:definition acl2::take-redefinition)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::car-nthcdr)
+                             (:type-prescription consp-append)
+                             (:type-prescription xw)
+                             (:type-prescription nthcdr-true-listp)
+                             (:definition binary-append)
+                             (:rewrite acl2::take-of-len-free)
+                             (:rewrite acl2::take-when-atom)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite effects-other-char-encountered-state-out)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite default-+-2)
+                             (:rewrite acl2::zp-when-gt-0)))
+           :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5467,8 +6653,36 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nw x86 (x86-run (gc-clk-otherwise-in) x86))
                   (nw x86 x86)))
-  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in)
-                        (:instance loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
+                             (:definition acl2::take-redefinition)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::car-nthcdr)
+                             (:type-prescription consp-append)
+                             (:type-prescription xw)
+                             (:type-prescription nthcdr-true-listp)
+                             (:definition binary-append)
+                             (:rewrite acl2::take-of-len-free)
+                             (:rewrite acl2::take-when-atom)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite effects-other-char-encountered-state-out)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite default-+-2)
+                             (:rewrite acl2::zp-when-gt-0)))
+           :use ((:instance effects-other-char-encountered-state-in)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nw-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5492,8 +6706,36 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nl x86 (x86-run (gc-clk-otherwise-in) x86))
                   (nl x86 x86)))
-  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in)
-                        (:instance loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal"
+           :in-theory (e/d* ()
+                            (append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
+                             (:definition acl2::take-redefinition)
+                             (:definition nth)
+                             (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                             (:rewrite acl2::take-of-too-many)
+                             (:rewrite acl2::car-nthcdr)
+                             (:type-prescription consp-append)
+                             (:type-prescription xw)
+                             (:type-prescription nthcdr-true-listp)
+                             (:definition binary-append)
+                             (:rewrite acl2::take-of-len-free)
+                             (:rewrite acl2::take-when-atom)
+                             (:type-prescription file-descriptor-fieldp)
+                             (:rewrite effects-other-char-encountered-state-out)
+                             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                             (:rewrite default-+-2)
+                             (:rewrite acl2::zp-when-gt-0)))
+           :use ((:instance effects-other-char-encountered-state-in)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5517,313 +6759,313 @@
 ;;**********************************************************************
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/nthcdr" :dir :system))
 
- (defun loop-effects-hint (word-state offset str-bytes x86)
-   (declare (xargs :stobjs (x86)
-                   :measure (len (nthcdr offset str-bytes))
-                   :verify-guards nil))
+  (defun loop-effects-hint (word-state offset str-bytes x86)
+    (declare (xargs :stobjs (x86)
+                    :measure (len (nthcdr offset str-bytes))
+                    :verify-guards nil))
 
-   (if (and (eof-terminatedp str-bytes)
-            (< offset (len str-bytes))
-            (natp offset))
+    (if (and (eof-terminatedp str-bytes)
+             (< offset (len str-bytes))
+             (natp offset))
 
-       (let ((char (get-char offset str-bytes)))
+        (let ((char (get-char offset str-bytes)))
 
-         (if (equal char #.*eof*)
+          (if (equal char #.*eof*)
 
-             (let ((x86 (x86-run (gc-clk-eof) x86)))
-               x86)
+              (let ((x86 (x86-run (gc-clk-eof) x86)))
+                x86)
 
-           (b* (((mv word-state x86)
-                 (case char
-                   (#.*newline*
-                    (b* ((x86 (x86-run (gc-clk-newline) x86)))
-                        (mv 0 x86)))
-                   (#.*space*
-                    (b* ((x86 (x86-run (gc-clk-space) x86)))
-                        (mv 0 x86)))
-                   (#.*tab*
-                    (b* ((x86 (x86-run (gc-clk-tab) x86)))
-                        (mv 0 x86)))
-                   (t
-                    (if (equal word-state #.*out*)
-                        (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
-                            (mv 1 x86))
-                      (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
-                          (mv word-state x86)))))))
+            (b* (((mv word-state x86)
+                  (case char
+                    (#.*newline*
+                     (b* ((x86 (x86-run (gc-clk-newline) x86)))
+                       (mv 0 x86)))
+                    (#.*space*
+                     (b* ((x86 (x86-run (gc-clk-space) x86)))
+                       (mv 0 x86)))
+                    (#.*tab*
+                     (b* ((x86 (x86-run (gc-clk-tab) x86)))
+                       (mv 0 x86)))
+                    (t
+                     (if (equal word-state #.*out*)
+                         (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
+                           (mv 1 x86))
+                       (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
+                         (mv word-state x86)))))))
 
-               (loop-effects-hint word-state (1+ offset) str-bytes x86))))
+              (loop-effects-hint word-state (1+ offset) str-bytes x86))))
 
-     x86))
+      x86))
 
- ) ;; End of encapsulate
+  ) ;; End of encapsulate
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/nthcdr" :dir :system))
 
- (local (include-book "std/lists/take" :dir :system))
+  (local (include-book "std/lists/take" :dir :system))
 
- (local (include-book "std/lists/last" :dir :system))
+  (local (include-book "std/lists/last" :dir :system))
 
- (local (in-theory (e/d* (acl2::take-of-1 acl2::take-of-zero take nthcdr) ())))
+  (local (in-theory (e/d* (acl2::take-of-1 acl2::take-of-zero take nthcdr) ())))
 
- (local
-  (defthm |Subgoal *1/4.5|
-    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                  (< OFFSET (LEN STR-BYTES))
-                  (NATP OFFSET)
-                  (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                         10)
-                  (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                            STR-BYTES
-                                            (X86-RUN (GC-CLK-NEWLINE) X86))
-                         (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
-                                  (X86-RUN (GC-CLK-NEWLINE) X86))))
-             (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                       STR-BYTES
-                                       (X86-RUN (GC-CLK-NEWLINE) X86))
-                    (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE)
-                                          (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
-                             X86)))
-    :hints (("Goal" :in-theory (e/d* (GC-CLK-NEWLINE
-                                      (GC-CLK-NEWLINE)
-                                      GC-CLK-NO-EOF
-                                      (GC-CLK-NO-EOF)
-                                      GC-CLK
-                                      (GC-CLK)))))))
+  (local
+   (defthm |Subgoal *1/4.5|
+     (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                   (< OFFSET (LEN STR-BYTES))
+                   (NATP OFFSET)
+                   (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                          10)
+                   (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                             STR-BYTES
+                                             (X86-RUN (GC-CLK-NEWLINE) X86))
+                          (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
+                                   (X86-RUN (GC-CLK-NEWLINE) X86))))
+              (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                        STR-BYTES
+                                        (X86-RUN (GC-CLK-NEWLINE) X86))
+                     (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE)
+                                           (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
+                              X86)))
+     :hints (("Goal" :in-theory (e/d* (GC-CLK-NEWLINE
+                                       (GC-CLK-NEWLINE)
+                                       GC-CLK-NO-EOF
+                                       (GC-CLK-NO-EOF)
+                                       GC-CLK
+                                       (GC-CLK)))))))
 
- (local
-  (defthm |Subgoal *1/4.4|
-    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                  (< OFFSET (LEN STR-BYTES))
-                  (NATP OFFSET)
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              35))
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              10))
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              32))
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              9))
-                  (NOT (EQUAL WORD-STATE 0))
-                  (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
-                                            STR-BYTES
-                                            (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
-                         (X86-RUN (LOOP-CLK WORD-STATE (+ 1 OFFSET)
-                                            STR-BYTES)
-                                  (X86-RUN (GC-CLK-OTHERWISE-IN) X86))))
-             (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
-                                       STR-BYTES
-                                       (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
-                    (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN)
-                                          (LOOP-CLK WORD-STATE (+ 1 OFFSET)
-                                                    STR-BYTES))
-                             X86)))
-    :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-IN
-                                      (GC-CLK-OTHERWISE-IN)
-                                      GC-CLK-NO-EOF
-                                      (GC-CLK-NO-EOF)
-                                      GC-CLK
-                                      (GC-CLK)))))))
+  (local
+   (defthm |Subgoal *1/4.4|
+     (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                   (< OFFSET (LEN STR-BYTES))
+                   (NATP OFFSET)
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               35))
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               10))
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               32))
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               9))
+                   (NOT (EQUAL WORD-STATE 0))
+                   (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
+                                             STR-BYTES
+                                             (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
+                          (X86-RUN (LOOP-CLK WORD-STATE (+ 1 OFFSET)
+                                             STR-BYTES)
+                                   (X86-RUN (GC-CLK-OTHERWISE-IN) X86))))
+              (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
+                                        STR-BYTES
+                                        (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
+                     (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN)
+                                           (LOOP-CLK WORD-STATE (+ 1 OFFSET)
+                                                     STR-BYTES))
+                              X86)))
+     :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-IN
+                                       (GC-CLK-OTHERWISE-IN)
+                                       GC-CLK-NO-EOF
+                                       (GC-CLK-NO-EOF)
+                                       GC-CLK
+                                       (GC-CLK)))))))
 
- (local
-  (defthm |Subgoal *1/4.3'|
-    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                  (< OFFSET (LEN STR-BYTES))
-                  (NATP OFFSET)
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              35))
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              10))
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              32))
-                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                              9))
-                  (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
-                                            STR-BYTES
-                                            (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
-                         (X86-RUN (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES)
-                                  (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))))
-             (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
-                                       STR-BYTES
-                                       (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
-                    (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT)
-                                          (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES))
-                             X86)))
-    :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-OUT
-                                      (GC-CLK-OTHERWISE-OUT)
-                                      GC-CLK-NO-EOF
-                                      (GC-CLK-NO-EOF)
-                                      GC-CLK
-                                      (GC-CLK)))))))
+  (local
+   (defthm |Subgoal *1/4.3'|
+     (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                   (< OFFSET (LEN STR-BYTES))
+                   (NATP OFFSET)
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               35))
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               10))
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               32))
+                   (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                               9))
+                   (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
+                                             STR-BYTES
+                                             (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
+                          (X86-RUN (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES)
+                                   (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))))
+              (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
+                                        STR-BYTES
+                                        (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
+                     (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT)
+                                           (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES))
+                              X86)))
+     :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-OUT
+                                       (GC-CLK-OTHERWISE-OUT)
+                                       GC-CLK-NO-EOF
+                                       (GC-CLK-NO-EOF)
+                                       GC-CLK
+                                       (GC-CLK)))))))
 
- (local
-  (defthm |Subgoal *1/4.2|
-    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                  (< OFFSET (LEN STR-BYTES))
-                  (NATP OFFSET)
-                  (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                         9)
-                  (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                            STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
-                         (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
-                                  (X86-RUN (GC-CLK-TAB) X86))))
-             (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                       STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
-                    (X86-RUN (BINARY-CLK+ (GC-CLK-TAB)
-                                          (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
-                             X86)))
-    :hints (("Goal" :in-theory (e/d* (GC-CLK-TAB
-                                      (GC-CLK-TAB)
-                                      GC-CLK-NO-EOF
-                                      (GC-CLK-NO-EOF)
-                                      GC-CLK
-                                      (GC-CLK)))))))
+  (local
+   (defthm |Subgoal *1/4.2|
+     (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                   (< OFFSET (LEN STR-BYTES))
+                   (NATP OFFSET)
+                   (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                          9)
+                   (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                             STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
+                          (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
+                                   (X86-RUN (GC-CLK-TAB) X86))))
+              (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                        STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
+                     (X86-RUN (BINARY-CLK+ (GC-CLK-TAB)
+                                           (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
+                              X86)))
+     :hints (("Goal" :in-theory (e/d* (GC-CLK-TAB
+                                       (GC-CLK-TAB)
+                                       GC-CLK-NO-EOF
+                                       (GC-CLK-NO-EOF)
+                                       GC-CLK
+                                       (GC-CLK)))))))
 
- (local
-  (defthm |Subgoal *1/4''|
-    (IMPLIES
-     (AND (EOF-TERMINATEDP STR-BYTES)
-          (< OFFSET (LEN STR-BYTES))
-          (NATP OFFSET)
-          (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                 32)
-          (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                    STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
-                 (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
-                          (X86-RUN (GC-CLK-SPACE) X86))))
-     (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                               STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
-            (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE)
-                                  (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
-                     X86)))
-    :hints (("Goal" :in-theory (e/d* (GC-CLK-SPACE
-                                      (GC-CLK-SPACE)
-                                      GC-CLK-NO-EOF
-                                      (GC-CLK-NO-EOF)
-                                      GC-CLK
-                                      (GC-CLK)))))))
+  (local
+   (defthm |Subgoal *1/4''|
+     (IMPLIES
+      (AND (EOF-TERMINATEDP STR-BYTES)
+           (< OFFSET (LEN STR-BYTES))
+           (NATP OFFSET)
+           (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                  32)
+           (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                     STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
+                  (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
+                           (X86-RUN (GC-CLK-SPACE) X86))))
+      (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
+             (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE)
+                                   (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
+                      X86)))
+     :hints (("Goal" :in-theory (e/d* (GC-CLK-SPACE
+                                       (GC-CLK-SPACE)
+                                       GC-CLK-NO-EOF
+                                       (GC-CLK-NO-EOF)
+                                       GC-CLK
+                                       (GC-CLK)))))))
 
- (local
-  (defthm |Subgoal *1/2.5''|
-    (IMPLIES
-     (AND
-      (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-      (EOF-TERMINATEDP STR-BYTES)
-      (< OFFSET (LEN STR-BYTES))
-      (NATP OFFSET)
-      (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                  35))
-      (<= (LEN STR-BYTES) (LEN STR-BYTES))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                  35))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                  10))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+  (local
+   (defthm |Subgoal *1/2.5''|
+     (IMPLIES
+      (AND
+       (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+       (EOF-TERMINATEDP STR-BYTES)
+       (< OFFSET (LEN STR-BYTES))
+       (NATP OFFSET)
+       (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                   35))
+       (<= (LEN STR-BYTES) (LEN STR-BYTES))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   35))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   10))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   32))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   9)))
+      (EQUAL (X86-RUN (GC-CLK-OTHERWISE-OUT) X86)
+             (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT) 0)
+                      X86)))
+     :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                      ())))))
+
+
+  (local
+   (defthm |Subgoal *1/2.4''|
+     (IMPLIES
+      (AND
+       (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+       (EOF-TERMINATEDP STR-BYTES)
+       (< OFFSET (LEN STR-BYTES))
+       (NATP OFFSET)
+       (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                   35))
+       (<= (LEN STR-BYTES) (LEN STR-BYTES))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   35))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   10))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   32))
+       (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                   9))
+       (NOT (EQUAL WORD-STATE 0)))
+      (EQUAL (X86-RUN (GC-CLK-OTHERWISE-IN) X86)
+             (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN) 0)
+                      X86)))
+     :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                      ())))))
+
+  (local
+   (defthm |Subgoal *1/2.3''|
+     (IMPLIES
+      (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+           (EOF-TERMINATEDP STR-BYTES)
+           (< OFFSET (LEN STR-BYTES))
+           (NATP OFFSET)
+           (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                       35))
+           (<= (LEN STR-BYTES) (LEN STR-BYTES))
+           (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
                   32))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                  9)))
-     (EQUAL (X86-RUN (GC-CLK-OTHERWISE-OUT) X86)
-            (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT) 0)
-                     X86)))
-    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                     ())))))
+      (EQUAL (X86-RUN (GC-CLK-SPACE) X86)
+             (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE) 0)
+                      X86)))
+     :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                      ())))))
 
-
- (local
-  (defthm |Subgoal *1/2.4''|
-    (IMPLIES
-     (AND
-      (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-      (EOF-TERMINATEDP STR-BYTES)
-      (< OFFSET (LEN STR-BYTES))
-      (NATP OFFSET)
-      (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                  35))
-      (<= (LEN STR-BYTES) (LEN STR-BYTES))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                  35))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+  (local
+   (defthm |Subgoal *1/2.2''|
+     (IMPLIES
+      (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+           (EOF-TERMINATEDP STR-BYTES)
+           (< OFFSET (LEN STR-BYTES))
+           (NATP OFFSET)
+           (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                       35))
+           (<= (LEN STR-BYTES) (LEN STR-BYTES))
+           (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
                   10))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                  32))
-      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+      (EQUAL (X86-RUN (GC-CLK-NEWLINE) X86)
+             (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE) 0)
+                      X86)))
+     :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                      ())))))
+
+  (local
+   (defthm |Subgoal *1/2.1''|
+     (IMPLIES
+      (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+           (EOF-TERMINATEDP STR-BYTES)
+           (< OFFSET (LEN STR-BYTES))
+           (NATP OFFSET)
+           (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                       35))
+           (<= (LEN STR-BYTES) (LEN STR-BYTES))
+           (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
                   9))
-      (NOT (EQUAL WORD-STATE 0)))
-     (EQUAL (X86-RUN (GC-CLK-OTHERWISE-IN) X86)
-            (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN) 0)
-                     X86)))
-    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                     ())))))
+      (EQUAL (X86-RUN (GC-CLK-TAB) X86)
+             (X86-RUN (BINARY-CLK+ (GC-CLK-TAB) 0)
+                      X86)))
+     :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                      ())))))
 
- (local
-  (defthm |Subgoal *1/2.3''|
-    (IMPLIES
-     (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-          (EOF-TERMINATEDP STR-BYTES)
-          (< OFFSET (LEN STR-BYTES))
-          (NATP OFFSET)
-          (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                      35))
-          (<= (LEN STR-BYTES) (LEN STR-BYTES))
-          (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 32))
-     (EQUAL (X86-RUN (GC-CLK-SPACE) X86)
-            (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE) 0)
-                     X86)))
-    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                     ())))))
+  (defthm loop-effects-hint-and-loop-clk
+    (implies (and (eof-terminatedp str-bytes)
+                  (< offset (len str-bytes))
+                  (natp offset))
+             (equal (loop-effects-hint word-state offset str-bytes x86)
+                    (x86-run (loop-clk word-state offset str-bytes) x86)))
+    :hints (("Goal" :in-theory (e/d* (loop-clk) ()))))
 
- (local
-  (defthm |Subgoal *1/2.2''|
-    (IMPLIES
-     (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-          (EOF-TERMINATEDP STR-BYTES)
-          (< OFFSET (LEN STR-BYTES))
-          (NATP OFFSET)
-          (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                      35))
-          (<= (LEN STR-BYTES) (LEN STR-BYTES))
-          (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 10))
-     (EQUAL (X86-RUN (GC-CLK-NEWLINE) X86)
-            (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE) 0)
-                     X86)))
-    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                     ())))))
-
- (local
-  (defthm |Subgoal *1/2.1''|
-    (IMPLIES
-     (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-          (EOF-TERMINATEDP STR-BYTES)
-          (< OFFSET (LEN STR-BYTES))
-          (NATP OFFSET)
-          (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                      35))
-          (<= (LEN STR-BYTES) (LEN STR-BYTES))
-          (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 9))
-     (EQUAL (X86-RUN (GC-CLK-TAB) X86)
-            (X86-RUN (BINARY-CLK+ (GC-CLK-TAB) 0)
-                     X86)))
-    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                     ())))))
-
- (defthm loop-effects-hint-and-loop-clk
-   (implies (and (eof-terminatedp str-bytes)
-                 (< offset (len str-bytes))
-                 (natp offset))
-            (equal (loop-effects-hint word-state offset str-bytes x86)
-                   (x86-run (loop-clk word-state offset str-bytes) x86)))
-   :hints (("Goal" :in-theory (e/d* (loop-clk) ()))))
-
- ) ;; End of encapsulate
+  ) ;; End of encapsulate
 
 (defthm effects-loop
   ;; Begins at (call GC)
@@ -5859,69 +7101,69 @@
 ;; Intention:
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/nthcdr" :dir :system))
 
- (defun nc-algo (offset str-bytes nc)
-   (declare (xargs :measure
-                   (len (nthcdr offset str-bytes))))
+  (defun nc-algo (offset str-bytes nc)
+    (declare (xargs :measure
+                    (len (nthcdr offset str-bytes))))
 
-   (if (and (eof-terminatedp str-bytes)
-            (< offset (len str-bytes))
-            (natp offset))
+    (if (and (eof-terminatedp str-bytes)
+             (< offset (len str-bytes))
+             (natp offset))
 
-       (b* ((c (get-char offset str-bytes))
-            ((when (equal c *eof*)) nc)
-            (new-nc (loghead 32 (1+ nc))))
-           (nc-algo (1+ offset) str-bytes new-nc))
+        (b* ((c (get-char offset str-bytes))
+             ((when (equal c *eof*)) nc)
+             (new-nc (loghead 32 (1+ nc))))
+          (nc-algo (1+ offset) str-bytes new-nc))
 
-     nc))
+      nc))
 
- (defun nl-algo (offset str-bytes nl)
-   (declare (xargs :measure
-                   (len (nthcdr offset str-bytes))))
+  (defun nl-algo (offset str-bytes nl)
+    (declare (xargs :measure
+                    (len (nthcdr offset str-bytes))))
 
-   (if (and (eof-terminatedp str-bytes)
-            (< offset (len str-bytes))
-            (natp offset))
+    (if (and (eof-terminatedp str-bytes)
+             (< offset (len str-bytes))
+             (natp offset))
 
-       (b* ((c (get-char offset str-bytes))
-            ((when (equal c *eof*)) nl)
-            (new-nl (if (equal c *newline*)
-                        (loghead 32 (1+ nl))
-                      nl)))
-           (nl-algo (1+ offset) str-bytes new-nl))
+        (b* ((c (get-char offset str-bytes))
+             ((when (equal c *eof*)) nl)
+             (new-nl (if (equal c *newline*)
+                         (loghead 32 (1+ nl))
+                       nl)))
+          (nl-algo (1+ offset) str-bytes new-nl))
 
-     nl))
+      nl))
 
- (defun nw-algo (offset str-bytes word-state nw)
-   (declare (xargs :measure
-                   (len (nthcdr offset str-bytes))))
+  (defun nw-algo (offset str-bytes word-state nw)
+    (declare (xargs :measure
+                    (len (nthcdr offset str-bytes))))
 
-   (if (and (eof-terminatedp str-bytes)
-            (< offset (len str-bytes))
-            (natp offset))
+    (if (and (eof-terminatedp str-bytes)
+             (< offset (len str-bytes))
+             (natp offset))
 
-       (b* ((c (get-char offset str-bytes))
-            ((when (equal c *eof*)) nw)
+        (b* ((c (get-char offset str-bytes))
+             ((when (equal c *eof*)) nw)
 
-            ((mv new-nw new-word-state)
-             (if (equal c *newline*)
-                 (mv nw *out*)
-               (if (equal c *space*)
-                   (mv nw *out*)
-                 (if (equal c *tab*)
-                     (mv nw *out*)
-                   (if (equal word-state *out*)
-                       (mv (loghead 32 (1+ nw)) *in*)
-                     (mv nw word-state)))))))
+             ((mv new-nw new-word-state)
+              (if (equal c *newline*)
+                  (mv nw *out*)
+                (if (equal c *space*)
+                    (mv nw *out*)
+                  (if (equal c *tab*)
+                      (mv nw *out*)
+                    (if (equal word-state *out*)
+                        (mv (loghead 32 (1+ nw)) *in*)
+                      (mv nw word-state)))))))
 
-           (nw-algo (1+ offset) str-bytes new-word-state new-nw))
+          (nw-algo (1+ offset) str-bytes new-word-state new-nw))
 
-     nw))
+      nw))
 
- ) ;; End of encapsulate
+  ) ;; End of encapsulate
 
 (deftheory effects-loop-rules
 
@@ -6734,7 +7976,6 @@
 
 
 (defthm not-member-p-canonical-address-listp-when-disjoint-p-new
-  ;; [Shilpi]: generalize...
   (implies (and (disjoint-p xs (create-canonical-address-list m addr))
                 (member-p e (create-canonical-address-list m addr)))
            (equal (member-p e xs)
@@ -6833,6 +8074,16 @@
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* ()
                             (wb-remove-duplicate-writes
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
                              force (force))))))
 
 (defthmd memory-analysis-effects-other-char-encountered-state-in
@@ -6856,6 +8107,16 @@
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* ()
                             (wb-remove-duplicate-writes
+                             append-and-create-addr-bytes-alist
+                             cons-and-create-addr-bytes-alist
+                             append-and-addr-byte-alistp
+                             negative-logand-to-positive-logand-with-integerp-x
+                             las-to-pas-values-and-!flgi
+                             las-to-pas
+                             get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix
                              force (force))))))
 
 (defthmd memory-analysis-loop
