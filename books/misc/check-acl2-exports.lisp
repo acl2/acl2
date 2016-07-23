@@ -104,6 +104,7 @@
     WATERFALL
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
 ; come from defpointers to system-utilities.
+    ALL-CALLS
     BODY
     CONJOIN
     CONS-COUNT-BOUNDED
