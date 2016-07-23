@@ -51,30 +51,16 @@
     (and (eq (car stars) 'acl2::*)
          (*-listp (cdr stars)))))
 
-(define funvar-typep (type)
-  (and (true-listp type)
-       (= (len type) 3)
-       (*-listp (first type))
-       (first type)
-       (eq (second type) 'acl2::=>)
-       (eq (third type) 'acl2::*)))
-
-; The name and type of each function variable are stored in a table.
+; The name of each function variable is stored in a table.
 
 (table function-variables nil nil :guard (and (symbolp acl2::key) ; name
-                                              (funvar-typep acl2::val)))
+                                              (null acl2::val))) ; no extra info
 
 (define funvarp (funvar (w plist-worldp))
   :verify-guards nil
   (let ((table (table-alist 'function-variables w)))
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
-
-(define funvar-type (funvar (w plist-worldp))
-  :guard (funvarp funvar w)
-  :verify-guards nil
-  (let ((table (table-alist 'function-variables w)))
-    (cdr (assoc-eq funvar table))))
 
 ; Function variables are mimicked by uninterpreted functions (i.e. stubs).
 ; The macro DEFUNVAR defines a function variable with its type.
@@ -92,7 +78,7 @@
         (raise "~x0 must be *." result)))
       `(progn
          (defstub ,funvar ,arguments => *)
-         (table function-variables ',funvar '(,arguments ,'acl2::=> *)))))
+         (table function-variables ',funvar nil))))
 
 (defmacro defunvar (funvar arguments arrow result)
   `(make-event (defunvar-event ',funvar ',arguments ',arrow ',result)))
