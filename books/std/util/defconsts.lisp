@@ -102,7 +102,7 @@ checking the primality of a large number) might best be done as @('defconsts')
 to avoid repeating the computation.</li>
 
 <li>Computations that are fast but produce \"large\" results (e.g.,
-@('(make-list 10000)'), might best be done as @('defconst'), to avoid storing
+@('(make-list 10000)')), might best be done as @('defconst'), to avoid storing
 this large list in the certificate.</li>
 
 </ul>")
@@ -429,5 +429,3 @@ this large list in the certificate.</li>
     :rule-classes nil)
   (defthm f2 (equal *oops2* 'ACL2::|(DEFCONSTS (*OOPS2* ...) ...)|)
     :rule-classes nil)))
-
-
