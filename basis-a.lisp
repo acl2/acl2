@@ -26,12 +26,6 @@
 
 (in-package "ACL2")
 
-(defmacro defn (f a &rest r)
-  `(defun ,f ,a (declare (xargs :guard t)) ,@r))
-
-(defmacro defnd (f a &rest r)
-  `(defund ,f ,a (declare (xargs :guard t)) ,@r))
-
 ; Essay on Wormholes
 
 ; Once upon a time (Version  3.6 and earlier) the wormhole function had a
@@ -701,6 +695,10 @@
 ; call such i the last-index, and it is initially 0.  Note that state global
 ; 'iprint-ar is thus always bound to an installed ACL2 array.
 
+; When state global 'iprint-fal has a non-nil value, it is a fast-alist that
+; inverts iprint-ar in the following sense: for every pair (i . v) in iprint-ar
+; with 1 <= i <= last-index, (v . i) is in the value of 'iprint-fal.
+
 ; We have to face a fundamental question: Do we use acons or aset1 as we
 ; encounter a new form to assign to some #@i# during those recursive
 ; subroutines?  The latter is dangerous in case we interrupt before installing
@@ -743,12 +741,13 @@
 ; It is tempting to cause an error when the user submits a form containing some
 ; #@j# and #@k# such that j <= last-index < k.  In such a case, k is from
 ; before the rollover and j is from after the rollover, so these couldn't have
-; been stored during a prettyprint of the same form.  But we avoid considering
-; this restriction because the user might want to read a list of forms that
-; include some prettyprinted before the last rollover and others printed after
-; the last rollover.  At any time, the reader is happy with #@j# for any index
-; j <= last-index and also any j below the maximum index before the last
-; rollover (initially 0).
+; been stored during a prettyprint of the same form.  By default we avoid this
+; restriction, because the user might want to read a list that includes some
+; forms prettyprinted before the last rollover and other forms printed after
+; the last rollover.  But if iprint sharing is on, then a subform that had been
+; printed before rollover might include iprint indices that have since changed,
+; which might be highly confusing.  So we make the above restriction on indices
+; when iprint sharing is on, as documented in :doc set-iprint.
 
 ; We need to be sure that the global iprint-ar is installed as an ACL2 array, in
 ; order to avoid slow-array-warnings.  See the comment in
@@ -776,33 +775,29 @@
          (aref1 'sharp-atsign-ar *sharp-atsign-ar* i))
         (t (make-sharp-atsign i))))
 
-(defun update-iprint-alist (iprint-alist val)
+(defun update-iprint-alist-fal (iprint-alist iprint-fal-new iprint-fal-old val)
 
 ; We are doing iprinting.  Iprint-alist is either a positive integer,
 ; representing the last-index but no accumulated iprint-alist, or else is a
 ; non-empty alist of entries (i . val_i).  See the Essay on Iprinting.
 
-  (cond ((consp iprint-alist)
-         (let ((i (1+ (caar iprint-alist))))
-           (acons i val iprint-alist)))
-        (t ; iprint-alist is a natp
-         (acons (1+ iprint-alist) val nil))))
-
-#+(or acl2-loop-only (not hons))
-(defn hons-equal (x y)
-  (declare (xargs :mode :logic))
-  ;; Has an under-the-hood implementation
-  (equal x y))
-
-(defn hons-assoc-equal (key alist)
-  (declare (xargs :mode :logic))
-  (cond ((atom alist)
-         nil)
-        ((and (consp (car alist))
-              (hons-equal key (caar alist)))
-         (car alist))
-        (t
-         (hons-assoc-equal key (cdr alist)))))
+  (let ((pair (and iprint-fal-old
+                   (or (hons-get val iprint-fal-new)
+                       (hons-get val iprint-fal-old)))))
+    (cond (pair
+           (mv (cdr pair) iprint-alist iprint-fal-new))
+          ((consp iprint-alist)
+           (let ((index (1+ (caar iprint-alist))))
+             (mv index
+                 (acons index val iprint-alist)
+                 (and iprint-fal-old
+                      (hons-acons val index iprint-fal-new)))))
+          (t
+           (let ((index (1+ iprint-alist)))
+             (mv index
+                 (acons index val nil)
+                 (and iprint-fal-old
+                      (hons-acons val index iprint-fal-new))))))))
 
 ; We now define the most elementary eviscerator, the one that implements
 ; *print-level* and *print-length*.  In this same pass we also arrange to
@@ -812,7 +807,8 @@
 
 (mutual-recursion
 
-(defun eviscerate1 (x v max-v max-n alist evisc-table hiding-cars iprint-alist)
+(defun eviscerate1 (x v max-v max-n alist evisc-table hiding-cars
+                      iprint-alist iprint-fal-new iprint-fal-old)
 
 ; Iprint-alist is either a symbol, indicating that we are not doing iprinting; a
 ; positive integer, representing the last-index but no accumulated iprint-alist;
@@ -826,26 +822,34 @@
            (mv (cond ((stringp (cdr temp))
                       (cons *evisceration-mark* (cdr temp)))
                      (t (cdr temp)))
-               iprint-alist))
+               iprint-alist
+               iprint-fal-new))
           ((atom x)
            (mv (cond ((eq x *evisceration-mark*) *anti-evisceration-mark*)
                      (t x))
-               iprint-alist))
+               iprint-alist
+               iprint-fal-new))
           ((= v max-v)
            (cond ((symbolp iprint-alist)
-                  (mv *evisceration-hash-mark* t))
+                  (mv *evisceration-hash-mark* t iprint-fal-new))
                  (t
-                  (let ((iprint-alist (update-iprint-alist iprint-alist x)))
+                  (mv-let (index iprint-alist iprint-fal-new)
+                    (update-iprint-alist-fal iprint-alist
+                                             iprint-fal-new
+                                             iprint-fal-old
+                                             x)
                     (mv (cons *evisceration-mark*
-                              (get-sharp-atsign (caar iprint-alist)))
-                        iprint-alist)))))
+                              (get-sharp-atsign index))
+                        iprint-alist
+                        iprint-fal-new)))))
           ((member-eq (car x) hiding-cars)
-           (mv *evisceration-hiding-mark* iprint-alist))
+           (mv *evisceration-hiding-mark* iprint-alist iprint-fal-new))
           (t (eviscerate1-lst x (1+ v) 0 max-v max-n alist evisc-table
-                              hiding-cars iprint-alist)))))
+                              hiding-cars iprint-alist
+                              iprint-fal-new iprint-fal-old)))))
 
 (defun eviscerate1-lst (lst v n max-v max-n alist evisc-table hiding-cars
-                            iprint-alist)
+                            iprint-alist iprint-fal-new iprint-fal-old)
   (let ((temp (or (hons-assoc-equal lst alist)
                   (hons-assoc-equal lst evisc-table))))
     (cond
@@ -853,27 +857,35 @@
       (mv (cond ((stringp (cdr temp))
                  (cons *evisceration-mark* (cdr temp)))
                 (t (cdr temp)))
-          iprint-alist))
+          iprint-alist
+          iprint-fal-new))
      ((atom lst)
       (mv (cond ((eq lst *evisceration-mark*) *anti-evisceration-mark*)
                 (t lst))
-          iprint-alist))
+          iprint-alist
+          iprint-fal-new))
      ((= n max-n)
       (cond ((symbolp iprint-alist)
-             (mv (list *evisceration-ellipsis-mark*) t))
-            (t
-             (let ((iprint-alist (update-iprint-alist iprint-alist lst)))
-               (mv (cons *evisceration-mark*
-                         (get-sharp-atsign (caar iprint-alist)))
-                   iprint-alist)))))
-     (t (mv-let (first iprint-alist)
-                (eviscerate1 (car lst) v max-v max-n alist evisc-table
-                             hiding-cars iprint-alist)
-                (mv-let (rest iprint-alist)
-                        (eviscerate1-lst (cdr lst) v (1+ n)
-                                         max-v max-n alist evisc-table
-                                         hiding-cars iprint-alist)
-                        (mv (cons first rest) iprint-alist)))))))
+             (mv (list *evisceration-ellipsis-mark*) t iprint-fal-new))
+            (t (mv-let (index iprint-alist iprint-fal-new)
+                 (update-iprint-alist-fal iprint-alist
+                                          iprint-fal-new
+                                          iprint-fal-old
+                                          lst)
+                 (mv (cons *evisceration-mark*
+                           (get-sharp-atsign index))
+                     iprint-alist
+                     iprint-fal-new)))))
+     (t (mv-let (first iprint-alist iprint-fal-new)
+          (eviscerate1 (car lst) v max-v max-n alist evisc-table
+                       hiding-cars iprint-alist
+                       iprint-fal-new iprint-fal-old)
+          (mv-let (rest iprint-alist iprint-fal-new)
+            (eviscerate1-lst (cdr lst) v (1+ n)
+                             max-v max-n alist evisc-table
+                             hiding-cars iprint-alist
+                             iprint-fal-new iprint-fal-old)
+            (mv (cons first rest) iprint-alist iprint-fal-new)))))))
 )
 
 (mutual-recursion
@@ -907,7 +919,7 @@
 )
 
 (defun eviscerate (x print-level print-length alist evisc-table hiding-cars
-                     iprint-alist)
+                     iprint-alist iprint-fal-new iprint-fal-old)
 
 ; See also eviscerate-top, which takes iprint-ar from the state and installs a
 ; new iprint-ar in the state, and update-iprint-alist, which describes the role
@@ -956,15 +968,17 @@
 
          (cond ((eviscerate1p x alist evisc-table hiding-cars)
                 (eviscerate1 x 0 -1 -1 alist evisc-table hiding-cars
-                             iprint-alist))
-               (t (mv x iprint-alist))))
+                             iprint-alist iprint-fal-new iprint-fal-old))
+               (t (mv x iprint-alist iprint-fal-new))))
         (t (eviscerate1 x 0
                         (or print-level -1)
                         (or print-length -1)
                         alist
                         evisc-table
                         hiding-cars
-                        iprint-alist))))
+                        iprint-alist
+                        iprint-fal-new
+                        iprint-fal-old))))
 
 (defun eviscerate-simple (x print-level print-length alist evisc-table
                             hiding-cars)
@@ -972,11 +986,18 @@
 ; This wrapper for eviscerate avoids the need to pass back multiple values when
 ; the iprint-alist is nil and we don't care if evisceration has occurred.
 
-  (mv-let (result null-iprint-alist)
-          (eviscerate x print-level print-length alist evisc-table hiding-cars
-                      nil)
-          (assert$ (symbolp null-iprint-alist)
-                   result)))
+  (mv-let (result null-iprint-alist null-iprint-fal)
+    (eviscerate x print-level print-length alist evisc-table hiding-cars
+                nil nil
+
+; We normally pass in the current value of state global 'iprint-fal for the
+; last argument, iprint-fal-old, of eviscerate.  However, since iprint-alist is
+; nil, we know that it's fine to pass in nil for iprint-fal-old
+
+                nil)
+    (assert$ (and (booleanp null-iprint-alist)
+                  (null null-iprint-fal))
+             result)))
 
 (defun aset1-lst (name alist ar)
   (declare (xargs :guard (eqlable-alistp alist))) ; really nat-alistp
@@ -1055,6 +1076,39 @@
                                              acc
                                            (cons (car ar) acc))))))
 
+(defun init-iprint-fal (sym state)
+
+; Warning: Consider also calling init-iprint-ar when calling this function.
+
+; The initial value of state global 'iprint-fal is nil if we are not to re-use
+; indices, and otherwise is the atom, :iprint-fal.  We choose a keyword so that
+; fast-alist-summary can print that name nicely in any package.
+
+  (declare (xargs :guard (symbolp sym)))
+  (let* ((old-iprint-fal (f-get-global 'iprint-fal state))
+         (old-iprint-name (if (consp old-iprint-fal)
+                              (cdr (last old-iprint-fal))
+                            old-iprint-fal))
+         (new-iprint-fal (cond ((null sym) nil)
+                               ((eq sym t)
+                                :iprint-fal)
+                               ((eq sym :same)
+                                old-iprint-name)
+                               (t sym))))
+    (prog2$ (and (consp old-iprint-fal) ; optimization
+                 (fast-alist-free old-iprint-fal))
+            (pprogn (f-put-global 'iprint-fal new-iprint-fal state)
+                    (mv (cond
+                         ((eq old-iprint-name new-iprint-fal)
+                          nil)
+                         (new-iprint-fal
+                          (msg "Iprinting is enabled with sharing, with a ~
+                                fast-alist whose name is ~x0."
+                               new-iprint-fal))
+                         (t
+                          (msg "Iprinting is enabled without sharing.")))
+                        state)))))
+
 (defun rollover-iprint-ar (iprint-alist last-index state)
 
 ; We assume that iprinting is enabled.  Install a new iprint-ar, whose last
@@ -1126,9 +1180,27 @@
 ; changing the :order from :none requires some thought.
 
                                    iprint-alist))))))
-    (f-put-global 'iprint-ar new-iprint-ar state)))
+    (mv-let (msg state)
+      (init-iprint-fal :same state)
+      (declare (ignore msg))
+      (f-put-global 'iprint-ar new-iprint-ar state))))
 
-(defun update-iprint-ar (iprint-alist state)
+(defun update-iprint-fal-rec (iprint-fal-new iprint-fal-old)
+  (cond ((atom iprint-fal-new) iprint-fal-old)
+        (t (update-iprint-fal-rec (cdr iprint-fal-new)
+                                  (hons-acons (caar iprint-fal-new)
+                                              (cdar iprint-fal-new)
+                                              iprint-fal-old)))))
+
+(defun update-iprint-fal (iprint-fal-new state)
+  (cond
+   ((atom iprint-fal-new) state) ; optimization
+   (t (f-put-global 'iprint-fal
+                    (update-iprint-fal-rec iprint-fal-new
+                                           (f-get-global 'iprint-fal state))
+                    state))))
+
+(defun update-iprint-ar-fal (iprint-alist iprint-fal-new iprint-fal-old state)
 
 ; We assume that iprinting is enabled.  Iprint-alist is known to be a consp.
 ; We update state global 'iprint-ar by updating iprint-ar with the pairs in
@@ -1136,9 +1208,21 @@
 
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
+
+; We throw away iprint-fal-new, because we only want to re-use indices below
+; last-index -- re-use of larger indices could quickly leave us pointing to
+; stale values when re-printing (say, using without-evisc) recently-printed
+; values.
+
            (rollover-iprint-ar iprint-alist last-index state))
           (t
-           (f-put-global 'iprint-ar
+           (assert$
+            (or (null iprint-fal-old) ; might have passed in nil at top level
+                (equal (f-get-global 'iprint-fal state)
+                       iprint-fal-old))
+            (pprogn
+             (update-iprint-fal iprint-fal-new state)
+             (f-put-global 'iprint-ar
 
 ; We know last-index <= (iprint-hard-bound state), and it is an invariant that
 ; this hard bound is less than the dimension of (@ iprint-ar).  See the
@@ -1146,10 +1230,10 @@
 ; less than that dimension, hence we can update with aset1 without encountering
 ; out-of-bounds indices.
 
-                         (aset1-lst 'iprint-ar
-                                    (acons 0 last-index iprint-alist)
-                                    (f-get-global 'iprint-ar state))
-                         state)))))
+                           (aset1-lst 'iprint-ar
+                                      (acons 0 last-index iprint-alist)
+                                      (f-get-global 'iprint-ar state))
+                           state)))))))
 
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)
@@ -1158,15 +1242,24 @@
 ; in addition to returning the evisceration of x.  See eviscerate and the Essay
 ; on Iprinting for more details.
 
-  (mv-let (result iprint-alist)
-          (eviscerate x print-level print-length alist evisc-table hiding-cars
-                      (and (iprint-enabledp state)
-                           (iprint-last-index state)))
-          (let ((state (cond ((eq iprint-alist t)
-                              (f-put-global 'evisc-hitp-without-iprint t state))
-                             ((atom iprint-alist) state)
-                             (t (update-iprint-ar iprint-alist state)))))
-            (mv result state))))
+  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+    (mv-let (result iprint-alist iprint-fal-new)
+      (eviscerate x print-level print-length alist evisc-table hiding-cars
+                  (and (iprint-enabledp state)
+                       (iprint-last-index state))
+                  nil iprint-fal-old)
+      (fast-alist-free-on-exit
+       iprint-fal-new
+       (let ((state
+              (cond
+               ((eq iprint-alist t)
+                (f-put-global 'evisc-hitp-without-iprint t state))
+               ((atom iprint-alist) state)
+               (t (update-iprint-ar-fal iprint-alist
+                                        iprint-fal-new
+                                        iprint-fal-old
+                                        state)))))
+         (mv result state))))))
 
 ; Essay on the ACL2 Prettyprinter
 
