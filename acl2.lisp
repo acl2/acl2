@@ -960,15 +960,15 @@
     #+acl2-par "multi-threading-raw"
     #+hons "serialize-raw"
     "axioms"
+    "hons"      ; but only get special under-the-hood treatment with #+hons
+    #+hons "hons-raw" ; avoid possible inlining of hons fns in later sources
     "basis-a"   ; to be included in any "toothbrush"
     "memoize"   ; but only get special under-the-hood treatment with #+hons
-    "hons"      ; but only get special under-the-hood treatment with #+hons
     "serialize" ; but only get special under-the-hood treatment with #+hons
     "basis-b"   ; not to be included in any "toothbrush"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
-    #+hons "hons-raw"
     #+hons "memoize-raw"
     "translate"
     "type-set-a"
@@ -1631,11 +1631,7 @@ which is saved just in case it's needed later.")
    #\.
    #'sharp-dot-read))
 
-(defun define-sharp-atsign ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\@
-   #'sharp-atsign-read))
+; Define-sharp-atsign is defined in interface-raw.lisp.
 
 (defun define-sharp-bang ()
   (set-new-dispatch-macro-character
@@ -1702,7 +1698,7 @@ which is saved just in case it's needed later.")
 
     (when do-all-changes
       (define-sharp-dot)
-      (define-sharp-atsign)
+;     (define-sharp-atsign) ; see interface-raw.lisp
       (define-sharp-bang)
       (define-sharp-u))
 
@@ -1731,7 +1727,7 @@ which is saved just in case it's needed later.")
           (copy-readtable *acl2-readtable*))
         (let ((*readtable* *acl2-readtable*))
           (define-sharp-dot)
-          (define-sharp-atsign)
+;         (define-sharp-atsign) ; see interface-raw.lisp
           (define-sharp-bang)
           (define-sharp-u)
           (set-dispatch-macro-character

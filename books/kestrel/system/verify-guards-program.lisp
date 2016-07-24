@@ -328,7 +328,7 @@
                             '(set-state-ok t)
                             '(set-irrelevant-formals-ok t)
                             '(set-ignore-ok t)
-                            '(defttag t)
+                            '(defttag :verify-guards-program)
                             '(set-temp-touchable-vars t state)
                             '(set-temp-touchable-fns t state)
                             '(assign verify-termination-on-raw-program-okp t)
