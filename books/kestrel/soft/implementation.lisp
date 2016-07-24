@@ -146,10 +146,6 @@
        bvars
        (no-duplicatesp bvars)))
 
-(define quantifierp (quant)
-  (or (eq quant 'acl2::forall)
-      (eq quant 'acl2::exists)))
-
 (define plain-sofun-infop (info (w plist-worldp))
   :verify-guards nil
   (and (true-listp info)
@@ -168,11 +164,10 @@
 (define quant-sofun-infop (info (w plist-worldp))
   :verify-guards nil
   (and (true-listp info)
-       (= (len info) 4)
+       (= (len info) 3)
        (sofun-kindp (first info))
        (funvar-setp (second info) w)
-       (bound-varsp (third info))
-       (quantifierp (fourth info))))
+       (bound-varsp (third info))))
 
 (define sofun-infop (info (w plist-worldp))
   :verify-guards nil
@@ -220,12 +215,6 @@
   :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (third (cdr (assoc-eq sofun table)))))
-
-(define sofun-quantifier (sofun (w plist-worldp))
-  :guard (quant-sofunp sofun w)
-  :verify-guards nil
-  (let ((table (table-alist 'second-order-functions w)))
-    (fourth (cdr (assoc-eq sofun table)))))
 
 ; A term may reference a function variable directly
 ; (when the function variable occurs in the term)
@@ -556,16 +545,15 @@
         (raise "~x0 must be a list of symbols." params))
        ((unless (and (consp body)
                      (= (len body) 3)
-                     (quantifierp (first body))
+                     (acl2::defun-sk-quantifier-p (first body))
                      (or (symbolp (second body))
                          (symbol-listp (second body)))))
         (raise "~x0 must be a quantified formula." body))
        ((unless (keyword-value-listp options))
         (raise "~x0 must be a list of keyed options." options))
-       (quant (first body))
        (bvars (second body))
        (bvars (if (symbolp bvars) (list bvars) bvars))
-       (info (list 'quant fparams bvars quant)))
+       (info (list 'quant fparams bvars)))
       `(progn
          (defun-sk ,sofun ,params ,body ,@options)
          (table second-order-functions ',sofun ',info)
@@ -1276,7 +1264,8 @@
        (sofun-info (acl2::defun-sk-check sofun w))
        ;; retrieve bound variables and quantifier of SOFUN:
        (bound-vars (sofun-bound-vars sofun w))
-       (quant (sofun-quantifier sofun w))
+       (quant (acl2::defun-sk-info->quantifier
+               (acl2::defun-sk-check sofun w)))
        ;; apply instantiation to the matrix of SOFUN:
        (sofun-matrix (acl2::defun-sk-info->matrix sofun-info))
        (fun-matrix (fun-subst-term inst sofun-matrix w))
@@ -1308,7 +1297,7 @@
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
-       (info (list 'quant fparams bound-vars quant))
+       (info (list 'quant fparams bound-vars))
        ;; singleton list of event to add FUN
        ;; to the table of second-order functions,
        ;; or NIL if FUN is first-order:
