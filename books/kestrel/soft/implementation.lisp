@@ -227,20 +227,6 @@
   (let ((table (table-alist 'second-order-functions w)))
     (fourth (cdr (assoc-eq sofun table)))))
 
-; A DEFUN-SK introduces a rewrite rule for the function FUN being defined,
-; namely the FUN-NECC (for FORALL) or FUN-SUFF (for EXISTS) theorem.
-; These are the default names,
-; but they may be changed using the :THM-NAME option of DEFUN-SK.
-; However, currently SOFT does not support the :THM-NAME option (see below),
-; and so the names are always the default ones.
-
-(define defun-sk-rewrite-rule-name ((fun symbolp) (quant quantifierp))
-  :verify-guards nil
-  (let* ((fun-name (symbol-name fun))
-         (suffix (case quant (forall "-NECC") (exists "-SUFF")))
-         (rule-name (string-append fun-name suffix)))
-    (intern-in-package-of-symbol rule-name fun)))
-
 ; A term may reference a function variable directly
 ; (when the function variable occurs in the term)
 ; or indirectly
@@ -303,14 +289,14 @@
 ; may reference function variables in their defining bodies.
 
 (define funvars-of-defchoose ((fun symbolp) (w plist-worldp))
-  :mode :program ; calls DEFCHOOSE-BODY
+  :mode :program
   (funvars-of-term (acl2::defchoose-body fun w) w))
 
 ; Second-order theorems and their instances
 ; may reference function variables in their formulas.
 
 (define funvars-of-defthm ((thm symbolp) (w plist-worldp))
-  :mode :program ; calls FORMULA
+  :mode :program
   (funvars-of-term (formula thm nil w) w))
 
 ; When a second-order function, or an instance thereof, is introduced,
@@ -327,7 +313,7 @@
    (w plist-worldp))
   :guard (or (funvar-setp fparams w) ; if FUN is 2nd-order
              (null fparams))         ; if FUN is 1st-order
-  :mode :program ; calls FUNVARS-OF-DEFUN
+  :mode :program
   (let ((funvars (case kind
                    (plain (funvars-of-defun fun w))
                    (choice (funvars-of-defchoose fun w))
@@ -360,10 +346,10 @@
 ; the custom rewrite rule must have the same function variables
 ; as the matrix (or body) of the function.
 
-(define check-qrewrite-rule-funvars
-  ((fun symbolp) (quant quantifierp) (w plist-worldp))
-  :mode :program ; calls FORMULA
-  (let* ((rule-name (defun-sk-rewrite-rule-name fun quant))
+(define check-qrewrite-rule-funvars ((fun symbolp) (w plist-worldp))
+  :mode :program
+  (let* ((rule-name (acl2::defun-sk-info->rewrite-name
+                     (acl2::defun-sk-check fun w)))
          (rule-body (formula rule-name nil w))
          (fun-body (acl2::body fun nil w)))
     (set-equiv (funvars-of-term rule-body w)
@@ -588,7 +574,6 @@
                                                  ',fparams
                                                  (w state)))
          (value-triple (check-qrewrite-rule-funvars ',sofun
-                                                    ',quant
                                                     (w state))))))
 
 (defmacro defun-sk2 (sofun fparams params body &rest options)
@@ -607,7 +592,7 @@
 ; A theorem may reference function variables in its formula.
 
 (define funvars-of-theorem ((thm symbolp) (w plist-worldp))
-  :mode :program ; calls FORMUAL
+  :mode :program
   (funvars-of-term (formula thm nil w) w))
 
 ; A second-order theorem is mimicked by a (first-order) theorem
@@ -616,7 +601,7 @@
 ; A theorem is second-order iff it depends on one or more function variables.
 
 (define sothmp ((sothm symbolp) (w plist-worldp))
-  :mode :program ; calls FUNVARS-OF-THEOREM
+  :mode :program
   (not (null (funvars-of-theorem sothm w))))
 
 ; When a second-order function or theorem is instantiated,
@@ -825,7 +810,7 @@
 ; similarly to the code that applies a function substitution to a term.
 
 (defines ext-fun-subst-term/terms/function
-  :mode :program ; termination needs ACL2 world invariants
+  :mode :program
 
   (define ext-fun-subst-term
     ((term pseudo-termp) (fsbs fun-substp) (w plist-worldp))
@@ -847,7 +832,6 @@
 
   (define ext-fun-subst-function
     ((fun symbolp) (fsbs fun-substp) (w plist-worldp))
-    :mode :program ; calls FORMULA
     (cond
      ((assoc fun fsbs) fsbs) ; pair already present
      ((sofunp fun w)
@@ -860,16 +844,8 @@
             (raise "~x0 has no instance for ~x1." fun fsbs))
            (fsbs (acons fun funinst fsbs))) ; extend FSBS
           (case (sofun-kind fun w)
-            (plain (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
-            (choice (ext-fun-subst-term (acl2::defchoose-body fun w) fsbs w))
-            (quant
-             (let* ((fsbs (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
-                    ;; the 2nd-order functions in the matrix of FUN
-                    ;; are the same as in the rewrite rule of FUN:
-                    (quant (sofun-quantifier fun w))
-                    (body
-                     (formula (defun-sk-rewrite-rule-name fun quant) nil w)))
-               (ext-fun-subst-term body fsbs w))))))
+            ((plain quant) (ext-fun-subst-term (acl2::body fun nil w) fsbs w))
+            (choice (ext-fun-subst-term (acl2::defchoose-body fun w) fsbs w)))))
      (t fsbs)))) ; FUN is not a 2nd-order function
 
 ; From a function substitution obtained by extending an instantiation as above,
@@ -892,7 +868,7 @@
 ; does not catch these witnesses.
 
 (define sothm-inst-pairs ((fsbs fun-substp) (w plist-worldp))
-  :mode :program ; calls DEFUN-SK-CHECK
+  :mode :program
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
@@ -957,7 +933,7 @@
 ;   so no fact is used in the proof.
 
 (define sothm-inst-facts ((fsbs fun-substp) (w plist-worldp))
-  :verify-guards nil
+  :mode :program
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
@@ -967,7 +943,8 @@
                  (choice-sofunp 1st w))
              (cons 2nd (sothm-inst-facts (cdr fsbs) w)))
             ((quant-sofunp 1st w)
-             (cons (defun-sk-rewrite-rule-name 2nd (sofun-quantifier 1st w))
+             (cons (acl2::defun-sk-info->rewrite-name
+                    (acl2::defun-sk-check 2nd w))
                    (sothm-inst-facts (cdr fsbs) w)))
             (t (sothm-inst-facts (cdr fsbs) w))))))
 
@@ -983,7 +960,7 @@
 
 (define sothm-inst-proof
   ((sothm symbolp) (fsbs fun-substp) (w plist-worldp))
-  :mode :program ; calls SOTHM-INST-PAIRS
+  :mode :program
   `(:instructions
     ((:use (:functional-instance ,sothm ,@(sothm-inst-pairs fsbs w)))
      (:repeat (:then (:use ,@(sothm-inst-facts fsbs w)) :prove)))))
@@ -1020,14 +997,14 @@
 ; where SOTHM is a 2nd-order theorem
 ; and ((F1 . G1) ... (Fm . Gm)) is an instantiation:
 (define check-sothm-inst (sothm-inst (w plist-worldp))
-  :mode :program ; calls SOTHMP
+  :mode :program
   (and (true-listp sothm-inst)
        (>= (len sothm-inst) 2)
        (sothmp (car sothm-inst) w)
        (funvar-instp (cdr sothm-inst) w)))
 
 (define defthm-inst-event (thm sothm-inst rest (w plist-worldp))
-  :mode :program ; calls EXT-FUN-SUBST-TERM and FORMULA
+  :mode :program
   (b* (;; THM is the name of the new theorem:
        ((unless (symbolp thm)) (raise "~x0 must be a name." thm))
        ;; after THM there is (SOTHM (F1 . G1) ... (Fm . Gm)):
@@ -1205,7 +1182,7 @@
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (plain-sofunp sofun w))
-  :mode :program ; calls EXT-FUN-SUBST-TERM and GUARD and FORMULA
+  :mode :program
   (b* (;; retrieve body, measure, and guard of SOFUN:
        (sofun-body (acl2::body sofun nil w))
        (sofun-measure (if (acl2::recursivep sofun nil w)
@@ -1264,7 +1241,7 @@
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (choice-sofunp sofun w))
-  :mode :program ; calls DEFCHOOSE-BODY and DEFCHOOSE-STRENGTHEN
+  :mode :program
   (b* (;; retrieve bound variables of SOFUN:
        (bound-vars (sofun-bound-vars sofun w))
        ;; apply instantiation to body of SOFUN:
@@ -1294,7 +1271,7 @@
   :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
               (quant-sofunp sofun w))
-  :mode :program ; calls FORMULA
+  :mode :program
   (b* (;; retrieve DEFUN-SK-specific constituents of SOFUN:
        (sofun-info (acl2::defun-sk-check sofun w))
        ;; retrieve bound variables and quantifier of SOFUN:
@@ -1320,8 +1297,8 @@
                  ;; (the instantiation is extended with (SOFUN . FUN)
                  ;; because the term presumably references SOFUN):
                  (let* ((fsbs (acons sofun fun inst))
-                        (rule-name (defun-sk-rewrite-rule-name
-                                     sofun (sofun-quantifier sofun w)))
+                        (rule-name (acl2::defun-sk-info->rewrite-name
+                                    (acl2::defun-sk-check sofun w)))
                         (term (formula rule-name nil w)))
                    (fun-subst-term fsbs term w)))))))
        ;; apply instantiation to the guard of SOFUN:
@@ -1350,10 +1327,10 @@
              '(:strengthen :quant-ok :rewrite :witness-dcls)
              options))
         ,@table-event
-        (value-triple (check-qrewrite-rule-funvars ',fun ',quant (w state))))))
+        (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
 
 (define defun-inst-event (fun fparams-or-sofuninst rest (w plist-worldp))
-  :mode :program ; calls DEFUN-INST-PLAIN-EVENTS
+  :mode :program
   (b* (;; FUN is the name of the new function:
        ((unless (symbolp fun)) (raise "~x0 must be a name." fun))
        ;; after FUN there is (FVAR1 ... FVARn) if FUN is 2nd-order,
