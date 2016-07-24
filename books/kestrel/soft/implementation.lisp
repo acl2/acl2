@@ -130,50 +130,13 @@
 ; like a first-order function).
 ; A table associates to each second-order function name
 ; its kind and the set of its function parameters.
-; In addition, the table associates
-; to each choice or quantifier second-order function name
-; its list of bound variables.
-; In addition, the table associates
-; to each quantifier second-order function name
-; its quantifier (FORALL or EXISTS)
-; and the kind of its rewrite rule
-; (default, direct, or custom term;
-; the custom term itself is not recorded in the table,
-; just the fact that it is a custom term is recorded).
 
-(define bound-varsp (bvars)
-  (and (symbol-listp bvars)
-       bvars
-       (no-duplicatesp bvars)))
-
-(define plain-sofun-infop (info (w plist-worldp))
+(define sofun-infop (info (w plist-worldp))
   :verify-guards nil
   (and (true-listp info)
        (= (len info) 2)
        (sofun-kindp (first info))
        (funvar-setp (second info) w)))
-
-(define choice-sofun-infop (info (w plist-worldp))
-  :verify-guards nil
-  (and (true-listp info)
-       (= (len info) 3)
-       (sofun-kindp (first info))
-       (funvar-setp (second info) w)
-       (bound-varsp (third info))))
-
-(define quant-sofun-infop (info (w plist-worldp))
-  :verify-guards nil
-  (and (true-listp info)
-       (= (len info) 3)
-       (sofun-kindp (first info))
-       (funvar-setp (second info) w)
-       (bound-varsp (third info))))
-
-(define sofun-infop (info (w plist-worldp))
-  :verify-guards nil
-  (or (plain-sofun-infop info w)
-      (choice-sofun-infop info w)
-      (quant-sofun-infop info w)))
 
 (table second-order-functions nil nil
   :guard (and (symbolp acl2::key) ; name
@@ -208,13 +171,6 @@
   :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (second (cdr (assoc-eq sofun table)))))
-
-(define sofun-bound-vars (sofun (w plist-worldp))
-  :guard (or (choice-sofunp sofun w)
-             (quant-sofunp sofun w))
-  :verify-guards nil
-  (let ((table (table-alist 'second-order-functions w)))
-    (third (cdr (assoc-eq sofun table)))))
 
 ; A term may reference a function variable directly
 ; (when the function variable occurs in the term)
@@ -476,7 +432,7 @@
         (raise "~x0 must be a non-empty list of function variables ~
                 without duplicates."
                fparams))
-       (info (list 'choice fparams (if (symbolp bvars) (list bvars) bvars))))
+       (info (list 'choice fparams)))
       `(progn
          (defchoose ,sofun ,bvars ,params ,body ,@options)
          (table second-order-functions ',sofun ',info)
@@ -551,9 +507,7 @@
         (raise "~x0 must be a quantified formula." body))
        ((unless (keyword-value-listp options))
         (raise "~x0 must be a list of keyed options." options))
-       (bvars (second body))
-       (bvars (if (symbolp bvars) (list bvars) bvars))
-       (info (list 'quant fparams bvars)))
+       (info (list 'quant fparams)))
       `(progn
          (defun-sk ,sofun ,params ,body ,@options)
          (table second-order-functions ',sofun ',info)
@@ -1231,13 +1185,13 @@
               (choice-sofunp sofun w))
   :mode :program
   (b* (;; retrieve bound variables of SOFUN:
-       (bound-vars (sofun-bound-vars sofun w))
+       (bound-vars (acl2::defchoose-bound-vars sofun w))
        ;; apply instantiation to body of SOFUN:
        (sofun-body (acl2::defchoose-body sofun w))
        (fun-body (fun-subst-term inst sofun-body w))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
-       (info (list 'choice fparams bound-vars))
+       (info (list 'choice fparams))
        ;; singleton list of event to add FUN
        ;; to the table of second-order functions,
        ;; or NIL if FUN is first-order:
@@ -1263,7 +1217,8 @@
   (b* (;; retrieve DEFUN-SK-specific constituents of SOFUN:
        (sofun-info (acl2::defun-sk-check sofun w))
        ;; retrieve bound variables and quantifier of SOFUN:
-       (bound-vars (sofun-bound-vars sofun w))
+       (bound-vars (acl2::defun-sk-info->bound-vars
+                    (acl2::defun-sk-check sofun w)))
        (quant (acl2::defun-sk-info->quantifier
                (acl2::defun-sk-check sofun w)))
        ;; apply instantiation to the matrix of SOFUN:
@@ -1297,7 +1252,7 @@
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
-       (info (list 'quant fparams bound-vars))
+       (info (list 'quant fparams))
        ;; singleton list of event to add FUN
        ;; to the table of second-order functions,
        ;; or NIL if FUN is first-order:
