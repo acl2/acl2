@@ -150,11 +150,6 @@
   (or (eq quant 'acl2::forall)
       (eq quant 'acl2::exists)))
 
-(define qrewrite-kindp (qrkind)
-  (or (eq qrkind 'default)
-      (eq qrkind 'direct)
-      (eq qrkind 'term)))
-
 (define plain-sofun-infop (info (w plist-worldp))
   :verify-guards nil
   (and (true-listp info)
@@ -173,12 +168,11 @@
 (define quant-sofun-infop (info (w plist-worldp))
   :verify-guards nil
   (and (true-listp info)
-       (= (len info) 5)
+       (= (len info) 4)
        (sofun-kindp (first info))
        (funvar-setp (second info) w)
        (bound-varsp (third info))
-       (quantifierp (fourth info))
-       (qrewrite-kindp (fifth info))))
+       (quantifierp (fourth info))))
 
 (define sofun-infop (info (w plist-worldp))
   :verify-guards nil
@@ -232,12 +226,6 @@
   :verify-guards nil
   (let ((table (table-alist 'second-order-functions w)))
     (fourth (cdr (assoc-eq sofun table)))))
-
-(define sofun-qrewrite-kind (sofun (w plist-worldp))
-  :guard (quant-sofunp sofun w)
-  :verify-guards nil
-  (let ((table (table-alist 'second-order-functions w)))
-    (fifth (cdr (assoc-eq sofun table)))))
 
 ; A DEFUN-SK introduces a rewrite rule for the function FUN being defined,
 ; namely the FUN-NECC (for FORALL) or FUN-SUFF (for EXISTS) theorem.
@@ -591,14 +579,7 @@
        (quant (first body))
        (bvars (second body))
        (bvars (if (symbolp bvars) (list bvars) bvars))
-       (rewrite (cadr (assoc-keyword :rewrite options)))
-       (qrkind (if rewrite
-                   (case rewrite
-                     (:default 'default)
-                     (:direct 'direct)
-                     (otherwise 'term))
-                 'default))
-       (info (list 'quant fparams bvars quant qrkind)))
+       (info (list 'quant fparams bvars quant)))
       `(progn
          (defun-sk ,sofun ,params ,body ,@options)
          (table second-order-functions ',sofun ',info)
@@ -1326,26 +1307,23 @@
        ;; is determined from the supplied value (if any),
        ;; otherwise it is inherited from SOFUN:
        (rewrite-supplied (cadr (assoc-keyword :rewrite options)))
-       (rewrite (or rewrite-supplied
-                    (let ((qrkind (sofun-qrewrite-kind sofun w)))
-                      (case qrkind
-                        (default :default)
-                        (direct :direct)
-                        (term
-                         ;; apply instantiation to that term
-                         ;; and use result as :REWRITE for FUN
-                         ;; (the instantiation is extended with (SOFUN . FUN)
-                         ;; because the term presumably references SOFUN):
-                         (let* ((fsbs (acons sofun fun inst))
-                                (rule-name (defun-sk-rewrite-rule-name
-                                             sofun (sofun-quantifier sofun w)))
-                                (term (formula rule-name nil w)))
-                           (fun-subst-term fsbs term w)))))))
-       ;; kind of rewrite rule for FUN:
-       (qrkind (case rewrite
-                 (:default 'default)
-                 (:direct 'direct)
-                 (otherwise 'term)))
+       (rewrite
+        (or rewrite-supplied
+            (let ((qrkind (acl2::defun-sk-info->rewrite-kind
+                            (acl2::defun-sk-check sofun w))))
+              (case qrkind
+                (:default :default)
+                (:direct :direct)
+                (:custom
+                 ;; apply instantiation to that term
+                 ;; and use result as :REWRITE for FUN
+                 ;; (the instantiation is extended with (SOFUN . FUN)
+                 ;; because the term presumably references SOFUN):
+                 (let* ((fsbs (acons sofun fun inst))
+                        (rule-name (defun-sk-rewrite-rule-name
+                                     sofun (sofun-quantifier sofun w)))
+                        (term (formula rule-name nil w)))
+                   (fun-subst-term fsbs term w)))))))
        ;; apply instantiation to the guard of SOFUN:
        (sofun-guard (guard sofun nil w))
        (fun-guard (fun-subst-term inst sofun-guard w))
@@ -1353,7 +1331,7 @@
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
-       (info (list 'quant fparams bound-vars quant qrkind))
+       (info (list 'quant fparams bound-vars quant))
        ;; singleton list of event to add FUN
        ;; to the table of second-order functions,
        ;; or NIL if FUN is first-order:
@@ -1367,7 +1345,7 @@
           :quant-ok t
           :rewrite ,rewrite
           :witness-dcls (,wit-dcl)
-; Matt K. mod: avoid duplicate keywords.
+          ;; Matt K. mod: avoid duplicate keywords:
           ,@(acl2::strip-keyword-list
              '(:strengthen :quant-ok :rewrite :witness-dcls)
              options))
