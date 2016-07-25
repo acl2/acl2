@@ -388,14 +388,6 @@
 (defmacro acl2::show-defun2 (&rest args)
   `(show-defun2 ,@args))
 
-; The name of the termination theorem of a recursive second-order function
-; is obtained by adding -T to the name of the function.
-
-(define sofun-termination-theorem-name ((sofun symbolp))
-  (let* ((sofun-name (symbol-name sofun))
-         (theorem-name (string-append sofun-name "-T")))
-    (intern-in-package-of-symbol theorem-name sofun)))
-
 ; The macro DEFCHOOSE2 introduces a choice second-order function.
 ; DEFCHOOSE2 has the form
 ;   (DEFCHOOSE2 SOFUN (BVAR1 ... BVARm) (FVAR1 ... FVARn) (VAR1 ... VARp)
@@ -1140,8 +1132,9 @@
        (fun-measure (fun-subst-term inst sofun-measure w))
        (fun-guard (fun-subst-term inst sofun-guard w))
        ;; construct the termination proof from the instantiation, if recursive:
-       (sofun-tt-name (sofun-termination-theorem-name sofun))
-       (sofun-tt-formula (formula sofun-tt-name nil w)) ; could be NIL
+       (sofun-tt-name `(:termination-theorem ,sofun))
+       (sofun-tt-formula (and (acl2::recursivep sofun nil w)
+                              (termination-theorem sofun w)))
        (fsbs (ext-fun-subst-term sofun-tt-formula inst w))
        (fun-tt-proof (sothm-inst-proof sofun-tt-name fsbs w))
        ;; :HINTS of FUN if recursive, otherwise NIL:
