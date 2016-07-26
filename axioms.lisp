@@ -1164,8 +1164,12 @@
 
 #-acl2-loop-only
 (progn
+
+; The following are valid exactly when *wormhole-iprint-ar* is not nil.
+
 (defvar *wormhole-iprint-ar* nil)
 (defvar *wormhole-iprint-hard-bound* nil)
+(defvar *wormhole-iprint-fal* nil)
 (defvar *wormhole-iprint-soft-bound* nil)
 )
 
@@ -1256,6 +1260,7 @@
                                ((member arg1
                                         '(iprint-ar
                                           iprint-hard-bound
+                                          iprint-fal
                                           iprint-soft-bound)
                                         :test 'eq)
 
@@ -1265,17 +1270,21 @@
 
                                 `(progn
                                    (when (null *wormhole-iprint-ar*)
-                                     (setq *wormhole-iprint-ar*
-                                           (f-get-global
-                                            'iprint-ar
-                                            *the-live-state*))
                                      (setq *wormhole-iprint-hard-bound*
                                            (f-get-global
                                             'iprint-hard-bound
                                             *the-live-state*))
+                                     (setq *wormhole-iprint-fal*
+                                           (f-get-global
+                                            'iprint-fal
+                                            *the-live-state*))
                                      (setq *wormhole-iprint-soft-bound*
                                            (f-get-global
                                             'iprint-soft-bound
+                                            *the-live-state*))
+                                     (setq *wormhole-iprint-ar*
+                                           (f-get-global
+                                            'iprint-ar
                                             *the-live-state*)))
                                    ,@(when (eq arg1 'iprint-ar)
                                        `((let ((qarg2 (quote ,arg2)))
@@ -1311,8 +1320,7 @@
                          *the-live-state*)
                        (cddr *wormhole-cleanup-form*)))))
       (otherwise
-       (interface-er "Unrecognized op in push-wormhole-undo-formi,~
-                          ~x0." op)))))
+       (interface-er "Unrecognized op in push-wormhole-undo-formi,~x0." op)))))
 
 ; The following symbol is the property under which we store Common
 ; Lisp streams on the property lists of channels.
@@ -12536,7 +12544,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     certify-book-finish-complete
     chk-absstobj-invariants
     get-stobj-creator
-    restore-iprint-ar-from-wormhole
+    iprint-oracle-updates
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
@@ -12875,6 +12883,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun init-iprint-ar (hard-bound enabledp)
 
+; Warning: Consider also calling init-iprint-fal when calling this function.
+
 ; We return an iprint-ar with the given hard-bound.
 
 ; As stated in the Essay on Iprinting, we maintain the invariants that the
@@ -13123,6 +13133,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (inhibited-summary-types . nil)
     (inside-skip-proofs . nil)
     (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
+    (iprint-fal . nil)
     (iprint-hard-bound . ,*iprint-hard-bound-default*)
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
@@ -19879,6 +19890,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-evisc-tuple-lst
     set-evisc-tuple-fn1
     set-iprint-ar
+    init-iprint-fal update-iprint-fal-rec update-iprint-fal init-iprint-fal+
 
     checkpoint-world
 
@@ -20028,6 +20040,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   print-readably ; generalized boolean
     print-right-margin ; nil or non-negative integer
     iprint-ar
+    iprint-fal
     iprint-hard-bound
     iprint-soft-bound
 ;   ld-evisc-tuple ; already mentioned above
@@ -20058,7 +20071,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-termination-on-raw-program-okp
     ))
 
-; There are a variety of state global variables, 'ld-skip-proofsp among them,
+; There is a variety of state global variables, 'ld-skip-proofsp among them,
 ; that are "bound" by LD in the sense that their values are protected by
 ; pushing them upon entrance to LD and popping them upon exit.  These globals
 ; are called the "LD specials".  For each LD special there are accessor and

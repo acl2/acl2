@@ -369,8 +369,8 @@
                                   (logicp fn wrld)
                                   (eql 1 (len (recursivep fn nil wrld)))))
                          (wrld plist-worldp))
-  ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
-  :verify-guards nil
+  :returns (calls-with-tests pseudo-tests-and-call-listp)
+  :prepwork ((program))
   :short
   "Recursive calls of a (singly) recursive function,
   along with the controlling tests."
@@ -380,43 +380,8 @@
   but each record has one recursive calls (instead of zero or more),
   and there is exactly one record for each recursive call.
   </p>"
-  (recursive-calls-aux2 (induction-machine fn wrld))
-
-  :prepwork
-
-  ((define recursive-calls-aux1 ((tests pseudo-term-listp)
-                                 (calls pseudo-term-listp))
-     ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
-     :parents (recursive-calls)
-     :short "First auxiliary function of @(tsee recursive-calls)."
-     :long
-     "<p>
-     Pair each call in @('calls') with the tests @('tests').
-     </p>"
-     (if (endp calls)
-         nil
-       (cons (make tests-and-call
-                   :tests tests
-                   :call (car calls))
-             (recursive-calls-aux1 tests (cdr calls)))))
-
-   (define recursive-calls-aux2
-     ((tests-and-calls-list pseudo-tests-and-calls-listp))
-     ;; :returns (calls-with-tests pseudo-tests-and-call-listp)
-     :verify-guards nil
-     :parents (recursive-calls)
-     :short "Second auxiliary function of @(tsee recursive-calls)."
-     :long
-     "<p>
-     Collect all the calls, with tests, from the induction machine.
-     </p>"
-     (if (endp tests-and-calls-list)
-         nil
-       (let* ((tests-and-calls (car tests-and-calls-list))
-              (tests (access tests-and-calls tests-and-calls :tests))
-              (calls (access tests-and-calls tests-and-calls :calls)))
-         (append (recursive-calls-aux1 tests calls)
-                 (recursive-calls-aux2 (cdr tests-and-calls-list))))))))
+  (termination-machine
+   (list fn) (body fn nil wrld) nil nil (ruler-extenders fn wrld)))
 
 (std::deflist pseudo-event-landmark-listp (x)
   (pseudo-event-landmarkp x)

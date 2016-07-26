@@ -10,8 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains macros for building tests,
-; related to MUST-SUCCEED and MUST-FAIL.
+; This file provides utilities for building tests.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,13 +20,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc testing-utilities
+  :parents (kestrel-general-utilities)
+  :short "Utilities for building tests.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection must-succeed*
 
-  :parents (kestrel-general-utilities errors)
+  :parents (testing-utilities errors)
 
-  :short "A variant of @(tsee must-succeed) that takes multiple forms."
+  :short "A variant of @(tsee must-succeed) that accepts multiple forms."
 
   :long
+
   "@({
   (must-succeed* form1
                  ...
@@ -35,6 +41,7 @@
                  :with-output-off ...
                  :check-expansion ...)
   })
+
   <p>
   The @('N') forms must be
   <see topic='@(url embedded-event-form)'>embedded event forms</see>,
@@ -50,11 +57,13 @@
   before considering later forms
   as in @(tsee must-succeed*).
   </p>
+
   <p>
   The forms may be followed by
   @(':with-output-off') and/or @(':check-expansion'),
   as in @(tsee must-succeed).
   </p>
+
   @(def must-succeed*)"
 
   (defmacro must-succeed* (&rest args)
@@ -80,17 +89,19 @@
 
 (defsection must-be-redundant
 
-  :parents (kestrel-general-utilities errors)
+  :parents (testing-utilities errors)
 
   :short
   "A top-level @(tsee assert$)-like command
   to ensure that given forms are redundant."
 
   :long
+
   "<p>
   The forms are put into an @(tsee encapsulate),
   along with a @(tsee set-enforce-redundancy) command that precedes them.
   </p>
+
   @(def must-be-redundant)"
 
   (defmacro must-be-redundant (&rest forms)
@@ -103,15 +114,17 @@
 
 (defsection must-fail-local
 
-  :parents (kestrel-general-utilities errors)
+  :parents (testing-utilities errors)
 
   :short "A @(see local) variant of @(tsee must-fail)."
 
   :long
+
   "<p>
   This is useful to overcome the problem discussed in the caveat
   in the documentation of @(tsee must-fail).
   </p>
+
   @(def must-fail-local)"
 
   (defmacro must-fail-local (&rest args)
