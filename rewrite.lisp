@@ -7093,7 +7093,7 @@
                    (t (lookup-brr-stack var-name (cdr stack))))))))
 
 (defun clean-brr-stack1 (gstack stack)
-  (cond ((null stack)
+  (cond ((endp stack)
          nil)
         ((equal gstack (caar stack)) stack)
         (t (clean-brr-stack1 gstack (cdr stack)))))

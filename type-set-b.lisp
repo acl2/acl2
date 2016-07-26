@@ -90,7 +90,9 @@
 
 ; Like assoc-equal but compares against the cdr of each pair in alist.
 
-  (cond ((null alist) nil)
+  (declare (xargs :mode :logic ; might as well put this into :logic mode
+                  :guard (alistp alist)))
+  (cond ((endp alist) nil)
         ((equal x (cdar alist)) (car alist))
         (t (assoc-equal-cdr x (cdr alist)))))
 

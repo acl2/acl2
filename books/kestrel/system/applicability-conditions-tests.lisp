@@ -40,132 +40,135 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (mv-let (t/msg state)
-   (prove-applicability-condition (make-applicability-condition
-                                   :name 'false
-                                   :formula '(equal x y)
-                                   :hints nil)
-                                  nil ; verbose
-                                  state)
-   (value (msgp t/msg))))
+ (b* (((mv success & state)
+       (prove-applicability-condition (make-applicability-condition
+                                       :name 'false
+                                       :formula '(equal x y)
+                                       :hints nil)
+                                      nil ; verbose
+                                      state)))
+   (value (not success))))
 
 (must-eval-to-t
- (mv-let (t/msg state)
-   (prove-applicability-condition (make-applicability-condition
-                                   :name 'false
-                                   :formula '(equal x y)
-                                   :hints nil)
-                                  t ; verbose
-                                  state)
-   (value (msgp t/msg))))
+ (b* (((mv success & state)
+       (prove-applicability-condition (make-applicability-condition
+                                       :name 'false
+                                       :formula '(equal x y)
+                                       :hints nil)
+                                      t ; verbose
+                                      state)))
+   (value (not success))))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (t/msg state)
-    (prove-applicability-condition (make-applicability-condition
-                                    :name 'need-hints
-                                    :formula '(equal (f x) x)
-                                    :hints nil)
-                                   nil ; verbose
-                                   state)
-    (value (msgp t/msg)))))
+  (b* (((mv success & state)
+        (prove-applicability-condition (make-applicability-condition
+                                        :name 'need-hints
+                                        :formula '(equal (f x) x)
+                                        :hints nil)
+                                       nil ; verbose
+                                       state)))
+    (value (not success)))))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (t/msg state)
-    (prove-applicability-condition (make-applicability-condition
-                                    :name 'need-hints
-                                    :formula '(equal (f x) x)
-                                    :hints nil)
-                                   t ; verbose
-                                   state)
-    (value (msgp t/msg)))))
+  (b* (((mv success & state)
+        (prove-applicability-condition (make-applicability-condition
+                                        :name 'need-hints
+                                        :formula '(equal (f x) x)
+                                        :hints nil)
+                                       t ; verbose
+                                       state)))
+    (value (not success)))))
 
 (must-eval-to-t
- (mv-let (t/msg state)
-   (prove-applicability-condition (make-applicability-condition
-                                   :name 'true
-                                   :formula '(equal x x)
-                                   :hints nil)
-                                  nil ; verbose
-                                  state)
-   (value (eq t/msg t))))
+ (b* (((mv success & state)
+       (prove-applicability-condition (make-applicability-condition
+                                       :name 'true
+                                       :formula '(equal x x)
+                                       :hints nil)
+                                      nil ; verbose
+                                      state)))
+   (value success)))
 
 (must-eval-to-t
- (mv-let (t/msg state)
-   (prove-applicability-condition (make-applicability-condition
-                                   :name 'true
-                                   :formula '(equal x x)
-                                   :hints nil)
-                                  t ; verbose
-                                  state)
-   (value (eq t/msg t))))
+ (b* (((mv success & state)
+       (prove-applicability-condition (make-applicability-condition
+                                       :name 'true
+                                       :formula '(equal x x)
+                                       :hints nil)
+                                      t ; verbose
+                                      state)))
+   (value success)))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (t/msg state)
-    (prove-applicability-condition (make-applicability-condition
-                                    :name 'true
-                                    :formula '(equal (f x) x)
-                                    :hints '(("Goal" :in-theory (enable f))))
-                                   nil ; verbose
-                                   state)
-    (value (eq t/msg t)))))
+  (b* (((mv success & state)
+        (prove-applicability-condition
+         (make-applicability-condition
+          :name 'true
+          :formula '(equal (f x) x)
+          :hints '(("Goal" :in-theory (enable f))))
+         nil ; verbose
+         state)))
+    (value success))))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (t/msg state)
-    (prove-applicability-condition (make-applicability-condition
-                                    :name 'true
-                                    :formula '(equal (f x) x)
-                                    :hints '(("Goal" :in-theory (enable f))))
-                                   t ; verbose
-                                   state)
-    (value (eq t/msg t)))))
+  (b* (((mv success & state)
+        (prove-applicability-condition
+         (make-applicability-condition
+          :name 'true
+          :formula '(equal (f x) x)
+          :hints '(("Goal" :in-theory (enable f))))
+         t ; verbose
+         state)))
+    (value success))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (mv-let (t/msg state)
-   (prove-applicability-conditions (list (make-applicability-condition
-                                          :name 'true
-                                          :formula '(equal x x)
-                                          :hints nil)
-                                         (make-applicability-condition
-                                          :name 'false
-                                          :formula '(equal x y)
-                                          :hints nil))
-                                   nil ; verbose
-                                   state)
-   (value (msgp t/msg))))
+ (b* (((mv success & state)
+       (prove-applicability-conditions
+        (list (make-applicability-condition
+               :name 'true
+               :formula '(equal x x)
+               :hints nil)
+              (make-applicability-condition
+               :name 'false
+               :formula '(equal x y)
+               :hints nil))
+        nil ; verbose
+        state)))
+   (value (not success))))
 
 (must-eval-to-t
- (mv-let (t/msg state)
-   (prove-applicability-conditions nil
-                                   nil ; verbose
-                                   state)
-   (value (eq t/msg t))))
+ (b* (((mv success & state)
+       (prove-applicability-conditions nil
+                                       nil ; verbose
+                                       state)))
+   (value success)))
 
 (must-succeed*
  (defund f (x) x)
  (must-eval-to-t
-  (mv-let (t/msg state)
-    (prove-applicability-conditions (list (make-applicability-condition
-                                           :name 'true
-                                           :formula '(equal x x)
-                                           :hints nil)
-                                          (make-applicability-condition
-                                           :name 'need-hints
-                                           :formula '(equal (f x) x)
-                                           :hints '(("Goal"
-                                                     :in-theory (enable f)))))
-                                    nil ; verbose
-                                    state)
-    (value (eq t/msg t)))))
+  (b* (((mv success & state)
+        (prove-applicability-conditions
+         (list (make-applicability-condition
+                :name 'true
+                :formula '(equal x x)
+                :hints nil)
+               (make-applicability-condition
+                :name 'need-hints
+                :formula '(equal (f x) x)
+                :hints '(("Goal" :in-theory (enable f)))))
+         nil ; verbose
+         state)))
+    (value success))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

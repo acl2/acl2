@@ -30,12 +30,12 @@
         'abcdefg$))
 
 (assert-event
- (equal (fresh-name-in-world-with-$s 'cons '(cons$ cons$$) (w state))
-        'cons$$$))
+ (equal (fresh-name-in-world-with-$s 'len '(len$ len$$) (w state))
+        'len$$$))
 
 (assert-event
- (equal (fresh-name-in-world-with-$s 'cons '(cons$ cons$$$) (w state))
-        'cons$$))
+ (equal (fresh-name-in-world-with-$s 'len '(len$ len$$$) (w state))
+        'len$$))
 
 (must-succeed*
  (defun f (x) x)

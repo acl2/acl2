@@ -26,11 +26,6 @@
   :parents (kestrel-system-utilities system-utilities)
   :short "Utilities related to @(see term)s.")
 
-(define all-fns ((term pseudo-termp))
-  ;; :returns (fns symbol-listp)
-  :short "Function symbols in a term."
-  (all-ffn-symbs term nil))
-
 (define pseudo-lambda-expr-p (x)
   :returns (yes/no booleanp)
   :short

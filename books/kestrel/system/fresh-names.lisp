@@ -8,8 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides utilities for generating fresh names,
-; i.e. names that do not already occur in the world, in terms, etc.
+; This file provides utilities for generating fresh names.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,16 +18,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection fresh-names
-  :parents (kestrel-system-utilities system-utilities)
-  :short "Utilities for generating fresh names.")
-
 (define fresh-name-in-world-with-$s ((name symbolp)
                                      (names-to-avoid symbol-listp)
                                      (wrld plist-worldp))
   :returns (fresh-name symbolp)
   :prepwork ((program))
-  :parents (fresh-names)
+  :parents (kestrel-system-utilities system-utilities)
   :short
   "Append as many @('$') signs to @('name')
   as needed to make the name new in the world, i.e. not already in use,
@@ -40,5 +35,5 @@
   </p>"
   (if (or (logical-namep name wrld)
           (member name names-to-avoid))
-      (fresh-name-in-world-with-$s (packn (list name '$)) names-to-avoid wrld)
+      (fresh-name-in-world-with-$s (add-suffix name "$") names-to-avoid wrld)
     name))

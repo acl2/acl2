@@ -67,9 +67,6 @@
 
 ; - Have an option that just returns the forms, rather than passing them to LD.
 
-; - Consider returning an error rather than (value :FAILED) when
-;   verify-guards-program fails.
-
 ; - Perhaps remove excess skip-proofs.
 
 ; - Note that because a defttag is executed under the make-event, a command
@@ -331,7 +328,7 @@
                             '(set-state-ok t)
                             '(set-irrelevant-formals-ok t)
                             '(set-ignore-ok t)
-                            '(defttag t)
+                            '(defttag :verify-guards-program)
                             '(set-temp-touchable-vars t state)
                             '(set-temp-touchable-fns t state)
                             '(assign verify-termination-on-raw-program-okp t)
@@ -339,59 +336,4 @@
                      :ld-error-action :error
                      ,@(and print-p `(:ld-pre-eval-print ,print)))
                  (declare (ignore val))
-                 (value (list 'value-triple
-                              (if erp :FAILED :SUCCESS))))))
-
-; Examples:
-#||
-
-(logic)
-
-(progn
-  (defun f1p (x) (declare (xargs :mode :program)) x)
-  (defun f2p (x)
-    (declare (xargs :mode :program))
-    (if (consp x) (f2p (cdr x)) x))
-  (defun f3 (x) x)
-  (defun f4p (x)
-    (declare (xargs :mode :program))
-    (list (f1p x) (f2p x) (f3 x))))
-(verify-guards-program f4p :print t))
-
-; No measure guessed:
-(progn
-  (defun f5p (x y)
-    (declare (xargs :mode :program))
-    (if (consp x)
-        (f5p (cdr x) y)
-      (if (consp y)
-          (f5p x (cdr y))
-        (list x y))))
-  (defun f6p (x y)
-    (declare (xargs :mode :program))
-    (list (f4p x) (f5p x y))))
-(verify-guards-program f6p :print t)
-
-; Guard verification fails for f7p:
-(defun f7p (x)
-  (declare (xargs :mode :program))
-  (car (f1p x)))
-(verify-guards-program f7p :print t)
-
-; Fails (tests that verify-termination doesn't do guard
-; verification under skip-proofs):
-(defun f8p (x)
-  (declare (xargs :mode :program :guard (not (acl2-numberp x))))
-  (car (f1p x)))
-(verify-guards-program f8p)
-
-; Succeeds
-(defun f9p (x)
-  (declare (xargs :mode :program :guard (consp x)))
-  (car (f1p x)))
-(verify-guards-program f9p)
-
-; Fails
-(verify-guards-program f0)
-
-||#
+                 (mv erp (list 'value-triple (if erp :FAILED :SUCCESS)) state))))

@@ -24,6 +24,104 @@
 ; cannot code in ACL2 because they require constructs not in ACL2, such
 ; as calling the compiler.
 
+; We start with a section that was originally in acl2-fns.lisp, but was moved
+; here when sharp-atsign-read started using several functions defined in the
+; sources, to avoid compiler warnings.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                            SUPPORT FOR #@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro sharp-atsign-read-er (str &rest format-args)
+  `(progn (loop (when (null (read-char-no-hang stream nil nil t))
+                  (return)))
+          (error (concatenate 'string ,str ".  See :DOC set-iprint.")
+                 ,@format-args)))
+
+(defun sharp-atsign-read (stream char n &aux (state *the-live-state*))
+  (declare (ignore char n))
+  (let (ch
+        bad-ch
+        (zero-code (char-code #\0))
+        (index 0)
+        (iprint-last-index (iprint-last-index state)))
+    (loop
+     (when (eql (setq ch (read-char stream t nil t))
+                #\#)
+       (return))
+     (let ((digit (- (char-code ch) zero-code)))
+       (cond ((or (< digit 0)
+                  (> digit 9))
+              (when (not bad-ch)
+                (setq bad-ch ch))
+              (return))
+             (t
+              (setq index (+ digit (* 10 index)))))))
+    (cond
+     (bad-ch
+      (sharp-atsign-read-er
+       "Non-digit character ~s following #@~s"
+       bad-ch index))
+     ((symbol-value (f-get-global 'certify-book-info state))
+      (sharp-atsign-read-er
+       "Illegal reader macro during certify-book, #@~s#"
+       index))
+     ((iprint-ar-illegal-index index state)
+      (sharp-atsign-read-er
+       "Out-of-bounds index in #@~s#"
+       index))
+     (t
+      (let ((old-read-state ; bind special
+             *iprint-read-state*))
+        (cond
+         ((eq old-read-state nil)
+          (iprint-ar-aref1 index state))
+         (t
+          (let ((new-read-state-order (if (<= index iprint-last-index)
+                                          '<=
+                                        '>)))
+            (cond
+             ((eq old-read-state t)
+              (setq *iprint-read-state*
+                    (cons index new-read-state-order))
+              (iprint-ar-aref1 index state))
+             ((eq (cdr old-read-state)
+                  new-read-state-order) ; both > or both <=
+              (iprint-ar-aref1 index state))
+             (t
+              (multiple-value-bind
+               (index-before index-after)
+               (cond
+                ((eq (cdr old-read-state) '<=)
+                 (values index (car old-read-state)))
+                (t ; (eq (cdr old-read-state) '>)
+                 (values (car old-read-state) index)))
+               (sharp-atsign-read-er
+                "Attempt to read a form containing both an index~%~
+                 created before the most recent rollover (#@~s#) and~%~
+                 an index created after that rollover (#@~s#)"
+                index-before index-after))))))))))))
+
+(defun define-sharp-atsign ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\@
+   #'sharp-atsign-read))
+
+(eval-when
+
+; Note: CMUCL build breaks without the check below for a compiled function.
+
+ #-cltl2
+ (load eval)
+ #+cltl2
+ (:load-toplevel :execute)
+ (when (compiled-function-p! 'sharp-atsign-read)
+   (let ((*readtable* *acl2-readtable*))
+     (define-sharp-atsign))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;          EVALUATION
 
 ; Essay on Evaluation in ACL2

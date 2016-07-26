@@ -10333,7 +10333,7 @@
   (list 'pr!-fn cd 'state))
 
 (defun disabledp-fn-lst (runic-mapping-pairs ens)
-  (cond ((null runic-mapping-pairs) nil)
+  (cond ((endp runic-mapping-pairs) nil)
         ((enabled-numep (caar runic-mapping-pairs) ens)
          (disabledp-fn-lst (cdr runic-mapping-pairs) ens))
         (t (cons (cdar runic-mapping-pairs)

@@ -19,21 +19,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (all-fns 'x) nil))
-
-(assert-event (equal (all-fns ''3) nil))
-
-(assert-event (equal (all-fns '(f x)) '(f)))
-
-(assert-event (equal (all-fns '(f '"ab")) '(f)))
-
-(assert-event (equal (all-fns '(f (g a) (h '4/5))) '(h g f)))
-
-(assert-event (equal (all-fns '((lambda (x y) (f x y)) (g '1) (h x x)))
-                     '(h g f)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-event (not (pseudo-lambda-expr-p "abc")))
 
 (assert-event (not (pseudo-lambda-expr-p (cons 3 6))))
