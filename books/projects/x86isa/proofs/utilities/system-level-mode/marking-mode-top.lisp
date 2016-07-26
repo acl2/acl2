@@ -1051,7 +1051,6 @@
                                  n08p
                                  len)
                                 (rewrite-get-prefixes-to-get-prefixes-alt
-                                 rm08-to-rb
                                  las-to-pas-values-and-write-to-physical-memory-disjoint
                                  get-prefixes-xw-mem-values-in-system-level-mode-helper-1
                                  xlate-equiv-memory-and-two-get-prefixes-values)))))

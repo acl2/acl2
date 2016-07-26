@@ -94,7 +94,6 @@
                 (member-p lin-addr (create-canonical-address-list n prog-addr))
                 (syntaxp (quotep n))
                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr :x (cpl x86) x86)))
-                ;; (not (mv-nth 0 (rb (list lin-addr) :x x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (x86p x86))
@@ -103,13 +102,11 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (program-at
+                            rm08
                             rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode-helper)
                            (acl2::mv-nth-cons-meta
-                            rm08-to-rb
                             member-p-canonical-address-p-canonical-address-listp))
-           :use ((:instance rm08-to-rb
-                            (r-w-x :x))
-                 (:instance member-p-canonical-address-p-canonical-address-listp
+           :use ((:instance member-p-canonical-address-p-canonical-address-listp
                             (e lin-addr))
                  (:instance rm08-in-terms-of-nth-pos-and-rb-in-system-level-non-marking-mode
                             (addr lin-addr)
@@ -742,5 +739,18 @@
 (globally-disable '(rb wb canonical-address-p program-at
                        unsigned-byte-p signed-byte-p
                        las-to-pas all-translation-governing-addresses))
+
+(in-theory (e/d*
+            ;; We enable all these functions so that reasoning about
+            ;; memory can be done in terms of rb and wb.
+            (rim-size
+             rm-size
+             wim-size
+             wm-size
+             rm08 rim08 wm08 wim08
+             rm16 rim16 wm16 wim16
+             rm32 rim32 wm32 wim32
+             rm64 rim64 wm64 wim64)
+            ()))
 
 ;; ======================================================================
