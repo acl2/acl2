@@ -1004,7 +1004,6 @@
                         combine-mv-nth-2-las-to-pas-same-r-w-x-when-addresses-in-sequence
                         mv-nth-2-las-to-pas-system-level-non-marking-mode
                         mv-nth-2-get-prefixes-alt-no-prefix-byte
-                        rm08-to-rb
                         rewrite-rb-to-rb-alt
                         page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                         unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12

@@ -10,15 +10,6 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* ()
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-                         xr-fault-wb-in-system-level-marking-mode
-                         xr-fault-wb-in-system-level-mode))))
-
 ;; ======================================================================
 
 ;; (0) Factorial program:
@@ -390,6 +381,7 @@
                              !flgi-undefined
                              rim-size
                              rim08
+                             rm08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -453,6 +445,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
@@ -489,6 +482,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
@@ -532,6 +526,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
@@ -570,6 +565,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32

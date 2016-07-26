@@ -311,10 +311,14 @@
                   (nth (pos addr l-addrs) (mv-nth 1 (rb l-addrs r-w-x (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance member-p-canonical-address-p
+                            (e addr)
+                            (x l-addrs)))
            :in-theory (e/d (rm08
                             member-p disjoint-p
                             rm08-in-terms-of-nth-pos-and-rb-helper)
-                           (all-translation-governing-addresses
+                           (member-p-canonical-address-p
+                            all-translation-governing-addresses
                             signed-byte-p
                             (:meta acl2::mv-nth-cons-meta))))))
 
@@ -347,13 +351,11 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (program-at
-                            rb-in-terms-of-nth-and-pos-helper)
+                            rb-in-terms-of-nth-and-pos-helper
+                            rm08)
                            (acl2::mv-nth-cons-meta
-                            rm08-to-rb
                             member-p-canonical-address-p-canonical-address-listp))
-           :use ((:instance rm08-to-rb
-                            (r-w-x :x))
-                 (:instance member-p-canonical-address-p-canonical-address-listp
+           :use ((:instance member-p-canonical-address-p-canonical-address-listp
                             (e lin-addr))
                  (:instance rm08-in-terms-of-nth-pos-and-rb-in-system-level-mode
                             (addr lin-addr)
@@ -1002,6 +1004,19 @@
                     unsigned-byte-p
                     signed-byte-p))
 
+(in-theory (e/d*
+            ;; We enable all these functions so that reasoning about
+            ;; memory can be done in terms of rb and wb.
+            (rim-size
+             rm-size
+             wim-size
+             wm-size
+             rm08 rim08 wm08 wim08
+             rm16 rim16 wm16 wim16
+             rm32 rim32 wm32 wim32
+             rm64 rim64 wm64 wim64)
+            ()))
+
 ;; ======================================================================
 
 (defsection xlate-equiv-memory-and-rm08
@@ -1064,8 +1079,10 @@
     :hints (("Goal"
              :cases ((xr :programmer-level-mode 0 x86-1))
              :in-theory (e/d* (rm08
+                               rb
                                disjoint-p
-                               member-p)
+                               member-p
+                               las-to-pas)
                               (force (force)))
              :use ((:instance xlate-equiv-memory-and-xr-mem-from-rest-of-memory
                               (j (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (cpl x86-1) x86-1)))
@@ -1077,12 +1094,12 @@
     (implies (xlate-equiv-memory x86-1 x86-2)
              (xlate-equiv-memory (mv-nth 2 (rm08 lin-addr r-w-x x86-1))
                                  (mv-nth 2 (rm08 lin-addr r-w-x x86-2))))
-    :hints (("Goal" :in-theory (e/d* (rm08) (force (force)))))
+    :hints (("Goal" :in-theory (e/d* (rm08 rb) (force (force)))))
     :rule-classes :congruence)
 
   (defthm xlate-equiv-memory-and-mv-nth-2-rm08
     (xlate-equiv-memory (mv-nth 2 (rm08 lin-addr r-w-x x86)) x86)
-    :hints (("Goal" :in-theory (e/d* (rm08) (force (force)))))))
+    :hints (("Goal" :in-theory (e/d* (rm08 rb) (force (force)))))))
 
 ;; ======================================================================
 
@@ -1100,9 +1117,8 @@
                     (xr fld index x86)))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
-             :in-theory (e/d* (get-prefixes rm08)
-                              (rm08-to-rb
-                               negative-logand-to-positive-logand-with-integerp-x
+             :in-theory (e/d* (get-prefixes rm08 rb las-to-pas)
+                              (negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                acl2::loghead-identity
                                not force (force))))))
@@ -1130,14 +1146,13 @@
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes
-                               rm08
+                               rb
                                las-to-pas)
                               (mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
                                negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                subset-p-two-create-canonical-address-lists-general
                                subset-p
-                               rm08-to-rb
                                not force (force))))))
 
   (defthmd get-prefixes-xw-values-in-system-level-mode
@@ -1157,14 +1172,16 @@
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :expand (get-prefixes start-rip prefixes cnt (xw fld index value x86))
-             :in-theory (e/d* (get-prefixes)
-                              (negative-logand-to-positive-logand-with-integerp-x
+             :in-theory (e/d* (get-prefixes
+                               rb
+                               las-to-pas)
+                              (rm08
+                               negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                acl2::ash-0
                                acl2::zip-open
                                acl2::ifix-when-not-integerp
                                acl2::loghead-identity
-                               rm08-to-rb
                                (:t bitops::logior-natp-type)
                                (:t natp-get-prefixes)
                                (:t n08p-mv-nth-1-rm08)
@@ -1185,14 +1202,16 @@
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :expand (get-prefixes start-rip prefixes cnt (xw fld index value x86))
-             :in-theory (e/d* (get-prefixes)
-                              (negative-logand-to-positive-logand-with-integerp-x
+             :in-theory (e/d* (get-prefixes
+                               las-to-pas
+                               rb)
+                              (rm08
+                               negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                acl2::ash-0
                                acl2::zip-open
                                acl2::ifix-when-not-integerp
                                acl2::loghead-identity
-                               rm08-to-rb
                                (:t bitops::logior-natp-type)
                                (:t natp-get-prefixes)
                                (:t n08p-mv-nth-1-rm08)
@@ -1253,7 +1272,6 @@
                                acl2::zip-open
                                acl2::ifix-when-not-integerp
                                acl2::loghead-identity
-                               rm08-to-rb
                                (:t bitops::logior-natp-type)
                                (:t natp-get-prefixes)
                                (:t n08p-mv-nth-1-rm08)
@@ -1295,7 +1313,7 @@
              :induct (get-prefixes start-rip prefixes cnt x86)
              :expand (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86))
              :in-theory (e/d* (get-prefixes)
-                              (force (force))))))
+                              (rm08 force (force))))))
 
   (defthm get-prefixes-values-and-!flgi-in-system-level-mode
     (implies (and (not (equal index *ac*))
@@ -1320,7 +1338,8 @@
                                              (logand 4294955007 (xr :rflags 0 x86))))))
              :in-theory (e/d* (!flgi-open-to-xw-rflags
                                !flgi)
-                              (get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
+                              (rm08
+                               get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
                                force (force))))))
 
   ;; Opener lemmas:
@@ -1633,7 +1652,8 @@
                                  get-prefixes
                                  las-to-pas
                                  mv-nth-0-las-to-pas-subset-p)
-                                (xlate-equiv-memory-and-mv-nth-0-rm08-cong
+                                (rm08
+                                 xlate-equiv-memory-and-mv-nth-0-rm08-cong
                                  xlate-equiv-memory-and-mv-nth-1-rm08
                                  mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                                  (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p)
@@ -1651,7 +1671,8 @@
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes  mv-nth-0-las-to-pas-subset-p subset-p)
-                              (acl2::ash-0
+                              (rm08
+                               acl2::ash-0
                                acl2::zip-open
                                cdr-create-canonical-address-list
                                force (force))))
@@ -1660,7 +1681,8 @@
                 (and (consp (car id))
                      (< 1 (len (car id))))
                 '(:in-theory (e/d* (subset-p get-prefixes  mv-nth-0-las-to-pas-subset-p)
-                                   (acl2::ash-0
+                                   (rm08
+                                    acl2::ash-0
                                     acl2::zip-open
                                     cdr-create-canonical-address-list
                                     force (force)))

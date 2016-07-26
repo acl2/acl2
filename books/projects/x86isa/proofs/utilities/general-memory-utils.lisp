@@ -17,8 +17,6 @@
 
 (local (xdoc::set-default-parents general-memory-utils))
 
-(in-theory (e/d* (rm08-to-rb wm08-to-wb) ()))
-
 ;; ===================================================================
 
 ;; Some lemmas for constructing a number from its constituent parts:
@@ -991,9 +989,12 @@
                           (create-canonical-address-list (len bytes) lin-addr)
                           bytes)
                          x86)))
-   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory wb wm08 wvm08)
+   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
+                                    wb
+                                    wm08
+                                    wvm08
+                                    byte-ify)
                                    (acl2::mv-nth-cons-meta
-                                    wm08-to-wb
                                     append-and-create-addr-bytes-alist
                                     cons-and-create-addr-bytes-alist
                                     append-and-addr-byte-alistp))))))
