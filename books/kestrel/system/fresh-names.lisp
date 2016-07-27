@@ -23,7 +23,7 @@
                                      (wrld plist-worldp))
   :returns (fresh-name symbolp)
   :prepwork ((program))
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short
   "Append as many @('$') signs to @('name')
   as needed to make the name new in the world, i.e. not already in use,

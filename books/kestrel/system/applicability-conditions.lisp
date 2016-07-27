@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection applicability-conditions
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short
   "Utilities to manage logical formulas
   that must hold for certain processes to apply."

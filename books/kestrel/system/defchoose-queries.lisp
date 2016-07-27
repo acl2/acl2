@@ -24,7 +24,7 @@
 
 (defxdoc defchoose-queries
 
-  :parents (kestrel-system-utilities system-utilities defchoose)
+  :parents (kestrel-utilities system-utilities defchoose)
 
   :short "Utilities to query @(tsee defchoose) functions."
 

@@ -65,7 +65,7 @@
   `(ubi-fn ',args state))
 
 (defxdoc ubi
-  :parents (kestrel-general-utilities history)
+  :parents (kestrel-utilities history)
   :short "Undo back up to longest initial segment containing only calls of
  certain symbols, including @(tsee defpkg) and @(tsee include-book)."
   :long "<p>The following example explains how @(':ubi') works.  We start up

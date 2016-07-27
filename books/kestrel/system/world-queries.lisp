@@ -30,7 +30,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc world-queries
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short "Utilities to query @(see world)s."
   :long
   "<p>

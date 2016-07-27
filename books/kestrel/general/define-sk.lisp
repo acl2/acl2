@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc define-sk
-  :parents (std/util defun-sk acl2::kestrel-general-utilities)
+  :parents (std/util defun-sk acl2::kestrel-utilities)
   :short "A very fine alternative to @(see defun-sk)."
   :long "<h3>Introduction</h3>
 

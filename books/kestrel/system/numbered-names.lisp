@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc numbered-names
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short "Utilities for numbered names."
   :long
   "<p>

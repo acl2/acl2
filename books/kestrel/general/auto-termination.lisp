@@ -751,7 +751,7 @@
         *auto-termination-fns*))
 
 (defxdoc with-auto-termination
-  :parents (kestrel-general-utilities)
+  :parents (kestrel-utilities)
   :short "Re-use an existing termination proof automatically."
   :long "<p>The following (admittedly, contrived) example shows how to use this
  utility.  First define:</p>

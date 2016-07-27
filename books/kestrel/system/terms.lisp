@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc term-utilities
-  :parents (kestrel-system-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short "Utilities related to @(see term)s.")
 
 (define pseudo-lambda-expr-p (x)
