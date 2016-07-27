@@ -6865,6 +6865,40 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (list 'cons (car chars) (car forms))
                  (make-fmt-bindings (cdr chars) (cdr forms))))))
 
+(defmacro warning$ (ctx summary str+ &rest fmt-args)
+
+; Warning: Keep this in sync with warning$-cw1.
+
+; Note: This macro was originally defined in basis-a.lisp, but was moved
+; forward after *acl2-files* was changed so that "hons-raw" occurs before
+; "basis-a".
+
+; A typical use of this macro might be:
+; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
+; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
+; If the second argument is wrapped in a one-element list, as in
+; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
+; then that argument is quoted, and no check will be made for whether the
+; warning is disabled, presumably because we are in a context where we know the
+; warning is enabled.
+
+  (list 'warning1
+        ctx
+
+; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
+; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
+; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
+; of warning$ be that conses are quoted in the second argument position.
+
+        (if (consp summary)
+            (kwote summary)
+          summary)
+        str+
+        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                             #\5 #\6 #\7 #\8 #\9)
+                           fmt-args)
+        'state))
+
 (defmacro msg (str &rest args)
 
 ; Fmt is defined much later.  But we need msg now because several of our macros

@@ -695,9 +695,11 @@
 ; call such i the last-index, and it is initially 0.  Note that state global
 ; 'iprint-ar is thus always bound to an installed ACL2 array.
 
-; When state global 'iprint-fal has a non-nil value, it is a fast-alist that
-; inverts iprint-ar in the following sense: for every pair (i . v) in iprint-ar
-; with 1 <= i <= last-index, (v . i) is in the value of 'iprint-fal.
+; When state global 'iprint-fal has a non-nil value (which is exactly when
+; set-iprint was last called with a non-nil value of :share), it is a
+; fast-alist that inverts iprint-ar in the following sense: for every pair (i
+; . v) in iprint-ar with 1 <= i <= last-index, (v . i) is in the value of
+; 'iprint-fal.  See :doc set-iprint for more about :share.
 
 ; We have to face a fundamental question: Do we use acons or aset1 as we
 ; encounter a new form to assign to some #@i# during those recursive
@@ -808,7 +810,7 @@
 (mutual-recursion
 
 (defun eviscerate1 (x v max-v max-n alist evisc-table hiding-cars
-                      iprint-alist iprint-fal-new iprint-fal-old)
+                      iprint-alist iprint-fal-new iprint-fal-old eager-p)
 
 ; Iprint-alist is either a symbol, indicating that we are not doing iprinting; a
 ; positive integer, representing the last-index but no accumulated iprint-alist;
@@ -816,8 +818,19 @@
 ; Note that if iprint-alist is a symbol, then it is nil if no evisceration has
 ; been done based on print-length or print-level, else t.
 
-  (let ((temp (or (hons-assoc-equal x alist)
-                  (hons-assoc-equal x evisc-table))))
+; If iprint-fal-old is nil (i.e., if iprinting is off), then eager-p is
+; essentially irrelevant; but as a sanity check, we insist that eager-p is nil
+; in that case (as enforced by the assert$ call below).
+
+  (let* ((temp (or (hons-assoc-equal x alist)
+                   (hons-assoc-equal x evisc-table)))
+         (eager-pair (and eager-p
+                          (null (cdr temp))
+                          (consp x)
+                          (assert$
+                           iprint-fal-old
+                           (or (hons-get x iprint-fal-new)
+                               (hons-get x iprint-fal-old))))))
     (cond ((cdr temp)
            (mv (cond ((stringp (cdr temp))
                       (cons *evisceration-mark* (cdr temp)))
@@ -827,6 +840,11 @@
           ((atom x)
            (mv (cond ((eq x *evisceration-mark*) *anti-evisceration-mark*)
                      (t x))
+               iprint-alist
+               iprint-fal-new))
+          (eager-pair
+           (mv (cons *evisceration-mark*
+                     (get-sharp-atsign (cdr eager-pair)))
                iprint-alist
                iprint-fal-new))
           ((= v max-v)
@@ -846,12 +864,19 @@
            (mv *evisceration-hiding-mark* iprint-alist iprint-fal-new))
           (t (eviscerate1-lst x (1+ v) 0 max-v max-n alist evisc-table
                               hiding-cars iprint-alist
-                              iprint-fal-new iprint-fal-old)))))
+                              iprint-fal-new iprint-fal-old eager-p)))))
 
 (defun eviscerate1-lst (lst v n max-v max-n alist evisc-table hiding-cars
-                            iprint-alist iprint-fal-new iprint-fal-old)
-  (let ((temp (or (hons-assoc-equal lst alist)
-                  (hons-assoc-equal lst evisc-table))))
+                            iprint-alist iprint-fal-new iprint-fal-old eager-p)
+  (let* ((temp (or (hons-assoc-equal lst alist)
+                   (hons-assoc-equal lst evisc-table)))
+         (eager-pair (and eager-p
+                          (null (cdr temp))
+                          (consp lst)
+                          (assert$
+                           iprint-fal-old
+                           (or (hons-get lst iprint-fal-new)
+                               (hons-get lst iprint-fal-old))))))
     (cond
      ((cdr temp)
       (mv (cond ((stringp (cdr temp))
@@ -862,6 +887,11 @@
      ((atom lst)
       (mv (cond ((eq lst *evisceration-mark*) *anti-evisceration-mark*)
                 (t lst))
+          iprint-alist
+          iprint-fal-new))
+     (eager-pair
+      (mv (cons *evisceration-mark*
+                (get-sharp-atsign (cdr eager-pair)))
           iprint-alist
           iprint-fal-new))
      ((= n max-n)
@@ -879,12 +909,12 @@
      (t (mv-let (first iprint-alist iprint-fal-new)
           (eviscerate1 (car lst) v max-v max-n alist evisc-table
                        hiding-cars iprint-alist
-                       iprint-fal-new iprint-fal-old)
+                       iprint-fal-new iprint-fal-old eager-p)
           (mv-let (rest iprint-alist iprint-fal-new)
             (eviscerate1-lst (cdr lst) v (1+ n)
                              max-v max-n alist evisc-table
                              hiding-cars iprint-alist
-                             iprint-fal-new iprint-fal-old)
+                             iprint-fal-new iprint-fal-old eager-p)
             (mv (cons first rest) iprint-alist iprint-fal-new)))))))
 )
 
@@ -919,7 +949,7 @@
 )
 
 (defun eviscerate (x print-level print-length alist evisc-table hiding-cars
-                     iprint-alist iprint-fal-new iprint-fal-old)
+                     iprint-alist iprint-fal-new iprint-fal-old eager-p)
 
 ; See also eviscerate-top, which takes iprint-ar from the state and installs a
 ; new iprint-ar in the state, and update-iprint-alist, which describes the role
@@ -968,9 +998,14 @@
 
          (cond ((eviscerate1p x alist evisc-table hiding-cars)
                 (eviscerate1 x 0 -1 -1 alist evisc-table hiding-cars
-                             iprint-alist iprint-fal-new iprint-fal-old))
+                             
+; Since we are not eviscerating based on print-level or print-length, there is
+; no involvement of iprinting, so we pass nil for the remaining arguments.
+
+                             nil nil nil nil))
                (t (mv x iprint-alist iprint-fal-new))))
-        (t (eviscerate1 x 0
+        (t (eviscerate1 (if eager-p (hons-copy x) x)
+                        0
                         (or print-level -1)
                         (or print-length -1)
                         alist
@@ -978,7 +1013,8 @@
                         hiding-cars
                         iprint-alist
                         iprint-fal-new
-                        iprint-fal-old))))
+                        iprint-fal-old
+                        eager-p))))
 
 (defun eviscerate-simple (x print-level print-length alist evisc-table
                             hiding-cars)
@@ -992,9 +1028,10 @@
 
 ; We normally pass in the current value of state global 'iprint-fal for the
 ; last argument, iprint-fal-old, of eviscerate.  However, since iprint-alist is
-; nil, we know that it's fine to pass in nil for iprint-fal-old
+; nil, we know that it's fine to pass in nil for iprint-fal-old, and similarly
+; for eager-p.
 
-                nil)
+                nil nil)
     (assert$ (and (booleanp null-iprint-alist)
                   (null null-iprint-fal))
              result)))
@@ -1076,6 +1113,15 @@
                                              acc
                                            (cons (car ar) acc))))))
 
+(defun iprint-fal-name (iprint-fal)
+  (if (consp iprint-fal)
+      (cdr (last iprint-fal))
+    iprint-fal))
+
+(defun iprint-eager-p (iprint-fal)
+  (eq (iprint-fal-name iprint-fal)
+      :eager))
+
 (defun init-iprint-fal (sym state)
 
 ; Warning: Consider also calling init-iprint-ar when calling this function.
@@ -1086,9 +1132,7 @@
 
   (declare (xargs :guard (symbolp sym)))
   (let* ((old-iprint-fal (f-get-global 'iprint-fal state))
-         (old-iprint-name (if (consp old-iprint-fal)
-                              (cdr (last old-iprint-fal))
-                            old-iprint-fal))
+         (old-iprint-name (iprint-fal-name old-iprint-fal))
          (new-iprint-fal (cond ((null sym) nil)
                                ((eq sym t)
                                 :iprint-fal)
@@ -1102,8 +1146,11 @@
                          ((eq old-iprint-name new-iprint-fal)
                           nil)
                          (new-iprint-fal
-                          (msg "Iprinting is enabled with sharing, with a ~
-                                fast-alist whose name is ~x0."
+                          (msg "Iprinting is enabled with~@0 sharing, with a ~
+                                fast-alist whose name is ~x1."
+                               (if (iprint-eager-p new-iprint-fal)
+                                   " eager"
+                                 "")
                                new-iprint-fal))
                          (t
                           (msg "Iprinting is enabled without sharing.")))
@@ -1203,8 +1250,8 @@
 (defun update-iprint-ar-fal (iprint-alist iprint-fal-new iprint-fal-old state)
 
 ; We assume that iprinting is enabled.  Iprint-alist is known to be a consp.
-; We update state global 'iprint-ar by updating iprint-ar with the pairs in
-; iprint-alist.
+; We update state globals 'iprint-ar and 'iprint-fal by updating them with the
+; pairs in iprint-alist and iprint-fal-new, respectively.
 
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
@@ -1247,7 +1294,7 @@
       (eviscerate x print-level print-length alist evisc-table hiding-cars
                   (and (iprint-enabledp state)
                        (iprint-last-index state))
-                  nil iprint-fal-old)
+                  nil iprint-fal-old (iprint-eager-p iprint-fal-old))
       (fast-alist-free-on-exit
        iprint-fal-new
        (let ((state
@@ -5120,36 +5167,6 @@
 ; user's summary, str and alist, and then two carriage returns.
 
   (warning1-form nil))
-
-(defmacro warning$ (ctx summary str+ &rest fmt-args)
-
-; Warning: Keep this in sync with warning$-cw1.
-
-; A typical use of this macro might be:
-; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
-; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
-; If the second argument is wrapped in a one-element list, as in
-; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
-; then that argument is quoted, and no check will be made for whether the
-; warning is disabled, presumably because we are in a context where we know the
-; warning is enabled.
-
-  (list 'warning1
-        ctx
-
-; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
-; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
-; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
-; of warning$ be that conses are quoted in the second argument position.
-
-        (if (consp summary)
-            (kwote summary)
-          summary)
-        str+
-        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                             #\5 #\6 #\7 #\8 #\9)
-                           fmt-args)
-        'state))
 
 (defmacro warning-disabled-p (summary)
 
