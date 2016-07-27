@@ -6,7 +6,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains the top-level documentation for the Kestrel Books.
+; This file provides a collection of ACL2 books
+; contributed by Kestrel Institute.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,8 +24,7 @@
 
   :parents (software-verification)
 
-  :short
-  "A collection of ACL2 books contributed by Kestrel Institute."
+  :short "A collection of ACL2 books contributed by Kestrel Institute."
 
   :long
   "<img src='res/kestrel/kestrel-logo.png'/>

@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides utilities in the Kestrel Books.
+; This file provides a collection of utilities provided by Kestrel Institute.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,5 +41,4 @@
 
   :parents (kestrel-books)
 
-  :short
-  "Utilities in the <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
+  :short "A collection of utilities contributed by Kestrel Institute.")
