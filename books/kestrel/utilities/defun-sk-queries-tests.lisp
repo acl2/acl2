@@ -15,7 +15,7 @@
 (in-package "ACL2")
 
 (include-book "defun-sk-queries")
-(include-book "kestrel/general/testing" :dir :system)
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

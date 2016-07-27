@@ -80,7 +80,7 @@
   :parents (kestrel-utilities system-utilities)
   :short "A way to call the prover from a program."
   :long "<p>For examples, see community book
- @('books/kestrel/system/prove-interface-tests.lisp').</p>
+ @('books/kestrel/utilities/prove-interface-tests.lisp').</p>
 
  @({
  General Form:

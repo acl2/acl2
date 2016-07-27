@@ -18,8 +18,8 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/system/defchoose-queries" :dir :system)
-(include-book "kestrel/system/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/defchoose-queries" :dir :system)
+(include-book "kestrel/utilities/defun-sk-queries" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 

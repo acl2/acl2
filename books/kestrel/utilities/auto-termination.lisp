@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/system/world-queries" :dir :system) ; for measure
+(include-book "kestrel/utilities/world-queries" :dir :system) ; for measure
 (include-book "tools/remove-hyps" :dir :system) ; for event-steps
 (include-book "xdoc/top" :dir :system)
 
@@ -867,7 +867,7 @@
 
  </ul>
 
- <p>See community book @('kestrel/system/auto-termination-tests.lisp') for more
+ <p>See community book @('kestrel/utilities/auto-termination-tests.lisp') for more
  examples.</p>")
 
 (defpointer auto-termination with-auto-termination)

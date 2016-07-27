@@ -15,7 +15,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/system/world-queries" :dir :system)
+(include-book "kestrel/utilities/world-queries" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
 (local (set-default-parents term-utilities))

@@ -16,8 +16,8 @@
 (in-package "ACL2")
 
 (include-book "install-not-norm-event")
-(include-book "kestrel/general/testing" :dir :system)
-(include-book "kestrel/system/world-queries" :dir :system)
+(include-book "kestrel/utilities/testing" :dir :system)
+(include-book "kestrel/utilities/world-queries" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

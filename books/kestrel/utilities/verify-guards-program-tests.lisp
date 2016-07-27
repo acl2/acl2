@@ -7,7 +7,7 @@
 ; Tests for verify-guards-program
 
 (include-book "verify-guards-program")
-(include-book "../general/testing")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 (defun f1p (x) (declare (xargs :mode :program)) x)
 (defun f2p (x)
