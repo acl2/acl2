@@ -33,13 +33,6 @@
     (and (function-symbolp (car syms) w)
          (function-symbol-listp (cdr syms) w))))
 
-; The :BOGUS-DEFUN-HINTS-OK setting is in the ACL2-DEFAULTS-TABLE.
-
-(define get-bogus-defun-hints-ok ((w plist-worldp))
-  :verify-guards nil
-  (let ((table (table-alist 'acl2::acl2-defaults-table w)))
-    (cdr (assoc-eq :bogus-defun-hints-ok table))))
-
 ; Second-order functions and theorems depend on function variables.
 ; Each function variable is typed by the number of its arguments (1 or more).
 ; Types of function variables are denoted
@@ -351,18 +344,15 @@
         (raise "~x0 must be a non-empty list of function variables ~
                  without duplicates."
                fparams))
-       (info (list 'plain fparams))
-       (bogus-defun-hints-ok (get-bogus-defun-hints-ok w)))
-      `(progn
-         (set-bogus-defun-hints-ok t)
-         (define ,sofun ,@rest :no-function t :enabled t)
-         (set-bogus-defun-hints-ok ,bogus-defun-hints-ok)
-         (table second-order-functions ',sofun ',info)
-         (value-triple (and (check-wfrel-o< ',sofun (w state))
-                            (check-fparams-dependency ',sofun
-                                                      'plain
-                                                      ',fparams
-                                                      (w state)))))))
+       (info (list 'plain fparams)))
+    `(progn
+       (define ,sofun ,@rest :no-function t :enabled t)
+       (table second-order-functions ',sofun ',info)
+       (value-triple (and (check-wfrel-o< ',sofun (w state))
+                          (check-fparams-dependency ',sofun
+                                                    'plain
+                                                    ',fparams
+                                                    (w state)))))))
 
 (defmacro defun2 (sofun fparams &rest rest)
   `(make-event (defun2-event ',sofun ',fparams ',rest (w state))))
