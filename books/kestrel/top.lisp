@@ -13,9 +13,7 @@
 
 (in-package "ACL2")
 
-(include-book "general/top")
 (include-book "soft/top")
-(include-book "system/top")
 (include-book "utilities/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
