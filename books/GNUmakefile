@@ -520,19 +520,20 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
 
 
-# SLOW_BOOKS is a list of books that are too slow to include as part
-# of an ordinary regression.  There are currently comments in some of
-# the corresponding Makefiles that explain something about these
-# books.  WARNING: It is probably a bad idea to include targets here
-# that are in ACL2_CUSTOM_TARGETS: SLOW_BOOKS is removed from OK_CERTS
-# just below, but later, ACL2_CUSTOM_TARGETS adds its targets to
-# OK_CERTS.
+# SLOW_BOOKS is a list of books that are too slow (or in any way
+# undesirable) to include as part of an ordinary regression.  There
+# are currently comments in some of the corresponding Makefiles that
+# explain something about these books.  WARNING: It is probably a bad
+# idea to include targets here that are in ACL2_CUSTOM_TARGETS:
+# SLOW_BOOKS is removed from OK_CERTS just below, but later,
+# ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
 
 # Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
 # that we want to add back in when using target "everything" instead
 # of the default target, "all".
 
 ADDED_BOOKS := \
+  books/misc/check-acl2-exports.cert \
   coi/defung/defung-stress-long.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
