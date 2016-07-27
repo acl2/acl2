@@ -169,7 +169,7 @@ memory.</li>
 
 ;; ======================================================================
 
-;; Some misc. arithmetic lemmas:
+;; Some misc. arithmetic lemmas and macros:
 
 (defthm signed-byte-p-limits-thm
   ;; i is positive, k is positive, k < i
@@ -189,273 +189,9 @@ memory.</li>
 
 (acl2::set-waterfall-parallelism t)
 
-;; ======================================================================
-
 (defabbrev cpl (x86)
   (the (unsigned-byte 2)
     (seg-sel-layout-slice :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
-
-;; ======================================================================
-
-(define rm08
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-w-x    :type (member  :r :w :x))
-   (x86))
-
-  :parents (x86-top-level-memory)
-  :guard (canonical-address-p lin-addr)
-
-  (if (programmer-level-mode x86)
-
-      (rvm08 lin-addr x86)
-
-    (b* ((cpl (cpl x86))
-         ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-          (la-to-pa lin-addr r-w-x cpl x86))
-         ((when flag)
-          (mv flag 0 x86))
-         (byte (the (unsigned-byte 8) (memi p-addr x86))))
-      (mv nil byte x86)))
-
-  ///
-
-  (defthm-usb n08p-mv-nth-1-rm08
-    :hyp (and (signed-byte-p *max-linear-address-size* lin-addr)
-              (x86p x86))
-    :bound 8
-    :concl (mv-nth 1 (rm08 lin-addr r-w-x x86))
-    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-    ;; If the hyps in the :type-prescription corollary aren't forced,
-    ;; we run into natp vs integerp/<= 0.. problems.
-    :hyp-t (forced-and (integerp lin-addr)
-                       (x86p x86))
-    :gen-type t)
-
-  (defthm x86p-rm08
-    (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm08 lin-addr r-w-x x86))))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm rm08-value-when-error
-    (implies (mv-nth 0 (rm08 addr :x x86))
-             (equal (mv-nth 1 (rm08 addr :x x86)) 0))
-    :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
-
-  (defthm rm08-does-not-affect-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
-             (equal (mv-nth 2 (rm08 start-rip :x x86))
-                    x86))
-    :hints (("Goal" :in-theory (e/d (rvm08) ()))))
-
-  (defthm programmer-level-mode-rm08-no-error
-    (implies (and (programmer-level-mode x86)
-                  (canonical-address-p addr))
-             (and (equal (mv-nth 0 (rm08 addr r-w-x x86))
-                         nil)
-                  (equal (mv-nth 1 (rm08 addr :x x86))
-                         (memi (loghead 48 addr) x86))
-                  (equal (mv-nth 2 (rm08 addr r-w-x x86))
-                         x86)))
-    :hints (("Goal" :in-theory (e/d (rvm08) ()))))
-
-  (defthm xr-rm08-state-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
-             (equal (xr fld index (mv-nth 2 (rm08 addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthm xr-rm08-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (rm08 addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthm rm08-xw-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
-                         (mv-nth 0 (rm08 addr r-w-x x86)))
-                  (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
-                         (mv-nth 1 (rm08 addr r-w-x x86)))
-                  ;; No need for the conclusion about the state because
-                  ;; "rm08-does-not-affect-state-in-programmer-level-mode".
-                  ))
-    :hints (("Goal" :in-theory (e/d* (rvm08) ()))))
-
-  (defthm rm08-xw-system-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :fault))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (not (equal fld :msr))
-                  (not (equal fld :rflags))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
-                         (mv-nth 0 (rm08 addr r-w-x x86)))
-                  (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
-                         (mv-nth 1 (rm08 addr r-w-x x86)))
-                  (equal (mv-nth 2 (rm08 addr r-w-x (xw fld index value x86)))
-                         (xw fld index value (mv-nth 2 (rm08 addr r-w-x x86)))))))
-
-  (defthm rm08-xw-system-mode-rflags-not-ac
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw :rflags 0 value x86)))
-                         (mv-nth 0 (rm08 addr r-w-x x86)))
-                  (equal (mv-nth 1 (rm08 addr r-w-x (xw :rflags 0 value x86)))
-                         (mv-nth 1 (rm08 addr r-w-x x86)))
-                  (equal (mv-nth 2 (rm08 addr r-w-x (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 2 (rm08 addr r-w-x x86)))))))
-
-  (defthm mv-nth-2-rm08-in-system-level-non-marking-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
-                  (x86p x86)
-                  (not (mv-nth 0 (rm08 lin-addr r-w-x x86))))
-             (equal (mv-nth 2 (rm08 lin-addr r-w-x x86))
-                    x86))))
-
-(define rim08
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-w-x    :type (member  :r :w :x))
-   (x86))
-
-  :parents (x86-top-level-memory)
-  :guard (canonical-address-p lin-addr)
-
-  (mv-let (flag val x86)
-    (rm08 lin-addr r-w-x x86)
-    (mv flag (n08-to-i08 val) x86))
-  ///
-
-  (defthm-sb i08p-mv-nth-1-rim08
-    :hyp (and (signed-byte-p *max-linear-address-size* lin-addr)
-              (x86p x86))
-    :bound 8
-    :concl (mv-nth 1 (rim08 lin-addr r-w-x x86))
-    :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
-    :hyp-t (forced-and (integerp lin-addr)
-                       (x86p x86))
-    :gen-type t)
-
-  (defthm x86p-rim08
-    (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rim08 lin-addr r-w-x x86))))
-    :rule-classes (:rewrite :type-prescription)))
-
-(define wm08
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 8))
-   (x86))
-
-  :parents (x86-top-level-memory)
-  :guard (canonical-address-p lin-addr)
-
-  (if (programmer-level-mode x86)
-
-      (wvm08 lin-addr val x86)
-
-    (b* ((cpl (cpl x86))
-         ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-          (la-to-pa lin-addr :w cpl x86))
-         ((when flag)
-          (mv flag x86))
-         (byte (mbe :logic (n08 val)
-                    :exec val))
-         (x86 (!memi p-addr byte x86)))
-      (mv nil x86)))
-
-  ///
-
-  (defthm x86p-wm08
-    (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm08 lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm programmer-level-mode-wm08-no-error
-    (implies (and (programmer-level-mode x86)
-                  (canonical-address-p addr))
-             (equal (mv-nth 0 (wm08 addr val x86))
-                    nil))
-    :hints (("Goal" :in-theory (e/d (wm08 wvm08) ()))))
-
-  (defthm xr-wm08-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
-             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wvm08) ()))))
-
-  (defthm xr-wm08-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthm wm08-xw-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
-                         (mv-nth 0 (wm08 addr val x86)))
-                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
-    :hints (("Goal" :in-theory (e/d* (wm08 wvm08) ()))))
-
-  (defthm wm08-xw-system-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :fault))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :mem))
-                  (not (equal fld :ctr))
-                  (not (equal fld :rflags))
-                  (not (equal fld :msr))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
-                         (mv-nth 0 (wm08 addr val x86)))
-                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthm wm08-xw-system-mode-rflags-not-ac
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (wm08 addr val (xw :rflags 0 value x86)))
-                         (mv-nth 0 (wm08 addr val x86)))
-                  (equal (mv-nth 1 (wm08 addr val (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 1 (wm08 addr val x86))))))
-    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
-
-(define wim08
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (signed-byte 8))
-   (x86))
-
-  :parents (x86-top-level-memory)
-  :guard (canonical-address-p lin-addr)
-
-  (wm08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
-  ///
-  (defthm x86p-wim08
-    (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wim08 lin-addr val x86))))
-    :rule-classes (:rewrite :type-prescription)))
 
 ;; ======================================================================
 
@@ -1016,8 +752,10 @@ memory.</li>
         (if (endp addresses)
             (mv nil acc x86)
           (b* ((addr (car addresses))
+               ;; rb-1 is used only in the programmer-level mode, so
+               ;; it makes sense to use rvm08 here.
                ((mv flg byte x86)
-                (rm08 addr r-w-x x86))
+                (rvm08 addr x86))
                ((when flg)
                 (mv flg acc x86)))
             (rb-1 (cdr addresses) r-w-x x86 (append acc (list byte)))))
@@ -1039,15 +777,14 @@ memory.</li>
     (defthm rb-1-returns-x86-programmer-level-mode
       (implies (programmer-level-mode x86)
                (equal (mv-nth 2 (rb-1 addresses r-w-x x86 acc))
-                      x86))
-      :hints (("Goal" :in-theory (e/d (rm08) ()))))
+                      x86)))
 
     (defthm rb-1-returns-no-error-programmer-level-mode
       (implies (and (canonical-address-listp addresses)
                     (programmer-level-mode x86))
                (equal (mv-nth 0 (rb-1 addresses r-w-x x86 acc))
                       nil))
-      :hints (("Goal" :in-theory (e/d (rm08 rvm08) ()))))
+      :hints (("Goal" :in-theory (e/d (rvm08) ()))))
 
     (local
      (defthm rb-1-accumulator-thm-helper
@@ -1345,8 +1082,7 @@ memory.</li>
     (defthm rb-returns-x86-programmer-level-mode
       (implies (and (programmer-level-mode x86)
                     (x86p x86))
-               (equal (mv-nth 2 (rb addresses r-w-x x86)) x86))
-      :hints (("Goal" :in-theory (e/d (rm08) ()))))
+               (equal (mv-nth 2 (rb addresses r-w-x x86)) x86)))
 
     (defthm len-of-rb-in-system-level-mode
       (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
@@ -1484,7 +1220,9 @@ memory.</li>
           (b* ((addr (caar addr-lst))
                (byte (cdar addr-lst))
                ((mv flg x86)
-                (wm08 addr byte x86))
+                ;; wb-1 is used only in the programmer-level mode, so
+                ;; it makes sense to use wvm08 here.
+                (wvm08 addr byte x86))
                ((when flg)
                 (mv flg x86)))
             (wb-1 (cdr addr-lst) x86)))
@@ -1502,7 +1240,7 @@ memory.</li>
                     (programmer-level-mode x86))
                (equal (mv-nth 0 (wb-1 addr-lst x86))
                       nil))
-      :hints (("Goal" :in-theory (e/d (wm08 wvm08) ())))))
+      :hints (("Goal" :in-theory (e/d (wvm08) ())))))
 
   (define write-to-physical-memory
     ((p-addrs physical-address-listp)
@@ -1577,18 +1315,6 @@ memory.</li>
                                :scheme (wb-1 addr-lst x86))))
 
   (local (in-theory (e/d () (force (force)))))
-
-  ;; Relating rb and rm08:
-
-  (defthmd rb-and-rm08-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (canonical-address-p addr)
-                  (x86p x86))
-             (equal (rm08 addr r-w-x x86)
-                    (mv (mv-nth 0 (rb (list addr) r-w-x x86))
-                        (combine-bytes (mv-nth 1 (rb (list addr) r-w-x x86)))
-                        x86)))
-    :hints (("Goal" :in-theory (e/d (rm08 rvm08) ()))))
 
   ;; Relating rb and xr/xw in the programmer-level mode:
 
@@ -1783,15 +1509,6 @@ memory.</li>
              (equal (mv-nth 2 (rb addr r-w-x (xw :rflags 0 value x86)))
                     (xw :rflags 0 value (mv-nth 2 (rb addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-  ;; Relating wb and wm08:
-
-  (defthmd wb-and-wm08
-    (implies (and (canonical-address-p addr)
-                  (n08p val))
-             (equal (wm08 addr val x86)
-                    (wb (acons addr val nil) x86)))
-    :hints (("Goal" :in-theory (e/d (wm08 wvm08) (force (force))))))
 
   ;; Relating wb and xr/xw in the programmer-level mode:
 
@@ -2296,9 +2013,10 @@ memory.</li>
                                  (* 8 (len xs))))))
     :hints (("Goal" :in-theory (e/d* (push-ash-inside-logior) ())))))
 
+
 ;; ======================================================================
 
-;; Defining the 16, 32, and 64, and 128 bit memory read/write
+;; Defining the 8, 16, 32, and 64, and 128 bit memory read/write
 ;; functions:
 
 ;; I haven't used physical memory functions like rm-low-* and wm-low-*
@@ -2310,6 +2028,295 @@ memory.</li>
 ;; addresses (though, IRL, that's likely the case). That's why there
 ;; are long and ugly sequences of memi and !memi below instead of nice
 ;; and pretty wrappers.
+
+(define rm08
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   (r-w-x    :type (member  :r :w :x))
+   (x86))
+
+  :parents (x86-top-level-memory)
+  :guard (canonical-address-p lin-addr)
+  :guard-hints (("Goal" :in-theory (e/d* (rvm08) ())))
+
+  (if (mbt (canonical-address-p lin-addr))
+
+      (mbe
+
+       :logic
+       (b* (((mv flg bytes x86)
+             (rb (create-canonical-address-list 1 lin-addr) r-w-x x86))
+            (result (combine-bytes bytes)))
+         (mv flg result x86))
+
+       :exec
+       (if (programmer-level-mode x86)
+
+           (rvm08 lin-addr x86)
+
+         (b* ((cpl (cpl x86))
+              ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
+               (la-to-pa lin-addr r-w-x cpl x86))
+              ((when flag)
+               (mv flag 0 x86))
+              (byte (the (unsigned-byte 8) (memi p-addr x86))))
+           (mv nil byte x86))))
+
+    (mv 'rm08 0 x86))
+
+  ///
+
+  (defthm-usb n08p-mv-nth-1-rm08
+    :hyp (and (signed-byte-p *max-linear-address-size* lin-addr)
+              (x86p x86))
+    :bound 8
+    :concl (mv-nth 1 (rm08 lin-addr r-w-x x86))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+    :gen-linear t
+    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
+    ;; If the hyps in the :type-prescription corollary aren't forced,
+    ;; we run into natp vs integerp/<= 0.. problems.
+    :hyp-t (forced-and (integerp lin-addr)
+                       (x86p x86))
+    :gen-type t)
+
+  (defthm x86p-rm08
+    (implies (force (x86p x86))
+             (x86p (mv-nth 2 (rm08 lin-addr r-w-x x86))))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm rm08-value-when-error
+    (implies (mv-nth 0 (rm08 addr :x x86))
+             (equal (mv-nth 1 (rm08 addr :x x86)) 0))
+    :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
+
+  (defthm rm08-does-not-affect-state-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (mv-nth 2 (rm08 start-rip :x x86))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
+
+  (defthm programmer-level-mode-rm08-no-error
+    (implies (and (programmer-level-mode x86)
+                  (canonical-address-p addr)
+                  (x86p x86))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x x86))
+                         nil)
+                  (equal (mv-nth 1 (rm08 addr :x x86))
+                         (memi (loghead 48 addr) x86))
+                  (equal (mv-nth 2 (rm08 addr r-w-x x86))
+                         x86)))
+    :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
+
+  (defthm xr-rm08-state-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 2 (rm08 addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-rm08-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (rm08 addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm rm08-xw-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rm08 addr r-w-x x86)))
+                  ;; No need for the conclusion about the state because
+                  ;; "rm08-does-not-affect-state-in-programmer-level-mode".
+                  ))
+    :hints (("Goal" :in-theory (e/d* (rvm08) ()))))
+
+  (defthm rm08-xw-system-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :fault))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr))
+                  (not (equal fld :rflags))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 2 (rm08 addr r-w-x (xw fld index value x86)))
+                         (xw fld index value (mv-nth 2 (rm08 addr r-w-x x86)))))))
+
+  (defthm rm08-xw-system-mode-rflags-not-ac
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 1 (rm08 addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 2 (rm08 addr r-w-x (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 2 (rm08 addr r-w-x x86)))))))
+
+  (defthm mv-nth-2-rm08-in-system-level-non-marking-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86))
+                  (x86p x86)
+                  (not (mv-nth 0 (rm08 lin-addr r-w-x x86))))
+             (equal (mv-nth 2 (rm08 lin-addr r-w-x x86))
+                    x86))))
+
+(define rim08
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   (r-w-x    :type (member  :r :w :x))
+   (x86))
+
+  :parents (x86-top-level-memory)
+  :guard (canonical-address-p lin-addr)
+
+  (mv-let (flag val x86)
+    (rm08 lin-addr r-w-x x86)
+    (mv flag (n08-to-i08 val) x86))
+  ///
+
+  (defthm-sb i08p-mv-nth-1-rim08
+    :hyp (and (signed-byte-p *max-linear-address-size* lin-addr)
+              (x86p x86))
+    :bound 8
+    :concl (mv-nth 1 (rim08 lin-addr r-w-x x86))
+    :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
+    :gen-linear t
+    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
+    :hyp-t (forced-and (integerp lin-addr)
+                       (x86p x86))
+    :gen-type t)
+
+  (defthm x86p-rim08
+    (implies (force (x86p x86))
+             (x86p (mv-nth 2 (rim08 lin-addr r-w-x x86))))
+    :rule-classes (:rewrite :type-prescription)))
+
+(define wm08
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+   (val      :type (unsigned-byte 8))
+   (x86))
+
+  :parents (x86-top-level-memory)
+  :guard (canonical-address-p lin-addr)
+  :guard-hints (("Goal" :in-theory (e/d* (wvm08 byte-ify) ())))
+
+  (if (mbt (canonical-address-p lin-addr))
+
+      (mbe
+
+       :logic
+       (wb (create-addr-bytes-alist
+            (create-canonical-address-list 1 lin-addr)
+            (byte-ify 1 val))
+           x86)
+
+       :exec
+       (if (programmer-level-mode x86)
+
+           (wvm08 lin-addr val x86)
+
+         (b* ((cpl (cpl x86))
+              ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
+               (la-to-pa lin-addr :w cpl x86))
+              ((when flag)
+               (mv flag x86))
+              (byte (mbe :logic (n08 val)
+                         :exec val))
+              (x86 (!memi p-addr byte x86)))
+           (mv nil x86))))
+
+    (mv 'wm08 x86))
+
+  ///
+
+  (defthm x86p-wm08
+    (implies (force (x86p x86))
+             (x86p (mv-nth 1 (wm08 lin-addr val x86))))
+    :hints (("Goal" :in-theory (e/d (byte-ify) (force (force)))))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm programmer-level-mode-wm08-no-error
+    (implies (and (programmer-level-mode x86)
+                  (canonical-address-p addr))
+             (equal (mv-nth 0 (wm08 addr val x86))
+                    nil))
+    :hints (("Goal" :in-theory (e/d (wm08 wvm08 byte-ify) ()))))
+
+  (defthm xr-wm08-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm08) ()))))
+
+  (defthm xr-wm08-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm wm08-xw-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wm08 addr val x86)))
+                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wm08 wvm08) ()))))
+
+  (defthm wm08-xw-system-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :fault))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :rflags))
+                  (not (equal fld :msr))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wm08 addr val x86)))
+                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm wm08-xw-system-mode-rflags-not-ac
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (wm08 addr val (xw :rflags 0 value x86)))
+                         (mv-nth 0 (wm08 addr val x86)))
+                  (equal (mv-nth 1 (wm08 addr val (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 1 (wm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
+
+(define wim08
+  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+   (val      :type (signed-byte 8))
+   (x86))
+
+  :parents (x86-top-level-memory)
+  :guard (canonical-address-p lin-addr)
+
+  (wm08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
+  ///
+  (defthm x86p-wim08
+    (implies (force (x86p x86))
+             (x86p (mv-nth 1 (wim08 lin-addr val x86))))
+    :rule-classes (:rewrite :type-prescription)))
 
 (define rm16
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -3749,39 +3756,37 @@ memory.</li>
 
 ;; Enable these rules when doing code proofs.
 
-(local
- (defthm dumb-integerp-of-mem-rewrite
-   (implies (x86p x86)
-            (integerp (xr :mem index x86)))))
+;; Relating rb and rm08:
 
-(defthmd rm08-to-rb
-  (implies (and (x86p x86)
-                (force (canonical-address-p lin-addr)))
-           (equal (rm08 lin-addr r-w-x x86)
-                  (b* (((mv flg bytes x86)
-                        (rb (create-canonical-address-list 1 lin-addr) r-w-x x86))
-                       (result (combine-bytes bytes)))
-                    (mv flg result x86))))
-  :hints (("Goal"
-           :use ((:instance rb-and-rm08-in-programmer-level-mode (addr lin-addr)))
-           :in-theory (e/d* (rm08 rb ifix)
-                            (rb-1
-                             signed-byte-p
-                             unsigned-byte-p
-                             force (force))))))
+;; (defthmd rm08-to-rb
+;;   (implies (and (x86p x86)
+;;                 (force (canonical-address-p lin-addr)))
+;;            (equal (rm08 lin-addr r-w-x x86)
+;;                   (b* (((mv flg bytes x86)
+;;                         (rb (create-canonical-address-list 1 lin-addr) r-w-x x86))
+;;                        (result (combine-bytes bytes)))
+;;                     (mv flg result x86))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (rm08 rb ifix)
+;;                             (rb-1
+;;                              signed-byte-p
+;;                              unsigned-byte-p
+;;                              force (force))))))
 
-(defthmd wm08-to-wb
-  (implies (and (force (canonical-address-p lin-addr))
-                (force (unsigned-byte-p 8 byte)))
-           (equal (wm08 lin-addr byte x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list 1 lin-addr)
-                       (list byte))
-                      x86)))
-  :hints (("Goal" :in-theory (e/d* (wm08 wvm08 wb)
-                                   (signed-byte-p
-                                    unsigned-byte-p
-                                    force (force))))))
+;; ;; Relating wb and wm08:
+
+;; (defthmd wm08-to-wb
+;;   (implies (and (force (canonical-address-p lin-addr))
+;;                 (force (unsigned-byte-p 8 byte)))
+;;            (equal (wm08 lin-addr byte x86)
+;;                   (wb (create-addr-bytes-alist
+;;                        (create-canonical-address-list 1 lin-addr)
+;;                        (list byte))
+;;                       x86)))
+;;   :hints (("Goal" :in-theory (e/d* (wm08 wvm08 wb byte-ify)
+;;                                    (signed-byte-p
+;;                                     unsigned-byte-p
+;;                                     force (force))))))
 
 ;; ======================================================================
 

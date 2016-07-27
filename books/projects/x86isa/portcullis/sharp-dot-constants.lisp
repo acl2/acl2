@@ -9,27 +9,27 @@
 
 (defun power-of-2-measure (x)
   (cond ((or (not (natp x))
-	     (<= x 1))
-	 0)
-	(t (floor x 1))))
+             (<= x 1))
+         0)
+        (t (floor x 1))))
 
 (defn power-of-2 (x count)
   (declare (xargs :measure (power-of-2-measure x)
-		  :guard (natp count)))
+                  :guard (natp count)))
   (if (natp x)
       (if (<= x 1)
-	  count
-	(power-of-2 (* 1/2 x) (1+ count)))
+          count
+        (power-of-2 (* 1/2 x) (1+ count)))
     count))
 
 (defun gl-int (start by count)
   (declare (xargs :guard (and (natp start)
-			      (natp by)
-			      (natp count))))
+                              (natp by)
+                              (natp count))))
   (if (zp count)
       nil
     (cons start
-	  (gl-int (+ by start) by (1- count)))))
+          (gl-int (+ by start) by (1- count)))))
 
 ;; ======================================================================
 ;; Some expt constants:
@@ -65,6 +65,7 @@
 (defconst *2^32*      (expt 2 32))
 (defconst *2^35*      (expt 2 35))
 (defconst *2^43*      (expt 2 43))
+(defconst *2^44*      (expt 2 44))
 (defconst *2^45*      (expt 2 45))
 (defconst *2^47*      (expt 2 47))
 (defconst *-2^47*     (- (expt 2 47)))
@@ -219,14 +220,14 @@
 
 (defconst *flg-names*
   (list *cf* *pf* *af* *zf* *sf* *tf* *if* *df*
-	*of* *iopl* *nt* *rf* *vm* *ac* *vif* *vip* *id*))
+        *of* *iopl* *nt* *rf* *vm* *ac* *vif* *vip* *id*))
 
 (defun max-list (l)
   (if (or (endp l)
-	  (equal (len l) 1))
+          (equal (len l) 1))
       (car l)
     (if (> (car l) (max-list (cdr l)))
-	(car l)
+        (car l)
       (max-list (cdr l)))))
 
 (defconst *max-flg-index*
@@ -251,7 +252,7 @@
 
 (defconst *fp-status-names*
   (list *fp-ie* *fp-de* *fp-ze* *fp-oe*  *fp-ue*  *fp-pe* *fp-sf*
-	*fp-es* *fp-c0* *fp-c1* *fp-c2*  *fp-top* *fp-c3* *fp-b*))
+        *fp-es* *fp-c0* *fp-c1* *fp-c2*  *fp-top* *fp-c3* *fp-b*))
 
 ;; MXCSR (Intel Manual, Feb'14, Vol. 1, Section 10.2.3)
 
@@ -281,9 +282,9 @@
 
 (defconst *mxcsr-names*
   (list *mxcsr-ie* *mxcsr-de*  *mxcsr-ze* *mxcsr-oe* *mxcsr-ue*
-	*mxcsr-pe* *mxcsr-daz* *mxcsr-im* *mxcsr-dm* *mxcsr-zm*
-	*mxcsr-om* *mxcsr-um*  *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
-	*mxcsr-reserved*))
+        *mxcsr-pe* *mxcsr-daz* *mxcsr-im* *mxcsr-dm* *mxcsr-zm*
+        *mxcsr-om* *mxcsr-um*  *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
+        *mxcsr-reserved*))
 
 
 ;; Access RGF or XMM
@@ -317,13 +318,13 @@
 (defconst *ieee-dp-frac-width*        52)
 
 (defconst *ia32_efer-sce*  0)  ;; Syscall Enable (R/W) --- enables
-			       ;; SYSCALL/SYSRET
+                               ;; SYSCALL/SYSRET
 (defconst *ia32_efer-lme*  8)  ;; Long Mode Enabled (R/W)
 (defconst *ia32_efer-lma* 10)  ;; Long Mode Active (R)
 (defconst *ia32_efer-nxe* 11)  ;; Execute Disable Bit Enable (R/W)
-			       ;; (Enables page access restriction by
-			       ;; preventing instruction fetches from
-			       ;; PAE pages with the XD bit set)
+                               ;; (Enables page access restriction by
+                               ;; preventing instruction fetches from
+                               ;; PAE pages with the XD bit set)
 
 (defconst *ia32_efer-names*
   (list *ia32_efer-sce* *ia32_efer-lme* *ia32_efer-lma* *ia32_efer-nxe*))
@@ -447,7 +448,7 @@
 (defconst *mem-table-size*
   ;; Size of table for address-to-pseudo-page translation
   (floor *mem-size-in-bytes*
-	 *pseudo-page-size-in-bytes*))
+         *pseudo-page-size-in-bytes*))
 
 (defconst *mem-table-size-bits*
   (power-of-2 *mem-table-size* 0))
@@ -480,73 +481,73 @@
 (defun define-general-purpose-registers ()
 
   `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
-		     *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*
-		     *64-bit-general-purpose-registers-len*)
+                     *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*
+                     *64-bit-general-purpose-registers-len*)
      ,(b* ((lst (gl-int 0 1 16))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-segment-registers ()
 
   `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
-		    *segment-register-names-len*)
+                    *segment-register-names-len*)
      ,(b* ((lst (gl-int 0 1 6))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-gdtr/idtr-registers ()
 
   `(defconsts (*GDTR* *IDTR* *gdtr-idtr-names-len*)
      ,(b* ((lst (gl-int 0 1 2))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-ldtr/tr-registers ()
 
   `(defconsts (*LDTR* *TR* *ldtr-tr-names-len*)
      ,(b* ((lst (gl-int 0 1 2))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 ;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
 (defun define-control-registers ()
 
   `(defconsts (*CR0* ;; cr0 controls operating mode and states of
-		     ;; processor
-	       *CR1* ;; cr1 is reserved
-	       *CR2* ;; cr2 holds the page fault linear address (the
-		     ;; one that caused the page fault)
-	       *CR3* ;; cr3 is associated with paging
-	       *CR4* ;; cr4 enables or indicates support for processor
-		     ;; extensions
-	       *CR5* ;; cr5 is reserved
-	       *CR6* ;; cr6 is reserved
-	       *CR7* ;; cr7 is reserved
-	       *CR8* ;; cr8 provides read/write access to the TPR.
-		     ;; (Task Priority Register) available only in 64
-		     ;; bit mode
-	       ;; cr9 thru cr15 are not implemented in our model yet.
-	       *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
-	       *XCR0*
-	       *control-register-names-len*)
+                     ;; processor
+               *CR1* ;; cr1 is reserved
+               *CR2* ;; cr2 holds the page fault linear address (the
+                     ;; one that caused the page fault)
+               *CR3* ;; cr3 is associated with paging
+               *CR4* ;; cr4 enables or indicates support for processor
+                     ;; extensions
+               *CR5* ;; cr5 is reserved
+               *CR6* ;; cr6 is reserved
+               *CR7* ;; cr7 is reserved
+               *CR8* ;; cr8 provides read/write access to the TPR.
+                     ;; (Task Priority Register) available only in 64
+                     ;; bit mode
+               ;; cr9 thru cr15 are not implemented in our model yet.
+               *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
+               *XCR0*
+               *control-register-names-len*)
      ,(b* ((lst (gl-int 0 1 17))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-debug-registers ()
 
   `(defconsts (*DR0* ;; dr0 holds breakpoint 0 virtual address, 64/32 bit
-	       *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
-	       *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
-	       *DR3* ;; dr3 holds breakpoint 3 virtual address, 64/32 bit
-	       *DR4* ;; dr4 is reserved
-	       *DR5* ;; dr5 is reserved
-	       *DR6* ;; dr6
-	       *DR7* ;; dr7
-	       *debug-register-names-len*)
+               *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
+               *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
+               *DR3* ;; dr3 holds breakpoint 3 virtual address, 64/32 bit
+               *DR4* ;; dr4 is reserved
+               *DR5* ;; dr5 is reserved
+               *DR6* ;; dr6
+               *DR7* ;; dr7
+               *debug-register-names-len*)
      ,(b* ((lst (gl-int 0 1 8))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-fp-registers ()
   ;; 80-bit registers
@@ -556,11 +557,11 @@
   ;; FP7.
 
   `(defconsts (*FP0* *FP1* *FP2* *FP3* *FP4* *FP5* *FP6* *FP7*
-		     *fp-data-register-names-len*)
+                     *fp-data-register-names-len*)
 
      ,(b* ((lst (gl-int 0 1 8))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-mmx-registers ()
   ;; 64-bit registers
@@ -569,23 +570,23 @@
   ;; of the FPU data registers.
 
   `(defconsts (*MM0* *MM1* *MM2* *MM3* *MM4* *MM5* *MM6* *MM7*
-		     *mmx-register-names-len*)
+                     *mmx-register-names-len*)
 
      ,(b* ((lst (gl-int 0 1 8))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-xmm-registers ()
   ;; 128-bit registers
 
   `(defconsts (*XMM0* *XMM1* *XMM2* *XMM3* *XMM4* *XMM5* *XMM6* *XMM7*
-		      *XMM8* *XMM9* *XMM10* *XMM11*
-		      *XMM12* *XMM13* *XMM14* *XMM15*
-		      *xmm-register-names-len*)
+                      *XMM8* *XMM9* *XMM10* *XMM11*
+                      *XMM12* *XMM13* *XMM14* *XMM15*
+                      *xmm-register-names-len*)
 
      ,(b* ((lst (gl-int 0 1 16))
-	   (len  (len lst)))
-	  (cons 'mv (append lst (list len))))))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
 
 (defun define-model-specific-registers ()
   ;; At this point, we only model the MSRs that we need.  Remember,
@@ -597,61 +598,61 @@
 
 
   `(defconsts (
-	       ;; extended features enables --- If
-	       ;; CPUID.80000001.EDX.[bit 20] or
-	       ;; CPUID.80000001.EDX.[bit 29]
-	       *IA32_EFER*
-	       *IA32_EFER-IDX*
+               ;; extended features enables --- If
+               ;; CPUID.80000001.EDX.[bit 20] or
+               ;; CPUID.80000001.EDX.[bit 29]
+               *IA32_EFER*
+               *IA32_EFER-IDX*
 
-	       ;; Map of BASE Address of FS (R/W) --- If
-	       ;; CPUID.80000001.EDX.[bit 29] = 1
-	       *IA32_FS_BASE*
-	       *IA32_FS_BASE-IDX*
+               ;; Map of BASE Address of FS (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_FS_BASE*
+               *IA32_FS_BASE-IDX*
 
-	       ;; Map of BASE Address of GB (R/W) --- If
-	       ;; CPUID.80000001.EDX.[bit 29] = 1
-	       *IA32_GS_BASE*
-	       *IA32_GS_BASE-IDX*
+               ;; Map of BASE Address of GB (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_GS_BASE*
+               *IA32_GS_BASE-IDX*
 
-	       ;; Swap Target of BASE Address of GS (R/W) --- If
-	       ;; CPUID.80000001.EDX.[bit 29] = 1
-	       *IA32_KERNEL_GS_BASE*
-	       *IA32_KERNEL_GS_BASE-IDX*
+               ;; Swap Target of BASE Address of GS (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_KERNEL_GS_BASE*
+               *IA32_KERNEL_GS_BASE-IDX*
 
-	       ;; System Call Target Address (R/W) --- If
-	       ;; CPUID.80000001.EDX.[bit 29] = 1
-	       *IA32_STAR*
-	       *IA32_STAR-IDX*
+               ;; System Call Target Address (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_STAR*
+               *IA32_STAR-IDX*
 
-	       ;; IA-32e Mode System Call Target Address (R/W) --- If
-	       ;; CPUID.80000001.EDX.[bit 29] = 1
-	       *IA32_LSTAR*
-	       *IA32_LSTAR-IDX*
+               ;; IA-32e Mode System Call Target Address (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_LSTAR*
+               *IA32_LSTAR-IDX*
 
-	       ;; System Call Flag Mask (R/W) --- If
-	       ;; CPUID.80000001.EDX.[bit 29] = 1
-	       *IA32_FMASK*
-	       *IA32_FMASK-IDX*
+               ;; System Call Flag Mask (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_FMASK*
+               *IA32_FMASK-IDX*
 
-	       *model-specific-register-names-len*)
+               *model-specific-register-names-len*)
 
      ,(b* ((lst (list #uxC000_0080 ;; ia32_efer and idx
-		      0
-		      #uxC000_0100 ;; ia32_fs_base and idx
-		      1
-		      #uxC000_0101 ;; ia32_gs_base and idx
-		      2
-		      #uxC000_0102 ;; ia32_kernel_gs_base and idx
-		      3
-		      #uxC000_0081 ;; ia32_star and idx
-		      4
-		      #uxC000_0082 ;; ia32_lstar and idx
-		      5
-		      #uxC000_0084 ;; ia32_fmask and idx
-		      6
-		      ))
-	   (len  (/ (len lst) 2)))
-	  (cons 'mv (append lst (list len))))))
+                      0
+                      #uxC000_0100 ;; ia32_fs_base and idx
+                      1
+                      #uxC000_0101 ;; ia32_gs_base and idx
+                      2
+                      #uxC000_0102 ;; ia32_kernel_gs_base and idx
+                      3
+                      #uxC000_0081 ;; ia32_star and idx
+                      4
+                      #uxC000_0082 ;; ia32_lstar and idx
+                      5
+                      #uxC000_0084 ;; ia32_fmask and idx
+                      6
+                      ))
+           (len  (/ (len lst) 2)))
+          (cons 'mv (append lst (list len))))))
 
 (make-event (define-general-purpose-registers))
 (make-event (define-segment-registers))

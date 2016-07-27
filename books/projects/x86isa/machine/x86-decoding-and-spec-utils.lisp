@@ -860,7 +860,7 @@ made from privilege level 3.</sf>"
           ,@(and trunc     `((trunc     booleanp)))
           (start-rip :type (signed-byte   #.*max-linear-address-size*))
           (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes  :type (unsigned-byte 43))
+          (prefixes  :type (unsigned-byte 44))
           (rex-byte  :type (unsigned-byte 8))
           (opcode    :type (unsigned-byte 8))
           (modr/m    :type (unsigned-byte 8))
@@ -911,7 +911,7 @@ made from privilege level 3.</sf>"
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 43)))
+   (prefixes      :type (unsigned-byte 44)))
 
   :inline t
   :parents (x86-decoding-and-spec-utils)

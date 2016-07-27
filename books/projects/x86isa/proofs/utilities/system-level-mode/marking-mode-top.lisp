@@ -143,8 +143,8 @@
 
   (define get-prefixes-alt
     ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-     (prefixes  :type (unsigned-byte 43))
-     (cnt       :type (integer 0 5))
+     (prefixes  :type (unsigned-byte 44))
+     (cnt       :type (integer 0 15))
      x86)
     :non-executable t
     :guard (canonical-address-p (+ cnt start-rip))
@@ -180,15 +180,15 @@
                                ())))
       :rule-classes :type-prescription)
 
-    (defthm-usb n43p-get-prefixes-alt
-      :hyp (and (n43p prefixes)
+    (defthm-usb n44p-get-prefixes-alt
+      :hyp (and (n44p prefixes)
                 (canonical-address-p start-rip)
                 (x86p x86))
-      :bound 43
+      :bound 44
       :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
       :hints (("Goal"
-               :use ((:instance n43p-get-prefixes))
-               :in-theory (e/d () (n43p-get-prefixes))))
+               :use ((:instance n44p-get-prefixes))
+               :in-theory (e/d () (n44p-get-prefixes))))
       :gen-linear t)
 
     (defthm x86p-get-prefixes-alt
@@ -316,7 +316,7 @@
                   (not (programmer-level-mode x86))
                   (canonical-address-p start-rip))
              (equal (get-prefixes-alt start-rip prefixes cnt x86)
-                    (mv nil prefixes x86)))
+                    (mv t prefixes x86)))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-zero-cnt))
              :in-theory (e/d () (get-prefixes-opener-lemma-zero-cnt
@@ -353,7 +353,7 @@
                             (!prefixes-slice :next-byte
                                              (mv-nth 1 (rm08 start-rip :x x86))
                                              prefixes)))
-                       (!prefixes-slice :num-prefixes (- 5 cnt) prefixes)))))
+                       (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-no-prefix-byte))
              :in-theory (e/d* () (get-prefixes-opener-lemma-no-prefix-byte)))))
@@ -856,7 +856,7 @@
                        (:rewrite subset-p-cdr-x)
                        (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
                        (:linear <=-logior)
-                       (:linear n43p-get-prefixes)
+                       (:linear n44p-get-prefixes)
                        (:rewrite get-prefixes-opener-lemma-group-4-prefix)
                        (:rewrite get-prefixes-opener-lemma-group-3-prefix)
                        (:rewrite get-prefixes-opener-lemma-group-2-prefix)
@@ -864,7 +864,7 @@
                        (:rewrite unsigned-byte-p-of-ash)
                        (:linear bitops::logior->=-0-linear)
                        (:rewrite rb-in-terms-of-rb-subset-p-in-system-level-mode)
-                       (:definition n43p$inline)
+                       (:definition n44p$inline)
                        (:rewrite bitops::logtail-of-logtail)
                        (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-mode)
                        (:rewrite mv-nth-1-las-to-pas-when-error)
@@ -896,7 +896,7 @@
                        (:type-prescription all-translation-governing-addresses)
                        (:rewrite acl2::unsigned-byte-p-loghead)
                        (:rewrite bitops::loghead-of-ash-same)
-                       (:type-prescription n43p$inline)
+                       (:type-prescription n44p$inline)
                        (:type-prescription ash)
                        (:rewrite bitops::loghead-of-0-i)
                        (:rewrite acl2::equal-constant-+)
@@ -1051,7 +1051,6 @@
                                  n08p
                                  len)
                                 (rewrite-get-prefixes-to-get-prefixes-alt
-                                 rm08-to-rb
                                  las-to-pas-values-and-write-to-physical-memory-disjoint
                                  get-prefixes-xw-mem-values-in-system-level-mode-helper-1
                                  xlate-equiv-memory-and-two-get-prefixes-values)))))
@@ -2061,7 +2060,7 @@
             ;; Start: binding hypotheses.
             (equal start-rip (rip x86))
             ;; get-prefixes-alt:
-            (equal three-vals-of-get-prefixes (get-prefixes-alt start-rip 0 5 x86))
+            (equal three-vals-of-get-prefixes (get-prefixes-alt start-rip 0 15 x86))
             (equal flg-get-prefixes (mv-nth 0 three-vals-of-get-prefixes))
             (equal prefixes (mv-nth 1 three-vals-of-get-prefixes))
             (equal x86-1 (mv-nth 2 three-vals-of-get-prefixes))
@@ -2147,7 +2146,7 @@
              (mv-nth
               1
               (las-to-pas
-               (create-canonical-address-list 5 (xr :rip 0 x86))
+               (create-canonical-address-list 15 (xr :rip 0 x86))
                :x (cpl x86) (double-rewrite x86)))
              (open-qword-paddr-list
               (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
@@ -2155,7 +2154,7 @@
              (mv-nth
               0
               (las-to-pas
-               (create-canonical-address-list 5 (xr :rip 0 x86))
+               (create-canonical-address-list 15 (xr :rip 0 x86))
                :x (cpl x86) (double-rewrite x86)))))
            (equal (x86-fetch-decode-execute x86)
                   (top-level-opcode-execute
