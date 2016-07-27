@@ -322,18 +322,6 @@
 ; If the new function is recursive,
 ; it also checks that the well-founded relation is O<.
 ;
-; DEFUN2 sets the :T-PROOF option of DEFINE to T,
-; in order to introduce an explicit termination theorem
-; (if the function is recursive).
-; :BOGUS-DEFUN-HINTS-OK is set to T just before the DEFINE,
-; so that if the function is not recursive
-; the :T-PROOF option does not cause an error
-; (checking whether the function is recursive before submitting it to ACL2
-; would involve parsing, expanding macros, etc.,
-; to see if the function is called in the body;
-; this is avoided by setting :BOGUS-DEFUN-HINTS-OK to T);
-; :BOGUS-DEFUN-HINTS-OK is restored to its previous value just after DEFINE.
-;
 ; DEFUN2 sets the :NO-FUNCTION option of DEFINE to T,
 ; to prevent DEFINE from wrapping the function body
 ; with a LET binding of __FUNCTION__ to the name of the function.
@@ -367,7 +355,7 @@
        (bogus-defun-hints-ok (get-bogus-defun-hints-ok w)))
       `(progn
          (set-bogus-defun-hints-ok t)
-         (define ,sofun ,@rest :t-proof t :no-function t :enabled t)
+         (define ,sofun ,@rest :no-function t :enabled t)
          (set-bogus-defun-hints-ok ,bogus-defun-hints-ok)
          (table second-order-functions ',sofun ',info)
          (value-triple (and (check-wfrel-o< ',sofun (w state))
@@ -1027,12 +1015,6 @@
 ; DEFUN-INST generates a :HINTS for the termination proof of the same form
 ; as the generated proof of an instance of a second-order theorem above.
 ;
-; If FUN is second-order and recursive, the :T-PROOF option is used,
-; so that the termination theorem of FUN can be later used
-; to prove the termination of instances of FUN.
-; Unlike DEFUN2, :BOGUS-DEFUN-HINTS-OK is not set to T and then restored,
-; because DEFUN-INST generates the :T-PROOF option
-; only if SOFUN and FUN are recursive.
 ; Similarly to DEFUN2, DEFUN-INST sets
 ; the :NO-FUNCTION and :ENABLED options of DEFINE to T.
 ; DEFUN-INST sets
@@ -1143,8 +1125,6 @@
        (measure (if fun-measure `(:measure ,fun-measure) nil))
        ;; :GUARD of FUN if guarded, otherwise NIL:
        (guard (if fun-guard `(:guard ,fun-guard) nil))
-       ;; :T-PROOF option if FUN is recursive, otherwise NIL:
-       (t-proof (if fun-measure '(:t-proof t) nil))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
        (info (list 'plain fparams))
@@ -1160,7 +1140,6 @@
           ,@measure
           ,@hints
           ,@guard
-          ,@t-proof
           :no-function t
           :enabled t
           :ignore-ok t
