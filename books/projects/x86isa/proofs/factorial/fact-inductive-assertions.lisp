@@ -10,15 +10,6 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
-(local (in-theory (e/d* ()
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-                         xr-fault-wb-in-system-level-marking-mode
-                         xr-fault-wb-in-system-level-mode))))
-
 ;; ======================================================================
 
 ;; (1) Specification: defining the expected inputs and the desired
@@ -653,8 +644,7 @@
                            (assertions
                             (:rewrite x86-fetch-decode-execute-opener)
                             (:rewrite get-prefixes-opener-lemma-no-prefix-byte)
-                            (:meta acl2::mv-nth-cons-meta)
-                            (:rewrite rm08-to-rb))))))
+                            (:meta acl2::mv-nth-cons-meta))))))
 
 ;; ======================================================================
 

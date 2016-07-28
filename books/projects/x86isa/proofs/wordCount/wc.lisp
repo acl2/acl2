@@ -17,9 +17,7 @@
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (in-theory (e/d ()
-                       (wb-remove-duplicate-writes
-                        mv-nth-1-wb-and-!flgi-commute
-                        byte-ify-and-combine-bytes))))
+                       (byte-ify-and-combine-bytes))))
 
 ;; ======================================================================
 
@@ -2408,15 +2406,13 @@
                   (mv-nth 1 (rb addresses :r x86))))
   :hints (("Goal" :in-theory (e/d* (rb rm08)
                                    (rb-1-accumulator-thm
-                                    rm08-to-rb
                                     (:meta acl2::mv-nth-cons-meta))))
           (if
               ;; Apply to all subgoals under a top-level induction.
               (and (consp (car id))
                    (< 1 (len (car id))))
               '(:in-theory (e/d* (rb rm08)
-                                 (rm08-to-rb
-                                  rb-1-accumulator-thm
+                                 (rb-1-accumulator-thm
                                   (:meta acl2::mv-nth-cons-meta)))
                            :use ((:instance rb-1-accumulator-thm
                                             (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))

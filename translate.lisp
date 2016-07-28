@@ -7700,13 +7700,15 @@
 
 ; Warning: Keep this in sync with macroexpand1*-cmp.
 
-; Bindings is an alist binding symbols either to their corresponding
-; STOBJS-OUT or to symbols.  The only symbols used are (about-to-be
-; introduced) function symbols or the keyword :STOBJS-OUT.  When fn is
-; bound to gn it means we have determined that the STOBJS-OUT of fn is
-; that of gn.  We allow fn to be bound to itself -- indeed, it is
-; required initially!  (This allows bindings to double as a recording
-; of all the names currently being introduced.)
+; Bindings is an alist binding symbols either to their corresponding STOBJS-OUT
+; or to symbols.  The only symbols used are (about-to-be introduced) function
+; symbols or the keyword :STOBJS-OUT.  When fn is bound to gn it means we have
+; determined that the STOBJS-OUT of fn is that of gn.  We allow fn to be bound
+; to itself -- indeed, it is required initially!  (This allows bindings to
+; double as a recording of all the names currently being introduced.)  A
+; special case is when :STOBJS-OUT is bound in bindings: initially it is bound
+; to itself, but in the returned bindings it will be bound to the stobjs-out of
+; the expression being translated.
 
 ; Stobjs-out is one of:
 
@@ -9195,8 +9197,11 @@
 ; one does not have state available, and then (default-state-vars nil).
 
 ; We return (mv erp transx bindings), where transx is the translation and
-; bindings has been modified to bind every fn (ultimately) to a proper stobjs
-; out setting.  Use translate-deref to recover the bindings.
+; bindings has been modified to bind every fn (ultimately) to a proper
+; stobjs-out setting.  A special case is when the initial stobjs-out is
+; :stobjs-out; in that case, :stobjs-out is bound in the returned bindings to
+; the stobjs-out of the expression being translated.  Use translate-deref to
+; recover the bindings.
 
   (trans-er-let*
    ((result
@@ -9227,6 +9232,7 @@
                    (default-state-vars t))))
 
 (defun collect-programs (names wrld)
+
 ; Names is a list of function symbols.  Collect the :program ones.
 
   (cond ((null names) nil)
