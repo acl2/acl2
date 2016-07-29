@@ -1,0 +1,6 @@
+This directory contains test cases that document the differences
+between the x86isa interpreter and a real x86 processor.  Serious
+differences are fixed (but test cases left here for reference) and
+those resulting from intentional design decisions are logged for
+documentation.  An example of the latter is in the file
+disp-immed-fault.lsp.
