@@ -53,7 +53,9 @@
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -89,7 +91,7 @@
        (x86 (!xmmi-size operand-size xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -140,7 +142,9 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
 
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
@@ -225,7 +229,9 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -299,7 +305,9 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
 
@@ -392,7 +400,9 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -473,7 +483,9 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
 
@@ -565,7 +577,9 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -638,7 +652,9 @@
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86))
+        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                            0 ;; No immediate operand
+                            x86))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((when (not (canonical-address-p v-addr)))
@@ -722,7 +738,9 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -752,7 +770,7 @@
        (result (merge-2-u64s mem low-qword))
        (x86 (!xmmi-size 16 xmm-index result x86))
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (progn
@@ -804,7 +822,9 @@
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86))
+        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                            0 ;; No immediate operand
+                            x86))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((when (not (canonical-address-p v-addr)))

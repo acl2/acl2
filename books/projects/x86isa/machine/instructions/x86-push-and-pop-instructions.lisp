@@ -151,7 +151,9 @@ extension (ModR/m.reg = 6).</p>"
         (x86-operand-from-modr/m-and-sib-bytes
          ;; inst-ac? is nil here because we only need increment-RIP-by
          ;; from this function.
-         #.*rgf-access* operand-size nil p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size nil p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -185,7 +187,7 @@ extension (ModR/m.reg = 6).</p>"
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 (def-inst x86-push-I
 
@@ -506,7 +508,9 @@ extension (ModR/m.reg = 0).</p>"
        ((mv flg1 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg1) ;; #SS exception?
         (!!ms-fresh :x86-effective-addr-error flg1))
 

@@ -151,6 +151,9 @@
     (if (and (page-structure-marking-mode x86)
              (not (programmer-level-mode x86))
              (canonical-address-p start-rip)
+             ;; In the following two conditions below, if we're being
+             ;; really precise, cnt should really be
+             ;; (1+ (prefixes-slice :num-prefixes prefixes)).
              (disjoint-p
               (mv-nth 1 (las-to-pas
                          (create-canonical-address-list cnt start-rip)
@@ -298,29 +301,61 @@
 
   ;; Opener lemmas:
 
+  ;; (defthm get-prefixes-alt-opener-lemma-zero-cnt
+  ;;   (implies (and (zp cnt)
+  ;;                 (disjoint-p
+  ;;                  (mv-nth 1 (las-to-pas
+  ;;                             (create-canonical-address-list cnt start-rip)
+  ;;                             :x (cpl x86) (double-rewrite x86)))
+  ;;                  (open-qword-paddr-list
+  ;;                   (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+  ;;                 (not
+  ;;                  (mv-nth
+  ;;                   0
+  ;;                   (las-to-pas (create-canonical-address-list cnt start-rip)
+  ;;                               :x (cpl x86)
+  ;;                               (double-rewrite x86))))
+  ;;                 (page-structure-marking-mode x86)
+  ;;                 (not (programmer-level-mode x86))
+  ;;                 (canonical-address-p start-rip))
+  ;;            (equal (get-prefixes-alt start-rip prefixes cnt x86)
+  ;;                   (mv t prefixes x86)))
+  ;;   :hints (("Goal"
+  ;;            :use ((:instance get-prefixes-opener-lemma-zero-cnt))
+  ;;            :in-theory (e/d () (get-prefixes-opener-lemma-zero-cnt
+  ;;                                force (force))))))
+
   (defthm get-prefixes-alt-opener-lemma-zero-cnt
-    (implies (and (zp cnt)
-                  (disjoint-p
-                   (mv-nth 1 (las-to-pas
-                              (create-canonical-address-list cnt start-rip)
-                              :x (cpl x86) (double-rewrite x86)))
-                   (open-qword-paddr-list
-                    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-                  (not
-                   (mv-nth
-                    0
-                    (las-to-pas (create-canonical-address-list cnt start-rip)
-                                :x (cpl x86)
-                                (double-rewrite x86))))
-                  (page-structure-marking-mode x86)
+    (implies (and (page-structure-marking-mode x86)
                   (not (programmer-level-mode x86))
                   (canonical-address-p start-rip))
-             (equal (get-prefixes-alt start-rip prefixes cnt x86)
+             (equal (get-prefixes-alt start-rip prefixes 0 x86)
                     (mv t prefixes x86)))
-    :hints (("Goal"
-             :use ((:instance get-prefixes-opener-lemma-zero-cnt))
-             :in-theory (e/d () (get-prefixes-opener-lemma-zero-cnt
-                                 force (force))))))
+    :hints
+    (("Goal"
+      :use ((:instance get-prefixes-opener-lemma-zero-cnt (cnt 0)))
+      :in-theory (e/d ()
+                      (get-prefixes-opener-lemma-zero-cnt force (force))))))
+
+  ;; (defthmd get-prefixes-alt-opener-lemma-no-prefix-byte-helper
+  ;;   (implies (and
+  ;;             (let*
+  ;;                 ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+  ;;                  (prefix-byte-group-code
+  ;;                   (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+  ;;               (and (not flg)
+  ;;                    (zp prefix-byte-group-code)))
+  ;;             (not (zp cnt)))
+  ;;            (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86))
+  ;;                   nil))
+  ;;   :hints (("Goal"
+  ;;            :use ((:instance get-prefixes-opener-lemma-no-prefix-byte
+  ;;                             (cnt 1))
+  ;;                  (:instance get-prefixes-opener-lemma-no-prefix-byte
+  ;;                             (cnt cnt)))
+  ;;            :in-theory (e/d* (get-prefixes-alt)
+  ;;                             (rewrite-get-prefixes-to-get-prefixes-alt
+  ;;                              get-prefixes-opener-lemma-no-prefix-byte)))))
 
   (defthm get-prefixes-alt-opener-lemma-no-prefix-byte
     (implies (and (let*
@@ -333,6 +368,14 @@
                   (page-structure-marking-mode x86)
                   (not (programmer-level-mode x86))
                   (canonical-address-p start-rip)
+                  ;; We read only one byte inside get-prefixes-alt --
+                  ;; there's really no need for us to know that the
+                  ;; translation of (create-canonical-address-list cnt
+                  ;; start-rip) is non-erroneous or that that range is
+                  ;; disjoint from the paging structures.  But,
+                  ;; unfortunately, because of the definition of
+                  ;; get-prefixes-alt, we need to know the following two
+                  ;; things in terms of a general cnt instead of cnt == 1.
                   (not
                    (mv-nth
                     0
@@ -1662,7 +1705,7 @@
                              (n prog-addr bytes))
                   (program-at-alt
                    (create-canonical-address-list n prog-addr)
-                   bytes x86)
+                   bytes (double-rewrite x86))
                   (syntaxp (quotep n))
                   (member-p lin-addr (create-canonical-address-list n prog-addr))
                   (not (mv-nth 0

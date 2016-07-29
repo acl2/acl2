@@ -434,7 +434,7 @@
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))  
+                               (canonical-address-p temp-rip)))
   :body
 
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
@@ -458,7 +458,9 @@
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -491,7 +493,7 @@
           x86))
        (x86 (!rip temp-rip x86)))
     x86)
-  
+
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'CMOVO #x0F40 '(:nil nil)
@@ -554,7 +556,7 @@
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))  
+                               (canonical-address-p temp-rip)))
 
   :body
 
@@ -573,7 +575,9 @@
        ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((mv flg1 v-addr)
@@ -635,7 +639,7 @@
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
        (x86 (!rip temp-rip x86)))
     x86)
-  
+
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'SETO #x0F90 '(:nil nil)

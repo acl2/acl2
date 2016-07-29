@@ -67,3 +67,22 @@
    (local (include-book "zeroCopy/marking-mode/zeroCopy" :ttags :all))))
 
 ;; ======================================================================
+
+;; The following books present small examples that Shilpi presents in
+;; her PhD dissertation to illustrate how symbolic simulation is
+;; controlled in all modes of operation of the x86 model.
+
+(local
+ (encapsulate
+   ()
+   (local (include-book "dissertation-examples/clc-stc-programmer-mode" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "dissertation-examples/clc-stc-system-level-marking-mode" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "dissertation-examples/clc-stc-system-level-non-marking-mode" :ttags :all))))
+
+;; ======================================================================

@@ -91,7 +91,9 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 
+         1 ;; One-byte immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -194,14 +196,16 @@
        ;; non 16-byte aligned addresses on a real machine.
        (inst-ac? ;; Exceptions Type 4
         t) ;; This should be nil according to the Intel manuals, but
-           ;; see comment above.
+       ;; see comment above.
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 
+         1 ;; One-byte immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -253,7 +257,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
 
   :implemented
   (add-to-implemented-opcodes-table 'SHUFPD #x0FC6
@@ -315,14 +319,16 @@
        ;; non 16-byte aligned addresses on a real machine.
        (inst-ac? ;; Exceptions Type 4
         t) ;; This should be nil according to the Intel manuals, but
-           ;; see comment above.
+       ;; see comment above.
 
        ((mv flg0
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
@@ -384,7 +390,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
+    x86)
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'UNPCKLPS #x0F14
@@ -455,7 +461,9 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 
+         0 ;; No immediate operand
+         x86))
 
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))

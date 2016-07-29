@@ -189,7 +189,11 @@ field conveying useful information. </li>
      (mod            :type (unsigned-byte 2) "mod field of ModR/M byte")
      (sib            :type (unsigned-byte 8) "Sib byte")
      ;; num-imm-bytes is needed for computing the next RIP when
-     ;; RIP-relative addressing is done.
+     ;; RIP-relative addressing is done.  Note that this argument is
+     ;; only relevant when the operand addressing mode is I, i.e.,
+     ;; when the operand value is encoded in subsequent bytes of the
+     ;; instruction. For details, see *Z-addressing-method-info* in
+     ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
                      "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
      x86)
