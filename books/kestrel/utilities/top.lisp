@@ -24,6 +24,8 @@
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
 (include-book "minimize-ruler-extenders")
+; Skipping the following, because it requires a trust tag:
+; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
 (include-book "numbered-names")
 (include-book "prove-interface")
 (include-book "terms")

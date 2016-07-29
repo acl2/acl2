@@ -1549,26 +1549,38 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; The following either returns the value of the given environment variable or
 ; returns nil (in lisps where we do not yet know how to get that value).
+; Except, it causes an error if the computed value is an illegal ACL2 string.
 
 ; WARNING: Keep this in sync with the #-acl2-loop-only definition of setenv$.
 
-  #+cmu
-  (cond (*cmucl-unix-getenv-fn*
-         (funcall *cmucl-unix-getenv-fn* string))
-        ((boundp 'ext::*environment-list*)
-         (cdr (assoc (intern string :keyword)
-                     ext::*environment-list*
-                     :test #'eq))))
-  #+(or gcl allegro lispworks ccl sbcl clisp)
-  (let ((fn
-         #+gcl       'si::getenv
-         #+allegro   'sys::getenv
-         #+lispworks 'hcl::getenv
-         #+ccl       'ccl::getenv
-         #+sbcl      'sb-ext::posix-getenv
-         #+clisp     'ext:getenv))
-    (and (fboundp fn)
-         (funcall fn string))))
+  (let* ((val
+          #+cmu
+          (cond (*cmucl-unix-getenv-fn*
+                 (funcall *cmucl-unix-getenv-fn* string))
+                ((boundp 'ext::*environment-list*)
+                 (cdr (assoc (intern string :keyword)
+                             ext::*environment-list*
+                             :test #'eq))))
+          #+(or gcl allegro lispworks ccl sbcl clisp)
+          (let ((fn
+                 #+gcl       'si::getenv
+                 #+allegro   'sys::getenv
+                 #+lispworks 'hcl::getenv
+                 #+ccl       'ccl::getenv
+                 #+sbcl      'sb-ext::posix-getenv
+                 #+clisp     'ext:getenv))
+            (and (fboundp fn)
+                 (funcall fn string))))
+         (msg (and val
+                   (fboundp 'bad-lisp-stringp) ; false early in boot-strap
+                   (qfuncall bad-lisp-stringp val))))
+    (cond (msg ; It's not clear that this case is possible, at least in CCL.
+           (qfuncall
+            interface-er
+            "The value of environment variable ~x0 is ~x1, which is not a ~
+             legal ACL2 string.~%~@2"
+            string val msg))
+          (t val))))
 
 #+sbcl
 (defmacro define-our-sbcl-putenv ()
@@ -1615,9 +1627,11 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun our-truename (filename &optional namestringp)
 
-; For now, assume that namestringp is nil (or not supplied).
-
 ; Filename can be a pathname, in which case we treat it as its namestring.
+; Both filename and the result of this function are OS filenames, which might
+; have characters that disqualify them from being ACL2 strings.
+
+; For now, assume that namestringp is nil (or not supplied).
 
 ; This function is intended to return nil if filename does not exist.  We thus
 ; rely on the CL HyperSpec, where it says of truename that "An error of type
@@ -1671,9 +1685,6 @@ notation causes an error and (b) the use of ,. is not permitted."
 
             (ignore-errors (truename filename)))))
          (namestring (and truename (namestring truename))))
-    (when (and namestring
-               *check-namestring*) ; always true unless a ttag is used
-      (qfuncall chk-bad-lisp-stringp namestring filename))
     (cond ((null namestringp)
            truename)
           ((null truename)
@@ -1691,21 +1702,14 @@ notation causes an error and (b) the use of ,. is not permitted."
                        "")))))
           (t namestring))))
 
-(defun our-pwd ()
-
-; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
-; variable is not necessarily maintained, for example in Solaris/SunOS as one
-; make invokes another make in a different directory.
-
-  (qfuncall pathname-os-to-unix
-            (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
-            (get-os)
-            *the-live-state*))
-
 (defun unix-full-pathname (name &optional extension)
 
-; We formerly used Common Lisp function merge-pathnames.  But in CCL,
-; merge-pathnames can insert an extra backslash (\), as follows:
+; Unlike truename and our-truename, unix-full-pathname does not assume that any
+; particular file exists.
+
+; We formerly used Common Lisp function merge-pathnames.  But with CCL
+; (probably quite an old version), merge-pathnames has inserted an extra
+; backslash (\), as follows:
 
 ;  ? (MERGE-PATHNAMES "foo.xxx.lx86cl64" "/u/kaufmann/temp/")
 ;  #P"/u/kaufmann/temp/foo\\.xxx.lx86cl64"
@@ -1714,7 +1718,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Gary Byers has explained that while this behavior may not be ideal, it is
 ; legal for Common Lisp.  So we avoid merge-pathnames here.
 
-  (let* ((os (get-os))
+  (let* ((*check-namestring* t)
+         (os (get-os))
          (state *the-live-state*)
          (name (qfuncall pathname-os-to-unix
                          (if extension
@@ -1729,7 +1734,7 @@ notation causes an error and (b) the use of ,. is not permitted."
      (cond ((qfuncall absolute-pathname-string-p name nil os)
             name)
            (t
-            (concatenate 'string (our-pwd) name))))))
+            (concatenate 'string (qfuncall our-pwd) name))))))
 
 (defun our-user-homedir-pathname ()
 

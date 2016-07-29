@@ -998,7 +998,7 @@
 
          (cond ((eviscerate1p x alist evisc-table hiding-cars)
                 (eviscerate1 x 0 -1 -1 alist evisc-table hiding-cars
-                             
+
 ; Since we are not eviscerating based on print-level or print-length, there is
 ; no involvement of iprinting, so we pass nil for the remaining arguments.
 
@@ -6451,6 +6451,18 @@
 ; (such as *initial-global-table*) is independent of the host Common Lisp
 ; implementation.  That is important to avoid trivial soundness bugs based on
 ; variance of a defconst value from one underlying Lisp to another.
+
+#-acl2-loop-only
+(defun our-pwd ()
+
+; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
+; variable is not necessarily maintained, for example in Solaris/SunOS as one
+; make invokes another make in a different directory.
+
+  (pathname-os-to-unix
+   (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
+   (get-os)
+   *the-live-state*))
 
 #-acl2-loop-only
 (initialize-state-globals)

@@ -8935,6 +8935,9 @@
 
 (defun canonical-unix-pathname (x dir-p state)
 
+; This function returns either nil or a Unix filename, which is a valid ACL2
+; string.
+
 ; Warning: Although it may be tempting to use pathname-device in this code, be
 ; careful if you do!  Camm Maguire sent an example in which GCL on Windows
 ; returned ("Z:") as the value of (pathname-device (truename "")), and it
@@ -8952,34 +8955,44 @@
 ; that is not a directory, or if the "true" name cannot be determined, in which
 ; case return nil.
 
-  (let ((truename (our-truename x)))
-    (and truename
-         (let ((dir (pathname-directory truename))
-               (name (pathname-name truename))
-               (type (pathname-type truename)))
-           (and (implies dir-p
-                         (not (or (stringp name) (stringp type))))
-                (assert$ (and (true-listp dir)
-                              (eq (car dir)
-                                  #+gcl :ROOT
-                                  #-gcl :ABSOLUTE))
-                         (let* ((mswindows-drive
-                                 (mswindows-drive (namestring truename) state))
-                                (tmp (if mswindows-drive
-                                         (concatenate 'string mswindows-drive "/")
-                                       "/")))
-                           (dolist (x dir)
-                             (when (stringp x)
-                               (setq tmp (concatenate 'string tmp x "/"))))
-                           (when (stringp name)
-                             (setq tmp (concatenate 'string tmp name)))
-                           (when (stringp type)
-                             (setq tmp (concatenate 'string tmp "." type)))
-                           (let ((namestring-tmp (namestring (truename tmp)))
-                                 (namestring-truename (namestring truename)))
-                             (cond ((equal namestring-truename namestring-tmp)
-                                    tmp)
-                                   ((and mswindows-drive
+  (let* ((truename (our-truename x))
+         (result
+          (and truename
+               (let ((dir (pathname-directory truename))
+                     (name (pathname-name truename))
+                     (type (pathname-type truename)))
+                 (and (implies dir-p
+                               (not (or (stringp name) (stringp type))))
+                      (assert$ (and (true-listp dir)
+                                    (eq (car dir)
+                                        #+gcl :ROOT
+                                        #-gcl :ABSOLUTE))
+                               (let* ((mswindows-drive
+                                       (mswindows-drive (namestring truename)
+                                                        state))
+                                      (tmp (if mswindows-drive
+                                               (concatenate 'string
+                                                            mswindows-drive
+                                                            "/")
+                                             "/")))
+                                 (dolist (x dir)
+                                   (when (stringp x)
+                                     (setq tmp
+                                           (concatenate 'string tmp x "/"))))
+                                 (when (stringp name)
+                                   (setq tmp (concatenate 'string tmp name)))
+                                 (when (stringp type)
+                                   (setq tmp
+                                         (concatenate 'string tmp "." type)))
+                                 (let ((namestring-tmp
+                                        (namestring (truename tmp)))
+                                       (namestring-truename
+                                        (namestring truename)))
+                                   (cond
+                                    ((equal namestring-truename
+                                            namestring-tmp)
+                                     tmp)
+                                    ((and mswindows-drive
 
 ; In Windows, it appears that the value returned by truename can start with
 ; (for example) "C:/" or "c:/" depending on whether "c" is capitalized in the
@@ -8990,34 +9003,36 @@
 ; whose pathnames are generally (as far as we know) considered to be
 ; case-insensitive.
 
-                                         (string-equal namestring-truename
-                                                       namestring-tmp))
-                                    tmp)
-                                   (t (case *canonical-unix-pathname-action*
-                                        (:warning
-                                         (let ((state *the-live-state*))
-                                           (warning$ 'canonical-unix-pathname
-                                                     "Pathname"
-                                                     "Unable to compute ~
+                                          (string-equal namestring-truename
+                                                        namestring-tmp))
+                                     tmp)
+                                    (t (case *canonical-unix-pathname-action*
+                                         (:warning
+                                          (let ((state *the-live-state*))
+                                            (warning$ 'canonical-unix-pathname
+                                                      "Pathname"
+                                                      "Unable to compute ~
                                                       canonical-unix-pathname ~
                                                       for ~x0.  (Debug info: ~
                                                       truename is ~x1 while ~
                                                       (truename tmp) is ~x2.)"
-                                                     x
-                                                     namestring-truename
-                                                     namestring-tmp)))
-                                        (:error
-                                         (er hard 'canonical-unix-pathname
-                                             "Unable to compute ~
+                                                      x
+                                                      namestring-truename
+                                                      namestring-tmp)))
+                                         (:error
+                                          (er hard 'canonical-unix-pathname
+                                              "Unable to compute ~
                                               canonical-unix-pathname for ~
                                               ~x0.  (Debug info: truename is ~
                                               ~x1 while (truename tmp) is ~
                                               ~x2.)"
-                                             x
-                                             namestring-truename
-                                             namestring-tmp)))
-                                      (and (not dir-p) ; indeterminate if dir-p
-                                           x)))))))))))
+                                              x
+                                              namestring-truename
+                                              namestring-tmp)))
+                                       (and (not dir-p) ; indeterminate if dir-p
+                                            x)))))))))))
+    (and result
+         (pathname-os-to-unix result (os (w state)) state))))
 
 (defun unix-truename-pathname (x dir-p state)
 
@@ -13980,18 +13995,21 @@
 ; Note that guard-checking-on is bound to nil in pc-single-step-primitive.  We
 ; no longer recall why, but we may as well preserve that binding.
 
-(defun expansion-filename (full-book-name convert-to-os-p state)
+(defun expansion-filename (file)
 
 ; We use a .lsp suffix instead of .lisp for benefit of the makefile system,
 ; which by default looks for .lisp files to certify.
 
-; Full-book-name is expected to be a Unix-style filename.  We return an OS
-; filename.
+; File can be either an ACL2 filename or an OS filename (see the Essay on
+; Pathnames).  We add the ".lisp" suffix either way.  This could be problematic
+; in the case that one adds the suffix to an ACL2 filename with this function,
+; and then converts the result to an OS filename -- is that really the same as
+; converting the ACL2 filename to an OS filename and then adding the suffix?
+; We believe that yes, these are the same, since the conversion of a filename
+; is presumably a matter of converting the individual bytes or characters, in
+; order.
 
-  (let* ((file (if convert-to-os-p
-                   (pathname-unix-to-os full-book-name state)
-                 full-book-name))
-         (len (length file)))
+  (let ((len (length file)))
     (assert$ (equal (subseq file (- len 5) len) ".lisp")
              (concatenate 'string
                           (subseq file 0 (- len 5))
@@ -15093,9 +15111,7 @@
         (compiled-file
          (convert-book-name-to-compiled-name full-book-name state))
         (expansion-file
-         (expansion-filename full-book-name
-                             nil ; don't convert to OS, since we didn't above
-                             state)))
+         (expansion-filename full-book-name)))
     (er-let* ((post-alist
                (certificate-post-alist pcert1-file cert-file full-book-name ctx
                                        state))
@@ -16438,7 +16454,7 @@
                                                            cert-op
                                                            ctx
                                                            state))
-                                                         (compiled-file
+                                                         (os-compiled-file
                                                           (cond
                                                            (compile-flg
 ; We only use the value of compile-flg when #-acl2-loop-only.
@@ -16451,7 +16467,7 @@
                                                                declaim-list
                                                                new-fns
                                                                (expansion-filename
-                                                                full-book-name nil state)
+                                                                full-book-name)
                                                                expansion-alist
                                                                pkg-names
                                                                ev-lst
@@ -16459,10 +16475,11 @@
                                                                ctx state)
                                                               #-acl2-loop-only
                                                               (let* ((os-expansion-filename
-                                                                      (expansion-filename
-                                                                       full-book-name
-                                                                       t state))
-                                                                     (compiled-file
+                                                                      (pathname-unix-to-os
+                                                                       (expansion-filename
+                                                                        full-book-name)
+                                                                       state))
+                                                                     (os-compiled-file
                                                                       (compile-certified-file
                                                                        os-expansion-filename
                                                                        full-book-name
@@ -16471,8 +16488,10 @@
                                                                             'save-expansion-file
                                                                             state))
                                                                   (delete-expansion-file
-                                                                   os-expansion-filename state))
-                                                                (value compiled-file)))))
+                                                                   os-expansion-filename
+                                                                   full-book-name
+                                                                   state))
+                                                                (value os-compiled-file)))))
                                                            (t
                                                             #-acl2-loop-only
                                                             (delete-auxiliary-book-files
@@ -16496,9 +16515,9 @@
                                                                  state)))
                                                          (when
                                                              (and
-                                                              compiled-file
+                                                              os-compiled-file
 
-; Ensure that compiled-file is more recent than .cert file, since rename-file
+; Ensure that os-compiled-file is more recent than .cert file, since rename-file
 ; is not guaranteed to preserve the write-date.  We first check the
 ; file-write-date of the .cert file, since we have found that to be almost 3
 ; orders of magnitude faster than touch? in CCL.
@@ -16508,15 +16527,14 @@
                                                                     with
                                                                     compile-date =
                                                                     (file-write-date
-                                                                     compiled-file)
+                                                                     os-compiled-file)
                                                                     thereis
                                                                     (< compile-date
-                                                                       (file-write-date
-                                                                        (pathname-unix-to-os
-                                                                         (cdr pair)
-                                                                         state)))))
+                                                                       (file-write-date$
+                                                                        (cdr pair)
+                                                                        state))))
                                                            (touch?
-                                                            compiled-file
+                                                            os-compiled-file
                                                             nil ctx state))
                                                          (value nil))
                                                        (pprogn
@@ -28918,6 +28936,8 @@
 
 (defun read-file-into-string2 (filename state)
 
+; Filename is an ACL2 pathname; see the Essay on Pathnames.
+
 ; Parallelism wart: avoid potential illegal behavior caused by this function.
 ; A simple but expensive solution is probably to add a lock.  But with some
 ; thought one might provide for correct parallel evaluations of this function.
@@ -28925,17 +28945,16 @@
 
   (declare (xargs :stobjs state :guard (stringp filename)))
   #-acl2-loop-only
-  (declare (ignore state))
-  #-acl2-loop-only
-  (with-open-file
-    (stream filename :direction :input :if-does-not-exist nil)
-    (and stream
-         (let ((len (file-length stream)))
-           (and (< len *read-file-into-string-bound*)
-                (let ((fwd (file-write-date filename)))
-                  (or (check-against-read-file-alist filename fwd)
-                      (push (cons filename fwd)
-                            *read-file-alist*))
+  (let ((os-filename (pathname-unix-to-os filename state)))
+    (with-open-file
+      (stream os-filename :direction :input :if-does-not-exist nil)
+      (and stream
+           (let ((len (file-length stream)))
+             (and (< len *read-file-into-string-bound*)
+                  (let ((fwd (file-write-date os-filename)))
+                    (or (check-against-read-file-alist filename fwd)
+                        (push (cons filename fwd)
+                              *read-file-alist*))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
 ; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
@@ -28945,15 +28964,15 @@
 
 ; The URL above says ``You can do anything you like with the code.''
 
-                  (let ((seq (make-string len)))
-                    (declare (type string seq))
-                    (read-sequence seq stream)
-                    (when (not (eql fwd (file-write-date filename)))
-                      (error "Illegal attempt to call ~s concurrently with ~
-                              some write to that file!~%See :DOC ~
-                              read-file-into-string."
-                             'read-file-into-string))
-                    seq))))))
+                    (let ((seq (make-string len)))
+                      (declare (type string seq))
+                      (read-sequence seq stream)
+                      (when (not (eql fwd (file-write-date os-filename)))
+                        (error "Illegal attempt to call ~s concurrently with ~
+                                some write to that file!~%See :DOC ~
+                                read-file-into-string."
+                               'read-file-into-string))
+                      seq)))))))
   #+acl2-loop-only
   (let* ((st (coerce-state-to-object state)))
     (mv-let
