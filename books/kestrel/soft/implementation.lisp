@@ -18,8 +18,8 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/system/defchoose-queries" :dir :system)
-(include-book "kestrel/system/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/defchoose-queries" :dir :system)
+(include-book "kestrel/utilities/defun-sk-queries" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
@@ -32,13 +32,6 @@
       t
     (and (function-symbolp (car syms) w)
          (function-symbol-listp (cdr syms) w))))
-
-; The :BOGUS-DEFUN-HINTS-OK setting is in the ACL2-DEFAULTS-TABLE.
-
-(define get-bogus-defun-hints-ok ((w plist-worldp))
-  :verify-guards nil
-  (let ((table (table-alist 'acl2::acl2-defaults-table w)))
-    (cdr (assoc-eq :bogus-defun-hints-ok table))))
 
 ; Second-order functions and theorems depend on function variables.
 ; Each function variable is typed by the number of its arguments (1 or more).
@@ -322,18 +315,6 @@
 ; If the new function is recursive,
 ; it also checks that the well-founded relation is O<.
 ;
-; DEFUN2 sets the :T-PROOF option of DEFINE to T,
-; in order to introduce an explicit termination theorem
-; (if the function is recursive).
-; :BOGUS-DEFUN-HINTS-OK is set to T just before the DEFINE,
-; so that if the function is not recursive
-; the :T-PROOF option does not cause an error
-; (checking whether the function is recursive before submitting it to ACL2
-; would involve parsing, expanding macros, etc.,
-; to see if the function is called in the body;
-; this is avoided by setting :BOGUS-DEFUN-HINTS-OK to T);
-; :BOGUS-DEFUN-HINTS-OK is restored to its previous value just after DEFINE.
-;
 ; DEFUN2 sets the :NO-FUNCTION option of DEFINE to T,
 ; to prevent DEFINE from wrapping the function body
 ; with a LET binding of __FUNCTION__ to the name of the function.
@@ -363,18 +344,15 @@
         (raise "~x0 must be a non-empty list of function variables ~
                  without duplicates."
                fparams))
-       (info (list 'plain fparams))
-       (bogus-defun-hints-ok (get-bogus-defun-hints-ok w)))
-      `(progn
-         (set-bogus-defun-hints-ok t)
-         (define ,sofun ,@rest :t-proof t :no-function t :enabled t)
-         (set-bogus-defun-hints-ok ,bogus-defun-hints-ok)
-         (table second-order-functions ',sofun ',info)
-         (value-triple (and (check-wfrel-o< ',sofun (w state))
-                            (check-fparams-dependency ',sofun
-                                                      'plain
-                                                      ',fparams
-                                                      (w state)))))))
+       (info (list 'plain fparams)))
+    `(progn
+       (define ,sofun ,@rest :no-function t :enabled t)
+       (table second-order-functions ',sofun ',info)
+       (value-triple (and (check-wfrel-o< ',sofun (w state))
+                          (check-fparams-dependency ',sofun
+                                                    'plain
+                                                    ',fparams
+                                                    (w state)))))))
 
 (defmacro defun2 (sofun fparams &rest rest)
   `(make-event (defun2-event ',sofun ',fparams ',rest (w state))))
@@ -387,14 +365,6 @@
 
 (defmacro acl2::show-defun2 (&rest args)
   `(show-defun2 ,@args))
-
-; The name of the termination theorem of a recursive second-order function
-; is obtained by adding -T to the name of the function.
-
-(define sofun-termination-theorem-name ((sofun symbolp))
-  (let* ((sofun-name (symbol-name sofun))
-         (theorem-name (string-append sofun-name "-T")))
-    (intern-in-package-of-symbol theorem-name sofun)))
 
 ; The macro DEFCHOOSE2 introduces a choice second-order function.
 ; DEFCHOOSE2 has the form
@@ -1035,12 +1005,6 @@
 ; DEFUN-INST generates a :HINTS for the termination proof of the same form
 ; as the generated proof of an instance of a second-order theorem above.
 ;
-; If FUN is second-order and recursive, the :T-PROOF option is used,
-; so that the termination theorem of FUN can be later used
-; to prove the termination of instances of FUN.
-; Unlike DEFUN2, :BOGUS-DEFUN-HINTS-OK is not set to T and then restored,
-; because DEFUN-INST generates the :T-PROOF option
-; only if SOFUN and FUN are recursive.
 ; Similarly to DEFUN2, DEFUN-INST sets
 ; the :NO-FUNCTION and :ENABLED options of DEFINE to T.
 ; DEFUN-INST sets
@@ -1140,8 +1104,9 @@
        (fun-measure (fun-subst-term inst sofun-measure w))
        (fun-guard (fun-subst-term inst sofun-guard w))
        ;; construct the termination proof from the instantiation, if recursive:
-       (sofun-tt-name (sofun-termination-theorem-name sofun))
-       (sofun-tt-formula (formula sofun-tt-name nil w)) ; could be NIL
+       (sofun-tt-name `(:termination-theorem ,sofun))
+       (sofun-tt-formula (and (acl2::recursivep sofun nil w)
+                              (termination-theorem sofun w)))
        (fsbs (ext-fun-subst-term sofun-tt-formula inst w))
        (fun-tt-proof (sothm-inst-proof sofun-tt-name fsbs w))
        ;; :HINTS of FUN if recursive, otherwise NIL:
@@ -1150,8 +1115,6 @@
        (measure (if fun-measure `(:measure ,fun-measure) nil))
        ;; :GUARD of FUN if guarded, otherwise NIL:
        (guard (if fun-guard `(:guard ,fun-guard) nil))
-       ;; :T-PROOF option if FUN is recursive, otherwise NIL:
-       (t-proof (if fun-measure '(:t-proof t) nil))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
        (info (list 'plain fparams))
@@ -1167,7 +1130,6 @@
           ,@measure
           ,@hints
           ,@guard
-          ,@t-proof
           :no-function t
           :enabled t
           :ignore-ok t

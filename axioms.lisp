@@ -6865,6 +6865,40 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (list 'cons (car chars) (car forms))
                  (make-fmt-bindings (cdr chars) (cdr forms))))))
 
+(defmacro warning$ (ctx summary str+ &rest fmt-args)
+
+; Warning: Keep this in sync with warning$-cw1.
+
+; Note: This macro was originally defined in basis-a.lisp, but was moved
+; forward after *acl2-files* was changed so that "hons-raw" occurs before
+; "basis-a".
+
+; A typical use of this macro might be:
+; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
+; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
+; If the second argument is wrapped in a one-element list, as in
+; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
+; then that argument is quoted, and no check will be made for whether the
+; warning is disabled, presumably because we are in a context where we know the
+; warning is enabled.
+
+  (list 'warning1
+        ctx
+
+; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
+; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
+; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
+; of warning$ be that conses are quoted in the second argument position.
+
+        (if (consp summary)
+            (kwote summary)
+          summary)
+        str+
+        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                             #\5 #\6 #\7 #\8 #\9)
+                           fmt-args)
+        'state))
+
 (defmacro msg (str &rest args)
 
 ; Fmt is defined much later.  But we need msg now because several of our macros
@@ -16573,20 +16607,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defvar *read-file-alist*
 
-; This alist associates each filename key with both a file-clock and its
-; file-write-date.  Recall that the keys into the readable-files component of
-; the ACL2 state are of the form (list file-name typ file-clock); see
-; open-input-channel.  In order to preserve our logical story about file IO, we
-; must avoid logically associating such a key with two different character
-; lists.  That could happen if read-file-into-string is called twice on the
-; same filename, say "F", in the case that there is an intervening write not
-; performed by ACL2.  We avoid that problem by associating "F" with its current
-; file-write-date, FWD, in the global *read-file-alist* just before opening a
-; character input channel to "F".  That global is cleared whenever the
-; file-clock of the state is updated, except when under read-file-into-string
-; (or any with-local-state actually).  Now suppose we later attempt to open a
-; (new) character input channel to "F" when the file-clock of the state is as
-; before.  Then we cause an error if the file-write-date is later than FWD.
+; This alist associates each key, an ACL2 filename (see the Essay on
+; Pathnames), with both a file-clock and its file-write-date.  Recall that the
+; keys into the readable-files component of the ACL2 state are of the form
+; (list file-name typ file-clock); see open-input-channel.  In order to
+; preserve our logical story about file IO, we must avoid logically associating
+; such a key with two different character lists.  That could happen if
+; read-file-into-string is called twice on the same filename, say "F", in the
+; case that there is an intervening write not performed by ACL2.  We avoid that
+; problem by associating "F" with its current file-write-date, FWD, in the
+; global *read-file-alist* just before opening a character input channel to
+; "F".  That global is cleared whenever the file-clock of the state is updated,
+; except when under read-file-into-string (or any with-local-state actually).
+; Now suppose we later attempt to open a (new) character input channel to "F"
+; when the file-clock of the state is as before.  Then we cause an error if the
+; file-write-date is later than FWD.
 
 ; But consider the following situation: when we close an input channel on
 ; behalf of read-file-into-string, the file-write-date of "F" is not FWD.  In
@@ -16617,7 +16652,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun check-against-read-file-alist (filename
                                       &optional
                                       (fwd (our-ignore-errors
-                                            (file-write-date filename))))
+                                            (file-write-date$ filename
+                                                              *the-live-state*))))
 
 ; See *read-file-alist* for relevant background.
 
@@ -18272,34 +18308,44 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    nil))))))
       ""))
 
+#-acl2-loop-only
 (defun pathname-os-to-unix (str os state)
 
-; This function takes a pathname string in the host OS syntax and converts it
-; to Unix syntax.
+; Warning: Keep this in sync with the corresponding redefinition in file
+; non-ascii-pathnames-raw.lsp, under books/kestrel/.
 
-  (declare (xargs :mode :program))
+; This function takes an OS pathname and converts it to an ACL2 pathname; see
+; the Essay on Pathnames.
+
   (if (equal str "")
       str
-    (case os
-      (:unix str)
-      (:mswindows
-       (let* ((sep #\\)
-              (str0 (substitute *directory-separator* sep str)))
-         (cond
-          ((and (eq os :mswindows)
-                (eql (char str0 0) *directory-separator*))
+    (let ((result
+           (case os
+             (:unix str)
+             (:mswindows
+              (let* ((sep #\\)
+                     (str0 (substitute *directory-separator* sep str)))
+                (cond
+                 ((and (eq os :mswindows)
+                       (eql (char str0 0) *directory-separator*))
 
 ; Warning: Do not append the drive if there is already a drive present.  We
-; rely on this in LP, where we initialize state global 'system-books-dir
-; using unix-full-pathname (which calls pathname-os-to-unix) based on
-; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
-; differs from that of the user.
+; rely on this in LP, where we initialize state global 'system-books-dir based
+; on environment variable ACL2_SYSTEM_BOOKS, which might already have a drive
+; that differs from that of the user.
 
-           (string-append (mswindows-drive nil state)
-                          str0))
-          (t
-           str0))))
-      (otherwise (os-er os 'pathname-os-to-unix)))))
+                  (string-append (mswindows-drive nil state)
+                                 str0))
+                 (t
+                  str0))))
+             (otherwise (os-er os 'pathname-os-to-unix)))))
+      (let ((msg (and result
+                      *check-namestring* ; always true unless a ttag is used
+                      (bad-lisp-stringp result))))
+        (cond (msg (interface-er
+                    "Illegal ACL2 pathname, ~x0:~%~@1"
+                    result msg))
+              (t result))))))
 
 #+(and (not acl2-loop-only) ccl)
 (defun ccl-at-least-1-3-p ()
@@ -18309,14 +18355,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (> (symbol-value 'ccl::*openmcl-minor-version*) 2)
          (> (symbol-value 'ccl::*openmcl-major-version*) 1))))
 
+#-acl2-loop-only
 (defun pathname-unix-to-os (str state)
 
-; This function takes a Unix-style pathname string and converts it to a
-; filename in the host OS.  In the case of :mswindows, the "Unix-style"
-; filename may or may not start with the drive, but the result definitely does.
+; Warning: Keep this in sync with the corresponding redefinition in file
+; non-ascii-pathnames-raw.lsp, under books/kestrel/.
 
-  (declare (xargs :mode :program))
-  #+(and (not acl2-loop-only) ccl mswindows)
+; This function takes an ACL2 pathname and converts it to an OS pathname; see
+; the Essay on Pathnames.  In the case of :mswindows, the ACL2 filename may or
+; may not start with the drive, but the result definitely does.
+
+  #+(and ccl mswindows)
 
 ; We believe that CCL 1.2 traffics in Unix-style pathnames, so it would be a
 ; mistake to convert them to use #\\, because then (for example) probe-file may
@@ -18845,13 +18894,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (live-state-p state)
     (return-from getenv$
-                 (let ((val (and (stringp str) (getenv$-raw str))))
-                   (value (and (not (bad-lisp-stringp val))
-
-; It isn't clear that it is possible to get a bad string from getenv$-raw, but
-; we check above and return nil if we happen to obtain such a string.
-
-                               val)))))
+                 (value (and (stringp str) ; guard check, for robustness
+                             (getenv$-raw str)))))
   (read-acl2-oracle state))
 
 (defun setenv$ (str val)
@@ -20322,14 +20366,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              CLTL displays as ~s0 is thus illegal in ACL2."
             (list (cons #\0 (format nil "~s" x)))))))
 )
-
-#-acl2-loop-only
-(defun chk-bad-lisp-stringp (namestring filename)
-  (let ((msg (bad-lisp-stringp namestring)))
-    (cond (msg (interface-er
-                "Illegal absolute pathname computed for ~x0:~%~@1"
-                filename msg))
-          (t nil))))
 
 #-acl2-loop-only
 (defun-one-output chk-bad-lisp-object (x)
@@ -25444,14 +25480,19 @@ Lisp definition."
    (read-acl2-oracle state))
 
 (defun file-write-date$ (file state)
+
+; File is an ACL2 filename; see the Essay on Pathnames.
+
   (declare (xargs :guard (stringp file)
-                  :stobjs state))
-  #+acl2-loop-only
-  (declare (ignore file))
+                  :stobjs state)
+           (ignorable file))
   #+(not acl2-loop-only)
   (when (live-state-p state)
-    (return-from file-write-date$
-                 (mv (our-ignore-errors (file-write-date file)) state)))
+    (return-from
+     file-write-date$
+     (mv (our-ignore-errors
+          (file-write-date (pathname-unix-to-os file state)))
+         state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (mv (and (null erp)
@@ -25460,6 +25501,8 @@ Lisp definition."
               state)))
 
 (defun delete-file$ (file state)
+
+; File is an ACL2 pathname; see the Essay on Pathnames.
 
 ; It may seem a bit surprising that this function does not update the
 ; file-clock of the state.  To see why that isn't necessary, let us review the
@@ -25506,9 +25549,11 @@ Lisp definition."
   (declare (ignore file))
   #-acl2-loop-only
   (when (live-state-p state)
-    (return-from delete-file$
-                 (mv (our-ignore-errors (delete-file file))
-                     state)))
+    (return-from
+     delete-file$
+     (mv (our-ignore-errors
+          (delete-file (pathname-unix-to-os file state)))
+         state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (mv (and (null erp)

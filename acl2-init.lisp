@@ -1893,7 +1893,10 @@ implementations.")
                         Allegro 5.0 or later.")))
              (sysout-dxl
               (unix-full-pathname sysout-name "dxl")))
-        (write-acl2rc (our-pwd))
+        (write-acl2rc
+         (our-truename ; our-pwd, without converting to ACL2/Unix pathname
+          ""
+          "NOTE: Calling OUR-TRUENAME from save-acl2-in-allegro-aux"))
         (with-open-file ; write to nsaved_acl2
          (str sysout-name :direction :output)
          (write-exec-file
@@ -1967,7 +1970,10 @@ implementations.")
 
 #+clisp
 (defun save-acl2-in-clisp-aux (sysout-name mem-name host-lisp-args inert-args)
-  (let ((save-dir (our-pwd))
+  (let ((save-dir
+         (our-truename ; our-pwd, without converting to ACL2/Unix pathname
+          ""
+          "NOTE: Calling OUR-TRUENAME from save-acl2-in-clisp-aux"))
         (eventual-sysout-mem
          (unix-full-pathname mem-name "mem"))
         (sysout-mem

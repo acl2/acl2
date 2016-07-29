@@ -4,9 +4,6 @@
 (in-package "X86ISA")
 (include-book "projects/x86isa/proofs/utilities/programmer-level-mode/top" :dir :system)
 
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-
 ;; ======================================================================
 
 (defconst *mov_test_code*
@@ -38,9 +35,9 @@
 (defconst *add_test_code*
   ;; ADD r/m8, imm8
   ;; RIP-relative addressing
-  ;; Destination = memory location[next rip + sign-extended(#000000xFF)]
+  ;; Destination = memory location[next rip + sign-extended(#xdd0000fd)]
   ;; Immediate data = #x20
-  '(#x80 #x05 #xFF #x0 #x0 #x0 #x20))
+  '(#x80 #x05 #xfd #x00 #x00 #xdd #x20))
 
 (b*
     ;; wm08 should add #x20 to memory location #xdd001078, which
