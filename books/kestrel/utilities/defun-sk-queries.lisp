@@ -273,7 +273,7 @@
   </p>"
   (equal
    strengthen-defthm
-   `(defthm ,(packn (list witness '-strengthen))
+   `(defthm ,(add-suffix witness "-STRENGTHEN")
       ,(defchoose-constraint-extra witness bound-vars args witness-body)
       :hints (("Goal"
                :use ,witness
