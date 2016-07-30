@@ -17069,7 +17069,7 @@
               ,@(and strengthen
                      '(:strengthen t))))
            ,@(and strengthen
-                  `((defthm ,(packn (list skolem-name '-strengthen))
+                  `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
                       ,(defchoose-constraint-extra skolem-name bound-vars args
                          defchoose-body)
                       :hints (("Goal"
