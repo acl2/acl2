@@ -30,6 +30,7 @@
 (include-book "prove-interface")
 (include-book "terms")
 (include-book "testing")
+(include-book "theorems/top")
 (include-book "types")
 (include-book "ubi")
 (include-book "user-interface")
