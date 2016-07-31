@@ -45,9 +45,43 @@
        (symbol-listp (second x))
        (pseudo-termp (third x))))
 
+(make-flag all-vars1)
+
+(defthm-flag-all-vars1
+  (defthm true-listp-of-all-vars1
+    (equal (true-listp (all-vars1 term ans))
+           (true-listp ans))
+    :flag all-vars1)
+  (defthm true-listp-of-all-vars1-lst
+    (equal (true-listp (all-vars1-lst lst ans))
+           (true-listp ans))
+    :flag all-vars1-lst))
+
+(defrule true-listp-of-all-vars1-type
+  (implies (true-listp ans)
+           (true-listp (all-vars1 term ans)))
+  :rule-classes :type-prescription)
+
+(defrule true-listp-of-all-vars1-lst-type
+  (implies (true-listp ans)
+           (true-listp (all-vars1-lst term ans)))
+  :rule-classes :type-prescription)
+
+(defthm-flag-all-vars1
+  (defthm symbol-listp-of-all-vars1
+    (implies (pseudo-termp term)
+             (equal (symbol-listp (all-vars1 term ans))
+                    (symbol-listp ans)))
+    :flag all-vars1)
+  (defthm symbol-listp-of-all-vars1-lst
+    (implies (pseudo-term-listp lst)
+             (equal (symbol-listp (all-vars1-lst lst ans))
+                    (symbol-listp ans)))
+    :flag all-vars1-lst))
+
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
-  :verify-guards nil
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap)))
   :short
   "True iff the lambda expression is closed, i.e. it has no free variables."
   (subsetp-eq (all-vars (lambda-body lambd))
@@ -102,9 +136,13 @@
   (defmacro apply-term* (fn &rest terms)
     `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((fn pseudo-functionp) (terms pseudo-term-listp))
+(define apply-unary-to-terms ((fn (and (pseudo-functionp fn)
+                                       (if (consp fn)
+                                           (eql 1 (len (cadr fn)))
+                                         t)))
+                              (terms pseudo-term-listp))
+  :guard-hints (("Goal" :in-theory (enable PSEUDO-FUNCTIONP pseudo-lambdap)))
   ;; :returns (applied-terms pseudo-term-listp)
-  :verify-guards nil
   :short
   "Apply @('fn'), as a unary function, to each of @('terms'),
   obtaining a list of corresponding terms."
@@ -165,11 +203,23 @@
   i.e. its body has no stobjs."
   (term-no-stobjs-p (lambda-body lambd) wrld))
 
+(defrule arity-when-not-function-namep
+ (implies (and (not (function-namep fn wrld))
+               (symbolp fn))
+          (not (arity fn wrld)))
+ :hints (("Goal" :in-theory (e/d (arity function-namep) (fgetprop))))
+ :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defrule plist-worldp-when-plist-worldp-with-formals-cheap
+  (implies (plist-worldp-with-formals wrld)
+           (plist-worldp wrld))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
 (defines term/terms-guard-verified-fns
   :short "True iff term/terms is/are guard-verified."
-  :verify-guards nil
 
-  (define guard-verified-fnsp ((term pseudo-termp) (wrld plist-worldp))
+  (define guard-verified-fnsp ((term (termp term wrld))
+                               (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
     :parents (term/terms-guard-verified-fns)
     :short "True iff all the functions in the term are guard-verified."
@@ -189,8 +239,8 @@
                    (guard-verified-p fn wrld)
                  (guard-verified-fnsp (lambda-body fn) wrld))))))
 
-  (define guard-verified-fns-listp ((terms pseudo-term-listp)
-                                    (wrld plist-worldp))
+  (define guard-verified-fns-listp ((terms (term-listp terms wrld))
+                                    (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
     :parents (term/terms-guard-verified-fns)
     :short "True iff all the functions in the terms are guard-verified."
@@ -198,17 +248,8 @@
         (and (guard-verified-fnsp (car terms) wrld)
              (guard-verified-fns-listp (cdr terms) wrld)))))
 
-(define lambda-guard-verified-fnsp ((lambd pseudo-lambdap)
-                                    (wrld plist-worldp))
+(define lambda-expr-p (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :verify-guards nil
-  :short
-  "True iff all the functions in the lambda expression is guard-verified."
-  (guard-verified-fnsp (lambda-body lambd) wrld))
-
-(define lambda-expr-p (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :verify-guards nil
   :short
   "True iff @('x') is a valid translated lambda expression."
   :long
@@ -226,6 +267,14 @@
        (termp (third x) wrld)
        (subsetp-eq (all-vars (third x))
                    (second x))))
+
+(define lambda-guard-verified-fnsp ((lambd (lambda-expr-p lambd wrld))
+                                    (wrld plist-worldp-with-formals))
+  :returns (yes/no booleanp)
+  :guard-hints (("Goal" :in-theory (enable LAMBDA-EXPR-P)))
+  :short
+  "True iff all the functions in the lambda expression is guard-verified."
+  (guard-verified-fnsp (lambda-body lambd) wrld))
 
 (define check-user-term (x (wrld plist-worldp))
   :returns (mv (term/message (or (pseudo-termp term/message)
