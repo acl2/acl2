@@ -26,7 +26,7 @@
   :parents (kestrel-utilities system-utilities)
   :short "Utilities related to @(see term)s.")
 
-(define pseudo-lambda-expr-p (x)
+(define pseudo-lambdap (x)
   :returns (yes/no booleanp)
   :short
   "True iff @('x') satisfies the conditions of lambda expressions
@@ -45,7 +45,7 @@
        (symbol-listp (second x))
        (pseudo-termp (third x))))
 
-(define lambda-expr-closedp ((lambd pseudo-lambda-expr-p))
+(define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
@@ -61,13 +61,13 @@
   :long
   "<p>
   Check whether @('x') is a symbol or a
-  <see topic='@(url pseudo-lambda-expr-p)'>pseudo-lambda-expression</see>.
+  <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expression</see>.
   These are the possible values of the first element of
   a pseudo-term that is not a variable or a quoted constant
   (i.e. a pseudo-term that is a function application).
   </p>"
   (or (symbolp x)
-      (pseudo-lambda-expr-p x)))
+      (pseudo-lambdap x)))
 
 (define apply-term ((fn pseudo-functionp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
@@ -75,7 +75,7 @@
                   (len (lambda-formals fn))))
   ;; :returns (term pseudo-termp)
   :guard-hints (("Goal" :in-theory (enable pseudo-functionp
-                                           pseudo-lambda-expr-p)))
+                                           pseudo-lambdap)))
   :short
   "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
   to list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
@@ -113,9 +113,9 @@
     (cons (apply-term* fn (car terms))
           (apply-unary-to-terms fn (cdr terms)))))
 
-(define lambda-expr-logicp ((lambd pseudo-lambda-expr-p) (wrld plist-worldp))
+(define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambda-expr-p)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap)))
   :short
   "True iff the lambda expression is in logic mode,
   i.e. its body is in logic mode."
@@ -156,8 +156,8 @@
         (and (term-no-stobjs-p (car terms) wrld)
              (terms-no-stobjs-p (cdr terms) wrld)))))
 
-(define lambda-expr-no-stobjs-p
-  ((lambd pseudo-lambda-expr-p) (wrld plist-worldp))
+(define lambda-no-stobjs-p
+  ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :prepwork ((program))
   :short
@@ -165,13 +165,13 @@
   i.e. its body has no stobjs."
   (term-no-stobjs-p (lambda-body lambd) wrld))
 
-(defines term/terms-fns-guard-verified-p
+(defines term/terms-guard-verified-fns
   :short "True iff term/terms is/are guard-verified."
   :verify-guards nil
 
-  (define term-fns-guard-verified-p ((term pseudo-termp) (wrld plist-worldp))
+  (define guard-verified-fnsp ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no booleanp)
-    :parents (term/terms-fns-guard-verified-p)
+    :parents (term/terms-guard-verified-fns)
     :short "True iff all the functions in the term are guard-verified."
     :long
     "<p>
@@ -183,28 +183,28 @@
     </p>"
     (or (variablep term)
         (fquotep term)
-        (and (terms-fns-guard-verified-p (fargs term) wrld)
+        (and (guard-verified-fns-listp (fargs term) wrld)
              (let ((fn (ffn-symb term)))
                (if (symbolp fn)
                    (guard-verified-p fn wrld)
-                 (term-fns-guard-verified-p (lambda-body fn) wrld))))))
+                 (guard-verified-fnsp (lambda-body fn) wrld))))))
 
-  (define terms-fns-guard-verified-p ((terms pseudo-term-listp)
-                                       (wrld plist-worldp))
+  (define guard-verified-fns-listp ((terms pseudo-term-listp)
+                                    (wrld plist-worldp))
     :returns (yes/no booleanp)
-    :parents (term/terms-fns-guard-verified-p)
+    :parents (term/terms-guard-verified-fns)
     :short "True iff all the functions in the terms are guard-verified."
     (or (endp terms)
-        (and (term-fns-guard-verified-p (car terms) wrld)
-             (terms-fns-guard-verified-p (cdr terms) wrld)))))
+        (and (guard-verified-fnsp (car terms) wrld)
+             (guard-verified-fns-listp (cdr terms) wrld)))))
 
-(define lambda-expr-fns-guard-verified-p ((lambd pseudo-lambda-expr-p)
-                                           (wrld plist-worldp))
+(define lambda-guard-verified-fnsp ((lambd pseudo-lambdap)
+                                    (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
   :short
   "True iff all the functions in the lambda expression is guard-verified."
-  (term-fns-guard-verified-p (lambda-body lambd) wrld))
+  (guard-verified-fnsp (lambda-body lambd) wrld))
 
 (define lambda-expr-p (x (wrld plist-worldp))
   :returns (yes/no booleanp)
@@ -294,8 +294,8 @@
             (cdr (assoc :stobjs-out bindings)))
       (mv term/message nil))))
 
-(define check-user-lambda-expr (x (wrld plist-worldp))
-  :returns (mv (lambd/message (or (pseudo-lambda-expr-p lambd/message)
+(define check-user-lambda (x (wrld plist-worldp))
+  :returns (mv (lambd/message (or (pseudo-lambdap lambd/message)
                                   (msgp lambd/message)))
                (stobjs-out symbol-listp))
   :prepwork ((program))
@@ -322,7 +322,7 @@
   along with @('nil') as output stobjs.
   </p>
   <p>
-  The @(tsee check-user-lambda-expr) function does not terminate
+  The @(tsee check-user-lambda) function does not terminate
   if @(tsee check-user-term) does not terminate.
   </p>"
   (b* (((unless (true-listp x))

@@ -19,38 +19,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (not (pseudo-lambda-expr-p "abc")))
+(assert-event (not (pseudo-lambdap "abc")))
 
-(assert-event (not (pseudo-lambda-expr-p (cons 3 6))))
+(assert-event (not (pseudo-lambdap (cons 3 6))))
 
-(assert-event (not (pseudo-lambda-expr-p '(lambda (x) x extra))))
+(assert-event (not (pseudo-lambdap '(lambda (x) x extra))))
 
-(assert-event (not (pseudo-lambda-expr-p '(lambd (x) x))))
+(assert-event (not (pseudo-lambdap '(lambd (x) x))))
 
-(assert-event (not (pseudo-lambda-expr-p '(lambda (x 8) x))))
+(assert-event (not (pseudo-lambdap '(lambda (x 8) x))))
 
-(assert-event (not (pseudo-lambda-expr-p '(lambda (x y) #\a))))
+(assert-event (not (pseudo-lambdap '(lambda (x y) #\a))))
 
-(assert-event (pseudo-lambda-expr-p '(lambda (x) x)))
+(assert-event (pseudo-lambdap '(lambda (x) x)))
 
-(assert-event (pseudo-lambda-expr-p '(lambda (x y z) (+ x (* y z)))))
+(assert-event (pseudo-lambdap '(lambda (x y z) (+ x (* y z)))))
 
-(assert-event (pseudo-lambda-expr-p '(lambda (x y z) (+ x x))))
+(assert-event (pseudo-lambdap '(lambda (x y z) (+ x x))))
 
-(assert-event (pseudo-lambda-expr-p '(lambda (x y z) (+ a b))))
+(assert-event (pseudo-lambdap '(lambda (x y z) (+ a b))))
 
 (must-succeed*
  (defconst *term* '((lambda (x) (1+ x)) y))
  (assert-event (pseudo-termp *term*))
- (assert-event (pseudo-lambda-expr-p (ffn-symb *term*))))
+ (assert-event (pseudo-lambdap (ffn-symb *term*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (lambda-expr-closedp '(lambda (x) (* '2 x))))
+(assert-event (lambda-closedp '(lambda (x) (* '2 x))))
 
-(assert-event (lambda-expr-closedp '(lambda (x y) (- y x))))
+(assert-event (lambda-closedp '(lambda (x y) (- y x))))
 
-(assert-event (not (lambda-expr-closedp '(lambda (x) (cons x a)))))
+(assert-event (not (lambda-closedp '(lambda (x) (cons x a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -85,12 +85,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (lambda-expr-logicp '(lambda (x y) (len (cons x x))) (w state)))
+(assert-event (lambda-logic-fnsp '(lambda (x y) (len (cons x x))) (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :mode :program)) x)
  (assert-event
-  (not (lambda-expr-logicp '(lambda (z) (cons (f x) '3)) (w state)))))
+  (not (lambda-logic-fnsp '(lambda (z) (cons (f x) '3)) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,31 +103,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (lambda-expr-no-stobjs-p '(lambda (x y) (binary-+ x (cons y '#\a))) (w state)))
+ (lambda-no-stobjs-p '(lambda (x y) (binary-+ x (cons y '#\a))) (w state)))
 
 (must-succeed*
  (defun f (state) (declare (xargs :stobjs state)) state)
  (assert-event
-  (not (lambda-expr-no-stobjs-p '(lambda (state) (list (f state))) (w state)))))
+  (not (lambda-no-stobjs-p '(lambda (state) (list (f state))) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (terms-fns-guard-verified-p '(cons (len a) '3) (w state)))
+(assert-event (guard-verified-fnsp '(cons (len a) '3) (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert-event (not (terms-fns-guard-verified-p '(zp (f '4)) (w state)))))
+ (assert-event (not (guard-verified-fns-listp '(zp (f '4)) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (lambda-expr-fns-guard-verified-p '(lambda (a) (cons (len a) '3)) (w state)))
+ (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
  (assert-event
-  (not (lambda-expr-fns-guard-verified-p '(lambda (x) (zp (f '4)))
-                                         (w state)))))
+  (not (lambda-guard-verified-fnsp '(lambda (x) (zp (f '4))) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,80 +177,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        "(lambda (x) x)" (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda (x) x . more) (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda (x) x y) (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda (x)) (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambdaa (x) x) (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda "x" x) (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda (x x) x) (w state))))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda (x "y") x) (w state))))))
 
 (assert-event
- (equal (mv-list 2 (check-user-lambda-expr '(lambda (x) 3) (w state)))
+ (equal (mv-list 2 (check-user-lambda '(lambda (x) 3) (w state)))
         '((lambda (x) '3) (nil))))
 
 (assert-event
- (equal (mv-list 2 (check-user-lambda-expr '(lambda (x) x) (w state)))
+ (equal (mv-list 2 (check-user-lambda '(lambda (x) x) (w state)))
         '((lambda (x) x) (nil))))
 
 (assert-event
- (equal (mv-list 2 (check-user-lambda-expr '(lambda (y) (len x)) (w state)))
+ (equal (mv-list 2 (check-user-lambda '(lambda (y) (len x)) (w state)))
         '((lambda (y) (len x)) (nil))))
 
 (assert-event
- (equal (mv-list 2 (check-user-lambda-expr
+ (equal (mv-list 2 (check-user-lambda
                     '(lambda (x y) (mv x y z)) (w state)))
         '((lambda (x y) (cons x (cons y (cons z 'nil)))) (nil nil nil))))
 
 (assert-event
- (equal (mv-list 2 (check-user-lambda-expr '(lambda (state) state) (w state)))
+ (equal (mv-list 2 (check-user-lambda '(lambda (state) state) (w state)))
         '((lambda (state) state) (state))))
 
 (assert-event
- (equal (mv-list 2 (check-user-lambda-expr
+ (equal (mv-list 2 (check-user-lambda
                     '(lambda (state) (mv state 1)) (w state)))
         '((lambda (state) (cons state (cons '1 'nil))) (state nil))))
 
 (must-succeed*
  (defstobj s)
- (assert-event (equal (mv-list 2 (check-user-lambda-expr
+ (assert-event (equal (mv-list 2 (check-user-lambda
                                   '(lambda (state s) (mv s 0 state)) (w state)))
                       '((lambda (state s) (cons s (cons '0 (cons state 'nil))))
                         (s nil state)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (mv-list 2 (check-user-lambda-expr
+ (value (equal (mv-list 2 (check-user-lambda
                            '(lambda (x y) (+ x y)) (w state)))
                '((lambda (x y) (binary-+ x y)) (nil)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (mv-list 2 (check-user-lambda-expr
+ (value (equal (mv-list 2 (check-user-lambda
                            '(lambda (z) (+ (len x) 55)) (w state)))
                '((lambda (z) (binary-+ (len x) '55)) (nil)))))
 
 (must-eval-to-t ; ASSERT-EVENT does not work here
- (value (equal (mv-list 2 (check-user-lambda-expr
+ (value (equal (mv-list 2 (check-user-lambda
                            '(lambda (u) (let ((x 4)) (+ x (len y)))) (w state)))
                '((lambda (u) ((lambda (x y) (binary-+ x (len y))) '4 y))
                  (nil)))))
 
-(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda-expr
+(assert-event (msgp (nth 0 (mv-list 2 (check-user-lambda
                                        '(lambda (x) (f x)) (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
