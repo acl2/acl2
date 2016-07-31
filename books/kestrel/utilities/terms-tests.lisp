@@ -85,14 +85,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (term-logicp '(len (cons x x)) (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :mode :program)) x)
- (assert-event (not (term-logicp '(cons (f x) '3) (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-event (lambda-expr-logicp '(lambda (x y) (len (cons x x))) (w state)))
 
 (must-succeed*

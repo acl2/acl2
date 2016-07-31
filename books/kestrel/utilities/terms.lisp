@@ -113,38 +113,13 @@
     (cons (apply-term* fn (car terms))
           (apply-unary-to-terms fn (cdr terms)))))
 
-(defines term/terms-logicp
-  :short "True iff term/terms is/are in logic mode."
-
-  (define term-logicp ((term pseudo-termp) (wrld plist-worldp))
-    :returns (yes/no booleanp)
-    :parents (term/terms-logicp)
-    :short
-    "True iff the term is in logic mode,
-    i.e. all its functions are in logic mode."
-    (or (variablep term)
-        (fquotep term)
-        (and (terms-logicp (fargs term) wrld)
-             (let ((fn (ffn-symb term)))
-               (if (symbolp fn)
-                   (logicp fn wrld)
-                 (term-logicp (lambda-body fn) wrld))))))
-
-  (define terms-logicp ((terms pseudo-term-listp) (wrld plist-worldp))
-    :returns (yes/no booleanp)
-    :parents (term/terms-logicp)
-    :short "True iff all the terms are in logic mode."
-    (or (endp terms)
-        (and (term-logicp (car terms) wrld)
-             (terms-logicp (cdr terms) wrld)))))
-
 (define lambda-expr-logicp ((lambd pseudo-lambda-expr-p) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambda-expr-p)))
   :short
   "True iff the lambda expression is in logic mode,
   i.e. its body is in logic mode."
-  (term-logicp (lambda-body lambd) wrld))
+  (logic-fnsp (lambda-body lambd) wrld))
 
 (defines term/terms-no-stobjs-p
   :prepwork ((program))
