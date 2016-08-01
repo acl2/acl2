@@ -77,21 +77,14 @@
         (t (and (logical-namep (car names) wrld)
                 (logical-name-listp (cdr names) wrld)))))
 
-(define definedp ((fn (function-namep fn wrld)) (wrld plist-worldp))
+(define definedp ((fn (and (function-namep fn wrld)
+                           (logicp fn wrld)))
+                  (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short
-  "True iff the function @('fn') is defined,
+  "True iff the logic-mode function @('fn') is defined,
   i.e. it has an @('unnormalized-body') property."
-  :long
-  "<p>
-  Note that built-in @(see program)-mode functions
-  do not have an @('unnormalized-body') property,
-  even though they have definitions.
-  Since their translated bodies are not stored,
-  they are not considered to be &ldquo;defined&rdquo;
-  from the perspective of the @(tsee definedp) system utility.
-   </p>"
   (not (eq t (getpropc fn 'unnormalized-body t wrld))))
 
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
@@ -104,11 +97,13 @@
   (eq (symbol-class fn/thm wrld) :common-lisp-compliant))
 
 (define non-executablep ((fn (and (function-namep fn wrld)
+                                  (logicp fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
-  ;; :returns (result (member result '(t nil :program)))
+  ;; :returns (result (member result '(t nil)))
   :guard-hints (("Goal" :in-theory (enable function-namep)))
-  :short "The @(tsee non-executable) status of the defined function @('fn')."
+  :short
+  "The @(tsee non-executable) status of the logic-mode, defined function @('fn')."
   (getpropc fn 'non-executablep nil wrld))
 
 (define unwrapped-nonexec-body ((fn (and (function-namep fn wrld)

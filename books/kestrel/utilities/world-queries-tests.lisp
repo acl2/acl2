@@ -166,10 +166,6 @@
    :witness-dcls ((declare (xargs :non-executable nil))))
  (assert-event (eq (non-executablep 'h (w state)) nil)))
 
-(must-succeed*
- (defproxy p (* *) => *)
- (assert-event (eq (non-executablep 'p (w state)) :program)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
