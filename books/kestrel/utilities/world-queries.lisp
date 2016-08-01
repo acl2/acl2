@@ -100,7 +100,7 @@
                                   (logicp fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
-  ;; :returns (result (member result '(t nil)))
+  ;; :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short
   "The @(tsee non-executable) status of the logic-mode, defined function @('fn')."
