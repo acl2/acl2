@@ -17,6 +17,8 @@
 
 (include-book "kestrel/utilities/world-queries" :dir :system)
 (include-book "std/util/defines" :dir :system)
+(include-book "theorems/all-vars")
+(include-book "theorems/world")
 
 (local (set-default-parents term-utilities))
 
@@ -44,40 +46,6 @@
        (eq (first x) 'lambda)
        (symbol-listp (second x))
        (pseudo-termp (third x))))
-
-(make-flag all-vars1)
-
-(defthm-flag-all-vars1
-  (defthm true-listp-of-all-vars1
-    (equal (true-listp (all-vars1 term ans))
-           (true-listp ans))
-    :flag all-vars1)
-  (defthm true-listp-of-all-vars1-lst
-    (equal (true-listp (all-vars1-lst lst ans))
-           (true-listp ans))
-    :flag all-vars1-lst))
-
-(defrule true-listp-of-all-vars1-type
-  (implies (true-listp ans)
-           (true-listp (all-vars1 term ans)))
-  :rule-classes :type-prescription)
-
-(defrule true-listp-of-all-vars1-lst-type
-  (implies (true-listp ans)
-           (true-listp (all-vars1-lst term ans)))
-  :rule-classes :type-prescription)
-
-(defthm-flag-all-vars1
-  (defthm symbol-listp-of-all-vars1
-    (implies (pseudo-termp term)
-             (equal (symbol-listp (all-vars1 term ans))
-                    (symbol-listp ans)))
-    :flag all-vars1)
-  (defthm symbol-listp-of-all-vars1-lst
-    (implies (pseudo-term-listp lst)
-             (equal (symbol-listp (all-vars1-lst lst ans))
-                    (symbol-listp ans)))
-    :flag all-vars1-lst))
 
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
@@ -202,18 +170,6 @@
   "True iff the lambda expression has no stobjs,
   i.e. its body has no stobjs."
   (term-no-stobjs-p (lambda-body lambd) wrld))
-
-(defrule arity-when-not-function-namep
- (implies (and (not (function-namep fn wrld))
-               (symbolp fn))
-          (not (arity fn wrld)))
- :hints (("Goal" :in-theory (e/d (arity function-namep) (fgetprop))))
- :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-(defrule plist-worldp-when-plist-worldp-with-formals-cheap
-  (implies (plist-worldp-with-formals wrld)
-           (plist-worldp wrld))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 (defines term/terms-guard-verified-fns
   :short "True iff term/terms is/are guard-verified."
