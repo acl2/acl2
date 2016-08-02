@@ -16,9 +16,12 @@
 
 (include-book "list-sets")
 (include-book "true-list-listp")
+(include-book "all-vars")
+(include-book "world")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc miscellaneous-theorems
   :parents (kestrel-utilities)
-  :short "Some miscellaneous theorems.")
+  :short "Some miscellaneous theorems about functions defined outside the
+  Kestrel Books:")
