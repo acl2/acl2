@@ -4368,8 +4368,8 @@
      (case symbol-class
        (:program
         (er-cmp ctx
-                "~x0 is :program.  Only :logic functions can have their ~
-                 guards verified.  See :DOC verify-guards."
+                "~x0 is in :program mode.  Only :logic mode functions can ~
+                 have their guards verified.  See :DOC verify-guards."
                 name))
        ((:ideal :common-lisp-compliant)
         (let* ((recp (getpropc name 'recursivep nil wrld))
