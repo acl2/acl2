@@ -53,7 +53,8 @@
 (define function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a function."
-  (and (symbolp x) (function-symbolp x wrld)))
+  (and (symbolp x) (function-symbolp x wrld))
+  :enabled t)
 
 (define theorem-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
