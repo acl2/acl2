@@ -131,9 +131,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (lambda-expr-p '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
+ (lambdap '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
 
-(assert-event (not (lambda-expr-p '(lambda (x) (fffff x)) (w state))))
+(assert-event (not (lambdap '(lambda (x) (fffff x)) (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

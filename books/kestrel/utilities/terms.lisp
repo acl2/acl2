@@ -51,11 +51,11 @@
 
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap)))
   :short "True iff the lambda expression is closed,
           i.e. it has no free variables."
   (subsetp-eq (all-vars (lambda-body lambd))
-              (lambda-formals lambd)))
+              (lambda-formals lambd))
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (define pseudo-functionp (x)
   :returns (yes/no booleanp)
@@ -77,8 +77,6 @@
              (eql (len terms)
                   (len (lambda-formals fn))))
   ;; :returns (term pseudo-termp)
-  :guard-hints (("Goal" :in-theory (enable pseudo-functionp
-                                           pseudo-lambdap)))
   :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
           to a list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
           obtaining a pseudo-term."
@@ -88,7 +86,8 @@
    a beta reduction is performed.
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
-        (t (subcor-var (lambda-formals fn) terms (lambda-body fn)))))
+        (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-functionp pseudo-lambdap))))
 
 (defsection apply-term*
   :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
@@ -118,10 +117,10 @@
 
 (define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap)))
   :short "True iff the lambda expression is in logic mode,
           i.e. its body is in logic mode."
-  (logic-fnsp (lambda-body lambd) wrld))
+  (logic-fnsp (lambda-body lambd) wrld)
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (defines term/terms-no-stobjs-p
   :prepwork ((program))
@@ -198,7 +197,7 @@
         (and (guard-verified-fnsp (car terms) wrld)
              (guard-verified-fns-listp (cdr terms) wrld)))))
 
-(define lambda-expr-p (x (wrld plist-worldp-with-formals))
+(define lambdap (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a valid translated lambda expression."
   :long
@@ -217,13 +216,13 @@
        (subsetp-eq (all-vars (third x))
                    (second x))))
 
-(define lambda-guard-verified-fnsp ((lambd (lambda-expr-p lambd wrld))
+(define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
                                     (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :guard-hints (("Goal" :in-theory (enable LAMBDA-EXPR-P)))
   :short "True iff all the functions in the lambda expression
           are guard-verified."
-  (guard-verified-fnsp (lambda-body lambd) wrld))
+  (guard-verified-fnsp (lambda-body lambd) wrld)
+  :guard-hints (("Goal" :in-theory (enable lambdap))))
 
 (define check-user-term (x (wrld plist-worldp))
   :returns (mv (term/message (or (pseudo-termp term/message)
