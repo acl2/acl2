@@ -4,7 +4,10 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Authors:
+;   Alessandro Coglio (coglio@kestrel.edu)
+;   Eric Smith (eric.smith@kestrel.edu)
+;
 ; Contributor: Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,17 +33,16 @@
 
 (define pseudo-lambdap (x)
   :returns (yes/no booleanp)
-  :short
-  "True iff @('x') satisfies the conditions of lambda expressions
-  in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
+  :short "True iff @('x') satisfies the conditions of lambda expressions
+          in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  Check whether @('x') is
-  a @('nil')-terminated list of exactly three elements,
-  whose first element is the symbol @('lambda'),
-  whose second element is a list of symbols, and
-  whose third element is a pseudo-term.
-  </p>"
+   Check whether @('x') is
+   a @('nil')-terminated list of exactly three elements,
+   whose first element is the symbol @('lambda'),
+   whose second element is a list of symbols, and
+   whose third element is a pseudo-term.
+   </p>"
   (and (true-listp x)
        (eql (len x) 3)
        (eq (first x) 'lambda)
@@ -50,24 +52,23 @@
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap)))
-  :short
-  "True iff the lambda expression is closed, i.e. it has no free variables."
+  :short "True iff the lambda expression is closed,
+          i.e. it has no free variables."
   (subsetp-eq (all-vars (lambda-body lambd))
               (lambda-formals lambd)))
 
 (define pseudo-functionp (x)
   :returns (yes/no booleanp)
-  :short
-  "True iff @('x') satisfies the conditions of functions
-  in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
+  :short "True iff @('x') satisfies the conditions of functions
+          in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-  Check whether @('x') is a symbol or a
-  <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expression</see>.
-  These are the possible values of the first element of
-  a pseudo-term that is not a variable or a quoted constant
-  (i.e. a pseudo-term that is a function application).
-  </p>"
+   Check whether @('x') is a symbol or a
+   <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expression</see>.
+   These are the possible values of the first element of
+   a pseudo-term that is not a variable or a quoted constant
+   (i.e. a pseudo-term that is a function application).
+   </p>"
   (or (symbolp x)
       (pseudo-lambdap x)))
 
@@ -78,53 +79,48 @@
   ;; :returns (term pseudo-termp)
   :guard-hints (("Goal" :in-theory (enable pseudo-functionp
                                            pseudo-lambdap)))
-  :short
-  "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
-  to list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
-  obtaining a pseudo-term."
+  :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+          to a list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
+          obtaining a pseudo-term."
   :long
   "<p>
-  If the pseudo-function is a lambda expression,
-  a beta reduction is performed.
-  </p>"
+   If the pseudo-function is a lambda expression,
+   a beta reduction is performed.
+   </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn)))))
 
 (defsection apply-term*
-  :short
-  "Apply <see topic='@(url pseudo-functionp)'>pseudo-function</see>
-  to <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
-  obtaining a pseudo-term."
+  :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+          to <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
+          obtaining a pseudo-term."
   :long
   "<p>
-  If the pseudo-function is a lambda expression,
-  a beta reduction is performed.
-  </p>
-  @(def apply-term*)"
+   If the pseudo-function is a lambda expression,
+   a beta reduction is performed.
+   </p>
+   @(def apply-term*)"
   (defmacro apply-term* (fn &rest terms)
     `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((fn (and (pseudo-functionp fn)
-                                       (if (consp fn)
-                                           (eql 1 (len (cadr fn)))
-                                         t)))
+(define apply-unary-to-terms ((fn (and (pseudo-functionp fn)))
                               (terms pseudo-term-listp))
-  :guard-hints (("Goal" :in-theory (enable PSEUDO-FUNCTIONP pseudo-lambdap)))
+  :guard (or (symbolp fn)
+             (eql 1 (len (lambda-formals fn))))
   ;; :returns (applied-terms pseudo-term-listp)
-  :short
-  "Apply @('fn'), as a unary function, to each of @('terms'),
-  obtaining a list of corresponding terms."
+  :short "Apply @('fn'), as a unary function, to each of @('terms'),
+          obtaining a list of corresponding terms."
   (if (endp terms)
       nil
     (cons (apply-term* fn (car terms))
-          (apply-unary-to-terms fn (cdr terms)))))
+          (apply-unary-to-terms fn (cdr terms))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-functionp pseudo-lambdap))))
 
 (define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap)))
-  :short
-  "True iff the lambda expression is in logic mode,
-  i.e. its body is in logic mode."
+  :short "True iff the lambda expression is in logic mode,
+          i.e. its body is in logic mode."
   (logic-fnsp (lambda-body lambd) wrld))
 
 (defines term/terms-no-stobjs-p
@@ -135,16 +131,15 @@
   (define term-no-stobjs-p ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no booleanp)
     :parents (term/terms-no-stobjs-p)
-    :short
-    "True iff the term has no stobjs,
-    i.e. all its functions have no stobjs."
+    :short "True iff the term has no stobjs,
+            i.e. all its functions have no stobjs."
     :long
     "<p>
-    A term containing functions in @('*stobjs-out-invalid*')
-    (on which @(tsee no-stobjs-p) would cause a guard violation),
-    is regarded as having no stobjs,
-    if all its other functions have no stobjs.
-    </p>"
+     A term containing functions in @('*stobjs-out-invalid*')
+     (on which @(tsee no-stobjs-p) would cause a guard violation),
+     is regarded as having no stobjs,
+     if all its other functions have no stobjs.
+     </p>"
     (or (variablep term)
         (fquotep term)
         (and (terms-no-stobjs-p (fargs term) wrld)
@@ -166,9 +161,8 @@
   ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :prepwork ((program))
-  :short
-  "True iff the lambda expression has no stobjs,
-  i.e. its body has no stobjs."
+  :short "True iff the lambda expression has no stobjs,
+          i.e. its body has no stobjs."
   (term-no-stobjs-p (lambda-body lambd) wrld))
 
 (defines term/terms-guard-verified-fns
@@ -181,12 +175,12 @@
     :short "True iff all the functions in the term are guard-verified."
     :long
     "<p>
-    Note that if @('term') includes @(tsee mbe),
-    @('nil') is returned
-    if any function inside the @(':logic') component of @(tsee mbe)
-    is not guard-verified,
-    even when @('term') could otherwise be fully guard-verified.
-    </p>"
+     Note that if @('term') includes @(tsee mbe),
+     @('nil') is returned
+     if any function inside the @(':logic') component of @(tsee mbe)
+     is not guard-verified,
+     even when @('term') could otherwise be fully guard-verified.
+     </p>"
     (or (variablep term)
         (fquotep term)
         (and (guard-verified-fns-listp (fargs term) wrld)
@@ -206,16 +200,15 @@
 
 (define lambda-expr-p (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :short
-  "True iff @('x') is a valid translated lambda expression."
+  :short "True iff @('x') is a valid translated lambda expression."
   :long
   "<p>
-  Check whether @('x') is a @('nil')-terminated list of exactly three elements,
-  whose first element is the symbol @('lambda'),
-  whose second element is a list of legal variable symbols without duplicates,
-  and whose third element is a valid translated term
-  whose free variables are all among the ones in the second element.
-  </p>"
+   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
+   whose first element is the symbol @('lambda'),
+   whose second element is a list of legal variable symbols without duplicates,
+   and whose third element is a valid translated term
+   whose free variables are all among the ones in the second element.
+   </p>"
   (and (true-listp x)
        (eql (len x) 3)
        (eq (first x) 'lambda)
@@ -228,8 +221,8 @@
                                     (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable LAMBDA-EXPR-P)))
-  :short
-  "True iff all the functions in the lambda expression is guard-verified."
+  :short "True iff all the functions in the lambda expression
+          are guard-verified."
   (guard-verified-fnsp (lambda-body lambd) wrld))
 
 (define check-user-term (x (wrld plist-worldp))
@@ -237,54 +230,54 @@
                                  (msgp term/message)))
                (stobjs-out symbol-listp))
   :prepwork ((program))
-  :short
-  "Check whether @('x') is an untranslated term that is valid for evaluation."
+  :short "Check whether @('x') is an untranslated term
+          that is valid for evaluation."
   :long
   "<p>
-  An untranslated @(see term) is a term as entered by the user.
-  This function checks @('x') by attempting to translate it.
-  If the translation succeeds, the translated term is returned,
-  along with the output @(see stobj)s of the term (see below for details).
-  Otherwise, a structured error message is returned (printable with @('~@')),
-  along with @('nil') as output stobjs.
-  These two possible outcomes can be distinguished by the fact that
-  the former yields a <see topic='@(url pseudo-termp)'>pseudo-term</see>
-  while the latter does not.
-  </p>
-  <p>
-  The &lsquo;output stobjs&rsquo; of a term are the analogous
-  of the @(tsee stobjs-out) property of a function,
-  namely a list of symbols that is like a &ldquo;mask&rdquo; for the result.
-  A @('nil') in the list means that
-  the corresponding result is a non-stobj value,
-  while the name of a stobj in the list means that
-  the corresponding result is the named stobj.
-  The list is a singleton, unless the term returns
-  <see topic='@(url mv)'>multiple values</see>.
-  </p>
-  <p>
-  The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
-  passed to @('translate1-cmp') as bindings
-  mean that the term is checked to be valid for evaluation.
-  This is stricter than checking the term to be valid for use in a theorem,
-  and weaker than checking the term to be valid
-  for use in the body of an executable function;
-  these different checks are performed by passing different values
-  to the second and third arguments of @('translate1-cmp')
-  (see the ACL2 source code for details).
-  However, for terms whose functions are all in logic mode,
-  validity for evaluation and validity for executable function bodies
-  should coincide.
-  </p>
-  <p>
-  If @('translate1-cmp') is successful,
-  it returns updated bindings that associate @(':stobjs-out')
-  to the output stobjs of the term.
-  </p>
-  <p>
-  The @(tsee check-user-term) function does not terminate
-  if the translation expands an ill-behaved macro that does not terminate.
-  </p>"
+   An untranslated @(see term) is a term as entered by the user.
+   This function checks @('x') by attempting to translate it.
+   If the translation succeeds, the translated term is returned,
+   along with the output @(see stobj)s of the term (see below for details).
+   Otherwise, a structured error message is returned (printable with @('~@')),
+   along with @('nil') as output stobjs.
+   These two possible outcomes can be distinguished by the fact that
+   the former yields a <see topic='@(url pseudo-termp)'>pseudo-term</see>
+   while the latter does not.
+   </p>
+   <p>
+   The &lsquo;output stobjs&rsquo; of a term are the analogous
+   of the @(tsee stobjs-out) property of a function,
+   namely a list of symbols that is like a &ldquo;mask&rdquo; for the result.
+   A @('nil') in the list means that
+   the corresponding result is a non-stobj value,
+   while the name of a stobj in the list means that
+   the corresponding result is the named stobj.
+   The list is a singleton, unless the term returns
+   <see topic='@(url mv)'>multiple values</see>.
+   </p>
+   <p>
+   The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
+   passed to @('translate1-cmp') as bindings
+   mean that the term is checked to be valid for evaluation.
+   This is stricter than checking the term to be valid for use in a theorem,
+   and weaker than checking the term to be valid
+   for use in the body of an executable function;
+   these different checks are performed by passing different values
+   to the second and third arguments of @('translate1-cmp')
+   (see the ACL2 source code for details).
+   However, for terms whose functions are all in logic mode,
+   validity for evaluation and validity for executable function bodies
+   should coincide.
+   </p>
+   <p>
+   If @('translate1-cmp') is successful,
+   it returns updated bindings that associate @(':stobjs-out')
+   to the output stobjs of the term.
+   </p>
+   <p>
+   The @(tsee check-user-term) function does not terminate
+   if the translation expands an ill-behaved macro that does not terminate.
+   </p>"
   (mv-let (ctx term/message bindings)
     (translate1-cmp x
                     :stobjs-out
@@ -304,32 +297,31 @@
                                   (msgp lambd/message)))
                (stobjs-out symbol-listp))
   :prepwork ((program))
-  :short
-  "Check whether @('x') is
-  an untranslated lambda expression that is valid for evaluation."
+  :short "Check whether @('x') is
+          an untranslated lambda expression that is valid for evaluation."
   :long
   "<p>
-  An untranslated @(see lambda) expression is
-  a lambda expression as entered by the user.
-  This function checks whether @('x')is
-  a @('nil')-terminated list of exactly three elements,
-  whose first element is the symbol @('lambda'),
-  whose second element is a list of legal variable symbols without duplicates,
-  and whose third element is an untranslated term that is valid for evaluation.
-  </p>
-  <p>
-  If the check succeeds, the translated lambda expression is returned,
-  along with the output @(see stobj)s of the body of the lambda expression
-  (see @(tsee check-user-term) for an explanation
-  of the output stobjs of a term).
-  Otherwise, a possibly structured error message is returned
-  (printable with @('~@')),
-  along with @('nil') as output stobjs.
-  </p>
-  <p>
-  The @(tsee check-user-lambda) function does not terminate
-  if @(tsee check-user-term) does not terminate.
-  </p>"
+   An untranslated @(see lambda) expression is
+   a lambda expression as entered by the user.
+   This function checks whether @('x')is
+   a @('nil')-terminated list of exactly three elements,
+   whose first element is the symbol @('lambda'),
+   whose second element is a list of legal variable symbols without duplicates,
+   and whose third element is an untranslated term that is valid for evaluation.
+   </p>
+   <p>
+   If the check succeeds, the translated lambda expression is returned,
+   along with the output @(see stobj)s of the body of the lambda expression
+   (see @(tsee check-user-term) for an explanation
+   of the output stobjs of a term).
+   Otherwise, a possibly structured error message is returned
+   (printable with @('~@')),
+   along with @('nil') as output stobjs.
+   </p>
+   <p>
+   The @(tsee check-user-lambda) function does not terminate
+   if @(tsee check-user-term) does not terminate.
+   </p>"
   (b* (((unless (true-listp x))
         (mv `("~x0 is not a NIL-terminated list." (#\0 . ,x))
             nil))
@@ -352,26 +344,26 @@
   :short "Translated term that a call to the macro translates to."
   :long
   "<p>
-  This function translates a call to the macro
-  that only includes its required formal arguments,
-  returning the resulting translated term.
-  </p>
-  <p>
-  Note that since the macro is in the ACL2 world
-  (because of the @(tsee macro-namep) guard),
-  the translation of the macro call should not fail.
-  However, the translation may not terminate,
-  as mentioned in @(tsee check-user-term).
-  </p>
-  <p>
-  Note also that if the macro has optional arguments,
-  its translation with non-default values for these arguments
-  may yield different terms.
-  Furthermore, if the macro is sensitive
-  to the &ldquo;shape&rdquo; of its arguments,
-  calls with argument that are not the required formal arguments
-  may yield different terms.
-  </p>"
+   This function translates a call to the macro
+   that only includes its required formal arguments,
+   returning the resulting translated term.
+   </p>
+   <p>
+   Note that since the macro is in the ACL2 world
+   (because of the @(tsee macro-namep) guard),
+   the translation of the macro call should not fail.
+   However, the translation may not terminate,
+   as mentioned in @(tsee check-user-term).
+   </p>
+   <p>
+   Note also that if the macro has optional arguments,
+   its translation with non-default values for these arguments
+   may yield different terms.
+   Furthermore, if the macro is sensitive
+   to the &ldquo;shape&rdquo; of its arguments,
+   calls with argument that are not the required formal arguments
+   may yield different terms.
+   </p>"
   (mv-let (term stobjs-out)
     (check-user-term (cons mac (macro-required-args mac wrld)) wrld)
     (declare (ignore stobjs-out))
@@ -383,10 +375,10 @@
   :short "Formula expressing the guard obligation of the term."
   :long
   "<p>
-  The case in which @('term') is a symbol is dealt with separately
-  because @(tsee guard-obligation)
-  interprets a symbol as a function or theorem name, not as a variable.
-  </p>"
+   The case in which @('term') is a symbol is dealt with separately
+   because @(tsee guard-obligation)
+   interprets a symbol as a function or theorem name, not as a variable.
+   </p>"
   (b* (((when (symbolp term)) *t*)
        ((mv erp val) (guard-obligation term nil nil __function__ state))
        ((when erp)
