@@ -39,7 +39,8 @@ bash
 # Create a file whose name probably looks like a Euro sign.
 touch $'\xe2\x82\xac'
 # Start ACL2 here, based on CCL.  Then:
-(include-book "kestrel/utilities/non-ascii-pathnames" :dir :system)
+(include-book  ;break line to fool dependency scanner
+ "kestrel/utilities/non-ascii-pathnames" :dir :system)
 (set-raw-mode-on!)
 # Next we use a new utility, which converts OS pathnames to ACL2 pathnames,
 # to store the ACL2 pathname of the new file into a global.
