@@ -27,7 +27,7 @@
 ;   already a guard-verified function symbol, and maybe even if it's already in
 ;   :logic mode (since then perhaps verify-guards would be more appropriate).
 
-; - Consider a mechanism for providing hints.
+; - Consider a mechanism for providing termination hints.
 
 ; - Consider adding an option that proves both termination and guards for the
 ;   given function, rather than skipping the termination proof.
@@ -274,16 +274,20 @@
         (t `(skip-proofs (verify-termination ,f
                            (declare (xargs :verify-guards nil)))))))
 
-(defun verify-term-guards-form (g sibs wrld)
+(defun verify-term-guards-form (g sibs hints otf-flg wrld)
   (cond ((eq (getpropc g 'symbol-class nil wrld)
              :program)
          `(progn
             ,(verify-termination-form g sibs wrld)
-            (verify-guards ,g)))
+            (verify-guards ,g
+                           ,@(and hints `(:hints ,hints))
+                           ,@(and otf-flg `(:otf-flg ,otf-flg)))))
         (t ; typically (eq class :ideal)
-         `(verify-guards ,g))))
+         `(verify-guards ,g
+                         ,@(and hints `(:hints ,hints))
+                         ,@(and otf-flg `(:otf-flg ,otf-flg))))))
 
-(defun verify-guards-program-forms-1 (fn-alist wrld acc)
+(defun verify-guards-program-forms-1 (fn-alist fn hints otf-flg wrld acc)
 
 ; Fn-alist is an alist with entries (fn . val), where fn is a function symbol
 ; of wrld and val is t if fn is non-recursive, else val is a list of the
@@ -296,17 +300,30 @@
          (reverse acc)) ; restore the order
         (t (verify-guards-program-forms-1
             (cdr fn-alist)
+            fn
+            hints
+            otf-flg
             wrld
             (let ((entry (car fn-alist)))
-              (cons (let ((form (verify-term-guards-form (car entry)
-                                                         (cdr entry)
-                                                         wrld)))
-                      (if (consp (cdr fn-alist))
-                          `(skip-proofs ,form)
-                        form))
+              (cons (let* ((val (cdr entry))
+                           ;; Test whether this is the entry for the
+                           ;; function on which verify-guards-program
+                           ;; was invoked (if so, attempt the guard
+                           ;; proof [with hints], if not skip the guard
+                           ;; proof):
+                           (main-fnp (and (not (eq t val))
+                                          (member-eq fn val)))
+                           (form (verify-term-guards-form (car entry)
+                                                          (cdr entry)
+                                                          (and main-fnp hints)
+                                                          (and main-fnp otf-flg)
+                                                          wrld)))
+                      (if main-fnp
+                          form
+                        `(skip-proofs ,form)))
                     acc))))))
 
-(defun verify-guards-program-forms (fn wrld)
+(defun verify-guards-program-forms (fn hints otf-flg wrld)
   (cond ((not (and (symbolp fn)
                    (function-symbolp fn wrld)))
          `((value-triple (er hard 'verify-guards-program
@@ -319,10 +336,12 @@
                   (alist (order-alist-by-non-compliant-supporters-depth
                           (non-compliant-supporters fn wrld ctx state-vars)
                           wrld ctx state-vars nil)))
-             (verify-guards-program-forms-1 alist wrld nil)))))
+             (verify-guards-program-forms-1 alist fn hints otf-flg wrld nil)))))
 
 (defmacro verify-guards-program (fn &key
-                                    (print ':use-default print-p))
+                                    (print ':use-default print-p)
+                                    (hints 'nil)
+                                    (otf-flg 'nil))
   `(make-event (mv-let (erp val state)
                  (ld (list* '(logic)
                             '(set-state-ok t)
@@ -332,7 +351,7 @@
                             '(set-temp-touchable-vars t state)
                             '(set-temp-touchable-fns t state)
                             '(assign verify-termination-on-raw-program-okp t)
-                            (verify-guards-program-forms ',fn (w state)))
+                            (verify-guards-program-forms ',fn ',hints ',otf-flg (w state)))
                      :ld-error-action :error
                      ,@(and print-p `(:ld-pre-eval-print ,print)))
                  (declare (ignore val))

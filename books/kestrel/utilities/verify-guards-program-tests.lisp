@@ -54,3 +54,21 @@
 
 ;; Fails because f0 does not exist
 (must-fail (verify-guards-program f0))
+
+;;; A test with :hints:
+
+(defun foo (x)
+  (declare (xargs :mode :program
+                  :guard (natp (car x))))
+  x)
+(defun bar (x)
+  (declare (xargs :mode :program
+                  :guard (natp x)))
+  (foo (cons x nil)))
+(in-theory (disable car-cons)) ;to make the proof fail without hints
+;; fails without the hints:
+(must-fail (verify-guards-program bar))
+(verify-guards-program bar :hints (("Goal" :in-theory (enable car-cons))))
+;Also test :otf-flg
+(verify-guards-program bar :otf-flg t
+                       :hints (("Goal" :in-theory (enable car-cons))))
