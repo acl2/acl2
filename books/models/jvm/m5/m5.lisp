@@ -485,7 +485,7 @@ J & George
                           '("monitor" "mcount" "wait-set")
                           '()
                           '()
-                          '(("<init>" () nil (RETURN)))
+                          '(("<init>()V" () nil (RETURN)))
                           '(REF -1))
          (make-class-decl "ARRAY"
                           '("java.lang.Object")
@@ -499,14 +499,14 @@ J & George
                           '()
                           '()
                           '()
-                          '(("run" () nil
+                          '(("run()V" () nil
                              (RETURN))
-                            ("start" () nil ())
-                            ("stop" () nil ())
-                            ("<init>" ()
+                            ("start()V" () nil ())
+                            ("stop()V" () nil ())
+                            ("<init>()V" ()
                                       nil
                                       (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>" 0)
+                                      (invokespecial "java.lang.Object" "<init>()V" 0)
                                       (return)))
                           '(REF -1))
          (make-class-decl "java.lang.String"
@@ -514,10 +514,10 @@ J & George
                           '("strcontents")
                           '()
                           '()
-                          '(("<init>" ()
+                          '(("<init>()V" ()
                                       nil
                                       (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>" 0)
+                                      (invokespecial "java.lang.Object" "<init>()V" 0)
                                       (return)))
                           '(REF -1))
          (make-class-decl "java.lang.Class"
@@ -525,10 +525,10 @@ J & George
                           '()
                           '()
                           '()
-                          '(("<init>" ()
+                          '(("<init>()V" ()
                                      nil
                                      (aload_0)
-                                     (invokespecial "java.lang.Object" "<init>" 0)
+                                     (invokespecial "java.lang.Object" "<init>()V" 0)
                                      (return)))
                           '(REF -1))))
 
@@ -730,7 +730,7 @@ J & George
 ; The methods component of a class declaration is a list of method definitions.
 ; A method definition is a list of the form
 
-; (name formals sync-status . program)
+; (name-and-type formals sync-status . program)
 
 ; We never build these declarations but just enter list constants for them,
 
@@ -742,7 +742,7 @@ J & George
 ; Method definitions will be constructed by expressions such as:
 ; (Note:  all of the symbols below are understood to be in the pkg "JVM".)
 
-; ("move" (dx dy) nil
+; ("move(II)I" (dx dy) nil
 ;   (load this)
 ;   (load this)
 ;   (getfield "Point" "x")
@@ -760,7 +760,7 @@ J & George
 
 ; Provided this method is defined in the class "Point" it can be invoked by
 
-;   (invokevirtual "Point" "move" 2)
+;   (invokevirtual "Point" "move(II)I" 2)
 
 ; This assumes that the stack, at the time of invocation, contains an
 ; reference to an object of type "Point" and two numbers, dx and dy.
@@ -777,7 +777,7 @@ J & George
 
 ; The accessors for methods are:
 
-(defun method-name (m)
+(defun method-name-and-type (m)
   (nth 0 m))
 (defun method-formals (m)
   (nth 1 m))
@@ -2610,31 +2610,31 @@ J & George
     (cons (top stack)
           (bind-formals (- n 1) (pop stack)))))
 
-(defun lookup-method-in-superclasses (name classes class-table)
+(defun lookup-method-in-superclasses (name-and-type classes class-table)
   (cond ((endp classes) nil)
         (t (let* ((class-name (car classes))
                   (class-decl (bound? class-name class-table))
-                  (method (bound? name (class-decl-methods class-decl))))
+                  (method (bound? name-and-type (class-decl-methods class-decl))))
              (if method
                  method
-                (lookup-method-in-superclasses name (cdr classes)
+                (lookup-method-in-superclasses name-and-type (cdr classes)
                                                class-table))))))
 
-(defun lookup-method (name class-name class-table)
-  (lookup-method-in-superclasses name
+(defun lookup-method (name-and-type class-name class-table)
+  (lookup-method-in-superclasses name-and-type
                                  (cons class-name
                                        (class-decl-superclasses
                                         (bound? class-name class-table)))
                                  class-table))
 
 (defun execute-INVOKESPECIAL (inst th s)
-  (let* ((method-name (arg2 inst))
+  (let* ((method-name-and-type (arg2 inst))
          (nformals (arg3 inst))
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
          (obj-class-name (arg1 inst))
          (closest-method
-          (lookup-method method-name
+          (lookup-method method-name-and-type
                          obj-class-name
                          (class-table s)))
          (prog (method-program closest-method))
@@ -2645,9 +2645,9 @@ J & George
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((equal method-name "start")
+      (cond ((equal method-name-and-type "start()V")
              (modify tThread s1 :status 'SCHEDULED))
-            ((equal method-name "stop")
+            ((equal method-name-and-type "stop()V")
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
@@ -2685,12 +2685,12 @@ J & George
 
 (defun execute-INVOKESTATIC (inst th s)
   (let* ((class (arg1 inst))
-         (method-name (arg2 inst))
+         (method-name-and-type (arg2 inst))
          (nformals (arg3 inst))
          (obj-ref (class-decl-heapref (bound? class (class-table s))))
          (instance (deref obj-ref (heap s)))
          (closest-method
-          (lookup-method method-name
+          (lookup-method method-name-and-type
                          (arg1 inst)
                          (class-table s)))
          (prog (method-program closest-method))
@@ -2699,25 +2699,25 @@ J & George
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((equal method-name "doubleToRawLongBits")
+      (cond ((equal method-name-and-type "doubleToRawLongBits(D)J")
              (modify th s1
                      :stack (push (long-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((equal method-name "floatToRawIntBits")
+            ((equal method-name-and-type "floatToRawIntBits(F)I")
              (modify th s1
                      :stack (push (int-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((equal method-name "intBitsToFloat")
+            ((equal method-name-and-type "intBitsToFloat(I)F")
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::sp))
                                   (stack (top-frame th s1)))))
-            ((equal method-name "longBitsToDouble")
+            ((equal method-name-and-type "longBitsToDouble(J)D")
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
-            ((equal method-name "sqrt")
+            ((equal method-name-and-type "sqrt(D)D")
              (modify th s1
                      :stack (push (fpsqrt (top (stack (top-frame th s)))
                                            (rtl::dp))
@@ -2756,13 +2756,13 @@ J & George
 ; (INVOKEVIRTUAL "class" "name" n) Instruction
 
 (defun execute-INVOKEVIRTUAL (inst th s)
-  (let* ((method-name (arg2 inst))
+  (let* ((method-name-and-type (arg2 inst))
          (nformals (arg3 inst))
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
          (obj-class-name (class-name-of-ref obj-ref (heap s)))
          (closest-method
-          (lookup-method method-name
+          (lookup-method method-name-and-type
                          obj-class-name
                          (class-table s)))
          (prog (method-program closest-method))
@@ -2773,9 +2773,9 @@ J & George
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((equal method-name "start")
+      (cond ((equal method-name-and-type "start()V")
              (modify tThread s1 :status 'SCHEDULED))
-            ((equal method-name "stop")
+            ((equal method-name-and-type "stop()V")
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
@@ -3197,7 +3197,7 @@ J & George
 (defun execute-NEW (inst th s)
   (let* ((class-name (arg1 inst))
          (class-table (class-table s))
-         (closest-method (lookup-method "run" class-name class-table))
+         (closest-method (lookup-method "run()V" class-name class-table))
          (prog (method-program closest-method))
          (new-object (build-an-instance
                       (cons class-name
@@ -3776,7 +3776,7 @@ J & George
 ; resolving class tables
 ;
 (defun assemble_method (method)
-  (append (list (method-name method)
+  (append (list (method-name-and-type method)
                 (method-formals method)
                 (method-sync method))
           (resolve_basic_block (method-program method))))

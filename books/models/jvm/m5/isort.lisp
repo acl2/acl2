@@ -201,7 +201,7 @@ Method ListProc()
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>" NIL NIL (RETURN)))
+     (("<init>()V" NIL NIL (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -215,11 +215,11 @@ Method ListProc()
      NIL
      NIL
      NIL
-     (("run" NIL NIL (RETURN))
-      ("start" NIL NIL NIL)
-      ("stop" NIL NIL NIL)
-      ("<init>" NIL NIL (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+     (("run()V" NIL NIL (RETURN))
+      ("start()V" NIL NIL NIL)
+      ("stop()V" NIL NIL NIL)
+      ("<init>()V" NIL NIL (ALOAD\_0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 2))
     ("java.lang.String"
@@ -227,9 +227,9 @@ Method ListProc()
      ("strcontents")
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 3))
     ("java.lang.Class"
@@ -237,9 +237,9 @@ Method ListProc()
      NIL
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 4))
     ("Cons"
@@ -247,14 +247,14 @@ Method ListProc()
      ("car" "cdr")
      nil
      nil
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN))
-      ("cons" (int java.lang.Object) nil
+      ("cons(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
        (NEW "Cons")
        (DUP)
-       (INVOKESPECIAL "Cons" "<init>" 0)
+       (INVOKESPECIAL "Cons" "<init>()V" 0)
        (ASTORE_2)
        (ALOAD_2)
        (ILOAD_0)
@@ -269,16 +269,16 @@ Method ListProc()
      nil
      nil
      nil
-     (("<init>" nil nil
+     (("<init>()V" nil nil
        (ALOAD\_0)
-       (INVOKESPECIAL "Cons" "<init>" 0)
+       (INVOKESPECIAL "Cons" "<init>()V" 0)
        (RETURN))
-      ("insert" (int java.lang.Object) nil
+      ("insert(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
         (aload_1)
         (ifnonnull 9)
         (iload_0)
         (aload_1)
-        (invokestatic "Cons" "cons" 2)
+        (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
         (areturn)
         (iload_0)
         (aload_1)
@@ -287,7 +287,7 @@ Method ListProc()
         (if_icmpgt 9)
         (iload_0)
         (aload_1)
-        (invokestatic "Cons" "cons" 2)
+        (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
         (areturn)
         (aload_1)
                                   ;;; checkcast "Cons" ommitted
@@ -296,10 +296,10 @@ Method ListProc()
         (aload_1)
                                   ;;; checkcast "Cons" ommitted
         (getfield "Cons" "cdr")
-        (invokestatic "ListProc" "insert" 2)
-        (invokestatic "Cons" "cons" 2)
+        (invokestatic "ListProc" "insert(ILjava/lang/Object;)LCons;" 2)
+        (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
         (areturn))
-      ("isort" (java.lang.Object) nil
+      ("isort(Ljava/lang/Object;)Ljava/Lang/Object;" (java.lang.Object) nil
        (aload_0)
        (ifnonnull 5)
        (aload_0)
@@ -310,8 +310,8 @@ Method ListProc()
        (aload_0)
                                   ;;; checkcast "Cons" ommitted
        (getfield "Cons" "cdr")
-       (invokestatic "ListProc" "isort" 1)
-       (invokestatic "ListProc" "insert" 2)
+       (invokestatic "ListProc" "isort(Ljava/lang/Object;)Ljava/Lang/Object;" 1)
+       (invokestatic "ListProc" "insert(ILjava/lang/Object;)LCons;" 2)
        (areturn)))))))
 
 ; Now we will name some parts of the state for future use.
@@ -326,13 +326,13 @@ Method ListProc()
   (bound? "ListProc" (class-table *Isort-state*)))
 
 (defconst *cons-def*
-  (lookup-method "cons" "Cons" (class-table *Isort-state*)))
+  (lookup-method "cons(ILjava/lang/Object;)LCons;" "Cons" (class-table *Isort-state*)))
 
 (defconst *insert-def*
-  (lookup-method "insert" "ListProc" (class-table *Isort-state*)))
+  (lookup-method "insert(ILjava/lang/Object;)LCons;" "ListProc" (class-table *Isort-state*)))
 
 (defconst *isort-def*
-  (lookup-method "isort" "ListProc" (class-table *Isort-state*)))
+  (lookup-method "isort(Ljava/lang/Object;)Ljava/Lang/Object;" "ListProc" (class-table *Isort-state*)))
 
 (defconst *Isort-heap0*
   (heap *Isort-state*))
@@ -822,10 +822,10 @@ Method ListProc()
                        (bipush 2)
                        (bipush 1)
                        (aload_0)
-                       (invokestatic "Cons" "cons" 2)
-                       (invokestatic "Cons" "cons" 2)
-                       (invokestatic "Cons" "cons" 2)
-                       (invokestatic "ListProc" "isort" 1)
+                       (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
+                       (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
+                       (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
+                       (invokestatic "ListProc" "isort(Ljava/lang/Object;)Ljava/Lang/Object;" 1)
                        (halt))
                      'UNLOCKED
                      "ListProc")
@@ -924,7 +924,7 @@ Method ListProc()
 
 (defun poised-to-invoke-cons (th s)
   (and (standard-hyps th s)
-       (equal (next-inst th s) '(INVOKESTATIC "Cons" "cons" 2))
+       (equal (next-inst th s) '(INVOKESTATIC "Cons" "cons(ILjava/lang/Object;)LCons;" 2))
 ;      (intp (top (pop (stack (top-frame th s)))))
 ;      (ok-refp (top (stack (top-frame th s))) (heap s))
        ))
@@ -1053,7 +1053,7 @@ Method ListProc()
 (defun poised-to-invoke-insert (th s e x heap)
   (and (standard-hyps th s)
        (equal heap (heap s))
-       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "insert" 2))
+       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "insert(ILjava/lang/Object;)LCons;" 2))
        (equal e (top (pop (stack (top-frame th s)))))
        (equal x (top (stack (top-frame th s))))
 ;      (intp e)
@@ -1237,7 +1237,7 @@ Method ListProc()
 (defun poised-to-invoke-isort (th s x heap)
   (and (standard-hyps th s)
        (equal heap (heap s))
-       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "isort" 1))
+       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "isort(Ljava/lang/Object;)Ljava/Lang/Object;" 1))
        (equal x (top (stack (top-frame th s))))
        (ok-refp x (heap s))))
 

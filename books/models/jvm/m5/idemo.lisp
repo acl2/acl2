@@ -64,7 +64,7 @@ Method int ifact(int)
              '((ICONST\_4)
                (ICONST\_4)
                (IADD)
-               (INVOKESTATIC "IDemo" "ifact" 1)
+               (INVOKESTATIC "IDemo" "ifact(I)I" 1)
                (HALT))
              'UNLOCKED
              "IDemo")
@@ -116,7 +116,7 @@ Method int ifact(int)
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>" NIL NIL (RETURN)))
+     (("<init>()V" NIL NIL (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -130,11 +130,11 @@ Method int ifact(int)
      NIL
      NIL
      NIL
-     (("run" NIL NIL (RETURN))
-      ("start" NIL NIL NIL)
-      ("stop" NIL NIL NIL)
-      ("<init>" NIL NIL (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+     (("run()V" NIL NIL (RETURN))
+      ("start()V" NIL NIL NIL)
+      ("stop()V" NIL NIL NIL)
+      ("<init>()V" NIL NIL (ALOAD\_0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 2))
     ("java.lang.String"
@@ -142,9 +142,9 @@ Method int ifact(int)
      ("strcontents")
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 3))
     ("java.lang.Class"
@@ -152,9 +152,9 @@ Method int ifact(int)
      NIL
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 4))
     ("IDemo"
@@ -162,11 +162,11 @@ Method int ifact(int)
      NIL
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN))
-      ("ifact" (INT) NIL
+      ("ifact(I)I" (INT) NIL
        (ICONST\_1)
        (ISTORE\_1)
        (GOTO 11)
@@ -242,7 +242,7 @@ Method int ifact(int)
     (ifactorial (- n 1) (int-fix (* n temp)))))
 
 (defconst *ifact-def*
-  (lookup-method "ifact" "IDemo" *IDemo-class-table*))
+  (lookup-method "ifact(I)I" "IDemo" *IDemo-class-table*))
 
 (defun poised-at-ifact-loop (th s n)
   (and (equal (status th s) 'SCHEDULED)
@@ -308,10 +308,10 @@ Method int ifact(int)
 
 (defun poised-to-invoke-ifact (th s n)
   (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(invokestatic "IDemo" "ifact" 1))
+       (equal (next-inst th s) '(invokestatic "IDemo" "ifact(I)I" 1))
        (equal n (top (stack (top-frame th s))))
        (intp n)
-       (equal (lookup-method "ifact" "IDemo" (class-table s))
+       (equal (lookup-method "ifact(I)I" "IDemo" (class-table s))
               *ifact-def*)))
 
 (defthm ifact-is-correct
