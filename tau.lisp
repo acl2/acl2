@@ -3619,6 +3619,10 @@
 ;             ...---)-z-)
 
 (defun lower-bound-<= (a-rel a b-rel b)
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -3638,6 +3642,10 @@
 ; the ``b'' bound is ``b <= ...''.  Thus, if a=b, the b interval extends further.
 
 (defun upper-bound->= (a-rel a b-rel b)
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -3654,6 +3662,10 @@
               (<= b a)))))
 
 (defun lower-bound-> (a-rel a b-rel b)
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -3670,6 +3682,10 @@
               (> a b)))))
 
 (defun upper-bound-< (a-rel a b-rel b)
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -4247,6 +4263,9 @@
             (collect-<?-k-x new-rel k neg-evgs)))))
 
 (defun squeeze-k (upper-boundp rel k)
+  (declare (xargs :guard (and (booleanp upper-boundp)
+                              (booleanp rel)
+                              (or (null k) (rationalp k)))))
 
 ; K is either NIL (the appopriate infinity) or a rational.  Consider some
 ; interval with INTEGERP domain bounded (above or below as per upper-boundp) by
