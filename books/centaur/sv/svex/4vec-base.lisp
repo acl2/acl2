@@ -491,3 +491,20 @@ fast), if so executes @('2vec-body'), and otherwise executes
                   (<= 0 (4vec->lower x))))
     :rule-classes :forward-chaining)
   (deffixequiv 4vec-index-p))
+
+(defmacro 4vec-size-p (x &key size)
+  `(and (4vec-p ,x)
+        (or (unsigned-byte-p ,size ,x)
+            (and (consp ,x)
+                 (<= (- ,size) (car ,x))
+                 (<= (car ,x) ,size)
+                 (<= (- ,size) (cdr ,x))
+                 (<= (cdr ,x) ,size)))))
+
+(defmacro 4vec-non-z-p (x)
+  `(or (atom ,x)
+       (equal (cdr ,x) 0)))
+
+(defmacro 4vec-non-x-p (x)
+  `(or (atom ,x)
+       (equal (car ,x) 0)))
