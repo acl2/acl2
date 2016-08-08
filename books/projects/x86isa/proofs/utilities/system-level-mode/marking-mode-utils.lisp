@@ -857,6 +857,21 @@
 
 ;; Lemmas about interaction of top-level memory reads and writes:
 
+(defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint
+  ;; Similar to rb-wb-disjoint-in-system-level-mode
+  (implies (and (disjoint-p
+                 p-addrs
+                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                (disjoint-p p-addrs
+                            (all-translation-governing-addresses
+                             (strip-cars addr-lst) (double-rewrite x86)))
+                (addr-byte-alistp addr-lst)
+                (not (programmer-level-mode x86))
+                (x86p x86))
+           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
+                  (read-from-physical-memory p-addrs x86)))
+  :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
 (defthm rb-wb-disjoint-in-system-level-mode
   (implies (and
             (disjoint-p
@@ -892,29 +907,16 @@
                    (mv-nth 0 (rb l-addrs r-w-x x86)))
             (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 1 (rb l-addrs r-w-x x86)))))
-  :hints (("Goal" :do-not-induct t
+  :hints (("Goal"
+           :do-not-induct t
            :use ((:instance xlate-equiv-memory-and-las-to-pas
                             (cpl (cpl x86))
                             (x86-1 (mv-nth 2 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                             (x86-2 x86)))
            :in-theory (e/d* (disjoint-p-commutative)
-                            (disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                            (wb
+                             disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)))))
-
-(defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint
-  ;; Similar to rb-wb-disjoint-in-system-level-mode
-  (implies (and (disjoint-p
-                 p-addrs
-                 (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-                (disjoint-p p-addrs
-                            (all-translation-governing-addresses
-                             (strip-cars addr-lst) (double-rewrite x86)))
-                (addr-byte-alistp addr-lst)
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
-                  (read-from-physical-memory p-addrs x86)))
-  :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
 (defthmd rb-wb-equal-in-system-level-mode
   (implies (and (equal
