@@ -923,8 +923,13 @@ values.</p>"
    (defun create-undef (x)
      (nfix x)))
 
+  (defthm integerp-create-undef
+    (integerp (create-undef x))
+    :rule-classes (:rewrite :type-prescription))
+
   (defthm natp-create-undef
-    (natp (create-undef x))))
+    (natp (create-undef x))
+    :rule-classes (:rewrite :type-prescription)))
 
 (define unsafe-!undef (v x86)
 

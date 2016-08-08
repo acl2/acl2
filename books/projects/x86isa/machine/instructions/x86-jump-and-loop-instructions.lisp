@@ -266,8 +266,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         ;; Offset size can be 2, 4, or 8 bytes.
         (select-operand-size nil rex-byte nil prefixes))
        (inst-ac? t)
-       ;; TODO: I'm not sure that (+ 2 offset-size) below is correct.
-       ;; I need to check what "Mp" operands really mean.
        ((mv flg mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
