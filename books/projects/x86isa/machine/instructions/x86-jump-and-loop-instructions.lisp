@@ -152,7 +152,9 @@
        ((mv flg jmp-addr (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* 8 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg)
@@ -274,7 +276,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
          ;; offset-size is the number of bytes of the
          ;; offset.  We need two more bytes for the selector.
          (the (integer 2 10) (+ 2 offset-size))
-         inst-ac?
+         inst-ac? t ;; A memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))

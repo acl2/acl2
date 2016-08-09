@@ -458,7 +458,9 @@
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -631,8 +633,8 @@
        (val (if branch-cond 1 0))
        ((mv flg2 x86)
         (x86-operand-to-reg/mem
-         1 inst-ac? val
-         (the (signed-byte #.*max-linear-address-size+1*) v-addr)
+         1 inst-ac? nil ;; Not a memory pointer operand
+         val (the (signed-byte #.*max-linear-address-size+1*) v-addr)
          rex-byte r/m mod x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)

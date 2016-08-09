@@ -4586,12 +4586,6 @@ memory.</li>
 
 ;; ======================================================================
 
-;; (i-am-here)
-;; TODO: Now that I've got proofs about the equivalence of rm/wm-size
-;; to rb/wb, I should think about two things: one, should rm/wm-size
-;; have mbes inside that define :logic as rb/wb? and two, should I
-;; disable these functions after proving bound rules about them?
-
 (defsection Parametric-Memory-Reads-and-Writes
 
   :parents (x86-top-level-memory)
@@ -4644,7 +4638,7 @@ memory.</li>
                      (rm-size nbytes lin-addr r-x x86))
                     ((mv flg2 bytes x86-2)
                      (rb (create-canonical-address-list nbytes lin-addr) r-x x86)))
-                 (and (iff flg1 flg2)
+                 (and (equal flg1 flg2)
                       (equal val (if flg1 0 (combine-bytes bytes)))
                       (equal x86-1 x86-2))))
       :hints (("Goal" :in-theory (e/d* (signed-byte-p rm08 rm128 rm32 rm48 rm64 rm80 rm16)
@@ -4723,7 +4717,7 @@ memory.</li>
                           (create-canonical-address-list nbytes lin-addr)
                           (byte-ify nbytes val))
                          x86)))
-                 (and (iff flg1 flg2)
+                 (and (equal flg1 flg2)
                       (equal x86-1 x86-2))))
       :hints (("Goal" :in-theory (e/d* (signed-byte-p
                                         las-to-pas
@@ -4750,6 +4744,142 @@ memory.</li>
       (8 (wim64 addr val x86))
       (otherwise
        (mv 'wim-size x86)))))
+
+#||
+
+;; The following definitions of rm/wm-size are nicer in one sense that
+;; their definition is in terms of rb/wb, unlike in the functions
+;; above, where the equivalence of rm/wm-size to rb/wb is established
+;; via a theorem.  However, these nicer definitions cause some proofs
+;; to fail in x86-decoding-and-spec-utils.lisp, which I'd rather not
+;; fix right now.
+
+(define rm-size
+  ((nbytes   :type (member 1 2 4 6 8 10 16))
+   (lin-addr :type (signed-byte #.*max-linear-address-size*))
+   (r-w-x    :type (member :r :w :x))
+   (x86))
+  :guard (natp nbytes)
+  :guard-hints (("Goal"
+                 :in-theory
+                 (e/d* (signed-byte-p rm08 rm128 rm32 rm48 rm64 rm80 rm16)
+                       (create-canonical-address-list-1))))
+  :inline t
+
+  (if (mbt (canonical-address-p lin-addr))
+
+      (let* ((last-lin-addr (the (signed-byte 49)
+                              (+ -1 nbytes lin-addr))))
+        (if (mbe :logic (canonical-address-p last-lin-addr)
+                 :exec (< (the (signed-byte 49) last-lin-addr)
+                          #.*2^47*))
+
+            (mbe
+             :logic
+             (b* (((mv flg bytes x86)
+                   (rb (create-canonical-address-list nbytes lin-addr)
+                       r-w-x x86))
+                  (result (combine-bytes bytes)))
+               (mv flg result x86))
+
+             :exec
+
+             (case nbytes
+               (1 (rm08 lin-addr r-w-x x86))
+               (2 (rm16 lin-addr r-w-x x86))
+               (4 (rm32 lin-addr r-w-x x86))
+               (6
+                  ;; Use case: To fetch operands of the form m16:32 (see far jmp ;
+                  ;; instruction). ;
+                (rm48 lin-addr r-w-x x86))
+               (8 (rm64 lin-addr r-w-x x86))
+               (10
+                  ;; Use case: The instructions LGDT and LIDT need to read 10 ;
+                  ;; bytes at once. ;
+                (rm80 lin-addr r-w-x x86))
+               (16 (rm128 lin-addr r-w-x x86))
+               (otherwise
+                (b* (((mv flg bytes x86)
+                      (rb (create-canonical-address-list nbytes lin-addr)
+                          r-w-x x86))
+                     ((when flg)
+                      (mv flg 0 x86)))
+                  (mv nil (combine-bytes bytes) x86)))))
+
+          (mv 'rm-size 0 x86)))
+    (mv 'rm-size 0 x86))
+
+  ///
+
+  (defthm x86p-of-mv-nth-2-of-rm-size
+    (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
+                  (x86p x86))
+             (x86p (mv-nth 2 (rm-size bytes lin-addr r-w-x x86))))))
+
+(define wm-size
+  ((nbytes   :type (member 1 2 4 6 8 10 16))
+   (lin-addr :type (signed-byte #.*max-linear-address-size*))
+   (val      :type (integer 0 *))
+   (x86))
+  :guard (and (natp nbytes)
+              (case nbytes
+                (1  (n08p val))
+                (2  (n16p val))
+                (4  (n32p val))
+                (6  (n48p val))
+                (8  (n64p val))
+                (10 (n80p val))
+                (16 (n128p val))))
+  :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p
+                                          las-to-pas
+                                          byte-ify
+                                          wm08 wm128 wm32 wm48 wm64 wm80 wm16)
+                                         ())))
+  :inline t
+  (if (mbt (canonical-address-p lin-addr))
+      (let* ((last-lin-addr (the (signed-byte 49)
+                              (+ -1 nbytes lin-addr))))
+        (if
+            (mbe :logic (canonical-address-p last-lin-addr)
+                 :exec (< (the (signed-byte 49) last-lin-addr)
+                          #.*2^47*))
+            (mbe
+             :logic
+             (wb (create-addr-bytes-alist
+                  (create-canonical-address-list nbytes lin-addr)
+                  (byte-ify nbytes val))
+                 x86)
+             :exec
+             (case nbytes
+               (1 (wm08 lin-addr val x86))
+               (2 (wm16 lin-addr val x86))
+               (4 (wm32 lin-addr val x86))
+               (6
+                  ;; Use case: To store operands of the form m16:32. ;
+                (wm48 lin-addr val x86))
+               (8 (wm64 lin-addr val x86))
+               (10
+                  ;; Use case: Instructions like SGDT and SIDT write 10 bytes to ;
+                  ;; the memory. ;
+                (wm80 lin-addr val x86))
+               (16 (wm128 lin-addr val x86))
+               (otherwise
+                (wb (create-addr-bytes-alist
+                     (create-canonical-address-list nbytes lin-addr)
+                     (byte-ify nbytes val))
+                    x86))))
+
+          (mv 'wm-size x86)))
+    (mv 'wm-size x86))
+
+  ///
+
+  (defthm x86p-wm-size
+    (implies (force (x86p x86))
+             (x86p (mv-nth 1 (wm-size nbytes lin-addr val x86))))
+    :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p))))))
+
+||#
 
 ;; ======================================================================
 
