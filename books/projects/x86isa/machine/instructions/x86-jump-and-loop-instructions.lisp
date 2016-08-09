@@ -48,6 +48,7 @@
   ;;                sign-extended to 64-bits
 
   :parents (one-byte-opcodes)
+  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -80,18 +81,18 @@
              (case offset-size
                (1
                 (mv-let (flag val x86)
-                        (rm08 temp-rip :x x86)
-                        (mv flag
-                            (n08-to-i08 val)
-                            x86)))
+                  (rm08 temp-rip :x x86)
+                  (mv flag
+                      (n08-to-i08 val)
+                      x86)))
                (4
                 (mv-let (flag val x86)
-                        (rm32 temp-rip :x x86)
-                        (mv flag
-                            (n32-to-i32 val)
-                            x86)))
+                  (rm32 temp-rip :x x86)
+                  (mv flag
+                      (n32-to-i32 val)
+                      x86)))
                (otherwise
-                (mv 'UNSUPPORTED-NBYTES 0 x86)))))
+                (mv 'rim-size 0 x86)))))
 
        ((when flg)
         (!!ms-fresh :rim-size-error flg))
@@ -113,7 +114,7 @@
         (!!ms-fresh :virtual-memory-error temp-rip))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-near-jmp-Op/En-M
 
