@@ -37,7 +37,7 @@ programmer-level mode.</p>" )
 
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
-;; (acl2::why get-prefixes-opener-lemma-2)
+;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
 ;; (acl2::why rb-in-terms-of-nth-and-pos)
 ;; (acl2::why program-at-wb-disjoint)
 ;; (acl2::why member-p-canonical-address-listp)
@@ -329,7 +329,8 @@ programmer-level mode.</p>" )
                  (programmer-level-mode x86))
             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 1 (rvm08 addr x86))))
-   :hints (("Goal" :in-theory (e/d (wm08 wb) ())))))
+   :hints (("Goal" :in-theory (e/d (wm08 wvm08 wb rvm08)
+                                   ())))))
 
 (local
  (defthm rm08-wb-not-member-p
@@ -347,8 +348,8 @@ programmer-level mode.</p>" )
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (disjoint-p)
                             (strip-cars
-                             wb-by-wb-1-for-programmer-level-mode-induction-rule)))))
-
+                             wb-by-wb-1-for-programmer-level-mode-induction-rule
+                             (:meta acl2::mv-nth-cons-meta))))))
 
 (local
  (defthm rb-wb-equal-assoc-helper-1
@@ -410,7 +411,6 @@ programmer-level mode.</p>" )
                    (mv-nth 1 (rvm08 addr x86))))
    :hints (("Goal" :in-theory (e/d (wm08) ())))))
 
-
 (local
  (defthm rvm08-wb-1-member-p-helper
    (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
@@ -419,7 +419,9 @@ programmer-level mode.</p>" )
             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))
    :hints (("Goal"
-            :in-theory (e/d (wm08 member-p) (unsigned-byte-p signed-byte-p))))))
+            :in-theory (e/d (wm08 member-p)
+                            (unsigned-byte-p
+                             signed-byte-p))))))
 
 (local
  (defthm rvm08-wb-member-p-helper
@@ -658,7 +660,7 @@ programmer-level mode.</p>" )
            (equal (mv-nth 1 (wb-1 addr-list2 (mv-nth 1 (wb-1 addr-list1 x86))))
                   (mv-nth 1 (wb-1 (append addr-list1 addr-list2) x86))))
   :hints (("Goal" :do-not '(generalize)
-           :in-theory (e/d (wb-and-wm08) (append acl2::mv-nth-cons-meta)))))
+           :in-theory (e/d () (append acl2::mv-nth-cons-meta)))))
 
 (defthm wb-and-wb-combine-wbs
   (implies (and (addr-byte-alistp addr-list1)
@@ -734,24 +736,12 @@ programmer-level mode.</p>" )
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
 
-(defthmd rm08-in-terms-of-nth-pos-and-rb
-  ;; addresses is free.  Hopefully, (member-p addr addresses) will
-  ;; help ACL2 find the right binding.
-  (implies (and (member-p addr addresses)
-                (canonical-address-listp addresses)
-                (equal bytes (mv-nth 1 (rb addresses r-w-x x86)))
-                (programmer-level-mode x86))
-           (equal (mv-nth 1 (rm08 addr r-w-x x86))
-                  (nth (pos addr addresses) bytes)))
-  :hints (("Goal" :in-theory (e/d (pos rb)
-                                  (signed-byte-p)))))
-
-(defthm rm08-in-terms-of-rb
-  ;; Also see rb-and-rm08.
-  (implies (and (canonical-address-p addr)
-                (programmer-level-mode x86))
-           (equal (mv-nth 1 (rm08 addr r-w-x x86))
-                  (car (mv-nth 1 (rb (list addr) r-w-x x86))))))
+;; (defthm rm08-in-terms-of-rb
+;;   ;; Also see rb-and-rm08.
+;;   (implies (and (canonical-address-p addr)
+;;                 (programmer-level-mode x86))
+;;            (equal (mv-nth 1 (rm08 addr r-w-x x86))
+;;                   (car (mv-nth 1 (rb (list addr) r-w-x x86))))))
 
 (defun find-info-from-program-at-term-in-programmer-mode (thm mfc state)
   (declare (xargs :stobjs (state) :mode :program)
@@ -768,9 +758,38 @@ programmer-level mode.</p>" )
        (n (cadr addresses))
        (prog-addr (caddr addresses))
        (bytes (caddr call)))
-      `((n . ,n)
-        (prog-addr . ,prog-addr)
-        (bytes . ,bytes))))
+    `((n . ,n)
+      (prog-addr . ,prog-addr)
+      (bytes . ,bytes))))
+
+(local
+ (defthmd rb-in-terms-of-nth-and-pos-helper-1
+   (implies (and (program-at (create-canonical-address-list n prog-addr) bytes x86)
+                 (member-p addr (create-canonical-address-list n prog-addr))
+                 (programmer-level-mode x86))
+            (equal (nth (+ addr (- prog-addr))
+                        (mv-nth 1 (rb-1 (create-canonical-address-list n prog-addr)
+                                        r-w-x x86 nil)))
+                   (mv-nth 1 (rvm08 addr x86))))
+   :hints (("Goal" :in-theory (e/d* (program-at) ())))))
+
+(local
+ (defthmd rb-in-terms-of-nth-and-pos-helper-2
+   (implies (and (program-at (create-canonical-address-list n prog-addr) bytes x86)
+                 (member-p addr (create-canonical-address-list n prog-addr))
+                 (programmer-level-mode x86))
+            (equal (car (mv-nth 1 (rb (list addr) :x x86)))
+                   (nth (+ addr (- prog-addr)) bytes)))
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance rb-in-terms-of-nth-and-pos-helper-1
+                             (r-w-x :x))
+                  (:instance member-p-canonical-address-p-canonical-address-listp
+                             (e addr)))
+            :in-theory (e/d (program-at)
+                            (acl2::mv-nth-cons-meta
+                             signed-byte-p
+                             member-p-canonical-address-p-canonical-address-listp))))))
 
 (defthm rb-in-terms-of-nth-and-pos
   (implies (and (bind-free (find-info-from-program-at-term-in-programmer-mode
@@ -783,18 +802,11 @@ programmer-level mode.</p>" )
                 (programmer-level-mode x86))
            (equal (car (mv-nth 1 (rb (list addr) :x x86)))
                   (nth (pos addr (create-canonical-address-list n prog-addr)) bytes)))
-  :hints (("Goal" :in-theory (e/d (program-at)
-                                  (acl2::mv-nth-cons-meta
-                                   rm08-in-terms-of-rb
-                                   member-p-canonical-address-p-canonical-address-listp
-                                   rb))
-           :use ((:instance rm08-in-terms-of-rb
-                            (r-w-x :x))
-                 (:instance member-p-canonical-address-p-canonical-address-listp
-                            (e addr))
-                 (:instance rm08-in-terms-of-nth-pos-and-rb
-                            (r-w-x :x)
-                            (addresses (create-canonical-address-list n prog-addr)))))))
+  :hints (("Goal"
+           :use ((:instance rb-in-terms-of-nth-and-pos-helper-2))
+           :in-theory (e/d ()
+                           (acl2::mv-nth-cons-meta
+                            signed-byte-p)))))
 
 (encapsulate
   ()
@@ -871,9 +883,50 @@ programmer-level mode.</p>" )
                               (theory 'minimal-theory))
            :use ((:instance rb-in-terms-of-rb-subset-p)))))
 
+(defthm combine-bytes-of-rb-of-1-address-in-programmer-level-mode
+  (implies (and (canonical-address-p addr)
+                (programmer-level-mode x86)
+                (x86p x86))
+           (equal (combine-bytes (mv-nth 1 (rb (cons addr nil) :x x86)))
+                  (car (mv-nth 1 (rb (cons addr nil) :x x86)))))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    rb rb-1
+                                    memi)
+                                   (byte-listp
+                                    mv-nth
+                                    create-canonical-address-list-1
+                                    (zp)
+                                    rb-returns-no-error-programmer-level-mode
+                                    rb-returns-x86-programmer-level-mode
+                                    combine-bytes-rb-in-terms-of-rb-subset-p
+                                    rb-in-terms-of-nth-and-pos
+                                    rb-in-terms-of-rb-subset-p)))))
+
 ;; ======================================================================
 
 (globally-disable '(rb wb canonical-address-p program-at
                        unsigned-byte-p signed-byte-p))
+
+(in-theory (e/d* 
+            ;; We enable all these functions so that reasoning about
+            ;; memory can be done in terms of rb and wb.
+            (rim-size
+             rm-size
+             wim-size
+             wm-size
+             rm08 rim08 wm08 wim08
+             rm16 rim16 wm16 wim16
+             rm32 rim32 wm32 wim32
+             rm64 rim64 wm64 wim64)
+            ;; We disable some expensive and irrelevant lemmas in
+            ;; the programmer-level mode.
+            (wb-remove-duplicate-writes
+             mv-nth-1-wb-and-!flgi-commute
+             ia32e-la-to-pa-values-and-!flgi
+             las-to-pas
+             las-to-pas-values-and-!flgi
+             mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+             xr-fault-wb-in-system-level-marking-mode
+             xr-fault-wb-in-system-level-mode)))
 
 ;; ======================================================================

@@ -658,28 +658,33 @@
 
 (defun eviscerate-stobjs1 (estobjs-out lst print-level print-length
                                        alist evisc-table hiding-cars
-                                       iprint-alist)
+                                       iprint-alist
+                                       iprint-fal-new iprint-fal-old eager-p)
   (cond
-   ((null estobjs-out) (mv nil iprint-alist))
+   ((null estobjs-out) (mv nil iprint-alist iprint-fal-new))
    ((car estobjs-out)
-    (mv-let (rest iprint-alist)
-            (eviscerate-stobjs1 (cdr estobjs-out) (cdr lst)
-                                print-level print-length
-                                alist evisc-table hiding-cars iprint-alist)
-            (mv (cons (car estobjs-out) rest)
-                iprint-alist)))
-   (t (mv-let (first iprint-alist)
-              (eviscerate (car lst) print-level print-length
-                          alist evisc-table hiding-cars iprint-alist)
-              (mv-let (rest iprint-alist)
-                      (eviscerate-stobjs1 (cdr estobjs-out) (cdr lst)
-                                          print-level print-length alist
-                                          evisc-table hiding-cars iprint-alist)
-                      (mv (cons first rest) iprint-alist))))))
+    (mv-let (rest iprint-alist iprint-fal-new)
+      (eviscerate-stobjs1 (cdr estobjs-out) (cdr lst)
+                          print-level print-length
+                          alist evisc-table hiding-cars
+                          iprint-alist iprint-fal-new iprint-fal-old eager-p)
+      (mv (cons (car estobjs-out) rest)
+          iprint-alist
+          iprint-fal-new)))
+   (t (mv-let (first iprint-alist iprint-fal-new)
+        (eviscerate (car lst) print-level print-length
+                    alist evisc-table hiding-cars iprint-alist
+                    iprint-fal-new iprint-fal-old eager-p)
+        (mv-let (rest iprint-alist iprint-fal-new)
+          (eviscerate-stobjs1 (cdr estobjs-out) (cdr lst)
+                              print-level print-length alist
+                              evisc-table hiding-cars iprint-alist
+                              iprint-fal-new iprint-fal-old eager-p)
+          (mv (cons first rest) iprint-alist iprint-fal-new))))))
 
 (defun eviscerate-stobjs (estobjs-out lst print-level print-length
                                       alist evisc-table hiding-cars
-                                      iprint-alist)
+                                      iprint-alist iprint-fal-old eager-p)
 
 ; See also eviscerate-stobjs-top, which takes iprint-ar from the state and
 ; installs a new iprint-ar in the state.
@@ -712,7 +717,7 @@
 ; eviscerate it without regard for stobjs.
 
     (eviscerate lst print-level print-length alist evisc-table hiding-cars
-                iprint-alist))
+                iprint-alist nil iprint-fal-old eager-p))
    ((null (cdr estobjs-out))
 
 ; Lst is a single output, which is either a stobj or not depending on whether
@@ -720,11 +725,12 @@
 
     (cond
      ((car estobjs-out)
-      (mv (car estobjs-out) iprint-alist))
+      (mv (car estobjs-out) iprint-alist nil))
      (t (eviscerate lst print-level print-length alist evisc-table
-                    hiding-cars iprint-alist))))
+                    hiding-cars iprint-alist nil iprint-fal-old eager-p))))
    (t (eviscerate-stobjs1 estobjs-out lst print-level print-length
-                          alist evisc-table hiding-cars iprint-alist))))
+                          alist evisc-table hiding-cars iprint-alist
+                          nil iprint-fal-old eager-p))))
 
 (defun eviscerate-stobjs-top (estobjs-out lst print-level print-length
                                           alist evisc-table hiding-cars
@@ -732,16 +738,26 @@
 
 ; See eviscerate-stobjs.
 
-  (mv-let (result iprint-alist)
-          (eviscerate-stobjs estobjs-out lst print-level print-length alist
-                             evisc-table hiding-cars
-                             (and (iprint-enabledp state)
-                                  (iprint-last-index state)))
-          (let ((state (cond ((eq iprint-alist t)
-                              (f-put-global 'evisc-hitp-without-iprint t state))
-                             ((atom iprint-alist) state)
-                             (t (update-iprint-ar iprint-alist state)))))
-            (mv result state))))
+  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+    (mv-let (result iprint-alist iprint-fal-new)
+      (eviscerate-stobjs estobjs-out lst print-level print-length alist
+                         evisc-table hiding-cars
+                         (and (iprint-enabledp state)
+                              (iprint-last-index state))
+                         iprint-fal-old
+                         (iprint-eager-p iprint-fal-old))
+      (fast-alist-free-on-exit
+       iprint-fal-new
+       (let ((state
+              (cond
+               ((eq iprint-alist t)
+                (f-put-global 'evisc-hitp-without-iprint t state))
+               ((atom iprint-alist) state)
+               (t (update-iprint-ar-fal iprint-alist
+                                        iprint-fal-new
+                                        iprint-fal-old
+                                        state)))))
+         (mv result state))))))
 
 ; Essay on Abbreviating Live Stobjs
 

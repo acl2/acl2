@@ -1,34 +1,48 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
   "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-	  
+
   <head>
 	<title>Helpful Instructions for Setting up ACL2 and Windows</title>
   </head>
-	  
-  <body>
-    <h1>Helpful Instructions for Setting up <A HREF="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</A> and Windows</h1> 
-	
-        <p> We thank David Rager for providing the following
-        instructions, which we include verbatim and expect apply to
-        future versions.  Note: We recommend using CCL for Windows
-        builds, in part so that interrupts (Control-C) will work.  If
-        you are using Windows, please note that there have been stalls
-        using CCL 1.5 on Windows, though not with CCL 1.4.  We have
-        been told by a CCL implementor that this bug has been fixed,
-        and people running CCL 1.5 under Windows at a revision less
-        than 13900 should update.
 
-        </p>
+  <body>
+    <h1>Helpful Instructions for Setting up <A HREF="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</A> and Windows</h1>
+
+        <p> We thank David Rager for providing
+        instructions, which we include verbatim below and expect apply to
+        future versions.  Note: We recommend using CCL for Windows
+        builds, in part so that interrupts (Control-C) will work.  But
+        first, a remark:</p>
+
+<p>At least one user has built ACL2 on Windows 10 in July, 2016 by
+following the instructions below, using the "bleeding edge" versions
+of CCL, mingw, and ACL2.  This user said the the bleeding edge
+versions might not be necessary, but with older versions there were
+too many times that the ACL2 build was hanging.  Even with the
+bleeding edge versions there were some hangs, but it wasn't clear if
+that was the fault of CCL, Mingw, MSys, or something else.  This user
+explained further:</p>
+
+<blockquote>
+
+The problem with hangs: It seems that while compiling ACL2 there were
+a few times when it simply hung.  But apparently this is
+non-deterministic.  Simply cleaning and retrying several times managed
+to get me out of the problem.
+
+</blockquote>
+
+	<p><b><font color="red">Here are David Rager's instructions.</font></b></p>
 
 	<p> I was able to get ACL2  3.6.1 to install and build the regression suite
 	on Windows 7 with the following steps.  I did not have to install
 	cygwin.</p>
-	
-	
+
+
 	<ol>
 	  <li><p>Install MinGW.  At the time of this writing, the following direct link works<br />
-	
+
 		<a
 		href="http://sourceforge.net/projects/mingw/files/Automated%20MinGW%20Installer/MinGW%205.1.6/MinGW-5.1.6.exe/download">MinGW-5.1.6.exe</a></p>
 
@@ -38,21 +52,21 @@
 		page</a>.</p>
 
 		</li>
-	  
+
 	  <li><p>Install MSys.  At the time of this writing, the following direct link
 		  works<br />
-		  
+
 		  <a
 			href="http://sourceforge.net/projects/mingw/files/MSYS%20Base%20System/msys-1.0.11/MSYS-1.0.11.exe/download">MSYS-1.0.11.exe</a></p>
-		
+
 		<p>If that direct link doesn't work, click on "MSYS Base System" on the
 		  more general <a
 			href="http://sourceforge.net/projects/mingw/files/">MinWG project files
 			page</a>.</p>
-		
+
 	  </li>
-	  
-	  
+
+
 	  <li>Add "C:\msys\1.0\bin" to my environment variable "path".  The way you
 	  do this varies with each Windows XP/Vista/7.  Roughly speaking, you need
 	  to go to the control panel, and open up your system settings.  Get to the
@@ -60,33 +74,33 @@
 	  "path" environment variable and add ";C:\msys\1.0\bin" to it.  At this
 	  point you might need to restart your computer, but I did not have to do
 	  so on Windows 7.  I did, however, have to restart my emacs.</li>
-	  
+
 	  <li><p>Realize that using "\" to indicate paths in windows confuses some
 	  linux programs and that you might need to use "/" sometimes.</p></li>
-	  
+
 	  <li>
 		<p>After expanding the ACL2 sources, cd to that directory and type
 		  something similar to the following (modify it to set LISP to your LISP
 		  executable<sup>1</sup>)<br />
-		  
+
 		  <code>make LISP=c:/ccl/wx86cl64.exe</code><br />
-		  
+
 		  The "make.exe" that will be used is intentionally the MSys version,
 		  not the MinGW version.</p>
 	  </li>
-	  
+
 	  <li>After your ACL2 image builds, make acl2 executable, specifically
-		
+
 		<ul>
 		  <li>Remove the "$*" from the saved_acl2 script (because Windows does
 			not understand $*). Consequently, any arguments you pass to ACL2 via
 			the command line will be ignored.</li>
-		  
+
 		  <li>Rename saved_acl2 to saved_acl2.bat, for example by executing the
 			following command: <code>rename saved_acl2 saved_acl2.bat</code></li>
 		</ul>
 	  </li>
-	  
+
 	  <li><p>You can now make the regression suite by typing<br />
 		<code>make regression ACL2=c:/acl2-3.6.1/acl2-sources/saved_acl2.bat</code>
 		</p>
@@ -94,9 +108,9 @@
               <code>ACL2_CENTAUR=skip</code>, for example if you have
               issues with Perl.]</p></li>
 	</ol>
-	
-	
-	<hr /> 
+
+
+	<hr />
 
 	<p><sup>1</sup>I have intentionally ommitted instructions on how to setup a
 	LISP on windows.  However, I include one link that should suffice: <a

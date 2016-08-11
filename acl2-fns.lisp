@@ -1025,6 +1025,130 @@ notation causes an error and (b) the use of ,. is not permitted."
     (otherwise (list *comma* (read stream t nil t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                            PACKAGES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following function used to be defined in axioms.lisp (with
+; #-acl2-loop-only), but we need it here.
+
+(defun symbol-package-name (x)
+
+; Warning: This function assumes that x is not a bad-lisp-objectp.  In
+; particular, see the Invariant on Symbols in the Common Lisp Package,
+; discussed in a comment in bad-lisp-objectp, which allows us to assume that if
+; x resides in the "COMMON-LISP" package and does not have its
+; *initial-lisp-symbol-mark* property set, then its symbol-package is the
+; *main-lisp-package*.
+
+  (cond ((get x *initial-lisp-symbol-mark*))
+        ((let ((p (symbol-package x)))
+           (cond ((eq p *main-lisp-package*)
+
+; We could just return *main-lisp-package-name-raw* in this case (but do not
+; skip this case, since in non-ANSI GCL, (package-name *main-lisp-package*) is
+; "LISP", not "COMMON-LISP" (which is what we need here).  But we go ahead and
+; set *initial-lisp-symbol-mark* in order to bypass this code next time.
+
+                  (setf (get x *initial-lisp-symbol-mark*)
+                        *main-lisp-package-name-raw*))
+                 (t (and p (package-name p))))))
+
+; We use ERROR now because we cannot print symbols without packages
+; with ACL2 functions.
+
+        (t (error
+            "The symbol ~a, which has no package, was encountered~%~
+             by ACL2.  This is an inconsistent state of affairs, one that~%~
+             may have arisen by undoing a defpkg but holding onto a symbol~%~
+             in the package being flushed, contrary to warnings printed.~%~%"
+            x))))
+
+(defvar *defpkg-virgins* nil)
+
+(defun maybe-make-package (name)
+
+; We formerly had a long comment here explaining that this definition CMU
+; Common Lisp 19e.  At that time, maybe-make-package was a macro with a #+cmu
+; body of `(defpackage ,name (:use)).  But CMU Common Lisp 21a does not have
+; this problem, so we have changed maybe-make-package from a macro to a
+; function, which allows its callers to be functions as well.  That, in turn,
+; may avoid compilation required for macro calls in some Lisps, including CCL.
+
+  (when (not (find-package name))
+    (make-package name :use nil)))
+
+(defun maybe-make-three-packages (name)
+  (maybe-make-package name)
+  (maybe-make-package (concatenate 'string
+                                   acl2::*global-package-prefix*
+                                   name))
+  (maybe-make-package (concatenate 'string
+                                   acl2::*1*-package-prefix*
+                                   name)))
+
+(defmacro maybe-introduce-empty-pkg-1 (name)
+
+; It appears that GCL requires a user::defpackage (non-ANSI case) or
+; defpackage (ANSI case; this may be the same as user::defpackage) form near
+; the top of a file in order to read the corresponding compiled file.  For
+; example, an error occurred upon attempting to load the community books file
+; books/data-structures/defalist.o after certifying the corresponding book
+; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
+; the file was insufficient to allow reading a symbol in the "U" package
+; occurring later in the corresponding source file.
+
+; On the other hand, the CL HyperSpec does not pin down the effect of
+; defpackage when a package already exists.  Indeed, the defpackage approach
+; that we use for GCL does not work for LispWorks 6.0.
+
+; So, we have quite a different definition of this macro for GCL as opposed to
+; the other Lisps.
+
+  #-gcl
+  `(eval-when
+    #+cltl2 (:load-toplevel :execute :compile-toplevel)
+    #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
+    (maybe-make-three-packages ,name))
+  #+gcl
+  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
+    `(progn
+       (,defp ,name
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*global-package-prefix*
+                            name)
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*1*-package-prefix*
+                            name)
+         (:use)))))
+
+(defvar *ever-known-package-alist* ; to be redefined in axioms.lisp
+  nil)
+
+(defun package-has-no-imports (name)
+  (let ((pkg (find-package name)))
+    (do-symbols (sym pkg)
+                (when (not (eq (symbol-package sym) pkg))
+                  (return-from package-has-no-imports nil))))
+  t)
+
+(defun maybe-introduce-empty-pkg-2 (name)
+  (when (and (not (member name *defpkg-virgins*
+                          :test 'equal))
+             (not (assoc name *ever-known-package-alist*
+                         :test 'equal))
+             (package-has-no-imports name))
+    (push name *defpkg-virgins*)))
+
+; The GCL proclaim mechanism puts symbols in package "ACL2-PC" into file
+; acl2-proclaims.lisp.  So Lisp needs to know about that package when it loads
+; that file.  We introduce that package in a harmless way here.  Although we
+; only need to do so for GCL, we do so for every Lisp, for uniformity.
+(maybe-make-package "ACL2-PC")
+(maybe-introduce-empty-pkg-2 "ACL2-PC")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR ACL2 CHARACTER READER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1117,7 +1241,7 @@ notation causes an error and (b) the use of ,. is not permitted."
     (acl2-read-character-string s ch)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                            SUPPORT FOR #,
+;                            SUPPORT FOR #.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar *inside-sharp-dot-read* nil)
@@ -1214,43 +1338,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;                            SUPPORT FOR #@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro sharp-atsign-read-er (str &rest format-args)
-  `(progn (loop (when (null (read-char-no-hang stream nil nil t))
-                  (return)))
-          (error (concatenate 'string ,str ".  See :DOC set-iprint.")
-                 ,@format-args)))
-
-(defun sharp-atsign-read (stream char n)
-  (declare (ignore char n))
-  (let (ch
-        bad-ch
-        (zero-code (char-code #\0))
-        (index 0))
-    (loop
-     (when (eql (setq ch (read-char stream t nil t))
-                #\#)
-       (return))
-     (let ((digit (- (char-code ch) zero-code)))
-       (cond ((or (< digit 0)
-                  (> digit 9))
-              (when (not bad-ch)
-                (setq bad-ch ch))
-              (return))
-             (t
-              (setq index (+ digit (* 10 index)))))))
-    (cond (bad-ch
-           (sharp-atsign-read-er
-            "Non-digit character ~s following #@~s"
-            bad-ch index))
-          ((eval '(f-get-global 'certify-book-info *the-live-state*))
-           (sharp-atsign-read-er
-            "Illegal reader macro during certify-book, #@~s#"
-            index))
-          ((qfuncall iprint-ar-illegal-index index *the-live-state*)
-           (sharp-atsign-read-er
-            "Out-of-bounds index in #@~s#"
-            index))
-          (t (qfuncall iprint-ar-aref1 index *the-live-state*)))))
+; See interface-raw.lisp, as sharp-atsign-read uses several functions defined
+; in the sources and we want to avoid compiler warnings.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #{"""
@@ -1416,130 +1505,6 @@ notation causes an error and (b) the use of ,. is not permitted."
          (setq *sharp-reader-max-index* 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                            PACKAGES
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; The following function used to be defined in axioms.lisp (with
-; #-acl2-loop-only), but we need it here.
-
-(defun symbol-package-name (x)
-
-; Warning: This function assumes that x is not a bad-lisp-objectp.  In
-; particular, see the Invariant on Symbols in the Common Lisp Package,
-; discussed in a comment in bad-lisp-objectp, which allows us to assume that if
-; x resides in the "COMMON-LISP" package and does not have its
-; *initial-lisp-symbol-mark* property set, then its symbol-package is the
-; *main-lisp-package*.
-
-  (cond ((get x *initial-lisp-symbol-mark*))
-        ((let ((p (symbol-package x)))
-           (cond ((eq p *main-lisp-package*)
-
-; We could just return *main-lisp-package-name-raw* in this case (but do not
-; skip this case, since in non-ANSI GCL, (package-name *main-lisp-package*) is
-; "LISP", not "COMMON-LISP" (which is what we need here).  But we go ahead and
-; set *initial-lisp-symbol-mark* in order to bypass this code next time.
-
-                  (setf (get x *initial-lisp-symbol-mark*)
-                        *main-lisp-package-name-raw*))
-                 (t (and p (package-name p))))))
-
-; We use ERROR now because we cannot print symbols without packages
-; with ACL2 functions.
-
-        (t (error
-            "The symbol ~a, which has no package, was encountered~%~
-             by ACL2.  This is an inconsistent state of affairs, one that~%~
-             may have arisen by undoing a defpkg but holding onto a symbol~%~
-             in the package being flushed, contrary to warnings printed.~%~%"
-            x))))
-
-(defvar *defpkg-virgins* nil)
-
-(defun maybe-make-package (name)
-
-; We formerly had a long comment here explaining that this definition CMU
-; Common Lisp 19e.  At that time, maybe-make-package was a macro with a #+cmu
-; body of `(defpackage ,name (:use)).  But CMU Common Lisp 21a does not have
-; this problem, so we have changed maybe-make-package from a macro to a
-; function, which allows its callers to be functions as well.  That, in turn,
-; may avoid compilation required for macro calls in some Lisps, including CCL.
-
-  (when (not (find-package name))
-    (make-package name :use nil)))
-
-(defun maybe-make-three-packages (name)
-  (maybe-make-package name)
-  (maybe-make-package (concatenate 'string
-                                   acl2::*global-package-prefix*
-                                   name))
-  (maybe-make-package (concatenate 'string
-                                   acl2::*1*-package-prefix*
-                                   name)))
-
-(defmacro maybe-introduce-empty-pkg-1 (name)
-
-; It appears that GCL requires a user::defpackage (non-ANSI case) or
-; defpackage (ANSI case; this may be the same as user::defpackage) form near
-; the top of a file in order to read the corresponding compiled file.  For
-; example, an error occurred upon attempting to load the community books file
-; books/data-structures/defalist.o after certifying the corresponding book
-; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
-; the file was insufficient to allow reading a symbol in the "U" package
-; occurring later in the corresponding source file.
-
-; On the other hand, the CL HyperSpec does not pin down the effect of
-; defpackage when a package already exists.  Indeed, the defpackage approach
-; that we use for GCL does not work for LispWorks 6.0.
-
-; So, we have quite a different definition of this macro for GCL as opposed to
-; the other Lisps.
-
-  #-gcl
-  `(eval-when
-    #+cltl2 (:load-toplevel :execute :compile-toplevel)
-    #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
-    (maybe-make-three-packages ,name))
-  #+gcl
-  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
-    `(progn
-       (,defp ,name
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*global-package-prefix*
-                            name)
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*1*-package-prefix*
-                            name)
-         (:use)))))
-
-(defvar *ever-known-package-alist* ; to be redefined in axioms.lisp
-  nil)
-
-(defun package-has-no-imports (name)
-  (let ((pkg (find-package name)))
-    (do-symbols (sym pkg)
-                (when (not (eq (symbol-package sym) pkg))
-                  (return-from package-has-no-imports nil))))
-  t)
-
-(defun maybe-introduce-empty-pkg-2 (name)
-  (when (and (not (member name *defpkg-virgins*
-                          :test 'equal))
-             (not (assoc name *ever-known-package-alist*
-                         :test 'equal))
-             (package-has-no-imports name))
-    (push name *defpkg-virgins*)))
-
-; The GCL proclaim mechanism puts symbols in package "ACL2-PC" into file
-; acl2-proclaims.lisp.  So Lisp needs to know about that package when it loads
-; that file.  We introduce that package in a harmless way here.  Although we
-; only need to do so for GCL, we do so for every Lisp, for uniformity.
-(maybe-make-package "ACL2-PC")
-(maybe-introduce-empty-pkg-2 "ACL2-PC")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            ENVIRONMENT SUPPORT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1584,26 +1549,38 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; The following either returns the value of the given environment variable or
 ; returns nil (in lisps where we do not yet know how to get that value).
+; Except, it causes an error if the computed value is an illegal ACL2 string.
 
 ; WARNING: Keep this in sync with the #-acl2-loop-only definition of setenv$.
 
-  #+cmu
-  (cond (*cmucl-unix-getenv-fn*
-         (funcall *cmucl-unix-getenv-fn* string))
-        ((boundp 'ext::*environment-list*)
-         (cdr (assoc (intern string :keyword)
-                     ext::*environment-list*
-                     :test #'eq))))
-  #+(or gcl allegro lispworks ccl sbcl clisp)
-  (let ((fn
-         #+gcl       'si::getenv
-         #+allegro   'sys::getenv
-         #+lispworks 'hcl::getenv
-         #+ccl       'ccl::getenv
-         #+sbcl      'sb-ext::posix-getenv
-         #+clisp     'ext:getenv))
-    (and (fboundp fn)
-         (funcall fn string))))
+  (let* ((val
+          #+cmu
+          (cond (*cmucl-unix-getenv-fn*
+                 (funcall *cmucl-unix-getenv-fn* string))
+                ((boundp 'ext::*environment-list*)
+                 (cdr (assoc (intern string :keyword)
+                             ext::*environment-list*
+                             :test #'eq))))
+          #+(or gcl allegro lispworks ccl sbcl clisp)
+          (let ((fn
+                 #+gcl       'si::getenv
+                 #+allegro   'sys::getenv
+                 #+lispworks 'hcl::getenv
+                 #+ccl       'ccl::getenv
+                 #+sbcl      'sb-ext::posix-getenv
+                 #+clisp     'ext:getenv))
+            (and (fboundp fn)
+                 (funcall fn string))))
+         (msg (and val
+                   (fboundp 'bad-lisp-stringp) ; false early in boot-strap
+                   (qfuncall bad-lisp-stringp val))))
+    (cond (msg ; It's not clear that this case is possible, at least in CCL.
+           (qfuncall
+            interface-er
+            "The value of environment variable ~x0 is ~x1, which is not a ~
+             legal ACL2 string.~%~@2"
+            string val msg))
+          (t val))))
 
 #+sbcl
 (defmacro define-our-sbcl-putenv ()
@@ -1650,9 +1627,11 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun our-truename (filename &optional namestringp)
 
-; For now, assume that namestringp is nil (or not supplied).
-
 ; Filename can be a pathname, in which case we treat it as its namestring.
+; Both filename and the result of this function are OS filenames, which might
+; have characters that disqualify them from being ACL2 strings.
+
+; For now, assume that namestringp is nil (or not supplied).
 
 ; This function is intended to return nil if filename does not exist.  We thus
 ; rely on the CL HyperSpec, where it says of truename that "An error of type
@@ -1706,9 +1685,6 @@ notation causes an error and (b) the use of ,. is not permitted."
 
             (ignore-errors (truename filename)))))
          (namestring (and truename (namestring truename))))
-    (when (and namestring
-               *check-namestring*) ; always true unless a ttag is used
-      (qfuncall chk-bad-lisp-stringp namestring filename))
     (cond ((null namestringp)
            truename)
           ((null truename)
@@ -1726,21 +1702,14 @@ notation causes an error and (b) the use of ,. is not permitted."
                        "")))))
           (t namestring))))
 
-(defun our-pwd ()
-
-; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
-; variable is not necessarily maintained, for example in Solaris/SunOS as one
-; make invokes another make in a different directory.
-
-  (qfuncall pathname-os-to-unix
-            (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
-            (get-os)
-            *the-live-state*))
-
 (defun unix-full-pathname (name &optional extension)
 
-; We formerly used Common Lisp function merge-pathnames.  But in CCL,
-; merge-pathnames can insert an extra backslash (\), as follows:
+; Unlike truename and our-truename, unix-full-pathname does not assume that any
+; particular file exists.
+
+; We formerly used Common Lisp function merge-pathnames.  But with CCL
+; (probably quite an old version), merge-pathnames has inserted an extra
+; backslash (\), as follows:
 
 ;  ? (MERGE-PATHNAMES "foo.xxx.lx86cl64" "/u/kaufmann/temp/")
 ;  #P"/u/kaufmann/temp/foo\\.xxx.lx86cl64"
@@ -1749,7 +1718,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Gary Byers has explained that while this behavior may not be ideal, it is
 ; legal for Common Lisp.  So we avoid merge-pathnames here.
 
-  (let* ((os (get-os))
+  (let* ((*check-namestring* t)
+         (os (get-os))
          (state *the-live-state*)
          (name (qfuncall pathname-os-to-unix
                          (if extension
@@ -1764,7 +1734,7 @@ notation causes an error and (b) the use of ,. is not permitted."
      (cond ((qfuncall absolute-pathname-string-p name nil os)
             name)
            (t
-            (concatenate 'string (our-pwd) name))))))
+            (concatenate 'string (qfuncall our-pwd) name))))))
 
 (defun our-user-homedir-pathname ()
 

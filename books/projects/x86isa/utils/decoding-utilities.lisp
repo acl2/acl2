@@ -1638,23 +1638,23 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
   :short "Functions to detect and decode ModR/M and SIB bytes"
 
   (defconst *prefixes-layout*
-    '((:num-prefixes      0  3) ;; Number of prefixes
-      (:group-1-prefix    3  8) ;; Lock, Repeat prefix
-      (:group-2-prefix   11  8) ;; Segment Override prefix
-      (:group-3-prefix   19  8) ;; Operand-Size Override prefix
-      (:group-4-prefix   27  8) ;; Address-Size Override prefix
-      (:next-byte        35  8) ;; Byte following the prefixes
+    '((:num-prefixes      0  4) ;; Number of prefixes
+      (:group-1-prefix    4  8) ;; Lock, Repeat prefix
+      (:group-2-prefix   12  8) ;; Segment Override prefix
+      (:group-3-prefix   20  8) ;; Operand-Size Override prefix
+      (:group-4-prefix   28  8) ;; Address-Size Override prefix
+      (:next-byte        36  8) ;; Byte following the prefixes
       ))
 
   (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 43)
+    (layout-constant-alistp *prefixes-layout* 0 44)
     :rule-classes nil)
 
   (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes 43 *prefixes-layout*))
+    (slice flg prefixes 44 *prefixes-layout*))
 
   (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg 43 *prefixes-layout*))
+    (!slice flg val reg 44 *prefixes-layout*))
 
   )
 

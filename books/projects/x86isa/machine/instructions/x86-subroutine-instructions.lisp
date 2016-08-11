@@ -151,7 +151,9 @@
        ((mv flg0 (the (unsigned-byte 64) call-rip) (the (unsigned-byte 3) increment-rip-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
        ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
@@ -190,7 +192,7 @@
        (x86 (!rip call-rip x86))
        ;; Decrement the stack pointer.
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: RET

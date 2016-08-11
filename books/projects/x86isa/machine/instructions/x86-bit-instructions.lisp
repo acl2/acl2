@@ -52,7 +52,9 @@
        ((mv flg0 bitBase (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 1 x86))
+         #.*rgf-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         1 ;; One-byte immediate data
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -154,7 +156,9 @@
             (mv nil 0 0 x86)
           (let ((p4? (equal #.*addr-size-override*
                             (prefixes-slice :group-4-prefix prefixes))))
-            (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86))))
+            (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                                0 ;; No immediate operand
+                                x86))))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((mv flg1 v-addr)

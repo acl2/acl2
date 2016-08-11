@@ -1138,7 +1138,7 @@
                                (18cdrs (cddr 16cdrs)))
                           (consp 18cdrs)))))))))
 
-(defabbrev hl-flex-assoc (key al)
+(defmacro hl-flex-assoc (key al)
 
 ; (hl-flex-assoc key al) returns the entry associated with key, or returns nil
 ; if key is not bound.  Note that the comparisons performed by flex-assoc are
@@ -1172,9 +1172,11 @@
 ;    NIL
 ;    ?
 
-  (if (listp al)
-      (assoc key al)
-    (gethash key (the hash-table al))))
+  `(let ((key ,key)
+         (al ,al))
+     (if (listp al)
+         (assoc key al)
+       (gethash key (the hash-table al)))))
 
 (defmacro hl-flex-acons (elem al &optional shared)
 
@@ -1245,7 +1247,7 @@
                 (= 1 (the fixnum (aref sbits (the fixnum idx)))))))))
 
 #-static-hons
-(defabbrev hl-hspace-find-flex-alist-for-cdr (b ctables)
+(defmacro hl-hspace-find-flex-alist-for-cdr (b ctables)
 
 ; (HL-HSPACE-FIND-FLEX-ALIST-FOR-CDR B CTABLES) --> FLEX ALIST
 ;
@@ -1255,14 +1257,16 @@
 ; though the NIL-HT starts out as a hash table, we can still regard it as a
 ; flex alist.
 
-  (cond ((null b)
-         (hl-ctables-nil-ht ctables))
-        ((or (consp b)
-             (symbolp b)
-             (stringp b))
-         (gethash b (hl-ctables-cdr-ht ctables)))
-        (t
-         (gethash b (hl-ctables-cdr-ht-eql ctables)))))
+  `(let ((b ,b)
+         (ctables ,ctables))
+     (cond ((null b)
+            (hl-ctables-nil-ht ctables))
+           ((or (consp b)
+                (symbolp b)
+                (stringp b))
+            (gethash b (hl-ctables-cdr-ht ctables)))
+           (t
+            (gethash b (hl-ctables-cdr-ht-eql ctables))))))
 
 (declaim (inline hl-hspace-honsp))
 (defun hl-hspace-honsp (x hs)
@@ -1495,7 +1499,7 @@
          'hl-with-lock-grabbed))
 
 #+static-hons
-(defabbrev hl-symbol-addr (s)
+(defmacro hl-symbol-addr (s)
 
 ; (HL-SYMBOL-ADDR S) --> NAT
 ;
@@ -1519,28 +1523,29 @@
 ; without-interrupts because installing the new 'hl-static-address cons is a
 ; single setf.
 
-  (let ((addr-cons (get (the symbol s) 'hl-static-address)))
-    (if addr-cons
-        ;; Already have an address.  ADDR-CONS = (S . TRUE-ADDR), where
-        ;; TRUE-ADDR is Index(ADDR-CONS) + BASE.  So, we just need to
-        ;; return the TRUE-ADDR.
-        (cdr addr-cons)
-      ;; We need to assign an address.  Must lock!
-      (hl-with-lock-grabbed
-       (*hl-symbol-addr-lock*)
-       ;; Some other thread might have assigned S an address before we
-       ;; got the lock.  So, double-check and make sure that there still
-       ;; isn't an address.
-       (setq addr-cons (get (the symbol s) 'hl-static-address))
+  `(let ((s ,s))
+     (let ((addr-cons (get (the symbol s) 'hl-static-address)))
        (if addr-cons
+           ;; Already have an address.  ADDR-CONS = (S . TRUE-ADDR), where
+           ;; TRUE-ADDR is Index(ADDR-CONS) + BASE.  So, we just need to
+           ;; return the TRUE-ADDR.
            (cdr addr-cons)
-         ;; Okay, safe to generate a new address.
-         (let* ((new-addr-cons (hl-static-cons s nil))
-                (true-addr     (+ hl-dynamic-base-addr
-                                  (hl-staticp new-addr-cons))))
-           (rplacd (the cons new-addr-cons) true-addr)
-           (setf (get (the symbol s) 'hl-static-address) new-addr-cons)
-           true-addr))))))
+         ;; We need to assign an address.  Must lock!
+         (hl-with-lock-grabbed
+          (*hl-symbol-addr-lock*)
+          ;; Some other thread might have assigned S an address before we
+          ;; got the lock.  So, double-check and make sure that there still
+          ;; isn't an address.
+          (setq addr-cons (get (the symbol s) 'hl-static-address))
+          (if addr-cons
+              (cdr addr-cons)
+            ;; Okay, safe to generate a new address.
+            (let* ((new-addr-cons (hl-static-cons s nil))
+                   (true-addr     (+ hl-dynamic-base-addr
+                                     (hl-staticp new-addr-cons))))
+              (rplacd (the cons new-addr-cons) true-addr)
+              (setf (get (the symbol s) 'hl-static-address) new-addr-cons)
+              true-addr)))))))
 
 #+static-hons
 (defun hl-addr-of-unusual-atom (x str-ht other-ht)
@@ -1632,25 +1637,27 @@
      b))
 
 #+static-hons
-(defabbrev hl-addr-combine* (a b)
+(defmacro hl-addr-combine* (a b)
   ;; Inlined version of hl-addr-combine, defined in community book
   ;; books/system/hl-addr-combine.lisp.  See that book for all documentation
   ;; and a proof that this function is one-to-one.  The only change we make
   ;; here is to use typep to see if the arguments are fixnums in the
   ;; comparisons, which speeds up our test loop by about 1/3.
-  (if (and (typep a 'fixnum)
-           (typep b 'fixnum)
-           (< (the fixnum a) 1073741824) ; (expt 2 30)
-           (< (the fixnum b) 1073741824))
-      ;; Optimized version of the small case
-      (the (signed-byte 61)
-           (- (the (signed-byte 61)
-                   (logior (the (signed-byte 61)
-                                (ash (the (signed-byte 31) a) 30))
-                           (the (signed-byte 31) b)))))
-    ;; Large case.
-    (- (hl-nat-combine* a b)
-       576460752840294399))) ; (+ (expt 2 59) (expt 2 29) -1)
+  `(let ((a ,a)
+         (b ,b))
+     (if (and (typep a 'fixnum)
+              (typep b 'fixnum)
+              (< (the fixnum a) 1073741824) ; (expt 2 30)
+              (< (the fixnum b) 1073741824))
+         ;; Optimized version of the small case
+         (the (signed-byte 61)
+              (- (the (signed-byte 61)
+                      (logior (the (signed-byte 61)
+                                   (ash (the (signed-byte 31) a) 30))
+                              (the (signed-byte 31) b)))))
+       ;; Large case.
+       (- (hl-nat-combine* a b)
+          576460752840294399)))) ; (+ (expt 2 59) (expt 2 29) -1)
 
 
 ; ----------------------------------------------------------------------
@@ -2161,7 +2168,7 @@
         (setf (gethash x persist-ht) t)))
     x))
 
-(defabbrev hl-hspace-hons (x y hs)
+(defmacro hl-hspace-hons (x y hs)
 
 ; (HL-HSPACE-HONS X Y HS) --> (X . Y) which is normed, and destructively
 ; updates HS.
@@ -2173,9 +2180,12 @@
 ; new cons is considered normed, and return it.
 
   (declare (type hl-hspace hs))
-  (hl-hspace-hons-normed (hl-hspace-norm x hs)
-                         (hl-hspace-norm y hs)
-                         nil hs))
+  `(let ((x ,x)
+         (y ,y)
+         (hs ,hs))
+     (hl-hspace-hons-normed (hl-hspace-norm x hs)
+                            (hl-hspace-norm y hs)
+                            nil hs)))
 
 
 ; ----------------------------------------------------------------------
@@ -3906,7 +3916,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (hl-maybe-initialize-default-hs))
 
 (defun hons (x y)
-  ;; hl-hspace-hons is inlined via defabbrev
+  ;; hl-hspace-hons is inlined via defmacro
   (hl-maybe-initialize-default-hs)
   (hl-hspace-hons x y *default-hs*))
 

@@ -3700,6 +3700,7 @@
             gag-mode-evisc-tuple  ;;; see just above
             slow-array-action     ;;; see just above
             iprint-ar             ;;; see just above
+            iprint-fal            ;;; see just above
             iprint-soft-bound     ;;; see just above
             iprint-hard-bound     ;;; see just above
             show-custom-keyword-hint-expansion

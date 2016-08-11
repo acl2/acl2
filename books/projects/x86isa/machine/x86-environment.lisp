@@ -98,9 +98,7 @@
                     (< n (len (string-to-bytes str)))
                     (stringp str))
                (stringp (read-n-bytes-from-string-as-string n str)))
-      :rule-classes :type-prescription))
-
-  )
+      :rule-classes :type-prescription)))
 
 ;; ======================================================================
 
@@ -133,12 +131,12 @@
              ((when flg)
               (mv flg acc x86)))
 
-            (if (equal 0 mem-val)
-                (mv nil (append (reverse acc) '(0)) x86)
+          (if (equal 0 mem-val)
+              (mv nil (append (reverse acc) '(0)) x86)
 
-              (read-memory-zero-terminated
-               (the (signed-byte 49) (1+ ptr))
-               x86 (cons mem-val acc))))
+            (read-memory-zero-terminated
+             (the (signed-byte 49) (1+ ptr))
+             x86 (cons mem-val acc))))
 
       (mv t (reverse acc) x86))
 
@@ -170,7 +168,7 @@
          ((when flg)
           (mv flg "nil" x86))
          (charlist (bytes-to-charlist bytes)))
-        (mv nil (coerce charlist 'string) x86))
+      (mv nil (coerce charlist 'string) x86))
 
     ///
 
@@ -213,10 +211,10 @@
                 (rm08 ptr :r x86))
                ((when flg)
                 (mv flg nil x86)))
-              (read-bytes-from-memory (the (signed-byte 49) (1+ ptr))
-                                      (the (unsigned-byte 48) (1- nbytes))
-                                      x86
-                                      (cons byte acc))))
+            (read-bytes-from-memory (the (signed-byte 49) (1+ ptr))
+                                    (the (unsigned-byte 48) (1- nbytes))
+                                    x86
+                                    (cons byte acc))))
       (mv t (reverse acc) x86))
 
     ///
@@ -249,7 +247,7 @@
          ((when flg)
           (mv flg "nil" x86))
          (charlist (bytes-to-charlist bytes)))
-        (mv nil (coerce charlist 'string) x86))
+      (mv nil (coerce charlist 'string) x86))
 
     ///
 
@@ -260,9 +258,7 @@
 
     (defthm x86p-mv-nth-2-read-string-from-memory
       (implies (x86p x86)
-               (x86p (mv-nth 2 (read-string-from-memory ptr nbytes x86))))))
-
-  )
+               (x86p (mv-nth 2 (read-string-from-memory ptr nbytes x86)))))))
 
 ;; ======================================================================
 

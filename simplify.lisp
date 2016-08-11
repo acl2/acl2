@@ -4637,6 +4637,7 @@
 
 ; We determine whether some lambda-expression is used as a function in term.
 
+  (declare (xargs :guard (pseudo-termp term)))
   (if (or (variablep term)
           (fquotep term))
       nil
@@ -4644,7 +4645,8 @@
         (lambda-subtermp-lst (fargs term)))))
 
 (defun lambda-subtermp-lst (termlist)
-  (if termlist
+  (declare (xargs :guard (pseudo-term-listp termlist)))
+  (if (consp termlist)
       (or (lambda-subtermp (car termlist))
           (lambda-subtermp-lst (cdr termlist)))
     nil))

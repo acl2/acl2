@@ -86,7 +86,9 @@
         (if (equal (ash opcode -4) 9) ;; #x90+rw/rd
             (mv nil (rgfi-size reg/mem-size *rax* rex-byte x86) 0 0 x86)
           (x86-operand-from-modr/m-and-sib-bytes
-           #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86)))
+           #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+           0 ;; No immediate operand
+           x86)))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
        ((when (mbe :logic (not (canonical-address-p v-addr))
@@ -145,7 +147,7 @@
                       x86)))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMPXCHG
@@ -195,7 +197,9 @@
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -304,7 +308,9 @@
        ((mv flg0 (the (signed-byte 64) ?v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr flg0))
 
@@ -318,6 +324,6 @@
         (!!ms-fresh :next-rip-invalid temp-rip))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

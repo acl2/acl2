@@ -24,6 +24,104 @@
 ; cannot code in ACL2 because they require constructs not in ACL2, such
 ; as calling the compiler.
 
+; We start with a section that was originally in acl2-fns.lisp, but was moved
+; here when sharp-atsign-read started using several functions defined in the
+; sources, to avoid compiler warnings.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                            SUPPORT FOR #@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro sharp-atsign-read-er (str &rest format-args)
+  `(progn (loop (when (null (read-char-no-hang stream nil nil t))
+                  (return)))
+          (error (concatenate 'string ,str ".  See :DOC set-iprint.")
+                 ,@format-args)))
+
+(defun sharp-atsign-read (stream char n &aux (state *the-live-state*))
+  (declare (ignore char n))
+  (let (ch
+        bad-ch
+        (zero-code (char-code #\0))
+        (index 0)
+        (iprint-last-index (iprint-last-index state)))
+    (loop
+     (when (eql (setq ch (read-char stream t nil t))
+                #\#)
+       (return))
+     (let ((digit (- (char-code ch) zero-code)))
+       (cond ((or (< digit 0)
+                  (> digit 9))
+              (when (not bad-ch)
+                (setq bad-ch ch))
+              (return))
+             (t
+              (setq index (+ digit (* 10 index)))))))
+    (cond
+     (bad-ch
+      (sharp-atsign-read-er
+       "Non-digit character ~s following #@~s"
+       bad-ch index))
+     ((symbol-value (f-get-global 'certify-book-info state))
+      (sharp-atsign-read-er
+       "Illegal reader macro during certify-book, #@~s#"
+       index))
+     ((iprint-ar-illegal-index index state)
+      (sharp-atsign-read-er
+       "Out-of-bounds index in #@~s#"
+       index))
+     (t
+      (let ((old-read-state ; bind special
+             *iprint-read-state*))
+        (cond
+         ((eq old-read-state nil)
+          (iprint-ar-aref1 index state))
+         (t
+          (let ((new-read-state-order (if (<= index iprint-last-index)
+                                          '<=
+                                        '>)))
+            (cond
+             ((eq old-read-state t)
+              (setq *iprint-read-state*
+                    (cons index new-read-state-order))
+              (iprint-ar-aref1 index state))
+             ((eq (cdr old-read-state)
+                  new-read-state-order) ; both > or both <=
+              (iprint-ar-aref1 index state))
+             (t
+              (multiple-value-bind
+               (index-before index-after)
+               (cond
+                ((eq (cdr old-read-state) '<=)
+                 (values index (car old-read-state)))
+                (t ; (eq (cdr old-read-state) '>)
+                 (values (car old-read-state) index)))
+               (sharp-atsign-read-er
+                "Attempt to read a form containing both an index~%~
+                 created before the most recent rollover (#@~s#) and~%~
+                 an index created after that rollover (#@~s#)"
+                index-before index-after))))))))))))
+
+(defun define-sharp-atsign ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\@
+   #'sharp-atsign-read))
+
+(eval-when
+
+; Note: CMUCL build breaks without the check below for a compiled function.
+
+ #-cltl2
+ (load eval)
+ #+cltl2
+ (:load-toplevel :execute)
+ (when (compiled-function-p! 'sharp-atsign-read)
+   (let ((*readtable* *acl2-readtable*))
+     (define-sharp-atsign))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;          EVALUATION
 
 ; Essay on Evaluation in ACL2
@@ -4724,16 +4822,17 @@
 
   (assert load-compiled-file)
   (mv-let
-   (cfile state)
+   (acl2-cfile state)
    (certificate-file file state)
-   (let* ((os-file (pathname-unix-to-os file state))
+   (let* ((cfile (pathname-unix-to-os acl2-cfile state))
+          (os-file (pathname-unix-to-os file state))
           (cfile-date (and cfile (file-write-date cfile)))
           (ofile (convert-book-name-to-compiled-name os-file state))
           (ofile-exists (probe-file ofile))
           (ofile-date (and ofile-exists (file-write-date ofile)))
           (ofile-p (and ofile-date cfile-date (>= ofile-date cfile-date)))
           (efile (and (not (eq load-compiled-file t))
-                      (expansion-filename file t state)))
+                      (expansion-filename os-file)))
           (efile-exists (and efile (probe-file efile)))
           (file-is-older-str
            "the file-write-date of ~x0 is less than that of ~x1"))
@@ -4760,9 +4859,9 @@
         ctx
         file
         (msg "~x0 is ~x1 (which is odd since file ~x2 exists)"
-             `(file-write-date ,cfile)
+             `(file-write-date$ ,acl2-cfile state)
              nil
-             cfile)
+             acl2-cfile)
         load-compiled-file
         state))
       ((not (or ofile-p
@@ -4781,7 +4880,9 @@
           ctx
           file
           (msg "the compiled file does not exist and ~@0"
-               (msg file-is-older-str efile cfile))
+               (msg file-is-older-str
+                    (expansion-filename file)
+                    acl2-cfile))
           load-compiled-file
           state))))
       ((and (not ofile-p) ; hence efile is suitable to load, except:
@@ -4808,14 +4909,16 @@
 ; include-book-fn, either that compilation will succeed or there will be an
 ; error -- either way, there is no need to warn here.
 
-           (warning$ ctx "Compiled file"
-                     "Loading expansion file ~x0 in place of compiled file ~
-                      ~x1, because ~@2."
-                     efile ofile
-                     (cond (ofile-exists
-                            (msg file-is-older-str ofile cfile))
-                           (t
-                            (msg "the compiled file is missing")))))
+           (let ((acl2-ofile (convert-book-name-to-compiled-name file state)))
+             (warning$ ctx "Compiled file"
+                       "Loading expansion file ~x0 in place of compiled file ~
+                        ~x1, because ~@2."
+                       (expansion-filename file)
+                       acl2-ofile
+                       (cond (ofile-exists
+                              (msg file-is-older-str acl2-ofile acl2-cfile))
+                             (t
+                              (msg "the compiled file is missing"))))))
          (catch 'missing-compiled-book
 ; bogus compiler warning in LispWorks 6.0.1, gone in LispWorks 6.1
            (state-global-let*
@@ -4946,7 +5049,9 @@
      (cond
       ((let ((true-full-book-name (our-truename full-book-name :safe)))
          (and true-full-book-name
-              (assoc-equal true-full-book-name
+              (assoc-equal (pathname-os-to-unix true-full-book-name
+                                                (os (w state))
+                                                state)
                            (global-val 'include-book-alist (w state)))))
 
 ; In ACL2 Version_4.1 running on Allegro CL, we got an error when attempting to
@@ -4993,8 +5098,8 @@
                (ofile-date (and ofile-exists (file-write-date ofile))))
           (cond ((not os-file-exists)
                  (er hard ctx
-                     "File ~x0 does not exist."
-                     os-file))
+                     "The file named ~x0 does not exist."
+                     full-book-name))
                 ((null load-compiled-file)
                  (assert$ raw-mode-p ; otherwise we already returned above
 
@@ -5016,8 +5121,7 @@
                                 "The compiled file for ~x0 was not loaded ~
                                  because ~@1."
                                 reason))
-                           (t (let* ((efile (expansion-filename
-                                             full-book-name t state))
+                           (t (let* ((efile (expansion-filename os-file))
                                      (efile-date (and (probe-file efile)
                                                       (file-write-date efile)))
                                      (efile-p (and book-date
@@ -6840,17 +6944,24 @@
 ; (needed by pathname-os-to-unix).
 
   (cond (system-books-dir
-         (let ((dir (unix-full-pathname
-                     (cond
-                      ((symbolp system-books-dir)
-                       (symbol-name system-books-dir))
-                      ((stringp system-books-dir)
-                       system-books-dir)
-                      (t (er hard 'initialize-acl2
-                             "Unable to complete initialization, because the ~
-                              supplied system books directory, ~x0, is not a ~
-                              string."
-                             system-books-dir))))))
+         (let* ((dir (unix-full-pathname
+                      (cond
+                       ((symbolp system-books-dir)
+                        (symbol-name system-books-dir))
+                       ((stringp system-books-dir)
+                        system-books-dir)
+                       (t (er hard 'initialize-acl2
+                              "Unable to complete initialization, because ~
+                                the supplied system books directory, ~x0, is ~
+                                not a string."
+                              system-books-dir)))))
+                (msg (bad-lisp-stringp dir)))
+           (when msg
+             (interface-er
+              "The value of the system-books-dir argument of ~
+               ENTER-BOOT-STRAP-MODE, which is ~x0, is not a legal ACL2 ~
+               string.~%~@1"
+              dir msg))
            (f-put-global 'system-books-dir
                          (canonical-dirname! (maybe-add-separator dir)
                                              'enter-boot-strap-mode
@@ -8034,18 +8145,21 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ; We use Unix-style pathnames everywhere in ACL2 except when interfacing with
 ; the operating system.  Functions defined in this file, interface-raw.lisp,
-; generally use real pathname strings for the host operating system.
-; (Exceptions are clearly labeled, including compile-uncompiled-defuns and
-; compile-uncompiled-*1*-defuns.)  Functions defined outside this file
-; (interface-raw.lisp) pass around ACL2 (Unix-style) pathname strings.  Here
-; are some functions that take pathnames whose form is based on (os (w state))
-; rather than on Unix.
+; generally use real pathname strings for the host operating system, which we
+; call "OS filenames".  (Exceptions are clearly labeled, including
+; compile-uncompiled-defuns and compile-uncompiled-*1*-defuns.)  Functions
+; defined outside this file (interface-raw.lisp) pass around what we call "ACL2
+; filenames", which are Unix-style pathname strings that consist solely of
+; legal ACL2 characters, as checked by bad-lisp-stringp.
+
+; Here are some examples of functions that take OS pathnames.
 
 ; acl2-compile-file [but see comment there]
 ; compile-file
-; convert-book-name-to-compiled-name [Unix pathname is OK too]
+; convert-book-name-to-compiled-name [ACL2 pathname is OK too]
 ; delete-file
 ; delete-compiled-file
+; expansion-filename [ACL2 pathname is OK too]
 ; load
 ; probe-file
 ; proclaim-file
@@ -8149,7 +8263,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (setq ccl::*break-hook* 'our-abort))
 
 (defun initial-customization-filename ()
-  (let* ((cfb00 (getenv$-raw "ACL2_CUSTOMIZATION"))
+
+; Every value returned by this function is either :none, nil, or a legal ACL2
+; string.
+
+  (let* ((cfb00 (getenv$-raw "ACL2_CUSTOMIZATION")) ; nil or legal ACL2 string
          (cfb0 (if (equal cfb00 "NONE")
                    :none
                  (and cfb00
@@ -8377,19 +8495,24 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                  (or (null s) ; default case
                      (not (equal (string-upcase s)
                                  "NIL")))))
-              (user-home-dir-path (our-user-homedir-pathname))
-              (user-home-dir0 (and user-home-dir-path
-                                   (our-truename user-home-dir-path
-                                                 "Note: Calling OUR-TRUENAME ~
+              (os-user-home-dir-path (our-user-homedir-pathname))
+              (os-user-home-dir0 (and os-user-home-dir-path
+                                      (our-truename os-user-home-dir-path
+                                                    "Note: Calling OUR-TRUENAME ~
                                                   from LP.")))
-              (user-home-dir (and user-home-dir0
-                                  (if (eql (char user-home-dir0
-                                                 (1- (length user-home-dir0)))
-                                           *directory-separator*)
-                                      (subseq user-home-dir0
-                                              0
-                                              (1- (length user-home-dir0)))
-                                    user-home-dir0)))
+              (os-user-home-dir (and os-user-home-dir0
+                                     (if (eql (char os-user-home-dir0
+                                                    (1- (length os-user-home-dir0)))
+                                              *directory-separator*)
+                                         (subseq os-user-home-dir0
+                                                 0
+                                                 (1- (length os-user-home-dir0)))
+                                       os-user-home-dir0)))
+              (user-home-dir (and os-user-home-dir
+                                  (pathname-os-to-unix
+                                   os-user-home-dir
+                                   (os (w *the-live-state*))
+                                   *the-live-state*)))
               (system-dir0 (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
                              (and str
                                   (maybe-add-separator str)))))
@@ -8400,17 +8523,18 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
          (when user-home-dir
            (f-put-global 'user-home-dir user-home-dir *the-live-state*))
          (when system-dir0 ; needs to wait for user-homedir-pathname
-           (f-put-global 'system-books-dir
-                         (canonical-dirname!
-                          (unix-full-pathname
-                           (expand-tilde-to-user-home-dir
-                            system-dir0
-                            (os (w *the-live-state*))
-                            'lp
-                            *the-live-state*))
-                          'lp
-                          *the-live-state*)
-                         *the-live-state*)))
+           (f-put-global
+            'system-books-dir
+            (canonical-dirname!
+             (unix-full-pathname
+              (expand-tilde-to-user-home-dir
+               system-dir0 ; from getenv$-raw, hence a legal ACL2 string
+               (os (w *the-live-state*))
+               'lp
+               *the-live-state*))
+             'lp
+             *the-live-state*)
+            *the-live-state*)))
        (set-gag-mode-fn :goals *the-live-state*)
        #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
@@ -8573,10 +8697,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defun acl2-compile-file (full-book-name os-expansion-filename)
 
-; Full-book-name is a Unix-style pathname.  Os-expansion-filename is a pathname
-; for the current operating system of the file we want to compile.  We compile
-; os-expansion-filename but into the compiled filename corresponding to
-; full-book-name.
+; Full-book-name is an ACL2 pathname, while os-expansion-filename is an OS
+; pathname; see the Essay on Pathnames.  We compile os-expansion-filename but
+; into the compiled filename corresponding to full-book-name.
 
 ; To compile os-expansion-filename, we need to make sure that uses in the file
 ; of backquote and comma conform in meaning to those that were in effect during
@@ -8648,7 +8771,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 (defun-one-output delete-auxiliary-book-files (full-book-name)
   (let* ((file (pathname-unix-to-os full-book-name *the-live-state*))
          (ofile (convert-book-name-to-compiled-name file *the-live-state*))
-         (efile (expansion-filename file nil *the-live-state*))
+         (efile (expansion-filename file))
          (err-string "A file created for book ~x0, namely ~x1, exists and ~
                       cannot be deleted with Common Lisp's delete-file.  We ~
                       do not know for sure whether this file was produced by ~
@@ -8678,12 +8801,18 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                    err-string
                    full-book-name efile))))))
 
-(defun delete-expansion-file (expansion-filename state)
-  (delete-file expansion-filename)
+(defun delete-expansion-file (os-expansion-filename full-book-name state)
+
+; Os-expansion-filename is, as the name suggests, an OS filename; see the Essay
+; on Pathnames.  Since that pathname could contain characters that are not ACL2
+; characters, we print the message using the ACL2 string for the corresponding
+; book, full-book-name.
+
+  (delete-file os-expansion-filename)
   (io? event nil state
-       (expansion-filename)
-       (fms "Note: Deleting book expansion file,~%~s0.~|"
-            (list (cons #\0 expansion-filename))
+       (full-book-name)
+       (fms "Note: Deleting expansion file for the book,~%~s0.~|"
+            (list (cons #\0 full-book-name))
             (proofs-co state) state nil)))
 
 (defun compile-uncompiled-defuns (file &optional (fns :some) gcl-flg
@@ -9110,11 +9239,13 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
         (value nil))))
     os-file))
 
-(defun compile-certified-file (expansion-filename full-book-name state)
+(defun compile-certified-file (os-expansion-filename full-book-name state)
 
-; Warning: File full-book-name should already have been included in order that
-; macros have been defined.  But more than that, expansion-filename must
-; already have been written.
+; Warning: full-book-name should be the full book name of a book that has
+; already have been included, so that its macro definitions have been evaluated
+; before we compile.  Moreover, os-expansion-filename must already have been
+; written.  As the names suggest, os-expansion-filename is an OS pathname and
+; full-book-name is an ACL2 pathname; see the Essay on Pathnames.
 
   (let* ((os-full-book-name (pathname-unix-to-os full-book-name state))
          (os-full-book-name-compiled
@@ -9124,7 +9255,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
           (stack-access-defeat-hook-cert-ht)))
     (when (probe-file os-full-book-name-compiled)
       (delete-file os-full-book-name-compiled))
-    (acl2-compile-file full-book-name expansion-filename)
+    (acl2-compile-file full-book-name os-expansion-filename)
     os-full-book-name-compiled))
 
 (defun compile-for-include-book (full-book-name certified-p ctx state)
@@ -9143,7 +9274,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                       full-book-name)
             (value nil)))
    (t
-    (let* ((efile (expansion-filename full-book-name t state))
+    (let* ((efile (pathname-unix-to-os (expansion-filename full-book-name)
+                                       state))
            (entry (and *hcomp-book-ht*
                        (gethash full-book-name *hcomp-book-ht*)))
            (status (and entry

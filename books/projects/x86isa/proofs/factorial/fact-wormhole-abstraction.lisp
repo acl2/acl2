@@ -10,15 +10,6 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* ()
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-                         xr-fault-wb-in-system-level-marking-mode
-                         xr-fault-wb-in-system-level-mode))))
-
 ;; ======================================================================
 
 ;; (0) Factorial program:
@@ -338,38 +329,38 @@
 ;; (5) Prove that the code (*factorial_recursive*) implements the
 ;; algorithm:
 
-
 (encapsulate
 
- ()
+  ()
 
- (local (include-book "centaur/gl/gl" :dir :system))
+  (local (include-book "centaur/gl/gl" :dir :system))
 
- (local
-  (def-gl-thm loop-effects-helper-1
-    :hyp (and (not (equal rdi 1))
-              (unsigned-byte-p 32 rdi))
-    :concl (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
-                  nil)
-    :g-bindings
-    `((rdi   (:g-number ,(gl-int 0 2 33))))))
+  (local
+   (def-gl-thm loop-effects-helper-1
+     :hyp (and (not (equal rdi 1))
+               (unsigned-byte-p 32 rdi))
+     :concl (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
+                   nil)
+     :g-bindings
+     `((rdi   (:g-number ,(gl-int 0 2 33))))))
 
- (defthm loop-effects-helper
-   (implies (and (not (equal rdi 1))
-                 (unsigned-byte-p 32 rdi))
-            (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
-                   nil))))
+  (defthm loop-effects-helper
+    (implies (and (not (equal rdi 1))
+                  (unsigned-byte-p 32 rdi))
+             (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
+                    nil))))
 
 (defthm loop-effects
   ;; imul %edi,%eax
   ;; sub $0x1,%edi
   ;; jne 400600
-  (implies (and (equal addr (- (rip x86) #x10))
-                (fact-init-x86-state n addr x86)
-                (equal loop-addr (+ #x10 addr))
-                (n32p a)
-                (posp n)
-                (equal a (rgfi *rax* x86)))
+  (implies (and
+            (equal addr (- (rip x86) #x10))
+            (fact-init-x86-state n addr x86)
+            (equal loop-addr (+ #x10 addr))
+            (n32p a)
+            (posp n)
+            (equal a (rgfi *rax* x86)))
            (equal (x86-run (loop-clk n a) x86)
                   (let* ((x86 (loop-all-induction n a loop-addr x86))
                          (x86 (xw :rip 0 (+ #x18 addr) x86)))
@@ -390,6 +381,7 @@
                              !flgi-undefined
                              rim-size
                              rim08
+                             rm08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -404,7 +396,19 @@
                              fact-init-x86-state)
                             (bitops::logior-equal-0
                              negative-logand-to-positive-logand-with-integerp-x
-                             not)))))
+                             not
+                             (:linear loghead-n-x-<-x)
+                             (:linear logext-n-x-1-<-x)
+                             (:rewrite acl2::natp-rw)
+                             (:rewrite acl2::<-*-0)
+                             (:rewrite acl2::natp-posp--1)
+                             (:rewrite acl2::natp-when-integerp)
+                             (:rewrite acl2::natp-when-gte-0)
+                             (:rewrite acl2::natp-*)
+                             (:rewrite get-prefixes-opener-lemma-group-4-prefix)
+                             (:rewrite get-prefixes-opener-lemma-group-3-prefix)
+                             (:rewrite get-prefixes-opener-lemma-group-2-prefix)
+                             (:rewrite get-prefixes-opener-lemma-group-1-prefix))))))
 
 (in-theory (e/d (subset-p) (loop-clk)))
 
@@ -441,6 +445,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
@@ -477,6 +482,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
@@ -520,6 +526,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
@@ -558,6 +565,7 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rm08
                              rm32
                              rim32
                              rr32
