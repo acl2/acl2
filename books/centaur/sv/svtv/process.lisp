@@ -1495,7 +1495,9 @@ irrelevant inputs are removed.</p>"
 
 
 (define svtv-flex-param-bindings ((svtv svtv-p)
-                                   (in-alist))
+                                  (in-alist
+                                   "Each element is (list case-spec-alist auto-bindings)
+                                    or (list case-spec-alist auto-bindings :arrange arrange)"))
   :hooks nil
   :parents (symbolic-test-vector)
   :short "Generating parametrized g-bindings from an SVTV using @(see gl::flex-bindings)."

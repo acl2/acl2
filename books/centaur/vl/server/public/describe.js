@@ -121,10 +121,11 @@ function showWire(name)
 
 function showModule(name)
 {
-    var url = "display.html?model=" + MODEL + "&origname=" + name;
-    var opts = "status=yes,toolbar=yes,height=600,width=780,resizable=yes,scrollbars=yes,location=yes";
-    var uniqueNum = new Date().getTime();
-    var wname = "module_" + name + "_" + uniqueNum;
-    var win = window.open(url, wname, opts);
-    win.focus();
+    var page = "display.html?"
+                    + "&model=" + MODEL
+                    + "&origname=" + name;
+    if (window.opener == null)
+	location.href = page;
+    else
+	window.opener.location.href = page;
 }

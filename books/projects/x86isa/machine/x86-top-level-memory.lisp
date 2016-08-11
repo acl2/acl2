@@ -4185,19 +4185,49 @@ memory.</li>
                 :use ((:instance bitops::unsigned-byte-p-128-of-merge-16-u8s))))
      :gen-linear t)
 
+   (local
+    (defthmd logior-ash-to-logapp
+      (implies (unsigned-byte-p w x)
+               (equal (logior x (ash y w))
+                      (logapp w x y)))
+      :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                       ihsext-recursive-redefs)
+                                      (unsigned-byte-p))))))
+
+   (local
+    (defthmd logior-ash-to-logapp-2
+      (implies (unsigned-byte-p w x)
+               (equal (logior x (ash y w) z)
+                      (logior (logapp w x y) z)))
+      :hints (("Goal" :use ((:instance (:theorem
+                                        (implies (equal a b)
+                                                 (equal (logior a c)
+                                                        (logior b c))))
+                                       (a (logior (ash y w) x))
+                                       (b (logapp w x y))))
+               :in-theory (e/d (logior-ash-to-logapp))))))
+
+
+   (local (defthm logior-0
+            (equal (logior x 0) (ifix x))))
+
    (defthmd combine-bytes-as-merge-16-u8s
      (implies
-      (and (natp b0)  (natp b1)  (natp b2)  (natp b3)
-           (natp b4)  (natp b5)  (natp b6)  (natp b7)
-           (natp b8)  (natp b9)  (natp b10) (natp b11)
-           (natp b12) (natp b13) (natp b14) (natp b15))
+      (and (unsigned-byte-p 8 b0)  (unsigned-byte-p 8 b1)  (unsigned-byte-p 8 b2)  (unsigned-byte-p 8 b3)
+           (unsigned-byte-p 8 b4)  (unsigned-byte-p 8 b5)  (unsigned-byte-p 8 b6)  (unsigned-byte-p 8 b7)
+           (unsigned-byte-p 8 b8)  (unsigned-byte-p 8 b9)  (unsigned-byte-p 8 b10) (unsigned-byte-p 8 b11)
+           (unsigned-byte-p 8 b12) (unsigned-byte-p 8 b13) (unsigned-byte-p 8 b14) (unsigned-byte-p 8 b15))
       (equal
        (combine-bytes
         (list
          b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15))
        (bitops::merge-16-u8s
         b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0)))
-     :hints (("Goal" :in-theory (enable push-ash-inside-logior merge-16-u8s)))))
+     :hints (("goal" :in-theory (e/d (push-ash-inside-logior
+                                      merge-16-u8s
+                                      logior-ash-to-logapp)
+                                     (unsigned-byte-p
+                                      acl2::commutativity-of-logior))))))
 
   (if (mbt (canonical-address-p lin-addr))
 

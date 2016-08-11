@@ -1980,6 +1980,21 @@
                       (svex-to-rsh-of-concat-table y))))
   :rhs res)
 
+(def-svex-rewrite partsel-of-concat
+  :lhs (partsel lsb width (concat w x y))
+  :checks ((svex-quoted-index-p lsb)
+           (svex-quoted-index-p w)
+           (<= (2vec->val (svex-quote->val w)) (2vec->val (svex-quote->val lsb)))
+           (bind res (rsh-of-concat-table-lookup
+                      (- (2vec->val (svex-quote->val lsb)) (2vec->val (svex-quote->val w)))
+                      (svex-to-rsh-of-concat-table y))))
+  :rhs (partsel 0 width res)
+  :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
+                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
+                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
+
 ;; (def-svex-rewrite rsh-of-concat-less
 ;;   :lhs (rsh sh (concat w x y))
 ;;   :checks ((svex-quoted-index-p sh)
@@ -3652,42 +3667,44 @@
          (logbitp-reasoning)))
 
 
-(def-svex-rewrite partsel-of-concat-1
-  :lhs (partsel lsb width (concat cwidth x y))
-  :checks ((let lsb-val (svex-xeval lsb))
-           (4vec-index-p lsb-val)
-           (let width-val (svex-xeval width))
-           (4vec-index-p width-val)
-           (let cwidth-val (svex-xeval cwidth))
-           (4vec-index-p cwidth-val)
-           (<= (+ (2vec->val lsb-val)
-                  (2vec->val width-val))
-               (2vec->val cwidth-val)))
-  :rhs (partsel lsb width x)
-  :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
-         (svex-generalize-lookups)
-         (logbitp-reasoning)))
 
-(def-svex-rewrite partsel-of-concat-2
-  :lhs (partsel lsb width (concat cwidth x y))
-  :checks ((let lsb-val (svex-xeval lsb))
-           (4vec-index-p lsb-val)
-           ;; (let width-val (svex-xeval width))
-           ;; (4vec-index-p width-val)
-           (let cwidth-val (svex-xeval cwidth))
-           (4vec-index-p cwidth-val)
-           (<= (2vec->val cwidth-val)
-               (2vec->val lsb-val))
-           (bind new-lsb (svex-quote (2vec (- (2vec->val lsb-val)
-                                              (2vec->val cwidth-val))))))
-  :rhs (partsel new-lsb width y)
-  :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
-                                    4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
-         (svex-generalize-lookups)
-         (logbitp-reasoning)))
+
+;; (def-svex-rewrite partsel-of-concat-1
+;;   :lhs (partsel lsb width (concat cwidth x y))
+;;   :checks ((let lsb-val (svex-xeval lsb))
+;;            (4vec-index-p lsb-val)
+;;            (let width-val (svex-xeval width))
+;;            (4vec-index-p width-val)
+;;            (let cwidth-val (svex-xeval cwidth))
+;;            (4vec-index-p cwidth-val)
+;;            (<= (+ (2vec->val lsb-val)
+;;                   (2vec->val width-val))
+;;                (2vec->val cwidth-val)))
+;;   :rhs (partsel lsb width x)
+;;   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
+;;                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
+;;                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
+;;          (svex-generalize-lookups)
+;;          (logbitp-reasoning)))
+
+;; (def-svex-rewrite partsel-of-concat-2
+;;   :lhs (partsel lsb width (concat cwidth x y))
+;;   :checks ((let lsb-val (svex-xeval lsb))
+;;            (4vec-index-p lsb-val)
+;;            ;; (let width-val (svex-xeval width))
+;;            ;; (4vec-index-p width-val)
+;;            (let cwidth-val (svex-xeval cwidth))
+;;            (4vec-index-p cwidth-val)
+;;            (<= (2vec->val cwidth-val)
+;;                (2vec->val lsb-val))
+;;            (bind new-lsb (svex-quote (2vec (- (2vec->val lsb-val)
+;;                                               (2vec->val cwidth-val))))))
+;;   :rhs (partsel new-lsb width y)
+;;   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
+;;                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
+;;                                     4vec-index-p svex-eval-when-2vec-p-of-minval))
+;;          (svex-generalize-lookups)
+;;          (logbitp-reasoning)))
 
 (def-svex-rewrite partsel-of-partsel
   :lhs (partsel lsb1 width1 (partsel lsb2 width2 x))
