@@ -90,7 +90,8 @@ FAILING_TEST_TARGETS := \
   sqrt/ok \
   udp_wide1/ok \
   fns3/ok \
-  bind1/ok
+  bind5/ok \
+  float1/ok \
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))

@@ -44,6 +44,12 @@ assignexpr5.v -- assignment expression in gate instance (vcs crash)
 
 bigwire1.v -- negative indices in wire bounds
 
+bind1.v -- trying to bind to module instance inside a generate
+bind2.v -- trying to bind mymod : myinst where mymod is wrong for myinst
+bind3.v -- trying to bind mymod : myinst where myinst isn't defined
+bind4.v -- trying to use wires from superior module in bind instances
+bind5.v -- trying to bind to myinst, which is a gate instance (other tools crash or reject)
+
 clocking1.v -- clocking block has bad parens
 clocking2.v -- clocking myclocking @(b) where b isn't declared anywhere
 clocking3.v -- clocking myclocking @(b) where b isn't declared previously (some tools reject)

@@ -3408,7 +3408,6 @@ doesn't have to recreate the default heuristics.</p>"
   ///
   (verify-guards vl-lucid-check-uses-are-spurious-instances))
 
-    
 (define vl-lucid-warning-type ((warning symbolp)
                                &key (tag 'tag))
   :returns (type symbolp :rule-classes :type-prescription)
@@ -3417,6 +3416,22 @@ doesn't have to recreate the default heuristics.</p>"
                "KEYWORD")
     (mbe :logic (acl2::symbol-fix warning)
          :exec warning)))
+
+(define vl-scopestack-is-portdecl-p ((name stringp "Name of some variable in this scopestack.")
+                                     (ss   vl-scopestack-p))
+  :returns (portdecl-p booleanp :rule-classes :type-prescription)
+  ;; Variables and ports overlap, so it seems like a good way to figure this
+  ;; out is to start by looking up the variable itself and finding the scope
+  ;; that it comes from.  Then, check if it's also a port in that particular
+  ;; scope.
+  (b* (((mv item item-ss) (vl-scopestack-find-item/ss name ss)))
+    (and item
+         (vl-scopestack-case item-ss
+           :null nil
+           :global nil
+           :local (if (vl-scope-find-portdecl-fast name item-ss.top)
+                      t
+                    nil)))))
 
 (define vl-lucid-dissect-var-main
   ((ss         vl-scopestack-p)
@@ -3434,9 +3449,11 @@ doesn't have to recreate the default heuristics.</p>"
                                 implicitly and either unset or unused.)"))
   (b* ((used     (vl-lucidocclist-fix used))
        (set      (vl-lucidocclist-fix set))
-       (tag  (tag item))
+       (tag      (tag item))
        (vartype  (if (eq tag :vl-vardecl)
-                     "Variable"
+                     (if (vl-scopestack-is-portdecl-p (vl-vardecl->name item) ss)
+                         "Port"
+                       "Variable")
                    "Parameter"))
        (name     (if (eq tag :vl-vardecl)
                      (vl-vardecl->name item)
