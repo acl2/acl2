@@ -197,7 +197,9 @@
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4 temp-rip rex-byte r/m mod sib
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4 temp-rip rex-byte r/m mod sib
          ;; Bytes of immediate data (only relevant when RIP-relative
          ;; addressing is done to get ?reg/mem operand)
          (if (or (equal opcode #xC0)
@@ -296,6 +298,7 @@
        ((mv flg2 x86)
         (x86-operand-to-reg/mem
          reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
          ;; TO-DO@Shilpi: Remove this trunc.
          (trunc reg/mem-size result)
          (the (signed-byte #.*max-linear-address-size*) v-addr)

@@ -51,6 +51,55 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
   :rule-classes :linear)
 
+(def-gl-export rm48-guard-proof-helper
+  :hyp (and (n08p a) (n08p b) (n32p c))
+  :concl (equal (logior a (ash b 8) (ash c 16))
+                (logior a (ash (logior b (ash c 8)) 8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 32) (:nat b 32) (:nat c 32)))
+  :rule-classes :linear)
+
+(def-gl-export rb-and-rm48-helper-1
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f))
+  :concl (equal (logior
+                 a
+                 (ash (logior
+                       b
+                       (ash (logior
+                             c
+                             (ash (logior
+                                   d (ash (logior e (ash f 8)) 8)) 8)) 8)) 8))
+                (logior
+                 a
+                 (ash b 8)
+                 (ash (logior
+                       c
+                       (ash (logior d (ash (logior e (ash f 8)) 8))
+                            8)) 16)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8))))
+
+(def-gl-export rb-and-rm48-helper-2
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f))
+  :concl (<
+          (logior
+           a
+           (ash b 8)
+           (ash (logior
+                 c
+                 (ash (logior d (ash (logior e (ash f 8)) 8))
+                      8)) 16))
+          #.*2^48*)
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8))))
+
 (def-gl-export rb-and-rvm64-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
@@ -83,12 +132,61 @@
    (:mix (:nat a 32) (:nat b 32)))
   :rule-classes :linear)
 
-(in-theory (e/d ()                
+(def-gl-export rm80-guard-proof-helper
+  :hyp (and (n08p a) (n08p b) (n64p c))
+  :concl (equal (logior a (ash b 8) (ash c 16))
+                (logior a (ash (logior b (ash c 8)) 8)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 64) (:nat b 64) (:nat c 64)))
+  :rule-classes :linear)
+
+(def-gl-export rm80-in-system-level-mode-guard-proof-helper
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e)
+            (n08p f) (n08p g) (n08p h) (n08p i) (n08p j))
+  :concl (<
+          (logior a
+                  (ash b 8)
+                  (ash (logior
+                        c
+                        (ash
+                         (logior
+                          d
+                          (ash
+                           (logior
+                            e
+                            (ash
+                             (logior
+                              f
+                              (ash
+                               (logior g
+                                       (ash (logior
+                                             h (ash
+                                                (logior i (ash j 8))
+                                                8)) 8)) 8)) 8)) 8)) 8)) 16))
+          *2^80*)
+  :g-bindings (gl::auto-bindings
+               (:mix (:nat a 8)
+                     (:nat b 8)
+                     (:nat c 8)
+                     (:nat d 8)
+                     (:nat e 8)
+                     (:nat f 8)
+                     (:nat g 8)
+                     (:nat h 8)
+                     (:nat i 8)
+                     (:nat j 8))))
+
+(in-theory (e/d ()
                 (rm16-guard-proof-helper
-                 rb-and-rvm32-helper                
+                 rm48-guard-proof-helper
+                 rb-and-rm48-helper-1
+                 rb-and-rm48-helper-2
+                 rb-and-rvm32-helper
                  rm32-guard-proof-helper
                  rb-and-rvm64-helper
-                 rm64-guard-proof-helper)))
+                 rm64-guard-proof-helper
+                 rm80-in-system-level-mode-guard-proof-helper)))
 
 (def-gl-export rm32-rb-system-level-mode-proof-helper
   :hyp (and (n08p a)

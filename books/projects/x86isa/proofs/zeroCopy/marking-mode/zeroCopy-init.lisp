@@ -607,10 +607,6 @@
 
 ;; ======================================================================
 
-;; ======================================================================
-
-;; Begin: Effects theorems:
-
 ;; Assumptions for the effects theorems:
 
 (defun-nx x86-state-okp (x86)
@@ -626,7 +622,7 @@
    ;; CR3's reserved bits must be zero (MBZ).
    (equal (logtail 40 (ctri *cr3* x86)) 0)))
 
-(defun-nx program-ok-p (x86)
+ (defun-nx program-ok-p (x86)
   (and
    ;; Program addresses are canonical.
    (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip 0 x86)))

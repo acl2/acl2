@@ -86,7 +86,9 @@
         (if (equal (ash opcode -4) 9) ;; #x90+rw/rd
             (mv nil (rgfi-size reg/mem-size *rax* rex-byte x86) 0 0 x86)
           (x86-operand-from-modr/m-and-sib-bytes
-           #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+           #.*rgf-access* reg/mem-size inst-ac?
+           nil ;; Not a memory pointer operand
+           p2 p4? temp-rip rex-byte r/m mod sib
            0 ;; No immediate operand
            x86)))
        ((when flg0)
@@ -130,8 +132,9 @@
                                    x86)))
               (mv nil x86))
           (x86-operand-to-reg/mem
-           reg/mem-size inst-ac? val2
-           (the (signed-byte #.*max-linear-address-size*) v-addr)
+           reg/mem-size inst-ac?
+           nil ;; Not a memory pointer operand
+           val2 (the (signed-byte #.*max-linear-address-size*) v-addr)
            rex-byte r/m mod x86)))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
@@ -197,7 +200,9 @@
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -229,8 +234,9 @@
                                        (reg-index reg rex-byte #.*r*) rex-byte
                                        x86)))
               (x86-operand-to-reg/mem
-               reg/mem-size inst-ac? register
-               (the (signed-byte #.*max-linear-address-size*) v-addr)
+               reg/mem-size inst-ac?
+               nil ;; Not a memory pointer operand
+               register (the (signed-byte #.*max-linear-address-size*) v-addr)
                rex-byte r/m mod x86))
           ;; rAX != reg/mem or ZF == 0
           ;; Put the destination operand into the accumulator.

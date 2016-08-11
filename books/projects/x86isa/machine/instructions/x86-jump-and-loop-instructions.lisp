@@ -48,6 +48,7 @@
   ;;                sign-extended to 64-bits
 
   :parents (one-byte-opcodes)
+  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -80,18 +81,18 @@
              (case offset-size
                (1
                 (mv-let (flag val x86)
-                        (rm08 temp-rip :x x86)
-                        (mv flag
-                            (n08-to-i08 val)
-                            x86)))
+                  (rm08 temp-rip :x x86)
+                  (mv flag
+                      (n08-to-i08 val)
+                      x86)))
                (4
                 (mv-let (flag val x86)
-                        (rm32 temp-rip :x x86)
-                        (mv flag
-                            (n32-to-i32 val)
-                            x86)))
+                  (rm32 temp-rip :x x86)
+                  (mv flag
+                      (n32-to-i32 val)
+                      x86)))
                (otherwise
-                (mv 'UNSUPPORTED-NBYTES 0 x86)))))
+                (mv 'rim-size 0 x86)))))
 
        ((when flg)
         (!!ms-fresh :rim-size-error flg))
@@ -113,7 +114,7 @@
         (!!ms-fresh :virtual-memory-error temp-rip))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-near-jmp-Op/En-M
 
@@ -151,7 +152,9 @@
        ((mv flg jmp-addr (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* 8 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* 8 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg)
@@ -273,7 +276,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
          ;; offset-size is the number of bytes of the
          ;; offset.  We need two more bytes for the selector.
          (the (integer 2 10) (+ 2 offset-size))
-         inst-ac?
+         inst-ac? t ;; A memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))

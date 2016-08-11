@@ -69,7 +69,9 @@
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 10 inst-ac?
+         t ;; Memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -156,7 +158,9 @@
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 10 inst-ac?
+         t ;; Memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -248,7 +252,9 @@ a non-canonical form, raise the SS exception.</p>"
        ((mv flg0 selector (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 2 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         0 2 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)

@@ -1663,7 +1663,6 @@
                  (all-translation-governing-addresses
                   (create-canonical-address-list *2^30* (xr :rgf *rdi* x86))
                   x86)))
-
            (equal
             (mv-nth 1
                     (las-to-pas
@@ -6465,6 +6464,23 @@
                              force (force)))
            :use ((:instance program-at-alt-in-final-state-==-program-at-in-initial-state)
                  (:instance program-at-alt-in-final-state-==-program-at-in-final-state)))))
+
+;; 5. Final value in rax == 1, which signals that the 1G-aligned
+;; physical address of the destination at the end of execution of the
+;; program is equal to the 1G-aligned physical address of the source.
+
+(defthmd rax-==-1-rewire_dst_to_src-effects
+  (implies
+   (rewire_dst_to_src-effects-preconditions x86)
+   (equal
+    (xr :rgf *rax* (x86-run (rewire_dst_to_src-clk) x86))
+    1))
+  :hints (("Goal"
+           :use ((:instance rewire_dst_to_src-effects))
+           :in-theory (union-theories
+                       '(xr-xw-intra-array-field
+                         member-equal)
+                       (theory 'minimal-theory)))))
 
 ;; !! TODO: How much stack was used?
 

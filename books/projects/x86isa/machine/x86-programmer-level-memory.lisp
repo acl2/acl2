@@ -5,6 +5,13 @@
 
 (include-book "x86-state-field-thms")
 
+(local (include-book "guard-helpers"))
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
+(local (in-theory (disable logior-expt-to-plus-quotep)))
+
 ;; ===================================================================
 
 (defsection programmer-level-mode
@@ -71,11 +78,6 @@ memory.</p>" )
   depending upon the value of @('programmer-level-mode').</p>"
 
   )
-
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "arithmetic-5/top" :dir :system))
-
-(local (in-theory (disable logior-expt-to-plus-quotep)))
 
 ;; ======================================================================
 
@@ -163,11 +165,11 @@ memory.</p>" )
 
             (b* (((the (unsigned-byte 8) byte0) (memi (n48 addr) x86))
                  ((the (unsigned-byte 8) byte1) (memi (n48 1+addr) x86)))
-                (mv nil
-                    (the (unsigned-byte 16)
-                      (logior (the (unsigned-byte 16) (ash byte1 8))
-                              byte0))
-                    x86))
+              (mv nil
+                  (the (unsigned-byte 16)
+                    (logior (the (unsigned-byte 16) (ash byte1 8))
+                            byte0))
+                  x86))
 
           (mv 'rvm16 0 x86)))
 
@@ -182,11 +184,20 @@ memory.</p>" )
                     nil))
     :hints (("Goal" :in-theory (e/d () (force (force))))))
 
+  (local
+   (defthm-usb n16p-mv-nth-1-rvm16-helper
+     :hyp (and (unsigned-byte-p 8 byte0)
+               (unsigned-byte-p 8 byte1))
+     :bound 16
+     :concl (logior byte0 (ash byte1 8))))
+
+
   (defthm-usb n16p-mv-nth-1-rvm16
     :hyp (x86p x86)
     :bound 16
     :concl (mv-nth 1 (rvm16 addr x86))
     :gen-linear t
+    :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t)
 
   (defthm x86p-mv-nth-2-rvm16-unchanged
@@ -243,7 +254,7 @@ memory.</p>" )
                  ((the (unsigned-byte 32) dword) (logior (the (unsigned-byte 32)
                                                            (ash word1 16))
                                                          word0)))
-                (mv nil dword x86))
+              (mv nil dword x86))
 
           (mv 'rvm32 0 x86)))
 
@@ -258,11 +269,24 @@ memory.</p>" )
                     nil))
     :hints (("Goal" :in-theory (e/d () (force (force))))))
 
+  (local
+   (defthm-usb n32p-mv-nth-1-rvm32-helper
+     :hyp (and (unsigned-byte-p 8 byte0)
+               (unsigned-byte-p 8 byte1)
+               (unsigned-byte-p 8 byte2)
+               (unsigned-byte-p 8 byte3))
+     :bound 32
+     :concl (logior byte0
+                    (ash
+                     (logior byte1
+                             (ash (logior byte2 (ash byte3 8)) 8))
+                     8))))
+
   (defthm-usb n32p-mv-nth-1-rvm32
     :hyp (x86p x86)
     :bound 32
     :concl (mv-nth 1 (rvm32 addr x86))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
     :gen-linear t
     :gen-type t)
 
@@ -281,6 +305,85 @@ memory.</p>" )
                          (mv-nth 0 (rvm32 addr x86)))
                   (equal (mv-nth 1 (rvm32 addr (xw fld index value x86)))
                          (mv-nth 1 (rvm32 addr x86)))))))
+
+(define rvm48
+  ((addr :type (signed-byte #.*max-linear-address-size*))
+   (x86))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (e/d (rm48-guard-proof-helper) ())))
+  :inline t
+  :parents (x86-linear-memory)
+
+  (if (mbt (canonical-address-p addr))
+
+      (let* ((2+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                              addr))))
+             (5+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 5 (the (signed-byte #.*max-linear-address-size*)
+                              addr)))))
+
+        (if (mbe :logic (canonical-address-p 5+addr)
+                 :exec (< (the (signed-byte #.*max-linear-address-size+1*)
+                            5+addr) #.*2^47*))
+
+            (b* (((mv flg0 (the (unsigned-byte 16) word0) x86)
+                  (rvm16 addr x86))
+                 ((mv flg1 (the (unsigned-byte 32) dword1) x86)
+                  (rvm32 2+addr x86))
+                 ((the (unsigned-byte 48) value)
+                  (the (unsigned-byte 48)
+                    (logior (the (unsigned-byte 48) (ash dword1 16))
+                            word0))))
+              (mbe :logic (if (or flg0 flg1)
+                              (mv 'rvm48 0 x86)
+                            (mv nil value x86))
+                   :exec (mv nil value x86)))
+
+          (mv 'rvm48 0 x86)))
+
+    (mv 'rvm48 0 x86))
+
+  ///
+
+  (local (in-theory (e/d () (rvm16 rvm32))))
+
+  (defthm rvm48-no-error
+    (implies (and (canonical-address-p addr)
+                  (canonical-address-p (+ 5 addr)))
+             (equal (mv-nth 0 (rvm48 addr x86))
+                    nil))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (local
+   (defthm-usb n48p-mv-nth-1-rvm48-helper
+     :hyp (and (unsigned-byte-p 16 word)
+               (unsigned-byte-p 32 dword))
+     :bound 48
+     :concl (logior word (ash dword 16))))
+
+  (defthm-usb n48p-mv-nth-1-rvm48
+    :hyp (x86p x86)
+    :bound 48
+    :concl (mv-nth 1 (rvm48 addr x86))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
+    :gen-linear t
+    :gen-type t)
+
+  (defthm x86p-mv-nth-2-rvm48-unchanged
+    (equal (mv-nth 2 (rvm48 addr x86)) x86)
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm xr-rvm48
+    (equal (xr fld index (mv-nth 2 (rvm48 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm48-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm48 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm48 addr x86)))
+                  (equal (mv-nth 1 (rvm48 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm48 addr x86)))))))
 
 (define rvm64
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -312,10 +415,10 @@ memory.</p>" )
                                            (the (unsigned-byte 64)
                                              (ash dword1 32))
                                            dword0))))
-                (mbe :logic (if (or flg0 flg1)
-                                (mv 'rvm64 0 x86)
-                              (mv nil qword x86))
-                     :exec (mv nil qword x86)))
+              (mbe :logic (if (or flg0 flg1)
+                              (mv 'rvm64 0 x86)
+                            (mv nil qword x86))
+                   :exec (mv nil qword x86)))
 
           (mv 'rvm64 0 x86)))
 
@@ -332,11 +435,18 @@ memory.</p>" )
                     nil))
     :hints (("Goal" :in-theory (e/d () (force (force))))))
 
+  (local
+   (defthm-usb n64p-mv-nth-1-rvm64-helper
+     :hyp (and (unsigned-byte-p 32 dword0)
+               (unsigned-byte-p 32 dword1))
+     :bound 64
+     :concl (logior dword0 (ash dword1 32))))
+
   (defthm-usb n64p-mv-nth-1-rvm64
     :hyp (x86p x86)
     :bound 64
     :concl (mv-nth 1 (rvm64 addr x86))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
     :gen-linear t
     :gen-type t)
 
@@ -355,6 +465,85 @@ memory.</p>" )
                          (mv-nth 0 (rvm64 addr x86)))
                   (equal (mv-nth 1 (rvm64 addr (xw fld index value x86)))
                          (mv-nth 1 (rvm64 addr x86)))))))
+
+(define rvm80
+  ((addr :type (signed-byte #.*max-linear-address-size*))
+   (x86))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (e/d () (rvm32))))
+  :inline t
+  :parents (x86-linear-memory)
+
+  (if (mbt (canonical-address-p addr))
+
+      (let* ((2+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                              addr))))
+             (9+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 9 (the (signed-byte #.*max-linear-address-size*)
+                              addr)))))
+
+        (if (mbe :logic (canonical-address-p 9+addr)
+                 :exec (< (the (signed-byte #.*max-linear-address-size+1*)
+                            9+addr) #.*2^47*))
+
+            (b* (((mv flg0 (the (unsigned-byte 16) word0) x86)
+                  (rvm16 addr x86))
+                 ((mv flg1 (the (unsigned-byte 64) qword1) x86)
+                  (rvm64 2+addr x86))
+                 ((the (unsigned-byte 80) value)
+                  (the (unsigned-byte 80)
+                    (logior (the (unsigned-byte 80) (ash qword1 16))
+                            word0))))
+              (mbe :logic (if (or flg0 flg1)
+                              (mv 'rvm80 0 x86)
+                            (mv nil value x86))
+                   :exec (mv nil value x86)))
+
+          (mv 'rvm80 0 x86)))
+
+    (mv 'rvm80 0 x86))
+
+  ///
+
+  (local (in-theory (e/d () (rvm16 rvm64))))
+
+  (defthm rvm80-no-error
+    (implies (and (canonical-address-p addr)
+                  (canonical-address-p (+ 9 addr)))
+             (equal (mv-nth 0 (rvm80 addr x86))
+                    nil))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (local
+   (defthm-usb n80p-mv-nth-1-rvm80-helper
+     :hyp (and (unsigned-byte-p 16 word)
+               (unsigned-byte-p 64 qword))
+     :bound 80
+     :concl (logior word (ash qword 16))))
+
+  (defthm-usb n80p-mv-nth-1-rvm80
+    :hyp (x86p x86)
+    :bound 80
+    :concl (mv-nth 1 (rvm80 addr x86))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
+    :gen-linear t
+    :gen-type t)
+
+  (defthm x86p-mv-nth-2-rvm80-unchanged
+    (equal (mv-nth 2 (rvm80 addr x86)) x86)
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm xr-rvm80
+    (equal (xr fld index (mv-nth 2 (rvm80 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm80-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm80 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm80 addr x86)))
+                  (equal (mv-nth 1 (rvm80 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm80 addr x86)))))))
 
 (define rvm128
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -386,10 +575,10 @@ memory.</p>" )
                                             (the (unsigned-byte 128)
                                               (ash qword1 64))
                                             qword0))))
-                (mbe :logic (if (or flg0 flg1)
-                                (mv 'rvm128 0 x86)
-                              (mv nil oword x86))
-                     :exec (mv nil oword x86)))
+              (mbe :logic (if (or flg0 flg1)
+                              (mv 'rvm128 0 x86)
+                            (mv nil oword x86))
+                   :exec (mv nil oword x86)))
 
           (mv 'rvm128 0 x86)))
 
@@ -406,11 +595,18 @@ memory.</p>" )
                     nil))
     :hints (("Goal" :in-theory (e/d () (force (force) rvm64)))))
 
+  (local
+   (defthm-usb n128p-mv-nth-1-rvm128-helper
+     :hyp (and (unsigned-byte-p 64 qword1)
+               (unsigned-byte-p 64 qword0))
+     :bound 128
+     :concl (logior qword1 (ash qword0 64))))
+
   (defthm-usb n128p-mv-nth-1-rvm128
     :hyp (x86p x86)
     :bound 128
     :concl (mv-nth 1 (rvm128 addr x86))
-    :hints (("Goal" :in-theory (e/d () (force (force) rvm64))))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force) rvm64))))
     :gen-linear t
     :gen-type t)
 
@@ -433,8 +629,6 @@ memory.</p>" )
 ;; ======================================================================
 
 ;; Memory Write Functions:
-
-(local (in-theory (e/d () (ACL2::logand-constant-mask))))
 
 (define wvm08
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -609,6 +803,68 @@ memory.</p>" )
                          (xw fld index value (mv-nth 1 (wvm32 addr val x86))))))
     :hints (("Goal" :in-theory (e/d* (wvm32 wvm32) ())))))
 
+(define wvm48
+  ((addr :type (signed-byte #.*max-linear-address-size*))
+   (val :type (unsigned-byte   48))
+   (x86))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
+  :inline t
+  :parents (x86-linear-memory)
+
+  (if (mbt (canonical-address-p addr))
+
+      (let* ((2+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 2 (the (signed-byte #.*max-linear-address-size*) addr))))
+             (5+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 5 (the (signed-byte #.*max-linear-address-size*) addr)))))
+
+        (if (mbe :logic (canonical-address-p 5+addr)
+                 :exec (< (the (signed-byte #.*max-linear-address-size+1*) 5+addr) #.*2^47*))
+
+            (b* ((word0 (mbe :logic (part-select val :low 0 :width 16)
+                             :exec  (logand #xFFFF val)))
+                 (dword1 (mbe :logic (part-select val :low 16 :width 32)
+                              :exec  (logand #xFFFFFFFF (ash val -16))))
+                 ((mv flg0 x86) (wvm16 addr    word0 x86))
+                 ((mv flg1 x86) (wvm32 2+addr dword1 x86)))
+              (mbe :logic (if (or flg0 flg1)
+                              (mv 'wvm48 x86)
+                            (mv nil x86))
+                   :exec (mv nil x86)))
+
+          (mv 'wvm48 x86)))
+
+    (mv 'wvm48 x86))
+
+  ///
+
+  (defthm wvm48-no-error
+    (implies (and (canonical-address-p addr)
+                  (canonical-address-p (+ 5 addr)))
+             (equal (mv-nth 0 (wvm48 addr val x86))
+                    nil))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm x86p-mv-nth-1-wvm48
+    (implies (x86p x86)
+             (x86p (mv-nth 1 (wvm48 addr val x86))))
+    :rule-classes (:type-prescription :rewrite))
+
+  (defthm xr-wmv48-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm48 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm48) ()))))
+
+  (defthm wvm48-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm48 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm48 addr val x86)))
+                  (equal (mv-nth 1 (wvm48 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm48 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm48 wvm48) ())))))
+
 (define wvm64
   ((addr :type (signed-byte #.*max-linear-address-size*))
    (val :type (unsigned-byte   64))
@@ -670,6 +926,68 @@ memory.</p>" )
                   (equal (mv-nth 1 (wvm64 addr val (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wvm64 addr val x86))))))
     :hints (("Goal" :in-theory (e/d* (wvm64 wvm64) ())))))
+
+(define wvm80
+  ((addr :type (signed-byte #.*max-linear-address-size*))
+   (val :type (unsigned-byte   80))
+   (x86))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
+  :inline t
+  :parents (x86-linear-memory)
+
+  (if (mbt (canonical-address-p addr))
+
+      (let* ((2+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 2 (the (signed-byte #.*max-linear-address-size*) addr))))
+             (9+addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (+ 9 (the (signed-byte #.*max-linear-address-size*) addr)))))
+
+        (if (mbe :logic (canonical-address-p 9+addr)
+                 :exec (< (the (signed-byte #.*max-linear-address-size+1*) 9+addr) #.*2^47*))
+
+            (b* ((word0 (mbe :logic (part-select val :low 0 :width 16)
+                             :exec  (logand #xFFFF val)))
+                 (qword1 (mbe :logic (part-select val :low 16 :width 64)
+                              :exec  (logand #xFFFFFFFFFFFFFFFF (ash val -16))))
+                 ((mv flg0 x86) (wvm16 addr    word0 x86))
+                 ((mv flg1 x86) (wvm64 2+addr qword1 x86)))
+              (mbe :logic (if (or flg0 flg1)
+                              (mv 'wvm80 x86)
+                            (mv nil x86))
+                   :exec (mv nil x86)))
+
+          (mv 'wvm80 x86)))
+
+    (mv 'wvm80 x86))
+
+  ///
+
+  (defthm wvm80-no-error
+    (implies (and (canonical-address-p addr)
+                  (canonical-address-p (+ 9 addr)))
+             (equal (mv-nth 0 (wvm80 addr val x86))
+                    nil))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm x86p-mv-nth-1-wvm80
+    (implies (x86p x86)
+             (x86p (mv-nth 1 (wvm80 addr val x86))))
+    :rule-classes (:type-prescription :rewrite))
+
+  (defthm xr-wmv80-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm80 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm80) ()))))
+
+  (defthm wvm80-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm80 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm80 addr val x86)))
+                  (equal (mv-nth 1 (wvm80 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm80 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm80 wvm80) ())))))
 
 (define wvm128
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -735,6 +1053,7 @@ memory.</p>" )
 
 ;; ======================================================================
 
-(globally-disable '(rvm08 rvm16 wvm08 wvm16 rvm32 rvm64 wvm32 wvm64 rvm128 wvm128))
+(globally-disable '(rvm08 rvm16 wvm16 rvm32 rvm48 rvm64 rvm80 rvm128
+                    wvm08 wvm16 wvm16 wvm32 wvm48 wvm64 wvm80 wvm128))
 
 ;; ======================================================================
