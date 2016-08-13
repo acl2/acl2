@@ -173,6 +173,10 @@ option on your @(see vl-loadconfig).</p>")
    (defines   vl-defines-p
               "The current set of @('`define')s at any point in time.")
 
+   (iskips    vl-includeskips-p
+              "Supports multiple-include optimization in the @(see ~
+               preprocessor).")
+
    (reportcard vl-reportcard-p
                "Main storage for load-time warnings that we want to associate
                 with particular descriptions.  This is where most load-time
@@ -438,19 +442,25 @@ descriptions.</li>
 ;   +------------------------------------------------------------------+
 ;   | If we can't parse the file successfully, we don't update any     |
 ;   | part of the state except the warnings (warnings and reportcard). |
-;   +------------------------------------------------------------------|
+;   +------------------------------------------------------------------+
 ;
 ; This way things are pretty clear.  Whatever was in that file we couldn't
 ; parse didn't affect us.  If it had defines we wanted, that's too bad.
+;
+; Exception to this rule: we also update the iskips, because it's OK to do
+; so, and because we want to ensure they are updated in a single-threaded
+; way for fast alist discipline.
 
-       ((mv successp defines filemap preprocessed state)
+       ((mv successp defines filemap iskips preprocessed state)
         (time$ (vl-preprocess contents
                               :defines st.defines
                               :filemap filemap
-                              :config st.config)
+                              :iskips  st.iskips
+                              :config  st.config)
                :msg "; ~s0: preprocess: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime st.config.mintime))
+       (st (change-vl-loadstate st :iskips iskips))
        ((unless successp)
         (b* ((warnings (warn :type :vl-preprocess-failed
                              :msg "Preprocessing failed for ~s0."
@@ -579,6 +589,7 @@ descriptions.</li>
                                    :pstate     pstate
                                    :defines    defines
                                    :filemap    filemap
+                                   :iskips     iskips
                                    :descs      descs
                                    :descalist  descalist
                                    :reportcard reportcard)))
@@ -832,6 +843,128 @@ will look for new modules.</p>"
 
   :tag :vl-loadresult)
 
+(define vl-includeskips-report-gather ((x vl-includeskips-p)
+                                       (lines)
+                                       (totalbytes   natp)
+                                       (totalsavings natp)
+                                       (totalmisses  natp)
+                                       (totalhits    natp))
+  :returns (mv lines
+               (totalbytes natp :rule-classes :type-prescription)
+               (totalsavings natp :rule-classes :type-prescription)
+               (totalmisses natp :rule-classes :type-prescription)
+               (totalhits natp :rule-classes :type-prescription))
+  (b* (((when (atom x))
+        (mv lines
+            (lnfix totalbytes)
+            (lnfix totalsavings)
+            (lnfix totalmisses)
+            (lnfix totalhits)))
+       ((cons realfile (vl-iskipinfo info)) (car x))
+       (misses   (len info.misses))
+       (hits     (len info.hits))
+       (fromdisk (* misses info.len))
+       (savings  (* hits info.len))
+       (reportline (list :fromdisk fromdisk
+                         :misses   misses
+                         :hits     hits
+                         :savings  savings
+                         :ctrl     info.controller
+                         :size     info.len
+                         :file     realfile)))
+    (vl-includeskips-report-gather (cdr x)
+                                   (cons reportline lines)
+                                   (+ fromdisk (lnfix totalbytes))
+                                   (+ savings (lnfix totalsavings))
+                                   (+ misses (lnfix totalmisses))
+                                   (+ hits (lnfix totalhits)))))
+
+(define vl-iskips-report ((iskips vl-includeskips-p))
+  (b* (((mv lines totalbytes totalsavings totalmisses totalhits)
+        (vl-includeskips-report-gather (fast-alist-free (fast-alist-clean iskips))
+                                       nil
+                                       0 0 0 0))
+       (lines (rev (set::mergesort lines))))
+    (cw "Included files report:~%")
+    (cw "  - Bytes read due to includes: ~x0~%" totalbytes)
+    (cw "  - Bytes saved due to multi-include optimization: ~x0~%" totalsavings)
+    (cw "  - MI stats: ~x0 hits, ~x1 misses (including first-time reads).~%" totalhits totalmisses)
+    (cw "Details:~%   ~x0~%~%"
+        lines)))
+
+(define vl-load-read-file-hook ((filename stringp)
+                                (contents vl-echarlist-p)
+                                state)
+  :returns (state state-p1 :hyp (state-p1 state))
+  (b* ((file-alist (and (acl2::boundp-global 'vl-read-file-alist state)
+                        (f-get-global 'vl-read-file-alist state)))
+       ;; Expected format of file-alist
+       ;;  (filename -> (num-reads . len))
+       (entry (cdr (hons-get filename file-alist)))
+       ((cons num-reads len)
+        (if entry
+            (if (and (consp entry)
+                     (natp (car entry))
+                     (natp (cdr entry)))
+                entry
+              (progn$ (raise "Unexpected vl-read-file-alist entry for ~x0: ~x1~%" filename entry)
+                      '(0 . 0)))
+          (cons 0 (len contents))))
+       (new-entry (cons (+ 1 num-reads) len))
+       (new-alist (hons-acons filename new-entry file-alist))
+       (state (f-put-global 'vl-read-file-alist new-alist state)))
+    state)
+  ///
+  (defattach vl-read-file-hook vl-load-read-file-hook))
+
+(define vl-read-file-report-gather (alist ;; already shrunk
+                                    ;; accumulators for results
+                                    lines
+                                    (total-reads natp)
+                                    (total-bytes natp))
+  :returns (mv lines
+               (total-reads natp :rule-classes :type-prescription)
+               (total-bytes natp :rule-classes :type-prescription))
+  (b* (((when (atom alist))
+        (mv lines
+            (lnfix total-reads)
+            (lnfix total-bytes)))
+       ((unless (and (consp (car alist))
+                     (stringp (caar alist))
+                     (consp (cdar alist))
+                     (natp (car (cdar alist)))
+                     (natp (cdr (cdar alist)))))
+        (raise "Unexpected vl-read-file-alist entry: ~x0" (car alist))
+        (mv lines (lnfix total-reads) (lnfix total-bytes)))
+       ((cons filename (cons num-reads len)) (car alist))
+       (bytes-for-this-file (* num-reads len))
+       (total-reads (+ num-reads (lnfix total-reads)))
+       (total-bytes (+ bytes-for-this-file (lnfix total-bytes)))
+       (line (list :fromdisk bytes-for-this-file
+                   :reads num-reads
+                   :size  len
+                   :file  filename)))
+    (vl-read-file-report-gather (cdr alist)
+                                (cons line lines)
+                                total-reads
+                                total-bytes)))
+
+(define vl-read-file-report (state)
+  :returns (state state-p1 :hyp (state-p1 state))
+  (b* ((file-alist (and (acl2::boundp-global 'vl-read-file-alist state)
+                        (f-get-global 'vl-read-file-alist state)))
+       (file-alist (fast-alist-free (fast-alist-clean file-alist)))
+       (state      (f-put-global 'vl-read-file-alist nil state))
+       ((mv lines total-reads total-bytes)
+        (vl-read-file-report-gather file-alist nil 0 0)))
+    (cw "Input file statistics:~%")
+    (cw "  - Unique files: ~x0~%" (len file-alist))
+    (cw "  - Number of files read: ~x0~%" total-reads)
+    (cw "  - Total bytes read: ~x0~%" total-bytes)
+    (cw "Details:~%")
+    (cw "   ~x0~%" (rev (set::mergesort lines)))
+    state))
+
 (local (defthm string-listp-of-remove-duplicates-equal
          (equal (string-listp (remove-duplicates-equal x))
                 (string-listp (list-fix x)))
@@ -843,7 +976,9 @@ will look for new modules.</p>"
    state)
   :returns (mv (result vl-loadresult-p)
                (state  state-p1        :hyp (force (state-p1 state))))
-  (b* ((config
+  (b* ((state (f-put-global 'vl-read-file-alist nil state))
+
+       (config
         ;; I'm pretty sure this is the right thing to do.  I've done a few
         ;; simple tests, and both Verilog-XL and NCVerilog seem to always
         ;; include files from the current directory first, even if +incdir
@@ -911,11 +1046,13 @@ will look for new modules.</p>"
                                                                  (vl-design->warnings design))))
        (result (make-vl-loadresult :design   design
                                    :filemap  st.filemap
-                                   :defines  st.defines)))
-    (vl-parsestate-free st.pstate)
-    (fast-alist-free st.descalist)
-    (mv result state)))
+                                   :defines  st.defines))
 
+       (- (vl-parsestate-free st.pstate))
+       (- (fast-alist-free st.descalist))
+       (- (vl-iskips-report st.iskips))
+       (state (vl-read-file-report state)))
+    (mv result state)))
 
 (defsection vl-load-summary
   :short "Print summary information (e.g., warnings, numbers of modules loaded,

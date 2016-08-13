@@ -138,6 +138,34 @@ following rule:</p> @(def vl-read-file-loop-aux-redef)"
                    (vl-read-file-loop channel filename line col)))
                (open-input-channel-p1 channel :byte state)))))
 
+(defsection vl-read-file-hook
+  :parents (vl-read-file)
+  :short "Customizable hook for @(see vl-read-file)."
+  :long "<p>This is generally intended for collecting up statistics on the
+files that have been read.  By default we do nothing.</p>"
+
+  (encapsulate
+    (((vl-read-file-hook * * state) => state
+      :formals (filename contents state)
+      :guard (and (stringp filename)
+                  (vl-echarlist-p contents))))
+    (local (defun vl-read-file-hook (filename contents state)
+             (declare (ignore filename contents))
+             state))
+    (defthm state-p1-of-vl-read-file-hook
+      (implies (force (state-p1 state))
+               (state-p1 (vl-read-file-hook filename contents state)))))
+
+  (define vl-read-file-hook-default ((filename stringp)
+                                     (contents vl-echarlist-p)
+                                     state)
+    :returns (state state-p1 :hyp (state-p1 state))
+    (declare (ignore filename contents))
+    state)
+
+  (defattach vl-read-file-hook vl-read-file-hook-default))
+
+
 (define vl-read-file
   :parents (loader)
   :short "Read an entire file into a list of extended characters."
@@ -157,7 +185,8 @@ character streams, @('read-byte$') should always safely return octets.</p>"
        ((mv channel state)  (open-input-channel filename :byte state))
        ((unless channel)    (mv nil nil state))
        ((mv data state)     (vl-read-file-loop channel filename 1 0))
-       (state               (close-input-channel channel state)))
+       (state               (close-input-channel channel state))
+       (state               (vl-read-file-hook filename data state)))
     (mv t data state))
   ///
   (defthm true-listp-of-vl-read-file
@@ -169,82 +198,85 @@ character streams, @('read-byte$') should always safely return octets.</p>"
       (implies (not okp)
                (not result)))))
 
-(define vl-read-file-rchars
-  :parents (vl-read-file)
-  :short "Optimized alternative to @(see vl-read-file) that reads the entire
-file into @(see nrev)."
-  ((filename stringp "The file to read.") nrev &key (state 'state))
-  :returns (mv okp nrev state)
-  :long "<p>We implement this mainly for @(see vl-read-files).</p>"
-  :enabled t
-  (mbe :logic
-       (non-exec
-        (b* (((mv okp data state)
-              (vl-read-file filename)))
-          (mv okp (append nrev data) state)))
-       :exec
-       (b* (((mv channel state)  (open-input-channel filename :byte state))
-            ((unless channel)    (mv nil nrev state))
-            ((mv nrev state)     (vl-read-file-loop-aux channel filename 1 0 nrev))
-            (state               (close-input-channel channel state)))
-         (mv t nrev state)))
-  :guard-hints(("Goal" :in-theory (enable vl-read-file))))
+;; [Jared] it looks like these aren't used anymore (they used to be used in
+;; vl2014's kit/pp command. Commenting them out until we want them again.
 
-(define vl-read-files-aux
-  :parents (vl-read-files)
-  :short "Tail recursive loop for @(see vl-read-files)."
-  ((filenames string-listp "The files to read.") nrev &key (state 'state))
-  :returns (mv errmsg? nrev state)
-  :long "<p>You should never need to reason about this directly, because of
-the following rule:</p> @(def vl-read-files-aux-redef)"
-  (b* (((when (atom filenames))
-        (let ((nrev (nrev-fix nrev)))
-          (mv nil nrev state)))
-       ((mv okp nrev state)
-        (vl-read-file-rchars (car filenames) nrev))
-       ((unless okp)
-        (mv (msg "Error reading file ~s0." (car filenames))
-            nrev state)))
-    (vl-read-files-aux (cdr filenames) nrev)))
+;; (define vl-read-file-rchars
+;;   :parents (vl-read-file)
+;;   :short "Optimized alternative to @(see vl-read-file) that reads the entire
+;; file into @(see nrev)."
+;;   ((filename stringp "The file to read.") nrev &key (state 'state))
+;;   :returns (mv okp nrev state)
+;;   :long "<p>We implement this mainly for @(see vl-read-files).</p>"
+;;   :enabled t
+;;   (mbe :logic
+;;        (non-exec
+;;         (b* (((mv okp data state)
+;;               (vl-read-file filename)))
+;;           (mv okp (append nrev data) state)))
+;;        :exec
+;;        (b* (((mv channel state)  (open-input-channel filename :byte state))
+;;             ((unless channel)    (mv nil nrev state))
+;;             ((mv nrev state)     (vl-read-file-loop-aux channel filename 1 0 nrev))
+;;             (state               (close-input-channel channel state)))
+;;          (mv t nrev state)))
+;;   :guard-hints(("Goal" :in-theory (enable vl-read-file))))
 
-(define vl-read-files
-  :parents (loader)
-  :short "Read an entire list of files into a list of extended characters."
-  ((filenames string-listp "The files to read.") &key (state 'state))
-  :returns
-  (mv (errmsg? "NIL on success, or an error @(see msg) that says which
-                file we were unable to read, otherwise.")
-      (data    "On success, extended characters from all files, in order."
-               vl-echarlist-p :hyp :fguard)
-      (state   state-p1 :hyp (force (state-p1 state))))
-  :verify-guards nil
-  (mbe :logic
-       (b* (((when (atom filenames))
-             (mv nil nil state))
-            ((mv okp first state) (vl-read-file (car filenames)))
-            ((unless okp)
-             (mv (msg "Error reading file ~s0." (car filenames)) nil state))
-            ((mv okp rest state) (vl-read-files (cdr filenames))))
-         (mv okp (append first rest) state))
-       :exec
-       (with-local-stobj nrev
-         (mv-let (errmsg echars nrev state)
-           (b* (((mv errmsg nrev state) (vl-read-files-aux filenames nrev))
-                ((mv echars nrev)       (nrev-finish nrev)))
-             (mv errmsg echars nrev state))
-           (mv errmsg echars state))))
-  ///
-  (local (in-theory (enable vl-read-files-aux)))
+;; (define vl-read-files-aux
+;;   :parents (vl-read-files)
+;;   :short "Tail recursive loop for @(see vl-read-files)."
+;;   ((filenames string-listp "The files to read.") nrev &key (state 'state))
+;;   :returns (mv errmsg? nrev state)
+;;   :long "<p>You should never need to reason about this directly, because of
+;; the following rule:</p> @(def vl-read-files-aux-redef)"
+;;   (b* (((when (atom filenames))
+;;         (let ((nrev (nrev-fix nrev)))
+;;           (mv nil nrev state)))
+;;        ((mv okp nrev state)
+;;         (vl-read-file-rchars (car filenames) nrev))
+;;        ((unless okp)
+;;         (mv (msg "Error reading file ~s0." (car filenames))
+;;             nrev state)))
+;;     (vl-read-files-aux (cdr filenames) nrev)))
 
-  (defthm true-listp-of-vl-read-files
-    (true-listp (mv-nth 1 (vl-read-files filenames)))
-    :rule-classes :type-prescription)
+;; (define vl-read-files
+;;   :parents (loader)
+;;   :short "Read an entire list of files into a list of extended characters."
+;;   ((filenames string-listp "The files to read.") &key (state 'state))
+;;   :returns
+;;   (mv (errmsg? "NIL on success, or an error @(see msg) that says which
+;;                 file we were unable to read, otherwise.")
+;;       (data    "On success, extended characters from all files, in order."
+;;                vl-echarlist-p :hyp :fguard)
+;;       (state   state-p1 :hyp (force (state-p1 state))))
+;;   :verify-guards nil
+;;   (mbe :logic
+;;        (b* (((when (atom filenames))
+;;              (mv nil nil state))
+;;             ((mv okp first state) (vl-read-file (car filenames)))
+;;             ((unless okp)
+;;              (mv (msg "Error reading file ~s0." (car filenames)) nil state))
+;;             ((mv okp rest state) (vl-read-files (cdr filenames))))
+;;          (mv okp (append first rest) state))
+;;        :exec
+;;        (with-local-stobj nrev
+;;          (mv-let (errmsg echars nrev state)
+;;            (b* (((mv errmsg nrev state) (vl-read-files-aux filenames nrev))
+;;                 ((mv echars nrev)       (nrev-finish nrev)))
+;;              (mv errmsg echars nrev state))
+;;            (mv errmsg echars state))))
+;;   ///
+;;   (local (in-theory (enable vl-read-files-aux)))
 
-  (defthm vl-read-files-aux-redef
-    (equal (vl-read-files-aux filenames acc)
-           (b* (((mv errmsg data state)
-                 (vl-read-files filenames)))
-             (mv errmsg (append acc data) state)))
-    :hints(("Goal" :induct (vl-read-files-aux-fn filenames acc state))))
+;;   (defthm true-listp-of-vl-read-files
+;;     (true-listp (mv-nth 1 (vl-read-files filenames)))
+;;     :rule-classes :type-prescription)
 
-  (verify-guards vl-read-files-fn))
+;;   (defthm vl-read-files-aux-redef
+;;     (equal (vl-read-files-aux filenames acc)
+;;            (b* (((mv errmsg data state)
+;;                  (vl-read-files filenames)))
+;;              (mv errmsg (append acc data) state)))
+;;     :hints(("Goal" :induct (vl-read-files-aux-fn filenames acc state))))
+
+;;   (verify-guards vl-read-files-fn))

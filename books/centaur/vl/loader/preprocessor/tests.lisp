@@ -70,14 +70,17 @@
 (defmacro preprocessor-must-ignore (input &key defines)
   `(make-event
     (b* ((echars (vl-echarlist-from-str ,input))
-         ((mv successp ?defs ?filemap output state)
+         ((mv successp ?defs ?filemap ?iskips output state)
           (vl-preprocess echars
                          :defines ,defines
                          :config (make-vl-loadconfig
                                   :include-dirs (list "."))))
          (- (or (debuggable-and successp
                                 (equal echars output))
-                (er hard? 'preprocessor-must-ignore "failed!"))))
+                (er hard? 'preprocessor-must-ignore
+                    "expected ~s0, got ~s1"
+                    (vl-echarlist->string echars)
+                    (vl-echarlist->string output)))))
       (value '(value-triple :success)))))
 
 ;; (preprocessor-must-ignore "`foo") ;; causes an error, good.
@@ -98,7 +101,7 @@
 (defmacro preprocessor-basic-test (&key input defines output)
   `(make-event
     (b* ((echars (vl-echarlist-from-str ,input :filename "test.v"))
-         ((mv successp ?defs ?filemap output state)
+         ((mv successp ?defs ?filemap ?iskips output state)
           (vl-preprocess echars
                          :defines ,defines
                          :config (make-vl-loadconfig
