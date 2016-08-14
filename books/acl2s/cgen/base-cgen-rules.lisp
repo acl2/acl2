@@ -80,12 +80,6 @@ date created: [2016-04-14 Thu]
       L
     (cons a L)))
       
-(defdata::cgen-rule member-equal-fixer2
-           :hyp (true-listp L)
-           :rule (let ((L (member-fixer2 a L)))
-                   (member-equal a L))
-           :rule-classes :fixer)
-
 (defdata::cgen-rule member-equal-fixer2-type-fixed
   :rule (let ((L (member-fixer2 a (true-list-fixer L))))
           (member-equal a L))
@@ -103,13 +97,6 @@ date created: [2016-04-14 Thu]
         ;; add repetitions
         (append L (len-fixer1 (- n (len L)) L))))))
        
-(defdata::cgen-rule len-fixer1
-           :hyp (and (true-listp L)
-                     (natp n))
-           :rule (let ((L (len-fixer1 n L)))
-                   (equal n (len L)))
-           :rule-classes :fixer)
-
 (defdata::cgen-rule len-fixer1-tlp-fixed
            :hyp (natp n)
            :rule (let ((L (len-fixer1 n (true-list-fixer L))))
@@ -126,12 +113,12 @@ date created: [2016-04-14 Thu]
     (mv X1 X2)))
     
 (defdata::cgen-rule append-fixer1
-           :hyp (and (true-listp X1)
-                     (true-listp X2)
-                     (true-listp X3)
-                     (>= (len X3) (len X1))
-                     )
-           :rule (mv-let (X1 X2) (append-fixer1 X3 X1)
+           ;:hyp ;; (and (true-listp X1)
+                ;;      (true-listp X2)
+                ;;      (true-listp X3)
+                ;;      (>= (len X3) (len X1))
+                ;;      )
+           :rule (mv-let (X1 X2) (append-fixer1 (true-list-fixer X3) (true-list-fixer X1))
                          (equal X3 (binary-append X1 X2)))
            :rule-classes :fixer)
 
@@ -143,12 +130,12 @@ date created: [2016-04-14 Thu]
     (mv X1 X2)))
 
 (defdata::cgen-rule append-fixer2
-           :hyp (and (true-listp X1)
-                     (true-listp X2)
-                     (true-listp X3)
-                     (>= (len X3) (len X2))
-                     )
-           :rule (mv-let (X1 X2) (append-fixer2 X3 X2)
+           ;:hyp ;; (and (true-listp X1)
+                ;;      (true-listp X2)
+                ;;      (true-listp X3)
+                ;;      (>= (len X3) (len X2))
+                ;;      )
+           :rule (mv-let (X1 X2) (append-fixer2 (true-list-fixer X3) (true-list-fixer X2))
                          (equal X3 (binary-append X1 X2)))
            :rule-classes :fixer)
 
@@ -157,12 +144,6 @@ date created: [2016-04-14 Thu]
 ;; INTERSECTP
 
 ;; NO-DUPLICATESP, REMOVE-DUPLICATES-EQUAL
-
-(defdata::cgen-rule no-dups-fixer
-           :hyp (true-listp X1)
-           :rule (let ((X1 (remove-duplicates-equal X1)))
-                   (no-duplicatesp-equal X1))
-           :rule-classes :fixer)
 
 (defdata::cgen-rule no-dups-fixer-type-fixed
            :rule (let ((X1 (remove-duplicates-equal (true-list-fixer X1))))
@@ -175,6 +156,13 @@ date created: [2016-04-14 Thu]
                      (< n (len L)))
            :rule (let ((L (update-nth n v (true-list-fixer L))))
                    (equal v (nth n L))) ;TODO orient equalities in preprocessing
+           :rule-classes :fixer)
+
+(defdata::cgen-rule nth-fixer2/symm
+           :hyp (and (natp n)
+                     (< n (len L)))
+           :rule (let ((L (update-nth n v (true-list-fixer L))))
+                   (equal (nth n L) v))
            :rule-classes :fixer)
 
 ;; POSITION-EQUAL-AC
@@ -216,40 +204,19 @@ date created: [2016-04-14 Thu]
 ;; SUBSETP-EQUAL
 
 (defun subsetp-equal-fixer1 (X1 X2)
-  (if (endp X1)
+  (if (atom X1)
       '()
     (if (member-equal (car X1) X2)
         (cons (car X1) (subsetp-equal-fixer1 (cdr X1) X2))
       (subsetp-equal-fixer1 (cdr X1) X2))))
 
-
-(defdata::cgen-rule subsetp-equal-fixer1
-           :hyp (and (true-listp X1)
-                     (true-listp X2)
-                     )
-           :rule (let ((X1 (subsetp-equal-fixer1 X1 X2)))
-                   (subsetp-equal X1 X2))
-           :rule-classes :fixer)
-
 (defdata::cgen-rule subsetp-equal-fixer1-type-fixed
-  :rule (mv-let (X1 X2)
-                (mv (subsetp-equal-fixer1 X1 (true-list-fixer X2))
-                    (true-list-fixer X2))
-                (subsetp-equal X1 X2))
-  :rule-classes :fixer)
-
-
-(defdata::cgen-rule subsetp-equal-fixer2
-  :hyp (and (true-listp X1)
-            (true-listp X2))
-  :rule (let ((X2 (union-equal X1 X2)))
+  :rule (let ((X1 (acl2::subsetp-equal-fixer1 X1 X2)))
           (subsetp-equal X1 X2))
   :rule-classes :fixer)
 
 (defdata::cgen-rule subsetp-equal-fixer2-type-fixed
-  :rule (mv-let (X1 X2)
-                (mv (true-list-fixer X1)
-                    (union-equal (true-list-fixer X1) (true-list-fixer X2)))
+  :rule (let ((X2 (union-equal (acl2::true-list-fixer X1) (acl2::true-list-fixer X2))))
                 (subsetp-equal X1 X2))
   :rule-classes :fixer)
 
@@ -260,8 +227,6 @@ date created: [2016-04-14 Thu]
 ;;; ALISTS -- Association List
 
 ;; ASSOC-EQUAL
-
-
 
 ; Two choices.
 ; 1. Use free variable v
@@ -302,6 +267,12 @@ date created: [2016-04-14 Thu]
   :rule (let ((x (member-fixer1 x
                                 (strip-cars A))))
           (assoc-equal x A))
+  :rule-classes :fixer)
+
+(defdata::cgen-rule assoc-eq-equation-fixer
+  :hyp (alistp A)
+  :rule (let ((A (put-assoc-equal x v A)))
+          (equal v (cdr (assoc-equal x A))))
   :rule-classes :fixer)
 
 ;; PAIRLIS$, STRIP-CARS, STRIP-CDRS

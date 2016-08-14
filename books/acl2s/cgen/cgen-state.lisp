@@ -325,9 +325,9 @@ cgen-state"
 
 ; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
 ; fixer/elim-binding as a let*-binding that can be used in simple-search
-(defstub fixer-arrangement (* * * * * * * state) => (mv * * state))
-(defun fixer-arrangement/dummy (hyps concl vars type-alist vl ctx wrld state)
-  (declare (ignore hyps concl vars type-alist vl ctx wrld))
+(defstub fixer-arrangement (* * * * * * state) => (mv * * state))
+(defun fixer-arrangement/dummy (hyps concl vars type-alist vl ctx state)
+  (declare (ignore hyps concl vars type-alist vl ctx))
   (declare (xargs :stobjs (state)))
   (mv nil '() state))
 (defattach (fixer-arrangement fixer-arrangement/dummy))

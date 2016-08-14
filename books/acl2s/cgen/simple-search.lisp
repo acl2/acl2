@@ -791,7 +791,7 @@ Use :simple search strategy to find counterexamples and witnesses.
        ;;[2016-04-03 Sun] Added support for fixers
        ((mv erp fixer-bindings state)
         (if (cget use-fixers)
-            (fixer-arrangement hyps concl vars type-alist vl ctx wrld state)
+            (fixer-arrangement hyps concl vars type-alist vl ctx state)
           (value nil)))
 
        ((when erp)
