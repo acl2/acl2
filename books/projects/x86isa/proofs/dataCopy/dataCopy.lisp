@@ -1247,8 +1247,7 @@
                                     addr (xr :rgf *rdi* x86)
                                     (xr :rgf *rsi* x86)
                                     (x86-run (pre-clk n) x86))
-                (preconditions n addr x86)
-                (< 0 n))
+                (preconditions n addr x86))
            (canonical-address-p
             (logext
              64
@@ -1273,14 +1272,14 @@
 
 (defthm preconditions-implies-after-the-copy-conditions-after-clk
   (implies (and (preconditions n addr x86)
-                (not (zp n))
-                (equal m (ash n 2)))
+                (not (zp n)))
            (after-the-copy-conditions n addr (x86-run (clk n) x86)))
   :hints (("Goal"
            :use ((:instance preconditions-fwd-chain-to-its-body)
                  (:instance preconditions-implies-after-the-copy-conditions-after-clk-helper)
                  (:instance effects-copyData-pre-rsp-projection)
-                 (:instance preconditions-implies-loop-preconditions-after-pre-clk)
+                 (:instance preconditions-implies-loop-preconditions-after-pre-clk
+                            (m (ash n 2)))
                  (:instance effects-copyData-loop
                             (k 0) (src-addr (xr :rgf *rdi* x86))
                             (dst-addr (xr :rgf *rsi* x86))))
@@ -1451,10 +1450,6 @@
                              create-canonical-address-list
                              force (force))))))
 
-;; ======================================================================
-
-;; Now, the top-level theorems:
-
 (defthm destination-array-is-a-copy-of-the-source-array
   (implies (and (preconditions n addr x86)
                 (equal m (ash n 2)))
@@ -1480,6 +1475,115 @@
   :hints (("Goal" :use ((:instance program-leaves-m-bytes-of-source-unmodified-helper-2))
            :in-theory (e/d* ()
                             (wb-remove-duplicate-writes
+                             after-the-copy-conditions
+                             preconditions
+                             clk post-clk pre-clk
+                             (clk) (post-clk) (pre-clk)
+                             create-canonical-address-list
+                             force (force))))))
+
+(defthmd preconditions-implies-after-the-copy-conditions-after-clk-n=0
+  (implies (preconditions 0 addr x86)
+           (after-the-copy-conditions 0 addr (x86-run (clk 0) x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-pre (n 0)))
+           :hands-off (x86-run)
+           :in-theory (e/d* (x86-run-plus-for-clk
+                             loop-preconditions)
+                            (effects-copydata-pre
+                             (pre-clk)
+                             pre-clk
+                             (clk)
+                             preconditions
+                             preconditions-implies-loop-preconditions-after-pre-clk
+                             effects-copydata-pre)))))
+
+(defthmd no-error-during-program-execution-helper
+  (implies (after-the-copy-conditions n addr x86)
+           (and (equal (ms (x86-run (post-clk) x86)) nil)
+                (equal (fault (x86-run (post-clk) x86)) nil)))
+  :hints (("Goal" :use ((:instance effects-copyData-after-clk))
+           :in-theory (e/d* ()
+                            (preconditions-implies-loop-preconditions-after-pre-clk
+                             loop-copies-m-bytes-from-source-to-destination
+                             effects-copydata-pre
+                             preconditions
+                             source-bytes
+                             clk post-clk
+                             (clk) (post-clk)
+                             create-canonical-address-list
+                             force (force))))))
+
+(defthm no-error-during-program-execution
+  (implies (preconditions n addr x86)
+           (and (equal (ms (x86-run (program-clk n) x86)) nil)
+                (equal (fault (x86-run (program-clk n) x86)) nil)))
+  :hints (("Goal"
+           :use ((:instance preconditions-implies-after-the-copy-conditions-after-clk)
+                 (:instance no-error-during-program-execution-helper
+                            (x86 (x86-run (clk n) x86))))
+           :in-theory (e/d* (x86-run-plus-for-program-clk
+                             preconditions-implies-after-the-copy-conditions-after-clk-n=0)
+                            (wb-remove-duplicate-writes
+                             after-the-copy-conditions
+                             preconditions-implies-loop-preconditions-after-pre-clk
+                             preconditions-implies-after-the-copy-conditions-after-clk
+                             loop-copies-m-bytes-from-source-to-destination
+                             effects-copydata-pre
+                             preconditions
+                             destination-bytes
+                             source-bytes
+                             clk post-clk
+                             (clk) (post-clk)
+                             create-canonical-address-list
+                             force (force))))))
+
+;; ======================================================================
+
+;; Now, the top-level theorem:
+
+(defun-nx source (n src-addr x86)
+  (source-bytes (ash n 2) (+ (ash n 2) src-addr) x86))
+
+(defun-nx destination (n dst-addr x86)
+  (destination-bytes (ash n 2) (+ (ash n 2) dst-addr) x86))
+
+(defun-nx copyData-preconditions (n src-addr dst-addr prog-addr x86)
+  (and
+   (equal (xr :rgf *rdi* x86) src-addr)
+   (equal (xr :rgf *rsi* x86) dst-addr)
+   (preconditions n prog-addr x86)))
+
+(defthm copyData-is-correct
+  (implies
+   (copyData-preconditions n src-addr dst-addr prog-addr x86)
+   (and
+    ;; Destination location after program's execution contains
+    ;; the same data as the source location before program's
+    ;; execution.
+    (equal (destination n dst-addr (x86-run (program-clk n) x86))
+           (source n src-addr x86))
+    ;; Source location after program's execution contains the
+    ;; same data as it did before program's execution.
+    (equal (source n src-addr (x86-run (program-clk n) x86))
+           (source n src-addr x86))
+    ;; No error was encountered during program's execution.
+    (equal (ms (x86-run (program-clk n) x86)) nil)
+    (equal (fault (x86-run (program-clk n) x86)) nil)))
+  :hints (("Goal"
+           :use ((:instance source-array-is-unmodified
+                            (addr prog-addr)
+                            (m (ash n 2)))
+                 (:instance destination-array-is-a-copy-of-the-source-array
+                            (addr prog-addr)
+                            (m (ash n 2)))
+                 (:instance no-error-during-program-execution
+                            (addr prog-addr)))
+           :in-theory (e/d* ()
+                            (source-array-is-unmodified
+                             destination-array-is-a-copy-of-the-source-array
+                             no-error-during-program-execution
+                             wb-remove-duplicate-writes
                              after-the-copy-conditions
                              preconditions
                              clk post-clk pre-clk
