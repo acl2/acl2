@@ -582,7 +582,7 @@ where
                                          (unsigned-byte-p 31 seed.)
                                          (symbol-unsigned-29bits-alistp BE.)
                                          (consp BE.) ;precondition TODOcheck
-                                         (and ,@(make-guard-var-member-eq
+                                         (and ,@(make-guard-var-assoc-eq
                                                  (strip-cars var-enumcalls-alist)
                                                  'BE.)))
                              :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
@@ -590,9 +590,10 @@ where
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
                                       `(B* ,(append partial-A elim-bindings)
                                           (mv ,(make-var-value-list-bindings
-                                                (union-eq (strip-cars var-enumcalls-alist)
-                                                          (strip-cars partial-A)
-                                                          (strip-cars elim-bindings)) '())
+                                                (remove-duplicates-eq
+                                                 (union-eq (strip-cars var-enumcalls-alist)
+                                                           (strip-cars partial-A)
+                                                           (strip-cars elim-bindings))) '())
                                               seed. BE.))))
            (defun next-sigma-current-gv (sampling-method seed. BE.)
              (declare (xargs :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014

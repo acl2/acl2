@@ -420,12 +420,12 @@ thought about how to implement it.
               (declare (ignorable ,var))
             ,(make-next-sigma_mv-let (rest var-enumcalls-alist) body))))))
 
-(def make-guard-var-member-eq (vars alst)
+(def make-guard-var-assoc-eq (vars alst)
   (decl :sig ((symbol-alistp symbol) -> all)
         :doc "helper function to make-next-sigma")
   (if (endp vars)
       nil
-    (cons `(member-eq ',(car vars) ,alst)
+    (cons `(assoc-eq ',(car vars) ,alst)
           (make-guard-var-member-eq (cdr vars) alst))))
   
 (def cs%-enumcalls (cs% vl wrld bound-vars)
