@@ -475,12 +475,13 @@ made from privilege level 3.</sf>"
              (alignment-checking-enabled-p x86))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
-    ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.
     ((reg-type      :type (unsigned-byte  1)
                     "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking, @('nil') otherwise.")
+     (memory-ptr?   booleanp
+                    "@('t') if the operand is a memory operand of the form m16:16, m16:32, or m16:64")
      (p2            :type (unsigned-byte  8)
                     "Segment Override Prefix")
      (p4?           :type (or t nil)
@@ -499,6 +500,10 @@ made from privilege level 3.</sf>"
                  (member operand-size '(1 2 4 8)))
                 (t (member operand-size '(4 8 16))))
              (member operand-size '(member 1 2 4 6 8 10 16)))
+    :guard-hints (("Goal" :in-theory (e/d* ()
+                                           (las-to-pas
+                                            unsigned-byte-p
+                                            signed-byte-p))))
 
     :returns
     (mv flg
@@ -584,11 +589,33 @@ made from privilege level 3.</sf>"
                    inst-ac?
                    (alignment-checking-enabled-p x86)
                    ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (not (equal (logand
-                                v-addr
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
+                   (case operand-size
+                     ;; A memory operand of the form m16:32 requires a
+                     ;; read of 6 bytes.  The natural boundary of the
+                     ;; 32-bit portion is an address divisible by 4,
+                     ;; which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (6   (not (equal (logand v-addr #b11) 0)))
+                     ;; A memory operand of the form m16:64 requires a
+                     ;; read of 10 bytes.  The natural boundary of the
+                     ;; 64-bit portion is an address divisible by 8,
+                     ;; which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (10  (not (equal (logand v-addr #b111) 0)))
+                     (otherwise
+                      (if (and memory-ptr?
+                               (eql operand-size 4))
+                          ;; If the 32-bit operand is of type m16:16,
+                          ;; instead of being aligned at an address
+                          ;; divisible by 4, it should be aligned at
+                          ;; an even address.
+                          (not (equal (logand v-addr #b1) 0))
+                        (not (equal (logand v-addr
+                                            (the (integer 0 15)
+                                              (- operand-size 1)))
+                                    0)))))))
           (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
               0 0 0 x86))
 
@@ -617,7 +644,7 @@ made from privilege level 3.</sf>"
       :bound bound
       :concl (mv-nth 1
                      (x86-operand-from-modr/m-and-sib-bytes
-                      reg-type operand-size inst-ac? p2 p4?
+                      reg-type operand-size inst-ac? memory-ptr? p2 p4?
                       temp-RIP rex-byte r/m mod sib
                       num-imm-bytes x86))
       :gen-linear t
@@ -629,39 +656,38 @@ made from privilege level 3.</sf>"
                 (not (equal mod #b11))
                 (x86p x86))
       :bound bound
-      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
-                        reg-type operand-size inst-ac? p2 p4?
-                        temp-RIP rex-byte r/m mod sib
-                        num-imm-bytes x86))
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes reg-type
+                                                              operand-size inst-ac? memory-ptr? p2 p4?
+                                                              temp-RIP rex-byte r/m mod sib num-imm-bytes
+                                                              x86))
       :gen-linear t
       :gen-type t)
 
     (defthm integerp-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-type-prescription
       (implies (force (x86p x86))
                (natp (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
-                                reg-type operand-size inst-ac? p2 p4
-                                temp-RIP rex-byte r/m mod sib
-                                num-imm-bytes x86))))
+                                reg-type operand-size inst-ac?
+                                memory-ptr? p2 p4 temp-RIP rex-byte
+                                r/m mod sib num-imm-bytes x86))))
       :hints (("Goal" :in-theory (e/d (rm-size) ())))
       :rule-classes :type-prescription)
 
     (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-linear<=4
       (implies (x86p x86)
                (<= (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
-                              reg-type operand-size inst-ac? p2 p4
-                              temp-RIP rex-byte r/m mod sib
-                              num-imm-bytes x86))
-                   4))
+                              reg-type operand-size inst-ac?
+                              memory-ptr? p2 p4 temp-RIP rex-byte r/m
+                              mod sib num-imm-bytes x86)) 4))
       :hints (("Goal" :in-theory (e/d (rm-size) ())))
       :rule-classes :linear)
 
     (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes
       :hyp (forced-and (x86p x86))
       :bound 48
-      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-                        reg-type operand-size inst-ac? p2 p4
-                        temp-rip rex-byte r/m mod sib
-                        num-imm-bytes x86))
+      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes reg-type
+                                                              operand-size inst-ac? memory-ptr? p2 p4
+                                                              temp-rip rex-byte r/m mod sib num-imm-bytes
+                                                              x86))
       :gen-linear t
       :gen-type t)
 
@@ -669,15 +695,16 @@ made from privilege level 3.</sf>"
       (implies (forced-and (x86p x86))
                (canonical-address-p
                 (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-                           reg-type operand-size inst-ac? p2 p4
-                           temp-rip rex-byte r/m mod sib
+                           reg-type operand-size inst-ac? memory-ptr?
+                           p2 p4 temp-rip rex-byte r/m mod sib
                            num-imm-bytes x86))))))
 
   (define x86-operand-to-reg/mem
-    ;; TO-DO: operand-sizes 6 and 10 are weird. Fix them.
     ((operand-size :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking, @('nil') otherwise")
+     (memory-ptr?   booleanp
+                    "@('t') if the operand is a memory operand of the form m16:16, m16:32, or m16:64")
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
      (rex-byte     :type (unsigned-byte 8))
@@ -717,11 +744,33 @@ made from privilege level 3.</sf>"
               (and inst-ac?
                    (alignment-checking-enabled-p x86)
                    ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (not (equal (logand
-                                v-addr
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
+                   (case operand-size
+                     ;; A memory operand of the form m16:32 requires a
+                     ;; write of 6 bytes.  The natural boundary of the
+                     ;; 32-bit portion is an address divisible by 4,
+                     ;; which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (6   (not (equal (logand v-addr #b11) 0)))
+                     ;; A memory operand of the form m16:64 requires a
+                     ;; write of 10 bytes.  The natural boundary of
+                     ;; the 64-bit portion is an address divisible by
+                     ;; 8, which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (10  (not (equal (logand v-addr #b111) 0)))
+                     (otherwise
+                      (if (and memory-ptr?
+                               (eql operand-size 4))
+                          ;; If the 32-bit operand is of type m16:16,
+                          ;; instead of being aligned at an address
+                          ;; divisible by 4, it should be aligned at
+                          ;; an even address.
+                          (not (equal (logand v-addr #b1) 0))
+                        (not (equal (logand v-addr
+                                            (the (integer 0 15)
+                                              (- operand-size 1)))
+                                    0)))))))
           (mv t x86))
 
          ((mv flg x86)
@@ -736,8 +785,8 @@ made from privilege level 3.</sf>"
                 (mv-nth
                  1
                  (x86-operand-to-reg/mem
-                  operand-size inst-ac? operand v-addr
-                  rex-byte r/m mod x86))))
+                  operand-size inst-ac?
+                  memory-ptr? operand v-addr rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
   (define x86-operand-to-xmm/mem

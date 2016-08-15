@@ -49,7 +49,9 @@
             (the (signed-byte 64) v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* 4 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* 4 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 
@@ -87,7 +89,9 @@
            (b* ((mxcsr (the (unsigned-byte 32) (mxcsr x86)))
                 ((mv flg1 x86)
                  (x86-operand-to-reg/mem
-                  4 inst-ac? mxcsr v-addr rex-byte r/m mod x86))
+                  4 inst-ac?
+                  nil ;; Not a memory pointer operand
+                  mxcsr v-addr rex-byte r/m mod x86))
                 ;; Note: If flg1 is non-nil, we bail out without changing the
                 ;; x86 state.
                 ((when flg1)

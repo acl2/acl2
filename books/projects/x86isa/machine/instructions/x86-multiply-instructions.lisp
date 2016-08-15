@@ -64,7 +64,9 @@
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -185,7 +187,9 @@
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -280,7 +284,9 @@
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -384,7 +390,9 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          imm-size ;; imm-size bytes of immediate data
          x86))
        ((when flg0)

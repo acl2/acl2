@@ -104,7 +104,9 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size inst-acc? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*rgf-access* operand-size inst-acc?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 

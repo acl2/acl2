@@ -149,9 +149,12 @@ extension (ModR/m.reg = 6).</p>"
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
+         #.*rgf-access* operand-size 
          ;; inst-ac? is nil here because we only need increment-RIP-by
          ;; from this function.
-         #.*rgf-access* operand-size nil p2 p4? temp-rip rex-byte r/m mod sib
+         nil
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -541,7 +544,9 @@ extension (ModR/m.reg = 0).</p>"
 
        ((mv flg3 x86)
         (x86-operand-to-reg/mem
-         operand-size inst-ac? val v-addr rex-byte r/m mod x86))
+         operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         val v-addr rex-byte r/m mod x86))
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
@@ -571,7 +576,7 @@ extension (ModR/m.reg = 0).</p>"
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 ;; (def-inst x86-pop-segment-register
 ;;   :parents (one-byte-opcodes)

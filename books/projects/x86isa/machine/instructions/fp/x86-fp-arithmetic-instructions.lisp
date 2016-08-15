@@ -69,7 +69,9 @@
         t)
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*xmm-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg0)
@@ -198,7 +200,9 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*xmm-access* 16 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 
@@ -363,7 +367,9 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*xmm-access* 16 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 
@@ -507,7 +513,9 @@
         t)
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* operand-size inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*xmm-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 
@@ -598,7 +606,9 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*xmm-access* 16 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 
@@ -732,7 +742,9 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac? p2 p4? temp-rip rex-byte r/m mod sib
+         #.*xmm-access* 16 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
 
