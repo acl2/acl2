@@ -167,12 +167,107 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
                                  a (if (<= w1 w2) c (logapp (- w1 w2) b c)))))
          :hints(("Goal" :in-theory (e/d* (ihsext-inductions
                                           ihsext-recursive-redefs))
-                 :induct (logapp-right-ind w1 w2 a))))))
+                 :induct (logapp-right-ind w1 w2 a))))
 
+   (defthm logapp-of-loghead-same
+     (equal (logapp w (loghead w x) y)
+            (logapp w x y))
+     :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                      ihsext-recursive-redefs)))))))
+
+
+
+
+(define merge-unsigneds-aux ((width natp)
+                             (elts integer-listp)
+                             (acc natp))
+  ;; BOZO Optimize this for execution efficiency somehow?
+  :returns (packed natp :rule-classes :type-prescription)
+  (if (atom elts)
+      (lnfix acc)
+    (merge-unsigneds-aux
+     width (cdr elts)
+     (logapp width (car elts) (lnfix acc))))
+  ///
+  (local (in-theory (disable unsigned-byte-p)))
+  (local (defthm unsigned-byte-p-of-integer-length
+           (implies (natp x)
+                    (unsigned-byte-p (integer-length x) x))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+  (local (defthm integer-length-of-logapp
+           (implies (natp b)
+                    (equal (integer-length (logapp width a b))
+                           (if (posp b)
+                               (+ (nfix width) (integer-length b))
+                             (integer-length (loghead width a)))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+                  
+  (defret width-of-merge-unsigneds-aux
+    (unsigned-byte-p (+ (integer-length (nfix acc))
+                        (* (nfix width) (len elts)))
+                     packed)))
+
+(define merge-unsigneds ((width natp)
+                         (elts integer-listp))
+  :returns (packed natp :rule-classes :type-prescription)
+  :short "Concatenate the given list of integers together at the given width, most-significant
+          first, to form a single natural number."
+  (merge-unsigneds-aux width elts 0)
+  ///
+  (local (in-theory (disable unsigned-byte-p)))
+
+  (defret width-of-merge-unsigneds
+    (implies (and (<= (* (nfix width) (len elts)) n)
+                  (natp n))
+             (unsigned-byte-p n packed))
+    :hints(("Goal" :in-theory (disable width-of-merge-unsigneds-aux)
+            :use (:instance width-of-merge-unsigneds-aux
+                  (acc 0)))))
+
+  (local (defun merge-unsigneds-aux-elim-ind (width lst acc)
+           (if (atom lst)
+               (list width acc)
+             (list (merge-unsigneds-aux-elim-ind width (cdr lst) (logapp width (car lst) (nfix acc)))
+                   (merge-unsigneds-aux-elim-ind width (cdr lst) (loghead width (car lst)))))))
+
+  (local (defthm logapp-of-equal-logapp-right-assoc
+           (implies (and (equal x (logapp w2 a b))
+                         (natp w1) (natp w2))
+                    (EQUAL (LOGAPP W1 x C)
+                           (LOGAPP (MIN W1 W2)
+                                   A
+                                   (IF (<= W1 W2)
+                                       C (LOGAPP (- W1 W2) B C)))))))
+
+  (local (defthmd merge-unsigneds-aux-elim
+           (equal (merge-unsigneds-aux width lst acc)
+                  (logapp (* (nfix width) (len lst))
+                          (merge-unsigneds width lst)
+                          (nfix acc)))
+           :hints(("Goal" 
+                   :induct (merge-unsigneds-aux-elim-ind width lst acc)
+                   :expand ((:free (acc) (merge-unsigneds-aux width lst acc)))))))
+
+  (defthmd merge-unsigneds-alt-def
+    (equal (merge-unsigneds width elts)
+           (if (atom elts)
+               0
+             (logapp (* (nfix width) (len (cdr elts)))
+                     (merge-unsigneds width (cdr elts))
+                     (loghead width (car elts)))))
+    :hints (("goal" :expand ((merge-unsigneds-aux width elts 0)
+                             (merge-unsigneds width elts))
+             :in-theory (disable merge-unsigneds))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (merge-unsigneds-aux-elim)
+                                   (merge-unsigneds)))))
+    :rule-classes ((:definition :controller-alist ((merge-unsigneds nil t))))))
 
 ;; Merging Bits ---------------------------------------------------------------
 
-
+(def-ruleset merges-are-merge-unsigneds nil)
 
 (defun def-merge-n-bits-fn (n)
   (declare (xargs :mode :program))
@@ -205,6 +300,14 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
         ///
         (defthm unsigned-byte-p-<n>-of-merge-<n>-bits
           (unsigned-byte-p <n> (merge-<n>-bits (:@proj countdown a<i>))))
+
+        (defthmd merge-<n>-bits-is-merge-unsigneds
+          (equal (merge-<n>-bits (:@proj countdown a<i>))
+                 (merge-unsigneds 1 (list (:@proj countdown (bfix a<i>)))))
+          :hints(("Goal" :in-theory (enable merge-unsigneds-alt-def))))
+
+        (acl2::add-to-ruleset merges-are-merge-unsigneds merge-<n>-bits-is-merge-unsigneds)
+
         "<h5>Basic @(see bit-equiv) congruences.</h5>"
         (congruences-for-merge (merge-<n>-bits (:@proj countdown a<i>)) <n>
                                :equiv bit-equiv))
@@ -277,6 +380,14 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
         ///
         (defthm unsigned-byte-p-<prod>-of-merge-<n>-u<width>s
           (unsigned-byte-p <prod> (merge-<n>-u<width>s (:@proj countdown a<i>))))
+
+        (defthmd merge-<n>-u<width>s-is-merge-unsigneds
+          (equal (merge-<n>-u<width>s (:@proj countdown a<i>))
+                 (merge-unsigneds <width> (list (:@proj countdown (nfix a<i>)))))
+          :hints(("Goal" :in-theory (enable merge-unsigneds-alt-def))))
+
+        (acl2::add-to-ruleset merges-are-merge-unsigneds merge-<n>-u<width>s-is-merge-unsigneds)
+
         "<h5>Basic @(see nat-equiv) congruences.</h5>"
         (congruences-for-merge (merge-<n>-u<width>s (:@proj countdown a<i>)) <n>))
      :atom-alist `((<n> . ,n)
@@ -328,95 +439,3 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 
 (def-merge-n-unsigneds 2 256)
 
-(define merge-unsigneds-aux ((width natp)
-                             (elts integer-listp)
-                             (acc natp))
-  ;; BOZO Optimize this for execution efficiency somehow?
-  :returns (packed natp :rule-classes :type-prescription)
-  (if (atom elts)
-      (lnfix acc)
-    (merge-unsigneds-aux
-     width (cdr elts)
-     (logapp width (car elts) (lnfix acc))))
-  ///
-  (local (in-theory (disable unsigned-byte-p)))
-  (local (defthm unsigned-byte-p-of-integer-length
-           (implies (natp x)
-                    (unsigned-byte-p (integer-length x) x))
-           :hints(("Goal" :in-theory (enable* ihsext-inductions
-                                              ihsext-recursive-redefs)))))
-  (local (defthm integer-length-of-logapp
-           (implies (natp b)
-                    (equal (integer-length (logapp width a b))
-                           (if (posp b)
-                               (+ (nfix width) (integer-length b))
-                             (integer-length (loghead width a)))))
-           :hints(("Goal" :in-theory (enable* ihsext-inductions
-                                              ihsext-recursive-redefs)))))
-                  
-  (defret width-of-merge-unsigneds-aux
-    (unsigned-byte-p (+ (integer-length (nfix acc))
-                        (* (nfix width) (len elts)))
-                     packed)))
-
-(define merge-unsigneds ((width natp)
-                         (elts integer-listp))
-  :returns (packed natp :rule-classes :type-prescription)
-  :short "Concatenate the given list of integers together at the given width, most-significant
-          first, to form a single natural number."
-  (merge-unsigneds-aux width elts 0)
-  ///
-  (local (in-theory (disable unsigned-byte-p)))
-
-  (defret width-of-merge-unsigneds
-    (implies (and (<= (* (nfix width) (len elts)) n)
-                  (natp n))
-             (unsigned-byte-p n packed))
-    :hints(("Goal" :in-theory (disable width-of-merge-unsigneds-aux)
-            :use (:instance width-of-merge-unsigneds-aux
-                  (acc 0)))))
-
-  (local (defun merge-unsigneds-aux-elim-ind (width lst acc)
-           (if (atom lst)
-               (list width acc)
-             (list (merge-unsigneds-aux-elim-ind width (cdr lst) (logapp width (car lst) (nfix acc)))
-                   (merge-unsigneds-aux-elim-ind width (cdr lst) (loghead width (car lst)))))))
-
-  (local (defthm logapp-of-equal-logapp-right-assoc
-           (implies (and (equal x (logapp w2 a b))
-                         (natp w1) (natp w2))
-                    (EQUAL (LOGAPP W1 x C)
-                           (LOGAPP (MIN W1 W2)
-                                   A
-                                   (IF (<= W1 W2)
-                                       C (LOGAPP (- W1 W2) B C)))))))
-
-  (local (defthm logapp-of-loghead
-           (equal (logapp width (loghead width x) y)
-                  (logapp width x y))
-           :hints(("Goal" :in-theory (enable* ihsext-inductions
-                                             ihsext-recursive-redefs)))))
-
-  (local (defthmd merge-unsigneds-aux-elim
-           (equal (merge-unsigneds-aux width lst acc)
-                  (logapp (* (nfix width) (len lst))
-                          (merge-unsigneds width lst)
-                          (nfix acc)))
-           :hints(("Goal" 
-                   :induct (merge-unsigneds-aux-elim-ind width lst acc)
-                   :expand ((:free (acc) (merge-unsigneds-aux width lst acc)))))))
-
-  (defthmd merge-unsigneds-alt-def
-    (equal (merge-unsigneds width elts)
-           (if (atom elts)
-               0
-             (logapp (* (nfix width) (len (cdr elts)))
-                     (merge-unsigneds width (cdr elts))
-                     (loghead width (car elts)))))
-    :hints (("goal" :expand ((merge-unsigneds-aux width elts 0)
-                             (merge-unsigneds width elts))
-             :in-theory (disable merge-unsigneds))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (merge-unsigneds-aux-elim)
-                                   (merge-unsigneds)))))
-    :rule-classes ((:definition :controller-alist ((merge-unsigneds nil t))))))
