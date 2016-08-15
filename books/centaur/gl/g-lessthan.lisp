@@ -47,15 +47,14 @@
 
     (if (and (equal ard brd)
              (equal aid bid))
-        (b* (((mv r< r=) (bfr-<-=-ss arn brn)))
-          (mk-g-boolean
-           (bfr-ite (bfr-=-uu ard nil)
+        (mk-g-boolean
+         (bfr-ite (bfr-=-uu ard nil)
                   (bfr-and (bfr-not (bfr-=-uu aid nil))
-                         (bfr-<-ss ain bin))
-                  (bfr-or r<
-                        (bfr-and r=
-                               (bfr-not (bfr-=-uu aid nil))
-                               (bfr-<-ss ain bin))))))
+                           (bfr-<-ss ain bin))
+                  (bfr-or (bfr-<-ss arn brn)
+                          (bfr-and (bfr-not (bfr-=-uu aid nil))
+                                   (bfr-<-ss ain bin)
+                                   (bfr-=-ss arn brn)))))
       (g-apply '< (gl-list a b)))))
 
 (defthm deps-of-g-<-of-numbers
