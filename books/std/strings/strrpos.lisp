@@ -112,8 +112,11 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
 
   (definlined strrpos (x y)
     (declare (type string x y))
-    (let ((yl (length (the string y))))
-      (declare (type (integer 0 *) yl))
+    (let ((x (mbe :logic (str-fix x) :exec x))
+          (y (mbe :logic (str-fix y) :exec y))
+          (yl (length (the string y))))
+      (declare (type string x y)
+               (type (integer 0 *) yl))
       (strrpos-fast (the string x)
                     (the string y)
                     (the (integer 0 *) yl)
@@ -127,6 +130,8 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
              (<= 0 (strrpos x y)))
         (not (strrpos x y)))
     :rule-classes :type-prescription)
+
+  (local (in-theory (enable str-fix)))
 
   (encapsulate
     ()
@@ -146,9 +151,7 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
              :hints(("Goal" :induct (strrpos-fast x y n xl yl)))))
 
     (defthm prefixp-of-strrpos
-      (implies (and (strrpos x y)
-                    (force (stringp x))
-                    (force (stringp y)))
+      (implies (strrpos x y)
                (prefixp (explode x)
                         (nthcdr (strrpos x y) (explode y))))))
 
@@ -192,16 +195,15 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
       (implies (and (prefixp (explode x)
                              (nthcdr m (explode y)))
                     (<= m (len y))
-                    (force (natp m))
-                    (force (stringp x))
-                    (force (stringp y)))
+                    (force (natp m)))
                (and (natp (strrpos x y))
                     (>= (strrpos x y) m)))))
 
 
   (defthm strrpos-upper-bound-weak
-    (implies (and (force (stringp x))
-                  (force (stringp y)))
+    ;; Aah, this force is necessary because explode doesn't properly string-fix
+    ;; things.  What a bummer...
+    (implies (force (stringp y))
              (<= (strrpos x y)
                  (len (explode y))))
     :rule-classes ((:rewrite) (:linear)))
@@ -228,6 +230,56 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
                     (force (stringp y)))
                (< (strrpos x y)
                   (len (explode y))))
+      :rule-classes ((:rewrite) (:linear))))
+
+
+  (encapsulate
+    ()
+    (local (defthm lens-same-when-list-equiv
+             (implies (list-equiv x y)
+                      (equal (len x) (len y)))
+             :rule-classes :forward-chaining))
+
+    (local (defthm len-of-nthcdr
+             (equal (len (nthcdr n x))
+                    (if (< (nfix n) (len x))
+                        (- (len x) (nfix n))
+                      0))))
+
+    (local (defthm len-bounded-by-prefixp
+             (implies (prefixp x y)
+                      (<= (len x) (len y)))
+             :rule-classes ((:linear) (:forward-chaining))))
+
+    (local (defthm prefixp-of-self-and-cdr
+             (equal (prefixp x (cdr x))
+                    (atom x))))
+
+    (local (defthm prefixp-of-nthcdr-bounds-n
+             (IMPLIES (AND (PREFIXP X (NTHCDR N Y))
+                           (case-split (consp x)))
+                      (<= (nfix N)
+                          (- (LEN Y) (LEN X))))
+             :rule-classes ((:rewrite) (:linear))
+             :hints(("Goal" :in-theory (enable prefixp nthcdr)))))
+
+    (local (defthm lemma1
+             (implies (and (strrpos-fast x y n xl yl)
+                           (stringp x)
+                           (stringp y)
+                           (natp n)
+                           (= xl (length x))
+                           (= yl (length y))
+                           (<= n (length y)))
+                      (<= (strrpos-fast x y n xl yl)
+                          (- yl xl)))
+             :rule-classes ((:rewrite) (:linear))))
+
+    (defthm strrpos-upper-bound-stronger
+      (implies (and (strrpos x y)
+                    (force (stringp x))
+                    (force (stringp y)))
+               (<= (strrpos x y)
+                   (- (len (explode y))
+                      (len (explode x)))))
       :rule-classes ((:rewrite) (:linear)))))
-
-

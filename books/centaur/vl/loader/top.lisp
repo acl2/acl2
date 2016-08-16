@@ -50,6 +50,7 @@
 (include-book "oslib/mkdir" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
+(local (in-theory (disable (:e tau-system))))
 
 (defxdoc loader
   :parents (vl)
@@ -150,92 +151,6 @@ option on your @(see vl-loadconfig).</p>")
 
 (local (xdoc::set-default-parents loader))
 
-(defprod vl-loadstate
-  :short "Internal state object used throughout the VL loading routines."
-  :tag :vl-loadstate
-  :layout :tree
-  ((config    vl-loadconfig-p
-              "Original configuration passed to @(see vl-load).  This remains
-               constant throughout our loading routines.")
-
-   (descs     vl-descriptionlist-p
-              "Top-level descriptions (modules, packages, interfaces, etc.)  we
-               have loaded so far.  These descriptions have been only minimally
-               transformed, and are intended to capture the actual source code
-               in the files on disk.  These are always kept in the reverse
-               order that they are encountered (i.e., accumulator style), which
-               is important for lexical scoping.")
-
-   (descalist  t
-               "Fast alist of description names, for fast lookups."
-               :reqfix (vl-make-descalist descs))
-
-   (defines   vl-defines-p
-              "The current set of @('`define')s at any point in time.")
-
-   (iskips    vl-includeskips-p
-              "Supports multiple-include optimization in the @(see ~
-               preprocessor).")
-
-   (reportcard vl-reportcard-p
-               "Main storage for load-time warnings that we want to associate
-                with particular descriptions.  This is where most load-time
-                warnings from loading are kept during loading.  At the end of
-                loading, these warnings get injected into the actual
-                descriptions they pertain to.")
-
-   (pstate    vl-parsestate-p
-              "State that the parser needs.  BOZO probably we should consider
-               moving some of the loadstate into the pstate.  This holds, among
-               other things, any \"floating\" warnings that aren't associated
-               with any description.  But few warnings get put here. Instead,
-               most warnings get associated with particular descriptions. But
-               some warnings from the early stages of file loading (like
-               preprocessing and lexing), or warnings about malformed syntax
-               that occurs <i>between</i> descriptions, can end up here.")
-
-   (filemap   vl-filemap-p
-              "Database mapping the names of files we have read to their contents.
-               This is occasionally useful for seeing the original code for a
-               description.  To save memory, you can avoid constructing this
-               alist; see the @('filemapp') option in @(see
-               vl-loadconfig-p)."))
-
-  :require
-  (equal descalist (vl-make-descalist descs)))
-
-(define vl-loadstate-warn (&key
-                           (type   symbolp)
-                           (msg    stringp)
-                           (args   true-listp)
-                           ((fn    symbolp) '__function__)
-                           (fatalp booleanp)
-                           ((st    vl-loadstate-p) 'st))
-  :returns (new-st vl-loadstate-p)
-  :parents (vl-loadstate-p)
-  (b* (((vl-loadstate st) st)
-       ((vl-parsestate st.pstate) st.pstate)
-       (w          (make-vl-warning :type type
-                                    :msg msg
-                                    :args args
-                                    :fn fn
-                                    :fatalp fatalp))
-       (new-pstate (change-vl-parsestate st.pstate
-                                         :warnings (cons w st.pstate.warnings))))
-    (change-vl-loadstate st :pstate new-pstate)))
-
-(define vl-loadstate-set-warnings ((warnings vl-warninglist-p)
-                                   &key
-                                   ((st vl-loadstate-p) 'st))
-  :parents (vl-loadstate-p)
-  :returns (new-st vl-loadstate-p)
-  (b* (((vl-loadstate st) st)
-       (new-pstate (change-vl-parsestate st.pstate :warnings warnings)))
-    (change-vl-loadstate st :pstate new-pstate)))
-
-(local (in-theory (enable vl-loadstate-set-warnings)))
-
-
 (defsection scope-of-defines
   :short "How VL and other tools handle the scope of @('`defines')."
 
@@ -286,6 +201,133 @@ behaviors.</p>
 tests have ever been considered and what their values are.  If we find that two
 files have ever done an @('ifdef') and gotten different results, we could add a
 warning that maybe something is amiss with file loading.</p>")
+
+(defprod vl-loadstate
+  :short "Internal state object used throughout the VL loading routines."
+  :tag :vl-loadstate
+  :layout :tree
+  ((config    vl-loadconfig-p
+              "Original configuration passed to @(see vl-load).  This remains
+               constant throughout our loading routines.")
+
+   (descs     vl-descriptionlist-p
+              "Top-level descriptions (modules, packages, interfaces, etc.)  we
+               have loaded so far.  These descriptions have been only minimally
+               transformed, and are intended to capture the actual source code
+               in the files on disk.  These are always kept in the reverse
+               order that they are encountered (i.e., accumulator style), which
+               is important for lexical scoping.")
+
+   (descalist  t
+               "Fast alist of description names, for fast lookups."
+               :reqfix (vl-make-descalist descs))
+
+   (defines   vl-defines-p
+              "The current set of @('`define')s at any point in time.")
+
+   (iskips    vl-includeskips-p
+              "Supports multiple-include optimization in the @(see ~
+               preprocessor).")
+
+   (idcache    vl-dirlist-cache-p
+               "Cache for the contents of the :include-dirs.")
+
+   (spcache    vl-dirxlist-cache-p
+               "Cache for the contents of the :search-path.")
+
+   (reportcard vl-reportcard-p
+               "Main storage for load-time warnings that we want to associate
+                with particular descriptions.  This is where most load-time
+                warnings from loading are kept during loading.  At the end of
+                loading, these warnings get injected into the actual
+                descriptions they pertain to.")
+
+   (pstate    vl-parsestate-p
+              "State that the parser needs.  BOZO probably we should consider
+               moving some of the loadstate into the pstate.  This holds, among
+               other things, any \"floating\" warnings that aren't associated
+               with any description.  But few warnings get put here. Instead,
+               most warnings get associated with particular descriptions. But
+               some warnings from the early stages of file loading (like
+               preprocessing and lexing), or warnings about malformed syntax
+               that occurs <i>between</i> descriptions, can end up here.")
+
+   (filemap   vl-filemap-p
+              "Database mapping the names of files we have read to their contents.
+               This is occasionally useful for seeing the original code for a
+               description.  To save memory, you can avoid constructing this
+               alist; see the @('filemapp') option in @(see
+               vl-loadconfig-p).")
+
+   (bytes     natp :rule-classes :type-prescription
+              "Total bytes of input files read so far."))
+
+  :require
+  (equal descalist (vl-make-descalist descs)))
+
+(define vl-loadstate->warnings ((st vl-loadstate-p))
+  :returns (warnings vl-warninglist-p)
+  (vl-parsestate->warnings (vl-loadstate->pstate st)))
+
+(define vl-loadstate-set-warnings ((warnings vl-warninglist-p)
+                                   &key
+                                   ((st vl-loadstate-p) 'st))
+  :parents (vl-loadstate)
+  :returns (new-st (and (vl-loadstate-p new-st)
+                        (equal (vl-loadstate->descs new-st)
+                               (vl-loadstate->descs st))))
+  (b* (((vl-loadstate st) st)
+       (new-pstate (change-vl-parsestate st.pstate :warnings warnings)))
+    (change-vl-loadstate st :pstate new-pstate)))
+
+(define vl-loadstate-pad ((st vl-loadstate-p))
+  :returns (pad stringp :rule-classes :type-prescription)
+  :short "Prefix for lines produced by the loader."
+  :long "<p>See @(see vl-ppst-pad), this is basically the same except that in
+         the loader proper we know there are no open includes.</p>"
+  (cat "{" (str::lpadstr (vl-nice-bytes (vl-loadstate->bytes st)) 6) "} "))
+
+(define vl-loadstate-fatal (&key (type symbolp)
+                                 (msg stringp)
+                                 (args true-listp)
+                                 ((fn symbolp) '__function__)
+                                 (st vl-loadstate-p))
+  :returns (new-st (and (vl-loadstate-p new-st)
+                        (equal (vl-loadstate->descs new-st)
+                               (vl-loadstate->descs st))))
+  :parents (vl-loadstate)
+  (b* ((w (make-vl-warning :fatalp t
+                           :type type
+                           :msg msg
+                           :args args
+                           :fn fn))
+       (warnings (vl-loadstate->warnings st))
+       (st       (vl-loadstate-set-warnings (cons w warnings)))
+       ;; Like vl-ppst-fatal, print the error immediately since we might care.
+       (wstr   (with-local-ps (vl-print-warning w)))
+       (padded (str::prefix-lines wstr (vl-loadstate-pad st))))
+    (cw-unformatted padded)
+    st))
+
+(define vl-loadstate-warn (&key
+                           (type   symbolp)
+                           (msg    stringp)
+                           (args   true-listp)
+                           ((fn    symbolp) '__function__)
+                           (fatalp booleanp)
+                           ((st    vl-loadstate-p) 'st))
+  :returns (new-st (and (vl-loadstate-p new-st)
+                        (equal (vl-loadstate->descs new-st)
+                               (vl-loadstate->descs st))))
+  :parents (vl-loadstate)
+  (b* ((w          (make-vl-warning :type type
+                                    :msg msg
+                                    :args args
+                                    :fn fn
+                                    :fatalp fatalp))
+       (warnings (vl-loadstate->warnings st)))
+    (vl-loadstate-set-warnings (cons w warnings))))
+
 
 (define vl-load-merge-descriptions
   :short "Merge newly found Verilog descriptions with previously loaded
@@ -375,6 +417,48 @@ warning that maybe something is amiss with file loading.</p>")
                 (vl-print-str (vl-echarlist->string preprocessed)))))
     (mv tempname state)))
 
+(define vl-preprocess-debug ((filename       stringp)
+                             (preprocessed   vl-echarlist-p)
+                             (st             vl-loadstate-p)
+                             state)
+  :returns (mv (preprocessed vl-echarlist-p)
+               (state state-p1 :hyp (force (state-p1 state))))
+  (b* (((vl-loadstate st))
+       ((vl-loadconfig st.config))
+       (preprocessed (vl-echarlist-fix preprocessed))
+
+       ((unless st.config.debugp)
+        (mv preprocessed state))
+
+       ;; Debugging mode.  Write out the preprocessed file into a temporary
+       ;; file.  Then, read that file back in (to get all line numbers updated)
+       ;; and go from there.
+       ((mv debug-filename state)
+        (time$ (vl-write-preprocessor-debug-file filename preprocessed state)
+               :msg "; ~s0: write preprocessor debug file: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime st.config.mintime))
+       ((unless debug-filename)
+        ;; Something went wrong, don't read the file back in.
+        (mv preprocessed state))
+       ((mv okp contents ?len state)
+        (time$ (vl-read-file debug-filename)
+               :msg "; ~s0: re-read preprocessor debug file: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime st.config.mintime))
+       ((unless okp)
+        ;; Well, not a big deal, we can just use the original file.
+        (cw "Error: reading debug-file failed: ~s0~%" debug-filename)
+        (mv preprocessed state))
+       ((unless (equal (vl-echarlist->string preprocessed)
+                       (vl-echarlist->string contents)))
+        (cw "Error: wrong contents in debug-file: ~s0~%" debug-filename)
+        (mv preprocessed state)))
+    ;; Else all seems well, we read the debug-file back in and got the same
+    ;; text, so let's go ahead and use it so that locations will be correct.
+    (mv contents state)))
+
+
 (define vl-load-file ((filename stringp)
                       (st       vl-loadstate-p)
                       state)
@@ -382,7 +466,6 @@ warning that maybe something is amiss with file loading.</p>")
                (state state-p1       :hyp (force (state-p1 state))))
   :short "Main function for loading a single Verilog file."
   :prepwork ((local (in-theory (disable (force)))))
-
   :long "<p>Even loading a single file is a multi-step process:</p>
 
 <ul>
@@ -406,32 +489,33 @@ descriptions.</li>
   (b* (((vl-loadstate st) st)
        ((vl-loadconfig st.config) st.config)
 
-       (warnings (vl-parsestate->warnings st.pstate))
-       (- (and st.config.debugp (cw ";;; vl-load-file: Starting ~f0~%" filename)))
+       (pad (vl-loadstate-pad st))
+       (- (cw-unformatted (cat pad filename *nls*)))
 
        ;; BOZO we should switch this to use some more subtle b* structure that
        ;; lets contents become unreachable.
 
-       ((mv okp contents state)
+       ((mv okp contents len state)
         (time$ (vl-read-file (string-fix filename))
-               :msg "; ~s0: read: ~st sec, ~sa bytes~%"
-               :args (list filename)
+               :msg "~s0 (read: ~st sec, ~sa bytes)~%"
+               :args (list pad)
                :mintime st.config.mintime))
        ((unless okp)
-        (b* ((warnings (warn :type :vl-read-failed
-                             :msg  "Error reading file ~s0."
-                             :args (list filename))))
-          (and st.config.debugp
-               (cw ";;; vl-load-file: Error reading ~f0~%" filename))
-          (mv (vl-loadstate-set-warnings warnings)
-              state)))
+        (mv (vl-loadstate-fatal :type :vl-read-failed
+                                :msg "Error reading file ~s0."
+                                :args (list filename)
+                                :st st)
+            state))
 
+       (new-bytes (+ len st.bytes))
+       (st  (change-vl-loadstate st :bytes new-bytes))
+       (pad (vl-loadstate-pad st))
        (filemap
         (time$ (and st.config.filemapp
                     (cons (cons filename (vl-echarlist->string contents))
                           st.filemap))
-               :msg "; ~s0: filemap: ~st sec, ~sa bytes~%"
-               :args (list filename)
+               :msg "~s0 (filemap: ~st sec, ~sa bytes)~%"
+               :args (list pad)
                :mintime st.config.mintime))
 
 
@@ -439,102 +523,72 @@ descriptions.</li>
 ; answer isn't very clear, and you can probably make a case for it either way.
 ; I think it makes the most sense to impose a simple, consistent rule:
 ;
-;   +------------------------------------------------------------------+
-;   | If we can't parse the file successfully, we don't update any     |
-;   | part of the state except the warnings (warnings and reportcard). |
-;   +------------------------------------------------------------------+
+;   +---------------------------------------------------------------------+
+;   | If we can't parse the file successfully, we don't update any        |
+;   | semantically relevant part of the state                             |
+;   +---------------------------------------------------------------------+
 ;
 ; This way things are pretty clear.  Whatever was in that file we couldn't
-; parse didn't affect us.  If it had defines we wanted, that's too bad.
-;
-; Exception to this rule: we also update the iskips, because it's OK to do
-; so, and because we want to ensure they are updated in a single-threaded
-; way for fast alist discipline.
+; parse didn't affect us.  If it had defines we wanted, that's too bad.  We are
+; still free to update warnings, iskips, bytes read, etc., because those aren't
+; relevant to the contents of the files we've loaded.
 
-       ((mv successp defines filemap iskips preprocessed state)
+       ((mv successp defines filemap iskips bytes warnings preprocessed state)
         (time$ (vl-preprocess contents
                               :defines st.defines
                               :filemap filemap
                               :iskips  st.iskips
-                              :config  st.config)
-               :msg "; ~s0: preprocess: ~st sec, ~sa bytes~%"
-               :args (list filename)
+                              :bytes   new-bytes
+                              :config  st.config
+                              :idcache st.idcache
+                              :warnings (vl-loadstate->warnings st))
+               :msg "~s0 (preprocess: ~st sec, ~sa bytes)~%"
+               :args (list pad)
                :mintime st.config.mintime))
-       (st (change-vl-loadstate st :iskips iskips))
+       (st (vl-loadstate-set-warnings warnings))
+       (st (change-vl-loadstate st
+                                :iskips iskips
+                                :bytes bytes))
        ((unless successp)
-        (b* ((warnings (warn :type :vl-preprocess-failed
-                             :msg "Preprocessing failed for ~s0."
-                             :args (list filename))))
-          (and st.config.debugp
-               (cw ";;; vl-load-file: Error preprocessing ~f0~%" filename))
-          (mv (vl-loadstate-set-warnings warnings)
-              state)))
+        (mv (vl-loadstate-fatal :type :vl-preprocess-failed
+                                :msg "Preprocessing failed for ~s0."
+                                :args (list filename)
+                                :st st)
+            state))
 
        ((mv preprocessed state)
-        (b* (((unless st.config.debugp)
-              (mv preprocessed state))
-             ;; Debugging mode.  Write out the preprocessed file into a
-             ;; temporary file.  Then, read that file back in (to get all
-             ;; line numbers updated) and go from there.
-             ((mv debug-filename state)
-              (time$ (vl-write-preprocessor-debug-file filename preprocessed state)
-                     :msg "; ~s0: write preprocessor debug file: ~st sec, ~sa bytes~%"
-                     :args (list filename)
-                     :mintime st.config.mintime))
-             ((unless debug-filename)
-              ;; Something went wrong, don't read the file back in.
-              (mv preprocessed state))
-             ((mv okp contents state)
-              (time$ (vl-read-file debug-filename)
-                     :msg "; ~s0: re-read preprocessor debug file: ~st sec, ~sa bytes~%"
-                     :args (list filename)
-                     :mintime st.config.mintime))
-             ((unless okp)
-              ;; Well, not a big deal, we can just use the original file.
-              (cw "Error: reading debug-file failed: ~s0~%" debug-filename)
-              (mv preprocessed state))
-             ((unless (equal (vl-echarlist->string preprocessed)
-                             (vl-echarlist->string contents)))
-              (cw "Error: wrong contents in debug-file: ~s0~%" debug-filename)
-              (mv preprocessed state)))
-          ;; Else all seems well, we read the debug-file back in and got the same
-          ;; text, so let's go ahead and use it so that locations will be correct.
-          (mv contents state)))
+        (vl-preprocess-debug filename preprocessed st state))
 
        ((mv successp lexed warnings)
         (time$ (vl-lex preprocessed
                        :config st.config
-                       :warnings warnings)
-               :msg "; ~s0: lex: ~st sec, ~sa bytes~%"
-               :args (list filename)
+                       :warnings (vl-loadstate->warnings st))
+               :msg "~s0 (lex: ~st sec, ~sa bytes)~%"
+               :args (list pad)
                :mintime st.config.mintime))
+       (st (vl-loadstate-set-warnings warnings))
        ((unless successp)
-        (b* ((warnings (warn :type :vl-lex-failed
-                             :msg "Lexing failed for ~s0."
-                             :args (list filename))))
-          (and st.config.debugp
-               (cw ";;; vl-load-file: Error lexing ~f0~%" filename))
-          (mv (vl-loadstate-set-warnings warnings)
-              state)))
+        (mv (vl-loadstate-fatal :type :vl-lex-failed
+                                :msg "Lexing failed for ~s0."
+                                :args (list filename)
+                                :st st)
+            state))
 
        ((mv cleaned comment-map)
         (time$ (vl-kill-whitespace-and-comments lexed)
-               :msg "; ~s0: whitespace: ~st sec, ~sa bytes~%"
-               :args (list filename)
+               :msg "~s0 (whitespace: ~st sec, ~sa bytes)~%"
+               :args (list pad)
                :mintime st.config.mintime))
 
        ;; Subtle, horrible nonsense.  Install all warnings into the pstate.
-
-       (pstate        (change-vl-parsestate st.pstate :warnings warnings))
+       (pstate (vl-loadstate->pstate st))
        (pstate-backup pstate)
-
        ((mv successp descs pstate)
         ;; Note that these descriptions are returned in parse order.
         (time$ (vl-parse cleaned pstate st.config)
                :msg "; ~s0: parse: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime st.config.mintime))
-
        ((unless successp)
         ;; In practice this should be rare.  See vl-parse-module-declaration:
         ;; We work hard to make sure that parse errors that occur within a
@@ -543,16 +597,14 @@ descriptions.</li>
         ;; we want to add nothing but warnings to the parse state.  That means
         ;; unwinding and restoring the pstate-backup that we had.
         (b* ((new-warnings (vl-parsestate->warnings pstate))
-             (-      (vl-parsestate-free pstate))
-             (pstate (vl-parsestate-restore pstate-backup))
-             (w      (make-vl-warning :type :vl-parse-failed
-                                      :msg "Parsing failed for ~s0."
-                                      :args (list filename)
-                                      :fn __function__))
-             (pstate (vl-parsestate-set-warnings (cons w new-warnings) pstate))
-             (st     (change-vl-loadstate st :pstate pstate)))
-          (and st.config.debugp
-               (cw ";;; vl-load-file: Error parsing ~f0~%" filename))
+             (-            (vl-parsestate-free pstate))
+             (pstate       (vl-parsestate-restore pstate-backup))
+             (st           (change-vl-loadstate st :pstate pstate))
+             (st           (vl-loadstate-set-warnings new-warnings))
+             (st           (vl-loadstate-fatal :type :vl-parse-failed
+                                               :msg "Parsing failed for ~s0."
+                                               :args (list filename)
+                                               :st st)))
           (mv st state)))
 
        ;; If we get here, parsing was successful, pstate has already been
@@ -561,28 +613,31 @@ descriptions.</li>
        (descs
         ;; Note that this preserves the order of descs.
         (time$ (vl-descriptionlist-inject-comments descs comment-map)
-               :msg "; ~s0: comment: ~st sec, ~sa bytes~%"
-               :args (list filename)
+               :msg "~s0 (comment: ~st sec, ~sa bytes)~%"
+               :args (list pad)
                :mintime st.config.mintime))
 
        ;; Try to associate low-level, "early" warnings (e.g., from the lexer)
        ;; with the appropriate modules.  Note that this preserves the order of
        ;; descs.
        ((mv descs pstate)
-        (b* ((warnings (vl-parsestate->warnings pstate))
-             (warnings (vl-commentmap-translate-off-warnings comment-map warnings))
-             ((mv descs warnings)
-              (vl-descriptionlist-inject-warnings descs warnings))
-             (pstate (change-vl-parsestate pstate :warnings warnings)))
-          (mv descs pstate)))
+        (time$ (b* ((warnings (vl-parsestate->warnings pstate))
+                    (warnings (vl-commentmap-translate-off-warnings comment-map warnings))
+                    ((mv descs warnings)
+                     (vl-descriptionlist-inject-warnings descs warnings))
+                    (pstate (change-vl-parsestate pstate :warnings warnings)))
+                 (mv descs pstate))
+               :msg "~s0 (warnings: ~st sec, ~sa bytes)~%"
+               :args (list pad)
+               :mintime st.config.mintime))
 
        ;; Merge new descriptions into previous descriptions.  Note that this
        ;; (modulo dropping later descriptions) revappends the descs onto
        ;; sc.descs.
        ((mv descs descalist reportcard)
         (time$ (vl-load-merge-descriptions descs st.descs st.descalist st.reportcard)
-               :msg "; ~s0: merge: ~st sec, ~sa bytes~%"
-               :args (list filename)
+               :msg "~s0 (merge: ~st sec, ~sa bytes)"
+               :args (list pad)
                :mintime st.config.mintime))
 
        (st    (change-vl-loadstate st
@@ -593,8 +648,6 @@ descriptions.</li>
                                    :descs      descs
                                    :descalist  descalist
                                    :reportcard reportcard)))
-    (and st.config.debugp
-         (cw ";;; vl-load-file: Finished ~f0~%" filename))
     (mv st state))
   ///
   (defthm unique-names-after-vl-load-file
@@ -611,14 +664,17 @@ descriptions.</li>
   :short "Load a list of files."
   (b* (((when (atom filenames))
         (mv (vl-loadstate-fix st) state))
-       ((mv st state) (vl-load-file (car filenames) st state)))
+       ((mv st state)
+        (time$ (vl-load-file (car filenames) st state)
+               :msg "~s0 (loaded ~f1; ~st sec, ~sa bytes)~%"
+               :args (list (vl-loadstate-pad st) (car filenames))
+               :mintime (vl-loadconfig->mintime (vl-loadstate->config st)))))
     (vl-load-files (cdr filenames) st state))
   ///
   (defthm unique-names-after-vl-load-files
     (b* (((mv new-st &) (vl-load-files filenames st state)))
       (implies (uniquep (vl-descriptionlist->names (vl-loadstate->descs st)))
                (no-duplicatesp (vl-descriptionlist->names (vl-loadstate->descs new-st)))))))
-
 
 
 (define vl-load-description
@@ -635,9 +691,14 @@ descriptions.</li>
        ((vl-loadconfig config) st.config)
        (warnings (vl-parsestate->warnings st.pstate))
 
-       ((mv filename warnings state)
-        (vl-find-basename/extension name config.search-exts config.search-path
-                                    warnings state))
+       ((mv filename warnings)
+        (time$ (vl-find-basename/extension name
+                                           config.search-exts
+                                           (vl-loadstate->spcache st)
+                                           warnings)
+               :msg "~s0 (search ~s1: ~st sec, ~sa bytes)~%"
+               :args (list (vl-loadstate-pad st) name)
+               :mintime (vl-loadconfig->mintime (vl-loadstate->config st))))
        (st (vl-loadstate-set-warnings warnings))
 
        ((unless filename)
@@ -677,7 +738,10 @@ descriptions.</li>
         ;; this, see the vl-search-failed warning below.
         (mv st state)))
 
-    (vl-load-file filename st state))
+    (time$ (vl-load-file filename st state)
+           :msg "~s0 (*loaded ~f1; ~st sec, ~sa bytes)~%"
+           :args (list (vl-loadstate-pad st) filename)
+           :mintime (vl-loadconfig->mintime (vl-loadstate->config st))))
   ///
   (defthm unique-names-after-vl-load-description
     (b* (((mv new-st &) (vl-load-description name st state)))
@@ -894,8 +958,10 @@ will look for new modules.</p>"
 
 (define vl-load-read-file-hook ((filename stringp)
                                 (contents vl-echarlist-p)
+                                (len (equal len (len contents)))
                                 state)
   :returns (state state-p1 :hyp (state-p1 state))
+  (declare (ignorable contents))
   (b* ((file-alist (and (acl2::boundp-global 'vl-read-file-alist state)
                         (f-get-global 'vl-read-file-alist state)))
        ;; Expected format of file-alist
@@ -909,7 +975,7 @@ will look for new modules.</p>"
                 entry
               (progn$ (raise "Unexpected vl-read-file-alist entry for ~x0: ~x1~%" filename entry)
                       '(0 . 0)))
-          (cons 0 (len contents))))
+          (cons 0 len)))
        (new-entry (cons (+ 1 num-reads) len))
        (new-alist (hons-acons filename new-entry file-alist))
        (state (f-put-global 'vl-read-file-alist new-alist state)))
@@ -1011,7 +1077,22 @@ will look for new modules.</p>"
           (mv warnings
               (change-vl-loadconfig config :start-files start-files))))
 
+       ;; Create include-dir and search-path caches for fast file lookups.
        ((vl-loadconfig config) config)
+
+       ((mv idcache warnings state)
+        (time$ (vl-make-dirlist-cache config.include-dirs warnings state)
+               :msg "; include-dir cache: ~x0 dirs, ~st sec, ~sa bytes~%"
+               :args (list (len config.include-dirs))
+               :mintime config.mintime))
+
+       ((mv spcache warnings state)
+        (time$ (vl-make-dirxlist-cache config.search-path
+                                       config.search-exts
+                                       warnings state)
+               :msg "; search-dir xcache: ~x0 dirs, ~st sec, ~sa bytes~%"
+               :args (list (len config.search-path))
+               :mintime config.mintime))
 
        (pstate (make-vl-parsestate :warnings warnings
                                    :usertypes nil))
@@ -1022,7 +1103,12 @@ will look for new modules.</p>"
                                   :defines    config.defines
                                   :reportcard nil
                                   :pstate     pstate
-                                  :filemap    nil))
+                                  :iskips     nil
+                                  :filemap    nil
+                                  :bytes      0
+                                  :idcache    idcache
+                                  :spcache    spcache
+                                  ))
 
        ((mv st state)
         (time$ (vl-load-files config.start-files st state)
@@ -1048,6 +1134,8 @@ will look for new modules.</p>"
                                    :filemap  st.filemap
                                    :defines  st.defines))
 
+       (- (vl-free-dirlist-cache idcache))
+       (- (vl-free-dirxlist-cache spcache))
        (- (vl-parsestate-free st.pstate))
        (- (fast-alist-free st.descalist))
        (- (vl-iskips-report st.iskips))

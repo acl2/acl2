@@ -45,33 +45,38 @@
    (filename stringp :type string        "Current file name")
    (line     posp    :type (integer 1 *) "Current line number")
    (col      natp    :type (integer 0 *) "Current column number")
+   (len      natp    :type (integer 0 *) "Current byte number")
    (nrev)
    &key
    (state 'state))
   :split-types t
   :returns
-  (mv (nrev "Characters from the file in reverse order.") state)
+  (mv (nrev "Characters from the file in reverse order.")
+      (len  natp :rule-classes :type-prescription)
+      state)
   :long "<p>You should never need to reason about this function directly,
 because it is typically rewritten into @(see vl-read-file-loop) using the
 following rule:</p> @(def vl-read-file-loop-aux-redef)"
   :measure (file-measure channel state)
-  (b* ((nrev (nrev-fix nrev))
+  (b* ((nrev  (nrev-fix nrev))
+       (len (lnfix len))
        ((unless (mbt (state-p state)))
-        (mv nrev state))
+        (mv nrev len state))
        ((mv byte state)
         (read-byte$ channel state))
        ((unless byte) ;; EOF
-        (mv nrev state))
+        (mv nrev len state))
        ((the character char) (code-char (the (unsigned-byte 8) byte)))
-       (echar     (make-vl-echar-fast :char char
-                                      :filename filename
-                                      :line line
-                                      :col col))
-       (newlinep  (eql char #\Newline))
-       (next-line (if newlinep (the (integer 0 *) (+ 1 line)) line))
-       (next-col  (if newlinep 0 (the (integer 0 *) (+ 1 col))))
-       (nrev      (nrev-push echar nrev)))
-    (vl-read-file-loop-aux channel filename next-line next-col nrev)))
+       (echar      (make-vl-echar-fast :char char
+                                       :filename filename
+                                       :line line
+                                       :col col))
+       (newlinep   (eql char #\Newline))
+       (next-line  (if newlinep (the (integer 0 *) (+ 1 line)) line))
+       (next-col   (if newlinep 0 (the (integer 0 *) (+ 1 col))))
+       (next-len   (the (integer 0 *) (+ 1 len)))
+       (nrev       (nrev-push echar nrev)))
+    (vl-read-file-loop-aux channel filename next-line next-col next-len nrev)))
 
 (define vl-read-file-loop
   :parents (vl-read-file)
@@ -84,17 +89,22 @@ following rule:</p> @(def vl-read-file-loop-aux-redef)"
    (state 'state))
   :guard (open-input-channel-p channel :byte state)
   :returns
-  (mv (data "Characters from the file." vl-echarlist-p :hyp :fguard)
-      (state state-p1 :hyp :fguard))
+  (mv (data "Characters from the file." vl-echarlist-p)
+      (len  "Number of characters read." (equal len (len data)))
+      (state (and (state-p1 state)
+                  (open-input-channel-p1 channel :byte state))
+             :hyp (and (force (state-p1 state))
+                       (force (symbolp channel))
+                       (force (open-input-channel-p1 channel :byte state)))))
   :measure (file-measure channel state)
   :verify-guards nil
   (mbe :logic
        (b* (((unless (state-p state))
-             (mv nil state))
+             (mv nil 0 state))
             ((mv byte state)
              (read-byte$ channel state))
             ((unless byte)
-             (mv nil state))
+             (mv nil 0 state))
             (char      (code-char (the (unsigned-byte 8) byte)))
             (echar     (make-vl-echar-fast :char char
                                            :filename filename
@@ -103,18 +113,17 @@ following rule:</p> @(def vl-read-file-loop-aux-redef)"
             (newlinep  (eql char #\Newline))
             (next-line (if newlinep (+ 1 line) line))
             (next-col  (if newlinep 0 (+ 1 col)))
-            ((mv rest state)
+            ((mv rest len state)
              (vl-read-file-loop channel filename next-line next-col)))
-         (mv (cons echar rest) state))
+         (mv (cons echar rest) (+ 1 len) state))
        :exec
-       (with-local-stobj nrev
-         (mv-let (echars nrev state)
-           (b* (((mv nrev state)
-                 (vl-read-file-loop-aux channel filename line col nrev))
-                ((mv echars nrev)
-                 (nrev-finish nrev)))
-             (mv echars nrev state))
-           (mv echars state))))
+       (b* (((local-stobjs nrev)
+             (mv echars len nrev state))
+            ((mv nrev len state)
+             (vl-read-file-loop-aux channel filename line col 0 nrev))
+            ((mv echars nrev)
+             (nrev-finish nrev)))
+         (mv echars len nrev state)))
   ///
   (local (in-theory (enable vl-read-file-loop-aux)))
 
@@ -123,20 +132,14 @@ following rule:</p> @(def vl-read-file-loop-aux-redef)"
     :rule-classes :type-prescription)
 
   (defthm vl-read-file-loop-aux-redef
-    (equal (vl-read-file-loop-aux channel filename line col acc)
-           (b* (((mv data state)
+    (equal (vl-read-file-loop-aux channel filename line col len acc)
+           (b* (((mv data & state)
                  (vl-read-file-loop channel filename line col)))
-             (mv (append acc data) state))))
+             (mv (append acc data)
+                 (+ (lnfix len) (len data))
+                 state))))
 
-  (verify-guards vl-read-file-loop-fn)
-
-  (defthm vl-read-file-loop-preserves-open-input-channel-p1
-    (implies (and (force (state-p1 state))
-                  (force (symbolp channel))
-                  (force (open-input-channel-p1 channel :byte state)))
-             (b* (((mv ?data state)
-                   (vl-read-file-loop channel filename line col)))
-               (open-input-channel-p1 channel :byte state)))))
+  (verify-guards vl-read-file-loop-fn))
 
 (defsection vl-read-file-hook
   :parents (vl-read-file)
@@ -145,26 +148,27 @@ following rule:</p> @(def vl-read-file-loop-aux-redef)"
 files that have been read.  By default we do nothing.</p>"
 
   (encapsulate
-    (((vl-read-file-hook * * state) => state
-      :formals (filename contents state)
+    (((vl-read-file-hook * * * state) => state
+      :formals (filename contents len state)
       :guard (and (stringp filename)
-                  (vl-echarlist-p contents))))
-    (local (defun vl-read-file-hook (filename contents state)
-             (declare (ignore filename contents))
+                  (vl-echarlist-p contents)
+                  (equal len (len contents)))))
+    (local (defun vl-read-file-hook (filename contents len state)
+             (declare (ignore filename contents len))
              state))
     (defthm state-p1-of-vl-read-file-hook
       (implies (force (state-p1 state))
-               (state-p1 (vl-read-file-hook filename contents state)))))
+               (state-p1 (vl-read-file-hook filename contents len state)))))
 
   (define vl-read-file-hook-default ((filename stringp)
                                      (contents vl-echarlist-p)
+                                     (len (equal len (len contents)))
                                      state)
     :returns (state state-p1 :hyp (state-p1 state))
-    (declare (ignore filename contents))
+    (declare (ignore filename contents len))
     state)
 
   (defattach vl-read-file-hook vl-read-file-hook-default))
-
 
 (define vl-read-file
   :parents (loader)
@@ -175,7 +179,8 @@ files that have been read.  By default we do nothing.</p>"
   (mv (okp    booleanp :rule-classes :type-prescription)
       (result "On success, the entire contents of @('filename') as a list of
                @(see extended-characters)."
-              vl-echarlist-p :hyp :fguard)
+              vl-echarlist-p)
+      (len    (equal len (len result)))
       (state  state-p1 :hyp (force (state-p1 state))))
   :long "<p>We read the file with @(see read-byte$) instead of @(see
 read-char$), because this seems perhaps to be more reliable.  In particular,
@@ -183,11 +188,11 @@ even if the Lisp system wants to use Unicode or some other encoding for
 character streams, @('read-byte$') should always safely return octets.</p>"
   (b* ((filename            (string-fix filename))
        ((mv channel state)  (open-input-channel filename :byte state))
-       ((unless channel)    (mv nil nil state))
-       ((mv data state)     (vl-read-file-loop channel filename 1 0))
+       ((unless channel)    (mv nil nil 0 state))
+       ((mv data len state) (vl-read-file-loop channel filename 1 0))
        (state               (close-input-channel channel state))
-       (state               (vl-read-file-hook filename data state)))
-    (mv t data state))
+       (state               (vl-read-file-hook filename data len state)))
+    (mv t data len state))
   ///
   (defthm true-listp-of-vl-read-file
     (true-listp (mv-nth 1 (vl-read-file filename)))

@@ -830,6 +830,7 @@ shown.</p>"
      :include-dirs  config.include-dirs
      :plusargs      config.plusargs
      :defines       defines
+     :mintime       1/100
      :debugp        config.debug)))
 
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
@@ -1013,7 +1014,9 @@ shown.</p>"
         :vl-warn-blank
         :vl-undefined-names
         :vl-port-mismatch
-        :vl-warn-scary-translate-comment))
+        :vl-warn-scary-translate-comment
+        :vl-preprocessor-error
+        :vl-preprocess-failed))
 
 (defconst *trunc-warnings*
   (list :vl-warn-extension
@@ -1038,6 +1041,7 @@ shown.</p>"
         :vl-warn-vardecl-assign
         :vl-warn-oddexpr
         :vl-warn-possible-typo
+        :vl-warn-include-guard
         ))
 
 (defconst *smell-minor-warnings*

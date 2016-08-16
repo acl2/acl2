@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "top")
 (include-book "print-defines")
+(include-book "../../mlib/print-warnings")
 (local (include-book "../../util/arithmetic"))
 
 ;; This will get run any time the book is included.
@@ -69,18 +70,27 @@
 
 (defmacro preprocessor-must-ignore (input &key defines)
   `(make-event
-    (b* ((echars (vl-echarlist-from-str ,input))
-         ((mv successp ?defs ?filemap ?iskips output state)
+    (b* ((__function__ 'preprocessor-must-ignore)
+         (echars (vl-echarlist-from-str ,input))
+         (include-dirs (list "."))
+         (warnings nil)
+         ((mv idcache ?warnings state)
+          (vl-make-dirlist-cache include-dirs warnings state))
+         ((mv successp ?defs ?filemap ?iskips ?bytes warnings output state)
           (vl-preprocess echars
                          :defines ,defines
-                         :config (make-vl-loadconfig
-                                  :include-dirs (list "."))))
+                         :config (make-vl-loadconfig :include-dirs include-dirs)
+                         :idcache idcache
+                         :warnings warnings
+                         :bytes 0))
+         (- (vl-free-dirlist-cache idcache))
          (- (or (debuggable-and successp
                                 (equal echars output))
-                (er hard? 'preprocessor-must-ignore
-                    "expected ~s0, got ~s1"
-                    (vl-echarlist->string echars)
-                    (vl-echarlist->string output)))))
+                (raise "expected ~s0, got ~s1"
+                       (vl-echarlist->string echars)
+                       (vl-echarlist->string output))))
+         (- (or (not warnings)
+                (raise "unexpected warnings: ~s0~%" (vl-warnings-to-string warnings)))))
       (value '(value-triple :success)))))
 
 ;; (preprocessor-must-ignore "`foo") ;; causes an error, good.
@@ -98,14 +108,22 @@
 
 
 
-(defmacro preprocessor-basic-test (&key input defines output)
+(defmacro preprocessor-basic-test (&key input defines output warnings-expectedp)
   `(make-event
-    (b* ((echars (vl-echarlist-from-str ,input :filename "test.v"))
-         ((mv successp ?defs ?filemap ?iskips output state)
+    (b* ((__function__ 'preprocessor-basic-test)
+         (echars (vl-echarlist-from-str ,input :filename "test.v"))
+         (include-dirs (list "."))
+         (warnings nil)
+         ((mv idcache warnings state)
+          (vl-make-dirlist-cache include-dirs warnings state))
+         ((mv successp ?defs ?filemap ?iskips ?bytes warnings output state)
           (vl-preprocess echars
                          :defines ,defines
-                         :config (make-vl-loadconfig
-                                  :include-dirs (list "."))))
+                         :config (make-vl-loadconfig :include-dirs include-dirs)
+                         :idcache idcache
+                         :warnings warnings
+                         :bytes 0))
+         (- (vl-free-dirlist-cache idcache))
          (- (cw! "Successp:~x0~%Input:~%~s1~%Output:~%|~s2|~%Expected:~%|~s3|~%"
                  successp
                  ,input
@@ -113,7 +131,13 @@
                  ,output))
          (- (or (debuggable-and successp
                                 (equal (vl-echarlist->string output) ,output))
-                (er hard? 'preprocessor-basic-test "failed!"))))
+                (raise "failed!")))
+         (- (if (and warnings (not ,warnings-expectedp))
+                (raise "unexpected warnings: ~s0~%" (vl-warnings-to-string warnings))
+              t))
+         (- (if (and ,warnings-expectedp (not warnings))
+                (raise "expected warnings but got none!")
+              t)))
       (value '(value-triple :success)))))
 
 
@@ -250,7 +274,9 @@
 
 
   4"
- :defines (simple-test-defines nil))
+ :defines (simple-test-defines nil)
+ :warnings-expectedp t ;; because we're redefining foo
+ )
 
 
 
@@ -288,13 +314,10 @@
  :output "`timescale 1ns / 10 ps"
  :defines (simple-test-defines '(("foo" . "1ns / 10 ps"))))
 
-
-
 (preprocessor-basic-test
  :input "this is some `resetall text"
  :output "this is some  text"
  :defines (simple-test-defines nil))
-
 
 (preprocessor-basic-test
  :input "this is `celldefine some more `endcelldefine and some more"
@@ -386,7 +409,9 @@ blah blah"
  :output "// this is used in preprocessor-tests.lisp
 // do not delete it
 "
- :defines (simple-test-defines nil))
+ :defines (simple-test-defines nil)
+ ;; since there isn't an include guard
+ :warnings-expectedp t)
 
 
 
@@ -645,7 +670,9 @@ wire [800:0] found5 =  "hello\"moon";
 // do not delete it
 
 """}
- :defines (simple-test-defines nil))
+ :defines (simple-test-defines nil)
+ ;; since there's no include-guard
+ :warnings-expectedp t)
 
 
 
@@ -662,7 +689,9 @@ hello
  
 hello
 """}
- :defines (simple-test-defines nil))
+ :defines (simple-test-defines nil)
+ ;; since there's no include guard
+ :warnings-expectedp t)
 
 
 
