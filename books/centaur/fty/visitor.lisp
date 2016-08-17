@@ -265,10 +265,14 @@
          x))))
 
 
-(define visitor-measure (x default)
+(define visitor-measure (x default type-name)
   (b* (((visitorspec x)))
     (if x.measure
-        (subst x.order :order (subst default :count x.measure))
+        (acl2::template-subst
+         x.measure
+         :str-alist `(("<TYPE>" ,(symbol-name type-name) . ,type-name))
+         :atom-alist `((:order . ,x.order)
+                       (:count . ,default)))
       default)))
 
 (define visitor-prod-body (type x)
@@ -303,7 +307,8 @@
     (and (or mrec type.recp)
          `(:measure ,(visitor-measure x (if type.count
                                             `(,type.count ,x.xvar)
-                                          0))))))
+                                          0)
+                                      type.name)))))
 
 
 
@@ -365,8 +370,9 @@
   (b* ((default
          ;; Not really sure what to use as a default measure, but maybe
          ;; 0 makes sense since that's the default for a normal sum.
-         0))
-    `(:measure ,(visitor-measure x default))))
+         0)
+       (typename (flextranssum->name type)))
+    `(:measure ,(visitor-measure x default typename))))
 
 
 
@@ -377,7 +383,8 @@
        ((visitorspec x)))
     `(:measure ,(visitor-measure x (if type.count
                                        `(,type.count ,x.xvar)
-                                     `(len ,x.xvar))))))
+                                     `(len ,x.xvar))
+                                 type.name))))
 
 
 
@@ -421,7 +428,8 @@
        ((visitorspec x)))
     `(:measure ,(visitor-measure x (if type.count
                                        `(,type.count ,x.xvar)
-                                     `(len (,type.fix ,x.xvar)))))))
+                                     `(len (,type.fix ,x.xvar)))
+                                 type.name))))
 
 
 
@@ -496,6 +504,7 @@
        (type.pred (with-flextype-bindings type type.pred))
        (type.fix  (with-flextype-bindings type type.fix))
        (name (visitor-macroname x type.name))
+       ((when (eq name :skip)) nil)
        (fnname (visitor-fnname x type.name))
        (formals (acl2::template-subst-top
                  x.formals
@@ -538,17 +547,22 @@
 (define visitor-mutual-aux (types x)
   (if (atom types)
       nil
-    (cons (visitor-def (car types) x t)
-          (visitor-mutual-aux (cdr types) x))))
+    (b* ((def (visitor-def (car types) x t))
+         (rest (visitor-mutual-aux (cdr types) x)))
+      (if def
+          (cons def rest)
+        rest))))
 
 (define visitor-mutual (type-name types x other-fns)
-  (b* (((visitorspec x)))
+  (b* (((visitorspec x))
+       (defs (visitor-mutual-aux types x))
+       ((when (and (not other-fns) (not defs))) nil))
   `(defines ,(visitor-macroname x type-name)
      ;; [Jared] no longer necessary since we now always use DEFINE
      ;; :locally-enable nil
      ,@x.defines-args
      ,@other-fns
-     ,@(visitor-mutual-aux types x)
+     ,@defs
      ///
      (verify-guards ,(visitor-fnname x
                                    (with-flextype-bindings (type (car types))
@@ -571,13 +585,15 @@
    fixequivs))
 
 (define visitor-multi (multicfg  types-templates)
-  (b* (((visitormulti multicfg)))
+  (b* (((visitormulti multicfg))
+       (defs (visitor-multi-aux types-templates))
+       ((when (and (not multicfg.other-fns) (not defs))) nil))
     `(defines ,multicfg.name
        ;; [Jared] no longer necessary since we now always use DEFINE
        ;; :locally-enable nil
        ,@multicfg.defines-args
        ,@multicfg.other-fns
-       ,@(visitor-multi-aux types-templates)
+       ,@defs
        ///
        (verify-guards ,(visitor-fnname (cdar types-templates)
                                        (with-flextype-bindings (type (car (caar types-templates)))
