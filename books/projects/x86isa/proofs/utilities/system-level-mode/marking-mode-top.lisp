@@ -2154,33 +2154,27 @@
             (not (ms x86))
             (not (fault x86))
             (x86p x86)
-            (double-rewrite (not flg-get-prefixes))
-            ;; !!! Add double-rewrite after monitoring this theorem...
-            (double-rewrite (canonical-address-p temp-rip0))
-            (double-rewrite
-             (if (and (equal prefix-length 0)
-                      (equal rex-byte 0)
-                      (not modr/m?))
-                 ;; One byte instruction --- all we need to know is that
-                 ;; the new RIP is canonical, not that there's no error
-                 ;; in reading a value from that address.
-                 t
-               (not flg-opcode/escape-byte)))
-            ;; !!! Add double-rewrite after monitoring this theorem...
-            (double-rewrite
-             (if (equal rex-byte 0)
-                 t
-               (canonical-address-p temp-rip1)))
-            (double-rewrite
-             (if  modr/m?
-                 (and (canonical-address-p temp-rip2)
-                      (not flg-modr/m))
-               t))
-            (double-rewrite
-             (if sib?
-                 (and (canonical-address-p temp-rip3)
-                      (not flg-sib))
-               t))
+            (not flg-get-prefixes)
+            (canonical-address-p temp-rip0)
+            (if (and (equal prefix-length 0)
+                     (equal rex-byte 0)
+                     (not modr/m?))
+                ;; One byte instruction --- all we need to know is that
+                ;; the new RIP is canonical, not that there's no error
+                ;; in reading a value from that address.
+                t
+              (not flg-opcode/escape-byte))
+            (if (equal rex-byte 0)
+                t
+              (canonical-address-p temp-rip1))
+            (if  modr/m?
+                (and (canonical-address-p temp-rip2)
+                     (not flg-modr/m))
+              t)
+            (if sib?
+                (and (canonical-address-p temp-rip3)
+                     (not flg-sib))
+              t)
 
             ;; For get-prefixes-alt (we wouldn't need these hyps if we
             ;; used get-prefixes):
@@ -2190,7 +2184,7 @@
               1
               (las-to-pas
                (create-canonical-address-list 15 (xr :rip 0 x86))
-               :x (cpl x86) (double-rewrite x86)))
+               :x (cpl x86) x86))
              (open-qword-paddr-list
               (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
             (not
@@ -2198,7 +2192,7 @@
               0
               (las-to-pas
                (create-canonical-address-list 15 (xr :rip 0 x86))
-               :x (cpl x86) (double-rewrite x86)))))
+               :x (cpl x86) x86))))
            (equal (x86-fetch-decode-execute x86)
                   (top-level-opcode-execute
                    start-rip temp-rip3 prefixes rex-byte opcode/escape-byte modr/m sib x86-4)))
