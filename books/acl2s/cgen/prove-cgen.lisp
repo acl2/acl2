@@ -82,7 +82,7 @@
 ;; (thm (implies (true-listp x)
 ;;               (equal (rev (rev x)) x))) 
 
-       ((mv top-hyps top-concl state) (partition-hyps-concl top-term "print-assignment" state))
+       ((mv top-hyps top-concl state) (partition-into-hyps-concl-and-preprocess top-term "print-assignment" state))
 
        (mv-sig-alist (mv-sig-alist (cons top-concl top-hyps) (w state)))
        (hyp/m   (mv-list-ify (single-hypothesis top-hyps) mv-sig-alist))
@@ -682,7 +682,7 @@ history s-hist.")
          (- (cw? (debug-flag vl)
                  "~%~%CEgen/Debug: (pm? ~x0) ~x1~|" programp (cons 'test? form))) 
 
-         ((mv hyps concl state) (partition-hyps-concl term "test?" state))
+         ((mv hyps concl state) (partition-into-hyps-concl-and-preprocess term "test?" state))
          ((mv start-top state) (acl2::read-run-time state))
          
          ((unless (cgen-state-p cgen-state))

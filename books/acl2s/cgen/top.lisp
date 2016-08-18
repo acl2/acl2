@@ -470,7 +470,7 @@ information in a human-readable form. </p>
 (acl2s-defaults :set testing-enabled t) ;test other books
 (acl2s-defaults :set verbosity-level 3)
 (acl2s-defaults :set num-witnesses 0)
-(acl2s-defaults :set sampling-method :uniform-random)
+(acl2s-defaults :set sampling-method :random)
 
 
 ; [2016-04-03 Sun] Add fixers support to Cgen

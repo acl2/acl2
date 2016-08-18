@@ -331,3 +331,143 @@ cgen-state"
   (declare (xargs :stobjs (state)))
   (mv nil '() state))
 (defattach (fixer-arrangement fixer-arrangement/dummy))
+
+
+; other basic functionality
+
+;The following 2 function only look at the outermost implies form
+;get hypothesis from acl2 term being proved.
+(defun get-hyp (form)
+  (declare (xargs :guard t))
+  (if (atom form)
+    t;no hyps is equivalent to true
+    (if (and (consp (cdr form))
+             (eq 'implies (first form)))
+      (second form)
+      t)));;no hyps is equivalent to true
+
+; use expand-assumptions-1 instead when you have a term
+(defun get-hyps (pform)
+  (declare (xargs :guard t))
+  (b* ((hyp (get-hyp pform))
+       ((when (eq hyp 't)) nil)
+       ((unless (and (consp hyp)
+                     (consp (cdr hyp))
+                     (eq (car hyp) 'and)))
+        (list hyp))
+       (rst (cdr hyp)))
+    rst))
+
+
+;get conclusion from acl2 term being proved
+(defun get-concl (form)
+  (declare (xargs :guard t))
+  (if (atom form)
+    form
+    (if (and (consp (cdr form))
+             (consp (cddr form))
+             (eq 'implies (first form)))
+      (third form)
+      form)))
+
+(program)
+
+(mutual-recursion
+ (defun strip-return-last (term)
+   (declare (xargs :verify-guards nil :guard (pseudo-termp term)))
+   (cond ((acl2::variablep term) term)
+         ((acl2::fquotep term) term)
+         ((eq (acl2::ffn-symb term) 'acl2::hide) term)
+         (t
+          (let* ((stripped-args (strip-return-last-lst (fargs term)))
+                 (fn (acl2::ffn-symb term)))
+               
+            (cond ((eq fn 'ACL2::RETURN-LAST) ;get rid return-last
+                   (car (last stripped-args)))
+                  (t (acl2::cons-term fn stripped-args)))))))
+
+(defun strip-return-last-lst (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) '())
+        (t (cons (strip-return-last (car term-lst))
+                 (strip-return-last-lst (cdr term-lst))))))
+
+ )
+
+
+(mutual-recursion
+ (defun strip-force (term)
+   (declare (xargs :verify-guards nil :guard (pseudo-termp term)))
+   (cond ((acl2::variablep term) term)
+         ((acl2::fquotep term) term)
+         ((eq (acl2::ffn-symb term) 'acl2::hide) term)
+         (t
+          (let* ((stripped-args (strip-force-lst (fargs term)))
+                 (fn (acl2::ffn-symb term)))
+               
+            (cond ((eq fn 'ACL2::FORCE) ;get rid force
+                   (first stripped-args))
+                  (t (acl2::cons-term fn stripped-args)))))))
+
+(defun strip-force-lst (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) '())
+        (t (cons (strip-force (car term-lst))
+                 (strip-force-lst (cdr term-lst))))))
+
+ )
+
+(defun orient-equality (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (and (consp term) 
+           (member-eq (car term) '(EQUAL EQ EQL =))
+           (consp (cdr term)) (consp (cddr term))
+           (variablep (third term)))
+      (list (first term) (third term) (second term))
+    term))
+
+(include-book "../defdata/defdata-util")
+
+(u::defloop orient-equalities (terms)
+  (for ((term in terms)) (collect (orient-equality term))))
+      
+(defun partition-hyps-concl (term str state)
+  (declare (xargs :stobjs (state)))
+  ;; (decl :mode :program
+  ;;       :sig ((pseudo-termp stringp state) -> (mv pseudo-term-listp pseudo-termp state))
+  ;;       :doc "expand lambdas,strip return-last, extracts hyps and concl from term")
+;expensive operation
+  ;; get rid of lambdas i.e let/let*
+  (b* ((term  (defdata::expand-lambda term))
+       (wrld (w state))
+       (pform (acl2::prettyify-clause (list term) nil wrld))
+       ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
+       
+       ((er hyps) (acl2::translate-term-lst phyps 
+                                            t nil t str wrld state))
+       ((er concl) (acl2::translate pconcl t nil t str wrld state)))
+    (mv hyps concl state)))
+
+(defun partition-into-hyps-concl-and-preprocess (term str state)
+  (declare (xargs :stobjs (state)))
+  ;; (decl :mode :program
+  ;;       :sig ((pseudo-termp stringp state) -> (mv pseudo-term-listp pseudo-termp state))
+  ;;       :doc "expand lambdas,strip return-last, extracts hyps and concl from term")
+;expensive operation
+  ;; get rid of lambdas i.e let/let*
+  (b* ((term  (defdata::expand-lambda term))
+       (wrld (w state))
+       (pform (acl2::prettyify-clause (list term) nil wrld))
+       ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
+       
+       ((er hyps) (acl2::translate-term-lst phyps 
+                                            t nil t str wrld state))
+       ((er concl) (acl2::translate pconcl t nil t str wrld state))
+       (hyps (strip-return-last-lst hyps))
+       (hyps (strip-force-lst hyps))
+       (concl (strip-return-last concl))
+       (concl (strip-force concl))
+       (hyps (orient-equalities hyps))
+       (concl (orient-equality concl))
+       )
+    (mv hyps concl state)))

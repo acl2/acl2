@@ -426,7 +426,7 @@ thought about how to implement it.
   (if (endp vars)
       nil
     (cons `(assoc-eq ',(car vars) ,alst)
-          (make-guard-var-member-eq (cdr vars) alst))))
+          (make-guard-var-assoc-eq (cdr vars) alst))))
   
 (def cs%-enumcalls (cs% vl wrld bound-vars)
   (decl :sig ((cs%-p fixnump plist-worldp  symbol-listp) 
