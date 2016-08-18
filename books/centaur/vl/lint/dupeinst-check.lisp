@@ -310,6 +310,8 @@ a warning about the modules.</p>"
 ; Anyway, this is annoying, so, at least for now, we just won't check
 ; generates.
 
+       ;; if you try to bring this back note that i changed flatten-modinsts
+       ;; to also return instances from binds!
        ;; (modinsts (vl-module->flatten-modinsts x))
        (modinsts (vl-module->modinsts x))
        (alist    (vl-make-dupeinst-alist modinsts))

@@ -1858,7 +1858,6 @@ useful or meant for debugging purposes.</p>"
 
 
 
-
 ; Definition of vl-design-toplevel
 ;
 ; For resolving top-level hierarchical identifiers like topmod.foo.bar, we need
@@ -1867,7 +1866,15 @@ useful or meant for debugging purposes.</p>"
 ; place for vl-design-toplevel, and decided to memoize it and free it alongside
 ; of the other scopestack memo tables in vl-scopestacks-free.
 
+(define vl-bindlist->modinsts ((x vl-bindlist-p))
+  :returns (modinsts vl-modinstlist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (vl-bind->modinsts (car x))
+                          (vl-bindlist->modinsts (cdr x)))))
+
 (def-genblob-transform vl-genblob->flatten-modinsts ((acc vl-modinstlist-p))
+  ;; Warning: rarely sensible -- returns modinsts from many scopes!
   :no-new-x t
   :returns ((acc vl-modinstlist-p))
   :apply-to-generates vl-generates->flatten-modinsts
@@ -1878,19 +1885,23 @@ useful or meant for debugging purposes.</p>"
                                         vl-modinstlist-p-when-subsetp-equal))))
   (vl-generates->flatten-modinsts (vl-genblob->generates x)
                                   (append-without-guard
+                                   (vl-bindlist->modinsts (vl-genblob->binds x))
                                    (vl-genblob->modinsts x)
                                    (vl-modinstlist-fix acc))))
 
+
 (define vl-module->flatten-modinsts ((x vl-module-p))
   :parents (vl-modulelist-everinstanced)
-  :short "Gather modinsts from the module, including its generate blocks."
+  :short "Gather modinsts from the module, including its generate blocks and bind
+          constructs (which don't even belong to it) -- rarely sensible!"
   :returns (modinsts vl-modinstlist-p)
   (b* ((genblob (vl-module->genblob x)))
     (vl-genblob->flatten-modinsts genblob nil)))
 
 (define vl-interface->flatten-modinsts ((x vl-interface-p))
   :parents (vl-interfacelist-everinstanced)
-  :short "Gather modinsts from the interface, including its generate blocks."
+  :short "Gather modinsts from the module, including its generate blocks and bind
+          constructs (which don't even belong to it) -- rarely sensible!"
   :returns (modinsts vl-modinstlist-p)
   (b* ((genblob (vl-interface->genblob x)))
     (vl-genblob->flatten-modinsts genblob nil)))

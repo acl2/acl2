@@ -3164,7 +3164,7 @@ update the defines table appropriately.</p>"
                  (vl-ppst-warn
                   :type :vl-warn-undef
                   :msg "~a0: found `undef ~s1, but ~s1 is not defined."
-                  :args (list loc))
+                  :args (list loc name))
                (progn$ (cw-unformatted (cat (vl-ppst-pad) " Undefining " name *nls*))
                        ppst)))
        (defines (vl-delete-define name defines))

@@ -1016,7 +1016,15 @@ shown.</p>"
         :vl-port-mismatch
         :vl-warn-scary-translate-comment
         :vl-preprocessor-error
-        :vl-preprocess-failed))
+        :vl-preprocess-failed
+        :vl-parse-error
+        :vl-parse-failed
+        :vl-search-failed
+        :vl-unreachable-module
+        :vl-warn-define-smashed
+        :vl-warn-undef
+        :vl-warn-define-ignored
+        :vl-bindelim-fail))
 
 (defconst *trunc-warnings*
   (list :vl-warn-extension

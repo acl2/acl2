@@ -262,13 +262,6 @@ basicsanity) so that we check namespaces correctly and to report unhandled
        (itbl       (hons-acons inst1.modname new-items itbl)))
     (vl-bindelim-extend-insttable (rest x) ctx genp bindp itbl)))
 
-(define vl-bindlist->modinsts ((x vl-bindlist-p))
-  :returns (modinsts vl-modinstlist-p)
-  (if (atom x)
-      nil
-    (append-without-guard (vl-bind->modinsts (car x))
-                          (vl-bindlist->modinsts (cdr x)))))
-
 (def-genblob-transform vl-genblob-bindelim-insttable ((ctx   vl-bindcontext-p)
                                                       (genp  booleanp)
                                                       (itbl  vl-bindelim-insttable-p))

@@ -1356,7 +1356,7 @@ instance, in this case the @('tail') would be
        ;; well. If so, use that item instead of the one found in the
        ;; scopestack by follow-scopeexpr.
        (ref-scopes (vl-elabscopes-traverse (rev ref.elabpath) scopes :allow-empty t))
-       (info (vl-elabscopes-item-info name1 ref-scopes))
+       (info (vl-elabscopes-item-info name1 ref-scopes :allow-empty t))
        (item (or info ref.item))
        
        ((when (eq (tag item) :vl-typedef))
