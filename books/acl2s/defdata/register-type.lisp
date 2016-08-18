@@ -59,7 +59,8 @@ data last modified: [2014-08-06]
        
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
-       
+
+       (pred-name (get1 :predicate kwd-alist))
        (enum (get1 :enumerator kwd-alist))
        (enum/acc (get1 :enum/acc kwd-alist))
        (enum-formals (acl2::formals enum wrld))
@@ -108,7 +109,10 @@ data last modified: [2014-08-06]
          (local (defun ,enum-name ,enum-formals
                   (declare (xargs :guard ,enum-guard))
                   (declare (ignorable . ,enum-formals))
-                  ',default-val)))
+                  ',default-val))
+         (defthm ,(s+ enum-name "-IS-OF-TYPE-" pred-name)
+           (,pred-name (,enum-name . ,enum-formals)))
+         )
         
         ;;(defstub ,enum/acc-name (* *) => (mv * *))
         ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum-name))
