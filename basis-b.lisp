@@ -2294,6 +2294,16 @@
 
 (defun body (fn normalp w)
 
+; WARNING: Fn can be either a function symbol of w or a lambda, but in the
+; former case fn should in :logic mode.  The requirement is actually a bit
+; looser: fn can be a :program mode function symbol if fn is not built-in and
+; normalp is nil.  But if fn is a built-in :program mode function symbol, we do
+; not store even its 'unnormalized-body property; when we tried modifying
+; defuns-fn-short-cut to store that property even when boot-strap-flg is true,
+; we saw nearly a 9% increase in image size for SBCL, and nearly 13% for CCL.
+; Consider using cltl-def-from-name or related functions if fn is in :program
+; mode.
+
 ; The safe way to call this function is with normalp = nil, which yields the
 ; actual original body of fn.  The normalized body is provably equal to the
 ; unnormalized body, but that is not a strong enough property in some cases.

@@ -3715,7 +3715,7 @@
            (flambdap (ffn-symb term)))
       (print-no-change2
        "Expansion of lambda terms is disabled when do-not-expand-lambda-flg = ~
-        t."))
+        t; see :DOC acl2-pc::expand."))
      (t
       (let* ((fn (ffn-symb term))
              (def-body (and (not (flambdap fn))
