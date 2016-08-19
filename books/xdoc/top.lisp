@@ -220,8 +220,8 @@
          (old-topic  (xdoc::find-topic name all-topics)))
     (cond ((not old-topic)
            (er hard? 'order-subtopics "Topic ~x0 wasn't found." name))
-          ((not (symbol-listp order))
-           (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
+          ((not (symbol-listp (fix-true-list order)))
+           (er hard? 'order-subtopics "Subtopics list contains a non-symbol: ~x0" order))
           (t
            (let* ((other-topics (remove-equal old-topic all-topics))
                   (new-topic    (acons :suborder order

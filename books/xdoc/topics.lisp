@@ -1382,15 +1382,34 @@ guides, you sometimes intend your topics to be read in some particular order,
 and alphabetizing things gets in the way.</p>
 
 <p>The @('order-subtopics') command lets you specify the exact subtopic
-ordering that should be used for a particular topic.  The general form is:</p>
+ordering that should be used for a particular topic.  A general form is:</p>
 
 @({
     (xdoc::order-subtopics parent
-      (subtopic1 subtopic2 ...))
+      (subtopic1 subtopic2 ... subtopicn))
 })
 
 <p>You don't have to give a complete order.  Any subtopics that aren't
 mentioned will be listed last, in the usual alphabetical order.</p>
+
+<p>A second general form uses a final non-@('nil') @('cdr'), shown as @('t')
+below (though any non-@('nil') atom is treated the same as @('t')).  This
+specifies that the order for unspecified child topics is the order in which the
+topics were defined, rather than alphabetical.</p>
+
+@({
+    (xdoc::order-subtopics parent
+      (subtopic1 subtopic2 ... subtopicn . t))
+})
+
+<p>A special case of that second general form omits the subtopics, thus
+specifying simply that all children are to be listed in the order in which they
+were defined.</p>
+
+@({
+    (xdoc::order-subtopics parent
+      t)
+})
 
 <p>We require @('parent') to refer to some defined topic, but the subtopics
 don't need to be defined at @('order-subtopics') time.  This makes it easy to
