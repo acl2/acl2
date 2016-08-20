@@ -16943,7 +16943,12 @@
                                           fn 'defchoose-axiom constraint wrld)
                                          state))))))))))))))))))))))
 
-(defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p)
+(defconst *defun-sk-keywords*
+  '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
+              #+:non-standard-analysis :classicalp))
+
+(defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
+                                       dcls witness-dcls)
 
 ; Since this is just a macro, we only do a little bit of vanilla checking,
 ; leaving it to the real events to implement the most rigorous checks.
@@ -16962,6 +16967,26 @@
       (msg "The only legal keyword values for the :rewrite argument of a ~
             defun-sk are :direct and :default.  ~x0 is thus illegal."
            rewrite))
+     ((not (and (plausible-dclsp dcls)
+                (not (get-string dcls))
+                (plausible-dclsp witness-dcls)
+                (not (get-string witness-dcls))))
+      (let ((str "The ~@0 of a DEFUN-SK event must be of the form (dcl ... ~
+                  dcl), where each dcl is a DECLARE form.  The DECLARE forms ~
+                  may contain TYPE, IGNORE, and XARGS entries, where the ~
+                  legal XARGS keys are ~&1.  The following value for the ~@0 ~
+                  is thus illegal: ~x2. See :DOC DEFUN-SK."))
+        (cond ((and (plausible-dclsp dcls)
+                    (not (get-string dcls)))
+               (msg str
+                    ":WITNESS-DCLS argument"
+                    *xargs-keywords*
+                    witness-dcls))
+              (t
+               (msg str
+                    "DECLARE forms"
+                    *xargs-keywords*
+                    dcls)))))
      ((not (true-listp args))
       (msg "The second argument of DEFUN-SK must be a true list of legal ~
             variable names, but ~x0 is not a true-listp."
@@ -17017,92 +17042,140 @@
            body))
      (t nil))))
 
-(defmacro defun-sk (&whole form name args body
-                           &key
-                           quant-ok skolem-name thm-name rewrite strengthen
-                           #+:non-standard-analysis
-                           (classicalp 't classicalp-p)
-                           (witness-dcls
-                            '((declare (xargs :non-executable t)))))
-  (let* ((exists-p (and (true-listp body)
-                        (eq (car body) 'exists)))
-         (bound-vars (and (true-listp body)
-                          (or (symbolp (cadr body))
-                              (true-listp (cadr body)))
-                          (cond ((atom (cadr body))
-                                 (list (cadr body)))
-                                (t (cadr body)))))
-         (body-guts (and (true-listp body) (caddr body)))
-         (defchoose-body (if exists-p
-                             body-guts
-                           `(not ,body-guts)))
-         (skolem-name
-          (or skolem-name
-              (add-suffix name "-WITNESS")))
-         (thm-name
-          (or thm-name
-              (add-suffix name
-                          (if exists-p "-SUFF" "-NECC"))))
-         (msg (non-acceptable-defun-sk-p name args body quant-ok rewrite
-                                         exists-p)))
-    (if msg
-        `(er soft '(defun-sk . ,name)
-             "~@0"
-             ',msg)
-      `(encapsulate
-         ()
-         (logic)
-         (set-match-free-default :all)
-         (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
-         (encapsulate
-           ((,skolem-name ,args
-                          ,(if (= (length bound-vars) 1)
-                               (car bound-vars)
-                             (cons 'mv bound-vars))
-                          #+:non-standard-analysis
-                          ,@(and classicalp-p
-                                 `(:classicalp ,classicalp))))
-           (local (in-theory '(implies)))
-           (local
-            (defchoose ,skolem-name ,bound-vars ,args
-              ,defchoose-body
-              ,@(and strengthen
-                     '(:strengthen t))))
-           ,@(and strengthen
-                  `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
-                      ,(defchoose-constraint-extra skolem-name bound-vars args
-                         defchoose-body)
-                      :hints (("Goal"
-                               :use ,skolem-name
-                               :in-theory (theory 'minimal-theory)))
-                      :rule-classes nil)))
-           (,(if (member-equal '(declare (xargs :non-executable t)) witness-dcls)
-                 'defun-nx
-               'defun)
-            ,name ,args
-            ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
-            ,(if (= (length bound-vars) 1)
-                 `(let ((,(car bound-vars) (,skolem-name ,@args)))
-                    ,body-guts)
-               `(mv-let (,@bound-vars)
-                  (,skolem-name ,@args)
-                  ,body-guts)))
-           (in-theory (disable (,name)))
-           (defthm ,thm-name
-             ,(cond (exists-p
-                     `(implies ,body-guts
-                               (,name ,@args)))
-                    ((eq rewrite :direct)
-                     `(implies (,name ,@args)
-                               ,body-guts))
-                    ((member-eq rewrite '(nil :default))
-                     `(implies (not ,body-guts)
-                               (not (,name ,@args))))
-                    (t rewrite))
-             :hints (("Goal"
-                      :use (,skolem-name ,name)
-                      :in-theory (theory 'minimal-theory))))
-           (extend-pe-table ,name ,form))))))
+(defmacro defun-sk (&whole form name args &rest rest)
+
+  (mv-let
+    (erp dcls-and-body keyword-alist)
+    (partition-rest-and-keyword-args rest *defun-sk-keywords*)
+    (cond
+     (erp
+
+; If the defstobj has been admitted, this won't happen.
+
+      (er hard 'defun-sk
+          "The keyword arguments to the DEFUN-SK event must appear after the ~
+           body.  The allowed keyword arguments are ~&0, and these may not be ~
+           duplicated.  Thus, ~x1 is ill-formed."
+          *defun-sk-keywords*
+          form))
+     (t
+      (let* ((quant-ok (cdr (assoc-eq :quant-ok keyword-alist)))
+             (skolem-name (cdr (assoc-eq :skolem-name keyword-alist)))
+             (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
+             (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
+             (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
+             #+:non-standard-analysis
+             (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
+                           (if pair
+                               (cdr pair)
+                             t)))
+             (witness-dcls-pair (assoc-eq :witness-dcls keyword-alist))
+             (dcls0 (butlast dcls-and-body 1))
+             (witness-dcls (if (or dcls0 witness-dcls-pair)
+                               (cdr witness-dcls-pair)
+                             '((declare (xargs :non-executable t)))))
+             (dcls1 (append dcls0 witness-dcls))
+             (body (car (last dcls-and-body)))
+             (exists-p (and (true-listp body)
+                            (eq (car body) 'exists)))
+             (msg (non-acceptable-defun-sk-p name args body quant-ok rewrite
+                                             exists-p dcls0 witness-dcls)))
+        (if msg
+            `(er soft '(defun-sk . ,name)
+                 "~@0"
+                 ',msg)
+          (let* ((bound-vars (and (true-listp body)
+                                  (or (symbolp (cadr body))
+                                      (true-listp (cadr body)))
+                                  (cond ((atom (cadr body))
+                                         (list (cadr body)))
+                                        (t (cadr body)))))
+                 (body-guts (and (true-listp body) (caddr body)))
+                 (defchoose-body (if exists-p
+                                     body-guts
+                                   `(not ,body-guts)))
+                 (skolem-name
+                  (or skolem-name
+                      (add-suffix name "-WITNESS")))
+                 (thm-name
+                  (or thm-name
+                      (add-suffix name
+                                  (if exists-p "-SUFF" "-NECC"))))
+                 (delayed-guard-p (and (fetch-dcl-fields '(type :guard) dcls1)
+                                       (not (fetch-dcl-field :verify-guards
+                                                             dcls1))))
+                 (dcls (if delayed-guard-p
+                           (cons '(declare (xargs :verify-guards nil))
+                                 dcls1)
+                         dcls1))
+                 (delayed-guard-hints
+                  (and delayed-guard-p
+                       (let ((hints-lst (fetch-dcl-field :guard-hints dcls1)))
+                         (and (consp hints-lst)
+                              (if (cdr hints-lst)
+                                  (er hard 'defun-sk
+                                      "The :guard-hints keyword may only be ~
+                                   supplied once in DEFUN-SK.  Thus, ~x0 is ~
+                                   ill-formed."
+                                      form)
+                                `(:hints ,(car hints-lst))))))))
+            `(encapsulate
+               ()
+               (logic)
+               (set-match-free-default :all)
+               (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
+               (encapsulate
+                 ((,skolem-name ,args
+                                ,(if (= (length bound-vars) 1)
+                                     (car bound-vars)
+                                   (cons 'mv bound-vars))
+                                #+:non-standard-analysis
+                                ,@(and classicalp-p
+                                       `(:classicalp ,classicalp))))
+                 (local (in-theory '(implies)))
+                 (local
+                  (defchoose ,skolem-name ,bound-vars ,args
+                    ,defchoose-body
+                    ,@(and strengthen
+                           '(:strengthen t))))
+                 ,@(and strengthen
+                        `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
+                            ,(defchoose-constraint-extra skolem-name bound-vars args
+                               defchoose-body)
+                            :hints (("Goal"
+                                     :use ,skolem-name
+                                     :in-theory (theory 'minimal-theory)))
+                            :rule-classes nil)))
+                 (,(if (member-equal '(declare (xargs :non-executable t)) dcls)
+                       'defun-nx
+                     'defun)
+                  ,name ,args
+                  ,@(remove1-equal '(declare (xargs :non-executable t)) dcls)
+                  ,(if (= (length bound-vars) 1)
+                       `(let ((,(car bound-vars) (,skolem-name ,@args)))
+                          ,body-guts)
+                     `(mv-let (,@bound-vars)
+                        (,skolem-name ,@args)
+                        ,body-guts)))
+                 (in-theory (disable (,name)))
+                 (defthm ,thm-name
+                   ,(cond (exists-p
+                           `(implies ,body-guts
+                                     (,name ,@args)))
+                          ((eq rewrite :direct)
+                           `(implies (,name ,@args)
+                                     ,body-guts))
+                          ((member-eq rewrite '(nil :default))
+                           `(implies (not ,body-guts)
+                                     (not (,name ,@args))))
+                          (t rewrite))
+                   :hints (("Goal"
+                            :use (,skolem-name ,name)
+                            :in-theory (theory 'minimal-theory))))
+                 (extend-pe-table ,name ,form))
+               ,@(and delayed-guard-p
+                      `((verify-guards ,name
+                          ,@delayed-guard-hints)))))))))))
 
 ; Here is the defstobj event.  Note that many supporting functions have been
 ; moved from this file to basis-a.lisp, in support of ACL2 "toothbrush"
