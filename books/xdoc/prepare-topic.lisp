@@ -53,13 +53,22 @@
         (t
          (find-children-aux par (cdr topics) acc))))
 
-(defun find-children (par all-topics flg)
+(defun suborder-indicates-chronological-p (suborder)
 
-; Gather names of immediate children topics and sort them.  If flg is nil then
-; sort alphabetically; otherwise sort by order of appearance in all-topics,
-; last ones first, where if a name is duplicated then its most recent
-; appearance in all-topics (i.e., closest to the front of the list) is the
-; significant one.
+; Returns true if and only if we are to list children in the order in which
+; they were defined, rather than alphabetically.
+
+  (if (consp suborder)
+      (cdr (last suborder))
+    suborder))
+
+(defun find-children (par all-topics suborder)
+
+; Gather names of immediate children topics and sort them.  Suborder is used
+; for deciding whether to sort alphabetically or by order of appearance in
+; all-topics (last ones first, where if a name is duplicated then its most
+; recent appearance in all-topics (i.e., closest to the front of the list) is
+; the significant one).
 
 ; Note that defxdoc (actually defxdoc-fn) pushes a new entry on the front of
 ; the xdoc table fetched by get-xdoc-table, which is called by all-xdoc-topics
@@ -70,7 +79,8 @@
 
   (let ((children-names ; ordered as per comment above on "name is duplicated"
          (find-children-aux par all-topics nil)))
-    (cond (flg (remove-duplicates-eq children-names))
+    (cond ((suborder-indicates-chronological-p suborder)
+           (remove-duplicates-eq children-names))
           (t (mergesort children-names)))))
 
 (defconst *xml-entity-stuff*
@@ -304,11 +314,7 @@
         ;; note: all children-names are known to be existing topics, since
         ;; otherwise we wouldn't have found them.  topics mentioned in
         ;; suborder, however, may not exist
-        (find-children name
-                       all-topics
-                       (if (consp suborder)
-                           (cdr (last suborder))
-                         suborder)))
+        (find-children name all-topics suborder))
        (- (and (xdoc-verbose-p)
                (not (gentle-subsetp-eq suborder children-names))
                (cw "~|~%WARNING: in topic ~x0, subtopic order mentions topics that ~

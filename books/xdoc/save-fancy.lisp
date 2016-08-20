@@ -241,17 +241,21 @@
     (mv long-str-xml state)))
 
 
-(defun json-encode-index-entry (topic topics-fal uid-map state acc)
+(defun json-encode-index-entry (topic topics topics-fal uid-map state acc)
   (b* ((- (check-topic-syntax topic))
 
-       (name     (cdr (assoc :name topic)))
-       (base-pkg (cdr (assoc :base-pkg topic)))
-       (parents  (cdr (assoc :parents topic)))
-       (suborder (cdr (assoc :suborder topic)))
+       (name      (cdr (assoc :name topic)))
+       (base-pkg  (cdr (assoc :base-pkg topic)))
+       (parents   (cdr (assoc :parents topic)))
+       (suborder0 (cdr (assoc :suborder topic)))
+       (suborder-flg (suborder-indicates-chronological-p suborder0))
+       (suborder  (if suborder-flg
+                      (apply-suborder suborder0
+                                      (find-children name topics t))
+                    suborder0))
 
        (parent-uids (collect-uids parents uid-map))
        (suborder    (and suborder (collect-uids suborder uid-map)))
-
        ((mv short-str state) (short-xml-for-topic topic topics-fal state))
 
 ; I originally used a JSON object like {"name":"Append","rawname":"..."}  But
@@ -296,24 +300,29 @@
      (topics-fal (topics-fal topics))
      (uid-map nil)
      ((mv acc state)
-      (json-encode-index-entry (car topics) topics-fal uid-map state nil))
+      (json-encode-index-entry topics (car topics) topics-fal uid-map state nil))
      (state (princ$ (str::rchars-to-string acc) *standard-co* state)))
   state)
 ||#
 
-(defun json-encode-index-aux (topics topics-fal uid-map state acc)
+(defun json-encode-index-aux (all-topics topics topics-fal uid-map state acc)
   (b* (((when (atom topics))
         (mv acc state))
-       ((mv acc state) (json-encode-index-entry (car topics) topics-fal uid-map
-                                                state acc))
+       ((mv acc state) (json-encode-index-entry (car topics) all-topics topics-fal
+                                                uid-map state acc))
        ((when (atom (cdr topics)))
         (mv acc state))
        (acc (list* #\Space #\Newline #\, acc)))
-    (json-encode-index-aux (cdr topics) topics-fal uid-map state acc)))
+    (json-encode-index-aux all-topics (cdr topics) topics-fal uid-map state acc)))
 
-(defun json-encode-index (topics topics-fal uid-map state acc)
+(defun json-encode-index (topics0 topics topics-fal uid-map state acc)
+
+; Topics is a version of topics0 that has been ordered.  Topics0 preserves the
+; order in which each topic was introduced into the xdoc table.
+
   (b* ((acc (cons #\[ acc))
-       ((mv acc state) (json-encode-index-aux topics topics-fal uid-map state acc))
+       ((mv acc state)
+        (json-encode-index-aux topics0 topics topics-fal uid-map state acc))
        (acc (cons #\] acc)))
     (mv acc state)))
 
@@ -321,7 +330,7 @@
 (b* ((topics     (take 5 (get-xdoc-table (w state))))
      (topics-fal (topics-fal topics))
      ((mv acc state)
-      (json-encode-index topics topics-fal state nil))
+      (json-encode-index topics topics topics-fal state nil))
      (state (princ$ (str::rchars-to-string acc) *standard-co* state)))
   state)
 ||#
@@ -395,14 +404,14 @@
 ||#
 
 (defun save-json-files (topics dir state)
-  (b* ((topics (force-missing-parents
-                (maybe-add-top-topic
-                 (normalize-parents-list
-                  (clean-topics topics)))))
+  (b* ((topics0 (force-missing-parents
+                 (maybe-add-top-topic
+                  (normalize-parents-list
+                   (clean-topics topics)))))
 
-       (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics)))
+       (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics0)))
        ((mv topics xtopics ?sitemap state)
-        (time$ (order-topics-by-importance topics state)
+        (time$ (order-topics-by-importance topics0 state)
                :msg "; Importance sorting topics: ~st sec, ~sa bytes.~%"
                :mintime 1/2))
 
@@ -422,7 +431,7 @@
        (index nil)
        (index (str::revappend-chars "var xindex = " index));
        ((mv index state)
-        (time$ (json-encode-index topics topics-fal uid-map state index)
+        (time$ (json-encode-index topics0 topics topics-fal uid-map state index)
                :msg "; Preparing JSON index: ~st sec, ~sa bytes.~%"))
        (index (cons #\; index))
        (index (str::rchars-to-string index))
@@ -453,7 +462,6 @@
     (fast-alist-free topics-fal)
     (fast-alist-free uid-map)
     state))
-
 
 (defun copy-resource-dirs (resdir              ;; path to new-manual/res
                            resource-dirs-alist ;; alist created by add-resource-directory
