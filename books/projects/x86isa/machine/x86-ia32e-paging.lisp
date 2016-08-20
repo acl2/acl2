@@ -1162,19 +1162,20 @@ accesses.</p>
                      (dirty           (mbe :logic (dirty-bit entry)
                                            :exec (ia32e-page-tables-slice :d entry)))
                      ;; Compute accessed and dirty bits:
-                     (entry (if (equal accessed 0)
-                                (mbe :logic (set-accessed-bit entry)
-                                     :exec (!ia32e-page-tables-slice :a 1 entry))
-                              entry))
-                     (entry (if (and (equal dirty 0)
-                                     (equal r-w-x :w))
-                                (mbe :logic (set-dirty-bit entry)
-                                     :exec (!ia32e-page-tables-slice :d 1 entry))
-                              entry))
+                     ((mv updated? entry)
+                      (if (equal accessed 0)
+                          (mv t
+                              (mbe :logic (set-accessed-bit entry)
+                                   :exec (!ia32e-page-tables-slice :a 1 entry)))
+                        (mv nil entry)))
+                     ((mv updated? entry)
+                      (if (and (equal dirty 0)
+                               (equal r-w-x :w))
+                          (mv t (mbe :logic (set-dirty-bit entry)
+                                     :exec (!ia32e-page-tables-slice :d 1 entry)))
+                        (mv updated? entry)))
                      ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                     (x86 (if (or (equal accessed 0)
-                                  (and (equal dirty 0)
-                                       (equal r-w-x :w)))
+                     (x86 (if updated?
                               (wm-low-64 p-entry-addr entry x86)
                             x86)))
                   x86)
@@ -1435,19 +1436,21 @@ accesses.</p>
                                                   :exec (ia32e-pde-2MB-page-slice :pde-d entry)))
 
                             ;; Compute accessed and dirty bits:
-                            (entry (if (equal accessed 0)
-                                       (mbe :logic (set-accessed-bit entry)
-                                            :exec (!ia32e-pde-2MB-page-slice :pde-a 1 entry))
-                                     entry))
-                            (entry (if (and (equal dirty 0)
-                                            (equal r-w-x :w))
-                                       (mbe :logic (set-dirty-bit entry)
-                                            :exec (!ia32e-pde-2MB-page-slice :pde-d 1 entry))
-                                     entry))
-                            ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                            (x86 (if (or (equal accessed 0)
-                                         (and (equal dirty 0)
-                                              (equal r-w-x :w)))
+                            ((mv updated? entry)
+                             (if (equal accessed 0)
+                                 (mv t
+                                     (mbe :logic (set-accessed-bit entry)
+                                          :exec (!ia32e-pde-2MB-page-slice :pde-a 1 entry)))
+                               (mv nil entry)))
+                            ((mv updated? entry)
+                             (if (and (equal dirty 0)
+                                      (equal r-w-x :w))
+                                 (mv t
+                                     (mbe :logic (set-dirty-bit entry)
+                                          :exec (!ia32e-pde-2MB-page-slice :pde-d 1 entry)))
+                               (mv updated? entry)))
+                            ;; Update x86 (to reflect accessed and dirty bits change):
+                            (x86 (if updated?
                                      (wm-low-64 p-entry-addr entry x86)
                                    x86)))
                          x86)
@@ -1497,6 +1500,12 @@ accesses.</p>
                 (if (page-structure-marking-mode x86)
                     ;; Mark A bit.
                     (b* (
+                         ;; Get possibly updated entry --- note that
+                         ;; if PDE and PTE are the same entries, entry
+                         ;; would have its A and/or D flags set
+                         ;; because of the walk done in
+                         ;; ia32e-la-to-pa-page-table.
+                         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
                          ;; Get accessed bit.  Dirty bit is ignored when PDE
                          ;; references the PT.
                          (accessed        (mbe :logic (accessed-bit entry)
@@ -1506,7 +1515,6 @@ accesses.</p>
                                     (mbe :logic (set-accessed-bit entry)
                                          :exec (!ia32e-page-tables-slice :a 1 entry))
                                   entry))
-                         ;; Update x86, if needed.
                          (x86 (if (equal accessed 0)
                                   (wm-low-64 p-entry-addr entry x86)
                                 x86)))
@@ -1744,19 +1752,21 @@ accesses.</p>
                             (dirty           (mbe :logic (dirty-bit entry)
                                                   :exec (ia32e-pdpte-1GB-page-slice :pdpte-d entry)))
                             ;; Compute accessed and dirty bits:
-                            (entry (if (equal accessed 0)
-                                       (mbe :logic (set-accessed-bit entry)
-                                            :exec (!ia32e-pdpte-1GB-page-slice :pdpte-a 1 entry))
-                                     entry))
-                            (entry (if (and (equal dirty 0)
-                                            (equal r-w-x :w))
-                                       (mbe :logic (set-dirty-bit entry)
-                                            :exec (!ia32e-pdpte-1GB-page-slice :pdpte-d 1 entry))
-                                     entry))
+                            ((mv updated? entry)
+                             (if (equal accessed 0)
+                                 (mv t
+                                     (mbe :logic (set-accessed-bit entry)
+                                          :exec (!ia32e-pdpte-1GB-page-slice :pdpte-a 1 entry)))
+                               (mv nil entry)))
+                            ((mv updated? entry)
+                             (if (and (equal dirty 0)
+                                      (equal r-w-x :w))
+                                 (mv t
+                                     (mbe :logic (set-dirty-bit entry)
+                                          :exec (!ia32e-pdpte-1GB-page-slice :pdpte-d 1 entry)))
+                               (mv updated? entry)))
                             ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                            (x86 (if (or (equal accessed 0)
-                                         (and (equal dirty 0)
-                                              (equal r-w-x :w)))
+                            (x86 (if updated?
                                      (wm-low-64 p-entry-addr entry x86)
                                    x86)))
                          x86)
@@ -1805,6 +1815,12 @@ accesses.</p>
                 (if (page-structure-marking-mode x86)
                     ;; Mark A bit.
                     (b* (
+                         ;; Get possibly updated entry --- note that
+                         ;; if PDPTE and PDE are the same entries,
+                         ;; entry would have its A and/or D flags set
+                         ;; because of the walk done in
+                         ;; ia32e-la-to-pa-page-directory.
+                         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
                          ;; Get accessed bit. Dirty bit is ignored when PDPTE
                          ;; references the PD.
                          (accessed        (mbe :logic (accessed-bit entry)
@@ -2043,6 +2059,12 @@ accesses.</p>
             (if (page-structure-marking-mode x86)
                 ;; Mark A bit.
                 (b* (
+                     ;; Get possibly updated entry --- note that if
+                     ;; PML4TE and PDPTE are the same entries, entry
+                     ;; would have its A and/or D flags set because of
+                     ;; the walk done in
+                     ;; ia32e-la-to-pa-page-dir-ptr-table.
+                     (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
                      ;; Get accessed bit. Dirty bit is ignored when PDPTE
                      ;; references the PDPT.
                      (accessed        (mbe :logic (accessed-bit entry)
