@@ -743,61 +743,6 @@
                          (declare (ignore erp val))
                          (mv t nil nil state)))))))))
 
-#-acl2-loop-only
-(defvar *iprint-read-state*
-
-; Possible values are:
-
-; nil      - no requirement on current iprint index
-; t        - either all indices must exceed iprint-last-index, or none does
-; (n . <=) - n, already read, is <= iprint-last-index; index must be too
-; (n .  >) - n, already read, is  > iprint-last-index; index must be too
-
-; The value is initially nil.  At a top-level read, it is set to nil if
-; iprint-fal is nil, else to t.  For the first index i that is read when the
-; value is t, we set the value to <= if (<= i iprint-last-index) and to >
-; otherwise.
-
-  nil)
-
-(defun iprint-oracle-updates (state)
-  #+acl2-loop-only
-  (mv-let (erp val state)
-    (read-acl2-oracle state)
-    (declare (ignore erp))
-
-; If we intend to reason about this function, then we might want to check that
-; val is a reasonable value.  But that seems not important, since very little
-; reasoning would be possible anyhow for this function.
-
-    (let ((val (fix-true-list val)))
-      (pprogn (f-put-global 'iprint-ar
-                            (nth 0 val)
-                            state)
-              (f-put-global 'iprint-hard-bound
-                            (nfix (nth 1 val))
-                            state)
-              (f-put-global 'iprint-soft-bound
-                            (nfix (nth 2 val))
-                            state)
-              (f-put-global 'iprint-fal
-                            (nth 3 val)
-                            state)
-              state)))
-  #-acl2-loop-only
-  (let* ((ar *wormhole-iprint-ar*))
-    (when ar
-      (f-put-global 'iprint-ar ar state)
-      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
-      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
-      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
-      (setq *wormhole-iprint-ar* nil))
-    (setq *iprint-read-state*
-          (if (f-get-global 'iprint-fal state)
-              t
-            nil))
-    state))
-
 (defun ld-fix-command (form)
   #-acl2-loop-only
   (when (and (consp form)

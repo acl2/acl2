@@ -5211,6 +5211,76 @@
                                             (erase-rw-cache-from-pspv new-pspv)))))
                     state))))))))
 
+#-acl2-loop-only
+(defvar *iprint-read-state*
+
+; Possible values are:
+
+; nil      - no requirement on current iprint index
+; t        - either all indices must exceed iprint-last-index, or none does
+; (n . <=) - n, already read, is <= iprint-last-index; index must be too
+; (n .  >) - n, already read, is  > iprint-last-index; index must be too
+
+; The value is initially nil.  At a top-level read, it is set to nil if
+; iprint-fal is nil, else to t.  For the first index i that is read when the
+; value is t, we set the value to <= if (<= i iprint-last-index) and to >
+; otherwise.
+
+  nil)
+
+#-acl2-loop-only
+(defun iprint-oracle-updates-raw (state)
+
+; Warning: Keep in sync with iprint-oracle-updates.
+
+  (let* ((ar *wormhole-iprint-ar*))
+    (when ar
+      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
+      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
+      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
+      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
+      (setq *wormhole-iprint-ar* nil))
+    (setq *iprint-read-state*
+          (if (f-get-global 'iprint-fal state)
+              t
+            nil)))
+  state)
+
+(defun iprint-oracle-updates (state)
+
+; Warning: Keep in sync with iprint-oracle-updates-raw.
+
+  #+acl2-loop-only
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (declare (ignore erp))
+
+; If we intend to reason about this function, then we might want to check that
+; val is a reasonable value.  But that seems not to be important, since very
+; little reasoning would be possible anyhow for this function.
+
+    (let ((val (fix-true-list val)))
+      (pprogn (f-put-global 'iprint-ar
+                            (nth 0 val)
+                            state)
+              (f-put-global 'iprint-hard-bound
+                            (nfix (nth 1 val))
+                            state)
+              (f-put-global 'iprint-soft-bound
+                            (nfix (nth 2 val))
+                            state)
+              (f-put-global 'iprint-fal
+                            (nth 3 val)
+                            state)
+              state)))
+  #-acl2-loop-only
+  (iprint-oracle-updates-raw state))
+
+(defun iprint-oracle-updates@par ()
+  #-acl2-loop-only
+  (iprint-oracle-updates-raw *the-live-state*)
+  nil)
+
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)
 
@@ -5300,47 +5370,56 @@
             (waterfall-step1@par processor cl-id clause hist pspv wrld state
                                  step-limit)
             (mv@par step-limit signal clauses ttree new-pspv state)))))
-   (cond
-    (erp ; from out-of-time or clause-processor failure; treat as 'error signal
-     (mv-let@par (erp2 val state)
-                 (er@par soft ctx "~@0" erp)
-                 (declare (ignore erp2 val))
-                 (pprogn@par
-                  (assert$
-                   (null ttree)
-                   (mv-let@par
-                    (erp3 val state)
-                    (accumulate-ttree-and-step-limit-into-state@par
-                     (add-to-tag-tree! 'abort-cause
-                                       (if (equal erp *interrupt-string*)
-                                           'interrupt
-                                         'time-limit-reached)
-                                       nil)
-                     step-limit
-                     state)
-                    (declare (ignore val))
-                    (assert$ (null erp3)
-                             (state-mac@par))))
-                  (mv@par step-limit 'error nil nil nil nil state))))
-    (t
-     (pprogn@par ; account for bddnote in case we do not have a hit
-      (cond ((and (eq processor 'apply-top-hints-clause)
-                  (member-eq signal '(error miss))
-                  ttree) ; a bddnote; see bdd-clause
-             (error-in-parallelism-mode@par
+   (pprogn@par
+
+; Since wormholes (in particular, brr wormholes) don't change the global values
+; of the iprint structuresa, we make such changes here so that iprinting done
+; in brr is reflected in the global state.
+
+    (serial-first-form-parallel-second-form@par
+     (iprint-oracle-updates state)
+     (iprint-oracle-updates@par))
+    (cond
+     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
+      (mv-let@par (erp2 val state)
+                  (er@par soft ctx "~@0" erp)
+                  (declare (ignore erp2 val))
+                  (pprogn@par
+                   (assert$
+                    (null ttree)
+                    (mv-let@par
+                     (erp3 val state)
+                     (accumulate-ttree-and-step-limit-into-state@par
+                      (add-to-tag-tree! 'abort-cause
+                                        (if (equal erp *interrupt-string*)
+                                            'interrupt
+                                          'time-limit-reached)
+                                        nil)
+                      step-limit
+                      state)
+                     (declare (ignore val))
+                     (assert$ (null erp3)
+                              (state-mac@par))))
+                   (mv@par step-limit 'error nil nil nil nil state))))
+     (t
+      (pprogn@par ; account for bddnote in case we do not have a hit
+       (cond ((and (eq processor 'apply-top-hints-clause)
+                   (member-eq signal '(error miss))
+                   ttree) ; a bddnote; see bdd-clause
+              (error-in-parallelism-mode@par
 
 ; Parallelism blemish: we disable the following addition of BDD notes to the
 ; state.  Until a user requests it, we don't see a need to implement this.
 
-              (state-mac@par)
-              (f-put-global 'bddnotes
-                            (cons ttree
-                                  (f-get-global 'bddnotes state))
-                            state)))
-            (t (state-mac@par)))
-      (mv-let@par
-       (signal clauses new-hist new-pspv jppl-flg state)
-       (cond ((eq signal 'error)
+               (state-mac@par)
+               (f-put-global 'bddnotes
+                             (cons ttree
+                                   (f-get-global 'bddnotes state))
+                             state)))
+             (t (state-mac@par)))
+       (mv-let@par
+        (signal clauses new-hist new-pspv jppl-flg state)
+        (cond ((eq signal 'error)
 
 ; As of this writing, the only processor which might cause an error is
 ; apply-top-hints-clause.  But processors can't actually cause errors in the
@@ -5350,48 +5429,48 @@
 ; (fmt-string . alist) suitable for giving error1.  Moreover, in this case
 ; ttree is an alist assigning state global variables to values.
 
-              (mv-let@par (erp val state)
-                          (error1@par ctx (car clauses) (cdr clauses) state)
-                          (declare (ignore erp val))
-                          (mv@par 'error nil nil nil nil state)))
-             ((eq signal 'miss)
-              (mv@par 'miss nil hist
-                      (accumulate-rw-cache-into-pspv processor ttree pspv)
-                      nil state))
-             (t
-              (mv-let@par
-               (signal clauses ttree new-hist new-pspv state)
-               (waterfall-step-cleanup@par processor cl-id clause hist wrld
-                                           state signal clauses ttree pspv
-                                           new-pspv step-limit)
+               (mv-let@par (erp val state)
+                           (error1@par ctx (car clauses) (cdr clauses) state)
+                           (declare (ignore erp val))
+                           (mv@par 'error nil nil nil nil state)))
+              ((eq signal 'miss)
+               (mv@par 'miss nil hist
+                       (accumulate-rw-cache-into-pspv processor ttree pspv)
+                       nil state))
+              (t
                (mv-let@par
-                (erp new-hint-settings new-hints state)
-                (cond
-                 ((or (eq signal 'miss) ; presumably specious
-                      (eq processor 'settled-down-clause)) ; not user-visible
-                  (mv@par nil nil nil state))
-                 (t (process-backtrack-hint@par cl-id clause clauses processor
-                                                new-hist new-pspv ctx wrld
-                                                state)))
-                (cond
-                 (erp
-                  (mv@par 'error nil nil nil nil state))
-                 (new-hint-settings
-                  (mv@par 'top-of-waterfall-hint
-                          new-hint-settings
-                          processor
-                          :pspv-for-backtrack
-                          new-hints
-                          state))
-                 (t
-                  (mv-let@par
-                   (jppl-flg new-pspv state)
-                   (waterfall-msg@par processor cl-id clause signal clauses
-                                      new-hist ttree new-pspv state)
-                   (mv@par signal clauses new-hist new-pspv jppl-flg
-                           state))))))))
-       (mv@par step-limit signal clauses new-hist new-pspv jppl-flg
-               state)))))))
+                (signal clauses ttree new-hist new-pspv state)
+                (waterfall-step-cleanup@par processor cl-id clause hist wrld
+                                            state signal clauses ttree pspv
+                                            new-pspv step-limit)
+                (mv-let@par
+                 (erp new-hint-settings new-hints state)
+                 (cond
+                  ((or (eq signal 'miss) ; presumably specious
+                       (eq processor 'settled-down-clause)) ; not user-visible
+                   (mv@par nil nil nil state))
+                  (t (process-backtrack-hint@par cl-id clause clauses processor
+                                                 new-hist new-pspv ctx wrld
+                                                 state)))
+                 (cond
+                  (erp
+                   (mv@par 'error nil nil nil nil state))
+                  (new-hint-settings
+                   (mv@par 'top-of-waterfall-hint
+                           new-hint-settings
+                           processor
+                           :pspv-for-backtrack
+                           new-hints
+                           state))
+                  (t
+                   (mv-let@par
+                    (jppl-flg new-pspv state)
+                    (waterfall-msg@par processor cl-id clause signal clauses
+                                       new-hist ttree new-pspv state)
+                    (mv@par signal clauses new-hist new-pspv jppl-flg
+                            state))))))))
+        (mv@par step-limit signal clauses new-hist new-pspv jppl-flg
+                state))))))))
 
 ; Section:  FIND-APPLICABLE-HINT-SETTINGS
 

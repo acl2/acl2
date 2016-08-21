@@ -12579,6 +12579,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-absstobj-invariants
     get-stobj-creator
     iprint-oracle-updates
+    iprint-oracle-updates@par
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
