@@ -723,7 +723,9 @@
                      (list index)
                      (all-translation-governing-addresses l-addrs (double-rewrite x86)))
                     (canonical-address-listp l-addrs)
-                    (physical-address-p index))
+                    (physical-address-p index)
+                    (unsigned-byte-p 8 value)
+                    (x86p x86))
                (equal (mv-nth 0 (rb l-addrs r-w-x (xw :mem index value x86)))
                       (mv-nth 0 (rb l-addrs r-w-x x86))))
       :hints (("Goal" :in-theory (e/d* (rb
@@ -752,7 +754,9 @@
                  (all-translation-governing-addresses l-addrs (double-rewrite x86)))
                 (canonical-address-listp l-addrs)
                 (physical-address-p index)
-                (not (programmer-level-mode x86)))
+                (unsigned-byte-p 8 value)
+                (not (programmer-level-mode x86))                
+                (x86p x86))
                (equal (mv-nth 1 (rb l-addrs r-w-x (xw :mem index value x86)))
                       (mv-nth 1 (rb l-addrs r-w-x x86))))
       :hints (("Goal" :in-theory (e/d* (rb
