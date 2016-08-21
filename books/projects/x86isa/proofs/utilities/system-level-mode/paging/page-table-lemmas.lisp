@@ -11,16 +11,13 @@
 
 ;; ======================================================================
 
-(defthmd multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p
+(defthm multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p
   (implies (and (equal (loghead 3 index) 0)
                 (mult-8-qword-paddr-listp addrs)
                 (physical-address-p index))
            (equal (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
                   (not (member-p index addrs))))
   :hints (("Goal" :in-theory (e/d* (disjoint-p member-p) ()))))
-
-(in-theory (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
-                ()))
 
 ;; ======================================================================
 
@@ -353,15 +350,6 @@
                               (gather-all-paging-structure-qword-addresses x86)))))
            :in-theory (e/d* (ia32e-la-to-pa-page-table
                              xlate-equiv-structures)
-                            (bitops::logand-with-negated-bitmask
-                             accessed-bit
-                             dirty-bit
-                             not
-                             MULTIPLE-OF-8-DISJOINT-WITH-ADDR-RANGE-AND-OPEN-QWORD-PADDR-LIST-TO-MEMBER-P)))
-          ("Subgoal 1"
-           :in-theory (e/d* (ia32e-la-to-pa-page-table
-                             xlate-equiv-structures
-                             MULTIPLE-OF-8-DISJOINT-WITH-ADDR-RANGE-AND-OPEN-QWORD-PADDR-LIST-TO-MEMBER-P)
                             (bitops::logand-with-negated-bitmask
                              accessed-bit
                              dirty-bit

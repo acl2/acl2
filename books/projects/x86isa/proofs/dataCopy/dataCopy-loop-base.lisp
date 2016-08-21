@@ -35,9 +35,13 @@
                      (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
                          :R X86)))
             (XW
-             :RGF *RSI* (+ 4 (XR :RGF *RSI* X86))
+             :RGF *RSI*
+             (LOGEXT 64
+                     (+ 4 (LOGHEAD 64 (XR :RGF *RSI* X86))))
              (XW
-              :RGF *RDI* (+ 4 (XR :RGF *RDI* X86))
+              :RGF *RDI*
+              (LOGEXT 64
+                      (+ 4 (LOGHEAD 64 (XR :RGF *RDI* X86))))
               (XW
                :RIP 0 (+ 18 (XR :RIP 0 X86))
                (MV-NTH
@@ -45,188 +49,15 @@
                 (WB
                  (CREATE-ADDR-BYTES-ALIST
                   (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RSI* X86))
-                  (BYTE-IFY
-                   4
-                   (COMBINE-BYTES
-                    (MV-NTH 1
-                            (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                                :r X86)))))
-                 (WRITE-USER-RFLAGS
-                  (LOGIOR
-                   (LOGHEAD 32
-                            (CF-SPEC64 (+ #xfffffffffffffffc
-                                          (XR :RGF *RAX* X86))))
-                   (LOGHEAD 32
-                            (ASH (PF-SPEC64 (LOGHEAD 64
-                                                     (+ #xfffffffffffffffc
-                                                        (XR :RGF *RAX* X86))))
-                                 2))
-                   (LOGAND
-                    4294967290
-                    (LOGIOR
-                     (LOGHEAD 32
-                              (ASH (ADD-AF-SPEC64 (XR :RGF *RAX* X86)
-                                                  #xfffffffffffffffc)
-                                   4))
-                     (LOGAND
-                      4294967278
-                      (LOGIOR
-                       (LOGHEAD 32
-                                (ASH (ZF-SPEC (LOGHEAD 64
-                                                       (+ #xfffffffffffffffc
-                                                          (XR :RGF *RAX* X86))))
-                                     6))
-                       (LOGAND
-                        4294967230
-                        (LOGIOR
-                         (LOGHEAD 32
-                                  (ASH (SF-SPEC64 (LOGHEAD 64
-                                                           (+ #xfffffffffffffffc
-                                                              (XR :RGF *RAX* X86))))
-                                       7))
-                         (LOGAND
-                          4294967166
-                          (LOGIOR
-                           (LOGHEAD 32
-                                    (ASH (OF-SPEC64 (+ -4 (XR :RGF *RAX* X86)))
-                                         11))
-                           (LOGAND
-                            4294965246
-                            (LOGIOR
-                             (BITOPS::LOGSQUASH
-                              1
-                              (LOGHEAD
-                               32
-                               (CF-SPEC64 (+ 4 (LOGHEAD 64 (XR :RGF *RSI* X86))))))
-                             (BITOPS::LOGSQUASH
-                              1
-                              (LOGHEAD
-                               32
-                               (ASH
-                                (PF-SPEC64
-                                 (LOGHEAD 64
-                                          (+ 4 (LOGHEAD 64 (XR :RGF *RSI* X86)))))
-                                2)))
-                             (LOGAND
-                              4294967290
-                              (LOGIOR
-                               (BITOPS::LOGSQUASH
-                                1
-                                (LOGHEAD
-                                 32
-                                 (ASH (ADD-AF-SPEC64 (LOGHEAD 64 (XR :RGF *RSI* X86))
-                                                     4)
-                                      4)))
-                               (LOGAND
-                                4294967278
-                                (LOGIOR
-                                 (BITOPS::LOGSQUASH
-                                  1
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (ZF-SPEC
-                                     (LOGHEAD
-                                      64
-                                      (+ 4 (LOGHEAD 64 (XR :RGF *RSI* X86)))))
-                                    6)))
-                                 (LOGAND
-                                  4294967230
-                                  (LOGIOR
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (LOGHEAD
-                                     32
-                                     (ASH
-                                      (SF-SPEC64
-                                       (LOGHEAD
-                                        64
-                                        (+ 4 (LOGHEAD 64 (XR :RGF *RSI* X86)))))
-                                      7)))
-                                   (LOGAND
-                                    4294967166
-                                    (LOGIOR
-                                     (BITOPS::LOGSQUASH
-                                      1
-                                      (LOGHEAD
-                                       32
-                                       (ASH (OF-SPEC64 (+ 4 (XR :RGF *RSI* X86)))
-                                            11)))
-                                     (LOGAND
-                                      4294965246
-                                      (LOGIOR
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (CF-SPEC64
-                                          (+ 4 (LOGHEAD 64 (XR :RGF *RDI* X86))))))
-                                       (BITOPS::LOGSQUASH
-                                        1
-                                        (LOGHEAD
-                                         32
-                                         (ASH
-                                          (PF-SPEC64
-                                           (LOGHEAD
-                                            64
-                                            (+ 4 (LOGHEAD 64 (XR :RGF *RDI* X86)))))
-                                          2)))
-                                       (LOGAND
-                                        4294967290
-                                        (LOGIOR
-                                         (BITOPS::LOGSQUASH
-                                          1
-                                          (LOGHEAD
-                                           32
-                                           (ASH (ADD-AF-SPEC64
-                                                 (LOGHEAD 64 (XR :RGF *RDI* X86))
-                                                 4)
-                                                4)))
-                                         (LOGAND
-                                          4294967278
-                                          (LOGIOR
-                                           (BITOPS::LOGSQUASH
-                                            1
-                                            (LOGHEAD
-                                             32
-                                             (ASH
-                                              (ZF-SPEC
-                                               (LOGHEAD
-                                                64
-                                                (+
-                                                 4
-                                                 (LOGHEAD 64 (XR :RGF *RDI* X86)))))
-                                              6)))
-                                           (LOGAND
-                                            4294967230
-                                            (LOGIOR
-                                             (BITOPS::LOGSQUASH
-                                              1
-                                              (LOGHEAD
-                                               32
-                                               (ASH
-                                                (SF-SPEC64
-                                                 (LOGHEAD
-                                                  64
-                                                  (+ 4
-                                                     (LOGHEAD
-                                                      64 (XR :RGF *RDI* X86)))))
-                                                7)))
-                                             (LOGAND
-                                              4294967166
-                                              (LOGIOR
-                                               (LOGAND 4294965246
-                                                       (BITOPS::LOGSQUASH
-                                                        1 (XR :RFLAGS 0 X86)))
-                                               (BITOPS::LOGSQUASH
-                                                1
-                                                (LOGHEAD
-                                                 32
-                                                 (ASH
-                                                  (OF-SPEC64
-                                                   (+ 4 (XR :RGF *RDI* X86)))
-                                                  11))))))))))))))))))))))))))))))))
-                  0 X86))))))))))
+                  (MV-NTH 1
+                          (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
+                              :R X86)))
+                 (!FLGI
+                  *CF* 1
+                  (!FLGI *PF* 1
+                         (!FLGI *AF* 1
+                                (!FLGI *ZF* 1
+                                       (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))))))
   :hints (("Goal"
            :do-not '(preprocess)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -261,7 +92,12 @@
                              signed-byte-p)
                             (wb-remove-duplicate-writes
                              mv-nth-1-wb-and-!flgi-commute
-                             create-canonical-address-list)))))
+                             create-canonical-address-list
+                             default-+-2
+                             get-prefixes-opener-lemma-group-4-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-1-prefix)))))
 
 (defthm effects-copyData-loop-base-destination-address-projection-original
   ;; dst[(+ -k dst-addr) to dst-addr] in (x86-run (loop-clk-base) x86) =
@@ -297,10 +133,11 @@
 (defthm effects-copyData-loop-base-destination-address-projection
   ;; dst[(+ -k dst-addr) to (dst-addr + 4)] in (x86-run (loop-clk-base) x86) =
   ;; src[(+ -k src-addr) to (src-addr + 4)] in x86
-  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
-                (<= m 4))
-           (equal (destination-bytes (+ 4 k) (+ 4 dst-addr) (x86-run (loop-clk-base) x86))
-                  (source-bytes (+ 4 k) (+ 4 src-addr) x86)))
+  (implies
+   (and (loop-preconditions k m addr src-addr dst-addr x86)
+        (<= m 4))
+   (equal (destination-bytes (+ 4 k) (+ 4 dst-addr) (x86-run (loop-clk-base) x86))
+          (source-bytes (+ 4 k) (+ 4 src-addr) x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base)
                         (:instance effects-copyData-loop-base-destination-address-projection-copied)
                         (:instance effects-copyData-loop-base-destination-address-projection-original)
@@ -323,6 +160,13 @@
                              rb-rb-split-reads
                              take-and-rb
                              (loop-clk-base)
+                             (:t xw)
+                             (:t consp-append)
+                             create-canonical-address-list
+                             canonical-address-p-limits-thm-0
+                             disjoint-p-two-create-canonical-address-lists-thm-1
+                             default-+-1
+                             default-+-2
                              force (force))))))
 
 (defthm effects-copyData-loop-base-source-address-projection-original
@@ -384,6 +228,13 @@
                              rb-rb-split-reads
                              take-and-rb
                              (loop-clk-base)
+                             (:t xw)
+                             (:t consp-append)
+                             create-canonical-address-list
+                             canonical-address-p-limits-thm-0
+                             disjoint-p-two-create-canonical-address-lists-thm-1
+                             default-+-1
+                             default-+-2
                              force (force))))))
 
 (defthm effects-copyData-loop-base-alignment-checking-enabled-p
@@ -480,11 +331,13 @@
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
            (equal (mv-nth 1
-                          (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                              :r (x86-run (loop-clk-base) x86)))
+                          (rb
+                           (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
+                           :r (x86-run (loop-clk-base) x86)))
                   (mv-nth 1
-                          (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                              :r x86))))
+                          (rb
+                           (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
+                           :r x86))))
   :hints (("Goal" :use ((:instance effects-copyData-loop-base)
                         (:instance loop-preconditions-fwd-chain-to-its-body))
            :in-theory (e/d* ()
