@@ -619,7 +619,7 @@
   ;; xw-mem-and-ia32e-la-to-pa-page-table-commute.  We include this book
   ;; locally so that EQUAL doesn't pollute our canonical forms that rely
   ;; on XLATE-EQUIV-MEMORY.
-  (local (include-book "side-effects-characterization"))
+  (local (include-book "page-walk-side-effects"))
 
   (defthm xw-mem-and-ia32e-la-to-pa-page-table-commute
     (implies (and
