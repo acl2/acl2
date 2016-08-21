@@ -32,6 +32,9 @@
 ;
 ; This file is adapted from the Milawa Theorem Prover, Copyright (C) 2005-2009
 ; Kookamara LLC, which is also available under an MIT/X11 style license.
+;
+; Contribution by Alessandro Coglio (coglio@kestrel.edu):
+; Add support for :PRED option of DEFAGGREGATE.
 
 (in-package "STD")
 (include-book "support")
@@ -141,10 +144,12 @@ fty::deftranssum).</p>"
             (da-accessor-names basename (cdr fields)))
     nil))
 
-(defun da-recognizer-name (basename)
-  (intern-in-package-of-symbol
-   (concatenate 'string (symbol-name basename) "-P")
-   basename))
+(defun da-recognizer-name (basename pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE, or NIL for DEF-PRIMITIVE-AGGREGATE.
+  (or pred
+      (intern-in-package-of-symbol
+       (concatenate 'string (symbol-name basename) "-P")
+       basename)))
 
 (defun da-changer-name (basename)
   (intern-in-package-of-symbol
@@ -480,10 +485,11 @@ fty::deftranssum).</p>"
 
 ; (FOOP X) RECOGNIZER.
 
-(defun da-make-recognizer-raw (basename tag fields guard layout)
+(defun da-make-recognizer-raw (basename tag fields guard layout pred)
   ;; Previously we allowed recognizers to be inlined, but now we prefer to
   ;; only inline accessors.
-  (let* ((foo-p      (da-recognizer-name basename))
+  ;; PRED is the :PRED option of DEFAGGREGATE, or NIL for DEF-PRIMITIVE-AGGREGATE.
+  (let* ((foo-p      (da-recognizer-name basename pred))
          (x          (da-x basename))
          (fields-map (da-fields-map basename tag layout fields))
          (let-binds  (da-fields-map-let-bindings fields-map)))
@@ -520,8 +526,9 @@ fty::deftranssum).</p>"
 
 ; (FOO->BAR X) ACCESSORS.
 
-(defun da-make-accessor (basename field map)
-  (let ((foo-p    (da-recognizer-name basename))
+(defun da-make-accessor (basename field map pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE, or NIL for DEF-PRIMITIVE-AGGREGATE.
+  (let ((foo-p    (da-recognizer-name basename pred))
         (foo->bar (da-accessor-name basename field))
         (x        (da-x basename))
         (body     (cdr (assoc field map))))
@@ -552,14 +559,17 @@ fty::deftranssum).</p>"
 
 ||#
 
-(defun da-make-accessors-aux (basename fields map)
+(defun da-make-accessors-aux (basename fields map pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE, or NIL for DEF-PRIMITIVE-AGGREGATE.
   (if (consp fields)
-      (cons (da-make-accessor basename (car fields) map)
-            (da-make-accessors-aux basename (cdr fields) map))
+      (cons (da-make-accessor basename (car fields) map pred)
+            (da-make-accessors-aux basename (cdr fields) map pred))
     nil))
 
-(defun da-make-accessors (basename tag fields layout)
-  (da-make-accessors-aux basename fields (da-fields-map basename tag layout fields)))
+(defun da-make-accessors (basename tag fields layout pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE, or NIL for DEF-PRIMITIVE-AGGREGATE.
+  (da-make-accessors-aux basename fields
+                         (da-fields-map basename tag layout fields) pred))
 
 (defun da-make-accessor-of-constructor (basename field all-fields)
   (let ((foo->bar (da-accessor-name basename field))
@@ -603,12 +613,13 @@ fty::deftranssum).</p>"
   (and (da-layout-supports-remake-p honsp layout)
        (da-remake-name basename)))
 
-(defun da-make-remaker-raw (basename tag fields guard honsp layout)
+(defun da-make-remaker-raw (basename tag fields guard honsp layout pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE, or NIL for DEF-PRIMITIVE-AGGREGATE.
   (b* (((unless (da-layout-supports-remake-p honsp layout))
         nil)
        (x          (da-x basename))
        (foo        (da-constructor-name basename))
-       (foo-p      (da-recognizer-name basename))
+       (foo-p      (da-recognizer-name basename pred))
        (remake-foo (da-remake-name basename)))
     `((defun ,remake-foo (,x . ,fields)
         (declare (xargs :guard (and (,foo-p ,x) ,guard)
@@ -925,11 +936,11 @@ fty::deftranssum).</p>"
         (layout :alist)
         (guard t))
     `(progn
-       ,(da-make-recognizer-raw basename tag fields guard layout)
+       ,(da-make-recognizer-raw basename tag fields guard layout nil)
        ,(da-make-constructor-raw basename tag fields guard honsp layout)
-       ,@(da-make-accessors basename tag fields layout)
+       ,@(da-make-accessors basename tag fields layout nil)
        ,@(da-make-accessors-of-constructor basename fields)
-       ,@(da-make-remaker-raw basename tag fields guard honsp layout)
+       ,@(da-make-remaker-raw basename tag fields guard honsp layout nil)
        ,(da-make-binder basename fields)
        ,(da-make-changer basename fields (da-maybe-remake-name basename honsp layout))
        ,(da-make-maker basename fields nil))))

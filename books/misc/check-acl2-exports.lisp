@@ -84,6 +84,8 @@
     ADD-DIVE-INTO-MACRO
     BDD
     BOOK-HASH
+    CHAR-DOWNCASE ; should probably be documented (noticed by Alessandro Coglio)
+    CHAR-UPCASE ; should probably be documented (noticed by Alessandro Coglio)
     CHECK-SUM
     COMP-GCL
     COUNT ; defined in books/coi/bags/basic.lisp

@@ -104,7 +104,8 @@ restrictions).</p>")
 (defun ds-recognizer-logic-def-aux (agginfos xvar)
   (if (atom agginfos)
       nil
-    (cons `(,(da-recognizer-name (agginfo->name (car agginfos))) ,xvar)
+    (cons `(,(da-recognizer-name (agginfo->name (car agginfos))
+                                 (agginfo->pred (car agginfos))) ,xvar)
           (ds-recognizer-logic-def-aux (cdr agginfos) xvar))))
 
 (defun ds-recognizer-logic-def (name agginfos)
@@ -121,10 +122,12 @@ restrictions).</p>")
         ((atom (cdr agginfos))
          ;; last one, just use "otherwise"
          `((otherwise
-            (,(da-recognizer-name (agginfo->name (car agginfos))) ,xvar))))
+            (,(da-recognizer-name (agginfo->name (car agginfos))
+                                  (agginfo->pred (car agginfos))) ,xvar))))
         (t
          (cons `(,(agginfo->tag (car agginfos))
-                 (,(da-recognizer-name (agginfo->name (car agginfos))) ,xvar))
+                 (,(da-recognizer-name (agginfo->name (car agginfos))
+                                       (agginfo->pred (car agginfos))) ,xvar))
                (ds-recognizer-exec-def-aux (cdr agginfos) xvar)))))
 
 (defun ds-recognizer-exec-def (name agginfos)
@@ -158,7 +161,7 @@ restrictions).</p>")
   (b* ((xvar     (ds-x name))
        (sum-name (ds-recognizer-name name))
        ((agginfo agginfo) agginfo)
-       (mem-name (da-recognizer-name agginfo.name))
+       (mem-name (da-recognizer-name agginfo.name agginfo.pred))
        (thm-name (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name sum-name) "-WHEN-"
                                (symbol-name mem-name))
@@ -188,7 +191,7 @@ restrictions).</p>")
   (b* ((xvar     (ds-x name))
        (sum-name (ds-recognizer-name name))
        ((agginfo agginfo) agginfo)
-       (mem-name (da-recognizer-name agginfo.name))
+       (mem-name (da-recognizer-name agginfo.name agginfo.pred))
        (thm-name (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name mem-name)
                                "-BY-TAG-WHEN-"
@@ -335,4 +338,3 @@ restrictions).</p>")
   :mode :logic
   (foo bar baz))
 ||#
-

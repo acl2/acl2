@@ -62,7 +62,10 @@ if you can exhibit a witness.  Many times that is all one needs.
                (concatenate 'string (symbol-name name)
                             (if exists-p "-SUFF" "-NECC"))
                name)))
-         (msg (non-acceptable-defun-sk-p name args body quant-ok nil exists-p)))
+         (msg (non-acceptable-defun-sk-p name args body quant-ok nil exists-p
+                                         nil ; dcls (Matt K. mod)
+                                         nil ; witness-dcls (Matt K. mod)
+                                         )))
     (if msg
         `(er soft '(defun-sk . ,name)
              "~@0"

@@ -79,6 +79,46 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc defpun
+  :parents (events)
+  :short "Define a tail-recursive function symbol"
+  :long "<p>@('Defpun') is a macro developed by Pete Manolios and J Moore that
+ allows tail-recursive definitions.  It is defined in community book
+ @('books/misc/defpun.lisp'), so to use it, execute the following event.</p>
+
+ @({
+  (include-book \"misc/defpun\" :dir :system)
+ })
+
+ <p>Details of defpun are provided by Manolios and Moore in the ``Partial
+ Functions in ACL2'' published with the <a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2000/'>ACL2 2000
+ workshop</a>.  Also see <a
+ href='http://www.cs.utexas.edu/users/moore/publications/defpun/index.html'>Partial
+ Functions in ACL2</a>.</p>
+
+ <p>A variant, @('defp'), has been developed by Matt Kaufmann to allow more
+ general forms of tail recursion.  If @('defpun') doesn't work for you, try
+ @('defp') by first executing the following event.</p>
+
+ @({
+  (include-book \"misc/defp\" :dir :system)
+ })
+
+ <p>Sandip Ray has contributed a variant of @('defpun'), @('defpun-exec'), that
+ supports executability.  See community book
+ @('books/defexec/defpun-exec/defpun-exec.lisp'):</p>
+
+ @({
+  (include-book \"defexec/defpun-exec/defpun-exec\" :dir :system)
+ })
+
+ <p>He has also contributed community book
+ @('books/misc/misc2/defpun-exec-domain-example.lisp'), for functions that are
+ uniquely defined in a particular domain.</p>")
+
 (defmacro defun-nonexec (name args &rest rst)
   `(defun-nx ,name ,args ,@rst))
 

@@ -1479,6 +1479,11 @@ sv_failtest : centaur/sv/cosims/cosim-core
 	@echo "Making SV failtests"
 	@cd centaur/sv/failtest; $(MAKE) passing
 
+sv_cosims : centaur/sv/cosims/cosim-core
+	@echo "Making SV cosim tests"
+	@echo "NOTE: This will fail unless you have commercial simulators ncverilog and vcs in your path!"
+	@cd centaur/sv/cosims; $(MAKE) passing
+
 
 .PHONY: clean_vl
 clean_vl:

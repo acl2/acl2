@@ -12579,6 +12579,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-absstobj-invariants
     get-stobj-creator
     iprint-oracle-updates
+    iprint-oracle-updates@par
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
@@ -17808,7 +17809,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp lst)
          t)
         ((member (car lst) potnum-chars)
-         (may-need-slashes1 (cdr lst) nil potnum-chars))
+         (may-need-slashes1 (cdr lst)
+                            (member (car lst) *letter-chars*)
+                            potnum-chars))
         ((member (car lst) *letter-chars*)
          (cond (flg nil)
                (t (may-need-slashes1 (cdr lst) t potnum-chars))))
@@ -17854,7 +17857,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (not (member (aref (the string ,s) (the fixnum (1- ,n)))
                      '(#\+ #\-)))
 
-; The strong consists entirely of digits, signs, ratio markers, decimal points,
+; The string consists entirely of digits, signs, ratio markers, decimal points,
 ; extension characters, and number markers (i.e. letters, but no two in a
 ; row).  The logic code for this is may-need-slashes1.
 
@@ -17865,7 +17868,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (declare (type fixnum ch))
                 (cond ((or (svref ,ar+ ch)
                            (int= ch *char-code-slash*))
-                       (setq prev-letter-p nil))
+                       (setq prev-letter-p
+                             (svref *letter-array* ch)))
                       ((svref *letter-array* ch)
                        (cond (prev-letter-p (return nil))
                              (t (setq prev-letter-p t))))

@@ -95,6 +95,11 @@
                         (t (member-equal a (cdr val))))))
   :hints(("Goal" :in-theory (enable member-equal))))
 
+(defthmd alistp-compound-recognizer
+  (implies (alistp x)
+           (true-listp x))
+  :rule-classes :compound-recognizer)
+
 (deftheory deftypes-theory
   '(equal-of-strip-cars
     car-cons cdr-cons
@@ -111,6 +116,7 @@
     (natp) acl2::natp-compound-recognizer
     hons
     open-member-equal-on-list-of-tags
+    alistp-compound-recognizer
     ;;  len
     ;; equal-of-plus-one fix
     prod-car
