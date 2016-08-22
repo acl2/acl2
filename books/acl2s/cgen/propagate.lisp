@@ -54,7 +54,7 @@
     (value new-term)))
 
 
-(def simplify-term (term hyps hints state)
+(def easy-simplify-term (term hyps hints state)
   (decl :sig ((pseudo-term pseudo-term-list true-list state) 
               -> (mv erp pseudo-term state))
         :mode :program
@@ -64,15 +64,15 @@
 ;  (symsim-fn term hyps :no-split hints nil t nil (w state) state))
 
 
-(def simplify-terms (terms hyps hints state)
+(def easy-simplify-terms (terms hyps hints state)
   (decl :sig ((pseudo-term pseudo-term-list true-list state) 
               -> (mv erp pseudo-term state))
         :mode :program
         :doc "loop over simplify-term")
   (if (endp terms)
       (value nil)
-    (er-let* ((sterm (simplify-term (car terms) hyps hints state))
-              (rest  (simplify-terms (cdr terms) hyps hints state)))
+    (er-let* ((sterm (easy-simplify-term (car terms) hyps hints state))
+              (rest  (easy-simplify-terms (cdr terms) hyps hints state)))
       (value (cons sterm rest)))))
 
 
@@ -118,7 +118,7 @@
 
 
 
-(def simplify (hyp other-hyps hints state)
+(def simplify-term (hyp other-hyps hints state)
   (decl :sig ((pseudo-term pseudo-term-list true-list state) 
               -> (mv erp pseudo-term state))
         :mode :program
@@ -126,7 +126,7 @@
   in them. return the simplifed term in error triple")
   (b* ((ens (acl2::ens state))
        (wrld (w state))
-       (ctx 'simplify)
+       (ctx 'simplify-term)
        ((mv erp x state) (acl2::tool2-fn0 hyp
                                           other-hyps
                                           'iff ctx ens wrld state
@@ -137,18 +137,18 @@
     (value shyp)))
          
 
-(def simplify-lst (terms hyps hints state)
+(def simplify-term-lst (terms hyps hints state)
   (decl :sig ((pseudo-term pseudo-term-list true-list state) 
               -> (mv erp pseudo-term state))
         :mode :program
-        :doc "loop over simplify, but be conservative")
+        :doc "loop over simplify-term, but be conservative")
   (if (endp terms)
       (value nil)
     (b* ((term (car terms))
          ((er sterm) (simplify-term (car terms) hyps hints state))
          (simplified? (term-order sterm term))
          (sterm (if simplified? sterm term))
-         ((er rest)  (simplify-terms (cdr terms) hyps hints state)))
+         ((er rest)  (simplify-term-lst (cdr terms) hyps hints state)))
       (value (cons sterm rest)))))
 
 (def simplify-hyps1 (rem-hyps init-hyps hints ans. vl state)
@@ -162,7 +162,7 @@
       (value ans.)
     (b* ((hyp         (car rem-hyps))
          (other-hyps  (remove1-equal hyp init-hyps))
-         ((er shyp)   (simplify-term hyp other-hyps hints state))
+         ((er shyp)   (easy-simplify-term hyp other-hyps hints state))
          (simplified? (term-order shyp hyp))
          ((when (equal shyp ''nil)) ;contradiction
           (mv T ans. state))
@@ -243,7 +243,7 @@
       (- (cw? (debug-flag vl)
 "~|CEGen/Debug/Propagate: ~x0 ---~x1=~x2--> ~x3~|" hyps x a shyps))
       (?eq-hyp (list 'equal x a)) ;variable comes first
-      ((er sconcl) (simplify (acl2::subst-var a x concl) shyps nil state))
+      ((er sconcl) (simplify-term (acl2::subst-var a x concl) shyps nil state))
       (- (cw? (debug-flag vl)
               "~|CEGen/Debug/Propagate: ~x0 ---~x1=~x2--> ~x3~|" concl x a sconcl))
 ;if conclusion is simplied to true, why waste time? -- abort with error/inconsistent [2015-09-20 Sun]

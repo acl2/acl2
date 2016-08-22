@@ -603,7 +603,7 @@ else pick c from constraints
          (var-type-dlist (dumb-type-alist-infer rule-hyps (all-vars-lst rule-hyps) vl (w state)))
          ;; ((er constraints~)  (acl2::bash-fn `(IMPLIES (EQUAL ,x ,refined-exp) (AND ,@(cdr constraints)))
          ;;                                    nil (debug-flag vl) 'refine-enum-shape1 state))
-         ((er constraints~) (simplify-lst (acl2::subst-var-lst refined-exp x (cdr constraints))
+         ((er constraints~) (simplify-term-lst (acl2::subst-var-lst refined-exp x (cdr constraints))
                                             rule-hyps
                                             '() state))
          )
