@@ -1145,101 +1145,92 @@ of the entries is same as the keys"
     A))
 
   
-
-
-(defun fixers-sat-glcp-query (vars lits term->lits-lst orig-hyps fxri{} num-sat-lits vl state)
-  (declare (xargs :mode :program :stobjs (state)))
+(defun make-GL-SAT-encoding (vars lits term->lits-lst fxri{})
+; return (mv bindings hyp concl-hyp)
+;  (declare (xargs :mode :program :stobjs (state)))
   (b* ((fixers (strip-cdrs fxri{}))
-       ((mv start-code-gen state) (acl2::read-run-time state))
        (terms (strip-cars term->lits-lst))
        (bindings (pvars-g-bindings vars fixers lits terms))
-       (param-bindings nil)
        (hyp `(AND . ,(pvars-type-constraints vars fixers lits terms)))
-       ;(- (cw "hyp is ~x0~%" hyp))
-       ((er trhyp) (acl2::translate hyp t t nil 'gl-hint-fn (w state) state))
-       (trparam nil)
+       (concl-hypothesis `(AND . ,(append 
+                                   (C/atleast-one-final-value vars fixers)
+                                   ;;(C/atmost-one-final-value vars fixers)
+                                   (C/TheChosenFixer lits fixers)
+                                   (C/final-value-implies-valid vars fixers)
+                                   (C/connection-implies-valid fixers vars)
+                                   (C/atmost-one-input-conn fixers vars)
+                                   (C/atleast-one-input-conn fixers vars)
+                                   (C/trans fixers vars)
+                                   (C/no-cycles fixers)
+                                   (C/final-value-def vars fixers)
+                                   (C/TheFixer-is-preserved lits fixers)
+                                   (C/sat-lits lits fixers)
+                                   (C/sat-terms term->lits-lst)))
+                                   ))
+       
+    (mv bindings hyp concl-hypothesis)))
+       
+       
 
-       (concl `(IMPLIES (AND . ,(append 
-                                 (C/atleast-one-final-value vars fixers)
-                                 ;(C/atmost-one-final-value vars fixers)
-                                 (C/TheChosenFixer lits fixers)
-                                 (C/final-value-implies-valid vars fixers)
-                                 (C/connection-implies-valid fixers vars)
-                                 (C/atmost-one-input-conn fixers vars)
-                                 (C/atleast-one-input-conn fixers vars)
-                                 (C/trans fixers vars)
-                                 (C/no-cycles fixers)
-                                 (C/final-value-def vars fixers)
-                                 (C/TheFixer-is-preserved lits fixers)
-                                 (C/sat-lits lits fixers)
-                                 (C/sat-terms term->lits-lst)
-                                 ))
-             
-                     (NOT (EQUAL ,(num-sat-literals orig-hyps)
-                                 ,num-sat-lits))))
-       (- (cw? (debug-flag vl) "~|concl is ~x0~%" concl))
-       ((mv end-code-gen state) (acl2::read-run-time state))
-       (- (cw? (verbose-stats-flag vl)
-               "~|** Time taken by code generation: "))
-       ((er &) (if t;(verbose-flag vl)
-                       (pprogn (print-rational-as-decimal (- end-code-gen start-code-gen)
-                                                      (standard-co state)
-                                                      state)
-                           (princ$ " seconds" (standard-co state) state)
-                           (newline (standard-co state) state)
-                           (newline (standard-co state) state)
-                           (value :invisible))
-                     (value nil)))
-       ((er trconcl) (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
-       ; (- (cw "~|trconcl is ~x0~%" trconcl))
+
+(defun fixers-sat-glcp-query (num-sat-lits top-hyps bindings trhyp concl-hyp vl state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (b* (((mv start-sat-query state) (acl2::read-run-time state))
+       (concl `(IMPLIES ,concl-hyp
+                        (NOT (EQUAL ,(num-sat-literals top-hyps)
+                                    ,num-sat-lits))))
+       (ctx 'fixers-sat-glcp-query)
+       ((er trconcl) (acl2::translate concl t t nil ctx (w state) state))
        (concl-vars (collect-vars trconcl))
        (missing-vars (set-difference-eq concl-vars (strip-cars bindings)))
-       ;(- (cw "missing-vars is ~x0~%" missing-vars))
        (- (and missing-vars
                 (let ((msg (acl2::msg "~
 The following variables are present in the theorem but have no symbolic object ~
 bindings:
 ~x0~%" missing-vars)))
                   (cw? (normal-output-flag vl) "****  ERROR ****~%~@0~%" msg))))
-        ((when missing-vars) (mv t nil state))
-        (config (gl::make-glcp-config
-                 :abort-ctrex t
-                 :abort-vacuous t
-                 :nexamples 1
-                 ))
-        ((mv erp ?val state) 
-         (gl::glcp nil (list bindings param-bindings trhyp trparam trconcl concl config) state))
-        ((unless erp) (mv erp :unsat state)) ;if no error, return as it is, o.w. below report sat assignment
+       ((when missing-vars) (mv :missing-vars nil state))
+    
+       (param-bindings nil)
+       (trparam nil)
+       (config (gl::make-glcp-config
+                :abort-ctrex t
+                :abort-vacuous t
+                :nexamples 1))
+       ((mv erp ?val state) 
+        (gl::glcp nil (list bindings param-bindings
+                            trhyp trparam trconcl
+                            concl config) state))
+;if no error, return as it is, o.w. below report sat assignment
+       ((mv end-sat-query state) (acl2::read-run-time state))
+       (- (cw? (verbose-stats-flag vl)
+               "~|Cgen/Note: GL/SAT Engine: Time taken = "))
+       ((er &) (if (verbose-stats-flag vl)
+                       (pprogn (print-rational-as-decimal (- end-sat-query start-sat-query)
+                                                      (standard-co state)
+                                                      state)
+                           (princ$ " seconds" (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (value :invisible))
+                 (value nil)))
+       
+        ((unless erp) (mv :unsat nil state)) 
         (x  (car (@ gl::glcp-counterex-assignments))) ;only pick the first
         (sat-A (gl::glcp-obj-ctrex->obj-alist x))
-        (all-basis-pvars (append (pvars/chosen-fixer lits fixers)
-                                 (pvars/final vars fixers)
-                                 (pvars/conn fixers vars)
-                                 (pvars/valid fixers)
-                                 (union-equal (pvars/sat-term terms)
-                                              (pvars/sat-lit lits))))
-        (pvars/true (filter-true-vars sat-A all-basis-pvars))
-        (sat-A/true (acl2::listlis pvars/true (make-list (len pvars/true) :initial-element 't)))
-        (- (cw? (debug-flag vl) "True pvars: ~x0~%" (filter-true-vars sat-A (pvars-fn vars fixers lits terms))))
-        (- (cw? (verbose-stats-flag vl) "SAT Assignment: ~x0~%" sat-A/true))
-        (ssigma (soln-sigma-top sat-A vars fxri{}))
-        (- (cw? (debug-flag vl) "Substitution: ~x0~%" ssigma))
-
-        (let*-b (convert-to-let*-binding ssigma))
-        (- (cw? (verbose-stats-flag vl) "Let* Binding: ~x0~%" let*-b))
         )
-      (mv t sat-A/true state)))
+      (mv nil sat-A state)))
       
-(defun fixers-maxsat-glcp-query-loop (n vars lits term->lits-lst relevant-hyps fxri{} vl state)
+(defun fixers-maxsat-glcp-query-loop (n top-hyps bindings trhyp concl-hyp vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (zp n)
-    (mv t :unsat 0 state) ;nothing satisfied
-    (b* (((mv erp A state) (fixers-sat-glcp-query vars lits term->lits-lst relevant-hyps fxri{} n vl state))
-         ((when erp) ;got sat assignment
+    (mv :unsat nil 0 state) ;nothing satisfied
+    (b* (((mv erp A state) (fixers-sat-glcp-query n top-hyps bindings trhyp concl-hyp vl state))
+         ((unless erp) ;got sat assignment
           (prog2$ 
            (cw? (verbose-stats-flag vl) "~|Got a sat assignment for #literals = ~x0~%" n)
            (mv nil A n state))))
-      (fixers-maxsat-glcp-query-loop (1- n) vars lits term->lits-lst relevant-hyps fxri{} vl state))))
+      (fixers-maxsat-glcp-query-loop (1- n) top-hyps bindings trhyp concl-hyp vl state))))
 
 
 
@@ -1252,15 +1243,50 @@ bindings:
                   (null relevant-hyps)
                   )) ;pathological cases
         (mv :null nil state)); abort, treat as error
+       (ctx 'fixers-maxsat-glcp-query)
+       ((mv start-code-gen state) (acl2::read-run-time state))
+       
+       ((mv bindings hyp concl-hyp)
+        (make-GL-SAT-encoding vars lits term->lits-lst fxri{}))
+       ((mv end-code-gen state) (acl2::read-run-time state))
+       (- (cw? (debug-flag vl) "~|concl-hyp is ~x0~%" concl-hyp))
+       (- (cw? (verbose-stats-flag vl)
+               "~|Cgen/Note: fixer-sat-encoding: Time taken = "))
+       ((er &) (if (verbose-stats-flag vl)
+                       (pprogn (print-rational-as-decimal (- end-code-gen start-code-gen)
+                                                      (standard-co state)
+                                                      state)
+                           (princ$ " seconds" (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (value :invisible))
+                 (value nil)))
+       
+       ((er trhyp) (acl2::translate hyp t t nil ctx (w state) state))
+       
+       
+       
        ((mv erp sat-A ?n state)
-        (fixers-maxsat-glcp-query-loop (len relevant-hyps) vars lits
-                                       term->lits-lst
+        (fixers-maxsat-glcp-query-loop (len relevant-hyps)
                                        relevant-hyps ;[2016-05-04 Wed] only count these
-                                       fxri{} vl state))
-        ((when erp) ;unsat, abort
-         (mv :unsat nil state))
+                                       bindings trhyp concl-hyp
+                                       vl state))
+        ((when erp) ;unsat or error, abort
+         (mv erp nil state))
+        (terms (strip-cars term->lits-lst))
+        (fixers (strip-cdrs fxri{}))
+        (all-basis-pvars (append (pvars/chosen-fixer lits fixers)
+                                 (pvars/final vars fixers)
+                                 (pvars/conn fixers vars)
+                                 (pvars/valid fixers)
+                                 (union-equal (pvars/sat-term terms)
+                                              (pvars/sat-lit lits))))
+        (pvars/true (filter-true-vars sat-A all-basis-pvars))
+        (sat-A/true (acl2::listlis pvars/true (make-list (len pvars/true) :initial-element 't)))
+        (- (cw? (debug-flag vl) "True pvars: ~x0~%" (filter-true-vars sat-A (pvars-fn vars fixers lits terms))))
+        (- (cw? (verbose-stats-flag vl) "SAT Assignment: ~x0~%" sat-A/true))
         )
-    (mv nil sat-A state)))
+    (mv nil sat-A/true state)))
   
   
 (in-theory (disable Implies))

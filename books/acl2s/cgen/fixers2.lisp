@@ -694,7 +694,7 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
          (fixer-terms1 (strip-cadrs fixer-letb)))
       (get-all-fixer-terms1 (cdr fxri{}) (union-equal ans fixer-terms1)))))
 
-(defun instantiate-pres-rule/lit (prule f-lit all-terms vl state fxri{})
+(defun instantiate-pres-rule/lit (prule f-lit all-terms all-fxr-term-instances vl state fxri{})
   (declare (xargs :guard (and ;(preservation-rule-p prule)
                               (pseudo-termp f-lit)
                               (alistp fxri{}) ;fxri{fixer-term-name} -> fixer-metadata
@@ -705,7 +705,7 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        ((unless yesp) (value fxri{})) ;no hit
        ;;get partially instantiated fixer-terms for this prule
        (fxr-terms-pI (acl2::sublis-var-lst partial-S (get1 :fixer-terms prule)))
-       (all-fxr-term-instances (get-all-fixer-terms1 fxri{} '()))
+
        ;;Now lets get all possible matching substitution lists
        (sigma-list-lst (match-pats/terms-alst fxr-terms-pI all-fxr-term-instances '()))
        (sigmas-lst (generate-all-tuples sigma-list-lst))
@@ -714,7 +714,7 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        
 
 
-(defun instantiate-pres-rule/lits (prule f-lits all-terms vl state fxri{}); -> fxri{}
+(defun instantiate-pres-rule/lits (prule f-lits all-terms all-fxr-term-instances vl state fxri{}); -> fxri{}
 ;loop over f-lits
   (declare (xargs :guard (and ;(preservation-rule-p prule)
                               (pseudo-term-listp f-lits)
@@ -724,9 +724,9 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
   (if (endp f-lits)
       (value fxri{})
     (b* ((f-lit (car f-lits))
-         ((er fxri{}) (instantiate-pres-rule/lit prule f-lit all-terms vl state fxri{}))
+         ((er fxri{}) (instantiate-pres-rule/lit prule f-lit all-terms all-fxr-term-instances vl state fxri{}))
          )
-      (instantiate-pres-rule/lits prule (cdr f-lits) all-terms vl state fxri{}))))
+      (instantiate-pres-rule/lits prule (cdr f-lits) all-terms all-fxr-term-instances vl state fxri{}))))
 
 
 (defun instantiate-pres-rules (prules f-lits all-terms vl state fxri{}); -> fxri{}
@@ -734,7 +734,10 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
   (if (endp prules)
       (value fxri{})
     (b* ((prule (car prules))
-         ((er fxri{}) (instantiate-pres-rule/lits prule f-lits all-terms vl state fxri{}))
+         (all-fxr-term-instances (get-all-fixer-terms1 fxri{} '()))
+         ((er fxri{}) (instantiate-pres-rule/lits prule f-lits
+                                                  all-terms all-fxr-term-instances
+                                                  vl state fxri{}))
          )
       (instantiate-pres-rules (cdr prules) f-lits all-terms vl state fxri{}))))
   
