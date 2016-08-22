@@ -316,8 +316,10 @@ types.</p>"
 
   (b* (((vl-paramdecl decl) (vl-paramdecl-fix decl))
        (warnings (ok))
+       ((vl-simpconfig config))
        ((wmv ok warnings decl.type elabindex)
-        (vl-paramtype-elaborate decl.type elabindex))
+        (vl-paramtype-elaborate decl.type elabindex
+                                :reclimit config.elab-limit))
 
        ;; To get the override scopes, temporarily traverse to that path.
        (elabindex (vl-elabindex-sync-scopes))

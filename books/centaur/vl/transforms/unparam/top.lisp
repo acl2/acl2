@@ -32,7 +32,7 @@
 (in-package "VL")
 (include-book "lineup")
 (include-book "override")
-(include-book "centaur/sv/vl/elaborate" :dir :system)
+(include-book "../../simpconfig")
 (include-book "../../util/namedb")
 ;; (include-book "scopesubst")
 (include-book "../../mlib/blocks")
@@ -41,6 +41,7 @@
 (local (include-book "../../util/default-hints"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
+(local (in-theory (disable nfix)))
 
 (defxdoc unparameterization
   :parents (transforms)
@@ -190,8 +191,7 @@ with, we can safely remove @('plus') from our module list.</p>")
    &key
    ((config vl-simpconfig-p) 'config))
   :prepwork ((local (in-theory (e/d (vl-paramdecloverridelist-fix)
-                                    (append
-                                     acl2::append-when-not-consp)))))
+                                    (append acl2::append-when-not-consp)))))
   :returns (mv (successp  "BOZO at the moment this never actually fails")
                (warnings vl-warninglist-p)
                (final-params vl-paramdecllist-p)
@@ -207,7 +207,6 @@ with, we can safely remove @('plus') from our module list.</p>")
   ;;                                   scopeinfo ss final-params-acc warnings ctx)))
   ;;                        :in-theory (e/d (vl-paramdecloverridelist-fix)
   ;;                                        ((:d vl-scopeinfo-resolve-params)))))))
-
   (b* ((outside-module-ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-update-ss
                    (vl-scopestack-push (vl-scopeinfo-fix scopeinfo)
@@ -220,7 +219,6 @@ with, we can safely remove @('plus') from our module list.</p>")
             elabindex))
        ((vl-paramdecloverride x1) (car x))
        (warnings (ok))
-
 
        ((mv ok warnings final-paramdecl elabindex)
         (vl-override-parameter
@@ -239,6 +237,8 @@ with, we can safely remove @('plus') from our module list.</p>")
                                  (cons final-paramdecl
                                        final-params-acc)
                                  warnings)))
+
+
 
 
 #|
@@ -268,6 +268,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                (warnings vl-warninglist-p)
                (elabindex "with the overridden parameter values")
                (final-paramdecls vl-paramdecllist-p))
+  :prepwork ((local (in-theory (disable nfix))))
   (b* (((mv ok warnings overrides)
         (vl-make-paramdecloverrides formals actuals
                                     (vl-simpconfig->unparam-bad-instance-fatalp config)
@@ -1287,8 +1288,10 @@ for each usertype is stored in the res field.</p>"
       (b* ((ledger (vl-unparam-ledger-fix ledger))
            ((vl-genblob x) (vl-genblob-fix x))
            (elabindex (vl-elabindex-push x))
+           ((vl-simpconfig config))
            ((wmv ?ok warnings new-x elabindex)
-            (vl-genblob-elaborate x elabindex))
+            (vl-genblob-elaborate x elabindex
+                                  :reclimit config.elab-limit))
 
            ((mv warnings keylist1 new-generates elabindex ledger)
             ;; Not new-x.generates (complicates termination)
@@ -1597,8 +1600,10 @@ for each usertype is stored in the res field.</p>"
            (elabindex (vl-elabindex-push idx-scope))
 
            ;; Check whether we continue.
+           ((vl-simpconfig config))
            ((wmv ok warnings continue-val ?svex elabindex)
-            (vl-expr-resolve-to-constant continue elabindex))
+            (vl-expr-resolve-to-constant continue elabindex
+                                         :reclimit config.elab-limit))
            ((unless (and ok (vl-expr-resolved-p continue-val)))
             (b* ((elabindex (vl-elabindex-undo)))
               (mv (vmsg "Failed to evaluate the loop termination expression")
@@ -1611,7 +1616,8 @@ for each usertype is stored in the res field.</p>"
 
            ;; While we're at it, compute the increment value.
            ((wmv ok warnings next-value ?svex elabindex)
-            (vl-expr-resolve-to-constant nextval elabindex))
+            (vl-expr-resolve-to-constant nextval elabindex
+                                         :reclimit config.elab-limit))
 
            ((unless (and ok (vl-expr-resolved-p next-value)))
             (b* ((elabindex (vl-elabindex-undo)))
@@ -1752,7 +1758,6 @@ for each usertype is stored in the res field.</p>"
    (ledger   vl-unparam-ledger-p)
    &key
    ((config vl-simpconfig-p) 'config))
-
   :returns (mv (new-mod vl-interface-p)
                (keylist vl-unparam-instkeylist-p "signatures for this interface")
                (new-elabindex)
@@ -1785,7 +1790,8 @@ for each usertype is stored in the res field.</p>"
                                (vl-scope-p x))))
              (local (defthm len-equal-0
                       (equal (equal (len x) 0)
-                             (not (consp x))))))
+                             (not (consp x)))))
+             (local (in-theory (enable nfix))))
   (define vl-unparameterize-main
     ((instkey vl-unparam-instkey-p "a single signature to expand")
      (donelist vl-unparam-donelist-p "fast alist of previously-seen signatures")
@@ -1811,7 +1817,8 @@ for each usertype is stored in the res field.</p>"
     (b* ((instkey (vl-unparam-instkey-fix instkey))
          (ledger (vl-unparam-ledger-fix ledger))
          (donelist (vl-unparam-donelist-fix donelist))
-         ((when (hons-get instkey donelist)) (mv nil nil nil donelist elabindex ledger))
+         ((when (hons-get instkey donelist))
+          (mv nil nil nil donelist elabindex ledger))
          (warnings nil)
          ((when (zp depthlimit))
           (mv (fatal :type :vl-unparameterize-loop
@@ -2131,7 +2138,8 @@ scopestacks.</p>"
        ;; unparameterized modules, which don't currently exist inside
        ;; packages).
        ((wmv ok warnings new-x elabindex)
-        (vl-package-elaborate-aux x elabindex))
+        (vl-package-elaborate-aux x elabindex
+                                  :reclimit (vl-simpconfig->elab-limit config)))
        (elabindex (vl-elabindex-undo)))
     (mv ok warnings elabindex new-x)))
 
@@ -2288,11 +2296,11 @@ scopestacks.</p>"
 (define vl-design-elaborate
   :short "Top-level @(see unparameterization) transform."
   ((x vl-design-p)
+   (config vl-simpconfig-p)
    &key ((name-without-default-params
           booleanp
           "Omit default parameters when creating module names.")
-         'nil)
-   ((config vl-simpconfig-p) 'config))
+         'nil))
   :returns (new-x vl-design-p)
   :prepwork ((local (defthm string-listp-of-scopedef-alist-key
                       (implies (vl-scopedef-alist-p x)
@@ -2306,6 +2314,8 @@ scopestacks.</p>"
        ((local-stobjs elabindex) (mv new-x elabindex))
        (elabindex (vl-elabindex-init x))
        (warnings x.warnings)
+       (elablimit (vl-simpconfig->elab-limit config))
+
        ;; ((mv ?ok warnings elabindex params)
        ;;  (vl-scope-finalize-params x.paramdecls
        ;;                            (make-vl-paramargs-named)
@@ -2330,7 +2340,7 @@ scopestacks.</p>"
        ;; dpiimports.  We could perhaps get into trouble here since these could
        ;; depend on packages and package parameters.
        ((wmv ?ok1 warnings x elabindex)
-        (vl-design-elaborate-aux x elabindex))
+        (vl-design-elaborate-aux x elabindex :reclimit elablimit))
 
        ((mv ?ok warnings elabindex new-packages)
         (vl-packagelist-elaborate x.packages elabindex warnings))

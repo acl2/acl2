@@ -1336,9 +1336,6 @@ because... (BOZO)</p>
                            (:t append)
                            default-car default-cdr not)))
 
-
-(defconst *vl-svstmt-compile-reclimit* 100000)
-
 (fty::defvisitor-template strip-nullstmts ((x :object))
   :type-fns ((vl-stmtlist vl-stmtlist-strip-nullstmts))
   :returns (new-x :update)
@@ -1399,7 +1396,7 @@ because... (BOZO)</p>
                                                                    :body (append-without-guard varstmts svstmts)))))
        ((wmv ok warnings svstate constraints blk-masks nonblk-masks)
         (time$ (sv::svstmtlist-compile-top svstmts
-                                           :reclimit *vl-svstmt-compile-reclimit*
+                                           :sclimit config.sc-limit
                                            :nb-delayp nil)
                :mintime 1/2
                :msg "; vl-fundecl-to-svex: compiling ~s0: ~st sec, ~sa bytes"
@@ -2377,7 +2374,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ;; Only use the nonblocking-delay strategy for flops, not latches
        (locstring (vl-location-string x.loc))
        ((wmv ok warnings st constraints blkst-write-masks nbst-write-masks :ctx x)
-        (time$ (sv::svstmtlist-compile-top svstmts :reclimit *vl-svstmt-compile-reclimit*
+        (time$ (sv::svstmtlist-compile-top svstmts
+                                           :sclimit config.sc-limit
                                            :nb-delayp nil)
                :mintime 1/2
                :msg "; vl-always->svex: compiling statement at ~s0: ~st sec, ~sa bytes~%"
@@ -2569,8 +2567,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 
 (define vl-final-size-warnings ((x vl-final-p)
-                                  (ss vl-scopestack-p)
-                                  (scopes vl-elabscopes-p))
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
   :short "Generate any sizing warnings for an final statement."
   :returns (warnings vl-warninglist-p)
   (b* (((vl-final x) (vl-final-fix x))
@@ -2584,8 +2582,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
     warnings))
 
 (define vl-finallist-size-warnings ((x vl-finallist-p)
-                                      (ss vl-scopestack-p)
-                                      (scopes vl-elabscopes-p))
+                                    (ss vl-scopestack-p)
+                                    (scopes vl-elabscopes-p))
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil

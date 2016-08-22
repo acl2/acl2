@@ -112,7 +112,11 @@
                                                  t)))
                    (or (not warnings)
                        (raise "Oops, warnings in parsing cmdline defines?"))
-                   defines))))
+                   defines))
+                :simpconfig
+                ;; for things like bigcase, work hard at unrolling loops
+                (change-vl-simpconfig *vl-default-simpconfig*
+                                      :sc-limit 20000)))
 
 (assert! *svex-design*)
 

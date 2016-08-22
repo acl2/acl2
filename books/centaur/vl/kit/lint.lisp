@@ -310,6 +310,28 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                      should not be defined anywhere else."
                     :merge cons
                     :parser getopt::parse-string)
+   (elab-limit  natp
+                :argname "N"
+                "Default 10000.  Recursion limit for elaboration.  This usually
+                 shouldn't matter or need tinkering.  It's a safety valve
+                 against possible loops in elaboration, e.g., to resolve
+                 parameter P you need to evaluate parameter Q, which might
+                 require you to resolve R, which might depend hierarchically on
+                 P, and so on.  So if you hit this there's probably something
+                 wrong with your design."
+                :rule-classes :type-prescription
+                :default 10000)
+
+   (stmt-limit natp
+               :argname "N"
+               "Default 80.  Recursion limit for compiling statements, e.g.,
+                unrolling loops and figuring out when they terminate.  For
+                linting we use a low default limit that is meant to avoid
+                wasting an inordinate amount of time compiling troublesome
+                loops.  Increasing this may avoid svex translation warnings,
+                but may result in bad performance in some cases."
+               :rule-classes :type-prescription
+               :default 80)
 
    (no-typo     booleanp
                 "Disable typo detection (it is sometimes slow)."
@@ -650,7 +672,11 @@ shown.</p>"
        (design (xf-cwtime (vl-design-logicassign design)))
 
 
-       (simpconfig (make-vl-simpconfig :sv-simplify nil))
+       ((vl-simpconfig simpconfig)
+        (change-vl-simpconfig *vl-default-simpconfig*
+                              :sv-simplify nil
+                              :elab-limit config.elab-limit
+                              :sc-limit config.stmt-limit))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
@@ -659,7 +685,7 @@ shown.</p>"
        ;;(design (cwtime (vl-design-follow-hids design)))
        ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (xf-cwtime (vl-design-elaborate design :config simpconfig)))
+       (design (xf-cwtime (vl-design-elaborate design simpconfig)))
 
        ((mv design stubnames) (vl-design-lint-stubs design))
 
