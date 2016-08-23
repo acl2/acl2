@@ -97,6 +97,7 @@
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
     LOOP-STOPPER
     MBE1
+    NEAR-MISSES ; should add to *acl2-exports*
     NON-LINEAR-ARITHMETIC
     NORMALIZE
     PROOF-BUILDER
