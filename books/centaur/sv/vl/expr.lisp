@@ -5073,7 +5073,7 @@ functions can assume all bits of it are good.</p>"
         (mv (vfatal :type :vl-expr-to-svex-fail
                     :msg "Couldn't size the datatype ~a0 of ~
                                     LHS expression ~a1: ~@2"
-                    :args (list type (vl-expr-fix x) err))
+                    :args (list type (vl-expr-fix x) (or err (vmsg "unsizeable"))))
             nil nil))
        (lhssvex (sv::svex-concat size
                                  (sv::svex-lhsrewrite svex size)

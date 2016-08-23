@@ -2546,6 +2546,67 @@ there may well be mismatches left.</p>"
              (acc (revappend prefix acc)))
           (vl-parse-define-actual name remainder loc stk acc ppst)))
 
+       ((when (and (eql char1 #\`)
+                   (consp (cdr echars))
+                   (eql (vl-echar->char (second echars)) #\")))
+        ;; Very weirdly, and from nowhere in the standard that I am aware of,
+        ;; other tools seem to permit things like the following:
+        ;;
+        ;;    `define foo(x) x
+        ;;    `foo(`"bar`")
+        ;;
+        ;; I don't see why in the world we could use `" during the macro text, but
+        ;; it seems like they permit it.  Other findings:
+        ;;
+        ;;    `foo("bar`")     -- works on other tools, resulting string is bar`
+        ;;    `foo(`"\101bc`") -- works on other tools, resulting string is Abc
+        ;;    `foo(`"bar")     -- parse error on other tools
+        ;;    `foo(`"bar)      -- parse error on other tools
+        ;;
+        ;; It also seems to be a parse error in other tools to try to split the
+        ;; actual by doing some trick like this:
+        ;;
+        ;;     `define foo(x) x`"
+        ;;     `foo(`"bar)
+        ;;
+        ;; Curiously some tools (but not others) also seem to tolerate uses of
+        ;; `" that do not even occur in macro text, such as:
+        ;;
+        ;;    logic [31:0] msg = `"foo`";
+        ;;
+        ;; At any rate, if we see a `" here, I'll try to parse a string and
+        ;; then chop off the extra ` that we read.  This should handle octal
+        ;; escapes like \101.  No idea how this is supposed to compare with
+        ;; things like {}/()/[] matching and so on.
+        (b* (((mv str prefix remainder)
+              (vl-read-string (cdr echars) (vl-lexstate-init (vl-ppst->config))))
+             ((unless str)
+              (let ((ppst (vl-ppst-fatal
+                           :msg "~a0: bad string literal while processing ~
+                                 arguments to `~s1."
+                           :args (list loc1 name))))
+                (mv nil nil "" echars ppst)))
+             (len (length str))
+             ((unless (and (< 0 len)
+                           (equal (char str (- len 1)) #\`)))
+              (let ((ppst (vl-ppst-fatal
+                           :msg "~a0: found string literal with backtick-escaped ~
+                                 open quote but regular closing quote, i.e., ~
+                                 `\"...\", while processing arguments to ~s1."
+                           :args (list loc1 name))))
+                (mv nil nil "" echars ppst)))
+             ;; At this point we know we have found:
+             ;;   `" ... `"
+             ;; And prefix omits the leading `, so we really have in prefix: "...`"
+             ;; We want to eat the `.  So to clean that up:
+             (rprefix (rev prefix))
+             (rprefix-fixed (cons (first rprefix) (cddr rprefix)))
+             ;; Now rprefix-fixed is the reverse string without the grave characters
+             ;; but with the quotes, as desired.  Since we've already reversed it,
+             ;; we can just append it onto the acc.
+             (acc (append rprefix-fixed acc)))
+          (vl-parse-define-actual name remainder loc stk acc ppst)))
+
        ((when (eql char1 #\\))
         (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars))
              ((unless name)

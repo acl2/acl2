@@ -108,7 +108,7 @@
 
 
 
-(defmacro preprocessor-basic-test (&key input defines output warnings-expectedp)
+(defmacro preprocessor-basic-test (&key input defines output warnings-expectedp must-failp)
   `(make-event
     (b* ((__function__ 'preprocessor-basic-test)
          (echars (vl-echarlist-from-str ,input :filename "test.v"))
@@ -129,6 +129,10 @@
                  ,input
                  (vl-echarlist->string output)
                  ,output))
+         ((when ',must-failp)
+          (or (not successp)
+              (raise "Failed to fail!"))
+          (value '(value-triple :success)))
          (- (or (debuggable-and successp
                                 (equal (vl-echarlist->string output) ,output))
                 (raise "failed!")))
@@ -820,4 +824,80 @@ The line is `__LINE__
 """}
  :output #{"""
 The line is 2
+"""})
+
+
+
+; Tests of weird `" behavior in macro arguments
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x
+assign w = `foo("bar");
+"""}
+ :output #{"""
+
+assign w =  "bar";
+"""})
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x
+assign w = `foo(`"bar`");
+"""}
+ :output #{"""
+
+assign w =  "bar";
+"""})
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x
+assign w = `foo(`"\101bc`");
+"""}
+ :output #{"""
+
+assign w =  "\101bc";
+"""})
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x
+assign w = `foo(`"bar");
+"""}
+ :must-failp t)
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x
+assign w = `foo(`");
+"""}
+ :must-failp t)
+
+;; Extra closing quote to make emacs highlight better "
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x
+assign w = `foo(`"bar);
+"""}
+ :must-failp t)
+
+;; Extra closing quote to make emacs highlight better "
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x) x`"
+assign w = `foo(`"bar);
+"""}
+ :must-failp t)
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo(x,y) x
+assign w = `foo(`"bar`", baz);
+"""}
+ :output #{"""
+
+assign w =  "bar";
 """})
