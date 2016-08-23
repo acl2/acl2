@@ -1957,6 +1957,7 @@
           (+f acc
               (cond ((eql x #\Newline) 9)
                     ((eql x #\Rubout) 8)
+                    ((eql x #\Return) 8)
                     ((eql x #\Space) 7)
                     ((eql x #\Page) 6)
                     ((eql x #\Tab) 5)

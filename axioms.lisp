@@ -4218,6 +4218,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (characterp #\Rubout)
   :rule-classes nil)
 
+(defaxiom characterp-return
+  (characterp #\Return)
+  :rule-classes nil)
+
 ; No-duplicatesp
 
 (defun-with-guard-check no-duplicatesp-eq-exec (l)
@@ -19706,6 +19710,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (#\Page    "Page")
                       (#\Tab     "Tab")
                       (#\Rubout  "Rubout")
+                      (#\Return  "Return")
                       (otherwise x))
                     stream))
                   ((stringp x)
@@ -19756,6 +19761,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (#\Page    "Page")
                     (#\Tab     "Tab")
                     (#\Rubout  "Rubout")
+                    (#\Return  "Return")
                     (otherwise x))
                   channel state)))
         ((stringp x)
@@ -26324,6 +26330,10 @@ Lisp definition."
        (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))
               (untouchable-fns (global-val 'untouchable-fns wrld)))
+
+; It is tempting to call untouchable-fn-p, but it seems inconvenient to fold
+; the necessary true-listp tests into that macro.  So we open-code here.
+
          (and (not (eq formals t))
               (eql (len formals) (len args))
               (true-listp untouchable-fns)

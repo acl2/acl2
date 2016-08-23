@@ -739,6 +739,7 @@ just assume that we always want to escape symbols that need escaping.</p>"
             (#\Page    (revappend-chars "Page" acc))
             (#\Tab     (revappend-chars "Tab" acc))
             (#\Rubout  (revappend-chars "Rubout" acc))
+            (#\Return  (revappend-chars "Return" acc))
             (otherwise (cons x acc)))))
        ((when (stringp x))
         (b* ((acc (cons #\" acc))
@@ -830,6 +831,7 @@ parts.</p>"
          (case x
            (#\Newline 9)
            (#\Rubout 8)
+           (#\Return 8)
            (#\Space 7)
            (#\Page 6)
            (#\Tab 5)

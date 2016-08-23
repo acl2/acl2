@@ -86,6 +86,7 @@
     BOOK-HASH
     CHAR-DOWNCASE ; should probably be documented (noticed by Alessandro Coglio)
     CHAR-UPCASE ; should probably be documented (noticed by Alessandro Coglio)
+    CHARACTERP-RETURN ; should add to *acl2-exports*
     CHECK-SUM
     COMP-GCL
     COUNT ; defined in books/coi/bags/basic.lisp

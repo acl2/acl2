@@ -240,8 +240,8 @@ most-negative-fixnum = ~s."
 ; that we support (see acl2-read-character-string), as described in :doc
 ; characters; so we add suitable checks on these here.
 
-(loop for pair in (pairlis '(#\Space #\Tab #\Newline #\Page #\Rubout)
-                           '(32 9 10 12 127))
+(loop for pair in (pairlis '(#\Space #\Tab #\Newline #\Page #\Rubout #\Return)
+                           '(32 9 10 12 127 13))
       do (let* ((ch (car pair))
                 (code (cdr pair))
                 (val (char-code ch)))

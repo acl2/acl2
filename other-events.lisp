@@ -4438,7 +4438,9 @@
                                               in-encapsulatep t)))))
           ((getpropc (car form) 'macro-body nil wrld)
            (cond
-            ((member-eq (car form) (global-val 'untouchable-fns wrld))
+            ((untouchable-fn-p (car form)
+                               wrld
+                               (f-get-global 'temp-touchable-fns state))
              (er soft ctx er-str
                  form
                  ""
@@ -25565,13 +25567,28 @@
                                     symbol."
                                    f))
                              (t "")))))
-                ((let ((fns (global-val 'untouchable-fns wrld)))
-                   (or (member-eq f fns) (member-eq g fns)))
+                ((or (untouchable-fn-p f
+                                       wrld
+                                       (f-get-global 'temp-touchable-fns
+                                                     state))
+                     (untouchable-fn-p g
+                                       wrld
+                                       (f-get-global 'temp-touchable-fns
+                                                     state)))
                  (er soft ctx
-                     "The argument~#0~[ ~&0 has~/s ~&0 have~] been placed on ~
-                      untouchable-fns.  See :DOC remove-untouchable."
-                     (intersection-eq (list f g)
-                                      (global-val 'untouchable-fns wrld))))
+                     "The function symbol~#0~[ ~&0 is~/s ~&0 are~] ~
+                      untouchable.  See :DOC remove-untouchable."
+                     (append
+                      (and (untouchable-fn-p f
+                                             wrld
+                                             (f-get-global 'temp-touchable-fns
+                                                           state))
+                           (list f))
+                      (and (untouchable-fn-p g
+                                             wrld
+                                             (f-get-global 'temp-touchable-fns
+                                                           state))
+                           (list g)))))
                 ((and (not skip-checks-t)
                       (not (logicp f wrld)))
                  (cond ((null g)

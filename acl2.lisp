@@ -1888,7 +1888,7 @@ which is saved just in case it's needed later.")
 ;
 ; So, we manage this simply by modifying the character reader so that
 ; the #\ notation only works for single characters and for Space, Tab,
-; Newline, Page, and Rubout; an error is caused otherwise.
+; Newline, Page, Rubout, and Return; an error is caused otherwise.
 
 ; Our algorithm for reading character objects starting with #\ is
 ; quite simple.  We accumulate characters until encountering a
@@ -1896,8 +1896,8 @@ which is saved just in case it's needed later.")
 ; *acl2-read-character-terminators*.  The result must be either a
 ; single standard character or else one of the names (up to case,
 ; which we ignore in the multiple-character case) SPACE, TAB, NEWLINE,
-; PAGE, and RUBOUT.  Otherwise we cause an error.  Note that if we do
-; NOT cause an error, then any dpANS-compliant Common Lisp
+; PAGE, RUBOUT, and RETURN.  Otherwise we cause an error.  Note that
+; if we do NOT cause an error, then any dpANS-compliant Common Lisp
 ; implementation's character reader would behave the same way, because
 ; dpANS says (in the section ``Sharpsign Backslash'') the following.
 
