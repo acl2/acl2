@@ -25703,11 +25703,18 @@
 
                          (er soft ctx
                              "It is illegal to attach to function symbol ~x0, ~
-                              because it was introduced with ~x1.~@2"
+                              because it ~@1.~@2"
                              f
-                             (if (getpropc f 'defchoose-axiom nil wrld)
-                                 'defchoose
-                               'defun)
+                             (let ((pair
+                                    (assoc-eq f
+                                              *primitive-formals-and-guards*)))
+                               (cond
+                                (pair
+                                 "is a built-in primitive")
+                                ((getpropc f 'defchoose-axiom nil wrld)
+                                 "was introduced with DEFCHOOSE")
+                                (t
+                                 "was introduced with DEFUN")))
                              see-doc))
                         ((not (symbolp g))
                          (er soft ctx
