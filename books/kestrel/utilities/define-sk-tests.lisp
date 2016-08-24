@@ -122,14 +122,17 @@
                    (integerp y)
                  (consp y))))
 
-(encapsulate ;; Make sure that we don't infer :rewrite :direct for the goofy one.
+;; Originally, we made sure here that we don't infer :rewrite :direct for the
+;; goofy one.  But Matt K. changed this 8/23/2016 when it became legal to have
+;; rewrite rules for IF-expressions.
+(encapsulate
   ()
   (set-enforce-redundancy t) ;; implicitly local
   (defthm goofy-bad-rewrite-rule-p-necc
-    (implies (not (if (< elem x)
-                      (integerp y)
-                    (consp y)))
-             (not (goofy-bad-rewrite-rule-p x y)))))
+    (implies (goofy-bad-rewrite-rule-p x y)
+             (if (< elem x)
+                 (integerp y)
+               (consp y)))))
 
 
 (define-sk positive-intersection-p

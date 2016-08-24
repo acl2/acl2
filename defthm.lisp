@@ -87,7 +87,7 @@
 ; so is the result.
 
   (declare (xargs :guard (pseudo-termp term)
-                  :verify-guards nil))  
+                  :verify-guards nil))
   (mv-let (changedp ans)
     (remove-lambdas1 term)
     (declare (ignore changedp))
@@ -111,8 +111,7 @@
      lhs))
    ((or (variablep lhs)
         (fquotep lhs)
-        (flambda-applicationp lhs)
-        (eq (ffn-symb lhs) 'if))
+        (flambda-applicationp lhs))
     (msg
      "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
       ~@1 ~x2.  For general information about rewrite rules in ACL2, see :DOC ~
@@ -121,7 +120,8 @@
      (cond ((variablep lhs) "variable symbol")
            ((fquotep lhs) "quoted constant")
            ((flambda-applicationp lhs) "LET-expression")
-           (t "IF-expression"))
+           (t (er hard 'interpret-term-as-rewrite-rule2
+                  "Implementation error: forgot a case.  LHS:~|~x0.")))
      lhs))
    (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
                                hyps (all-vars lhs) nil wrld)))

@@ -11966,14 +11966,17 @@
                          (rewrite-entry (rewrite right alist 3)
                                         :type-alist false-type-alist
                                         :ttree (rw-cache-enter-context ttree))
-                         (let ((ttree (rw-cache-exit-context ttree ttree1)))
-                           (prepend-step-limit
-                            2
-                            (rewrite-if1 test
-                                         rewritten-left rewritten-right
-                                         type-alist geneqv ens
-                                         (ok-to-force rcnst)
-                                         wrld ttree))))))))))))))
+                         (mv-let
+                           (rewritten-term ttree)
+                           (rewrite-if1 test
+                                        rewritten-left rewritten-right
+                                        type-alist geneqv ens
+                                        (ok-to-force rcnst)
+                                        wrld
+                                        (rw-cache-exit-context ttree ttree1))
+                           (rewrite-entry
+                            (rewrite-with-lemmas
+                             rewritten-term))))))))))))))
 
 (defun rewrite-args (args alist bkptr rewritten-args-rev
                           deep-pequiv-lst shallow-pequiv-lst
