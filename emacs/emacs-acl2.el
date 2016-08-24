@@ -201,6 +201,8 @@
 ;;; Control-t keymap
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar ctl-t-keymap)
+
 (when (not (boundp 'ctl-t-keymap))
 
 ; Warning: Keep this in sync with the introduction of ctl-t-keymap in
@@ -208,7 +210,6 @@
 
 ; This trick probably came from Bob Boyer, to define a new keymap; so now
 ; control-t is the first character of a complex command.
-  (defvar ctl-t-keymap)
   (setq ctl-t-keymap (make-sparse-keymap))
   (define-key (current-global-map) "\C-T" ctl-t-keymap)
 
@@ -240,6 +241,7 @@
 
 ; Do meta-x new-shell to start a new shell.
 (defvar number-of-other-shells 0)
+(load "shell")
 (defun new-shell ()
   "Start up another shell."
   (interactive)
@@ -1039,6 +1041,7 @@ of the current s-expression in the enclosing list"
 ; (define-key rmail-mode-map "\214" 'c-m-l)
 
 ; Turn on time/mail display on mode line.
+(load "time")
 (setq display-time-interval 10)
 (display-time) ; turn off as described just below:
 ; Turn off display-time with:
