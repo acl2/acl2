@@ -157,14 +157,24 @@
         (mv new-disjuncts new-tterm)
       (mv (cdr uterm) tterm))))
 
+(defconst *boolean-primitives*
+
+; These are function symbols from (strip-cars *primitive-formals-and-guards*)
+; that always return a Boolean.
+
+  '(acl2-numberp bad-atom<= < characterp complex-rationalp consp equal integerp
+                 rationalp stringp symbolp))
+
 (defun boolean-fnp (fn wrld)
-  (let ((tp (cert-data-tp-from-runic-type-prescription fn wrld)))
-    (and tp
-         (null (access type-prescription tp :vars))
-         (assert$ (null (access type-prescription tp :hyps))
-                  (ts-subsetp
-                   (access type-prescription tp :basic-ts)
-                   *ts-boolean*)))))
+  (if (member-eq fn *boolean-primitives*)
+      t
+    (let ((tp (cert-data-tp-from-runic-type-prescription fn wrld)))
+      (and tp
+           (null (access type-prescription tp :vars))
+           (assert$ (null (access type-prescription tp :hyps))
+                    (ts-subsetp
+                     (access type-prescription tp :basic-ts)
+                     *ts-boolean*))))))
 
 (defconst *car-cdr-macro-alist*
 

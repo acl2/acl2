@@ -7455,10 +7455,16 @@
 ; for the active checkpoint, then we add the clause-id and pool-lst for that
 ; goal.
 
-  (clause-id ; could be nil
-   clause    ; nil iff clause-id is nil
-   .         ; list of pairs (clause-id . pool-lst); see above
-   pushed
+; At one time we thought that clause-id can be nil, but as of August 2016 we do
+; not see evidence of that.  We also thought that clause is nil if and only if
+; clause-id is nil, but that is false: clause can be nil for a valid clause-id
+; because we have generated the empty clause, nil, which implies that the proof
+; has failed.
+
+  (clause-id
+   clause
+   .
+   pushed ; list of pairs (clause-id . pool-lst); see above
    )
   t)
 

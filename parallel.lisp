@@ -244,6 +244,11 @@
               (er soft ctx
                   "Parallel execution must be enabled before enabling ~
                    waterfall parallelism.  See :DOC set-parallel-execution"))
+             ((and val (f-get-global 'gstackp state))
+              (er soft ctx
+                  "You must disable brr (e.g., with :BRR NIL) before turning ~
+                   on waterfall-parallelism.  See :DOC ~
+                   unsupported-waterfall-parallelism-features."))
              (t
               (pprogn
 

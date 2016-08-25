@@ -10940,6 +10940,12 @@
 
 (defun brr-fn (flg state)
   (cond
+   #+acl2-par
+   ((and flg
+         (f-get-global 'waterfall-parallelism state))
+    (er soft 'brr
+        "Brr is not supported in ACL2(p) with waterfall parallelism on.  See ~
+         :DOC unsupported-waterfall-parallelism-features."))
    (flg
     (pprogn
      (f-put-global 'gstackp t state)
