@@ -7066,15 +7066,12 @@
   status)
 
 (defmacro good-bye (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 (defmacro exit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 (defmacro quit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 ; Saving an Executable Image
