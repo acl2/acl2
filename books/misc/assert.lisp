@@ -48,11 +48,36 @@
 
 (defxdoc assert!-stobj
   :parents (assert$ errors)
-  :short "Form of @(tsee assert$) that is an event"
-  :long "<p>See @(see assert!).  The only difference between @('assert!-stobj')
- and @('assert!') is that for @('assert!-stobj'), the assertion should evaluate
- to multiple values @('(mv val st)'), where @('val') is an ordinary value and
- @('st') is a user-defined @(see stobj) (not @(tsee state)).</p>")
+  :short "Form of @(tsee assert$) involving @(see stobj)s that is an event"
+  :long "<p>This variant of @(see assert!) allows forms that modify @(see
+ stobj)s.</p>
+
+ <p>General Form:</p>
+
+ @({
+ (assert!-stobj assertion stobj)
+ })
+
+ <p>Example Forms:</p>
+
+ @({
+ (assert!-stobj (mv-let (erp val state)
+                  (set-inhibit-output-lst nil)
+                  (declare (ignore val))
+                  (mv (null erp) state))
+                state)
+
+ (defstobj st fld)
+ (assert!-stobj (let ((st (update-fld 3 st)))
+                  (mv (eql (fld st) 3)
+                      st))
+                st)
+ })
+
+ <p>The first argument (the assertion) should evaluate to multiple values
+ @('(mv val st)'), where @('val') is an ordinary value and @('st') is a @(see
+ stobj) (either user-defined or @(tsee state)).  The second argument should be
+ the name of the stobj that is being returned.</p>")
 
 (defun assert!-body (assertion form)
 
@@ -60,13 +85,15 @@
 ; assert!-stobj-body.
 
   `(let ((assertion ,assertion))
-     (er-progn
-      (if assertion
-          (value nil)
-        (er soft 'assert!
-            "Assertion failed:~%~x0"
-            ',assertion))
-      (value ',(or form '(value-triple :success))))))
+     (value (if assertion
+                ',(or form '(value-triple :success))
+              '(with-output
+                 :stack :pop
+                 (value-triple nil
+                               :check (msg
+                                       "~x0"
+                                       ',assertion)
+                               :ctx 'assert!))))))
 
 (defmacro assert! (&whole whole-form
                           assertion &optional form)
@@ -74,8 +101,11 @@
 ; Note that assertion should evaluate to a single non-stobj value.  See also
 ; assert!-stobj.
 
-  (list 'make-event (assert!-body assertion form)
-        :on-behalf-of whole-form))
+  `(with-output
+     :stack :push
+     :off error
+     (make-event ,(assert!-body assertion form)
+                 :on-behalf-of ,whole-form)))
 
 (assert! (equal 3 3)
          (defun assert-test1 (x) x))
@@ -135,16 +165,19 @@
 ; Assertion should evaluate to (mv val st), where val is an ordinary value and
 ; st is a stobj.  See also assert!-body.
 
-  `(mv-let (result ,st)
-           ,assertion
+  (let ((extra (if (eq st 'state) nil (list st))))
+    `(mv-let (result ,st)
+       ,assertion
+       (mv nil
            (if result
-               (mv nil ',(or form '(value-triple :success)) state ,st)
-             (mv-let (erp val state)
-                     (er soft 'assert!
-                         "Assertion failed:~%~x0"
-                         ',assertion)
-                     (declare (ignore erp val))
-                     (mv t nil state ,st)))))
+               ',(or form '(value-triple :success))
+             '(value-triple nil
+                            :check (msg
+                                    "~x0"
+                                    ',assertion)
+                            :ctx 'assert!-stobj))
+           state
+           ,@extra))))
 
 (defmacro assert!-stobj (&whole whole-form
                                 assertion st &optional form)
@@ -152,8 +185,11 @@
 ; Assertion should evaluate to (mv val st), where val is an ordinary value and
 ; st is a stobj.  See also assert!.
 
-  (list 'make-event (assert!-stobj-body assertion st form)
-        :on-behalf-of whole-form))
+  `(with-output
+     :stack :push
+     :off (error summary)
+     (make-event ,(assert!-stobj-body assertion st form)
+                 :on-behalf-of ,whole-form)))
 
 ; Test-stobj example from David Rager.
 (local

@@ -6251,13 +6251,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(mv nil ,x state))
 
-(defun value-triple-fn (form on-skip-proofs check)
+(defun value-triple-fn (form on-skip-proofs check ctx)
   (declare (xargs :guard t))
   `(cond ((and ,(not on-skip-proofs)
                (f-get-global 'ld-skip-proofsp state))
           (value :skipped))
          (t ,(let ((form
-                    `(let ((check ,check))
+                    `(let ((check ,check)
+                           (ctx ,ctx))
                        (cond (check
                               (cond
                                ((check-vars-not-free
@@ -6265,11 +6266,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  ,form)
                                 :passed)
                                ((tilde-@p check)
-                                (er hard 'value-triple
+                                (er hard ctx
                                     "Assertion failed:~%~@0~|"
                                     check))
                                (t
-                                (er hard 'value-triple
+                                (er hard ctx
                                     "Assertion failed on form:~%~x0~|"
                                     ',form))))
                              (t ,form)))))
@@ -6278,14 +6279,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (value ,form))))))
 
 #+acl2-loop-only
-(defmacro value-triple (form &key on-skip-proofs check)
-  (value-triple-fn form on-skip-proofs check))
+(defmacro value-triple (form &key on-skip-proofs check (ctx ''value-triple))
+  (value-triple-fn form on-skip-proofs check ctx))
 
 (defmacro assert-event (form &key on-skip-proofs msg)
   (declare (xargs :guard (booleanp on-skip-proofs)))
   `(value-triple ,form
                  :on-skip-proofs ,on-skip-proofs
-                 :check ,(or msg t)))
+                 :check ,(or msg t)
+                 :ctx 'assert-event))
 
 (defun xd-name (event-type name)
   (declare (xargs :guard (member-eq event-type '(defund defthmd))))
