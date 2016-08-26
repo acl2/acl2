@@ -18,7 +18,9 @@
   :short "Form of @(tsee assert$) that is an event"
   :long "<p>The @('assert!') macro is similar to @('assert$'), but its calls
   may appear as top-level @(see events) in @(see books) and @(see encapsulate)
-  forms.</p>
+  forms.  In that sense @('assert!') is similar to @('assert-event'); see @(see
+  assert-event) for a comparison of features offered by @('assert!') and
+  @('assert-event').</p>
 
  <p>General forms:</p>
 
