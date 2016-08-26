@@ -1193,9 +1193,9 @@ off looking at the source code.</p>")
                     (lognot (logcdr i))))
     :hints(("Goal"
             :use ((:instance acl2::lognot*
-                             (i (ifix i))))))
+                   (i (ifix i))))))
     :rule-classes ((:definition :clique (lognot)
-                                :controller-alist ((lognot t)))))
+                    :controller-alist ((lognot t)))))
 
   (add-to-ruleset ihsext-redefs '(lognot**))
 
@@ -1211,7 +1211,7 @@ off looking at the source code.</p>")
                  (t (logcons (b-not (logcar i))
                              (lognot (logcdr i))))))
     :hints (("goal" :use ((:instance acl2::lognot*
-                                     (i (ifix i))))
+                           (i (ifix i))))
              :in-theory (disable lognot acl2::lognot*)))
     :rule-classes ((:definition
                     :clique (lognot)
@@ -1294,9 +1294,9 @@ off looking at the source code.</p>")
                     (> (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
             :use ((:instance acl2::<-on-others
-                             (x (lognot i)) (y j))
+                   (x (lognot i)) (y j))
                   (:instance acl2::<-on-others
-                             (x (lognot k)) (y (ifix i)))))))
+                   (x (lognot k)) (y (ifix i)))))))
 
   (defthm lognot->-const
     (implies (and (syntaxp (quotep j))
@@ -1305,9 +1305,9 @@ off looking at the source code.</p>")
                     (< (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
             :use ((:instance acl2::<-on-others
-                             (y (lognot i)) (x j))
+                   (y (lognot i)) (x j))
                   (:instance acl2::<-on-others
-                             (y (lognot j)) (x (ifix i)))))))
+                   (y (lognot j)) (x (ifix i)))))))
 
   (defthm lognot-equal-const
     (implies (and (syntaxp (quotep j))
@@ -1316,9 +1316,16 @@ off looking at the source code.</p>")
                     (equal (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot))))
 
+  (defthm integer-length-of-lognot
+    (equal (integer-length (lognot x))
+           (integer-length x))
+    :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                       ihsext-recursive-redefs))))
+
   (add-to-ruleset ihsext-basic-thms '(lognot-<-const
                                       lognot->-const
-                                      lognot-equal-const)))
+                                      lognot-equal-const
+                                      integer-length-of-lognot)))
 
 
 
@@ -1379,7 +1386,7 @@ off looking at the source code.</p>")
   (defthm logand-of-logcons-right
     (equal (logand c (logcons a b))
            (logcons (b-and a (logcar c))
-                    (logand b (logcdr c))))
+                    (logand (logcdr c) b)))
     :hints(("Goal" :in-theory (enable logand**))))
 
   (defthmd logand$
@@ -1601,7 +1608,7 @@ off looking at the source code.</p>")
   (defthm logior-of-logcons-right
     (equal (logior c (logcons a b))
            (logcons (b-ior a (logcar c))
-                    (logior b (logcdr c))))
+                    (logior (logcdr c) b)))
     :hints(("Goal" :in-theory (enable logior**
                                       b-not b-and b-ior))))
 
