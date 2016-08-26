@@ -1508,6 +1508,11 @@
 
                      (equal (stobjs-in val world) '(nil nil nil nil))
                      (not (assoc-eq val *ttag-fns-and-macros*))
+
+; The following test is a bit too strong, since it fails to take into account
+; temp-touchable-fns; see untouchable-fn-p.  However, this drawback seems quite
+; minor and it certainly does not affect soundness.
+
                      (not (member-eq val (global-val 'untouchable-fns world))))
                 (integerp val)
                 (null val))))
@@ -3715,7 +3720,7 @@
            (flambdap (ffn-symb term)))
       (print-no-change2
        "Expansion of lambda terms is disabled when do-not-expand-lambda-flg = ~
-        t."))
+        t; see :DOC acl2-pc::expand."))
      (t
       (let* ((fn (ffn-symb term))
              (def-body (and (not (flambdap fn))

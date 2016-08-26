@@ -9,6 +9,22 @@
 
 ;; ======================================================================
 
+(def-gl-export accessed-bit-set-accessed-bit-identity
+  :hyp (and (equal (accessed-bit e) 1)
+            (unsigned-byte-p 64 e))
+  :concl (equal (set-accessed-bit e) e)
+  :g-bindings
+  (gl::auto-bindings (:nat e 64)))
+
+(def-gl-export dirty-bit-set-dirty-bit-identity
+  :hyp (and (equal (dirty-bit e) 1)
+            (unsigned-byte-p 64 e))
+  :concl (equal (set-dirty-bit e) e)
+  :g-bindings
+  (gl::auto-bindings (:nat e 64)))
+
+;; ======================================================================
+
 ;; For use in marking-mode-top.lisp:
 
 (def-gl-export canonical-address-p-of-lin-addr+7

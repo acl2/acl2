@@ -213,8 +213,18 @@
 (defconst *pi/4* (/ *pi* 4))
 
 (defun close-to (x y)
-  (and (< (- y 1/10000000) x)
-       (< x (+ y 1/10000000))))
+
+; Originally this definition used 1/10000000 (i.e., 1.0E-7) rather
+; than 2/10000000 as the tolerance.  However, for ACL2 built on 32-bit
+; CCL, the test (test-close (er-float-tan *pi/4*) 1) has failed,
+; because the value of (er-float-tan *pi/4*) was computed as
+; 8388609/8388608, which differs from 1 by a bit more than 1.0E-7,
+; namely, by 1.1920929E-7.  This might or might not be a 32-bit CCL
+; bug, but other Lisps may someday similarly balk at the stricter
+; bound, so we increase it here.
+
+  (and (< (- y 2/10000000) x)
+       (< x (+ y 2/10000000))))
 
 (defmacro test-exact (body expect)
   `(assert! (b* (((mv err ans) ,body))

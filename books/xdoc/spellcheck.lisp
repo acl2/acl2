@@ -292,6 +292,13 @@
         (collect-plausible-misspellings-aux goal goal-tokens 5 topic-names)
         )))
 
+; Matt K. addition: interface function, in ACL2 package so that it can be
+; referenced in the ACL2 sources (see near-misses).  Note that
+; system/event-names needs to be included in order for this macro to be used.
+(defmacro acl2::plausible-misspellings (name)
+  `(collect-plausible-misspellings ,name
+                                   (acl2::event-names (w state) nil)))
+
 #||
 (defconst *topic-names*
   '(acl2::explode acl2::append str::cat acl2::implode acl2::coerce

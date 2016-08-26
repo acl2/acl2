@@ -1382,15 +1382,35 @@ guides, you sometimes intend your topics to be read in some particular order,
 and alphabetizing things gets in the way.</p>
 
 <p>The @('order-subtopics') command lets you specify the exact subtopic
-ordering that should be used for a particular topic.  The general form is:</p>
+ordering that should be used for a particular topic.  One general form is:</p>
 
 @({
     (xdoc::order-subtopics parent
-      (subtopic1 subtopic2 ...))
+      (subtopic1 subtopic2 ... subtopicn))
 })
 
 <p>You don't have to give a complete order.  Any subtopics that aren't
 mentioned will be listed last, in the usual alphabetical order.</p>
+
+<p>A second general form has an optional argument of @('t').  This specifies
+that the order for unspecified child topics is the order in which the topics
+were defined, rather than alphabetical.</p>
+
+@({
+    (xdoc::order-subtopics parent
+      (subtopic1 subtopic2 ... subtopicn)
+      t)
+})
+
+<p>A special case of that second general form lists no subtopics, thus
+specifying simply that all children are to be listed in the order in which they
+were defined.</p>
+
+@({
+    (xdoc::order-subtopics parent
+      nil
+      t)
+})
 
 <p>We require @('parent') to refer to some defined topic, but the subtopics
 don't need to be defined at @('order-subtopics') time.  This makes it easy to
@@ -1505,6 +1525,21 @@ and in preprocessor blocks here:</p>
 (defxdoc order-test-o :short "O")
 (defxdoc order-test-k :short "K")
 
+(defxdoc xdoc-test-order-subtopics-flg
+  :short "Parent topic for testing chronological order of subtopics.")
+
+(order-subtopics xdoc-test-order-subtopics-flg
+                 (order-test-flg-move-to-front)
+                 t)
+
+(local (set-default-parents xdoc-test-order-subtopics-flg))
+
+(defxdoc order-test-flg-w :short "W")
+(defxdoc order-test-flg-o :short "O")(defxdoc order-test-flg-o :short "O")
+(defxdoc order-test-flg-move-to-front :short "Move to front")
+(defxdoc order-test-flg-r :short "R")
+(defxdoc order-test-flg-k :short "K")
+(defxdoc order-test-flg-s :short "S")
 
 (local (set-default-parents xdoc))
 

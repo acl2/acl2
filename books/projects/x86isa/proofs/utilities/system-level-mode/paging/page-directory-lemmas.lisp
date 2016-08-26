@@ -21,7 +21,8 @@
                  (x86-2))
                 (syntaxp (and (not (eq x86-1 x86-2))
                               ;; x86-1 must be smaller than x86-2.
-                              (term-order x86-1 x86-2)))
+                              ;; (term-order x86-1 x86-2)
+                              ))
                 (xlate-equiv-structures (double-rewrite x86-1) x86-2)
                 (member-p (page-directory-entry-addr lin-addr base-addr)
                           (gather-all-paging-structure-qword-addresses x86-1)))
@@ -301,16 +302,8 @@
                              (open-qword-paddr-list
                               (gather-all-paging-structure-qword-addresses x86)))))
            :in-theory (e/d* (ia32e-la-to-pa-page-directory
-                             xlate-equiv-structures)
-                            (bitops::logand-with-negated-bitmask
-                             accessed-bit
-                             dirty-bit
-                             not
-                             MULTIPLE-OF-8-DISJOINT-WITH-ADDR-RANGE-AND-OPEN-QWORD-PADDR-LIST-TO-MEMBER-P)))
-          ("Subgoal 1"
-           :in-theory (e/d* (ia32e-la-to-pa-page-directory
                              xlate-equiv-structures
-                             MULTIPLE-OF-8-DISJOINT-WITH-ADDR-RANGE-AND-OPEN-QWORD-PADDR-LIST-TO-MEMBER-P)
+                             multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
                             (bitops::logand-with-negated-bitmask
                              accessed-bit
                              dirty-bit

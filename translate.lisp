@@ -6496,6 +6496,21 @@
                           (list *nil*))))
                 fn$inline)))))
 
+(defmacro untouchable-fn-p (sym wrld temp-touchable-fns)
+
+; Warning: Keep this in sync with ev-fncall-w-guard (see the comment about
+; untouchable-fn-p in that definition).
+
+  `(let ((sym ,sym)
+         (untouchable-fns ; avoid global-val; wrld can be nil during boot-strap
+          (getpropc 'untouchable-fns 'global-value nil ,wrld)))
+     (and (member-eq sym untouchable-fns)
+          (let ((temp-touchable-fns
+                 (check-vars-not-free (sym untouchable-fns)
+                                      ,temp-touchable-fns)))
+            (and (not (eq temp-touchable-fns t))
+                 (not (member-eq sym temp-touchable-fns)))))))
+
 (defun macroexpand1*-cmp (x ctx wrld state-vars)
 
 ; We expand x repeatedly as long as it is a macro call, though we may stop
@@ -6527,11 +6542,10 @@
               (not (and (member-eq (car x) '(pand por pargs plet))
                         (eq (access state-vars state-vars :parallel-execution-enabled)
                             t)))
-              (not (and (member-eq (car x) (global-val 'untouchable-fns wrld))
-                        (not (eq (access state-vars state-vars :temp-touchable-fns)
-                                 t))
-                        (not (member-eq (car x) (access state-vars state-vars
-                                                        :temp-touchable-fns))))))
+              (not (untouchable-fn-p (car x)
+                                     wrld
+                                     (access state-vars state-vars
+                                             :temp-touchable-fns))))
          (mv-let
           (erp expansion)
           (macroexpand1-cmp x ctx wrld state-vars)
@@ -6586,6 +6600,30 @@
     (mbe1-raw . mbe1)
     (ec-call1-raw . ec-call1)
     (with-guard-checking1-raw . with-guard-checking1)))
+
+(defun defined-symbols (sym-name pkg-name known-package-alist wrld acc)
+  (cond
+   ((endp known-package-alist) acc)
+   (t (let* ((entry (car known-package-alist))
+             (pkg-entry-name (package-entry-name entry)))
+        (cond
+         ((equal pkg-name pkg-entry-name)
+          (defined-symbols sym-name pkg-name (cdr known-package-alist) wrld
+            acc))
+         (t (let ((sym (intern$ sym-name pkg-entry-name)))
+              (defined-symbols sym-name pkg-name
+                (cdr known-package-alist)
+                wrld
+                (if (and (not (member-eq sym acc))
+                         (or (function-symbolp sym wrld)
+                             (getpropc sym 'macro-body nil wrld)))
+                    (cons sym acc)
+                  acc)))))))))
+
+(defun macros-and-functions-in-other-packages (sym wrld)
+  (let ((kpa (global-val 'known-package-alist wrld)))
+    (defined-symbols (symbol-name sym) (symbol-package-name sym) kpa wrld
+      nil)))
 
 (mutual-recursion
 
@@ -8108,7 +8146,8 @@
                    (if (and (consp form)
                             (symbolp (car form))
                             (getpropc (car form) 'macro-body nil wrld))
-                       (list "  Note that ~x0 is a macro, not a function symbol."
+                       (list "  Note that ~x0 is a macro, not a function ~
+                              symbol."
                              (cons #\0 (car form)))
                      ""))))))
    ((eq (car x) 'check-vars-not-free) ; optimization; see check-vars-not-free
@@ -8217,13 +8256,10 @@
                          evaluated directly, as in the top-level loop.  ~
                          See :DOC with-local-stobj and see :DOC top-level."
                         x))
-             ((and (member-eq creator
-                              (global-val 'untouchable-fns wrld))
-                   (not (eq (access state-vars state-vars :temp-touchable-fns)
-                            t))
-                   (not (member-eq creator
-                                   (access state-vars state-vars
-                                           :temp-touchable-fns))))
+             ((untouchable-fn-p creator
+                                wrld
+                                (access state-vars state-vars
+                                        :temp-touchable-fns))
               (trans-er ctx
                         "Illegal with-local-stobj form~@0~|~%  ~y1:~%the stobj ~
                          creator function ~x2 is untouchable.  See :DOC ~
@@ -8469,11 +8505,10 @@
                 '(pand por pargs plet)
                 x
                 '(set-parallel-execution :bogus-parallelism-ok)))
-     ((and (member-eq (car x) (global-val 'untouchable-fns wrld))
-           (not (eq (access state-vars state-vars :temp-touchable-fns)
-                    t))
-           (not (member-eq (car x) (access state-vars state-vars
-                                           :temp-touchable-fns))))
+     ((untouchable-fn-p (car x)
+                        wrld
+                        (access state-vars state-vars
+                                :temp-touchable-fns))
 
 ; If this error burns you during system maintenance, you can subvert our
 ; security by setting untouchables to nil in raw Lisp:
@@ -8513,11 +8548,10 @@
                 and in theorems.  Also see :DOC with-local-stobj."
                (car x)))
    ((equal (arity (car x) wrld) (length (cdr x)))
-    (cond ((and (member-eq (car x) (global-val 'untouchable-fns wrld))
-                (not (eq (access state-vars state-vars :temp-touchable-fns)
-                         t))
-                (not (member-eq (car x) (access state-vars state-vars
-                                                :temp-touchable-fns))))
+    (cond ((untouchable-fn-p (car x)
+                             wrld
+                             (access state-vars state-vars
+                                     :temp-touchable-fns))
            (trans-er+ x ctx
                       "It is illegal to call ~x0 because it has been placed ~
                        on untouchable-fns."
@@ -9024,17 +9058,31 @@
                the body in the DECLARE form or closing the superior ~
                form before typing the body."
               x))
-   (t (trans-er+ x ctx
-                 "The symbol ~x0 (in package ~x1) has neither a function nor ~
-                  macro definition in ACL2.  ~#2~[Please define ~
-                  it.~/Moreover, this symbol is in the main Lisp package; ~
-                  hence, you cannot define it in ACL2.~]"
-                 (car x)
-                 (symbol-package-name (car x))
-                 (if (equal (symbol-package-name (car x))
-                            *main-lisp-package-name*)
-                     1
-                   0)))))
+   (t (let ((syms (macros-and-functions-in-other-packages
+                   (car x)
+                   wrld)))
+        (trans-er+ x ctx
+                   "The symbol ~x0 (in package ~x1) has neither a function ~
+                    nor macro definition in ACL2.  ~#2~[Please define ~
+                    it~@3~/Moreover, this symbol is in the main Lisp package; ~
+                    hence, you cannot define it in ACL2.~]  See :DOC ~
+                    near-misses."
+                   (car x)
+                   (symbol-package-name (car x))
+                   (if (equal (symbol-package-name (car x))
+                              *main-lisp-package-name*)
+                       1
+                     0)
+                   (cond
+                    ((null syms) ".")
+                    ((null (cdr syms))
+                     (msg "; or perhaps you meant ~x0, which has the same ~
+                           name but is in a different package."
+                          (car syms)))
+                    (t
+                     (msg "; or perhaps you meant one of the following, each ~
+                           with the same name but in a different package: ~v0."
+                          syms))))))))
 
 (defun translate11-lst (lst stobjs-out bindings known-stobjs
                             msg flet-alist cform ctx wrld state-vars)

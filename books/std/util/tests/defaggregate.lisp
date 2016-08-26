@@ -670,3 +670,14 @@
   ;; makes no sense at all.  To avoid this we reworked the way the change macro
   ;; expands to avoid capture.
   (change-student grade :firstname "blah"))
+
+
+;; Added by Alessandro Coglio (coglio@kestrel.edu).
+(defsection test-of-pred-option
+
+  (defaggregate point
+    ((x integerp)
+     (y integerp))
+    :pred pointp)
+
+  (assert! (pointp (point 3 2))))

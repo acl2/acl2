@@ -1414,22 +1414,22 @@
               (n08p e) (n08p f) (n08p g) (n08p h))
     :concl (equal
             (logior
-             a 
-             (ash (logior 
-                   b 
+             a
+             (ash (logior
+                   b
                    (ash (logior
-                         c 
+                         c
                          (ash (logior
                                d
                                (ash (logior
-                                     e 
+                                     e
                                      (ash (logior f (ash (logior g (ash h 8)) 8))
                                           8))
                                     8))
                               8))
                         8))
                   8))
-            (logior a (ash b 8) 
+            (logior a (ash b 8)
                     (ash (logior c (ash d 8)) 16)
                     (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32)))
     :g-bindings

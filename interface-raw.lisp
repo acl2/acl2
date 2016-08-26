@@ -8224,9 +8224,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                    "~&***********************************************~&")
            (when *acl2-error-msg*
              (format t *acl2-error-msg*))
-           (when (not (member-eq 'set-debugger-enable-fn
-;                                (global-val 'untouchable-fns (w state))
-                                 (getpropc 'untouchable-fns 'global-value)))
+           (when (not (untouchable-fn-p 'set-debugger-enable-fn
+                                        (w state)
+                                        (f-get-global 'temp-touchable-fns
+                                                      state)))
              (format t
                      "~%To enable breaks into the debugger (also see :DOC ~
                       acl2-customization):~&~s~&"

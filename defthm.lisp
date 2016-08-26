@@ -48,23 +48,50 @@
 
 (mutual-recursion
 
-(defun remove-lambdas (term)
-  (if (or (variablep term)
-          (fquotep term))
-      term
-    (let ((args (remove-lambdas-lst (fargs term)))
-          (fn (ffn-symb term)))
-      (if (flambdap fn)
-          (subcor-var (lambda-formals fn) args (remove-lambdas (lambda-body fn)))
-        (cons-term fn args)))))
+(defun remove-lambdas1 (term)
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (cond ((or (variablep term)
+             (fquotep term))
+         (mv nil term))
+        (t (mv-let (changedp args)
+             (remove-lambdas-lst (fargs term))
+             (let ((fn (ffn-symb term)))
+               (cond ((flambdap fn)
+                      (mv-let (changedp body)
+                        (remove-lambdas1 (lambda-body fn))
+                        (declare (ignore changedp))
+                        (mv t
+                            (subcor-var (lambda-formals fn)
+                                        args
+                                        body))))
+                     (changedp (mv t (cons-term fn args)))
+                     (t (mv nil term))))))))
 
 (defun remove-lambdas-lst (termlist)
-  (if termlist
-      (cons (remove-lambdas (car termlist))
-            (remove-lambdas-lst (cdr termlist)))
-    nil))
-
+  (declare (xargs :guard (pseudo-term-listp termlist)))
+  (cond ((consp termlist)
+         (mv-let (changedp1 term)
+           (remove-lambdas1 (car termlist))
+           (mv-let (changedp2 rest)
+             (remove-lambdas-lst (cdr termlist))
+             (mv (or changedp1 changedp2)
+                 (cons term rest)))))
+        (t (mv nil nil))))
 )
+
+(defun remove-lambdas (term)
+
+; Remove-lambdas returns the result of applying beta-reductions in term.  This
+; function preserves quote-normal form: if term is in quote-normal form, then
+; so is the result.
+
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (mv-let (changedp ans)
+    (remove-lambdas1 term)
+    (declare (ignore changedp))
+    ans))
 
 ; We use the following functions to determine the sense of the conclusion
 ; as a :REWRITE rule.
@@ -84,8 +111,7 @@
      lhs))
    ((or (variablep lhs)
         (fquotep lhs)
-        (flambda-applicationp lhs)
-        (eq (ffn-symb lhs) 'if))
+        (flambda-applicationp lhs))
     (msg
      "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
       ~@1 ~x2.  For general information about rewrite rules in ACL2, see :DOC ~
@@ -94,7 +120,8 @@
      (cond ((variablep lhs) "variable symbol")
            ((fquotep lhs) "quoted constant")
            ((flambda-applicationp lhs) "LET-expression")
-           (t "IF-expression"))
+           (t (er hard 'interpret-term-as-rewrite-rule2
+                  "Implementation error: forgot a case.  LHS:~|~x0.")))
      lhs))
    (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
                                hyps (all-vars lhs) nil wrld)))
@@ -144,6 +171,9 @@
                          (t (mv 'iff term *t* nil)))))))
 
 (defun interpret-term-as-rewrite-rule (name hyps term ens wrld)
+
+; NOTE: Term is assumed to have had remove-guard-holders applied, which in
+; particular implies that term is in quote-normal form.
 
 ; This function returns five values.  The first can be a msg for printing an
 ; error message.  Otherwise the first is nil, in which case the second is an
@@ -10910,6 +10940,12 @@
 
 (defun brr-fn (flg state)
   (cond
+   #+acl2-par
+   ((and flg
+         (f-get-global 'waterfall-parallelism state))
+    (er soft 'brr
+        "Brr is not supported in ACL2(p) with waterfall parallelism on.  See ~
+         :DOC unsupported-waterfall-parallelism-features."))
    (flg
     (pprogn
      (f-put-global 'gstackp t state)

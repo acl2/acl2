@@ -4218,6 +4218,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (characterp #\Rubout)
   :rule-classes nil)
 
+(defaxiom characterp-return
+  (characterp #\Return)
+  :rule-classes nil)
+
 ; No-duplicatesp
 
 (defun-with-guard-check no-duplicatesp-eq-exec (l)
@@ -6247,13 +6251,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(mv nil ,x state))
 
-(defun value-triple-fn (form on-skip-proofs check)
+(defun value-triple-fn (form on-skip-proofs check ctx)
   (declare (xargs :guard t))
   `(cond ((and ,(not on-skip-proofs)
                (f-get-global 'ld-skip-proofsp state))
           (value :skipped))
          (t ,(let ((form
-                    `(let ((check ,check))
+                    `(let ((check ,check)
+                           (ctx ,ctx))
                        (cond (check
                               (cond
                                ((check-vars-not-free
@@ -6261,11 +6266,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  ,form)
                                 :passed)
                                ((tilde-@p check)
-                                (er hard 'value-triple
+                                (er hard ctx
                                     "Assertion failed:~%~@0~|"
                                     check))
                                (t
-                                (er hard 'value-triple
+                                (er hard ctx
                                     "Assertion failed on form:~%~x0~|"
                                     ',form))))
                              (t ,form)))))
@@ -6274,14 +6279,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (value ,form))))))
 
 #+acl2-loop-only
-(defmacro value-triple (form &key on-skip-proofs check)
-  (value-triple-fn form on-skip-proofs check))
+(defmacro value-triple (form &key on-skip-proofs check (ctx ''value-triple))
+  (value-triple-fn form on-skip-proofs check ctx))
 
 (defmacro assert-event (form &key on-skip-proofs msg)
   (declare (xargs :guard (booleanp on-skip-proofs)))
   `(value-triple ,form
                  :on-skip-proofs ,on-skip-proofs
-                 :check ,(or msg t)))
+                 :check ,(or msg t)
+                 :ctx 'assert-event))
 
 (defun xd-name (event-type name)
   (declare (xargs :guard (member-eq event-type '(defund defthmd))))
@@ -12579,6 +12585,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-absstobj-invariants
     get-stobj-creator
     iprint-oracle-updates
+    iprint-oracle-updates@par
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
@@ -17808,7 +17815,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp lst)
          t)
         ((member (car lst) potnum-chars)
-         (may-need-slashes1 (cdr lst) nil potnum-chars))
+         (may-need-slashes1 (cdr lst)
+                            (member (car lst) *letter-chars*)
+                            potnum-chars))
         ((member (car lst) *letter-chars*)
          (cond (flg nil)
                (t (may-need-slashes1 (cdr lst) t potnum-chars))))
@@ -17854,7 +17863,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (not (member (aref (the string ,s) (the fixnum (1- ,n)))
                      '(#\+ #\-)))
 
-; The strong consists entirely of digits, signs, ratio markers, decimal points,
+; The string consists entirely of digits, signs, ratio markers, decimal points,
 ; extension characters, and number markers (i.e. letters, but no two in a
 ; row).  The logic code for this is may-need-slashes1.
 
@@ -17865,7 +17874,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (declare (type fixnum ch))
                 (cond ((or (svref ,ar+ ch)
                            (int= ch *char-code-slash*))
-                       (setq prev-letter-p nil))
+                       (setq prev-letter-p
+                             (svref *letter-array* ch)))
                       ((svref *letter-array* ch)
                        (cond (prev-letter-p (return nil))
                              (t (setq prev-letter-p t))))
@@ -19702,6 +19712,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (#\Page    "Page")
                       (#\Tab     "Tab")
                       (#\Rubout  "Rubout")
+                      (#\Return  "Return")
                       (otherwise x))
                     stream))
                   ((stringp x)
@@ -19752,6 +19763,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (#\Page    "Page")
                     (#\Tab     "Tab")
                     (#\Rubout  "Rubout")
+                    (#\Return  "Return")
                     (otherwise x))
                   channel state)))
         ((stringp x)
@@ -26320,6 +26332,10 @@ Lisp definition."
        (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))
               (untouchable-fns (global-val 'untouchable-fns wrld)))
+
+; It is tempting to call untouchable-fn-p, but it seems inconvenient to fold
+; the necessary true-listp tests into that macro.  So we open-code here.
+
          (and (not (eq formals t))
               (eql (len formals) (len args))
               (true-listp untouchable-fns)

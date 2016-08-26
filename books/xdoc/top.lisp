@@ -214,23 +214,29 @@
   `(table xdoc 'doc
           (xdoc-prepend-fn ',name ,long world)))
 
-(defun order-subtopics-fn (name order world)
+(defun order-subtopics-fn (name order flg world)
   (declare (xargs :mode :program))
   (let* ((all-topics (xdoc::get-xdoc-table world))
-         (old-topic  (xdoc::find-topic name all-topics)))
+         (old-topic  (xdoc::find-topic name all-topics))
+         (ctx 'order-subtopics))
     (cond ((not old-topic)
-           (er hard? 'order-subtopics "Topic ~x0 wasn't found." name))
-          ((not (symbol-listp order))
-           (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
+           (er hard? ctx "Topic ~x0 wasn't found." name))
+          ((not (symbol-listp (fix-true-list order)))
+           (er hard? ctx "Subtopics list contains a non-symbol: ~x0" order))
+          ((not (booleanp flg))
+           (er hard? ctx "Optional argument is not Boolean: ~x0" flg))
           (t
            (let* ((other-topics (remove-equal old-topic all-topics))
-                  (new-topic    (acons :suborder order
+                  (new-topic    (acons :suborder
+                                       (if flg
+                                           (append order flg)
+                                         order)
                                        (delete-assoc :suborder old-topic))))
              (cons new-topic other-topics))))))
 
-(defmacro order-subtopics (name order)
+(defmacro order-subtopics (name order &optional flg)
   `(table xdoc 'doc
-          (order-subtopics-fn ',name ',order world)))
+          (order-subtopics-fn ',name ',order ',flg world)))
 
 (defund extract-keyword-from-args (kwd args)
   (declare (xargs :guard (keywordp kwd)))

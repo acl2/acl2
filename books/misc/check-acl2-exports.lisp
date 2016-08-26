@@ -84,6 +84,9 @@
     ADD-DIVE-INTO-MACRO
     BDD
     BOOK-HASH
+    CHAR-DOWNCASE ; should probably be documented (noticed by Alessandro Coglio)
+    CHAR-UPCASE ; should probably be documented (noticed by Alessandro Coglio)
+    CHARACTERP-RETURN ; should add to *acl2-exports*
     CHECK-SUM
     COMP-GCL
     COUNT ; defined in books/coi/bags/basic.lisp
@@ -94,6 +97,7 @@
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
     LOOP-STOPPER
     MBE1
+    NEAR-MISSES ; should add to *acl2-exports*
     NON-LINEAR-ARITHMETIC
     NORMALIZE
     PROOF-BUILDER

@@ -1957,6 +1957,7 @@
           (+f acc
               (cond ((eql x #\Newline) 9)
                     ((eql x #\Rubout) 8)
+                    ((eql x #\Return) 8)
                     ((eql x #\Space) 7)
                     ((eql x #\Page) 6)
                     ((eql x #\Tab) 5)
@@ -7065,15 +7066,12 @@
   status)
 
 (defmacro good-bye (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 (defmacro exit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 (defmacro quit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 ; Saving an Executable Image
