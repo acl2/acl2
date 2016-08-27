@@ -104,6 +104,7 @@
     REDEFINED-NAMES
     REMOVE-DIVE-INTO-MACRO
     REWRITE
+    SET-SERIALIZE-CHARACTER-SYSTEM ; probably should add to *acl2-exports*
     TYPE-SET
     WATERFALL
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they

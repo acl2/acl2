@@ -12157,7 +12157,8 @@
            certification-file))
       (t (with-print-defaults
           ((current-package "ACL2")
-           (print-circle (f-get-global 'print-circle-files state)))
+           (print-circle (f-get-global 'print-circle-files state))
+           (print-readably t))
           (pprogn
            (print-object$ '(in-package "ACL2") ch state)
            (print-object$ (f-get-global 'acl2-version state) ch state)
@@ -14066,7 +14067,8 @@
     (t
      (with-print-defaults
       ((current-package "ACL2")
-       (print-circle (f-get-global 'print-circle-files state)))
+       (print-circle (f-get-global 'print-circle-files state))
+       (print-readably t))
       (pprogn
        (io? event nil state
             (expansion-filename)
@@ -14661,7 +14663,8 @@
          acl2x-file))
     (t (with-print-defaults
         ((current-package "ACL2")
-         (print-circle (f-get-global 'print-circle-files state)))
+         (print-circle (f-get-global 'print-circle-files state))
+         (print-readably t))
         (pprogn
          (io? event nil state
               (acl2x-file)
@@ -14783,7 +14786,8 @@
                     (proofs-co state) state nil))
           (with-print-defaults
            ((current-package "ACL2")
-            (print-circle (f-get-global 'print-circle-files state)))
+            (print-circle (f-get-global 'print-circle-files state))
+            (print-readably t))
            (pprogn
             (print-object$ '(in-package "ACL2") ch state)
             (print-objects
@@ -14856,7 +14860,8 @@
                     ch-to to
                     (with-print-defaults
                      ((current-package "ACL2")
-                      (print-circle (f-get-global 'print-circle-files state)))
+                      (print-circle (f-get-global 'print-circle-files state))
+                      (print-readably t))
                      (cond ((null ch-to)
                             (pprogn
                              (close-input-channel ch-from state)
