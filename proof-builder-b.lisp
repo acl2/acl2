@@ -3726,6 +3726,7 @@
              (def-body (and (not (flambdap fn))
                             (def-body fn w)))
              (formals (access def-body def-body :formals))
+             (equiv (access def-body def-body :equiv))
              (body (if (flambdap fn)
                        (lambda-body fn)
                      (and def-body
@@ -3734,17 +3735,29 @@
                                                :hyp)
                                        (access def-body def-body
                                                :concl))))))
-        (if (null body)
-            (prog2$ (if (flambdap fn)
-                        (er hard 'acl2-pc::expand
-                            "Found null body for lambda in term ~x0~|Please ~
-                             contact the ACL2 implementors."
-                            term)
-                      t)
-                    (print-no-change2
-                     "Expansion failed.  Apparently function ~x0 is ~
-                      constrained, not defined."
-                     (list (cons #\0 fn))))
+        (cond
+         ((and (not (eq equiv 'equal)) ; optimization
+               (not (flambdap fn))
+               (not (geneqv-refinementp
+                     equiv
+                     (geneqv-at-subterm-top conc
+                                            current-addr
+                                            (make-pc-ens pc-ens state)
+                                            w)
+                     w)))
+          (print-no-change2
+           "Expansion failed: the equivalence relation for the definition ~
+            rule ~x0 is ~x1, which is not sufficient to maintain in the ~
+            current context."
+           (list (cons #\0 (base-symbol (access def-body def-body :rune)))
+                 (cons #\1 equiv))))
+         ((null body)
+          (assert$ (not (flambdap fn)) ; else surprising null body for lambda
+                   (print-no-change2
+                    "Expansion failed.  Apparently function ~x0 is ~
+                     constrained, not defined."
+                    (list (cons #\0 fn)))))
+         (t
           (let ((new-term
                  (cond
                   (do-not-expand-lambda-flg ; hence not (flambdap fn)
@@ -3757,21 +3770,21 @@
                                (fargs term)
                                body)))))
             (mv-let (new-goal state)
-                    (deposit-term-in-goal
-                     (car goals) conc current-addr
-                     new-term
-                     state)
-                    (mv (change-pc-state
-                         pc-state
-                         :goals
-                         (cons new-goal (cdr goals))
-                         :local-tag-tree
-                         (if (flambdap fn)
-                             nil
-                           (push-lemma? (access def-body def-body
-                                                :rune)
-                                        nil)))
-                        state)))))))))
+              (deposit-term-in-goal
+               (car goals) conc current-addr
+               new-term
+               state)
+              (mv (change-pc-state
+                   pc-state
+                   :goals
+                   (cons new-goal (cdr goals))
+                   :local-tag-tree
+                   (if (flambdap fn)
+                       nil
+                     (push-lemma? (access def-body def-body
+                                          :rune)
+                                  nil)))
+                  state))))))))))
 
 (define-pc-atomic-macro x-dumb ()
   (value `(expand t)))

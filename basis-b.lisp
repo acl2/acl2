@@ -2306,6 +2306,7 @@
     hyp ; nil if there are no hypotheses
     .
     concl)
+   equiv
    .
    (recursivep formals rune . controller-alist))
   t)
@@ -2350,11 +2351,26 @@
   (cond ((flambdap fn)
          (lambda-body fn))
         (normalp (let ((def-body (def-body fn w)))
-                   (latest-body (fcons-term fn
-                                            (access def-body def-body
-                                                    :formals))
-                                (access def-body def-body :hyp)
-                                (access def-body def-body :concl))))
+                   (cond
+                    ((not (eq (access def-body def-body :equiv)
+                              'equal))
+
+; The application of fn to its formals can fail to be equal to its body in all
+; such cases, so we revert to the unnormalized body.  An alternative could be
+; to define the function def-body to find the most recent body that has 'equal
+; as its :equal, rather than the recent body unconditionally.  But then, since
+; we want :expand hints to use the latest body even if :equiv is not 'equal, we
+; could have three different bodies in use at a given time (unnormalized,
+; latest normalized, and latest normalized with :equiv = equal), and that just
+; seems potentially too confusing.  Instead, our story will be that the body is
+; always either the latest body or the (original) unnormalized body.
+
+                     (getpropc fn 'unnormalized-body nil w))
+                    (t (latest-body (fcons-term fn
+                                                (access def-body def-body
+                                                        :formals))
+                                    (access def-body def-body :hyp)
+                                    (access def-body def-body :concl))))))
         (t (getpropc fn 'unnormalized-body nil w))))
 
 ; Rockwell Addition: Consider the guard conjectures for a stobj-using

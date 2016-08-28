@@ -1255,6 +1255,7 @@
                                   :formals '(state)
                                   :hyp nil
                                   :concl '(ld-skip-proofsp state)
+                                  :equiv 'equal
                                   :rune *fake-rune-for-anonymous-enabled-rule*
                                   :nume 0 ; fake
                                   :recursivep nil
@@ -1275,6 +1276,7 @@
                                        :hyp nil
                                        :concl '(default-defun-mode-from-state
                                                  state)
+                                       :equiv 'equal
                                        :rune
                                        *fake-rune-for-anonymous-enabled-rule*
                                        :nume 0 ; fake
@@ -1295,6 +1297,7 @@
                                             :formals '(str state)
                                             :hyp nil
                                             :concl '(skip-when-logic str state)
+                                            :equiv 'equal
                                             :rune
                                             *fake-rune-for-anonymous-enabled-rule*
                                             :nume 0 ; fake
@@ -1343,6 +1346,7 @@
                                     :formals formals
                                     :hyp nil
                                     :concl (cons name-fn formals)
+                                    :equiv 'equal
                                     :rune
                                     *fake-rune-for-anonymous-enabled-rule*
                                     :nume 0 ; fake

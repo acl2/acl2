@@ -587,6 +587,8 @@
             ((and def-body
                   (null (access def-body def-body :recursivep))
                   (null (access def-body def-body :hyp))
+                  (member-eq (access def-body def-body :equiv)
+                             '(equal iff))
                   (enabled-numep (access def-body def-body :nume)
                                  ens)
                   (and-orp (access def-body def-body :concl)
