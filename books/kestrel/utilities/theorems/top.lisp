@@ -24,4 +24,4 @@
 (defxdoc miscellaneous-theorems
   :parents (kestrel-utilities)
   :short "Some miscellaneous theorems about functions defined outside the
-  Kestrel Books:")
+  Kestrel Books.")
