@@ -99,7 +99,7 @@
                                   (logicp fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
-  ;; :returns (yes/no booleanp)
+  :returns (yes/no "A @(tsee booleanp).")
   :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short "The @(tsee non-executable) status
           of the logic-mode, defined function @('fn')."
@@ -108,7 +108,7 @@
 (define unwrapped-nonexec-body ((fn (and (function-namep fn wrld)
                                          (non-executablep fn wrld)))
                                 (wrld plist-worldp))
-  ;; :returns (unwrapped-body pseudo-termp)
+  :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Body of a non-executable function,
           without the &ldquo;non-executable wrapper&rdquo;."
@@ -146,7 +146,7 @@
 (define number-of-results ((fn (function-namep fn wrld))
                            (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
-  ;; :returns (n posp)
+  :returns (n "A @(tsee posp).")
   :short "Number of values returned by a function."
   :long
   "<p>
@@ -180,7 +180,7 @@
                           (logicp fn wrld)
                           (recursivep fn nil wrld)))
                  (wrld plist-worldp))
-  ;; :returns (measure pseudo-termp)
+  :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Measure expression of a logic-mode recursive function."
   :long
@@ -193,7 +193,7 @@
                                   (logicp fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
-  ;; :returns (measured-subset symbol-listp)
+  :returns (measured-subset "A @(tsee symbol-listp).")
   :verify-guards nil
   :short "Subset of the formal arguments of the recursive function @('fn')
           that occur in its @(see measure) expression."
@@ -203,7 +203,7 @@
                                         (logicp fn wrld)
                                         (recursivep fn nil wrld)))
                                (wrld plist-worldp))
-  ;; :returns (well-founded-relation symbolp)
+  :returns (well-founded-relation "A @(tsee symbolp).")
   :verify-guards nil
   :short "Well-founded relation of a logic-mode recursive function."
   :long
@@ -216,15 +216,14 @@
                                   (logicp fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
-  ;; :returns (ruler-extenders (or (symbol-listp ruler-extenders)
-  ;;                               (equal ruler-extenders :all)))
+  :returns (ruler-extenders "A @(tsee symbol-listp) or @(':all').")
   :verify-guards nil
   :short "Ruler-extenders of a logic-mode recursive function
           (see @(see rulers) for background)."
   (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  ;; :returns (required-args symbol-listp)
+  :returns (required-args "A @(tsee symbol-listp).")
   :verify-guards nil
   :short "Required arguments of the macro @('mac'), in order."
   :long
@@ -244,7 +243,7 @@
 
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp))
-     ;; :returns (required-args symbol-listp)
+     :returns (required-args "A @(tsee symbol-listp).")
      :parents (macro-required-args)
      :short "Auxiliary function of @(tsee macro-required-args)."
      :long
@@ -263,31 +262,31 @@
            (cons arg (macro-required-args-aux (cdr args)))))))))
 
 (define fundef-disabledp ((fn (function-namep fn (w state))) state)
-  :returns (yes/no booleanp)
-  :prepwork ((program))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :short "True iff the definition of the function @('fn') is disabled."
   (member-equal `(:definition ,fn) (disabledp fn)))
 
 (define fundef-enabledp ((fn (function-namep fn (w state))) state)
-  :returns (yes/no booleanp)
-  :prepwork ((program))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :short "True iff the definition of the function @('fn') is enabled."
   (not (fundef-disabledp fn state)))
 
 (define rune-disabledp ((rune (runep rune (w state))) state)
-  :returns (yes/no booleanp)
-  :prepwork ((program))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :short "True iff the @(see rune) @('rune') is disabled."
   (member-equal rune (disabledp (cadr rune))))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
-  :returns (yes/no booleanp)
-  :prepwork ((program))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :short "True iff the @(see rune) @('rune') is enabled."
   (not (rune-disabledp rune state)))
 
 (define included-books ((wrld plist-worldp))
-  ;; :returns (result string-listp)
+  :returns (result "A @(tsee string-listp).")
   :verify-guards nil
   :short "List of full pathnames of all books currently included
           (directly or indirectly)."
@@ -297,7 +296,7 @@
                                     (logicp fn wrld)
                                     (eql 1 (len (recursivep fn nil wrld)))))
                            (wrld plist-worldp))
-  ;; :returns (machine (pseudo-induction-machinep fn machine))
+  :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
   :verify-guards nil
   :short "Induction machine of a (singly) recursive function."
   :long
@@ -360,8 +359,8 @@
                                   (logicp fn wrld)
                                   (eql 1 (len (recursivep fn nil wrld)))))
                          (wrld plist-worldp))
-  :returns (calls-with-tests pseudo-tests-and-call-listp)
-  :prepwork ((program))
+  :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
+  :mode :program
   :short "Recursive calls of a (singly) recursive function,
           along with the controlling tests."
   :long
@@ -396,7 +395,7 @@
   :elementp-of-nil nil)
 
 (define event-landmark-names ((event pseudo-event-landmarkp))
-  ;; :returns (names string-or-symbol-listp)
+  :returns (names "A @('string-or-symbol-listp').")
   :verify-guards nil
   :short "Names introduced by an event landmark."
   :long

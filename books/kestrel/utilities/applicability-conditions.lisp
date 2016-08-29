@@ -52,10 +52,10 @@
 (define prove-applicability-condition ((app-cond applicability-condition-p)
                                        (verbose booleanp)
                                        state)
-  :returns (mv (success booleanp)
-               (msg msgp)
+  :returns (mv (success "A @(tsee booleanp).")
+               (msg "A @('msgp') (see @(tsee msg)).")
                state)
-  :prepwork ((program))
+  :mode :program
   :short "Try to prove the applicability condition."
   :long
   "<p>
@@ -110,10 +110,10 @@
   ((app-conds applicability-condition-listp)
    (verbose booleanp)
    state)
-  :returns (mv (success booleanp)
-               (msg msgp)
+  :returns (mv (success "A @(tsee booleanp).")
+               (msg "A @('msgp') (see @(tsee msg)).")
                state)
-  :prepwork ((program))
+  :mode :program
   :short "Try to prove a list of applicability conditions, one after the other."
   :long
   "<p>
@@ -146,9 +146,9 @@
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
    (wrld plist-worldp))
   :guard (or rule-classes enabled)
-  :returns (mv (thm-name symbolp)
-               (thm-event-form pseudo-event-formp))
-  :prepwork ((program))
+  :returns (mv (thm-name "A @(tsee symbolp).")
+               (thm-event-form "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate theorem event form for applicability condition."
   :long
   "<p>
@@ -187,13 +187,11 @@
   :guard (and (eql (len locals) (len app-conds))
               (eql (len enableds) (len app-conds))
               (eql (len rule-classess) (len app-conds)))
-  :returns (mv (names-to-thm-names
-                (and (symbol-symbol-alistp names-to-thm-names)
-                     (eql (len names-to-thm-names) (len app-conds))))
-               (thm-event-forms
-                (and (true-list-listp thm-event-forms)
-                     (eql (len thm-event-forms) (len app-conds)))))
-  :prepwork ((program))
+  :returns (mv (names-to-thm-names "A @(tsee symbol-symbol-alistp)
+                                    of length @('(len app-conds)').")
+               (thm-event-forms "A @(tsee pseudo-event-form-listp)
+                                 of length @('(len app-conds)')."))
+  :mode :program
   :short "Generate theorem event forms for applicability conditions."
   :long
   "<p>

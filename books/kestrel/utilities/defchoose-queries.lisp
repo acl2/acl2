@@ -39,7 +39,7 @@
    </p>")
 
 (define defchoosep ((fn (function-namep fn wrld)) (wrld plist-worldp))
-  ;; :returns (axiom pseudo-termp)
+  :returns (axiom "A @(tsee pseudo-termp).")
   :short "Check if the function @('fn') was introduced via @(tsee defchoose),
           returning the function's constraining axiom if the check succeeds."
   :long
@@ -54,8 +54,8 @@
 (define defchoose-bound-vars ((fn (and (function-namep fn wrld)
                                        (defchoosep fn wrld)))
                               (wrld plist-worldp))
-  :returns (bound-vars symbol-listp)
-  :prepwork ((program))
+  :returns (bound-vars "A @(tsee symbol-listp).")
+  :mode :program
   :short "Bound variables
           of the function @('fn') introduced via @(tsee defchoose)."
   :long
@@ -73,8 +73,8 @@
 (define defchoose-strengthen ((fn (and (function-namep fn wrld)
                                        (defchoosep fn wrld)))
                               (wrld plist-worldp))
-  :returns (t/nil booleanp)
-  :prepwork ((program))
+  :returns (t/nil "A @(tsee booleanp).")
+  :mode :program
   :short "Value of the @(':strengthen') option
           of the function @('fn') introduced via @(tsee defchoose)."
   :long
@@ -94,7 +94,7 @@
 (define defchoose-untrans-body ((fn (and (function-namep fn wrld)
                                          (defchoosep fn wrld)))
                                 (wrld plist-worldp))
-  :prepwork ((program))
+  :mode :program
   :short "Body of the function @('fn') introduced via @(tsee defchoose),
           in <see topic='@(url term)'>untranslated form</see>."
   :long
@@ -107,8 +107,8 @@
 (define defchoose-body ((fn (and (function-namep fn wrld)
                                  (defchoosep fn wrld)))
                         (wrld plist-worldp))
-  :returns (body pseudo-termp)
-  :prepwork ((program))
+  :returns (body "A @(tsee pseudo-termp).")
+  :mode :program
   :short "Body of the function @('fn') introduced via @(tsee defchoose),
           in <see topic='@(url term)'>translated form</see>."
   :long

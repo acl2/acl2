@@ -156,9 +156,9 @@
 (define defun-sk-check-signature (signature
                                   (witness symbolp)
                                   (args symbol-listp))
-  ;; :returns (mv (yes/no booleanp)
-  ;;              (bound-vars symbol-listp)
-  ;;              (classicalp booleanp))
+  :returns (mv (yes/no "A @(tsee booleanp).")
+               (bound-vars "A @(tsee symbol-listp).")
+               (classicalp "A @(tsee booleanp)."))
   :short "Check the @(see signature)
           of the @(tsee encapsulate) of a @(tsee defun-sk) function,
           retrieving the variables bound by the quantifier
@@ -254,8 +254,8 @@
                                           (bound-vars symbol-listp)
                                           (args symbol-listp)
                                           witness-body)
-  :returns (yes/no booleanp)
-  :prepwork ((program))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :short "Check the (optional) strengthening theorem
           in the @(tsee encapsulate) of a @(tsee defun-sk) function."
   :long
@@ -370,9 +370,9 @@
                                      (quantifier defun-sk-quantifier-p)
                                      untrans-matrix
                                      (witness symbolp))
-  ;; :returns (mv (yes/no booleanp)
-  ;;              (rewrite-name symbolp)
-  ;;              (rewrite-kind defun-sk-rewrite-kind-p))
+  :returns (mv (yes/no "A @(tsee booleanp).")
+               (rewrite-name "A @(tsee symbolp).")
+               (rewrite-kind "A @(tsee defun-sk-rewrite-kind-p)."))
   :short "Check the rewrite rule in the @('encapsulate')
           of a @(tsee defun-sk) function,
           retrieving the name and kind of the rewrite rule."
@@ -447,7 +447,7 @@
                                   (bound-vars symbol-listp)
                                   (non-executable booleanp)
                                   (wrld plist-worldp))
-  ;; :returns (matrix pseudo-termp)
+  :returns (matrix "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Retrieve the matrix of a @(tsee defun-sk) function,
           in <see topic='@(url term)'>translated form</see>."
@@ -511,8 +511,8 @@
 
 (define defun-sk-check ((fn (function-namep fn wrld))
                         (wrld plist-worldp))
-  :returns (record? maybe-defun-sk-info-p)
-  :prepwork ((program))
+  :returns (record? "A @(tsee maybe-defun-sk-info-p).")
+  :mode :program
   :short "Check if the function @('fn') is a @(tsee defun-sk) function."
   :long
   "<p>

@@ -139,7 +139,7 @@
   "{")
 
 (define get-numbered-name-index-start ((wrld plist-worldp))
-  ;; :returns (start numbered-name-index-start-p)
+  :returns (start "A @(tsee numbered-name-index-start-p).")
   :verify-guards nil
   :parents (numbered-name-index-start)
   :short "Retrieve the current starting marker
@@ -199,7 +199,7 @@
   "}")
 
 (define get-numbered-name-index-end ((wrld plist-worldp))
-  ;; :returns (end numbered-name-index-end-p)
+  :returns (end "A @(tsee numbered-name-index-end-p).")
   :verify-guards nil
   :parents (numbered-name-index-end)
   :short "Retrieve the current ending marker
@@ -260,7 +260,7 @@
   "*")
 
 (define get-numbered-name-index-wildcard ((wrld plist-worldp))
-  ;; :returns (wildcard numbered-name-index-wildcard-p)
+  :returns (wildcard "A @(tsee numbered-name-index-wildcard-p).")
   :verify-guards nil
   :parents (numbered-name-index-wildcard)
   :short "Retrieve the current wildcard
@@ -451,8 +451,7 @@
 
   (define add-numbered-name-in-use-aux
     ((base symbolp) (index posp) (wrld plist-worldp))
-    ;; :returns (indices (and (pos-listp indices)
-    ;;                        (no-duplicatesp indices)))
+    :returns (indices "A @(tsee pos-listp) without duplicates.")
     :verify-guards nil
     :parents (add-numbered-name-in-use)
     :short "Auxiliary function for @(tsee add-numbered-name-in-use) macro."
@@ -471,7 +470,7 @@
 
 (define max-numbered-name-index-in-use-aux
   ((indices pos-listp) (current-max-index natp))
-  ;; :returns (final-max-index natp)
+  :returns (final-max-index "A @(tsee natp).")
   :parents (max-numbered-name-index-in-use)
   :short "Auxiliary function for @(tsee max-numbered-name-index-in-use)."
   :long
@@ -484,7 +483,7 @@
             (max (car indices) current-max-index)))))
 
 (define max-numbered-name-index-in-use ((base symbolp) (wrld plist-worldp))
-  ;; :returns (max-index natp)
+  :returns (max-index "A @(tsee natp).")
   :verify-guards nil
   :parents (numbered-names-in-use)
   :short "Largest index of numbered name in use with given base."
@@ -501,7 +500,7 @@
     (max-numbered-name-index-in-use-aux current-indices 0)))
 
 (define resolve-numbered-name-wildcard ((name symbolp) (wrld plist-worldp))
-  ;; :returns (resolved-name symbolp)
+  :returns (resolved-name "A @(tsee symbolp).")
   :verify-guards nil
   :parents (numbered-names)
   :short "Resolve the wildcard in a numbered name (if any)
@@ -525,8 +524,8 @@
 
 (define next-numbered-name-aux
   ((base symbolp) (current-index posp) (wrld plist-worldp))
-  :returns (final-index posp)
-  :prepwork ((program))
+  :returns (final-index "A @(tsee posp).")
+  :mode :program
   :parents (next-numbered-name)
   :short "Auxiliary function for @(tsee next-numbered-name)."
   :long
@@ -542,8 +541,8 @@
       current-index)))
 
 (define next-numbered-name ((name symbolp) (wrld plist-worldp))
-  :returns (next-index posp)
-  :prepwork ((program))
+  :returns (next-index "A @(tsee posp).")
+  :mode :program
   :parents (numbered-names)
   :short "Next numbered name with the same base."
   :long
@@ -602,7 +601,7 @@
               (posp val)))
 
 (define get-global-numbered-name-index ((wrld plist-worldp))
-  ;; :returns (global-index posp)
+  :returns (global-index "A @(tsee posp).")
   :verify-guards nil
   :parents (global-numbered-name-index)
   :short "Retrieve the global index for numbered names."
