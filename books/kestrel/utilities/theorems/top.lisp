@@ -1,4 +1,4 @@
-; Miscellaneous Theorems
+; Theorems about Functions Defined outside the Kestrel Books
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
