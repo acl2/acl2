@@ -40,7 +40,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc kestrel-utilities
-
   :parents (kestrel-books)
-
   :short "A collection of utilities contributed by Kestrel Institute.")

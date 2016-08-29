@@ -22,18 +22,17 @@
 (define pseudo-event-formp (x)
   :returns (yes/no booleanp)
   :parents (kestrel-utilities system-utilities)
-  :short
-  "True iff @('x') has the basic structure of an event form."
+  :short "True iff @('x') has the basic structure of an event form."
   :long
   "<p>
-  Check whether @('x') is a
-  non-empty, @('nil')-terminated list that starts with a symbol
-  (like a function or macro call).
-  </p>
-  <p>
-  This is a &ldquo;shallow&rdquo; check.
-  Its satisfaction does not guarantee that @('x') is a valid event form.
-  </p>"
+   Check whether @('x') is a
+   non-empty, @('nil')-terminated list that starts with a symbol
+   (like a function or macro call).
+   </p>
+   <p>
+   This is a &ldquo;shallow&rdquo; check.
+   Its satisfaction does not guarantee that @('x') is a valid event form.
+   </p>"
   (and x
        (true-listp x)
        (symbolp (car x)))
@@ -48,10 +47,9 @@
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
   :parents (pseudo-event-formp)
-  :short
-  "True iff @('x') is a @('nil')-terminated list
-  each of whose elements has the
-  <see topic='@(url pseudo-event-formp)'>basic structure
-  of an event form</see>."
+  :short "True iff @('x') is a @('nil')-terminated list
+          each of whose elements has the
+          <see topic='@(url pseudo-event-formp)'>basic structure
+          of an event form</see>."
   :true-listp t
   :elementp-of-nil nil)
