@@ -21,7 +21,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc miscellaneous-theorems
+(defxdoc theorems-about-non-kestrel-books
   :parents (kestrel-utilities)
-  :short "Some miscellaneous theorems about functions defined outside the
-  Kestrel Books.")
+  :short "Some theorems about functions defined outside the Kestrel Books.")
