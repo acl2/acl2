@@ -1,4 +1,4 @@
-;; Copyright (c) 2016, Nathan Wetzler
+;; Copyright (c) 2016, Regents of the University of Texas
 ;;
 ;; License: The MIT License (MIT)
 ;;
@@ -25,7 +25,7 @@
 ;;
 ;; Original author: Nathan Wetzler <nathan.wetzler@gmail.com>
 
-;; Last Modified:  2016-08-28 23:00
+;; Last Modified:  2016-08-29 20:46
 
 ;; ============================= PACKAGE =============================
 (in-package "FARRAY")
