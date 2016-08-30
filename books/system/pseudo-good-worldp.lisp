@@ -2703,10 +2703,10 @@
                            ABSOLUTE-EVENT-NUMBER
                            UNNORMALIZED-BODY
 
-; The following property is set by primordial-event-macro-and-fn for ;
-; ld-skip-proofsp and default-defun-mode-from-state.  (def-bodies is also set ;
-; for other primitives, like skip-when-logic and include-book-fn, but they ;
-; remain in :program mode and so the setting isn't shadowed out) ;
+; The following property is set by primordial-event-macro-and-fn for
+; ld-skip-proofsp and default-defun-mode-from-state.  (Def-bodies is also set
+; for other primitives, like skip-when-logic and include-book-fn, but they
+; remain in :program mode and so the setting isn't shadowed out.)
 
                            DEF-BODIES
 
