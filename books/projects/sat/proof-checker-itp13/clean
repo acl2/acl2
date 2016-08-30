@@ -1,0 +1,5 @@
+#! /bin/sh
+
+rm -f *.cert *.dx64fsl *.dx86cl64 *.out *.pcert workxxx.* supplemental/*.cert \
+      supplemental/*.dx64fsl supplemental/*.out supplemental/*.pcert \
+      supplemental/workxxx.* rat-checker

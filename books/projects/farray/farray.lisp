@@ -1,4 +1,4 @@
-;; Copyright (c) 2015, Nathan Wetzler
+;; Copyright (c) 2016, Nathan Wetzler
 ;;
 ;; License: The MIT License (MIT)
 ;;
@@ -25,7 +25,7 @@
 ;;
 ;; Original author: Nathan Wetzler <nathan.wetzler@gmail.com>
 
-;; Last Modified:  2016-07-17 17:33
+;; Last Modified:  2016-08-28 23:00
 
 ;; ============================= PACKAGE =============================
 (in-package "FARRAY")
@@ -125,6 +125,26 @@ stobj</li>
 <li>Define and analyze a membership operator for ranges within a field</li>
 </ul></p>"
 )
+
+
+;; ============================= LAYOUT ==============================
+
+(defsection Links
+  :extension FARRAY
+  ;; :parents (farray)
+  ;; :short ""
+  :long
+"<p>This material is further described in Nathan Wetzler's dissertation
+  available as a <a
+  href='http://www.cs.utexas.edu/~nwetzler/publications/dissertation-preprint.pdf'>preprint</a>
+  or on the <a href='https://repositories.lib.utexas.edu/handle/2152/30538'>UT
+  Digital Repository</a>.</p>
+
+<p>A talk on farray was presented at the ACL2 Seminar and the <a
+  href='http://www.cs.utexas.edu/users/moore/acl2/seminar/2015.01.27-wetzler/farray-talk-20150127.lisp'>slides</a>
+  and <a
+  href='http://www.cs.utexas.edu/users/moore/acl2/seminar/2015.01.27-wetzler/farray-diagram.pdf'>figure</a>
+  are available online.</p>" )
 
 
 ;; ======================== STOBJ DEFINITION =========================

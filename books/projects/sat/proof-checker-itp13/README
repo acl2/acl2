@@ -1,0 +1,32 @@
+Nathan Wetzler
+nwetzler@cs.utexas.edu
+Last modified: 2013-02-14 8:31pm
+
+
+The code and proofs are a work in progress.  We have provided them as
+supplemental material for the Interactive Theorem Proving conference.
+Code was tested with ACL2 version 6.0.
+
+
+Three scripts have been provided:
+build     - Will ceritfy all books
+run arg1  - Will check a RAT proof file "arg1"
+clean     - Will remove all certificates and logs
+
+
+The ACL2 Lisp proof files are included and some descriptions are
+listed below:
+
+top.lisp - LOOK AT THIS FILE FIRST.  This contains the main events
+           from the rat-checker proof without many of the ugly
+           details.
+
+rat-checker.lisp - This is the definition and proof of correctness for
+                   the RAT proof checker.
+
+rat-parser.lsp - A RAT proof file parser.
+
+rat-1 - An sample RAT proof file.
+
+supplemental/ - This directory contains a library of function
+                definitions and theorems related to SAT.
