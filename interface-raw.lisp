@@ -7748,7 +7748,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
             (and (eq (car trip) 'event-landmark)
                  (true-listp trip)
                  (eq (cadr trip) 'global-value)
-                 (eq (nth 4 trip) 'defun)
+                 (eq (access-event-tuple-type (cddr trip)) 'defun)
                  (nth 5 trip))))
       (cond ((and fn
                   (symbolp fn)
