@@ -310,44 +310,49 @@
 ; function sees a FORMALS property it takes the occasion to introduce FORMALS
 ; to Paco's world and also to introduce FN-NUMES and CONTROLLER-ALISTS.
 
-                 (list*
-                  (list* sym
-                         'PACO::FORMALS
-                         val)
+                 (let ((def0
+                         (car
+                          (last
+                           (getprop sym 'def-bodies nil
+                                    'current-acl2-world
+                                    (w state))))))
+                   (cond ((and def0
+                               (null (access def-body def0 :hyp))
 
-                  (list* sym
-                         'PACO::BODY
-                         (access def-body
-                                 (car
-                                  (last
-                                   (getprop sym 'def-bodies nil
-                                            'current-acl2-world
-                                            (w state))))
-                                 :concl))
+; If we want to allow other than EQUAL as the :equiv, we will need to think
+; about possible consequences, perhaps restricting the application of :expand
+; hints to suitable contexts.
+
+                               (eq (access def-body def0 :equiv)
+                                   'equal))
+                          (list*
+                           (list* sym
+                                  'PACO::FORMALS
+                                  val)
+
+                           (list* sym
+                                  'PACO::BODY
+                                  (access def-body def0 :concl))
 
 ; If you change the layout of the FN-NUMES value below, change
 ; fn-nume!
 
-                  (list* sym
-                         'PACO::FN-NUMES
-                         (list
-                          (fnume (list :DEFINITION sym) (w state))
-                          (fnume (list :EXECUTABLE-COUNTERPART sym) (w state))
-                          (fnume (list :INDUCTION sym) (w state))))
+                           (list* sym
+                                  'PACO::FN-NUMES
+                                  (list
+                                   (fnume (list :DEFINITION sym) (w state))
+                                   (fnume (list :EXECUTABLE-COUNTERPART sym) (w state))
+                                   (fnume (list :INDUCTION sym) (w state))))
 
 ; We just use the controller-alist for the first def-body of the
 ; function.
 
-                  (list* sym
-                         'PACO::CONTROLLER-ALISTS
-                         (list (access def-body
-                                       (car
-                                        (last
-                                         (getprop sym 'def-bodies nil
-                                                  'current-acl2-world
-                                                  (w state))))
-                                       :controller-alist)))
-                  a))
+                           (list* sym
+                                  'PACO::CONTROLLER-ALISTS
+                                  (list (access def-body def0
+                                                :controller-alist)))
+                           a))
+                         (t a))))
                 ((BODY UNNORMALIZED-BODY RECURSIVEP CONTROLLER-ALISTS
                        PRIMITIVE-RECURSIVE-DEFUNP LEVEL-NO)
 
