@@ -14,6 +14,7 @@
 
 (in-package "ACL2")
 
+(include-book "all-vars-theorems")
 (include-book "applicability-conditions")
 (include-book "auto-termination")
 (include-book "defchoose-queries")
@@ -24,6 +25,7 @@
 (include-book "event-forms")
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
+(include-book "list-set-theorems")
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
@@ -31,15 +33,22 @@
 (include-book "prove-interface")
 (include-book "terms")
 (include-book "testing")
-(include-book "theorems/top")
+(include-book "true-list-listp-theorems")
 (include-book "types")
 (include-book "ubi")
 (include-book "user-interface")
 (include-book "verify-guards-program")
 (include-book "world-queries")
+(include-book "world-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc kestrel-utilities
   :parents (kestrel-books)
   :short "A collection of utilities contributed by Kestrel Institute.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc theorems-about-non-kestrel-books
+  :parents (kestrel-utilities)
+  :short "Some theorems about functions defined outside the Kestrel Books.")
