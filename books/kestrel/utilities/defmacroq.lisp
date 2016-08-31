@@ -19,9 +19,9 @@
  <p>However, for any subsequent call of @('name'), and for each variable
  @('var') introduced by @(tsee macro-args) that is bound to a corresponding
  value @('val') from the call, @('var') is instead bound to @('(quote val)')
- with one exception: if @('val') is a cons whose @('car') is the keyword
- @(':eval'), theen @('var') is bound to the expression @('(cadr val)').  The
- following example shows how this works.</p>
+ with one exception: if @('val') is of the form @('(:eval x)'), then @('var')
+ is bound to the expression @('x').  The following example shows how this
+ works.</p>
 
  @({
  ACL2 !>(defmacroq mac2 (x y)
@@ -48,14 +48,16 @@
  })")
 
 (defun defmacroq-binding (arg)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (symbolp arg)))
   `(,arg (if (and (consp ,arg)
+                  (consp (cdr ,arg))
+                  (null (cddr ,arg))
                   (eq (car ,arg) :eval))
              (cadr ,arg)
            (list 'quote ,arg))))
 
 (defun defmacroq-bindings (args)
-  (declare (xargs :guard (true-listp args)))
+  (declare (xargs :guard (symbol-listp args)))
   (cond ((endp args) nil)
         (t (cons (defmacroq-binding (car args))
                  (defmacroq-bindings (cdr args))))))
