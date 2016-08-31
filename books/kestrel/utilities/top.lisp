@@ -19,6 +19,7 @@
 (include-book "defchoose-queries")
 (include-book "define-sk")
 (include-book "defun-sk-queries")
+(include-book "defmacroq")
 (include-book "directed-untranslate")
 (include-book "event-forms")
 (include-book "fresh-names")
