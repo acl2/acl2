@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-true-list-listp
+(defsection theorems-about-true-list-lists
 
   :parents (theorems-about-non-kestrel-books)
 

@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc theorems-about-world-related-functions
-  :parents (kestrel-utilities)
+  :parents (theorems-about-non-kestrel-books)
   :short "Some theorems about world-related functions
           defined outside the Kestrel Books."
   :long

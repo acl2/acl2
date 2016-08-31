@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc theorems-about-all-vars
-  :parents (kestrel-utilities)
+  :parents (theorems-about-non-kestrel-books)
   :short "Some theorems about @(tsee all-vars)."
   :long
   "<p>
