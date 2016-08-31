@@ -4,6 +4,49 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc defmacroq
+  :parents (macros defmacro)
+  :short "Define a macro that quotes arguments not wrapped in @(':eval')"
+  :long "<p>@('Defmacroq') has the same general form as @('defmacro') (see
+ @(see defmacro)), that is:</p>
+
+ @({
+ (defmacro name macro-args doc-string dcl ... dcl body)
+ })
+
+ <p>However, for any subsequent call of @('name'), and for each variable
+ @('var') introduced by @(tsee macro-args) that is bound to a corresponding
+ value @('val') from the call, @('var') is instead bound to @('(quote val)')
+ with one exception: if @('val') is a cons whose @('car') is the keyword
+ @(':eval'), theen @('var') is bound to the expression @('(cadr val)').  The
+ following example shows how this works.</p>
+
+ @({
+ ACL2 !>(defmacroq mac2 (x y)
+          `(list ,x ,y))
+
+ Summary
+ Form:  ( DEFMACRO MAC2 ...)
+ Rules: NIL
+ Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+  MAC2
+ ACL2 !>:trans1 (mac2 (a b) (:eval (append '(c d) '(e f))))
+  (LIST '(A B) (APPEND '(C D) '(E F)))
+ ACL2 !>(mac2 (a b) (:eval (append '(c d) '(e f))))
+ ((A B) (C D E F))
+ ACL2 !>
+ })
+
+ <p>Thus, if we ignore the role of @(':eval'), the macro definition above is
+ equivalent to the following.</p>
+
+ @({
+ (defmacro mac2 (x y)
+   `(list ',x ',y))
+ })")
+
 (defun defmacroq-binding (arg)
   (declare (xargs :guard t))
   `(,arg (if (and (consp ,arg)
