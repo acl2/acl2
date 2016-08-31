@@ -516,7 +516,7 @@
   (mv-let (is-numbered-name base index)
     (check-numbered-name name wrld)
     (if (and is-numbered-name
-             (eql index 0))
+             (= index 0))
         (make-numbered-name base
                             (max-numbered-name-index-in-use base wrld)
                             wrld)
@@ -567,7 +567,7 @@
   (mv-let (is-numbered-name base index)
     (check-numbered-name name wrld)
     (if is-numbered-name
-        (let ((next-index (if (eql index 0)
+        (let ((next-index (if (= index 0)
                               (next-numbered-name-aux
                                base
                                (1+ (max-numbered-name-index-in-use base wrld))

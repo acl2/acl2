@@ -44,7 +44,7 @@
    whose third element is a pseudo-term.
    </p>"
   (and (true-listp x)
-       (eql (len x) 3)
+       (= (len x) 3)
        (eq (first x) 'lambda)
        (symbol-listp (second x))
        (pseudo-termp (third x))))
@@ -74,8 +74,8 @@
 
 (define apply-term ((fn pseudo-functionp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
-             (eql (len terms)
-                  (len (lambda-formals fn))))
+             (= (len terms)
+                (len (lambda-formals fn))))
   :returns (term "A @(tsee pseudo-termp).")
   :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
           to a list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
@@ -105,7 +105,7 @@
 (define apply-unary-to-terms ((fn (and (pseudo-functionp fn)))
                               (terms pseudo-term-listp))
   :guard (or (symbolp fn)
-             (eql 1 (len (lambda-formals fn))))
+             (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
   :short "Apply @('fn'), as a unary function, to each of @('terms'),
           obtaining a list of corresponding terms."
@@ -209,7 +209,7 @@
    whose free variables are all among the ones in the second element.
    </p>"
   (and (true-listp x)
-       (eql (len x) 3)
+       (= (len x) 3)
        (eq (first x) 'lambda)
        (arglistp (second x))
        (termp (third x) wrld)
@@ -323,7 +323,7 @@
    </p>"
   (b* (((unless (true-listp x))
         (mv (msg "~x0 is not a NIL-terminated list." x) nil))
-       ((unless (eql (len x) 3))
+       ((unless (= (len x) 3))
         (mv (msg "~x0 does not consist of exactly three elements." x) nil))
        ((unless (eq (first x) 'lambda))
         (mv (msg "~x0 does not start with LAMBDA." x) nil))

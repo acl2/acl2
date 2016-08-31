@@ -352,7 +352,7 @@
                         (eq defun/defun-nx 'defun-nx))) (fail))
            (non-executable (eq defun/defun-nx 'defun-nx))
            (body (car (last declares-body)))
-           (pre-matrix (if (eql (len bound-vars) 1)
+           (pre-matrix (if (= (len bound-vars) 1)
                            `(let ((,(car bound-vars) (,witness ,@args))))
                          `(mv-let ,bound-vars (,witness ,@args))))
            ((unless (equal (butlast body 1) pre-matrix)) (fail))
@@ -499,7 +499,7 @@
          (core (if non-executable
                    (car (last body))
                  body)))
-    (if (eql (len bound-vars) 1)
+    (if (= (len bound-vars) 1)
         (case-match core
           (((& & matrix) . &) matrix)
           (& (raise "Unexpected body ~x0 of @(tsee defun-sk) function ~x1."

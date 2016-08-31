@@ -87,7 +87,7 @@
    and the @(tsee defchoose) event consists of five elements only.
    </p>"
   (let ((event (get-event fn wrld)))
-    (if (eql (len event) 5)
+    (if (= (len event) 5)
         nil
       (car (last event)))))
 
@@ -142,7 +142,7 @@
   (b* ((axiom (defchoosep fn wrld))
        (strengthen (defchoose-strengthen fn wrld))
        (bound-vars (defchoose-bound-vars fn wrld))
-       (one-bound-var (eql (len bound-vars) 1)))
+       (one-bound-var (= (len bound-vars) 1)))
     (if strengthen
         (if one-bound-var
             (second (second axiom))

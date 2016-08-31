@@ -294,7 +294,7 @@
 
 (define induction-machine ((fn (and (function-namep fn wrld)
                                     (logicp fn wrld)
-                                    (eql 1 (len (recursivep fn nil wrld)))))
+                                    (= 1 (len (recursivep fn nil wrld)))))
                            (wrld plist-worldp))
   :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
   :verify-guards nil
@@ -357,7 +357,7 @@
 
 (define recursive-calls ((fn (and (function-namep fn wrld)
                                   (logicp fn wrld)
-                                  (eql 1 (len (recursivep fn nil wrld)))))
+                                  (= 1 (len (recursivep fn nil wrld)))))
                          (wrld plist-worldp))
   :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
   :mode :program
