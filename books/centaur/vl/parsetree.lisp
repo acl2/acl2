@@ -167,7 +167,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2016-07-26")
+  "VL Syntax 2016-08-26")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2244,7 +2244,15 @@ their types as @(see vl-typeparam)s.</p>"
    :short "Representation for implicitly specified value parameter types."
    ((range   vl-maybe-range-p    "The range for this parameter, if provided.")
     (sign    vl-maybe-exprsign-p "The signedness for this parameter, if provided.")
-    (default vl-maybe-expr-p     "The default value for this parameter, if provided.")))
+    (default vl-maybe-expr-p     "The default value for this parameter, if provided."))
+   :long "<p>Note that there are no unpacked dimensions here, even though it is
+   legal to write things like @('parameter [3:0] foo [4:0]'), because we have
+   not seen a case where the above sort of parameter declaration differs from a
+   fully explicitly typed parameter such as @('parameter logic [3:0] foo
+   [4:0]').  It's not entirely clear that this is the right behavior, but at
+   present the parser will create @(see vl-explicitvalueparam)s for any
+   parameters that have unpacked dimensions, as if they had been specified
+   with a @('logic') type.</p>")
 
   (:vl-explicitvalueparam
    :layout :tree

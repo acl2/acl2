@@ -132,6 +132,42 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
 
 ; Value Parameters ------------------------------------------------------------
 
+(define vl-update-paramtype-udims ((udims vl-packeddimensionlist-p)
+                                   (x     vl-paramtype-p))
+  :guard (and (consp udims)
+              (member (vl-paramtype-kind x)
+                      '(:vl-implicitvalueparam :vl-explicitvalueparam)))
+  :returns (new-x vl-paramtype-p)
+  (vl-paramtype-case x
+    :vl-implicitvalueparam
+    ;; Special hack.  We currently believe that there is no difference between
+    ;;
+    ;;    parameter [3:0] foo [1:0] = ...
+    ;;    parameter logic [3:0] foo [1:0] = ...
+    ;;
+    ;; I.e., the presence of unpacked dimensions seems to imply that the
+    ;; parameter has an explicit type.  So: if we started with an implicit
+    ;; parameter and have now encountered some udims, we're going to go ahead
+    ;; and turn it into an explicit parameter right at parse time.
+    (b* ((signedp (cond ((not x.sign) nil)
+                        ((vl-exprsign-equiv x.sign :vl-signed) t)
+                        (t nil)))
+         (pdims (and x.range
+                     (list (vl-range->packeddimension x.range))))
+         (datatype (make-vl-coretype :name :vl-logic
+                                     :pdims pdims
+                                     :signedp signedp
+                                     :udims udims)))
+      (make-vl-explicitvalueparam :type datatype
+                                  :default x.default
+                                  :final-value nil))
+    :vl-explicitvalueparam
+    (change-vl-explicitvalueparam x :type (vl-datatype-update-udims udims x.type))
+    :otherwise
+    (progn$ (impossible)
+            (vl-paramtype-fix x))))
+
+
 (defparser vl-parse-param-assignment (atts localp type)
   ;; Verilog-2005:       param_assignment ::= identifier = mintypmax_expression
   ;; SystemVerilog-2012: param_assignment ::= identifier { unpacked_dimension } [ '=' constant_param_expression ]
@@ -152,33 +188,28 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
           ;; We make this very strict because otherwise it seems that ambiguities
           ;; can arise.
           (return-raw
-           (vl-parse-error (cat "Parameter names that shadow types are not supported: " (vl-idtoken->name id)))))
+           (vl-parse-error (cat "Parameter names that shadow types are not supported: "
+                                (vl-idtoken->name id)))))
 
-        (udims := (vl-parse-0+-unpacked-dimensions))
+        (when (not (eq (vl-loadconfig->edition config) :verilog-2005))
+          (udims := (vl-parse-0+-unpacked-dimensions)))
 
-        (utype := (if udims
-                     (vl-paramtype-case type
-                       :vl-explicitvalueparam
-                       (mv nil
-                           (change-vl-explicitvalueparam type :type (vl-datatype-update-udims udims type.type))
-                           tokstream)
-                       :vl-implicitvalueparam
-                       (vl-parse-error "Implicit-type parameter declarations with unpacked dimensions are not yet supported.")
-                       :otherwise
-                       (vl-parse-error "impossible"))
-                   (mv nil type tokstream)))
-
-        ;; For SystemVerilog-2012, the right hand side is optional but only for non-local parameters.
+        ;; For SystemVerilog-2012, the right hand side is optional but only for
+        ;; non-local parameters.
         (when (and (not (vl-is-token? :vl-equalsign))
                    (not (eq (vl-loadconfig->edition config) :verilog-2005))
                    (not localp))
           ;; Special case: SystemVerilog-2012 with a non-local parameter, so
           ;; we're allowed to not have a default value here.
-          (return (make-vl-paramdecl :loc (vl-token->loc id)
-                                     :name (vl-idtoken->name id)
-                                     :atts atts
-                                     :localp localp
-                                     :type utype)))
+          (return
+           (let ((type (if (atom udims)
+                           type
+                         (vl-update-paramtype-udims udims type))))
+             (make-vl-paramdecl :loc (vl-token->loc id)
+                                :name (vl-idtoken->name id)
+                                :atts atts
+                                :localp localp
+                                :type type))))
 
         ;; Otherwise, a default value has been given or is required.
         (:= (vl-match-token :vl-equalsign))
@@ -190,15 +221,19 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
         ;;   (2) The lone $ is already supported as a kind of base expression
         ;; So this all just collapses down into a mintypmax expression.
         (default := (vl-parse-mintypmax-expression))
-        (return (make-vl-paramdecl
-                 :loc (vl-token->loc id)
-                 :name (vl-idtoken->name id)
-                 :atts atts
-                 :localp localp
-                 :type
-                 (if (eq (vl-paramtype-kind utype) :vl-implicitvalueparam)
-                     (change-vl-implicitvalueparam utype :default default)
-                   (change-vl-explicitvalueparam utype :default default))))))
+        (return
+         (let* ((type (if (eq (vl-paramtype-kind type) :vl-implicitvalueparam)
+                          (change-vl-implicitvalueparam type :default default)
+                        (change-vl-explicitvalueparam type :default default)))
+                (type (if (atom udims)
+                          type
+                        (vl-update-paramtype-udims udims type))))
+           (make-vl-paramdecl :loc (vl-token->loc id)
+                              :name (vl-idtoken->name id)
+                              :atts atts
+                              :localp localp
+                              :type type)))))
+
 
 (defparser vl-parse-list-of-param-assignments (atts localp type)
   ;; list_of_param_assignments ::= param_assignment { ',' param_assignment }

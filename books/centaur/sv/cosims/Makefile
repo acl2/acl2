@@ -92,6 +92,9 @@ FAILING_TEST_TARGETS := \
   fns3/ok \
   bind5/ok \
   float1/ok \
+  paramtypes3/ok \
+  paramtypes4/ok \
+  param3/ok
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))

@@ -234,6 +234,11 @@ param3.v -- named parameter value for a parameter that does not exist
 param4.v -- too many positional parameters
 param5.v -- explicit parameter value given to local parameter
 param6.v -- instantiating parameters with #1,2 instead of #(1,2)
+param7.v -- instantiate array of 3 parameters with 4-element pattern
+param8.v -- instantiate array of 3 parameters with scalar
+param9.v -- default value for parameter array is the wrong size (but never used; some other tools accept, some reject)
+param10.v -- default value for parameter array is a scalar (both reject)
+param11.v -- plain parameter (no signedness, range) with udims (both reject)
 
 port1.v  -- interfaces (locally declared) given to submodule in wrong order (interface connection type error)
 port1b.v -- interfaces (interface ports)  given to submodule in wrong order (interface connection type error)

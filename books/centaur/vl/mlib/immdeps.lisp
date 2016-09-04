@@ -583,20 +583,6 @@ elements.")
 
 (def-vl-immdeps-list vl-gateinstlist vl-gateinst :ctxp nil)
 
-;; (def-vl-immdeps vl-paramtype
-;;   :body
-;;   (vl-paramtype-case x
-;;     (:vl-implicitvalueparam
-;;      (b* ((ans (vl-maybe-range-immdeps x.range ans))
-;;           (ans (vl-maybe-expr-immdeps x.default ans)))
-;;        ans))
-;;     (:vl-explicitvalueparam
-;;      (b* ((ans (vl-datatype-immdeps x.type ans))
-;;           (ans (vl-maybe-expr-immdeps x.default ans)))
-;;        ans))
-;;     (:vl-typeparam
-;;      (vl-maybe-datatype-immdeps x.default ans))))
-
 (def-vl-immdeps vl-paramdecl
   :ctxp nil
   :body
