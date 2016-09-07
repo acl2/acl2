@@ -73,8 +73,10 @@
 (table allp-aliases nil)
 (table allp-aliases 'allp 'all :put) ;all will be registered as a defdata type below.
 
-
-
+; Matt K. addition: Avoid ACL2(p) failure due to override-hints.
+(set-override-hints nil) ; a local event enabling waterfall-parallelism off
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (acl2::non-parallel-book))
 
 ;; NOTE: ALL should not be used in subtype/disjoint relations
 ;; because of a caveat in tau

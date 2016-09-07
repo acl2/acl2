@@ -201,7 +201,7 @@
           "Before changing the status of waterfall-parallelism, either (1) ~
            override hints must be removed from the default-hints-table or (2) ~
            waterfall-parallelism hacks must be enabled.  (1) can be achieved ~
-           by calling ~x0.  (2) can be achived by calling ~x1."
+           by calling ~x0.  (2) can be achieved by calling ~x1."
           '(set-override-hints nil)
           '(set-waterfall-parallelism-hacks-enabled t)))
      (t (value nil)))))
