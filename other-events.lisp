@@ -1255,6 +1255,7 @@
                                   :formals '(state)
                                   :hyp nil
                                   :concl '(ld-skip-proofsp state)
+                                  :equiv 'equal
                                   :rune *fake-rune-for-anonymous-enabled-rule*
                                   :nume 0 ; fake
                                   :recursivep nil
@@ -1275,6 +1276,7 @@
                                        :hyp nil
                                        :concl '(default-defun-mode-from-state
                                                  state)
+                                       :equiv 'equal
                                        :rune
                                        *fake-rune-for-anonymous-enabled-rule*
                                        :nume 0 ; fake
@@ -1295,6 +1297,7 @@
                                             :formals '(str state)
                                             :hyp nil
                                             :concl '(skip-when-logic str state)
+                                            :equiv 'equal
                                             :rune
                                             *fake-rune-for-anonymous-enabled-rule*
                                             :nume 0 ; fake
@@ -1343,6 +1346,7 @@
                                     :formals formals
                                     :hyp nil
                                     :concl (cons name-fn formals)
+                                    :equiv 'equal
                                     :rune
                                     *fake-rune-for-anonymous-enabled-rule*
                                     :nume 0 ; fake
@@ -12157,7 +12161,8 @@
            certification-file))
       (t (with-print-defaults
           ((current-package "ACL2")
-           (print-circle (f-get-global 'print-circle-files state)))
+           (print-circle (f-get-global 'print-circle-files state))
+           (print-readably t))
           (pprogn
            (print-object$ '(in-package "ACL2") ch state)
            (print-object$ (f-get-global 'acl2-version state) ch state)
@@ -14066,7 +14071,8 @@
     (t
      (with-print-defaults
       ((current-package "ACL2")
-       (print-circle (f-get-global 'print-circle-files state)))
+       (print-circle (f-get-global 'print-circle-files state))
+       (print-readably t))
       (pprogn
        (io? event nil state
             (expansion-filename)
@@ -14661,7 +14667,8 @@
          acl2x-file))
     (t (with-print-defaults
         ((current-package "ACL2")
-         (print-circle (f-get-global 'print-circle-files state)))
+         (print-circle (f-get-global 'print-circle-files state))
+         (print-readably t))
         (pprogn
          (io? event nil state
               (acl2x-file)
@@ -14783,7 +14790,8 @@
                     (proofs-co state) state nil))
           (with-print-defaults
            ((current-package "ACL2")
-            (print-circle (f-get-global 'print-circle-files state)))
+            (print-circle (f-get-global 'print-circle-files state))
+            (print-readably t))
            (pprogn
             (print-object$ '(in-package "ACL2") ch state)
             (print-objects
@@ -14856,7 +14864,8 @@
                     ch-to to
                     (with-print-defaults
                      ((current-package "ACL2")
-                      (print-circle (f-get-global 'print-circle-files state)))
+                      (print-circle (f-get-global 'print-circle-files state))
+                      (print-readably t))
                      (cond ((null ch-to)
                             (pprogn
                              (close-input-channel ch-from state)
@@ -22937,12 +22946,12 @@
                  (cons #\1 current-term))
            (standard-co state) state (term-evisc-tuple nil state)))
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
-           (eq (ffn-symb current-term) 'if))
-      (fms "It is only possible to apply ~#0~[rewrite rules to terms~/linear ~
-            rules for triggers~] that are applications of function symbols ~
-            other than IF.  However, the current term is~|~ ~ ~y0.~|"
-           (list (cons #\0 (if (eq caller 'show-rewrites) 0 1))
-                 (cons #\1 current-term))
+           (eq (ffn-symb current-term) 'if)
+           (eq caller 'show-linears))
+      (fms "It is only possible to apply linear rules for triggers that are ~
+            applications of function symbols other than IF.  However, the ~
+            current term is~|~ ~ ~y0.~|"
+           (list (cons #\0 current-term))
            (standard-co state) state (term-evisc-tuple nil state)))
      (t
       (mv-let
@@ -23147,8 +23156,13 @@
                                           state)
   (cond ((and (nvariablep term)
               (not (fquotep term))
-              (not (flambdap (ffn-symb term)))
-              (not (eq (ffn-symb term) 'if)))
+              (not (flambdap (ffn-symb term))))
+
+; We could also rule out a function symbol of IF, but then we will get the
+; message in the other case (see "(other than IF)" below) even with calls of
+; :pl and :pl2 intended to show rewrite rules hung on IF.  So we just silently
+; fail to show any type-prescription rules in the case of IF.
+
          (let ((wrld (w state)))
            (mv-let
             (flg hyps-type-alist ttree)
@@ -23190,19 +23204,16 @@
           (flg term1)
           (cond ((or (variablep term)
                      (fquotep term)
-                     (flambdap (ffn-symb term))
-                     (eq (ffn-symb term) 'if))
+                     (flambdap (ffn-symb term)))
                  (mv t (remove-guard-holders term)))
                 (t (mv nil term)))
           (cond ((or (variablep term1)
                      (fquotep term1)
-                     (flambdap (ffn-symb term1))
-                     (eq (ffn-symb term1) 'if))
+                     (flambdap (ffn-symb term1)))
                  (er soft caller
                      "~@0 must represent a term that is not a variable or a ~
-                      constant, which is not a LET (or LAMBDA application), ~
-                      and whose function symbol is not IF.  But ~x1 does not ~
-                      meet this requirement."
+                      constant, which is not a LET (or LAMBDA application).  ~
+                      But ~x1 does not meet this requirement."
                      (case caller
                        (pl (msg "A non-symbol argument of ~x0" caller))
                        (pl2 (msg "The first argument of ~x0" caller))

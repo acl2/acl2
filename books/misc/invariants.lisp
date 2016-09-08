@@ -48,8 +48,6 @@
   ;; normalized or non-normalized body based on what the user typed for the
   ;; :normalize xarg.  The use of "last" skips past any other :definition rules
   ;; that have been added since then.
-  ;; !! If latest-def is t, we should perhaps cause an error if the :hyps field
-  ;; is non-nil.
   (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
          (body (if latest-def
                    (car bodies)
@@ -58,7 +56,13 @@
         (er hard 'get-body
             "Attempt to call get-body on a body with a non-nil hypothesis, ~x0"
             (access def-body body :hyp))
-      (access def-body body :concl))))
+      (if (not (eq (access def-body body :equiv)
+                   'equal))
+          (er hard 'get-body
+              "Attempt to call get-body for an equivalence relation other ~
+               than equal, ~x0"
+              (access def-body body :equiv))
+        (access def-body body :concl)))))
 
 
 (defun inv-build-lemma-from-context (concl hyps context)

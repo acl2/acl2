@@ -1,0 +1,9 @@
+#! /bin/sh
+
+echo "ACL2 Certification Beginning."
+( cat certify.lsp | acl2 ) > certify.out
+echo "ACL2 Certification Complete"
+
+echo "RAT Checker Executable Beginning."
+( cat save-exec.lsp | acl2 ) > save-exec.out
+echo "RAT Checker Executable Complete."

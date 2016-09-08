@@ -1555,10 +1555,10 @@
 
 ; This is a list of def-body records:
 ; (defrec def-body
-;  ((nume hyp . concl) . (recursivep formals rune . controller-alist))
+;  ((nume hyp . concl) equiv . (recursivep formals rune . controller-alist))
 ;  t)
 
-; meaning (implies hyp (EQUAL (sym . formals) concl)), with recursivep listing
+; meaning (implies hyp (equiv (sym . formals) concl)), with recursivep listing
 ; the fns in the clique and controll-alist being the map from fn symbols to
 ; controller masks.  Rune and nume justify it.
 
@@ -1578,11 +1578,13 @@
 
 (defun pseudo-def-bodyp (x)
   (case-match x
-    (((nume hyp . concl) . (recursivep formals rune . controller-alist))
+    (((nume hyp . concl) equiv . (recursivep formals rune . controller-alist))
      (and (pseudo-numep nume)
           (or (null hyp)                ; means there is no hyp
               (pseudo-termp hyp))
           (pseudo-termp concl)
+          (and (symbolp equiv)
+               equiv) ; equality is represented by equal, not nil
           (pseudo-function-symbol-listp recursivep nil)
           (pseudo-arglistp formals)
           (pseudo-runep rune)
@@ -2701,10 +2703,10 @@
                            ABSOLUTE-EVENT-NUMBER
                            UNNORMALIZED-BODY
 
-; The following property is set by primordial-event-macro-and-fn for ;
-; ld-skip-proofsp and default-defun-mode-from-state.  (def-bodies is also set ;
-; for other primitives, like skip-when-logic and include-book-fn, but they ;
-; remain in :program mode and so the setting isn't shadowed out) ;
+; The following property is set by primordial-event-macro-and-fn for
+; ld-skip-proofsp and default-defun-mode-from-state.  (Def-bodies is also set
+; for other primitives, like skip-when-logic and include-book-fn, but they
+; remain in :program mode and so the setting isn't shadowed out.)
 
                            DEF-BODIES
 

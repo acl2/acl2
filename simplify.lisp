@@ -7595,7 +7595,7 @@
                            (cons :constants
                                  (controller-unify-subst name term def-body))
                            :rune (access def-body def-body :rune)
-                           :equiv 'equal
+                           :equiv (access def-body def-body :equiv)
                            :hyp (access def-body def-body :hyp)
                            :lhs (cons-term name formals)
                            :rhs (access def-body def-body :concl))

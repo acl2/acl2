@@ -6718,6 +6718,11 @@
                                                   install-body
                                                   install-body-supplied-p
                                                   ctx state)
+
+; This function should be called even during include-book, since we check for
+; an equivalence relation that might not be a known equivalence relation during
+; the first pass of certification or encapsulate.
+
   (let ((install-body (if install-body-supplied-p
                           install-body
                         :NORMALIZE))
@@ -6757,12 +6762,11 @@
           er-preamble
           args
           install-body-msg))
-     ((not (eq equiv 'equal))
+     ((not (equivalence-relationp equiv (w state)))
       (er soft ctx
-          "~@0 the equivalence relation on the left-hand side of the rule ~
-           must be ~x1, unlike ~x2.~@3  See :DOC definition."
+          "~@0 the function symbol at the top of the conclusion must be an ~
+           equivalence relation, unlike ~x1.~@2  See :DOC definition."
           er-preamble
-          'equal
           equiv
           install-body-msg))
      ((free-varsp-member-lst hyps args)

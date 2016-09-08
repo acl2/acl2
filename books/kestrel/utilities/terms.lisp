@@ -18,10 +18,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "all-vars-theorems")
+(include-book "world-queries")
+(include-book "world-theorems")
 (include-book "std/util/defines" :dir :system)
-(include-book "theorems/all-vars")
-(include-book "theorems/world")
 
 (local (set-default-parents term-utilities))
 
@@ -44,7 +44,7 @@
    whose third element is a pseudo-term.
    </p>"
   (and (true-listp x)
-       (eql (len x) 3)
+       (= (len x) 3)
        (eq (first x) 'lambda)
        (symbol-listp (second x))
        (pseudo-termp (third x))))
@@ -74,9 +74,9 @@
 
 (define apply-term ((fn pseudo-functionp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
-             (eql (len terms)
-                  (len (lambda-formals fn))))
-  ;; :returns (term pseudo-termp)
+             (= (len terms)
+                (len (lambda-formals fn))))
+  :returns (term "A @(tsee pseudo-termp).")
   :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
           to a list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
           obtaining a pseudo-term."
@@ -105,8 +105,8 @@
 (define apply-unary-to-terms ((fn (and (pseudo-functionp fn)))
                               (terms pseudo-term-listp))
   :guard (or (symbolp fn)
-             (eql 1 (len (lambda-formals fn))))
-  ;; :returns (applied-terms pseudo-term-listp)
+             (= 1 (len (lambda-formals fn))))
+  :returns (applied-terms "A @(tsee pseudo-term-listp).")
   :short "Apply @('fn'), as a unary function, to each of @('terms'),
           obtaining a list of corresponding terms."
   (if (endp terms)
@@ -123,12 +123,12 @@
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (defines term/terms-no-stobjs-p
-  :prepwork ((program))
+  :mode :program
   :short "True iff term/terms has/have no stobjs."
   :flag nil
 
   (define term-no-stobjs-p ((term pseudo-termp) (wrld plist-worldp))
-    :returns (yes/no booleanp)
+    :returns (yes/no "A @(tsee booleanp).")
     :parents (term/terms-no-stobjs-p)
     :short "True iff the term has no stobjs,
             i.e. all its functions have no stobjs."
@@ -149,7 +149,7 @@
                  (term-no-stobjs-p (lambda-body fn) wrld))))))
 
   (define terms-no-stobjs-p ((terms pseudo-term-listp) (wrld plist-worldp))
-    :returns (yes/no booleanp)
+    :returns (yes/no "A @(tsee booleanp).")
     :parents (term/terms-no-stobjs-p)
     :short "True iff all the terms have no stobjs."
     (or (endp terms)
@@ -158,8 +158,8 @@
 
 (define lambda-no-stobjs-p
   ((lambd pseudo-lambdap) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :prepwork ((program))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :short "True iff the lambda expression has no stobjs,
           i.e. its body has no stobjs."
   (term-no-stobjs-p (lambda-body lambd) wrld))
@@ -209,7 +209,7 @@
    whose free variables are all among the ones in the second element.
    </p>"
   (and (true-listp x)
-       (eql (len x) 3)
+       (= (len x) 3)
        (eq (first x) 'lambda)
        (arglistp (second x))
        (termp (third x) wrld)
@@ -225,10 +225,10 @@
   :guard-hints (("Goal" :in-theory (enable lambdap))))
 
 (define check-user-term (x (wrld plist-worldp))
-  :returns (mv (term/message (or (pseudo-termp term/message)
-                                 (msgp term/message)))
-               (stobjs-out symbol-listp))
-  :prepwork ((program))
+  :returns (mv (term/message "A @(tsee pseudo-termp) or @('msgp')
+                              (see @(tsee msg)).")
+               (stobjs-out "A @(tsee symbol-listp)."))
+  :mode :program
   :short "Check whether @('x') is an untranslated term
           that is valid for evaluation."
   :long
@@ -292,10 +292,10 @@
       (mv term/message nil))))
 
 (define check-user-lambda (x (wrld plist-worldp))
-  :returns (mv (lambd/message (or (pseudo-lambdap lambd/message)
-                                  (msgp lambd/message)))
-               (stobjs-out symbol-listp))
-  :prepwork ((program))
+  :returns (mv (lambd/message  "A @(tsee pseudo-termp) or @('msgp')
+                                (see @(tsee msg)).")
+               (stobjs-out "A @(tsee symbol-listp)."))
+  :mode :program
   :short "Check whether @('x') is
           an untranslated lambda expression that is valid for evaluation."
   :long
@@ -323,7 +323,7 @@
    </p>"
   (b* (((unless (true-listp x))
         (mv (msg "~x0 is not a NIL-terminated list." x) nil))
-       ((unless (eql (len x) 3))
+       ((unless (= (len x) 3))
         (mv (msg "~x0 does not consist of exactly three elements." x) nil))
        ((unless (eq (first x) 'lambda))
         (mv (msg "~x0 does not start with LAMBDA." x) nil))
@@ -335,8 +335,8 @@
     (mv `(lambda ,(second x) ,term/message) stobjs-out)))
 
 (define trans-macro ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (term pseudo-termp)
-  :prepwork ((program))
+  :returns (term "A @(tsee pseudo-termp).")
+  :mode :program
   :short "Translated term that a call to the macro translates to."
   :long
   "<p>
@@ -366,8 +366,8 @@
     term))
 
 (define term-guard-obligation ((term pseudo-termp) state)
-  :returns (obligation pseudo-termp)
-  :prepwork ((program))
+  :returns (obligation "A @(tsee pseudo-termp).")
+  :mode :program
   :short "Formula expressing the guard obligation of the term."
   :long
   "<p>

@@ -179,21 +179,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (eql (number-of-results 'cons (w state))
-                   1))
+(assert-event (= (number-of-results 'cons (w state))
+                 1))
 
-(assert-event (eql (number-of-results 'len (w state))
-                   1))
+(assert-event (= (number-of-results 'len (w state))
+                 1))
 
 (must-succeed*
  (defun f (x) (mv x (list x)))
- (assert-event (eql (number-of-results 'f (w state))
-                    2)))
+ (assert-event (= (number-of-results 'f (w state))
+                  2)))
 
 (must-succeed*
  (defun f (x) (mv x (list x) (list x x)))
- (assert-event (eql (number-of-results 'f (w state))
-                    3)))
+ (assert-event (= (number-of-results 'f (w state))
+                  3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +378,7 @@
 
 (assert-event (let ((im (induction-machine 'len (w state))))
                 (and (pseudo-induction-machinep 'len im)
-                     (eql (len im) 2)
+                     (= (len im) 2)
                      (let ((im1 (first im)))
                        (and (equal (access tests-and-calls im1 :tests)
                                    '((consp x)))
@@ -394,13 +394,13 @@
  (defun fib (n)
    (if (zp n)
        1
-     (if (eql n 1)
+     (if (= n 1)
          1
        (+ (fib (- n 1))
           (fib (- n 2))))))
  (assert-event (let ((im (induction-machine 'fib (w state))))
                  (and (pseudo-induction-machinep 'fib im)
-                      (eql (len im) 3)
+                      (= (len im) 3)
                       (let ((im1 (first im)))
                         (and (equal (access tests-and-calls im1 :tests)
                                     '((zp n)))
@@ -409,13 +409,13 @@
                       (let ((im2 (second im)))
                         (and (equal (access tests-and-calls im2 :tests)
                                     '((not (zp n))
-                                      (eql n '1)))
+                                      (= n '1)))
                              (equal (access tests-and-calls im2 :calls)
                                     nil)))
                       (let ((im3 (third im)))
                         (and (equal (access tests-and-calls im3 :tests)
                                     '((not (zp n))
-                                      (not (eql n '1))))
+                                      (not (= n '1))))
                              (equal (access tests-and-calls im3 :calls)
                                     '((fib (binary-+ '-1 n))
                                       (fib (binary-+ '-2 n))))))))))
@@ -460,7 +460,7 @@
 
 (assert-event (let ((rc (recursive-calls 'len (w state))))
                 (and (pseudo-tests-and-call-listp rc)
-                     (eql (len rc) 1)
+                     (= (len rc) 1)
                      (let ((rc1 (first rc)))
                        (and  (equal (access tests-and-call rc1 :tests)
                                     '((consp x)))
@@ -471,23 +471,23 @@
  (defun fib (n)
    (if (zp n)
        1
-     (if (eql n 1)
+     (if (= n 1)
          1
        (+ (fib (- n 1))
           (fib (- n 2))))))
  (assert-event (let ((rc (recursive-calls 'fib (w state))))
                  (and (pseudo-tests-and-call-listp rc)
-                      (eql (len rc) 2)
+                      (= (len rc) 2)
                       (let ((rc1 (first rc)))
                         (and (equal (access tests-and-call rc1 :tests)
                                     '((not (zp n))
-                                      (not (eql n '1))))
+                                      (not (= n '1))))
                              (equal (access tests-and-call rc1 :call)
                                     '(fib (binary-+ '-1 n)))))
                       (let ((rc2 (second rc)))
                         (and (equal (access tests-and-call rc2 :tests)
                                     '((not (zp n))
-                                      (not (eql n '1))))
+                                      (not (= n '1))))
                              (equal (access tests-and-call rc2 :call)
                                     '(fib (binary-+ '-2 n)))))))))
 

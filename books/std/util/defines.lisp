@@ -104,7 +104,7 @@ inductive theorems about your new definitions.</li>
         (append (my-flatten-term (car x))
                 (my-flatten-term-list (cdr x)))))
     ///
-    (defthm-my-flatten-term-flag
+    (defthm-flattening-flag
       (defthm nat-listp-of-my-flatten-term
         (implies (my-termp x)
                  (nat-listp (my-flatten-term x)))
@@ -1033,6 +1033,3 @@ lemma for the overall mutually recursive proof, and doesn't export it.</p>
 (defmacro defret-mutual (name &rest args)
   `(make-event
     (defret-mutual-fn ',name ',args (w state))))
-                              
-       
-        

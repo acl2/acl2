@@ -336,6 +336,7 @@
 ;;   (if (not rule)
 ;;       (b* ((def (def-body fn w))
 ;;            ((unless (and def (not (access def-body def :hyp))))
+;; ; Matt K. note: With new :equiv field, maybe also need (eq 'equal (access def-body def :equiv)).
 ;;             (er hard? 'just-expand-cp "couldn't find a hyp-free definition for ~x0"
 ;;                 fn)
 ;;             nil))

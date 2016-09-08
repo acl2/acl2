@@ -20,7 +20,7 @@
 
 (defsection theorems-about-sets-represented-as-lists
 
-  :parents (miscellaneous-theorems)
+  :parents (theorems-about-non-kestrel-books)
 
   :short "Some theorems about sets represented as lists."
 

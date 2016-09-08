@@ -20,12 +20,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-true-list-listp
+(defsection theorems-about-true-list-lists
 
-  :parents (miscellaneous-theorems true-list-listp)
+  :parents (theorems-about-non-kestrel-books)
 
-  :short
-  "Some theorems about @('nil')-terminated lists of @('nil')-terminated lists."
+  :short "Some theorems about
+          @('nil')-terminated lists of @('nil')-terminated lists."
 
   (std::deflist true-list-listp (x)
     (true-listp x)

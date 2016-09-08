@@ -100,10 +100,13 @@
     NEAR-MISSES ; should add to *acl2-exports*
     NON-LINEAR-ARITHMETIC
     NORMALIZE
+    POS-LISTP ; should add to *acl2-exports*
     PROOF-BUILDER
+    PSEUDO-TERM-LISTP ; should add to *acl2-exports*
     REDEFINED-NAMES
     REMOVE-DIVE-INTO-MACRO
     REWRITE
+    SET-SERIALIZE-CHARACTER-SYSTEM ; probably should add to *acl2-exports*
     TYPE-SET
     WATERFALL
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they

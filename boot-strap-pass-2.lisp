@@ -1526,13 +1526,19 @@
   (cond ((endp fns-alist) acc)
         (t (system-verify-guards-fn-1
             (cdr fns-alist)
-            (cons `(skip-proofs (verify-termination-boot-strap ; and guards
-                                 ,(caar fns-alist)
-                                 ,@(let ((measure (cdar fns-alist)))
-                                     (and measure
-                                          `((declare (xargs :measure
-                                                            ,measure)))))))
-                  acc)))))
+            (list* `(skip-proofs (verify-termination-boot-strap
+                                  ,(caar fns-alist)
+                                  ,@(let ((measure (cdar fns-alist)))
+                                      (and measure
+                                           `((declare (xargs :measure
+                                                             ,measure)))))))
+
+; Normally the following verify-guards will be redundant.  However, if the
+; original defun specified xargs :verify-guards nil, then this will be
+; necessary.  (An example as of this writing is remove-lambdas.)
+
+                   `(skip-proofs (verify-guards ,(caar fns-alist)))
+                   acc)))))
 
 (defun cons-absolute-event-numbers (fns-alist wrld acc)
   (declare (xargs :guard (and (symbol-alistp fns-alist)
