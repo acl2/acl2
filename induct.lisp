@@ -2573,8 +2573,10 @@
                                       :tests-and-alists-lst))
                              (let*-abstractionp state)
                              wrld))
-                  (cons #\g (access candidate winning-candidate
-                                    :xinduction-term))
+                  (cons #\g (untranslate (access candidate winning-candidate
+                                                 :xinduction-term)
+                                         nil
+                                         wrld))
                   (cons #\h (if (access candidate winning-candidate :xancestry)
                                 1 0))
                   (cons #\i (tilde-*-untranslate-lst-phrase

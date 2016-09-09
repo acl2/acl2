@@ -890,8 +890,8 @@ so execution differences don't matter.</p>")
            ,@(and skolem-name  `(:skolem-name ,skolem-name))
            ,@(and thm-name     `(:thm-name ,thm-name))
            #+non-standard-analysis
-           (and (assoc :classicalp kwd-alist)
-                `(:classicalp ,(cdr (assoc :classicalp kwd-alist))))))
+           ,@(and (assoc :classicalp kwd-alist)
+                  `(:classicalp ,(cdr (assoc :classicalp kwd-alist))))))
        (guts (make-define-sk-guts :name name
                                   :name-fn name-fn
                                   :raw-formals raw-formals
