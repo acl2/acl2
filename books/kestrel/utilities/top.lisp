@@ -18,6 +18,7 @@
 (include-book "all-vars-theorems")
 (include-book "applicability-conditions")
 (include-book "auto-termination")
+(include-book "copy-def")
 (include-book "defchoose-queries")
 (include-book "define-sk")
 (include-book "defmacroq")
