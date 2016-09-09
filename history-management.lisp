@@ -8940,7 +8940,7 @@
                  (let ((formals (access def-body def-body :formals)))
                    (mv nil
                        (access def-body def-body :rune)
-                       'equal
+                       (access def-body def-body :equiv)
                        (access def-body def-body :hyp)
                        (cons-term (ffn-symb term) formals)
                        (access def-body def-body :concl))))

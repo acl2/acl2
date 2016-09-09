@@ -158,6 +158,10 @@ some value.")
 
 ;; ======================================================================
 
+; Matt K. addition: Avoid ACL2(p) failure due to logbitp-reasoning.
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (acl2::non-parallel-book))
+
 (defsection part-select-and-part-install
   :parents (bitops/part-install bitops/part-select)
   :short "Interactions between @('part-select') and @('part-install')"

@@ -114,6 +114,10 @@
 ;; part-selects/installs.  These will be enabled only for the guards for these
 ;; functions.
 
+; Matt K. addition: Avoid ACL2(p) failure due to logbitp-reasoning.
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (acl2::non-parallel-book))
+
 (defthmd part-select-is-logbit
   (equal (part-select x :width 1 :low n)
          (logbit n x))

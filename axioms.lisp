@@ -16250,32 +16250,62 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   :guard (state-p state)))
   (global-val 'hons-enabled (w state)))
 
+(defun set-serialize-character-fn (c system-p state)
+  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+                  :guard (and (state-p state)
+                              (or (null c)
+                                  (and (hons-enabledp state)
+                                       (member c '(#\Y #\Z)))))))
+  (let ((caller (if system-p
+                    'serialize-character-system
+                  'serialize-character)))
+    (cond
+     ((or (null c)
+          (and (hons-enabledp state)
+               (member c '(#\Y #\Z))))
+      (if system-p
+          (f-put-global 'serialize-character-system c state)
+        (f-put-global 'serialize-character c state)))
+     (t ; presumably guard-checking is off
+      (prog2$
+       (cond ((not (hons-enabledp state)) ; and note that c is not nil
+              (er hard caller
+                  "It is currently only legal to call ~x0 with a non-nil ~
+                   first argument in a hons-enabled version of ACL2.  If this ~
+                   presents a problem, feel free to contact the ACL2 ~
+                   implementors."
+                  caller))
+             (t
+              (er hard caller
+                  "The first argument of a call of ~x0 must be ~v1.  The ~
+                   argument ~x2 is thus illegal."
+                  caller '(nil #\Y #\Z) c)))
+       state)))))
+
 (defun set-serialize-character (c state)
   (declare (xargs :verify-guards nil ; wait for hons-enabledp
                   :guard (and (state-p state)
                               (or (null c)
                                   (and (hons-enabledp state)
                                        (member c '(#\Y #\Z)))))))
-  (cond
-   ((or (null c)
-        (and (hons-enabledp state)
-             (member c '(#\Y #\Z))))
-    (f-put-global 'serialize-character c state))
-   (t ; presumably guard-checking is off
-    (prog2$
-     (cond ((not (hons-enabledp state)) ; and note that c is not nil
-            (er hard 'set-serialize-character
-                "It is currently only legal to call ~x0 with a non-nil first ~
-                 argument in a hons-enabled version of ACL2.  If this ~
-                 presents a problem, feel free to contact the ACL2 ~
-                 implementors."
-                'set-serialize-character))
-           (t
-            (er hard 'set-serialize-character
-                "The first argument of a call of ~x0 must be ~v1.  The ~
-                 argument ~x2 is thus illegal."
-                'set-serialize-character '(nil #\Y #\Z) c)))
-     state))))
+  (set-serialize-character-fn c nil state))
+
+(defun set-serialize-character-system (c state)
+
+; By putting the form (set-serialize-character-system nil state) into one's
+; acl2-customization file, one can make .cert files and .port files (among
+; others) human-readable.  For example:
+
+; cd books ; \
+; make basic \
+; ACL2_CUSTOMIZATION=`pwd`/../acl2-customization-files/no-serialize.lisp
+
+  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+                  :guard (and (state-p state)
+                              (or (null c)
+                                  (and (hons-enabledp state)
+                                       (member c '(#\Y #\Z)))))))
+  (set-serialize-character-fn c t state))
 
 (defun print-object$-ser (x serialize-character channel state-state)
 
@@ -18276,7 +18306,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (verify-guards w)
 (verify-guards hons-enabledp)
+(verify-guards set-serialize-character-fn)
 (verify-guards set-serialize-character)
+(verify-guards set-serialize-character-system)
 
 (defun mswindows-drive1 (filename)
   (declare (xargs :mode :program))
@@ -25651,7 +25683,7 @@ Lisp definition."
 ; Lisp.
 
     (eval ; using eval because the certify-book-info record is not yet defined
-     '(format *standard-output*
+     '(format *debug-io*
               "~%; Book under certification: ~s~%"
               (access certify-book-info
                       (f-get-global 'certify-book-info *the-live-state*)
@@ -25679,13 +25711,13 @@ Lisp definition."
                            :count t :all t)))
   #+sbcl
   (cond ((fboundp 'sb-debug::print-backtrace)
-         (eval '(sb-debug::print-backtrace :stream *standard-output*)))
+         (eval '(sb-debug::print-backtrace :stream *debug-io*)))
         ((fboundp 'sb-debug::backtrace)
-         (eval '(sb-debug::backtrace nil *standard-output*))))
+         (eval '(sb-debug::backtrace nil *debug-io*))))
   #+cmucl
   (when (fboundp 'debug::backtrace)
     (eval '(debug::backtrace 1000 ; default for sbcl
-                             *standard-output*)))
+                             *debug-io*)))
   #+clisp
   (when (fboundp 'system::print-backtrace)
     (eval '(catch 'system::debug

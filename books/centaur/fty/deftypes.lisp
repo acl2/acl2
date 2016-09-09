@@ -542,6 +542,47 @@
           (mv t rune)
         (find-fix-when-pred-thm-aux fix pred (cdr fix-rules))))))
 
+(defun find-fix-when-unsigned-byte-p-pred-thm-aux (fix pred size fix-rules)
+  (if (atom fix-rules)
+      (let ((body `(implies (acl2::unsigned-byte-p (acl2::quote ,size) x)
+                            (equal (,fix x) x))))
+        (mv nil `(local (make-event
+                         '(:or (defthm ,(intern-in-package-of-symbol
+                                         (cat "TMP-DEFTYPES-" (symbol-name fix) "-WHEN-" (symbol-name pred))
+                                         'fty)
+                                 ,body)
+                           (value-triple
+                            (er hard? 'deftypes
+                                "To use ~x0/~x1 as a fixing function/predicate, we must ~
+                       be able to prove the following: ~x2.  But this proof ~
+                       failed! Please try to prove this rule yourself."
+                                ',fix ',pred ',body)))))))
+    (let ((rune (b* ((rule (car fix-rules))
+                     (subclass (acl2::access acl2::rewrite-rule rule :subclass))
+                     ((unless (eq subclass 'acl2::backchain)) nil)
+                     (lhs (acl2::access acl2::rewrite-rule rule :lhs))
+                     ((unless (symbolp (cadr lhs))) nil)
+                     (var (cadr lhs))
+                     (rhs (acl2::access acl2::rewrite-rule rule :rhs))
+                     ((unless (eq rhs var)) nil)
+                     (hyps (acl2::access acl2::rewrite-rule rule :hyps))
+                     ((unless (and (consp hyps)
+                                   (not (cdr hyps))
+                                   (consp (car hyps))
+                                   (eq 'acl2::unsigned-byte-p (caar hyps))
+                                   (consp (cadar hyps))
+                                   (equal 'acl2::quote (car (cadar hyps)))
+                                   (eq size (cadr (cadar hyps)))
+                                   (eq var (caddr (car hyps)))))
+                      nil)
+                     (equiv (acl2::access acl2::rewrite-rule rule :equiv))
+                     ((unless (eq equiv 'equal)) nil)
+                     ((unless (eq (acl2::access acl2::rewrite-rule rule :backchain-limit-lst) nil)) nil))
+                  (acl2::access acl2::rewrite-rule rule :rune))))
+      (if rune
+          (mv t rune)
+        (find-fix-when-unsigned-byte-p-pred-thm-aux fix pred size (cdr fix-rules))))))
+
 (defun find-pred-of-fix-thm-aux (fix pred pred-rules)
   (if (atom pred-rules)
       (let ((body `(,pred (,fix x))))
@@ -577,6 +618,45 @@
           (mv t rune)
         (find-pred-of-fix-thm-aux fix pred (cdr pred-rules))))))
 
+(defun find-unsigned-byte-p-pred-of-fix-thm-aux (fix pred size pred-rules)
+  (if (atom pred-rules)
+      (let ((body `(acl2::unsigned-byte-p (acl2::quote ,size) (,fix x))))
+        (mv nil
+            `(local (make-event
+                     '(:or (defthm ,(intern-in-package-of-symbol
+                                     (cat "TMP-DEFTYPES-" (symbol-name PRED) "-OF-" (symbol-name fix))
+                                     'fty)
+                             ,body)
+                       (value-triple
+                        (er hard? 'deftypes
+                            "To use ~x0/~x1 as a fixing function/predicate, we must ~
+                       be able to prove the following: ~x2.  But this proof ~
+                       failed! Please try to prove this rule yourself."
+                            ',fix ',pred ',body)))))))
+    (let ((rune (b* ((rule (car pred-rules))
+                     (subclass (acl2::access acl2::rewrite-rule rule :subclass))
+                     ((unless (eq subclass 'acl2::abbreviation)) nil)
+                     (lhs (acl2::access acl2::rewrite-rule rule :lhs))
+                     ((unless (and (eq 'acl2::unsigned-byte-p (car lhs))
+                                   (consp (cadr lhs))
+                                   (eq (car (cadr lhs)) 'acl2::quote)
+                                   (eq size (cadr (cadr lhs)))
+                                   (consp (caddr lhs))
+                                   (eq fix (car (caddr lhs)))
+                                   (symbolp (cadr (caddr lhs)))))
+                      nil)
+                     (rhs (acl2::access acl2::rewrite-rule rule :rhs))
+                     ((unless (equal rhs ''t)) nil)
+                     (hyps (acl2::access acl2::rewrite-rule rule :hyps))
+                     ((unless (atom hyps))
+                      nil)
+                     (equiv (acl2::access acl2::rewrite-rule rule :equiv))
+                     ((unless (member equiv '(equal iff))) nil))
+                  (acl2::access acl2::rewrite-rule rule :rune))))
+      (if rune
+          (mv t rune)
+        (find-unsigned-byte-p-pred-of-fix-thm-aux fix pred size (cdr pred-rules))))))
+
 (defun flextypes-collect-fix/pred-pairs-aux (types)
   (if (atom types)
       nil
@@ -596,7 +676,31 @@
          (fix (acl2::deref-macro-name fix (acl2::macro-aliases world)))
          (pred (acl2::deref-macro-name pred (acl2::macro-aliases world)))
          (fix-exists (not (eq :none (getprop fix 'acl2::formals :none 'acl2::current-acl2-world world))))
-         (pred-exists (not (eq :none (getprop pred 'acl2::formals :none 'acl2::current-acl2-world world))))
+         (pred-macro-args (getprop pred 'acl2::macro-args :none 'acl2::current-acl2-world world))
+         (pred-macro-body (getprop pred 'acl2::macro-body nil 'acl2::current-acl2-world world))
+         (unsigned-byte-p-pred-exists
+          (and (not (eq :none pred-macro-args))
+               (equal (car pred-macro-body) 'acl2::cons)
+               (equal (cadr pred-macro-body) '(acl2::quote acl2::unsigned-byte-p))
+               (consp (caddr pred-macro-body))
+               (equal (car (caddr pred-macro-body)) 'acl2::cons)
+               (consp (cadr (caddr pred-macro-body)))
+               (equal (caadr (caddr pred-macro-body)) 'acl2::quote)
+               (consp (cdadr (caddr pred-macro-body)))
+               (natp (cadadr (caddr pred-macro-body)))
+               (not (cddadr (caddr pred-macro-body)))
+               (consp (caddr (caddr pred-macro-body)))
+               (equal (car (caddr (caddr pred-macro-body))) 'acl2::cons)
+               (consp (cdr (caddr (caddr pred-macro-body))))
+               (equal (cadr (caddr (caddr pred-macro-body))) (car pred-macro-args))
+               (consp (cddr (caddr (caddr pred-macro-body))))
+               (equal (caddr (caddr (caddr pred-macro-body))) '(acl2::quote nil))
+               (not (cdddr (caddr (caddr pred-macro-body))))
+               (not (cdddr (caddr pred-macro-body)))
+               (not (cdddr pred-macro-body))
+          ))
+         (pred-exists (or unsigned-byte-p-pred-exists
+                          (not (eq :none (getprop pred 'acl2::formals :none 'acl2::current-acl2-world world)))))
          ((unless (and fix-exists pred-exists))
           ;; These pairs include types that we are about to define, so if the
           ;; function isn't yet defined, don't complain.  But if one is defined
@@ -606,9 +710,18 @@
                    (if fix-exists fix pred) (if fix-exists pred fix)))
           (collect-fix/pred-enable-rules (cdr pairs) world))
          (fix-rules (getprop fix 'acl2::lemmas nil 'acl2::current-acl2-world world))
-         (pred-rules (getprop pred 'acl2::lemmas nil 'acl2::current-acl2-world world))
-         ((mv fix-rule-exists fix-rule) (find-fix-when-pred-thm-aux fix pred fix-rules))
-         ((mv pred-rule-exists pred-rule) (find-pred-of-fix-thm-aux fix pred pred-rules))
+         (pred-rules (getprop (if unsigned-byte-p-pred-exists
+                                  'acl2::unsigned-byte-p
+                                pred)
+                              'acl2::lemmas nil 'acl2::current-acl2-world world))
+         ((mv fix-rule-exists fix-rule)
+          (if unsigned-byte-p-pred-exists
+              (find-fix-when-unsigned-byte-p-pred-thm-aux fix pred (cadadr (caddr pred-macro-body)) fix-rules)
+              (find-fix-when-pred-thm-aux fix pred fix-rules)))
+         ((mv pred-rule-exists pred-rule)
+          (if unsigned-byte-p-pred-exists
+              (find-unsigned-byte-p-pred-of-fix-thm-aux fix pred (cadadr (caddr pred-macro-body)) pred-rules)
+            (find-pred-of-fix-thm-aux fix pred pred-rules)))
          ((mv enables thms)
           (collect-fix/pred-enable-rules (cdr pairs) world))
          ((mv enables thms)

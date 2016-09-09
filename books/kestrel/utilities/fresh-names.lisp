@@ -21,18 +21,17 @@
 (define fresh-name-in-world-with-$s ((name symbolp)
                                      (names-to-avoid symbol-listp)
                                      (wrld plist-worldp))
-  :returns (fresh-name symbolp)
-  :prepwork ((program))
+  :returns (fresh-name "A @(tsee symbolp).")
+  :mode :program
   :parents (kestrel-utilities system-utilities)
-  :short
-  "Append as many @('$') signs to @('name')
-  as needed to make the name new in the world, i.e. not already in use,
-  and not among the given names to avoid."
+  :short "Append as many @('$') signs to @('name')
+          as needed to make the name new in the world, i.e. not already in use,
+          and not among the given names to avoid."
   :long
   "<p>
-  If @('name') is already new and not among the names to avoid,
-  it is left unchanged.
-  </p>"
+   If @('name') is already new and not among the names to avoid,
+   it is left unchanged.
+   </p>"
   (if (or (logical-namep name wrld)
           (member name names-to-avoid))
       (fresh-name-in-world-with-$s (add-suffix name "$") names-to-avoid wrld)

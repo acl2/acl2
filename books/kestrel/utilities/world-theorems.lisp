@@ -1,4 +1,4 @@
-; Theorems about world-related functions
+; Theorems about World-Related Functions
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -9,6 +9,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(include-book "xdoc/top" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc theorems-about-world-related-functions
+  :parents (theorems-about-non-kestrel-books)
+  :short "Some theorems about world-related functions
+          defined outside the Kestrel Books."
+  :long
+  "@(def arity-iff)
+   @(def plist-worldp-when-plist-worldp-with-formals-cheap)")
 
 (defthm arity-iff
   (iff (arity fn wrld)

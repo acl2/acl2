@@ -1,4 +1,4 @@
-; Theorems about all-vars (and all-vars1)
+; Theorems about ALL-VARS (and ALL-VARS1)
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,6 +11,18 @@
 (in-package "ACL2")
 
 (include-book "tools/flag" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc theorems-about-all-vars
+  :parents (theorems-about-non-kestrel-books)
+  :short "Some theorems about @(tsee all-vars)."
+  :long
+  "<p>
+   See the file for lemmas about @('all-vars1').
+   </p>
+   @(def symbol-listp-of-all-vars)
+   @(def true-listp-of-all-vars)")
 
 ;;;  Theorems about all-vars1
 

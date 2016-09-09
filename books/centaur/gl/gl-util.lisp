@@ -72,6 +72,8 @@
 (defun my-def-body (name world)
   (let ((def-body (ec-call (acl2::def-body name world))))
     (and (not (acl2::access acl2::def-body def-body :hyp))
+         (eq (acl2::access acl2::def-body def-body :equiv)
+             'equal)
          `(equal ,(acl2::fcons-term
                    name (acl2::access acl2::def-body def-body :formals))
                  ,(acl2::access acl2::def-body def-body :concl)))))

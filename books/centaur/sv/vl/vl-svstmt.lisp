@@ -584,13 +584,13 @@ because... (BOZO)</p>
                         (sv::svex-z)))
 
              ((unless (sv::lhssvex-p lsp-simp))
-              (mv nil
+              (mv t ;; ok, but issue a fatal warning.
                   (fatal :type :vl-assignstmt-fail
-                         :msg "Programming error -- the static portion of LHS ~
-                               ~a0 couldn't be turned into a proper LHS ~
-                               expression."
+                         :msg "The static portion of LHS ~a0 couldn't be ~
+                               turned into a proper LHS expression.  This ~
+                               assignment will be ignored if it is reached."
                          :args (list lhs))
-                  nil nil)))
+                  nil dyn-size)))
           (mv t warnings
               (list (sv::make-svstmt-assign
                      :lhs (sv::svex->lhs lsp-simp)

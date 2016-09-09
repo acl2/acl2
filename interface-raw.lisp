@@ -7748,7 +7748,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
             (and (eq (car trip) 'event-landmark)
                  (true-listp trip)
                  (eq (cadr trip) 'global-value)
-                 (eq (nth 4 trip) 'defun)
+                 (eq (access-event-tuple-type (cddr trip)) 'defun)
                  (nth 5 trip))))
       (cond ((and fn
                   (symbolp fn)
@@ -8427,7 +8427,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
    (f-put-global 'parallel-execution-enabled t *the-live-state*)
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
-         (system::*break-enable* (debugger-enabledp *the-live-state*)))
+         (system::*break-enable* (debugger-enabledp *the-live-state*))
+         (*debug-io* *standard-output*))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)

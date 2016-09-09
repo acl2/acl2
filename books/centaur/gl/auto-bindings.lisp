@@ -209,7 +209,8 @@ mentioned in the auto-bindings.</p>")
                   (lens (auto-bind-len-list elems))
                   ((unless (ab-all-equal (cdr lens) (car lens)))
                    (er hard? 'auto-bind-xlate
-                       "Lengths inside :mix must agree")))
+                       "Lengths inside :mix must agree: ~x0 has lengths ~x1"
+                       elems lens)))
                (cons :mix elems)))
        (:seq (cons :seq (auto-bind-xlate-list (cdr x) nil)))
        (:rev (cond ((= (len x) 2)

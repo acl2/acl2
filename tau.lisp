@@ -9765,7 +9765,10 @@
            (def-eqn
              (cond
               ((null db) nil)
-              ((access def-body db :hyp) nil)
+              ((or (access def-body db :hyp)
+                   (not (eq (access def-body db :equiv)
+                            'equal)))
+               nil)
               (t
                (fcons-term* 'equal
                             (fcons-term fn formals)
