@@ -100,3 +100,24 @@ module m1 ;
   wire [3:0] trunc1 = 16;
 
 endmodule
+
+
+module m2 ;
+
+   parameter width = 0;
+
+   output [width-1:0] foo0, foo1;
+   input [width-1:0] bar;
+
+   assign foo0 = bar;
+   assign foo0[width-1:0] = bar[width-1:0];
+
+endmodule
+
+module m3;
+
+   input [32'd4294967295:0] bar ;
+   output [32'd4294967295:0] foo ;
+   assign bar = foo ;
+
+endmodule

@@ -852,6 +852,18 @@ assign w =  "bar";
 
 (preprocessor-basic-test
  :input #{"""
+`define foo(x,y) x
+`define xx 123
+assign w = `foo(`"bar`", `xx);
+"""}
+ :output #{"""
+
+
+assign w =  "bar";
+"""})
+
+(preprocessor-basic-test
+ :input #{"""
 `define foo(x) x
 assign w = `foo(`"\101bc`");
 """}
@@ -901,3 +913,27 @@ assign w = `foo(`"bar`", baz);
 
 assign w =  "bar";
 """})
+
+
+(preprocessor-basic-test
+ :input
+ #{"""
+`define FOO_BAZ 5
+`define FOO_BAR(bar, tasty, flavor, sausage)\
+    FOO_FN((bar), (tasty), (flavor), `__FILE__, `__LINE__, (sausage))
+`define FOO_TOP(tasty, flavor, sausage)\
+    `FOO_BAR(null, (tasty), (flavor), (sausage))
+`FOO_TOP(`"oink`", `FOO_BAZ, $psprintf("lalala %x %y", xxx, yyy));
+"""}
+
+ :output
+ #{"""
+
+
+
+
+    
+    FOO_FN((null), (("oink")), (( 5)), "test.v", 7, (($psprintf("lalala %x %y", xxx, yyy))));
+"""})
+
+

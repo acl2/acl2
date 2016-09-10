@@ -601,6 +601,16 @@ shown.</p>"
     (change-vl-design design :mods mods)))
 
 
+(encapsulate
+  ()
+  (defund vl-lint-suppress-large-integer-problems (suppressp)
+    (declare (xargs :guard t)
+             (ignorable suppressp))
+    t)
+
+  (defttag :vl-lint-suppress-large-integer-problems)
+  (acl2::include-raw "lint-raw.lsp"))
+
 (define run-vl-lint-main ((design vl-design-p)
                           (config vl-lintconfig-p))
   :guard-debug t
@@ -608,8 +618,9 @@ shown.</p>"
 
   (b* (((vl-lintconfig config) config)
        (design-orig design)
-       (design (vl-annotate-design design))
+       (- (vl-lint-suppress-large-integer-problems t))
 
+       (design (vl-annotate-design design))
        ;; We originally did this before annotate, but that doesn't work in the
        ;; new world of loaditems.  we need to annotate first.
        (design (xf-cwtime (vl-design-drop-user-submodules design config.dropmods)))
@@ -790,7 +801,7 @@ shown.</p>"
        (design   (xf-cwtime (vl-lint-apply-quiet (append stubnames config.quiet) design)))
        (sd-probs (xf-cwtime (vl-delete-sd-problems-for-modnames (append stubnames config.quiet) sd-probs)))
        (reportcard  (xf-cwtime (vl-design-origname-reportcard design))))
-
+    (vl-lint-suppress-large-integer-problems nil)
     (make-vl-lintresult :design design
                         :design0 design0
                         :design-orig design-orig

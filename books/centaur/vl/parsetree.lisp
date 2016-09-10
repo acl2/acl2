@@ -4066,35 +4066,29 @@ be non-sliceable, at least if it's an input.</p>"
   :short "Representation of a single @('class')."
   :tag :vl-class
   :layout :tree
+  ;; We define classes here and make them modelements because they can occur
+  ;; within (?).  Fortunately it looks like you can't use generates inside of
+  ;; classes, so we should not need to make these mutually recursive with
+  ;; genelements or anything like that.
   ((name stringp
          :rule-classes :type-prescription
          "The name of this class as a string.")
-
-   ;; We define classes here and make them modelements because they can occur
-   ;; within classes.  Fortunately it looks like you can't use generates inside
-   ;; of classes, so we should not need to make these mutually recursive with
-   ;; genelements or anything like that.
-
-   ;; ... bozo we don't actually implement these yet ...
-
    (warnings vl-warninglist-p)
-   (loc      vl-location-p
-             ;; We sort of want these to have minloc/maxloc and their own comments,
-             ;; but we also want them to be ordinary modelements which only have a
-             ;; minloc, so blah they're gross right now.
-             )
+   (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (atts     vl-atts-p)
    (comments vl-commentmap-p)
    (virtualp booleanp :rule-classes :type-prescription)
    (lifetime vl-lifetime-p))
   :long "BOZO incomplete stub -- we don't really support classes yet."
-  :extra-binder-names (minloc))
+  :extra-binder-names (loc))
 
-(define vl-class->minloc ((x vl-class-p))
+(define vl-class->loc ((x vl-class-p))
+  ;; We want these to be like an ordinary modelement, so dumbly make it so
+  ;; so dumbly make loc an alias for minloc.
   :parents (vl-class)
   :enabled t
-  (vl-class->loc x))
+  (vl-class->minloc x))
 
 (fty::deflist vl-classlist :elt-type vl-class-p
   :elementp-of-nil nil)

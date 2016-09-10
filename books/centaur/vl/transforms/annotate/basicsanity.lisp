@@ -225,7 +225,7 @@ interfaces.</p>")
        (dupes          (duplicated-members (remove nil external-names)))
        (warnings       (if (not dupes)
                            warnings
-                         (warn :type :vl-bad-ports
+                         (fatal :type :vl-bad-ports
                                 :msg "Duplicate port names: ~&0."
                                 :args (list dupes)))))
 

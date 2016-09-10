@@ -104,5 +104,5 @@
                           :msg "Classes are not supported."
                           :args nil
                           :acc nil)
-         :loc    (vl-token->loc name)
+         :minloc (vl-token->loc name)
          :maxloc (vl-endinfo->loc endinfo)))))
