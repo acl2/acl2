@@ -80,7 +80,9 @@ expands ruleset names within a given ruleset, see @(see expand-ruleset).</p>"
 (defsection ruleset
   :parents (rulesets)
   :short "The ruleset associated with a given name"
-  :long "<p>Examples:</p>
+  :long "<p>See @(see rulesets) for an introduction to rulesets.</p>
+
+<p>Examples of calls of @('ruleset'):</p>
 
 @({
  (ruleset 'my-ruleset) ; assumes that WORLD is bound
