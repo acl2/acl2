@@ -56,25 +56,42 @@ an alias for @('enable*'), to make using rulesets more convenient.</p>
 
 <p>Advanced users can do some nifty things with rulesets, e.g., you can have a
 superior ruleset that contains other rulesets, and it will grow as you add
-rules to the contained rulesets.</p>")
+rules to the contained rulesets.</p>
 
-; BOZO this documentation is incomplete and doesn't really explain ruleset
-; designators and fancy things like rules-of-class.  Oh well, maybe someday.
+<p>A ruleset is actually a list of so-called <i>ruleset designators</i>.  All
+ruleset operators, such as @(tsee e/d*) and @(tsee def-ruleset), take arguments
+that are rulesets.  See @(see expand-ruleset) for a discussion of ruleset
+designators and the corresponding @(see theories) that they represent.</p>")
 
 (defsection get-ruleset
   :parents (rulesets)
-  :short "See what currently constitutes a ruleset"
+  :short "The @(see ruleset) associated with a given name"
   :long "<p>Example usage:</p>
 
-@({ (get-ruleset 'my-ruleset (w state)) })"
+@({ (get-ruleset 'my-ruleset (w state)) })
+
+<p>Also see @(see ruleset).  For a more powerful operator that recursively
+expands ruleset names within a given ruleset, see @(see expand-ruleset).</p>"
 
   (defun get-ruleset (name world)
     (let* ((ruleset-alist (table-alist 'ruleset-table world)))
       (cdr (assoc name ruleset-alist)))))
 
-(defmacro ruleset (name)
-  `(get-ruleset ,name world))
+(defsection ruleset
+  :parents (rulesets)
+  :short "The ruleset associated with a given name"
+  :long "<p>Examples:</p>
 
+@({
+ (ruleset 'my-ruleset) ; assumes that WORLD is bound
+ (ruleset 'my-ruleset (w state)) ; ruleset currently associated with MY-RULESET
+})
+
+<p>Also see @(see get-ruleset).  For a more powerful operator that recursively
+expands ruleset names within a given ruleset, see @(see expand-ruleset).</p>"
+
+  (defmacro ruleset (name &optional (world 'world))
+    `(get-ruleset ,name ,world)))
 
 (defun is-ruleset (name world)
   (let* ((ruleset-alist (table-alist 'ruleset-table world)))
@@ -161,7 +178,7 @@ rules to the contained rulesets.</p>")
 
 (defsection def-ruleset
   :parents (rulesets)
-  :short "@(call def-ruleset) creates a new ruleset."
+  :short "@(call def-ruleset) creates a new @(see ruleset)."
 
   :long "<p>Examples:</p>
 @({
@@ -197,7 +214,7 @@ redundant calls.</p>"
 (defsection add-to-ruleset
   :parents (rulesets)
   :short "@(call add-to-ruleset) adds additional rules to an existing
-ruleset."
+@(see ruleset)."
 
   :long "<p>Examples:</p>
 @({
@@ -221,7 +238,8 @@ ruleset."
 (defsection def-ruleset!
   :parents (rulesets)
   :short "Same as @(see def-ruleset) except that it does not complain if the
-ruleset already exists, instead acting like add-to-ruleset in that case."
+@(see ruleset) already exists, instead acting like @('add-to-ruleset') in that
+case."
 
   (defmacro def-ruleset! (name form)
     (declare (xargs :guard (symbolp name)))
@@ -274,17 +292,74 @@ ruleset already exists, instead acting like add-to-ruleset in that case."
                   (append (theory (cadr des))
                           (expand-ruleset1 (cdr x) world)))
                  (:current-theory
-                  (append (executable-counterpart-theory (cadr des))
+                  (append (current-theory (cadr des))
                           (expand-ruleset1 (cdr x) world)))))))))
 
-(defun expand-ruleset (x world)
-  (if (ruleset-designator-listp x world)
-      (expand-ruleset1 x world)
-    (er hard 'expand-ruleset "~x0 is not a valid ruleset.~%" x)))
+(defsection expand-ruleset
+  :parents (rulesets)
+  :short "Expand @(see rulesets) to @(see theories)."
+  :long "<p>A @(see ruleset) is a list of so-called <i>ruleset designators</i>.
+The @(see ruleset) operators, such as @(tsee e/d*) and @(tsee def-ruleset),
+expect arguments that are (or evaluate to) rulesets.  Every ruleset represents
+an ACL2 <i>theory</i>, called its ``expansion''.  Consider for example these
+ruleset definitions.</p>
+
+@({
+ (def-ruleset my-rules
+   '(append reverse))
+
+ (def-ruleset other-rules
+   '(member-equal my-rules revappend))
+})
+
+<p>Then the symbol @('my-rules') is a ruleset designator, which represents the
+theory containing @('append') and @('reverse').  The symbol @('other-rules') is
+a ruleset designator, which represents the theory containing @('member-equal'),
+@('append'), @('reverse'), and @('revappend').  The function
+@('expand-ruleset') returns the theory obtained by expanding every ruleset
+designator in a given ruleset, for example:</p>
+
+@({
+ ACL2 !>(expand-ruleset '(car-cons (:d nth) other-rules) (w state))
+ (CAR-CONS (:D NTH)
+           MEMBER-EQUAL APPEND REVERSE REVAPPEND)
+ ACL2 !>
+})
+
+<p>We now list the valid ruleset designators and indicate the corresponding
+expansion, a theory, for each.</p>
+
+<ul>
+
+<li>A symbol that names a rule (e.g., from a definition or a theorem) or names
+a @(see theory) is a ruleset designator.  More generally, every <i>runic
+designator</i> @('x') is also a ruleset designator, which expands to the theory
+containing exactly @('x').  See @(see theories) for a discussion of runic
+designators.</li>
+
+<li>If @('N') is a symbol that is the name of a ruleset @('S'), then @('N') and
+@('(:ruleset N)') are ruleset designators.  They expand to the union of the
+expansions of the ruleset designators in @('S').</li>
+
+<li>The ruleset designators @('(:executable-counterpart-theory name)'),
+@('(:current-theory name)'), and @('(:theory name)') expand to the values in
+the current ACL2 @(see world) of the forms @('(executable-counterpart-theory
+name)'), @('(current-theory name)'), and @('(theory name)'), respectively.</li>
+
+<li>The ruleset designator @('(:rules-of-class class name)') represent the
+runes of the indicated class (see @(see rule-classes)) in the value of
+@('(universal-theory name)').</li>
+
+</ul>"
+
+  (defun expand-ruleset (x world)
+    (if (ruleset-designator-listp x world)
+        (expand-ruleset1 x world)
+      (er hard 'expand-ruleset "~x0 is not a valid ruleset.~%" x))))
 
 (defsection enable*
   :parents (rulesets)
-  :short "Ruleset-aware version of @(see enable)."
+  :short "@(csee Ruleset)-aware version of @(see enable)."
   :long "<p>Examples:</p>
 
 @({
@@ -302,7 +377,7 @@ ruleset already exists, instead acting like add-to-ruleset in that case."
 
 (defsection disable*
   :parents (rulesets)
-  :short "Ruleset-aware version of @(see disable)."
+  :short "@(csee Ruleset)-aware version of @(see disable)."
   :long "<p>Examples:</p>
 
 @({
@@ -320,7 +395,7 @@ ruleset already exists, instead acting like add-to-ruleset in that case."
 
 (defsection e/d*
   :parents (rulesets)
-  :short "Ruleset-aware version of @(see e/d)."
+  :short "@(csee Ruleset)-aware version of @(see e/d)."
   :long "<p>Examples:</p>
 
 @({
