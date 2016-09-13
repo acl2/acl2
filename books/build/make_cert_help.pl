@@ -70,6 +70,9 @@ use File::Path qw(make_path);
 use FindBin qw($RealBin);
 use POSIX qw(strftime);
 use Cwd;
+use utf8;
+
+binmode(STDOUT,':utf8');
 
 (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
