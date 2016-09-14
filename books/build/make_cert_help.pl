@@ -70,6 +70,9 @@ use File::Path qw(make_path);
 use FindBin qw($RealBin);
 use POSIX qw(strftime);
 use Cwd;
+use utf8;
+
+binmode(STDOUT,':utf8');
 
 (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
@@ -568,8 +571,9 @@ my $instrs = "";
 # I think this strange :q/lp dance is needed for lispworks or something?
 $instrs .= "(acl2::value :q)\n";
 $instrs .= "(acl2::in-package \"ACL2\")\n";
-$instrs .= "#+hons (profile-fn 'prove)\n";
-$instrs .= "#+hons (profile-fn 'certify-book-fn)\n";
+$instrs .= "; see github issue #638 (waterfall-parallelism and profiling): \n";
+$instrs .= "#+(and hons (not acl2-par)) (profile-fn 'prove)\n";
+$instrs .= "#+(and hons (not acl2-par)) (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 # We used to comment this out, but maybe it's better to leave this enabled by default?
 $instrs .= "(set-debugger-enable :bt)\n";

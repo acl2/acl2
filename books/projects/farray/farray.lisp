@@ -344,18 +344,18 @@ stobj</li>
 (defthm sb60p-types
   (implies (sb60p x)
            (and (integerp x)
-                (rationalp x)
+                (real/rationalp x)
                 (acl2-numberp x))))
 
 ;; integerp implies other things.  Wish this could be removed...  Potentially
 ;; make this forward-chaining.
 (defthm integerp-types
   (implies (integerp x)
-           (and (rationalp x)
+           (and (real/rationalp x)
                 (acl2-numberp x))))
 
 ;; addition preserves integerp
-(local 
+(local
  (defthm integerp-+
    (implies (and (integerp i)
                  (integerp j))
@@ -446,7 +446,7 @@ stobj</li>
    :rule-classes (:linear :rewrite)))
 
 ;; Field table entries are less than the length of mem.
-(local 
+(local
  (defthm field-tablep-implies-<-memi-mem-len
    (implies (and (field-tablep i end st)
                  ;; (integerp i)
@@ -503,7 +503,7 @@ stobj</li>
    :rule-classes (:linear :rewrite)))
 
 ;; The field table is preserved when writes are above the table.
-(local 
+(local
  (defthm field-tablep-!memi
    (implies (and (field-tablep i end st)
                  ;; (integerp i)
@@ -638,7 +638,7 @@ stobj</li>
                             (j (+ f start)))
                  (:instance sb60p-memi
                             (i (+ start 1 f)))))))
-                 
+
 ;; Each field fits inside mem.
 (defthm flength-<-mem-len
   (implies (and (farrayp start st)
@@ -699,7 +699,7 @@ stobj</li>
                               (end (+ 1 start (memi start st))))))))))
 
 ;; Any field offset is within mem.
-(local 
+(local
  (defthm field-offsetp-implies-offset-+-index-<-mem-len
    (implies (and (field-offsetp offset f start st)
                  (farrayp start st)
@@ -877,7 +877,7 @@ stobj</li>
 
 ;; Induct once to show that all fields less than k have entries less than k's
 ;; entry.
-(local 
+(local
  (defthm field-tablep-ordering-arbitrary-k
    (implies (and ;; (integerp i)
              ;; (<= 0 i)
@@ -930,7 +930,7 @@ stobj</li>
 
 ;; Abstract the lemmas above to be based on fields instead of field table
 ;; entries.
-(local 
+(local
  (defthm field-tablep-ordering-arbitrary-field-based
    (implies (and (farrayp start st)
                  (fieldp f1 start st)
@@ -976,7 +976,7 @@ stobj</li>
             :use ((:instance field-tablep-ordering-arbitrary-field-based-offset-one))))))
 
 ;; If two fields are distict, so are all offsets into those fields.
-(local 
+(local
  (defthm field-tablep-ordering-arbitrary-field-based-offset-both-ne
    (implies (and (farrayp start st)
                  (fieldp f1 start st)
@@ -1117,7 +1117,7 @@ stobj</li>
            (equal (field-offsetp o1 f1 start (fwrite f2 o2 v start st))
                   (field-offsetp o1 f1 start st))))
 
-  
+
 
 
 ;; ============================ PRINTING =============================
@@ -1282,7 +1282,7 @@ stobj</li>
 
 ;; ;; < implies !=
 ;; ;; Would like to remove without adding arithmetic.
-;; (local 
+;; (local
 ;;  (defthm <-implies-not-equal
 ;;    (implies (< x y)
 ;;             (not (equal x y)))
@@ -1290,7 +1290,7 @@ stobj</li>
 
 ;; ;; < transitive
 ;; ;; Would like to remove without adding arithmetic.
-;; (local 
+;; (local
 ;;  (defthm <-transitive-fc
 ;;    (implies (and (< x y)
 ;;                  (< y z))
@@ -1502,7 +1502,7 @@ stobj</li>
 ;;     0
 ;;     2
 ;;     7
-;;     8 
+;;     8
 ;;     11
 ;;     5
 ;;     1

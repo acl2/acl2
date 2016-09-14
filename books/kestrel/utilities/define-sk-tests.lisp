@@ -134,7 +134,6 @@
                  (integerp y)
                (consp y)))))
 
-
 (define-sk positive-intersection-p
   :verbosep t
   :short "Basic test of macro arguments."
@@ -150,9 +149,9 @@
             (implies (and (integer-listp x)
                           (member a x))
                      (integerp a))))
-   (local (defthm rationalp-when-integerp
+   (local (defthm real/rationalp-when-integerp
             (implies (integerp x)
-                     (rationalp x))))
+                     (real/rationalp x))))
    (local (defthm eqlable-listp-when-integer-listp
             (implies (integer-listp x)
                      (eqlable-listp x)))))
@@ -188,7 +187,7 @@
 
   (local (defthm crock3
            (implies (natp elem)
-                    (rationalp elem))))
+                    (real/rationalp elem))))
 
   (local (defthm eqlable-listp-when-nat-listp
            (implies (nat-listp x)

@@ -1134,6 +1134,10 @@
 	 (mv nil nil state))
     `(instantiate-quantified-formulae :rec ,rec :hints ,hints :formulae ,formulae)))
 
+; Matt K. addition: Avoid ACL2(p) failure due to INST calls below.
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (acl2::non-parallel-book))
+
 ;; skolemization
 
 (defun restrict-all-instances (quant list-alist)

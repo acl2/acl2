@@ -563,7 +563,7 @@ unchanged when its first character is not a lower-case letter.</p>"
 
 (define downcase-first-charlist ((x character-listp))
   :parents (cases)
-  :short "Convert the first character of a character list to downper case."
+  :short "Convert the first character of a character list to lower case."
   :returns (downcased character-listp)
   (mbe :logic
        (if (atom x)
@@ -601,7 +601,7 @@ unchanged when its first character is not a lower-case letter.</p>"
 
 (define downcase-first
   :parents (cases)
-  :short "Convert the first character of a string to downper case."
+  :short "Convert the first character of a string to lower case."
   ((x :type string))
   :returns (downcased stringp :rule-classes :type-prescription)
 
@@ -630,4 +630,3 @@ unchanged when its first character is not an upper-case letter.</p>"
   ///
   (defcong streqv equal (downcase-first x) 1)
   (defcong istreqv istreqv (downcase-first x) 1))
-

@@ -895,6 +895,10 @@ exists there.</p>"
                 '(:in-theory (enable 4vec-?* 3vec-?* 4vec-reduction-or 3vec-reduction-or))))))
 
 
+; Matt K. addition: Avoid ACL2(p) failure due to logbitp-reasoning.
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (acl2::non-parallel-book))
+
 (define svex-svstmt-or ((a svex-p)
                         (b svex-p))
   :returns (or svex-p)
