@@ -1201,6 +1201,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                    #\Page)
                   ((string-equal x "RUBOUT")
                    #\Rubout)
+                  ((string-equal x "RETURN")
+                   #\Return)
                   #+clisp
 
 ; Currently we only allow #\Null in CLISP.  We have to allow it there in some
@@ -1229,7 +1231,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                        x must either be a single character followed ~
                        by a character in the list ~x0, ~
                        or else x must be one of Space, Tab, Newline, ~
-                       Page, or Rubout (where case is ignored). ~
+                       Page, Rubout, or Return (where case is ignored). ~
                        However, ~s1 is none of these."
                       *acl2-read-character-terminators*
                       x)))))))

@@ -14,6 +14,7 @@
 
 (in-package "STD")
 (include-book "std/util/define" :dir :system)
+(include-book "acceptable-rewrite-rule-p")
 (set-state-ok t)
 (program)
 
@@ -597,10 +598,11 @@ so execution differences don't matter.</p>")
         ;; can report about it then.
         (mv :default state))
        ;; Call ACL2's function that checks whether the rule is okay or not.
-       ((mv msg ?eqv ?lhs ?rhs ?ttree)
-        (acl2::interpret-term-as-rewrite-rule
-         'temporary-name-for-define-sk nil translated-body (acl2::ens state) (acl2::w state)))
-       ((when msg)
+       (okp
+        (acl2::acceptable-rewrite-rule-p translated-body
+                                         (acl2::ens state)
+                                         (acl2::w state)))
+       ((when (not okp))
         ;; It's an error message, so there's some problem, don't use :direct.
         (mv :default state)))
     ;; Otherwise seems OK.
@@ -616,7 +618,15 @@ so execution differences don't matter.</p>")
                ((unless (eq mode1 :direct))
                 (er soft 'infer-rewrite-mode "sanity check 1 failed"))
                ((mv mode2 state) (define-sk-infer-rewrite-mode `(if x (integerp y) (consp z)) state))
-               ((unless (eq mode2 :default))
+               ((unless (eq mode2
+
+; Matt K. mod, now that rewrite rules are permitted for IF-expressions
+; (formerly :default).
+
+                            :direct))
+                (er soft 'infer-rewrite-mode "sanity check 2 failed"))
+               ((mv mode3 state) (define-sk-infer-rewrite-mode ''t state))
+               ((unless (eq mode3 :default))
                 (er soft 'infer-rewrite-mode "sanity check 2 failed")))
             (value '(value-triple :success))))))
 

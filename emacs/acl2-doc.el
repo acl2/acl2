@@ -203,8 +203,7 @@ then restart the ACL2-Doc browser to view that manual."
        ((and (file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
 	     (y-or-n-p
 	      (format "Run gunzip on %s? "
-		      *acl2-doc-rendered-combined-pathname-gzipped*
-		      *acl2-doc-rendered-combined-pathname*)))
+		      *acl2-doc-rendered-combined-pathname-gzipped*)))
 	(shell-command-to-string
 	 (format "gunzip %s"
 		 *acl2-doc-rendered-combined-pathname-gzipped*))
@@ -283,9 +282,9 @@ then restart the ACL2-Doc browser to view that manual."
   (nth 1 *acl2-doc-state*))
 
 ; Based on http://ergoemacs.org/emacs/elisp_syntax_coloring.html:
-(setq acl2-doc-keywords
-      '(("\\[\\([^ \t]*\\)\\]"
-	 . 1)))
+(defvar acl2-doc-keywords
+  '(("\\[\\([^ \t]*\\)\\]"
+     . 1)))
 
 ; Can be modified by user; set to the desired link color, or nil if none.
 (defv *acl2-doc-link-color* "#0000FF") ; blue

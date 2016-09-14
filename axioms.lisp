@@ -4218,6 +4218,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (characterp #\Rubout)
   :rule-classes nil)
 
+(defaxiom characterp-return
+  (characterp #\Return)
+  :rule-classes nil)
+
 ; No-duplicatesp
 
 (defun-with-guard-check no-duplicatesp-eq-exec (l)
@@ -6247,13 +6251,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(mv nil ,x state))
 
-(defun value-triple-fn (form on-skip-proofs check)
+(defun value-triple-fn (form on-skip-proofs check ctx)
   (declare (xargs :guard t))
   `(cond ((and ,(not on-skip-proofs)
                (f-get-global 'ld-skip-proofsp state))
           (value :skipped))
          (t ,(let ((form
-                    `(let ((check ,check))
+                    `(let ((check ,check)
+                           (ctx ,ctx))
                        (cond (check
                               (cond
                                ((check-vars-not-free
@@ -6261,11 +6266,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  ,form)
                                 :passed)
                                ((tilde-@p check)
-                                (er hard 'value-triple
+                                (er hard ctx
                                     "Assertion failed:~%~@0~|"
                                     check))
                                (t
-                                (er hard 'value-triple
+                                (er hard ctx
                                     "Assertion failed on form:~%~x0~|"
                                     ',form))))
                              (t ,form)))))
@@ -6274,14 +6279,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (value ,form))))))
 
 #+acl2-loop-only
-(defmacro value-triple (form &key on-skip-proofs check)
-  (value-triple-fn form on-skip-proofs check))
+(defmacro value-triple (form &key on-skip-proofs check (ctx ''value-triple))
+  (value-triple-fn form on-skip-proofs check ctx))
 
 (defmacro assert-event (form &key on-skip-proofs msg)
   (declare (xargs :guard (booleanp on-skip-proofs)))
   `(value-triple ,form
                  :on-skip-proofs ,on-skip-proofs
-                 :check ,(or msg t)))
+                 :check ,(or msg t)
+                 :ctx 'assert-event))
 
 (defun xd-name (event-type name)
   (declare (xargs :guard (member-eq event-type '(defund defthmd))))
@@ -16244,32 +16250,62 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   :guard (state-p state)))
   (global-val 'hons-enabled (w state)))
 
+(defun set-serialize-character-fn (c system-p state)
+  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+                  :guard (and (state-p state)
+                              (or (null c)
+                                  (and (hons-enabledp state)
+                                       (member c '(#\Y #\Z)))))))
+  (let ((caller (if system-p
+                    'serialize-character-system
+                  'serialize-character)))
+    (cond
+     ((or (null c)
+          (and (hons-enabledp state)
+               (member c '(#\Y #\Z))))
+      (if system-p
+          (f-put-global 'serialize-character-system c state)
+        (f-put-global 'serialize-character c state)))
+     (t ; presumably guard-checking is off
+      (prog2$
+       (cond ((not (hons-enabledp state)) ; and note that c is not nil
+              (er hard caller
+                  "It is currently only legal to call ~x0 with a non-nil ~
+                   first argument in a hons-enabled version of ACL2.  If this ~
+                   presents a problem, feel free to contact the ACL2 ~
+                   implementors."
+                  caller))
+             (t
+              (er hard caller
+                  "The first argument of a call of ~x0 must be ~v1.  The ~
+                   argument ~x2 is thus illegal."
+                  caller '(nil #\Y #\Z) c)))
+       state)))))
+
 (defun set-serialize-character (c state)
   (declare (xargs :verify-guards nil ; wait for hons-enabledp
                   :guard (and (state-p state)
                               (or (null c)
                                   (and (hons-enabledp state)
                                        (member c '(#\Y #\Z)))))))
-  (cond
-   ((or (null c)
-        (and (hons-enabledp state)
-             (member c '(#\Y #\Z))))
-    (f-put-global 'serialize-character c state))
-   (t ; presumably guard-checking is off
-    (prog2$
-     (cond ((not (hons-enabledp state)) ; and note that c is not nil
-            (er hard 'set-serialize-character
-                "It is currently only legal to call ~x0 with a non-nil first ~
-                 argument in a hons-enabled version of ACL2.  If this ~
-                 presents a problem, feel free to contact the ACL2 ~
-                 implementors."
-                'set-serialize-character))
-           (t
-            (er hard 'set-serialize-character
-                "The first argument of a call of ~x0 must be ~v1.  The ~
-                 argument ~x2 is thus illegal."
-                'set-serialize-character '(nil #\Y #\Z) c)))
-     state))))
+  (set-serialize-character-fn c nil state))
+
+(defun set-serialize-character-system (c state)
+
+; By putting the form (set-serialize-character-system nil state) into one's
+; acl2-customization file, one can make .cert files and .port files (among
+; others) human-readable.  For example:
+
+; cd books ; \
+; make basic \
+; ACL2_CUSTOMIZATION=`pwd`/../acl2-customization-files/no-serialize.lisp
+
+  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+                  :guard (and (state-p state)
+                              (or (null c)
+                                  (and (hons-enabledp state)
+                                       (member c '(#\Y #\Z)))))))
+  (set-serialize-character-fn c t state))
 
 (defun print-object$-ser (x serialize-character channel state-state)
 
@@ -18270,7 +18306,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (verify-guards w)
 (verify-guards hons-enabledp)
+(verify-guards set-serialize-character-fn)
 (verify-guards set-serialize-character)
+(verify-guards set-serialize-character-system)
 
 (defun mswindows-drive1 (filename)
   (declare (xargs :mode :program))
@@ -19706,6 +19744,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (#\Page    "Page")
                       (#\Tab     "Tab")
                       (#\Rubout  "Rubout")
+                      (#\Return  "Return")
                       (otherwise x))
                     stream))
                   ((stringp x)
@@ -19756,6 +19795,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (#\Page    "Page")
                     (#\Tab     "Tab")
                     (#\Rubout  "Rubout")
+                    (#\Return  "Return")
                     (otherwise x))
                   channel state)))
         ((stringp x)
@@ -25643,7 +25683,7 @@ Lisp definition."
 ; Lisp.
 
     (eval ; using eval because the certify-book-info record is not yet defined
-     '(format *standard-output*
+     '(format *debug-io*
               "~%; Book under certification: ~s~%"
               (access certify-book-info
                       (f-get-global 'certify-book-info *the-live-state*)
@@ -25671,13 +25711,13 @@ Lisp definition."
                            :count t :all t)))
   #+sbcl
   (cond ((fboundp 'sb-debug::print-backtrace)
-         (eval '(sb-debug::print-backtrace :stream *standard-output*)))
+         (eval '(sb-debug::print-backtrace :stream *debug-io*)))
         ((fboundp 'sb-debug::backtrace)
-         (eval '(sb-debug::backtrace nil *standard-output*))))
+         (eval '(sb-debug::backtrace nil *debug-io*))))
   #+cmucl
   (when (fboundp 'debug::backtrace)
     (eval '(debug::backtrace 1000 ; default for sbcl
-                             *standard-output*)))
+                             *debug-io*)))
   #+clisp
   (when (fboundp 'system::print-backtrace)
     (eval '(catch 'system::debug
@@ -26324,6 +26364,10 @@ Lisp definition."
        (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))
               (untouchable-fns (global-val 'untouchable-fns wrld)))
+
+; It is tempting to call untouchable-fn-p, but it seems inconvenient to fold
+; the necessary true-listp tests into that macro.  So we open-code here.
+
          (and (not (eq formals t))
               (eql (len formals) (len args))
               (true-listp untouchable-fns)

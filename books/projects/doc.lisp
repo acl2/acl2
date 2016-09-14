@@ -13,6 +13,7 @@
 (include-book "sidekick/server")
 (include-book "x86isa/doc")
 (include-book "farray/farray")
+(include-book "sat/proof-checker-itp13/top")
 
 (defxdoc projects
   :parents (top)

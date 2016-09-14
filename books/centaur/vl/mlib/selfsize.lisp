@@ -228,29 +228,89 @@ only meant as a heuristic for generating more useful warnings.</p>"
 (trace$ #!Vl (vl-is-unsized-int :entry (list 'vl-is-unsized-int (with-local-ps (vl-pp-expr x)) x)))
 ||#
 
+
+
+;; BOZO this should look at the elabscopes too
+(define vl-unsized-index-p
+  :short "Identify occurrences of basic, unsized parameters."
+  ((x  vl-expr-p)
+   (ss vl-scopestack-p))
+  :long "<p>We often run into cases like</p>
+
+@({
+    parameter foo = 5;
+    ...
+    assign w[3:0] = foo;
+})
+
+<p>It was annoying to get truncation warnings about this sort of thing.  So,
+here, as a heuristic, we are looking for expression like @('foo') which are
+references to untyped parameters.</p>"
+  :prepwork ((local (in-theory (enable vl-paramdecl-p-when-wrong-tag
+                                       vl-vardecl-p-when-wrong-tag))))
+  (vl-expr-case x
+    :vl-index
+    (b* (((when (or x.indices
+                    (not (vl-partselect-case x.part :none))))
+          ;; something like foo[3] or foo[3:0] is not a plain parameter
+          nil)
+         ((mv err trace ?context tail) (vl-follow-scopeexpr x.scope ss))
+         ((when err)
+          ;; don't know what it is, don't assume it's a plain parameter
+          nil)
+         ((when (vl-hidexpr-case tail :dot))
+          ;; reference into a structure or something, not a plain parameter
+          nil)
+         (item (vl-hidstep->item (car trace)))
+         ((when (mbe :logic (vl-paramdecl-p item)
+                     :exec (eq (tag item) :vl-paramdecl)))
+          (b* (((vl-paramdecl item)))
+            (vl-paramtype-case item.type
+              :vl-implicitvalueparam t
+              :vl-typeparam nil
+              :vl-explicitvalueparam
+              (and (vl-datatype-resolved-p item.type.type)
+                   (b* (((mv err size) (vl-datatype-size item.type.type)))
+                     (and (not err)
+                          (equal size 32)))))))
+         ((when (mbe :logic (vl-vardecl-p item)
+                     :exec (eq (tag item) :vl-vardecl)))
+          (b* (((vl-vardecl item)))
+            (vl-datatype-case item.type
+              :vl-coretype (member item.type.name '(:vl-int :vl-integer))
+              :otherwise nil))))
+      nil)
+    :otherwise nil))
+
+;; (b* (((mv err opinfo) (vl-index-expr-typetrace x1 ss scopes))
+;;                      ((when err) nil)
+;;                      ((vl-operandinfo opinfo)))
+;;                   (vl-datatype-case opinfo.type
+;;                     :vl-coretype (or (and (atom opinfo.type.pdims)
+;;                                           (atom opinfo.type.udims)
+;;                                           (or (vl-coretypename-equiv opinfo.type.name :vl-int)
+;;                                               (vl-coretypename-equiv opinfo.type.name :vl-integer)))
+;;                                      (and (eql (len opinfo.type.pdims) 1)
+;;                                           (vl-coretypename-equiv opinfo.type.name :vl-logic)
+;;                                           (eql 
+;;                     :vl-enum (vl-datatype-case opinfo.type.basetype
+;;                                :vl-coretype (and (atom opinfo.type.basetype.pdims)
+;;                                                  (atom opinfo.type.basetype.udims)
+;;                                                  (or (vl-coretypename-equiv opinfo.type.basetype.name :vl-int)
+;;                                                      (vl-coretypename-equiv opinfo.type.basetype.name :vl-integer)))
+;;                                :otherwise nil)
+;;                     :otherwise nil))
+
 (define vl-is-unsized-int ((x vl-expr-p)
                            (ss vl-scopestack-p)
                            (scopes vl-elabscopes-p))
+  (declare (ignore scopes)) ;; bozo should be using scopes in vl-unsized-parameter-index-p
   (b* ((x1 (vl-expr-fix x)))
     (vl-expr-case x1
       :vl-literal (vl-value-case x1.val
                     :vl-constint x1.val.wasunsized
                     :otherwise nil)
-      :vl-index (b* (((mv err opinfo) (vl-index-expr-typetrace x1 ss scopes))
-                     ((when err) nil)
-                     ((vl-operandinfo opinfo)))
-                  (vl-datatype-case opinfo.type
-                    :vl-coretype (and (atom opinfo.type.pdims)
-                                      (atom opinfo.type.udims)
-                                      (or (vl-coretypename-equiv opinfo.type.name :vl-int)
-                                          (vl-coretypename-equiv opinfo.type.name :vl-integer)))
-                    :vl-enum (vl-datatype-case opinfo.type.basetype
-                               :vl-coretype (and (atom opinfo.type.basetype.pdims)
-                                                 (atom opinfo.type.basetype.udims)
-                                                 (or (vl-coretypename-equiv opinfo.type.basetype.name :vl-int)
-                                                     (vl-coretypename-equiv opinfo.type.basetype.name :vl-integer)))
-                               :otherwise nil)
-                    :otherwise nil))
+      :vl-index (vl-unsized-index-p x ss)
       :otherwise nil)))
 
 

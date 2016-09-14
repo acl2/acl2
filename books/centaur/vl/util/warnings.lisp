@@ -159,11 +159,12 @@ explicit fixing.</li>
 
   (defmacro warn (&key type msg args
                        (fn '__function__)
-                       (acc 'warnings))
+                       (acc 'warnings)
+                       (fatalp 'nil))
     `(cons (make-vl-warning :type ,type
                             :msg ,msg
                             :args ,args
-                            :fatalp nil
+                            :fatalp ,fatalp
                             :fn ,fn)
            (vl-warninglist-fix ,acc))))
 

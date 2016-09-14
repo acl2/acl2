@@ -1,0 +1,9 @@
+#! /bin/sh
+
+echo 'Running "'$1'" in ACL2.'
+( echo '(time$ (verify-file "'$1'"))' | ./rat-checker ) > run.out
+echo 'ACL2 run finished.\n'
+
+acl2time=`cat run.out | awk 'BEGIN{time=0} /real/ {time=$2} END{print time}'`
+
+echo "ACL2 time:  $acl2time s\n"

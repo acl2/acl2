@@ -7748,7 +7748,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
             (and (eq (car trip) 'event-landmark)
                  (true-listp trip)
                  (eq (cadr trip) 'global-value)
-                 (eq (nth 4 trip) 'defun)
+                 (eq (access-event-tuple-type (cddr trip)) 'defun)
                  (nth 5 trip))))
       (cond ((and fn
                   (symbolp fn)
@@ -8224,9 +8224,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                    "~&***********************************************~&")
            (when *acl2-error-msg*
              (format t *acl2-error-msg*))
-           (when (not (member-eq 'set-debugger-enable-fn
-;                                (global-val 'untouchable-fns (w state))
-                                 (getpropc 'untouchable-fns 'global-value)))
+           (when (not (untouchable-fn-p 'set-debugger-enable-fn
+                                        (w state)
+                                        (f-get-global 'temp-touchable-fns
+                                                      state)))
              (format t
                      "~%To enable breaks into the debugger (also see :DOC ~
                       acl2-customization):~&~s~&"
@@ -8426,7 +8427,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
    (f-put-global 'parallel-execution-enabled t *the-live-state*)
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
-         (system::*break-enable* (debugger-enabledp *the-live-state*)))
+         (system::*break-enable* (debugger-enabledp *the-live-state*))
+         (*debug-io* *standard-output*))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)

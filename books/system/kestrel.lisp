@@ -15,9 +15,7 @@
 
 ; This file contains Kestrel's contributions to the ACL2 system code.
 ; In particular, it contains forms
-; to put some system code into logic mode,
-; guard-verify it,
-; and prove theorems about it.
+; to put some system code into logic mode and possibly guard-verify it.
 ; These contributions may be eventually incorporated into the ACL2 system code.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,3 +108,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination compute-stobj-flags)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination msgp) ; and guards

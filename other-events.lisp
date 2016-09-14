@@ -1255,6 +1255,7 @@
                                   :formals '(state)
                                   :hyp nil
                                   :concl '(ld-skip-proofsp state)
+                                  :equiv 'equal
                                   :rune *fake-rune-for-anonymous-enabled-rule*
                                   :nume 0 ; fake
                                   :recursivep nil
@@ -1275,6 +1276,7 @@
                                        :hyp nil
                                        :concl '(default-defun-mode-from-state
                                                  state)
+                                       :equiv 'equal
                                        :rune
                                        *fake-rune-for-anonymous-enabled-rule*
                                        :nume 0 ; fake
@@ -1295,6 +1297,7 @@
                                             :formals '(str state)
                                             :hyp nil
                                             :concl '(skip-when-logic str state)
+                                            :equiv 'equal
                                             :rune
                                             *fake-rune-for-anonymous-enabled-rule*
                                             :nume 0 ; fake
@@ -1343,6 +1346,7 @@
                                     :formals formals
                                     :hyp nil
                                     :concl (cons name-fn formals)
+                                    :equiv 'equal
                                     :rune
                                     *fake-rune-for-anonymous-enabled-rule*
                                     :nume 0 ; fake
@@ -4438,7 +4442,9 @@
                                               in-encapsulatep t)))))
           ((getpropc (car form) 'macro-body nil wrld)
            (cond
-            ((member-eq (car form) (global-val 'untouchable-fns wrld))
+            ((untouchable-fn-p (car form)
+                               wrld
+                               (f-get-global 'temp-touchable-fns state))
              (er soft ctx er-str
                  form
                  ""
@@ -12155,7 +12161,8 @@
            certification-file))
       (t (with-print-defaults
           ((current-package "ACL2")
-           (print-circle (f-get-global 'print-circle-files state)))
+           (print-circle (f-get-global 'print-circle-files state))
+           (print-readably t))
           (pprogn
            (print-object$ '(in-package "ACL2") ch state)
            (print-object$ (f-get-global 'acl2-version state) ch state)
@@ -14064,7 +14071,8 @@
     (t
      (with-print-defaults
       ((current-package "ACL2")
-       (print-circle (f-get-global 'print-circle-files state)))
+       (print-circle (f-get-global 'print-circle-files state))
+       (print-readably t))
       (pprogn
        (io? event nil state
             (expansion-filename)
@@ -14659,7 +14667,8 @@
          acl2x-file))
     (t (with-print-defaults
         ((current-package "ACL2")
-         (print-circle (f-get-global 'print-circle-files state)))
+         (print-circle (f-get-global 'print-circle-files state))
+         (print-readably t))
         (pprogn
          (io? event nil state
               (acl2x-file)
@@ -14781,7 +14790,8 @@
                     (proofs-co state) state nil))
           (with-print-defaults
            ((current-package "ACL2")
-            (print-circle (f-get-global 'print-circle-files state)))
+            (print-circle (f-get-global 'print-circle-files state))
+            (print-readably t))
            (pprogn
             (print-object$ '(in-package "ACL2") ch state)
             (print-objects
@@ -14854,7 +14864,8 @@
                     ch-to to
                     (with-print-defaults
                      ((current-package "ACL2")
-                      (print-circle (f-get-global 'print-circle-files state)))
+                      (print-circle (f-get-global 'print-circle-files state))
+                      (print-readably t))
                      (cond ((null ch-to)
                             (pprogn
                              (close-input-channel ch-from state)
@@ -25565,13 +25576,28 @@
                                     symbol."
                                    f))
                              (t "")))))
-                ((let ((fns (global-val 'untouchable-fns wrld)))
-                   (or (member-eq f fns) (member-eq g fns)))
+                ((or (untouchable-fn-p f
+                                       wrld
+                                       (f-get-global 'temp-touchable-fns
+                                                     state))
+                     (untouchable-fn-p g
+                                       wrld
+                                       (f-get-global 'temp-touchable-fns
+                                                     state)))
                  (er soft ctx
-                     "The argument~#0~[ ~&0 has~/s ~&0 have~] been placed on ~
-                      untouchable-fns.  See :DOC remove-untouchable."
-                     (intersection-eq (list f g)
-                                      (global-val 'untouchable-fns wrld))))
+                     "The function symbol~#0~[ ~&0 is~/s ~&0 are~] ~
+                      untouchable.  See :DOC remove-untouchable."
+                     (append
+                      (and (untouchable-fn-p f
+                                             wrld
+                                             (f-get-global 'temp-touchable-fns
+                                                           state))
+                           (list f))
+                      (and (untouchable-fn-p g
+                                             wrld
+                                             (f-get-global 'temp-touchable-fns
+                                                           state))
+                           (list g)))))
                 ((and (not skip-checks-t)
                       (not (logicp f wrld)))
                  (cond ((null g)
@@ -25686,11 +25712,18 @@
 
                          (er soft ctx
                              "It is illegal to attach to function symbol ~x0, ~
-                              because it was introduced with ~x1.~@2"
+                              because it ~@1.~@2"
                              f
-                             (if (getpropc f 'defchoose-axiom nil wrld)
-                                 'defchoose
-                               'defun)
+                             (let ((pair
+                                    (assoc-eq f
+                                              *primitive-formals-and-guards*)))
+                               (cond
+                                (pair
+                                 "is a built-in primitive")
+                                ((getpropc f 'defchoose-axiom nil wrld)
+                                 "was introduced with DEFCHOOSE")
+                                (t
+                                 "was introduced with DEFUN")))
                              see-doc))
                         ((not (symbolp g))
                          (er soft ctx

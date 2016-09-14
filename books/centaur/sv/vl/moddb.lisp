@@ -890,8 +890,9 @@ constructed separately.)</p>"
               (mv nil nil x-size y-size))
              ((when (eql x-size (* arraysize y-size)))
               (mv nil t x-size y-size)))
-          (mv (vmsg "Bad instancearray port connection size on port ~s0"
-                     (string-fix portname))
+          (mv (vmsg "Bad instancearray port connection size on port ~s0: should be ~x1 (if replicated) or else ~x2, but is ~x3"
+                    (string-fix portname)
+                    y-size (* arraysize y-size) x-size)
               nil nil nil)))
        ((when x-packed)
         (mv (vmsg "Bad instancearray port connection: packed expression ~a0 ~
@@ -935,9 +936,44 @@ constructed separately.)</p>"
 
 
 
+(define vl-expr-is-extensional ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (vl-expr-case x
+    :vl-literal (vl-value-case x.val :vl-extint)
+    :vl-qmark (and (vl-expr-is-extensional x.then)
+                   (vl-expr-is-extensional x.else))
+    :otherwise nil))
 
 
-
+(define vl-port-type-err-warn ((portname stringp)
+                               (portdir vl-maybe-direction-p)
+                               (x vl-plainarg-p)
+                               (port-type vl-datatype-p)
+                               (type-err vl-maybe-type-error-p)
+                               (ss vl-scopestack-p))
+  :guard (vl-plainarg->expr x)
+  :returns (warnings vl-warninglist-p)
+  (b* (((unless type-err) nil)
+       (warnings nil)
+       (expr (vl-plainarg->expr x)))
+    (vl-type-error-case type-err
+      :trunc/extend (b* (((when (vl-expr-is-extensional expr))
+                          ;; Don't warn about extints.
+                          nil))
+                      (fatal :type :vl-port-size-mismatch
+                             :msg "~s0ort ~s1 has size ~x2, but its connection expression ~a3 has size ~x4"
+                             :args (list (case (vl-maybe-direction-fix portdir)
+                                           ;; ugly
+                                           ((nil) "P")
+                                           (:vl-input "Input p")
+                                           (:vl-output "Output p")
+                                           (otherwise "Inout p"))
+                                         (string-fix portname)
+                                         type-err.lhs-size
+                                         expr
+                                         type-err.rhs-selfsize)))
+      :otherwise (vl-type-error-basic-warn expr nil type-err (vl-idexpr portname) port-type ss))))
+       
 
 
 (define vl-gate-plainarg-portinfo ((x vl-plainarg-p)
@@ -978,13 +1014,14 @@ constructed separately.)</p>"
        (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
        (port-type *vl-plain-old-logic-type*)
-       ((wmv warnings x-svex x-type ?x-size)
+       ((wmv warnings x-svex x-type ?x-size type-err)
         (vl-expr-to-svex-maybe-typed
          x.expr
          (if arraysize
              nil
            port-type)
          ss scopes :compattype :equiv))
+       ((wmv warnings) (vl-port-type-err-warn portname (vl-direction-fix portdir) x port-type type-err ss))
 
        ((unless x-type) (fail warnings))
        ((mv err multi x-size ?port-size)
@@ -1285,9 +1322,11 @@ constructed separately.)</p>"
        ((unless y-type)
         ;; already warned
         (fail warnings))
-       ((wmv warnings x-svex x-type ?x-size)
+       ((wmv warnings x-svex x-type ?x-size type-err)
         (vl-expr-to-svex-maybe-typed
          x.expr (if arraysize nil y-type) ss scopes :compattype :assign))
+
+       ((wmv warnings) (vl-port-type-err-warn y.name x.dir x y-type type-err ss))
 
        ((unless x-type) (fail warnings))
        ((mv err ?multi ?x-size ?y-size)
@@ -2130,7 +2169,7 @@ how VL module instances are translated.</p>"
                    :args (list x))
             wires assigns aliases nil nil))
 
-       ((wmv warnings portinfo)
+       ((wmv warnings portinfo :ctx x)
         (vl-gate-plainarglist-portinfo
          x.args portnames portdirs 0 ss scopes arraywidth))
 
@@ -2657,8 +2696,10 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
         (vl-expr-to-svex-lhs x.lvalue ss scopes))
        ((unless lhs-type) (mv warnings nil))
        ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
-       ((wmv warnings svex-rhs :ctx x)
+       ((wmv warnings type-err svex-rhs :ctx x)
         (vl-expr-to-svex-datatyped x.expr x.lvalue lhs-type ss scopes :compattype :assign))
+       ((wmv warnings :ctx x)
+        (vl-type-error-basic-warn x.expr nil type-err x.lvalue lhs-type ss))
        ;; BOZO deal with drive strengths
        ((when (not delay))
         (mv warnings (list (cons lhs (sv::make-driver :value svex-rhs)))))

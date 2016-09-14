@@ -1995,6 +1995,7 @@
                                        :nume nume
                                        :hyp (and hyps (conjoin hyps))
                                        :concl body
+                                       :equiv equiv
                                        :rune rune
                                        :formals args
                                        :recursivep clique

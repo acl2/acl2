@@ -65,14 +65,27 @@ debugging and hacking on VL.
 
 ")
 
-(define vl-shell-top ((argv string-listp) &key (state 'state))
-  :short "Top-level @('vl shell') command."
+(define vl-shell-entry ((events true-listp) &key (state 'state))
+  :short "Implementation-level @('vl shell') command."
   :long "<p>This command is defined in raw Lisp, see @('shell-raw.lsp') for
-         details.</p>"
+details.</p>
+
+<p>Its argument is a list of ACL2 events to run before presenting the user with
+an interactive shell.</p>"
   :returns state
   :ignore-ok t
   (progn$ (die "Raw lisp definition not installed?")
           state))
+
+
+(define vl-shell-top ((argv string-listp) &key (state 'state))
+  :short "Top-level @('vl shell') command."
+  :long "<p>This command just calls @(see vl-shell-entry).  It provides a
+single event that saves the user arguments as an ACL2 constant named
+@('vl::*vl-shell-argv*').</p>"
+  :returns state
+  :ignore-ok t
+  (vl-shell-entry `((defconst vl::*VL-SHELL-ARGV* ',argv))))
 
 (defttag :vl-shell)
 (acl2::include-raw "shell-raw.lsp")

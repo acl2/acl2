@@ -2225,10 +2225,24 @@
 (defun maybe-print-nil-goal-generated (gag-state chan state)
   (cond ((eq (access gag-state gag-state :abort-stack)
              'empty-clause)
-         (fms "[NOTE: A goal of ~x0 was generated.  See :DOC nil-goal.]~|"
+         (fms "~%[NOTE: A goal of ~x0 was generated.  See :DOC nil-goal.]~|"
               (list (cons #\0 nil))
               chan state nil))
         (t (newline chan state))))
+
+(defun reverse-gag-stack (stack acc)
+
+; Stack is a list of gag-info records.  This function is just revappend, except
+; that if we encounter a goal with :clause nil, then we return the first such
+; goal encountered as the first element of the result.
+
+  (cond ((null stack) acc)
+        ((equal (access gag-info (car stack) :clause)
+                nil)
+         (cons (car stack)
+               (revappend (cdr stack) acc)))
+        (t (reverse-gag-stack (cdr stack)
+                              (cons (car stack) acc)))))
 
 (defun print-gag-state1 (gag-state state)
   (cond
@@ -2287,7 +2301,7 @@
                     (sub-stack (newline chan state))
                     (t (maybe-print-nil-goal-generated gag-state chan state)))
                    (print-gag-stack-rev
-                    (reverse top-stack)
+                    (reverse-gag-stack top-stack nil)
                     limit limit "before induction" chan
                     state))))
                (t state))
@@ -2302,7 +2316,7 @@
                         chan state nil)
                    (maybe-print-nil-goal-generated gag-state chan state)
                    (print-gag-stack-rev
-                    (reverse sub-stack)
+                    (reverse-gag-stack sub-stack nil)
                     limit
                     limit
                     "under a top-level induction"
@@ -8926,7 +8940,7 @@
                  (let ((formals (access def-body def-body :formals)))
                    (mv nil
                        (access def-body def-body :rune)
-                       'equal
+                       (access def-body def-body :equiv)
                        (access def-body def-body :hyp)
                        (cons-term (ffn-symb term) formals)
                        (access def-body def-body :concl))))

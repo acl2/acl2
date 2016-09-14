@@ -218,8 +218,15 @@
 ; pairs.  It puts into co-string and co-channel the string and returned channel
 ; for the first of standard-co or proofs-co encountered.
 
-  (let ((var (car pair))
-        (val (cdr pair)))
+  (let* ((var (car pair))
+         (val (cdr pair))
+         (file-name (and (member-eq var
+                                    '(standard-oi standard-co proofs-co))
+                         (stringp val) ; else not file-name is not used
+                         (extend-pathname
+                          (f-get-global 'connected-book-directory state)
+                          val
+                          state))))
 
 ; The first three LD specials, namely the three channels, are special because
 ; we may have to open a channel and create a new pair.  Once we get past those
@@ -234,16 +241,12 @@
             ((true-listp val)
              (value pair))
             ((stringp val)
-             (let ((file-name (extend-pathname
-                               (f-get-global 'connected-book-directory state)
-                               val
-                               state)))
-               (mv-let (ch state)
-                       (open-input-channel file-name :object state)
-                       (cond (ch (value (cons 'standard-oi ch)))
-                             (t (ld-standard-oi-missing
-                                 val file-name ld-missing-input-ok ctx
-                                 state))))))
+             (mv-let (ch state)
+               (open-input-channel file-name :object state)
+               (cond (ch (value (cons 'standard-oi ch)))
+                     (t (ld-standard-oi-missing
+                         val file-name ld-missing-input-ok ctx
+                         state)))))
             ((consp val)
              (let ((last-cons (last val)))
                (cond
@@ -275,13 +278,7 @@
              (value (cons 'standard-co co-channel)))
             ((stringp val)
              (mv-let (ch state)
-                     (open-output-channel
-                      (extend-pathname
-                       (f-get-global 'connected-book-directory state)
-                       val
-                       state)
-                      :character
-                      state)
+                     (open-output-channel file-name :character state)
                      (cond (ch (value (cons 'standard-co ch)))
                            (t (er soft ctx *ld-special-error* 'standard-co
                                   val)))))
@@ -291,19 +288,16 @@
             ((and (symbolp val)
                   (open-output-channel-p val :character state))
              (value pair))
-            ((equal val co-string)
-             (value (cons 'proofs-co co-channel)))
             ((stringp val)
-             (mv-let (ch state)
-                     (open-output-channel
-                      (extend-pathname
-                       (f-get-global 'connected-book-directory state)
-                       val
-                       state)
-                      :character
-                      state)
-                     (cond (ch (value (cons 'proofs-co ch)))
-                           (t (er soft ctx *ld-special-error* 'proofs-co val)))))
+             (cond
+              ((equal file-name co-string)
+               (value (cons 'proofs-co co-channel)))
+              (t
+               (mv-let (ch state)
+                 (open-output-channel file-name :character state)
+                 (cond
+                  (ch (value (cons 'proofs-co ch)))
+                  (t (er soft ctx *ld-special-error* 'proofs-co val)))))))
             (t (er soft ctx *ld-special-error* 'proofs-co val))))
           (current-package
            (er-progn (chk-current-package val ctx state)
@@ -2464,6 +2458,27 @@
      (progn
        (include-book "misc/disassemble" :dir :system :ttags '(:disassemble$))
        (value-triple (disassemble$-fn ,fn ,recompile (list ,@args)))))))
+
+(defmacro near-misses (name)
+
+; This macro is similar in nature to wet and disassemble$, in that it relies on
+; including books.  At some point we might share code by adding an autoload
+; utility.
+
+  `(with-output
+     :off :all
+     :on error
+     (make-event
+      (er-progn
+       (include-book "system/event-names" :dir :system)
+       (include-book "xdoc/spellcheck" :dir :system)
+       (make-event (pprogn
+                    (f-put-global 'near-misses-val-crazy-name-used-only-here
+                                  (plausible-misspellings ',name)
+                                  state)
+                    (value '(value-triple nil))))
+       (value `(value-triple
+                ',(@ near-misses-val-crazy-name-used-only-here)))))))
 
 ; Changes made March 9-16, 2009 (after v3-4), for more efficient handling of
 ; certificates, etc.:

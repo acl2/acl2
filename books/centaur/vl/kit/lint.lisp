@@ -57,6 +57,7 @@
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
+(include-book "shell")
 (local (include-book "xdoc/display" :dir :system))
 (local (include-book "../mlib/modname-sets"))
 (local (include-book "../util/arithmetic"))
@@ -300,7 +301,17 @@ for particular modules, or all warnings of particular types, etc.  See @(see
 
    (debug       booleanp
                 "Print extra information for debugging."
-                :rule-classes :type-prescription)))
+                :rule-classes :type-prescription)
+
+   (shell        booleanp
+                "Instead of running the linter, enter an ACL2 shell where the linter
+                 configuration has been saved as constant
+                 @('vl::*vl-user-lintconfig*').")
+
+   (post-shell  booleanp
+                "After running the linter, enter an ACL2 shell where the linter
+                 configuration has been saved as constant
+                 @('vl::*vl-user-lintconfig*').")))
 
 (defval *vl-lint-help*
   :short "Usage message for vl lint."
@@ -516,7 +527,7 @@ shown.</p>"
 (define run-vl-lint-main ((design vl-design-p)
                           (config vl-lintconfig-p))
   :guard-debug t
-  :returns (result vl-lintresult-p :hyp :fguard)
+  :returns (result vl-lintresult-p)
 
   (b* (((vl-lintconfig config) config)
        (design (vl-annotate-design design))
@@ -693,22 +704,29 @@ shown.</p>"
                         :sd-probs sd-probs
                         )))
 
+(define vl-lintconfig-loadconfig ((config vl-lintconfig-p))
+  :returns (loadconfig vl-loadconfig-p)
+  (b* (((vl-lintconfig config)))
+    (make-vl-loadconfig
+     :edition       config.edition
+     :strictp       config.strict
+     :start-files   config.start-files
+     :search-path   config.search-path
+     :search-exts   config.search-exts
+     :include-dirs  config.include-dirs
+     :defines       (vl-make-initial-defines config.defines))))
+
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
-  :returns (mv (res vl-lintresult-p :hyp :fguard)
+  :returns (mv (res vl-lintresult-p)
+               (loadres vl-loadresult-p)
+               (loadconfig vl-loadconfig-p)
                (state state-p1 :hyp (state-p1 state)))
   (b* ((- (cw "Starting VL-Lint~%"))
        ((vl-lintconfig config) config)
        (- (or (not config.debug)
               (cw "Lint configuration: ~x0~%" config)))
 
-       (loadconfig (make-vl-loadconfig
-                    :edition       config.edition
-                    :strictp       config.strict
-                    :start-files   config.start-files
-                    :search-path   config.search-path
-                    :search-exts   config.search-exts
-                    :include-dirs  config.include-dirs
-                    :defines       (vl-make-initial-defines config.defines)))
+       (loadconfig (vl-lintconfig-loadconfig config))
        (- (or (not config.debug)
               (cw "Load configuration: ~x0~%" loadconfig)))
 
@@ -718,7 +736,7 @@ shown.</p>"
        (lintres
         (cwtime (run-vl-lint-main (vl-loadresult->design loadres)
                                   config))))
-    (mv lintres state)))
+    (mv lintres loadres loadconfig state)))
 
 
 (define sd-problem-major-p ((x sd-problem-p))
@@ -1200,11 +1218,27 @@ wide addition instead of a 10-bit wide addition.")))
        (state (must-be-directories! config.search-path))
        (state (must-be-directories! config.include-dirs))
 
-       ((mv result state)
+       ((when config.shell)
+        (vl-shell-entry `((defconst *vl-user-lintconfig* ',config)
+                          (defconst *vl-user-loadconfig* (vl-lintconfig-loadconfig *vl-user-lintconfig*)))))
+
+       ((mv result loadres loadconfig state)
         (cwtime (run-vl-lint config)
                 :name vl-lint))
        (state
-        (cwtime (vl-lint-report result state))))
+        (cwtime (vl-lint-report result state)))
+
+       ((when config.post-shell)
+        (b* ((print (and (boundp-global 'acl2::ld-pre-eval-print state) ;; for guard
+                         (f-get-global 'acl2::ld-pre-eval-print state))))
+          (vl-shell-entry `((acl2::set-ld-pre-eval-print nil state)
+                            (defconst *vl-user-lintconfig* ',config)
+                            (defconst *vl-user-loadconfig* ',loadconfig)
+                            (defconst *vl-user-loadres* ',loadres)
+                            (defconst *vl-user-design* (vl-loadresult->design *vl-user-loadres*))
+                            (defconst *vl-user-lintresult* ',result)
+                            (acl2::set-ld-pre-eval-print ',print state))))))
+
     (exit-ok)
     state))
 

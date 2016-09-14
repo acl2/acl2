@@ -448,7 +448,8 @@ expression with @(see vl-expr-to-svex).</p>")
                                        &key
                                        ((reclimit natp) '1000)
                                        ((ctxsize maybe-natp) 'nil)
-                                       ((type vl-maybe-datatype-p) 'nil))
+                                       ((type vl-maybe-datatype-p) 'nil)
+                                       ((lhs vl-maybe-expr-p) 'nil))
     ;; Just calls vl-expr-maybe-resolve-to-constant, but produces a fatal
     ;; warning if it failed to reduce to a constant.
     :measure (acl2::nat-list-measure
@@ -462,7 +463,8 @@ expression with @(see vl-expr-to-svex).</p>")
          ((mv ok constantp warnings x svex elabindex)
           (vl-expr-maybe-resolve-to-constant x elabindex :reclimit reclimit
                                              :ctxsize ctxsize
-                                             :type type)))
+                                             :type type
+                                             :lhs lhs)))
       (mv (and ok constantp)
           (if (and ok (not constantp))
               (fatal :type :vl-expr-consteval-fail
@@ -508,7 +510,8 @@ expression with @(see vl-expr-to-svex).</p>")
                                              &key
                                              ((reclimit natp) '1000)
                                              ((ctxsize maybe-natp) 'nil)
-                                             ((type vl-maybe-datatype-p) 'nil))
+                                             ((type vl-maybe-datatype-p) 'nil)
+                                             ((lhs vl-maybe-expr-p) 'nil))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-expr-count x) 9))
     :returns (mv (ok)
@@ -525,7 +528,7 @@ expression with @(see vl-expr-to-svex).</p>")
          ((vl-elabindex elabindex))
          ((mv ok constp warnings x svex)
           (vl-elaborated-expr-consteval x elabindex.ss elabindex.scopes
-                                        :ctxsize ctxsize :type type)))
+                                        :ctxsize ctxsize :type type :lhs lhs)))
       (mv ok constp warnings x svex elabindex))
     ///
     (in-theory (disable vl-expr-maybe-resolve-to-constant)))
@@ -881,7 +884,8 @@ expression with @(see vl-expr-to-svex).</p>")
              ((wmv ok1 warnings new-expr svex elabindex :ctx x)
               (vl-expr-resolve-to-constant
                decl.type.default elabindex :reclimit reclimit
-               :type decl.type.type))
+               :type decl.type.type
+               :lhs (vl-idexpr name)))
 
              (val (sv::svex-case svex :quote svex.val :otherwise nil))
              ((unless (and ok1 val))

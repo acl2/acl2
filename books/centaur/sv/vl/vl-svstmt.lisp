@@ -714,8 +714,10 @@ because... (BOZO)</p>
                        :args (list lhs err))
                 nil))
            ((vl-operandinfo opinfo))
-           ((wmv warnings rhssvex)
+           ((wmv warnings type-err rhssvex)
             (vl-expr-to-svex-datatyped rhs lhs opinfo.type ss scopes :compattype :assign))
+           ((wmv warnings) (vl-type-error-basic-warn
+                            rhs nil type-err lhs opinfo.type ss))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts lhs rhssvex blockingp ss scopes)))
         (mv ok warnings svstmts))
@@ -876,7 +878,9 @@ because... (BOZO)</p>
     "$fmonitor" "$fmonitorb" "$fmonitoro" "$fmonitorh"
     "$fstrobe" "$fstrobeb" "$fstrobeo" "$fstrobeh"
     "$fwrite" "$fwriteb" "$fwriteo" "$fwriteh"
-    "$monitoroff" "$monitoron"))
+    "$monitoroff" "$monitoron"
+    "$dumpoff" "$dumpon" "$dumpvars"
+    "$fsdbDumpoff" "$fsdbDumpon" "$fsdbDumpvars" "$fsdbDumpvarsByFile"))
 
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
@@ -983,10 +987,11 @@ because... (BOZO)</p>
               (vl-stmtlist->svstmts x.stmts blk-ss blk-scopes nonblockingp fnname)))
           (mv (and ok1 ok2)
               warnings
-              (list
-               (sv::make-svstmt-scope
-                :locals locals
-                :body (append-without-guard initstmts bodystmts)))))
+              (and (or (consp initstmts) (consp bodystmts))
+                   (list
+                    (sv::make-svstmt-scope
+                     :locals locals
+                     :body (append-without-guard initstmts bodystmts))))))
 
         :vl-casestmt
         (b* ((caseexprs (cons x.test (vl-caselist->caseexprs x.caselist)))
@@ -1032,18 +1037,22 @@ because... (BOZO)</p>
         (mv t warnings (list (sv::make-svstmt-jump :type :continue)))
 
         :vl-timingstmt
-        (b* (((unless (eq (tag x.ctrl) :vl-delaycontrol))
+        (b* (((wmv ok warnings substmts)
+              (vl-stmt->svstmts x.body ss scopes nonblockingp fnname))
+             ;; If the body is effectively empty (maybe because it was just a call of some no-ops),
+             ;; then just ignore this.
+             ((when (atom substmts))
+              (mv ok warnings nil))
+             ((unless (eq (tag x.ctrl) :vl-delaycontrol))
               (fail (fatal :type :vl-stmt-unsupported
-                           :msg "~s0 control statement unsupported: ~a0"
+                           :msg "~s0 control statement unsupported: ~a1"
                            :args (list (if (eq (tag x.ctrl) :vl-eventcontrol)
                                            "Event"
                                          "Repeat")
-                                       x))))
-             ((wmv ok warnings substmts)
-              (vl-stmt->svstmts x.body ss scopes nonblockingp fnname)))
+                                       x)))))
           (mv ok
               (warn :type :vl-delay-ignored
-                    :msg "Ignoring delay control on statment ~a1"
+                    :msg "Ignoring delay control on statment ~a0"
                     :args (list x))
               substmts))
 
@@ -1340,7 +1349,8 @@ because... (BOZO)</p>
                                       (scopes vl-elabscopes-p)
                                       &key
                                       ((ctxsize maybe-natp) 'nil)
-                                      ((type vl-maybe-datatype-p) 'nil))
+                                      ((type vl-maybe-datatype-p) 'nil)
+                                      ((lhs vl-maybe-expr-p) 'nil))
   :short "Assumes expression is already elaborated."
   :returns (mv (ok  "no errors")
                (constp "successfully reduced to constant")
@@ -1362,12 +1372,14 @@ because... (BOZO)</p>
             (b* (((mv ?err size) (vl-datatype-size type))
                  ;; Note: vl-expr-to-svex-datatyped is going to complain
                  ;; already if we don't get the size, so don't warn here.
-                 ((mv warnings svex)
+                 ((mv warnings type-err svex)
                   ;; Note: We use :compattype :assign because the only place
                   ;; where the datatype argument is used is when computing the
                   ;; value for an explicitvalueparam, which is basically an
                   ;; assignment.
-                  (vl-expr-to-svex-datatyped x nil type ss scopes :compattype :assign)))
+                  (vl-expr-to-svex-datatyped x nil type ss scopes :compattype :assign))
+                 ((wmv warnings) (vl-type-error-basic-warn
+                                  x nil type-err lhs type ss)))
               (mv warnings svex size))
           (if ctxsize
               (vl-expr-to-svex-selfdet x ctxsize ss scopes)
@@ -1397,11 +1409,12 @@ because... (BOZO)</p>
                       (scopes vl-elabscopes-p)
                       &key
                       ((ctxsize maybe-natp) 'nil)
-                      ((type vl-maybe-datatype-p) 'nil))
+                      ((type vl-maybe-datatype-p) 'nil)
+                      ((lhs vl-maybe-expr-p) 'nil))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-expr-p))
   (b* (((mv ?ok ?constant warnings new-x ?svex)
-        (vl-elaborated-expr-consteval x ss scopes :ctxsize ctxsize :type type)))
+        (vl-elaborated-expr-consteval x ss scopes :ctxsize ctxsize :type type :lhs lhs)))
     (mv warnings new-x)))
 
 

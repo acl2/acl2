@@ -179,9 +179,14 @@
   (interactive)
   (when *dmr-timer*
     (if (string-match "XEmacs" emacs-version)
-        (delete-itimer *dmr-timer*)
+        (if (fboundp 'delete-itimer)
+	    (delete-itimer *dmr-timer*)
+	  (error "delete-itimer is unbound;
+please contact matthew.j.kaufmann@gmail.com"))
       (cancel-timer *dmr-timer*))
     (setq *dmr-timer* nil)))
+
+(defvar ctl-t-keymap)
 
 ; The following won't be necessary if emacs/emacs-acl2.el is loaded first.
 ; Keep this in sync with that code (the two should be identical).
@@ -189,7 +194,6 @@
 
 ; This trick probably came from Bob Boyer, to define a new keymap; so now
 ; control-t is the first character of a complex command.
-  (defvar ctl-t-keymap)
   (setq ctl-t-keymap (make-sparse-keymap))
   (define-key (current-global-map) "\C-T" ctl-t-keymap)
 

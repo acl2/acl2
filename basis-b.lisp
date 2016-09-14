@@ -314,56 +314,83 @@
          (cdr body)))
     nil))
 
-(defmacro defstub (name &rest args)
-  (cond
-   ((not (or (equal (length args) 2)
-             (and (equal (length args) 3)
-                  (symbol-listp (car args))
-                  (symbolp (cadr args))
-                  (equal (symbol-name (cadr args)) "=>"))))
-    `(er soft 'defstub
-         "Defstub must be of the form (defstub name formals body) or (defstub ~
-          name args-sig => body-sig), where args-sig is a true-list of ~
-          symbols.  See :DOC defstub."))
-   ((equal (length args) 2)
-
-; Old style
-    (let* ((formals (car args))
-           (body (cadr args))
-           (ignores (defstub-ignores formals body)))
-      `(encapsulate
-         ((,name ,formals ,body))
-         (logic)
-         (local
-          (defun ,name ,formals
-            (declare (ignore ,@ignores))
-            ,body))
-         ,@(and (consp body)
-                (eq (car body) 'mv)
-                `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                      name)
-                    (true-listp (,name ,@formals))
-                    :rule-classes :type-prescription))))))
-   (t (let* ((args-sig (car args))
-             (body-sig (caddr args))
-             (formals (gen-formals-from-pretty-flags args-sig))
-             (body (defstub-body body-sig))
-             (ignores (defstub-ignores formals body))
-             (stobjs (collect-non-x '* args-sig)))
+(defun defstub-fn (name args)
+  (let ((len-args (length args)))
+    (cond
+     ((not (or (eql len-args 2)
+               (and (eql len-args 3)
+                    (symbolp (cadr args))
+                    (equal (symbol-name (cadr args)) "=>"))))
+      `(er soft 'defstub
+           "Defstub must be of the form (defstub name formals args-sig) or ~
+            (defstub name args-sig => body-sig).  See :DOC defstub."))
+     ((and (eql len-args 2)
+           (not (and (symbol-listp (car args))
+                     (or (symbolp (cadr args))
+                         (symbol-listp (cadr args))))))
+      `(er soft 'defstub
+           "For calls of the form (defstub name formals args-sig), formals ~
+            must be a true-list of symbols and args-sig must be a symbol or a ~
+            true-list of symbols.  See :DOC defstub."))
+     ((and (eql len-args 3)
+           (not (symbol-listp (car args))))
+      `(er soft 'defstub
+           "For calls of the form (defstub name args-sig => body-sig), ~
+            args-sig must be a true-list of symbols.  See :DOC defstub."))
+     ((eql len-args 2) ; old style
+      (let* ((formals (car args))
+             (body (cadr args))
+             (mv-p (and (consp body)
+                        (eq (car body) 'mv))))
         `(encapsulate
-           (((,name ,@args-sig) => ,body-sig))
+           ((,name ,formals ,body))
            (logic)
            (local
             (defun ,name ,formals
-              (declare (ignore ,@ignores)
-                       (xargs :stobjs ,stobjs))
-              ,body))
-           ,@(and (consp body-sig)
-                  (eq (car body-sig) 'mv)
+              (declare (ignorable ,@formals))
+              ,(if mv-p
+                   (let* ((output-vars (cdr body))
+                          (posn (position-eq 'state output-vars))
+                          (lst
+                           (if posn
+                               (append (make-list posn :initial-element t)
+                                       (cons 'state
+                                             (make-list (- (length output-vars)
+                                                           (1+ posn)))))
+                             (make-list (length output-vars)
+                                        :initial-element t))))
+                     `(mv ,@lst))
+                 (if (eq body 'state)
+                     'state
+                   t))))
+           ,@(and mv-p
                   `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
                                         name)
                       (true-listp (,name ,@formals))
-                      :rule-classes :type-prescription))))))))
+                      :rule-classes :type-prescription))))))
+     (t (let* ((args-sig (car args))
+               (body-sig (caddr args))
+               (formals (gen-formals-from-pretty-flags args-sig))
+               (body (defstub-body body-sig))
+               (ignores (defstub-ignores formals body))
+               (stobjs (collect-non-x '* args-sig)))
+          `(encapsulate
+             (((,name ,@args-sig) => ,body-sig))
+             (logic)
+             (local
+              (defun ,name ,formals
+                (declare (ignore ,@ignores)
+                         (xargs :stobjs ,stobjs))
+                ,body))
+             ,@(and (consp body-sig)
+                    (eq (car body-sig) 'mv)
+                    `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
+                                          name)
+                        (true-listp (,name ,@formals))
+                        :rule-classes :type-prescription)))))))))
+
+(defmacro defstub (name &rest args)
+  (defstub-fn name args))
 
 ;; RAG - I changed the primitive guard for the < function, and the
 ;; complex function.  Added the functions complexp, realp, and floor1.
@@ -2279,6 +2306,7 @@
     hyp ; nil if there are no hypotheses
     .
     concl)
+   equiv
    .
    (recursivep formals rune . controller-alist))
   t)
@@ -2323,11 +2351,26 @@
   (cond ((flambdap fn)
          (lambda-body fn))
         (normalp (let ((def-body (def-body fn w)))
-                   (latest-body (fcons-term fn
-                                            (access def-body def-body
-                                                    :formals))
-                                (access def-body def-body :hyp)
-                                (access def-body def-body :concl))))
+                   (cond
+                    ((not (eq (access def-body def-body :equiv)
+                              'equal))
+
+; The application of fn to its formals can fail to be equal to its body in all
+; such cases, so we revert to the unnormalized body.  An alternative could be
+; to define the function def-body to find the most recent body that has 'equal
+; as its :equal, rather than the recent body unconditionally.  But then, since
+; we want :expand hints to use the latest body even if :equiv is not 'equal, we
+; could have three different bodies in use at a given time (unnormalized,
+; latest normalized, and latest normalized with :equiv = equal), and that just
+; seems potentially too confusing.  Instead, our story will be that the body is
+; always either the latest body or the (original) unnormalized body.
+
+                     (getpropc fn 'unnormalized-body nil w))
+                    (t (latest-body (fcons-term fn
+                                                (access def-body def-body
+                                                        :formals))
+                                    (access def-body def-body :hyp)
+                                    (access def-body def-body :concl))))))
         (t (getpropc fn 'unnormalized-body nil w))))
 
 ; Rockwell Addition: Consider the guard conjectures for a stobj-using

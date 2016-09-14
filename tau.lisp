@@ -287,7 +287,8 @@
 ; WARNING: The resulting term is in quote normal form.  We take advantage of
 ; this fact in our implementation of :by hints, in function
 ; apply-top-hints-clause1, to increase the chances that the "easy-winp" case
-; holds.
+; holds.  We also take advantage of this fact in
+; interpret-term-as-rewrite-rule, as commented there.
 
 ; WARNING.  Remove-guard-holders is used in constraint-info,
 ; induction-machine-for-fn1, and termination-machine, so (remove-guard-holders1
@@ -9764,7 +9765,10 @@
            (def-eqn
              (cond
               ((null db) nil)
-              ((access def-body db :hyp) nil)
+              ((or (access def-body db :hyp)
+                   (not (eq (access def-body db :equiv)
+                            'equal)))
+               nil)
               (t
                (fcons-term* 'equal
                             (fcons-term fn formals)

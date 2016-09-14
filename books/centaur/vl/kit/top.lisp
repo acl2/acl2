@@ -239,7 +239,9 @@ vl-toolkit-other-command).</p>"
 
        ((when (equal cmd "lint"))
         (b* ((state (vl-lint-top args)))
-          (exit-ok)
+          ;; hack to make interactive lint debugging work and not just exit
+          (and (not (intersectp-equal '("--shell" "--post-shell") args))
+               (exit-ok))
           state))
 
        ((when (equal cmd "gather"))
