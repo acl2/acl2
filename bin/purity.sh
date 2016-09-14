@@ -26,6 +26,7 @@ git fetch --all
 echo "-----"
 
 $basecmd \
+  --author='Matt Kaufmann <kaufmann@horatio-217.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@horatio-168.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@cs.utexas.edu>' \
   --author='MattKaufmann <matthew.j.kaufmann@gmail.com>' \
