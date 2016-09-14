@@ -434,7 +434,9 @@ the two instances are the same (or there aren't any parameters).</p>")
   :parents (vl-unparam-basename)
   (b* (((when (atom x)) ps)
        ((vl-paramdecl x1) (car x))
-       ((when x1.localp)
+       ((when (or x1.localp
+                  ;; this is a little scary
+                  (not x1.overriddenp)))
         ;; we think localparams are always determined by the nonlocal params,
         ;; so we don't need to include them in the name.
         (vl-unparam-basename-paramdecls (cdr x)))
@@ -2154,6 +2156,12 @@ scopestacks.</p>"
 
 ||#
 
+;; bozo why isn't this already defined?
+(local (defthm string-listp-of-append
+         (implies (and (string-listp x)
+                       (string-listp y))
+                  (string-listp (append x y)))))
+
 (define vl-design-elaborate
   :short "Top-level @(see unparameterization) transform."
   ((x vl-design-p))
@@ -2218,9 +2226,10 @@ scopestacks.</p>"
         (vl-design-toplevel x))
 
        ;; Make a ledger with initially empty instkeymap and namefactory
-       ;; containing the top-level definitions' names -- modules, UDPs,
-       ;; interfaces, programs.
-       (top-names (acl2::alist-keys (vl-design-scope-definition-alist x nil)))
+       ;; containing the names of all top-level definitions not subject to
+       ;; parameterization -- currently just programs and UDPs.
+       (top-names (append (vl-programlist->names (vl-design->programs x))
+                          (vl-udplist->names (vl-design->udps x))))
        (ledger (make-vl-unparam-ledger
                 :ndb (vl-starting-namedb top-names)))
 
