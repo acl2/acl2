@@ -17216,6 +17216,26 @@
 ;           (SETQ ANS FALSE)
 ;           (GO WIN)))
 
+; On a somewhat related note, we have briefly considered the possibility of
+; supporting some weak kind of forward chaining when we enter the true and
+; false branches of an IF, generalizing what we support with compound
+; recognizer rules.
+
+; (implies (unsigned-byte-p 4 x)
+;          (< x 16))
+
+; We have come up with at least the following reasons not to provide such
+; support.
+
+; - To take full advantage of such a rule we'd need assume-true-false to extend
+;   the linear pot, which would likely be expensive, as discussed above.
+
+; - IF calls generally work their way up to top-level case splits anyhow, with
+;   two exceptions: backchaining and the tentative opening of recursive
+;   functions.  Such a rule would only provide marginal help for these cases.
+;   Note that recursive function calls can be forced open anyhow, using :expand
+;   hints.
+
   (declare (ignore geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))

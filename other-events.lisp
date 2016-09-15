@@ -17076,6 +17076,8 @@
              (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
              (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
              #+:non-standard-analysis
+             (classicalp-p (and (assoc-eq :classicalp keyword-alist) t))
+             #+:non-standard-analysis
              (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
                            (if pair
                                (cdr pair)
