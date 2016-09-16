@@ -125,6 +125,14 @@
        ((when exists) (mv nil state)))
     (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state)))
 
+(defconsts (*output-lines-iv* state)
+  (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/no_iv")))
+       ((when err)
+        (er hard? 'output-lines-iv "~@0~%" err)
+        (mv nil state))
+       ((when exists) (mv nil state)))
+    (acl2::read-file-lines (str::cat *testname* "/outputs.iv.data") state)))
+
 (defconsts (*err* *updates* *nextstates* *assigns* *delays* moddb aliases)
   (svex-design-compile *svex-design*))
 
@@ -149,6 +157,8 @@
              (cosims-compare *input-lines* *output-lines-ncv* *exactp* *updates* *nextstates*)))
 (assert! (or (not *output-lines-vcs*)
              (cosims-compare *input-lines* *output-lines-vcs* *exactp* *updates* *nextstates*)))
+(assert! (or (not *output-lines-iv*)
+             (cosims-compare *input-lines* *output-lines-iv*  *exactp* *updates* *nextstates*)))
 
 ;; (assert! (or (not *output-lines-ncv*)
 ;;              (cosims-compare-stv *input-lines* *output-lines-ncv* *exactp* (impl-stv))))

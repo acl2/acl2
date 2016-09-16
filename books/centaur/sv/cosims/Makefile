@@ -94,12 +94,14 @@ TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
 TESTCERTS := $(patsubst %,%/ok,$(TESTS))
 OUTDATAS_NCV := $(patsubst %,%/outputs.ncv.data,$(TESTS))
 OUTDATAS_VCS := $(patsubst %,%/outputs.vcs.data,$(TESTS))
+OUTDATAS_IV  := $(patsubst %,%/outputs.iv.data,$(TESTS))
 
 PASSING_TESTS := $(filter-out $(FAILING_TEST_TARGETS), $(TESTCERTS))
 OUTDIRS_VCS := $(patsubst %,%/simv.daidir,$(TESTS))
 print_tests :
 	@echo $(TESTS)
 
+# %/ok : %/outputs.ncv.data %/outputs.vcs.data %/outputs.iv.data cosim-core
 %/ok : %/outputs.ncv.data %/outputs.vcs.data cosim-core
 	@echo "Making $*/ok"
 	@rm -f $*.ok $*/cosim.out
@@ -138,11 +140,29 @@ print_tests :
 	 fi
 	@ls -l $*/outputs.vcs.data
 
+%/outputs.iv.data : %/spec.sv twovalued.data fourvalued.data test.sv
+	@echo "Making $*/outputs.vcs.data"
+	@cd $*; \
+         if [ -e twovalued ]; then \
+           infile=../twovalued.data; \
+         else \
+           infile=../fourvalued.data; \
+         fi; \
+	 if [ -e no_iv ]; then \
+		touch outputs.iv.data; \
+	 else \
+		 iverilog spec.sv ../test.sv -Dinfile=\"$$infile\" -Doutfile=\"outputs.iv.data\" && ./a.out; \
+	 fi
+	@ls -l $*/outputs.iv.data
+
 .PHONY: ncv
 ncv : $(OUTDATAS_NCV)
 
 .PHONY: vcs
 vcs : $(OUTDATAS_VCS)
+
+.PHONY: iv
+iv  : $(OUTDATAS_IV)
 
 .PHONY: passing
 passing : $(PASSING_TESTS)
@@ -150,16 +170,18 @@ passing : $(PASSING_TESTS)
 .phony: failing
 failing: $(FAILING_TEST_TARGETS)
 
+# all : $(TESTCERTS) ncv vcs iv
 all : $(TESTCERTS) ncv vcs
 
 .PHONY: cleansim
 cleansim:
-	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS)
+	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS) $(OUTDATAS_IV)
 	rm -rf $(OUTDIRS_VCS)
 	rm -rf */INCA_libs
 	rm -rf */csrc
 	rm -rf */simv.daidir
 	rm -f */simv
+	rm -f */a.out
 	rm -f */irun.history */ncverilog.history
 	rm -f */ncverilog.log
 	rm -f */test.vcd
