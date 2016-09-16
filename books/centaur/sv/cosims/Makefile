@@ -151,7 +151,7 @@ print_tests :
 	 if [ -e no_iv ]; then \
 		touch outputs.iv.data; \
 	 else \
-		 iverilog spec.sv ../test.sv -Dinfile=\"$$infile\" -Doutfile=\"outputs.iv.data\" && ./a.out; \
+		 iverilog -g2012 spec.sv ../test.sv -Dinfile=\"$$infile\" -Doutfile=\"outputs.iv.data\" && ./a.out; \
 	 fi
 	@ls -l $*/outputs.iv.data
 
