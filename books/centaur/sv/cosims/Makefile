@@ -141,7 +141,7 @@ print_tests :
 	@ls -l $*/outputs.vcs.data
 
 %/outputs.iv.data : %/spec.sv twovalued.data fourvalued.data test.sv
-	@echo "Making $*/outputs.vcs.data"
+	@echo "Making $*/outputs.iv.data"
 	@cd $*; \
          if [ -e twovalued ]; then \
            infile=../twovalued.data; \
