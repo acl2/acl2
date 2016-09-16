@@ -50,7 +50,7 @@ module test ();
      $dumpvars();
      clk = 0;
      reset = 1;
-     $readmemb(`infile, inputs);
+     $readmemb(`infile, inputs, 0, nCycles-1);
      for (i=0; i<nCycles; i++) begin
        in = inputs[i];
        #2;
@@ -62,6 +62,6 @@ module test ();
        clk = 0;
        #3;
      end
-     $writememb(`outfile, outputs);
+     $writememb(`outfile, outputs, 0, nCycles-1);
    end
 endmodule
