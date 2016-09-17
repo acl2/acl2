@@ -125,13 +125,23 @@
        ((when exists) (mv nil state)))
     (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state)))
 
+(defun drop-comment-lines (lines)
+  (if (atom lines)
+      lines
+    (if (equal (search "//" (car lines)) 0)
+        (drop-comment-lines (cdr lines))
+      (cons (car lines) (drop-comment-lines (cdr lines))))))
+
 (defconsts (*output-lines-iv* state)
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/no_iv")))
        ((when err)
         (er hard? 'output-lines-iv "~@0~%" err)
         (mv nil state))
-       ((when exists) (mv nil state)))
-    (acl2::read-file-lines (str::cat *testname* "/outputs.iv.data") state)))
+       ((when exists) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.iv.data")
+                               state)))
+    (mv (drop-comment-lines lines) state)))
 
 (defconsts (*err* *updates* *nextstates* *assigns* *delays* moddb aliases)
   (svex-design-compile *svex-design*))
