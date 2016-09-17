@@ -28,6 +28,7 @@
 (include-book "event-forms")
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
+(include-book "integers-from-to")
 (include-book "list-set-theorems")
 (include-book "list-theorems")
 (include-book "minimize-ruler-extenders")
