@@ -27,6 +27,11 @@
   :short "Some theorems about
           @('nil')-terminated lists of @('nil')-terminated lists."
 
+  :long
+  "<p>
+   These are generated via @(tsee std::deflist).
+   </p>"
+
   (std::deflist true-list-listp (x)
     (true-listp x)
     :true-listp t
