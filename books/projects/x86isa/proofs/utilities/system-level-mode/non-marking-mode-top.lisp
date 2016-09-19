@@ -15,26 +15,87 @@
 
 ;; ======================================================================
 
-(defsection non-marking-mode-top
-  :parents (proof-utilities)
+(defsection system-level-non-marking-mode-proof-utilities
+  :parents (proof-utilities x86-programs-proof-debugging)
 
-  :short "Reasoning in the system-level non-marking mode"
+  :short "General-purpose code-proof libraries to include in the system-level marking mode (with A/D flag updates on)"
 
-  :long "<p>WORK IN PROGRESS...</p>
+  :long "<p>When reasoning about an supervisor-mode program in the
+  system-level marking mode of operation of the x86 ISA model, include
+  the book
+  @('x86isa/proofs/utilities/system-level-mode/marking-mode-top') to
+  make use of some standard rules you would need to control the
+  symbolic simulation of the program.</p>
 
-<p>This doc topic will be updated in later commits...</p>"
-  )
+  <p>If unwinding the @('(x86-run ... x86)') expression during your
+  proof attempt does not result in a 'clean' expression (i.e., one
+  entirely in terms of updates made to the initial state as opposed to
+  in terms of @(see x86-fetch-decode-execute) or @(see x86-run)), then
+  there is a good chance that you're missing some preconditions.  You
+  can @(see acl2::monitor) the following rules to get some clues:</p>
 
-(local (xdoc::set-default-parents non-marking-mode-top))
+  <ul>
 
-;; ----------------------------------------------------------------------
-;; Debugging:
-;; ----------------------------------------------------------------------
+    <li>@(see x86-run-opener-not-ms-not-zp-n): Useful when you see
+    un-expanded calls of @(see x86-run).</li>
 
-;; If you think some rules from this book should fire when you are
-;; unwinding your (x86-run ... x86) expression, monitoring the
-;; following rules (maybe using Jared Davis's why macro) can tell you
-;; (maybe) what's going on.
+    <li>@(see x86-fetch-decode-execute-opener): Useful when you see
+    un-expanded calls of @(see x86-fetch-decode-execute).</li>
+
+    <li>@(see get-prefixes-opener-lemma-no-prefix-byte): Useful when
+    monitoring @('x86-fetch-decode-execute-opener') tells you that a
+    hypothesis involving @(see get-prefixes) was not rewritten to
+    @('t').  Note that if the instruction under consideration has
+    prefix bytes, you should monitor one of these rules instead: @(see
+    get-prefixes-opener-lemma-group-1-prefix), @(see
+    get-prefixes-opener-lemma-group-2-prefix), @(see
+    get-prefixes-opener-lemma-group-3-prefix), or @(see
+    get-prefixes-opener-lemma-group-4-prefix).</li>
+
+    <li>@(see
+    rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode):
+    Useful when you believe that ACL2 is not able to fetch/read an
+    instruction successfully.</li>
+
+    <li>@(see
+    program-at-wb-disjoint-in-system-level-non-marking-mode): Useful
+    if you believe that ACL2 can't resolve that the program remained
+    unchanged (@(see program-at)) after a write operation @(see wb)
+    occurred.  An instance of where monitoring this rule might be
+    helpful is when the @('program-at') hypothesis of
+    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode')
+    is not being relieved.</li>
+
+    <li>@(see member-p-canonical-address-listp): Useful if you believe
+    that the canonical nature of a linear address should be inferable
+    from the canonical nature of a list of addresses, of which that
+    address is a member.  An instance of where monitoring this rule
+    might be helpful is when the @('member-p') hypothesis of
+    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode')
+    is not being relieved.</li>
+
+   <li>When reasoning about disjointness/overlap of memory regions,
+   monitor one of these rules: @(see
+   rb-wb-disjoint-in-system-level-non-marking-mode), @(see
+   rb-wb-equal-in-system-level-non-marking-mode), @(see
+   la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode),
+   @(see
+   all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode).</li>
+
+ </ul>
+
+ <p>When symbolically simulating supervisor-mode programs, you might
+ also want to do the following, which replaces ACL2's default ancestor
+ check with something simpler:</p>
+
+ <code>
+ (local (include-book \"tools/trivial-ancestors-check\" :dir :system))
+ (local (acl2::use-trivial-ancestors-check))
+ </code>
+
+")
+
+(local (xdoc::set-default-parents system-level-non-marking-mode-proof-utilities))
 
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)

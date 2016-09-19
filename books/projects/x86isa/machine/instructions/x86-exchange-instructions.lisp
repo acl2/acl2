@@ -109,6 +109,15 @@
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
 
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Fetch the second operand and put it in val2.
        ;; If the opcode is #x90+rw/rd, we let the contents of the register
        ;; chosen by rw/rd be the second operand.
@@ -217,6 +226,15 @@
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
 
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        ((mv result
@@ -276,6 +294,13 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes)))
+
+    ;; We don't need to check for valid length for one-byte
+    ;; instructions.  The length will be more than 15 only if
+    ;; get-prefixes fetches 15 prefixes, and that error will be
+    ;; caught in x86-fetch-decode-execute, that is, before control
+    ;; reaches this function.
+
     ;; Update the x86 state:
     (!rip temp-rip x86)))
 
@@ -328,6 +353,14 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :next-rip-invalid temp-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
     x86))
