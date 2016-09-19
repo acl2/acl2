@@ -622,7 +622,7 @@ inside if, case, or loop generate forms.</p>")
                            :msg "Block flagged as nested conditional was not: ~a0"
                            :args (list x)))))
                ((mv elem indices warnings)
-                (vl-genelement-addnames (car x.elems) indices nameset)))
+                (vl-genelement-addnames-aux (car x.elems) indices nameset)))
             (mv (change-vl-genblock x :elems (list elem))
                 indices warnings)))
          (blob (vl-sort-genelements x.elems :id x.name :scopetype :vl-genblock))
