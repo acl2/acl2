@@ -18,69 +18,88 @@
 (defsection system-level-non-marking-mode-proof-utilities
   :parents (proof-utilities x86-programs-proof-debugging)
 
-  :short "General-purpose code-proof libraries to include in the system-level marking mode (with A/D flag updates on)"
+  :short "General-purpose code-proof libraries to include in the
+  system-level non-marking mode (with A/D flag updates off)"
 
   :long "<p>When reasoning about an supervisor-mode program in the
-  system-level marking mode of operation of the x86 ISA model, include
-  the book
-  @('x86isa/proofs/utilities/system-level-mode/marking-mode-top') to
-  make use of some standard rules you would need to control the
+  system-level <i>non-marking</i> mode of operation of the x86 ISA
+  model, include the book
+  @('x86isa/proofs/utilities/system-level-mode/non-marking-mode-top')
+  to make use of some standard rules you would need to control the
   symbolic simulation of the program.</p>
 
   <p>If unwinding the @('(x86-run ... x86)') expression during your
   proof attempt does not result in a 'clean' expression (i.e., one
   entirely in terms of updates made to the initial state as opposed to
   in terms of @(see x86-fetch-decode-execute) or @(see x86-run)), then
-  there is a good chance that you're missing some preconditions.  You
-  can @(see acl2::monitor) the following rules to get some clues:</p>
+  there is a good chance that you're missing some preconditions, or
+  that the existing rules are not good enough.  In any case, it can
+  help to @(see acl2::monitor) the existing rules to figure out what's
+  wrong.  Feel free to send on suggestions for new rules or improving
+  existing ones!</p>
+
+  <p>You can monitor the following rules, depending on the kind of
+  subgoals you see, to get some clues.  You can find definitions of
+  these rules in @(see unwind-x86-interpreter-in-non-marking-mode).</p>
 
   <ul>
 
-    <li>@(see x86-run-opener-not-ms-not-zp-n): Useful when you see
-    un-expanded calls of @(see x86-run).</li>
+    <li>When the subgoal has calls of @('x86-run'): <br/>
+        Monitor @('x86-run-opener-not-ms-not-zp-n').
+   </li>
 
-    <li>@(see x86-fetch-decode-execute-opener): Useful when you see
-    un-expanded calls of @(see x86-fetch-decode-execute).</li>
+    <li>When the subgoal has calls of @(see x86-fetch-decode-execute): <br/>
+        Monitor @('x86-fetch-decode-execute-opener').
+   </li>
 
-    <li>@(see get-prefixes-opener-lemma-no-prefix-byte): Useful when
-    monitoring @('x86-fetch-decode-execute-opener') tells you that a
-    hypothesis involving @(see get-prefixes) was not rewritten to
-    @('t').  Note that if the instruction under consideration has
-    prefix bytes, you should monitor one of these rules instead: @(see
-    get-prefixes-opener-lemma-group-1-prefix), @(see
-    get-prefixes-opener-lemma-group-2-prefix), @(see
-    get-prefixes-opener-lemma-group-3-prefix), or @(see
-    get-prefixes-opener-lemma-group-4-prefix).</li>
+   <li>When monitoring @('x86-fetch-decode-execute-opener') tells you
+    that a hypothesis involving @(see get-prefixes) was not rewritten
+    to @('t'): <br/>
+    Monitor
+    @('get-prefixes-opener-lemma-no-prefix-byte'). <br/>
+    Note that if the instruction under consideration has prefix
+    bytes, you should monitor one of these rules instead: <br/>
+    @('get-prefixes-opener-lemma-group-1-prefix') <br/>
+    @('get-prefixes-opener-lemma-group-2-prefix') <br/>
+    @('get-prefixes-opener-lemma-group-3-prefix') <br/>
+    @('get-prefixes-opener-lemma-group-4-prefix').
+  </li>
 
-    <li>@(see
-    rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode):
-    Useful when you believe that ACL2 is not able to fetch/read an
-    instruction successfully.</li>
+    <li>When monitoring other rules above indicates that an
+    instruction is not being fetched successfully using @(see rb):
+    <br/>
+    Monitor @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode').
+    </li>
 
-    <li>@(see
-    program-at-wb-disjoint-in-system-level-non-marking-mode): Useful
-    if you believe that ACL2 can't resolve that the program remained
-    unchanged (@(see program-at)) after a write operation @(see wb)
-    occurred.  An instance of where monitoring this rule might be
-    helpful is when the @('program-at') hypothesis of
-    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode')
-    is not being relieved.</li>
+   <li>When monitoring other rules above indicates that ACL2 can't
+    resolve that the program remained unchanged (@(see
+    program-at)) after a write operation @(see wb) occurred: <br/>
+    Monitor @('program-at-wb-disjoint-in-system-level-non-marking-mode'). <br/>
+    <br/>
+    An instance of where monitoring this rule might be helpful is when
+    the @('program-at') hypothesis of
+    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode') is not
+    being relieved.
+   </li>
 
-    <li>@(see member-p-canonical-address-listp): Useful if you believe
-    that the canonical nature of a linear address should be inferable
-    from the canonical nature of a list of addresses, of which that
-    address is a member.  An instance of where monitoring this rule
+   <li>When inferring the canonical nature of a linear address:<br/>
+    Monitor @('member-p-canonical-address-listp'). <br/>
+    <br/>
+    This is useful if you believe that the canonical nature of a
+    linear address should be inferable from the canonical nature of a
+    list of addresses, of which that address is a member.  An instance
+    of where monitoring this rule
     might be helpful is when the @('member-p') hypothesis of
-    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode')
-    is not being relieved.</li>
+    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode') is not
+    being relieved.
+   </li>
 
-   <li>When reasoning about disjointness/overlap of memory regions,
-   monitor one of these rules: @(see
-   rb-wb-disjoint-in-system-level-non-marking-mode), @(see
-   rb-wb-equal-in-system-level-non-marking-mode), @(see
-   la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode),
-   @(see
-   all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode).</li>
+   <li>When reasoning about disjointness/overlap of memory regions: <br/>
+   @('rb-wb-disjoint-in-system-level-non-marking-mode') <br/>
+   @('rb-wb-equal-in-system-level-non-marking-mode') <br/>
+   @('la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode') <br/>
+   @('all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode')
+   </li>
 
  </ul>
 
@@ -93,6 +112,56 @@
  (local (acl2::use-trivial-ancestors-check))
  </code>
 
+")
+
+(defsection unwind-x86-interpreter-in-non-marking-mode
+  :parents (system-level-non-marking-mode-proof-utilities)
+
+  ;; A benefit of defining this topic (apart from letting the user
+  ;; view the definitions of the rules) is that if the rule names
+  ;; mentioned in the parent topic are changed, the manual build
+  ;; process will complain about broken links, and we'll know to
+  ;; modify these two doc topics.
+
+  :short "Definitions of rules to monitor in the system-level
+  non-marking mode"
+
+  :long "
+
+ <h3>Rules about @('x86-run') and @('x86-fetch-decode-execute')</h3>
+
+ @(def x86-run-opener-not-ms-not-zp-n)
+
+ @(def x86-fetch-decode-execute-opener)
+
+ <h3>Rules about @('get-prefixes')</h3>
+
+ @(def get-prefixes-opener-lemma-no-prefix-byte)
+
+ @(def get-prefixes-alt-opener-lemma-group-1-prefix)
+
+ @(def get-prefixes-alt-opener-lemma-group-2-prefix)
+
+ @(def get-prefixes-alt-opener-lemma-group-3-prefix)
+
+ @(def get-prefixes-alt-opener-lemma-group-4-prefix)
+
+ <h3>Rules related to instruction fetches and program location</h3>
+
+ @(def rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
+
+ @(def program-at-wb-disjoint-in-system-level-non-marking-mode)
+
+ <h3>Rules related to canonical linear addresses</h3>
+
+ @(def member-p-canonical-address-listp)
+
+ <h3>Rules related to disjointness/overlap of memory regions</h3>
+
+  @(def rb-wb-disjoint-in-system-level-non-marking-mode)
+  @(def rb-wb-equal-in-system-level-non-marking-mode)
+  @(def la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
+  @(def all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode)
 ")
 
 (local (xdoc::set-default-parents system-level-non-marking-mode-proof-utilities))
