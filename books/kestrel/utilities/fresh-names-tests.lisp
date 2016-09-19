@@ -19,28 +19,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (fresh-name-in-world-with-$s 'abcdefg nil (w state))
-                     'abcdefg))
+(assert! (equal (fresh-name-in-world-with-$s 'abcdefg nil (w state))
+                'abcdefg))
 
-(assert-event (equal (fresh-name-in-world-with-$s 'abcdefg '(a b c) (w state))
-                     'abcdefg))
+(assert! (equal (fresh-name-in-world-with-$s 'abcdefg '(a b c) (w state))
+                'abcdefg))
 
-(assert-event
- (equal (fresh-name-in-world-with-$s 'abcdefg '(abcdefg nil) (w state))
-        'abcdefg$))
+(assert! (equal (fresh-name-in-world-with-$s 'abcdefg '(abcdefg nil) (w state))
+                'abcdefg$))
 
-(assert-event
- (equal (fresh-name-in-world-with-$s 'len '(len$ len$$) (w state))
-        'len$$$))
+(assert! (equal (fresh-name-in-world-with-$s 'len '(len$ len$$) (w state))
+                'len$$$))
 
-(assert-event
- (equal (fresh-name-in-world-with-$s 'len '(len$ len$$$) (w state))
-        'len$$))
+(assert! (equal (fresh-name-in-world-with-$s 'len '(len$ len$$$) (w state))
+                'len$$))
 
 (must-succeed*
  (defun f (x) x)
  (defun f$ (x) x)
  (defun f$$ (x) x)
  (defun f$$$ (x) x)
- (assert-event (equal (fresh-name-in-world-with-$s 'f nil (w state))
-                      'f$$$$)))
+ (assert! (equal (fresh-name-in-world-with-$s 'f nil (w state))
+                 'f$$$$)))
