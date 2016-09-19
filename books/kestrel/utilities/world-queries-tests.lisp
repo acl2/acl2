@@ -19,201 +19,206 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (theorem-symbolp 'car-cdr-elim (w state)))
+(assert! (theorem-symbolp 'car-cdr-elim (w state)))
 
-(assert-event (not (theorem-symbolp 'cons (w state))))
+(assert! (not (theorem-symbolp 'cons (w state))))
 
-(assert-event (not (theorem-symbolp 'aaaaaaaaa (w state))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ x y)))
- (assert-event (theorem-symbolp 'th (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (macro-symbolp 'append (w state)))
-
-(assert-event (not (macro-symbolp 'cons (w state))))
-
-(assert-event (not (macro-symbolp 'aaaaaaaaaa (w state))))
-
-(must-succeed*
- (defmacro m (x) `(list ,x))
- (assert-event (macro-symbolp 'm (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (function-namep 'len (w state)))
-
-(assert-event (not (function-namep 'cons-car-cdr (w state))))
-
-(assert-event (not (function-namep 'bbbbbbbbbbb (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (assert-event (function-namep 'f (w state))))
-
-(assert-event (not (function-namep 33 (w state))))
-
-(assert-event (not (function-namep "len" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (theorem-namep 'car-cdr-elim (w state)))
-
-(assert-event (not (theorem-namep 'cons (w state))))
-
-(assert-event (not (theorem-namep 'aaaaaaaaa (w state))))
+(assert! (not (theorem-symbolp 'aaaaaaaaa (w state))))
 
 (must-succeed*
  (defthm th (acl2-numberp (+ x y)))
- (assert-event (theorem-namep 'th (w state))))
-
-(assert-event (not (theorem-namep 8 (w state))))
-
-(assert-event (not (theorem-namep "car-cdr-elim" (w state))))
+ (assert! (theorem-symbolp 'th (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (macro-namep 'append (w state)))
+(assert! (macro-symbolp 'append (w state)))
 
-(assert-event (not (macro-namep 'cons (w state))))
+(assert! (not (macro-symbolp 'cons (w state))))
 
-(assert-event (not (macro-namep 'aaaaaaaaaa (w state))))
+(assert! (not (macro-symbolp 'aaaaaaaaaa (w state))))
 
 (must-succeed*
  (defmacro m (x) `(list ,x))
- (assert-event (macro-namep 'm (w state))))
-
-(assert-event (not (macro-namep 5/3 (w state))))
-
-(assert-event (not (macro-namep "append" (w state))))
+ (assert! (macro-symbolp 'm (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (logical-name-listp '(append "ACL2" car-cdr-elim cons) (w state)))
+(assert! (function-namep 'len (w state)))
 
-(assert-event (not (logical-name-listp '(1 2 3) (w state))))
+(assert! (not (function-namep 'cons-car-cdr (w state))))
 
-(assert-event (not (logical-name-listp '(cccccccc) (w state))))
-
-(assert-event (not (logical-name-listp "xyz" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (definedp 'not (w state)))
-
-(assert-event (not (definedp 'cons (w state))))
+(assert! (not (function-namep 'bbbbbbbbbbb (w state))))
 
 (must-succeed*
  (defun f (x) x)
- (assert-event (definedp 'f (w state))))
+ (assert! (function-namep 'f (w state))))
+
+(assert! (not (function-namep 33 (w state))))
+
+(assert! (not (function-namep "len" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (theorem-namep 'car-cdr-elim (w state)))
+
+(assert! (not (theorem-namep 'cons (w state))))
+
+(assert! (not (theorem-namep 'aaaaaaaaa (w state))))
+
+(must-succeed*
+ (defthm th (acl2-numberp (+ x y)))
+ (assert! (theorem-namep 'th (w state))))
+
+(assert! (not (theorem-namep 8 (w state))))
+
+(assert! (not (theorem-namep "car-cdr-elim" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (macro-namep 'append (w state)))
+
+(assert! (not (macro-namep 'cons (w state))))
+
+(assert! (not (macro-namep 'aaaaaaaaaa (w state))))
+
+(must-succeed*
+ (defmacro m (x) `(list ,x))
+ (assert! (macro-namep 'm (w state))))
+
+(assert! (not (macro-namep 5/3 (w state))))
+
+(assert! (not (macro-namep "append" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (logical-name-listp '(append "ACL2" car-cdr-elim cons) (w state)))
+
+(assert! (not (logical-name-listp '(1 2 3) (w state))))
+
+(assert! (not (logical-name-listp '(cccccccc) (w state))))
+
+(assert! (not (logical-name-listp "xyz" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (definedp 'not (w state)))
+
+(assert! (not (definedp 'cons (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (definedp 'f (w state))))
 
 (must-succeed*
  (defstub f (*) => *)
- (assert-event (not (definedp 'f (w state)))))
+ (assert! (not (definedp 'f (w state)))))
 
 (must-succeed*
  (encapsulate
    (((f *) => *))
    (local (defun f (x) x))
    (defthm th (equal (f x) x)))
- (assert-event (not (definedp 'f (w state)))))
+ (assert! (not (definedp 'f (w state)))))
 
 (must-succeed*
  (defchoose f x (y) (equal x y))
- (assert-event (not (definedp 'f (w state)))))
+ (assert! (not (definedp 'f (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (guard-verified-p 'len (w state)))
+(assert! (guard-verified-p 'len (w state)))
 
-(assert-event (guard-verified-p 'cons (w state)))
+(assert! (guard-verified-p 'cons (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards t)) x)
- (assert-event (guard-verified-p 'f (w state))))
+ (assert! (guard-verified-p 'f (w state))))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert-event (not (guard-verified-p 'f (w state)))))
+ (assert! (not (guard-verified-p 'f (w state)))))
 
 (must-succeed*
  (defthm th (acl2-numberp (+ (fix x) (fix y))))
  (verify-guards th)
- (assert-event (guard-verified-p 'th (w state))))
+ (assert! (guard-verified-p 'th (w state))))
 
 (must-succeed*
  (defthm th (acl2-numberp (+ x y)))
- (assert-event (not (guard-verified-p 'th (w state)))))
+ (assert! (not (guard-verified-p 'th (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (eq (non-executablep 'not (w state)) nil))
+(assert! (eq (non-executablep 'not (w state))
+             nil))
 
-(assert-event (eq (non-executablep 'len (w state)) nil))
+(assert! (eq (non-executablep 'len (w state))
+             nil))
 
 (must-succeed*
  (defun-nx f (x) x)
- (assert-event (eq (non-executablep 'f (w state)) t)))
+ (assert! (eq (non-executablep 'f (w state))
+              t)))
 
 (must-succeed*
  (defun-sk g (x) (forall (y z) (equal x (cons y z))))
- (assert-event (eq (non-executablep 'g (w state)) t)))
+ (assert! (eq (non-executablep 'g (w state))
+              t)))
 
 (must-succeed*
  (defun-sk h (x y) (exists z (equal z (cons x y)))
    :witness-dcls ((declare (xargs :non-executable nil))))
- (assert-event (eq (non-executablep 'h (w state)) nil)))
+ (assert! (eq (non-executablep 'h (w state))
+              nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
- (assert-event (equal (body 'f nil (w state))
-                      '(return-last 'progn
-                                    (throw-nonexec-error 'f (cons x 'nil))
-                                    (cons (cons x 'nil) (cons x 'nil)))))
- (assert-event (equal (unwrapped-nonexec-body 'f (w state))
-                      '(cons (cons x 'nil) (cons x 'nil)))))
+ (assert! (equal (body 'f nil (w state))
+                 '(return-last 'progn
+                               (throw-nonexec-error 'f (cons x 'nil))
+                               (cons (cons x 'nil) (cons x 'nil)))))
+ (assert! (equal (unwrapped-nonexec-body 'f (w state))
+                 '(cons (cons x 'nil) (cons x 'nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (= (number-of-results 'cons (w state))
-                 1))
+(assert! (= (number-of-results 'cons (w state))
+            1))
 
-(assert-event (= (number-of-results 'len (w state))
-                 1))
+(assert! (= (number-of-results 'len (w state))
+            1))
 
 (must-succeed*
  (defun f (x) (mv x (list x)))
- (assert-event (= (number-of-results 'f (w state))
-                  2)))
+ (assert! (= (number-of-results 'f (w state))
+             2)))
 
 (must-succeed*
  (defun f (x) (mv x (list x) (list x x)))
- (assert-event (= (number-of-results 'f (w state))
-                  3)))
+ (assert! (= (number-of-results 'f (w state))
+             3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (no-stobjs-p 'cons (w state)))
+(assert! (no-stobjs-p 'cons (w state)))
 
-(assert-event (no-stobjs-p 'len (w state)))
+(assert! (no-stobjs-p 'len (w state)))
 
-(assert-event (not (no-stobjs-p 'guard-obligation (w state))))
+(assert! (not (no-stobjs-p 'guard-obligation (w state))))
 
 (must-succeed*
  (defun f (x) x)
- (assert-event (no-stobjs-p 'f (w state))))
+ (assert! (no-stobjs-p 'f (w state))))
 
 (must-succeed*
  (defun f (state) (declare (xargs :stobjs state)) state)
- (assert-event (not (no-stobjs-p 'f (w state)))))
+ (assert! (not (no-stobjs-p 'f (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (measure 'len (w state)) '(acl2-count x)))
+(assert! (equal (measure 'len (w state)) '(acl2-count x)))
 
 (must-succeed*
  (defun f (x)
@@ -221,14 +226,14 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert-event (equal (measure 'f (w state))
-                      '(nfix (binary-+ '10 (unary-- x))))))
+ (assert! (equal (measure 'f (w state))
+                 '(nfix (binary-+ '10 (unary-- x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (measured-subset 'len (w state)) '(x)))
+(assert! (equal (measured-subset 'len (w state)) '(x)))
 
-(assert-event (equal (measured-subset 'binary-append (w state)) '(x)))
+(assert! (equal (measured-subset 'binary-append (w state)) '(x)))
 
 (must-succeed*
  (defun f (x)
@@ -236,7 +241,8 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert-event (equal (measured-subset 'f (w state)) '(x))))
+ (assert! (equal (measured-subset 'f (w state))
+                 '(x))))
 
 (must-succeed*
  (defun f (x y z)
@@ -244,11 +250,12 @@
    (if (and (natp y) (< y 10))
        (f x (1+ y) z)
      (cons x z)))
- (assert-event (equal (measured-subset 'f (w state)) '(y))))
+ (assert! (equal (measured-subset 'f (w state))
+                 '(y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (well-founded-relation 'len (w state)) 'o<))
+(assert! (equal (well-founded-relation 'len (w state)) 'o<))
 
 (must-succeed*
  (defun f (x)
@@ -256,7 +263,8 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert-event (equal (well-founded-relation 'f (w state)) 'o<)))
+ (assert! (equal (well-founded-relation 'f (w state))
+                 'o<)))
 
 (must-succeed*
  ;; well-founded relation:
@@ -277,12 +285,13 @@
        nil
      (f (1- x))))
  ;; test:
- (assert-event (equal (well-founded-relation 'f (w state)) 'o<$)))
+ (assert! (equal (well-founded-relation 'f (w state))
+                 'o<$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (ruler-extenders 'len (w state))
-                     '(mv-list return-last)))
+(assert! (equal (ruler-extenders 'len (w state))
+                '(mv-list return-last)))
 
 (must-succeed*
  (defun f (x)
@@ -291,8 +300,8 @@
          (if (consp x)
              (f (cdr x))
            nil)))
- (assert-event (equal (ruler-extenders 'f (w state))
-                      '(cons))))
+ (assert! (equal (ruler-extenders 'f (w state))
+                 '(cons))))
 
 (must-succeed*
  (defun f (x)
@@ -301,8 +310,8 @@
          (if (consp x)
              (f (cdr x))
            nil)))
- (assert-event (equal (ruler-extenders 'f (w state))
-                      :all)))
+ (assert! (eq (ruler-extenders 'f (w state))
+              :all)))
 
 (must-succeed*
  (defun fact (n)
@@ -311,84 +320,88 @@
         (if (posp n)
             (* n (fact (1- n)))
           1)))
- (assert-event (equal (ruler-extenders 'fact (w state))
-                      '(:lambdas))))
+ (assert! (equal (ruler-extenders 'fact (w state))
+                 '(:lambdas))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (macro-required-args 'tthm (w state)) '(fn)))
+(assert! (equal (macro-required-args 'tthm (w state))
+                '(fn)))
 
-(assert-event (equal (macro-required-args 'list (w state)) nil))
+(assert! (eq (macro-required-args 'list (w state))
+             nil))
 
 (must-succeed*
  (defmacro m (a) `(list ,a))
- (assert-event (equal (macro-required-args 'm (w state)) '(a))))
+ (assert! (equal (macro-required-args 'm (w state))
+                 '(a))))
 
 (must-succeed*
  (defmacro m (a &key b) `(list ,a ,(or b :default)))
- (assert-event (equal (macro-required-args 'm (w state)) '(a))))
+ (assert! (equal (macro-required-args 'm (w state))
+                 '(a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun f (x) x)
- (assert-event (fundef-enabledp 'f state)))
+ (assert! (fundef-enabledp 'f state)))
 
 (must-succeed*
  (defund f (x) x)
- (assert-event (not (fundef-enabledp 'f state))))
+ (assert! (not (fundef-enabledp 'f state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (rune-enabledp '(:rewrite cons-car-cdr) state))
+(assert! (rune-enabledp '(:rewrite cons-car-cdr) state))
 
 (must-succeed*
  (defthm th (acl2-numberp (+ x y)))
- (assert-event (rune-enabledp '(:rewrite th) state)))
+ (assert! (rune-enabledp '(:rewrite th) state)))
 
 (must-succeed*
  (defthmd th (acl2-numberp (+ x y)))
- (assert-event (not (rune-enabledp '(:rewrite th) state))))
+ (assert! (not (rune-enabledp '(:rewrite th) state))))
 
 (must-succeed*
  (defthm th (acl2-numberp (+ x y)) :rule-classes :type-prescription)
- (assert-event (rune-enabledp '(:type-prescription th) state)))
+ (assert! (rune-enabledp '(:type-prescription th) state)))
 
 (must-succeed*
  (defthm th
    (acl2-numberp (+ x y))
    :rule-classes ((:rewrite :corollary (acl2-numberp (+ x y)))
                   (:rewrite :corollary (acl2-numberp (+ y x)))))
- (assert-event (rune-enabledp '(:rewrite th . 1) state))
- (assert-event (rune-enabledp '(:rewrite th . 2) state)))
+ (assert! (rune-enabledp '(:rewrite th . 1) state))
+ (assert! (rune-enabledp '(:rewrite th . 2) state)))
 
 (must-succeed*
  (defthmd th
    (acl2-numberp (+ x y))
    :rule-classes ((:rewrite :corollary (acl2-numberp (+ x y)))
                   (:rewrite :corollary (acl2-numberp (+ y x)))))
- (assert-event (not (rune-enabledp '(:rewrite th . 1) state)))
- (assert-event (not (rune-enabledp '(:rewrite th . 2) state))))
+ (assert! (not (rune-enabledp '(:rewrite th . 1) state)))
+ (assert! (not (rune-enabledp '(:rewrite th . 2) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (string-listp (included-books (w state))))
+(assert! (string-listp (included-books (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (let ((im (induction-machine 'len (w state))))
-                (and (pseudo-induction-machinep 'len im)
-                     (= (len im) 2)
-                     (let ((im1 (first im)))
-                       (and (equal (access tests-and-calls im1 :tests)
-                                   '((consp x)))
-                            (equal (access tests-and-calls im1 :calls)
-                                   '((len (cdr x))))))
-                     (let ((im2 (second im)))
-                       (and (equal (access tests-and-calls im2 :tests)
-                                   '((not (consp x))))
-                            (equal (access tests-and-calls im2 :calls)
-                                   nil))))))
+(assert! (let ((im (induction-machine 'len (w state))))
+           (and (pseudo-induction-machinep 'len im)
+                (= (len im) 2)
+                (let ((im1 (first im)))
+                  (and (equal (access tests-and-calls im1 :tests)
+                              '((consp x)))
+                       (equal (access tests-and-calls im1 :calls)
+                              '((len (cdr x))))))
+                (let ((im2 (second im)))
+                  (and (equal (access tests-and-calls im2 :tests)
+                              '((not (consp x))))
+                       (equal (access tests-and-calls im2 :calls)
+                              nil))))))
 
 (must-succeed*
  (defun fib (n)
@@ -398,74 +411,74 @@
          1
        (+ (fib (- n 1))
           (fib (- n 2))))))
- (assert-event (let ((im (induction-machine 'fib (w state))))
-                 (and (pseudo-induction-machinep 'fib im)
-                      (= (len im) 3)
-                      (let ((im1 (first im)))
-                        (and (equal (access tests-and-calls im1 :tests)
-                                    '((zp n)))
-                             (equal (access tests-and-calls im1 :calls)
-                                    nil)))
-                      (let ((im2 (second im)))
-                        (and (equal (access tests-and-calls im2 :tests)
-                                    '((not (zp n))
-                                      (= n '1)))
-                             (equal (access tests-and-calls im2 :calls)
-                                    nil)))
-                      (let ((im3 (third im)))
-                        (and (equal (access tests-and-calls im3 :tests)
-                                    '((not (zp n))
-                                      (not (= n '1))))
-                             (equal (access tests-and-calls im3 :calls)
-                                    '((fib (binary-+ '-1 n))
-                                      (fib (binary-+ '-2 n))))))))))
+ (assert! (let ((im (induction-machine 'fib (w state))))
+            (and (pseudo-induction-machinep 'fib im)
+                 (= (len im) 3)
+                 (let ((im1 (first im)))
+                   (and (equal (access tests-and-calls im1 :tests)
+                               '((zp n)))
+                        (equal (access tests-and-calls im1 :calls)
+                               nil)))
+                 (let ((im2 (second im)))
+                   (and (equal (access tests-and-calls im2 :tests)
+                               '((not (zp n))
+                                 (= n '1)))
+                        (equal (access tests-and-calls im2 :calls)
+                               nil)))
+                 (let ((im3 (third im)))
+                   (and (equal (access tests-and-calls im3 :tests)
+                               '((not (zp n))
+                                 (not (= n '1))))
+                        (equal (access tests-and-calls im3 :calls)
+                               '((fib (binary-+ '-1 n))
+                                 (fib (binary-+ '-2 n))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (pseudo-tests-and-callp (make tests-and-call
-                                            :tests '((f x))
-                                            :call ''3)))
+(assert! (pseudo-tests-and-callp (make tests-and-call
+                                       :tests '((f x))
+                                       :call ''3)))
 
-(assert-event (not (pseudo-tests-and-callp (make tests-and-call
-                                                 :tests "a"
+(assert! (not (pseudo-tests-and-callp (make tests-and-call
+                                            :tests "a"
+                                            :call 2))))
+
+(assert! (not (pseudo-tests-and-callp 88)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (pseudo-tests-and-call-listp nil))
+
+(assert! (pseudo-tests-and-call-listp (list (make tests-and-call
+                                                  :tests '((f x))
+                                                  :call '(g y z))
+                                            (make tests-and-call
+                                                  :tests '('3 x)
+                                                  :call ''#\a))))
+
+(assert! (not (pseudo-tests-and-call-listp (list (make tests-and-call
+                                                       :tests 1
+                                                       :call 2)
+                                                 (make tests-and-call
+                                                       :tests "a"
+                                                       :call "b")))))
+
+(assert! (not (pseudo-tests-and-call-listp 88)))
+
+(assert! (not (pseudo-tests-and-call-listp (make tests-and-call
+                                                 :tests 1
                                                  :call 2))))
 
-(assert-event (not (pseudo-tests-and-callp 88)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (pseudo-tests-and-call-listp nil))
-
-(assert-event (pseudo-tests-and-call-listp (list (make tests-and-call
-                                                       :tests '((f x))
-                                                       :call '(g y z))
-                                                 (make tests-and-call
-                                                       :tests '('3 x)
-                                                       :call ''#\a))))
-
-(assert-event (not (pseudo-tests-and-call-listp (list (make tests-and-call
-                                                            :tests 1
-                                                            :call 2)
-                                                      (make tests-and-call
-                                                            :tests "a"
-                                                            :call "b")))))
-
-(assert-event (not (pseudo-tests-and-call-listp 88)))
-
-(assert-event (not (pseudo-tests-and-call-listp (make tests-and-call
-                                                      :tests 1
-                                                      :call 2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-event (let ((rc (recursive-calls 'len (w state))))
-                (and (pseudo-tests-and-call-listp rc)
-                     (= (len rc) 1)
-                     (let ((rc1 (first rc)))
-                       (and  (equal (access tests-and-call rc1 :tests)
-                                    '((consp x)))
-                             (equal (access tests-and-call rc1 :call)
-                                    '(len (cdr x))))))))
+(assert! (let ((rc (recursive-calls 'len (w state))))
+           (and (pseudo-tests-and-call-listp rc)
+                (= (len rc) 1)
+                (let ((rc1 (first rc)))
+                  (and  (equal (access tests-and-call rc1 :tests)
+                               '((consp x)))
+                        (equal (access tests-and-call rc1 :call)
+                               '(len (cdr x))))))))
 
 (must-succeed*
  (defun fib (n)
@@ -475,21 +488,21 @@
          1
        (+ (fib (- n 1))
           (fib (- n 2))))))
- (assert-event (let ((rc (recursive-calls 'fib (w state))))
-                 (and (pseudo-tests-and-call-listp rc)
-                      (= (len rc) 2)
-                      (let ((rc1 (first rc)))
-                        (and (equal (access tests-and-call rc1 :tests)
-                                    '((not (zp n))
-                                      (not (= n '1))))
-                             (equal (access tests-and-call rc1 :call)
-                                    '(fib (binary-+ '-1 n)))))
-                      (let ((rc2 (second rc)))
-                        (and (equal (access tests-and-call rc2 :tests)
-                                    '((not (zp n))
-                                      (not (= n '1))))
-                             (equal (access tests-and-call rc2 :call)
-                                    '(fib (binary-+ '-2 n)))))))))
+ (assert! (let ((rc (recursive-calls 'fib (w state))))
+            (and (pseudo-tests-and-call-listp rc)
+                 (= (len rc) 2)
+                 (let ((rc1 (first rc)))
+                   (and (equal (access tests-and-call rc1 :tests)
+                               '((not (zp n))
+                                 (not (= n '1))))
+                        (equal (access tests-and-call rc1 :call)
+                               '(fib (binary-+ '-1 n)))))
+                 (let ((rc2 (second rc)))
+                   (and (equal (access tests-and-call rc2 :tests)
+                               '((not (zp n))
+                                 (not (= n '1))))
+                        (equal (access tests-and-call rc2 :call)
+                               '(fib (binary-+ '-2 n)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,7 +515,7 @@
        (if (eq (car triple) 'event-landmark)
            (cddr triple)
          (latest-event-landmark (cdr wrld))))))
- (assert-event
+ (assert!
   (pseudo-event-landmark-listp (list (latest-event-landmark (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -517,21 +530,21 @@
            (cddr triple)
          (latest-command-landmark (cdr wrld))))))
  (comp t) ; seems to be needed for Allegro CL (but isn't for LispWorks; hmm...)
- (assert-event
+ (assert!
   (pseudo-command-landmark-listp (list (latest-command-landmark (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun f (x) x)
- (assert-event (equal (event-landmark-names (cddr (nth 0 (w state))))
-                      '(f))))
+ (assert! (equal (event-landmark-names (cddr (nth 0 (w state))))
+                 '(f))))
 
 (must-succeed*
  (defun f (x) x)
  (verify-guards f)
- (assert-event (equal (event-landmark-names (cddr (nth 0 (w state))))
-                      nil)))
+ (assert! (eq (event-landmark-names (cddr (nth 0 (w state))))
+              nil)))
 
 (must-succeed*
  (mutual-recursion
@@ -546,5 +559,5 @@
         0
       (+ (f (car terms))
          (f-lst (cdr terms))))))
- (assert-event (equal (event-landmark-names (cddr (nth 0 (w state))))
-                      '(f f-lst))))
+ (assert! (equal (event-landmark-names (cddr (nth 0 (w state))))
+                 '(f f-lst))))
