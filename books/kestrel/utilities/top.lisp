@@ -31,6 +31,7 @@
 (include-book "integers-from-to")
 (include-book "list-set-theorems")
 (include-book "list-theorems")
+(include-book "maybe-msgp")
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
