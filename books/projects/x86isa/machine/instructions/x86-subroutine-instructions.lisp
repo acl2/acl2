@@ -79,6 +79,15 @@
                                    #.*max-linear-address-size+1*)
                                next-rip))))
         (!!ms-fresh :next-rip-invalid next-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           next-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ((the (signed-byte #.*max-linear-address-size+1*) call-rip)
         (+ next-rip rel32))
        ((when (mbe :logic (not (canonical-address-p call-rip))
@@ -166,6 +175,14 @@
                                    #.*max-linear-address-size+1*)
                                next-rip))))
         (!!ms-fresh :temp-rip-invalid next-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           next-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; Converting call-rip into a "good" address in our world...
        (call-rip (n64-to-i64 call-rip))
@@ -260,6 +277,26 @@
        ((when flg0)
         (!!ms-fresh :imm-rm16-error flg0))
 
+       ;; For #xC3: We don't need to check for valid length for
+       ;; one-byte instructions.  The length will be more than 15 only
+       ;; if get-prefixes fetches 15 prefixes, and that error will be
+       ;; caught in x86-fetch-decode-execute, that is, before control
+       ;; reaches this function.
+       ;; For #xC2:
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (if (equal opcode #xC2)
+            (-
+             ;; Adding 2 to account for imm16 in #xC2.
+             (the (signed-byte #.*max-linear-address-size+1*)
+               (+ 2 temp-rip))
+             (the (signed-byte #.*max-linear-address-size*)
+               start-rip))
+          ;; Irrelevant for #xC3.
+          0))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+
        ((when (mbe :logic (not (canonical-address-p new-rsp))
                    :exec (<= #.*2^47*
                              (the (signed-byte
@@ -340,6 +377,13 @@
                                    #.*max-linear-address-size+1*)
                                new-rsp))))
         (!!ms-fresh :invalid-rsp new-rsp))
+
+       ;; We don't need to check for valid length for one-byte
+       ;; instructions.  The length will be more than 15 only if
+       ;; get-prefixes fetches 15 prefixes, and that error will be
+       ;; caught in x86-fetch-decode-execute, that is, before control
+       ;; reaches this function.
+
 
        ;; Update the x86 state:
        ;; We chose to write the value val into the register using !rgfi-size

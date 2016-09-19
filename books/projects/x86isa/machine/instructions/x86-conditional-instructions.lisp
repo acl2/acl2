@@ -201,6 +201,17 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; temp-rip right now points to the rel8 byte.  Add 1 to
+           ;; temp-rip to account for rel8 when computing the length
+           ;; of this instruction.
+           (+ 1 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*) start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*) rel8/next-rip) x86)
         (if branch-cond
@@ -208,6 +219,7 @@
           (mv nil (+ 1 temp-rip) x86)))
        ((when flg)
         (!!ms-fresh :rim-size-error flg))
+
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (if branch-cond
             (+ (+ 1 temp-rip) ;; rip of the next instruction
@@ -227,7 +239,7 @@
         (!!ms-fresh :virtual-memory-error temp-rip))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-two-byte-jcc
 
@@ -311,6 +323,18 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; temp-rip right now points to the rel32 byte.  Add 4 to
+           ;; temp-rip to account for rel32 when computing the length
+           ;; of this instruction.
+           (+ 4 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*)
                    rel32/next-rip)
@@ -371,6 +395,19 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; temp-rip right now points to the rel8 byte.  Add 1 to
+           ;; temp-rip to account for rel8 when computing the length
+           ;; of this instruction.
+           (+ 1 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        (register-size (if p4? 4 8))

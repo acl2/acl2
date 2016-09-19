@@ -17,6 +17,10 @@
   :short "Basic utilities for x86 machine-code proofs"
   )
 
+(defsection x86-programs-proof-debugging
+  :parents (proof-utilities x86isa)
+  )
+
 ;; ======================================================================
 ;; Some useful arithmetic theorems, currently placed here because
 ;; they've yet to find a good home:

@@ -8,14 +8,6 @@
 
 ;; ======================================================================
 
-(defsection environment-proof-utilities
-  :parents (proof-utilities)
-  :short "Helper lemmas for x86 machine-code proofs involving the
-  @('env') field"
-  )
-
-;; ======================================================================
-
 (defthm nthcdr-true-listp
   (implies (true-listp xs)
            (true-listp (nthcdr n xs)))

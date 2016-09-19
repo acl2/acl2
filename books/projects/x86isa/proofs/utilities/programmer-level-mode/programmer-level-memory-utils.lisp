@@ -12,20 +12,6 @@
 (local (include-book "std/lists/take" :dir :system))
 
 ;; ======================================================================
-
-(defsection programmer-level-memory-utils
-  :parents (proof-utilities)
-
-  :short "Helper lemmas for reasoning about operations done on regions
-  of memory in programmer-level mode"
-
-  :long "<p>Here, we prove some useful lemmas that facilitate
-reasoning about the behavior of @(see wb) and @(see rb) when they
-operate in disjoint or overlapping regions of memory in the
-programmer-level mode.</p>" )
-
-(local (xdoc::set-default-parents programmer-level-memory-utils))
-
 ;; ----------------------------------------------------------------------
 ;; Debugging:
 ;; ----------------------------------------------------------------------

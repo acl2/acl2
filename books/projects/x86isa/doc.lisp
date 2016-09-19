@@ -224,11 +224,11 @@
  <ol>
 
  <li>
- <p>Using the Makefile provided with the @('x86isa') books: Users of these
- books who wish to simulate x86 programs with non-deterministic
- computations like @('SYSCALL') \(in @(see programmer-level-mode)\) and
- @('RDRAND') should use this Makefile and run make with
- @('X86ISA_EXEC') set to @('t') \(which is the default value\).</p>
+ <p>Using the Makefile provided with the @('x86isa') books: Users of
+ these books who wish to simulate x86 programs with non-deterministic
+ computations like @('SYSCALL') \(in @(see programmer-level-mode)\)
+ should use this Makefile and run make with @('X86ISA_EXEC') set to
+ @('t') \(which is the default value\).</p>
 
  <code>
  make JOBS=8 \\
@@ -240,16 +240,16 @@
 
  <p>When @('X86ISA_EXEC') is @('t'), some dynamic C libraries that are
  used in the model for supporting the execution of @('SYSCALL') in the
- programmer-level mode and @('RDRAND') will be built.  <b>Since we rely
- on the foreign function interface of <a
- href='http://ccl.clozure.com/'>Clozure CL</a> (CCL), full execution
- support is available only if you use CCL.</b></p>
+ programmer-level mode will be built.  <b>Since we rely on the foreign
+ function interface of <a href='http://ccl.clozure.com/'>Clozure
+ CL</a> (CCL), full execution support is available only if you use
+ CCL.</b></p>
 
  <p>Values of @('X86ISA_EXEC') other than @('t') will not allow the
- execution of @('SYSCALL') and @('RDRAND') instructions \(as may be the
- case with using other Lisps as well\).  Note that reasoning about
- these instructions will still be possible.  Execution and reasoning
- about all other instructions will always be possible, irrespective of
+ execution of @('SYSCALL') instructions \(as may be the case with
+ using other Lisps as well\).  Note that reasoning about these
+ instructions will still be possible.  Execution and reasoning about
+ all other instructions will always be possible, irrespective of
  @('X86ISA_EXEC') or the underlying Lisp.</p>
 
  <p><b>IMPORTANT:</b> You should do a \"make clean\" \(or \"make
@@ -279,14 +279,8 @@
  included.</code>
 
  <p>then you do <i>not</i> have @('SYSCALL') execution support.
- Otherwise, you do. If, in @('machine/x86-other-non-det.cert.out'), you
- find the following string, then you do <i>not</i> have @('RDRAND')
- execution support, either because the books were certified with
- @('X86ISA_EXEC') not equal to @('t') or because your processor does
- not support the @('RDRAND') instruction:</p>
-
- <code>X86ISA_EXEC Warning: x86-other-non-det-raw.lsp is not
- included.</code>")
+ Otherwise, you do.</p>"
+  )
 
 (defxdoc model-validation
   :parents (x86isa)
@@ -479,35 +473,35 @@
   (if (endp op-table)
       ""
     (b* ((t-entry           (car op-table))
-	 (ins-name          (car (cdr t-entry)))
-	 (semantic-fn-name  (cdr (cdr t-entry)))
-	 (t-opcode-info     (car t-entry))
-	 (t-opcode          (car t-opcode-info))
-	 (opcode-string     (cond
-			     ((n04p t-opcode)
-			      (string-append "0" (str::natstr16 t-opcode)))
-			     ((n08p t-opcode)
-			      (str::natstr16 t-opcode))
-			     ((n12p t-opcode)
-			      (string-append "0" (str::natstr16 t-opcode)))
-			     (t
-			      (str::natstr16 t-opcode))))
-	 (opcode-extns      (cdr t-opcode-info))
-	 (opcode-extns      (if (equal (car opcode-extns) :nil)
-				'NONE
-			      opcode-extns))
+         (ins-name          (car (cdr t-entry)))
+         (semantic-fn-name  (cdr (cdr t-entry)))
+         (t-opcode-info     (car t-entry))
+         (t-opcode          (car t-opcode-info))
+         (opcode-string     (cond
+                             ((n04p t-opcode)
+                              (string-append "0" (str::natstr16 t-opcode)))
+                             ((n08p t-opcode)
+                              (str::natstr16 t-opcode))
+                             ((n12p t-opcode)
+                              (string-append "0" (str::natstr16 t-opcode)))
+                             (t
+                              (str::natstr16 t-opcode))))
+         (opcode-extns      (cdr t-opcode-info))
+         (opcode-extns      (if (equal (car opcode-extns) :nil)
+                                'NONE
+                              opcode-extns))
 
-	 (table-info-string
-	  (fms-to-string
-	   "Opcode: ~s0 Extension: ~y1 ~t3 Instruction: ~s2~%~t3 Semantic Function: ~s4~%~%"
-	   (list (cons #\0 opcode-string)
-		 (cons #\1 opcode-extns)
-		 (cons #\2 ins-name)
-		 (cons #\3 '8)
-		 (cons #\4 semantic-fn-name)))))
-	(string-append
-	 table-info-string
-	 (print-implemented-opcodes-table (cdr op-table))))))
+         (table-info-string
+          (fms-to-string
+           "Opcode: ~s0 Extension: ~y1 ~t3 Instruction: ~s2~%~t3 Semantic Function: ~s4~%~%"
+           (list (cons #\0 opcode-string)
+                 (cons #\1 opcode-extns)
+                 (cons #\2 ins-name)
+                 (cons #\3 '8)
+                 (cons #\4 semantic-fn-name)))))
+        (string-append
+         table-info-string
+         (print-implemented-opcodes-table (cdr op-table))))))
 
 (defsection implemented-opcodes
   :parents (x86-instructions)
@@ -517,8 +511,8 @@
 
  @(`
    (:code (print-implemented-opcodes-table
-	   (reverse
-	    (table-alist 'implemented-opcodes-table (w state)))))
+           (reverse
+            (table-alist 'implemented-opcodes-table (w state)))))
 `)
 
 ")
