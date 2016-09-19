@@ -33,6 +33,7 @@
 (include-book "list-theorems")
 (include-book "maybe-msgp")
 (include-book "minimize-ruler-extenders")
+(include-book "nati")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
 (include-book "numbered-names")
