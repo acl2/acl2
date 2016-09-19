@@ -27,7 +27,7 @@
 
 (define alpha/digit/dash-char-p ((char characterp))
   :returns (yes/no booleanp)
-  :parents (characters-utilities)
+  :parents (character-utilities)
   :short "True iff the character @('char') is
           a letter, a (decimal) digit, or a dash."
   (or (and (standard-char-p char)
@@ -38,7 +38,7 @@
 (std::deflist alpha/digit/dash-char-list-p (x)
   (alpha/digit/dash-char-p x)
   :guard (character-listp x)
-  :parents (characters-utilities)
+  :parents (character-utilities)
   :short "True iff all the characters in @('chars') are
           letters, (decimal) digits, or dashes."
   :true-listp nil
@@ -48,7 +48,7 @@
 
 (define nats=>chars ((nats (unsigned-byte-listp 8 nats)))
   :returns (chars character-listp)
-  :parents (characters-utilities)
+  :parents (character-utilities)
   :short "Convert a list of natural numbers below 256
           to the corresponding list of characters."
   (cond ((endp nats) nil)
@@ -63,7 +63,7 @@
 
 (define chars=>nats ((chars character-listp))
   :returns (nats (unsigned-byte-listp 8 nats))
-  :parents (characters-utilities)
+  :parents (character-utilities)
   :short "Convert a list of characters
           to the corresponding list of natural numbers below 256."
   (cond ((endp chars) nil)

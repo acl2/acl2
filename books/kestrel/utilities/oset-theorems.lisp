@@ -21,13 +21,12 @@
 
 (defsection theorems-about-osets
 
-  :parents (theorems-about-non-kestrel-books)
+  :parents (acl2::theorems-about-non-kestrel-books)
 
   :short "Some theorems about
           <see topic='@(url std/osets)'>finite sets</see>."
 
   (std::defrule cardinality-of-tail
-    :parents (theorems-about-osets)
     (equal (cardinality (tail x))
            (if (empty x)
                0

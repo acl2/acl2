@@ -19,11 +19,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-nat-lists
+(defsection theorems-about-nat-list-fix
 
   :parents (theorems-about-non-kestrel-books)
 
-  :short "Some theorems about lists of natural numbers."
+  :short "Some theorems about @(tsee nat-list-fix)."
 
   (defrule cdr-of-nat-list-fix
     (equal (cdr (nat-list-fix x))

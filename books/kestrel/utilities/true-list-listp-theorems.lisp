@@ -22,7 +22,7 @@
 
 (defsection theorems-about-true-list-lists
 
-  :parents (theorems-about-non-kestrel-books)
+  :parents (theorems-about-non-kestrel-books true-list-listp)
 
   :short "Some theorems about
           @('nil')-terminated lists of @('nil')-terminated lists."

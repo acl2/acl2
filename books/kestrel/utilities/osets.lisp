@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc oset-utilities
-  :parents (kestrel-utilities)
+  :parents (acl2::kestrel-utilities)
   :short "Some utilities for
           <see topic='@(url std/osets)'>finite sets</see>.")
 
