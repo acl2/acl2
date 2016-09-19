@@ -1146,9 +1146,10 @@ values.</p>"
 
 (define undef-flg (x86)
   ;; I have smashed this function under the hood.  This is a tad more
-  ;; efficient than smashing undef-read because it helps us avoid
-  ;; calling n01 while execution.  This saves one call to the builtin
-  ;; LOGAND that might create bignums, potentially.
+  ;; efficient than smashing just undef-read when flags are assigned
+  ;; undefined values because it helps us avoid calling n01 while
+  ;; execution.  This saves one call to the builtin LOGAND that might
+  ;; create bignums, potentially.
   :inline nil
   :enabled t
   :prepwork ((local (in-theory (e/d* () (undef-flg-logic)))))

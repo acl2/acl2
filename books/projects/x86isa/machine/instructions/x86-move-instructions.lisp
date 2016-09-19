@@ -500,24 +500,25 @@
                    (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
-       ((the (integer 1 8) operand-size)
+       ((the (integer 1 8) imm-size)
         (if (equal opcode #xC6)
             1
-          (if p3?
-              ;; See Table 3-4, P. 3-26, Intel Vol. 1.
-              2 ;; 16-bit operand-size
-            4)))
+          (if (logbitp #.*w* rex-byte)
+              4
+            (if p3?
+                2
+              4))))
        ((the (integer 1 8) reg/mem-size)
         (if (and (equal opcode #xC7)
                  (logbitp #.*w* rex-byte))
             8
-          operand-size))
+          imm-size))
 
        ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
           (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
-                              operand-size ;; bytes of immediate data
+                              imm-size ;; bytes of immediate data
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
@@ -556,11 +557,11 @@
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg2 imm x86)
-        (rm-size operand-size temp-rip :x x86))
+        (rm-size imm-size temp-rip :x x86))
        ((when flg2)
         (!!ms-fresh :imm-rm-size-error flg2))
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip operand-size))
+        (+ temp-rip imm-size))
        ((when (mbe :logic (not (canonical-address-p temp-rip))
                    :exec (<= #.*2^47*
                              (the (signed-byte
@@ -1004,6 +1005,15 @@
   :body
 
   (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))

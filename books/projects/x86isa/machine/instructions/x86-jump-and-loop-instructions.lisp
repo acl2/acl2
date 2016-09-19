@@ -99,6 +99,15 @@
 
        ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
         (+ (the (integer 0 4) offset-size) temp-rip))
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           next-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (+ next-rip offset))
        ((when (mbe :logic (not (canonical-address-p temp-rip))
@@ -723,6 +732,18 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((when lock?)
         ;; CMP does not allow a LOCK prefix.
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; Accounting for rel8 byte to compute the instruction
+           ;; length.
+           (+ 1 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
