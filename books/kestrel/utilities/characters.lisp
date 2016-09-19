@@ -23,6 +23,8 @@
   :parents (kestrel-utilities)
   :short "Some utilities for @(see characters).")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define alpha/digit/dash-char-p ((char characterp))
   :returns (yes/no booleanp)
   :parents (characters-utilities)
@@ -41,6 +43,8 @@
           letters, (decimal) digits, or dashes."
   :true-listp nil
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nats=>chars ((nats (unsigned-byte-listp 8 nats)))
   :returns (chars character-listp)

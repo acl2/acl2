@@ -24,6 +24,8 @@
   :parents (kestrel-utilities)
   :short "Some utilities for @(see strings).")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define string-list-fix ((x string-listp))
   :returns (fixed-x string-listp)
   :parents (string-utilities)
@@ -52,6 +54,8 @@
     :define t
     :forward t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define nonempty-stringp (x)
   :returns (yes/no booleanp)
   :parents (string-utilities)
@@ -69,6 +73,8 @@
   :short "@('Nil')-terminated lists of nonempty strings."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nats=>string ((nats (unsigned-byte-listp 8 nats)))
   :returns (string stringp :rule-classes (:rewrite :type-prescription))
