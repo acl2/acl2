@@ -36,4 +36,7 @@
 
   (defrule maybe-msgp-when-msgp
     (implies (msgp x)
-             (maybe-msgp x))))
+             (maybe-msgp x)))
+
+  (defrule maybe-msgp-of-nil
+    (maybe-msgp nil)))
