@@ -20,7 +20,8 @@
 
 (fty::deftagsum nati
   :parents (kestrel-utilities)
-  :short "Natural numbers and infinity."
+  :short "<see topic='@(url fty)'>Fixtype</see> of
+          natural numbers and infinity."
   (:finite ((get nat)))
   (:infinity ())
   :pred natip)
