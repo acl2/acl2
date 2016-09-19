@@ -39,6 +39,7 @@
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
 (include-book "numbered-names")
 (include-book "prove-interface")
+(include-book "strings")
 (include-book "symbol-symbol-alists")
 (include-book "terms")
 (include-book "testing")
