@@ -27,12 +27,12 @@
       (HW_RND_GEN-logic size x86)))
   (let ((cf
          (multiple-value-bind (cf random-state)
-             (ccl::random 2)
+             (random 2)
            (declare (ignorable random-state))
            cf))
         (rand
          (multiple-value-bind (rand random-state)
-             (ccl::random (expt 2 (ash size 3)))
+             (random (expt 2 (ash size 3)))
            (declare (ignorable random-state))
            rand)))
     (mv cf rand x86)))
