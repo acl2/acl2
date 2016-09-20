@@ -78,18 +78,24 @@
 
 (in-package "SV")
 
-(defconsts (*testname* state)
-  (b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
-       ((when constval)
-        ;; Make this event redundant if testname is already bound :)
-        (mv (acl2::unquote constval) state))
-       ;; When running non-interactively we read the cosim name from the
-       ;; environment.  In this case, try to set up some sanity checking.
-       ((mv & & state) (acl2::set-ld-error-action '(:exit 1) state))
-       ((mv & & state) (acl2::set-slow-alist-action :break))
-       ((mv er val state) (getenv$ "COSIM_TESTDIR" state))
-       (- (and er (raise "Failed: ~@0" er))))
-    (mv val state)))
+
+(b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
+     ;; When testname is already bound don't do anything.
+     ((when constval) (value 'testname-already-set))
+     ;; When running non-interactively we read the cosim name from the
+     ;; environment.  In this case, try to set up some sanity checking.  Note:
+     ;; This used to be inside a defconsts form, which didn't work because
+     ;; settings of ld-error-action made during make-event expansion don't
+     ;; stick.  Fortunately this doesn't need to be a certifiable book so we
+     ;; can do these outside make-event expansion.
+     ((mv & & state) (acl2::set-ld-error-action '(:exit 1) state))
+     ((mv & & state) (acl2::set-slow-alist-action :break)))
+  (ld
+   '((defconsts (*testname* state)
+       (b* (((mv er val state) (getenv$ "COSIM_TESTDIR" state))
+            (- (or val (raise "Empty COSIM_TESTDIR" statE)))
+            (- (and er (raise "Failed: ~@0" er))))
+         (mv val state))))))
 
 (defconsts (*svex-design* *orig-design* state)
   #!vl
@@ -157,7 +163,7 @@
              (cosims-compare *input-lines* *output-lines-ncv* *exactp* *updates* *nextstates*)))
 (assert! (or (not *output-lines-vcs*)
              (cosims-compare *input-lines* *output-lines-vcs* *exactp* *updates* *nextstates*)))
-(assert! (or (not *output-lines-iv*)
+(assert! (or (atom *output-lines-iv*)
              (cosims-compare *input-lines* *output-lines-iv*  *exactp* *updates* *nextstates*)))
 
 ;; (assert! (or (not *output-lines-ncv*)
