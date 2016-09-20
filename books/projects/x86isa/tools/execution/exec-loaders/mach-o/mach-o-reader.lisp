@@ -707,7 +707,7 @@
 (in-theory (disable read-load_commands))
 
 ;;----------------------------------------------------------------------
-;; Fill the sections of the DATA segment into mach-o:
+;; Fill the sections of the __TEXT segment into mach-o:
 ;;----------------------------------------------------------------------
 
 (defun fill-TEXT-text-section-bytes
@@ -729,7 +729,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly.  TEXT::Text section could not be read.~%") mach-o state))
+         (cw "EOF encountered unexpectedly.  TEXT::text section could not be read.~%") mach-o state))
        (mach-o (!TEXT-text-section-bytes section mach-o)))
       (mv nil mach-o state)))
 
@@ -775,7 +775,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly.  TEXT::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly.  TEXT::cstring section could not be read.~%")
          mach-o state))
        (mach-o (!TEXT-cstring-section-bytes section mach-o)))
       (mv nil mach-o state)))
@@ -818,7 +818,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly.  TEXT::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly.  TEXT::const section could not be read.~%")
          mach-o state))
        (mach-o (!TEXT-const-section-bytes section mach-o)))
       (mv nil mach-o state)))
@@ -890,7 +890,7 @@
 (in-theory (disable fill-TEXT-segment-bytes))
 
 ;;----------------------------------------------------------------------
-;; Fill the sections of the DATA segment into mach-o:
+;; Fill the sections of the __DATA segment into mach-o:
 ;;----------------------------------------------------------------------
 
 (defun fill-DATA-data-section-bytes
@@ -912,7 +912,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly.  DATA::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly.  DATA::data section could not be read.~%")
          mach-o state))
        (mach-o (!DATA-data-section-bytes section mach-o)))
       (mv nil mach-o state)))
@@ -954,7 +954,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly in file ~x0.  DATA::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly in file ~x0.  DATA::dyld section could not be read.~%")
          mach-o state))
        (mach-o (!DATA-dyld-section-bytes section mach-o)))
       (mv nil mach-o state)))
@@ -996,7 +996,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly. DATA::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly. DATA::const section could not be read.~%")
          mach-o state))
        (mach-o (!DATA-const-section-bytes section mach-o)))
       (mv nil mach-o state)))
@@ -1038,7 +1038,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly.  DATA::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly.  DATA::bss section could not be read.~%")
          mach-o state))
        (mach-o (!DATA-bss-section-bytes section mach-o)))
       (mv nil mach-o state)))
@@ -1080,7 +1080,7 @@
                           remaining-file)))))
        ((when (not (byte-listp section)))
         (mv
-         (cw "EOF encountered unexpectedly. DATA::Text section could not be read.~%")
+         (cw "EOF encountered unexpectedly. DATA::common section could not be read.~%")
          mach-o state))
        (mach-o (!DATA-common-section-bytes section mach-o)))
       (mv nil mach-o state)))

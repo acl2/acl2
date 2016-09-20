@@ -15,28 +15,29 @@
 (in-package "ACL2")
 
 (include-book "event-forms")
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (pseudo-event-formp '(defun f (x) x)))
+(assert! (pseudo-event-formp '(defun f (x) x)))
 
-(assert-event (pseudo-event-formp '(encapsulate () (defun f (x) x))))
+(assert! (pseudo-event-formp '(encapsulate () (defun f (x) x))))
 
-(assert-event (not (pseudo-event-formp 33)))
+(assert! (not (pseudo-event-formp 33)))
 
-(assert-event (not (pseudo-event-formp '("a" 1))))
+(assert! (not (pseudo-event-formp '("a" 1))))
 
-(assert-event (not (pseudo-event-formp nil)))
+(assert! (not (pseudo-event-formp nil)))
 
-(assert-event (not (pseudo-event-formp '((f x) y))))
+(assert! (not (pseudo-event-formp '((f x) y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (pseudo-event-form-listp nil))
+(assert! (pseudo-event-form-listp nil))
 
-(assert-event (pseudo-event-form-listp '((defun f (x) x)
-                                         (encapsulate () (defun f (x) x)))))
+(assert! (pseudo-event-form-listp '((defun f (x) x)
+                                    (encapsulate () (defun f (x) x)))))
 
-(assert-event (not (pseudo-event-form-listp 2)))
+(assert! (not (pseudo-event-form-listp 2)))
 
-(assert-event (not (pseudo-event-form-listp '(defun f (x) x))))
+(assert! (not (pseudo-event-form-listp '(defun f (x) x))))
