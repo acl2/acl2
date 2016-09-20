@@ -32,8 +32,14 @@ HW_RND_GEN)\).</p>"
   :guard (or (equal size 2)
              (equal size 4)
              (equal size 8))
-  (declare (ignorable size))
-  (pop-x86-oracle x86))
+  ;; Old implementation used the env field.
+  ;; (pop-x86-oracle x86)
+  (b* (((mv cf x86)
+        (undef-flg x86))
+       ((mv rand x86)
+        (undef-read x86))
+       (rand (loghead (ash size 3) rand)))
+    (mv cf rand x86)))
 
 (define HW_RND_GEN
   ((size :type (integer 2 8))
@@ -42,7 +48,6 @@ HW_RND_GEN)\).</p>"
   :guard (or (equal size 2)
              (equal size 4)
              (equal size 8))
-  (declare (ignorable size))
   (HW_RND_GEN-logic size x86))
 
 ;; ======================================================================
@@ -58,41 +63,14 @@ HW_RND_GEN)\).</p>"
   :parents (other-non-deterministic-computations)
   :short "Definitions of non-deterministic computations to be used for
   execution"
-  :long "<p><b>IMPORTANT:</b> The following raw Lisp definitions will
-not be available unless the x86 books have been build with the
-environment variable @('X86ISA_EXEC') set to @('t'). See @(see
-x86isa-build-instructions) for details.</p>
-
-<ul>
-<li>@(see HW_RND_GEN)</li>
-</ul>
-"
-
-  (build-with-full-exec-support
-
-   x86isa_rdrand_exec_support
-
-   (progn
-
-     (defttag :other-non-det)
-
-     (defconst *os-specific-other-non-det-lib*
-       (os
-        "shared/librdrand.so"    ;; Linux
-        "shared/librdrand.dylib" ;; Darwin
-        ;; Hopefully, one day I'll have FreeBSD listed here as well.
-        ""
-        ))
-
-     (defconst *shared-other-non-det-dir-path*
-       (string-append *current-dir* *os-specific-other-non-det-lib*))
+  :long "<p>We smash the definition of @(see HW_RND_GEN) to provide
+  random numbers during execution by using Lisp's @('random')
+  function.</p>"
 
 ; Instruction to cert.pl for dependency tracking.
 ; (depends-on "x86-other-non-det-raw.lsp")
 
-     (include-raw "x86-other-non-det-raw.lsp"))
-
-   (value-triple
-    (cw "~%~%X86ISA_EXEC Warning: x86-other-non-det-raw.lsp is not included.~%~%~%"))))
+  (defttag :other-non-det)
+  (include-raw "x86-other-non-det-raw.lsp"))
 
 ;; ======================================================================

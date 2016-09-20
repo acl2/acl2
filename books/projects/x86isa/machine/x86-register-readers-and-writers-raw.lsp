@@ -17,9 +17,25 @@
     (return-from X86ISA::undef-flg$notinline
       (X86ISA::undef-flg-logic x86)))
   ;; TO-DO@Shilpi: For now, I'm just returning 0 as the "undefined"
-  ;; value.
+  ;; value for flags.
   (mv 0 x86)
   ;; (b* ((- (cw "~%undef-flg at PC: ~x0~%" (X86ISA::rip X86ISA::*the-live-x86*))))
+  ;;     (mv 0 x86))
+  )
+
+(defun undef-read$notinline (x86)
+  (declare (xargs :mode :program :stobjs x86))
+  (when (or (equal (f-get-global 'in-prove-read ACL2::*the-live-state*)
+                   t)
+            (equal (f-get-global
+                    'in-verify-read ACL2::*the-live-state*)
+                   t))
+    (return-from X86ISA::undef-read$notinline
+      (X86ISA::undef-read-logic x86)))
+  ;; TO-DO@Shilpi: For now, I'm just returning 0 as the "undefined"
+  ;; value.
+  (mv 0 x86)
+  ;; (b* ((- (cw "~%undef-read at PC: ~x0~%" (X86ISA::rip X86ISA::*the-live-x86*))))
   ;;     (mv 0 x86))
   )
 

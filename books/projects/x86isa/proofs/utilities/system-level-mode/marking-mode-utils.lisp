@@ -14,7 +14,7 @@
 
 ;; ======================================================================
 
-(local (xdoc::set-default-parents marking-mode-top))
+(local (xdoc::set-default-parents system-level-marking-mode-proof-utilities))
 
 ;; ======================================================================
 
@@ -1022,7 +1022,7 @@
 ;; ======================================================================
 
 (defsection xlate-equiv-memory-and-rm08
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   (defthmd xlate-equiv-memory-and-rvm08
     (implies (and (xr :programmer-level-mode 0 x86-1)
@@ -1108,7 +1108,7 @@
 ;; Get-prefixes in system-level marking mode:
 
 (defsection get-prefixes-in-system-level-marking-mode
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   (defthmd xr-not-mem-and-get-prefixes
     ;; I don't need this lemma in the programmer-level mode because
@@ -1720,7 +1720,7 @@
 ;; rb in system-level marking mode:
 
 (defsection rb-in-system-level-marking-mode
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   (defthm xr-fault-rb-state-in-system-level-mode
     (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))

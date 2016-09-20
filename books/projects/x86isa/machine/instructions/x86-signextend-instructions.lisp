@@ -39,6 +39,16 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+       
        ((the (integer 1 8) register-size)
         (select-operand-size nil rex-byte nil prefixes))
        ((the (integer 1 4) src-size) (ash register-size -1))
@@ -62,7 +72,7 @@
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size *rax* dst rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CWD/CDQ/CQO
@@ -89,6 +99,16 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+       
        ((the (integer 1 8) src-size)
         (select-operand-size nil rex-byte nil prefixes))
        (src (rgfi-size src-size *rax* rex-byte x86))

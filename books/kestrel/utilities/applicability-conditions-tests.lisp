@@ -21,21 +21,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (applicability-condition-p (make-applicability-condition
-                                          :name 'appcond
-                                          :formula '(equal x x)
-                                          :hints nil)))
+(assert! (applicability-condition-p (make-applicability-condition
+                                     :name 'appcond
+                                     :formula '(equal x x)
+                                     :hints nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (applicability-condition-listp nil))
+(assert! (applicability-condition-listp nil))
 
-(assert-event (applicability-condition-listp (list (make-applicability-condition
-                                                    :name 'appcond
-                                                    :formula '(equal x x)
-                                                    :hints nil))))
+(assert! (applicability-condition-listp (list (make-applicability-condition
+                                               :name 'appcond
+                                               :formula '(equal x x)
+                                               :hints nil))))
 
-(assert-event (not (applicability-condition-listp '(1 2 3))))
+(assert! (not (applicability-condition-listp '(1 2 3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,7 +187,7 @@
       (w state))
      `(progn
         (encapsulate () ,event)
-        (assert-event (rune-disabledp '(:type-prescription ,name) state)))))
+        (assert! (rune-disabledp '(:type-prescription ,name) state)))))
  (make-event (f state)))
 
 (must-succeed*
@@ -205,7 +205,7 @@
       (w state))
      `(progn
         (encapsulate () ,event)
-        (assert-event (not (runep '(:type-prescription ,name) (w state)))))))
+        (assert! (not (runep '(:type-prescription ,name) (w state)))))))
  (make-event (f state)))
 
 (must-succeed*
@@ -223,7 +223,7 @@
       (w state))
      `(progn
         (encapsulate () ,event)
-        (assert-event (rune-enabledp '(:type-prescription ,name) state)))))
+        (assert! (rune-enabledp '(:type-prescription ,name) state)))))
  (make-event (f state)))
 
 (must-succeed*
@@ -241,7 +241,7 @@
       (w state))
      `(progn
         (encapsulate () ,event)
-        (assert-event (rune-disabledp '(:type-prescription ,name) state)))))
+        (assert! (rune-disabledp '(:type-prescription ,name) state)))))
  (make-event (f state)))
 
 (must-succeed*
@@ -259,7 +259,7 @@
       (w state))
      `(progn
         (encapsulate () ,event)
-        (assert-event (rune-disabledp '(:type-prescription ,name) state)))))
+        (assert! (rune-disabledp '(:type-prescription ,name) state)))))
  (make-event (f state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,7 +271,7 @@
      (applicability-condition-events nil nil nil nil nil (w state))
      `(progn
         ,@events
-        (assert-event (eq ,names-to-thms nil)))))
+        (assert! (eq ,names-to-thms nil)))))
  (make-event (f state)))
 
 (must-succeed*
@@ -302,10 +302,10 @@
            (th-thm (cdr (assoc-eq 'th names-to-thms))))
        `(progn
           (encapsulate () ,@events)
-          (assert-event
+          (assert!
            (rune-enabledp '(:type-prescription ,appcond-thm) state))
-          (assert-event
+          (assert!
            (not (runep '(:rewrite ,cons-thm) (w state))))
-          (assert-event
+          (assert!
            (rune-disabledp '(:rewrite ,th-thm) state))))))
  (make-event (f state)))

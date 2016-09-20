@@ -55,6 +55,16 @@
        (lock? (equal #.*lock* group-1-prefix))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
@@ -261,6 +271,16 @@
        (group-1-prefix (the (unsigned-byte 8) (prefixes-slice :group-1-prefix prefixes)))
        (lock? (equal #.*lock* group-1-prefix))
        ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
@@ -445,6 +465,16 @@
        (lock? (equal #.*lock* group-1-prefix))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+       
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
@@ -549,6 +579,6 @@
                                  #.*max-linear-address-size+1*)
                              dst-addr) x86))))
 
-      x86))
+    x86))
 
 ;; ======================================================================

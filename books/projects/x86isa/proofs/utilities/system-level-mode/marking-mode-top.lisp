@@ -13,17 +13,201 @@
 
 ;; ======================================================================
 
-(defsection marking-mode-top
-  :parents (proof-utilities)
+(defsection system-level-marking-mode-proof-utilities
+  :parents (proof-utilities x86-programs-proof-debugging)
 
-  :short "Reasoning in the system-level marking mode"
+  :short "General-purpose code-proof libraries to include in the
+  system-level marking mode (with A/D flag updates on)"
 
-  :long "<p>WORK IN PROGRESS...</p>
+  :long "<p>When reasoning about an supervisor-mode program in the
+  system-level <i>marking</i> mode of operation of the x86 ISA model,
+  include the book
+  @('x86isa/proofs/utilities/system-level-mode/marking-mode-top') to
+  make use of some standard rules you would need to control the
+  symbolic simulation of the program.</p>
 
-<p>This doc topic will be updated in later commits...</p>"
+  <p>If unwinding the @('(x86-run ... x86)') expression during your
+  proof attempt does not result in a 'clean' expression (i.e., one
+  entirely in terms of updates made to the initial state as opposed to
+  in terms of @(see x86-fetch-decode-execute) or @(see x86-run)), then
+  there is a good chance that you're missing some preconditions, or
+  that the existing rules are not good enough.  In any case, it can
+  help to @(see acl2::monitor) the existing rules to figure out what's
+  wrong.  Feel free to send on suggestions for new rules or improving
+  existing ones!</p>
+
+  <p>You can monitor the following rules, depending on the kind of
+  subgoals you see, to get some clues.  You can find definitions of
+  these rules in @(see unwind-x86-interpreter-in-marking-mode).</p>
+
+  <ul>
+
+    <li>When the subgoal has calls of @('x86-run'): <br/>
+        Monitor @('x86-run-opener-not-ms-not-zp-n').
+   </li>
+
+    <li>When the subgoal has calls of @(see x86-fetch-decode-execute): <br/>
+        Monitor @('x86-fetch-decode-execute-opener-in-marking-mode').
+   </li>
+
+   <li>When monitoring
+    @('x86-fetch-decode-execute-opener-in-marking-mode') tells you
+    that a hypothesis involving @(see get-prefixes-alt) was not
+    rewritten to @('t'): <br/>
+    Monitor
+    @('get-prefixes-alt-opener-lemma-no-prefix-byte'). <br/>
+    Note that if the instruction under consideration has prefix
+    bytes, you should monitor one of these rules instead: <br/>
+    @('get-prefixes-alt-opener-lemma-group-1-prefix-in-marking-mode') <br/>
+    @('get-prefixes-alt-opener-lemma-group-2-prefix-in-marking-mode') <br/>
+    @('get-prefixes-alt-opener-lemma-group-3-prefix-in-marking-mode') <br/>
+    @('get-prefixes-alt-opener-lemma-group-4-prefix-in-marking-mode').<br/>
+    <br/>
+    Other useful rules involving @('get-prefixes-alt') are:
+   @('get-prefixes-alt-and-wb-in-system-level-marking-mode-disjoint-from-paging-structures') <br/>
+   and <br/>
+   @('mv-nth-2-get-prefixes-alt-no-prefix-byte').
+  </li>
+
+    <li>When monitoring other rules above indicates that an
+    instruction is not being fetched successfully using @(see rb-alt):
+    <br/>
+    Monitor @('rb-alt-in-terms-of-nth-and-pos-in-system-level-mode').
+    </li>
+
+    <li>When monitoring other rules above indicates that ACL2 can't
+    resolve that the program remained unchanged (@(see
+    program-at-alt)) after a write operation @(see wb) occurred: <br/>
+    Monitor @('program-at-alt-wb-disjoint-in-system-level-mode'). <br/>
+    <br/>
+    An instance of where monitoring this rule might be helpful is when
+    the @('program-at') hypothesis of
+    @('rb-alt-in-terms-of-nth-and-pos-in-system-level-mode') is not
+    being relieved.
+   </li>
+
+   <li>When inferring the canonical nature of a linear address:<br/>
+    Monitor @('member-p-canonical-address-listp'). <br/>
+    <br/>
+    This is useful if you believe that the canonical nature of a
+    linear address should be inferable from the canonical nature of a
+    list of addresses, of which that address is a member.  An instance
+    of where monitoring this rule
+    might be helpful is when the @('member-p') hypothesis of
+    @('rb-alt-in-terms-of-nth-and-pos-in-system-level-mode') is not
+    being relieved.
+   </li>
+
+   <li>When reasoning about disjointness/overlap of memory regions:<br/>
+   Monitor one of these rules: <br/>
+   @('rb-alt-wb-equal-in-system-level-mode') <br/>
+   @('rb-alt-wb-disjoint-in-system-level-mode') <br/>
+   @('rb-alt-and-wb-to-paging-structures-disjoint') <br/>
+   @('rb-wb-disjoint-in-system-level-mode') <br/>
+   @('rb-wb-equal-in-system-level-mode') <br/>
+   @('all-translation-governing-addresses-and-mv-nth-1-wb-disjoint') <br/>
+   @('la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs').<br/>
+   <br/>
+   Note that @(see rb) is rewritten to @(see rb-alt) when the read is
+   being done from a program address.
+  </li>
+
+ </ul>
+
+ <p>When symbolically simulating supervisor-mode programs, you might
+ also want to do the following, which replaces ACL2's default ancestor
+ check with something simpler:</p>
+
+ <code>
+ (local (include-book \"tools/trivial-ancestors-check\" :dir :system))
+ (local (acl2::use-trivial-ancestors-check))
+ </code>
+
+")
+
+(defsection unwind-x86-interpreter-in-marking-mode
+  :parents (system-level-marking-mode-proof-utilities)
+
+  ;; A benefit of defining this topic (apart from letting the user
+  ;; view the definitions of the rules) is that if the rule names
+  ;; mentioned in the parent topic are changed, the manual build
+  ;; process will complain about broken links, and we'll know to
+  ;; modify these two doc topics.
+
+  :short "Definitions of rules to monitor in the system-level marking mode"
+
+  :long "
+
+ <h3>Rules about @('x86-run') and @('x86-fetch-decode-execute')</h3>
+
+ @(def x86-run-opener-not-ms-not-zp-n)
+
+ @(def x86-fetch-decode-execute-opener-in-marking-mode)
+
+ <h3>Rules about @('get-prefixes-alt')</h3>
+
+ @(def get-prefixes-alt-opener-lemma-no-prefix-byte)
+
+ @(def get-prefixes-alt-opener-lemma-group-1-prefix-in-marking-mode)
+
+ @(def get-prefixes-alt-opener-lemma-group-2-prefix-in-marking-mode)
+
+ @(def get-prefixes-alt-opener-lemma-group-3-prefix-in-marking-mode)
+
+ @(def get-prefixes-alt-opener-lemma-group-4-prefix-in-marking-mode)
+
+ @(def get-prefixes-alt-and-wb-in-system-level-marking-mode-disjoint-from-paging-structures)
+
+ @(def mv-nth-2-get-prefixes-alt-no-prefix-byte)
+
+ <h3>Rules related to instruction fetches and program location</h3>
+
+ @(def rb-alt-in-terms-of-nth-and-pos-in-system-level-mode)
+
+ @(def program-at-alt-wb-disjoint-in-system-level-mode)
+
+ <h3>Rules related to canonical linear addresses</h3>
+
+ @(def member-p-canonical-address-listp)
+
+ <h3>Rules related to disjointness/overlap of memory regions</h3>
+
+ @(def rb-alt-wb-equal-in-system-level-mode)
+ @(def rb-alt-wb-disjoint-in-system-level-mode)
+ @(def rb-alt-and-wb-to-paging-structures-disjoint)
+ @(def rb-wb-disjoint-in-system-level-mode)
+ @(def rb-wb-equal-in-system-level-mode)
+ @(def all-translation-governing-addresses-and-mv-nth-1-wb-disjoint)
+ @(def la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs).
+ "
   )
 
-(local (xdoc::set-default-parents marking-mode-top))
+
+(local (xdoc::set-default-parents system-level-marking-mode-proof-utilities))
+
+;; ======================================================================
+
+;; (acl2::why x86-run-opener-not-ms-not-zp-n)
+;; (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
+;; (acl2::why get-prefixes-alt-opener-lemma-no-prefix-byte)
+;; (acl2::why get-prefixes-alt-and-wb-in-system-level-marking-mode-disjoint-from-paging-structures)
+;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+;; (acl2::why rb-alt-wb-disjoint-in-system-level-mode)
+;; (acl2::why rb-alt-wb-equal-in-system-level-mode)
+;; (acl2::why mv-nth-1-rb-after-mv-nth-2-rb-alt)
+;; (acl2::why all-translation-governing-addresses-and-mv-nth-1-wb-disjoint)
+;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
+;; (acl2::why mv-nth-1-rb-after-mv-nth-2-get-prefixes-alt-no-prefix-byte)
+;; (acl2::why mv-nth-2-get-prefixes-alt-no-prefix-byte)
+;; (acl2::why mv-nth-2-rb-in-system-level-marking-mode)
+;; (acl2::why combine-mv-nth-2-las-to-pas-same-r-w-x)
+;; (acl2::why mv-nth-1-rb-after-mv-nth-2-las-to-pas)
+;; (acl2::why mv-nth-1-rb-after-mv-nth-2-rb)
+;; (acl2::why get-prefixes-alt-and-wb-to-paging-structures)
+;; (acl2::why rb-wb-disjoint-in-system-level-mode)
+;; (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
+;; (acl2::why mv-nth-2-get-prefixes-alt-no-prefix-byte)
+;; (acl2::why rb-alt-and-wb-to-paging-structures-disjoint)
 
 ;; ======================================================================
 
@@ -91,7 +275,7 @@
 ;; ======================================================================
 
 (defsection get-prefixes-alt
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   :short "Rewriting @('get-prefixes') to @('get-prefixes-alt')"
 
@@ -755,7 +939,7 @@
                 (canonical-address-listp l-addrs)
                 (physical-address-p index)
                 (unsigned-byte-p 8 value)
-                (not (programmer-level-mode x86))                
+                (not (programmer-level-mode x86))
                 (x86p x86))
                (equal (mv-nth 1 (rb l-addrs r-w-x (xw :mem index value x86)))
                       (mv-nth 1 (rb l-addrs r-w-x x86))))
@@ -1366,7 +1550,7 @@
 ;; ======================================================================
 
 (defsection program-at-alt
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   ;; Note that unlike rb-alt and get-prefixes-alt, we need to use
   ;; disjoint-p$ for program-at-alt instead of disjoint-p.
@@ -1485,7 +1669,7 @@
 ;; ======================================================================
 
 (defsection rb-alt
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   :long "<p>rb-alt is defined basically to read the program bytes from
  the memory. I don't intend to use it to read paging data

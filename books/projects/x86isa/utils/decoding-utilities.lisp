@@ -232,10 +232,6 @@ y  Doubleword or quadword (in 64-bit mode), depending on operand-size
 z  Word for 16-bit operand-size or doubleword for 32 or 64-bit
    operand-size.
 
-||#
-
-#||
-
 See Intel Manuals, Volume 2, Appendix A.2.5
 
 Table A-1. Superscripts Utilized in Opcode Tables
@@ -352,22 +348,22 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
               (:prefix-DS)
               ((:i64 . ("AAS" 0))))
 
-    #| 40 |# (((:o64  . (:rex))       (:i64 . ("INC"  2 (:eAX))))
-              ((:o64  . (:rex-b))     (:i64 . ("INC"  2 (:eCX))))
-              ((:o64  . (:rex-x))     (:i64 . ("INC"  2 (:eDX))))
-              ((:o64  . (:rex-xb))    (:i64 . ("INC"  2 (:eBX))))
-              ((:o64  . (:rex-r))     (:i64 . ("INC"  2 (:eSP))))
-              ((:o64  . (:rex-rb))    (:i64 . ("INC"  2 (:eBP))))
-              ((:o64  . (:rex-rx))    (:i64 . ("INC"  2 (:eSI))))
-              ((:o64  . (:rex-rxb))   (:i64 . ("INC"  2 (:eDI))))
-              ((:o64  . (:rex-w))     (:i64 . ("DEC"  2 (:eAX))))
-              ((:o64  . (:rex-wb))    (:i64 . ("DEC"  2 (:eCX))))
-              ((:o64  . (:rex-wx))    (:i64 . ("DEC"  2 (:eDX))))
-              ((:o64  . (:rex-wxb))   (:i64 . ("DEC"  2 (:eBX))))
-              ((:o64  . (:rex-wr))    (:i64 . ("DEC"  2 (:eSP))))
-              ((:o64  . (:rex-wrb))   (:i64 . ("DEC"  2 (:eBP))))
-              ((:o64  . (:rex-wrx))   (:i64 . ("DEC"  2 (:eSI))))
-              ((:o64  . (:rex-wrxb))  (:i64 . ("DEC"  2 (:eDI)))))
+    #| 40 |# (((:o64  . (:rex))       (:i64 . ("INC"  1 (:eAX))))
+              ((:o64  . (:rex-b))     (:i64 . ("INC"  1 (:eCX))))
+              ((:o64  . (:rex-x))     (:i64 . ("INC"  1 (:eDX))))
+              ((:o64  . (:rex-xb))    (:i64 . ("INC"  1 (:eBX))))
+              ((:o64  . (:rex-r))     (:i64 . ("INC"  1 (:eSP))))
+              ((:o64  . (:rex-rb))    (:i64 . ("INC"  1 (:eBP))))
+              ((:o64  . (:rex-rx))    (:i64 . ("INC"  1 (:eSI))))
+              ((:o64  . (:rex-rxb))   (:i64 . ("INC"  1 (:eDI))))
+              ((:o64  . (:rex-w))     (:i64 . ("DEC"  1 (:eAX))))
+              ((:o64  . (:rex-wb))    (:i64 . ("DEC"  1 (:eCX))))
+              ((:o64  . (:rex-wx))    (:i64 . ("DEC"  1 (:eDX))))
+              ((:o64  . (:rex-wxb))   (:i64 . ("DEC"  1 (:eBX))))
+              ((:o64  . (:rex-wr))    (:i64 . ("DEC"  1 (:eSP))))
+              ((:o64  . (:rex-wrb))   (:i64 . ("DEC"  1 (:eBP))))
+              ((:o64  . (:rex-wrx))   (:i64 . ("DEC"  1 (:eSI))))
+              ((:o64  . (:rex-wrxb))  (:i64 . ("DEC"  1 (:eDI)))))
 
     #| 50 |# (((:d64 . ("PUSH" 1 (:rAX/r8))))
               ((:d64 . ("PUSH" 1 (:rCX/r9))))
@@ -492,7 +488,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
               ("MOV" 2  (:rD/r15)  (I v)))
 
     #| c0 |# (("ShftGrp2" 2 (E b) (I b) :1a)
-              ("ShftGrp2" 2 (E v) (I v) :1a)
+              ("ShftGrp2" 2 (E v) (I b) :1a)
               ((:f64 . ("RET" 1 (I w))))
               ((:f64 . ("RET" 0)))
               ((:i64 . ("LES" 2 (G z) (M p) :vex)))
@@ -920,10 +916,10 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
     #| b8 |#  ((:no-prefix . ("JMPE"   0))
                (:F3        . ("POPCNT" 2 (G v) (E v))))
 
-              (("Grp10" 0 :1a)
-               ("InvalidOpcode" 0 :1b))
+              ((:no-prefix . ("Grp10" 0 :1a))
+               (:no-prefix . ("InvalidOpcode" 0 :1b)))
 
-              (("Grp8" 2 (E v) (I b) :1a))
+              ("Grp8" 2 (E v) (I b) :1a)
 
               ("BTC" 2 (E v) (G v))
 
@@ -1116,42 +1112,96 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
   #|       -------------------------------        |#
   ))
 
-(defn opcode-row-recognizer (lst)
+;; Thanks to Dmitry Nadezhin for fixing bugs in opcode-row-recognizer
+;; and opcode-map-info-recognizer!
+(defn opcode-row-recognizer (row-lst)
+  ;; row-lst ==  a row of opcodes.
   ;; A "row" refers to one row of an Intel opcode map (Intel manuals,
   ;; Volume 2, Appendix A); e.g., opcodes 0x00 to 0x0F form one row of
   ;; the one-byte opcode map.
-  (if (atom lst)
-      (eq lst nil)
-    (and ;; (car lst): information about one opcode
-     (consp (car lst))
-     (alistp (car lst))
-     ;; caar: one opcode
-     (true-listp (caar lst))
-     (or
-      ;; A "simple" opcode
-      (and (stringp (car (caar lst))) ;; Opcode
-           (natp (cadr (caar lst)))   ;; Number of Operands
-           ;; Number of operands <= addressing info. of all operands
-           (<= (cadr (caar lst)) (len (cddr (caar lst)))))
+  (if (atom row-lst)
+      (eq row-lst nil)
+    (and
+     (let ((one-opcode-lst (car row-lst)))
+       (and
+        (consp one-opcode-lst)
+        (true-listp one-opcode-lst)
+        (or
+         ;; A "simple" opcode
+         ;; Example: one-opcode-lst == ("ADD" 2 (E b)  (G b))
+         (and (stringp (nth 0 one-opcode-lst)) ;; Opcode
+              (natp (nth 1 one-opcode-lst))    ;; Number of Operands
+              ;; Number of operands <= addressing info. of all operands
+              (<= (nth 1 one-opcode-lst) (len (nthcdr 1 one-opcode-lst))))
 
-      ;; :2-byte-escape, :3-byte-escape, or :rex, etc. --- just the
-      ;; keyword without any other information
-      (and (keywordp (car (caar lst)))
-           (equal (len (caar lst)) 1))
+         ;; Just the keyword without any other information.
+         ;; The following keywords are supported:
+         ;; :2-byte-escape, :3-byte-escape, :rex, :prefix-CS,
+         ;; :prefix-ES, :prefix-SS, :prefix-DS, :prefix-FS,
+         ;; :prefix-GS, :prefix-OpSize, :prefix-AddrSize, :none,
+         ;; :prefix-Lock, :prefix-REPNE, :prefix-REP/REPE
+         ;; Example: one-opcode-lst ==  (:2-byte-escape)
+         (and (keywordp (nth 0 one-opcode-lst))
+              (equal (len one-opcode-lst) 1))
 
-      ;; A set of opcodes (different for different modes and prefixes)
-      (and (alistp (caar lst))
-           (subsetp (strip-cars (caar lst))
-                    '(:i64 :o64 :d64 :f64 :no-prefix :66 :F3 :F2))
-           (opcode-row-recognizer (list (strip-cdrs (caar lst))))))
-     (opcode-row-recognizer (cdr lst)))))
+         ;; A set of opcodes (different for different modes and prefixes)
+         ;; These following modes and prefixes are supported:
+         ;; :i64, :o64, :d64, :f64, :no-prefix, :66, :F3, :F2
+         ;; Examples: ((:i64 . ("POP ES"  0)))
+         ;;           ((:o64  . (:rex))       (:i64 . ("INC"  1 (:eAX))))
+         (and (alistp one-opcode-lst)
+              (subsetp (strip-cars one-opcode-lst)
+                       '(:i64 :o64 :d64 :f64 :no-prefix :66 :F3 :F2))
+              (opcode-row-recognizer (strip-cdrs one-opcode-lst))))))
+     (opcode-row-recognizer (cdr row-lst)))))
 
-(defn opcode-map-info-recognizer (lst)
-  (if (atom lst)
-      (eq lst nil)
-    (and ;; car: one row of the opcode map
-     (opcode-row-recognizer (list (car lst)))
-     (opcode-map-info-recognizer (cdr lst)))))
+(defn opcode-map-info-recognizer (map-lst)
+  (if (atom map-lst)
+      (eq map-lst nil)
+    (and ;; (car map-lst) == one row of the opcode map
+     (opcode-row-recognizer (car map-lst))
+     (opcode-map-info-recognizer (cdr map-lst)))))
+
+#||
+
+;; From Dmitry Nadezhin: this is helpful in finding out which row
+;; (if any) has a well-formednes problem.
+
+(opcode-row-recognizer (nth #x0 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x1 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x2 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x3 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x4 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x5 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x6 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x7 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x8 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x9 *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xA *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xB *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xC *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xD *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xE *one-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xF *one-byte-opcode-map-lst*))
+
+(opcode-row-recognizer (nth #x0 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x1 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x2 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x3 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x4 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x5 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x6 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x7 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x8 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #x9 *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xA *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xB *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xC *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xD *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xE *two-byte-opcode-map-lst*))
+(opcode-row-recognizer (nth #xF *two-byte-opcode-map-lst*))
+
+||#
 
 (defthm len-one-byte-map
   (equal (len *one-byte-opcode-map-lst*) 16)
