@@ -93,7 +93,7 @@
   (ld
    '((defconsts (*testname* state)
        (b* (((mv er val state) (getenv$ "COSIM_TESTDIR" state))
-            (- (or val (raise "Empty COSIM_TESTDIR" statE)))
+            (- (or val (raise "Empty COSIM_TESTDIR")))
             (- (and er (raise "Failed: ~@0" er))))
          (mv val state))))))
 
@@ -120,16 +120,37 @@
        ((when err)
         (er hard? 'output-lines-ncv "~@0~%" err)
         (mv nil state))
-       ((when exists) (mv nil state)))
-    (acl2::read-file-lines (str::cat *testname* "/outputs.ncv.data") state)))
+       ((when exists) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.ncv.data") state))
+       ((when (stringp lines))
+        ;; indicates error
+        (er hard? 'output-lines-ncv "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines*)))
+        (er hard? 'output-lines-ncv "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
+        
 
 (defconsts (*output-lines-vcs* state)
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/no_vcs")))
        ((when err)
         (er hard? 'output-lines-vcs "~@0~%" err)
         (mv nil state))
-       ((when exists) (mv nil state)))
-    (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state)))
+       ((when exists) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state))
+       ((when (stringp lines))
+        ;; indicates error
+        (er hard? 'output-lines-vcs "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines*)))
+        (er hard? 'output-lines-vcs "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
 
 (defun drop-comment-lines (lines)
   (if (atom lines)
@@ -146,8 +167,16 @@
        ((when exists) (mv nil state))
        ((mv lines state)
         (acl2::read-file-lines (str::cat *testname* "/outputs.iv.data")
-                               state)))
-    (mv (drop-comment-lines lines) state)))
+                               state))
+       ((when (stringp lines))
+        ;; indicates error -- but allow for now since iverilog is a new/optional feature
+        ;; (er hard? 'output-lines-iv "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines*)))
+        (er hard? 'output-lines-iv "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
 
 (defconsts (*err* *updates* *nextstates* *assigns* *delays* moddb aliases)
   (svex-design-compile *svex-design*))
@@ -173,7 +202,7 @@
              (cosims-compare *input-lines* *output-lines-ncv* *exactp* *updates* *nextstates*)))
 (assert! (or (not *output-lines-vcs*)
              (cosims-compare *input-lines* *output-lines-vcs* *exactp* *updates* *nextstates*)))
-(assert! (or (atom *output-lines-iv*)
+(assert! (or (not *output-lines-iv*)
              (cosims-compare *input-lines* *output-lines-iv*  *exactp* *updates* *nextstates*)))
 
 ;; (assert! (or (not *output-lines-ncv*)
