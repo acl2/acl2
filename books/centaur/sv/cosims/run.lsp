@@ -78,18 +78,24 @@
 
 (in-package "SV")
 
-(defconsts (*testname* state)
-  (b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
-       ((when constval)
-        ;; Make this event redundant if testname is already bound :)
-        (mv (acl2::unquote constval) state))
-       ;; When running non-interactively we read the cosim name from the
-       ;; environment.  In this case, try to set up some sanity checking.
-       ((mv & & state) (acl2::set-ld-error-action '(:exit 1) state))
-       ((mv & & state) (acl2::set-slow-alist-action :break))
-       ((mv er val state) (getenv$ "COSIM_TESTDIR" state))
-       (- (and er (raise "Failed: ~@0" er))))
-    (mv val state)))
+
+(b* ((constval (fgetprop '*testname* 'acl2::const nil (w state)))
+     ;; When testname is already bound don't do anything.
+     ((when constval) (value 'testname-already-set))
+     ;; When running non-interactively we read the cosim name from the
+     ;; environment.  In this case, try to set up some sanity checking.  Note:
+     ;; This used to be inside a defconsts form, which didn't work because
+     ;; settings of ld-error-action made during make-event expansion don't
+     ;; stick.  Fortunately this doesn't need to be a certifiable book so we
+     ;; can do these outside make-event expansion.
+     ((mv & & state) (acl2::set-ld-error-action '(:exit 1) state))
+     ((mv & & state) (acl2::set-slow-alist-action :break)))
+  (ld
+   '((defconsts (*testname* state)
+       (b* (((mv er val state) (getenv$ "COSIM_TESTDIR" state))
+            (- (or val (raise "Empty COSIM_TESTDIR")))
+            (- (and er (raise "Failed: ~@0" er))))
+         (mv val state))))))
 
 (defconsts (*svex-design* *orig-design* state)
   #!vl
@@ -114,24 +120,63 @@
        ((when err)
         (er hard? 'output-lines-ncv "~@0~%" err)
         (mv nil state))
-       ((when exists) (mv nil state)))
-    (acl2::read-file-lines (str::cat *testname* "/outputs.ncv.data") state)))
+       ((when exists) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.ncv.data") state))
+       ((when (stringp lines))
+        ;; indicates error
+        (er hard? 'output-lines-ncv "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines*)))
+        (er hard? 'output-lines-ncv "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
+        
 
 (defconsts (*output-lines-vcs* state)
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/no_vcs")))
        ((when err)
         (er hard? 'output-lines-vcs "~@0~%" err)
         (mv nil state))
-       ((when exists) (mv nil state)))
-    (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state)))
+       ((when exists) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.vcs.data") state))
+       ((when (stringp lines))
+        ;; indicates error
+        (er hard? 'output-lines-vcs "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines*)))
+        (er hard? 'output-lines-vcs "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
+
+(defun drop-comment-lines (lines)
+  (if (atom lines)
+      lines
+    (if (equal (search "//" (car lines)) 0)
+        (drop-comment-lines (cdr lines))
+      (cons (car lines) (drop-comment-lines (cdr lines))))))
 
 (defconsts (*output-lines-iv* state)
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/no_iv")))
        ((when err)
         (er hard? 'output-lines-iv "~@0~%" err)
         (mv nil state))
-       ((when exists) (mv nil state)))
-    (acl2::read-file-lines (str::cat *testname* "/outputs.iv.data") state)))
+       ((when exists) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.iv.data")
+                               state))
+       ((when (stringp lines))
+        ;; indicates error -- but allow for now since iverilog is a new/optional feature
+        ;; (er hard? 'output-lines-iv "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines*)))
+        (er hard? 'output-lines-iv "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
 
 (defconsts (*err* *updates* *nextstates* *assigns* *delays* moddb aliases)
   (svex-design-compile *svex-design*))
