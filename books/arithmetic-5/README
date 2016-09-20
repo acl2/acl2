@@ -35,7 +35,7 @@ Contents
 0. WHICH ARITHMETIC BOOKS SHOULD I USE?
 
 1. HOW TO USE THE ARITHMETIC-5 BOOKS.
-  1.A. In Brief 
+  1.A. In Brief
   1.B. Choosing a Normal Form.
   1.C. Mini-theories.
 
@@ -60,8 +60,8 @@ about floor and mod), arithmetic/top-with-meta will probably
 suffice.  It is a good, fast, minimal arithmetic library.
 
 The book arithmetic-5/top is much more powerful, and includes
-rules for reasoning about floor and mod.  It also includes 
-the start of a theory about the logical operators such as logand 
+rules for reasoning about floor and mod.  It also includes
+the start of a theory about the logical operators such as logand
 and lognot.  You can enable nonlinear reasoning with either
 
 (set-default-hints '((nonlinearp-default-hint
@@ -70,14 +70,14 @@ and lognot.  You can enable nonlinear reasoning with either
 
 or
 
-(set-default-hints '((nonlinearp-default-hint++ 
+(set-default-hints '((nonlinearp-default-hint++
                       id stable-under-simplificationp
                       hist nil)))
 
-This library is reasonably fast, but unfortunately suffers from 
-rewrite loops on occasion.   
+This library is reasonably fast, but unfortunately suffers from
+rewrite loops on occasion.
 
-I do not particularly recommend arithmetic-3, but it is a bit 
+I do not particularly recommend arithmetic-3, but it is a bit
 faster than arithmetic-5, and some users may find it useful.
 
 The most powerful (and therefore the slowest) library is this
@@ -107,7 +107,7 @@ and enable nonlinear arithmetic with either
 
 or
 
-(set-default-hints '((nonlinearp-default-hint++ 
+(set-default-hints '((nonlinearp-default-hint++
                       id stable-under-simplificationp
                       hist nil)))
 
@@ -179,13 +179,13 @@ Gather/Scatter-exponents:
 
 There are (at least) two ways of normalizing the (almost) equivalent
 terms:
-(expt x (+ m n)) and 
+(expt x (+ m n)) and
 (* (expt x m) (expt x n)).
 (Question: Under what conditions are these two terms not equivalent?)
 
 One can choose the first of these as the normal form and gather
 exponents, or one can choose the second as the normal form and scatter
-exponents.  That is, one can choose to rewrite (expt x (+ m n)) to 
+exponents.  That is, one can choose to rewrite (expt x (+ m n)) to
 (* (expt x m) (expt x n)) --- to scatter exponents; or to rewrite
 (* (expt x m) (expt x n)) to (expt x (+ m n)) --- to gather exponents.
 By default, exponents are gathered when the book Bind-free/top is
@@ -195,9 +195,9 @@ To switch to scattering exponents, execute (scatter-exponents)
 at the top level prompt.  To resume gathering exponents, execute
 (gather-exponents).  These two forms are macros which expand to the
 appropriate set of commands.  (To see their expansions, one can
-execute 
+execute
 :trans (scatter-exponents) or
-:trans (gather-exponents) at the top-level. 
+:trans (gather-exponents) at the top-level.
 
 It is slightly more
 complex to switch theories within a :hints form.  One can use
@@ -611,4 +611,3 @@ sufficient for type-reasoning to establish (< 3 x).)
 experienced ACL2 user will regularly write a false theorem.  When a
 proof just will not go through, examine the output of the failed proof
 attempt with an eye to test cases which may reveal a problem.
-
