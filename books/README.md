@@ -43,9 +43,15 @@ to the most recent ACL2 release; there is also a reasonably up-to-date
 You can download a gzipped tarfile or zip file for the latest release,
 which includes the [ACL2 system][ACL2] and the [community
 books][community books].  Simply click on the "release" button at the
-top of github.com/acl2/acl2.
+top of github.com/acl2/acl2.  Alternatively you get a copy from git as
+follows:
 
-Please see the [ACL2 home page][ACL2], specifically its [installation
+```
+git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout 7.2
+```
+
+Your current directory is now a copy of ACL2 Version 7.2.  Please see
+the [ACL2 home page][ACL2], specifically its [installation
 instructions][installation], for how to build an executable and
 certify books in your new directory.
 
@@ -57,8 +63,8 @@ certify books in your new directory.
 
 #### Experimental Development Version
 
-To check out an effectively read-only copy of the repository using
-[git], run:
+To check out the latest development branch of the repository omit the
+last checkout command using [git], run:
 
 ```
 git clone git://github.com/acl2/acl2
