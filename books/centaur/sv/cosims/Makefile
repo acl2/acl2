@@ -71,6 +71,7 @@ FAILING_TEST_TARGETS := \
   for-nba/ok \
   task/ok \
   task2/ok \
+  case_wilds/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
