@@ -88,7 +88,7 @@
          (cw "can't open ~s0 for output." outfile)
          (acl2::silent-error state))
         (state (princ$ header channel state))
-        (state (fms! "(in-package \"ACL2\")~|~% (defconst ~x0 '~|"
+        (state (fms! "(in-package \"ACL2\")~|~%(defconst ~x0 '~|"
                      (list (cons #\0 topic-list-name))
                      channel state nil))
         (state (time$ (fms! "~x0"
