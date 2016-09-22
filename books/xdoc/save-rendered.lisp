@@ -46,9 +46,15 @@
 
 (defun save-rendered (outfile
                       header
+                      topic-list-name
                       force-missing-parents-p
                       maybe-add-top-topic-p
                       state)
+
+; See books/doc/top.lisp for an example call of xdoc::save-rendered.  In
+; particular, the constant *rendered-doc-combined-header* defined in that file
+; is an example of header, which goes at the top of the generated file; and
+; topic-list-name is a symbol, such as acl2::*acl2+books-documentation*.
 
 ; This code was originally invoked with force-missing-parents-p and
 ; maybe-add-top-topic-p both true.  Perhaps that's always best.
@@ -82,6 +88,9 @@
          (cw "can't open ~s0 for output." outfile)
          (acl2::silent-error state))
         (state (princ$ header channel state))
+        (state (fms! "(in-package \"ACL2\")~|~% (defconst ~x0 '~|"
+                     (list (cons #\0 topic-list-name))
+                     channel state nil))
         (state (time$ (fms! "~x0"
                             (list (cons #\0 rendered))
                             channel state nil)))

@@ -462,10 +462,7 @@
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ; LICENSE for more details.
-
-(in-package \"ACL2\")
-
-(defconst *acl2+books-documentation* '")
+")
 
 (make-event
  (time$
@@ -474,6 +471,7 @@
                     "../system/doc/rendered-doc-combined.lsp"
                     state)
    *rendered-doc-combined-header*
+   '*acl2+books-documentation*
    t ; force-missing-parents-p
    t ; maybe-add-top-topic-p
    state)))
