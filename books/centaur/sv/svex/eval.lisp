@@ -725,3 +725,30 @@ is being given the right number of arguments.</p>
 
   (defmacro svcall (fn &rest args)
     (svcall-fn fn args)))
+
+
+
+;; used in rewriting and select stuff
+(define svexlist-quotesp ((x svexlist-p))
+  :hooks ((:fix :hints (("goal" :expand ((svexlist-fix x))))))
+  (if (atom x)
+      t
+    (and (eq (svex-kind (car x)) :quote)
+         (svexlist-quotesp (cdr x)))))
+
+(define svexlist-unquote ((x svexlist-p))
+  :prepwork ((local (in-theory (enable svexlist-quotesp))))
+  :guard (svexlist-quotesp x)
+  :returns (objs 4veclist-p)
+  :hooks ((:fix :hints (("goal" :expand ((svexlist-fix x))))))
+  (if (atom x)
+      nil
+    (cons (svex-quote->val (car x))
+          (svexlist-unquote (cdr x))))
+  ///
+
+  (defthm svexlist-unquote-correct
+    (implies (svexlist-quotesp x)
+             (equal (svexlist-eval x env)
+                    (svexlist-unquote x)))
+    :hints(("Goal" :in-theory (enable svexlist-eval svex-eval)))))
