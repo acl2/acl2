@@ -47,7 +47,7 @@ top of github.com/acl2/acl2.  Alternatively you get a copy from git as
 follows:
 
 ```
-git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout 7.2
+git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout v7.2
 ```
 
 Your current directory is now a copy of ACL2 Version 7.2.  Please see
