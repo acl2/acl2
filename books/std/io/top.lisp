@@ -35,6 +35,7 @@
 (include-book "read-file-bytes")
 (include-book "read-file-characters")
 (include-book "read-file-lines")
+(include-book "read-file-lines-no-newlines")
 (include-book "read-file-objects")
 (include-book "read-ints")
 (include-book "take-bytes")
