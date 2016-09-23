@@ -307,7 +307,7 @@ Digital Random Number Generator Guide</a> for more details.</p>"
           (if (logbitp #.*w* rex-byte)
               8
             4)))
-       ((mv rand-and-cf x86)
+       ((mv cf rand x86)
         (HW_RND_GEN operand-size x86))
 
        ;; (- (cw "~%~%HW_RND_GEN: If RDRAND does not return the result you ~
@@ -317,13 +317,9 @@ Digital Random Number Generator Guide</a> for more details.</p>"
 
        ((when (ms x86))
         (!!ms-fresh :x86-rdrand (ms x86)))
-       ((when (or (not (consp rand-and-cf))
-                  (not (unsigned-byte-p (ash operand-size 3) (car rand-and-cf)))
-                  (not (unsigned-byte-p 1 (cdr rand-and-cf)))))
+       ((when (or (not (unsigned-byte-p 1 cf))
+                  (not (unsigned-byte-p (ash operand-size 3) rand))))
         (!!ms-fresh :x86-rdrand-ill-formed-outputs (ms x86)))
-
-       (rand (car rand-and-cf))
-       (cf (cdr rand-and-cf))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)

@@ -21,13 +21,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event
- (equal (mv-list 2 (install-not-norm-event 'f nil))
-        '(f$not-normalized (install-not-normalized f))))
+(assert! (equal (mv-list 2 (install-not-norm-event 'f nil))
+                '(f$not-normalized (install-not-normalized f))))
 
-(assert-event
- (equal (mv-list 2 (install-not-norm-event 'g t))
-        '(g$not-normalized (local (install-not-normalized g)))))
+(assert! (equal (mv-list 2 (install-not-norm-event 'g t))
+                '(g$not-normalized (local (install-not-normalized g)))))
 
 (must-succeed*
  (defun f (x) x)
@@ -36,7 +34,7 @@
      (install-not-norm-event 'f nil)
      `(progn
         (encapsulate () ,event)
-        (assert-event (rune-enabledp '(:definition ,name) state)))))
+        (assert! (rune-enabledp '(:definition ,name) state)))))
  (make-event (g)))
 
 (must-succeed*
@@ -46,5 +44,5 @@
      (install-not-norm-event 'f t)
      `(progn
         (encapsulate () ,event)
-        (assert-event (not (runep '(:definition ,name) (w state)))))))
+        (assert! (not (runep '(:definition ,name) (w state)))))))
  (make-event (g)))

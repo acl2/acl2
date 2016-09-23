@@ -26141,7 +26141,7 @@
                          (add-to-set ev event-names)
                          new-entries seen wrld))
                    (t (defattach-constraint-rec
-                        (cdr alist) alist proved-fnl-insts-alist
+                        (cdr alist) full-alist proved-fnl-insts-alist
                         (if name
                             (conjoin (cons constraint
                                            (sublis-fn-lst-simple

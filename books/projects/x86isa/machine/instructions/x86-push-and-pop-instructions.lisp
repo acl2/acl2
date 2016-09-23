@@ -60,6 +60,15 @@
        (val (rgfi-size operand-size (reg-index reg rex-byte #.*b*) rex-byte
                        x86))
 
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Update the x86 state:
        ((mv flg x86)
         (wm-size operand-size
@@ -149,7 +158,7 @@ extension (ModR/m.reg = 6).</p>"
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size 
+         #.*rgf-access* operand-size
          ;; inst-ac? is nil here because we only need increment-RIP-by
          ;; from this function.
          nil
@@ -236,7 +245,11 @@ decoding with the execution in this case.</p>"
        ((the (integer 1 8) imm-size)
         (if (equal opcode #x6A)
             1
-          (if p3? 2 4)))
+          (if (logbitp #.*w* rex-byte)
+              4
+            (if p3?
+                2
+              4))))
        ((the (integer 1 8) operand-size)
         (if p3?
             2
@@ -345,6 +358,15 @@ the execution in this case.</p>"
        ((the (unsigned-byte 16) val)
         (seg-visiblei (if (eql opcode #xA0) *FS* *GS*) x86))
 
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Update the x86 state:
 
        ((mv flg x86)
@@ -421,6 +443,16 @@ the execution in this case.</p>"
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x58.
        (reg (logand opcode #x07))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Update the x86 state:
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86
@@ -570,7 +602,6 @@ extension (ModR/m.reg = 0).</p>"
 
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-
 
        ;; Update the x86 state:
        (x86 (!rgfi *rsp* new-rsp x86))
@@ -743,6 +774,12 @@ extension (ModR/m.reg = 0).</p>"
           ;; zeroed out.
           (otherwise (logand #x3cffff eflags))))
 
+       ;; We don't need to check for valid length for one-byte
+       ;; instructions.  The length will be more than 15 only if
+       ;; get-prefixes fetches 15 prefixes, and that error will be
+       ;; caught in x86-fetch-decode-execute, that is, before control
+       ;; reaches this function.
+
        ;; Update the x86 state:
        ((mv flg x86)
         (wm-size operand-size
@@ -752,7 +789,7 @@ extension (ModR/m.reg = 0).</p>"
         (!!ms-fresh :wm-size-error flg))
        (x86 (!rip temp-rip x86))
        (x86 (!rgfi *rsp* new-rsp x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: POPF/POPFQ
@@ -880,6 +917,12 @@ extension (ModR/m.reg = 0).</p>"
                   (x86 (!flgi #.*vip* 0 x86))
                   (x86 (!flgi #.*vif* 0 x86)))
              x86))))
+
+       ;; We don't need to check for valid length for one-byte
+       ;; instructions.  The length will be more than 15 only if
+       ;; get-prefixes fetches 15 prefixes, and that error will be
+       ;; caught in x86-fetch-decode-execute, that is, before control
+       ;; reaches this function.
 
        ((when (mbe :logic (not (canonical-address-p temp-rip))
                    :exec (<= #.*2^47*

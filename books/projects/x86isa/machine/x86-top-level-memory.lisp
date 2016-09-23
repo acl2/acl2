@@ -1985,8 +1985,6 @@ memory.</li>
   (define create-canonical-address-list (count addr)
     :guard (natp count)
 
-    :parents (programmer-level-memory-utils)
-
     :long "<p>Given a canonical address @('addr'),
   @('create-canonical-address-list') creates a list of canonical
   addresses where the first address is @('addr') and the last address

@@ -109,7 +109,9 @@
   :long "<p><b>Signature:</b> @(call read-file-lines) returns @('(mv contents state)').</p>
 
 <p>On success, @('contents') is a @(see string-listp) that contains each line
-of the file.</p>
+of the file.  Each string except the last will end with a newline character,
+i.e., @('#\\Newline').  For a variant of this utility that omits these newlines,
+see @(see read-file-lines-no-newlines).</p>
 
 <p>On failure, e.g., perhaps @('filename') does not exist, @('contents') will
 be a @(see stringp) saying that we failed to open the file.</p>
