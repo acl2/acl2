@@ -1609,24 +1609,57 @@ functions) and that it is being given the right number of arguments.</p>
   ///
   (fty::deffixequiv svexlist-rewrite-fixpoint)
 
-  (defthm svexlist-rewrite-fixpoint-correct
-    (equal (svexlist-eval (svexlist-rewrite-fixpoint x :count count :verbosep verbosep) env)
+  (defret svexlist-rewrite-fixpoint-correct
+    (equal (svexlist-eval xx env)
            (svexlist-eval x env)))
 
-  (defthm len-of-svexlist-rewrite-fixpoint
-    (equal (len (svexlist-rewrite-fixpoint x :count count :verbosep verbosep))
+  (defret len-of-svexlist-rewrite-fixpoint
+    (equal (len xx)
            (len x)))
 
-  (defthm consp-of-svexlist-rewrite-fixpoint
-    (equal (consp (svexlist-rewrite-fixpoint x :count count :verbosep verbosep))
+  (defret consp-of-svexlist-rewrite-fixpoint
+    (equal (consp xx)
            (consp x))
     :hints (("goal" :use len-of-svexlist-rewrite-fixpoint
-             :in-theory (e/d (len) (len-of-svexlist-rewrite-fixpoint))
+             :in-theory (e/d (len) (len-of-svexlist-rewrite-fixpoint
+                                    svexlist-rewrite-fixpoint))
              :expand ((len (svexlist-rewrite-fixpoint x :count count :verbosep verbosep))))))
 
-  (defthm vars-of-svexlist-rewrite-fixpoint
+  (defret vars-of-svexlist-rewrite-fixpoint
     (implies (not (member v (svexlist-vars x)))
-             (not (member v (svexlist-vars (svexlist-rewrite-fixpoint x :count count :verbosep verbosep)))))))
+             (not (member v (svexlist-vars xx))))))
+
+
+(define svexlist-maybe-rewrite-fixpoint ((x svexlist-p)
+                                         (do-rewrite)
+                                         &key ((count natp) '4) (verbosep 'nil))
+  :returns (xx svexlist-p)
+  (if do-rewrite
+      (svexlist-rewrite-fixpoint x :count count :verbosep verbosep)
+    (svexlist-fix x))
+  ///
+  (fty::deffixequiv svexlist-maybe-rewrite-fixpoint)
+
+  (defret svexlist-maybe-rewrite-fixpoint-correct
+    (equal (svexlist-eval xx env)
+           (svexlist-eval x env)))
+
+  (defret len-of-svexlist-maybe-rewrite-fixpoint
+    (equal (len xx)
+           (len x)))
+
+  (defret consp-of-svexlist-maybe-rewrite-fixpoint
+    (equal (consp xx)
+           (consp x))
+    :hints (("goal" :use len-of-svexlist-maybe-rewrite-fixpoint
+             :in-theory (e/d (len) (len-of-svexlist-maybe-rewrite-fixpoint
+                                    svexlist-maybe-rewrite-fixpoint))
+             :expand ((len (svexlist-maybe-rewrite-fixpoint x do-rewrite :count count :verbosep verbosep))))))
+
+  (defret vars-of-svexlist-maybe-rewrite-fixpoint
+    (implies (not (member v (svexlist-vars x)))
+             (not (member v (svexlist-vars xx))))))
+
 
 
 (define svex-alist-rewrite-fixpoint ((x svex-alist-p)
@@ -1686,3 +1719,37 @@ functions) and that it is being given the right number of arguments.</p>
   (defthm keys-of-svex-alist-rewrite-fixpoint
     (iff (svex-lookup v (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep))
          (svex-lookup v x))))
+
+
+(define svex-alist-maybe-rewrite-fixpoint ((x svex-alist-p)
+                                           (do-rewrite)
+                                           &key
+                                           ((count natp) '4)
+                                           (verbosep 'nil))
+  :short "Rewrites the alist, but only if do-rewrite is non-nil."
+  :returns (xx svex-alist-p)
+  (if do-rewrite
+      (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep)
+    (svex-alist-fix x))
+  ///
+  (fty::deffixequiv svex-alist-maybe-rewrite-fixpoint)
+
+  (defret svex-alist-maybe-rewrite-fixpoint-correct
+    (equal (svex-alist-eval xx env)
+           (svex-alist-eval x env)))
+
+
+  (defret len-of-svex-alist-maybe-rewrite-fixpoint
+    (equal (len xx)
+           (len (svex-alist-fix x))))
+
+  (defret vars-of-svex-alist-maybe-rewrite-fixpoint
+    (implies (not (member v (svex-alist-vars x)))
+             (not (member v (svex-alist-vars xx)))))
+
+  (defret keys-of-svex-alist-maybe-rewrite-fixpoint
+    (iff (svex-lookup v xx)
+         (svex-lookup v x))))
+
+
+
