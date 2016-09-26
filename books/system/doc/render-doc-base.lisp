@@ -204,8 +204,10 @@
         (mv (er hard 'render-topic
                 "Unexpected implementation error!")
             state))
-       (merged-tokens (reverse (merge-text tokens nil 0 nil
-                                           topic-to-rendered-table)))
+       (merged-tokens
+        (reverse (merge-text tokens nil 0 nil
+                             topic-to-rendered-table
+                             (f-get-global 'xdoc-tag-elide-alist state))))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 

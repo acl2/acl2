@@ -166,7 +166,27 @@
                                (car match)
                                "]")))))
 
-(defun merge-text (x acc codes href topic-to-rendered-table)
+; This variable can be modified here or by the user.  It is an alist so that
+; for every tag TAG for which <TAG>...</TAG> is to be replaced by text TEXT,
+; the alist contains the entry (TAG . TEXT).
+(make-event (pprogn (f-put-global 'xdoc-tag-elide-alist
+                                  '(("stv" . "{STV display}"))
+                                  state)
+                    (value '(value-triple t)))
+            :check-expansion t)
+
+(defun skip-to-close (tag x)
+  (cond ((atom x)
+         x)
+        (t (b* ((tok1 (car x))
+                (name (and (closetok-p tok1)
+                           (closetok-name tok1))))
+             (cond ((equal name tag)
+                    (cdr x))
+                   (t (skip-to-close tag (cdr x))))))))
+
+(defun merge-text (x acc codes href topic-to-rendered-table
+                     xdoc-tag-elide-alist)
   ;; CODES is number of open <code> tags -- we don't normalize whitespace
   ;; within them, but entities still get converted.
   (b* (((when (atom x))
@@ -181,18 +201,22 @@
           (cond ((equal name "img")
                  (b* ((tok  (list :TEXT "{IMAGE}")))
                    (merge-text (cons tok rest) acc codes href
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 ((equal name "icon")
                  (b* ((tok  (list :TEXT "{ICON}")))
                    (merge-text (cons tok rest) acc codes href
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 ((member-equal name *throwaway-tags*)
-                 (merge-text rest acc codes nil topic-to-rendered-table))
+                 (merge-text rest acc codes nil topic-to-rendered-table
+                             xdoc-tag-elide-alist))
                 ((equal name "a")
                  (b* ((href (cdr (assoc-equal "href" (opentok-atts tok1))))
                       (tok  (list :TEXT (str::cat "{"))))
                    (merge-text (cons tok rest) acc codes href
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 ((equal name "see")
                  (b* ((href (or
 ; It's probably rare or impossible to have a <see> within an <a href...>, but
@@ -204,21 +228,32 @@
                                                (opentok-atts tok1)))))
                       (tok  (list :TEXT "[")))
                    (merge-text (cons tok rest) acc codes href
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 ((equal name "srclink")
                  (b* ((tok  (list :TEXT "<")))
                    (merge-text (cons tok rest) acc codes href
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 (t
-                 (merge-text rest (cons tok1 acc) codes href
-                             topic-to-rendered-table)))))
+                 (let ((pair (assoc-equal name xdoc-tag-elide-alist)))
+                   (cond
+                    (pair (b* ((tok (list :TEXT (cdr pair))))
+                            (merge-text (cons tok (skip-to-close name x))
+                                        acc codes href
+                                        topic-to-rendered-table
+                                        xdoc-tag-elide-alist)))
+                    (t (merge-text rest (cons tok1 acc) codes href
+                                   topic-to-rendered-table
+                                   xdoc-tag-elide-alist))))))))
        ((when (closetok-p tok1))
         (b* ((name  (closetok-name tok1))
              (codes (if (equal name "code")
                         (- 1 codes)
                       codes)))
           (cond ((member-equal name *throwaway-tags*)
-                 (merge-text rest acc codes href topic-to-rendered-table))
+                 (merge-text rest acc codes href topic-to-rendered-table
+                             xdoc-tag-elide-alist))
                 ((member-equal name '("see"))
                  (b* ((text (texttok-text (car acc)))
                       (bracket-posn (search "[" text :from-end t))
@@ -234,24 +269,29 @@
                     ((eq match t)
                      (let ((tok (list :TEXT "]")))
                        (merge-text (cons tok rest) acc codes nil
-                                   topic-to-rendered-table)))
+                                   topic-to-rendered-table
+                                   xdoc-tag-elide-alist)))
                     (t (merge-text
                         rest
                         (cons (list :text
                                     (fix-close-see text bracket-posn match))
                               (cdr acc))
-                        codes nil topic-to-rendered-table)))))
+                        codes nil topic-to-rendered-table
+                        xdoc-tag-elide-alist)))))
                 ((member-equal name '("a"))
                  (let ((tok (list :TEXT (str::cat " | " (or href "") "}"))))
                    (merge-text (cons tok rest) acc codes nil
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 ((equal name "srclink")
                  (let ((tok (list :TEXT ">")))
                    (merge-text (cons tok rest) acc codes href
-                               topic-to-rendered-table)))
+                               topic-to-rendered-table
+                               xdoc-tag-elide-alist)))
                 (t
                  (merge-text rest (cons tok1 acc) codes href
-                             topic-to-rendered-table)))))
+                             topic-to-rendered-table
+                             xdoc-tag-elide-alist)))))
        (tok1
         ;; Goofy.  Convert any entities into ordinary text.  Normalize
         ;; whitespace for any non-code tokens.
@@ -264,12 +304,14 @@
                ;; Inside a <code> block, so don't touch ws.
                tok1)))
        ((unless (texttok-p (car acc)))
-        (merge-text rest (cons tok1 acc) codes href topic-to-rendered-table))
+        (merge-text rest (cons tok1 acc) codes href topic-to-rendered-table
+                    xdoc-tag-elide-alist))
 
        (merged-tok (list :TEXT (str::cat (texttok-text (car acc))
                                          (texttok-text tok1)))))
     (merge-text rest (cons merged-tok (cdr acc)) codes href
-                topic-to-rendered-table)))
+                topic-to-rendered-table
+                xdoc-tag-elide-alist)))
 
 (defun has-tag-above (tag open-tags)
   (if (atom open-tags)
@@ -597,8 +639,10 @@
        ((when err)
         (mv (str::cat "Error displaying xdoc topic: " *nls* *nls* err *nls* *nls*)
             state))
-       (merged-tokens (reverse (merge-text tokens nil 0 nil
-                                           topic-to-rendered-table)))
+       (merged-tokens
+        (reverse (merge-text tokens nil 0 nil
+                             topic-to-rendered-table
+                             (f-get-global 'xdoc-tag-elide-alist state))))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string
                   (tokens-to-terminal merged-tokens 70 nil nil nil)))
@@ -695,8 +739,10 @@
              (state (newline *standard-co* state))
              (state (newline *standard-co* state)))
           state))
-       (merged-tokens (reverse (merge-text tokens nil 0 nil
-                                           topic-to-rendered-table)))
+       (merged-tokens
+        (reverse (merge-text tokens nil 0 nil
+                             topic-to-rendered-table
+                             (f-get-global 'xdoc-tag-elide-alist state))))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string (tokens-to-terminal merged-tokens 70 nil nil nil)))
        (state (princ$ "    " *standard-co* state))

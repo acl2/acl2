@@ -8345,9 +8345,10 @@
                    that maps each function symbol in the :CLIQUE to a list of ~
                    t's and nil's whose length is equal to the arity of the ~
                    function symbol. ~x0 is an inappropriate controller alist ~
-                   for the :CLIQUE consisting of ~&1.  See :DOC definition."
+                   for the ~@1.  See :DOC definition."
                   controller-alist
-                  clique)))))))
+                  (cond ((null clique) "empty clique")
+                        (t (msg ":CLIQUE consisting of ~&0" clique))))))))))
      ((eq token :INDUCTION)
       (cond ((not (assoc-eq :PATTERN seen))
              (er soft ctx

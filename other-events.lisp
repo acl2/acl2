@@ -24502,81 +24502,83 @@
                               soft-bound soft-bound-p
                               hard-bound hard-bound-p
                               ctx state)
-  (let ((action (cond ((or share-p hard-bound-p)
-                       (case action0
-                         ((t) :reset-enable)
-                         ((nil) :reset)
-                         ((:same) (if (iprint-enabledp state)
-                                      :reset-enable
-                                    :reset))
-                         ((:reset :reset-enable) action0)
-                         (otherwise (assert$ (not (member-eq action0
-                                                             *iprint-actions*))
-                                             :fail))))
-                      (t action0))))
-    (cond
-     ((eq action :fail)
-      (er soft ctx
-          "Unknown option, ~x0.  The legal iprint actions are ~&1."
-          action0 *iprint-actions*))
-     ((not (symbolp share))
-      (er soft ctx
-          "The :share argument for iprinting must be a symbol, but ~x0 is not."
-          share))
-     ((and soft-bound-p
-           (not (posp soft-bound)))
-      (er soft ctx
-          "The :SOFT-BOUND argument of SET-IPRINT must be a positive integer, ~
+  (cond
+   ((not (member-eq action0 *iprint-actions*))
+    (er soft ctx
+        "Unknown option, ~x0.  The legal iprint actions are ~&1."
+        action0 *iprint-actions*))
+   (t
+    (let ((action (cond ((or share-p hard-bound-p)
+                         (case action0
+                           ((t) :reset-enable)
+                           ((nil) :reset)
+                           ((:same) (if (iprint-enabledp state)
+                                        :reset-enable
+                                      :reset))
+                           (otherwise
+                            (assert$ (member-eq action0
+                                                '(:reset :reset-enable))
+                                     action0))))
+                        (t action0))))
+      (cond
+       ((not (symbolp share))
+        (er soft ctx
+            "The :share argument for iprinting must be a symbol, but ~x0 is not."
+            share))
+       ((and soft-bound-p
+             (not (posp soft-bound)))
+        (er soft ctx
+            "The :SOFT-BOUND argument of SET-IPRINT must be a positive integer, ~
            but ~x0 is not."
-          soft-bound))
-     ((and hard-bound-p
-           (not (posp hard-bound)))
-      (er soft ctx
-          "The :HARD-BOUND argument of SET-IPRINT must be a positive integer, ~
+            soft-bound))
+       ((and hard-bound-p
+             (not (posp hard-bound)))
+        (er soft ctx
+            "The :HARD-BOUND argument of SET-IPRINT must be a positive integer, ~
            but ~x0 is not."
-          hard-bound))
-     (t (pprogn (cond ((not (eq action action0))
-                       (warning$ 'set-iprint "Iprint"
-                                 "Converting SET-IPRINT action from ~x0 to ~
+            hard-bound))
+       (t (pprogn (cond ((not (eq action action0))
+                         (warning$ 'set-iprint "Iprint"
+                                   "Converting SET-IPRINT action from ~x0 to ~
                                   ~x1, as required by use of keyword :SHARE ~
                                   or :HARD-BOUND.  See :DOC set-iprint."
-                                 action0 action))
-                      (t state))
-                (pprogn (cond
-                         (soft-bound-p
-                          (pprogn (f-put-global 'iprint-soft-bound
-                                                soft-bound
-                                                state)
-                                  (observation ctx
-                                               "The soft-bound for ~
+                                   action0 action))
+                        (t state))
+                  (pprogn (cond
+                           (soft-bound-p
+                            (pprogn (f-put-global 'iprint-soft-bound
+                                                  soft-bound
+                                                  state)
+                                    (observation ctx
+                                                 "The soft-bound for ~
                                                   iprinting has been set to ~
                                                   ~x0."
-                                               soft-bound)))
-                         (t state))
-                        (cond
-                         (hard-bound-p
-                          (pprogn (f-put-global 'iprint-hard-bound
-                                                hard-bound
-                                                state)
-                                  (observation ctx
-                                               "The hard-bound for ~
+                                                 soft-bound)))
+                           (t state))
+                          (cond
+                           (hard-bound-p
+                            (pprogn (f-put-global 'iprint-hard-bound
+                                                  hard-bound
+                                                  state)
+                                    (observation ctx
+                                                 "The hard-bound for ~
                                                   iprinting has been set to ~
                                                   ~x0."
-                                               hard-bound)))
-                         (t state))
-                        (cond ((eq share :same)
-                               (if (member-eq action
-                                              '(:reset :reset-enable))
-                                   (init-iprint-fal+ :same ctx state)
-                                 state))
-                              ((eq share nil)
-                               (init-iprint-fal+ share ctx state))
-                              (t (init-iprint-fal+ share ctx state)))
-                        (mv-let (msg state)
-                          (set-iprint-fn1 action state)
-                          (pprogn (cond (msg (observation ctx "~@0" msg))
-                                        (t state))
-                                  (value :invisible)))))))))
+                                                 hard-bound)))
+                           (t state))
+                          (cond ((eq share :same)
+                                 (if (member-eq action
+                                                '(:reset :reset-enable))
+                                     (init-iprint-fal+ :same ctx state)
+                                   state))
+                                ((eq share nil)
+                                 (init-iprint-fal+ share ctx state))
+                                (t (init-iprint-fal+ share ctx state)))
+                          (mv-let (msg state)
+                            (set-iprint-fn1 action state)
+                            (pprogn (cond (msg (observation ctx "~@0" msg))
+                                          (t state))
+                                    (value :invisible)))))))))))
 
 (defmacro set-iprint (&optional (action ':reset ; default ignored
                                         action-p)
@@ -24605,8 +24607,8 @@
                      :reset :reset :reset-enable :reset-enable :same :same
                      :q :q
                      :? ("reply with :Q to quit, or else with one of the ~
-                        options to set-iprint, which are ~&0 (see :DOC ~
-                        set-iprint)"
+                          options to set-iprint, which are ~&0 (see :DOC ~
+                          set-iprint)"
                          :t t :nil nil
                          :reset :reset :reset-enable :reset-enable
                          :same :same
