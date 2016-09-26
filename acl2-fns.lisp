@@ -1274,14 +1274,22 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (consp (cdr val))
                   (null (cddr val)))
              (cadr val))
-            (t (error "(Implementation error) Found non-quotep 'const ~%~
+            (t (clear-input stream)
+               (error "(Implementation error) Found non-quotep 'const ~%~
                        property for ~s."
                       sym))))
      (sym
+      (clear-input stream)
       (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
-              defined by ~s.  Thus the form #.~s is illegal."
-             'defconst sym))
+              defined by ~s.  Thus the form #.~s is illegal.  See :DOC ~%~
+              sharp-dot-reader~a."
+             'defconst
+             sym
+             (cond ((eval '(f-get-global 'certify-book-info *the-live-state*))
+                    (format nil ", in particular Remark (2)"))
+                   (t ""))))
      (t ; surprising case
+      (clear-input stream)
       (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
               defined by ~s."
              'defconst)))))
