@@ -17,7 +17,7 @@
 
 <p>The constants @('*one-byte-opcode-map-lst*') and
 @('*two-byte-opcode-map-lst*') contains information presented in the
-opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
+opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
 
 <p>An array @('*64-bit-mode-one-byte-has-modr/m-ar*') is created by
   the function @(see 64-bit-compute-modr/m-map) for the efficient
@@ -46,7 +46,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
 
    ;; A Direct address: the instruction has no ModR/M byte; the
    ;; address of the operand is encoded in the instruction. No base
-   ;; register index register or scaling factor can be applied (for
+   ;; register, index register, or scaling factor can be applied (for
    ;; example far JMP (EA)).
 
    '(A (:modr/m? . nil) (:vex . nil))
@@ -57,12 +57,12 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    '(B (:modr/m? . nil) (:vex . t))
 
    ;; C The reg field of the ModR/M byte selects a control register
-   ;; (for example MOV (0F20 0F22)).
+   ;; (for example MOV (0F20, 0F22)).
 
    '(C (:modr/m? . t) (:vex . nil))
 
    ;; D The reg field of the ModR/M byte selects a debug register (for
-   ;; example MOV (0F210F23)).
+   ;; example MOV (0F21,0F23)).
 
    '(D (:modr/m? . t) (:vex . nil))
 
@@ -70,7 +70,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    ;; operand. The operand is either a general-purpose register or a
    ;; memory address. If it is a memory address the address is
    ;; computed from a segment register and any of the following
-   ;; values: a base register an index register a scaling factor a
+   ;; values: a base register, an index register, a scaling factor, a
    ;; displacement.
 
    '(E (:modr/m? . t) (:vex . nil))
@@ -86,7 +86,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
 
    ;; H The VEX.vvvv field of the VEX prefix selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand
-   ;; type. For legacy SSE encodings this operand does not exist
+   ;; type. For legacy SSE encodings this operand does not exist,
    ;; changing the instruction to destructive form.
 
    '(H (:modr/m? . nil) (:vex . t))
@@ -97,7 +97,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    '(I (:modr/m? . nil) (:vex . nil))
 
    ;; J The instruction contains a relative offset to be added to the
-   ;; instruction pointer register (for example JMP (0E9) LOOP).
+   ;; instruction pointer register (for example JMP (0E9), LOOP).
 
    '(J (:modr/m? . nil) (:vex . nil))
 
@@ -107,8 +107,8 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
 
    '(L (:modr/m? . nil) (:vex . t))
 
-   ;; M The ModR/M byte may refer only to memory (for example BOUND
-   ;; LES LDS LSS LFS LGS CMPXCHG8B).
+   ;; M The ModR/M byte may refer only to memory (for example BOUND,
+   ;; LES, LDS, LSS, LFS, LGS, CMPXCHG8B).
 
    '(M (:modr/m? . t) (:vex . nil))
 
@@ -120,7 +120,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    ;; O The instruction has no ModR/M byte. The offset of the operand
    ;; is coded as a word or double word (depending on address size
    ;; attribute) in the instruction. No base register index register
-   ;; or scaling factor can be applied (for example MOV (A0 A3)).
+   ;; or scaling factor can be applied (for example MOV (A0-A3)).
 
    '(O (:modr/m? . nil) (:vex . nil))
 
@@ -133,7 +133,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    ;; operand. The operand is either an MMX technology register or a
    ;; memory address. If it is a memory address the address is
    ;; computed from a segment register and any of the following
-   ;; values: a base register an index register a scaling factor and a
+   ;; values: a base register, an index register, a scaling factor, and a
    ;; displacement.
 
    '(Q (:modr/m? . t) (:vex . nil))
@@ -144,7 +144,7 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    '(R (:modr/m? . t) (:vex . nil))
 
    ;; S The reg field of the ModR/M byte selects a segment register
-   ;; (for example MOV (8C8E)).
+   ;; (for example MOV (8C,8E)).
 
    '(S (:modr/m? . t) (:vex . nil))
 
@@ -159,21 +159,21 @@ opcode maps, as describe in Intel Manual, Volume 2, Appendix A-2.</p>
    '(V (:modr/m? . t) (:vex . t))
 
    ;; W A ModR/M byte follows the opcode and specifies the
-   ;; operand. The operand is either a 128-bit XMM register a 256-bit
-   ;; YMM register (determined by operand type) or a memory
+   ;; operand. The operand is either a 128-bit XMM register, a 256-bit
+   ;; YMM register (determined by operand type), or a memory
    ;; address. If it is a memory address the address is computed from
    ;; a segment register and any of the following values: a base
-   ;; register an index register a scaling factor and a displacement.
+   ;; register, an index register, a scaling factor, and a displacement.
 
    '(W (:modr/m? . t) (:vex . t))
 
-   ;; X Memory addressed by the DS:rSI register pair (for example MOVS
-   ;; CMPS OUTS or LODS).
+   ;; X Memory addressed by the DS:rSI register pair (for example MOVS,
+   ;; CMPS, OUTS, or LODS).
 
    '(X (:modr/m? . nil) (:vex . nil))
 
-   ;; Y Memory addressed by the ES:rDI register pair (for example MOVS
-   ;; CMPS INS STOS or SCAS).
+   ;; Y Memory addressed by the ES:rDI register pair (for example MOVS,
+   ;; CMPS, INS, STOS, or SCAS).
 
    '(Y (:modr/m? . nil) (:vex . nil))
 
@@ -201,8 +201,9 @@ d  Doubleword, regardless of operand-size attribute.
 dq Double-quadword, regardless of operand-size attribute.
 
 p  32-bit, 48-bit, or 80-bit pointer, depending on operand-size
-   attribute. pd 128-bit or 256-bit packed double-precision
-   floating-point data.
+   attribute.
+
+pd 128-bit or 256-bit packed double-precision floating-point data.
 
 pi Quadword MMX technology register (for example: mm0).
 
@@ -210,8 +211,9 @@ ps 128-bit or 256-bit packed single-precision floating-point data.
 
 q  Quadword, regardless of operand-size attribute.
 
-qq Quad-Quadword (256-bits), regardless of operand-size attribute. s
-   6-byte or 10-byte pseudo-descriptor.
+qq Quad-Quadword (256-bits), regardless of operand-size attribute.
+
+s  6-byte or 10-byte pseudo-descriptor.
 
 sd Scalar element of a 128-bit double-precision floating data.
 
@@ -266,7 +268,7 @@ v:  VEX form only exists. There is no legacy SSE form of the
     instruction. For Integer GPR instructions it means VEX prefix
     required.
 
-v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
+v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
     from the data size.
 
 ||#
@@ -1165,7 +1167,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
 #||
 
 ;; From Dmitry Nadezhin: this is helpful in finding out which row
-;; (if any) has a well-formednes problem.
+;; (if any) has a well-formedness problem.
 
 (opcode-row-recognizer (nth #x0 *one-byte-opcode-map-lst*))
 (opcode-row-recognizer (nth #x1 *one-byte-opcode-map-lst*))
@@ -1657,7 +1659,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can t be inferred
 
   (define x86-decode-SIB-p
     ((ModR/M :type (unsigned-byte 8)))
-    :short "If ModR/M.mod is not #x11 and ModR/M.r/m is #x100, then SIB is expected."
+    :short "If ModR/M.mod is not #b11 and ModR/M.r/m is #b100, then SIB is expected."
     :returns (bool booleanp :hyp (n08p ModR/M))
     (let* ((r/m (mrm-r/m ModR/M))
            (mod (mrm-mod ModR/M)))
