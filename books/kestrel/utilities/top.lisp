@@ -22,6 +22,7 @@
 (include-book "copy-def")
 (include-book "defchoose-queries")
 (include-book "define-sk")
+(include-book "defthmr")
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
