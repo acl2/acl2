@@ -659,7 +659,8 @@ shown.</p>"
        ;;                   (len lost) lost))
        ;;           design))
 
-       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist design)))
+       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist
+                                              design :config (make-vl->sv-config :simplify nil))))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))

@@ -430,16 +430,17 @@ the two instances are the same (or there aren't any parameters).</p>")
     "NULL"))
 
 (define vl-unparam-basename-paramdecls ((x vl-paramdecllist-p)
+                                        (include-default booleanp)
                                 &key (ps 'ps))
   :parents (vl-unparam-basename)
   (b* (((when (atom x)) ps)
        ((vl-paramdecl x1) (car x))
        ((when (or x1.localp
-                  ;; this is a little scary
-                  (not x1.overriddenp)))
+                  (and (not include-default)
+                       (not x1.overriddenp))))
         ;; we think localparams are always determined by the nonlocal params,
         ;; so we don't need to include them in the name.
-        (vl-unparam-basename-paramdecls (cdr x)))
+        (vl-unparam-basename-paramdecls (cdr x) include-default))
        ((the string name-part)
         (acl2::substitute #\_ #\Space x1.name))
        ((the string type-expr-part)
@@ -454,7 +455,7 @@ the two instances are the same (or there aren't any parameters).</p>")
                (vl-print-str name-part)
                (vl-print "=")
                (vl-print-str type-expr-part)
-               (vl-unparam-basename-paramdecls (cdr x)))))
+               (vl-unparam-basename-paramdecls (cdr x) include-default))))
 
 (fty::defalist vl-ifport-alist :key-type string :val-type string
   :short "Mapping from interface port portnames to interface names."
@@ -478,15 +479,26 @@ interfaces on one of its ports.</p>")
                (vl-unparam-basename-ifports (cdr x)))))
 
 
+#||
+(trace$
+ #!vl (vl-unparam-basename
+       :entry (list 'vl-unparam-basename
+                    origname
+                    (with-local-ps (vl-pp-paramdecllist paramdecls))
+                    include-default))) 
+
+||#
+
 (define vl-unparam-basename 
   :short "Generate a new name for an unparameterized module."
   ((origname stringp              "Original name of the module, e.g., @('my_adder').")
    (paramdecls vl-paramdecllist-p "Final, overridden paramdecls for the module.")
-   (ifportalist vl-ifport-alist-p  "Interface port alist"))
+   (ifportalist vl-ifport-alist-p  "Interface port alist")
+   (include-default booleanp       "Include non-overridden parameters in the generated names"))
   :returns (new-name stringp :rule-classes :type-prescription
                      "New, mangled name, e.g., @('my_adder$size=5').")
   (with-local-ps (vl-ps-seq (vl-print-str origname)
-                            (vl-unparam-basename-paramdecls paramdecls)
+                            (vl-unparam-basename-paramdecls paramdecls include-default)
                             (vl-unparam-basename-ifports ifportalist))))
 
 
@@ -643,7 +655,10 @@ for each usertype is stored in the res field.</p>"
           we generate.")
    (instkeymap vl-unparam-instkeymap
             "Mapping from instkey to new module name that we've assigned so
-             far.  Fast alist.")))
+             far.  Fast alist.")
+   (omit-default-params
+    booleanp
+    "Omit non-overridden parameters from module names.")))
 
 
 
@@ -703,7 +718,8 @@ for each usertype is stored in the res field.</p>"
                                                 :instkeymap instkeymap))))
        ;; Haven't named this particular combination yet: generate the name,
        ;; uniquify it, and add it to the ledger.
-       (basename (vl-unparam-basename origname paramdecls ifportalist))
+       (basename (vl-unparam-basename origname paramdecls ifportalist
+                                      (not ledger.omit-default-params)))
        ((mv newname ndb) (vl-namedb-plain-name basename ledger.ndb))
        (signature (make-vl-unparam-signature :modname origname
                                              :newname newname
@@ -2164,7 +2180,11 @@ scopestacks.</p>"
 
 (define vl-design-elaborate
   :short "Top-level @(see unparameterization) transform."
-  ((x vl-design-p))
+  ((x vl-design-p)
+   &key ((name-without-default-params
+          booleanp
+          "Omit default parameters when creating module names.")
+         'nil))
   :returns (new-x vl-design-p)
   :prepwork ((local (defthm string-listp-of-scopedef-alist-key
                       (implies (vl-scopedef-alist-p x)
@@ -2231,7 +2251,8 @@ scopestacks.</p>"
        (top-names (append (vl-programlist->names (vl-design->programs x))
                           (vl-udplist->names (vl-design->udps x))))
        (ledger (make-vl-unparam-ledger
-                :ndb (vl-starting-namedb top-names)))
+                :ndb (vl-starting-namedb top-names)
+                :omit-default-params name-without-default-params))
 
        ;; This is something Sol wanted for Samev.  The idea is to instance
        ;; every top-level module with its default parameters, so that we don't

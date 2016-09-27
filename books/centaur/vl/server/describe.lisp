@@ -574,6 +574,8 @@ to describe all of the places that @('name') is used.</p>")
                           (case (tag item)
                             (:vl-typedef
                              (vl-pp-typedef item))
+                            (:vl-fundecl
+                             (vl-pp-fundecl item))
                             (:vl-paramdecl
                              (vl-pp-paramdecl item))
                             (:vl-vardecl

@@ -34,6 +34,7 @@
 (include-book "../svex/compose")
 (include-book "../svex/env-ops")
 (include-book "../svex/rewrite")
+(include-book "../svex/select")
 (include-book "centaur/vl/util/warnings" :dir :System)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
@@ -122,6 +123,13 @@
            (svex-lookup k (svstack-to-svex-alist stack)))
     :hints(("Goal" :in-theory (enable svstack-to-svex-alist
                                       svex-lookup)))))
+
+(define svstack-globalp ((k svar-p) (stack svstack-p))
+  :guard (consp stack)
+  (if (atom (cdr stack))
+      t
+    (and (not (svex-fastlookup k (car stack)))
+         (svstack-globalp k (cdr stack)))))
 
 (define svstack-assign ((k svar-p) (v svex-p) (stack svstack-p))
   :returns (new-stack svstack-p)
@@ -662,6 +670,184 @@ exists there.</p>"
     :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
 
 
+
+
+
+;; (define svex-resolve-single-assignment ((dynselect svex-p  "potentially a dynamic select
+;;                                                       expression, in terms of
+;;                                                       prefixvar")
+;;                                         (rhs svex-p  "RHS of assignment")
+;;                                         (prefixvar svar-p "variable standing in for static-prefix")
+;;                                         (static-prefix svex-p
+;;                                                          "the static prefix of the DYNSELECT"))
+;;   ;; This function tries to take assignments such as
+;;   ;;   my_arr[idx] = foo
+;;   ;; and transform them into
+;;   ;;   my_arr = { my_arr[max_idx:idx+1], foo, my_arr[idx-1:0] }.
+;;   ;; In actuality, the VL expression->svex transform turns dynamic indices
+;;   ;; into mostly partselects; e.g., if we have
+;;   ;;    logic [15:0] e;
+;;   ;;    logic [3:0] a;
+;;   ;; then e[a] becomes
+;;   ;;    (part-select a 1 e)
+
+;;   ;; Historically (before part-select and part-install were added) these were
+;;   ;; instead expressed as a horrendous mess like this:
+;;   ;; (CONCAT 1
+;;   ;;         (? (< (* 1 (CONCAT 4 "a" 0)) 0)
+;;   ;;            (CONCAT (U- (* 1 (CONCAT 4 "a" 0)))
+;;   ;;                    '(-1 . 0)
+;;   ;;                    (CONCAT 16 "e" '(-1 . 0)))
+;;   ;;            (RSH (* 1 (CONCAT 4 "a" 0))
+;;   ;;                 (CONCAT 16 "e" '(-1 . 0))))
+;;   ;;         '(0 . -1))
+;;   ;; This is because we had to check the case where a is below the lowest
+;;   ;; index of e -- in this case that's impossible, but in general it could be.
+
+;;   ;; So we would recursively descend through that mess until we get to the
+;;   ;; occurrences of e, transforming things as follows (where here capital Z
+;;   ;; signifies X or Z, i.e. '(0 . -1) or '(-1 . 0)):
+
+;;   ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
+;;   ;; (concat w Z b) = rhs --> b = (rsh w rhs)
+;;   ;; (zerox w a) = rhs --> a = (concat w rhs (rsh w a))
+;;   ;; (signx w a) = rhs --> a = (concat w rhs (rsh w a))
+;;   ;; (rsh w v) = rhs --> v = (concat w v rhs)
+
+;;   ;; (? test then else) = rhs
+;;   ;; is more complicated.  Resolve
+;;   ;; then = rhs -->  var = then-val
+;;   ;; else = rhs -->  var = else-val
+;;   ;; and if both are successful, then result is
+;;   ;; var = (? test then-val else-val).
+
+;;   :measure (svex-count dynselect)
+;;   :returns (mv (err (iff (vl::vl-msg-p err) err))
+;;                (final-rhs (implies (not err) (svex-p final-rhs))))
+;;   :verify-guards nil
+;;   (b* (((when (svex-case dynselect :var (svar-equiv prefixvar dynselect.name) :otherwise nil))
+;;         (mv nil (svex-fix rhs)))
+;;        ((mv ok al) (svex-unify '(partsel lsb w a) dynselect nil))
+;;        ((when ok)
+;;         (b* ((lsb (svex-lookup 'lsb al))
+;;              (w (svex-lookup 'w al))
+;;              (a (svex-lookup 'a al))
+;;              (lsb-rhs (svex-replace-var lsb prefixvar static-prefix))
+;;              (w-rhs (svex-replace-var w prefixvar static-prefix))
+;;              (a-rhs (svex-replace-var a prefixvar static-prefix)))
+;;           (svex-resolve-single-assignment
+;;            a (svcall partinst lsb-rhs w-rhs a-rhs rhs) prefixvar static-prefix)))
+;;        ((mv ok al) (svex-unify '(concat w a b)
+;;                                dynselect nil))
+;;        ((when ok)
+;;         (b* ((w (svex-lookup 'w al))
+;;              (a (svex-lookup 'a al))
+;;              (b (svex-lookup 'b al))
+;;              (w-rhs (svex-replace-var w prefixvar static-prefix))
+;;              ((when (svex-case b :quote))
+;;               ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
+;;               (b* ((a-rhs (svex-replace-var a prefixvar static-prefix)))
+;;                 (svex-resolve-single-assignment
+;;                  a
+;;                  (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+;;                  prefixvar static-prefix)))
+;;              ((when (svex-case a :quote))
+;;               ;; (concat w Z b) = rhs --> b = (rsh w rhs)
+;;               (svex-resolve-single-assignment
+;;                b (svcall rsh w-rhs rhs) prefixvar static-prefix)))
+;;           (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix dynselect))
+;;               nil)))
+;;        ((mv ok al) (svex-unify '(zerox w a) dynselect nil))
+;;        ((mv ok al) (if ok
+;;                        (mv ok al)
+;;                      (svex-unify '(signx w a) dynselect nil)))
+;;        ((when ok) ;; zerox or signx matched
+;;         (b* ((w (svex-lookup 'w al))
+;;              (a (svex-lookup 'a al))
+;;              (a-rhs (svex-replace-var a prefixvar static-prefix))
+;;              (w-rhs (svex-replace-var w prefixvar static-prefix)))
+;;           ;; (zerox/signx w a) = rhs --> a = (concat w rhs (rsh w a))
+;;           (svex-resolve-single-assignment
+;;            a (svcall concat w-rhs rhs (svcall rsh w-rhs a-rhs))
+;;            prefixvar static-prefix)))
+
+;;        ((mv ok al) (svex-unify '(rsh w v) dynselect nil))
+;;        ((when ok)
+;;         (b* ((w (svex-lookup 'w al))
+;;              (v (svex-lookup 'v al))
+;;              (w-rhs (svex-replace-var w prefixvar static-prefix))
+;;              (v-rhs (svex-replace-var v prefixvar static-prefix)))
+;;           ;; (rsh w v) = rhs --> v = (concat w v rhs)
+;;           (svex-resolve-single-assignment
+;;            v (svcall concat w-rhs v-rhs rhs)
+;;            prefixvar static-prefix)))
+;;        ((mv ok al) (svex-unify '(? test then else) dynselect nil))
+;;        ((when ok)
+;;         (b* ((test (svex-lookup 'test al))
+;;              (then (svex-lookup 'then al))
+;;              (else (svex-lookup 'else al))
+;;              ;; (? test then else) = rhs
+;;              ;; is more complicated.  Resolve
+;;              ;; then = rhs -->  var = then-val
+;;              ;; else = rhs -->  var = else-val
+;;              ;; and if both are successful, then result is
+;;              ;; var = (? test then-val else-val).
+;;              ((mv err then-val) (svex-resolve-single-assignment then rhs prefixvar static-prefix))
+;;              ((when err) (mv err nil))
+;;              ((mv err else-val) (svex-resolve-single-assignment else rhs prefixvar static-prefix))
+;;              ((when err) (mv err nil)))
+;;           (mv nil (svcall ? (svex-replace-var test prefixvar static-prefix)
+;;                           then-val else-val)))))
+;;     (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0 (variable: ~x1)"
+;;                   (svex-fix dynselect) (svar-fix prefixvar))
+;;         nil))
+;;   ///
+;;   (local (defthm member-vars-of-svex-unify
+;;            (b* (((mv ?ok al1) (svex-unify pat x al)))
+;;              (implies (and (not (member v (svex-vars x)))
+;;                            (not (member v (svex-alist-vars al))))
+;;                       (not (member v (svex-alist-vars al1)))))
+;;            :hints (("goal" :use svex-unify-subst-no-new-vars
+;;                     :in-theory (disable svex-unify-subst-no-new-vars)))))
+
+;;   (std::defret vars-of-svex-resolve-single-assignment-1
+;;     (implies (and ;; (not (equal v (svar-fix prefixvar)))
+;;                   (not (member v (svex-vars dynselect)))
+;;                   (not (member v (svex-vars rhs)))
+;;                   (not (member v (svex-vars static-prefix)))
+;;                   (not err))
+;;              (not (member v (svex-vars final-rhs))))
+;;     :hints(("Goal" :in-theory (enable vars-of-svex-compose-strong
+;;                                       svex-alist-vars))))
+
+;;   (local (defthm svex-fix-under-iff
+;;            (iff (svex-fix x) t)
+;;            :hints (("goal" :use ((:instance return-type-of-svex-fix$inline.new-x))
+;;                     :in-theory (disable return-type-of-svex-fix$inline.new-x)))))
+
+;;   (local (defthm svex-vars-of-hons-assoc-equal
+;;            (implies (and (not (member v (svex-alist-vars x)))
+;;                          (hons-assoc-equal k x))
+;;                     (not (member v (svex-vars (cdr (hons-assoc-equal k x))))))
+;;            :hints(("Goal" :in-theory (enable svex-alist-vars
+;;                                              hons-assoc-equal)))))
+
+;;   (std::defret vars-of-svex-resolve-single-assignment-2
+;;     (implies (and (case-split (equal v (svar-fix prefixvar)))
+;;                   (not (member v (svex-vars rhs)))
+;;                   (not (member v (svex-vars static-prefix)))
+;;                   (not err))
+;;              (not (member v (svex-vars final-rhs))))
+;;     :hints(("Goal" :in-theory (enable vars-of-svex-compose-strong
+;;                                       svex-alist-vars
+;;                                       sv::svex-lookup))))
+;;   (verify-guards svex-resolve-single-assignment))
+
+
+
+
+
+
 #||
 (trace$ (svstmt-assign->subst
          :entry (list 'svstmt-assign->subst
@@ -806,6 +992,94 @@ exists there.</p>"
   (defret svstates-compatible-of-svstmt-assign->subst
     (implies (consp (svstate->blkst st))
              (svstates-compatible new-st st))))
+
+
+
+;; Procedure for performing an assignment.
+;; We have an RHS expression (any svex), an LHS static and dynamic select
+;; (svex-selects), and a state (bindings for variables).
+
+;; Compose the state into the RHS and all LHS select indices -- in
+;; particular, not the variable that the selects are selecting from (which in
+;; the dynamic part is *svex-longest-static-prefix-var*, but in the static
+;; part might be any variable).
+
+;; Simplify the indices so that as many of them are constant as possible.
+
+;; Some of the select operations may now be static which were previously
+;; dynamic.  Rework the two LHS parts, moving inner expressions from dynamic
+;; to static.
+
+;; Crunch the static part into a lhs, and get the writemask from it.
+
+;; Crunch the dynamic part with the RHS to produce the final expression to be
+;; assigned to the static select.
+
+(define svstmt-process-write ((write svstmt-write-p)
+                              (blockingp)
+                              (nb-delayp)
+                              (st svstate-p))
+  :returns (mv (new-st svstate-p)
+               (lhs lhs-p))
+  (b* (((svstmt-write write))
+       ((svstate st))
+       (svstack (if blockingp
+                    st.blkst
+                  (cons st.nonblkst st.blkst)))
+       (lhs-indices (svexlist-maskfree-rewrite
+                     (svexlist-compose-svstack (svex-select->indices write.lhs) svstack)))
+       (rhs (svex-compose-svstack write.rhs svstack))
+       (rhs (if (and (eq nb-delayp t)
+                     (not blockingp))
+                (svex-add-delay rhs 1)
+              rhs))
+       (lhs-select (svex-select-replace-indices write.lhs lhs-indices))
+       (lhs-var (svex-select-inner-var write.lhs))
+       (var-value (or (svstack-lookup lhs-var svstack) (svex-var lhs-var)))
+       ((mv static-lhs-select static-rhs) (svex-select-staticify-assignment lhs-select rhs var-value))
+       (lhs (svex-select-to-lhs static-lhs-select))
+       (st (svstmt-assign->subst lhs static-rhs 0 blockingp st)))
+    (mv st lhs))
+  ///
+  (defret svstates-compatible-of-svstmt-process-write
+    (implies (consp (svstate->blkst st))
+             (svstates-compatible new-st st)))
+
+
+  (local (in-theory (disable member-equal
+                             ;; MEMBER-OF-SVARLIST-ADD-DELAY
+                             acl2::member-of-append
+                             acl2::member-equal-append
+                             svarlist-addr-p-when-subsetp-equal)))
+
+  (defret svarlist-addr-p-of-svstmt-process-write
+    (implies (and (svarlist-addr-p (svstmt-write-vars write))
+                  (svarlist-addr-p (svstate-vars st)))
+             (Svarlist-addr-p (svstate-vars new-st)))
+    :hints(("Goal" :in-theory (enable svstmt-write-vars
+                                      svstate-vars)))))
+
+
+(define svstmt-process-writelist ((x svstmt-writelist-p)
+                                  (blockingp)
+                                  (nb-delayp)
+                                  (st svstate-p))
+  :returns (mv (new-st svstate-p)
+               (all-lhs lhs-p "Concatenation of the static LHSes of all of the writes."))
+  (b* (((when (atom x)) (mv (svstate-fix st) nil))
+       ((mv st lhs1) (svstmt-process-write (car x) blockingp nb-delayp st))
+       ((mv st lhs2) (svstmt-process-writelist (cdr x) blockingp nb-delayp st)))
+    (mv st (append-without-guard lhs1 lhs2)))
+  ///
+  (defret svstates-compatible-of-svstmt-process-writelist
+    (implies (consp (svstate->blkst st))
+             (svstates-compatible new-st st)))
+
+  (defret svarlist-addr-p-of-svstmt-process-writelist
+    (implies (and (svarlist-addr-p (svstmt-writelist-vars x))
+                  (svarlist-addr-p (svstate-vars st)))
+             (svarlist-addr-p (svstate-vars new-st)))
+    :hints(("Goal" :in-theory (enable svstmt-writelist-vars)))))
 
 
 
@@ -1977,22 +2251,66 @@ exists there.</p>"
 
 ||#
 
+(define svstack-filter-global-lhs-vars ((x lhs-p)
+                                        (stack svstack-p))
+  :guard (consp stack)
+  :measure (len x)
+  :returns (filtered-lhs lhs-p)
+  (b* (((when (atom x)) nil)
+       ((lhrange x1) (lhrange-fix (car x)))
+       ((when (lhatom-case x1.atom :z))
+        (svstack-filter-global-lhs-vars (cdr x) stack))
+       ((lhatom-var x1.atom))
+       ((unless (svstack-globalp x1.atom.name stack))
+        (svstack-filter-global-lhs-vars (cdr x) stack)))
+    (cons x1 (svstack-filter-global-lhs-vars (cdr x) stack))))
+    
+
+
+(define svstmt-lhs-check-masks ((blk-masks 4vmask-alist-p)
+                                (nonblk-masks 4vmask-alist-p)
+                                (full-lhs lhs-p)
+                                (blockingp)
+                                (stack svstack-p))
+  :guard (consp stack)
+  :returns (mv (new-blk-masks 4vmask-alist-p)
+               (new-nonblk-masks 4vmask-alist-p)
+               (conflicts 4vmask-alist-p))
+  (b* (((mv masks1 conflicts) (lhs-check-masks full-lhs nil nil))
+       (- (fast-alist-free masks1))
+       (filtered-lhs (svstack-filter-global-lhs-vars full-lhs stack))
+       ((mv new-masks confs1) (lhs-check-masks filtered-lhs
+                                               (if blockingp blk-masks nonblk-masks)
+                                               nil)))
+    (fast-alist-free confs1)
+    (if blockingp
+        (mv new-masks (4vmask-alist-fix nonblk-masks) conflicts)
+      (mv (4vmask-alist-fix blk-masks) new-masks conflicts))))
+       
+
+
 
 (defines svstmt-compile
   :verify-guards nil
   (define svstmt-compile ((x svstmt-p)
                           (st svstate-p)
                           (reclimit natp)
-                          (nb-delayp))
+                          (nb-delayp)
+                          (blk-masks 4vmask-alist-p)
+                          (nonblk-masks 4vmask-alist-p))
     :parents (svstmt)
     :returns (mv (ok)
                  (warnings1 vl::vl-warninglist-p)
                  (st1 svstate-p)
-                 (jst svjumpstate-p))
+                 (jst svjumpstate-p)
+                 (new-blk-masks 4vmask-alist-p)
+                 (new-nonblk-masks 4vmask-alist-p))
     :measure (two-nats-measure reclimit (svstmt-count x))
     (b* ((x              (svstmt-fix x))
          ((svstate st)   (svstate-fix st))
-         (warnings       nil))
+         (warnings       nil)
+         (blk-masks     (4vmask-alist-fix blk-masks))
+         (nonblk-masks  (4vmask-alist-fix nonblk-masks)))
       (clear-memoize-table 'svex-compose-svstack)
       (svstmt-case x
         :assign
@@ -2022,9 +2340,12 @@ exists there.</p>"
         ;;
         ;; OK, so anything we look up in the LHS and don't find, we bind to
         ;; itself.  And that goes for the RHS as well.
-        (b* (((mv mask-acc conf-acc) (lhs-check-masks x.lhs nil nil))
-             (- (fast-alist-free mask-acc)
-                (fast-alist-free conf-acc))
+        (b* (((mv st full-lhs) (svstmt-process-writelist x.writes x.blockingp nb-delayp st))
+             ;; BOZO collect writemask as well
+             ((mv blk-masks nonblk-masks conf-acc) (svstmt-lhs-check-masks 
+                                                    blk-masks nonblk-masks full-lhs x.blockingp
+                                                    (svstate->blkst st)))
+             (- (fast-alist-free conf-acc))
              ((when conf-acc)
               (svstate-free st)
               (b* ((st (make-svstate)))
@@ -2034,19 +2355,11 @@ exists there.</p>"
                               ~a0 (conflicts: ~a1)"
                               :args (list x conf-acc))
                     st
-                    (make-empty-svjumpstate st))))
-                    
-                           
-             (composed-rhs (svex-compose-svstack x.rhs (if x.blockingp
-                                                           st.blkst
-                                                         (cons st.nonblkst st.blkst))))
-             (composed-rhs (if (and (eq nb-delayp t)
-                                    (not x.blockingp))
-                               (svex-add-delay composed-rhs 1)
-                             composed-rhs))
-             (st (svstmt-assign->subst x.lhs composed-rhs 0 x.blockingp st)))
+                    (make-empty-svjumpstate st)
+                    blk-masks nonblk-masks))))
           (mv t warnings st
-              (make-empty-svjumpstate st)))
+              (make-empty-svjumpstate st)
+              blk-masks nonblk-masks))
         :if
         (b* (;; We need to compose ST into the condition to handle cases
              ;; like:
@@ -2054,28 +2367,28 @@ exists there.</p>"
              ;;    if (A) { ... } else {...}
              (cond-compose (svex-compose-svstack x.cond st.blkst))
              (st2 (svstate-fork st))
-             ((vl::wmv ok warnings then-st then-jst)
-              (svstmtlist-compile x.then st reclimit nb-delayp))
+             ((vl::wmv ok warnings then-st then-jst blk-masks nonblk-masks)
+              (svstmtlist-compile x.then st reclimit nb-delayp blk-masks nonblk-masks))
              ((unless ok)
               (b* ((st (make-svstate)))
                 (svstate-free st2)
-                (mv nil warnings st (make-empty-svjumpstate st))))
-             ((vl::wmv ok warnings else-st else-jst)
-              (svstmtlist-compile x.else st2 reclimit nb-delayp))
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
+             ((vl::wmv ok warnings else-st else-jst blk-masks nonblk-masks)
+              (svstmtlist-compile x.else st2 reclimit nb-delayp blk-masks nonblk-masks))
              ((unless ok)
               (b* ((st (make-svstate)))
                 (svstate-free then-st)
-                (mv nil warnings st (make-empty-svjumpstate st))))
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
              (st (svstate-merge-branches cond-compose then-st else-st))
              (jst (svjumpstate-merge-branches cond-compose then-jst else-jst)))
-          (mv t warnings st jst))
+          (mv t warnings st jst blk-masks nonblk-masks))
         :while
         (b* ((cond-compose (svex-compose-svstack x.cond st.blkst))
              (cond-rw (svex-maskfree-rewrite cond-compose))
              ((when (eql cond-rw 0))
               ;; Loop condition is syntactically just always false so there is
               ;; no reason to run anything.
-              (mv t warnings st (make-empty-svjumpstate st)))
+              (mv t warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks))
              ((when (zp reclimit))
               (svstate-free st)
               (b* ((st (make-svstate)))
@@ -2084,7 +2397,8 @@ exists there.</p>"
                           :msg "couldn't determine bound on while loop ~
                               unrollings: ~a0. rewritten condition ~a1."
                           :args (list x cond-rw))
-                    st (make-empty-svjumpstate st))))
+                    st (make-empty-svjumpstate st)
+                    blk-masks nonblk-masks)))
 
              ;; Even though the loop condition is not syntactically obviously
              ;; 0, it may be some symbolic expression that is sometimes zero,
@@ -2093,12 +2407,12 @@ exists there.</p>"
              (norun-st (svstate-fork st))
              (norun-jst (make-empty-svjumpstate norun-st))
 
-             ((vl::wmv ok warnings run-st body-jst)
-              (svstmtlist-compile x.body st reclimit nb-delayp))
+             ((vl::wmv ok warnings run-st body-jst blk-masks nonblk-masks)
+              (svstmtlist-compile x.body st reclimit nb-delayp blk-masks nonblk-masks))
              ((unless ok)
               (svstate-free norun-st)
               (b* ((st (make-svstate)))
-                (mv nil warnings st (make-empty-svjumpstate st))))
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
              
              ;; Before processing the next forms and the rest of the loop
              ;; iterations, we merge the continue statement into the current
@@ -2111,11 +2425,11 @@ exists there.</p>"
                        body-jst.continuecond body-jst.continuest run-st)))
 
              
-             ((vl::wmv ok warnings run-st ?next-jst)
+             ((vl::wmv ok warnings run-st ?next-jst blk-masks nonblk-masks)
               ;; The for loop step can only be certain things,
               ;; break/continue/return not among them.  So for now at least, we
               ;; ignore the jumpstate from this part.
-              (svstmtlist-compile x.next run-st reclimit nb-delayp))
+              (svstmtlist-compile x.next run-st reclimit nb-delayp blk-masks nonblk-masks))
 
              (- (b* (((svjumpstate next-jst)))
                   (and (or (not (eql 0 next-jst.breakcond))
@@ -2127,7 +2441,7 @@ exists there.</p>"
              ((unless ok)
               (svstate-free norun-st)
               (b* ((st (make-svstate)))
-                (mv nil warnings st (make-empty-svjumpstate st))))
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
 
              ;; We could possibly avoid evaluating the rest of the loop if we
              ;; found that there was a break statement that was always taken.
@@ -2135,12 +2449,12 @@ exists there.</p>"
              ;; (i=0;....) if (data[i]==0) break;" we don't know anything about
              ;; data when we're processing the body, so we won't know for sure
              ;; that we are breaking.
-             ((vl::wmv ok warnings run-st loop-jst)
-              (svstmt-compile x run-st (1- reclimit) nb-delayp))
+             ((vl::wmv ok warnings run-st loop-jst blk-masks nonblk-masks)
+              (svstmt-compile x run-st (1- reclimit) nb-delayp blk-masks nonblk-masks))
              ((unless ok)
               (svstate-free norun-st)
               (b* ((st (make-svstate)))
-                (mv nil warnings st (make-empty-svjumpstate st))))
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
 
              ;; Convention: the loop-jst we get back from compiling the rest of
              ;; the loop will never have any unmerged continue conditions
@@ -2172,51 +2486,58 @@ exists there.</p>"
              ;; turned out to be false.
              (st (svstate-merge-branches cond-rw run-st norun-st))
              (jst (svjumpstate-merge-branches cond-rw run-jst norun-jst)))
-          (mv ok warnings st jst))
+          (mv ok warnings st jst blk-masks nonblk-masks))
         :scope
         (b* ((subscope-st (svstate-push-scope st x.locals))
-             ((vl::wmv ok warnings subscope-st subscope-jst)
-              (svstmtlist-compile x.body subscope-st reclimit nb-delayp))
-             ((unless ok) (mv nil warnings subscope-st subscope-jst))
+             ((vl::wmv ok warnings subscope-st subscope-jst blk-masks nonblk-masks)
+              (svstmtlist-compile x.body subscope-st reclimit nb-delayp blk-masks nonblk-masks))
+             ((unless ok) (mv nil warnings subscope-st subscope-jst blk-masks nonblk-masks))
              (st (svstate-pop-scope subscope-st))
              (jst (svjumpstate-pop-scope subscope-jst)))
-          (mv t warnings st jst))
+          (mv t warnings st jst blk-masks nonblk-masks))
         :jump
         (b* ((empty-jst (make-empty-svjumpstate st)))
           (case x.type
-            (:break (mv t warnings st (change-svjumpstate empty-jst :breakcond 1)))
-            (:continue (mv t warnings st (change-svjumpstate empty-jst :continuecond 1)))
-            (:return (mv t warnings st (change-svjumpstate empty-jst :returncond 1)))
-            (otherwise (mv (acl2::impossible) warnings st empty-jst)))))))
+            (:break (mv t warnings st (change-svjumpstate empty-jst :breakcond 1) blk-masks nonblk-masks))
+            (:continue (mv t warnings st (change-svjumpstate empty-jst :continuecond 1) blk-masks nonblk-masks))
+            (:return (mv t warnings st (change-svjumpstate empty-jst :returncond 1) blk-masks nonblk-masks))
+            (otherwise (mv (acl2::impossible) warnings st empty-jst blk-masks nonblk-masks)))))))
 
   (define svstmtlist-compile ((x        svstmtlist-p)
                               (st       svstate-p)
                               (reclimit natp)
-                              (nb-delayp))
+                              (nb-delayp)
+                              (blk-masks 4vmask-alist-p)
+                              (nonblk-masks 4vmask-alist-p))
     :returns (mv (ok)
                  (warnings1 vl::vl-warninglist-p)
                  (st1       svstate-p)
-                 (jst       svjumpstate-p))
+                 (jst       svjumpstate-p)
+                 (new-blk-masks 4vmask-alist-p)
+                 (new-nonblk-masks 4vmask-alist-p))
     :measure (two-nats-measure reclimit (svstmtlist-count x))
     (b* ((warnings nil)
          ((when (atom x))
           (mv t
               (vl::ok)
               (svstate-fix st)
-              (make-empty-svjumpstate st)))
-         ((vl::wmv okp warnings st jst1)
-          (svstmt-compile (car x) st reclimit nb-delayp))
+              (make-empty-svjumpstate st)
+              (4vmask-alist-fix blk-masks)
+              (4vmask-alist-fix nonblk-masks)))
+         ((vl::wmv okp warnings st jst1 blk-masks nonblk-masks)
+          (svstmt-compile (car x) st reclimit nb-delayp blk-masks nonblk-masks))
          ((unless okp)
-          (mv nil warnings st jst1))
-         ((vl::wmv okp warnings st jst2)
-          (svstmtlist-compile (cdr x) st reclimit nb-delayp))
+          (mv nil warnings st jst1 blk-masks nonblk-masks))
+         ((vl::wmv okp warnings st jst2 blk-masks nonblk-masks)
+          (svstmtlist-compile (cdr x) st reclimit nb-delayp blk-masks nonblk-masks))
          ((unless okp)
-          (mv nil warnings st jst2))
+          (mv nil warnings st jst2 blk-masks nonblk-masks))
          (jst (svjumpstate-sequence jst1 jst2)))
-      (mv t warnings st jst)))
+      (mv t warnings st jst blk-masks nonblk-masks)))
   ///
   (verify-guards svstmtlist-compile :guard-debug t)
 
+  (local (in-theory (disable svstmt-compile svstmtlist-compile)))
 
   ;; (defthm-svstmt-compile-flag
   ;;   (defthm svstmt-compile-preserves-blkst-len
@@ -2267,11 +2588,11 @@ exists there.</p>"
   (defthm-svstmt-compile-flag
     (defthm svstmt-compile-preserves-blkst-compatible
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmt-compile x st reclimit nb-delayp)))
+            (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
         (implies ok
                  (and (svstates-compatible new-st (double-rewrite st))
                       (svjumpstates-compatible jst (double-rewrite (make-empty-svjumpstate st))))))
-      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp))
+      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks))
                 :do-not-induct t)
               (and stable-under-simplificationp
                    '(:in-theory (enable svjumpstate-svstate-compatible)))
@@ -2279,11 +2600,11 @@ exists there.</p>"
       :flag svstmt-compile)
     (defthm svstmtlist-compile-preserves-blkst-compatible
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmtlist-compile x st reclimit nb-delayp)))
+            (svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
         (implies ok
                  (and (svstates-compatible new-st (double-rewrite st))
                       (svjumpstates-compatible jst (double-rewrite (make-empty-svjumpstate st))))))
-      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp))))
+      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks))))
       :flag svstmtlist-compile))
 
 
@@ -2321,49 +2642,53 @@ exists there.</p>"
   ;;     :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp))))
   ;;     :flag svstmtlist-compile))
 
-  (local (DEFTHM
-           SVARLIST-ADDR-P-BY-BADGUY-strong
-           (IMPLIES (NOT (MEMBER (SVARLIST-ADDR-P-BADGUY X)
-                                 (double-rewrite (SVARLIST-FIX X))))
-                    (SVARLIST-ADDR-P X))
-           :HINTS (("goal" :INDUCT (SVARLIST-FIX X)
-                    :EXPAND ((SVARLIST-ADDR-P X)
-                             (SVARLIST-ADDR-P-BADGUY X)
-                             (SVARLIST-FIX X))
-                    :IN-THEORY (ENABLE (:I SVARLIST-FIX))))))
+  ;; (local (DEFTHM
+  ;;          SVARLIST-ADDR-P-BY-BADGUY-strong
+  ;;          (IMPLIES (NOT (MEMBER (SVARLIST-ADDR-P-BADGUY X)
+  ;;                                (double-rewrite (SVARLIST-FIX X))))
+  ;;                   (SVARLIST-ADDR-P X))
+  ;;          :HINTS (("goal" :INDUCT (SVARLIST-FIX X)
+  ;;                   :EXPAND ((SVARLIST-ADDR-P X)
+  ;;                            (SVARLIST-ADDR-P-BADGUY X)
+  ;;                            (SVARLIST-FIX X))
+  ;;                   :IN-THEORY (ENABLE (:I SVARLIST-FIX))))))
 
   (local (in-theory (disable member-equal
                              MEMBER-OF-SVARLIST-ADD-DELAY
                              acl2::member-of-append
                              acl2::member-equal-append
-                             SVARLIST-ADDR-P-BY-BADGUY-STRONG
-                             svarlist-addr-p-when-subsetp-equal)))
+                             ;; SVARLIST-ADDR-P-BY-BADGUY-STRONG
+                             svarlist-addr-p-when-subsetp-equal
+                             acl2::list-fix-when-len-zero
+                             true-listp
+                             acl2::append-of-nil
+                             set::sets-are-true-lists)))
 
   (defthm-svstmt-compile-flag
     (defthm vars-of-svstmt-compile
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmt-compile x st reclimit nb-delayp)))
+            (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
         (implies (and (svarlist-addr-p (svstmt-vars x))
                       (svarlist-addr-p (svstate-vars st))
                       ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
                       ok)
                  (and (svarlist-addr-p (svstate-vars new-st))
                       (svarlist-addr-p (svjumpstate-vars jst)))))
-      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp)
+      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks)
                          (svstmt-vars x))
                 :do-not-induct t)
               )
       :flag svstmt-compile)
     (defthm vars-of-svstmtlist-compile
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmtlist-compile x st reclimit nb-delayp)))
+            (svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
         (implies (and (svarlist-addr-p (svstmtlist-vars x))
                       (svarlist-addr-p (svstate-vars st))
                       ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
                       ok)
                  (and (svarlist-addr-p (svstate-vars new-st))
                       (svarlist-addr-p (svjumpstate-vars jst)))))
-      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp))))
+      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks))))
       :flag svstmtlist-compile))
 
   (deffixequiv-mutual svstmt-compile))
@@ -2375,71 +2700,134 @@ exists there.</p>"
                                 (nb-delayp 't))
   :Returns (mv (ok)
                (warnings vl-warninglist-p)
-               (final-st svstate-p))
-  (b* (((mv ok warnings st jst)
-        (svstmtlist-compile x (make-svstate) reclimit nb-delayp))
+               (final-st svstate-p)
+               (blk-masks 4vmask-alist-p)
+               (nonblk-masks 4vmask-alist-p))
+  (b* (((mv ok warnings st jst blk-masks nonblk-masks)
+        (svstmtlist-compile x (make-svstate) reclimit nb-delayp nil nil))
        ((svjumpstate jst))
        (final-st (svstate-fork (svstate-merge-branches
                                 jst.returncond jst.returnst st))))
     (svjumpstate-free jst)
     (svstate-free st)
-    (mv ok warnings final-st))
+    (mv ok warnings final-st blk-masks nonblk-masks))
   ///
   (defret vars-of-svstmtlist-compile-top
     (implies (and (svarlist-addr-p (svstmtlist-vars x))
                   ok)
              (svarlist-addr-p (svstate-vars final-st)))))
+
+
+
+
+
+
+(defalist svar-size-alist :key-type svar :val-type natp)
+
+(define svstmt-write-var-sizes ((x svstmt-write-p)
+                                (blockstack svstack-p)
+                                (acc svar-size-alist-p))
+  :guard (consp blockstack)
+  :returns (sizes svar-size-alist-p)
+  (b* (((svstmt-write x))
+       (acc (svar-size-alist-fix acc))
+       (lhs-var (svex-select-inner-var x.lhs))
+       ((unless (svstack-globalp lhs-var blockstack)) acc))
+    (cons (cons lhs-var (svex-select-inner-width x.lhs)) acc)))
+
+(define svstmt-writelist-var-sizes ((x svstmt-writelist-p)
+                                    (blockstack svstack-p)
+                                    (acc svar-size-alist-p))
+  :guard (consp blockstack)
+  :returns (sizes svar-size-alist-p)
+  (if (atom x)
+      (svar-size-alist-fix acc)
+    (svstmt-writelist-var-sizes
+     (cdr x) blockstack
+     (svstmt-write-var-sizes (car x) blockstack acc))))
+
+(defines svstmt-lhs-var-sizes 
+  (define svstmt-lhs-var-sizes ((x svstmt-p)
+                                (blockstack svstack-p)
+                                (acc svar-size-alist-p))
+    :guard (consp blockstack)
+    :measure (svstmt-count x)
+    :returns (sizes svar-size-alist-p)
+    :verify-guards nil
+    (svstmt-case x
+      :assign (svstmt-writelist-var-sizes x.writes blockstack acc)
+      :if (svstmtlist-lhs-var-sizes
+           x.else blockstack (svstmtlist-lhs-var-sizes x.then blockstack acc))
+      :while (svstmtlist-lhs-var-sizes
+              x.next blockstack
+              (svstmtlist-lhs-var-sizes x.body blockstack acc))
+      :scope (svstmtlist-lhs-var-sizes
+              x.body (cons (svstmt-initialize-locals x.locals) blockstack) acc)
+      :jump (svar-size-alist-fix acc)))
+  (define svstmtlist-lhs-var-sizes ((x svstmtlist-p)
+                                    (blockstack svstack-p)
+                                    (acc svar-size-alist-p))
+    :guard (consp blockstack)
+    :measure (svstmtlist-count x)
+    :returns (sizes svar-size-alist-p)
+    (if (atom x)
+        (svar-size-alist-fix acc)
+      (svstmtlist-lhs-var-sizes
+       (cdr x) blockstack
+       (svstmt-lhs-var-sizes (car x) blockstack acc))))
+  ///
+  (verify-guards svstmt-lhs-var-sizes))
              
        
 
 
 
-(defines svstmt-write-masks
-  :verify-guards nil
-  (define svstmt-write-masks ((x svstmt-p)
-                              (masks 4vmask-alist-p)
-                              (nb-masks 4vmask-alist-p))
-    :parents (svstmt-compile)
-    :short "Static analysis to tell what parts of what variables may be written
-            by a statement."
-    :returns (mv (masks 4vmask-alist-p)
-                 (nb-masks 4vmask-alist-p))
-    :measure (svstmt-count x)
-    (b* ((x           (svstmt-fix x))
-         (masks       (4vmask-alist-fix masks))
-         (nb-masks    (4vmask-alist-fix nb-masks)))
-      (svstmt-case x
-        :assign
-        (b* (((mv mask-acc conf-acc) (lhs-check-masks x.lhs (if x.blockingp masks nb-masks) nil))
-             (- (fast-alist-free conf-acc)))
-          (if x.blockingp
-              (mv mask-acc nb-masks)
-            (mv masks mask-acc)))
-        :if
-        (b* (((mv masks nb-masks) (svstmtlist-write-masks x.then masks nb-masks)))
-          (svstmtlist-write-masks x.else masks nb-masks))
-        :while
-        (svstmtlist-write-masks x.body masks nb-masks)
-        :scope
-        ;; BOZO overly conservative
-        (svstmtlist-write-masks x.body masks nb-masks)
-        :jump (mv masks nb-masks))))
+;; (defines svstmt-write-masks
+;;   :verify-guards nil
+;;   (define svstmt-write-masks ((x svstmt-p)
+;;                               (masks 4vmask-alist-p)
+;;                               (nb-masks 4vmask-alist-p))
+;;     :parents (svstmt-compile)
+;;     :short "Static analysis to tell what parts of what variables may be written
+;;             by a statement."
+;;     :returns (mv (masks 4vmask-alist-p)
+;;                  (nb-masks 4vmask-alist-p))
+;;     :measure (svstmt-count x)
+;;     (b* ((x           (svstmt-fix x))
+;;          (masks       (4vmask-alist-fix masks))
+;;          (nb-masks    (4vmask-alist-fix nb-masks)))
+;;       (svstmt-case x
+;;         :assign
+;;         (b* (((mv mask-acc conf-acc) (lhs-check-masks x.lhs (if x.blockingp masks nb-masks) nil))
+;;              (- (fast-alist-free conf-acc)))
+;;           (if x.blockingp
+;;               (mv mask-acc nb-masks)
+;;             (mv masks mask-acc)))
+;;         :if
+;;         (b* (((mv masks nb-masks) (svstmtlist-write-masks x.then masks nb-masks)))
+;;           (svstmtlist-write-masks x.else masks nb-masks))
+;;         :while
+;;         (svstmtlist-write-masks x.body masks nb-masks)
+;;         :scope
+;;         ;; BOZO overly conservative
+;;         (svstmtlist-write-masks x.body masks nb-masks)
+;;         :jump (mv masks nb-masks))))
 
-  (define svstmtlist-write-masks ((x        svstmtlist-p)
-                                  (masks    4vmask-alist-p)
-                                  (nb-masks 4vmask-alist-p))
-    :returns (mv (masks 4vmask-alist-p)
-                 (nb-masks 4vmask-alist-p))
-    :measure (svstmtlist-count x)
-    (b* (((when (atom x))
-          (mv (4vmask-alist-fix masks)
-              (4vmask-alist-fix nb-masks)))
-         ((mv masks nb-masks) (svstmt-write-masks (car x) masks nb-masks)))
-      (svstmtlist-write-masks (cdr x) masks nb-masks)))
-  ///
-  (verify-guards svstmtlist-write-masks)
+;;   (define svstmtlist-write-masks ((x        svstmtlist-p)
+;;                                   (masks    4vmask-alist-p)
+;;                                   (nb-masks 4vmask-alist-p))
+;;     :returns (mv (masks 4vmask-alist-p)
+;;                  (nb-masks 4vmask-alist-p))
+;;     :measure (svstmtlist-count x)
+;;     (b* (((when (atom x))
+;;           (mv (4vmask-alist-fix masks)
+;;               (4vmask-alist-fix nb-masks)))
+;;          ((mv masks nb-masks) (svstmt-write-masks (car x) masks nb-masks)))
+;;       (svstmtlist-write-masks (cdr x) masks nb-masks)))
+;;   ///
+;;   (verify-guards svstmtlist-write-masks)
 
-  (deffixequiv-mutual svstmt-write-masks))
+;;   (deffixequiv-mutual svstmt-write-masks))
 
 
 
@@ -2496,3 +2884,5 @@ exists there.</p>"
   (4vec-zero-ext 8 (svex-eval (cdr (hons-assoc-equal 'res st)) env)))
 
 ||#
+
+

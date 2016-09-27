@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "../mods/lhs")
+(include-book "../svex/select")
 (include-book "std/util/defmapappend" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
@@ -53,13 +54,19 @@
 
 (defenum svjump-p (:break :continue :return))
 
+(defprod svstmt-write
+  ((lhs svex-select-p)
+   (rhs svex))
+  :layout :tree)
+
+(deflist svstmt-writelist :elt-type svstmt-write)
+
 (deftypes svstmt
   (fty::deftagsum svstmt
     :parents (sv)
     :short "An @(see svex)-based representation for procedural statement blocks"
     (:assign
-     ((lhs lhs)
-      (rhs svex)
+     ((writes svstmt-writelist)
       (blockingp booleanp :default t))
      :layout :tree)
     (:if
@@ -88,15 +95,31 @@
   (deflist svstmtlist :elt-type svstmt :true-listp nil :elementp-of-nil nil))
 
 
+(local (defthm svarlist-p-of-remove-equal
+         (implies (svarlist-p x)
+                  (svarlist-p (remove-equal k x)))))
+
+(define svstmt-write-vars ((x svstmt-write-p))
+  :returns (vars svarlist-p)
+  (b* (((svstmt-write x)))
+    (append-without-guard (svex-select-vars x.lhs)
+                          (svex-vars x.rhs))))
+
+(define svstmt-writelist-vars ((x svstmt-writelist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (svstmt-write-vars (car x))
+                          (svstmt-writelist-vars (cdr x)))))
+
+
 (defines svstmt-vars
   (define svstmt-vars ((x svstmt-p))
     :verify-guards nil
     :returns (vars svarlist-p)
     :measure (svstmt-count x)
     (svstmt-case x
-      :assign (append-without-guard
-               (lhs-vars x.lhs)
-               (svex-vars x.rhs))
+      :assign (svstmt-writelist-vars x.writes)
       :if (append-without-guard
            (svex-vars x.cond)
            (svstmtlist-vars x.then)
@@ -127,8 +150,8 @@
     :already-definedp t)
 
   (defthm svstmt-vars-of-assign
-    (equal (svstmt-vars (svstmt-assign lhs rhs blockingp))
-           (append (lhs-vars lhs) (svex-vars rhs))))
+    (equal (svstmt-vars (svstmt-assign writes blockingp))
+           (svstmt-writelist-vars writes)))
 
   (defthm svstmt-vars-of-if
     (equal (svstmt-vars (svstmt-if cond then else))
