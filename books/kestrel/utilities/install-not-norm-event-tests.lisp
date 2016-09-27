@@ -21,11 +21,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (mv-list 2 (install-not-norm-event 'f nil))
-                '(f$not-normalized (install-not-normalized f))))
+(assert-equal (mv-list 2 (install-not-norm-event 'f nil))
+              '(f$not-normalized (install-not-normalized f)))
 
-(assert! (equal (mv-list 2 (install-not-norm-event 'g t))
-                '(g$not-normalized (local (install-not-normalized g)))))
+(assert-equal (mv-list 2 (install-not-norm-event 'g t))
+              '(g$not-normalized (local (install-not-normalized g))))
 
 (must-succeed*
  (defun f (x) x)

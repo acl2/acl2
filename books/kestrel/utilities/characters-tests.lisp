@@ -33,16 +33,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (nats=>chars nil)
-                nil))
+(assert-equal (nats=>chars nil) nil)
 
-(assert! (equal (nats=>chars '(65 99 46))
-                '(#\A #\c #\.)))
+(assert-equal (nats=>chars '(65 99 46)) '(#\A #\c #\.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (chars=>nats nil)
-                nil))
+(assert-equal (chars=>nats nil) nil)
 
-(assert! (equal (chars=>nats '(#\a #\5 #\~))
-                '(97 53 126)))
+(assert-equal (chars=>nats '(#\a #\5 #\~)) '(97 53 126))
