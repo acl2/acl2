@@ -234,6 +234,7 @@
 (include-book "misc/defpun" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "misc/defmac" :dir :system)
+(include-book "misc/dft" :dir :system)
 
 (include-book "make-event/proof-by-arith" :dir :system)
 
