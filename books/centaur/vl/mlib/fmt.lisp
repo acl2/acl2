@@ -408,14 +408,14 @@ formerly the \"location directive\" and printed a location.</p>")
                   (#\a (vl-fmt-tilde-a (cdr lookup)))
                   (#\@ (b* ((look (cdr lookup))
                             ((unless (vl-msg-p look))
-                             (prog2$ (raise "Bad ~~@ argument: ~x0.~%" look)
+                             (prog2$ (raise "Bad ~~@ argument: ~x0.  fmt-string is ~x1~%" look x)
                                      ps))
                             ((vl-msg look)))
                          (vl-fmt-aux look.msg 0 (length look.msg)
                                      (vl-fmt-pair-args look.args))))
 
                   (otherwise
-                   (prog2$ (raise "Unsupported directive: ~~~x0.~%" type)
+                   (prog2$ (raise "Unsupported directive: ~~~x0.  fmt-string is ~x1~%" type x)
                            ps))))))))
     (vl-fmt-aux x n xl alist))
   :prepwork

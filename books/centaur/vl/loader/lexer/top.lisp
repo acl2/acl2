@@ -219,6 +219,54 @@ order, you can search for long prefixes first, e.g., @('>>>') before
     :extra-appendhyp (and (force (vl-plaintoken-alistp alist))
                           (force (booleanp breakp)))))
 
+(define vl-lex-timescale ((echars vl-echarlist-p))
+  :parents (vl-lex)
+  :short "Try to read a @('`timescale') directive and turn it into a whitespace
+          token."
+  :returns (mv token/nil remainder)
+  :guard (and (consp echars)
+              (equal (vl-echar->char (car echars)) #\`))
+  :long "<p>This is a special, unusual hack.  We try to read a @('`timescale')
+         directive, i.e.,:</p>
+
+         @({
+              timescale_compiler_directive ::= `timescale time_unit / time_precision
+         })
+
+         <p>Where the @('time_unit') is 1, 10, or 100, and the
+         @('time_precision') is one of: s, ms, us, ns, ps, or fs.</p>
+
+         <p>On success we just turn this into a <b>whitespace token</b> which will
+         get dropped before parsing.</p>
+
+         <p>We used to remove @('`timescale') directives as part of the
+         preprocessor, but we eventually found that it was better to do it as
+         part of lexing because otherwise it is hard to support things like
+         @('`timescale `foo').</p>"
+
+  (b* (((mv grv remainder)     (mv (car echars) (cdr echars)))
+       ((mv ts remainder)      (vl-read-literal "timescale" remainder))
+       ((mv ws1 remainder)     (vl-read-while-whitespace remainder))
+       ((mv tu-val remainder)  (vl-read-some-literal (list "100" "10" "1") remainder))
+       ((mv ws2 remainder)     (vl-read-while-whitespace remainder))
+       ((mv tu-type remainder) (vl-read-some-literal (list "fs" "ps" "ns" "us" "ms" "s") remainder))
+       ((mv ws3 remainder)     (vl-read-while-whitespace remainder))
+       ((mv div remainder)     (vl-read-literal "/" remainder))
+       ((mv ws4 remainder)     (vl-read-while-whitespace remainder))
+       ((mv tp-val remainder)  (vl-read-some-literal (list "100" "10" "1") remainder))
+       ((mv ws5 remainder)     (vl-read-while-whitespace remainder))
+       ((mv tp-type remainder) (vl-read-some-literal (list "fs" "ps" "ns" "us" "ms" "s") remainder)))
+    (if (and ts tu-val tu-type div tp-val tp-type)
+        (mv (make-vl-plaintoken :type :vl-ws
+                                :etext (cons grv (append ts ws1 tu-val ws2 tu-type ws3
+                                                         div ws4 tp-val ws5 tp-type))
+                                ;; BOZO could do a better job here
+                                :breakp nil)
+            remainder)
+      (mv nil echars)))
+  ///
+  (def-token/remainder-thms vl-lex-timescale))
+
 (define vl-lex-token1
   :parents (vl-lex)
   :short "Try to parse a single token at the front of @('echars')."
@@ -413,6 +461,10 @@ order, you can search for long prefixes first, e.g., @('>>>') before
                                ("~^" . :vl-xnor)
                                ("~"  . :vl-bitnot))
                              warnings))
+
+        (#\`
+         (b* (((mv tok remainder) (vl-lex-timescale echars)))
+           (mv tok remainder (ok))))
 
         (otherwise
          (mv nil echars (ok))))))

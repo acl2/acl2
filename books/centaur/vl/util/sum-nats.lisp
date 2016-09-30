@@ -222,6 +222,17 @@ reasonable default we say the minimum of the empty list is @('0').</p>"
     :hints(("Goal" :in-theory (enable min-nats max-nats)))))
 
 
+(define nats-from-exec ((a natp) (b natp) nrev)
+  :guard (<= a b)
+  :measure (nfix (- (nfix b) (nfix a)))
+  :parents (nats-from)
+  (let ((a (lnfix a))
+        (b (lnfix b)))
+    (if (mbe :logic (zp (- b a))
+             :exec (= a b))
+        (nrev-fix nrev)
+      (let ((nrev (nrev-push a nrev)))
+        (nats-from-exec (+ 1 a) b nrev)))))
 
 (define nats-from ((a natp)
                    (b natp))
@@ -229,15 +240,23 @@ reasonable default we say the minimum of the empty list is @('0').</p>"
   :measure (nfix (- (nfix b) (nfix a)))
   :parents (utilities)
   :short "@(call nats-from) enumerates the naturals from @('[a, b)')."
-
-  (let ((a (lnfix a))
-        (b (lnfix b)))
-    (if (mbe :logic (zp (- b a))
-             :exec (= a b))
-        nil
-      (cons a (nats-from (+ 1 a) b))))
-
+  :verify-guards nil
+  (mbe :logic (let ((a (lnfix a))
+                    (b (lnfix b)))
+                (if (zp (- b a))
+                    nil
+                  (cons a (nats-from (+ 1 a) b))))
+       :exec (with-local-nrev
+               (nats-from-exec a b nrev)))
   ///
+  (defthm nats-from-exec-removal
+    (equal (nats-from-exec a b nrev)
+           (append nrev (nats-from a b)))
+    :hints(("Goal"
+            :in-theory (enable nats-from-exec acl2::rcons)
+            :induct (nats-from-exec a b nrev))))
+
+  (verify-guards nats-from)
 
   (defthm true-listp-of-nats-from
     (true-listp (nats-from a b))
