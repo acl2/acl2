@@ -403,6 +403,7 @@ descriptions.</li>
        ((vl-loadconfig st.config) st.config)
 
        (warnings (vl-parsestate->warnings st.pstate))
+       (- (and st.config.debugp (cw ";;; vl-load-file: Starting ~f0~%" filename)))
 
        ;; BOZO we should switch this to use some more subtle b* structure that
        ;; lets contents become unreachable.
@@ -416,6 +417,8 @@ descriptions.</li>
         (b* ((warnings (warn :type :vl-read-failed
                              :msg  "Error reading file ~s0."
                              :args (list filename))))
+          (and st.config.debugp
+               (cw ";;; vl-load-file: Error reading ~f0~%" filename))
           (mv (vl-loadstate-set-warnings warnings)
               state)))
 
@@ -452,6 +455,8 @@ descriptions.</li>
         (b* ((warnings (warn :type :vl-preprocess-failed
                              :msg "Preprocessing failed for ~s0."
                              :args (list filename))))
+          (and st.config.debugp
+               (cw ";;; vl-load-file: Error preprocessing ~f0~%" filename))
           (mv (vl-loadstate-set-warnings warnings)
               state)))
 
@@ -497,6 +502,8 @@ descriptions.</li>
         (b* ((warnings (warn :type :vl-lex-failed
                              :msg "Lexing failed for ~s0."
                              :args (list filename))))
+          (and st.config.debugp
+               (cw ";;; vl-load-file: Error lexing ~f0~%" filename))
           (mv (vl-loadstate-set-warnings warnings)
               state)))
 
@@ -534,6 +541,8 @@ descriptions.</li>
                                       :fn __function__))
              (pstate (vl-parsestate-set-warnings (cons w new-warnings) pstate))
              (st     (change-vl-loadstate st :pstate pstate)))
+          (and st.config.debugp
+               (cw ";;; vl-load-file: Error parsing ~f0~%" filename))
           (mv st state)))
 
        ;; If we get here, parsing was successful, pstate has already been
@@ -573,7 +582,8 @@ descriptions.</li>
                                    :descs      descs
                                    :descalist  descalist
                                    :reportcard reportcard)))
-
+    (and st.config.debugp
+         (cw ";;; vl-load-file: Finished ~f0~%" filename))
     (mv st state))
   ///
   (defthm unique-names-after-vl-load-file
@@ -822,6 +832,10 @@ will look for new modules.</p>"
 
   :tag :vl-loadresult)
 
+(local (defthm string-listp-of-remove-duplicates-equal
+         (equal (string-listp (remove-duplicates-equal x))
+                (string-listp (list-fix x)))
+         :hints(("Goal" :induct (len x)))))
 
 (define vl-load-main
   :short "Top level interface for loading Verilog sources."
@@ -841,9 +855,30 @@ will look for new modules.</p>"
                               :include-dirs
                               (cons "." (vl-loadconfig->include-dirs config))))
 
+       ((mv warnings config)
+        ;; As a special convenience, if there are any duplicate start-files,
+        ;; warn about this but then remove them before processing.  This
+        ;; provides a very clear explanation of what the problem is and avoids
+        ;; re-processing the files, whereas otherwise we can get, e.g., a bunch
+        ;; of multidef warnings that say the module is being redefined from the
+        ;; same file or similar.
+        (b* ((start-files (vl-loadconfig->start-files config))
+             (dupes       (duplicated-members start-files))
+             ((unless dupes)
+              (mv nil config))
+             (warnings
+              (warn :type :vl-warn-same-file
+                    :msg "Duplicate file names given; ignoring later ~
+                          occurrences of ~&0."
+                    :args dupes
+                    :acc nil))
+             (start-files (remove-duplicates-equal start-files)))
+          (mv warnings
+              (change-vl-loadconfig config :start-files start-files))))
+
        ((vl-loadconfig config) config)
 
-       (pstate (make-vl-parsestate :warnings nil
+       (pstate (make-vl-parsestate :warnings warnings
                                    :usertypes nil))
 
        (st     (make-vl-loadstate :config     config

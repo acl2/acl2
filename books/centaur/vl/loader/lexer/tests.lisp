@@ -865,3 +865,62 @@ line\""
                       :remainder "+0")
 
 
+
+
+(defmacro vl-lex-misc-testcase (&key input
+                                     successp
+                                     value
+                                     type
+                                     (remainder '"")
+                                     (nwarnings '0)
+                                     (config '*vl-default-loadconfig*))
+  `(assert!
+    (b* ((echars             (vl-echarlist-from-str ,input))
+         (breakp             nil)
+         (?st                (vl-lexstate-init ,config))
+         ((mv tok remainder ?warnings)
+          (vl-lex-token echars breakp st nil))
+         (-                  (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%~%" echars tok remainder)))
+        (debuggable-and ,@(if successp
+                              `((equal (append (vl-token->etext tok)
+                                               remainder)
+                                       echars)
+                                (equal (vl-token->type tok) ,type)
+                                (equal (vl-echarlist->string (vl-token->etext tok))
+                                       ,value)
+                                (equal (vl-echarlist->string remainder) ,remainder)
+                                (equal (len warnings) ,nwarnings))
+                            '((not tok)
+                              (equal remainder echars)))))))
+
+(vl-lex-misc-testcase :input "// foo bar baz
+4 5 6"
+  :successp t
+  :value "// foo bar baz
+"
+  :type :vl-comment
+  :remainder "4 5 6")
+
+(vl-lex-misc-testcase :input "`timescale 1ns/1ps"
+  :successp t
+  :value "`timescale 1ns/1ps"
+  :type :vl-ws
+  :remainder "")
+
+(vl-lex-misc-testcase :input "`timescale 1 ns / 10 ps 5 6 7"
+  :successp t
+  :value "`timescale 1 ns / 10 ps"
+  :type :vl-ws
+  :remainder " 5 6 7")
+
+(vl-lex-misc-testcase :input "`timescale 1 s /100us
+a b c"
+  :successp t
+  :value "`timescale 1 s /100us"
+  :type :vl-ws
+  :remainder "
+a b c")
+
+(vl-lex-misc-testcase :input "`timescale bogus"
+  :successp nil)
+
