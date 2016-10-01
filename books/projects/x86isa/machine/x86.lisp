@@ -3267,58 +3267,59 @@ semantic function.</p>"
 
   (defthm x86-fetch-decode-execute-opener
     (implies
-     (and (equal start-rip (rip x86))
-          (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 15 x86)))
-          (equal opcode/rex/escape-byte
-                 (prefixes-slice :next-byte prefixes))
-          (equal prefix-length (prefixes-slice :num-prefixes prefixes))
-          (equal temp-rip0 (if (equal prefix-length 0)
-                               (+ 1 start-rip)
-                             (+ prefix-length start-rip 1)))
-          (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
-                              opcode/rex/escape-byte
-                            0))
-          (equal opcode/escape-byte (if (equal rex-byte 0)
-                                        opcode/rex/escape-byte
-                                      (mv-nth 1 (rm08 temp-rip0 :x x86))))
-          (equal temp-rip1 (if (equal rex-byte 0)
-                               temp-rip0 (1+ temp-rip0)))
-          (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
-          (equal modr/m (if modr/m?
-                            (mv-nth 1 (rm08 temp-rip1 :x x86))
-                          0))
-          (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
-          (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
-          (equal sib (if sib? (mv-nth 1 (rm08 temp-rip2 :x x86)) 0))
-          (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
+     (and
+      (not (ms x86))
+      (not (fault x86))
+      (equal start-rip (rip x86))
+      (not (mv-nth 0 (get-prefixes start-rip 0 15 x86)))
+      (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 15 x86)))
+      (equal opcode/rex/escape-byte
+             (prefixes-slice :next-byte prefixes))
+      (equal prefix-length (prefixes-slice :num-prefixes prefixes))
+      (equal temp-rip0 (if (equal prefix-length 0)
+                           (+ 1 start-rip)
+                         (+ prefix-length start-rip 1)))
+      (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
+                          opcode/rex/escape-byte
+                        0))
+      (equal opcode/escape-byte (if (equal rex-byte 0)
+                                    opcode/rex/escape-byte
+                                  (mv-nth 1 (rm08 temp-rip0 :x x86))))
+      (equal temp-rip1 (if (equal rex-byte 0)
+                           temp-rip0 (1+ temp-rip0)))
+      (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
+      (equal modr/m (if modr/m?
+                        (mv-nth 1 (rm08 temp-rip1 :x x86))
+                      0))
+      (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
+      (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
+      (equal sib (if sib? (mv-nth 1 (rm08 temp-rip2 :x x86)) 0))
+      (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
 
-          (or (programmer-level-mode x86)
-              (and (not (programmer-level-mode x86))
-                   (not (page-structure-marking-mode x86))))
-          (not (ms x86))
-          (not (fault x86))
-          (not (mv-nth 0 (get-prefixes start-rip 0 15 x86)))
-          (canonical-address-p temp-rip0)
-          (if (and (equal prefix-length 0)
-                   (equal rex-byte 0)
-                   (not modr/m?))
-              ;; One byte instruction --- all we need to know is that
-              ;; the new RIP is canonical, not that there's no error
-              ;; in reading a value from that address.
-              t
-            (not (mv-nth 0 (rm08 temp-rip0 :x x86))))
-          (if (equal rex-byte 0)
-              t
-            (canonical-address-p temp-rip1))
-          (if modr/m?
-              (and (canonical-address-p temp-rip2)
-                   (not (mv-nth 0 (rm08 temp-rip1 :x x86))))
-            t)
-          (if sib?
-              (and (canonical-address-p temp-rip3)
-                   (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
-            t)
-          (x86p x86))
+      (or (programmer-level-mode x86)
+          (and (not (programmer-level-mode x86))
+               (not (page-structure-marking-mode x86))))
+      (canonical-address-p temp-rip0)
+      (if (and (equal prefix-length 0)
+               (equal rex-byte 0)
+               (not modr/m?))
+          ;; One byte instruction --- all we need to know is that
+          ;; the new RIP is canonical, not that there's no error
+          ;; in reading a value from that address.
+          t
+        (not (mv-nth 0 (rm08 temp-rip0 :x x86))))
+      (if (equal rex-byte 0)
+          t
+        (canonical-address-p temp-rip1))
+      (if modr/m?
+          (and (canonical-address-p temp-rip2)
+               (not (mv-nth 0 (rm08 temp-rip1 :x x86))))
+        t)
+      (if sib?
+          (and (canonical-address-p temp-rip3)
+               (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
+        t)
+      (x86p x86))
      (equal (x86-fetch-decode-execute x86)
             (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                       opcode/escape-byte modr/m sib x86)))

@@ -766,7 +766,7 @@
             :do-not-induct t
             :hands-off (x86-run)
             :use ((:instance rewire_dst_to_src-effects))
-            :in-theory (e/d* (disjoint-p-all-translation-governing-addresses-subset-p)
+            :in-theory (e/d* (disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                              (
                               ;; x86-state-okp
                               ;; program-ok-p
@@ -835,7 +835,7 @@
                               (:rewrite acl2::loghead-identity)
                               (:definition subset-p)
                               (:rewrite
-                               infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
+                               infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
                               (:meta acl2::mv-nth-cons-meta)
                               (:rewrite bitops::loghead-of-loghead-2)
                               (:type-prescription member-p)
@@ -941,7 +941,7 @@
                               (:rewrite acl2::loghead-identity)
                               (:definition subset-p)
                               (:rewrite
-                               infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
+                               infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
                               (:meta acl2::mv-nth-cons-meta)
                               (:rewrite bitops::loghead-of-loghead-2)
                               (:type-prescription member-p)
@@ -996,7 +996,7 @@
            :use ((:instance rewire_dst_to_src-effects))
            :hands-off (x86-run)
            :in-theory (e/d*
-                       (disjoint-p-all-translation-governing-addresses-subset-p)
+                       (disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                        (x86-fetch-decode-execute-opener-in-marking-mode
                         mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
                         mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
@@ -1057,7 +1057,7 @@
                8
                (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list 8 (xr :rgf *rsp* x86))
     x86)))
 
@@ -1082,7 +1082,7 @@
                 8
                 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1098,7 +1098,7 @@
                  8
                  (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
                 :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1111,7 +1111,7 @@
                8
                (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (page-dir-ptr-table-entry-addr
@@ -1128,7 +1128,7 @@
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
      :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list 8 (xr :rgf *rsp* x86))
     x86)))
 
@@ -1159,7 +1159,7 @@
        8
        (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
       :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1177,7 +1177,7 @@
                 8
                 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1192,7 +1192,7 @@
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1220,7 +1220,7 @@
        8
        (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
       :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1238,7 +1238,7 @@
        8
        (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
       :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1269,7 +1269,7 @@
                   8
                   (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
                  :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1286,7 +1286,7 @@
        (page-dir-ptr-table-entry-addr (xr :rgf *rsi* x86)
                                       (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
       :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1314,7 +1314,7 @@
                 8
                 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
                :r (cpl x86) (double-rewrite x86)))
-             (all-translation-governing-addresses l-addrs-2 (double-rewrite x86)))
+             (all-xlation-governing-entries-paddrs l-addrs-2 (double-rewrite x86)))
             (disjoint-p
              (mv-nth
               1
@@ -1323,7 +1323,7 @@
                 8
                 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
                :r (cpl x86) (double-rewrite x86)))
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (create-canonical-address-list
                8
                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
@@ -1350,7 +1350,7 @@
                          8
                          (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
                         :r (cpl x86) (double-rewrite x86)))
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (strip-cars addr-lst) (double-rewrite x86)))
             (disjoint-p
              (mv-nth 1 (las-to-pas
@@ -1358,14 +1358,14 @@
                          8
                          (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
                         :r (cpl x86) (double-rewrite x86)))
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (create-canonical-address-list
                8
                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
               (double-rewrite x86)))
             (disjoint-p
              (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (create-canonical-address-list
                8
                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
@@ -1416,7 +1416,7 @@
    :hints (("Goal"
             :use ((:instance rewire_dst_to_src-effects))
             :in-theory (e/d* (pml4-table-base-addr-from-final-state
-                              disjoint-p-all-translation-governing-addresses-subset-p)
+                              disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                              (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                               unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12
                               unsigned-byte-p-of-combine-bytes-and-rb-in-system-level-mode
@@ -1501,7 +1501,7 @@
   :hints (("Goal"
            :use ((:instance rewire_dst_to_src-effects))
            :in-theory (e/d* (pml4-table-base-addr-from-final-state
-                             disjoint-p-all-translation-governing-addresses-subset-p)
+                             disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                             (rewrite-rb-to-rb-alt
                              las-to-pas-values-and-!flgi
                              create-canonical-address-list
@@ -1660,7 +1660,7 @@
                      (xr :rgf *rsi* x86)
                      (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                    :w (cpl x86) x86))
-                 (all-translation-governing-addresses
+                 (all-xlation-governing-entries-paddrs
                   (create-canonical-address-list *2^30* (xr :rgf *rdi* x86))
                   x86)))
            (equal
@@ -1682,7 +1682,7 @@
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12
                              unsigned-byte-p-of-combine-bytes-and-rb-in-system-level-mode
-                             infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$
+                             infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$
                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                              subset-p
                              (:meta acl2::mv-nth-cons-meta)
@@ -1735,7 +1735,7 @@
                      (xr :rgf *rsi* x86)
                      (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                    :w (cpl x86) x86))
-                 (all-translation-governing-addresses
+                 (all-xlation-governing-entries-paddrs
                   (create-canonical-address-list *2^30* (xr :rgf *rdi* x86))
                   x86))
 
@@ -1791,7 +1791,7 @@
                         source-pdpt-base-addr-from-final-state
                         source-addresses-from-final-state
 
-                        disjoint-p-all-translation-governing-addresses-subset-p)
+                        disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
 
                        (rewrite-rb-to-rb-alt
                         page-dir-ptr-table-entry-addr-to-c-program-optimized-form
@@ -1865,7 +1865,7 @@
 
 ;; In order to prove destination-data-from-final-state-*, I first need
 ;; las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr,
-;; all-translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr,
+;; all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr,
 ;; and rb-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr.
 
 ;; ======================================================================
@@ -1966,7 +1966,7 @@
                      (las-to-pas (create-canonical-address-list 8 direct-mapped-addr)
                                  r-w-x (cpl x86)
                                  (double-rewrite x86)))
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (create-canonical-address-list 8 direct-mapped-addr)
               (double-rewrite x86)))
             (not
@@ -2108,7 +2108,7 @@
         8
         (page-dir-ptr-table-entry-addr lin-addr base-addr))
        r-w-x cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
       x86))
@@ -2185,7 +2185,7 @@
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                   :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 pml4-table-entry-addr)
       x86))
     (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -2201,7 +2201,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       x86))
 
@@ -2276,7 +2276,7 @@
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                   :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 pml4-table-entry-addr)
       x86))
     (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -2292,7 +2292,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       x86))
 
@@ -2440,7 +2440,7 @@
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                   :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 pml4-table-entry-addr)
       x86))
     (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -2456,7 +2456,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       x86))
 
@@ -2545,7 +2545,7 @@
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                   :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 pml4-table-entry-addr)
       x86))
     (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -2561,7 +2561,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       x86))
 
@@ -2648,7 +2648,7 @@
               (las-to-pas (create-canonical-address-list
                            8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
                           r-w-x cpl x86))
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (create-canonical-address-list
                8 (page-dir-ptr-table-entry-addr lin-addr base-addr))
               x86))
@@ -2763,7 +2763,7 @@
       (las-to-pas
        (create-canonical-address-list 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr))
       x86))
 
@@ -2782,7 +2782,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       x86))
 
@@ -2873,7 +2873,7 @@
       (las-to-pas
        (create-canonical-address-list 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)))
       (double-rewrite x86)))
 
@@ -2892,7 +2892,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
 
@@ -2993,7 +2993,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -3014,7 +3014,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
 
@@ -3041,7 +3041,7 @@
              (las-to-pas
               (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
               :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
 
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r cpl (double-rewrite x86))))
 
@@ -3147,7 +3147,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -3168,7 +3168,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
 
@@ -3195,7 +3195,7 @@
              (las-to-pas
               (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
               :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
 
     (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r cpl (double-rewrite x86))))
 
@@ -3316,7 +3316,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -3337,7 +3337,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
 
@@ -3369,7 +3369,7 @@
              (las-to-pas
               (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
               :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
 
     (not (mv-nth 0 (las-to-pas
                     (create-canonical-address-list *2^30* lin-addr)
@@ -3423,17 +3423,17 @@
 ;; ======================================================================
 
 ;; Begin proof of
-;; all-translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr:
+;; all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr:
 
 ;; First, we compute the translation-governing addresses corresponding
 ;; to (+ n lin-addr), given that (+ n lin-addr) lies in the same 1G
 ;; page as lin-addr.  We then generalize this result to
-;; all-translation-governing-addresses (from
-;; translation-governing-addresses).
+;; all-xlation-governing-entries-paddrs (from
+;; xlation-governing-entries-paddrs).
 
-(defthmd translation-governing-addresses-for-same-1G-page
+(defthmd xlation-governing-entries-paddrs-for-same-1G-page
   ;; Similar to ia32e-la-to-pa-values-for-same-1G-page, but for
-  ;; translation-governing-addresses.
+  ;; xlation-governing-entries-paddrs.
   (implies
    (and
     (equal cpl (cpl x86))
@@ -3459,7 +3459,7 @@
       1
       (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                   :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 pml4-table-entry-addr)
       x86))
     (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -3475,7 +3475,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl x86))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       x86))
     (equal (page-size page-dir-ptr-table-entry) 1)
@@ -3486,12 +3486,12 @@
     (equal (loghead 30 (+ n lin-addr)) n)
     (unsigned-byte-p 30 n)
     (x86p x86))
-   (equal (translation-governing-addresses (+ n lin-addr) x86)
-          (translation-governing-addresses lin-addr x86)))
+   (equal (xlation-governing-entries-paddrs (+ n lin-addr) x86)
+          (xlation-governing-entries-paddrs lin-addr x86)))
   :hints (("Goal"
-           :in-theory (e/d* (translation-governing-addresses
-                             translation-governing-addresses-for-pml4-table
-                             translation-governing-addresses-for-page-dir-ptr-table
+           :in-theory (e/d* (xlation-governing-entries-paddrs
+                             xlation-governing-entries-paddrs-for-pml4-table
+                             xlation-governing-entries-paddrs-for-page-dir-ptr-table
                              disjoint-p$
                              direct-map-p
                              pdpt-base-addr
@@ -3516,7 +3516,7 @@
    (if (zp n) nil (append x (repeat (- n 1) x)))))
 
 (local
- (defthmd all-translation-governing-addresses-1G-pages-general
+ (defthmd all-xlation-governing-entries-paddrs-1G-pages-general
    (implies
     (and
      (equal cpl (cpl x86))
@@ -3541,7 +3541,7 @@
        1
        (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                    :r cpl x86))
-      (all-translation-governing-addresses
+      (all-xlation-governing-entries-paddrs
        (create-canonical-address-list 8 pml4-table-entry-addr)
        x86))
      (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -3557,7 +3557,7 @@
        (las-to-pas
         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
         :r cpl x86))
-      (all-translation-governing-addresses
+      (all-xlation-governing-entries-paddrs
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        x86))
      (equal (page-size page-dir-ptr-table-entry) 1)
@@ -3571,13 +3571,13 @@
      (equal (loghead 30 lin-addr) 0)
      (x86p x86))
     (equal
-     (all-translation-governing-addresses (create-canonical-address-list-alt iteration m lin-addr) x86)
-     (repeat (- m iteration) (translation-governing-addresses lin-addr x86))))
+     (all-xlation-governing-entries-paddrs (create-canonical-address-list-alt iteration m lin-addr) x86)
+     (repeat (- m iteration) (xlation-governing-entries-paddrs lin-addr x86))))
    :hints (("Goal"
             :induct (create-canonical-address-list-alt iteration m lin-addr)
             :do-not '(preprocess)
-            :in-theory (e/d* (all-translation-governing-addresses
-                              translation-governing-addresses-for-same-1G-page)
+            :in-theory (e/d* (all-xlation-governing-entries-paddrs
+                              xlation-governing-entries-paddrs-for-same-1G-page)
                              (member-p-strip-cars-of-remove-duplicate-keys
                               page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                               bitops::logand-with-negated-bitmask
@@ -3585,7 +3585,7 @@
                               not))))))
 
 (local
- (defthmd all-translation-governing-addresses-1G-pages
+ (defthmd all-xlation-governing-entries-paddrs-1G-pages
    (implies
     (and
      (equal cpl (cpl x86))
@@ -3617,7 +3617,7 @@
        1
        (las-to-pas (create-canonical-address-list 8 pml4-table-entry-addr)
                    :r cpl x86))
-      (all-translation-governing-addresses
+      (all-xlation-governing-entries-paddrs
        (create-canonical-address-list 8 pml4-table-entry-addr)
        x86))
      (direct-map-p 8 page-dir-ptr-table-entry-addr :r cpl (double-rewrite x86))
@@ -3633,7 +3633,7 @@
        (las-to-pas
         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
         :r cpl x86))
-      (all-translation-governing-addresses
+      (all-xlation-governing-entries-paddrs
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        x86))
      (disjoint-p$
@@ -3663,11 +3663,11 @@
      (<= m *2^30*)
      (x86p x86))
     (equal
-     (all-translation-governing-addresses (create-canonical-address-list m lin-addr) x86)
-     (repeat m (translation-governing-addresses lin-addr x86))))
+     (all-xlation-governing-entries-paddrs (create-canonical-address-list m lin-addr) x86)
+     (repeat m (xlation-governing-entries-paddrs lin-addr x86))))
    :hints (("Goal"
             :do-not '(preprocess)
-            :use ((:instance all-translation-governing-addresses-1G-pages-general
+            :use ((:instance all-xlation-governing-entries-paddrs-1G-pages-general
                              (iteration 0)))
             :in-theory (e/d* (create-canonical-address-list-alt-is-create-canonical-address-list)
                              (member-p-strip-cars-of-remove-duplicate-keys
@@ -3687,11 +3687,11 @@
                    (rm-low-64 p-addr-1 x86)))
    :hints (("Goal" :in-theory (e/d* (disjoint-p-commutative) ())))))
 
-(defthmd translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+(defthmd xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   ;; Similar to
   ;; ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   ;; for
-  ;; translation-governing-addresses.
+  ;; xlation-governing-entries-paddrs.
   (implies
    ;; Restricting this rule so that it doesn't apply when lin-addr
    ;; points to a paging entry.
@@ -3729,7 +3729,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -3747,7 +3747,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
     (disjoint-p$
@@ -3770,7 +3770,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst)
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst)
                                           (double-rewrite x86)))
     (equal (page-size page-dir-ptr-table-entry)
            (page-size (combine-bytes (strip-cdrs addr-lst))))
@@ -3780,8 +3780,8 @@
      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (x86p x86))
-   (equal (translation-governing-addresses lin-addr (mv-nth 1 (wb addr-lst x86)))
-          (translation-governing-addresses lin-addr x86)))
+   (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst x86)))
+          (xlation-governing-entries-paddrs lin-addr x86)))
   :hints
   (("Goal"
     :do-not-induct t
@@ -3807,9 +3807,9 @@
                  direct-map-p
                  pml4-table-base-addr
                  pdpt-base-addr
-                 translation-governing-addresses
-                 translation-governing-addresses-for-pml4-table
-                 translation-governing-addresses-for-page-dir-ptr-table
+                 xlation-governing-entries-paddrs
+                 xlation-governing-entries-paddrs-for-pml4-table
+                 xlation-governing-entries-paddrs-for-page-dir-ptr-table
                  rm-low-64-and-write-to-physical-memory-disjoint-commuted)
 
                 (rm-low-64-and-write-to-physical-memory-disjoint
@@ -3831,7 +3831,7 @@
 
 
 (local
- (defthmd translation-governing-addresses-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper
+ (defthmd xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper
    (implies
     (and
      (equal page-dir-ptr-table-entry-addr
@@ -3865,7 +3865,7 @@
          8
          (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
         :r cpl (double-rewrite x86)))
-      (all-translation-governing-addresses
+      (all-xlation-governing-entries-paddrs
        (create-canonical-address-list
         8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        (double-rewrite x86)))
@@ -3884,7 +3884,7 @@
        (las-to-pas
         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
         :r cpl (double-rewrite x86)))
-      (all-translation-governing-addresses
+      (all-xlation-governing-entries-paddrs
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        (double-rewrite x86)))
      (disjoint-p$
@@ -3908,7 +3908,7 @@
        (las-to-pas
         (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
         :r cpl (double-rewrite x86)))
-      (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+      (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
      (equal (page-size page-dir-ptr-table-entry)
             (page-size (combine-bytes (strip-cdrs addr-lst))))
      (addr-byte-alistp addr-lst)
@@ -4015,7 +4015,7 @@
                               not
                               bitops::logand-with-negated-bitmask))))))
 
-(defthmd translation-governing-addresses-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
+(defthmd xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
     (syntaxp (not (and (consp lin-addr)
@@ -4051,7 +4051,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -4069,7 +4069,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
     (disjoint-p$
@@ -4092,7 +4092,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst)
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst)
                                           (double-rewrite x86)))
     (equal (page-size page-dir-ptr-table-entry)
            (page-size (combine-bytes (strip-cdrs addr-lst))))
@@ -4108,16 +4108,16 @@
     (unsigned-byte-p 30 n)
     (not (programmer-level-mode x86))
     (x86p x86))
-   (equal (translation-governing-addresses (+ n lin-addr) (mv-nth 1 (wb addr-lst x86)))
-          (translation-governing-addresses lin-addr x86)))
+   (equal (xlation-governing-entries-paddrs (+ n lin-addr) (mv-nth 1 (wb addr-lst x86)))
+          (xlation-governing-entries-paddrs lin-addr x86)))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance translation-governing-addresses-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper))
-           :in-theory (e/d* (translation-governing-addresses-for-same-1G-page
-                             translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-                             translation-governing-addresses
-                             translation-governing-addresses-for-pml4-table
-                             translation-governing-addresses-for-page-dir-ptr-table
+           :use ((:instance xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper))
+           :in-theory (e/d* (xlation-governing-entries-paddrs-for-same-1G-page
+                             xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+                             xlation-governing-entries-paddrs
+                             xlation-governing-entries-paddrs-for-pml4-table
+                             xlation-governing-entries-paddrs-for-page-dir-ptr-table
                              pdpt-base-addr
                              pml4-table-base-addr)
                             (mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
@@ -4141,7 +4141,7 @@
                              not
                              bitops::logand-with-negated-bitmask)))))
 
-(defthmd all-translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
+(defthmd all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
   (implies
    (and
     (equal page-dir-ptr-table-entry-addr
@@ -4172,7 +4172,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -4193,7 +4193,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
 
@@ -4220,7 +4220,7 @@
              (las-to-pas
               (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
               :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
 
 
 
@@ -4250,18 +4250,18 @@
     (not (programmer-level-mode x86))
     (x86p x86))
    (equal
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list-alt iteration m lin-addr) (mv-nth 1 (wb addr-lst x86)))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list-alt iteration m lin-addr) x86)))
   :hints (("Goal"
            :induct (create-canonical-address-list-alt iteration m lin-addr)
            :do-not '(preprocess)
-           :in-theory (e/d* (all-translation-governing-addresses
-                             translation-governing-addresses-for-same-1G-page
-                             translation-governing-addresses-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
-                             translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-                             all-translation-governing-addresses-1G-pages-general)
+           :in-theory (e/d* (all-xlation-governing-entries-paddrs
+                             xlation-governing-entries-paddrs-for-same-1G-page
+                             xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
+                             xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+                             all-xlation-governing-entries-paddrs-1G-pages-general)
                             (member-p
                              subset-p
                              member-p-strip-cars-of-remove-duplicate-keys
@@ -4270,7 +4270,7 @@
                              force (force)
                              not)))))
 
-(defthm all-translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+(defthm all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
     ;; Restrict this rule so that it fires when lin-addr is either (XR
@@ -4301,7 +4301,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -4314,7 +4314,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
     (disjoint-p$
@@ -4343,7 +4343,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present (combine-bytes (strip-cdrs addr-lst))))
@@ -4366,26 +4366,26 @@
     (<= m *2^30*)
     (x86p x86))
    (equal
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list m lin-addr) (mv-nth 1 (wb addr-lst x86)))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list m lin-addr) (double-rewrite x86))))
   :hints (("Goal"
            :do-not-induct t
            :do-not '(preprocess)
-           :use ((:instance all-translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
+           :use ((:instance all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
                             (iteration 0)))
            :in-theory (e/d* (create-canonical-address-list-alt-is-create-canonical-address-list
                              direct-map-p
                              las-to-pas)
-                            (all-translation-governing-addresses
+                            (all-xlation-governing-entries-paddrs
                              mv-nth-0-las-to-pas-subset-p
                              subset-p
                              mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
                              member-p
                              rewrite-rb-to-rb-alt
                              rb-and-rm-low-64-for-direct-map
-                             translation-governing-addresses-for-same-1G-page
+                             xlation-governing-entries-paddrs-for-same-1G-page
                              member-p-strip-cars-of-remove-duplicate-keys
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              bitops::logand-with-negated-bitmask
@@ -4429,7 +4429,7 @@
         8
         (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list
        8
        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))))
@@ -4442,7 +4442,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses
+     (all-xlation-governing-entries-paddrs
       (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
       (double-rewrite x86)))
     (disjoint-p$
@@ -4473,7 +4473,7 @@
       (las-to-pas
        (create-canonical-address-list 8 page-dir-ptr-table-entry-addr)
        :r cpl (double-rewrite x86)))
-     (all-translation-governing-addresses (strip-cars addr-lst) (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
 
     (not (mv-nth 0
                  (las-to-pas (create-canonical-address-list *2^30* lin-addr)
@@ -4562,7 +4562,7 @@
         (xr :rgf *rsi* x86)
         (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
       :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list *2^30* (xr :rgf *rdi* x86))
      x86))
 
@@ -4674,12 +4674,12 @@
 
 ;; Now back to proving destination-data-from-final-state:
 
-;; (acl2::why all-translation-governing-addresses-and-mv-nth-1-wb-disjoint)
+;; (acl2::why all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint)
 ;; (acl2::why rb-wb-disjoint-in-system-level-mode)
 ;; (acl2::why pdpt-base-addr-after-mv-nth-1-wb)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
 ;; (acl2::why las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr)
-;; (acl2::why all-translation-governing-addresses-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr)
+;; (acl2::why all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr)
 ;; (acl2::why rb-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr)
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-las-to-pas)
 
@@ -4712,7 +4712,7 @@
                   (pml4-table-entry-addr (xr :rgf *rsi* x86)
                                          (pml4-table-base-addr x86)))
                  :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr (xr :rgf *rsi* x86)
@@ -4794,7 +4794,7 @@
                 (page-dir-ptr-table-entry-addr
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))) x86))
@@ -4807,7 +4807,7 @@
                 (page-dir-ptr-table-entry-addr
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86)
@@ -4822,7 +4822,7 @@
                 (page-dir-ptr-table-entry-addr
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -4841,7 +4841,7 @@
        (pml4-table-entry-addr (xr :rgf *rsi* x86)
                               (pml4-table-base-addr x86)))
       :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86)
@@ -4859,7 +4859,7 @@
        (pml4-table-entry-addr (xr :rgf *rsi* x86)
                               (pml4-table-base-addr x86)))
       :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -4878,7 +4878,7 @@
        (pml4-table-entry-addr (xr :rgf *rsi* x86)
                               (pml4-table-base-addr x86)))
       :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86)
@@ -5331,7 +5331,7 @@
                         source-addresses-from-final-state
                         destination-pdpt-base-addr-from-final-state
                         destination-pml4-table-entry-from-final-state
-                        disjoint-p-all-translation-governing-addresses-subset-p
+                        disjoint-p-all-xlation-governing-entries-paddrs-subset-p
                         pdpt-base-addr)
 
                        (rewire_dst_to_src-disable
@@ -5377,7 +5377,7 @@
                         (:rewrite acl2::cdr-of-append-when-consp)
                         (:type-prescription binary-append)
                         (:rewrite
-                         all-translation-governing-addresses-1g-pages-and-wb-to-page-dir-ptr-table-entry-addr)
+                         all-xlation-governing-entries-paddrs-1g-pages-and-wb-to-page-dir-ptr-table-entry-addr)
                         (:rewrite
                          int-lists-in-seq-p-and-append-with-create-canonical-address-list-2)
                         (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
@@ -5467,7 +5467,7 @@
       source-addresses-from-final-state
       destination-pdpt-base-addr-from-final-state
       destination-pml4-table-entry-from-final-state
-      disjoint-p-all-translation-governing-addresses-subset-p)
+      disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
      (rewire_dst_to_src-disable
       read-from-physical-memory
       pdpt-base-addr-after-mv-nth-2-las-to-pas
@@ -5513,7 +5513,7 @@
       (:rewrite
        int-lists-in-seq-p-and-append-with-create-canonical-address-list-2)
       (:rewrite
-       infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
+       infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
       (:rewrite car-addr-range)
       (:type-prescription member-p-physical-address-p)
       (:type-prescription n01p-page-size)
@@ -5624,7 +5624,7 @@
      (mv-nth 1
              (las-to-pas (create-canonical-address-list 8 lin-addr)
                          :w (cpl x86) (double-rewrite x86)))
-     (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
     (disjoint-p$
      (mv-nth 1
              (las-to-pas (create-canonical-address-list 8 lin-addr)
@@ -6191,7 +6191,7 @@
                               (:rewrite default-+-2)
                               (:rewrite two-mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas)
                               (:rewrite
-                               infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
+                               infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
                               (:rewrite loghead-of-non-integerp)
                               (:type-prescription acl2::|x < y  =>  0 < -x+y|)
                               (:rewrite acl2::equal-of-booleans-rewrite)
@@ -6360,7 +6360,7 @@
                               (:rewrite int-lists-in-seq-p-and-append)
                               (:type-prescription consp-create-addr-bytes-alist)
                               (:type-prescription bitp)
-                              (:type-prescription all-translation-governing-addresses)
+                              (:type-prescription all-xlation-governing-entries-paddrs)
                               (:rewrite acl2::expt-with-violated-guards)
                               (:type-prescription consp-create-addr-bytes-alist-in-terms-of-len)
                               (:rewrite acl2::append-of-cons)
