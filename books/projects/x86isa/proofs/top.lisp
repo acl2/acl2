@@ -40,6 +40,13 @@
    ()
    (local (include-book "popcount/popcount" :ttags :all))))
 
+;; Same popcount program as popcount/popcount, but here we use our
+;; lemma libraries to perform symbolic simulation.
+(local
+ (encapsulate
+   ()
+   (local (include-book "popcount/popcount-general" :ttags :all))))
+
 (local
  (encapsulate
    ()
