@@ -32,7 +32,7 @@
           a letter, a (decimal) digit, or a dash."
   (or (and (standard-char-p char)
            (alpha-char-p char))
-      (iff t (digit-char-p char))
+      (if (digit-char-p char) t nil)
       (eql char #\-)))
 
 (std::deflist alpha/digit/dash-char-list-p (x)
