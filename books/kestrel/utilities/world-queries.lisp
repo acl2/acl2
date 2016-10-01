@@ -52,18 +52,21 @@
 (define function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a function."
-  (and (symbolp x) (function-symbolp x wrld))
+  (and (symbolp x)
+       (function-symbolp x wrld))
   :enabled t)
 
 (define theorem-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a theorem."
-  (and (symbolp x) (theorem-symbolp x wrld)))
+  (and (symbolp x)
+       (theorem-symbolp x wrld)))
 
 (define macro-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a macro."
-  (and (symbolp x) (macro-symbolp x wrld)))
+  (and (symbolp x)
+       (macro-symbolp x wrld)))
 
 (define logical-name-listp (names (wrld plist-worldp))
   :returns (yes/no booleanp)
@@ -77,9 +80,14 @@
         (t (and (logical-namep (car names) wrld)
                 (logical-name-listp (cdr names) wrld)))))
 
-(define definedp ((fn (and (function-namep fn wrld)
-                           (logicp fn wrld)))
-                  (wrld plist-worldp))
+(define logic-function-namep (x (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :short "True iff @('x') is a symbol that names a logic-mode function."
+  (and (function-namep x wrld)
+       (logicp x wrld))
+  :enabled t)
+
+(define definedp ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short "True iff the logic-mode function @('fn') is defined,
@@ -95,8 +103,7 @@
           is @(tsee guard)-verified."
   (eq (symbol-class fn/thm wrld) :common-lisp-compliant))
 
-(define non-executablep ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define non-executablep ((fn (and (logic-function-namep fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
@@ -176,8 +183,7 @@
   (and (all-nils (stobjs-in fn wrld))
        (all-nils (stobjs-out fn wrld))))
 
-(define measure ((fn (and (function-namep fn wrld)
-                          (logicp fn wrld)
+(define measure ((fn (and (logic-function-namep fn wrld)
                           (recursivep fn nil wrld)))
                  (wrld plist-worldp))
   :returns (measure "A @(tsee pseudo-termp).")
@@ -189,8 +195,7 @@
    </p>"
   (access justification (getpropc fn 'justification nil wrld) :measure))
 
-(define measured-subset ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define measured-subset ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
   :returns (measured-subset "A @(tsee symbol-listp).")
@@ -199,8 +204,7 @@
           that occur in its @(see measure) expression."
   (access justification (getpropc fn 'justification nil wrld) :subset))
 
-(define well-founded-relation ((fn (and (function-namep fn wrld)
-                                        (logicp fn wrld)
+(define well-founded-relation ((fn (and (logic-function-namep fn wrld)
                                         (recursivep fn nil wrld)))
                                (wrld plist-worldp))
   :returns (well-founded-relation "A @(tsee symbolp).")
@@ -212,8 +216,7 @@
    including the @(':well-founded-relation') rule class.</p>"
   (access justification (getpropc fn 'justification nil wrld) :rel))
 
-(define ruler-extenders ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define ruler-extenders ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
   :returns (ruler-extenders "A @(tsee symbol-listp) or @(':all').")
@@ -290,8 +293,7 @@
           (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist wrld)))
 
-(define induction-machine ((fn (and (function-namep fn wrld)
-                                    (logicp fn wrld)
+(define induction-machine ((fn (and (logic-function-namep fn wrld)
                                     (= 1 (len (recursivep fn nil wrld)))))
                            (wrld plist-worldp))
   :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
@@ -353,8 +355,7 @@
   :true-listp t
   :elementp-of-nil nil)
 
-(define recursive-calls ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define recursive-calls ((fn (and (logic-function-namep fn wrld)
                                   (= 1 (len (recursivep fn nil wrld)))))
                          (wrld plist-worldp))
   :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
