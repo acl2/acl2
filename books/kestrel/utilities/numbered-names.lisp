@@ -438,24 +438,20 @@
    </p>
    @(def add-numbered-name-in-use)"
 
-  (define add-numbered-name-in-use-aux
+  (define add-numbered-name-in-use-new-indices
     ((base symbolp) (index posp) (wrld plist-worldp))
     :returns (indices "A @(tsee pos-listp) without duplicates.")
     :verify-guards nil
     :parents (add-numbered-name-in-use)
-    :short "Auxiliary function for @(tsee add-numbered-name-in-use) macro."
-    :long
-    "<p>
-     Return the result of adding @('index')
-     to the set of indices that the table associates to @('base').
-     </p>"
+    :short "Result of adding @('index')
+            to the set of indices that the table associates to @('base')."
     (let* ((tab (table-alist 'numbered-names-in-use wrld))
            (current-indices (cdr (assoc-eq base tab))))
       (add-to-set-eql index current-indices)))
 
   (defmacro add-numbered-name-in-use (base index)
     `(table numbered-names-in-use
-       ,base (add-numbered-name-in-use-aux ,base ,index world))))
+       ,base (add-numbered-name-in-use-new-indices ,base ,index world))))
 
 (define max-numbered-name-index-in-use-aux
   ((indices pos-listp) (current-max-index natp))
