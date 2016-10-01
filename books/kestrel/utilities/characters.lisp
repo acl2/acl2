@@ -14,10 +14,11 @@
 
 (in-package "ACL2")
 
-(include-book "std/typed-lists/character-listp" :dir :system)
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/deflist" :dir :system)
-(include-book "typed-list-theorems")
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
+
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "typed-list-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

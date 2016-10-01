@@ -19,9 +19,10 @@
 (in-package "ACL2")
 
 (include-book "std/util/defines" :dir :system)
-(include-book "all-vars-theorems")
 (include-book "world-queries")
-(include-book "world-theorems")
+
+(local (include-book "all-vars-theorems"))
+(local (include-book "world-theorems"))
 
 (local (set-default-parents term-utilities))
 

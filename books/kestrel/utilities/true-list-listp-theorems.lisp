@@ -15,8 +15,9 @@
 
 (in-package "ACL2")
 
-(include-book "std/lists/top" :dir :system)
 (include-book "std/util/deflist" :dir :system)
+
+(local (include-book "std/lists/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
