@@ -454,7 +454,7 @@
        ,base (add-numbered-name-in-use-new-indices ,base ,index world))))
 
 (define max-numbered-name-index-in-use ((base symbolp) (wrld plist-worldp))
-  :returns (max-index "A @(tsee natp).")
+  :returns (max-index natp)
   :verify-guards nil
   :parents (numbered-names-in-use)
   :short "Largest index of numbered name in use with given base."
@@ -473,14 +473,15 @@
   :prepwork
   ((define max-numbered-name-index-in-use-aux ((indices pos-listp)
                                                (current-max-index natp))
-     :returns (final-max-index "A @(tsee natp).")
-     (cond ((atom indices) current-max-index)
+     :returns (final-max-index natp)
+     (cond ((atom indices) (mbe :logic (nfix current-max-index)
+                                :exec current-max-index))
            (t (max-numbered-name-index-in-use-aux
                (cdr indices)
                (max (car indices) current-max-index)))))))
 
 (define resolve-numbered-name-wildcard ((name symbolp) (wrld plist-worldp))
-  :returns (resolved-name "A @(tsee symbolp).")
+  :returns (resolved-name symbolp)
   :verify-guards nil
   :parents (numbered-names)
   :short "Resolve the wildcard in a numbered name (if any)
@@ -500,7 +501,8 @@
         (make-numbered-name base
                             (max-numbered-name-index-in-use base wrld)
                             wrld)
-      name)))
+      (mbe :logic (symbol-fix name)
+           :exec name))))
 
 (define next-numbered-name ((name symbolp) (wrld plist-worldp))
   :returns (next-index "A @(tsee posp).")
