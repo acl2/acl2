@@ -19,6 +19,7 @@
 (include-book "event-forms")
 (include-book "fresh-names")
 (include-book "prove-interface")
+(include-book "symbol-symbol-alists")
 
 (local (set-default-parents applicability-conditions))
 
@@ -209,23 +210,52 @@
    their names are added to the names to avoid,
    because the theorem events are not in the ACL2 world yet.
    </p>"
-  (cond ((endp app-conds) (mv nil nil))
-        (t (b* (((mv thm-name thm-event-form)
-                 (applicability-condition-event (car app-conds)
-                                                (car locals)
-                                                (car enableds)
-                                                (car rule-classess)
-                                                names-to-avoid
-                                                wrld))
-                (new-names-to-avoid (cons thm-name names-to-avoid))
-                ((mv names-to-thm-names thm-event-forms)
-                 (applicability-condition-events (cdr app-conds)
-                                                 (cdr locals)
-                                                 (cdr enableds)
-                                                 (cdr rule-classess)
-                                                 new-names-to-avoid
-                                                 wrld)))
-             (mv (acons (applicability-condition->name (car app-conds))
-                        thm-name
-                        names-to-thm-names)
-                 (cons thm-event-form thm-event-forms))))))
+  (b* (((mv names-to-thm-names rev-thm-event-forms)
+        (applicability-condition-events-aux app-conds
+                                            locals
+                                            enableds
+                                            rule-classess
+                                            names-to-avoid
+                                            wrld
+                                            nil
+                                            nil)))
+    (mv names-to-thm-names (reverse rev-thm-event-forms)))
+
+  :prepwork
+  ((define applicability-condition-events-aux
+     ((app-conds applicability-condition-listp)
+      (locals boolean-listp)
+      (enableds boolean-listp)
+      (rule-classess)
+      (names-to-avoid)
+      (wrld plist-worldp)
+      (names-to-thm-names symbol-symbol-alistp)
+      (rev-thm-event-forms pseudo-event-form-listp))
+     :guard (and (= (len locals) (len app-conds))
+                 (= (len enableds) (len app-conds))
+                 (= (len rule-classess) (len app-conds)))
+     :returns (mv final-names-to-thm-names final-rev-thm-event-forms)
+     :mode :program
+     (cond ((endp app-conds) (mv names-to-thm-names rev-thm-event-forms))
+           (t (b* (((mv thm-name thm-event-form)
+                    (applicability-condition-event (car app-conds)
+                                                   (car locals)
+                                                   (car enableds)
+                                                   (car rule-classess)
+                                                   names-to-avoid
+                                                   wrld))
+                   (new-names-to-avoid (cons thm-name names-to-avoid))
+                   (new-names-to-thm-names
+                    (acons (applicability-condition->name (car app-conds))
+                           thm-name
+                           names-to-thm-names))
+                   (new-rev-thm-event-forms
+                    (cons thm-event-form rev-thm-event-forms)))
+                (applicability-condition-events-aux (cdr app-conds)
+                                                    (cdr locals)
+                                                    (cdr enableds)
+                                                    (cdr rule-classess)
+                                                    new-names-to-avoid
+                                                    wrld
+                                                    new-names-to-thm-names
+                                                    new-rev-thm-event-forms)))))))
