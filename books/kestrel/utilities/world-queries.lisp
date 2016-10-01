@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 
+(include-book "std/typed-lists/symbol-listp" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
@@ -248,8 +249,8 @@
     (if (null all-args)
         nil
       (if (eq (car all-args) '&whole)
-          (macro-required-args-aux (cddr all-args) nil)
-        (macro-required-args-aux all-args nil))))
+          (reverse (macro-required-args-aux (cddr all-args) nil))
+        (reverse (macro-required-args-aux all-args nil)))))
 
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp)
@@ -260,7 +261,7 @@
        (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
                        :exec (car args))))
          (if (lambda-keywordp arg)
-             nil
+             rev-result
            (macro-required-args-aux (cdr args)
                                     (cons arg rev-result))))))))
 
