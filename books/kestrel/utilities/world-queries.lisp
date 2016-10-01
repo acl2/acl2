@@ -248,19 +248,21 @@
     (if (null all-args)
         nil
       (if (eq (car all-args) '&whole)
-          (macro-required-args-aux (cddr all-args))
-        (macro-required-args-aux all-args))))
+          (macro-required-args-aux (cddr all-args) nil)
+        (macro-required-args-aux all-args nil))))
 
   :prepwork
-  ((define macro-required-args-aux ((args symbol-listp))
-     :returns (required-args symbol-listp)
+  ((define macro-required-args-aux ((args symbol-listp)
+                                    (rev-result symbol-listp))
+     :returns (final-rev-result symbol-listp :hyp (symbol-listp rev-result))
      (if (endp args)
-         nil
+         rev-result
        (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
                        :exec (car args))))
          (if (lambda-keywordp arg)
              nil
-           (cons arg (macro-required-args-aux (cdr args)))))))))
+           (macro-required-args-aux (cdr args)
+                                    (cons arg rev-result))))))))
 
 (define fundef-disabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
