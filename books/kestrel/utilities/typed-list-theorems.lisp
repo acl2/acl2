@@ -41,22 +41,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorem-about-character-listp
+(defsection theorems-about-unsigned-byte-listp
 
-  :parents (theorems-about-non-kestrel-books)
-
-  :short "A theorem about @(tsee character-listp)."
-
-  (defrule character-listp-of-rev
-    (equal (character-listp (rev chars))
-           (character-listp (list-fix chars)))
-    :enable rev))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection theorem-about-character-listp
-
-  :parents (theorems-about-non-kestrel-books)
+  :parents (theorems-about-non-kestrel-books unsigned-byte-listp)
 
   :short "A theorem about @(tsee unsigned-byte-listp)."
 
