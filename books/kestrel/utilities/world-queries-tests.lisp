@@ -323,12 +323,54 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
+ (defund f (x) x)
+ (assert! (fundef-disabledp 'f state)))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (fundef-disabledp 'f state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
  (defun f (x) x)
  (assert! (fundef-enabledp 'f state)))
 
 (must-succeed*
  (defund f (x) x)
  (assert! (not (fundef-enabledp 'f state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (not (rune-disabledp '(:rewrite cons-car-cdr) state)))
+
+(must-succeed*
+ (defthmd th (acl2-numberp (+ x y)))
+ (assert! (rune-disabledp '(:rewrite th) state)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (+ x y)))
+ (assert! (not (rune-disabledp '(:rewrite th) state))))
+
+(must-succeed*
+ (defthmd th (acl2-numberp (+ x y)) :rule-classes :type-prescription)
+ (assert! (rune-disabledp '(:type-prescription th) state)))
+
+(must-succeed*
+ (defthmd th
+   (acl2-numberp (+ x y))
+   :rule-classes ((:rewrite :corollary (acl2-numberp (+ x y)))
+                  (:rewrite :corollary (acl2-numberp (+ y x)))))
+ (assert! (rune-disabledp '(:rewrite th . 1) state))
+ (assert! (rune-disabledp '(:rewrite th . 2) state)))
+
+(must-succeed*
+ (defthm th
+   (acl2-numberp (+ x y))
+   :rule-classes ((:rewrite :corollary (acl2-numberp (+ x y)))
+                  (:rewrite :corollary (acl2-numberp (+ y x)))))
+ (assert! (not (rune-disabledp '(:rewrite th . 1) state)))
+ (assert! (not (rune-disabledp '(:rewrite th . 2) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -121,18 +121,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (lambdap '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
+
+(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
  (assert!
   (not (lambda-guard-verified-fnsp '(lambda (x) (zp (f '4))) (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (lambdap '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
-
-(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

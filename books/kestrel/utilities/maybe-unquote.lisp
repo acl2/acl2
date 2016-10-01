@@ -1,4 +1,4 @@
-; Remove Any Wrapping QUOTE
+; Unquote Object If Quoted
 ;
 ; Copyright (C) 2015-2016
 ;   Kestrel Institute (http://www.kestrel.edu)

@@ -14,8 +14,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/testing" :dir :system)
 (include-book "characters")
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,6 +30,28 @@
 (assert! (not (alpha/digit/dash-char-p #\\)))
 
 (assert! (not (alpha/digit/dash-char-p #\<)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (alpha/digit/dash-char-listp nil))
+
+(assert! (alpha/digit/dash-char-listp '(#\- #\5 #\a)))
+
+(assert! (not (alpha/digit/dash-char-listp '(#\a #\<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (nondigit-char-p #\a))
+
+(assert! (not (nondigit-char-p #\0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (nondigit-char-listp nil))
+
+(assert! (nondigit-char-listp '(#\a #\~)))
+
+(assert! (not (nondigit-char-listp '(#\: #\9))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
