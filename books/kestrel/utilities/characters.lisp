@@ -35,7 +35,7 @@
       (if (digit-char-p char) t nil)
       (eql char #\-)))
 
-(std::deflist alpha/digit/dash-char-list-p (x)
+(std::deflist alpha/digit/dash-char-listp (x)
   (alpha/digit/dash-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
