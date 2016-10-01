@@ -102,18 +102,28 @@
   (defmacro apply-term* (fn &rest terms)
     `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((fn (and (pseudo-functionp fn)))
-                              (terms pseudo-term-listp))
+(define apply-unary-to-terms ((fn pseudo-functionp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
   :short "Apply @('fn'), as a unary function, to each of @('terms'),
           obtaining a list of corresponding terms."
-  (if (endp terms)
-      nil
-    (cons (apply-term* fn (car terms))
-          (apply-unary-to-terms fn (cdr terms))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-functionp pseudo-lambdap))))
+  (reverse (apply-unary-to-terms-aux fn terms nil))
+  :verify-guards nil
+
+  :prepwork
+  ((define apply-unary-to-terms-aux ((fn pseudo-functionp)
+                                     (terms pseudo-term-listp)
+                                     (rev-result pseudo-term-listp))
+     :guard (or (symbolp fn)
+                (= 1 (len (lambda-formals fn))))
+     :returns (final-rev-result "A @(tsee pseudo-term-listp).")
+     (cond ((endp terms) rev-result)
+           (t (apply-unary-to-terms-aux fn
+                                        (cdr terms)
+                                        (cons (apply-term* fn (car terms))
+                                              rev-result))))
+     :verify-guards nil)))
 
 (define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
