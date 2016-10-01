@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/baselists" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,3 +38,29 @@
   (defrule car-of-nat-list-fix-iff-consp
     (iff (car (nat-list-fix x))
          (consp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection theorem-about-character-listp
+
+  :parents (theorems-about-non-kestrel-books)
+
+  :short "A theorem about @(tsee character-listp)."
+
+  (defrule character-listp-of-rev
+    (equal (character-listp (rev chars))
+           (character-listp (list-fix chars)))
+    :enable rev))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection theorem-about-character-listp
+
+  :parents (theorems-about-non-kestrel-books)
+
+  :short "A theorem about @(tsee unsigned-byte-listp)."
+
+  (defrule unsigned-byte-listp-of-rev
+    (equal (unsigned-byte-listp n (rev bytes))
+           (unsigned-byte-listp n (list-fix bytes)))
+    :enable rev))
