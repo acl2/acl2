@@ -38,6 +38,10 @@ all:
 STARTJOB ?= $(SHELL)
 ACL2 ?= acl2
 
+# For any extra VCS/NCVerilog flags
+VCS_FLAGS ?=
+NCV_FLAGS ?=
+
 CORE := ./cosim-core
 IMG_EXT ?= lx86cl64
 
@@ -71,6 +75,7 @@ FAILING_TEST_TARGETS := \
   for-nba/ok \
   task/ok \
   task2/ok \
+  case_wilds/ok \
   gates_bufif0/ok \
   gates_bufif1/ok \
   gates_notif0/ok \
@@ -121,7 +126,7 @@ print_tests :
 	 if [ -e no_ncv ]; then \
 		touch outputs.ncv.data; \
          else \
-		ncverilog -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\"; \
+		ncverilog $(NCV_FLAGS) -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\"; \
 	 fi
 	@ls -l $*/outputs.ncv.data
 
@@ -136,7 +141,7 @@ print_tests :
 	 if [ -e no_vcs ]; then \
 		touch outputs.vcs.data; \
 	 else \
-		 vcs -sverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.vcs.data\" && ./simv; \
+		 vcs $(VCS_FLAGS) -sverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.vcs.data\" && ./simv; \
 	 fi
 	@ls -l $*/outputs.vcs.data
 

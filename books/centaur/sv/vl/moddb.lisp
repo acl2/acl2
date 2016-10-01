@@ -263,6 +263,16 @@ current one.  We translate module @('a') as follows:</p>
 (local (in-theory (disable (tau-system))))
 
 
+(fty::defprod vl->sv-config
+  :short "Configuration settings for the VL module to SV module transformation"
+  ((simplify booleanp :default t
+             "Determines whether we apply svex rewriting to the results of compiling
+              procedural blocks.")
+   (verbosep booleanp :default nil
+             "Determines whether we verbosely report svex rewriting statistics.")))
+
+
+
 (define svex-svar-from-name ((name stringp))
   :returns (svar sv::svar-p)
   :prepwork ((local (in-theory (enable sv::name-p))))
@@ -3674,6 +3684,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     ((x vl-genblock-p)
      (elabindex  "outside of the scope")
      (modname sv::modname-p)
+     (config vl->sv-config-p)
      (modalist sv::modalist-p)
      (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
                            the lsb of the outer block's wire at which to alias
@@ -3710,7 +3721,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                     (append-without-guard modname (list :genblock x.name))))
          (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock :id x.name))
          ((wmv warnings mod modalist width elabindex)
-          (vl-genblob->svex-modules genblob elabindex modname modalist self-lsb))
+          (vl-genblob->svex-modules genblob elabindex modname config modalist self-lsb))
          (modalist (hons-acons modname mod modalist))
          (modinst (sv::make-modinst :modname modname
                                     :instname x.name))
@@ -3727,6 +3738,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (define vl-genblob->svex-modules ((x vl-genblob-p)
                                     (elabindex "outside of the genblob scope")
                                     (modname sv::modname-p)
+                                    (config vl->sv-config-p)
                                     (modalist sv::modalist-p)
                                     (interfacep "determines whether we create :self
                                                  wires aliased to the concatenation
@@ -3782,8 +3794,10 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          
          (modalist (hons-shrink-alist ifportmod-alist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist))))
 
+         ((vl->sv-config config))
          ((wmv warnings always-assigns)
-          (vl-alwayslist->svex x.alwayses ss scopes))
+          (vl-alwayslist->svex x.alwayses ss scopes
+                               :verbosep config.verbosep :simplify config.simplify))
          ((wmv warnings) (vl-initiallist-size-warnings x.initials ss scopes))
          ((wmv warnings) (vl-finallist-size-warnings x.finals ss scopes))
 
@@ -3791,7 +3805,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
          ((wmv warnings modalist gen-insts gen-wires gen-aliases gen-width elabindex)
           (vl-generates->svex-modules
-           x.generates elabindex modname modalist
+           x.generates elabindex modname config modalist
            (maybe-nat interfacep (+ vars-width insts-width ifports-width))))
 
          (totalwidth (+ vars-width insts-width ifports-width gen-width))
@@ -3812,6 +3826,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     ((x vl-genelementlist-p)
      (elabindex)
      (modname sv::modname-p)
+     (config vl->sv-config-p)
      (modalist sv::modalist-p)
      (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
                            the lsb of the outer block's wire at which to alias
@@ -3837,10 +3852,10 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil nil nil 0 elabindex))
          ((wmv warnings modalist insts2 wires2 aliases2 width2 elabindex)
           (vl-generates->svex-modules
-           (cdr x) elabindex modname modalist self-lsb))
+           (cdr x) elabindex modname config modalist self-lsb))
          ((wmv warnings modalist insts1 wires1 aliases1 width1 elabindex)
           (vl-generate->svex-modules
-           (car x) elabindex modname modalist (and self-lsb (+ self-lsb width2)))))
+           (car x) elabindex modname config modalist (and self-lsb (+ self-lsb width2)))))
       (mv warnings modalist
           (append-without-guard insts1 insts2)
           (append-without-guard wires1 wires2)
@@ -3853,6 +3868,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     ((x vl-genelement-p)
      (elabindex)
      (modname sv::modname-p)
+     (config vl->sv-config-p)
      (modalist sv::modalist-p)
      (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
                            the lsb of the outer block's wire at which to alias
@@ -3877,7 +3893,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          (x (vl-genelement-fix x)))
       (vl-genelement-case x
         :vl-genbegin
-        (vl-genblock->svex-modules x.block elabindex modname modalist self-lsb)
+        (vl-genblock->svex-modules x.block elabindex modname config modalist self-lsb)
 
         :vl-genarray
         (b* ((modname (sv::modname-fix modname))
@@ -3895,7 +3911,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
              (elabindex (vl-elabindex-push (make-vl-genblob :scopetype :vl-genarray
                                                             :id x.name)))
              ((wmv warnings modalist block-insts block-wires block-aliases block-width elabindex)
-              (vl-genblocks->svex-modules x.blocks elabindex modname modalist self-lsb))
+              (vl-genblocks->svex-modules x.blocks elabindex modname config modalist self-lsb))
              (arraymod (sv::make-module :insts block-insts
                                         :wires block-wires
                                         :aliaspairs block-aliases))
@@ -3928,6 +3944,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     ((x vl-genblocklist-p)
      (elabindex)
      (modname sv::modname-p)
+     (config vl->sv-config-p)
      (modalist sv::modalist-p)
      (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
                            the lsb of the outer block's wire at which to alias
@@ -3951,9 +3968,9 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          (self-lsb (maybe-natp-fix self-lsb))
          ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil nil nil 0 elabindex))
          ((wmv warnings modalist insts2 wires2 aliases2 width2 elabindex)
-          (vl-genblocks->svex-modules (cdr x) elabindex modname modalist self-lsb))
+          (vl-genblocks->svex-modules (cdr x) elabindex modname config modalist self-lsb))
          ((wmv warnings modalist insts1 wires1 aliases1 width1 elabindex)
-          (vl-genblock->svex-modules (car x) elabindex modname modalist
+          (vl-genblock->svex-modules (car x) elabindex modname config modalist
                                      (and self-lsb (+ self-lsb width2)))))
       (mv warnings modalist
           (append-without-guard insts1 insts2)
@@ -3979,6 +3996,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
 (define vl-module->svex-module ((name stringp)
                                 (elabindex "global scope")
+                                (config vl->sv-config-p)
                                 (modalist sv::modalist-p))
   :short "Translate a VL module into an svex module, adding any auxiliary modules
           necessary."
@@ -4011,13 +4029,14 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
        ((vl-module x) x)
        (genblob (vl-module->genblob x))
        ((wmv warnings mod modalist ?width elabindex)
-        (vl-genblob->svex-modules genblob elabindex x.name modalist nil)))
+        (vl-genblob->svex-modules genblob elabindex x.name config modalist nil)))
     (mv warnings (hons-acons x.name mod modalist) elabindex)))
 
 
 (define vl-modulelist->svex-modalist
   ((x vl-modulelist-p)
    (elabindex "global scope")
+   (config vl->sv-config-p)
    (modalist sv::modalist-p))
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -4030,10 +4049,10 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
   (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-module->name (car x)))
        ((mv warnings modalist elabindex)
-        (vl-module->svex-module name elabindex modalist))
+        (vl-module->svex-module name elabindex config modalist))
        
        ((mv reportcard modalist elabindex)
-        (vl-modulelist->svex-modalist (cdr x) elabindex modalist)))
+        (vl-modulelist->svex-modalist (cdr x) elabindex config modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)
@@ -4043,6 +4062,7 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
 
 (define vl-interface->svex-module ((name stringp)
                                    (elabindex "global scope")
+                                   (config vl->sv-config-p)
                                    (modalist sv::modalist-p))
   :returns (mv (warnings vl-warninglist-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -4075,7 +4095,7 @@ the concatenation of all its other declared wires.</p>"
        ((vl-interface x) x)
        (genblob (vl-interface->genblob x))
        ((wmv warnings mod modalist ?width elabindex)
-        (vl-genblob->svex-modules genblob elabindex x.name modalist t)))
+        (vl-genblob->svex-modules genblob elabindex x.name config modalist t)))
     (mv warnings
         (hons-acons (sv::modname-fix name) mod modalist)
         elabindex)))
@@ -4083,6 +4103,7 @@ the concatenation of all its other declared wires.</p>"
 (define vl-interfacelist->svex-modalist
   ((x vl-interfacelist-p)
    (elabindex "global scope")
+   (config vl->sv-config-p)
    (modalist sv::modalist-p))
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -4095,9 +4116,9 @@ the concatenation of all its other declared wires.</p>"
                (new-elabindex))
   (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-interface->name (car x)))
-       ((mv warnings modalist elabindex) (vl-interface->svex-module name elabindex modalist))
+       ((mv warnings modalist elabindex) (vl-interface->svex-module name elabindex config modalist))
 
-       ((mv reportcard modalist elabindex) (vl-interfacelist->svex-modalist (cdr x) elabindex modalist)))
+       ((mv reportcard modalist elabindex) (vl-interfacelist->svex-modalist (cdr x) elabindex config modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)
@@ -4105,7 +4126,8 @@ the concatenation of all its other declared wires.</p>"
         elabindex)))
 
 
-(define vl-design->svex-modalist ((x vl-design-p))
+(define vl-design->svex-modalist ((x vl-design-p)
+                                  &key ((config vl->sv-config-p) '(make-vl->sv-config)))
   :parents (vl-design->svex-design)
   :short "Translate a simplified VL design into an SVEX modalist."
   :long "<p>This expects the input to be a VL modulelist that is
@@ -4122,8 +4144,8 @@ this translation.</p>"
   (b* (((vl-design x) (vl-design-fix x))
        ((local-stobjs elabindex) (mv reportcard modalist elabindex))
        (elabindex (vl-elabindex-init x))
-       ((mv reportcard1 modalist elabindex) (vl-modulelist->svex-modalist x.mods elabindex nil))
-       ((mv reportcard2 modalist elabindex) (vl-interfacelist->svex-modalist x.interfaces elabindex modalist))
+       ((mv reportcard1 modalist elabindex) (vl-modulelist->svex-modalist x.mods elabindex config nil))
+       ((mv reportcard2 modalist elabindex) (vl-interfacelist->svex-modalist x.interfaces elabindex config modalist))
        (reportcard (vl-clean-reportcard (append-without-guard reportcard1 reportcard2))))
     (vl-scopestacks-free)
     (mv reportcard modalist elabindex)))

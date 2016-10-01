@@ -1447,14 +1447,23 @@ special: $(BOOKS_SPECIAL_OUT)
 
 # VL Toolkit
 
-.PHONY: vl vl2014 vl_linttest sv_failtest
+.PHONY: vl vl2014 vl_linttest sv_failtest sv_cosims vlfull
+
+vl2014: centaur/vl2014/bin/vl2014
 
 vl: centaur/vl/bin/vl \
     centaur/sv/cosims/cosim-core \
     vl_linttest \
     sv_failtest
 
-vl2014: centaur/vl2014/bin/vl2014
+# We don't make the sv cosims as part of "vl", because it requires commercial
+# Verilog simulators that many ACL2 users may not have.
+
+vlfull: vl sv_cosims
+
+sv_cosims: centaur/sv/cosims/cosim-core
+	@echo "Running Passing SV Cosims."
+	@cd centaur/sv/cosims; $(MAKE) passing
 
 centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
 	@echo "Making VL Verilog Toolkit, 2014 Edition"

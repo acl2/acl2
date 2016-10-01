@@ -110,6 +110,7 @@ discussion.</p>
 quite underspecified, and we have basically tried to mimic the behavior of
 Verilog-XL and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
 
+<p>We also support @('`__FILE__') and @('`__LINE__') directives.</p>
 
 <h4>Ignored Directives</h4>
 
@@ -120,6 +121,8 @@ Verilog-XL and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
  <li>@('`endcelldefine')</li>
  <li>@('`resetall')</li>
  <li>@('`timescale')</li>
+ <li>@('`protect')</li>
+ <li>@('`endprotect')</li>
 </ul>
 
 <p>When we say we ignore these directives, we mean that the preprocessor
@@ -144,6 +147,14 @@ delays, as long as differnet timescales are not being mixed together.  (Mixing
 timescales within a single design seems insane, and after all what is the
 \"default\" timescale supposed to be?  BOZO maybe add a warning if more than
 one kind of timescale is seen.</p>
+
+<p>We also ignore @('`protect') and @('`endprotect'), which seem to be old
+Verilog-XL directives for marking code that you want a tool to encrypt.  VL
+doesn't implement any support for decrypting protected code, but it can at
+least ignore these indications that you want to encrypt something.  Note that
+these directives are not documented in the SystemVerilog-2012 standard and are
+probably subsumed by the @('pragma') syntax described in Section 34, protected
+envelopes.</p>
 
 <p>As future work, there might be some benefit to somehow preserving these
 directives so that they can be printed out again in the simplified Verilog we
@@ -208,9 +219,17 @@ stuff.</p>")
    "unconnected_drive"
    "undef"
 
+   ;; SystemVerilog-2012 Compiler Directives
+   "__FILE__"
+   "__LINE__"
+   "undefineall"
+
+   ;; Legacy Verilog-XL nonsense
+   "protect"
+   "endprotect"
+
    ;; Extended VL Compiler Directives
    "centaur_define"
-
    )
 
   :short "List of Verilog-2005 compiler directives."
@@ -601,14 +620,14 @@ the defines table, and make the appropriate changes to the @('istack') and
        ((mv name & remainder) (vl-read-identifier remainder))
 
        ((unless name)
-        (mv (cw "Preprocessor error (~s0): found an `~s1 without an identifier.~%"
+        (mv (cw "Preprocessor error (~f0): found an `~s1 without an identifier.~%"
                 (vl-location-string loc) directive)
             istack activep echars))
 
        ((when (vl-is-compiler-directive-p name))
         ;; Special prohibition of compiler directive names in ifdefs, ifndefs,
         ;; etc.  See :xdoc preprocessor-ifdef-minutia for why.
-        (mv (cw "Preprocessor error (~s0): cowardly refusing to permit `s1 ~s2.~%"
+        (mv (cw "Preprocessor error (~f0): cowardly refusing to permit `s1 ~s2.~%"
                 (vl-location-string loc) directive name)
             istack activep echars))
 
@@ -627,13 +646,13 @@ the defines table, and make the appropriate changes to the @('istack') and
           (mv t new-istack new-activep remainder)))
 
        ((when (atom istack))
-        (mv (cw "Preprocessor error (~s0): found an `elsif, but no ifdef or ~
+        (mv (cw "Preprocessor error (~f0): found an `elsif, but no ifdef or ~
                  ifndef is open.~%"
                 (vl-location-string loc))
             istack activep echars))
 
        ((when (vl-iframe->already-saw-elsep (car istack)))
-        (mv (cw "Preprocessor error (~s0): found an `elsif, but we have ~
+        (mv (cw "Preprocessor error (~f0): found an `elsif, but we have ~
                  already seen `else.~%"
                 (vl-location-string loc))
             istack activep echars))
@@ -690,12 +709,12 @@ the defines table, and make the appropriate changes to the @('istack') and
       (new-activep booleanp :rule-classes :type-prescription
                    :hyp (booleanp activep)))
   (b* (((when (atom istack))
-        (mv (cw "Preprocessor error (~s0): found an `else, but no ~
+        (mv (cw "Preprocessor error (~f0): found an `else, but no ~
                   ifdef/ifndef is open.~%"
                 (vl-location-string loc))
             istack activep))
        ((when (vl-iframe->already-saw-elsep (car istack)))
-        (mv (cw "Preprocessor error (~s0): found an `else, but we have ~
+        (mv (cw "Preprocessor error (~f0): found an `else, but we have ~
                  already seen an `else.~%"
                 (vl-location-string loc))
             istack activep))
@@ -723,7 +742,7 @@ the defines table, and make the appropriate changes to the @('istack') and
       (new-activep booleanp :rule-classes :type-prescription
                    :hyp (booleanp activep)))
   (b* (((when (atom istack))
-        (mv (cw "Preprocessor error (~s0): found an `endif, but no ifdef/ifndef ~
+        (mv (cw "Preprocessor error (~f0): found an `endif, but no ifdef/ifndef ~
                  is open.~%"
                 (vl-location-string loc))
             istack activep))
@@ -808,16 +827,26 @@ non-arguments pieces.</p>"
              ;; and `endif.
              ((mv name prefix remainder) (vl-read-identifier (cdr echars)))
              ((unless name)
-              (mv (cw "Preprocessor error (~s0): no name following ~
+              (mv (cw "Preprocessor error (~f0): no name following ~
                        back-quote/grave character (`).~%"
                       (vl-location-string (vl-echar->loc (car echars))))
                   nil echars))
-             ((when (vl-is-compiler-directive-p name))
-              (mv (cw "Preprocessor error (~s0): we cowardly do not allow ~
-                       `~s1 in defines.~%"
-                      (vl-location-string (vl-echar->loc (car echars)))
-                      name)
-                  nil echars))
+
+             ;; [Jared] We historically prohibited the use of any compiler
+             ;; directives here.  But the really scary things are the ifdef
+             ;; related things; it seems pretty reasonable for a compiler macro
+             ;; to include other things like `celldefine, `timescale, and so
+             ;; on.  It would be nice to prohibit the ifdef stuff, but I found
+             ;; that to support certain code I needed it.  So, for now just
+             ;; emit warnings about them.
+             (- (and (vl-is-compiler-directive-p name)
+                     (member-equal (string-fix name)
+                                   '("ifdef" "ifndef" "else"
+                                     "elsif" "endif"))
+                     (cw "Preprocessor warning (~f0): using `~s1 in a `define ~
+                          seems scary.~%"
+                         (vl-location-string (vl-echar->loc (car echars)))
+                         name)))
              ((mv successp text remainder)
               (vl-read-until-end-of-define remainder config))
              ((unless successp)
@@ -840,50 +869,62 @@ non-arguments pieces.</p>"
 
        ((when (eql char1 #\\))
         (b* (((when (vl-matches-string-p "//" (cdr echars)))
-              (mv (cw "Preprocessor error (~s0): we cowardly do not allow ~
+              (mv (cw "Preprocessor error (~f0): we cowardly do not allow ~
                        '\//' in defines.~%"
                       (vl-location-string (vl-echar->loc (car echars))))
                   nil echars))
              ((when (vl-matches-string-p "/*" (cdr echars)))
-              (mv (cw "Preprocessor error (~s0): we cowardly do not allow ~
+              (mv (cw "Preprocessor error (~f0): we cowardly do not allow ~
                        '\/*' in defines.~%"
                       (vl-location-string (vl-echar->loc (car echars))))
                   nil echars))
              ((when (vl-matches-string-p *nls* (cdr echars)))
 
-; Line continuations.
+; A line continuation.
 ;
 ; Ugh.  I found a stupid bug here on 2011-04-26 because I was recurring on (cdr
 ; echars) instead of (cddr echars).
 ;
-; Then I did some more tests.  This is really horrible.  I apparently used to
-; think that the sequence \<newline> should just expand into a newline
-; character.  But that doesn't seem right: both Verilog-XL and NCVerilog say
-; that `goo is 3 in the following:
+; Then I did some more tests.  This is really horrible.  In particular, what
+; should \<newline> expand to?  Some plausible answers would include at least:
+; nothing, a newline, or a single space.
+;
+; Theory 1 (my first theory): the sequence \<newline> should just expand into a
+; newline character.
+;
+; Experiment to try to disprove Theory 2 (cosims/pp3): Verilog-XL, NCV, and VCS
+; say that `goo is 3 in the following:
 ;
 ;   |`define foo 1 \<newline>
 ;   |  + 2
-;   |`define `goo `foo
+;   |`define goo `foo
 ;
-; So it seems that \<newline> must expand into something other than a newline,
-; since otherwise the expansion of `foo would yield:
+; After seeing this, I originally thought that it disproved Theory 1, because
+; if \<newline> expanded to just a <newline>, then wouldn't that mean that
+; after expanding `foo the above would be equivalent to:
 ;
-;   |`define `goo 1
+;   |`define goo 1
 ;   |  + 2
 ;
-; And `goo would then be defined as 1.  So what should \<newline> expand to?  I
-; think plausible answers would be nothing, or a single space.  As another
-; experiment, I tried:
+; And wouldn't this mean that `goo would be defined as 1?  But I no longer
+; think this is the case.  Instead, I think all we're seeing here is that
+; `define expansion is lazy: `goo just expands to `foo, which then expands to 1
+; [whatever \<newline> expands to] + 2.  So the experiment is just not very
+; useful.  For further verification that `define is lazy, see cosims/pp5.
 ;
-;  |`define `test module\<newline>
-;  |test
+; New experiment (cosims/pp4) to try to rule out \<newline> expanding into
+; nothing at all.  Notice the left column here.
+;
+;  |`define test module\<newline>
+;  |mytest
 ;  |
 ;  |`test () ;
 ;  |endmodule
 ;
-; NCVerilog was happy with this, which suggests that \<newline> expands to at
-; least a space.  Verilog-XL said this was a syntax error, even when I added a
-; space before the module's name, e.g.,
+; NCVerilog and VCS both accept this, which suggests that \<newline> expands to
+; at least a space or newline or some other kind of whitespace.  Verilog-XL
+; said this was a syntax error, even when I added a space before the module's
+; name, e.g.,
 ;
 ;  |`define `test module\<newline>
 ;  | test
@@ -892,15 +933,38 @@ non-arguments pieces.</p>"
 ; seem like Verilog-XL tolerates \ continuations without a space before them,
 ; meaning that whether it expands to a space or nothing is irrelevant.
 ;
-; Well, I think expanding into a space seems pretty reasonable, so that's what
-; I'm going to do for now.
+; For many years, I had \<newline> expand into a space character and I thought
+; that was the right story.  But later, when I relaxed VL's restrictions that
+; `defines must not contain directives like `ifdef, `define, etc., I found that
+; this did not seem to be correct.  In particular, consider:
+;
+; Experiment 3 (cosims/pp2):
+;
+;    |`define HORRIBLE \<newline>
+;    |  `define FOO \<newline>
+;    |  1'b1<newline>
+;
+; If \<newline> expands to a space, then this should be equivalent to:
+;
+;    |`define HORRIBLE `define FOO 1'b1
+;
+; But both NCV and VCS seem to interpret this differently.  In particular,
+; constructs such as
+;
+;   generate
+;     if (`HORRIBLE) ...
+;   endgenerate
+;
+; Are tolerated, and afterward `FOO seems to be `define'd to be 1.  I think
+; the most plausible explanation is that \<newline> expands to a newline
+; character.
 
               (b* (((mv successp text remainder)
                     (vl-read-until-end-of-define (cddr echars) config))
                    ((unless successp)
                     (mv nil nil echars)))
                 (mv t
-                    (cons (change-vl-echar (second echars) :char #\Space) text)
+                    (cons (second echars) text)
                     remainder)))
 
              ;; Skip over escaped identifiers so we aren't confused by graves,
@@ -908,7 +972,7 @@ non-arguments pieces.</p>"
              ((mv name prefix remainder)
               (vl-read-escaped-identifier echars))
              ((unless name)
-              (mv (cw "Preprocessor error (~s0): stray backslash?~%"
+              (mv (cw "Preprocessor error (~f0): stray backslash?~%"
                       (vl-location-string (vl-echar->loc (car echars))))
                   nil echars))
              ((mv successp text remainder)
@@ -944,7 +1008,7 @@ non-arguments pieces.</p>"
                 ;; some commercial tools are actually allowing this and
                 ;; treating it as a line continuation.  So, now we'll just
                 ;; print a warning and do the same.
-                (cw "Preprocessor warning (~s0): single-line comment ends ~
+                (cw "Preprocessor warning (~f0): single-line comment ends ~
                      with a backslash.  Treating this as a line continuation.~%"
                     (vl-location-string (vl-echar->loc (car echars))))
                 ;; See the above case for handling line continuations.  I think
@@ -967,12 +1031,12 @@ non-arguments pieces.</p>"
           (b* (((mv successp prefix remainder)
                 (vl-read-through-literal "*/" (cddr echars)))
                ((unless successp)
-                (mv (cw "Preprocessor error (~s0): block comment is never ~
+                (mv (cw "Preprocessor error (~f0): block comment is never ~
                          closed.~%"
                         (vl-location-string (vl-echar->loc (car echars))))
                     nil echars))
                ((when (member #\Newline (vl-echarlist->chars prefix)))
-                (mv (cw "Preprocessor error (~s0): block comment inside a ~
+                (mv (cw "Preprocessor error (~f0): block comment inside a ~
                          define is not closed before end of line.~%"
                         (vl-location-string (vl-echar->loc (car echars))))
                     nil echars))
@@ -1040,14 +1104,14 @@ non-arguments pieces.</p>"
       (body     vl-echarlist-p "Remaining characters after the closing paren."
                 :hyp (force (vl-echarlist-p text))))
   (b* (((when (atom text))
-        (mv (cw "Preprocessor error (~s0): `define arguments are not closed.~%"
+        (mv (cw "Preprocessor error (~f0): `define arguments are not closed.~%"
                 (vl-location-string starting-loc))
             nil nil))
        ;; This is a mess -- without a lexer we're always having to eat whitespace.
        ((mv ?ws rest) (vl-read-while-whitespace text))
        ((mv id rest)  (vl-read-simple-identifier rest))
        ((unless id)
-        (mv (cw "Preprocessor error (~s0): invalid `define argument name~%"
+        (mv (cw "Preprocessor error (~f0): invalid `define argument name~%"
                 (vl-location-string (vl-echar->loc (car text))))
             nil nil))
 
@@ -1055,7 +1119,7 @@ non-arguments pieces.</p>"
        ;; ;; Prohibit using keywords as arguments.  Of course, the valid keywords
        ;; ;; are governed by the Verilog edition... blaaah...
        ;; ((when (vl-keyword-lookup name1 (vl-lexstate->kwdtable (vl-lexstate-init config))))
-       ;;  (mv (cw "Preprocessor error (~s0): keyword ~s1 not permitted as `define argument~%"
+       ;;  (mv (cw "Preprocessor error (~f0): keyword ~s1 not permitted as `define argument~%"
        ;;          (vl-location-string (vl-echar->loc (car text)))
        ;;          name1)
        ;;      nil nil))
@@ -1073,7 +1137,7 @@ non-arguments pieces.</p>"
 
        ((unless (and (consp rest)
                      (eql (vl-echar->char (car rest)) #\,)))
-        (mv (cw "Preprocessor error (~s0): expected next `define argument or end of arguments.~%"
+        (mv (cw "Preprocessor error (~f0): expected next `define argument or end of arguments.~%"
                 (vl-location-string (if (consp rest)
                                         (vl-echar->loc (car rest))
                                       ;; Blah, not quite right, probably close enough to be useful
@@ -1136,12 +1200,12 @@ appropriately if @('activep') is set.</p>"
        ((mv name & remainder) (vl-read-identifier remainder))
 
        ((when (not name))
-        (mv (cw "Preprocessor error (~s0): found a `define without a name.~%"
+        (mv (cw "Preprocessor error (~f0): found a `define without a name.~%"
                 (vl-location-string loc))
             defines echars))
 
        ((when (vl-is-compiler-directive-p name))
-        (mv (cw "Preprocessor error (~s0): refusing to permit `define ~s1.~%"
+        (mv (cw "Preprocessor error (~f0): refusing to permit `define ~s1.~%"
                 (vl-location-string loc) name)
             defines echars))
 
@@ -1169,7 +1233,7 @@ appropriately if @('activep') is set.</p>"
 
        (formal-names (vl-define-formallist->names formals))
        ((unless (uniquep formal-names))
-        (mv (cw "Preprocessor error (~s0): `define ~s1 has repeats arguments ~&2."
+        (mv (cw "Preprocessor error (~f0): `define ~s1 has repeats arguments ~&2."
                 (vl-location-string loc) name (duplicated-members formal-names))
             defines echars))
 
@@ -1187,8 +1251,8 @@ appropriately if @('activep') is set.</p>"
                     ;; whitespace.
                     t))
               (cw "Preprocessor warning: redefining ~s0:~% ~
-                    - Was ~s1     // from ~s2~% ~
-                    - Now ~s3     // from ~s4~%"
+                    - Was ~s1     // from ~f2~% ~
+                    - Now ~s3     // from ~f4~%"
                   name
                   old-str
                   (vl-location-string (vl-define->loc prev-def))
@@ -1304,7 +1368,7 @@ there may well be mismatches left.</p>"
                  :hyp (force (vl-echarlist-p echars))))
   (b* (((when (atom echars))
         ;; Error because we expect to eventually find a closing paren.
-        (mv (cw "Preprocessor error (~s0): unexpected end of input while processing ~
+        (mv (cw "Preprocessor error (~f0): unexpected end of input while processing ~
                  arguments to `~s1." (vl-location-string loc) name)
             nil "" echars))
 
@@ -1317,7 +1381,7 @@ there may well be mismatches left.</p>"
         ;; it if we ever care.
         (b* (((mv str prefix remainder) (vl-read-string echars (vl-lexstate-init config)))
              ((unless str)
-              (mv (cw "Preprocessor error (~s0): bad string literal while processing ~
+              (mv (cw "Preprocessor error (~f0): bad string literal while processing ~
                        arguments to `~s1." (vl-location-string loc1) name)
                   nil "" echars))
              (acc (revappend prefix acc)))
@@ -1326,7 +1390,7 @@ there may well be mismatches left.</p>"
        ((when (eql char1 #\\))
         (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars))
              ((unless name)
-              (mv (cw "Preprocessor error (~s0): stray backslash while processing ~
+              (mv (cw "Preprocessor error (~f0): stray backslash while processing ~
                        arguments to `~s1." (vl-location-string loc1) name)
                   nil "" echars))
              (acc (revappend prefix acc)))
@@ -1339,7 +1403,7 @@ there may well be mismatches left.</p>"
               (b* (((mv successp ?prefix remainder)
                     (vl-read-until-literal *nls* (cddr echars)))
                    ((unless successp)
-                    (mv (cw "Preprocessor error (~s0): unexpected EOF while reading ~
+                    (mv (cw "Preprocessor error (~f0): unexpected EOF while reading ~
                              macro arguments to ~s1.~%" (vl-location-string loc1) name)
                         nil "" echars)))
                 ;; It might be nice to preserve the comment.  On the other
@@ -1351,7 +1415,7 @@ there may well be mismatches left.</p>"
               (b* (((mv successp ?prefix remainder)
                     (vl-read-through-literal "*/" (cddr echars)))
                    ((unless successp)
-                    (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
+                    (mv (cw "Preprocessor error (~f0): block comment is never closed.~%"
                             (vl-location-string (vl-echar->loc (car echars))))
                         nil "" echars)))
                 ;; As with single-line comments, we'll just drop the comment.
@@ -1382,7 +1446,7 @@ there may well be mismatches left.</p>"
              (matching-char (case char1 (#\) #\() (#\] #\[) (#\} #\{)))  ;; escape all the things
              ((unless (and (consp stk)
                            (eql (car stk) matching-char)))
-              (mv (cw "Preprocessor error (~s0): unbalanced ~s1 vs. ~s2 in arguments to `~s3."
+              (mv (cw "Preprocessor error (~f0): unbalanced ~s1 vs. ~s2 in arguments to `~s3."
                       (vl-location-string loc1)
                       (implode (list matching-char))
                       (implode (list char1))
@@ -1453,7 +1517,7 @@ there may well be mismatches left.</p>"
        ((vl-define-formal x1) (car x))
        (has-default-p (not (equal "" (str::trim x1.default))))
        ((unless has-default-p)
-        (cw "Preprocessor error (~s0): too few arguments to ~s1 (no ~
+        (cw "Preprocessor error (~f0): too few arguments to ~s1 (no ~
              default value for ~s2)."
             (vl-location-string loc) name x1.name)))
     (vl-check-remaining-formals-all-have-defaults (cdr x) name loc)))
@@ -1474,7 +1538,7 @@ there may well be mismatches left.</p>"
             ;; no more substitution to create.
             (mv t nil)
           ;; Ran out of formals but still have actuals?  No sir, that's not ok.
-          (mv (cw "Preprocessor error (~s0): too many arguments given to ~s1."
+          (mv (cw "Preprocessor error (~f0): too many arguments given to ~s1."
                   (vl-location-string loc) name)
               nil)))
 
@@ -1602,7 +1666,7 @@ sensible.</p>"
              ;;    ((mv name prefix remainder) (vl-read-identifier (cdr body)))
              ;;    ((unless name)
              ;;     ;; Should be ruled out by vl-read-until-end-of-define
-             ;;     (mv (cw "Preprocessor error (~s0): bad grave character in macro ~
+             ;;     (mv (cw "Preprocessor error (~f0): bad grave character in macro ~
              ;;              text for ~s1.~%"
              ;;             (vl-location-string loc) name)
              ;;         acc))
@@ -1617,7 +1681,7 @@ sensible.</p>"
               (vl-read-string body (vl-lexstate-init config)))
              ((unless string)
               ;; Should be ruled out by vl-read-until-end-of-define
-              (mv (cw "Preprocessor error (~s0): bad string literal in macro ~
+              (mv (cw "Preprocessor error (~f0): bad string literal in macro ~
                        text for ~s1.~%"
                       (vl-location-string loc) name)
                   acc))
@@ -1644,7 +1708,7 @@ sensible.</p>"
        ;;       (vl-read-escaped-identifier body))
        ;;      ((unless name)
        ;;       ;; Should be ruled out by vl-read-until-end-of-define.
-       ;;       (mv (cw "Preprocessor error (~s0): stray backslash in macro ~
+       ;;       (mv (cw "Preprocessor error (~f0): stray backslash in macro ~
        ;;                text for ~s1.~%"
        ;;               (vl-location-string loc) name)
        ;;           acc))
@@ -1691,7 +1755,7 @@ sensible.</p>"
         (b* (((when (vl-matches-string-p "//" body))
               ;; Single-line comments are eaten by vl-read-until-end-of-define,
               ;; so we shouldn't need to deal with them here.
-              (mv (cw "Preprocessor error (~s0): //-style comment in macro ~
+              (mv (cw "Preprocessor error (~f0): //-style comment in macro ~
                        text for ~s1? Jared thinks this shouldn't happen.~%"
                       (vl-location-string loc) name)
                   acc))
@@ -1701,7 +1765,7 @@ sensible.</p>"
                     (vl-read-through-literal "*/" (cddr body)))
                    ((unless successp)
                     ;; Should be ruled out by vl-read-until-end-of-define.
-                    (mv (cw "Preprocessor error (~s0): unterminated /* ... */ ~
+                    (mv (cw "Preprocessor error (~f0): unterminated /* ... */ ~
                              style comment in macro text for ~s1?  Jared ~
                              thinks this shouldn't happen."
                             (vl-location-string loc) name)
@@ -1789,7 +1853,7 @@ foo's expansion occur at 37:5.</p>"
 
   (b* ((lookup (vl-find-define name defines))
        ((unless lookup)
-        (mv (cw "Preprocessor error (~s0): `~s1 is not defined.~%"
+        (mv (cw "Preprocessor error (~f0): `~s1 is not defined.~%"
                 (vl-location-string loc) name)
             echars))
 
@@ -1798,10 +1862,29 @@ foo's expansion occur at 37:5.</p>"
 
        ((when (atom lookup.formals))
         ;; No arguments to process, just insert the body of the macro.
-        (b* ((body-str    lookup.body)
-             (body-echars (vl-echarlist-from-str body-str))
-             (body-fixed  (vl-change-echarlist-locations body-echars loc)))
-          (mv t (append body-fixed echars))))
+        ;;
+        ;; Historically we just got the body and dumped it into the file after
+        ;; changing its locations, like this:
+        ;;
+        ;; (b* ((body-str    lookup.body)
+        ;;      (body-echars (vl-echarlist-from-str body-str))
+        ;;      (body-fixed  (vl-change-echarlist-locations body-echars loc)))
+        ;;   (mv t (append body-fixed echars))))
+        ;;
+        ;; That turns out to be not quite correct in the case of goofy macros
+        ;; such as:  `define FOO `"foo`", because we end up just dumping the
+        ;; `" directly into the body instead of expanding it.  So even though
+        ;; there are no arguments, we now call substitute-into-macro-text.
+        (b* (((mv okp rev-replacement-body)
+              (vl-substitute-into-macro-text (vl-change-echarlist-locations
+                                              (vl-echarlist-from-str lookup.body)
+                                              loc)
+                                             nil ;; no formals->actual substitution
+                                             name loc config nil))
+             ((unless okp) (mv nil echars)) ;; Already printed error
+             (replacement-body (rev rev-replacement-body))
+             (echars (append replacement-body echars)))
+          (mv t echars)))
 
        ;; The macro has arguments.
        ;;
@@ -1818,7 +1901,7 @@ foo's expansion occur at 37:5.</p>"
        ((mv ?ws echars) (vl-read-while-whitespace echars))
        ((unless (and (consp echars)
                      (eql (vl-echar->char (car echars)) #\()))
-        (mv (cw "Preprocessor error (~s0): `~s1 requires arguments.~%"
+        (mv (cw "Preprocessor error (~f0): `~s1 requires arguments.~%"
                 (vl-location-string loc) name)
             echars))
        (echars (cdr echars)) ;; Eat leading '(' character
@@ -1834,7 +1917,9 @@ foo's expansion occur at 37:5.</p>"
        ((unless successp) (mv nil echars)) ;; Already printed error
 
        ((mv okp rev-replacement-body)
-        (vl-substitute-into-macro-text (vl-echarlist-from-str lookup.body)
+        (vl-substitute-into-macro-text (vl-change-echarlist-locations
+                                        (vl-echarlist-from-str lookup.body)
+                                        loc)
                                        subst name loc config nil))
        ((unless okp) (mv nil echars)) ;; Already printed error
 
@@ -1864,12 +1949,12 @@ update the defines table appropriately.</p>"
        ((mv name & remainder) (vl-read-identifier remainder))
 
        ((when (not name))
-        (mv (cw "Preprocessor error (~s0): found an `undef without a name.~%"
+        (mv (cw "Preprocessor error (~f0): found an `undef without a name.~%"
                 (vl-location-string loc))
             defines echars))
 
        ((when (vl-is-compiler-directive-p name))
-        (mv (cw "Preprocessor error (~s0): refusing to permit `undef ~s1.~%"
+        (mv (cw "Preprocessor error (~f0): refusing to permit `undef ~s1.~%"
                 (vl-location-string loc) name)
             defines echars))
 
@@ -1880,7 +1965,7 @@ update the defines table appropriately.</p>"
        (lookup (vl-find-define name defines))
 
        (- (if (not lookup)
-              (cw "Preprocessor warning (~s0): found `undef ~s1, but ~s1 is ~
+              (cw "Preprocessor warning (~f0): found `undef ~s1, but ~s1 is ~
                    not defined.~%"
                   (vl-location-string loc)
                   name)
@@ -1907,38 +1992,6 @@ update the defines table appropriately.</p>"
                 (acl2-count echars)))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force))))))
-
-
-
-(define vl-read-timescale
-  ((echars vl-echarlist-p))
-  :returns (mv prefix remainder)
-
-; timescale_compiler_directive ::= `timescale time_unit / time_precision
-;
-; The time_unit seems to be 1, 10, or 100.
-; and time_precision seems to be s, ms, us, ns, ps, or fs.
-
-  (b* (((mv ws1 remainder)     (vl-read-while-whitespace echars))
-       ((mv tu-val remainder)  (vl-read-some-literal (list "100" "10" "1") remainder))
-       ((mv ws2 remainder)     (vl-read-while-whitespace remainder))
-       ((mv tu-type remainder) (vl-read-some-literal (list "fs" "ps" "ns" "us" "ms" "s") remainder))
-       ((mv ws3 remainder)     (vl-read-while-whitespace remainder))
-       ((mv div remainder)     (vl-read-literal "/" remainder))
-       ((mv ws4 remainder)     (vl-read-while-whitespace remainder))
-       ((mv tp-val remainder)  (vl-read-some-literal (list "100" "10" "1") remainder))
-       ((mv ws5 remainder)     (vl-read-while-whitespace remainder))
-       ((mv tp-type remainder) (vl-read-some-literal (list "fs" "ps" "ns" "us" "ms" "s") remainder)))
-    (if (and tu-val tu-type div tp-val tp-type)
-        (mv (append ws1 tu-val ws2 tu-type ws3 div ws4 tp-val ws5 tp-type)
-            remainder)
-      (mv (cw "Preprocessor error (~s0): invalid `timescale directive.~%"
-              (if (consp echars)
-                  (vl-location-string (vl-echar->loc (car echars)))
-                "at end of file"))
-          echars)))
-  ///
-  (def-prefix/remainder-thms vl-read-timescale))
 
 
 
@@ -2033,7 +2086,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
           (mv nil nil remainder)))
 
        ((unless filename)
-        (mv (cw "Preprocessor error (~s0): invalid `include directive.~%"
+        (mv (cw "Preprocessor error (~f0): invalid `include directive.~%"
                 (if (consp echars)
                     (vl-location-string (vl-echar->loc (car echars)))
                   "at end of file"))
@@ -2044,6 +2097,13 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
     :formals (echars config)
     :prefix-n 1
     :remainder-n 2))
+
+(define vl-filename-to-string-literal ((filename stringp))
+  :returns (string stringp :rule-classes :type-prescription)
+  (implode (append (vl-maybe-escape-string
+                    filename 0 (length filename)
+                    (list #\"))
+                   (list #\"))))
 
 (define vl-preprocess-loop
   :short "Main loop for the preprocessor."
@@ -2074,7 +2134,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
        (echar1 (car echars))
        (char1  (vl-echar->char echar1))
        ((when (zp n))
-        (mv (cw "Preprocessor error (~s0): ran out of steps. Macro expansion ~
+        (mv (cw "Preprocessor error (~f0): ran out of steps. Macro expansion ~
                  or file inclusion loop?")
             defines filemap acc echars state))
 
@@ -2097,7 +2157,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         ;; Start of an escaped identifier
         (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars))
              ((unless name)
-              (mv (cw "Preprocessor error (~s0): stray backslash?~%"
+              (mv (cw "Preprocessor error (~f0): stray backslash?~%"
                       (vl-location-string (vl-echar->loc echar1)))
                   defines filemap acc echars state)))
           (vl-preprocess-loop remainder defines filemap istack activep
@@ -2190,7 +2250,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (b* (((mv successp prefix remainder)
               (vl-read-through-literal "*/" (cddr echars)))
              ((unless successp)
-              (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
+              (mv (cw "Preprocessor error (~f0): block comment is never closed.~%"
                       (vl-location-string (vl-echar->loc echar1)))
                   defines filemap acc echars state))
 
@@ -2238,7 +2298,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (vl-read-identifier remainder))
 
        ((when (not directive))
-        (mv (cw "Preprocessor error (~s0): stray ` character.~%"
+        (mv (cw "Preprocessor error (~f0): stray ` character.~%"
                 (vl-location-string (vl-echar->loc echar1)))
             defines filemap acc echars state))
 
@@ -2266,7 +2326,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
        ((when (eql (vl-echar->char (car prefix)) #\\))
         ;; We explicitly disallow `\define, `\ifdef, etc.
-        (mv (cw "Preprocessor error (~s0): we do not allow the use of \~s1.~%"
+        (mv (cw "Preprocessor error (~f0): we do not allow the use of \~s1.~%"
                 (vl-location-string (vl-echar->loc echar1)) directive)
             defines filemap acc echars state))
 
@@ -2389,7 +2449,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                                   (- n 1) ;; makes termination easy
                                   config state))
              ((unless okp)
-              (mv (cw "Preprocessor error (~s0): failed to preprocess rest of ~
+              (mv (cw "Preprocessor error (~f0): failed to preprocess rest of ~
                        `include line: ~s1.~%"
                       (vl-location-string (vl-echar->loc echar1))
                       include-line)
@@ -2403,7 +2463,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              ((mv realfile state)
               (vl-find-file filename (vl-loadconfig->include-dirs config) state))
              ((unless realfile)
-              (mv (cw "Preprocessor error (~s0): unable to find ~s1.  The ~
+              (mv (cw "Preprocessor error (~f0): unable to find ~s1.  The ~
                        include directories are ~&2."
                       (vl-location-string (vl-echar->loc echar1))
                       filename
@@ -2412,11 +2472,11 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
              ((mv okp contents state)
               (time$ (vl-read-file (string-fix realfile))
-                     :msg "; ~s0: read: ~st sec, ~sa bytes~%"
+                     :msg "; ~f0: read: ~st sec, ~sa bytes~%"
                      :args (list realfile)
                      :mintime (vl-loadconfig->mintime config)))
              ((unless okp)
-              (mv (cw "Preprocessor error (~s0): unable to read ~s1."
+              (mv (cw "Preprocessor error (~f0): unable to read ~s1."
                       (vl-location-string (vl-echar->loc echar1)) realfile)
                   defines filemap acc echars state))
 
@@ -2434,21 +2494,60 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
            acc (- n 1) config state)))
 
        ((when (equal directive "timescale"))
-        (b* (((mv prefix remainder) (vl-read-timescale remainder))
-             ((unless prefix)
-              (mv nil defines filemap acc echars state)))
-          ;; BOZO maybe add a note that we are ignoring timescale?
+        ;; [Jared] historically, our preprocessor recognized constructs such as
+        ;; `timescale 1ns/1ps and just threw them away.  But I later found that
+        ;; designers were using constructs such as `timescale `foo, which meant
+        ;; that I needed to somehow expand the `foo before trying to process
+        ;; the timescale part.  After considering how to handle this, I think
+        ;; the nicest approach is to move the job of ignoring `timescale from
+        ;; the preprocessor to the lexer.  The preprocessor can just leave the
+        ;; `timescale directives in, and the lexer can remove them after any
+        ;; other `define stuff within them has been expanded.
+        (vl-preprocess-loop remainder defines filemap istack activep
+                            (if activep
+                                (revappend prefix (cons echar1 acc))
+                              acc)
+                            n config state))
+
+       ((when (equal directive "__FILE__"))
+        (b* (((unless activep)
+              (vl-preprocess-loop remainder defines filemap istack activep
+                                  acc n config state))
+             ((vl-location loc) (vl-echar->loc echar1))
+             (quoted-escaped-filename-str
+              (vl-filename-to-string-literal loc.filename))
+             (quoted-escaped-filename-echars
+              (vl-change-echarlist-locations
+               (vl-echarlist-from-str quoted-escaped-filename-str)
+               loc)))
           (vl-preprocess-loop remainder defines filemap istack activep
-                              acc n config state)))
+                              (revappend quoted-escaped-filename-echars
+                                         acc)
+                              n config state)))
+
+       ((when (equal directive "__LINE__"))
+        (b* (((unless activep)
+              (vl-preprocess-loop remainder defines filemap istack activep
+                                  acc n config state))
+             ((vl-location loc) (vl-echar->loc echar1))
+             (line-str (natstr loc.line))
+             (line-echars (vl-change-echarlist-locations
+                           (vl-echarlist-from-str line-str)
+                           loc)))
+          (vl-preprocess-loop remainder defines filemap istack activep
+                              (revappend line-echars acc)
+                              n config state)))
 
        ((when (or (equal directive "celldefine")
                   (equal directive "endcelldefine")
-                  (equal directive "resetall")))
+                  (equal directive "resetall")
+                  (equal directive "protect")
+                  (equal directive "endprotect")))
         ;; BOZO maybe add a note that we are ignoring these directives?
         (vl-preprocess-loop remainder defines filemap istack activep
                             acc n config state)))
 
-    (mv (cw "Preprocessor error (~s0): we do not support ~s1.~%"
+    (mv (cw "Preprocessor error (~f0): we do not support ~s1.~%"
             (vl-location-string (vl-echar->loc echar1)) directive)
         defines filemap acc echars state))
 

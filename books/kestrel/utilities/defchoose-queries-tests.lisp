@@ -63,35 +63,35 @@
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c)))
- (assert! (equal (defchoose-bound-vars 'f (w state)) '(x))))
+ (assert-equal (defchoose-bound-vars 'f (w state)) '(x)))
 
 (must-succeed*
  (defchoose f (x) (a b c)
    (equal x (list a b c)))
- (assert! (equal (defchoose-bound-vars 'f (w state)) '(x))))
+ (assert-equal (defchoose-bound-vars 'f (w state)) '(x)))
 
 (must-succeed*
  (defchoose f (x y) (a b c)
    (equal (cons x y) (list a b c)))
- (assert! (equal (defchoose-bound-vars 'f (w state)) '(x y))))
+ (assert-equal (defchoose-bound-vars 'f (w state)) '(x y)))
 
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-bound-vars 'f (w state)) '(x))))
+ (assert-equal (defchoose-bound-vars 'f (w state)) '(x)))
 
 (must-succeed*
  (defchoose f (x) (a b c)
    (equal x (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-bound-vars 'f (w state)) '(x))))
+ (assert-equal (defchoose-bound-vars 'f (w state)) '(x)))
 
 (must-succeed*
  (defchoose f (x y) (a b c)
    (equal (cons x y) (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-bound-vars 'f (w state)) '(x y))))
+ (assert-equal (defchoose-bound-vars 'f (w state)) '(x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -122,53 +122,53 @@
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c)))
- (assert! (equal (defchoose-untrans-body 'f (w state))
-                 '(equal x (list a b c)))))
+ (assert-equal (defchoose-untrans-body 'f (w state))
+               '(equal x (list a b c))))
 
 (must-succeed*
  (defchoose f (x y) (a b c)
    (equal (cons x y) (list a b c)))
- (assert! (equal (defchoose-untrans-body 'f (w state))
-                 '(equal (cons x y) (list a b c)))))
+ (assert-equal (defchoose-untrans-body 'f (w state))
+               '(equal (cons x y) (list a b c))))
 
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-untrans-body 'f (w state))
-                 '(equal x (list a b c)))))
+ (assert-equal (defchoose-untrans-body 'f (w state))
+               '(equal x (list a b c))))
 
 (must-succeed*
  (defchoose f (x y) (a b c)
    (equal (cons x y) (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-untrans-body 'f (w state))
-                 '(equal (cons x y) (list a b c)))))
+ (assert-equal (defchoose-untrans-body 'f (w state))
+               '(equal (cons x y) (list a b c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c)))
- (assert! (equal (defchoose-body 'f (w state))
-                 '(equal x (cons a (cons b (cons c 'nil)))))))
+ (assert-equal (defchoose-body 'f (w state))
+               '(equal x (cons a (cons b (cons c 'nil))))))
 
 (must-succeed*
  (defchoose f (x y) (a b c)
    (equal (cons x y) (list a b c)))
- (assert! (equal (defchoose-body 'f (w state))
-                 '(equal (cons x y) (cons a (cons b (cons c 'nil)))))))
+ (assert-equal (defchoose-body 'f (w state))
+               '(equal (cons x y) (cons a (cons b (cons c 'nil))))))
 
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-body 'f (w state))
-                 '(equal x (cons a (cons b (cons c 'nil)))))))
+ (assert-equal (defchoose-body 'f (w state))
+               '(equal x (cons a (cons b (cons c 'nil))))))
 
 (must-succeed*
  (defchoose f (x y) (a b c)
    (equal (cons x y) (list a b c))
    :strengthen t)
- (assert! (equal (defchoose-body 'f (w state))
-                 '(equal (cons x y) (cons a (cons b (cons c 'nil)))))))
+ (assert-equal (defchoose-body 'f (w state))
+               '(equal (cons x y) (cons a (cons b (cons c 'nil))))))

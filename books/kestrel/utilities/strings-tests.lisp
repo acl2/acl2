@@ -29,16 +29,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (nats=>string nil)
-                ""))
+(assert-equal (nats=>string nil) "")
 
-(assert! (equal (nats=>string '(72 32 109))
-                "H m"))
+(assert-equal (nats=>string '(72 32 109)) "H m")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (string=>nats "")
-                nil))
+(assert-equal (string=>nats "") nil)
 
-(assert! (equal (string=>nats "#if")
-                '(35 105 102)))
+(assert-equal (string=>nats "#if") '(35 105 102))

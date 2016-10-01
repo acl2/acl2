@@ -3098,3 +3098,12 @@ bits of @('foo'):</p>
   (defret vars-of-make-simple-lhs
     (equal (lhs-vars lhs) (list (svar-fix var)))
     :hints(("Goal" :in-theory (enable lhatom-vars)))))
+
+;; This is used in vl/expr.lisp as well as now svstmt.lisp, so it needs to be in a
+;; book that both include...
+(defconst *svex-longest-static-prefix-var*
+  :svex-longest-static-prefix)
+
+
+
+

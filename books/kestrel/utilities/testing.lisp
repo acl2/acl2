@@ -1,4 +1,4 @@
-; Testing Facilities
+; Testing Utilities
 ;
 ; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides utilities for building tests.
+; This file provides utilities for testing.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,7 +23,7 @@
 
 (defxdoc testing-utilities
   :parents (kestrel-utilities)
-  :short "Utilities for building tests.")
+  :short "Utilities for testing.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,7 +107,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-local
-  :parents (testing-utilities errors)
+  :parents (testing-utilities errors must-fail)
   :short "A @(see local) variant of @(tsee must-fail)."
   :long
   "<p>
@@ -117,3 +117,12 @@
    @(def must-fail-local)"
   (defmacro must-fail-local (&rest args)
     `(local (must-fail ,@args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection assert-equal
+  :parents (testing-utilities errors)
+  :short "Abbreviation for calling @(tsee assert-event) on an equality."
+  :long "@(def assert-equal)"
+  (defmacro assert-equal (x y)
+    `(assert-event (equal ,x ,y))))

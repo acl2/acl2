@@ -659,7 +659,8 @@ shown.</p>"
        ;;                   (len lost) lost))
        ;;           design))
 
-       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist design)))
+       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist
+                                              design :config (make-vl->sv-config :simplify nil))))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
@@ -714,7 +715,8 @@ shown.</p>"
      :search-path   config.search-path
      :search-exts   config.search-exts
      :include-dirs  config.include-dirs
-     :defines       (vl-make-initial-defines config.defines))))
+     :defines       (vl-make-initial-defines config.defines)
+     :debugp        config.debug)))
 
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
   :returns (mv (res vl-lintresult-p)
@@ -1194,6 +1196,11 @@ wide addition instead of a 10-bit wide addition.")))
 
        (- (acl2::set-max-mem ;; newline to appease cert.pl
            (* (expt 2 30) config.mem)))
+
+       ;; Arrange to eagerly GC when we expect it to be beneficial when
+       ;; we're past 60% of the desired memory ceiling.
+       (- (set-vl-gc-threshold (floor (* 6 (expt 2 30) config.mem) 10)))
+       (- (set-vl-gc-baseline))
 
        ((when config.help)
         (vl-cw-ps-seq (vl-print *vl-lint-help*))

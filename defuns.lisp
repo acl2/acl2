@@ -7033,9 +7033,7 @@
                 acc))))))
 
 (defun bogus-irrelevants-alist (irrelevant-slots irrelevants-alist)
-  (cond ((null irrelevant-slots) ; common case
-         nil)
-        ((null irrelevants-alist) ; common case
+  (cond ((null irrelevants-alist) ; optimization for common case
          irrelevant-slots)
         (t (bogus-irrelevants-alist1 irrelevant-slots irrelevants-alist nil))))
 

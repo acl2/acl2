@@ -65,3 +65,7 @@
  (must-be-redundant (defun f (x) x))
  (defthm th (acl2-numberp (+ x y)))
  (must-be-redundant (defthm th (acl2-numberp (+ x y)))))
+
+(must-succeed*
+ (defun f (x) (cons x x))
+ (assert-equal (f 3) '(3 . 3)))

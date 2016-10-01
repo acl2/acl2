@@ -2519,7 +2519,10 @@ created when we process their packages, etc.</p>"
 ;; nats-from that produces a sparse bitset.  That's fine but might take an hour
 ;; or two of work.
 
-(define vl-lucid-range->bits ((x vl-range-p))
+(defconst *vl-lucid-too-many-bits* (expt 2 20))
+
+(define vl-lucid-range->bits ((x vl-range-p)
+                              (ctx any-p))
   :guard (vl-range-resolved-p x)
   :returns (bits (and (integer-listp bits)
                       (setp bits)))
@@ -2527,7 +2530,11 @@ created when we process their packages, etc.</p>"
        (msb (vl-resolved->val x.msb))
        (lsb (vl-resolved->val x.lsb))
        (min (min msb lsb))
-       (max (max msb lsb)))
+       (max (max msb lsb))
+       ((unless (< max (+ min *vl-lucid-too-many-bits*)))
+        (vl-cw-ps-seq
+         (vl-cw "; ~a0: Whoops, range [~x1:~x2] has too many bits; fudging.~%" ctx msb lsb))
+        nil))
     ;; We add one to max because nats-from enumerates [a, b)
     (ints-from min (+ 1 max))))
 
@@ -2542,7 +2549,8 @@ created when we process their packages, etc.</p>"
     (and (vl-expr-resolved-p x.left)
          (vl-expr-resolved-p x.right))))
 
-(define vl-lucid-resolved-slice->bits ((x vl-lucidocc-p))
+(define vl-lucid-resolved-slice->bits ((x vl-lucidocc-p)
+                                       (ctx any-p))
   :guard (and (equal (vl-lucidocc-kind x) :slice)
               (vl-lucid-resolved-slice-p x))
   :returns (indices (and (integer-listp indices)
@@ -2552,7 +2560,11 @@ created when we process their packages, etc.</p>"
        (msb (vl-resolved->val x.left))
        (lsb (vl-resolved->val x.right))
        (min (min msb lsb))
-       (max (max msb lsb)))
+       (max (max msb lsb))
+       ((unless (< max (+ min *vl-lucid-too-many-bits*)))
+        (vl-cw-ps-seq
+         (vl-cw "; ~a0: Whoops, range [~x1:~x2] has too many bits; fudging.~%" ctx msb lsb))
+        nil))
     ;; We add one to max because nats-from enumerates [a, b)
     (ints-from min (+ 1 max))))
 
@@ -2561,18 +2573,20 @@ created when we process their packages, etc.</p>"
               (vl-lucid-all-slices-p x))
   (vl-lucid-resolved-slice-p x))
 
-(define vl-lucid-resolved-slices->bits ((x vl-lucidocclist-p))
+(define vl-lucid-resolved-slices->bits ((x vl-lucidocclist-p)
+                                        (ctx any-p))
   :guard (and (vl-lucid-all-slices-p x)
               (vl-lucid-all-slices-resolved-p x))
   :returns (indices (and (integer-listp indices)
                          (setp indices)))
   (if (atom x)
       nil
-    (union (vl-lucid-resolved-slice->bits (car x))
-           (vl-lucid-resolved-slices->bits (cdr x)))))
+    (union (vl-lucid-resolved-slice->bits (car x) ctx)
+           (vl-lucid-resolved-slices->bits (cdr x) ctx))))
 
-(define vl-lucid-valid-bits-for-datatype ((x  vl-datatype-p)
-                                          (ss vl-scopestack-p))
+(define vl-lucid-valid-bits-for-datatype ((x   vl-datatype-p)
+                                          (ss  vl-scopestack-p)
+                                          (ctx any-p))
   :returns (mv (simple-p booleanp :rule-classes :type-prescription)
                (bits     (and (integer-listp bits)
                               (setp bits))))
@@ -2601,7 +2615,8 @@ created when we process their packages, etc.</p>"
                               (vl-packeddimension->range (first x.pdims)))))
                 ;; Too many or unresolved dimensions -- too hard.
                 (mv nil nil)))
-            (mv t (vl-lucid-range->bits (vl-packeddimension->range (first x.pdims))))))
+            (mv t (vl-lucid-range->bits (vl-packeddimension->range (first x.pdims))
+                                        ctx))))
 
          ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time)
           ;; Integer atom types.  If there aren't any dimensions then it still
@@ -2659,7 +2674,7 @@ created when we process their packages, etc.</p>"
              ;; Doesn't make any sense to try to index into a type.
              nil))))
        ((when datatype-for-indexing)
-        (vl-lucid-valid-bits-for-datatype datatype-for-indexing ss)))
+        (vl-lucid-valid-bits-for-datatype datatype-for-indexing ss item)))
     ;; Else, too hard to do any kind of indexing
     (mv nil nil)))
 
@@ -3017,14 +3032,15 @@ whose arguments are not sensibly resolved.</p>"
               (vl-lucid-collect-resolved-slices (cdr x)))))
     (vl-lucid-collect-resolved-slices (cdr x))))
 
-(define vl-lucid-slices-append-bits ((x vl-lucidocclist-p))
+(define vl-lucid-slices-append-bits ((x vl-lucidocclist-p)
+                                     (ctx any-p))
   :guard (and (vl-lucid-all-slices-p x)
               (vl-lucid-all-slices-resolved-p x))
   :returns (bits integer-listp)
   (if (atom x)
       nil
-    (append (vl-lucid-resolved-slice->bits (car x))
-            (vl-lucid-slices-append-bits (cdr x))))
+    (append (vl-lucid-resolved-slice->bits (car x) ctx)
+            (vl-lucid-slices-append-bits (cdr x) ctx)))
   ///
   (more-returns
    (bits true-listp :rule-classes :type-prescription)))
@@ -3032,16 +3048,17 @@ whose arguments are not sensibly resolved.</p>"
 (define vl-lucid-pp-multibits
   ((badbits  setp              "The set of multiply driven bits.")
    (occs     vl-lucidocclist-p "Occs which may or may not drive these bits.")
+   (ctx      any-p)
    &key (ps 'ps))
   :guard (and (integer-listp badbits)
               (vl-lucid-all-slices-p occs)
               (vl-lucid-all-slices-resolved-p occs))
   (b* (((when (atom occs))
         ps)
-       (occbits (vl-lucid-resolved-slice->bits (car occs)))
+       (occbits (vl-lucid-resolved-slice->bits (car occs) ctx))
        (overlap (intersect occbits badbits))
        ((unless overlap)
-        (vl-lucid-pp-multibits badbits (cdr occs))))
+        (vl-lucid-pp-multibits badbits (cdr occs) ctx)))
     ;; Else, there is some overlap here:
     (vl-ps-seq (vl-indent 4)
                (if (vl-plural-p overlap)
@@ -3052,7 +3069,7 @@ whose arguments are not sensibly resolved.</p>"
                (vl-pp-ctxelement-summary (vl-context1->elem (vl-lucidocc->ctx (car occs)))
                                          :withloc t)
                (vl-println "")
-               (vl-lucid-pp-multibits badbits (cdr occs)))))
+               (vl-lucid-pp-multibits badbits (cdr occs) ctx))))
 
 (define vl-inside-interface-p ((ss vl-scopestack-p))
   :measure (vl-scopestack-count ss)
@@ -3249,7 +3266,7 @@ doesn't have to recreate the default heuristics.</p>"
        ;; if we can find any bit-level conflicts.
 
        (resolved (vl-lucid-collect-resolved-slices set))
-       (allbits  (vl-lucid-slices-append-bits resolved))
+       (allbits  (vl-lucid-slices-append-bits resolved item))
 
        ((when (and (consp solos)
                    (consp allbits)))
@@ -3265,7 +3282,7 @@ doesn't have to recreate the default heuristics.</p>"
                              (vl-pp-ctxelement-summary (vl-context1->elem (vl-lucidocc->ctx (car solos)))
                                                        :withloc t)
                              (vl-println "")
-                             (vl-lucid-pp-multibits (mergesort allbits) resolved)))
+                             (vl-lucid-pp-multibits (mergesort allbits) resolved item)))
                :fn __function__)))
 
        ;; Otherwise, there aren't any writes to the whole wire, but there may
@@ -3279,7 +3296,7 @@ doesn't have to recreate the default heuristics.</p>"
            :type :vl-lucid-multidrive
            :msg "~w0 has multiple drivers on some bits:~%~s1"
            :args (list name (with-local-ps
-                              (vl-lucid-pp-multibits (mergesort dupes) resolved)))
+                              (vl-lucid-pp-multibits (mergesort dupes) resolved item)))
            :fn __function__))))
 
 (define vl-lucid-dissect-var-main
@@ -3345,7 +3362,7 @@ doesn't have to recreate the default heuristics.</p>"
               warnings)
              ;; Otherwise, we *do* understand all the uses of this variable
              ;; so we can figure out which bits are used.
-             (used-bits   (vl-lucid-resolved-slices->bits used))
+             (used-bits   (vl-lucid-resolved-slices->bits used item))
              (unused-bits (difference valid-bits used-bits))
              ((unless unused-bits)
               ;; All of the bits get used somewhere so this is fine.
@@ -3369,7 +3386,7 @@ doesn't have to recreate the default heuristics.</p>"
                            (vl-lucid-all-slices-p set)
                            (vl-lucid-all-slices-resolved-p set)))
               warnings)
-             (set-bits    (vl-lucid-resolved-slices->bits set))
+             (set-bits    (vl-lucid-resolved-slices->bits set item))
              (unset-bits  (difference valid-bits set-bits))
              ((unless unset-bits)
               warnings))

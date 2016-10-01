@@ -32,9 +32,10 @@
 
 all:
 
-STARTJOB ?= bash
-VL       ?= $(PWD)/../bin/vl
-RUBY     ?= ruby
+STARTJOB              ?= bash
+VL                    ?= $(PWD)/../bin/vl
+VL_LINTTEST_RUBYFLAGS ?=
+RUBY                  ?= ruby $(VL_LINTTEST_RUBYFLAGS)
 
 SPEC_FILES := $(wildcard */spec.sv)
 TEST_DIRS  := $(patsubst %/spec.sv, %, $(SPEC_FILES))
