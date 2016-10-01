@@ -39,10 +39,26 @@
   (alpha/digit/dash-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
-  :short "True iff all the characters in @('chars') are
+  :short "True iff all the characters in @('x') are
           letters, (decimal) digits, or dashes."
-  :true-listp nil
+  :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nondigit-char-p ((char characterp))
+  :returns (yes/no booleanp)
+  :parents (character-utilities)
+  :short "True iff the character @('char') is not a (decimal) digit."
+  (not (digit-char-p char)))
+
+(std::deflist nondigit-char-listp (x)
+  (nondigit-char-p x)
+  :guard (character-listp x)
+  :parents (character-utilities)
+  :short "True iff all the characters in @('x') are not (decimal) digits."
+  :true-listp t
+  :elementp-of-nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
