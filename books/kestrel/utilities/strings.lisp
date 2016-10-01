@@ -30,9 +30,10 @@
   :returns (fixed-x string-listp)
   :parents (string-utilities)
   :short "Fix to @('nil')-terminated list of @(see strings)."
-  (cond ((endp x) nil)
-        (t (cons (str-fix (car x))
-                 (string-list-fix (cdr x)))))
+  (mbe :logic (cond ((endp x) nil)
+                    (t (cons (str-fix (car x))
+                             (string-list-fix (cdr x)))))
+       :exec x)
   ///
 
   (defrule string-list-fix-when-string-listp
