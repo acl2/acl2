@@ -236,21 +236,21 @@
    An untranslated @(see term) is a term as entered by the user.
    This function checks @('x') by attempting to translate it.
    If the translation succeeds, the translated term is returned,
-   along with the output @(see stobj)s of the term (see below for details).
+   along with the @(tsee stobjs-out) list of the term (see below for details).
    Otherwise, a structured error message is returned (printable with @('~@')),
-   along with @('nil') as output stobjs.
+   along with @('nil') as @(tsee stobjs-out) list.
    These two possible outcomes can be distinguished by the fact that
    the former yields a <see topic='@(url pseudo-termp)'>pseudo-term</see>
    while the latter does not.
    </p>
    <p>
-   The &lsquo;output stobjs&rsquo; of a term are the analogous
+   The @(tsee stobjs-out) list of a term is the term analogous
    of the @(tsee stobjs-out) property of a function,
    namely a list of symbols that is like a &ldquo;mask&rdquo; for the result.
    A @('nil') in the list means that
-   the corresponding result is a non-stobj value,
-   while the name of a stobj in the list means that
-   the corresponding result is the named stobj.
+   the corresponding result is a non-@(see stobj) value,
+   while the name of a @(see stobj) in the list means that
+   the corresponding result is the named @(see stobj).
    The list is a singleton, unless the term returns
    <see topic='@(url mv)'>multiple values</see>.
    </p>
@@ -310,12 +310,12 @@
    </p>
    <p>
    If the check succeeds, the translated lambda expression is returned,
-   along with the output @(see stobj)s of the body of the lambda expression
+   along with the @(tsee stobjs-out) list of the body of the lambda expression
    (see @(tsee check-user-term) for an explanation
-   of the output stobjs of a term).
+   of the @(tsee stobjs-out) list of a term).
    Otherwise, a possibly structured error message is returned
    (printable with @('~@')),
-   along with @('nil') as output stobjs.
+   along with @('nil') as @(tsee stobjs-out) list.
    </p>
    <p>
    The @(tsee check-user-lambda) function does not terminate

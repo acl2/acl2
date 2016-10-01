@@ -156,7 +156,7 @@
    </p>
    <p>
    The number of results of the function
-   is the length of its output @(see stobj) list.
+   is the length of its @(tsee stobjs-out) list.
    But the function must not be in @('*stobjs-out-invalid*'),
    because in that case the number of its results depends on how it is called.
    </p>"
