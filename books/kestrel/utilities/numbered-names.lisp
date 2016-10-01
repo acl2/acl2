@@ -453,20 +453,6 @@
     `(table numbered-names-in-use
        ,base (add-numbered-name-in-use-new-indices ,base ,index world))))
 
-(define max-numbered-name-index-in-use-aux
-  ((indices pos-listp) (current-max-index natp))
-  :returns (final-max-index "A @(tsee natp).")
-  :parents (max-numbered-name-index-in-use)
-  :short "Auxiliary function for @(tsee max-numbered-name-index-in-use)."
-  :long
-  "<p>
-   Return the maximum of @('(cons current-max-index indices)').
-   </p>"
-  (cond ((atom indices) current-max-index)
-        (t (max-numbered-name-index-in-use-aux
-            (cdr indices)
-            (max (car indices) current-max-index)))))
-
 (define max-numbered-name-index-in-use ((base symbolp) (wrld plist-worldp))
   :returns (max-index "A @(tsee natp).")
   :verify-guards nil
@@ -482,7 +468,16 @@
    </p>"
   (let* ((tab (table-alist 'numbered-names-in-use wrld))
          (current-indices (cdr (assoc-eq base tab))))
-    (max-numbered-name-index-in-use-aux current-indices 0)))
+    (max-numbered-name-index-in-use-aux current-indices 0))
+
+  :prepwork
+  ((define max-numbered-name-index-in-use-aux ((indices pos-listp)
+                                               (current-max-index natp))
+     :returns (final-max-index "A @(tsee natp).")
+     (cond ((atom indices) current-max-index)
+           (t (max-numbered-name-index-in-use-aux
+               (cdr indices)
+               (max (car indices) current-max-index)))))))
 
 (define resolve-numbered-name-wildcard ((name symbolp) (wrld plist-worldp))
   :returns (resolved-name "A @(tsee symbolp).")
@@ -506,24 +501,6 @@
                             (max-numbered-name-index-in-use base wrld)
                             wrld)
       name)))
-
-(define next-numbered-name-aux
-  ((base symbolp) (current-index posp) (wrld plist-worldp))
-  :returns (final-index "A @(tsee posp).")
-  :mode :program
-  :parents (next-numbered-name)
-  :short "Auxiliary function for @(tsee next-numbered-name)."
-  :long
-  "<p>
-   Returns the smallest positive integer @('final-index')
-   that is greater than or equal to @('current-index')
-   and such that the numbered name with base @('base') and index @('final-index')
-   is not in the ACL2 @(see world).
-   </p>"
-  (let ((name (make-numbered-name base current-index wrld)))
-    (if (logical-namep name wrld)
-        (next-numbered-name-aux base (1+ current-index) wrld)
-      current-index)))
 
 (define next-numbered-name ((name symbolp) (wrld plist-worldp))
   :returns (next-index "A @(tsee posp).")
@@ -559,7 +536,17 @@
                                wrld)
                             (next-numbered-name-aux base (1+ index) wrld))))
           (make-numbered-name base next-index wrld))
-      (make-numbered-name name 1 wrld))))
+      (make-numbered-name name 1 wrld)))
+
+  :prepwork
+  ((define next-numbered-name-aux
+     ((base symbolp) (current-index posp) (wrld plist-worldp))
+     :returns (final-index "A @(tsee posp).")
+     :mode :program
+     (let ((name (make-numbered-name base current-index wrld)))
+       (if (logical-namep name wrld)
+           (next-numbered-name-aux base (1+ current-index) wrld)
+         current-index)))))
 
 (defxdoc global-numbered-name-index
   :parents (numbered-names)
