@@ -223,7 +223,7 @@
   (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (required-args "A @(tsee symbol-listp).")
+  :returns (required-args symbol-listp)
   :verify-guards nil
   :short "Required arguments of the macro @('mac'), in order."
   :long
@@ -233,6 +233,13 @@
    continues with zero or more symbols that do not start with @('&')
    which are the required arguments,
    and possibly ends with a symbol starting with @('&') followed by more symbols.
+   </p>
+   <p>
+   After removing @('&whole') and the symbol following it
+   (if the list of arguments starts with @('&whole')),
+   we collect all the arguments until
+   either the end of the list is reached
+   or a symbol starting with @('&') is encountered.
    </p>"
   (let ((all-args (macro-args mac wrld)))
     (if (null all-args)
@@ -243,20 +250,11 @@
 
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp))
-     :returns (required-args "A @(tsee symbol-listp).")
-     :parents (macro-required-args)
-     :short "Auxiliary function of @(tsee macro-required-args)."
-     :long
-     "<p>
-      After removing @('&whole') and the symbol following it
-      (if the list of arguments starts with @('&whole')),
-      collect all the arguments until
-      either the end of the list is reached
-      or a symbol starting with @('&') is encountered.
-      </p>"
+     :returns (required-args symbol-listp)
      (if (endp args)
          nil
-       (let ((arg (car args)))
+       (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
+                       :exec (car args))))
          (if (lambda-keywordp arg)
              nil
            (cons arg (macro-required-args-aux (cdr args)))))))))
