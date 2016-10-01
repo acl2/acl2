@@ -399,7 +399,7 @@
          t)
        ;; Memory locations of interest are disjoint.
        (disjoint-p
-        ;; Return Addresses
+        ;; Location of the Return Address (on the stack)
         (create-canonical-address-list 8 (xr :rgf *rsp* x86))
         ;; Destination Addresses
         (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
@@ -472,7 +472,7 @@
                   t)
                 ;; Memory locations of interest are disjoint.
                 (disjoint-p
-                 ;; Return Addresses
+                 ;; Location of the Return Addresses (on the stack)
                  (create-canonical-address-list 8 (xr :rgf *rsp* x86))
                  ;; Destination Addresses
                  (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
