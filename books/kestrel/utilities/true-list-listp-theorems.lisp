@@ -36,5 +36,4 @@
     (true-listp x)
     :true-listp t
     :elementp-of-nil t
-    :already-definedp t
     :parents nil))
