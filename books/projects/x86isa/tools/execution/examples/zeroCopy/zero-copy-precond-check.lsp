@@ -6,7 +6,7 @@
 (in-package "X86ISA")
 
 (include-book "../../top" :ttags :all)
-;; For all-translation-governing-addresses:
+;; For all-xlation-governing-entries-paddrs:
 (include-book "../../../../proofs/utilities/system-level-mode/top" :ttags :all)
 (include-book "readValues-addr-byte" :ttags :all)
 
@@ -503,7 +503,7 @@
        ;; Translation-governing addresses of the program are
        ;; disjoint from the physical addresses of the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
        ;;   x86)
        ;;  (mv-nth 1 (las-to-pas
@@ -511,13 +511,13 @@
        ;;              8 (+ -24 (xr :rgf *rsp* x86)))
        ;;             :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses prog-laddrs x86)
+        (all-xlation-governing-entries-paddrs prog-laddrs x86)
         stack-paddrs-from-write)
 
        ;; Translation-governing addresses of the stack are
        ;; disjoint from the physical addresses of the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list
        ;;    8 (+ -24 (xr :rgf *rsp* x86)))
        ;;   x86)
@@ -526,7 +526,7 @@
        ;;              8 (+ -24 (xr :rgf *rsp* x86)))
        ;;             :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses stack-laddrs x86)
+        (all-xlation-governing-entries-paddrs stack-laddrs x86)
         stack-paddrs-from-write))
 
       (mv :PASSED x86)
@@ -565,7 +565,7 @@
        ;; are disjoint from the physical addresses corresponding
        ;; to the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list
        ;;    8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
        ;;   x86)
@@ -573,7 +573,7 @@
        ;;             (create-canonical-address-list
        ;;              8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses src-pml4-laddrs x86)
+        (all-xlation-governing-entries-paddrs src-pml4-laddrs x86)
         stack-paddrs-from-write)
 
        ;; The PML4TE physical addresses are disjoint from the
@@ -655,7 +655,7 @@
        ;; are disjoint from the physical addresses corresponding
        ;; to the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list
        ;;    8
        ;;    (page-dir-ptr-table-entry-addr
@@ -666,7 +666,7 @@
        ;;             (create-canonical-address-list
        ;;              8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses src-page-dir-ptr-laddrs x86)
+        (all-xlation-governing-entries-paddrs src-page-dir-ptr-laddrs x86)
         stack-paddrs-from-write)
 
        ;; The PDPTE physical addresses are disjoint from the
@@ -750,7 +750,7 @@
        ;; are disjoint from the physical addresses corresponding
        ;; to the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list
        ;;    8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
        ;;   x86)
@@ -758,7 +758,7 @@
        ;;             (create-canonical-address-list
        ;;              8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses dst-pml4-laddrs x86)
+        (all-xlation-governing-entries-paddrs dst-pml4-laddrs x86)
         stack-paddrs-from-write)
 
        ;; The PML4TE physical addresses are disjoint from the
@@ -863,7 +863,7 @@
        ;; are disjoint from the physical addresses corresponding
        ;; to the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list
        ;;    8
        ;;    (page-dir-ptr-table-entry-addr
@@ -874,7 +874,7 @@
        ;;             (create-canonical-address-list
        ;;              8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses dst-page-dir-ptr-laddrs x86)
+        (all-xlation-governing-entries-paddrs dst-page-dir-ptr-laddrs x86)
         stack-paddrs-from-write)
 
        ;; The PDPTE physical addresses are disjoint from the
@@ -912,7 +912,7 @@
        ;; disjoint from the PDPTE physical addresses (on behalf
        ;; of a write).
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
        ;;   x86)
        ;;  (mv-nth 1 (las-to-pas
@@ -922,7 +922,7 @@
        ;;               (xr :rgf *rsi* x86)
        ;;               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
        ;;             :w (cpl x86) x86)))
-       (disjoint-p (all-translation-governing-addresses prog-laddrs x86)
+       (disjoint-p (all-xlation-governing-entries-paddrs prog-laddrs x86)
                    dst-page-dir-ptr-paddrs)
 
 
@@ -992,7 +992,7 @@
        ;; The translation-governing addresses of the ret address
        ;; are disjoint from the destination PDPTE.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
        ;;  (mv-nth 1 (las-to-pas
        ;;             (create-canonical-address-list
@@ -1002,7 +1002,7 @@
        ;;               (page-dir-ptr-table-base-addr (xr :rgf *rsi* x86) x86)))
        ;;             :r (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses ret-laddrs x86)
+        (all-xlation-governing-entries-paddrs ret-laddrs x86)
         dst-page-dir-ptr-paddrs)
 
        ;; The destination PDPTE is disjoint from the ret address
@@ -1048,14 +1048,14 @@
        ;; address on the stack are disjoint from the physical
        ;; addresses of the rest of the stack.
        ;; (disjoint-p
-       ;;  (all-translation-governing-addresses
+       ;;  (all-xlation-governing-entries-paddrs
        ;;   (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
        ;;  (mv-nth 1
        ;;          (las-to-pas (create-canonical-address-list
        ;;                       8 (+ -24 (xr :rgf *rsp* x86)))
        ;;                      :w (cpl x86) x86)))
        (disjoint-p
-        (all-translation-governing-addresses ret-laddrs x86)
+        (all-xlation-governing-entries-paddrs ret-laddrs x86)
         stack-paddrs-from-write)
 
        ;; Return address on the stack is canonical.
@@ -1221,7 +1221,7 @@
 ;; are disjoint from the physical addresses corresponding
 ;; to the stack.
 ;; (disjoint-p
-;;  (all-translation-governing-addresses
+;;  (all-xlation-governing-entries-paddrs
 ;;   (create-canonical-address-list *2^30* (xr :rgf *rsi* x86)) x86)
 ;;  (mv-nth 1 (las-to-pas
 ;;             (create-canonical-address-list
@@ -1231,7 +1231,7 @@
      ((mv & stack-paddrs-from-write x86)
       (las-to-pas stack-laddrs :w (cpl x86) x86)))
   (if (disjoint-p
-       (all-translation-governing-addresses
+       (all-xlation-governing-entries-paddrs
         (create-canonical-address-list
          8 ;; @@@ This really ought to be *2^30*.
          (xr :rgf *rsi* x86)) x86)
