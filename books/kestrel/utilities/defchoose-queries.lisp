@@ -16,7 +16,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "world-queries")
 
 (local (set-default-parents defchoose-queries))
 

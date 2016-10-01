@@ -14,8 +14,8 @@
 
 (in-package "ACL2")
 
+(include-book "testing")
 (include-book "world-queries")
-(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

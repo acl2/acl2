@@ -14,8 +14,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/testing" :dir :system)
 (include-book "integers-from-to")
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

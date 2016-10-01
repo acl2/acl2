@@ -16,8 +16,8 @@
 (in-package "ACL2")
 
 (include-book "applicability-conditions")
-(include-book "kestrel/utilities/testing" :dir :system)
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "testing")
+(include-book "world-queries")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

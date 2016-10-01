@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/world-queries" :dir :system) ; for measure
+(include-book "world-queries") ; for measure
 (include-book "tools/remove-hyps" :dir :system) ; for event-steps
 (include-book "xdoc/top" :dir :system)
 

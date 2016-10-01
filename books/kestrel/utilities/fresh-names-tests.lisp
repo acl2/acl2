@@ -15,7 +15,7 @@
 (in-package "ACL2")
 
 (include-book "fresh-names")
-(include-book "kestrel/utilities/testing" :dir :system)
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
