@@ -20,6 +20,7 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
+(include-book "characters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,18 +97,6 @@
    e.g. @('foo{1}'), @('foo{2}'), ...
    </p>")
 
-(define non-numeric-character-listp (x)
-  :returns (yes/no booleanp)
-  :parents (numbered-name-index-start-p
-            numbered-name-index-end-p
-            numbered-name-index-wildcard-p)
-  :short "True iff @('x') is
-          a @('nil')-terminated list of non-numeric characters."
-  (cond ((atom x) (eq x nil))
-        (t (and (characterp (car x))
-                (not (digit-char-p (car x)))
-                (non-numeric-character-listp (cdr x))))))
-
 (defxdoc numbered-name-index-start
   :parents (numbered-names)
   :short "Starting marker of the numeric index of numbered names."
@@ -126,7 +115,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (non-numeric-character-listp (explode x))
+       (nondigit-char-listp (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-start nil nil
@@ -187,7 +176,7 @@
    Check whether @('x') consists of zero or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (non-numeric-character-listp (explode x))))
+       (nondigit-char-listp (explode x))))
 
 (table numbered-name-index-end nil nil
   :guard (and (equal key 'end) ; one key => singleton table
@@ -247,7 +236,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (non-numeric-character-listp (explode x))
+       (nondigit-char-listp (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-wildcard nil nil
