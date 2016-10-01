@@ -34,6 +34,7 @@
 (include-book "list-set-theorems")
 (include-book "list-theorems")
 (include-book "maybe-msgp")
+(include-book "maybe-unquote")
 (include-book "minimize-ruler-extenders")
 (include-book "nati")
 ; Skipping the following, because it requires a trust tag:
