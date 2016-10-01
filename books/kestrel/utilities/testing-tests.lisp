@@ -69,3 +69,6 @@
 (must-succeed*
  (defun f (x) (cons x x))
  (assert-equal (f 3) '(3 . 3)))
+
+(must-fail
+ (assert-equal 1 2))

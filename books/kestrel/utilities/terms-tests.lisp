@@ -159,18 +159,15 @@
  (assert-equal (mv-list 2 (check-user-term '(mv s 0 state) (w state)))
                '((cons s (cons '0 (cons state 'nil))) (s nil state))))
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal (mv-list 2 (check-user-term '(+ x y) (w state)))
-                '((binary-+ x y) (nil))))
+(assert-equal (mv-list 2 (check-user-term '(+ x y) (w state)))
+              '((binary-+ x y) (nil)))
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal (mv-list 2 (check-user-term '(+ (len x) 55) (w state)))
-                '((binary-+ (len x) '55) (nil))))
+(assert-equal (mv-list 2 (check-user-term '(+ (len x) 55) (w state)))
+              '((binary-+ (len x) '55) (nil)))
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal
-          (mv-list 2 (check-user-term '(let ((x 4)) (+ x (len y))) (w state)))
-          '(((lambda (x y) (binary-+ x (len y))) '4 y) (nil))))
+(assert-equal
+ (mv-list 2 (check-user-term '(let ((x 4)) (+ x (len y))) (w state)))
+ '(((lambda (x y) (binary-+ x (len y))) '4 y) (nil)))
 
 (assert! (msgp (nth 0 (mv-list 2 (check-user-term '(f x) (w state))))))
 
@@ -227,35 +224,28 @@
                '((lambda (state s) (cons s (cons '0 (cons state 'nil))))
                  (s nil state))))
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal
-          (mv-list 2 (check-user-lambda '(lambda (x y) (+ x y)) (w state)))
-          '((lambda (x y) (binary-+ x y)) (nil))))
+(assert-equal (mv-list 2 (check-user-lambda '(lambda (x y) (+ x y)) (w state)))
+              '((lambda (x y) (binary-+ x y)) (nil)))
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal
-          (mv-list 2 (check-user-lambda '(lambda (z) (+ (len x) 55)) (w state)))
-          '((lambda (z) (binary-+ (len x) '55)) (nil))))
+(assert-equal
+ (mv-list 2 (check-user-lambda '(lambda (z) (+ (len x) 55)) (w state)))
+ '((lambda (z) (binary-+ (len x) '55)) (nil)))
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal
-          (mv-list 2 (check-user-lambda
-                      '(lambda (u) (let ((x 4)) (+ x (len y)))) (w state)))
-          '((lambda (u) ((lambda (x y) (binary-+ x (len y))) '4 y))
-            (nil))))
+(assert-equal (mv-list 2 (check-user-lambda
+                          '(lambda (u) (let ((x 4)) (+ x (len y)))) (w state)))
+              '((lambda (u) ((lambda (x y) (binary-+ x (len y))) '4 y))
+                (nil)))
 
 (assert! (msgp (nth 0 (mv-list 2 (check-user-lambda
                                   '(lambda (x) (f x)) (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal (trans-macro 'list (w state))
-                ''nil))
+(assert-equal (trans-macro 'list (w state))
+              ''nil)
 
-; ASSERT-EQUAL does not work here:
-(assert! (equal (trans-macro 'make-list (w state))
-                '(make-list-ac size 'nil 'nil)))
+(assert-equal (trans-macro 'make-list (w state))
+              '(make-list-ac size 'nil 'nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
