@@ -931,6 +931,8 @@
           :user-supplied-term term
           :displayed-goal displayed-goal
           :otf-flg otf-flg
+          :never-irrelevant-fns-alist
+          (global-val 'never-irrelevant-fns-alist wrld)
           ))
 
 (defun pc-prove (term displayed-goal hints otf-flg ens wrld ctx state)

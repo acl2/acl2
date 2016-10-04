@@ -1543,12 +1543,13 @@
                                                backchain-limit-lst
                                                match-free-value
                                                wrld))
-            (wrld1 (putprop (ffn-symb lhs)
+            (wrld1 (extend-never-irrelevant-fns-alist hyps lhs wrld))
+            (wrld2 (putprop (ffn-symb lhs)
                             'lemmas
                             (cons rewrite-rule
                                   (getpropc (ffn-symb lhs) 'lemmas nil wrld))
-                            wrld)))
-       (put-match-free-value match-free-value rune wrld1))))))
+                            wrld1)))
+       (put-match-free-value match-free-value rune wrld2))))))
 
 (defun add-rewrite-rule1 (rune nume lst loop-stopper-lst
                                backchain-limit-lst match-free ens wrld)
@@ -2081,7 +2082,9 @@
                                               (access linear-lemma linear-rule
                                                       :max-term))
                                              'linear-lemmas nil wrld))
-                             wrld)))
+                             (extend-never-irrelevant-fns-alist hyps
+                                                                (car max-terms)
+                                                                wrld))))
         (add-linear-rule3 rune nume hyps concl (cdr max-terms)
                           backchain-limit-lst
                           match-free
@@ -3071,7 +3074,8 @@
                                  :match-free match-free)
                            (getpropc (ffn-symb (car triggers))
                                      'forward-chaining-rules nil wrld))
-                     wrld)))))
+                     (extend-never-irrelevant-fns-alist-lst hyps concls
+                                                            wrld))))))
 
 (defun add-forward-chaining-rule (rune nume trigger-terms term match-free wrld)
   (mv-let
@@ -5319,7 +5323,7 @@
                           :corollary term)
                     (getpropc (ffn-symb typed-term) 'type-prescriptions nil
                               wrld))
-              wrld)))))
+              (extend-never-irrelevant-fns-alist hyps typed-term wrld))))))
 
 (defun strong-compound-recognizer-p (fn recognizer-alist ens)
   (cond ((endp recognizer-alist) nil)

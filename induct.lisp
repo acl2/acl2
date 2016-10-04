@@ -3168,50 +3168,151 @@
 ;; RAG - I added realp and complexp to the list of function names
 ;; simplification can decide.
 
-(defun probably-not-validp (cl)
+(defun irrelevant-fnp (fn parity never-irrelevant-fns-alist)
+  (not ; not relevant, and here's the condition for relevancy:
+   (let ((pair (hons-get fn never-irrelevant-fns-alist)))
+     (and pair
+          (or (eq (cdr pair) :both)
+              (eq (cdr pair) parity))))))
 
-; Cl is a clause.  We return t if we think there is an instantiation
-; of cl that makes each literal false.  It is assumed that cl has
-; survived simplification.
+(defconst *irrelevant-clausep-fns*
 
-; We have two trivial heuristics.  One is to detect whether the only
-; function symbols in cl are ones that we think make up a fragment
-; of the theory that simplification can decide.  The other heuristic
-; is to bet that any cl consisting of a single literal which is of the
-; form (fn v1 ... vn) or (not (fn v1 ... vn)), where the vi are
-; distinct variables, is probably not valid.
+; See irrelevant-clausep.  It's pretty bold to include a recursive function,
+; namely true-listp, in the list below.  However, as long as it's the only one,
+; we feel safe.
 
-; It's pretty bold to include a recursive function, namely true-listp, in the
-; list below.  However, as long as it's the only one, we feel safe.
+  '(not consp integerp rationalp
+        #+:non-standard-analysis realp
+        acl2-numberp
+        true-listp complex-rationalp
+        #+:non-standard-analysis complexp
+        stringp characterp
+        symbolp cons car cdr equal
+        binary-+ unary-- < apply))
 
-  (or (ffnnames-subsetp-listp cl '(consp integerp rationalp
-                                         #+:non-standard-analysis realp
-                                         acl2-numberp
-                                         true-listp complex-rationalp
-                                         #+:non-standard-analysis complexp
-                                         stringp characterp
-                                         symbolp cons car cdr equal
-                                         binary-+ unary-- < apply))
+(defun irrelevant-clausep (cl never-irrelevant-fns-alist)
+
+; This function was formerly named probably-not-validp.
+
+; Cl is a clause.  We return t if we think there is an instantiation of cl that
+; makes each literal false.  It is assumed that cl has survived simplification.
+
+; We have two trivial heuristics.  One is to detect whether the only function
+; symbols in cl are ones that we think make up a fragment of the theory that
+; simplification can decide.  The other heuristic is to bet that any cl
+; consisting of a single literal which is of the form (fn v1 ... vn) or (not
+; (fn v1 ... vn)), where the vi are distinct variables, is probably not valid,
+; though we also insist on avoiding a "never-irrelevant" case in order to
+; drop that literal.  We elaborate on "never-irrelevant" and more, below.
+
+; For eliminating irrelevance, we view a clause as
+
+; (forall x y)(p(x) \/ q(y))
+
+; where p(x) is a possibly irrelevant literal and q(y) is the disjunction of
+; the other literals.  In general, of course, each of these terms may have
+; several free variables; but even in general, in order for p(x) to be a
+; candidate its set of variables must be disjoint from the set of variables in
+; q.  In that case we can view the clause as follows.
+
+; (forall x)p(x) \/ (forall y)q(y)
+
+; We'd like to drop one of those disjuncts to clean up the clause (actually q
+; could be a disjunction on which we recur); but which one?  If p(x) is
+; probably not valid then it's perhaps good to drop, at least if we are
+; choosing between just p(x) and q(y); if q(y) is valid and we drop q(y), then
+; we'll be left to prove p(x), which will likely fail.  But we consider another
+; possibility.  Maybe p(x) is not valid, but we want to keep it because it is
+; important for proving the clause.  How could that be?  For example, there
+; could be a rewrite rule
+
+;   (implies (and (not (p u)) (r u v))
+;            (q v)).
+
+; Of course, we might expect that rewrite rule to have helped us before we
+; were about to slip into induction (which is where we are when considering
+; the dropping of irrelevant literals).  But imagine for example that we do a
+; cdr-induction on v in which we know (r x (cdr v)).
+
+; Note that the rule above could (in part depending on (q v)) be of class
+; :rewrite, :definition, :forward-chaining, :linear, or :type-prescription.  So
+; far we really have been considering the left-hand side of a :rewrite rule;
+; more generally, we consider the "target" of a rule, which for example is a
+; max-tem in the :linear case.  Also note the following variant that could be
+; equally useful in the proof:
+
+;   (implies (and (not (q v)) (r u v))
+;            (p u)).
+
+; So we are looking for a hypothesis and target with disjoint variables, in any
+; rule of one of the four classes above, and when we find it we should mark the
+; (p u).  We'll mark p with parity t for the caess above, where (p u) is a
+; positive literal, but of course, this all works equally well if (p u) is
+; really (not (f u)), that is, (f u) is a negative literal, in which case we
+; will mark f with parity nil.  We need only consider such hypotheses or target
+; when the arguments (of p or f) are distinct variables, since we already
+; refuse to consider the literal irrelevant otherwise.  We are simply doing
+; something extra here to prevent a literal from being marked as irrelevant.
+
+; Here is an example for which the THM failed until we added the check for
+; irrelevant-fnp below.
+
+;   (encapsulate
+;     ((p () t)
+;      (my-app (x y) t))
+;     (local (defun p () t))
+;     (local (defun my-app (x y) (append x y)))
+;     (defthm my-app-def
+;       (implies (p)
+;                (equal (my-app x y)
+;                       (if (consp x)
+;                           (cons (car x) (my-app (cdr x) y))
+;                         y)))
+;       :rule-classes ((:definition
+;                       :controller-alist ((my-app t nil))))))
+;   
+;   (defun rev (x)
+;     (if (consp x)
+;         (my-app (rev (cdr x))
+;                 (cons (car x) nil))
+;       nil))
+;   
+;   (thm (implies (and (p)
+;                      (true-listp x))
+;                 (equal (rev (rev x)) x)))
+
+  (or (ffnnames-subsetp-listp cl *irrelevant-clausep-fns*)
       (case-match cl
-                  ((('not (& . args)))
-                   (and (all-variablep args)
-                        (no-duplicatesp-equal args)))
-                  (((& . args))
-                   (and (all-variablep args)
-                        (no-duplicatesp-equal args)))
-                  (& nil))))
+        ((('not (fn . args)))
+         (and (all-variablep args)
+              (no-duplicatesp-eq args)
+              (symbolp fn)
+              (irrelevant-fnp fn nil never-irrelevant-fns-alist)))
+        (((fn . args))
+         (and (all-variablep args)
+              (no-duplicatesp-eq args)
+              (symbolp fn)
+              (irrelevant-fnp fn t never-irrelevant-fns-alist)))
+        (& nil))))
 
-(defun irrelevant-lits (alist)
+(defun irrelevant-lits (alist never-irrelevant-fns-alist)
 
-; Alist is an alist that associates a set of literals with each key.
-; The keys are irrelevant.  We consider each set of literals and decide
-; if it is probably not valid.  If so we consider it irrelevant.
-; We return the concatenation of all the irrelevant literal sets.
+; Alist is an alist that associates a set of literals with each key.  The keys
+; are irrelevant.  We consider each set of literals and decide if it is
+; probably not valid and if it contains no literal L that we see could be
+; relevant to some term in variables disjoint from L.  If so we consider it
+; irrelevant.  We return the concatenation of all the irrelevant literal sets.
+
+; For more about irrelevant literals, see irrelevant-clausep.
 
   (cond ((null alist) nil)
-        ((probably-not-validp (cdar alist))
-         (append (cdar alist) (irrelevant-lits (cdr alist))))
-        (t (irrelevant-lits (cdr alist)))))
+        ((irrelevant-clausep (cdar alist)
+                             never-irrelevant-fns-alist)
+         (append (cdar alist)
+                 (irrelevant-lits (cdr alist)
+                                  never-irrelevant-fns-alist)))
+        (t (irrelevant-lits (cdr alist)
+                            never-irrelevant-fns-alist))))
 
 (defun eliminate-irrelevance-clause (cl hist pspv wrld state)
 
@@ -3225,6 +3326,8 @@
 ; unmodified pspv.  (We return the fourth thing to adhere to the
 ; convention used by all clause processors in the waterfall (q.v.).)
 
+; For more about irrelevant literals, see irrelevant-clausep.
+
   (declare (ignore hist wrld state))
   (cond
    ((not (assoc-eq 'being-proved-by-induction
@@ -3232,7 +3335,10 @@
     (mv 'miss nil nil nil))
    (t (let* ((partitioning (m&m (pair-vars-with-lits cl)
                                 'intersectp-eq/union-equal))
-             (irrelevant-lits (irrelevant-lits partitioning)))
+             (irrelevant-lits
+              (irrelevant-lits partitioning
+                               (access prove-spec-var pspv
+                                       :never-irrelevant-fns-alist))))
         (cond ((null irrelevant-lits)
                (mv 'miss nil nil nil))
               (t (mv 'hit

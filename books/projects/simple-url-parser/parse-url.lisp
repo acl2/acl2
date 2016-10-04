@@ -190,7 +190,7 @@ ACL2 !>(let ((char-list (coerce "http://www.utexas.edu/grades" 'LIST))
 
 (defthm separate-char-list-guard-lemma-1
   (implies
-   (and (character-list-listp field-separator-list)
+   (and ;; (character-list-listp field-separator-list) ; deleted by Matt K.
         (character-list-listp separator-list)
         (character-listp char-list)
         (character-listp backwards-field)
@@ -206,7 +206,7 @@ ACL2 !>(let ((char-list (coerce "http://www.utexas.edu/grades" 'LIST))
 
 (defthm separate-char-list-guard-lemma-3
   (implies
-   (and (character-list-listp field-separator-list)
+   (and ;; (character-list-listp field-separator-list) ; deleted by Matt K.
         (character-list-listp separator-list)
         (character-listp char-list)
         (character-listp backwards-field)
