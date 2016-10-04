@@ -3170,7 +3170,7 @@
 
 (defun irrelevant-fnp (fn parity never-irrelevant-fns-alist)
   (not ; not relevant, and here's the condition for relevancy:
-   (let ((pair (hons-get fn never-irrelevant-fns-alist)))
+   (let ((pair (assoc-eq fn never-irrelevant-fns-alist)))
      (and pair
           (or (eq (cdr pair) :both)
               (eq (cdr pair) parity))))))
