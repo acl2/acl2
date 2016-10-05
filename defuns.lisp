@@ -1935,63 +1935,77 @@
 
   (let ((pair (assoc-eq fn never-irrelevant-fns-alist)))
     (cond ((null pair)
-           (acons fn parity never-irrelevant-fns-alist))
-          ((eq (cdr pair) parity)
-           never-irrelevant-fns-alist)
-          (t (acons fn :both never-irrelevant-fns-alist)))))
+           (mv t (acons fn parity never-irrelevant-fns-alist)))
+          ((or (eq (cdr pair) parity)
+               (eq parity :both))
+           (mv nil never-irrelevant-fns-alist))
+          (t (mv t (acons fn :both never-irrelevant-fns-alist))))))
 
 (defun extend-never-irrelevant-fns-alist-1 (hyps target-fn target-parity tvars
-                                                 tp never-irrelevant-fns-alist?
+                                                 changedp target-p
+                                                 never-irrelevant-fns-alist?
                                                  wrld)
 
 ; See extend-never-irrelevant-fns-alist.  Note that never-irrelevant-fns-alist?
 ; is initially nil, and it stays that way through the recursion until we are
-; ready to extend the world's never-irrelevant-fns-alist and then pass the
-; result through the recursion.  Initially tp may be t, but as we recur through
-; hyps, we change tp to nil when we first extend the never-irrelevant-fns-alist
-; using the target, which is the application of target-fn to tvars.
+; ready to try to extend the world's never-irrelevant-fns-alist.
+
+; Changedp is initially nil, and is non-nil if and only if
+; never-irrelevant-fns-alist? properly extends the 'never-irrelevant-fns-alist
+; of world.  The non-nil values of changedp are :hyps when only hyps (not
+; target) has contributed an extension, and t when target has contributed an
+; extension (regardless of whether hyps has done so or not).
 
   (cond
-   ((endp hyps) never-irrelevant-fns-alist?)
+   ((endp hyps)
+    (mv changedp never-irrelevant-fns-alist?))
    ((intersectp-eq (all-vars (car hyps)) tvars)
     (extend-never-irrelevant-fns-alist-1 (cdr hyps) target-fn target-parity
-                                         tvars tp never-irrelevant-fns-alist?
-                                         wrld))
+                                         tvars changedp target-p
+                                         never-irrelevant-fns-alist? wrld))
    (t
-    (let* ((never-irrelevant-fns-alist?0 ; maybe extend with target-fn
-            (if tp
-                (extend-never-irrelevant-fns-alist-2
-                 target-fn target-parity
-                 (or never-irrelevant-fns-alist?
-                     (global-val 'never-irrelevant-fns-alist wrld)))
-              never-irrelevant-fns-alist?))
-           (tp (and tp
-                    (not (equal (car never-irrelevant-fns-alist?)
-                                (car never-irrelevant-fns-alist?0)))))
-           (never-irrelevant-fns-alist?1 ; maybe extend for (car hyps)
-            (mv-let (not-flg hyp+)
-              (strip-not (car hyps))
-              (cond ((and (nvariablep hyp+)
-                          (not (fquotep hyp+))
-                          (not (flambdap (ffn-symb hyp+)))
-                          (not (member-eq (ffn-symb hyp+)
-                                          *irrelevant-clausep-fns*))
-                          (all-variablep (fargs hyp+))
-                          (no-duplicatesp-eq (fargs hyp+)))
-                     (extend-never-irrelevant-fns-alist-2
-                      (ffn-symb hyp+)
-                      not-flg
-                      (or never-irrelevant-fns-alist?0
-                          (global-val 'never-irrelevant-fns-alist wrld))))
-                    (t never-irrelevant-fns-alist?0)))))
-      (extend-never-irrelevant-fns-alist-1
-       (cdr hyps) target-fn target-parity tvars tp never-irrelevant-fns-alist?1
-       wrld)))))
+    (mv-let (flg1 never-irrelevant-fns-alist?0) ; maybe extend with target-fn
+      (cond ((or (eq changedp t) ; target already used to extend alist
+                 (not target-p))
+             (mv nil never-irrelevant-fns-alist?))
+            (t (extend-never-irrelevant-fns-alist-2
+                target-fn target-parity
+                (or never-irrelevant-fns-alist?
+                    (global-val 'never-irrelevant-fns-alist wrld)))))
+      (mv-let (flg2 never-irrelevant-fns-alist?1) ; maybe extend for (car hyps)
+        (mv-let (not-flg hyp+)
+          (strip-not (car hyps))
+          (cond ((and (nvariablep hyp+)
+                      (not (fquotep hyp+))
+                      (not (flambdap (ffn-symb hyp+)))
+                      (not (member-eq (ffn-symb hyp+)
+                                      *irrelevant-clausep-fns*))
+                      (all-variablep (fargs hyp+))
+                      (no-duplicatesp-eq (fargs hyp+)))
+                 (extend-never-irrelevant-fns-alist-2
+                  (ffn-symb hyp+)
 
-(defun extend-never-irrelevant-fns-alist (hyps target wrld)
+ ; Note that we are interested in the case that (car hyps) occurs
+ ; negatively in a clause.
+
+                  (not not-flg)
+                  (or never-irrelevant-fns-alist?0
+                      (global-val 'never-irrelevant-fns-alist wrld))))
+                (t (mv nil never-irrelevant-fns-alist?0))))
+        (extend-never-irrelevant-fns-alist-1
+         (cdr hyps) target-fn target-parity tvars
+         (or flg1     ; t indicates that alist was extended for target
+             changedp ; if non-nil, keep its value (:hyps or t)
+             (and flg2 :hyps))
+         target-p
+         never-irrelevant-fns-alist?1
+         wrld))))))
+
+(defun extend-never-irrelevant-fns-alist (hyps target target-parity wrld)
 
 ; For the given hypotheses of some rule and a target term (such as the
-; left-hand side of a rewrite rule), extend the world global
+; left-hand side of a rewrite rule) that we imagine occurring in a clause with
+; the given target-parity (t if negated, else nil), extend the world global
 ; 'never-irrelevant-fns-alist whenever a hypothesis and target have disjoint
 ; variables and one or both of them consist of the application of a function
 ; symbol to distinct variables.  See irrelevant-clausep for relevant
@@ -1999,36 +2013,41 @@
 
   (mv-let (not-flg atm)
     (strip-not target)
-    (let* ((vars (all-vars atm))
-           (target-p (and (nvariablep atm)
-                          (not (fquotep atm))
-                          (not (flambdap (ffn-symb atm)))
-                          (not (member-eq (ffn-symb atm)
+    (let ((target-p (and (nvariablep atm)
+                         (not (fquotep atm))
+                         (not (flambdap (ffn-symb atm)))
+                         (not (member-eq (ffn-symb atm)
 
 ; If the function symbol is such that the target will already qualify as
 ; irrelevant according to the test involving *irrelevant-clausep-fns* in
 ; function irrelevant-clausep, there is no reason to extend the value of world
 ; global 'never-irrelevant-fns-alist.
 
-                                          *irrelevant-clausep-fns*))
-                          (all-variablep (fargs atm))
-                          (no-duplicatesp-eq (fargs atm))))
-           (never-irrelevant-fns-alist (extend-never-irrelevant-fns-alist-1
-                                        hyps
-                                        (ffn-symb atm)
-                                        (not not-flg)
-                                        vars target-p nil wrld)))
-      (cond (never-irrelevant-fns-alist (global-set 'never-irrelevant-fns-alist
-                                                    never-irrelevant-fns-alist
-                                                    wrld))
-            (t wrld)))))
+                                         *irrelevant-clausep-fns*))
+                         (all-variablep (fargs atm))
+                         (no-duplicatesp-eq (fargs atm)))))
+      (mv-let (changedp never-irrelevant-fns-alist)
+        (extend-never-irrelevant-fns-alist-1 hyps
+                                             (ffn-symb atm)
+                                             (if (eq target-parity :both)
+                                                 :both
+; Flip the parity iff not-flg is true.
+                                               (iff (not not-flg)
+                                                    target-parity))
+                                             (all-vars atm)
+                                             nil target-p nil wrld)
+        (cond (changedp (assert$ never-irrelevant-fns-alist
+                                 (global-set 'never-irrelevant-fns-alist
+                                             never-irrelevant-fns-alist
+                                             wrld)))
+              (t wrld))))))
 
 (defun extend-never-irrelevant-fns-alist-lst (hyps targets wrld)
   (cond ((endp targets) wrld)
         (t (extend-never-irrelevant-fns-alist-lst
             hyps
             (cdr targets)
-            (extend-never-irrelevant-fns-alist hyps (car targets) wrld)))))
+            (extend-never-irrelevant-fns-alist hyps (car targets) nil wrld)))))
 
 (defun add-definition-rule-with-ttree (rune nume clique controller-alist
                                             install-body term ens wrld ttree)
@@ -2089,7 +2108,7 @@
 ; Backchain-limit-lst does not make much sense for definitions.
 
                   :backchain-limit-lst nil)))
-      (let* ((wrld0 (extend-never-irrelevant-fns-alist phyps fn-args wrld))
+      (let* ((wrld0 (extend-never-irrelevant-fns-alist phyps fn-args nil wrld))
              (wrld1 (if (eq fn 'hide)
                         wrld0
                       (putprop fn 'lemmas

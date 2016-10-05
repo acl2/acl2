@@ -3194,8 +3194,11 @@
 
 ; This function was formerly named probably-not-validp.
 
-; Cl is a clause.  We return t if we think there is an instantiation of cl that
-; makes each literal false.  It is assumed that cl has survived simplification.
+; Cl is a clause that is a subset of some clause, cl2, that has survived
+; simplification.  We are considering whether cl seems useless in proving cl2,
+; so that we can reasonably drop cl; if so, we return t.  In particular, we
+; return t if we think there is an instantiation of cl that makes each literal
+; false.
 
 ; We have two trivial heuristics.  One is to detect whether the only function
 ; symbols in cl are ones that we think make up a fragment of the theory that
@@ -3203,25 +3206,26 @@
 ; consisting of a single literal which is of the form (fn v1 ... vn) or (not
 ; (fn v1 ... vn)), where the vi are distinct variables, is probably not valid,
 ; though we also insist on avoiding a "never-irrelevant" case in order to
-; drop that literal.  We elaborate on "never-irrelevant" and more, below.
+; decide that the literal is to be considered irrelevant.  We elaborate on
+; "never-irrelevant" and more, below.
 
 ; For eliminating irrelevance, we view a clause as
 
 ; (forall x y)(p(x) \/ q(y))
 
-; where p(x) is a possibly irrelevant literal and q(y) is the disjunction of
-; the other literals.  In general, of course, each of these terms may have
-; several free variables; but even in general, in order for p(x) to be a
-; candidate its set of variables must be disjoint from the set of variables in
-; q.  In that case we can view the clause as follows.
+; where p(x) is a possibly irrelevant literal (or set of literals, but we focus
+; here on the case of a single literal) and q(y) is the disjunction of the
+; other literals.  In general, of course, each of these terms may have several
+; free variables; but even in general, in order for p(x) to be a candidate for
+; irrelevance, its set of variables must be disjoint from the set of variables
+; in q.  In that case the clause is logically equivalent to the following.
 
 ; (forall x)p(x) \/ (forall y)q(y)
 
 ; We'd like to drop one of those disjuncts to clean up the clause (actually q
 ; could be a disjunction on which we recur); but which one?  If p(x) is
-; probably not valid then it's perhaps good to drop, at least if we are
-; choosing between just p(x) and q(y); if q(y) is valid and we drop q(y), then
-; we'll be left to prove p(x), which will likely fail.  But we consider another
+; probably not valid then we consider it reasonable to drop p(x) in the hope
+; that q(y) may be valid, and indeed provable by ACL2.  But we consider another
 ; possibility.  Maybe p(x) is not valid, but we want to keep it because it is
 ; important for proving the clause.  How could that be?  For example, there
 ; could be a rewrite rule
@@ -3229,9 +3233,9 @@
 ;   (implies (and (not (p u)) (r u v))
 ;            (q v)).
 
-; Of course, we might expect that rewrite rule to have helped us before we
-; were about to slip into induction (which is where we are when considering
-; the dropping of irrelevant literals).  But imagine for example that we do a
+; Of course, we might expect this rewrite rule to have helped us before we have
+; reached the point of dropping irrelevant literals, which is just before we
+; consider slipping into a sub-induction.  But imagine for example that we do a
 ; cdr-induction on v in which we know (r x (cdr v)).
 
 ; Note that the rule above could (in part depending on (q v)) be of class
@@ -3239,20 +3243,23 @@
 ; far we really have been considering the left-hand side of a :rewrite rule;
 ; more generally, we consider the "target" of a rule, which for example is a
 ; max-tem in the :linear case.  Also note the following variant that could be
-; equally useful in the proof:
+; equally useful in the proof, when the "q part" helps the "p part", instead of
+; vice-versa as described above.
 
 ;   (implies (and (not (q v)) (r u v))
 ;            (p u)).
 
-; So we are looking for a hypothesis and target with disjoint variables, in any
-; rule of one of the four classes above, and when we find it we should mark the
-; (p u).  We'll mark p with parity t for the caess above, where (p u) is a
-; positive literal, but of course, this all works equally well if (p u) is
-; really (not (f u)), that is, (f u) is a negative literal, in which case we
-; will mark f with parity nil.  We need only consider such hypotheses or target
-; when the arguments (of p or f) are distinct variables, since we already
-; refuse to consider the literal irrelevant otherwise.  We are simply doing
-; something extra here to prevent a literal from being marked as irrelevant.
+; So we are looking in a rule for a hypothesis and target with disjoint
+; variables, in any rule of one of the four classes above, and when we find it
+; we mark the function symbol, p, with the "parity" of the expected call of p
+; in the clause: nil for (p ...), and t for (not (p ...)).  For example, we'll
+; mark p with parity nil for the cases above, since the case of interest is
+; when (p u) is a positive literal, but of course, this all works equally well
+; if (p u) is really (not (f u)), in which case we will mark f with parity t.
+; We need only consider such hypotheses or target when the arguments (of p or
+; f) are distinct variables, since we already refuse to consider the literal
+; irrelevant otherwise.  We are simply doing something extra here to prevent a
+; literal from being marked as irrelevant.
 
 ; Here is an example for which the THM failed until we added the check for
 ; irrelevant-fnp below.
@@ -3287,12 +3294,12 @@
          (and (all-variablep args)
               (no-duplicatesp-eq args)
               (symbolp fn)
-              (irrelevant-fnp fn nil never-irrelevant-fns-alist)))
+              (irrelevant-fnp fn t never-irrelevant-fns-alist)))
         (((fn . args))
          (and (all-variablep args)
               (no-duplicatesp-eq args)
               (symbolp fn)
-              (irrelevant-fnp fn t never-irrelevant-fns-alist)))
+              (irrelevant-fnp fn nil never-irrelevant-fns-alist)))
         (& nil))))
 
 (defun irrelevant-lits (alist never-irrelevant-fns-alist)

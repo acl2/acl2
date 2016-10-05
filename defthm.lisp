@@ -1543,7 +1543,16 @@
                                                backchain-limit-lst
                                                match-free-value
                                                wrld))
-            (wrld1 (extend-never-irrelevant-fns-alist hyps lhs wrld))
+            (parity
+
+; See irrelevant-clausep.  In a nutshell, we expect the lhs to match an
+; irrelevant literal (parity = nil) when the rhs is t, but to match the negated
+; literal (parity = t) when the rhs is nil.
+
+             (cond ((equal rhs *t*) nil)
+                   ((equal rhs *nil*) t)
+                   (t :both)))
+            (wrld1 (extend-never-irrelevant-fns-alist hyps lhs parity wrld))
             (wrld2 (putprop (ffn-symb lhs)
                             'lemmas
                             (cons rewrite-rule
@@ -2084,6 +2093,7 @@
                                              'linear-lemmas nil wrld))
                              (extend-never-irrelevant-fns-alist hyps
                                                                 (car max-terms)
+                                                                nil
                                                                 wrld))))
         (add-linear-rule3 rune nume hyps concl (cdr max-terms)
                           backchain-limit-lst
@@ -5291,21 +5301,21 @@
 ;   ACL2 !>
 
             (prog2$ (cw "~%NOTE:  ACL2 is unable to create a proposed ~
-                          type-prescription rule from the term ~x0 for ~
-                          :typed-term ~x1, so this proposed rule is not being ~
-                          added.~|"
+                         type-prescription rule from the term ~x0 for ~
+                         :typed-term ~x1, so this proposed rule is not being ~
+                         added.~|"
                         term typed-term)
                     wrld))
            (t
             (er hard 'add-type-prescription-rule
                 "Unable to process this :TYPE-PRESCRIPTION rule.  A possible ~
-                  explanation is that we are in the second pass of an ~
-                  include-book or encapsulate, and although this rule was ~
-                  legal in the first pass, it is not legal in the second pass. ~
-                   For example, the rule may depend on a preceding ~
-                  :COMPOUND-RECOGNIZER rule local to this encapsulate or ~
-                  include-book.  The usual error message for ~
-                  :TYPE-PRESCRIPTION rules now follows.~|~%~@0"
+                 explanation is that we are in the second pass of an ~
+                 include-book or encapsulate, and although this rule was ~
+                 legal in the first pass, it is not legal in the second pass. ~
+                 For example, the rule may depend on a preceding ~
+                 :COMPOUND-RECOGNIZER rule local to this encapsulate or ~
+                 include-book.  The usual error message for ~
+                 :TYPE-PRESCRIPTION rules now follows.~|~%~@0"
                 erp))))
     (t
      (putprop (ffn-symb typed-term)
@@ -5323,7 +5333,7 @@
                           :corollary term)
                     (getpropc (ffn-symb typed-term) 'type-prescriptions nil
                               wrld))
-              (extend-never-irrelevant-fns-alist hyps typed-term wrld))))))
+              (extend-never-irrelevant-fns-alist hyps typed-term nil wrld))))))
 
 (defun strong-compound-recognizer-p (fn recognizer-alist ens)
   (cond ((endp recognizer-alist) nil)
