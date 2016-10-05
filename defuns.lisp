@@ -1931,7 +1931,9 @@
 
 ; This function always returns a non-nil never-irrelevant-fns-alist.  It
 ; returns the result of extending never-irrelevant-fns-alist by mapping fn to a
-; suitable value unless it already has that value.
+; suitable value unless it already has that value.  It also returns a
+; "changedp" flag, indicating whether or not the input
+; never-irrelevant-fns-alist was actually extended.
 
   (let ((pair (assoc-eq fn never-irrelevant-fns-alist)))
     (cond ((null pair)
