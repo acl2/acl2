@@ -1253,15 +1253,14 @@
 
 ; Warning: Keep this in sync with stobj-let-fn and the handling of stobj-let in
 ; this function, in particular the case in which stobj-let-fn generates a call
-; of prog2$.
+; of prog2$ (or perhaps progn$).
 
     (let* ((qfn (and (consp (cdr x))
                      (cadr x)))
-           (fn (or (and (consp qfn)
-                        (eq (car qfn) 'quote)
-                        (consp (cdr qfn))
-                        (cadr qfn))
-                   'progn)))
+           (return-last-fn (return-last-fn qfn))
+           (fn (or return-last-fn 'progn))
+           (arg2 (return-last-arg2 return-last-fn
+                                   (oneify (caddr x) fns w program-p))))
       (cond ((eq fn 'ec-call1-raw)
 
 ; In the case of ec-call1-raw, we are already oneifying the last argument -- we
@@ -1309,7 +1308,8 @@
 ; function call in the logic.
 
                (let ((form (car (last x))))
-                 `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
+                 `(let* ((args (list ,arg2
+                                     ,(oneify (cadddr form) fns w program-p)))
                          (**1*-as-raw* nil))
                     (apply ',(if (function-symbolp (car form) w)
                                  (*1*-symbol (car form))
@@ -1367,7 +1367,7 @@
 ; apparent calls.  That's OK.
 
              (let* ((oneified-logic-body (oneify (cadddr x) fns w program-p))
-                    (oneified-exec-body (oneify (caddr x) fns w program-p))
+                    (oneified-exec-body arg2)
                     (logic-fn (and (not program-p) ; optimization
                                    (acl2-gentemp "ONEIFY")))
                     (exec-fn (acl2-gentemp "ONEIFY"))
@@ -1393,8 +1393,7 @@
 ; Since fn is not 'ec-call1-raw, the guard of return-last is automatically met
 ; for the arguments.
 
-             (let ((args (oneify-lst (cddr x) fns w program-p)))
-               (cons fn args))))))
+             (list fn arg2 (oneify (cadddr x) fns w program-p))))))
    ((or (member-eq (car x) *oneify-primitives*)
 
 ; Note that safe-mode for make-event will require addition of the following two

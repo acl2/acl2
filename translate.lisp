@@ -2480,6 +2480,9 @@
 
 ; See the #-acl2-loop-only definition of return-last and the comment just
 ; below.  Note that fn is not mbe1-raw, so this binding is appropriate.
+; We are being a bit more generous here in our binding of *aokp*, but it seems
+; fine to keep it simple here, and for since evaluation of arg2 does not affect
+; the logical result, there is no soundness issue here.
 
                             t))
       (ev-rec arg2 alist w user-stobj-alist

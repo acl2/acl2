@@ -2885,15 +2885,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   :mode :logic))
   last-arg)
 
+(defun return-last-fn (qfn)
+
+; Return nil unless qfn is of the form (quote s) for a symbol s.
+
+  (declare (xargs :guard t))
+  (and (consp qfn)
+       (eq (car qfn) 'quote)
+       (consp (cdr qfn))
+       (symbolp (cadr qfn))
+       (null (cddr qfn))
+       (cadr qfn)))
+
 #-acl2-loop-only
-(defmacro return-last (qfn arg2 arg3)
-  (let* ((fn (and (consp qfn)
-                  (eq (car qfn) 'quote)
-                  (consp (cdr qfn))
-                  (symbolp (cadr qfn))
-                  (null (cddr qfn))
-                  (cadr qfn)))
-         (arg2
+(defun return-last-arg2 (fn arg2)
+
+; Here fn is known to be a symbol, for example as returned by applying
+; return-last-fn to the first argument of a call of return-last.  Note that fn
+; can be nil, in which case the second cond clause below is taken.  We think of
+; arg2 as being the second argument of a call of return-last, and here we cause
+; that argument to be evaluated with attachments when appropriate.
 
 ; There is no logical problem with using attachments when evaluating the second
 ; argument of return-last, because logically the third argument provides the
@@ -2905,16 +2916,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; See also the related treatment of aokp in ev-rec-return-last.
 
-          (cond
-           ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
-                (and fn (macro-function fn))
-                (symbolp arg2)      ; no point in doing extra bindings below
-                (and (consp arg2)
-                     (eq (car arg2) ; no point in doing extra bindings below
-                         'quote)))
-            arg2)
-           (t `(let ((*aokp* t))
-                 ,arg2)))))
+  (cond ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
+             (and fn (macro-function fn))
+             (symbolp arg2) ; no point in doing extra bindings below
+             (and (consp arg2)
+                  (eq (car arg2) ; no point in doing extra bindings below
+                      'quote)))
+         arg2)
+        (t `(let ((*aokp* t))
+              ,arg2))))
+
+#-acl2-loop-only
+(defmacro return-last (qfn arg2 arg3)
+  (let* ((fn (return-last-fn qfn))
+         (arg2 (return-last-arg2 fn arg2)))
     (cond ((and fn (fboundp fn))
 
 ; Translation for evaluation requires that if the first argument is a quoted
