@@ -500,7 +500,8 @@ implementations.")
          #+(or gcl clisp)
          (tmp-file (format nil
                            "~a/tmp~s"
-                           (or (f-get-global 'tmp-dir *the-live-state*)
+                           (or (our-ignore-errors
+                                (f-get-global 'tmp-dir *the-live-state*))
                                "/tmp")
                            (getpid$)))
          no-error
