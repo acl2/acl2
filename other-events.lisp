@@ -8971,9 +8971,14 @@
                  (and (implies dir-p
                                (not (or (stringp name) (stringp type))))
                       (assert$ (and (true-listp dir)
-                                    (eq (car dir)
-                                        #+gcl :ROOT
-                                        #-gcl :ABSOLUTE))
+                                    #+gcl
+                                    (member (car dir)
+                                            '(:ROOT ; for backward compatibility
+                                              #+cltl2
+                                              :ABSOLUTE)
+                                            :test #'eq)
+                                    #-gcl
+                                    (eq (car dir) :ABSOLUTE))
                                (let* ((mswindows-drive
                                        (mswindows-drive (namestring truename)
                                                         state))
