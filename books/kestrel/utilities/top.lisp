@@ -49,6 +49,7 @@
 (include-book "testing")
 (include-book "true-list-listp-theorems")
 (include-book "typed-list-theorems")
+(include-book "typed-tuples")
 (include-book "ubi")
 (include-book "user-interface")
 (include-book "verify-guards-program")
