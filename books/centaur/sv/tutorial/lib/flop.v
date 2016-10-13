@@ -32,7 +32,7 @@
 module flop (q, d, clk);
    parameter width = 1;
 
-  output [width-1:0] q;
+  output reg [width-1:0] q;
   input [width-1:0] d;
   input clk;
 
