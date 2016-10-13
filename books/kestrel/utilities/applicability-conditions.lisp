@@ -135,6 +135,27 @@
                  (prove-applicability-conditions (cdr app-conds) verbose state)
                (mv nil msg state))))))
 
+(define ensure-applicability-conditions
+  ((app-conds applicability-condition-listp)
+   (verbose booleanp)
+   (ctx "Context for errors.")
+   state)
+  :returns (mv (erp "@(tsee Booleanp) flag of the
+                     <see topic='@(url error-triple)'>error triple</see>.")
+               (nothing "Always @('nil').")
+               state)
+  :mode :program
+  :short "Cause a soft error if the proof of any applicability condition fails."
+  :long
+  "<p>
+   Use the message from the applicability condition proof failure
+   as error message.
+   </p>"
+  (b* (((mv success msg state) (prove-applicability-conditions
+                                app-conds verbose state))
+       ((unless success) (er soft ctx "~@0" msg)))
+    (value nil)))
+
 (define applicability-condition-event
   ((app-cond applicability-condition-p)
    (local booleanp "Make the theorem local or not.")
