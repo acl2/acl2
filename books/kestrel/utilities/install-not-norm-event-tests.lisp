@@ -8,8 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains tests for the non-normalized definition installation event
-; in install-not-norm-event.lisp.
+; This file contains tests for the utility in install-not-norm-event.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,28 +20,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (mv-list 2 (install-not-norm-event 'f nil))
-              '(f$not-normalized (install-not-normalized f)))
+(assert-equal (mv-list 2 (install-not-norm-event 'f nil nil (w state)))
+              '(f$not-normalized
+                (install-not-normalized f :defthm-name 'f$not-normalized)))
 
-(assert-equal (mv-list 2 (install-not-norm-event 'g t))
-              '(g$not-normalized (local (install-not-normalized g))))
+(assert-equal (mv-list 2 (install-not-norm-event 'g t nil (w state)))
+              '(g$not-normalized
+                (local
+                 (install-not-normalized g :defthm-name 'g$not-normalized))))
+
+(assert-equal (mv-list 2 (install-not-norm-event 'f nil '(a b) (w state)))
+              '(f$not-normalized
+                (install-not-normalized f :defthm-name 'f$not-normalized)))
+
+(assert-equal (mv-list 2 (install-not-norm-event
+                          'f nil '(a f$not-normalized) (w state)))
+              '(f$not-normalized$
+                (install-not-normalized f :defthm-name 'f$not-normalized$)))
+
+(must-succeed*
+ (defun f$not-normalized (x) x)
+ (assert-equal (mv-list 2 (install-not-norm-event 'f nil nil (w state)))
+               '(f$not-normalized$
+                 (install-not-normalized f :defthm-name 'f$not-normalized$))))
+
+(must-succeed*
+ (defun f$not-normalized (x) x)
+ (defun f$not-normalized$ (x) x)
+ (assert-equal (mv-list 2 (install-not-norm-event 'f nil nil (w state)))
+               '(f$not-normalized$$
+                 (install-not-normalized f :defthm-name 'f$not-normalized$$))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun f (x) x)
- (defun g ()
-   (mv-let (name event)
-     (install-not-norm-event 'f nil)
-     `(progn
-        (encapsulate () ,event)
-        (assert! (rune-enabledp '(:definition ,name) state)))))
- (make-event (g)))
+ (make-event
+  (b* (((mv & event)
+        (install-not-norm-event 'f nil nil (w state))))
+    event))
+ (assert! (theorem-namep 'f$not-normalized (w state))))
+
+(must-succeed*
+ (defun g (x) x)
+ (encapsulate
+   ()
+   (make-event
+    (b* (((mv & event)
+          (install-not-norm-event 'g t nil (w state))))
+      event))
+   (assert! (theorem-namep 'g$not-normalized (w state))))
+ (assert! (not (theorem-namep 'g$not-normalized (w state)))))
 
 (must-succeed*
  (defun f (x) x)
- (defun g ()
-   (mv-let (name event)
-     (install-not-norm-event 'f t)
-     `(progn
-        (encapsulate () ,event)
-        (assert! (not (runep '(:definition ,name) (w state)))))))
- (make-event (g)))
+ (make-event
+  (b* (((mv & event)
+        (install-not-norm-event 'f nil '(a b) (w state))))
+    event))
+ (assert! (theorem-namep 'f$not-normalized (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (make-event
+  (b* (((mv & event)
+        (install-not-norm-event
+         'f nil '(a f$not-normalized) (w state))))
+    event))
+ (assert! (theorem-namep 'f$not-normalized$ (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (defun f$not-normalized (x) x)
+ (make-event
+  (b* (((mv & event)
+        (install-not-norm-event 'f nil nil (w state))))
+    event))
+ (assert! (theorem-namep 'f$not-normalized$ (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (defun f$not-normalized (x) x)
+ (defun f$not-normalized$ (x) x)
+ (make-event
+  (b* (((mv & event)
+        (install-not-norm-event 'f nil nil (w state))))
+    event))
+ (assert! (theorem-namep 'f$not-normalized$$ (w state))))
