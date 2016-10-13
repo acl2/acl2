@@ -45,7 +45,8 @@
             (= (len x) N)
             (type1 (nth 0 x))
             ...
-            (typeN (nth N-1 x))))
+            (typeN (nth N-1 x))
+            t))
    })
    <p>
    When @('N') is 0, @('typed-tuplep') recognizes just @('nil').
@@ -55,7 +56,8 @@
    the macro (arbitrarily) expands to @('t').
    </p>
    <p>
-   The macro always returns a @(tsee booleanp).
+   The final @('t') conjunct ensures that
+   the macro always returns a @(tsee booleanp).
    </p>
    @(def typed-tuplep)"
 
