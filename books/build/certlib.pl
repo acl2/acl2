@@ -149,6 +149,7 @@ sub abs_canonical_path {
     # print "path: $path\n";
     my $abspath;
     if (File::Spec->file_name_is_absolute($path)) {
+	# print "absolute\n";
 	$abspath = $path;
     } else {
 	$abspath = File::Spec->rel2abs($path);
@@ -1124,9 +1125,12 @@ sub expand_dirname_cmd {
 	}
     } else {
 	my $dir = dirname($basename);
+	my $fullpath = File::Spec->file_name_is_absolute($relname) ?
+	    $relname . $ext : 
+	    File::Spec->catfile($dir, $relname . $ext);
 	# was:
 	# $fullname = canonical_path(rel_path($dir, $relname . $ext));
-	$fullname = canonical_path(File::Spec->catfile($dir, $relname . $ext));
+	$fullname = canonical_path($fullpath);
 	if (! $fullname) {
 	    print "bad path in ($cmd \"$relname\")\n";
 	}
@@ -1216,7 +1220,10 @@ sub src_deps {
 		# was:
 		# my $newdir = canonical_path(rel_path($basedir, $dir));
 		my $basedir = dirname($fname);
-		$newdir = canonical_path(File::Spec->catfile($basedir, $dir));
+		my $catdir = File::Spec->file_name_is_absolute($dir) ?
+		    $dir :
+		    File::Spec->catfile($basedir, $dir);
+		$newdir = canonical_path($catdir);
 	    }
 	    print "add_dir_event: newdir is $newdir\n" if $debugging;
 
