@@ -4080,13 +4080,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(27 . MINUSP))
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
-  '(109 . BOOLEANP)
+  '(32 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
-  '(108 . BOOLEANP)
+  '(31 . BOOLEANP)
   #+(and non-standard-analysis (not acl2-par))
-  '(111 . BOOLEANP)
+  '(34 . BOOLEANP)
   #+(and non-standard-analysis acl2-par)
-  '(112 . BOOLEANP)
+  '(35 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -12734,6 +12734,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     canonical-pathname ; under dependent clause-processor
 
+    concrete-badge-userfn
+    concrete-apply$-userfn
+
+; The apply.lisp book defines apply$-lambda in :logic mode and if execution of
+; apply$ is allowed (by going through the rubric that involves setting
+; *allow-concrete-execution-of-apply-stubs*) then its raw Lisp code is
+; different, namely apply$-lambda in raw Lisp is defined to call
+; concrete-apply$-lambda.  So, perhaps, someday, apply$-lambda will be on this
+; list.
+
 ; mfc functions
 
     mfc-ancestors ; *metafunction-context*
@@ -13264,6 +13274,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
+    (slow-apply$-action . t)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
@@ -26995,3 +27006,21 @@ Lisp definition."
                    (natp val)
                    val)
               state)))
+
+(encapsulate
+  ()
+
+; The following function symbols are used (ancestrally) in the constraints on
+; concrete-badge-userfn.  They must be in logic mode.  We use encapsulate so
+; that verify-termination-boot-strap will do its intended job in the first pass
+; of the build.
+
+  (logic)
+  (verify-termination-boot-strap booleanp)
+  (verify-termination-boot-strap all-nils)
+  (verify-termination-boot-strap member-eql-exec)
+  (verify-termination-boot-strap member-eql-exec$guard-check)
+  (verify-termination-boot-strap member-equal)
+  (verify-termination-boot-strap subsetp-eql-exec)
+  (verify-termination-boot-strap subsetp-eql-exec$guard-check)
+  (verify-termination-boot-strap subsetp-equal))

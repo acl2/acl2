@@ -3712,6 +3712,7 @@
             term-evisc-tuple      ;;; see just above
             abbrev-evisc-tuple    ;;; see just above
             gag-mode-evisc-tuple  ;;; see just above
+            slow-apply$-action    ;;; see just above
             slow-array-action     ;;; see just above
             iprint-ar             ;;; see just above
             iprint-fal            ;;; see just above

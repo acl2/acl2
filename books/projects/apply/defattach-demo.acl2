@@ -1,0 +1,4 @@
+(include-book "user-book")
+(include-book "doppelgangers")
+(defattach badge-userfn badge-userfn!)
+(defattach apply$-userfn apply$-userfn!)

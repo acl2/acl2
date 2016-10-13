@@ -1,125 +1,52 @@
-THIS IS A WORK IN PROGRESS!  DO NOT RELY ON THESE BOOKS FOR SERIOUS WORK!
+In this directory we provide the apply.lisp book, which makes available
+the functions:
 
-This directory contains three certified books
+(apply$ fn args)     - applies the warranted function fn to args
 
- apply-prim.lisp
- apply.lisp
- chronology.lisp
+(ev$ x a)            - evaluates an expression x composed of warranted
+                       functions under an alist a binding the variable
+                       symbols
 
-The book apply.lisp formalizes a tamed version of apply, making it possible to
-define functions like:
+(def-warranted fn)   - analyzes a defun'd function and makes it warranted,
+                       if possible.  If successful, this function creates the
+                       0-ary predicate APPLY$-WARRANT-fn, which hypothesizes
+                       that apply$ fn works appropriately for fn.  These
+                       predicates are called ``warrants'' for their respective
+                       functions.  Warrants are required in any theorem
+                       involving the application via apply$ of user-defined
+                       functions.
 
-(defun$ sumlist (lst fn)
-  (cond ((endp lst) 0)
-        (t (+ (apply$ fn (list (car lst)))   ; <--- Note apply$
-              (sumlist (cdr lst) fn)))))
+(defun$ fn ...)      - like defun but then makes fn warranted, if possible
 
-and prove and use such theorems about them as:
+Apply$ and ev$ are not, in general, executable at the top-level of the ACL2
+loop because of the involvement of certain undefined (constrained) functions
+namely badge-userfn and apply$-userfn.
 
-(defthm sumlist-ap
-  (equal (sumlist (ap a b) u)
-         (+ (sumlist a u)
-            (sumlist b u))))
+This directory also contains the books user-book.lisp and foldr-exercises.lisp
+that contain many defun$ forms and some theorems about various mapping
+functions.
 
-and
+This directory also contains the book doppelgangers.lisp which demonstrates
+that we can define versions of badge-userfn and apply$-userfn, called their
+``doppelgangers,'' that we can attach to those two constrained functions to
+obtain an evaluation theory suitable for all the functions in user-book.lisp.
+Not only can we then execute (at the top-level of the ACL2 loop) forms
+ancestrally involving apply$, but we can prove that all the warrants issued in
+user-book.lisp are valid.  This demonstrates, at least for user-book, that the
+theorems we prove about mapping functions like collect and foldr -- which are
+burdened by those odd warrant hypotheses -- are not vacuously true because
+there's no way the warrants are true.
 
-(defthm sum-of-squares
-  (implies (natp n)
-           (equal (sumlist (nats n)
-                           '(lambda (x)
-                              (binary-* x x)))
-                  (+ (/ (expt n 3) 3)
-                     (/ (expt n 2) 2)
-                     (/ n 6)))))
+Unfortunately, the demonstration of successful attachments to make an effective
+evaluation theory for user-book.lisp does not solve the problem of evaluation
+for other books built on apply$.  That is, apply$ is just not evaluable.
 
-You can see a selection of such ``mapping functions'' and theorems about them
-in chronology.lisp.
+We are working on improving that situation.
 
-At the moment the only documentation of these utilities are the examples in
-chronology.lisp.  Good luck!  Like we said, this is a work in progress!
+To certify all the books on this directory,
 
-There are three major problems with this prototype formalization of apply aside
-from the absence of documentation.
+(ld "script.lsp" :ld-pre-eval-print t)
 
-FIRST, it is not executable.  You cannot execute (sumlist '(1 2 3) 'identity)
-even though it is possible to prove (with a hint) that it is 6.  We intend to
-fix this by changes in ACL2 itself, if this work matures to the point where we
-think it worthwhile.
-
-SECOND, if your mapping function uses a user-defined function symbol, as in
-
-(defun sq (x) (* x x)) 
-
-(thm (implies (natp n)   ; this formula is not a theorem
-              (equal (sumlist (nats n)
-                              'sq)        ; <--- note user-defined symbol!
-                     (+ (/ (expt n 3) 3)
-                        (/ (expt n 2) 2)
-                        (/ n 6)))))
-
-it is necessary to add an additional hypothesis supposing that
-SQ can be applied:
-
-(thm (implies (and (applicablep sq)   ; this formula is a theorem
-                   (natp n))
-              (equal (sumlist (nats n)
-                              'sq)
-                     (+ (/ (expt n 3) 3)
-                        (/ (expt n 2) 2)
-                        (/ n 6)))))
-
-By the way, to prove the above you should define
-
-(defun nats (n)
-  (cond ((zp n) '(0))
-        (t (cons n (nats (- n 1))))))
-
-and include the community book "arithmetic-5/top".
-
-THIRD, it is possible that some applicablity hypotheses may be unsatisfiable!
-That is, it is possible with this version of the apply book that hypotheses
-like (applicablep sq) make theorems vacuously valid.  We are currently working
-on restricting the make-applicable utility (defined in apply.lisp) to ensure
-that there is a constructive model of apply$ that makes these hypotheses true.
-
-This work was described in a series of ACL2 Seminars starting in January, 2016.
-Check the ACL2 seminar web page:
-
-http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html
-
-where you might find slides and additional demos.  The abstract for the series
-is given below.
-
-Adding Apply to ACL2
-Matt Kaufmann
-J Strother Moore
-
-Abstract: This is the first of three proposed seminars reporting ongoing joint
-work with Matt Kaufmann.
-
-Apply is a Common Lisp function that takes a function and a list of arguments
-and returns the result of applying the function to those arguments.  Naively
-axiomatizing apply to handle all definable functions in ACL2's first order
-logic produces an inconsistent theory.  One source of inconsistency is that it
-is possible to define non-terminating ``non-recursive'' functions.  Another has
-to do with ACL2's notion of local events in encapsulate and include-book.  In
-this talk we present a ``tame'' apply and a solution to the local problem.
-
-Our apply is provided in a certified ACL2 book and is thus guaranteed sound but
-has some serious drawbacks including (a) it may be so restrictive that it is of
-no use to the ACL2 user, (b) theorems proved about it may be vacuous in the
-sense that they have unsatisfiable hypotheses, and (c) it cannot be executed.
-Addressing
-(c) would require changes to ACL2 itself, which would
-not be worthwhile if the answers to (a) and (b) are
-unsatisfactory.
-
-In part 1 of this series we will address the pragmatic adequacy of our
-restricted apply by defining various mapping functions and proofs and uses of
-various lemmas about them.
-
-In part 2, we will explain tameness and how apply is defined in a certifiable
-way.
-
-In part 3 we will explore why we believe that this solution (or a modification
-of it) is non-vacuous.
+You should read script.lsp to see that doppelgangers can be attached
+to the two constrained functions and to see how we show that all
+warrants are valid in the resulting evaluation theory for user-book.
