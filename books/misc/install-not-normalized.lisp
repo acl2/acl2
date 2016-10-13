@@ -55,12 +55,14 @@ This comment motivates the macro install-not-normalized, defined below.
                                             "$NOT-NORMALIZED")
                                name))
 
-(defun install-not-normalized-fn-1 (name wrld clique)
+(defun install-not-normalized-fn-1 (name wrld clique defthm-name)
   (declare (xargs :guard (and (symbolp name)
+                              (symbolp defthm-name)
                               (plist-worldp wrld))))
   (let* ((formals (formals name wrld))
          (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
-         (defthm-name (install-not-normalized-name name))
+         (defthm-name (or defthm-name
+                          (install-not-normalized-name name)))
          (controller-alist (let* ((def-bodies
                                     (getprop name 'def-bodies nil
                                              'current-acl2-world wrld))
@@ -83,27 +85,58 @@ This comment motivates the macro install-not-normalized, defined below.
                                                  controller-alist)))))
       (in-theory (disable ,name)))))
 
-(defun install-not-normalized-fn-lst (fns wrld all-fns)
+(defun install-not-normalized-fn-lst (fns wrld all-fns defthm-name-alist)
   (declare (xargs :guard (and (symbol-listp fns)
+                              (symbol-alistp defthm-name-alist)
+                              (symbol-listp (strip-cdrs defthm-name-alist))
                               (plist-worldp wrld))))
-  (cond ((endp fns)
-         nil)
-        (t (append (install-not-normalized-fn-1 (car fns) wrld all-fns)
-                   (install-not-normalized-fn-lst (cdr fns) wrld all-fns)))))
+  (cond
+   ((endp fns)
+    nil)
+   (t (append (install-not-normalized-fn-1 (car fns) wrld all-fns
+                                           (cdr (assoc-eq (car fns)
+                                                          defthm-name-alist)))
+              (install-not-normalized-fn-lst (cdr fns) wrld all-fns
+                                             defthm-name-alist)))))
 
-(defun install-not-normalized-fn (name wrld allp)
+(defun install-not-normalized-fn (name wrld allp defthm-name)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
-  (let ((fns (getprop name 'recursivep nil 'current-acl2-world wrld)))
-    (if (symbol-listp fns) ; for guard verification
-        (install-not-normalized-fn-lst (or (and allp fns)
-                                           (list name))
-                                       wrld fns)
-      (er hard? 'install-not-normalized-fn
-          "Surprise!  Not a non-empty symbol-listp: ~x0"
-          fns))))
+  (let* ((ctx 'install-not-normalized)
+         (fns (getprop name 'recursivep nil 'current-acl2-world wrld))
+         (defthm-name-alist
+           (and defthm-name
+                (cond ((symbolp defthm-name)
+                       (list (cons name defthm-name)))
+                      ((not (and (symbol-alistp defthm-name)
+                                 (symbol-listp
+                                  (strip-cdrs defthm-name))))
+                       (er hard? ctx
+                           "Illegal :defthm-name argument: ~x0"
+                           defthm-name))
+                      ((and (true-listp fns) ; for guard; always true
+                            (not (subsetp-eq (strip-cars defthm-name)
+                                             fns)))
+                       (let ((bad (set-difference-eq (strip-cars defthm-name)
+                                                     fns)))
+                         (er hard? ctx
+                             "Illegal :defthm-name argument: ~x0.  The ~
+                              name~#1~[~x1 is~/s ~&1 are~] bound in your ~
+                              :defthm-name argument but not among the list of ~
+                              candidate names, ~x2, for being given an ~
+                              unnormalized definition."
+                             defthm-name bad fns)))
+                      (t defthm-name)))))
+    (cond
+     ((symbol-listp fns) ; for guard verification
+      (install-not-normalized-fn-lst (or (and allp fns)
+                                         (list name))
+                                     wrld fns defthm-name-alist))
+     (t (er hard? ctx
+            "Implementation error!  Not a non-empty symbol-listp: ~x0"
+            fns)))))
 
-(defmacro install-not-normalized (name &optional (allp 't))
+(defmacro install-not-normalized (name &key (allp 't) defthm-name)
 
 ; Alessandro Coglio sent the following example, which failed until taking his
 ; suggestion to use encapsulate (originally we used progn) and call
@@ -123,7 +156,7 @@ This comment motivates the macro install-not-normalized, defined below.
            ()
            '(set-ignore-ok t) ; see comment above
            '(set-irrelevant-formals-ok t) ; perhaps not necessary, but harmless
-           (install-not-normalized-fn ',name (w state) ,allp))))
+           (install-not-normalized-fn ',name (w state) ,allp ,defthm-name))))
 
 (defun fn-is-body-name (name)
   (declare (xargs :guard (symbolp name)))
@@ -152,8 +185,8 @@ This comment motivates the macro install-not-normalized, defined below.
 (defmacro my-test (&rest forms)
   `(local (encapsulate
             ()
-            (in-theory (current-theory :here)) ; avoid redundancy
-            ,@forms)))
+            (local (in-theory (current-theory :here))) ; avoid redundancy
+            (local (progn ,@forms)))))
 
 ; Example (challenge supplied by Eric Smith):
 
@@ -178,6 +211,48 @@ This comment motivates the macro install-not-normalized, defined below.
 (must-succeed
  (fn-is-body foo
              :hints (("Goal" :in-theory '(foo$not-normalized)))))
+
+(must-succeed
+ (fn-is-body foo
+             :hints (("Goal"
+                      :expand ((foo x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with the default name supplied explicitly.
+
+(my-test
+
+(defun return-nil (x) (declare (ignore x)) nil)
+
+(defun foo (x) (return-nil x))
+
+(install-not-normalized foo :defthm-name 'foo$not-normalized)
+
+(must-succeed
+ (fn-is-body foo
+             :hints (("Goal" :in-theory '(foo$not-normalized)))))
+
+(must-succeed
+ (fn-is-body foo
+             :hints (("Goal"
+                      :expand ((foo x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with a name supplied explicitly that is not the default.
+
+(my-test
+
+(defun return-nil (x) (declare (ignore x)) nil)
+
+(defun foo (x) (return-nil x))
+
+(install-not-normalized foo :defthm-name 'foo-is-unnormalized-body)
+
+(must-succeed
+ (fn-is-body foo
+             :hints (("Goal" :in-theory '(foo-is-unnormalized-body)))))
 
 (must-succeed
  (fn-is-body foo
@@ -216,6 +291,62 @@ This comment motivates the macro install-not-normalized, defined below.
 (must-succeed
  (fn-is-body f-norm
              :hints (("Goal" :in-theory '(f-norm$not-normalized)))))
+
+(must-succeed
+ (fn-is-body f-norm
+             :hints (("Goal"
+                      :expand ((f-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with the default name supplied explicitly.
+
+(my-test
+
+(defun my-t () t)
+(defun my-nil () nil)
+(defun my-zero () 0)
+
+(defun f-norm (x)
+  (if (my-t)
+      (if (consp x)
+          (cons (car x) (f-norm (cdr x)))
+        (my-zero))
+    (my-nil)))
+
+(install-not-normalized f-norm :defthm-name 'f-norm$not-normalized)
+
+(must-succeed
+ (fn-is-body f-norm
+             :hints (("Goal" :in-theory '(f-norm$not-normalized)))))
+
+(must-succeed
+ (fn-is-body f-norm
+             :hints (("Goal"
+                      :expand ((f-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with a name supplied explicitly that is not the default.
+
+(my-test
+
+(defun my-t () t)
+(defun my-nil () nil)
+(defun my-zero () 0)
+
+(defun f-norm (x)
+  (if (my-t)
+      (if (consp x)
+          (cons (car x) (f-norm (cdr x)))
+        (my-zero))
+    (my-nil)))
+
+(install-not-normalized f-norm :defthm-name 'f-norm-alt-def)
+
+(must-succeed
+ (fn-is-body f-norm
+             :hints (("Goal" :in-theory '(f-norm-alt-def)))))
 
 (must-succeed
  (fn-is-body f-norm
@@ -284,6 +415,157 @@ This comment motivates the macro install-not-normalized, defined below.
                       :in-theory (theory 'minimal-theory)))))
 )
 
+; As above, but with one default name supplied explicitly.
+
+(my-test
+
+(defun my-t () t)
+(defun my-nil () nil)
+(defun my-zero () 0)
+
+(mutual-recursion
+
+ (defun f1-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f2-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+
+ (defun f2-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f1-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+ )
+
+(install-not-normalized f1-norm :defthm-name 'f1-norm$not-normalized)
+
+(must-succeed
+ (fn-is-body f1-norm
+             :hints (("Goal" :in-theory '(f1-norm$not-normalized)))))
+
+(must-succeed
+ (fn-is-body f1-norm
+             :hints (("Goal"
+                      :expand ((f1-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+
+; f2 is handled too:
+
+(must-succeed
+ (fn-is-body f2-norm
+             :hints (("Goal" :in-theory '(f2-norm$not-normalized)))))
+
+(must-succeed
+ (fn-is-body f2-norm
+             :hints (("Goal"
+                      :expand ((f2-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with a name supplied explicitly that is not the default.
+
+(my-test
+
+(defun my-t () t)
+(defun my-nil () nil)
+(defun my-zero () 0)
+
+(mutual-recursion
+
+ (defun f1-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f2-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+
+ (defun f2-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f1-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+ )
+
+(install-not-normalized f1-norm :defthm-name 'f1-norm-new-def)
+
+(must-succeed
+ (fn-is-body f1-norm
+             :hints (("Goal" :in-theory '(f1-norm-new-def)))))
+
+(must-succeed
+ (fn-is-body f1-norm
+             :hints (("Goal"
+                      :expand ((f1-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+
+; f2 is handled too:
+
+(must-succeed
+ (fn-is-body f2-norm
+             :hints (("Goal" :in-theory '(f2-norm$not-normalized)))))
+
+(must-succeed
+ (fn-is-body f2-norm
+             :hints (("Goal"
+                      :expand ((f2-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with both names supplied explicitly that are not the default.
+
+(my-test
+
+(defun my-t () t)
+(defun my-nil () nil)
+(defun my-zero () 0)
+
+(mutual-recursion
+
+ (defun f1-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f2-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+
+ (defun f2-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f1-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+ )
+
+(install-not-normalized f1-norm :defthm-name '((f1-norm . f1-norm-new-def)
+                                               (f2-norm . f2-norm-new-def)))
+
+(must-succeed
+ (fn-is-body f1-norm
+             :hints (("Goal" :in-theory '(f1-norm-new-def)))))
+
+(must-succeed
+ (fn-is-body f1-norm
+             :hints (("Goal"
+                      :expand ((f1-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+
+; f2 is handled too:
+
+(must-succeed
+ (fn-is-body f2-norm
+             :hints (("Goal" :in-theory '(f2-norm-new-def)))))
+
+(must-succeed
+ (fn-is-body f2-norm
+             :hints (("Goal"
+                      :expand ((f2-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
 ; Mutual-recursion example, but handling only one function in the nest:
 
 (my-test
@@ -319,11 +601,64 @@ This comment motivates the macro install-not-normalized, defined below.
                       :expand ((f3-norm x))
                       :in-theory (theory 'minimal-theory)))))
 
-(install-not-normalized f3-norm nil) ; "nil" for "not the entire nest
+(install-not-normalized f3-norm :allp nil) ; "nil" for "not the entire nest
 
 (must-succeed
  (fn-is-body f3-norm
              :hints (("Goal" :in-theory '(f3-norm$not-normalized)))))
+
+(must-succeed
+ (fn-is-body f3-norm
+             :hints (("Goal"
+                      :expand ((f3-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+
+; F4 is not handled, since we gave nestp = nil in the call above of
+; install-not-normalized.
+
+(must-fail
+ (fn-is-body f4-norm
+             :hints (("Goal" :in-theory '(f4-norm$not-normalized)))))
+
+(must-fail
+ (fn-is-body f4-norm
+             :hints (("Goal"
+                      :expand ((f4-norm x))
+                      :in-theory (theory 'minimal-theory)))))
+)
+
+; As above, but with a name supplied explicitly that is not the default.
+
+(my-test
+
+(defun my-t () t)
+(defun my-nil () nil)
+(defun my-zero () 0)
+
+(mutual-recursion
+
+ (defun f3-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f4-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+
+ (defun f4-norm (x)
+   (if (my-t)
+       (if (consp x)
+           (cons (car x) (f3-norm (cdr x)))
+         (my-zero))
+     (my-nil)))
+ )
+
+(install-not-normalized f3-norm
+                        :allp nil ; "nil" for "not the entire nest
+                        :defthm-name 'f3-norm-new)
+
+(must-succeed
+ (fn-is-body f3-norm
+             :hints (("Goal" :in-theory '(f3-norm-new)))))
 
 (must-succeed
  (fn-is-body f3-norm
@@ -350,37 +685,123 @@ This comment motivates the macro install-not-normalized, defined below.
 (defxdoc install-not-normalized
   :parents (proof-automation)
   :short "Install an unnormalized definition"
-  :long "<p>By default, ACL2 simplifies the definitions by ``normalizing''
- their bodies; see @(see normalize).  If you prefer that ACL2 avoid such
- simplification when expanding a function call, then you can assigning the
- value of @('nil') to @(tsee xargs) keyword @(':normalize') (see @(see defun))
- instead of the default value of @('t').  But that might not be a reasonable
- option, for example because the definition in question occurs in an included
- book that you prefer not to edit.  An alternative is to call a macro,
- @('install-not-normalized').</p>
+  :long "@({
+ General Form:
 
- @({
- General Forms:
-
- (install-not-normalized NAME)
- (install-not-normalized NAME t) ; equivalent to the form above
- (install-not-normalized NAME nil)
-
+ (install-not-normalized NAME :allp FLG :defthm-name DNAME-SPEC)
  })
 
- <p>In the forms above, @('NAME') should be the name of a function symbol
- introduced with @(tsee defun) (or one of its variants, including @(tsee
- defund) and @(tsee defun-nx)).  The forms above are equivalent unless
- @('NAME') was defined together with other functions in a @(tsee
- mutual-recursion) (or @(tsee defuns)) event.  In that case, the first two
- forms install a non-normalized definition for every function symbol defined in
- that event, while the third form only handles @('NAME').  By ``handle'', we
- mean that a rule of class @('(:definition :install-body t)') is installed,
- with suitable additional fields when appropriate for keywords @(':clique') and
- @(':controller-alist').  The name of the rule generated for function @('F') is
- the symbol @('F$NOT-NORMALIZED'), that is, the result of modifying the @(tsee
- symbol-name) of @('F') by adding the suffix @('\"$NOT-NORMALIZED\"').  To
- obtain that name programmatically:</p>
+ <p>We explain the arguments of @('install-not-normalized') below, but first
+ let us illustrate its use with an example.</p>
+
+ <p>By default, ACL2 simplifies definitions by ``normalizing'' their bodies;
+ see @(see normalize).  If you prefer that ACL2 avoid such simplification when
+ expanding a function call, then you can assign the value of @('nil') to @(tsee
+ xargs) keyword @(':normalize') (see @(see defun)) instead of the default value
+ of @('t').  But that might not be a reasonable option, for example because the
+ definition in question occurs in an included book that you prefer not to edit.
+ An alternative is to call a macro, @('install-not-normalized').</p>
+
+ <p>Consider the following example from Eric Smith.</p>
+
+ @({
+ (defun return-nil (x) (declare (ignore x)) nil)
+ (defun foo (x) (return-nil x))
+
+ ; Fails!
+ (thm (equal (foo x) (return-nil x))
+      :hints ((\"Goal\" :in-theory '(foo))))
+
+ ; Also fails!
+ (thm (equal (foo x) (return-nil x))
+      :hints ((\"Goal\" :expand ((foo x))
+                      :in-theory (theory 'minimal-theory))))
+ })
+
+ <p>The problem is that ACL2 stores @('nil') for the body of @('foo'), using
+ ``type reasoning'' to deduce that @('return-nil') always returns the value,
+ @('nil').  So if @('foo') is the only enabled rule, then we are left trying to
+ prove that @('nil') equals @('(return-nil x)').  Of course, this example is
+ trivial to fix by enabling @('foo'); but we want to support development of
+ tools that leave @('foo') disabled for some reason.</p>
+
+ <p>To solve this problem, we can invoke @('(install-not-normalized foo)'),
+ which generates the following @(':')@(tsee definition) rule.</p>
+
+ @({
+ (DEFTHM FOO$NOT-NORMALIZED
+   (EQUAL (FOO X) (RETURN-NIL X))
+   :HINTS ((\"Goal\" :BY FOO))
+   :RULE-CLASSES ((:DEFINITION :INSTALL-BODY T)))
+ })
+
+ <p>Each of the following now succeeds.  For the second, note that the rule
+ @('FOO$NOT-NORMALIZED') has installed a new body for @('FOO').</p>
+
+ @({
+ (thm (equal (foo x) (return-nil x))
+      :hints ((\"Goal\" :in-theory '(foo$not-normalized))))
+
+ (thm (equal (foo x) (return-nil x))
+      :hints ((\"Goal\"
+               :expand ((foo x))
+               :in-theory (theory 'minimal-theory))))
+ })
+
+ <p>Let us see some more example forms; then, we discuss the general form.</p>
+
+ @({
+ Example Forms:
+
+ (install-not-normalized NAME)
+
+ ; Equivalent to the form above:
+ (install-not-normalized NAME :allp t)
+
+ ; Generate a definition for NAME but not for others from its mutual-recursion:
+ (install-not-normalized NAME :allp nil)
+
+ ; Give the name BAR to the new theorem:
+ (install-not-normalized NAME :defthm-name 'BAR)
+
+ ; Give the name F1-DEF to the new theorem for F1 and
+ ; give the name F2-DEF to the new theorem for F2:
+ (install-not-normalized NAME :defthm-name '((f1 . f1-def) (f2 . f1-def)))
+
+ General Form:
+
+ (install-not-normalized NAME :allp FLG :defthm-name DNAME-SPEC)
+ })
+
+ <p>where the keyword arguments are evaluated, but not @('NAME'), and:</p>
+
+ <ul>
+
+ <li>@('NAME') is the name of a function introduced by @(tsee defun) (or one of
+ its variants, including @(tsee defund) and @(tsee defun-nx)), possibly using
+ @(tsee mutual-recursion).</li>
+
+ <li>@('FLG') (if supplied) is a Boolean that is relevant only in the case that
+ @('NAME') was introduced using @('mutual-recursion').  When @('FLG') is nil, a
+ @(tsee defthm) event is to be introduced only for @('NAME'); otherwise, there
+ will be a new @('defthm') for every function defined with the same
+ @('mutual-recursion') as @('NAME').</li>
+
+ <li>@('DNAME-SPEC') (if supplied) is usually a symbol denoting the name of the
+ @('defthm') event to be introduced for @('NAME'), which is
+ @('NAME$NOT-NORMALIZED') by default &mdash; that is, the result of modifying
+ the @(tsee symbol-name) of @('F') by adding the suffix
+ @('\"$NOT-NORMALIZED\"').  Otherwise, of special interest when @('NAME') was
+ introduced with @('mutual-recursion'): @('DNAME-SPEC') is an association list
+ that maps symbols to symbols.  An entry @('(F . G)') indicates that @('G') is
+ the name of the @('defthm') event generated for @('f').</li>
+
+ </ul>
+
+ <p>Any such @('defthm') event has @(':')@(tsee rule-classes)
+ @('((:definition :install-body t))'), with suitable additional fields when
+ appropriate for keywords @(':clique') and @(':controller-alist').  To obtain
+ its default name programmatically:</p>
 
  @({
  ACL2 !>(install-not-normalized-name 'foo)

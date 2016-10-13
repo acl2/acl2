@@ -14,8 +14,8 @@
 
 (in-package "ACL2")
 
+(include-book "testing")
 (include-book "world-queries")
-(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,6 +101,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (logic-function-namep 'len (w state)))
+
+(assert! (not (logic-function-namep 'car-cdr-elim (w state))))
+
+(assert! (not (logic-function-namep 'aaaaaaaaa (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (logic-function-namep 'f (w state))))
+
+(assert! (not (logic-function-namep "len" (w state))))
+
+(assert! (not (logic-function-namep 'error1 (w state))))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :mode :program)) x)
+ (assert! (not (logic-function-namep 'f (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (definedp 'not (w state)))
 
 (assert! (not (definedp 'cons (w state))))
@@ -149,56 +169,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (eq (non-executablep 'not (w state))
-             nil))
+(assert! (not (non-executablep 'not (w state))))
 
-(assert! (eq (non-executablep 'len (w state))
-             nil))
+(assert! (not (non-executablep 'len (w state))))
 
 (must-succeed*
  (defun-nx f (x) x)
- (assert! (eq (non-executablep 'f (w state))
-              t)))
+ (assert! (non-executablep 'f (w state))))
 
 (must-succeed*
  (defun-sk g (x) (forall (y z) (equal x (cons y z))))
- (assert! (eq (non-executablep 'g (w state))
-              t)))
+ (assert! (non-executablep 'g (w state))))
 
 (must-succeed*
  (defun-sk h (x y) (exists z (equal z (cons x y)))
    :witness-dcls ((declare (xargs :non-executable nil))))
- (assert! (eq (non-executablep 'h (w state))
-              nil)))
+ (assert! (not (non-executablep 'h (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
- (assert! (equal (body 'f nil (w state))
-                 '(return-last 'progn
-                               (throw-nonexec-error 'f (cons x 'nil))
-                               (cons (cons x 'nil) (cons x 'nil)))))
- (assert! (equal (unwrapped-nonexec-body 'f (w state))
-                 '(cons (cons x 'nil) (cons x 'nil)))))
+ (assert-equal (body 'f nil (w state))
+               '(return-last 'progn
+                             (throw-nonexec-error 'f (cons x 'nil))
+                             (cons (cons x 'nil) (cons x 'nil))))
+ (assert-equal (unwrapped-nonexec-body 'f (w state))
+               '(cons (cons x 'nil) (cons x 'nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (= (number-of-results 'cons (w state))
-            1))
+(assert-equal (number-of-results 'cons (w state)) 1)
 
-(assert! (= (number-of-results 'len (w state))
-            1))
+(assert-equal (number-of-results 'len (w state)) 1)
 
 (must-succeed*
  (defun f (x) (mv x (list x)))
- (assert! (= (number-of-results 'f (w state))
-             2)))
+ (assert-equal (number-of-results 'f (w state)) 2))
 
 (must-succeed*
  (defun f (x) (mv x (list x) (list x x)))
- (assert! (= (number-of-results 'f (w state))
-             3)))
+ (assert-equal (number-of-results 'f (w state)) 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -218,7 +229,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (measure 'len (w state)) '(acl2-count x)))
+(assert-equal (measure 'len (w state)) '(acl2-count x))
 
 (must-succeed*
  (defun f (x)
@@ -226,14 +237,14 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert! (equal (measure 'f (w state))
-                 '(nfix (binary-+ '10 (unary-- x))))))
+ (assert-equal (measure 'f (w state))
+               '(nfix (binary-+ '10 (unary-- x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (measured-subset 'len (w state)) '(x)))
+(assert-equal (measured-subset 'len (w state)) '(x))
 
-(assert! (equal (measured-subset 'binary-append (w state)) '(x)))
+(assert-equal (measured-subset 'binary-append (w state)) '(x))
 
 (must-succeed*
  (defun f (x)
@@ -241,8 +252,7 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert! (equal (measured-subset 'f (w state))
-                 '(x))))
+ (assert-equal (measured-subset 'f (w state)) '(x)))
 
 (must-succeed*
  (defun f (x y z)
@@ -250,12 +260,11 @@
    (if (and (natp y) (< y 10))
        (f x (1+ y) z)
      (cons x z)))
- (assert! (equal (measured-subset 'f (w state))
-                 '(y))))
+ (assert-equal (measured-subset 'f (w state)) '(y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (well-founded-relation 'len (w state)) 'o<))
+(assert-equal (well-founded-relation 'len (w state)) 'o<)
 
 (must-succeed*
  (defun f (x)
@@ -263,8 +272,7 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert! (equal (well-founded-relation 'f (w state))
-                 'o<)))
+ (assert-equal (well-founded-relation 'f (w state)) 'o<))
 
 (must-succeed*
  ;; well-founded relation:
@@ -285,13 +293,11 @@
        nil
      (f (1- x))))
  ;; test:
- (assert! (equal (well-founded-relation 'f (w state))
-                 'o<$)))
+ (assert-equal (well-founded-relation 'f (w state)) 'o<$))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (ruler-extenders 'len (w state))
-                '(mv-list return-last)))
+(assert-equal (ruler-extenders 'len (w state)) '(mv-list return-last))
 
 (must-succeed*
  (defun f (x)
@@ -300,8 +306,7 @@
          (if (consp x)
              (f (cdr x))
            nil)))
- (assert! (equal (ruler-extenders 'f (w state))
-                 '(cons))))
+ (assert-equal (ruler-extenders 'f (w state)) '(cons)))
 
 (must-succeed*
  (defun f (x)
@@ -310,8 +315,7 @@
          (if (consp x)
              (f (cdr x))
            nil)))
- (assert! (eq (ruler-extenders 'f (w state))
-              :all)))
+ (assert-equal (ruler-extenders 'f (w state)) :all))
 
 (must-succeed*
  (defun fact (n)
@@ -320,26 +324,31 @@
         (if (posp n)
             (* n (fact (1- n)))
           1)))
- (assert! (equal (ruler-extenders 'fact (w state))
-                 '(:lambdas))))
+ (assert-equal (ruler-extenders 'fact (w state)) '(:lambdas)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (macro-required-args 'tthm (w state))
-                '(fn)))
+(assert-equal (macro-required-args 'tthm (w state)) '(fn))
 
-(assert! (eq (macro-required-args 'list (w state))
-             nil))
+(assert-equal (macro-required-args 'list (w state)) nil)
 
 (must-succeed*
  (defmacro m (a) `(list ,a))
- (assert! (equal (macro-required-args 'm (w state))
-                 '(a))))
+ (assert-equal (macro-required-args 'm (w state)) '(a)))
 
 (must-succeed*
  (defmacro m (a &key b) `(list ,a ,(or b :default)))
- (assert! (equal (macro-required-args 'm (w state))
-                 '(a))))
+ (assert-equal (macro-required-args 'm (w state)) '(a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+ (defund f (x) x)
+ (assert! (fundef-disabledp 'f state)))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (fundef-disabledp 'f state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,6 +359,38 @@
 (must-succeed*
  (defund f (x) x)
  (assert! (not (fundef-enabledp 'f state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (not (rune-disabledp '(:rewrite cons-car-cdr) state)))
+
+(must-succeed*
+ (defthmd th (acl2-numberp (+ x y)))
+ (assert! (rune-disabledp '(:rewrite th) state)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (+ x y)))
+ (assert! (not (rune-disabledp '(:rewrite th) state))))
+
+(must-succeed*
+ (defthmd th (acl2-numberp (+ x y)) :rule-classes :type-prescription)
+ (assert! (rune-disabledp '(:type-prescription th) state)))
+
+(must-succeed*
+ (defthmd th
+   (acl2-numberp (+ x y))
+   :rule-classes ((:rewrite :corollary (acl2-numberp (+ x y)))
+                  (:rewrite :corollary (acl2-numberp (+ y x)))))
+ (assert! (rune-disabledp '(:rewrite th . 1) state))
+ (assert! (rune-disabledp '(:rewrite th . 2) state)))
+
+(must-succeed*
+ (defthm th
+   (acl2-numberp (+ x y))
+   :rule-classes ((:rewrite :corollary (acl2-numberp (+ x y)))
+                  (:rewrite :corollary (acl2-numberp (+ y x)))))
+ (assert! (not (rune-disabledp '(:rewrite th . 1) state)))
+ (assert! (not (rune-disabledp '(:rewrite th . 2) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -537,14 +578,12 @@
 
 (must-succeed*
  (defun f (x) x)
- (assert! (equal (event-landmark-names (cddr (nth 0 (w state))))
-                 '(f))))
+ (assert-equal (event-landmark-names (cddr (nth 0 (w state)))) '(f)))
 
 (must-succeed*
  (defun f (x) x)
  (verify-guards f)
- (assert! (eq (event-landmark-names (cddr (nth 0 (w state))))
-              nil)))
+ (assert-equal (event-landmark-names (cddr (nth 0 (w state)))) nil))
 
 (must-succeed*
  (mutual-recursion
@@ -559,5 +598,5 @@
         0
       (+ (f (car terms))
          (f-lst (cdr terms))))))
- (assert! (equal (event-landmark-names (cddr (nth 0 (w state))))
-                 '(f f-lst))))
+ (assert-equal (event-landmark-names (cddr (nth 0 (w state))))
+               '(f f-lst)))

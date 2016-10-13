@@ -58,7 +58,7 @@ copying and pasting code.")
 ; Check added by Matt K.  (Without it, the check below involving
 ;   (get-event-tuple 'binary-append world)
 ; was failing after a 3/20/2015 modification to ACL2 source file axioms.lisp.
-             (get-event-tuple name (cdr ev-world)))
+             (get-event-tuple name (acl2::scan-to-event (cdr ev-world))))
             (t tuple))))
 
 (defun runes-to-e/ds (runes enables disables state)

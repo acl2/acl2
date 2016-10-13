@@ -10,7 +10,7 @@
 (set-state-ok t)
 
 (include-book "tools/remove-hyps" :dir :system) ; for event-steps
-(include-book "kestrel/utilities/world-queries" :dir :system) ; for ruler-extenders
+(include-book "world-queries") ; for ruler-extenders
 
 (defun not-none (r)
 

@@ -16,9 +16,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/world-queries" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)
+(include-book "world-queries")
 
 (local (set-default-parents defun-sk-queries))
 

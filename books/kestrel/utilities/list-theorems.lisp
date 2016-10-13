@@ -63,8 +63,7 @@
     :use lemma
     :prep-lemmas
     ((defruled lemma
-       (implies (and (syntaxp (quotep c))
-                     (consp x)
+       (implies (and (consp x)
                      (or (< (fix c) 0)
                          (> (len (cdr x))
                             (1- c))))

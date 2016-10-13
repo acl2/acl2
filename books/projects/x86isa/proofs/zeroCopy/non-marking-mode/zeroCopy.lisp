@@ -205,7 +205,7 @@
                :r (cpl x86) x86))
              (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
             (disjoint-p
-             (all-translation-governing-addresses
+             (all-xlation-governing-entries-paddrs
               (create-canonical-address-list
                8 (pml4-table-entry-addr lin-addr (pml4t-base-addr x86)))
               x86)
@@ -336,7 +336,7 @@
    ;; Translation-governing addresses of the stack are disjoint from
    ;; the physical addresses of the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
      x86)
     (mv-nth 1 (las-to-pas
@@ -550,7 +550,7 @@
    ;; Translation-governing addresses of the program are disjoint from
    ;; the physical addresses of the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
      x86)
     (mv-nth 1 (las-to-pas
@@ -562,7 +562,7 @@
    ;; The translation-governing addresses of PML4TE addresses are
    ;; disjoint from the physical addresses corresponding to the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4t-base-addr x86)))
      x86)
@@ -584,7 +584,7 @@
    ;; The translation-governing addresses of PDPTE addresses are
    ;; disjoint from the physical addresses corresponding to the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -611,7 +611,7 @@
    ;; The translation-governing addresses of PML4TE addresses are
    ;; disjoint from the physical addresses corresponding to the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4t-base-addr x86)))
      x86)
@@ -633,7 +633,7 @@
    ;; The translation-governing addresses of PDPTE addresses are
    ;; disjoint from the physical addresses corresponding to the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -676,7 +676,7 @@
    ;; Translation-governing addresses of the program are disjoint from
    ;; the PDPTE physical addresses (on behalf of a write).
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
      x86)
     (mv-nth 1 (las-to-pas
@@ -692,7 +692,7 @@
    ;; The translation-governing addresses of the ret address are
    ;; disjoint from the destination PDPTE.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list
@@ -731,7 +731,7 @@
    ;; stack are disjoint from the physical addresses of the rest of
    ;; the stack.
    (disjoint-p
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86)
     (mv-nth 1
             (las-to-pas (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
@@ -775,7 +775,7 @@
 ;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
 ;; (acl2::why program-at-wb-disjoint-in-system-level-non-marking-mode)
 ;; (acl2::why rb-wb-disjoint-in-system-level-non-marking-mode)
-;; (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
+;; (acl2::why disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
 
 ;; Argh, ACL2's default ancestors-check is killing me --- it prevents
@@ -787,7 +787,7 @@
 (def-ruleset rewire_dst_to_src-disable
   '((:rewrite ia32e-la-to-pa-lower-12-bits-error)
     (:rewrite
-     disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p)
+     disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p)
     (:type-prescription natp-pml4-table-entry-addr)
     (:rewrite acl2::consp-when-member-equal-of-atom-listp)
     (:rewrite ia32e-la-to-pa-xw-state)
@@ -888,7 +888,7 @@
     (:type-prescription true-listp)
     (:rewrite unsigned-byte-p-of-logtail)
     (:rewrite bitops::logbitp-when-bitmaskp)
-    (:type-prescription all-translation-governing-addresses)
+    (:type-prescription all-xlation-governing-entries-paddrs)
     (:type-prescription set::setp-type)
     (:type-prescription set::empty-type)
     (:rewrite acl2::equal-constant-+)
@@ -2934,11 +2934,11 @@
                   (xr :rgf *rsi* x86)
                   (pdpt-base-addr (xr :rgf *rsi* x86) x86)))))
 
-(defun-nx destination-translation-governing-addresses-and-stack-no-interfere-p (x86)
+(defun-nx destination-xlation-governing-entries-paddrs-and-stack-no-interfere-p (x86)
   ;; The translation-governing addresses of the destination are disjoint
   ;; from the physical addresses corresponding to the stack.
   (disjoint-p
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list *2^30* (xr :rgf *rsi* x86)) x86)
    (mv-nth 1 (las-to-pas
               (create-canonical-address-list
@@ -2968,7 +2968,7 @@
 (defun-nx more-non-interference-assumptions (x86)
   (and (source-physical-addresses-and-destination-PDPTE-no-interfere-p x86)
        (destination-PML4E-and-destination-PDPTE-no-interfere-p x86)
-       (destination-translation-governing-addresses-and-stack-no-interfere-p x86)
+       (destination-xlation-governing-entries-paddrs-and-stack-no-interfere-p x86)
        (source-addresses-and-stack-no-interfere-p x86)))
 
 ;; ----------------------------------------------------------------------
@@ -3012,7 +3012,7 @@
                              pml4-table-entry-addr-to-c-program-optimized-form-gl
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
-                             disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                             disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                              acl2::consp-when-member-equal-of-atom-listp
                              r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
                              ia32e-la-to-pa-xw-state
@@ -3071,7 +3071,7 @@
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
 
-                             disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                             disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                              acl2::consp-when-member-equal-of-atom-listp
                              r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
                              ia32e-la-to-pa-xw-state

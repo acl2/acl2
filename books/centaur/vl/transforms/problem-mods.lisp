@@ -34,7 +34,7 @@
 
 (defsection problem-modules
   :parents (transforms)
-  :short "Eliminate modules (that the user) says cause problems."
+  :short "Eliminate modules that (the user says) cause problems."
 
   :long "<p>This is a trivial transform that simply adds fatal @(see warnings)
 to any modules we are told are \"problem modules.\"</p>

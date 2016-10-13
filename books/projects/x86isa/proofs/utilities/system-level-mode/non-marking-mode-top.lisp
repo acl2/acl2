@@ -98,7 +98,7 @@
    @('rb-wb-disjoint-in-system-level-non-marking-mode') <br/>
    @('rb-wb-equal-in-system-level-non-marking-mode') <br/>
    @('la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode') <br/>
-   @('all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode')
+   @('all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-in-non-marking-mode')
    </li>
 
  </ul>
@@ -161,7 +161,7 @@
   @(def rb-wb-disjoint-in-system-level-non-marking-mode)
   @(def rb-wb-equal-in-system-level-non-marking-mode)
   @(def la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
-  @(def all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode)
+  @(def all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-in-non-marking-mode)
 ")
 
 (local (xdoc::set-default-parents system-level-non-marking-mode-proof-utilities))
@@ -174,7 +174,7 @@
 ;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
 ;; (acl2::why program-at-wb-disjoint-in-system-level-non-marking-mode)
 ;; (acl2::why rb-wb-disjoint-in-system-level-non-marking-mode)
-;; (acl2::why disjointness-of-translation-governing-addresses-from-all-translation-governing-addresses)
+;; (acl2::why disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
 
 ;; ======================================================================
@@ -364,7 +364,7 @@
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm las-to-pas-values-and-xw-mem-not-member-in-non-marking-mode
-  (implies (and (not (member-p index (all-translation-governing-addresses l-addrs x86)))
+  (implies (and (not (member-p index (all-xlation-governing-entries-paddrs l-addrs x86)))
                 (physical-address-p index)
                 (canonical-address-listp l-addrs)
                 (unsigned-byte-p 8 byte)
@@ -376,7 +376,7 @@
   :hints (("Goal"
            :in-theory (e/d* (disjoint-p
                              member-p)
-                            (translation-governing-addresses)))))
+                            (xlation-governing-entries-paddrs)))))
 
 (defun-nx wb-duplicate-writes-induct (addr-list x86)
   (if (endp addr-list)
@@ -410,14 +410,14 @@
   (implies (canonical-address-listp x)
            (canonical-address-listp (remove-duplicates-equal x))))
 
-(defthmd all-translation-governing-addresses-remove-duplicates-equal-and-subset-p
-  (subset-p (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)
-            (all-translation-governing-addresses l-addrs x86))
-  :hints (("Goal" :in-theory (e/d* (subset-p) (translation-governing-addresses)))))
+(defthmd all-xlation-governing-entries-paddrs-remove-duplicates-equal-and-subset-p
+  (subset-p (all-xlation-governing-entries-paddrs (remove-duplicates-equal l-addrs) x86)
+            (all-xlation-governing-entries-paddrs l-addrs x86))
+  :hints (("Goal" :in-theory (e/d* (subset-p) (xlation-governing-entries-paddrs)))))
 
-(defthmd member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
-  (implies (not (member-p addr (all-translation-governing-addresses l-addrs x86)))
-           (not (member-p addr (all-translation-governing-addresses (remove-duplicates-equal l-addrs) x86)))))
+(defthmd member-p-of-all-xlation-governing-entries-paddrs-and-remove-duplicates-equal
+  (implies (not (member-p addr (all-xlation-governing-entries-paddrs l-addrs x86)))
+           (not (member-p addr (all-xlation-governing-entries-paddrs (remove-duplicates-equal l-addrs) x86)))))
 
 (defthmd wb-remove-duplicate-writes-in-system-level-non-marking-mode
   (implies (and (syntaxp (not (and (consp addr-lst)
@@ -426,7 +426,7 @@
                  ;; Physical addresses corresponding to (strip-cars
                  ;; addr-lst) are disjoint from the
                  ;; translation-governing addresses.
-                 (all-translation-governing-addresses (strip-cars addr-lst)  x86)
+                 (all-xlation-governing-entries-paddrs (strip-cars addr-lst)  x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (addr-byte-alistp addr-lst)
                 ;; (not (mv-nth 0 (wb addr-lst x86)))
@@ -443,13 +443,13 @@
            :in-theory (e/d (disjoint-p
                             member-p
                             subset-p
-                            member-p-of-all-translation-governing-addresses-and-remove-duplicates-equal
-                            all-translation-governing-addresses-remove-duplicates-equal-and-subset-p)
+                            member-p-of-all-xlation-governing-entries-paddrs-and-remove-duplicates-equal
+                            all-xlation-governing-entries-paddrs-remove-duplicates-equal-and-subset-p)
                            (acl2::mv-nth-cons-meta
                             disjoint-p-subset-p
                             member-p-and-remove-duplicates-equal
-                            disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
-                            translation-governing-addresses))
+                            disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
+                            xlation-governing-entries-paddrs))
            :induct (wb-duplicate-writes-induct addr-lst x86))))
 
 ;; ======================================================================
@@ -486,7 +486,7 @@
                              force (force))))))
 
 (defthm las-to-pas-values-in-non-marking-mode-and-write-to-physical-memory-disjoint
-  (implies (and (disjoint-p (all-translation-governing-addresses l-addrs x86) p-addrs)
+  (implies (and (disjoint-p (all-xlation-governing-entries-paddrs l-addrs x86) p-addrs)
                 (physical-address-listp p-addrs)
                 (canonical-address-listp l-addrs)
                 (not (page-structure-marking-mode x86)))
@@ -495,13 +495,13 @@
                 (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
                        (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86)
-           :in-theory (e/d* (disjoint-p disjoint-p-commutative) (translation-governing-addresses)))))
+           :in-theory (e/d* (disjoint-p disjoint-p-commutative) (xlation-governing-entries-paddrs)))))
 
 (defthm ia32e-la-to-pa-page-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode
   (implies (and (equal cpl (cpl x86))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (disjoint-p
-                 (translation-governing-addresses-for-page-table lin-addr base-addr x86)
+                 (xlation-governing-entries-paddrs-for-page-table lin-addr base-addr x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr)
@@ -529,7 +529,7 @@
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-table
-                             translation-governing-addresses-for-page-table)
+                             xlation-governing-entries-paddrs-for-page-table)
                             (wb
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
@@ -539,7 +539,7 @@
   (implies (and (equal cpl (cpl x86))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (disjoint-p
-                 (translation-governing-addresses-for-page-directory lin-addr base-addr x86)
+                 (xlation-governing-entries-paddrs-for-page-directory lin-addr base-addr x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr)
@@ -567,9 +567,9 @@
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-directory
-                             translation-governing-addresses-for-page-directory)
+                             xlation-governing-entries-paddrs-for-page-directory)
                             (wb
-                             translation-governing-addresses-for-page-table
+                             xlation-governing-entries-paddrs-for-page-table
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
@@ -578,7 +578,7 @@
   (implies (and (equal cpl (cpl x86))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (disjoint-p
-                 (translation-governing-addresses-for-page-dir-ptr-table lin-addr base-addr x86)
+                 (xlation-governing-entries-paddrs-for-page-dir-ptr-table lin-addr base-addr x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr)
@@ -606,9 +606,9 @@
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-dir-ptr-table
-                             translation-governing-addresses-for-page-dir-ptr-table)
+                             xlation-governing-entries-paddrs-for-page-dir-ptr-table)
                             (wb
-                             translation-governing-addresses-for-page-directory
+                             xlation-governing-entries-paddrs-for-page-directory
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
@@ -617,7 +617,7 @@
   (implies (and (equal cpl (cpl x86))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (disjoint-p
-                 (translation-governing-addresses-for-pml4-table lin-addr base-addr x86)
+                 (xlation-governing-entries-paddrs-for-pml4-table lin-addr base-addr x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr)
@@ -643,9 +643,9 @@
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-pml4-table
-                             translation-governing-addresses-for-pml4-table)
+                             xlation-governing-entries-paddrs-for-pml4-table)
                             (wb
-                             translation-governing-addresses-for-page-dir-ptr-table
+                             xlation-governing-entries-paddrs-for-page-dir-ptr-table
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
@@ -653,7 +653,7 @@
 (defthm ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode
   (implies (and (equal cpl (cpl x86))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
-                (disjoint-p (translation-governing-addresses lin-addr x86)
+                (disjoint-p (xlation-governing-entries-paddrs lin-addr x86)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr))
@@ -667,16 +667,16 @@
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa
-                             translation-governing-addresses)
+                             xlation-governing-entries-paddrs)
                             (wb
-                             translation-governing-addresses-for-pml4-table
+                             xlation-governing-entries-paddrs-for-pml4-table
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
 (defthm la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode
   (implies (and (equal cpl (cpl x86))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
-                (disjoint-p (all-translation-governing-addresses l-addrs x86)
+                (disjoint-p (all-xlation-governing-entries-paddrs l-addrs x86)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl x86)))
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs))
@@ -686,10 +686,10 @@
             (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal"
-           :induct (all-translation-governing-addresses l-addrs x86)
+           :induct (all-xlation-governing-entries-paddrs l-addrs x86)
            :in-theory (e/d* ()
                             (wb
-                             translation-governing-addresses
+                             xlation-governing-entries-paddrs
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
@@ -702,7 +702,7 @@
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (all-translation-governing-addresses l-addrs x86)
+                 (all-xlation-governing-entries-paddrs l-addrs x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
@@ -736,7 +736,7 @@
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (all-translation-governing-addresses l-addrs x86)
+                 (all-xlation-governing-entries-paddrs l-addrs x86)
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
                 (no-duplicates-p
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -791,7 +791,7 @@
                  (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p
-                 (all-translation-governing-addresses l-addrs x86)
+                 (all-xlation-governing-entries-paddrs l-addrs x86)
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
@@ -826,49 +826,49 @@
                                    ()))))
 
 (local
- (defthm translation-governing-addresses-and-write-to-physical-memory
+ (defthm xlation-governing-entries-paddrs-and-write-to-physical-memory
    ;; This lemma already exists in paging/top.
-   (implies (and (disjoint-p p-addrs (all-translation-governing-addresses l-addrs x86))
+   (implies (and (disjoint-p p-addrs (all-xlation-governing-entries-paddrs l-addrs x86))
                  (physical-address-listp p-addrs))
             (equal
-             (all-translation-governing-addresses l-addrs (write-to-physical-memory p-addrs bytes x86))
-             (all-translation-governing-addresses l-addrs x86)))
+             (all-xlation-governing-entries-paddrs l-addrs (write-to-physical-memory p-addrs bytes x86))
+             (all-xlation-governing-entries-paddrs l-addrs x86)))
    :hints (("Goal" :in-theory (e/d* (disjoint-p-commutative) ())))))
 
-(defthm translation-governing-addresses-and-mv-nth-1-wb-disjoint-p-in-non-marking-mode
+(defthm xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-p-in-non-marking-mode
   (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                (disjoint-p (translation-governing-addresses lin-addr x86)
+                (disjoint-p (xlation-governing-entries-paddrs lin-addr x86)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (x86p x86))
-           (equal (translation-governing-addresses lin-addr (mv-nth 1 (wb addr-lst x86)))
-                  (translation-governing-addresses lin-addr x86)))
+           (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst x86)))
+                  (xlation-governing-entries-paddrs lin-addr x86)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p wb) ()))))
 
-(defthm all-translation-governing-addresses-and-mv-nth-1-wb-disjoint-in-non-marking-mode
+(defthm all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-in-non-marking-mode
   (implies (and
             (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-            (disjoint-p (all-translation-governing-addresses l-addrs x86)
+            (disjoint-p (all-xlation-governing-entries-paddrs l-addrs x86)
                         (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
             (not (programmer-level-mode x86))
             (not (page-structure-marking-mode x86))
             (x86p x86))
-           (equal (all-translation-governing-addresses l-addrs (mv-nth 1 (wb addr-lst x86)))
-                  (all-translation-governing-addresses l-addrs x86)))
+           (equal (all-xlation-governing-entries-paddrs l-addrs (mv-nth 1 (wb addr-lst x86)))
+                  (all-xlation-governing-entries-paddrs l-addrs x86)))
   :hints (("Goal"
-           :in-theory (e/d* (all-translation-governing-addresses)
-                            (translation-governing-addresses
+           :in-theory (e/d* (all-xlation-governing-entries-paddrs)
+                            (xlation-governing-entries-paddrs
                              wb))
-           :induct (all-translation-governing-addresses l-addrs x86))))
+           :induct (all-xlation-governing-entries-paddrs l-addrs x86))))
 
 ;; ======================================================================
 
 (globally-disable '(rb wb canonical-address-p program-at
                        unsigned-byte-p signed-byte-p
-                       las-to-pas all-translation-governing-addresses))
+                       las-to-pas all-xlation-governing-entries-paddrs))
 
 (in-theory (e/d*
             ;; We enable all these functions so that reasoning about

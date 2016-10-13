@@ -16,8 +16,8 @@
 (in-package "ACL2")
 
 (include-book "applicability-conditions")
-(include-book "kestrel/utilities/testing" :dir :system)
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "testing")
+(include-book "world-queries")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,7 +271,7 @@
      (applicability-condition-events nil nil nil nil nil (w state))
      `(progn
         ,@events
-        (assert! (eq ,names-to-thms nil)))))
+        (assert-equal ,names-to-thms nil))))
  (make-event (f state)))
 
 (must-succeed*
@@ -302,10 +302,7 @@
            (th-thm (cdr (assoc-eq 'th names-to-thms))))
        `(progn
           (encapsulate () ,@events)
-          (assert!
-           (rune-enabledp '(:type-prescription ,appcond-thm) state))
-          (assert!
-           (not (runep '(:rewrite ,cons-thm) (w state))))
-          (assert!
-           (rune-disabledp '(:rewrite ,th-thm) state))))))
+          (assert! (rune-enabledp '(:type-prescription ,appcond-thm) state))
+          (assert! (not (runep '(:rewrite ,cons-thm) (w state))))
+          (assert! (rune-disabledp '(:rewrite ,th-thm) state))))))
  (make-event (f state)))

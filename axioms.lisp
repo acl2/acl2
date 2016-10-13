@@ -2885,15 +2885,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   :mode :logic))
   last-arg)
 
+(defun return-last-fn (qfn)
+
+; Return nil unless qfn is of the form (quote s) for a symbol s.
+
+  (declare (xargs :guard t))
+  (and (consp qfn)
+       (eq (car qfn) 'quote)
+       (consp (cdr qfn))
+       (symbolp (cadr qfn))
+       (null (cddr qfn))
+       (cadr qfn)))
+
 #-acl2-loop-only
-(defmacro return-last (qfn arg2 arg3)
-  (let* ((fn (and (consp qfn)
-                  (eq (car qfn) 'quote)
-                  (consp (cdr qfn))
-                  (symbolp (cadr qfn))
-                  (null (cddr qfn))
-                  (cadr qfn)))
-         (arg2
+(defun return-last-arg2 (fn arg2)
+
+; Here fn is known to be a symbol, for example as returned by applying
+; return-last-fn to the first argument of a call of return-last.  Note that fn
+; can be nil, in which case the second cond clause below is taken.  We think of
+; arg2 as being the second argument of a call of return-last, and here we cause
+; that argument to be evaluated with attachments when appropriate.
 
 ; There is no logical problem with using attachments when evaluating the second
 ; argument of return-last, because logically the third argument provides the
@@ -2905,16 +2916,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; See also the related treatment of aokp in ev-rec-return-last.
 
-          (cond
-           ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
-                (and fn (macro-function fn))
-                (symbolp arg2)      ; no point in doing extra bindings below
-                (and (consp arg2)
-                     (eq (car arg2) ; no point in doing extra bindings below
-                         'quote)))
-            arg2)
-           (t `(let ((*aokp* t))
-                 ,arg2)))))
+  (cond ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
+             (and fn (macro-function fn))
+             (symbolp arg2) ; no point in doing extra bindings below
+             (and (consp arg2)
+                  (eq (car arg2) ; no point in doing extra bindings below
+                      'quote)))
+         arg2)
+        (t `(let ((*aokp* t))
+              ,arg2))))
+
+#-acl2-loop-only
+(defmacro return-last (qfn arg2 arg3)
+  (let* ((fn (return-last-fn qfn))
+         (arg2 (return-last-arg2 fn arg2)))
     (cond ((and fn (fboundp fn))
 
 ; Translation for evaluation requires that if the first argument is a quoted
@@ -4065,13 +4080,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(27 . MINUSP))
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
-  '(109 . BOOLEANP)
+  '(32 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
-  '(108 . BOOLEANP)
+  '(31 . BOOLEANP)
   #+(and non-standard-analysis (not acl2-par))
-  '(111 . BOOLEANP)
+  '(34 . BOOLEANP)
   #+(and non-standard-analysis acl2-par)
-  '(112 . BOOLEANP)
+  '(35 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -12719,6 +12734,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     canonical-pathname ; under dependent clause-processor
 
+    concrete-badge-userfn
+    concrete-apply$-userfn
+
+; The apply.lisp book defines apply$-lambda in :logic mode and if execution of
+; apply$ is allowed (by going through the rubric that involves setting
+; *allow-concrete-execution-of-apply-stubs*) then its raw Lisp code is
+; different, namely apply$-lambda in raw Lisp is defined to call
+; concrete-apply$-lambda.  So, perhaps, someday, apply$-lambda will be on this
+; list.
+
 ; mfc functions
 
     mfc-ancestors ; *metafunction-context*
@@ -13249,6 +13274,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
+    (slow-apply$-action . t)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
@@ -26980,3 +27006,21 @@ Lisp definition."
                    (natp val)
                    val)
               state)))
+
+(encapsulate
+  ()
+
+; The following function symbols are used (ancestrally) in the constraints on
+; concrete-badge-userfn.  They must be in logic mode.  We use encapsulate so
+; that verify-termination-boot-strap will do its intended job in the first pass
+; of the build.
+
+  (logic)
+  (verify-termination-boot-strap booleanp)
+  (verify-termination-boot-strap all-nils)
+  (verify-termination-boot-strap member-eql-exec)
+  (verify-termination-boot-strap member-eql-exec$guard-check)
+  (verify-termination-boot-strap member-equal)
+  (verify-termination-boot-strap subsetp-eql-exec)
+  (verify-termination-boot-strap subsetp-eql-exec$guard-check)
+  (verify-termination-boot-strap subsetp-equal))

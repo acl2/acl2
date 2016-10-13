@@ -53,11 +53,11 @@
 
 ;; ======================================================================
 
-;; !! TODO: I should probably replace translation-governing-addresses*
+;; !! TODO: I should probably replace xlation-governing-entries-paddrs*
 ;; !! with xlate-governing-qword-addresses* eventually...
 
 ;; xlate-governing-qword-addresses are similar to
-;; translation-governing-addresses, except that they output quadword
+;; xlation-governing-entries-paddrs, except that they output quadword
 ;; addresses of the paging entries instead of byte addresses.
 
 (define xlate-governing-qword-addresses-for-page-table
@@ -82,9 +82,9 @@
     (equal (open-qword-paddr-list
             (xlate-governing-qword-addresses-for-page-table
              lin-addr base-addr x86))
-           (translation-governing-addresses-for-page-table
+           (xlation-governing-entries-paddrs-for-page-table
             lin-addr base-addr x86))
-    :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-table)
+    :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-page-table)
                                      ()))))
 
   (defthm xlate-governing-qword-addresses-for-page-table-and-xw-not-mem
@@ -143,9 +143,9 @@
     (equal (open-qword-paddr-list
             (xlate-governing-qword-addresses-for-page-directory
              lin-addr base-addr x86))
-           (translation-governing-addresses-for-page-directory
+           (xlation-governing-entries-paddrs-for-page-directory
             lin-addr base-addr x86))
-    :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-directory)
+    :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-page-directory)
                                      ()))))
 
   (defthm xlate-governing-qword-addresses-for-page-directory-and-xw-not-mem
@@ -205,9 +205,9 @@
     (equal (open-qword-paddr-list
             (xlate-governing-qword-addresses-for-page-dir-ptr-table
              lin-addr base-addr x86))
-           (translation-governing-addresses-for-page-dir-ptr-table
+           (xlation-governing-entries-paddrs-for-page-dir-ptr-table
             lin-addr base-addr x86))
-    :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-page-dir-ptr-table)
+    :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-page-dir-ptr-table)
                                      ()))))
 
   (defthm xlate-governing-qword-addresses-for-page-dir-ptr-table-and-xw-not-mem
@@ -269,9 +269,9 @@
     (equal (open-qword-paddr-list
             (xlate-governing-qword-addresses-for-pml4-table
              lin-addr base-addr x86))
-           (translation-governing-addresses-for-pml4-table
+           (xlation-governing-entries-paddrs-for-pml4-table
             lin-addr base-addr x86))
-    :hints (("Goal" :in-theory (e/d* (translation-governing-addresses-for-pml4-table)
+    :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-pml4-table)
                                      ()))))
 
   (defthm xlate-governing-qword-addresses-for-pml4-table-and-xw-not-mem
@@ -321,7 +321,7 @@
 </ol>
 
 <p>The following rule shows the relationship between @(see
-translation-governing-addresses) and
+xlation-governing-entries-paddrs) and
 @('xlate-governing-qword-addresses'):</p>
 
 @(def xlate-governing-qword-and-byte-addresses)"
@@ -347,8 +347,8 @@ translation-governing-addresses) and
   (defthm xlate-governing-qword-and-byte-addresses
     (equal (open-qword-paddr-list
             (xlate-governing-qword-addresses lin-addr x86))
-           (translation-governing-addresses lin-addr x86))
-    :hints (("Goal" :in-theory (e/d* (translation-governing-addresses)
+           (xlation-governing-entries-paddrs lin-addr x86))
+    :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs)
                                      ()))))
 
   (defthm xlate-governing-qword-addresses-and-xw-not-mem
@@ -381,8 +381,8 @@ translation-governing-addresses) and
   (defthm all-xlate-governing-qword-and-byte-addresses
     (equal (open-qword-paddr-list
             (all-xlate-governing-qword-addresses l-addrs x86))
-           (all-translation-governing-addresses l-addrs x86))
-    :hints (("Goal" :in-theory (e/d* (all-translation-governing-addresses)
+           (all-xlation-governing-entries-paddrs l-addrs x86))
+    :hints (("Goal" :in-theory (e/d* (all-xlation-governing-entries-paddrs)
                                      ()))))
 
   (defthm all-xlate-governing-qword-addresses-and-xw-not-mem

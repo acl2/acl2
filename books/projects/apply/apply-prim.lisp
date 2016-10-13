@@ -2,11 +2,14 @@
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Portcullis:  Empty
+
 ; The Maximal Defun of Apply$-Prim
 
-; We define apply$-primp, and apply$-prim to include all functions in the
-; bootstrap world that satisfy the Fundamental Properties.  We also introduce a
-; metafunction for simplifying (apply$-prim 'fn args) and verify it.
+; We define *apply$-primitives*, apply$-primp, and apply$-prim to include all
+; functions in the bootstrap world that satisfy the Fundamental Properties.  We
+; also introduce a metafunction for simplifying (apply$-prim 'fn args) and
+; verify it.
 
 ; At some point we may fix these books to work with ACL2(r).
 ; cert_param: (non-acl2r)
@@ -54,8 +57,9 @@
 ; or out) in stobjs or state and that are not among a select few (named below)
 ; that require trust tags or have syntactic restrictions on their calls.  Note
 ; that our final list includes functions that return multiple values, which are
-; not applicable but are first-order-like and could be used in the subsequent
-; definitions of applicable functions.
+; not warranted but will have badges: they are first-order-like and could be
+; used in the subsequent definitions of warranted functions provided their
+; multiple values are ultimately turned into a single returned value.
 
 ; Return (... ((fn . formals) . output-arity) ...), that for each identified
 ; fn, pairs a term, (fn . formals), with its output arity.  We will ultimately
@@ -114,7 +118,7 @@
 ;     ...))
 
 ; But in apply.lisp and in the support for the execution of the stubs
-; badge-nonprim and apply$-nonprim we do not need the formals and we sometimes
+; badge-userfn and apply$-userfn we do not need the formals and we sometimes
 ; need the arities.  So we define another constant which is used in those
 ; places.  That constant, *badge-prim-falist* is a fast alist.
 
@@ -122,7 +126,6 @@
  `(defconst *first-order-like-terms-and-out-arities*
     ',(first-order-like-terms-and-out-arities (w state))))
 
-; This is redundant with the defrec in the ACL2 sources:
 (defrec apply$-badge (authorization-flg arity . ilks) nil)
 
 (defun compute-badge-of-primitives (terms-and-out-arities)

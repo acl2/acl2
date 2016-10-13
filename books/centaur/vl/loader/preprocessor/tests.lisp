@@ -97,7 +97,7 @@
 
 (defmacro preprocessor-basic-test (&key input defines output)
   `(make-event
-    (b* ((echars (vl-echarlist-from-str ,input))
+    (b* ((echars (vl-echarlist-from-str ,input :filename "test.v"))
          ((mv successp ?defs ?filemap output state)
           (vl-preprocess echars
                          :defines ,defines
@@ -254,17 +254,17 @@
 
 (preprocessor-basic-test
  :input "`timescale 1 ns / 10 ps"
- :output ""
+ :output "`timescale 1 ns / 10 ps"
  :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`timescale 1ms/10fs"
- :output ""
+ :output "`timescale 1ms/10fs"
  :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`timescale 1 s /100us"
- :output ""
+ :output "`timescale 1 s /100us"
  :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
@@ -273,8 +273,17 @@
       1
 
               s"
- :output ""
+ :output "`timescale 1 s /
+
+      1
+
+              s"
  :defines (simple-test-defines nil))
+
+(preprocessor-basic-test
+ :input "`timescale `foo"
+ :output "`timescale 1ns / 10 ps"
+ :defines (simple-test-defines '(("foo" . "1ns / 10 ps"))))
 
 
 
@@ -540,6 +549,29 @@ wire [800:0] found3 =  "hello moon";
 """}
  :defines (simple-test-defines nil))
 
+;; (trace$ (vl-read-until-end-of-define
+;;          :entry (list 'vl-read-until-end-of-define (vl-echarlist->string echars))
+;;          :exit (b* (((list successp prefix remainder) acl2::values))
+;;                  (list 'vl-read-until-end-of-define successp
+;;                        :prefix (vl-echarlist->string prefix)
+;;                        :remainder (vl-echarlist->string remainder)))))
+
+;; (trace$ (vl-expand-define
+;;          :entry (list 'vl-expand-define name
+;;                       :echars (vl-echarlist->string echars))
+;;          :exit (b* (((list successp new-echars) acl2::values))
+;;                  (list 'vl-expand-define 
+;;                        successp (vl-echarlist->string new-echars)))))
+
+(preprocessor-basic-test
+ :input #{"""
+`define FOO `"FOO`"
+ wire [24:0] foo = `FOO;
+"""}
+ :output #{"""
+
+ wire [24:0] foo =  "FOO";
+"""})
 
 (preprocessor-basic-test
  :input #{"""
@@ -711,4 +743,20 @@ hello
  :output #{"""
 
  wire \blah_mac = 1;
+"""})
+
+(preprocessor-basic-test
+ :input #{"""
+The file is `__FILE__
+"""}
+ :output #{"""
+The file is "test.v"
+"""})
+
+(preprocessor-basic-test
+ :input #{"""
+The line is `__LINE__
+"""}
+ :output #{"""
+The line is 2
 """})

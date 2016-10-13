@@ -22,6 +22,7 @@
 (include-book "copy-def")
 (include-book "defchoose-queries")
 (include-book "define-sk")
+(include-book "defthmr")
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
@@ -33,6 +34,7 @@
 (include-book "list-set-theorems")
 (include-book "list-theorems")
 (include-book "maybe-msgp")
+(include-book "maybe-unquote")
 (include-book "minimize-ruler-extenders")
 (include-book "nati")
 ; Skipping the following, because it requires a trust tag:

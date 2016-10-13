@@ -15,29 +15,29 @@
 (in-package "ACL2")
 
 (include-book "fresh-names")
-(include-book "kestrel/utilities/testing" :dir :system)
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (fresh-name-in-world-with-$s 'abcdefg nil (w state))
-                'abcdefg))
+(assert-equal (fresh-name-in-world-with-$s 'abcdefg nil (w state))
+              'abcdefg)
 
-(assert! (equal (fresh-name-in-world-with-$s 'abcdefg '(a b c) (w state))
-                'abcdefg))
+(assert-equal (fresh-name-in-world-with-$s 'abcdefg '(a b c) (w state))
+              'abcdefg)
 
-(assert! (equal (fresh-name-in-world-with-$s 'abcdefg '(abcdefg nil) (w state))
-                'abcdefg$))
+(assert-equal (fresh-name-in-world-with-$s 'abcdefg '(abcdefg nil) (w state))
+              'abcdefg$)
 
-(assert! (equal (fresh-name-in-world-with-$s 'len '(len$ len$$) (w state))
-                'len$$$))
+(assert-equal (fresh-name-in-world-with-$s 'len '(len$ len$$) (w state))
+              'len$$$)
 
-(assert! (equal (fresh-name-in-world-with-$s 'len '(len$ len$$$) (w state))
-                'len$$))
+(assert-equal (fresh-name-in-world-with-$s 'len '(len$ len$$$) (w state))
+              'len$$)
 
 (must-succeed*
  (defun f (x) x)
  (defun f$ (x) x)
  (defun f$$ (x) x)
  (defun f$$$ (x) x)
- (assert! (equal (fresh-name-in-world-with-$s 'f nil (w state))
-                 'f$$$$)))
+ (assert-equal (fresh-name-in-world-with-$s 'f nil (w state))
+               'f$$$$))

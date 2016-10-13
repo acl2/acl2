@@ -11,6 +11,18 @@
 ;             (quote x) |
 ;             (sym <dterm> ... <dterm>)
 
+(include-book "xdoc/top" :dir :system)
+(defxdoc dft
+  :parents (defthm events)
+  :short "Provide an explicit proof, for example chaining equalities"
+  :long "<p>@('Dft') is a proof-checking-like macro that allows you to chain
+ together equalities.  The name @('\"dft\"') is short for @('\"defthm\"').  In
+ the @(see community-books) see @('books/misc/dft-ex.lisp') for some
+ examples.</p>
+
+ <p>This tool has not been used in big proofs and probably can be improved
+ quite a bit.  The author encourages users to build improved versions.</p>")
+
 (defmacro enable-disable (a b)
   `(set-difference-theories (enable ,@a) ',b))
 

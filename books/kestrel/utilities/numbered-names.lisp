@@ -20,6 +20,7 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
+(include-book "characters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,18 +97,6 @@
    e.g. @('foo{1}'), @('foo{2}'), ...
    </p>")
 
-(define non-numeric-character-listp (x)
-  :returns (yes/no booleanp)
-  :parents (numbered-name-index-start-p
-            numbered-name-index-end-p
-            numbered-name-index-wildcard-p)
-  :short "True iff @('x') is
-          a @('nil')-terminated list of non-numeric characters."
-  (cond ((atom x) (eq x nil))
-        (t (and (characterp (car x))
-                (not (digit-char-p (car x)))
-                (non-numeric-character-listp (cdr x))))))
-
 (defxdoc numbered-name-index-start
   :parents (numbered-names)
   :short "Starting marker of the numeric index of numbered names."
@@ -126,7 +115,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (non-numeric-character-listp (explode x))
+       (nondigit-char-listp (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-start nil nil
@@ -187,7 +176,7 @@
    Check whether @('x') consists of zero or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (non-numeric-character-listp (explode x))))
+       (nondigit-char-listp (explode x))))
 
 (table numbered-name-index-end nil nil
   :guard (and (equal key 'end) ; one key => singleton table
@@ -247,7 +236,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (non-numeric-character-listp (explode x))
+       (nondigit-char-listp (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-wildcard nil nil
@@ -449,41 +438,23 @@
    </p>
    @(def add-numbered-name-in-use)"
 
-  (define add-numbered-name-in-use-aux
+  (define add-numbered-name-in-use-new-indices
     ((base symbolp) (index posp) (wrld plist-worldp))
     :returns (indices "A @(tsee pos-listp) without duplicates.")
     :verify-guards nil
     :parents (add-numbered-name-in-use)
-    :short "Auxiliary function for @(tsee add-numbered-name-in-use) macro."
-    :long
-    "<p>
-     Return the result of adding @('index')
-     to the set of indices that the table associates to @('base').
-     </p>"
+    :short "Result of adding @('index')
+            to the set of indices that the table associates to @('base')."
     (let* ((tab (table-alist 'numbered-names-in-use wrld))
            (current-indices (cdr (assoc-eq base tab))))
       (add-to-set-eql index current-indices)))
 
   (defmacro add-numbered-name-in-use (base index)
     `(table numbered-names-in-use
-       ,base (add-numbered-name-in-use-aux ,base ,index world))))
-
-(define max-numbered-name-index-in-use-aux
-  ((indices pos-listp) (current-max-index natp))
-  :returns (final-max-index "A @(tsee natp).")
-  :parents (max-numbered-name-index-in-use)
-  :short "Auxiliary function for @(tsee max-numbered-name-index-in-use)."
-  :long
-  "<p>
-   Return the maximum of @('(cons current-max-index indices)').
-   </p>"
-  (cond ((atom indices) current-max-index)
-        (t (max-numbered-name-index-in-use-aux
-            (cdr indices)
-            (max (car indices) current-max-index)))))
+       ,base (add-numbered-name-in-use-new-indices ,base ,index world))))
 
 (define max-numbered-name-index-in-use ((base symbolp) (wrld plist-worldp))
-  :returns (max-index "A @(tsee natp).")
+  :returns (max-index natp)
   :verify-guards nil
   :parents (numbered-names-in-use)
   :short "Largest index of numbered name in use with given base."
@@ -497,10 +468,20 @@
    </p>"
   (let* ((tab (table-alist 'numbered-names-in-use wrld))
          (current-indices (cdr (assoc-eq base tab))))
-    (max-numbered-name-index-in-use-aux current-indices 0)))
+    (max-numbered-name-index-in-use-aux current-indices 0))
+
+  :prepwork
+  ((define max-numbered-name-index-in-use-aux ((indices pos-listp)
+                                               (current-max-index natp))
+     :returns (final-max-index natp)
+     (cond ((atom indices) (mbe :logic (nfix current-max-index)
+                                :exec current-max-index))
+           (t (max-numbered-name-index-in-use-aux
+               (cdr indices)
+               (max (car indices) current-max-index)))))))
 
 (define resolve-numbered-name-wildcard ((name symbolp) (wrld plist-worldp))
-  :returns (resolved-name "A @(tsee symbolp).")
+  :returns (resolved-name symbolp)
   :verify-guards nil
   :parents (numbered-names)
   :short "Resolve the wildcard in a numbered name (if any)
@@ -520,25 +501,8 @@
         (make-numbered-name base
                             (max-numbered-name-index-in-use base wrld)
                             wrld)
-      name)))
-
-(define next-numbered-name-aux
-  ((base symbolp) (current-index posp) (wrld plist-worldp))
-  :returns (final-index "A @(tsee posp).")
-  :mode :program
-  :parents (next-numbered-name)
-  :short "Auxiliary function for @(tsee next-numbered-name)."
-  :long
-  "<p>
-   Returns the smallest positive integer @('final-index')
-   that is greater than or equal to @('current-index')
-   and such that the numbered name with base @('base') and index @('final-index')
-   is not in the ACL2 @(see world).
-   </p>"
-  (let ((name (make-numbered-name base current-index wrld)))
-    (if (logical-namep name wrld)
-        (next-numbered-name-aux base (1+ current-index) wrld)
-      current-index)))
+      (mbe :logic (symbol-fix name)
+           :exec name))))
 
 (define next-numbered-name ((name symbolp) (wrld plist-worldp))
   :returns (next-index "A @(tsee posp).")
@@ -574,7 +538,17 @@
                                wrld)
                             (next-numbered-name-aux base (1+ index) wrld))))
           (make-numbered-name base next-index wrld))
-      (make-numbered-name name 1 wrld))))
+      (make-numbered-name name 1 wrld)))
+
+  :prepwork
+  ((define next-numbered-name-aux
+     ((base symbolp) (current-index posp) (wrld plist-worldp))
+     :returns (final-index "A @(tsee posp).")
+     :mode :program
+     (let ((name (make-numbered-name base current-index wrld)))
+       (if (logical-namep name wrld)
+           (next-numbered-name-aux base (1+ current-index) wrld)
+         current-index)))))
 
 (defxdoc global-numbered-name-index
   :parents (numbered-names)

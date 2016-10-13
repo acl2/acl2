@@ -20,7 +20,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "event-forms")
+(include-book "maybe-unquote")
 
 (local (set-default-parents user-interface))
 
@@ -49,12 +50,6 @@
   (if suppress
       (suppress-output form)
     form))
-
-(defun maybe-unquote (x)
-  (declare (xargs :guard t))
-  (case-match x
-    (('quote y) y)
-    (& x)))
 
 (define control-screen-output (verbose (form pseudo-event-formp))
   :returns (form-with-output-controlled pseudo-event-formp :hyp :guard)

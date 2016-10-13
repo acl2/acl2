@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 ; 2010-09-16 Pete Manolios: Created two versions of our
-; lexicogrphic-ordering book: one includes
+; lexicographic-ordering book: one includes
 ; arithmetic/top-with-meta and one doesn't. This book contains
 ; all the core theorems.
 

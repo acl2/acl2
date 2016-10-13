@@ -14,8 +14,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/testing" :dir :system)
 (include-book "strings")
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,16 +29,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (nats=>string nil)
-                ""))
+(assert-equal (nats=>string nil) "")
 
-(assert! (equal (nats=>string '(72 32 109))
-                "H m"))
+(assert-equal (nats=>string '(72 32 109)) "H m")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (string=>nats "")
-                nil))
+(assert-equal (string=>nats "") nil)
 
-(assert! (equal (string=>nats "#if")
-                '(35 105 102)))
+(assert-equal (string=>nats "#if") '(35 105 102))

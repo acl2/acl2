@@ -105,7 +105,7 @@
    @('rb-alt-and-wb-to-paging-structures-disjoint') <br/>
    @('rb-wb-disjoint-in-system-level-mode') <br/>
    @('rb-wb-equal-in-system-level-mode') <br/>
-   @('all-translation-governing-addresses-and-mv-nth-1-wb-disjoint') <br/>
+   @('all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint') <br/>
    @('la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs').<br/>
    <br/>
    Note that @(see rb) is rewritten to @(see rb-alt) when the read is
@@ -177,7 +177,7 @@
  @(def rb-alt-and-wb-to-paging-structures-disjoint)
  @(def rb-wb-disjoint-in-system-level-mode)
  @(def rb-wb-equal-in-system-level-mode)
- @(def all-translation-governing-addresses-and-mv-nth-1-wb-disjoint)
+ @(def all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint)
  @(def la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs).
  "
   )
@@ -195,7 +195,7 @@
 ;; (acl2::why rb-alt-wb-disjoint-in-system-level-mode)
 ;; (acl2::why rb-alt-wb-equal-in-system-level-mode)
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-rb-alt)
-;; (acl2::why all-translation-governing-addresses-and-mv-nth-1-wb-disjoint)
+;; (acl2::why all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-get-prefixes-alt-no-prefix-byte)
 ;; (acl2::why mv-nth-2-get-prefixes-alt-no-prefix-byte)
@@ -265,7 +265,7 @@
    (and (equal cpl (cpl x86))
         (disjoint-p
          (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w cpl (double-rewrite x86)))
-         (all-translation-governing-addresses (create-canonical-address-list count addr) (double-rewrite x86))))
+         (all-xlation-governing-entries-paddrs (create-canonical-address-list count addr) (double-rewrite x86))))
    (equal (direct-map-p count addr r-w-x cpl (mv-nth 1 (wb addr-lst x86)))
           (direct-map-p count addr r-w-x cpl (double-rewrite x86))))
   :hints (("Goal" :in-theory (e/d* () (force (force))))))
@@ -905,7 +905,7 @@
     (defthm mv-nth-0-rb-and-xw-mem-in-system-level-mode
       (implies (and (disjoint-p
                      (list index)
-                     (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+                     (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
                     (canonical-address-listp l-addrs)
                     (physical-address-p index)
                     (unsigned-byte-p 8 value)
@@ -929,13 +929,13 @@
       (implies (and
                 (disjoint-p
                  (list index)
-                 (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+                 (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
                 (disjoint-p
                  (list index)
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
                 (disjoint-p
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-                 (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+                 (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
                 (canonical-address-listp l-addrs)
                 (physical-address-p index)
                 (unsigned-byte-p 8 value)
@@ -959,14 +959,14 @@
                                          signed-byte-p)
                                         ())))))
     (local
-     (defthmd disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p
+     (defthmd disjoint-p-all-xlation-governing-entries-paddrs-and-las-to-pas-subset-p
        ;; Very similar to
        ;; MV-NTH-1-LAS-TO-PAS-SUBSET-P-DISJOINT-FROM-OTHER-P-ADDRS,
-       ;; DISJOINTNESS-OF-ALL-TRANSLATION-GOVERNING-ADDRESSES-FROM-ALL-TRANSLATION-GOVERNING-ADDRESSES-SUBSET-P.
+       ;; DISJOINTNESS-OF-ALL-XLATION-GOVERNING-ENTRIES-PADDRS-FROM-ALL-XLATION-GOVERNING-ENTRIES-PADDRS-SUBSET-P.
 
        ;; This rule is tailored to rewrite terms of the form
 
-       ;; (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+       ;; (disjoint-p (all-xlation-governing-entries-paddrs l-addrs-subset x86)
        ;;             (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86)))
 
        ;; where l-addrs-subset is a subset of l-addrs, and l-addrs is of
@@ -975,19 +975,19 @@
        (implies
         (and
          (bind-free (find-l-addrs-like-create-canonical-address-list-from-fn
-                     'all-translation-governing-addresses 'l-addrs mfc state)
+                     'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
                     (l-addrs))
          ;; (syntaxp (not (cw "~% l-addrs: ~x0~%" l-addrs))) ; ;
          (disjoint-p
-          (all-translation-governing-addresses l-addrs (double-rewrite x86))
+          (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))
           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
          (subset-p l-addrs-subset l-addrs)
          (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
-        (disjoint-p (all-translation-governing-addresses l-addrs-subset x86)
+        (disjoint-p (all-xlation-governing-entries-paddrs l-addrs-subset x86)
                     (mv-nth 1 (las-to-pas l-addrs-subset r-w-x cpl x86))))
        :hints
        (("Goal"
-         :use ((:instance disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+         :use ((:instance disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                           (l-addrs l-addrs)
                           (l-addrs-subset l-addrs-subset)
                           (other-p-addrs (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
@@ -1124,7 +1124,7 @@
                        (:rewrite loghead-ash-0)
                        (:rewrite acl2::expt-with-violated-guards)
                        (:type-prescription bitops::lognot-negp)
-                       (:type-prescription all-translation-governing-addresses)
+                       (:type-prescription all-xlation-governing-entries-paddrs)
                        (:rewrite acl2::unsigned-byte-p-loghead)
                        (:rewrite bitops::loghead-of-ash-same)
                        (:type-prescription n44p$inline)
@@ -1155,7 +1155,7 @@
          (mv-nth 1 (las-to-pas
                     (create-canonical-address-list cnt start-rip)
                     :x (cpl x86) (double-rewrite x86)))
-         (all-translation-governing-addresses
+         (all-xlation-governing-entries-paddrs
           (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
         (disjoint-p
          (list index)
@@ -1163,7 +1163,7 @@
                                :x (cpl x86) (double-rewrite x86))))
         (disjoint-p
          (list index)
-         (all-translation-governing-addresses
+         (all-xlation-governing-entries-paddrs
           (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
         (not (mv-nth 0 (las-to-pas
                         (create-canonical-address-list cnt start-rip)
@@ -1192,9 +1192,9 @@
                  (get-prefixes start-rip prefixes cnt x86))
         :in-theory (e/d* (get-prefixes
                           disjoint-p$
-                          disjoint-p-all-translation-governing-addresses-and-las-to-pas-subset-p
+                          disjoint-p-all-xlation-governing-entries-paddrs-and-las-to-pas-subset-p
                           subset-p)
-                         (disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                         (disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                           get-prefixes-alt-opener-lemma-zero-cnt
                           member-p-strip-cars-of-remove-duplicate-keys
                           open-qword-paddr-list-and-member-p
@@ -1202,15 +1202,15 @@
                           xlate-equiv-memory-and-xr-mem-from-rest-of-memory
                           mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
                           mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                          infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
+                          infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
                           r-w-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
                           mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                           xlate-equiv-memory-with-mv-nth-2-las-to-pas
                           las-to-pas-values-and-xw-mem-not-member
-                          all-translation-governing-addresses-and-xw-mem-not-member
+                          all-xlation-governing-entries-paddrs-and-xw-mem-not-member
                           r/x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
                           xr-programmer-level-mode-mv-nth-2-las-to-pas
-                          all-translation-governing-addresses-and-xw-not-mem
+                          all-xlation-governing-entries-paddrs-and-xw-not-mem
                           xr-seg-visible-mv-nth-2-las-to-pas
                           xr-page-structure-marking-mode-mv-nth-2-las-to-pas
                           disjoint-p
@@ -1235,7 +1235,7 @@
          (mv-nth 1
                  (las-to-pas (create-canonical-address-list cnt start-rip)
                              :x (cpl x86) (double-rewrite x86)))
-         (all-translation-governing-addresses
+         (all-xlation-governing-entries-paddrs
           (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
         (disjoint-p
          p-addrs
@@ -1245,7 +1245,7 @@
                       :x (cpl x86) (double-rewrite x86))))
         (disjoint-p
          p-addrs
-         (all-translation-governing-addresses
+         (all-xlation-governing-entries-paddrs
           (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
         (not (mv-nth 0 (las-to-pas (create-canonical-address-list cnt start-rip)
                                    :x (cpl x86) x86)))
@@ -1319,7 +1319,7 @@
       (("Goal"
         :do-not-induct t
         :use ((:instance get-prefixes-and-write-to-physical-memory)
-              (:instance all-translation-governing-addresses-subset-of-paging-structures
+              (:instance all-xlation-governing-entries-paddrs-subset-of-paging-structures
                          (l-addrs (create-canonical-address-list cnt start-rip))))
         :in-theory
         (e/d*
@@ -1332,7 +1332,7 @@
           get-prefixes-and-write-to-physical-memory
           xlate-equiv-memory-and-two-get-prefixes-values
           mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-          all-translation-governing-addresses-subset-of-paging-structures
+          all-xlation-governing-entries-paddrs-subset-of-paging-structures
           force (force))))))
 
     (defthm get-prefixes-alt-and-wb-in-system-level-marking-mode-disjoint-from-paging-structures
@@ -1365,7 +1365,7 @@
                                  disjoint-p$
                                  wb
                                  disjoint-p-commutative
-                                 infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
+                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
                                  xlate-equiv-memory-with-mv-nth-2-las-to-pas)
                                 (rewrite-get-prefixes-to-get-prefixes-alt
                                  xlate-equiv-memory-and-two-get-prefixes-values
@@ -1425,7 +1425,7 @@
                              :x (cpl x86) (double-rewrite x86))))
         (disjoint-p$
          p-addrs
-         (all-translation-governing-addresses
+         (all-xlation-governing-entries-paddrs
           (create-canonical-address-list cnt start-rip)
           (double-rewrite x86)))
         (equal (page-size (combine-bytes bytes)) 1)
@@ -1452,7 +1452,7 @@
       (("Goal"
         :do-not-induct t
         :use ((:instance get-prefixes-and-write-to-physical-memory)
-              (:instance all-translation-governing-addresses-subset-of-paging-structures
+              (:instance all-xlation-governing-entries-paddrs-subset-of-paging-structures
                          (l-addrs (create-canonical-address-list cnt start-rip)))
               (:instance disjointness-of-las-to-pas-from-write-to-physical-memory-subset-of-paging-structures
                          (index index)
@@ -1471,7 +1471,7 @@
           get-prefixes-and-write-to-physical-memory
           xlate-equiv-memory-and-two-get-prefixes-values
           mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-          all-translation-governing-addresses-subset-of-paging-structures
+          all-xlation-governing-entries-paddrs-subset-of-paging-structures
           force (force))))))
 
     (defthm get-prefixes-alt-and-wb-to-paging-structures
@@ -1488,7 +1488,7 @@
         (disjoint-p
          (mv-nth 1 (las-to-pas (create-canonical-address-list 8 lin-addr)
                                :w (cpl x86) (double-rewrite x86)))
-         (all-translation-governing-addresses
+         (all-xlation-governing-entries-paddrs
           (create-canonical-address-list cnt start-rip) (double-rewrite x86)))
         (disjoint-p
          (mv-nth 1 (las-to-pas (create-canonical-address-list 8 lin-addr)
@@ -1537,7 +1537,7 @@
                                  acl2::fold-consts-in-+
                                  disjoint-p$
                                  wb
-                                 infer-disjointness-with-all-translation-governing-addresses-from-gather-all-paging-structure-qword-addresses
+                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
                                  xlate-equiv-memory-with-mv-nth-2-las-to-pas)
                                 (rewrite-get-prefixes-to-get-prefixes-alt
                                  mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
@@ -1625,7 +1625,7 @@
        (rewrite-program-at-to-program-at-alt
         program-at-wb-disjoint-in-system-level-mode
         rb-wb-disjoint-in-system-level-mode
-        disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+        disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
         mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
         rb wb)))))
 
@@ -1683,7 +1683,7 @@
              (not (programmer-level-mode x86))
              (canonical-address-listp l-addrs)
              (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-             ;; (disjoint-p (all-translation-governing-addresses l-addrs x86)
+             ;; (disjoint-p (all-xlation-governing-entries-paddrs l-addrs x86)
              ;;             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
              (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                          (open-qword-paddr-list
@@ -1922,7 +1922,7 @@
                              (acl2::mv-nth-cons-meta
                               rb-in-terms-of-nth-and-pos-in-system-level-mode
                               rewrite-rb-to-rb-alt
-                              disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p))
+                              disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p))
              :use ((:instance rewrite-rb-to-rb-alt
                               (l-addrs (list lin-addr))
                               (r-w-x :x))
@@ -1967,7 +1967,7 @@
                              (rb-in-terms-of-rb-subset-p-in-system-level-mode
                               rewrite-rb-to-rb-alt
                               acl2::mv-nth-cons-meta
-                              disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p))
+                              disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p))
              :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)
                    (:instance rewrite-rb-to-rb-alt
                               (r-w-x :x))
@@ -1988,7 +1988,7 @@
                   ;; of disjoint-p.
                   (disjoint-p$
                    ;; The physical addresses pertaining to the write are
-                   ;; disjoint from the translation-governing-addresses
+                   ;; disjoint from the xlation-governing-entries-paddrs
                    ;; pertaining to the read.
                    (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
                    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses
@@ -2009,7 +2009,7 @@
                                disjoint-p$
                                disjoint-p-commutative)
                               (rewrite-rb-to-rb-alt
-                               disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                               disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                                mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                                force (force)))
              :use ((:instance rewrite-rb-to-rb-alt
@@ -2064,7 +2064,7 @@
                                disjoint-p$)
                               (rewrite-rb-to-rb-alt
                                rb-wb-disjoint-in-system-level-mode
-                               disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+                               disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                                mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)))))
 
   (defthm disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures
@@ -2245,7 +2245,7 @@
                (mv-nth 1 (las-to-pas
                           (create-canonical-address-list 8 lin-addr)
                           :w (cpl x86) (double-rewrite x86)))
-               (all-translation-governing-addresses l-addrs (double-rewrite x86)))
+               (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
               (disjoint-p
                (mv-nth 1 (las-to-pas (create-canonical-address-list 8 lin-addr)
                                      :w (cpl x86) (double-rewrite x86)))

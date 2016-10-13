@@ -25,6 +25,8 @@
 (include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 (local (set-default-parents world-queries))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,18 +54,21 @@
 (define function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a function."
-  (and (symbolp x) (function-symbolp x wrld))
+  (and (symbolp x)
+       (function-symbolp x wrld))
   :enabled t)
 
 (define theorem-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a theorem."
-  (and (symbolp x) (theorem-symbolp x wrld)))
+  (and (symbolp x)
+       (theorem-symbolp x wrld)))
 
 (define macro-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "True iff @('x') is a symbol that names a macro."
-  (and (symbolp x) (macro-symbolp x wrld)))
+  (and (symbolp x)
+       (macro-symbolp x wrld)))
 
 (define logical-name-listp (names (wrld plist-worldp))
   :returns (yes/no booleanp)
@@ -77,9 +82,14 @@
         (t (and (logical-namep (car names) wrld)
                 (logical-name-listp (cdr names) wrld)))))
 
-(define definedp ((fn (and (function-namep fn wrld)
-                           (logicp fn wrld)))
-                  (wrld plist-worldp))
+(define logic-function-namep (x (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :short "True iff @('x') is a symbol that names a logic-mode function."
+  (and (function-namep x wrld)
+       (logicp x wrld))
+  :enabled t)
+
+(define definedp ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :guard-hints (("Goal" :in-theory (enable function-namep)))
   :short "True iff the logic-mode function @('fn') is defined,
@@ -95,8 +105,7 @@
           is @(tsee guard)-verified."
   (eq (symbol-class fn/thm wrld) :common-lisp-compliant))
 
-(define non-executablep ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define non-executablep ((fn (and (logic-function-namep fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
@@ -156,7 +165,7 @@
    </p>
    <p>
    The number of results of the function
-   is the length of its output @(see stobj) list.
+   is the length of its @(tsee stobjs-out) list.
    But the function must not be in @('*stobjs-out-invalid*'),
    because in that case the number of its results depends on how it is called.
    </p>"
@@ -176,8 +185,7 @@
   (and (all-nils (stobjs-in fn wrld))
        (all-nils (stobjs-out fn wrld))))
 
-(define measure ((fn (and (function-namep fn wrld)
-                          (logicp fn wrld)
+(define measure ((fn (and (logic-function-namep fn wrld)
                           (recursivep fn nil wrld)))
                  (wrld plist-worldp))
   :returns (measure "A @(tsee pseudo-termp).")
@@ -189,8 +197,7 @@
    </p>"
   (access justification (getpropc fn 'justification nil wrld) :measure))
 
-(define measured-subset ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define measured-subset ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
   :returns (measured-subset "A @(tsee symbol-listp).")
@@ -199,8 +206,7 @@
           that occur in its @(see measure) expression."
   (access justification (getpropc fn 'justification nil wrld) :subset))
 
-(define well-founded-relation ((fn (and (function-namep fn wrld)
-                                        (logicp fn wrld)
+(define well-founded-relation ((fn (and (logic-function-namep fn wrld)
                                         (recursivep fn nil wrld)))
                                (wrld plist-worldp))
   :returns (well-founded-relation "A @(tsee symbolp).")
@@ -212,8 +218,7 @@
    including the @(':well-founded-relation') rule class.</p>"
   (access justification (getpropc fn 'justification nil wrld) :rel))
 
-(define ruler-extenders ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define ruler-extenders ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
   :returns (ruler-extenders "A @(tsee symbol-listp) or @(':all').")
@@ -223,7 +228,7 @@
   (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (required-args "A @(tsee symbol-listp).")
+  :returns (required-args symbol-listp)
   :verify-guards nil
   :short "Required arguments of the macro @('mac'), in order."
   :long
@@ -233,33 +238,33 @@
    continues with zero or more symbols that do not start with @('&')
    which are the required arguments,
    and possibly ends with a symbol starting with @('&') followed by more symbols.
+   </p>
+   <p>
+   After removing @('&whole') and the symbol following it
+   (if the list of arguments starts with @('&whole')),
+   we collect all the arguments until
+   either the end of the list is reached
+   or a symbol starting with @('&') is encountered.
    </p>"
   (let ((all-args (macro-args mac wrld)))
     (if (null all-args)
         nil
       (if (eq (car all-args) '&whole)
-          (macro-required-args-aux (cddr all-args))
-        (macro-required-args-aux all-args))))
+          (reverse (macro-required-args-aux (cddr all-args) nil))
+        (reverse (macro-required-args-aux all-args nil)))))
 
   :prepwork
-  ((define macro-required-args-aux ((args symbol-listp))
-     :returns (required-args "A @(tsee symbol-listp).")
-     :parents (macro-required-args)
-     :short "Auxiliary function of @(tsee macro-required-args)."
-     :long
-     "<p>
-      After removing @('&whole') and the symbol following it
-      (if the list of arguments starts with @('&whole')),
-      collect all the arguments until
-      either the end of the list is reached
-      or a symbol starting with @('&') is encountered.
-      </p>"
+  ((define macro-required-args-aux ((args symbol-listp)
+                                    (rev-result symbol-listp))
+     :returns (final-rev-result symbol-listp :hyp (symbol-listp rev-result))
      (if (endp args)
-         nil
-       (let ((arg (car args)))
+         rev-result
+       (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
+                       :exec (car args))))
          (if (lambda-keywordp arg)
-             nil
-           (cons arg (macro-required-args-aux (cdr args)))))))))
+             rev-result
+           (macro-required-args-aux (cdr args)
+                                    (cons arg rev-result))))))))
 
 (define fundef-disabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
@@ -292,8 +297,7 @@
           (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist wrld)))
 
-(define induction-machine ((fn (and (function-namep fn wrld)
-                                    (logicp fn wrld)
+(define induction-machine ((fn (and (logic-function-namep fn wrld)
                                     (= 1 (len (recursivep fn nil wrld)))))
                            (wrld plist-worldp))
   :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
@@ -355,8 +359,7 @@
   :true-listp t
   :elementp-of-nil nil)
 
-(define recursive-calls ((fn (and (function-namep fn wrld)
-                                  (logicp fn wrld)
+(define recursive-calls ((fn (and (logic-function-namep fn wrld)
                                   (= 1 (len (recursivep fn nil wrld)))))
                          (wrld plist-worldp))
   :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")

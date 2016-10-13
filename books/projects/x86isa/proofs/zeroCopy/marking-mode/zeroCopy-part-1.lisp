@@ -66,7 +66,7 @@
 ;; (acl2::why rb-alt-wb-disjoint-in-system-level-mode)
 ;; (acl2::why rb-alt-wb-equal-in-system-level-mode)
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-rb-alt)
-;; (acl2::why all-translation-governing-addresses-and-mv-nth-1-wb-disjoint)
+;; (acl2::why all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs)
 ;; (acl2::why mv-nth-1-rb-after-mv-nth-2-get-prefixes-alt-no-prefix-byte)
 ;; (acl2::why mv-nth-2-get-prefixes-alt-no-prefix-byte)
@@ -794,7 +794,7 @@
                              car-create-canonical-address-list
                              cdr-create-canonical-address-list
                              loghead-negative
-                             disjoint-p-all-translation-governing-addresses-subset-p)
+                             disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                             (create-canonical-address-list
                              (:rewrite program-at-values-and-!flgi)
                              (:rewrite get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)

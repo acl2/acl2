@@ -279,7 +279,7 @@
                 nil nil nil 0
                 *popcount-64*
                 x86))
-              (x86 (!rgfi *rdi* n x86))
+              (x86 (wr32 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))
            (and (equal (rgfi *rax* x86)
@@ -307,7 +307,12 @@
                 nil nil nil 0
                 *popcount-64*
                 x86))
-              (x86 (!rgfi *rdi* n x86))
+              (x86 ;; (!rgfi *rdi* n x86)
+               ;; Shilpi: It's important to use wr64 instead of !rgfi
+               ;; because wr64 converts unsigned numbers to signed
+               ;; ones, which is the representation of GPRs in the x86
+               ;; state.
+               (wr64 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))
            (and (equal (rgfi *rax* x86)
@@ -321,6 +326,42 @@
   :abort-indeterminate t
   :exec-ctrex nil
   :rule-classes nil)
+
+;; (def-gl-thm x86-popcount-correct-general
+;;   :hyp (and (natp n)
+;;             (< n (expt 2 64))
+;;             (natp m)
+;;             (< m (expt 2 64)))
+;;   :concl (b* ((start-address #x400650)
+;;               (halt-address #x4006c2)
+;;               (x86 (!programmer-level-mode t (create-x86)))
+;;               ((mv flg x86)
+;;                (init-x86-state
+;;                 nil start-address halt-address
+;;                 nil nil nil 0
+;;                 *popcount-64*
+;;                 x86))
+;;               (x86
+;;                (wr64 *rax* m x86))
+;;               (x86 ;; (!rgfi *rdi* n x86)
+;;                ;; Shilpi: It's important to use wr64 instead of !rgfi
+;;                ;; because wr64 converts unsigned numbers to signed
+;;                ;; ones, which is the representation of GPRs in the x86
+;;                ;; state.
+;;                (wr64 *rdi* n x86))
+;;               (count 300)
+;;               (x86 (x86-run count x86)))
+;;            (and (equal (rgfi *rax* x86)
+;;                        (logcount n))
+;;                 (equal flg nil)
+;;                 (equal (rip x86)
+;;                        (+ 1 halt-address))))
+;;   :g-bindings
+;;   (gl::auto-bindings (:mix (:nat n 64) (:nat m 64)))
+;;   :n-counterexamples 1
+;;   :abort-indeterminate t
+;;   :exec-ctrex nil
+;;   :rule-classes nil)
 
 ;; ======================================================================
 
@@ -430,7 +471,7 @@
                  nil nil nil 0
                  *popcount-32-buggy*
                  x86))
-               (x86 (!rgfi *rdi* n x86))
+               (x86 (wr32 *rdi* n x86))
                (count 300)
                (x86 (x86-run count x86)))
             (and (equal (rgfi *rax* x86)
@@ -455,7 +496,7 @@
        nil nil nil 0
        *popcount-32-buggy*
        x86))
-     (x86 (!rgfi *rdi* #x80000000  x86))
+     (x86 (wr32 *rdi* #x80000000  x86))
      (count 300)
      (x86 (x86-run count x86)))
   x86)
@@ -470,7 +511,7 @@
        nil nil nil 0
        *popcount-32-buggy*
        x86))
-     (x86 (!rgfi *rdi* #xFFFFFFFF  x86))
+     (x86 (wr32 *rdi* #xFFFFFFFF  x86))
      (count 300)
      (x86 (x86-run count x86)))
   x86)
@@ -491,7 +532,7 @@
                 nil nil nil 0
                 *popcount-32-buggy*
                 x86))
-              (x86 (!rgfi *rdi* n x86))
+              (x86 (wr32 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))
            (and (equal (ash (rgfi *rax* x86) -24)

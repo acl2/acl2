@@ -625,11 +625,10 @@ directly with ACL2.</p>
                        '(:do-not-induct :do-not :induct :use :cases :by)
                        (strip-cars hint-settings))
                       (er soft ctx
-                          "It makes no sense for TOOL2 to be given hints ~
-                                for \"Goal\" that include any of ~
-                                :do-not-induct, :do-not,:induct, :use, ~
-                                :cases, or :by.  The hint ~p0 is therefore ~
-                                illegal."
+                          "It makes no sense for TOOL2 to be given hints for ~
+                           \"Goal\" that include any of :do-not-induct, ~
+                           :do-not,:induct, :use, :cases, or :by.  The hint ~
+                           ~p0 is therefore illegal."
                           (cons "Goal" hint-settings)))
                      (t
                       (pprogn
@@ -642,8 +641,37 @@ directly with ACL2.</p>
                            ((current-clause (dumb-negate-lit-lst thyps))
                             (rcnst
                              (change rewrite-constant
-                                     (access prove-spec-var pspv :rewrite-constant)
+                                     (access prove-spec-var pspv
+                                             :rewrite-constant)
+
+; For a long time, up to October 2016, we failed to set the :current-clause and
+; :top-clause fields of this rcnst.  That had the unfortunate effect of making
+; mfc-clause return nil.  That function only requires the :current-clause, so
+; in the interest of not giving rewrite-fncallp too much to work with during
+; evaluation of expander functions in this file, we only set :current-clause,
+; hoping that it doesn't permit too much expansion; here's more on the topic of
+; expansion using :current-clause.
+
+; We considered extending the :current-clause with (equal tterm ???), perhaps
+; using genvar to guarantee that ??? is new.  But we avoid that in order to
+; avoid giving rewrite-fncallp access to the term being simplified, by way of
+; the :top-clause or :current-clause that are passed into it, when deciding
+; whether or not a rewritten term or its subterms are already lying around in
+; the clause.  This is purely a heuristic choice.  We discovered this issue
+; when attempting to simplify a term (specifically, the body of an existing
+; defun) with subterms (integer-listp x) as well as (car x) and (cdr x).  It
+; was unfortunate when (integer-listp x) expanded, since we were trying to
+; obtain an "aesthetic" simplification.  There was nothing other than other
+; subterms of that defun body to suggest keeping that expansion, we we have
+; decided to avoid extending current-clause using that body.
+
+                                     :current-clause current-clause
                                      :force-info
+
+; It probably makes sense simply to set the following to t.  Up through October
+; 2016 it has been 'weak, so we leave it that way for backward compatibility --
+; for now.
+
                                      (if (ffnnamep-lst 'if current-clause)
                                          'weak
                                        t)))
@@ -737,7 +765,7 @@ directly with ACL2.</p>
                                        (bad-ass
                                         (er soft ctx
                                             "Generated false assumption, ~p0! ~
-                                              So, rewriting is aborted, just ~
+                                             ~ So, rewriting is aborted, just ~
                                              as it would be in the course of ~
                                              a regular Acl2 proof."
                                             bad-ass))

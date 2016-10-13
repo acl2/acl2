@@ -15,14 +15,15 @@
 
 (in-package "ACL2")
 
-(include-book "std/lists/top" :dir :system)
 (include-book "std/util/deflist" :dir :system)
+
+(local (include-book "std/lists/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection theorems-about-true-list-lists
 
-  :parents (theorems-about-non-kestrel-books true-list-listp)
+  :parents (theorems-about-non-kestrel-books true-list-listp std/typed-lists)
 
   :short "Some theorems about
           @('nil')-terminated lists of @('nil')-terminated lists."
@@ -36,5 +37,4 @@
     (true-listp x)
     :true-listp t
     :elementp-of-nil t
-    :already-definedp t
     :parents nil))

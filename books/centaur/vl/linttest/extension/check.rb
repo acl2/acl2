@@ -30,6 +30,7 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
+require 'require_relative'
 require_relative '../utils'
 
 outlaw_bad_warnings()

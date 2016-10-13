@@ -437,7 +437,7 @@
     (:type-prescription true-listp)
     (:rewrite unsigned-byte-p-of-logtail)
     (:rewrite bitops::logbitp-when-bitmaskp)
-    (:type-prescription all-translation-governing-addresses)
+    (:type-prescription all-xlation-governing-entries-paddrs)
     (:type-prescription set::setp-type)
     (:type-prescription set::empty-type)
     (:rewrite acl2::equal-constant-+)
@@ -556,14 +556,14 @@
     mv-nth-1-las-to-pas-when-error
     bitops::logand-with-negated-bitmask
     xlate-equiv-memory-and-xr-mem-from-rest-of-memory
-    disjointness-of-all-translation-governing-addresses-from-all-translation-governing-addresses-subset-p
+    disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
     unsigned-byte-p))
 
 (def-ruleset rewire_dst_to_src-disable-more
   '(mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs-alt
     mv-nth-0-las-to-pas-subset-p
     (:type-prescription true-listp-mv-nth-1-las-to-pas)
-    (:rewrite disjoint-p-all-translation-governing-addresses-subset-p)
+    (:rewrite disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
     (:type-prescription rm-low-64-logand-logior-helper-1)
     (:type-prescription n64p$inline)
     (:definition strip-cars)
@@ -730,7 +730,7 @@
             (las-to-pas
              (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
              :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
      x86))))
 
@@ -780,7 +780,7 @@
                 8
                 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -837,7 +837,7 @@
                  (xr :rgf *rdi* x86)
                  (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -865,7 +865,7 @@
                 8
                 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
      x86))
    ;; The stack physical addresses are disjoint from the
@@ -874,7 +874,7 @@
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
                :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -889,7 +889,7 @@
                8
                (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
     x86)))
 
@@ -917,7 +917,7 @@
                  (xr :rgf *rdi* x86)
                  (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
      x86))))
 
@@ -932,7 +932,7 @@
                 (xr :rgf *rdi* x86)
                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
     x86)))
 
@@ -947,7 +947,7 @@
                 (xr :rgf *rdi* x86)
                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1013,7 +1013,7 @@
                 8
                 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1084,7 +1084,7 @@
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1112,7 +1112,7 @@
                 8
                 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
      x86))
    ;; The stack physical addresses are disjoint from the
@@ -1120,7 +1120,7 @@
    (disjoint-p$
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1135,7 +1135,7 @@
                8
                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
     x86)))
 
@@ -1148,7 +1148,7 @@
                8
                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1163,7 +1163,7 @@
                8
                (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (page-dir-ptr-table-entry-addr
@@ -1182,7 +1182,7 @@
                 (xr :rgf *rsi* x86)
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
               :w (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1199,7 +1199,7 @@
                 (xr :rgf *rsi* x86)
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
               :w (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (page-dir-ptr-table-entry-addr
@@ -1218,7 +1218,7 @@
                 (xr :rgf *rsi* x86)
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
               :w (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1248,7 +1248,7 @@
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86)))
      x86))
    ;; The stack physical addresses are disjoint from the
@@ -1256,7 +1256,7 @@
    (disjoint-p$
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1292,7 +1292,7 @@
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                :w (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
      x86))
    ;; The program physical addresses are disjoint from the
@@ -1301,7 +1301,7 @@
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
                :x (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1332,14 +1332,14 @@
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (xr :rgf *rsp* x86))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (xr :rgf *rsp* x86))
      x86))
    (disjoint-p$
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (xr :rgf *rsp* x86))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (xr :rgf *rsp* x86))
      x86))))
 
@@ -1351,7 +1351,7 @@
    (mv-nth 1 (las-to-pas
               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
               :r (cpl x86) x86))
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list *rewire_dst_to_src-len* (xr :rip 0 x86))
     x86)))
 
@@ -1364,7 +1364,7 @@
               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
               :r (cpl x86) x86))
 
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)))
@@ -1379,7 +1379,7 @@
               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
               :r (cpl x86) x86))
 
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (page-dir-ptr-table-entry-addr
@@ -1396,7 +1396,7 @@
               (create-canonical-address-list 8 (xr :rgf *rsp* x86))
               :r (cpl x86) x86))
 
-   (all-translation-governing-addresses
+   (all-xlation-governing-entries-paddrs
     (create-canonical-address-list
      8
      (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)))
@@ -1416,7 +1416,7 @@
                  (xr :rgf *rsi* x86)
                  (pdpt-base-addr (xr :rgf *rsi* x86) x86)))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (xr :rgf *rsp* x86)) x86))
    ;; The destination PDPTE physical addresses are disjoint from the
    ;; stack containing the return address.
@@ -1437,7 +1437,7 @@
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (xr :rgf *rsp* x86))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list
       8
       (page-dir-ptr-table-entry-addr
@@ -1455,7 +1455,7 @@
     (mv-nth 1 (las-to-pas
                (create-canonical-address-list 8 (xr :rgf *rsp* x86))
                :r (cpl x86) x86))
-    (all-translation-governing-addresses
+    (all-xlation-governing-entries-paddrs
      (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))) x86))
    ;; The rest of the stack is disjoint from the physical addresses on
    ;; the stack corresponding to the return address.

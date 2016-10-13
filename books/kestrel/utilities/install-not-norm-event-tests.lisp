@@ -16,16 +16,16 @@
 (in-package "ACL2")
 
 (include-book "install-not-norm-event")
-(include-book "kestrel/utilities/testing" :dir :system)
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "testing")
+(include-book "world-queries")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (equal (mv-list 2 (install-not-norm-event 'f nil))
-                '(f$not-normalized (install-not-normalized f))))
+(assert-equal (mv-list 2 (install-not-norm-event 'f nil))
+              '(f$not-normalized (install-not-normalized f)))
 
-(assert! (equal (mv-list 2 (install-not-norm-event 'g t))
-                '(g$not-normalized (local (install-not-normalized g)))))
+(assert-equal (mv-list 2 (install-not-norm-event 'g t))
+              '(g$not-normalized (local (install-not-normalized g))))
 
 (must-succeed*
  (defun f (x) x)

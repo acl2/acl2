@@ -15,8 +15,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/event-forms" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
+(include-book "event-forms")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

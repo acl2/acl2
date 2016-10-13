@@ -2,12 +2,32 @@
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Sample Chronology for which We Will Establish the Apply Hypotheses
+; Portcullis:
+; (include-book "apply")
 
-; The complete list of functions defined with defun$ in this version of the
-; chronology is given below.  The list is in the same order in which the
-; functions are defined here.  We include this list to make it easier to
-; confirm that model.lisp defines them all.
+; Sample User Book for which We Will Establish All of the Warrants
+
+; We define a variety of tame and mapping functions and prove a few
+; illustrative theorems about a few of them just to show that we can.
+
+; But the real motivation of this book is to develop a construction method for
+; defining attachments for badge-userfn and apply$-userfn that make valid all
+; the warrants issued in a user book built on apply.lisp.  We take this as a
+; ``typical'' such book.
+
+; With a focus on developing an attachment construction method (aka
+; doppelganger construction) we defun$ functions that illustrate and exercise
+; the various nuances in our construction.  Every time we've realized a problem
+; with with our construction we've introduced a function here to show that
+; we've figured out how to handle the problem.  So these mapping functions are
+; pretty useless except as exemplars of the doppelganger construction.  That's
+; why we don't really prove many theorems about them here.
+
+; The complete list of functions defined with defun$ in this file is given
+; below.  The list is in the same order in which the functions are defined
+; below and was collected mechanically with an Emacs keyboard macro.  We
+; assemble this list here in this comment so we can more easily confirm that
+; doppelgangers.lisp deals with each of these functions.
 
 #||
 ap
@@ -15,6 +35,8 @@ rev
 palindromify-list
 list-of-true-listsp
 list-of-list-of-true-listsp
+expt-2-and-expt-3
+expt-5
 ok-fnp
 collect
 sumlist
@@ -35,27 +57,29 @@ collect2
 recur-by-collect
 prow
 prow*
+fn-2-and-fn-3
+fn-5
+map-fn-5
+sumlist-expr
 collect-rev
+sum-of-products
 ||#
 
 (in-package "ACL2")
 
 (include-book "misc/eval" :dir :system) ; for testing only
 
-(include-book "apply")
-
 ; -----------------------------------------------------------------
 ; Definitions
 
 ; For the sake of later modeling, we exhibit all of our defuns together, even
 ; though some are only used to state theorems about others.  We group them
-; into: ordinary functions, mapping functions, and tame instances of mapping
-; functions.  We don't prove theorems about most of these functions in this
-; chronology.  We define them simply to exercise the process of developing a
-; model.
+; into: Group 1 (tame functions independent of apply$), Group 3 (mapping
+; functions), and Group 2 (tame functions not independent of apply$).  The
+; groups are discussed in doppelgangers.lisp.
 
 ; ---
-; Ordinary Functions
+; Group 1 (tame functions independent of apply$)
 
 (defun$ ap (x y)
   (if (consp x)
@@ -82,16 +106,26 @@ collect-rev
         (t (and (list-of-true-listsp (car lst))
                 (list-of-list-of-true-listsp (cdr lst))))))
 
+; This next pair illustrate the idea that a function, e.g., expt-2-and-expt-3,
+; can have a badge in the badge-table without having a warrant, and then be
+; used in a function with a warrant, e.g., expt-5.
+
+(defun$ expt-2-and-expt-3 (x)
+  (let ((x2 (* x x)))
+    (mv x2 (* x x2))))
+
+(defun$ expt-5 (x)
+  (mv-let (x2 x3)
+    (expt-2-and-expt-3 x)
+    (* x2 x3)))
+
 (defun$ ok-fnp (fn)
   (and (not (equal fn 'QUOTE))
        (not (equal fn 'IF))
        (tamep `(,fn X))))
 
 ; ---
-; Mapping Functions
-
-; Most of these functions are only introduced to show that we can justify their
-; applicability hyps in our model.
+; Group 3 (mapping functions)
 
 (defun$ collect (lst fn)
   (cond ((endp lst) nil)
@@ -142,7 +176,7 @@ collect-rev
 
 ; A Russell-like function: The classic russell function would be
 
-; (defun$ russell (fn)
+; ( defun$ russell (fn)
 ;   (not (apply$ fn (list fn))))
 
 ; But this abuses our classification system because fn is used both in a
@@ -215,12 +249,43 @@ collect-rev
          (apply$ fn (list lst lst)))
         (t (prow* (prow lst fn) fn))))
 
+; These are nonrecursive mapping functions, the first of which
+; is un-warranted because it returns multiple values.
+ 
+(defun$ fn-2-and-fn-3 (fn x)
+; Return (mv (fn x x) (fn x (fn x x)))
+  (let ((x2 (apply$ fn (list x x))))
+    (mv x2 (apply$ fn (list x x2)))))
+
+(defun$ fn-5 (fn x)
+  (mv-let (x2 x3)
+    (fn-2-and-fn-3 fn x)
+    (apply$ fn (list x2 x3))))
+
+(defun$ map-fn-5 (lst fn)
+  (if (endp lst)
+      nil
+      (cons (fn-5 fn (car lst))
+            (map-fn-5 (cdr lst) fn))))
+
+(defun$ sumlist-expr (lst expr alist)
+  (cond ((endp lst) 0)
+        (t (+ (ev$ expr (cons (cons 'x (car lst)) alist))
+              (sumlist-expr (cdr lst) expr alist)))))
+
 ; ---
-; Tame Instances
+; Group 2 (tame functions not independent of apply$)
 
 (defun$ collect-rev (lst)
   (collect lst 'REV))
 
+(defun$ sum-of-products (lst)
+  (sumlist lst
+           '(LAMBDA (X)
+                    (FOLDR X
+                           '(LAMBDA (I A)
+                                    (BINARY-* I A))
+                           '1))))
 
 ; -----------------------------------------------------------------
 ; Some Sample Theorems about Mapping Functions
@@ -245,7 +310,7 @@ collect-rev
 
 ; But this succeeds in 1671 steps.
 (defthm theorem-about-collect-ap-rev
-  (implies (Applicablep AP REV)
+  (implies (warrant AP REV)
            (equal (collect lst '(lambda (e) (ap e (rev e))))
                   (palindromify-list lst)))
   :rule-classes nil)
@@ -255,11 +320,11 @@ collect-rev
 ; Of course, this concept is the same as a nest of all, and we can prove
 ; that (but we don't make it a rule).
 
-; By the way, this theorem has no applicablep hypotheses because it doesn't use
-; any user defined functions.
+; By the way, this theorem needs no warrants because it doesn't use any user
+; defined functions.
 
 (defthm list-of-list-of-true-listsp-expessed-as-all
-  (implies (Applicablep all)
+  (implies (warrant all)
            (equal (list-of-list-of-true-listsp lst)
                   (and (true-listp lst)
                        (all lst
@@ -275,51 +340,65 @@ collect-rev
 ; We prove three versions of the theorem.  The first is about a composition of
 ; two collects, each of which map with another collect:
 
-(must-fail ; failed to supply applicablep hypotheses
+(must-fail ; failed to supply warrants
  (defthm theorem-about-collect-collect-rev-twice-version1
    (implies (list-of-list-of-true-listsp lst)
             (equal (collect
                     (collect lst '(lambda (x) (collect x 'rev)))
                     '(lambda (x) (collect x 'rev)))
-                   lst))))
+                   lst))
+;  :hints (("Goal" :do-not '(eliminate-irrelevance))) ; This hint needed in Version_7.2
+   )) ; see the next attempt
 
 (defthm theorem-about-collect-collect-rev-twice-version1
-  (implies (and (Applicablep collect rev)
+  (implies (and (warrant collect rev)
                 (list-of-list-of-true-listsp lst))
            (equal (collect
                    (collect lst '(lambda (x) (collect x 'rev)))
                    '(lambda (x) (collect x 'rev)))
-                  lst)))
+                  lst))
+; :hints (("Goal" :do-not '(eliminate-irrelevance)))  ; This hint needed in Version_7.2
+  )
+
+; Note: Through ACL2 Version_7.2, ACL2 would discard the 0-ary functions as
+; irrelevant prior to a second induction.  The :do-not hint prevents it.  This
+; was an oversight in the heuristic: quantified hypotheses sharing no variables
+; with the rest of the clause might still be relevant!  The heuristic was
+; improved after Version_7.2.
 
 ; The second version is about a composition of two collect-revs.  One might
-; think that we must provide an applicablep hypothesis just for COLLECT-REV.
-; But that's wrong.  We must also provide one for REV because after (APPLY$
-; 'COLLECT-REV ...) expands to (collect-rev ...), that expands to (collect
-; ... 'REV) and hence introduces (APPLY$ 'REV ...).  It is possible to detect
-; this requirement by looking at the forced subgoals.
+; think that we must provide a warrant for COLLECT-REV.  But that's wrong.  We
+; must also provide one for REV because after (APPLY$ 'COLLECT-REV ...) expands
+; to (collect-rev ...), that expands to (collect ... 'REV) and hence introduces
+; (APPLY$ 'REV ...).  It is possible to detect this requirement by looking at
+; the forced subgoals.
 
 (defthm theorem-about-collect-collect-rev-twice-version2
-  (implies (and (Applicablep collect-rev rev)
+  (implies (and (warrant collect-rev rev)
                 (list-of-list-of-true-listsp lst))
            (equal (collect
                    (collect lst 'collect-rev)
                    'collect-rev)
-                  lst)))
+                  lst))
+ ;:hints (("Goal" :do-not '(eliminate-irrelevance)))
+  )
 
 ; Here is a version with the hypothesis phrased with ALL:
 
 (defthm theorem-about-collect-collect-rev-twice-version3
-  (implies (and (Applicablep all collect rev)
+  (implies (and (warrant all collect rev)
                 (true-listp lst)
                 (all lst
-                         '(lambda (x)
-                            (if (true-listp x)
-                                (all x 'true-listp)
-                                'nil))))
+                     '(lambda (x)
+                        (if (true-listp x)
+                            (all x 'true-listp)
+                            'nil))))
            (equal (collect
                    (collect lst '(lambda (x) (collect x 'rev)))
                    '(lambda (x) (collect x 'rev)))
-                  lst)))
+                  lst))
+; :hints (("Goal" :do-not '(eliminate-irrelevance)))
+  )
 
 ; A few theorems manipulating mapping functions and the functions they
 ; apply:
@@ -356,7 +435,7 @@ collect-rev
 ; to mapping functions.
 
 (defthm collect*-collect-example
-  (implies (applicablep collect)
+  (implies (warrant collect)
            (equal (collect* '(((1 2 3) (lambda (x) (cons 'a x)))
                               ((4 5 6 7) (lambda (z) (cons 'b z)))
                               ((8 9) (lambda (y) (cons 'c y))))
@@ -376,7 +455,7 @@ collect-rev
   (equal (foldr x 'cons y) (ap x y)))
 
 (defthm foldr-is-rev
-  (implies (Applicablep foldr)
+  (implies (warrant foldr)
            (equal (foldr x
                          '(lambda (x y)
                                   (foldr y 'cons (cons x 'nil)))

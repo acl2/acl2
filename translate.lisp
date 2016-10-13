@@ -125,6 +125,23 @@
            ~x0.~|~%~@1"
           args ; actually, the form
           (error-trace-suggestion nil))))
+   ((consp fn)
+
+; This is a special case for errors detected by the code that supports the
+; evaluation (at the top-level of the ACL2 loop) of terms ancestrally dependent
+; upon the constrained functions in apply$ development.  In particular, if
+; (consp fn) is true -- which only happens when we're executing the attachments
+; for those constrained functions -- then fn is the msg we're supposed to
+; return.  The basic idea is that those attachments detect a wide variety of
+; errors and rather than produce a single generic error message (as we would do
+; if this clause were eliminated) we let the caller formulate the message.
+
+; Note:  We could assert (msgp fn) but it is weaker than the assertion below.
+
+    (assert$
+     (and (stringp (car fn))
+          (alistp (cdr fn))) ; character-alistp isn't defined yet...
+     fn))
    (t (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
             list:~|~%~x1~@2~|~%~@3"
            fn
@@ -2480,6 +2497,9 @@
 
 ; See the #-acl2-loop-only definition of return-last and the comment just
 ; below.  Note that fn is not mbe1-raw, so this binding is appropriate.
+; We are being a bit more generous here in our binding of *aokp*, but it seems
+; fine to keep it simple here, and for since evaluation of arg2 does not affect
+; the logical result, there is no soundness issue here.
 
                             t))
       (ev-rec arg2 alist w user-stobj-alist

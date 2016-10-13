@@ -1241,6 +1241,14 @@
   (symbol-listp val))
 
 ; -----------------------------------------------------------------
+; NEVER-IRRELEVANT-FNS-ALIST [GLOBAL-VALUE]
+
+(defun never-irrelevant-fns-alistp (val)
+  (and (symbol-alistp val)
+       (subsetp-eq (strip-cdrs val)
+                   '(t nil :both))))
+
+; -----------------------------------------------------------------
 ; DEFINED-HEREDITARILY-CONSTRAINED-FNS [GLOBAL-VALUE]
 
 (defun pseudo-defined-hereditarily-constrained-fnsp (val)
@@ -1764,6 +1772,7 @@
     (DEFINED-HEREDITARILY-CONSTRAINED-FNS
       (pseudo-defined-hereditarily-constrained-fnsp val))
     (WORLD-GLOBALS (world-globalsp val))
+    (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------

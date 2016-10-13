@@ -14,8 +14,11 @@
 
 (in-package "ACL2")
 
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/deflist" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
+
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "typed-list-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,17 +35,33 @@
           a letter, a (decimal) digit, or a dash."
   (or (and (standard-char-p char)
            (alpha-char-p char))
-      (iff t (digit-char-p char))
+      (if (digit-char-p char) t nil)
       (eql char #\-)))
 
-(std::deflist alpha/digit/dash-char-list-p (x)
+(std::deflist alpha/digit/dash-char-listp (x)
   (alpha/digit/dash-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
-  :short "True iff all the characters in @('chars') are
+  :short "True iff all the characters in @('x') are
           letters, (decimal) digits, or dashes."
-  :true-listp nil
+  :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nondigit-char-p ((char characterp))
+  :returns (yes/no booleanp)
+  :parents (character-utilities)
+  :short "True iff the character @('char') is not a (decimal) digit."
+  (not (digit-char-p char)))
+
+(std::deflist nondigit-char-listp (x)
+  (nondigit-char-p x)
+  :guard (character-listp x)
+  :parents (character-utilities)
+  :short "True iff all the characters in @('x') are not (decimal) digits."
+  :true-listp t
+  :elementp-of-nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,9 +70,22 @@
   :parents (character-utilities)
   :short "Convert a list of natural numbers below 256
           to the corresponding list of characters."
-  (cond ((endp nats) nil)
-        (t (cons (code-char (car nats))
-                 (nats=>chars (cdr nats)))))
+  (reverse (nats=>chars-aux nats nil))
+
+  :prepwork
+  ((define nats=>chars-aux ((nats (unsigned-byte-listp 8 nats))
+                            (rev-chars character-listp))
+     :returns (final-rev-chars character-listp :hyp (character-listp rev-chars))
+     (cond ((endp nats) rev-chars)
+           (t (nats=>chars-aux (cdr nats)
+                               (cons (code-char (car nats))
+                                     rev-chars))))
+     ///
+     (more-returns
+      (final-rev-chars true-listp
+                       :hyp (true-listp rev-chars)
+                       :name true-listp-of-nats=>chars-aux
+                       :rule-classes :type-prescription))))
   ///
 
   (more-returns
@@ -61,14 +93,33 @@
           :name true-listp-of-nats=>chars
           :rule-classes :type-prescription)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define chars=>nats ((chars character-listp))
   :returns (nats (unsigned-byte-listp 8 nats))
   :parents (character-utilities)
   :short "Convert a list of characters
           to the corresponding list of natural numbers below 256."
-  (cond ((endp chars) nil)
-        (t (cons (char-code (car chars))
-                 (chars=>nats (cdr chars)))))
+  (reverse (chars=>nats-aux chars nil))
+
+  :prepwork
+  ((define chars=>nats-aux ((chars character-listp)
+                            (rev-nats (unsigned-byte-listp 8 rev-nats)))
+     :returns (final-rev-nats (unsigned-byte-listp 8 final-rev-nats)
+                              :hyp (unsigned-byte-listp 8 rev-nats))
+     (cond ((endp chars) rev-nats)
+           (t (chars=>nats-aux (cdr chars)
+                               (cons (char-code (car chars))
+                                     rev-nats))))
+     ///
+     (more-returns
+      (final-rev-nats true-listp
+                      :hyp (true-listp rev-nats)
+                      :name true-listp-of-chars=>nats-aux
+                      :rule-classes :type-prescription)
+      (final-rev-nats nat-listp
+                      :hyp (nat-listp rev-nats)
+                      :name nat-listp-of-chars=>nats-aux))))
   ///
 
   (more-returns
