@@ -54,6 +54,9 @@
    When called with no arguments, i.e. @('(typed-tuplep)'),
    the macro (arbitrarily) expands to @('t').
    </p>
+   <p>
+   The macro always returns a @(tsee booleanp).
+   </p>
    @(def typed-tuplep)"
 
   (define typed-tuplep-conjuncts ((component-types true-listp)
@@ -77,5 +80,5 @@
           `(let ((,variable ,object))
              (and (true-listp ,variable)
                   (= (len ,variable) ,(len component-types))
-                  ,@(typed-tuplep-conjuncts
-                     component-types 0 variable nil)))))))
+                  ,@(typed-tuplep-conjuncts component-types 0 variable nil)
+                  t))))))

@@ -40,3 +40,5 @@
 (assert! (typed-tuplep (lambda (x) (unsigned-byte-p 8 x)) integerp '(55 -2)))
 
 (assert! (not (typed-tuplep (lambda (x) (unsigned-byte-p 8 x)) '(1 1))))
+
+(assert! (booleanp (typed-tuplep (lambda (x) (member-eq x '(a b c))) 'a)))
