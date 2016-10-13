@@ -29233,7 +29233,7 @@
 ; badge-userfn and apply$-userfn on symbols that are not built into their
 ; definitions, and then providing hypotheses that stipulate the properties of
 ; those constrained functions on the user-defined symbols in question.
-; These hypotheses are called ``warrants.'' 
+; These hypotheses are called ``warrants.''
 
 ; Warrant (Merriam-Webster);
 ; [noun] commission or document giving authority to do something
@@ -29873,7 +29873,7 @@
 ; evaluation theory after attaching the doppelgangers of badge-userfn and
 ; apply$-userfn for the current world to those critical functions.
 
-; Now we turn to the optimization of APPLY$-LAMBDA.  In apply.lisp, 
+; Now we turn to the optimization of APPLY$-LAMBDA.  In apply.lisp,
 ; we have the theorem:
 ; (equal (apply$-lambda fn args)
 ;        (ev$ (lambda-body fn)
@@ -29906,7 +29906,7 @@
 ; free variables in the body other than the formals, and that the body is tame.
 
 ; From apply.lisp we have the theorem above saying that (apply$-lambda fn args)
-; is unconditionally equal to the ev$ of the body under an alist created from 
+; is unconditionally equal to the ev$ of the body under an alist created from
 ; the formals and args.  So if the lambda object in question does not satisfy the
 ; rules above, we can still ev$ it as per the theorem.
 
@@ -30574,38 +30574,38 @@
 ; APPLY$-LAMBDA we will be using *1* EV$ to interpret LAMBDA applications.
 
 ;   (progn
-;   
+;
 ;   ; This is the ``old style'' way to do this computation. ;
 ;     (defun$ sum-3+2x (lst)
 ;       (declare (xargs :guard t))
 ;       (cond ((atom lst) 0)
 ;             (t (+ (+ 3 (* 2 (fix (car lst))))
 ;                   (sum-3+2x (cdr lst))))))
-;   
+;
 ;   ; Here is the mapping function approach. ;
 ;     (defun$ sum (lst fn)
 ;       (cond ((endp lst) 0)
 ;             (t (+ (apply$ fn (list (car lst)))
 ;                   (sum (cdr lst) fn)))))
-;   
+;
 ;     (defun$ test-fn-0 (x)        ; an ideal function ;
 ;       (+ 3 (* 2 (fix x))))
-;   
+;
 ;     (defun$ test-fn-1 (x)        ; a Common Lisp compliant (guard t) function ;
 ;       (declare (xargs :guard t))
 ;       (+ 3 (* 2 (fix x))))
-;   
+;
 ;     (defconst *test-bad-lambda*      ; a LAMBDA with a non-trivial guard ;
 ;       '(lambda (x)
 ;          (binary-+ '3 (binary-* '2 x))))
-;   
+;
 ;     (defconst *test-good-lambda*      ; the unrestricted LAMBDA expression ;
 ;       '(lambda (x)
 ;          (binary-+ '3 (binary-* '2 (fix x)))))
-;   
+;
 ;     (defun nats (n)
 ;       (if (zp n) nil (cons n (nats (- n 1)))))
-;   
+;
 ;     (defconst *million* (nats 1000000))
 ;     )
 
@@ -30769,9 +30769,9 @@
 ;   (setq *cl-cache-world* nil)
 ;   (setq *cl-cache-bad-lambdas* nil)
 ;   (defvar *cl-cache-fast-alist* nil)
-;   
+;
 ;   (defun compile-tame-compliant-unrestricted-lambda (fn)
-;   
+;
 ;   ; *cl-cache-fast-alist* is a fast alist mapping some lambda expressions to
 ;   ; their compiled counterparts.  It is accessed only if (w *the-live-state*) is
 ;   ; eq to *cl-cache-world*.  We add a new <fn, compiled-code> pair to the fast
@@ -30779,11 +30779,11 @@
 ;   ; add fn to the bad lambdas list.  If the world is not the one the fast-alist
 ;   ; is expecting, we set the alist to nil and start over.  No provision is taken
 ;   ; here for interrupts or extensions of the world.
-;   
+;
 ;   ; In this quick and dirty trial, the bad-lambdas are kept in an ordinary
 ;   ; list as before.  But that won't matter because the list will be nil in all
 ;   ; our tests; all our lambdas will be good.
-;   
+;
 ;     (cond
 ;      ((eq *cl-cache-world* (w *the-live-state*))
 ;       (let* ((hfn (hons-copy fn))
@@ -30810,7 +30810,7 @@
 ;         (setq *cl-cache-bad-lambdas* nil)
 ;         (setq *cl-cache-world* (w *the-live-state*))
 ;         (compile-tame-compliant-unrestricted-lambda fn))))
-;   
+;
 ;   (lp)
 
 ; Test 11. ``Good'' LAMBDA with quick and dirty fast-alist cache:
@@ -30933,7 +30933,7 @@
 ; test.
 
 ; It also interesting to note that just interpreting the good LAMBDA (the Do
-; Nothing scenario (a)), which completely ignores issues of recognizing and 
+; Nothing scenario (a)), which completely ignores issues of recognizing and
 ; compiling good ones, can be done a million times in 6.27 seconds, ignoring
 ; the trivial overhead.  That means this good lambda is interpreted by EV$ in
 ; about 0.00000627 seconds.  But the cost of recognizing it and compiling it is
