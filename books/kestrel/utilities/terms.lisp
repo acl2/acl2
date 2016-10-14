@@ -130,6 +130,40 @@
                                               rev-result))))
      :verify-guards nil)))
 
+(defines all-program-ffn-symbs
+  :parents (term-utilities)
+  :short "Program-mode functions called by a term."
+  :long
+  "@(def all-program-ffn-symbs)
+   @(def all-program-ffn-symbs-lst)"
+  :verify-guards nil
+
+  (define all-program-ffn-symbs ((term pseudo-termp)
+                                 (ans symbol-listp)
+                                 (wrld plist-worldp))
+    :returns (final-ans symbol-listp :hyp :guard)
+    (b* (((when (variablep term)) ans)
+         ((when (fquotep term)) ans)
+         (fn/lambda (ffn-symb term))
+         (ans (if (flambdap fn/lambda)
+                  (all-program-ffn-symbs (lambda-body fn/lambda) ans wrld)
+                (if (logicp fn/lambda wrld)
+                    ans
+                  (add-to-set-eq fn/lambda ans)))))
+      (all-program-ffn-symbs-lst (fargs term) ans wrld)))
+
+  (define all-program-ffn-symbs-lst ((terms pseudo-term-listp)
+                                     (ans symbol-listp)
+                                     (wrld plist-worldp))
+    :returns (final-ans symbol-listp :hyp :guard)
+    (b* (((when (endp terms)) ans)
+         (ans (all-program-ffn-symbs (car terms) ans wrld)))
+      (all-program-ffn-symbs-lst (cdr terms) ans wrld)))
+
+  ///
+
+  (verify-guards all-program-ffn-symbs))
+
 (define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (term-utilities)
