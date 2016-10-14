@@ -230,6 +230,14 @@
        (subsetp-eq (all-vars (third x))
                    (second x))))
 
+(define fn/lambda-p (x (wrld plist-worldp-with-formals))
+  :returns (yes/no booleanp)
+  :parents (term-utilities)
+  :short "Recognize valid function symbols and
+          <see topic='@(url term)'>translated</see> lambda expression."
+  (or (function-namep x wrld)
+      (lambdap x wrld)))
+
 (define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
                                     (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)

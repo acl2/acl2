@@ -127,6 +127,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (not (fn/lambda-p "cons" (w state))))
+
+(assert! (not (fn/lambda-p 'fffffffff (w state))))
+
+(assert! (fn/lambda-p 'cons (w state)))
+
+(assert! (fn/lambda-p 'len (w state)))
+
+(assert! (not (fn/lambda-p 'car-cdr-elim (w state))))
+
+(must-succeed*
+ (defun h (x) x)
+ (assert! (fn/lambda-p 'h (w state))))
+
+(assert!
+ (fn/lambda-p '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
+
+(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
 
 (must-succeed*
