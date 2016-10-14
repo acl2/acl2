@@ -109,7 +109,7 @@
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
   :short "Apply @('fn'), as a unary function, to each of @('terms'),
           obtaining a list of corresponding terms."
-  (reverse (apply-unary-to-terms-aux fn terms nil))
+  (apply-unary-to-terms-aux fn terms nil)
   :verify-guards nil
 
   :prepwork
@@ -118,8 +118,8 @@
                                      (rev-result pseudo-term-listp))
      :guard (or (symbolp fn)
                 (= 1 (len (lambda-formals fn))))
-     :returns (final-rev-result "A @(tsee pseudo-term-listp).")
-     (cond ((endp terms) rev-result)
+     :returns (final-result "A @(tsee pseudo-term-listp).")
+     (cond ((endp terms) (reverse rev-result))
            (t (apply-unary-to-terms-aux fn
                                         (cdr terms)
                                         (cons (apply-term* fn (car terms))

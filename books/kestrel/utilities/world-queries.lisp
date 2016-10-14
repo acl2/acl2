@@ -250,15 +250,15 @@
     (if (null all-args)
         nil
       (if (eq (car all-args) '&whole)
-          (reverse (macro-required-args-aux (cddr all-args) nil))
-        (reverse (macro-required-args-aux all-args nil)))))
+          (macro-required-args-aux (cddr all-args) nil)
+        (macro-required-args-aux all-args nil))))
 
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp)
                                     (rev-result symbol-listp))
-     :returns (final-rev-result symbol-listp :hyp (symbol-listp rev-result))
+     :returns (final-result symbol-listp :hyp (symbol-listp rev-result))
      (if (endp args)
-         rev-result
+         (reverse rev-result)
        (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
                        :exec (car args))))
          (if (lambda-keywordp arg)
