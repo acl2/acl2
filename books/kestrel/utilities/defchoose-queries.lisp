@@ -40,7 +40,7 @@
 
 (define defchoosep ((fn (function-namep fn wrld)) (wrld plist-worldp))
   :returns (axiom "A @(tsee pseudo-termp).")
-  :short "Check if the function @('fn') was introduced via @(tsee defchoose),
+  :short "Check if a function was introduced via @(tsee defchoose),
           returning the function's constraining axiom if the check succeeds."
   :long
   "<p>
@@ -56,8 +56,7 @@
                               (wrld plist-worldp))
   :returns (bound-vars "A @(tsee symbol-listp).")
   :mode :program
-  :short "Bound variables
-          of the function @('fn') introduced via @(tsee defchoose)."
+  :short "Bound variables of a function introduced via @(tsee defchoose)."
   :long
   "<p>
    The bound variables are in the third element of the @(tsee defchoose) event,
@@ -76,7 +75,7 @@
   :returns (t/nil "A @(tsee booleanp).")
   :mode :program
   :short "Value of the @(':strengthen') option
-          of the function @('fn') introduced via @(tsee defchoose)."
+          of a function introduced via @(tsee defchoose)."
   :long
   "<p>
    If explicitly supplied, the value of the @(':strengthen') option
@@ -95,8 +94,8 @@
                                          (defchoosep fn wrld)))
                                 (wrld plist-worldp))
   :mode :program
-  :short "Body of the function @('fn') introduced via @(tsee defchoose),
-          in <see topic='@(url term)'>untranslated form</see>."
+  :short "<see topic='@(url term)'>Untranslated</see> body
+          of a function introduced via @(tsee defchoose)."
   :long
   "<p>
    The untranslated body, as supplied by the user,
@@ -109,8 +108,8 @@
                         (wrld plist-worldp))
   :returns (body "A @(tsee pseudo-termp).")
   :mode :program
-  :short "Body of the function @('fn') introduced via @(tsee defchoose),
-          in <see topic='@(url term)'>translated form</see>."
+  :short "<see topic='@(url term)'>Translated</see> body
+          of a function introduced via @(tsee defchoose)."
   :long
   "<p>
    The body @('body') is extracted from the constraining axiom of @('fn'),

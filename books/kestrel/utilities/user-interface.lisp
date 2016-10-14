@@ -23,8 +23,6 @@
 (include-book "event-forms")
 (include-book "maybe-unquote")
 
-(local (set-default-parents user-interface))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection user-interface
@@ -34,8 +32,8 @@
 
 (define suppress-output ((form pseudo-event-formp))
   :returns (form-with-output-suppressed pseudo-event-formp)
-  :short "Wrap the event form @('form')
-          with a construct to suppress its output."
+  :parents (user-interface)
+  :short "Wrap an event form with a construct to suppress its output."
   `(with-output
      :gag-mode nil
      :off :all
@@ -44,17 +42,23 @@
 
 (define maybe-suppress-output (suppress (form pseudo-event-formp))
   :returns (form-with-output-maybe-suppressed pseudo-event-formp :hyp :guard)
-  :short "If @('suppress') is non-@('nil'),
-          wrap the event-form @('form') with a construct to suppress its output.
-          Otherwise, just return @('form')."
+  :parents (user-interface)
+  :short "Conditionally wrap an event form
+          with a construct to suppress its output."
+  :long
+  "<p>
+   If @('suppress') is non-@('nil'),
+   wrap the event-form @('form') with a construct to suppress its output.
+   Otherwise, just return @('form').
+   </p>"
   (if suppress
       (suppress-output form)
     form))
 
 (define control-screen-output (verbose (form pseudo-event-formp))
   :returns (form-with-output-controlled pseudo-event-formp :hyp :guard)
-  :short "Use the @('verbose') argument
-          to control the screen output generated from the event form @('form')."
+  :parents (user-interface)
+  :short "Control the screen output generated from an event form."
   :long
   "<p>
    If @('verbose') is not @('nil') or @(''nil'), keep all screen output.
@@ -83,6 +87,7 @@
    (event-p "Make an event when true.")
    (form (pseudo-event-formp form)))
   :returns (new-form pseudo-event-formp :hyp (pseudo-event-formp form))
+  :parents (user-interface)
   :short "Variant of @(tsee control-screen-output)
           that can replay a failure verbosely."
   :long
@@ -140,6 +145,7 @@
                           (t (value val)))))))))))
 
 (defsection cw-event
+  :parents (user-interface)
   :short "Event form of @(tsee cw)."
   :long
   "<p>

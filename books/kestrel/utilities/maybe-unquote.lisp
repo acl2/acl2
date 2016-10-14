@@ -24,8 +24,7 @@
 
 (define maybe-unquote (x)
   :parents (kestrel-utilities unquote)
-  :short "If @('x') is a quoted object, return the object;
-          otherwise, return @('x') unchanged."
+  :short "Unquote an object, if quoted; otherwise, leave unchanged."
   (case-match x
     (('quote y) y)
     (& x)))

@@ -24,9 +24,9 @@
   :returns (fresh-name "A @(tsee symbolp).")
   :mode :program
   :parents (kestrel-utilities system-utilities)
-  :short "Append as many @('$') signs to @('name')
+  :short "Append as many &lsquo;@('$')&rsquo; signs to a name
           as needed to make the name new in the world, i.e. not already in use,
-          and not among the given names to avoid."
+          and not among a given list of names to avoid."
   :long
   "<p>
    If @('name') is already new and not among the names to avoid,

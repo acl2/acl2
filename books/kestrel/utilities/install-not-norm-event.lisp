@@ -34,7 +34,7 @@
   :short "Event form to
           <see topic='@(url install-not-normalized)'
           >install the non-normalized definition</see>
-          of @('fn')."
+          of a function."
   :long
   "<p>
    Ensure that the name of the theorem is not already in use

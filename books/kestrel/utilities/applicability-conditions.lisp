@@ -46,7 +46,7 @@
 
 (std::deflist applicability-condition-listp (x)
   (applicability-condition-p x)
-  :short "@('Nil')-terminated lists of applicability conditions."
+  :short "Recognize @('nil')-terminated lists of applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
 
@@ -252,6 +252,7 @@
                  (= (len enableds) (len app-conds))
                  (= (len rule-classess) (len app-conds)))
      :returns (mv final-names-to-thm-names final-thm-events)
+     :parents nil
      :mode :program
      (cond ((endp app-conds) (mv names-to-thm-names (reverse rev-thm-events)))
            (t (b* (((mv thm-name thm-event-form)

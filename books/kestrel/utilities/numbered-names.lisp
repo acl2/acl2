@@ -108,7 +108,7 @@
 (define numbered-name-index-start-p (x)
   :returns (yes/no booleanp)
   :parents (numbered-name-index-start)
-  :short "True iff @('x') is an admissible starting marker
+  :short "Recognize admissible starting markers
           of the numeric index of numbered names."
   :long
   "<p>
@@ -169,7 +169,7 @@
 (define numbered-name-index-end-p (x)
   :returns (yes/no booleanp)
   :parents (numbered-name-index-end)
-  :short "True iff @('x') is an admissible ending marker
+  :short "Recognize admissible ending markers
           of the numeric index of numbered names."
   :long
   "<p>
@@ -229,7 +229,7 @@
 (define numbered-name-index-wildcard-p (x)
   :returns (yes/no booleanp)
   :parents (numbered-name-index-wildcard)
-  :short "True iff @('x') is an admissible wildcard
+  :short "Recognize admissible wildcards
           for the numeric index of numbered names."
   :long
   "<p>
@@ -289,7 +289,7 @@
                                   or @('nil') if @('yes/no') is @('nil')."))
   :verify-guards nil
   :parents (numbered-names)
-  :short "Check whether a symbol is a numbered name."
+  :short "Check if a symbol is a numbered name."
   :long
   "<p>
    If successful, return its base symbol and index (or wildcard).
@@ -457,7 +457,7 @@
   :returns (max-index natp)
   :verify-guards nil
   :parents (numbered-names-in-use)
-  :short "Largest index of numbered name in use with given base."
+  :short "Largest index of numbered name in use with a given base."
   :long
   "<p>
    Return the largest positive integer @('i')

@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides some utilities for strings.
+; This file provides utilities for strings.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,7 +22,7 @@
 
 (defxdoc string-utilities
   :parents (kestrel-utilities)
-  :short "Some utilities for @(see strings).")
+  :short "Utilities for @(see strings).")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +60,7 @@
 (define nonempty-stringp (x)
   :returns (yes/no booleanp)
   :parents (string-utilities)
-  :short "Non-empty strings."
+  :short "Recognize non-empty strings."
   (not (equal (str-fix x) ""))
   ///
 
@@ -71,7 +71,7 @@
 (std::deflist nonempty-string-listp (x)
   (nonempty-stringp x)
   :parents (string-utilities)
-  :short "@('Nil')-terminated lists of nonempty strings."
+  :short "Recognize @('nil')-terminated lists of nonempty strings."
   :true-listp t
   :elementp-of-nil nil)
 

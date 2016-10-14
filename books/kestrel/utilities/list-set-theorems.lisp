@@ -22,7 +22,7 @@
 
   :parents (theorems-about-non-kestrel-books)
 
-  :short "Some theorems about sets represented as lists."
+  :short "Theorems about sets represented as lists."
 
   (defrule true-listp-of-add-to-set-equal
     :parents (add-to-set)

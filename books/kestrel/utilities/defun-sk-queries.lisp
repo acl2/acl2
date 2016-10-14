@@ -130,7 +130,7 @@
 
 (define maybe-defun-sk-info-p (x)
   :returns (yes/no booleanp)
-  :short "True iff @('x') is a @(tsee defun-sk-info) record or is @('nil')."
+  :short "Recognize @('nil') and @(tsee defun-sk-info) records."
   (or (defun-sk-info-p x)
       (null x)))
 
@@ -449,8 +449,8 @@
                                   (wrld plist-worldp))
   :returns (matrix "A @(tsee pseudo-termp).")
   :verify-guards nil
-  :short "Retrieve the matrix of a @(tsee defun-sk) function,
-          in <see topic='@(url term)'>translated form</see>."
+  :short "Retrieve the <see topic='@(url term)'>translated form</see> matrix
+          of a @(tsee defun-sk) function."
   :long
   "<p>
    After <see topic='@(url term)'>translation</see>,
@@ -513,7 +513,7 @@
                         (wrld plist-worldp))
   :returns (record? "A @(tsee maybe-defun-sk-info-p).")
   :mode :program
-  :short "Check if the function @('fn') is a @(tsee defun-sk) function."
+  :short "Check if a function is a @(tsee defun-sk) function."
   :long
   "<p>
    If successful, return its @(tsee defun-sk)-specific constituents;

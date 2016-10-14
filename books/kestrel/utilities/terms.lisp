@@ -24,18 +24,17 @@
 (local (include-book "all-vars-theorems"))
 (local (include-book "world-theorems"))
 
-(local (set-default-parents term-utilities))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc term-utilities
   :parents (kestrel-utilities system-utilities)
-  :short "Utilities related to @(see term)s.")
+  :short "Utilities for @(see term)s.")
 
 (define pseudo-lambdap (x)
   :returns (yes/no booleanp)
-  :short "True iff @('x') satisfies the conditions of lambda expressions
-          in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
+  :parents (term-utilities)
+  :short "Recognize lambda expressions of
+          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
    Check whether @('x') is
@@ -52,7 +51,8 @@
 
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
-  :short "True iff the lambda expression is closed,
+  :parents (term-utilities)
+  :short "Check if a lambda expression is closed,
           i.e. it has no free variables."
   (subsetp-eq (all-vars (lambda-body lambd))
               (lambda-formals lambd))
@@ -60,8 +60,10 @@
 
 (define pseudo-functionp (x)
   :returns (yes/no booleanp)
-  :short "True iff @('x') satisfies the conditions of functions
-          in <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
+  :parents (term-utilities)
+  :short "Recognize symbols and
+          lambda expressions of
+          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
    Check whether @('x') is a symbol or a
@@ -78,26 +80,26 @@
              (= (len terms)
                 (len (lambda-formals fn))))
   :returns (term "A @(tsee pseudo-termp).")
-  :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+  :parents (term-utilities)
+  :short "Apply a function symbol or a lambda expression
           to a list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
           obtaining a pseudo-term."
   :long
   "<p>
-   If the pseudo-function is a lambda expression,
-   a beta reduction is performed.
+   If a lambda expression is applied, a beta reduction is performed.
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
   :guard-hints (("Goal" :in-theory (enable pseudo-functionp pseudo-lambdap))))
 
 (defsection apply-term*
-  :short "Apply a <see topic='@(url pseudo-functionp)'>pseudo-function</see>
+  :parents (term-utilities)
+  :short "Apply a function symbol or a lambda expression
           to <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
           obtaining a pseudo-term."
   :long
   "<p>
-   If the pseudo-function is a lambda expression,
-   a beta reduction is performed.
+   If a lambda expression is applied, a beta reduction is performed.
    </p>
    @(def apply-term*)"
   (defmacro apply-term* (fn &rest terms)
@@ -107,7 +109,9 @@
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
-  :short "Apply @('fn'), as a unary function, to each of @('terms'),
+  :parents (term-utilities)
+  :short "Apply a function symbol or a unary lambda expression
+          to each element of a list of terms,
           obtaining a list of corresponding terms."
   (apply-unary-to-terms-aux fn terms nil)
   :verify-guards nil
@@ -128,28 +132,27 @@
 
 (define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff the lambda expression is in logic mode,
+  :parents (term-utilities)
+  :short "Check if a lambda expression is in logic mode,
           i.e. its body is in logic mode."
   (logic-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(defines term/terms-no-stobjs-p
+(defines term-no-stobjs-p
   :mode :program
-  :short "True iff term/terms has/have no stobjs."
+  :parents (term-utilities)
+  :short "Check if a term has no @(see stobj)s."
+  :long
+  "<p>
+   A term containing functions in @('*stobjs-out-invalid*')
+   (on which @(tsee no-stobjs-p) would cause a guard violation),
+   is regarded as having no stobjs,
+   if all its other functions have no stobjs.
+   </p>"
   :flag nil
 
   (define term-no-stobjs-p ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no "A @(tsee booleanp).")
-    :parents (term/terms-no-stobjs-p)
-    :short "True iff the term has no stobjs,
-            i.e. all its functions have no stobjs."
-    :long
-    "<p>
-     A term containing functions in @('*stobjs-out-invalid*')
-     (on which @(tsee no-stobjs-p) would cause a guard violation),
-     is regarded as having no stobjs,
-     if all its other functions have no stobjs.
-     </p>"
     (or (variablep term)
         (fquotep term)
         (and (terms-no-stobjs-p (fargs term) wrld)
@@ -161,8 +164,6 @@
 
   (define terms-no-stobjs-p ((terms pseudo-term-listp) (wrld plist-worldp))
     :returns (yes/no "A @(tsee booleanp).")
-    :parents (term/terms-no-stobjs-p)
-    :short "True iff all the terms have no stobjs."
     (or (endp terms)
         (and (term-no-stobjs-p (car terms) wrld)
              (terms-no-stobjs-p (cdr terms) wrld)))))
@@ -171,26 +172,28 @@
   ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
-  :short "True iff the lambda expression has no stobjs,
+  :parents (term-utilities)
+  :short "Check if a lambda expression has no @(see stobj)s,
           i.e. its body has no stobjs."
   (term-no-stobjs-p (lambda-body lambd) wrld))
 
-(defines term/terms-guard-verified-fns
-  :short "True iff term/terms is/are guard-verified."
+(defines guard-verified-fnsp
+  :parents (term-utilities)
+  :short "Check if a term calls only guard-verified functions."
+  :long
+  "<p>
+   Note that if @('term') includes @(tsee mbe),
+   @('nil') is returned
+   if any function inside the @(':logic') component of @(tsee mbe)
+   is not guard-verified,
+   even when @('term') could otherwise be fully guard-verified.
+   </p>
+   @(def guard-verified-fnsp)
+   @(def guard-verified-fns-listp)"
 
   (define guard-verified-fnsp ((term (termp term wrld))
                                (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
-    :parents (term/terms-guard-verified-fns)
-    :short "True iff all the functions in the term are guard-verified."
-    :long
-    "<p>
-     Note that if @('term') includes @(tsee mbe),
-     @('nil') is returned
-     if any function inside the @(':logic') component of @(tsee mbe)
-     is not guard-verified,
-     even when @('term') could otherwise be fully guard-verified.
-     </p>"
     (or (variablep term)
         (fquotep term)
         (and (guard-verified-fns-listp (fargs term) wrld)
@@ -202,15 +205,15 @@
   (define guard-verified-fns-listp ((terms (term-listp terms wrld))
                                     (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
-    :parents (term/terms-guard-verified-fns)
-    :short "True iff all the functions in the terms are guard-verified."
     (or (endp terms)
         (and (guard-verified-fnsp (car terms) wrld)
              (guard-verified-fns-listp (cdr terms) wrld)))))
 
 (define lambdap (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :short "True iff @('x') is a valid translated lambda expression."
+  :parents (term-utilities)
+  :short "Recognize valid
+          <see topic='@(url term)'>translated</see> lambda expression."
   :long
   "<p>
    Check whether @('x') is a @('nil')-terminated list of exactly three elements,
@@ -230,7 +233,8 @@
 (define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
                                     (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :short "True iff all the functions in the lambda expression
+  :parents (term-utilities)
+  :short "Check if all the functions in a lambda expression
           are guard-verified."
   (guard-verified-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable lambdap))))
@@ -240,8 +244,9 @@
                               (see @(tsee msg)).")
                (stobjs-out "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Check whether @('x') is an untranslated term
-          that is valid for evaluation."
+  :parents (term-utilities)
+  :short "Recognize <see topic='@(url term)'>untranslated</see> terms
+          that are valid for evaluation."
   :long
   "<p>
    An untranslated @(see term) is a term as entered by the user.
@@ -307,8 +312,9 @@
                                 (see @(tsee msg)).")
                (stobjs-out "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Check whether @('x') is
-          an untranslated lambda expression that is valid for evaluation."
+  :parents (term-utilities)
+  :short "Recognize <see topic='@(url term)'>untranslated</see>
+          lambda expressions that are valid for evaluation."
   :long
   "<p>
    An untranslated @(see lambda) expression is
@@ -348,7 +354,8 @@
 (define trans-macro ((mac (macro-namep mac wrld)) (wrld plist-worldp))
   :returns (term "A @(tsee pseudo-termp).")
   :mode :program
-  :short "Translated term that a call to the macro translates to."
+  :parents (term-utilities)
+  :short "Translated term that a call to a macro translates to."
   :long
   "<p>
    This function translates a call to the macro
@@ -379,7 +386,8 @@
 (define term-guard-obligation ((term pseudo-termp) state)
   :returns (obligation "A @(tsee pseudo-termp).")
   :mode :program
-  :short "Formula expressing the guard obligation of the term."
+  :parents (term-utilities)
+  :short "Formula expressing the guard obligation of a term."
   :long
   "<p>
    The case in which @('term') is a symbol is dealt with separately

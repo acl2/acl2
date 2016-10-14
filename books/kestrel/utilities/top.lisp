@@ -66,4 +66,4 @@
 
 (defxdoc theorems-about-non-kestrel-books
   :parents (kestrel-utilities)
-  :short "Some theorems about functions defined outside the Kestrel Books.")
+  :short "Theorems about functions defined outside the Kestrel Books.")

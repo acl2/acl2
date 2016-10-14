@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides some utilities for characters.
+; This file provides utilities for characters.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,15 +25,14 @@
 
 (defxdoc character-utilities
   :parents (kestrel-utilities)
-  :short "Some utilities for @(see characters).")
+  :short "Utilities for @(see characters).")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define alpha/digit/dash-char-p ((char characterp))
   :returns (yes/no booleanp)
   :parents (character-utilities)
-  :short "True iff the character @('char') is
-          a letter, a (decimal) digit, or a dash."
+  :short "Check if a character is a letter, a (decimal) digit, or a dash."
   (or (and (standard-char-p char)
            (alpha-char-p char))
       (if (digit-char-p char) t nil)
@@ -43,8 +42,8 @@
   (alpha/digit/dash-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
-  :short "True iff all the characters in @('x') are
-          letters, (decimal) digits, or dashes."
+  :short "Check if a list of characters
+          includes only letters, (decimal) digits, and dashes."
   :true-listp t
   :elementp-of-nil nil)
 
@@ -53,14 +52,14 @@
 (define nondigit-char-p ((char characterp))
   :returns (yes/no booleanp)
   :parents (character-utilities)
-  :short "True iff the character @('char') is not a (decimal) digit."
+  :short "Check if a character is not a (decimal) digit."
   (not (digit-char-p char)))
 
 (std::deflist nondigit-char-listp (x)
   (nondigit-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
-  :short "True iff all the characters in @('x') are not (decimal) digits."
+  :short "Check if a list of characters includes no (decimal) digits."
   :true-listp t
   :elementp-of-nil t)
 
