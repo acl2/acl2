@@ -58,7 +58,7 @@
               (lambda-formals lambd))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define pseudo-functionp (x)
+(define pseudo-fn/lambda-p (x)
   :returns (yes/no booleanp)
   :parents (term-utilities)
   :short "Recognize symbols and
@@ -75,7 +75,7 @@
   (or (symbolp x)
       (pseudo-lambdap x)))
 
-(define apply-term ((fn pseudo-functionp) (terms pseudo-term-listp))
+(define apply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
                 (len (lambda-formals fn))))
@@ -90,7 +90,7 @@
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-functionp pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
 
 (defsection apply-term*
   :parents (term-utilities)
@@ -105,7 +105,7 @@
   (defmacro apply-term* (fn &rest terms)
     `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((fn pseudo-functionp) (terms pseudo-term-listp))
+(define apply-unary-to-terms ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
@@ -117,7 +117,7 @@
   :verify-guards nil
 
   :prepwork
-  ((define apply-unary-to-terms-aux ((fn pseudo-functionp)
+  ((define apply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
                                      (terms pseudo-term-listp)
                                      (rev-result pseudo-term-listp))
      :guard (or (symbolp fn)

@@ -54,11 +54,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (pseudo-functionp 'f))
+(assert! (pseudo-fn/lambda-p 'f))
 
-(assert! (pseudo-functionp '(lambda (x) x)))
+(assert! (pseudo-fn/lambda-p '(lambda (x) x)))
 
-(assert! (not (pseudo-functionp 33)))
+(assert! (not (pseudo-fn/lambda-p 33)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
