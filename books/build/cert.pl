@@ -1010,7 +1010,7 @@ unless ($no_makefile) {
     close($mf);
 
     unless ($no_build) {
-	my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name",
+	my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name --no-builtin-rules ",
 				  ($keep_going ? " -k" : ""),
 				  @make_args,
 				  "all-cert-pl-certs"));
