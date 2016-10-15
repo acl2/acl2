@@ -1,6 +1,6 @@
 ; Standard IO Library
-; read-file-lines.lisp -- originally part of the Unicode library
-; Copyright (C) 2005-2013 Kookamara LLC
+; read-file-lines-no-newlines.lisp -- a variant of read-file-lines
+; Copyright (C) 2005-2013 Kookamara LLC, 2016 Kestrel Technology
 ;
 ; Contact:
 ;
@@ -30,6 +30,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@kookamara.com>
+; Changed by: Eric Smith <eric.smith@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "file-measure")
@@ -40,20 +41,19 @@
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
-(set-state-ok t)
 
-
-(defsection read-file-lines-aux
-  :parents (read-file-lines)
-  :short "Tail recursive implementation of @(see read-file-lines)."
-  :long "<p>@(call read-file-lines-aux) returns @('(mv lines state)')</p>
+(defsection read-file-lines-no-newlines-aux
+  :parents (read-file-lines-no-newlines)
+  :short "Tail recursive implementation of @(see read-file-lines-no-newlines)."
+  :long "<p>@(call read-file-lines-no-newlines-aux) returns @('(mv lines state)')
+        where @('lines') is in reverse order.</p>
 <ul>
 <li>@('line') is a character list, the current line in reverse order</li>
 <li>@('lines') are a string list, the previously read lines in reverse order</li>
 <li>@('channel') is the @(':byte') channel we're reading from</li>
 </ul>"
 
-  (defund read-file-lines-aux (line lines channel state)
+  (defund read-file-lines-no-newlines-aux (line lines channel state)
     (declare (xargs :guard (and (character-listp line)
                                 (string-listp lines)
                                 (symbolp channel)
@@ -67,51 +67,53 @@
          ((unless byte)
           (let ((lines (cons (str::rchars-to-string line) lines)))
             (mv lines state)))
-         ((the character char) (code-char (the (unsigned-byte 8) byte)))
-         (line (cons char line))
-         ((when (eql char #\Newline))
-          (let ((lines (cons (str::rchars-to-string line) lines)))
-            (read-file-lines-aux nil lines channel state))))
-      (read-file-lines-aux line lines channel state)))
+         ((the character char) (code-char (the (unsigned-byte 8) byte))))
+        (if (eql char #\Newline)
+            (let ((lines (cons (str::rchars-to-string line) lines)))
+              (read-file-lines-no-newlines-aux nil ;next line initially empty
+                                               lines channel state))
+          (let ((line (cons char line)))
+            (read-file-lines-no-newlines-aux line lines channel state)))))
 
-  (local (in-theory (enable read-file-lines-aux)))
+  (local (in-theory (enable read-file-lines-no-newlines-aux)))
 
-  (defthm state-p1-of-read-file-lines-aux
+  (defthm state-p1-of-read-file-lines-no-newlines-aux
     (implies (and (force (state-p1 state))
                   (force (symbolp channel))
                   (force (open-input-channel-p1 channel :byte state)))
              (b* (((mv ?lines state)
-                   (read-file-lines-aux line lines channel state)))
+                   (read-file-lines-no-newlines-aux line lines channel state)))
                (state-p1 state))))
 
-  (defthm open-input-channel-p1-of-read-file-lines-aux
+  (defthm open-input-channel-p1-of-read-file-lines-no-newlines-aux
     (implies (and (force (state-p1 state))
                   (force (symbolp channel))
                   (force (open-input-channel-p1 channel :byte state)))
              (b* (((mv ?lines state)
-                   (read-file-lines-aux line lines channel state)))
+                   (read-file-lines-no-newlines-aux line lines channel state)))
                (open-input-channel-p1 channel :byte state))))
 
-  (defthm string-listp-of-read-file-lines-aux
+  (defthm string-listp-of-read-file-lines-no-newlines-aux
     (implies (force (string-listp lines))
              (string-listp
-              (mv-nth 0 (read-file-lines-aux line lines channel state)))))
+              (mv-nth 0 (read-file-lines-no-newlines-aux line lines channel state)))))
 
-  (defthm true-listp-of-read-file-lines-aux
-    (equal (true-listp (mv-nth 0 (read-file-lines-aux line lines channel state)))
+  (defthm true-listp-of-read-file-lines-no-newlines-aux
+    (equal (true-listp (mv-nth 0 (read-file-lines-no-newlines-aux line lines channel state)))
            (true-listp lines))))
 
 
 
-(defsection read-file-lines
+(defsection read-file-lines-no-newlines
   :parents (std/io)
-  :short "Read an entire file into a list of lines (strings)."
-  :long "<p><b>Signature:</b> @(call read-file-lines) returns @('(mv contents state)').</p>
+  :short "Read an entire file into a list of lines (strings), omitting
+  newline characters from the resuting strings"
+  :long "<p><b>Signature:</b> @(call read-file-lines-no-newlines) returns @('(mv contents state)').</p>
 
 <p>On success, @('contents') is a @(see string-listp) that contains each line
-of the file.  Each string except the last will end with a newline character,
-i.e., @('#\\Newline').  For a variant of this utility that omits these newlines,
-see @(see read-file-lines-no-newlines).</p>
+of the file, with all newline characters removed (unlike @(see read-file-lines)).  A
+line of the file that contains only a newline character will be represented by an
+empty string in this list.</p>
 
 <p>On failure, e.g., perhaps @('filename') does not exist, @('contents') will
 be a @(see stringp) saying that we failed to open the file.</p>
@@ -121,7 +123,7 @@ i.e., @('#\\Newline'), sometimes called @('\\n').  It might be desirable to
 change how it works to somehow support @('\\r\\n') or whatever other
 carriage-return stuff people use on platforms like Windows.</p>"
 
-  (defund read-file-lines (filename state)
+  (defund read-file-lines-no-newlines (filename state)
     "Returns (MV ERRMSG/LINES STATE)"
     (declare (xargs :guard (stringp filename)
                     :stobjs state))
@@ -132,20 +134,20 @@ carriage-return stuff people use on platforms like Windows.</p>"
          ((unless channel)
           (mv (concatenate 'string "Error opening file " filename) state))
          ((mv data state)
-          (read-file-lines-aux nil nil channel state))
+          (read-file-lines-no-newlines-aux nil nil channel state))
          (state (close-input-channel channel state)))
       (mv (reverse data) state)))
 
-  (local (in-theory (enable read-file-lines)))
+  (local (in-theory (enable read-file-lines-no-newlines)))
 
-  (defthm state-p1-of-read-file-lines
+  (defthm state-p1-of-read-file-lines-no-newlines
     (implies (force (state-p1 state))
-             (state-p1 (mv-nth 1 (read-file-lines filename state)))))
+             (state-p1 (mv-nth 1 (read-file-lines-no-newlines filename state)))))
 
   (local (defthm crock
            (implies (string-listp x)
                     (string-listp (rev x)))))
 
-  (defthm string-listp-of-read-file-lines
-    (equal (string-listp (mv-nth 0 (read-file-lines filename state)))
-           (not (stringp (mv-nth 0 (read-file-lines filename state)))))))
+  (defthm string-listp-of-read-file-lines-no-newlines
+    (equal (string-listp (mv-nth 0 (read-file-lines-no-newlines filename state)))
+           (not (stringp (mv-nth 0 (read-file-lines-no-newlines filename state)))))))
