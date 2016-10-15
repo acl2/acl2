@@ -44,9 +44,10 @@
 
 <p>where @('name') is a new symbolic name (see @(see name)), @(see macro-args)
 specifies the formals of the macro (see @(see macro-args) for a description),
-and @('body') is a term.  @(see Doc-string) is an optional @(see documentation)
-string; see @(see doc-string).  Each @('dcl') is an optional declaration as for
-@(see defun) (see @(see declare)).</p>
+and @('body') is a term.  @('Doc-string') is an optional @(see documentation)
+string, which (as for @(tsee defmacro)) is essentially ignored by ACL2.  Each
+@('dcl') is an optional declaration as for @(see defun) (see @(see
+declare)).</p>
 
 <p>See @(see defmacro) for a discussion of @('defmacro'), which is the
 traditional way of introducing macros.  @('Defmac') is similar to @('defmacro')

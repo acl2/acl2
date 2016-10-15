@@ -453,7 +453,7 @@ statement is well-formed.</p>")
 
 (defaggregate vl-udp-head
   :tag nil
-  :legiblep nil
+  :layout :fulltree
   :short "Temporary structure for parsing UDPs."
   ((output vl-portdecl-p     "Output port for this UDP.")
    (inputs vl-portdecllist-p "Input ports for this UDP, in order.")
@@ -461,6 +461,8 @@ statement is well-formed.</p>")
 
 (defaggregate vl-udp-body
   :short "Temporary structure for parsing UDPs."
+  :tag nil
+  :layout :fulltree
   ((init  vl-maybe-expr-p "Initial value for the sequential UDP register, if applicable.")
    (table vl-udptable-p   "The parsed state table.")))
 
@@ -522,7 +524,7 @@ statement is well-formed.</p>")
        (:= (vl-match-token :vl-kwd-input))
        ;; list_of_port_identifiers ::= identifier { ',' identifier }
        (ids := (vl-parse-1+-identifiers-separated-by-commas))
-       (return (vl-make-udp-portdecls ids :vl-input *vl-plain-old-wire-type* atts))))
+       (return (vl-make-udp-portdecls ids :vl-input *vl-plain-old-logic-type* atts))))
 
 (defparser vl-parse-1+-udp-input-declarations-separated-by-commas ()
   :short "@('udp_input_declaration { ',' udp_input_declaration }')"
@@ -569,14 +571,14 @@ implement the optional assignment part here.</p>"
         (make-vl-portdecl :loc (vl-token->loc id)
                           :name (vl-idtoken->name id)
                           :dir :vl-output
-                          :type (if reg *vl-plain-old-reg-type* *vl-plain-old-wire-type*)
+                          :type (if reg *vl-plain-old-reg-type* *vl-plain-old-logic-type*)
                           :atts atts)))
   ///
   (defthm type-of-vl-parse-udp-output-declaration
     (b* (((mv err val ?tokstream) (vl-parse-udp-output-declaration atts)))
       (implies (not err)
                (let ((type (vl-portdecl->type val)))
-                 (or (equal type *vl-plain-old-wire-type*)
+                 (or (equal type *vl-plain-old-logic-type*)
                      (equal type *vl-plain-old-reg-type*)))))
     :rule-classes ((:forward-chaining :trigger-terms ((mv-nth 1 (vl-parse-udp-output-declaration atts)))))))
 
@@ -985,7 +987,7 @@ their declarations.</p>"
     (make-vl-udp :name name
                  :output (make-vl-portdecl :name "FAKE_PORT_FOR_UDP_WITH_PARSE_ERROR"
                                            :dir :vl-output
-                                           :type *vl-plain-old-wire-type*
+                                           :type *vl-plain-old-logic-type*
                                            :loc minloc)
                  :minloc minloc
                  :maxloc maxloc

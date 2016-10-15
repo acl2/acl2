@@ -6,13 +6,15 @@
 ; sort-symbol-<.  This function is included in :program mode in the ACL2 source
 ; code, and is used by defpkg.
 
+(in-package "ACL2")
+
 ; Added October, 2012: Parts of this file have been incorporated into the ACL2
 ; sources, so that now strict-merge-symbol-<, strict-merge-sort-symbol-<,
 ; strict-symbol-<-sortedp, and sort-symbol-listp are guard-verified when ACL2
-; starts up.
+; starts up.  So I'm commenting them out here with #+skip readtime
+; conditionals.
 
-(in-package "ACL2")
-
+#+skip
 (defun strict-merge-symbol-< (l1 l2 acc)
   (declare (xargs :guard (and (symbol-listp l1)
                               (symbol-listp l2)
@@ -57,6 +59,7 @@
                  (symbol-listp acc))
             (symbol-listp (strict-merge-symbol-< l1 l2 acc)))))
 
+#+skip
 (defun strict-merge-sort-symbol-< (l)
   (declare (xargs :guard (symbol-listp l)
                   :measure (len l)
@@ -72,8 +75,10 @@
    (implies (symbol-listp x)
             (symbol-listp (strict-merge-sort-symbol-< x)))))
 
+#+skip
 (verify-guards strict-merge-sort-symbol-<)
 
+#+skip
 (defun strict-symbol-<-sortedp (x)
   (declare (xargs :guard (symbol-listp x)))
   (cond ((or (endp x) (null (cdr x)))
@@ -81,6 +86,7 @@
         (t (and (symbol-< (car x) (cadr x))
                 (strict-symbol-<-sortedp (cdr x))))))
 
+#+skip
 (defun sort-symbol-listp (x)
   (declare (xargs :guard (symbol-listp x)))
   (cond ((strict-symbol-<-sortedp x)

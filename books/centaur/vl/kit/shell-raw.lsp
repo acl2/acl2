@@ -30,10 +30,9 @@
 
 (in-package "ACL2")
 
-(defun vl::vl-shell-fn (argv state)
-  (declare (ignore argv))
+(defun vl::vl-shell-entry-fn (events state)
   (format t "VL Verilog Toolkit
-Copyright (C) 2008-2014 Centaur Technology <http://www.centtech.com>
+Copyright (C) 2008-2016 Centaur Technology <http://www.centtech.com>
 
 ,-------------------------,
 |  VL Interactive Shell   |     This is an interactive ACL2 shell with VL pre-
@@ -45,9 +44,14 @@ Copyright (C) 2008-2014 Centaur Technology <http://www.centtech.com>
 ")
 
   (f-put-global 'ld-verbose nil state)
-  ;; well, this doesn't seem to actually work and get us into an interactive
-  ;; LP shell.  But at least we get into a raw-lisp shell, which is probably
-  ;; fine for now.
-  (lp)
+  (ld events)
+  ;; Note: We used to execute (lp) here, but it didn't really do anything.  The
+  ;; vl executable ends up at a prompt as long as (vl-main) doesn't directly
+  ;; exit.  It's a raw Lisp prompt if we save with :return-from-lp or an ACL2
+  ;; prompt if we use :init-forms instead.
+
+  ;; So basically all this function does is provide an entry to LD that can be
+  ;; used in logic mode.  We could easily work around this so we don't need raw
+  ;; Lisp code at all.  Oh well, someday.
   state)
 

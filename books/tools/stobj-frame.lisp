@@ -205,7 +205,7 @@ generally they'll need induction to do the proofs (future work).</p>")
        (concl$ `(equal (nth n ,mv-call$) (nth n ,stobj)))
        (concl `(equal (nth n ,mv-call) (nth n ,stobj)))
        (ind-hint (and (not hints)
-                      (let ((recp (recursivep fn$ wrld)))
+                      (let ((recp (recursivep fn$ t wrld)))
                         (if (and recp
                                  (not (cdr recp))) ;; not mutually recursive
                             `(:induct ,call
@@ -259,7 +259,7 @@ generally they'll need induction to do the proofs (future work).</p>")
                 `(equal ,upd-mvcall
                         ,mvcall)))
        (ind-hint (and (not hints)
-                      (let ((recp (recursivep fn$ wrld)))
+                      (let ((recp (recursivep fn$ t wrld)))
                         (if (and recp
                                  (not (cdr recp))) ;; not mutually recursive
                             `(:induct ,call

@@ -35,7 +35,7 @@ if you can exhibit a witness.  Many times that is all one needs.
 
 |#
 
-(defmacro defun-weak-sk (name args body &key doc quant-ok skolem-name thm-name)
+(defmacro defun-weak-sk (name args body &key quant-ok skolem-name thm-name)
   (let* ((exists-p (and (true-listp body)
                         (symbolp (car body))
                         (equal (symbol-name (car body)) "EXISTS")))
@@ -62,7 +62,10 @@ if you can exhibit a witness.  Many times that is all one needs.
                (concatenate 'string (symbol-name name)
                             (if exists-p "-SUFF" "-NECC"))
                name)))
-         (msg (non-acceptable-defun-sk-p name args body doc quant-ok nil exists-p)))
+         (msg (non-acceptable-defun-sk-p name args body quant-ok nil exists-p
+                                         nil ; dcls (Matt K. mod)
+                                         nil ; witness-dcls (Matt K. mod)
+                                         )))
     (if msg
         `(er soft '(defun-sk . ,name)
              "~@0"
@@ -130,7 +133,5 @@ if you can exhibit a witness.  Many times that is all one needs.
 	; interferes with the proof (e.g., function definitions and
 	; rewrites).
 
-	,@(if doc
-	      `((defdoc ,name ,doc))
-	    nil)))))
+	))))
 

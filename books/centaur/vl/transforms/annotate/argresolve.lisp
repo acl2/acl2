@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../../mlib/port-tools")
 (include-book "../../mlib/modnamespace")
+(include-book "../../mlib/hid-tools")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -302,10 +303,6 @@ vl-gateinst-p)s."
        ((mv warnings car-prime) (vl-gateinst-dirassign (car x) warnings))
        ((mv warnings cdr-prime) (vl-gateinstlist-dirassign (cdr x) warnings)))
     (mv warnings (cons car-prime cdr-prime))))
-
-
-
-
 
 
 
@@ -751,6 +748,484 @@ a non-fatal warning explaining the problem.</p>"
           (ok))))
     (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
 
+;; BOZO implement automatic -case macros for transparent sums, so that we can
+;; get things like vl-scopedef-case, vl-scopeitem-case, vl-port-case.  Tricky
+;; for nested transsums, I guess.
+
+(define vl-scopeitem-modinst-p ((x vl-scopeitem-p))
+  :inline t
+  :enabled t
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  :hooks nil
+  (mbe :logic (vl-modinst-p x)
+       :exec (eq (tag x) :vl-modinst)))
+
+(define vl-scopeitem-modport-p ((x vl-scopeitem-p))
+  :inline t
+  :enabled t
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  :hooks nil
+  (mbe :logic (vl-modport-p x)
+       :exec (eq (tag x) :vl-modport)))
+
+(define vl-scopeitem-interfaceport-p ((x vl-scopeitem-p))
+  :inline t
+  :enabled t
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  :hooks nil
+  (mbe :logic (vl-interfaceport-p x)
+       :exec (eq (tag x) :vl-interfaceport)))
+
+(define vl-port-interface-p ((x vl-port-p))
+  :inline t
+  :enabled t
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  :hooks nil
+  (mbe :logic (vl-interfaceport-p x)
+       :exec (eq (tag x) :vl-interfaceport)))
+
+(define vl-hidexpr-split-right
+  :parents (vl-unhierarchicalize-interfaceport)
+  :short "Split off the rightmost part of a hierarchical identifier."
+  ((x vl-hidexpr-p
+      "Expression to split, say @('foo.bar') or @('elf.cow[3][4].horse')."))
+  :returns
+  (mv (successp booleanp
+                "We fail if this is an atomic HID expression like @('foo')
+                 since then there's nothing to split.  We also fail if we're
+                 given a HID like @('$root.foo'), because @('$root') isn't a
+                 valid @(see vl-hidexpr) by itself.")
+      (prefix  vl-hidexpr-p
+               "On success: everything up to the final indexing/name.  For instance,
+                @('foo') or @('elf.cow') in the above examples.")
+      (indices vl-exprlist-p
+               "On success: any next-to-last indexing that is also chopped off.
+                For instance, NIL and @('[3][4]') in the above examples.")
+      (lastname stringp
+                "On success: the final name that was chopped off, e.g.,
+                 @('bar') or @('horse') in the above examples."))
+  :verify-guards nil
+  :measure (vl-hidexpr-count x)
+  (let ((x (vl-hidexpr-fix x)))
+    (vl-hidexpr-case x
+      :end
+      ;; Fail: this is atomic, there's nothing to split.
+      (mv nil x nil "")
+      :dot
+      (vl-hidexpr-case x.rest
+        :end
+        (b* ((name1 (vl-hidindex->name x.first))
+             ((unless (stringp name1))
+              ;; Fail: trying to split $root.foo
+              (mv nil x nil ""))
+             (prefix (make-vl-hidexpr-end :name name1)))
+          (mv t
+              prefix
+              (vl-hidindex->indices x.first)
+              (vl-hidexpr-end->name x.rest)))
+        :dot
+        (b* (((mv rest-okp rest-prefix rest-indices rest-lastname)
+              (vl-hidexpr-split-right x.rest))
+             (prefix (change-vl-hidexpr-dot x :rest rest-prefix)))
+          (mv rest-okp prefix rest-indices rest-lastname)))))
+  ///
+  (verify-guards vl-hidexpr-split-right))
+
+(define vl-scopeexpr-split-right ((x vl-scopeexpr-p))
+  :parents (vl-unhierarchicalize-interfaceport)
+  :short "Split off the rightmost part of a hierarchical scope expression."
+  :long "<p>This is a thin wrapper around @(see vl-hidexpr-split-right) that
+         just sticks the scopes back on.</p>"
+  :returns (mv (successp booleanp)
+               (prefix   vl-scopeexpr-p)
+               (indices  vl-exprlist-p)
+               (lastname stringp))
+  :measure (vl-scopeexpr-count x)
+  :verify-guards nil
+  (vl-scopeexpr-case x
+    :end
+    (b* (((mv okp new-hid indices lastname) (vl-hidexpr-split-right x.hid))
+         (new-x (change-vl-scopeexpr-end x :hid new-hid)))
+      (mv okp new-x indices lastname))
+    :colon
+    (b* (((mv okp new-rest indices lastname) (vl-scopeexpr-split-right x.rest))
+         (new-x (change-vl-scopeexpr-colon x :rest new-rest)))
+      (mv okp new-x indices lastname)))
+  ///
+  (verify-guards vl-scopeexpr-split-right))
+
+(define vl-unhierarchicalize-interfaceport
+  :short "Sanity check and normalize interface port arguments by dropping
+hierarchical modinst name components, e.g., transform @('mypipe.producer') to
+just @('mypipe')."
+
+  :long "<p>See SystemVerilog-2012 Section 25.5, especially at the top of Page
+718.  Suppose we have an interface called @('IPipe') with modports named
+@('producer') and @('consumer').  The names of these modport declarations can
+be used in two distinct places:</p>
+
+@({
+     module fooBuilder( IPipe.producer pipe ) ;  // <-- .producer used in the module's port
+       ...
+     endmodule
+
+     module top ;
+       IPipe mypipe;
+       fooBuilder prod ( mypipe.producer );   // <-- .producer used in module instance
+     endmodule
+})
+
+<p>Our goal here is to deal with the latter kind of usage.  The basic idea is
+to reduce such an argument to just @('mypipe'), after checking that its
+interface is compatible with the module's interface declaration.  This way,
+later VL code for dealing with interface ports doesn't have to think about
+hierarchical identifiers that point at modports.</p>"
+
+  ((arg      vl-plainarg-p     "Actual for this port.")
+   (port     vl-port-p         "Corresponding port; not necessarily an interface port.")
+   (ss       vl-scopestack-p)
+   (inst     vl-modinst-p      "The module instance itself, context for error messages.")
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-arg  vl-plainarg-p
+                         "If @('arg') is of the form @('myinterface.myport')
+                          and everything is OK, this will just be
+                          @('myinterface').  In any other case, we just return
+                          @('arg') unchanged."))
+  :guard-debug t
+  (b* ((port (vl-port-fix port))
+       ((vl-plainarg arg) (vl-plainarg-fix arg))
+       ((vl-modinst inst) (vl-modinst-fix inst))
+
+       ((unless (vl-port-interface-p port))
+        ;; Not an interface port, nothing to do.
+        (mv (ok) arg))
+
+       ((vl-interfaceport port))
+       (expr (vl-plainarg->expr arg))
+       ((unless expr)
+        ;; Blank argument -- this doesn't seem to be allowed; see failtest/port5d.v
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: interface port ~s1 is blank."
+                   :args (list inst port.name))
+            arg))
+       ((unless (vl-expr-case expr :vl-index))
+        ;; Something like .myiface(3 + 4) or whatever.  failtest/iface14.v and
+        ;; failtest/port5c.v
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
+                   :args (list inst port.name expr))
+            arg))
+       ((vl-index expr))
+
+       ;; If we get here, we have a scope expression, so try to follow
+       ;; it.  This is a bit limited.  Doing it here, instead of during
+       ;; elaboration, means we won't be able to handle things like:
+       ;;
+       ;;   for(genvar i = 0; ...)
+       ;;   begin : foo
+       ;;       myinterface iface (...);
+       ;;   end
+       ;;
+       ;;   mysubmod mysub ( .producer(foo[3].iface) );
+       ;;
+       ;; Because we can't follow the foo[3].iface into the generate array
+       ;; until it's been elaborated.
+       ;;
+       ;; Fortunately, this seems to be too hard for commercial tools as well.
+       ;; In particular failtest/iface23.v shows that neither of NCV and VCS
+       ;; handle this, so we probably don't need to handle it either.
+       ((mv err trace ?context tail)
+        (vl-follow-scopeexpr expr.scope ss :strictp nil))
+       ((when err)
+        (mv (fatal :type :vl-bad-instance ;; failtest/iface18.v
+                   :msg "~a0: error resolving interface port argument .~s1(~a2): ~@3"
+                   :args (list inst port.name expr err))
+            arg))
+
+       ((vl-hidstep step1) (first trace))
+       ((when (vl-scopeitem-modinst-p step1.item))
+        (b* (((vl-modinst step1.item))
+             (iface (vl-scopestack-find-definition step1.item.modname ss))
+             ((unless (and iface (vl-scopedef-interface-p iface)))
+              ;; Connecting .ifport(foo) where foo is a module/UDP instance
+              ;; instead of an interface instance.  See also failtest/iface24.v
+              ;; and failtest/iface25.v
+              (mv (fatal :type :vl-bad-instance
+                         :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
+                         :args (list inst port.name expr))
+                  arg))
+             ((unless (equal step1.item.modname port.ifname))
+              ;; See failtest/port1.v
+              (mv (fatal :type :vl-bad-instance
+                         :msg "~a0: type error: interface port ~s1 (type ~s2) ~
+                               is connected to ~a3 (type ~s4)."
+                         :args (list inst port.name port.ifname expr step1.item.modname))
+                  arg)))
+          (mv (ok) arg)))
+
+       ((when (vl-scopeitem-interfaceport-p step1.item))
+        (b* (((vl-interfaceport step1.item))
+             ((unless (equal step1.item.ifname port.ifname))
+              ;; See failtest/port1b.v
+              (mv (fatal :type :vl-bad-instance
+                         :msg "~a0: type error: interface port ~s1 (type ~s2) ~
+                               is connected to ~a3 (type ~s4)."
+                         :args (list inst port.name port.ifname expr step1.item.ifname))
+                  arg)))
+          (mv (ok) arg)))
+
+       ;; The only other possibility is the very weird case where you can write
+       ;; a modport name directly in the instantiation instead.  For instance
+       ;; we might be instantiating
+       ;;
+       ;;    submodule sub (.pipe(foo.bar.mypipe.consumer));
+       ;;
+       ;; to sanity check that the "foo.bar.mypipe" part is a compatible
+       ;; interface and that the "consumer" part is a valid modport name for
+       ;; this interface.
+
+       ((unless (vl-scopeitem-modport-p step1.item))
+        ;; See also failtest/ifport2.v, 
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
+                   :args (list inst port.name expr))
+            arg))
+       ;; There shouldn't be any indices on the outside, because modports don't
+       ;; come in arrays.
+       ((when (or (consp expr.indices)
+                  (not (vl-partselect-case expr.part :none))))
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: array indexing can't be applied to modport: .~s1(~a2)"
+                   :args (list inst port.name expr))
+            arg))
+       ((vl-modport step1.item))
+       ((unless (vl-hidexpr-case tail :end))
+        ;; If there's stuff in the tail, there's additional indexing *through*
+        ;; the modport?  That doesn't seem like it makes any sense.
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: error resolving interface port argument .~s1(~a2): ~
+                         trying to index through modport ~s3 with ~a4."
+                   :args (list inst port.name expr step1.item.name tail))
+            arg))
+       ((unless (consp (cdr trace)))
+        ;; There are no more steps in the trace, so somehow this is a direct
+        ;; reference to a modport?  Can this happen?  Maybe if we have an
+        ;; interface like:
+        ;;     interface foo ;
+        ;;         modport consumer (...);
+        ;;         otherinterface bar (consumer);
+        ;;     endinterface
+        ;; but that certainly makes no sense.
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
+                   :args (list inst port.name expr))
+            arg))
+
+       ((vl-hidstep step2) (second trace))
+       ((unless (vl-scopeitem-modinst-p step2.item))
+        ;; The expression is something like:
+        ;;
+        ;;    foo.bar.baz.mymodport
+        ;;
+        ;; but baz isn't an interface instance (a modinst)?  Can this make
+        ;; any sense?  Maybe...
+        ;;
+        ;; See failtest/iface20: NCV allows, but VCS disallows using modport
+        ;; connections when instantiating submodules with interface ports.
+        ;; That is, assuming consumer is a modport of myinterface, VCS will
+        ;; reject:
+        ;;
+        ;;     module foo (myinterface iface) ;
+        ;;        submod bar (iface.consumer);
+        ;;     endmodule
+        ;;
+        ;; For now we mimic VCS and only allow .modport connections when they
+        ;; are used on explicit interface instances.  If we want to relax this
+        ;; and allow them on interface ports, we'll need to add another case
+        ;; here for step2.item being an interfaceport.
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: unsupported interface port argument .~s1(~a2). ~
+                         We currently only support arguments with modport ~
+                         specifiers for direct interface instantiations, but ~
+                         modport ~s3 is found via ~a4."
+                   :args (list inst port.name expr step1.item.name step2.item))
+            arg))
+
+       ((vl-modinst step2.item))
+       (iface   (vl-scopestack-find-definition step2.item.modname ss))
+       ((unless (and iface (vl-scopedef-interface-p iface)))
+        ;; I don't think this should be possible unless we're not properly
+        ;; prohibiting modports from occurring except in interfaces.
+        ;; BOZO maybe this can happen if the modports are in a generate?
+        (mv (fatal :type :vl-programming-error
+                   :msg "~a0: unsupported interface port argument .~s1(~a2). ~
+                         Expected the modport ~s3 to be inside an interface, ~
+                         but found it inside ~s4 which is a ~a5.  Thought ~
+                         that modports should only occur in interfaces."
+                   :args (list inst port.name expr step1.item.name step2.name iface))
+            arg))
+       ((vl-interface iface))
+       ((unless (equal iface.name port.ifname))
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: type error: interface port ~s1 (type ~s2) is ~
+                         connected to ~a3 (type ~s4)."
+                   :args (list inst port.name port.ifname expr iface.name))
+            arg))
+       ((unless (or (not port.modport)
+                    (equal port.modport step1.item.name)))
+        ;; SystemVerilog-2012 25.5, page 718: "If a port connection specifies a
+        ;; modport list name in both the module instance and module header
+        ;; declaration, then the two modport list names shall be identical."
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: modport clash for .~s1(~a2).  In submodule ~s3 ~
+                         the port is declared as modport ~s4, so you can't ~
+                         instantiate it with modport ~s5."
+                   :args (list inst port.name expr inst.modname
+                               port.modport step1.item.name))
+            arg))
+
+       ;; All sanity checks passed, this is an OK modport.  Now remove the
+       ;; .modport part from the expression.
+       ((mv chop-okp new-scopeexpr indices ?lastname)
+        (vl-scopeexpr-split-right expr.scope))
+       ((unless chop-okp)
+        (mv (fatal :type :vl-programming-error
+                   :msg "~a0: reducing interface port .~s1(~a2) by dropping ~
+                         modport ~s3: somehow failed to split the modport?"
+                   :args (list inst port.name expr step1.item.name))
+            arg))
+       ((when indices)
+        ;; This probably won't be too hard to support: we'll need to somehow
+        ;; move these indices into the new index expression we build.  I'm not
+        ;; sure what that's going to look like, yet.
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0: reducing interface port .~s1(~a2) by dropping ~
+                         modport ~s3: indices on pre-modport expression?  ~
+                         BOZO we might need to support this for interface ~
+                         arrays.")
+            arg))
+       ;; We'll make some attributes to record what we did.
+       ;; Note: these attributes are used by Lucid!
+       (modportname-as-expr   (make-vl-literal :val (make-vl-string :value step1.item.name)))
+       (interfacename-as-expr (make-vl-literal :val (make-vl-string :value port.ifname)))
+       (new-atts (list* (cons "VL_REMOVED_EXPLICIT_MODPORT" modportname-as-expr)
+                        (cons "VL_INTERFACE_NAME" interfacename-as-expr)
+                        arg.atts))
+       (new-arg (change-vl-plainarg arg
+                                    :expr (change-vl-index expr :scope new-scopeexpr)
+                                    :atts new-atts)))
+    (mv (ok) new-arg)))
+
+(define vl-unhierarchicalize-interfaceports
+  ((args     vl-plainarglist-p "plainargs to the instance")
+   (ports    vl-portlist-p     "corresponding ports for the submodule")
+   (ss       vl-scopestack-p)
+   (inst     vl-modinst-p      "the module instance itself, context for error messages.")
+   (warnings vl-warninglist-p))
+  :guard (same-lengthp args ports)
+  :returns (mv (warnings vl-warninglist-p)
+               (new-args vl-plainarglist-p))
+  (b* (((when (atom args))
+        (mv (ok) nil))
+       ((mv warnings first) (vl-unhierarchicalize-interfaceport (car args) (car ports) ss inst warnings))
+       ((mv warnings rest) (vl-unhierarchicalize-interfaceports (cdr args) (cdr ports) ss inst warnings)))
+    (mv warnings (cons first rest)))
+  ///
+  (defret len-of-vl-unhierarchicalize-interfaceports
+    (equal (len new-args)
+           (len args))))
+
+;; [Jared] folded all of this into unhierarchicalize.
+
+;; (define vl-typecheck-interfaceport
+;;   :short "Check that interface ports are connected sensibly."
+;;   ((arg      vl-plainarg-p     "Actual for this port.")
+;;    (port     vl-port-p         "Corresponding port; not necessarily an interface port.")
+;;    (ss       vl-scopestack-p)
+;;    (inst     vl-modinst-p      "The module instance itself, context for error messages.")
+;;    (warnings vl-warninglist-p))
+;;   :returns (warnings vl-warninglist-p)
+;;   :long "<p>See also @(see vl-unhierarchicalize-interfaceport), which
+;; simplifies arguments of the form @('myiface.mymodport') to just @('myiface').
+;; We assume that it has been run first.</p>"
+;;   :prepwork ((local (in-theory (enable tag-reasoning))))
+;;   (b* ((port (vl-port-fix port))
+;;        ((vl-plainarg arg) (vl-plainarg-fix arg))
+;;        ((vl-modinst inst) (vl-modinst-fix inst))
+
+;;        ((unless (mbe :logic (vl-interfaceport-p port)
+;;                      :exec (eq (tag port) :vl-interfaceport)))
+;;         ;; Not an interface port, nothing to do.
+;;         (ok))
+
+;;        ((vl-interfaceport port))
+;;        (expr        (vl-plainarg->expr arg))
+;;        ((unless expr)
+;;         ;; Blank argument -- this doesn't seem to be allowed; see failtest/port5d.v
+;;         (fatal :type :vl-bad-instance
+;;                :msg "~a0: interface port ~s1 is left blank."
+;;                :args (list inst port.name)))
+
+;;        ((unless (vl-idexpr-p expr))
+;;         (fatal :type :vl-bad-instance
+;;                :msg "~a0: interface port connected to non-identifier: .~s1(~a2)"
+;;                :args (list inst port.name expr)))
+
+;;        (varname (vl-idexpr->name expr))
+;;        (item    (vl-scopestack-find-item varname ss))
+;;        ((unless item)
+;;         (fatal :type :vl-bad-instance
+;;                :msg "~a0: interface port connected to undeclared identifier: .~s1(~s2)"
+;;                :args (list inst port.name varname)))
+
+;;        ((when (mbe :logic (vl-modinst-p item)
+;;                    :exec (eq (tag item) :vl-modinst)))
+;;         (b* (((vl-modinst item))
+;;              (iface (vl-scopestack-find-definition item.modname ss))
+;;              ((unless (and iface (vl-scopedef-interface-p iface)))
+;;               ;; It's a module or UDP instance instead of an interface.  Report
+;;               ;; it like any other non-interface things.
+;;               (fatal :type :vl-bad-instance
+;;                      :msg "~a0: interface port ~s1 is connected to non-interface: ~a2."
+;;                      :args (list inst port.name item)))
+
+;;              ((unless (equal item.modname port.ifname))
+;;               (fatal :type :vl-bad-instance
+;;                      :msg "~a0: type error: interface port ~s1 (type ~s2) is ~
+;;                            connected to ~s3 (type ~s4)."
+;;                      :args (list inst port.name port.ifname varname item.modname))))
+;;           (ok)))
+
+;;        ((when (mbe :logic (vl-interfaceport-p item)
+;;                    :exec (eq (tag item) :vl-interfaceport)))
+;;         (b* (((vl-interfaceport item))
+;;              ((unless (equal item.ifname port.ifname))
+;;               (fatal :type :vl-bad-instance
+;;                      :msg "~a0: type error: interface port ~s1 (type ~s2) is ~
+;;                            connected to ~s3 (type ~s4)."
+;;                      :args (list inst port.name port.ifname varname item.ifname))))
+;;           (ok))))
+
+;;     ;; Anything else makes no sense.
+;;     (fatal :type :vl-bad-instance
+;;            :msg "~a0: interface port ~s1 is connected to non-interface: ~a2."
+;;            :args (list inst port.name item))))
+
+;; (define vl-typecheck-interfaceports
+;;   ((args     vl-plainarglist-p "plainargs to the instance")
+;;    (ports    vl-portlist-p     "corresponding ports for the submodule")
+;;    (ss       vl-scopestack-p)
+;;    (inst     vl-modinst-p      "the module instance itself, context for error messages.")
+;;    (warnings vl-warninglist-p))
+;;   :guard (same-lengthp args ports)
+;;   :returns (warnings vl-warninglist-p)
+;;   (b* (((when (atom args))
+;;         (ok))
+;;        (warnings (vl-typecheck-interfaceport (car args) (car ports) ss inst warnings)))
+;;     (vl-typecheck-interfaceports (cdr args) (cdr ports) ss inst warnings)))
+
+
 (define vl-arguments-argresolve
   ((x         "arguments of a module instance, named or plain" vl-arguments-p)
    (ss        vl-scopestack-p)
@@ -792,9 +1267,10 @@ checking, and add direction/name annotations.</p>"
        ;; heuristically consider the directions of the ports.
        (plainargs (vl-annotate-plainargs plainargs ports scope))
        (warnings  (vl-check-blankargs plainargs ports inst warnings))
+       ((mv warnings plainargs) (vl-unhierarchicalize-interfaceports plainargs ports ss inst warnings))
+       ;; (warnings  (vl-typecheck-interfaceports plainargs ports ss inst warnings))
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
-
 
 (define vl-modinst-argresolve
   :short "Resolve arguments in a @(see vl-modinst-p)."
@@ -879,12 +1355,33 @@ instances in the module.</p>"
   :returns (new-x vl-modulelist-p)
   (vl-module-argresolve x ss))
 
+(define vl-interface-argresolve
+  :short "Apply the @(see argresolve) transformation to a @(see vl-interface-p)."
+  :long "<p>This is just glue-code to apply @(see vl-modinst-argresolve) to all
+of the interface instances, and @(see vl-gateinst-dirassign) to all of the gate
+instances in the interface.</p>"
+  ((x  vl-interface-p)
+   (ss vl-scopestack-p))
+  :returns (new-x vl-interface-p)
+  (b* (((mv warnings genblob)
+        (vl-genblob-argresolve (vl-interface->genblob x) ss (vl-interface->warnings x)))
+       (x-warn (change-vl-interface x :warnings warnings)))
+    (vl-genblob->interface genblob x-warn)))
+
+(defprojection vl-interfacelist-argresolve ((x    vl-interfacelist-p)
+                                            (ss   vl-scopestack-p))
+  :returns (new-x vl-interfacelist-p)
+  (vl-interface-argresolve x ss))
+
 (define vl-design-argresolve
   :short "Top-level @(see argresolve) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x)
-       (ss   (vl-scopestack-init x))
-       (mods (vl-modulelist-argresolve x.mods ss)))
+       (ss         (vl-scopestack-init x))
+       (mods       (vl-modulelist-argresolve x.mods ss))
+       (interfaces (vl-interfacelist-argresolve x.interfaces ss)))
     (vl-scopestacks-free)
-    (change-vl-design x :mods mods)))
+    (change-vl-design x
+                      :mods mods
+                      :interfaces interfaces)))

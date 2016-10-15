@@ -1,27 +1,22 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
-; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; DOCUMENTATION
@@ -184,9 +179,14 @@
   (interactive)
   (when *dmr-timer*
     (if (string-match "XEmacs" emacs-version)
-        (delete-itimer *dmr-timer*)
+        (if (fboundp 'delete-itimer)
+	    (delete-itimer *dmr-timer*)
+	  (error "delete-itimer is unbound;
+please contact matthew.j.kaufmann@gmail.com"))
       (cancel-timer *dmr-timer*))
     (setq *dmr-timer* nil)))
+
+(defvar ctl-t-keymap)
 
 ; The following won't be necessary if emacs/emacs-acl2.el is loaded first.
 ; Keep this in sync with that code (the two should be identical).
@@ -194,7 +194,6 @@
 
 ; This trick probably came from Bob Boyer, to define a new keymap; so now
 ; control-t is the first character of a complex command.
-  (defvar ctl-t-keymap)
   (setq ctl-t-keymap (make-sparse-keymap))
   (define-key (current-global-map) "\C-T" ctl-t-keymap)
 

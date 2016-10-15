@@ -35,7 +35,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc drop-user-submodules
-  :parents (lint)
+  :parents (vl-lint)
   :short "(Unsound transform) Remove modules that the user says to drop, and
 simultaneously remove all instances of these submodules."
 

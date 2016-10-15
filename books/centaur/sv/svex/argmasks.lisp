@@ -182,7 +182,6 @@ svex-nth)."
            BITOPS::LOGAND-NATP-TYPE-2
            BITOPS::LOGIOR-NATP-TYPE
            4VEC->LOWER-WHEN-2VEC-P
-           DOUBLE-CONTAINMENT
            BITOPS::LOGBITP-NONZERO-OF-BIT
            BITOPS::LOGBITP-WHEN-BITMASKP
            BITOPS::LOGNOT-NEGP
@@ -231,7 +230,7 @@ svex-nth)."
            SVEX-EVAL-OF-SVEX-FIX-X-NORMALIZE-CONST
            SVEX-EVAL-OF-SVEX-ENV-FIX-ENV-NORMALIZE-CONST
            CDR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEXLIST-EQUIV
-           4VMASK-P-WHEN-MEMBER-EQUAL-OF-4VMASKLIST-P
+           ;; 4VMASK-P-WHEN-MEMBER-EQUAL-OF-4VMASKLIST-P
 
            )))
 
@@ -567,6 +566,19 @@ of global X/Z detection.</p>"
          (and stable-under-simplificationp
               '(:in-theory (enable 4vmask-all-or-none)))))
 
+(def-svmask pow (x y)
+  :long "<p>As in @(see svmask-for-+), we can't do anything smart here because
+of global X/Z detection.</p>"
+  :inline t
+  :nobindings t
+  :body (b* ((argmask (4vmask-all-or-none mask)))
+          (list argmask argmask))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-first-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (enable 4vmask-all-or-none)))))
+
 (def-svmask xdet (x)
   :long "<p>We can't do anything smart here.  Since @('(xdet x)') returns pure
 Xes whenever there are <i>any</i> X/Z bits in x, we always have to consider all
@@ -594,8 +606,8 @@ every bit of X and Y, with no short circuiting or any kind.</p>"
          (and stable-under-simplificationp
               '(:in-theory (enable 4vmask-all-or-none)))))
 
-(def-svmask ==? (a b)
-  :long "<p>We are considering @('(==? a b)') and we want to compute the care
+(def-svmask safer-==? (a b)
+  :long "<p>We are considering @('(safer-==? a b)') and we want to compute the care
 masks for @('a') and @('b'), given some outer care mask for the whole
 expression.</p>
 
@@ -606,6 +618,36 @@ about any bits at all.</p>
 <p>We can't do anything smart for @('b'), but for @('a') we definitely don't
 care about any bits that are Z in @('b'), since @(see 4vec-wildeq) doesn't care
 about the corresponding bit in @('a').</p>"
+
+  :body (b* (((when (eql mask 0))
+              ;; Don't care about any bits at all.
+              (list 0 0))
+             ((4vec bval) (svex-xeval b))
+             (b-nonz (logorc2 bval.upper bval.lower)))
+          (list b-nonz -1))
+  :prepwork ((local (in-theory (disable* not))))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-second-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (e/d (4vec-wildeq-safe
+                                 3vec-reduction-and
+                                 3vec-bitor
+                                 3vec-bitnot
+                                 4vec-bitxor
+                                 4vec-mask
+                                 4vec-[=)
+                                (svex-eval-gte-xeval))
+                :use ((:instance svex-eval-gte-xeval (x (car args)))
+                      (:instance svex-eval-gte-xeval (x (cadr args))))))
+         (bitops::logbitp-reasoning)
+         (and stable-under-simplificationp '(:bdd (:vars nil)))))
+
+(def-svmask ==? (a b)
+  :long "<p>We just reuse the argmasks for @('safer-==?') here.  We could
+someday check for bits in @('b') that are known to be @('x') and mark them as
+don't-cares for @('a'), but we currently don't have a good way to find bits
+that are known to be @('x').</p>"
 
   :body (b* (((when (eql mask 0))
               ;; Don't care about any bits at all.
@@ -1079,7 +1121,7 @@ about.</p>"
                                    hide-past-second-arg)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                  4vec-rsh))
+                                  4vec-rsh 4vec-shift-core))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))
                  ))
           (bitops::logbitp-reasoning)))
@@ -1104,9 +1146,114 @@ shifts instead of right shifts.</p>"
                                    hide-past-second-arg)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                  4vec-lsh))
+                                  4vec-lsh 4vec-shift-core))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
           (bitops::logbitp-reasoning)))
+
+(def-svmask partsel (lsb width in)
+
+  :body (b* (((when (4vmask-empty mask))
+              ;; Don't care about any bits of the result, so we don't care
+              ;; about any of the arguments.
+              (list 0 0 0))
+             (widthval (svex-xeval width))
+             (lsbval (svex-xeval lsb))
+             ((unless (2vec-p widthval))
+              ;; We don't know the width, but if we know the lsb, then the mask
+              ;; for in can be a shift of the input mask.
+              (if (2vec-p lsbval)
+                  (list -1 -1 (ash mask (2vec->val lsbval)))
+                (list -1 -1 -1)))
+             (widthval (2vec->val widthval))
+
+             ((unless (<= 0 widthval))
+              ;; width is statically known to be negative, so the whole result is X
+              ;; for sure and we don't care about lsb or in
+              (list 0 -1 0))
+             
+             ((unless (2vec-p lsbval))
+              ;; Don't know what the lsb is. The one thing we can do in this
+              ;; case: if there are no mask bits inside the width, then we
+              ;; don't care about in.
+              (if (eql 0 (loghead widthval mask))
+                  (list -1 -1 0)
+                (list -1 -1 -1)))
+             (lsbval (2vec->val lsbval)))
+          ;; X is statically known and positive, so adjust mask accordingly on
+          ;; the arguments.
+          (list -1 -1 (ash (loghead widthval mask) lsbval)))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                   4veclist-nth-safe
+                                   hide-past-third-arg)))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (4vec-mask
+                                  4vec-concat 4vec-rsh 4vec-shift-core 4vec-zero-ext 4vec-part-select))))
+          (bitops::logbitp-reasoning)))
+
+
+
+
+(local (defthmd move-minus-over-comparison
+         (and (iff (< (+ a (- b)) c)
+                   (< a (+ b c)))
+              (iff (> (+ a (- b)) c)
+                   (> a (+ b c))))))
+
+
+
+(def-svmask partinst (lsb width in val)
+
+  :body (b* (((when (4vmask-empty mask))
+              ;; Don't care about any bits of the result, so we don't care
+              ;; about any of the arguments.
+              (list 0 0 0 0))
+             (lsbval (svex-xeval lsb))
+             (widthval (svex-xeval width))
+             ((unless (2vec-p widthval))
+              ;; Knowing the LSB without knowing the width doesn't give us
+              ;; anything in this case.  But we can always mask in by the outer
+              ;; mask because its bits always line up.
+              (list -1 -1 mask -1))
+             (widthval (2vec->val widthval))
+             ((when (< widthval 0))
+              ;; width is negative, so the whole thing is X
+              (list 0 -1 0 0))
+             ((unless (2vec-p lsbval))
+              ;; We don't know what the LSB is, but we can at least mask the
+              ;; val by width.
+              (list -1 -1 mask (loghead widthval -1)))
+             ;; We know what both LSB and width are.  We can basically divide
+             ;; the outer mask into the portion for val and the portion for in.
+             (lsbval (2vec->val lsbval)) 
+             ((when (<= 0 lsbval))
+              ;; some bits of in, then val, then in
+              (b* ((inmask (logapp lsbval mask (logapp widthval 0 (ash mask (- (+ lsbval widthval))))))
+                   (valmask (loghead widthval (ash mask (- lsbval)))))
+                (list -1 -1 
+                      inmask
+                      valmask)))
+             ((when (< (- lsbval) widthval))
+              ;; some bits of val, then in
+              (b* ((inmask (logapp (+ widthval lsbval) 0 (ash mask (- (+ widthval lsbval)))))
+                   (valmask (ash (loghead (+ widthval lsbval) mask) (- lsbval))))
+                (list -1 -1 inmask valmask))))
+          ;; just in, no val
+          (list -1 -1 mask 0))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                   4veclist-nth-safe
+                                   hide-past-third-arg)))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (4vec-mask
+                                  4vec-concat 4vec-rsh 4vec-shift-core 4vec-zero-ext 4vec-part-install))))
+          (bitops::logbitp-reasoning
+           :add-hints (:in-theory (enable* logbitp-case-splits
+                                           bitops::logbitp-of-const-split
+                                           move-minus-over-comparison)))
+          (and stable-under-simplificationp
+               '(:bdd (:vars nil))))
+  :otf-flg t)
+
+
 
 (def-svmask bitand (x y)
   :long "<p>We are considering a @('(bitand x y)') expression and we know that
@@ -1421,6 +1568,30 @@ false.</p>
                                            4vec-mask))
                 (bitops::logbitp-reasoning))))
 
+(local (defthm strengthen-4vec-?*-then
+         (implies (and (equal (4vec-mask mask then1)
+                              (4vec-mask mask then2))
+                       (syntaxp (term-order then2 then1)))
+                  (equal (4vec-mask mask (4vec-?* test then1 else))
+                         (4vec-mask mask (4vec-?* test then2 else))))
+         :hints(("Goal" :in-theory (enable 4vec-?*
+                                           3vec-?*
+                                           3vec-fix
+                                           4vec-mask))
+                (bitops::logbitp-reasoning))))
+
+(local (defthm strengthen-4vec-?*-else
+         (implies (and (EQUAL (4VEC-MASK MASK else1)
+                              (4VEC-MASK MASK ELSE2))
+                       (syntaxp (term-order else2 else1)))
+                  (equal (4vec-mask mask (4vec-?* test then else1))
+                         (4vec-mask mask (4vec-?* test then else2))))
+         :hints(("Goal" :in-theory (enable 4vec-?*
+                                           3vec-?*
+                                           3vec-fix
+                                           4vec-mask))
+                (bitops::logbitp-reasoning))))
+
 (define branches-same-under-mask-p ((mask 4vmask-p)
                                       (then svex-p)
                                       (else svex-p))
@@ -1443,6 +1614,7 @@ in which case we don't care about @('test') at all."
  (defsection branches-same-under-mask-lemmas
 
    (local (in-theory (disable not)))
+                     
    (defthmd branches-same-under-mask-p-correct
      (implies (and (branches-same-under-mask-p mask then else)
                    (syntaxp (not (equal any-test ''0))))
@@ -1478,6 +1650,43 @@ in which case we don't care about @('test') at all."
                                 (4vec-mask mask (svex-eval else env))))))
      :hints(("Goal"
              :use ((:instance branches-same-under-mask-p-correct
+                    (any-test testval))))))
+
+   (defthmd branches-same-under-mask-p-correct*
+     (implies (and (branches-same-under-mask-p mask then else)
+                   (syntaxp (not (equal any-test ''0))))
+              (equal (4vec-mask mask (4vec-?* any-test
+                                             (svex-eval then env)
+                                             (svex-eval else env)))
+                     (4vec-mask mask (4vec-?* 0
+                                             (4vec-mask mask (svex-eval then env))
+                                             (4vec-mask mask (svex-eval else env))))))
+     :hints(("Goal" :in-theory (e/d (branches-same-under-mask-p
+                                     4vec-mask
+                                     4vec-?*
+                                     3vec-?*
+                                     3vec-fix
+                                     4vec-[=)
+                                    (svex-eval-gte-xeval
+                                     ))
+             :use ((:instance svex-eval-gte-xeval (x then))
+                   (:instance svex-eval-gte-xeval (x else)))
+             )
+            (bitops::logbitp-reasoning)
+            (and stable-under-simplificationp '(:bdd (:vars nil)))))
+
+   (defthmd branches-same-under-mask-p-crux*
+     (implies
+      (and (branches-same-under-mask-p mask then else)
+           (equal (4vec-mask mask (svex-eval then env)) (4vec-mask mask thenval))
+           (equal (4vec-mask mask (svex-eval else env)) (4vec-mask mask elseval)))
+      (equal (4vec-mask mask (4vec-?* testval thenval elseval))
+             (4vec-mask mask
+                        (4vec-?* 0
+                                (4vec-mask mask (svex-eval then env))
+                                (4vec-mask mask (svex-eval else env))))))
+     :hints(("Goal"
+             :use ((:instance branches-same-under-mask-p-correct*
                     (any-test testval))))))))
 
 (def-svmask ? (test then else)
@@ -1534,16 +1743,105 @@ care @('then').</li>
                                    branches-same-under-mask-p-crux
                                    )))
           (and stable-under-simplificationp
-               '(:in-theory (e/d (4vec-mask
+               (not (member-equal
+                     '(not (branches-same-under-mask-p mask (CAR (CDR ARGS))
+                                                       (CAR (CDR (CDR ARGS)))))
+                     clause))
+               '(:computed-hint-replacement
+                 ((logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:bdd (:vars nil))))
+                 :in-theory (e/d (4vec-mask
                                   2vec-p
                                   4vec-?
                                   3vec-?
                                   3vec-fix
                                   4vec-[=)
                                  (svex-eval-gte-xeval))
-                 :use ((:instance svex-eval-gte-xeval (x (first args))))))
-          (bitops::logbitp-reasoning)
-          (and stable-under-simplificationp '(:bdd (:vars nil)))))
+                 :use ((:instance svex-eval-gte-xeval (x (first args))))))))
+
+
+(local (defthm 4vec-?*-of-equal-branches
+         (equal (4vec-?* test then then)
+                (4vec-fix then))
+         :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
+
+
+(def-svmask ?* (test then else)
+  :long "<p>We are considering a @('(? test then else)') expression and we know
+that we only care about the bits mentioned in @('mask').  We need to figure out
+which bits of @('test'), @('then'), and @('else') we care about.</p>
+
+<p>We will almost always need to care about the entire @('test') expression.
+The only exceptions to this would be when either:</p>
+
+<ul>
+
+<li>We don't care about any bits at all, i.e., the outer @('mask') is
+empty.</li>
+
+<li>For all bits we care about, the corresponding bits of @('then') and
+@('else') branches are known to agree.  For instance, @('(? test 5 5)') is
+going to be 5 regardless of @('test').  (This is pretty obscure).</li>
+
+</ul>
+
+<p>More obvious and probably more useful mask improvements:</p>
+
+<ul>
+<li>When we know that some bit of @('test') is 1, we can completely don't
+care @('else');</li>
+<li>When we know that all bits of @('test') are 0, we can completely don't
+care @('then').</li>
+</ul>"
+  :body (b* (((when (4vmask-empty mask))
+              (list 0 0 0))
+             ((4vec testval) (svex-xeval test))
+             (test-1s (logand testval.upper testval.lower))
+             ((unless (eql test-1s 0))
+              ;; There is some bit of the test that is definitely 1, so the
+              ;; else branch doesn't matter at all.
+              (list test-1s mask 0))
+             ((when (and (eql testval.upper 0)
+                         (eql testval.lower 0)))
+              ;; The test is definitely all 0s, so the then branch doesn't
+              ;; matter at all.
+              (list -1 0 mask)))
+          ;; BOZO this is sound but very slow for the proof of correctness.
+          ;; Can we speed this proof up?
+          (if (or (equal then else)
+                  (branches-same-under-mask-p mask then else))
+              (list 0 mask mask)
+            (list -1 mask mask)))
+  :prepwork ((local (in-theory (disable* not
+                                         svex-eval-gte-xeval
+                                         bitops::logior-equal-0))))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                   4veclist-nth-safe
+                                   hide-past-third-arg
+                                   branches-same-under-mask-p-crux*
+                                   )))
+          (and stable-under-simplificationp
+               (not (member-equal
+                     '(not (EQUAL (SVEX-FIX$INLINE (CAR (CDR ARGS)))
+                                  (SVEX-FIX$INLINE (CAR (CDR (CDR ARGS))))))
+                     clause))
+               (not (member-equal
+                     '(not (branches-same-under-mask-p mask (CAR (CDR ARGS))
+                                                       (CAR (CDR (CDR ARGS)))))
+                     clause))
+               '(:computed-hint-replacement
+                 ((logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:bdd (:vars nil))))
+                 :in-theory (e/d (4vec-mask
+                                  2vec-p
+                                  4vec-?*
+                                  3vec-?*
+                                  3vec-fix
+                                  4vec-[=)
+                                 (svex-eval-gte-xeval))
+                 :use ((:instance svex-eval-gte-xeval (x (first args))))))))
 
 (define unrev-blocks ((nbits natp)
                       (blocksz posp)

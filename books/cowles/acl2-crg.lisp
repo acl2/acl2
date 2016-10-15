@@ -15,10 +15,10 @@
 (include-book "acl2-agp")
 
 (defsection commutative-rings
-  :parents (cowles)
+  :parents (algebra)
   :short "Axiomatization of two associative and commutative operations, one
 distributes over the other, while the other has an identity and an unary
-inverse operation."
+inverse operation, developed by John Cowles."
 
   :long "<h3>Theory of Commutative Rings</h3>
 
@@ -64,10 +64,12 @@ RG which acts as an @('ACL2-CRG::plus-inverse') for @('ACL2-CRG::zero').</p>
 <p>with the following, constraining axioms:</p>
 
 @(def Equiv-is-an-equivalence)
-@(def Equiv-1-implies-equiv-plus)
-@(def Equiv-2-implies-equiv-plus)
-@(def Equiv-2-implies-equiv-times)
-@(def Equiv-1-implies-equiv-minus)
+@(def Equiv-implies-iff-pred-1)
+@(def Equiv-implies-equiv-plus-1)
+@(def Equiv-implies-equiv-plus-2)
+@(def Equiv-implies-equiv-times-1)
+@(def Equiv-implies-equiv-times-2)
+@(def Equiv-implies-equiv-minus-1)
 
 @(def Closure-of-plus-for-pred)
 @(def Closure-of-times-for-pred)
@@ -132,43 +134,24 @@ acl2-agp::abelian-groups).</p>"
              (declare (xargs :guard (pred x)))
              x))
 
-    (defthm Equiv-is-an-equivalence
-      (and (booleanp (equiv x y))
-           (equiv x x)
-           (implies (equiv x y)
-                    (equiv y x))
-           (implies (and (equiv x y)
-                         (equiv y z))
-                    (equiv x z)))
+    (defequiv equiv
       :rule-classes (:equivalence
                      (:type-prescription
                       :corollary
                       (or (equal (equiv x y) t)
                           (equal (equiv x y) nil)))))
 
-    (defthm Equiv-1-implies-equiv-plus
-      (implies (equiv x1 x2)
-               (equiv (plus x1 y)
-                      (plus x2 y)))
-      :rule-classes :congruence)
+    (defcong equiv iff (pred x) 1)
 
-    (defthm Equiv-2-implies-equiv-plus
-      (implies (equiv y1 y2)
-               (equiv (plus x y1)
-                      (plus x y2)))
-      :rule-classes :congruence)
+    (defcong equiv equiv (plus x y) 1)
 
-    (defthm Equiv-2-implies-equiv-times
-      (implies (equiv y1 y2)
-               (equiv (times x y1)
-                      (times x y2)))
-      :rule-classes :congruence)
+    (defcong equiv equiv (plus x y) 2)
 
-    (defthm Equiv-1-implies-equiv-minus
-      (implies (equiv x1 x2)
-               (equiv (minus x1)
-                      (minus x2)))
-      :rule-classes :congruence)
+    (defcong equiv equiv (times x y) 1)
+
+    (defcong equiv equiv (times x y) 2)
+
+    (defcong equiv equiv (minus x) 1)
 
     (defthm Closure-of-plus-for-pred
       (implies (and (pred x)
@@ -255,7 +238,7 @@ acl2-agp::abelian-groups).</p>"
                      (acl2-agp::op plus)
                      (acl2-agp::id zero)
                      (acl2-agp::inv minus))
-                    (acl2-agp::x (times (zero) x)))
+                    (x (times (zero) x)))
                    (:instance Left-distributivity-of-times-over-plus
                               (y (zero))
                               (z (zero)))))))
@@ -279,8 +262,8 @@ acl2-agp::abelian-groups).</p>"
                      (acl2-agp::op plus)
                      (acl2-agp::id zero)
                      (acl2-agp::inv minus))
-                    (acl2-agp::x (times x y))
-                    (acl2-agp::y (times x (minus y))))
+                    (x (times x y))
+                    (y (times x (minus y))))
                    (:instance
                     Left-distributivity-of-times-over-plus
                     (z (minus y)))))))

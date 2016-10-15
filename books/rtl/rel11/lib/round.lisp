@@ -27,7 +27,8 @@
 (defsection-rtl |Truncation| |Rounding|
 
 (defund rtz (x n)
-  (declare (xargs :guard (integerp n)))
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -251,6 +252,8 @@
 (defsection-rtl |Rounding Away from Zero| |Rounding|
 
 (defund raz (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (* (sgn x)
      (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -505,9 +508,12 @@
 (defsection-rtl |Unbiased Rounding| |Rounding|
 
 (defun re (x)
+  (declare (xargs :guard (real/rationalp x)))
   (- x (fl x)))
 
 (defund rne (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
@@ -764,6 +770,8 @@
   :rule-classes ())
 
 (defund rna (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (< (re (* (expt 2 (1- n)) (sig x)))
 	 1/2)
       (rtz x n)
@@ -1060,6 +1068,8 @@
 (defsection-rtl |Odd Rounding| |Rounding|
 
 (defund rto (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (exactp x (1- n))
       x
     (+ (rtz x (1- n))
@@ -1198,11 +1208,15 @@
 (defsection-rtl |IEEE Rounding| |Rounding|
 
 (defun rup (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (>= x 0)
       (raz x n)
     (rtz x n)))
 
 (defun rdn (x n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp n))))
   (if (>= x 0)
       (rtz x n)
     (raz x n)))
@@ -1219,10 +1233,10 @@
 	     (<= (rdn x n) x))
   :rule-classes :linear)
 
-(defund IEEE-rounding-mode-p (mode)
+(defnd IEEE-rounding-mode-p (mode)
   (member mode '(rtz rup rdn rne)))
 
-(defund common-mode-p (mode)
+(defnd common-mode-p (mode)
   (or (IEEE-rounding-mode-p mode) (equal mode 'raz) (equal mode 'rna)))
 
 (defthm ieee-mode-is-common-mode
@@ -1230,6 +1244,9 @@
            (common-mode-p mode)))
 
 (defund rnd (x mode n)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     (raz (raz x n))
     (rna (rna x n))
@@ -1290,6 +1307,7 @@
   :rule-classes (:rewrite :type-prescription :linear))
 
 (defund flip-mode (m)
+  (declare (xargs :guard (common-mode-p m)))
   (case m
     (rup 'rdn)
     (rdn 'rup)
@@ -1413,8 +1431,8 @@
                   (rationalp x)
 		  (rationalp y)
 		  (common-mode-p mode)
-                  (INTEGERP N)
-                  (> N 0))
+                  (integerp n)
+                  (> n 0))
 	     (<= (rnd x mode n) (rnd y mode n)))
   :rule-classes ())
 
@@ -1463,6 +1481,9 @@
            (equal (abs (rnd x mode m)) (expt 2 k))))
 
 (defun rnd-const (e mode n)
+  (declare (xargs :guard (and (integerp e)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     ((rne rna) (expt 2 (- e n)))
     ((rup raz) (1- (expt 2 (1+ (- e n)))))
@@ -1483,6 +1504,11 @@
                       (rtz (+ x (rnd-const (expo x) mode n)) n)))))
 
 (defund roundup-pos (x e sticky mode n)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp e)
+                              (integerp sticky)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     ((rup raz) (or (not (= (bits x (- e n) 0) 0))
                    (= sticky 1)))
@@ -1509,6 +1535,11 @@
                            (rtz x n)))))))
 
 (defund roundup-neg (x e sticky mode n)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp e)
+                              (integerp sticky)
+                              (common-mode-p mode)
+                              (integerp n))))
   (case mode
     ((rdn raz) t)
     ((rup rtz) (and (= (bits x (- e n) 0) 0)
@@ -1551,6 +1582,9 @@
 (defsection-rtl |Denormal Rounding| |Rounding|
 
 (defund drnd (x mode f)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (common-mode-p mode)
+                              (formatp f))))
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
 
 (defthmd drnd-minus

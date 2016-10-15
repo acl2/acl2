@@ -58,12 +58,12 @@
     arith-equiv-forwarding
 
     ;; basic bit definitions from ihs we want to import
-    logbitp logbit logior logand lognot logxor
+    logbitp logbit logior logand lognot logxor logite
     logcons logcar logcdr loghead logtail
     logext logapp logrev logrev1 logcount
     logmask logmaskp bitmaskp
     b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
-    b-not b-and b-ior b-xor bfix bitp
+    b-not b-and b-ior b-xor b-ite bfix bitp
     binary-logand binary-logior binary-logxor binary--
     maybe-bitp maybe-bit-fix
 
@@ -86,7 +86,7 @@
 
     ;; new definitions we want to export
     nth-slice2 nth-slice4 nth-slice8 nth-slice16
-    nth-slice32 nth-slice64 nth-slice128 nth-slice256 nth-slice512
+    nth-slice32 nth-slice64 nth-slice128 nth-slice256 nth-slice512 nth-slice
     negate-slice8 negate-slice16
     negate-slice32 negate-slice64
     abs-diff

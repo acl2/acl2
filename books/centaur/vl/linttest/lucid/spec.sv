@@ -50,6 +50,7 @@ module m0 () ;
   wire [3:0] w1_unset;
   wire [3:0] w1_normal = top_normal;
   wire [3:0] w1_unused;
+
   assign w1_unused = w1_normal + w1_unset + top_unset;
 
 endmodule
@@ -68,10 +69,22 @@ function top_f_unused (input logic [3:0] a);
   top_f_unused = b;
 endfunction
 
+function top_f_dpiexported (input logic [3:0] a);
+  logic [3:0] b;
+  b = a;
+  top_f_dpiexported = b;
+endfunction
+
+export "DPI" function top_f_dpiexported;
+
+import "DPI" function logic top_f_dpiimported_unused (logic [3:0] a);
+import "DPI" function logic top_f_dpiimported_normal (logic [3:0] a);
+
 
 module m1 (output top_used_t myout) ;
 
   assign myout = top_f_used(4'b1101);
+  wire temp = top_f_dpiimported_normal(myout);
 
 endmodule
 
@@ -395,6 +408,23 @@ module mg1 () ;
 endmodule
 
 
+module mg2 () ;
+
+  wire [3:0] xx, yy;
+
+  genvar     genvar1;
+  genvar     genvar2;
+
+  generate
+    for(genvar1 = 0; genvar1 < 4; genvar1 = genvar1+1)
+    begin
+      not(xx[genvar1], yy[genvar1]);
+    end
+  endgenerate
+
+endmodule
+
+
 
 
 interface ImPort ;
@@ -483,18 +513,34 @@ module trickyscope;
 
   // This once caused a scopestack/shadowcheck mismatch
 
-  integer d;
+  integer loopvar1;
   always_comb
   begin
-    for (int d=0; d < 4 ; d=d+1)
+    for (loopvar1=0; loopvar1 < 4 ; loopvar1=loopvar1+1)
     begin
-      $display("Hello");
+      $display("Hello %d", loopvar1);
     end
   end
 
   logic [16-1:0] counter_unused;
   assign counter_unused = 0;
 
+  integer loopvar2;
+
+  always_comb
+  for(int loopvar3 = 0; loopvar2 < 4; loopvar3=10)
+  begin
+    $display("Didnt use loopvar3.");
+  end
+
+  integer loopvar4;
+  always_comb
+  begin
+    for (int loopvar4=0; loopvar4 < 4 ; loopvar4=loopvar4+1)
+    begin
+      $display("Hello %d", loopvar4);
+    end
+  end
 
 endmodule
 
@@ -508,5 +554,199 @@ module minuscolon ;
   assign normal1[7 -: 4] = normal2[7 -: 4];
   assign normal1[9:8] = normal2[9:8];
   assign normal1[10] = normal2[10];
+
+endmodule
+
+
+typedef struct {
+  opcode_t opcode;
+  logic [3:0]  arg1;
+  logic [3:0]  arg2;
+} instruction2_t;
+
+module pattern;
+
+  instruction2_t myinst;
+
+  initial begin
+    myinst = instruction2_t'{
+              opcode: 0,
+              arg1: 1,
+              arg2: 2
+             };
+  end
+
+endmodule
+
+
+
+module tricky_init ;
+
+  wire w1_normal;
+  wire w2_normal;
+  wire w3_unused;
+  wire w4_unset;
+  wire w5_spurious;
+
+  initial begin
+    w1_normal = w4_unset;
+  end
+
+  initial begin
+    w2_normal = w4_unset;
+  end
+
+  final begin
+    w3_unused = w2_normal;
+  end
+
+  final begin
+    w3_unused = w1_normal;
+  end
+
+endmodule
+
+
+interface fancy_mp;
+
+  logic [3:0] foo;
+
+  modport mp1 (input foo);
+  modport mp2 (input foo);
+  modport mp3 (input foo);
+  modport mp4 (input foo);
+
+endinterface
+
+module fancy_mptest_sub (fancy_mp xx);
+
+endmodule
+
+module fancy_mptest_sub2 (fancy_mp.mp3 xx);
+
+endmodule
+
+module fancy_mptest ;
+
+  fancy_mp xx();
+
+  fancy_mptest_sub sub1 (xx.mp1);
+  fancy_mptest_sub sub2 (.xx(xx.mp2));
+
+endmodule
+
+
+
+interface fancy_mp_param;
+
+  // parameterized interfaces make modport handling trickier
+
+  parameter width = 3;
+  logic [width-1:0] foo;
+
+  modport mp1 (input foo);
+  modport mp2 (input foo);
+  modport mp3 (input foo);
+  modport mp4 (input foo);
+
+endinterface
+
+module fancy_mp_paramtest_sub (fancy_mp_param xx);
+
+endmodule
+
+module fancy_mp_paramtest_sub2 (fancy_mp_param.mp3 xx);
+
+endmodule
+
+module fancy_mp_paramtest ;
+
+  fancy_mp_param #(5) xx();
+
+  fancy_mp_paramtest_sub sub1 (xx.mp1);
+  fancy_mp_paramtest_sub sub2 (.xx(xx.mp2));
+  fancy_mp_paramtest_sub2 sub3 (.*);
+
+endmodule
+
+
+
+// This next test is based on a real example that was acting crazy.
+
+package fcasttest_package;
+
+  function yes_usedfun1 (input logic [3:0] a);
+    logic [3:0] b = a;
+    return b;
+  endfunction
+
+  function yes_usedfun2 (input logic [3:0] a);
+    logic [3:0] b = a;
+    return b;
+  endfunction
+
+  function not_usedfun (input logic [3:0] a);
+    logic [3:0] b = a;
+    return b;
+  endfunction
+
+endpackage
+
+module fcasttest ;
+
+  import fcasttest_package::*;
+
+  logic [3:0] xx;
+
+  typedef logic [3:0] foo_t;
+
+  parameter size = 4;
+  for(genvar i = 0; i < size; ++i) begin
+    logic [3:0] blah1 = yes_usedfun1(xx);
+    logic [3:0] blah2 = foo_t'(yes_usedfun2(xx));
+  end
+
+
+endmodule
+
+
+
+module gen3 ;
+
+  begin : myblock
+    wire [3:0] aa;
+  end
+
+  wire [3:0] bb = aa;  // oops, should be myblock.aa
+
+endmodule
+
+
+
+
+module cosim_gen7 ( input logic [127:0] in, output wire [127:0] out);
+
+  parameter version = 1;
+  parameter mode = 1;
+
+  logic aa1_unset;
+  logic aa1_unused;
+  logic aa1_spurious;
+
+  // Very tricky: the nested conditional generate does NOT introduce an extra
+  // scope.  Thus it is legal to refer to foo.a directly, even though you might
+  // think it should be something like genblock_0.foo.a or whatever the stupid
+  // name generation scheme is.
+
+  if (version == 1)
+    if (mode == 1) begin : foo
+      wire [3:0] bb1_unset;
+      wire [3:0] bb1_unused = aa1_unset;
+      wire [3:0] bb1_spurious;
+    end
+    else
+       wire cc1_unused = in;
+
+  assign aa1_unused = foo.bb1_unset;
 
 endmodule

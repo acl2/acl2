@@ -30,13 +30,125 @@
 
 (in-package "ACL2")
 
+; Note: Modified by J Moore, 12/28/2015, to add comments below and to change
+; syn::defevaluator-form accordingly.
+
+; This version of defevaluator-form is exactly what is in the ACL2 sources
+; except that we skip local in-theory (commented out below) that puts us in a
+; minimal theory.
+
+(defun syn::defevaluator-form (evfn evfn-lst namedp fn-args-lst)
+  (declare (xargs :mode :program))
+  (let* ((fns-clauses (defevaluator-form/fns-clauses fn-args-lst))
+         (defthms (defevaluator-form/defthms evfn evfn-lst namedp
+                    (namedp-prefix evfn namedp)
+                    0
+                    (evaluator-clauses evfn evfn-lst fn-args-lst))))
+    `(encapsulate
+      (((,evfn * *) => *)
+       ((,evfn-lst * *) => *))
+      (set-inhibit-warnings "theory")
+;     (local (in-theory *defevaluator-form-base-theory*))
+      . ,(sublis
+          (list (cons 'evfn evfn)
+                (cons 'evfn-lst evfn-lst)
+                (cons 'fns-clauses fns-clauses)
+                (cons 'defthms defthms))
+          '((local (defun-nx apply-for-defevaluator (fn args)
+                     (declare (xargs :verify-guards nil
+                                     :normalize nil))
+                     (cond . fns-clauses)))
+            (local
+             (mutual-recursion
+              (defun-nx evfn (x a)
+                (declare
+                 (xargs :verify-guards nil
+                        :measure (acl2-count x)
+                        :well-founded-relation o<
+                        :normalize nil
+                        :hints (("goal" :in-theory
+                                 (enable (:type-prescription
+                                          acl2-count))))
+                        :mode :logic))
+                (cond
+                 ((symbolp x) (and x (cdr (assoc-eq x a))))
+                 ((atom x) nil)
+                 ((eq (car x) 'quote) (car (cdr x)))
+                 (t (let ((args (evfn-lst (cdr x) a)))
+                      (cond
+                       ((consp (car x))
+                        (evfn (car (cdr (cdr (car x))))
+                              (pairlis$ (car (cdr (car x)))
+                                        args)))
+                       (t (apply-for-defevaluator (car x) args)))))))
+                (defun-nx evfn-lst (x-lst a)
+                  (declare (xargs :measure (acl2-count x-lst)
+                                  :well-founded-relation o<))
+                  (cond ((endp x-lst) nil)
+                        (t (cons (evfn (car x-lst) a)
+                                 (evfn-lst (cdr x-lst) a)))))))
+            (local (in-theory (disable evfn evfn-lst apply-for-defevaluator)))
+            (local
+             (defthm eval-list-kwote-lst
+               (equal (evfn-lst (kwote-lst args) a)
+                      (fix-true-list args))
+               :hints (("goal"
+                        :expand ((:free (x y) (evfn-lst (cons x y) a))
+                                 (evfn-lst nil a)
+                                 (:free (x)
+                                        (evfn (list 'quote x) a)))
+                        :induct (fix-true-list args)))))
+            (local
+             (defthm fix-true-list-ev-lst
+               (equal (fix-true-list (evfn-lst x a))
+                      (evfn-lst x a))
+               :hints (("goal" :induct (len x)
+                        :in-theory (e/d ((:induction len)))
+                        :expand ((evfn-lst x a)
+                                 (evfn-lst nil a))))))
+            (local
+             (defthm ev-commutes-car
+               (equal (car (evfn-lst x a))
+                      (evfn (car x) a))
+               :hints (("goal" :expand ((evfn-lst x a)
+                                        (evfn nil a))
+                        :in-theory (enable default-car)))))
+            (local
+             (defthm ev-lst-commutes-cdr
+               (equal (cdr (evfn-lst x a))
+                      (evfn-lst (cdr x) a))
+               :hints (("Goal" :expand ((evfn-lst x a)
+                                        (evfn-lst nil a))
+                        :in-theory (enable default-cdr)))))
+            . defthms)))))
+
+; Note that :namedp is an allowed keyword arg but is not mentioned in the error
+; msg.
+
+(defmacro syn::defevaluator (&whole x evfn evfn-lst fn-args-lst &key namedp)
+  (cond
+   ((not (and (symbolp evfn)
+              (symbolp evfn-lst)
+              (symbol-list-listp fn-args-lst)))
+    `(er soft '(defevaluator . ,evfn)
+	       "The form of a defevaluator event is (defevaluator evfn ~
+          evfn-lst fn-args-lst), where evfn and evfn-lst are symbols ~
+          and fn-args-lst is a true list of lists of symbols.  ~
+          However, ~x0 does not have this form."
+	       ',x))
+   (t
+    (syn::defevaluator-form evfn evfn-lst namedp fn-args-lst))))
+
+#||
 (defun syn::defevaluator-form (evfn evfn-lst fn-args-lst)
   (declare (xargs :mode :program))
   (let* ((clauses (evaluator-clauses evfn evfn-lst fn-args-lst))
-         (fns-clauses (defevaluator-form/fns-clauses evfn fn-args-lst))
+         (fns-clauses (defevaluator-form/fns-clauses fn-args-lst))
          (defthms (defevaluator-form/defthms
                     evfn
-                    (symbol-name (pack2 evfn '-constraint-))
+                    evfn-lst
+                    nil
+                    (namedp-prefix evfn nil)
                     0
                     clauses)))
     `(encapsulate
@@ -95,6 +207,7 @@
 	       ',x))
    (t
     (syn::defevaluator-form evfn evfn-lst fn-args-lst))))
+||#
 
 
 (defthm o<-acl2-count-car

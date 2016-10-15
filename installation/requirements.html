@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 7.1 Installation Guide: Requirements</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 7.2 Installation Guide: Requirements</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
@@ -9,7 +9,7 @@
 
 <p><hr size=3 noshade><p>
 
-ACL2 Version 7.1<br> Copyright (C) 2015, Regents of the University of
+ACL2 Version 7.2<br> Copyright (C) 2016, Regents of the University of
 Texas<br>
 
 ACL2 is licensed under the terms of
@@ -40,7 +40,7 @@ file distributed with ACL2.  See also the documentation topic,
 <H3><A NAME="Performance">Performance comparisons</A></H3>
 
 You can see recent performance numbers by following <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v7-1/HTML/new.html#performance">this
+href="http://www.cs.utexas.edu/users/moore/acl2/v7-2/HTML/new.html#performance">this
 link</a>, or by going to the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page on
 the web</a> and following the link "Recent changes to this page".
@@ -84,8 +84,9 @@ convenient foreign-function interface.''
 
 Here is an easy way to obtain and build the latest version (generally
 recommended) for Linux (or another OS; see below) running on an x86 or
-x86-64.  First execute the following shell command to create
-a <code>ccl</code> directory, but substituting
+x86-64.  First stand in any directory, though you might want to stand
+in a fresh directory.  Then execute the following shell command to create
+a new <code>ccl</code> subdirectory, but substituting
 for <code>linuxx86</code>, if appropriate, any of
 <code>darwinx86</code> (which we use for modern Macs), <code>freebsdx86</code>,
 <code>solarisx86</code>, <code>windows</code>, <code>darwinppc</code>,
@@ -111,6 +112,7 @@ replace "<code>./lx86cl64</code>" by a suitable executable; e.g., for
 
 <hr>
 <pre>
+cd ccl
 ./lx86cl64
 (rebuild-ccl :full t)
 (quit)
@@ -187,9 +189,9 @@ Common Lisp implementations.</li>
 <li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
 <li>CLISP does not support building the
-  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-1/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-2/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
   ACL2 (ACL2(h)), but only (with the limitations expressed above)
-  ACL2(c).</li>
+  a discontinued version, ACL2(c).</li>
 
 </ul>
 
@@ -215,18 +217,12 @@ that ACL2 requires GCL version 2.6.12 or later, which can be fetched
 as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
 GNU website for GCL</a> or perhaps
 from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
-After unpacking the archive, GCL can be built with
+ACL2 also requires an ANSI Common Lisp executable;
+after unpacking the archive, an ANSI GCL can be built as follows.
 
 <pre>
 cd gcl && ./configure --enable-ansi && make
 </pre>
-
-The resulting GCL executable supports building a
-default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-1/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
-ACL2 executable.  If you have reason to build a "classic" ACL2
-executable (ACL2(c)) instead (that is, one that is <i>not</i>
-hons-enabled), you can omit the <code>--enable-ansi</code> flag above
-to generate a smaller GCL executable.
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
 

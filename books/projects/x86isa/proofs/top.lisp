@@ -6,70 +6,83 @@
 ;; ======================================================================
 
 ;; Proof utilities
-(include-book "utilities/programmer-level-memory-utils" :ttags :all)
-(include-book "utilities/physical-memory-utils" :ttags :all)
-(include-book "utilities/system-level-memory-utils" :ttags :all)
-(include-book "utilities/paging-utils" :ttags :all)
-(include-book "utilities/environment-utils" :ttags :all)
+(include-book "utilities/programmer-level-mode/top" :ttags :all)
+(include-book "utilities/system-level-mode/top" :ttags :all)
 
-;; Program proofs:
+;; Proofs of correctness of various x86 programs: We exclude these
+;; from the x86isa documentation.
 
-(defsection code-proofs
-  :parents (X86ISA)
-  :short "Verification of various x86 programs"
-  :long "<p>Detailed documentation topic coming soon!</p>
+;; [Shilpi]: There are name clashes in these two factorial books.  The
+;; empty encapsulates below avoid this name clash problem while
+;; ensuring that the books get built as a part of the
+;; regression. Another way to ensure that these books get built is to
+;; rely on cert.pl's dependency scanner and put these include-books in
+;; a multi-line comment or something.
 
-<p>The <b>factorial program</b> has been proved correct using two methods:</p>
+;; ----------------------------------------------------------------------
+;; Application Programs:
 
-<ol>
-<li>Inductive Assertions: See book @('factorial/fact-inductive-assertions.lisp').</li>
-<li>Wormhole Abstraction: See book @('factorial/fact-wormhole-abstraction.lisp').</li>
-</ol>
+;; The factorial program has been proved correct using two methods:
+;; inductive assertions and wormhole abstraction.
+(local
+ (encapsulate
+   ()
+   (local (include-book "factorial/fact-inductive-assertions" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
 
-<p>The proof of correctness of the <b>word-count program</b> can be found in
-@('word-count/wc.lisp').</p>
+;; The proof of correctness of a population count program was done
+;; using the GL bit-blasting framework.
+(local
+ (encapsulate
+   ()
+   (local (include-book "popcount/popcount" :ttags :all))))
 
-<p>The proof of correctness of a simple <b>array copy sub-routine</b> can be
-found in @('dataCopy/dataCopy.lisp').</p>
+(local
+ (encapsulate
+   ()
+   (local (include-book "wordCount/wc" :ttags :all))))
 
-<p>The proof of correctness of a <b>population count program</b> can be found
-in @('popcount/popcount.lisp'). This proof was done using the @(see GL)
-symbolic simulation framework.</p>
+;; Proof of correctness of a simple array copy sub-routine:
+(local
+ (encapsulate
+   ()
+   (local (include-book "dataCopy/dataCopy" :ttags :all))))
 
-"
+;; ----------------------------------------------------------------------
+;; System Program:
 
-  ;; [Shilpi]: There are name clashes in these two factorial books.  The
-  ;; empty encapsulates below avoid this name clash problem while
-  ;; ensuring that the books get built as a part of the
-  ;; regression. Another way to ensure that these books get built is to
-  ;; rely on cert.pl's dependency scanner and put these include-books in
-  ;; a multi-line comment or something.
+;; The zeroCopy program has been proved correct in both the marking
+;; and non-marking mode of the x86 model.
 
-  (local
-   (encapsulate
-    ()
-    (local (include-book "factorial/fact-inductive-assertions" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "zeroCopy/non-marking-mode/zeroCopy" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "zeroCopy/marking-mode/zeroCopy" :ttags :all))))
 
-  (local
-   (encapsulate
-    ()
-    (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
+;; ======================================================================
 
-  (local
-   (encapsulate
-    ()
-    (local (include-book "popcount/popcount" :ttags :all))))
+;; The following books present small examples that Shilpi presents in
+;; her PhD dissertation to illustrate how symbolic simulation is
+;; controlled in all modes of operation of the x86 model.
 
-  (local
-   (encapsulate
-    ()
-    (local (include-book "word-count/wc" :ttags :all))))
-
-  (local
-   (encapsulate
-    ()
-    (local (include-book "dataCopy/dataCopy" :ttags :all))))
-
-  )
+(local
+ (encapsulate
+   ()
+   (local (include-book "dissertation-examples/clc-stc-programmer-mode" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "dissertation-examples/clc-stc-system-level-marking-mode" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "dissertation-examples/clc-stc-system-level-non-marking-mode" :ttags :all))))
 
 ;; ======================================================================

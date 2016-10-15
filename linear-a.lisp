@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -32,20 +32,20 @@
 ; We begin with some general support functions.  They should
 ; probably be organized and moved to axioms.lisp.
 
-(defabbrev ts-acl2-numberp (ts)
-  (ts-subsetp ts *ts-acl2-number*))
+(defmacro ts-acl2-numberp (ts)
+  `(ts-subsetp ,ts *ts-acl2-number*))
 
-(defabbrev ts-rationalp (ts)
-  (ts-subsetp ts *ts-rational*))
+(defmacro ts-rationalp (ts)
+  `(ts-subsetp ,ts *ts-rational*))
 
-(defabbrev ts-real/rationalp (ts)
+(defmacro ts-real/rationalp (ts)
   #+non-standard-analysis
-  (ts-subsetp ts *ts-real*)
+  `(ts-subsetp ,ts *ts-real*)
   #-non-standard-analysis
-  (ts-subsetp ts *ts-rational*))
+  `(ts-subsetp ,ts *ts-rational*))
 
-(defabbrev ts-integerp (ts)
-  (ts-subsetp ts *ts-integer*))
+(defmacro ts-integerp (ts)
+  `(ts-subsetp ,ts *ts-integer*))
 
 (defun all-quoteps (lst)
   (cond ((null lst) t)
@@ -1949,9 +1949,9 @@
 ; of theorems in two different theories but rather an entirely
 ; proof-theoretic step.
 
-(defabbrev first-var (p) (caar (access poly p :alist)))
+(defmacro first-var (p) `(caar (access poly ,p :alist)))
 
-(defabbrev first-coefficient (p) (cdar (access poly p :alist)))
+(defmacro first-coefficient (p) `(cdar (access poly ,p :alist)))
 
 ; We expect polys to meet the following invariant implied in the discussion
 ; above:

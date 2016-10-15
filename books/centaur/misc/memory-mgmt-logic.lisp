@@ -64,7 +64,7 @@
 (defsection maybe-wash-memory
   :parents (hons)
   :short "Conditionally trigger a @(see hons-wash) and also @(see
-  clear-memoize-tables) to reclaim memory in ACL2(h).  (CCL only; requires a
+  clear-memoize-tables) to reclaim memory.  (CCL only; requires a
   trust tag)"
 
   :long "<p>@(call maybe-wash-memory) will clear out unused honses and throw
@@ -111,7 +111,7 @@ gl::def-gl-param-thm) cases, and in other situations.</p>")
 
 (defxdoc set-max-mem
   :parents (hons-and-memoization)
-  :short "An enhanced memory management scheme for ACL2(h). (CCL only; requires
+  :short "An enhanced memory management scheme. (CCL only; requires
   a trust tag)"
 
   :long "<p>Typical usage:</p>
@@ -139,11 +139,12 @@ physical memory, you may wish to reserve no more than about 6 GB for the
 heap.</p>
 
 
-<h3>Interaction with @(see cert.pl)</h3>
+<h3>Interaction with @(see build::cert.pl)</h3>
 
-<p>The @(see cert.pl) build system scans for calls of @('set-max-mem') and uses
-them to infer how much memory a book will need.  This information may be useful
-for scheduling jobs when carrying out distributed builds on a cluster.</p>
+<p>The @(see build::cert.pl) build system scans for calls of @('set-max-mem')
+and uses them to infer how much memory a book will need.  This information may
+be useful for scheduling jobs when carrying out distributed builds on a
+cluster.</p>
 
 <p>Note that this parsing is done by a simple Perl script, so you can't just
 use an arbitrary Lisp expression here.  Explicitly supported expressions

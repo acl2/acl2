@@ -37,7 +37,7 @@
 (include-book "centaur/vl/mlib/reportcard" :dir :system)
 (include-book "centaur/vl/mlib/blocks" :dir :System)
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable cons-equal)))
 
@@ -189,7 +189,7 @@ instantiate other data-structure modules.  Interfaces are treated as a
 combination of struct variable and module instance.</p>
 
 <p>This approach to array indexing also lets us deal straightforwardly with
-instance arrays; see @(see vl-instarray-plainarg-nested-instance-alias) for details.</p>
+instance arrays; see @(see vl-instarray-nested-aliases) for details.</p>
 
 <h3>Scopes</h3>
 
@@ -379,26 +379,100 @@ current one.  We translate module @('a') as follows:</p>
     (true-listp sizes)
     :rule-classes :type-prescription))
 
+#||
+(trace$ #!vl (vl-interface-size-fn
+              :entry (list 'vl-interface-size
+                           (vl-interface->name x))
+              :exit (list 'vl-interface-size
+                          (with-local-ps (vl-print-warnings-with-header (car values)))
+                          (cadr values))))
+
+||#
 
 
 (define vl-interface-size ((x vl-interface-p)
                            (ss vl-scopestack-p))
-  :prepwork ((local (defthm nat-listp-remove-nil
-                      (implies (maybe-nat-list-p x)
-                               (nat-listp (remove nil x)))
-                      :hints(("Goal" :in-theory (enable maybe-nat-list-p))))))
-  :short "Computes the number of bits in all the variables in an interface."
-  :returns (mv (warnings vl-warninglist-p)
-               (size natp :rule-classes :type-prescription))
-  (b* (((vl-interface x) (vl-interface-fix x))
-       (ss (vl-scopestack-push x ss))
-       ((mv warnings sizes) (vl-vardecllist-sizes x.vardecls ss)))
-    (mv warnings (sum-nats (remove nil sizes)))))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (size (implies (not err) (natp size)) :rule-classes :type-prescription))
+  (b* ((x (vl-interface-fix x))
+       ((mv err1 type) (vl-interface-mocktype x ss))
+       ((unless (vl-datatype-resolved-p type))
+        (mv (vmsg "Mocktype of interface ~a0 not resolved: ~a1"
+                  x type)
+            nil))
+       ((mv err2 size) (vl-datatype-size type)))
+    (mv (vmsg-concat err1
+                     (or err2
+                         (and (not size)
+                              (vmsg "Mocktype of interface ~a0 couldn't be sized: ~a1"
+                                    x type))))
+        size)))
+       
+      
+  
+
+  
+(define vlsv-aggregate-subalias ((name sv::name-p)
+                                  (width posp))
+  :returns (alias sv::lhspairs-p)
+  (b* ((var (sv::make-simple-svar name))
+       (lhs (sv::make-simple-lhs :width width :var var))
+       (selfvar (sv::make-scoped-svar name :self))
+       (selflhs (sv::make-simple-lhs :width width :var selfvar)))
+    (list (cons lhs selflhs)))
+  ///
+  (defret vlsv-aggregate-subalias-vars
+    (sv::svarlist-addr-p (sv::lhspairs-vars alias))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+(define vlsv-aggregate-superalias ((name sv::name-p)
+                                   (width posp)
+                                   (lsb natp))
+  :returns (alias sv::lhspairs-p)
+  (b* ((var (sv::make-simple-svar name))
+       (lhs (sv::make-simple-lhs :width width :var var))
+       (outervar (sv::make-simple-svar :self))
+       (outerlhs (sv::make-simple-lhs :width width :var outervar :rsh lsb)))
+    (list (cons lhs outerlhs)))
+  ///
+  (defret vlsv-aggregate-superalias-vars
+    (sv::svarlist-addr-p (sv::lhspairs-vars alias))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+(define vlsv-aggregate-aliases ((name sv::name-p)
+                                (width posp)
+                                (lsb maybe-natp))
+  :returns (aliases sv::lhspairs-p)
+  (append-without-guard (vlsv-aggregate-subalias name width)
+                        (and lsb (vlsv-aggregate-superalias name width lsb)))
+  ///
+  (defret vlsv-aggregate-aliases-vars
+    (sv::svarlist-addr-p (sv::lhspairs-vars aliases))))
+
+
+#||
+(trace$ #!vl
+        (vl-interfaceinst->svex
+         :entry (list 'vl-interfaceinst->svex name ifname context (vl-scopestack->hashkey ss)
+                      self-lsb arraywidth)
+         :exit (b* (((list warnings wires aliases width single-width) values))
+                 (list 'vl-interfaceinst->svex
+                       (with-local-ps (vl-print-warnings warnings))
+                       wires aliases width single-width))))
+||#
+
 
 (define vl-interfaceinst->svex ((name stringp "name of instance or interface port")
                                 (ifname stringp "name of the interface")
                                 (context anyp)
-                                (ss vl-scopestack-p))
+                                (ss vl-scopestack-p)
+                                (self-lsb maybe-natp
+                                          "indicates we're inside an interface
+                                           and should make an additional alias
+                                           to the outer block starting at
+                                           self-lsb")
+                                (arraywidth maybe-posp
+                                            "indicates an array of instances"))
   :short "Produces the wires and aliases for an interface instantiation."
   :long "<p>This may be used either for an interface port or for an interface
 instance.  It looks up the instantiated interface and computes its size,
@@ -411,47 +485,285 @@ constructed separately.)</p>"
                       :hints(("Goal" :in-theory (enable sv::name-p))))))
   :returns (mv (warnings vl-warninglist-p)
                (wires sv::wirelist-p)
-               (aliases sv::lhspairs-p))
+               (aliases sv::lhspairs-p)
+               (width natp :rule-classes :type-prescription)
+               (single-width natp :rule-classes :type-prescription))
   (b* ((warnings nil)
        (ifname (string-fix ifname))
        (name   (string-fix name))
+       (arraywidth (acl2::maybe-posp-fix arraywidth))
        ((mv iface i-ss) (vl-scopestack-find-definition/ss ifname ss))
        ((unless (and iface (eq (tag iface) :vl-interface)))
-        (mv (warn :type :vl-module->svex-fail
-                  :msg "~a0: Interface not found: ~s1"
-                  :args (list context ifname))
-            nil nil))
-       ((wmv warnings size) (vl-interface-size iface i-ss))
+        (mv (fatal :type :vl-module->svex-fail
+                   :msg "~a0: Interface not found: ~s1"
+                   :args (list context ifname))
+            nil nil 0 0))
+       ((mv err size) (vl-interface-size iface i-ss))
+       (warnings (vl-err->fatal err
+                                :type :vl-interface->svex-fail
+                                :msg "Failed to resolve the size of ~a0"
+                                :args (list iface)))
        ((unless (posp size))
-        (mv warnings nil nil))
+        (mv warnings nil nil 0 0))
+       (arraysize (if arraywidth (* arraywidth size) size))
        (wire (sv::make-wire :name name
-                              :width size
+                              :width arraysize
                               :low-idx 0))
-       (wire-lhs (svex-lhs-from-name name :width size))
-       (subself-var (sv::address->svar
-                     (sv::make-address
-                      :path (sv::make-path-scope :namespace name :subpath :self))))
-       (subself-lhs (list (sv::make-lhrange :w size
-                                              :atom (sv::make-lhatom-var
-                                                     :name subself-var :rsh 0)))))
-    (mv (ok) (list wire) (list (cons wire-lhs subself-lhs))))
+       (aliases (vlsv-aggregate-aliases name arraysize self-lsb)))
+    (mv (ok) (list wire) aliases arraysize size))
   ///
   (local (in-theory (disable sv::lhs-vars-when-consp)))
-  (defthm vars-of-vl-interfaceinst->svex
-    (sv::svarlist-addr-p
-     (sv::lhspairs-vars
-      (mv-nth 2 (vl-interfaceinst->svex name ifname context ss))))
+  (defret vars-of-vl-interfaceinst->svex
+    (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
     :hints(("goal" :in-theory (enable sv::lhspairs-vars))
            (and stable-under-simplificationp
                 '(:in-theory #!sv (enable lhspairs-vars lhatom-vars))))))
 
 
+(deftagsum vl-portinfo
+  (:bad   ())
+  (:blank ())
+  ;; (:interface ((portname stringp)
+  ;;              (interface vl-interface-p)
+  ;;              (argindex natp)
+  ;;              (conn-expr vl-expr-p)
+  ;;              (port-lhs sv::lhs-p
+  ;;                        "Svex expression form of the port.  Not scoped by the
+  ;;                         instance name.")
+  ;;              (conn-lhs sv::lhs-p)
+  ;;              (size natp)))
+  (:regular   ((portname stringp)
+               (port-dir vl-maybe-direction-p)
+               ;; (argindex natp)
+               ;; (port-expr vl-expr-p)
+               (conn-expr vl-expr-p)
+               (port-lhs
+                sv::lhs-p
+                "Translation of the actual port expression.  Not scoped by the
+                 instance name.")
+               (conn-svex sv::svex-p)
+               (port-size posp)
+               ;; (conn-size posp)
+               (replicatedp)
+               (interfacep booleanp)))
+   :layout :tree)
+
+(fty::deflist vl-portinfolist :elt-type vl-portinfo)
+
+(define vl-portinfo-vars ((x vl-portinfo-p))
+  :returns (vars sv::svarlist-p)
+  (vl-portinfo-case x
+    ;; :interface (append (sv::lhs-vars x.port-lhs)
+    ;;                    (sv::lhs-vars x.conn-lhs))
+    :regular (append (sv::lhs-vars x.port-lhs)
+                     (sv::svex-vars x.conn-svex))
+    :otherwise nil)
+  ///
+  (defthm svarlist-addr-p-of-vl-portinfo-vars-implies
+    (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
+             (and ;; (implies (vl-portinfo-case x :interface)
+                  ;;          (b* (((vl-portinfo-interface x)))
+                  ;;            (and (sv::svarlist-addr-p (sv::lhs-vars x.port-lhs))
+                  ;;                 (sv::svarlist-addr-p (sv::lhs-vars x.conn-lhs)))))
+                  (implies (vl-portinfo-case x :regular)
+                           (b* (((vl-portinfo-regular x)))
+                             (and (sv::svarlist-addr-p (sv::lhs-vars x.port-lhs))
+                                  (sv::svarlist-addr-p (sv::svex-vars x.conn-svex))))))))
+  (defret true-listp-of-vl-portinfo-vars
+    (true-listp vars)
+    :rule-classes :type-prescription))
+
+(define vl-portinfolist-vars ((x vl-portinfolist-p))
+  :returns (vars sv::svarlist-p)
+  (if (atom x)
+      nil
+    (append (vl-portinfo-vars (car x))
+            (vl-portinfolist-vars (cdr x)))))
+
+
+;; (define vl-portinfo-instarray-nested-alias ((x vl-portinfo-p)
+;;                                             (instindex integerp
+;;                                                        "declared index of this instance")
+;;                                             (instoffset natp
+;;                                                         "number of instances that come after this one"))
+;;   :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
+;;   :returns (aliases sv::lhspairs-p)
+;;   :guard-hints ((and stable-under-simplificationp
+;;                      '(:in-theory (enable sv::name-p))))
+;;   :short "Produces the alias for the connection between an instance array
+;; module's wire for a given port and some particular instance's port."
+;;   :long "<p>As noted in @(see vl-hierarchy-svex-translation), we replace each
+;; instance array with a single instance of new module representing the array:</p>
+
+;; @({
+;;   module b (input [3:0] bi, output [2:0] bo);
+;;   endmodule
+
+;;   module a ();
+;;    wire [3:0] abi;
+;;    wire [11:0] abo;
+;;    b barray [3:0] (.bi(abi+4'b10), .bo(abo));
+;;   endmodule
+;;  })
+;; <p>becomes:</p>
+;; @({
+;;   module b ();
+;;     wire [3:0] bi;
+;;     wire [2:0] bo;
+;;   endmodule
+
+;;   module arrayinst##a.binst ();
+;;    wire [3:0] bi;
+;;    wire [11:0] bo;
+
+;;    b <3> ();
+;;    alias <3>.bi = bi;
+;;    alias <3>.bo = bo[11:9];
+
+;;    b <2> ();
+;;    alias <2>.bi = bi;
+;;    alias <2>.bo = bo[8:6];
+
+;;    b <1> ();
+;;    alias <1>.bi = bi;
+;;    alias <1>.bo = bo[5:3];
+
+;;    b <0> ();
+;;    alias <0>.bi = bi;
+;;    alias <0>.bo = bo[2:0];
+;;   endmodule
+
+;;   module a ();
+
+;;    wire [3:0] abi;
+;;    wire [11:0] abo;
+
+;;    arrayinst##a.binst binst ();
+;;    assign binst.bi = abi+4'b10;
+;;    alias  binst.bo = abo;
+;;  endmodule
+;;  })
+
+;; <p>This function produces one of the aliases inside the @('arrayinst##a.binst')
+;; module.  It always aliases the port expression of the given port with either
+;; the whole local wire for that port (i.e., @('<3>.bi = bi')) or part of that
+;; wire (i.e., @('<3>.bo = bo[11:9]')).  It decides this per the Verilog spec
+;; based on the relative widths of the port expression and port connection
+;; expression: they must either be the same (in which case the whole wire goes to
+;; all copies of the port) or the connection expression must be N times the size
+;; of the port expression, where N is the number of elements in the array; in this
+;; case, the local wire for the port is the size of the whole port connection
+;; expression and a different segment of it is passed to each port copy.</p>
+
+;; <p>The other major function used to produce this intermediate module is @(see
+;; vl-instarray-port-wiredecls), which produces (in the example) the declarations</p>
+;; @({
+;;    wire [3:0] bi;
+;;    wire [11:0] bo;
+;;  })
+;; <p>from the new arrayinst module.</p>"
+;;   (vl-portinfo-case x
+;;     :regular
+;;     (b* ((instindex (lifix instindex))
+;;          (instoffset (lnfix instoffset))
+;;          (shift (if x.replicatedp
+;;                     0
+;;                   (* x.port-size instoffset)))
+;;          (port-inner-lhs (sv::lhs-add-namespace instindex x.port-inner-lhs))
+;;          (port-outer-lhs (sv::lhs-concat
+;;                           x.port-size
+;;                           (sv::lhs-rsh shift x.port-outer-lhs)
+;;                           nil)))
+;;       (list (cons port-inner-lhs port-outer-lhs)))
+;;     :otherwise nil)
+;;   ///
+;;   (defret vars-of-vl-portinfo-instarray-nested-alias
+;;     (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
+;;              (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+;;     :hints(("Goal" :in-theory (enable sv::lhspairs-vars))))
+
+;;   (defret true-listp-of-vl-portinfo-instarray-nested-alias
+;;     (true-listp aliases)
+;;     :rule-classes :type-prescription))
+
+;; (define vl-portinfolist-instarray-nested-aliases
+;;   ((x vl-portinfolist-p)
+;;    (instindex integerp
+;;               "declared index of this instance")
+;;    (instoffset natp
+;;                "number of instances that come after this one"))
+;;   :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
+;;   :prepwork ((local (in-theory (enable vl-portinfolist-vars))))
+;;   :returns (aliases sv::lhspairs-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (vl-portinfo-instarray-nested-alias (car x) instindex instoffset)
+;;             (vl-portinfolist-instarray-nested-aliases (cdr x) instindex instoffset)))
+;;   ///
+;;   (defret vars-of-vl-portinfolist-instarray-nested-aliases
+;;     (implies (sv::svarlist-addr-p (vl-portinfolist-vars x))
+;;              (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+;;     :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+
+
+
+(define vl-instarray-nested-aliases
+  ;; BOZO Make this work inside interfaces and with interface arrays
+  ((x vl-portinfolist-p)
+   (instindex integerp)
+   (instoffset natp)
+   (inst-incr integerp)
+   (inst-modname sv::modname-p)
+   (inst-ifacesize maybe-natp "indicates that we're instantiating an interface,
+                               so we need :self aliases among them"))
+  :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable sv::name-p))))
+  :returns (mv (aliases sv::lhspairs-p)
+               (modinsts sv::modinstlist-p)
+               (wires sv::wirelist-p))
+  (b* ((instindex (lifix instindex))
+       (inst-modname (sv::modname-fix inst-modname))
+       (inst-ifacesize (maybe-natp-fix inst-ifacesize))
+       ((when (zp instoffset)) (mv nil nil nil))
+       ;; (aliases1
+       ;;  (vl-portinfolist-instarray-nested-aliases x instindex (1- instoffset)))
+       (aliases2 (and (posp inst-ifacesize)
+                      (vlsv-aggregate-aliases instindex inst-ifacesize (* (1- instoffset) inst-ifacesize))))
+       (wires1 (and (posp inst-ifacesize)
+                   (list (sv::make-wire :name instindex :width inst-ifacesize :low-idx 0))))
+       ((mv aliases3 modinsts2 wires2)
+        (vl-instarray-nested-aliases
+         x
+         (+ (lifix instindex) (lifix inst-incr))
+         (1- instoffset)
+         inst-incr
+         inst-modname inst-ifacesize)))
+    (mv (append-without-guard ;; aliases1
+                              aliases2 aliases3)
+        (cons (sv::make-modinst :instname instindex
+                                  :modname inst-modname)
+              modinsts2)
+        (append-without-guard wires1 wires2)))
+  ///
+  (defret vars-of-vl-instarray-nested-instance-alias
+    (implies (sv::svarlist-addr-p (vl-portinfolist-vars x))
+             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+
+
 (define vl-interfaceport->svex ((x vl-interfaceport-p)
-                                (ss vl-scopestack-p))
+                                (ss vl-scopestack-p)
+                                (self-lsb maybe-natp)
+                                (context-mod sv::modname-p))
   :returns (mv (warnings vl-warninglist-p)
                (wires sv::wirelist-p)
                (insts sv::modinstlist-p)
-               (aliases sv::lhspairs-p))
+               (aliases sv::lhspairs-p)
+               (modalist sv::modalist-p)
+               (width natp :rule-classes :type-prescription))
   :short "Produces svex wires, insts, aliases for an interface port."
   :long "<p>Just adds a modinst to the outputs of @(see vl-interfaceinst->svex).</p>"
   :prepwork ((local (defthm modname-p-when-stringp
@@ -461,391 +773,86 @@ constructed separately.)</p>"
              (local (defthm name-p-when-stringp
                       (implies (stringp x)
                                (sv::name-p x))
-                      :hints(("Goal" :in-theory (enable sv::name-p))))))
+                      :hints(("Goal" :in-theory (enable sv::name-p)))))
+             (local (defthm modname-p-when-consp
+                      (implies (consp x)
+                               (sv::modname-p x))
+                      :hints(("Goal" :in-theory (enable sv::modname-p))))))
+  :guard-debug t
   (b* (((vl-interfaceport x) (vl-interfaceport-fix x))
-       (insts (list (sv::make-modinst :instname x.name :modname x.ifname)))
-       ((mv warnings wires aliases)
-        (vl-interfaceinst->svex x.name x.ifname x ss)))
-    (mv warnings wires insts aliases))
+       (context-mod (sv::modname-fix context-mod))
+       (warnings nil)
+       ((unless (or (atom x.udims)
+                    (and (atom (cdr x.udims))
+                         (vl-packeddimension-case (car x.udims) :range)
+                         (vl-range-resolved-p (Vl-packeddimension->range (car x.udims))))))
+        (mv (fatal :type :vl-bad-interfaceport-array
+                   :msg "Unresolved or unsized dimensions on interfaceport array: ~a0"
+                   :args (list x))
+            nil nil nil nil 0))
+       (range (and (consp x.udims)  (vl-packeddimension->range (car x.udims))))
+       (arraysize (and range (vl-range-size range)))
+       ((wmv warnings wires aliases arrwidth singlewidth)
+        (vl-interfaceinst->svex x.name x.ifname x ss self-lsb arraysize))
+       ((unless (and arraysize (posp arrwidth)))
+        (mv warnings wires (list (sv::make-modinst :instname x.name :modname x.ifname))
+            aliases nil arrwidth))
+       ((mv arraymod-aliases arraymod-modinsts arraymod-ifacewires)
+        (vl-instarray-nested-aliases
+         nil (vl-resolved->val (vl-range->msb range))
+         arraysize
+         (if (vl-range-revp range) 1 -1)
+         x.ifname singlewidth))
+       (arraymod-selfwire (list (sv::make-wire :name :self :width arrwidth :low-idx 0)))
+       (arraymod (sv::make-module :wires (append arraymod-selfwire
+                                                 arraymod-ifacewires)
+                                  :insts arraymod-modinsts
+                                  :aliaspairs arraymod-aliases))
+       (array-modname (list :array-ifportmod context-mod x.name))
+       (insts (list (sv::make-modinst :instname x.name :modname array-modname))))
+    (mv warnings wires insts aliases
+        (list (cons array-modname arraymod))
+        arrwidth))
+
   ///
-  (defthm vars-of-vl-interfaceport->svex
-    (sv::svarlist-addr-p
-     (sv::lhspairs-vars
-      (mv-nth 3 (vl-interfaceport->svex x ss))))))
+  (defret vars-of-vl-interfaceport->svex
+    (and (sv::svarlist-addr-p
+          (sv::lhspairs-vars aliases))
+         (sv::svarlist-addr-p
+          (sv::modalist-vars modalist)))
+    :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
 
 (define vl-interfaceports->svex ((x vl-interfaceportlist-p)
-                                 (ss vl-scopestack-p))
+                                 (ss vl-scopestack-p)
+                                 (self-lsb maybe-natp)
+                                 (context-mod sv::modname-p))
   :returns (mv (warnings vl-warninglist-p)
                (wires sv::wirelist-p)
                (insts sv::modinstlist-p)
-               (aliases sv::lhspairs-p))
-  (b* (((when (atom x)) (mv nil nil nil nil))
+               (aliases sv::lhspairs-p)
+               (modalist sv::modalist-p)
+               (width natp :rule-classes :type-prescription))
+  :verify-guards nil
+  (b* (((when (atom x)) (mv nil nil nil nil nil 0))
        (warnings nil)
-       ((wmv warnings wires1 insts1 aliases1)
-        (vl-interfaceport->svex (car x) ss))
-       ((wmv warnings wires2 insts2 aliases2)
-        (vl-interfaceports->svex (cdr x) ss)))
+       (self-lsb (maybe-natp-fix self-lsb))
+       ((wmv warnings wires2 insts2 aliases2 modalist2 width2)
+        (vl-interfaceports->svex (cdr x) ss self-lsb context-mod))
+       ((wmv warnings wires1 insts1 aliases1 modalist1 width1)
+        (vl-interfaceport->svex (car x) ss (and self-lsb (+ width2 self-lsb)) context-mod)))
     (mv warnings
         (append-without-guard wires1 wires2)
         (append-without-guard insts1 insts2)
-        (append-without-guard aliases1 aliases2)))
+        (append-without-guard aliases1 aliases2)
+        (append-without-guard modalist1 modalist2)
+        (+ width1 width2)))
   ///
-
-  (defthm vars-of-vl-interfaceports->svex
-    (sv::svarlist-addr-p
-     (sv::lhspairs-vars
-      (mv-nth 3 (vl-interfaceports->svex x ss))))))
-
-
-
-;; ;; (fty::deflist boolean-list :pred boolean-listp :elt-type booleanp
-;; ;;   :elementp-of-nil t)
-
-;; (define vl-plainarg-size-check ((x vl-plainarg-p)
-;;                                 (y vl-port-p)
-;;                                 (argindex natp)
-;;                                 (inst-modname stringp)
-;;                                 (instname stringp)
-;;                                 (arraysize maybe-posp))
-;;   :returns (warnings vl-warninglist-p)
-;;   :prepwork ((local (in-theory (disable acl2::zp-open not
-;;                                         integerp-when-natp))))
-;;   :short "Creates warnings, if necessary, for arguments to a module instance or
-;;           instance array."
-;;   :long "<p>We check that the port connections are appropriately sized and that
-;; interface ports are connected to interfaces.  If we warn about anything here,
-;; we'll consider the whole module instance to be bad and skip it.</p>"
-;;   (b* (((vl-plainarg x) (vl-plainarg-fix x))
-;;        (instname (string-fix instname))
-;;        (inst-modname (string-fix inst-modname))
-;;        (warnings nil)
-;;        (y (vl-port-fix y))
-;;        ((when (eq (tag y) :vl-interfaceport))
-;;         (b* (((when arraysize)
-;;               (warn :type :vl-plainarg->svex-fail
-;;                   :msg "~s0: interface ports in instance arrays not supported: ~s1"
-;;                   :args (list instname (vl-interfaceport->name y))))
-;;              ((unless (or (not x.expr)
-;;                           (vl-idexpr-p x.expr)))
-;;               (warn :type :vl-plainarg->svex-fail
-;;                     :msg "Non-ID expression on interface port ~s0"
-;;                     :args (list (vl-interfaceport->name y)))))
-;;           (ok)))
-;;        ((vl-regularport y))
-;;        (y.name (or y.name (cat "unnamed_port_" (natstr argindex))))
-;;        ((unless (and y.expr x.expr))
-;;         ;; Blank port or port connection -- anything goes.
-;;         (ok))
-;;        (ywidth (vl-expr->finalwidth y.expr))
-;;        (ytype (vl-expr->finaltype y.expr))
-;;        ((unless (and (posp ywidth) ytype
-;;                      (vl-expr-welltyped-p y.expr)))
-;;         (warn :type :vl-plainarg->svex-fail
-;;               :msg "Port expression unsized: ~s0, module ~s1"
-;;               :args (list y.name inst-modname)))
-;;        (xwidth (vl-expr->finalwidth x.expr))
-;;        ((unless (and (vl-expr-welltyped-p x.expr)
-;;                      (posp xwidth)))
-;;         (warn :type :vl-plainarg->svex-fail
-;;               :msg "Port connection not well-typed: ~s0, inst ~s1~%"
-;;               :args (list y.name instname)))
-;;        ((when (and arraysize
-;;                    (not (or (eql ywidth xwidth)
-;;                             (eql (* ywidth arraysize) xwidth)))))
-;;         (warn :type :vl-plainarg->svex-fail
-;;               :msg "Port connection has incompatible width for port ~
-;;                         expression: ~s0, inst ~s1"
-;;               :args (list y.name instname))))
-;;     (ok))
-;;   ///
-;;   (more-returns
-;;    (warnings :name true-listp-of-vl-plainarg-size-check
-;;              true-listp :rule-classes :type-prescription))
-;;   (defthm vl-plainarg-size-check-normalize-under-iff
-;;     (implies (syntaxp (not (and (or (equal inst-modname ''"")
-;;                                     (equal inst-modname ''nil))
-;;                                 (or (equal instname ''"")
-;;                                     (equal instname ''nil)))))
-;;              (iff (vl-plainarg-size-check x y argidx inst-modname instname arraysize)
-;;                   (vl-plainarg-size-check x y argidx nil "" arraysize)))))
-
-
-;; (define vl-plainarglist-size-check ((x vl-plainarglist-p)
-;;                                     (y vl-portlist-p)
-;;                                     (argindex natp)
-;;                                     (inst-modname stringp)
-;;                                     (instname stringp)
-;;                                     (arraysize maybe-posp))
-;;   :verbosep t
-;;   :guard (eql (len x) (len y))
-;;   :returns (warnings vl-warninglist-p)
-;;   (b* (((when (atom x)) nil)
-;;        (warnings (vl-plainarg-size-check
-;;                    (car x) (car y) argindex inst-modname instname arraysize))
-;;        (warnings
-;;         (vl-plainarglist-size-check (cdr x) (cdr y) (1+ (lnfix argindex))
-;;                                     inst-modname instname arraysize)))
-;;     (append-without-guard warnings warnings))
-;;   ///
-;;   (more-returns
-;;    (warnings :name true-listp-of-vl-plainarglist-size-check
-;;              true-listp :rule-classes :type-prescription))
-
-;;   (defthm vl-plainarglist-size-check-normalize-under-iff
-;;     (implies (syntaxp (not (and (or (equal inst-modname ''"")
-;;                                     (equal inst-modname ''nil))
-;;                                 (or (equal instname ''"")
-;;                                     (equal instname ''nil)))))
-;;              (iff (vl-plainarglist-size-check x y argidx inst-modname instname arraysize)
-;;                   (vl-plainarglist-size-check x y argidx nil "" arraysize)))))
-
-
-
-
-
-;; (define vl-plainarg->svex-assign-or-alias ((x vl-plainarg-p)
-;;                                            (y vl-port-p)
-;;                                            (argindex natp)
-;;                                            (ss vl-scopestack-p)
-;;                                            (fns sv::svex-alist-p)
-;;                                            (inst-modname stringp)
-;;                                            (inst-ss vl-scopestack-p)
-;;                                            (instname stringp)
-;;                                            (arraysize maybe-posp)
-;;                                            (ctx acl2::any-p))
-;;   :prepwork ((local (in-theory (disable vl-warninglist-p-when-not-consp
-;;                                         acl2::append-when-not-consp
-;;                                         rationalp-implies-acl2-numberp
-;;                                         double-containment
-;;                                         stringp-when-true-listp
-;;                                         acl2::true-listp-when-atom
-;;                                         acl2::list-fix-when-len-zero
-;;                                         (tau-system)
-;;                                         not)))
-;;              (local (in-theory (enable sv::lhatom-vars))))
-;;   :short "Creates an assignment or alias, as appropriate, for a port connection."
-;;   :long "<p>Given a module instance such as</p>
-;; @({ foo fooinst (.fa({a, c[1:0]}), .fb(b+1)) })
-;; <p>this function produces aliases and assignments reflecting the port
-;; connections.  In this case, @('fa') is connected to an lvalue expression but
-;; @('fb') is not, which means we will create an alias for the @('fa') connection
-;; but an assignment for the @('fb') connection.  We disregard the directionality
-;; of the ports except to create a warning if we make an assignment to an output
-;; port (i.e. if, in this example, @('fb') is an output).</p>"
-;;   ;; :guard (not (vl-plainarg-size-check x y argindex inst-modname instname arraysize))
-;;   :returns (mv (warnings vl-warninglist-p)
-;;                (assigns sv::assigns-p "list of lhs/svex pairs (at most one)")
-;;                (aliases sv::lhspairs-p "list of lhs/lhs pairs (at most one)")
-;;                (replicatedp "For instance array, is the connection replicated (T)
-;;                              or distributed (NIL)"))
-;;   :guard-hints (;; ("goal" :in-theory (enable (force)
-;;                 ;;                            vl-plainarg-size-check))
-;;                 (and stable-under-simplificationp
-;;                      '(:in-theory (enable sv::name-p)))
-;;                 ;; (and stable-under-simplificationp
-;;                 ;;      '(:in-theory (enable sv::lhssvex-p
-;;                 ;;                           sv::lhssvex-unbounded-p
-;;                 ;;                           sv::svex-concat
-;;                 ;;                           sv::4vec-index-p)))
-;;                 )
-;;   (b* (((vl-plainarg x) (vl-plainarg-fix x))
-;;        (y (vl-port-fix y))
-;;        ;; (ss (vl-scopestack-fix ss))
-;;        ;; (inst-ss (vl-scopestack-fix inst-ss))
-;;        (?inst-modname (string-fix inst-modname))
-;;        (instname     (string-fix instname))
-;;        (warnings nil)
-
-;;        ((when (eq (tag y) :vl-interfaceport))
-;;         (b* (((vl-interfaceport y))
-;;              ((when arraysize)
-;;               (mv (fatal :type :vl-plainarg->svex-fal
-;;                          :msg "~a0: Interface arrays aren't yet suported: ~a1"
-;;                          :args (list ctx y))
-;;                   nil nil nil))
-;;              ((when (not x.expr)) (mv (ok) nil nil nil))
-;;              ((mv interface if-ss) (vl-scopestack-find-definition/ss y.ifname ss))
-;;              ((unless (and interface (eq (tag interface) :vl-interface)))
-;;               (mv (fatal :type :vl-plainarg->svex-fail
-;;                         :msg "~a2: Interface ~s0 for interface port ~s1 not found"
-;;                         :args (list y.ifname y.name ctx))
-;;                   nil nil nil))
-;;              ((unless (vl-idexpr-p x.expr))
-;;               (mv (fatal :type :vl-plainarg->svex-fail
-;;                          :msg "~a0: Connection to interfaceport ~a1 must be a ~
-;;                                simple ID, for the moment: ~a2"
-;;                          :args (list ctx y.name x.expr))
-;;                   nil nil nil))
-;;              (xvar (sv::make-svex-var :name (sv::address->svar
-;;                                                (sv::make-address
-;;                                                 :path (sv::make-path-wire :name (vl-idexpr->name x.expr))))))
-;;              (yvar (sv::make-svex-var :name (sv::address->svar
-;;                                                (sv::make-address
-;;                                                 :path
-;;                                                 (sv::make-path-scope
-;;                                                  :namespace instname
-;;                                                  :subpath (sv::make-path-wire :name (vl-idexpr->name x.expr)))))))
-;;              ;; ((mv ok yvar) (svex-add-namespace instname yvar))
-;;              ;; (- (or ok (raise "Programming error: malformed variable in expression ~x0"
-;;              ;;                  yvar)))
-;;              ((wmv warnings ifwidth) (vl-interface-size interface if-ss))
-;;              (warnings (append-without-guard warnings (ok)))
-;;              (xsvex (sv::svex-concat ifwidth xvar (sv::svex-z)))
-;;              (ysvex (sv::Svex-concat ifwidth yvar (sv::svex-z)))
-;;              (xlhs (sv::svex->lhs xsvex))
-;;              (ylhs (sv::svex->lhs ysvex)))
-;;           (mv (ok) nil (list (cons xlhs ylhs)) nil)))
-
-
-;;        ;; ((when (not y.name))
-;;        ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
-;;        ;;  (mv nil nil))
-;;        ((vl-regularport y))
-;;        (y.name (or y.name (cat "unnamed_port_" (natstr argindex))))
-;;        ((unless (and y.expr x.expr))
-;;         ;; Blank port or connection. Don't create an assign or alias.
-;;         (mv (ok) nil nil nil))
-;;        ((wmv warnings y-lhs y-type y-type-ss)
-;;         (vl-expr-to-svex-lhs y.expr inst-ss ctx warnings))
-;;        ((unless y-type)
-;;         (mv warnings nil nil nil))
-;;        ((wmv warnings x-svex x-type x-type-ss)
-;;         (if arraysize
-;;             ;; Can't just assume the datatype of y, b/c it might be that or it
-;;             ;; might be arraysize * that.
-;;             (vl-expr-to-svex-typed x.expr ss fns ctx warnings)
-;;           (b* (((wmv warnings x-svex)
-;;                 (vl-expr-to-svex-datatyped
-;;                  x.expr y-type y-type-ss ss fns ctx warnings)))
-;;             (mv warnings x-svex y-type y-type-ss))))
-
-;;        ((unless x-type) (mv warnings nil nil nil))
-;;        ((wmv ok warnings ?multi ?x-size ?y-size)
-;;         (vl-instarray-plainarg-type-check
-;;          arraysize y-type y-type-ss y.expr
-;;          x-type x-type-ss x.expr ctx y.name warnings))
-
-;;        ((unless ok) (mv warnings nil nil nil))
-
-;;        (y-lhs (if arraysize
-;;                   (list (sv::make-lhrange
-;;                          :w y-size
-;;                          :atom (sv::make-lhatom-var
-;;                                 :name (sv::address->svar
-;;                                        (sv::make-address
-;;                                         :path (sv::make-path-wire :name y.name)))
-;;                                 :rsh 0)))
-;;                 y-lhs))
-
-;;        ;; This seems wrong, what is supposed to happen if the port connection
-;;        ;; is narrower than the port expression?
-;;        ;; ;; truncate y to the width of x if necessary
-;;        ;; (y-lhs (if (and (not arraysize)
-;;        ;;                 (< xwidth ywidth))
-;;        ;;            (sv::lhs-concat xwidth y-lhs nil)
-;;        ;;          y-lhs))
-;;        (xsvex (sv::svex-concat y-size
-;;                                  (sv::svex-lhsrewrite x-svex 0 y-size)
-;;                                  (sv::svex-z)))
-;;        (x-lhsp (sv::lhssvex-p xsvex))
-;;        ((unless x-lhsp)
-;;         (mv (if (eq x.dir :vl-output)
-;;                 (warn :type :vl-port-direction-mismatch
-;;                       :msg  "Non-LHS expression on output ~
-;;                                                port: inst ~s0, port ~x1, expr ~
-;;                                                ~x2~%"
-;;                       :args (list instname y.name x.expr))
-;;               warnings)
-;;             (list (cons y-lhs (sv::make-driver :value xsvex)))
-;;             nil (not multi)))
-;;        (x-lhs (sv::svex->lhs xsvex)))
-;;     (mv warnings nil (list (cons y-lhs x-lhs))
-;;         (not multi)))
-;;   ///
-;;   (defmvtypes vl-plainarg->svex-assign-or-alias (nil true-listp true-listp))
-
-;;   (defret vl-plainarg->svex-assign-or-alias-vars
-;;     (and (sv::svarlist-addr-p (sv::assigns-vars assigns))
-;;          (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
-;;     :hints(("Goal" :in-theory (enable sv::lhspairs-vars sv::assigns-vars)))))
-
-
-
-
-
-;; (define vl-plainarglist->svex-assigns/aliases ((x vl-plainarglist-p)
-;;                                                (y vl-portlist-p)
-;;                                                (argidx natp)
-;;                                                (ss vl-scopestack-p)
-;;                                                (fns sv::svex-alist-p)
-;;                                                (inst-modname stringp)
-;;                                                (inst-ss vl-scopestack-p)
-;;                                                (instname stringp)
-;;                                                (assigns sv::assigns-p)
-;;                                                (aliases sv::lhspairs-p)
-;;                                                (arraywidth maybe-posp)
-;;                                                (ctx))
-;;   :guard (eql (len x) (len y))
-;;   :returns (mv (warnings vl-warninglist-p)
-;;                (assigns1 sv::assigns-p)
-;;                (aliases1 sv::lhspairs-p)
-;;                (replicateds true-listp))
-;;   (b* (((when (atom x))
-;;         (mv nil
-;;             (sv::assigns-fix assigns)
-;;             (sv::lhspairs-fix aliases)
-;;             nil))
-;;        ((wmv warnings assigns1 aliases1 replic1)
-;;         (vl-plainarg->svex-assign-or-alias (car x) (car y) argidx ss fns inst-modname inst-ss instname arraywidth ctx))
-;;        ((wmv warnings assigns2 aliases2 replic2)
-;;         (vl-plainarglist->svex-assigns/aliases
-;;          (cdr x) (cdr y) (1+ (lnfix argidx))
-;;          ss fns inst-modname inst-ss instname
-;;          (append assigns1 assigns)
-;;          (append aliases1 aliases)
-;;          arraywidth ctx)))
-;;     (mv (append-without-guard warnings warnings) assigns2 aliases2
-;;         (cons replic1 replic2)))
-;;   ///
-;;   (defret vl-plainarglist->svex-assign-or-alias-vars
-;;     (and (implies (sv::svarlist-addr-p (sv::assigns-vars assigns))
-;;                   (sv::svarlist-addr-p (sv::assigns-vars assigns1)))
-;;          (implies (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
-;;                   (sv::svarlist-addr-p (sv::lhspairs-vars aliases1)))))
-;;   (defret len-of-vl-plainarglist->svex-assign-or-alias-replicateds
-;;     (equal (len replicateds)
-;;            (len x))))
-
-
-;; (define vl-instarray-plainarglist-nested-instance-alias
-;;   ((y vl-portlist-p)
-;;    (replicateds (eql (len replicateds) (len y)))
-;;    (argindex natp)
-;;    (instindex integerp)
-;;    (instoffset natp)
-;;    (inst-modname stringp)
-;;    (inst-ss vl-scopestack-p)
-;;    (instname stringp)
-;;    (arraysize posp)
-;;    (ctx))
-;;   :returns (mv (warnings vl-warninglist-p)
-;;                (aliases sv::lhspairs-p))
-;;   (b* (((when (atom y)) (mv nil nil))
-;;        ((wmv warnings aliases1)
-;;         (vl-instarray-plainarg-nested-instance-alias
-;;          (car y) (car replicateds)
-;;          argindex instindex instoffset inst-modname inst-ss instname arraysize ctx))
-;;        ((wmv warnings aliases2)
-;;         (vl-instarray-plainarglist-nested-instance-alias
-;;          (cdr y) (cdr replicateds)
-;;          (1+ (lnfix argindex)) instindex instoffset inst-modname inst-ss instname arraysize ctx)))
-;;     (mv (append-without-guard warnings warnings)
-;;         (append-without-guard aliases1 aliases2)))
-;;   ///
-;;   (more-returns
-;;    (aliases :name vars-of-vl-instarray-plainarglist-nested-instance-alias
-;;             (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
-;;             :hints(("Goal" :in-theory (enable sv::lhspairs-vars))))))
+  (verify-guards vl-interfaceports->svex)
+  (defret vars-of-vl-interfaceports->svex
+    (and (sv::svarlist-addr-p
+          (sv::lhspairs-vars aliases))
+         (sv::svarlist-addr-p
+          (sv::modalist-vars modalist)))))
 
 
 (define vl-instarray-plainarg-type-check ((arraysize maybe-posp)
@@ -873,8 +880,7 @@ constructed separately.)</p>"
         (mv nil nil y-size y-size))
        ((mv err x-size) (vl-datatype-size x-type))
        ((when (or err (not x-size) (eql 0 x-size)))
-        (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port ~
-                         expression ~a2"
+        (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port expression ~a2"
                   (vl-datatype-fix x-type) (string-fix portname) (vl-expr-fix x-expr))
             nil nil nil))
        (y-packed (vl-datatype-packedp y-type))
@@ -884,8 +890,9 @@ constructed separately.)</p>"
               (mv nil nil x-size y-size))
              ((when (eql x-size (* arraysize y-size)))
               (mv nil t x-size y-size)))
-          (mv (vmsg "Bad instancearray port connection size on port ~s0"
-                     (string-fix portname))
+          (mv (vmsg "Bad instancearray port connection size on port ~s0: should be ~x1 (if replicated) or else ~x2, but is ~x3"
+                    (string-fix portname)
+                    y-size (* arraysize y-size) x-size)
               nil nil nil)))
        ((when x-packed)
         (mv (vmsg "Bad instancearray port connection: packed expression ~a0 ~
@@ -895,7 +902,7 @@ constructed separately.)</p>"
        ;; Otherwise we either need the types to be compatible or else we need
        ;; x's type to be an arraysize-element unpacked array of things
        ;; compatible with y's type.
-       (compat-err (vl-compare-datatypes y-type x-type))
+       (compat-err (vl-check-datatype-compatibility y-type x-type :equiv))
        ((unless compat-err)
         (mv nil nil x-size y-size))
        ((mv err ?caveat x-basetype dim)
@@ -919,7 +926,7 @@ constructed separately.)</p>"
        ((when (and x-base-packed y-packed
                    (eql x-size (* arraysize y-size))))
         (mv nil t x-size y-size))
-       (compat-err2 (vl-compare-datatypes y-type x-basetype))
+       (compat-err2 (vl-check-datatype-compatibility y-type x-basetype :equiv))
        ((when compat-err2)
         ;; (cw "Args: ~x0~%" (list arraysize y-type y-expr x-type x-expr portname))
         (mv (vmsg "Incompatible type for connection to instancearray port ~s0 ~
@@ -927,83 +934,54 @@ constructed separately.)</p>"
             nil nil nil)))
     (mv nil t x-size y-size)))
 
-(deftagsum vl-portinfo
-  (:bad   ())
-  (:blank ())
-  (:interface ((portname stringp)
-               (interface vl-interface-p)
-               (argindex natp)
-               (conn-name stringp)
-               (port-lhs sv::lhs-p
-                         "Svex expression form of the port.  Not scoped by the
-                          instance name.")
-               (conn-lhs sv::lhs-p)
-               (size natp)))
-  (:regular   ((portname stringp)
-               (port-dir vl-maybe-direction-p)
-               (argindex natp)
-               (port-expr vl-expr-p)
-               (conn-expr vl-expr-p)
-               (port-inner-lhs
-                sv::lhs-p
-                "Translation of the actual port expression.  Not scoped by the
-                 instance name.")
-               (port-outer-lhs
-                sv::lhs-p
-                "If an instance array, then the expression for the port in the
-                 intermediate module holding the whole instance array, otherwise
-                 same as port-inner-lhs.  Not scoped by the instance name.")
-               (conn-svex sv::svex-p)
-               (port-size posp)
-               (conn-size posp)
-               (replicatedp))
-   :layout :alist))
-
-(fty::deflist vl-portinfolist :elt-type vl-portinfo)
 
 
+(define vl-expr-is-extensional ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (vl-expr-case x
+    :vl-literal (vl-value-case x.val :vl-extint)
+    :vl-qmark (and (vl-expr-is-extensional x.then)
+                   (vl-expr-is-extensional x.else))
+    :otherwise nil))
 
 
+(define vl-port-type-err-warn ((portname stringp)
+                               (portdir vl-maybe-direction-p)
+                               (x vl-plainarg-p)
+                               (port-type vl-datatype-p)
+                               (type-err vl-maybe-type-error-p)
+                               (ss vl-scopestack-p))
+  :guard (vl-plainarg->expr x)
+  :returns (warnings vl-warninglist-p)
+  (b* (((unless type-err) nil)
+       (warnings nil)
+       (expr (vl-plainarg->expr x)))
+    (vl-type-error-case type-err
+      :trunc/extend (b* (((when (vl-expr-is-extensional expr))
+                          ;; Don't warn about extints.
+                          nil))
+                      (fatal :type :vl-port-size-mismatch
+                             :msg "~s0ort ~s1 has size ~x2, but its connection expression ~a3 has size ~x4"
+                             :args (list (case (vl-maybe-direction-fix portdir)
+                                           ;; ugly
+                                           ((nil) "P")
+                                           (:vl-input "Input p")
+                                           (:vl-output "Output p")
+                                           (otherwise "Inout p"))
+                                         (string-fix portname)
+                                         type-err.lhs-size
+                                         expr
+                                         type-err.rhs-selfsize)))
+      :otherwise (vl-type-error-basic-warn expr nil type-err (vl-idexpr portname) port-type ss))))
+       
 
-
-
-(define vl-portinfo-vars ((x vl-portinfo-p))
-  :returns (vars sv::svarlist-p)
-  (vl-portinfo-case x
-    :interface (append (sv::lhs-vars x.port-lhs)
-                       (sv::lhs-vars x.conn-lhs))
-    :regular (append (sv::lhs-vars x.port-inner-lhs)
-                     (sv::lhs-vars x.port-outer-lhs)
-                     (sv::svex-vars x.conn-svex))
-    :otherwise nil)
-  ///
-  (defthm svarlist-addr-p-of-vl-portinfo-vars-implies
-    (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
-             (and (implies (vl-portinfo-case x :interface)
-                           (b* (((vl-portinfo-interface x)))
-                             (and (sv::svarlist-addr-p (sv::lhs-vars x.port-lhs))
-                                  (sv::svarlist-addr-p (sv::lhs-vars x.conn-lhs)))))
-                  (implies (vl-portinfo-case x :regular)
-                           (b* (((vl-portinfo-regular x)))
-                             (and (sv::svarlist-addr-p (sv::lhs-vars x.port-outer-lhs))
-                                  (sv::svarlist-addr-p (sv::lhs-vars x.port-inner-lhs))
-                                  (sv::svarlist-addr-p (sv::svex-vars x.conn-svex))))))))
-  (defret true-listp-of-vl-portinfo-vars
-    (true-listp vars)
-    :rule-classes :type-prescription))
-
-(define vl-portinfolist-vars ((x vl-portinfolist-p))
-  :returns (vars sv::svarlist-p)
-  (if (atom x)
-      nil
-    (append (vl-portinfo-vars (car x))
-            (vl-portinfolist-vars (cdr x)))))
 
 (define vl-gate-plainarg-portinfo ((x vl-plainarg-p)
                                    (portname stringp)
                                    (portdir vl-direction-p)
                                    (argindex natp)
-                                   (conf vl-svexconf-p
+                                   (ss vl-scopestack-p)
+                                   (scopes vl-elabscopes-p
                                        "scopestack where the instance occurs")
                                    (arraysize maybe-posp))
   :short "Processes a gate instance argument into a vl-portinfo structure."
@@ -1019,7 +997,8 @@ constructed separately.)</p>"
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
-
+  :ignore-ok t
+  :irrelevant-formals-ok t
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (portname (string-fix portname))
@@ -1034,17 +1013,18 @@ constructed separately.)</p>"
        ;;  (mv nil nil))
        (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
-       (port-type (make-vl-coretype :name :vl-logic))
-       ((wmv warnings x-svex x-type ?x-size)
+       (port-type *vl-plain-old-logic-type*)
+       ((wmv warnings x-svex x-type ?x-size type-err)
         (vl-expr-to-svex-maybe-typed
          x.expr
          (if arraysize
              nil
            port-type)
-         conf))
+         ss scopes :compattype :equiv))
+       ((wmv warnings) (vl-port-type-err-warn portname (vl-direction-fix portdir) x port-type type-err ss))
 
        ((unless x-type) (fail warnings))
-       ((mv err ?multi x-size ?port-size)
+       ((mv err multi x-size ?port-size)
         (vl-instarray-plainarg-type-check
          arraysize port-type portexpr
          x-type x.expr portname))
@@ -1054,26 +1034,26 @@ constructed separately.)</p>"
                      :msg "~@0"
                      :args (list err))))
 
-       (port-outer-lhs (if (and arraysize multi)
-                           (svex-lhs-from-name portname :width (lposfix arraysize))
-                         port-lhs))
+       ;; (port-outer-lhs (if (and arraysize multi)
+       ;;                     (svex-lhs-from-name portname :width (lposfix arraysize))
+       ;;                   port-lhs))
 
        (xsvex (sv::svex-concat x-size
-                                 (sv::svex-lhsrewrite x-svex 0 x-size)
+                                 (sv::svex-lhsrewrite x-svex x-size)
                                  (sv::svex-z))))
     (mv (ok)
         (make-vl-portinfo-regular
          :portname portname
          :port-dir (vl-direction-fix portdir)
-         :argindex argindex
-         :port-expr portexpr
+         ;; :argindex argindex
+         ;; :port-expr portexpr
          :conn-expr x.expr
-         :port-inner-lhs port-lhs
-         :port-outer-lhs port-outer-lhs
+         :port-lhs port-lhs
+         ;; :port-outer-lhs port-outer-lhs
          :conn-svex xsvex
          :port-size 1
-         :conn-size x-size
-         :replicatedp (not multi))))
+         ;; :conn-size x-size
+         :replicatedp (and arraysize (not multi)))))
   ///
   (defret vars-of-vl-gate-plainarg-portinfo
     (sv::svarlist-addr-p (vl-portinfo-vars res))
@@ -1083,7 +1063,8 @@ constructed separately.)</p>"
                                        (portnames string-listp)
                                        (portdirs vl-directionlist-p)
                                        (argindex natp)
-                                       (conf vl-svexconf-p)
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p)
                                        (arraysize maybe-posp))
   :guard (and (eql (len x) (len portnames))
               (eql (len x) (len portdirs)))
@@ -1094,11 +1075,11 @@ constructed separately.)</p>"
     (b* ((warnings nil)
          ((wmv warnings portinfo1)
           (vl-gate-plainarg-portinfo
-           (car x) (car portnames) (car portdirs) argindex conf arraysize))
+           (car x) (car portnames) (car portdirs) argindex ss scopes arraysize))
          ((wmv warnings portinfo2)
           (vl-gate-plainarglist-portinfo
            (cdr x) (cdr portnames) (cdr portdirs)
-           (1+ (lnfix argindex)) conf arraysize)))
+           (1+ (lnfix argindex)) ss scopes arraysize)))
       (mv warnings
           (cons portinfo1 portinfo2))))
   ///
@@ -1107,14 +1088,53 @@ constructed separately.)</p>"
     :hints(("Goal" :in-theory (enable vl-portinfolist-vars)))))
 
 
+(define vl-interfaceref-to-svar ((x vl-expr-p "should be an index expr referencing an interface instance/port")
+                                 (ss vl-scopestack-p))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (svex (and (sv::svex-p svex)
+                          (sv::svarlist-addr-p (sv::svex-vars svex)))))
+  (b* ((x (vl-expr-fix x)))
+    (vl-expr-case x
+      :vl-index
+      (b* (((when (or (not (vl-partselect-case x.part :none))
+                      (consp x.indices)))
+            (mv (vmsg "Don't yet support referencing interface arrays: ~a0" x)
+                (svex-x)))
+           ((mv err hidtrace context tail)
+            (vl-follow-scopeexpr x.scope ss))
+           ((when err)
+            (mv (vmsg "Couldn't resolve interface reference to ~a0: ~@1" x err) (svex-x)))
+           (declname (vl-hidexpr-case tail :end tail.name :otherwise nil))
+           ((unless declname)
+            (mv (vmsg "Extra indexing on interface reference ~a0: ~a1. Modports
+                       should have been removed?" x (make-vl-index
+                                                     :scope (make-vl-scopeexpr-end :hid tail)))
+                (svex-x)))
+           ((unless (vl-hidtrace-resolved-p hidtrace))
+            (mv (vmsg "Unresolved hid indices on interface reference: ~a0" x) (svex-x)))
+           (path (vl-hidtrace-to-path hidtrace nil))
+           ((mv err addr) (vl-scopecontext-to-addr context ss path))
+           ((when err)
+            (mv (vmsg "Couldn't resolve interface reference to ~a0: context was
+                       problematic? ~@1" x err)
+                (svex-x))))
+        (mv nil (sv::make-svex-var :name (sv::address->svar addr))))
+      :otherwise
+      (mv (vmsg "Bad expression for interface reference: ~a0" x) (svex-x)))))
+           
+
+
 (define vl-plainarg-portinfo ((x vl-plainarg-p)
                               (y vl-port-p)
                               (argindex natp)
-                              (conf vl-svexconf-p
+                              (ss vl-scopestack-p)
+                              (scopes vl-elabscopes-p
                                   "scopestack where the instance occurs")
                               (inst-modname stringp)
                               (inst-ss vl-scopestack-p
                                        "scopestack inside the instance's module")
+                              (inst-scopes vl-elabscopes-p
+                                           "elabscopes inside the instance's module")
                               (arraysize maybe-posp))
   :short "Processes a module instance argument into a vl-portinfo structure."
   :returns (mv (warnings vl-warninglist-p)
@@ -1135,50 +1155,160 @@ constructed separately.)</p>"
                                                         sv::lhssvex-unbounded-p))))))
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
-       ((vl-svexconf conf))
        (y (vl-port-fix y))
        (arraysize (acl2::maybe-posp-fix arraysize))
        ;; (ss (vl-scopestack-fix conf))
        ;; (inst-ss (vl-scopestack-fix inst-ss))
        (?inst-modname (string-fix inst-modname))
        (warnings nil)
-       ((unless x.expr) (mv (ok) (make-vl-portinfo-blank)))
+       ((unless x.expr)
+        ;; It wouldn't be OK for an interface port to be blank, but we check
+        ;; that in argresolve so we aren't checking it here.
+        (mv (ok) (make-vl-portinfo-blank)))
+
        ((when (eq (tag y) :vl-interfaceport))
         (b* (((vl-interfaceport y))
-             ((when arraysize)
-              (fail (fatal :type :vl-plainarg->svex-fal
-                           :msg "Interface arrays aren't yet suported: ~a0"
+             ((when (and (consp y.udims)
+                         (or (consp (cdr y.udims))
+                             (b* ((dim (car y.udims)))
+                               (vl-packeddimension-case dim
+                                 :range
+                                 (not (vl-range-resolved-p dim.range))
+                                 :otherwise t)))))
+              (fail (fatal :type :vl-plainarg->svex-fail
+                           :msg "Can't handle dimensions of interface port ~a0"
                            :args (list y))))
-             ((mv interface if-ss) (vl-scopestack-find-definition/ss y.ifname conf.ss))
-             ((unless (and interface (eq (tag interface) :vl-interface)))
+             ((mv err y-memb) (vl-interfaceport-mockmember y inst-ss :reclimit 100))
+             ((when (or err (not (vl-datatype-resolved-p (vl-structmember->type y-memb)))))
+              (fail (fatal :type :Vl-plainarg->svex-fail
+                           :msg "Couldn't get mocktype for interfaceport ~a0: ~@1"
+                           :args (list y err))))
+             (y-type (vl-structmember->type y-memb))
+
+             ((unless (vl-expr-case x.expr :vl-index))
               (fail (fatal :type :vl-plainarg->svex-fail
-                        :msg "Interface ~s0 for interface port ~s1 not found"
-                        :args (list y.ifname y.name))))
-             ((unless (vl-idexpr-p x.expr))
+                           :msg "Interface port ~a0 connected to non-index arg ~a1"
+                           :args (list y x))))
+
+             ((wmv warnings x-svex x-type) (vl-index-expr-to-svex x.expr ss scopes))
+             ((unless (and x-type (vl-datatype-resolved-p x-type)))
+              (fail (fatal :type :Vl-plainarg->svex-fail
+                           :msg "Couldn't resolve type for interfaceport argument .~s0(~a1) (type: ~a2)"
+                           :args (list y.name x.expr x-type))))
+             (y-expr (make-vl-index :scope (vl-idscope y.name)
+                                    :part (if (consp y.udims)
+                                              (vl-range->partselect
+                                               (vl-packeddimension->range (car y.udims)))
+                                            (vl-partselect-none))))
+
+             ((mv type-err multi x-size y-size)
+              ;; bozo -- this probably isn't all the right checks yet
+              (vl-instarray-plainarg-type-check
+               arraysize y-type y-expr x-type x.expr y.name))
+
+             (type-err (or type-err
+                           (and (not arraysize)
+                                (vl-check-datatype-compatibility x-type y-type :equiv))))
+
+             ((when type-err)
               (fail (fatal :type :vl-plainarg->svex-fail
-                         :msg "Connection to interfaceport ~a0 must be a ~
-                               simple ID, for the moment: ~a1"
-                         :args (list y.name x.expr))))
-             (xvar (svex-var-from-name (vl-idexpr->name x.expr)))
-             (yvar (svex-var-from-name y.name))
-             ;; ((mv ok yvar) (svex-add-namespace instname yvar))
-             ;; (- (or ok (raise "Programming error: malformed variable in expression ~x0"
-             ;;                  yvar)))
-             ((wmv warnings ifwidth) (vl-interface-size interface if-ss))
-             (warnings (append-without-guard warnings (ok)))
-             (xsvex (sv::svex-concat ifwidth xvar (sv::svex-z)))
-             (ysvex (sv::Svex-concat ifwidth yvar (sv::svex-z)))
-             (xlhs (sv::svex->lhs xsvex))
-             (ylhs (sv::svex->lhs ysvex)))
+                           :msg "Types mismatch on interfaceport argument .~s0(~a1): ~@2"
+                           :args (list y.name x.expr type-err))))
+
+             (y-lhs (svex-lhs-from-name y.name :width y-size))
+
+             ;; (y-outer-lhs (if (and arraysize multi)
+             ;;                  (svex-lhs-from-name y.name :width (* y-size (lposfix arraysize)))
+             ;;                y-lhs))
+
+             (xsvex (sv::svex-concat x-size
+                                     (sv::svex-lhsrewrite x-svex x-size)
+                                     (sv::svex-z))))
           (mv (ok)
-              (make-vl-portinfo-interface
+              (make-vl-portinfo-regular
                :portname y.name
-               :interface interface
-               :argindex argindex
-               :conn-name (vl-idexpr->name x.expr)
-               :port-lhs ylhs
-               :conn-lhs xlhs
-               :size ifwidth))))
+               :port-dir nil
+               ;; :argindex argindex
+               ;; :port-expr y-expr
+               :conn-expr x.expr
+               :port-lhs y-lhs
+               ;; :port-outer-lhs y-outer-lhs
+               :conn-svex xsvex
+               :port-size y-size
+               ;; :conn-size x-size
+               :replicatedp (and arraysize (not multi))
+               :interfacep t))))
+
+
+          ;;    (x-lhs
+
+          ;;    (x-udims (vl-datatype->udims x-type))
+          ;;    ((when (consp (cdr x-udims)))
+          ;;     (fail (fatal :type :vl-plainarg->svex-fail
+          ;;                  :msg "Can't handle multidimensional interface port argument ~
+          ;;                        .~s0(~a1)"
+          ;;                  :args (list y.name x.expr))))
+          ;;    (x-array-resolved (or (atom x-udims)
+          ;;                          (b* ((dim (car x-udims)))
+          ;;                            (vl-packeddimension-case dim
+          ;;                              :range
+          ;;                              (vl-range-resolved-p dim.range)
+          ;;                              :otherwise nil))))
+          ;;    ((unless x-array-resolved)
+          ;;     (fail (fatal :type :vl-plainarg->svex-fail
+          ;;                  :msg "Bad array dimension on interface port argument ~
+          ;;                        .~s0(~a1) (type: ~a2)"
+          ;;                  :args (list y.name x.expr
+          ;;                              (make-vl-structmember
+          ;;                               :name "xx"
+          ;;                               :type x-type)))))
+
+          ;;    (x-range-size (and (consp x-udims)
+          ;;                       (vl-range->size (vl-packeddimension->range (car x-udims)))))
+
+          ;;    ;; At this point we have:
+          ;;    ;;   arraysize -- number of modinsts
+          ;;    ;;   x-range-size -- 
+
+          ;;    ((when (and arraysize
+          ;;                (atom (vl-datatype->udims x-type))))
+          ;;     (fail (fatal :type :vl-plainarg->svex-fail
+          ;;                  :msg ""
+          ;;                  :args (list y.name x.expr)))
+             
+
+          ;;    ((mv interface if-ss) (vl-scopestack-find-definition/ss y.ifname ss))
+          ;;    ((unless (and interface (vl-scopedef-interface-p interface)))
+          ;;     (fail (fatal :type :vl-plainarg->svex-fail
+          ;;               :msg "Interface ~s0 for interface port ~s1 not found"
+          ;;               :args (list y.ifname y.name))))
+             
+
+
+          ;;    ((mv err xvar) (vl-interfaceref-to-svar x.expr ss))
+          ;;    ((when err)
+          ;;     (fail (fatal :type :vl-plainarg->svex-fail
+          ;;                  :msg "Failed to resolve argument to interface port ~a0: ~@1"
+          ;;                  :args (list y err))))
+          ;;    (yvar (svex-var-from-name y.name))
+          ;;    ;; ((mv ok yvar) (svex-add-namespace instname yvar))
+          ;;    ;; (- (or ok (raise "Programming error: malformed variable in expression ~x0"
+          ;;    ;;                  yvar)))
+          ;;    ((wmv warnings ifwidth) (vl-interface-size interface if-ss))
+          ;;    (warnings (append-without-guard warnings (ok)))
+          ;;    (xsvex (sv::svex-concat ifwidth xvar (sv::svex-z)))
+          ;;    (ysvex (sv::Svex-concat ifwidth yvar (sv::svex-z)))
+          ;;    (xlhs (sv::svex->lhs xsvex))
+          ;;    (ylhs (sv::svex->lhs ysvex)))
+          ;; (mv (ok)
+          ;;     (make-vl-portinfo-interface
+          ;;      :portname y.name
+          ;;      :interface interface
+          ;;      :argindex argindex
+          ;;      :conn-expr x.expr
+          ;;      :port-lhs ylhs
+          ;;      :conn-lhs xlhs
+          ;;      :size ifwidth))))
 
        ;; ((when (not y.name))
        ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
@@ -1188,13 +1318,15 @@ constructed separately.)</p>"
        ((unless y.expr)
         (mv (ok) (make-vl-portinfo-blank)))
        ((wmv warnings y-lhs y-type)
-        (vl-expr-to-svex-lhs y.expr (make-vl-svexconf :ss inst-ss)))
+        (vl-expr-to-svex-lhs y.expr inst-ss inst-scopes))
        ((unless y-type)
         ;; already warned
         (fail warnings))
-       ((wmv warnings x-svex x-type ?x-size)
+       ((wmv warnings x-svex x-type ?x-size type-err)
         (vl-expr-to-svex-maybe-typed
-         x.expr (if arraysize nil y-type) conf))
+         x.expr (if arraysize nil y-type) ss scopes :compattype :assign))
+
+       ((wmv warnings) (vl-port-type-err-warn y.name x.dir x y-type type-err ss))
 
        ((unless x-type) (fail warnings))
        ((mv err ?multi ?x-size ?y-size)
@@ -1207,9 +1339,9 @@ constructed separately.)</p>"
                      :msg "~@0"
                      :args (list err))))
 
-       (y-outer-lhs (if arraysize
-                        (svex-lhs-from-name y.name :width (if multi (* y-size (lposfix arraysize)) y-size))
-                      y-lhs))
+       ;; (y-outer-lhs (if arraysize
+       ;;                  (svex-lhs-from-name y.name :width (if multi (* y-size (lposfix arraysize)) y-size))
+       ;;                y-lhs))
 
        ;; This seems wrong, what is supposed to happen if the port connection
        ;; is narrower than the port expression?
@@ -1219,21 +1351,21 @@ constructed separately.)</p>"
        ;;            (sv::lhs-concat xwidth y-lhs nil)
        ;;          y-lhs))
        (xsvex (sv::svex-concat x-size
-                                 (sv::svex-lhsrewrite x-svex 0 x-size)
+                                 (sv::svex-lhsrewrite x-svex x-size)
                                  (sv::svex-z))))
     (mv (ok)
         (make-vl-portinfo-regular
          :portname y.name
          :port-dir x.dir
-         :argindex argindex
-         :port-expr y.expr
+         ;; :argindex argindex
+         ;; :port-expr y.expr
          :conn-expr x.expr
-         :port-inner-lhs y-lhs
-         :port-outer-lhs y-outer-lhs
+         :port-lhs y-lhs
+         ;; :port-outer-lhs y-outer-lhs
          :conn-svex xsvex
          :port-size y-size
-         :conn-size x-size
-         :replicatedp (not multi))))
+         ;; :conn-size x-size
+         :replicatedp (and arraysize (not multi)))))
   ///
   (defret vars-of-vl-plainarg-portinfo
     (sv::svarlist-addr-p (vl-portinfo-vars res))
@@ -1242,9 +1374,11 @@ constructed separately.)</p>"
 (define vl-plainarglist-portinfo ((x vl-plainarglist-p)
                                   (y vl-portlist-p)
                                   (argindex natp)
-                                  (conf vl-svexconf-p)
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p)
                                   (inst-modname stringp)
                                   (inst-ss vl-scopestack-p)
+                                  (inst-scopes vl-elabscopes-p)
                                   (arraysize maybe-posp))
   :guard (eql (len x) (len y))
   :returns (mv (warnings vl-warninglist-p)
@@ -1254,10 +1388,10 @@ constructed separately.)</p>"
     (b* ((warnings nil)
          ((wmv warnings portinfo1)
           (vl-plainarg-portinfo
-           (car x) (car y) argindex conf inst-modname inst-ss arraysize))
+           (car x) (car y) argindex ss scopes inst-modname inst-ss inst-scopes arraysize))
          ((wmv warnings portinfo2)
           (vl-plainarglist-portinfo
-           (cdr x) (cdr y) (1+ (lnfix argindex)) conf inst-modname inst-ss arraysize)))
+           (cdr x) (cdr y) (1+ (lnfix argindex)) ss scopes inst-modname inst-ss inst-scopes arraysize)))
       (mv warnings
           (cons portinfo1 portinfo2))))
   ///
@@ -1266,37 +1400,190 @@ constructed separately.)</p>"
     :hints(("Goal" :in-theory (enable vl-portinfolist-vars)))))
 
 
+(define vl-instarray-nonreplicated-port-lhs-aux
+  ((port-lhs sv::lhs-p)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :guard (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+  :returns (array-lhs sv::lhs-p
+                      "Port-lhs appended instoffset times scoped by the various instindices")
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  (b* (((when (zp instoffset)) nil)
+       (instindex (lifix instindex))
+       (lhs1 (sv::lhs-add-namespace instindex port-lhs)))
+    (append-without-guard lhs1
+                          (vl-instarray-nonreplicated-port-lhs-aux
+                           port-lhs
+                           (+ instindex (lifix inst-incr))
+                           (1- instoffset)
+                           inst-incr)))
+  ///
+  (local (defthm lhs-vars-of-append
+           (equal (sv::lhs-vars (append a b))
+                  (append (sv::lhs-vars a) (sv::lhs-vars b)))
+           :hints(("Goal" :in-theory (enable sv::lhs-vars)))))
+  (defret svarlist-addr-p-of-vl-instarray-nonreplicated-port-lhs-aux
+    (sv::svarlist-addr-p (sv::lhs-vars array-lhs))))
+
+(define vl-instarray-nonreplicated-port-lhs
+  ((port-lhs sv::lhs-p)
+   (instname stringp)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :guard (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  :returns (scoped-lhs sv::lhs-p)
+  (sv::lhs-add-namespace (string-fix instname)
+                         (vl-instarray-nonreplicated-port-lhs-aux
+                          port-lhs instindex instoffset inst-incr))
+  ///
+  (defret svarlist-addr-p-of-vl-instarray-nonreplicated-port-lhs
+    (sv::svarlist-addr-p (sv::lhs-vars scoped-lhs))))
+
+(define vl-instarray-replicated-port-assigns
+  ((port-lhs sv::lhs-p)
+   (instname stringp)
+   (conn-driver sv::driver-p)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :returns (assigns sv::assigns-p)
+  :guard (and (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+              (sv::svarlist-addr-p (sv::svex-vars (sv::driver->value conn-driver))))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  (b* (((when (zp instoffset)) nil)
+       (instindex (lifix instindex))
+       (lhs1 (sv::lhs-add-namespace (string-fix instname)
+                                    (sv::lhs-add-namespace instindex port-lhs))))
+    (cons (cons lhs1 (sv::driver-fix conn-driver))
+          (vl-instarray-replicated-port-assigns
+           port-lhs instname conn-driver
+           (+ instindex (lifix inst-incr))
+           (1- instoffset)
+           inst-incr)))
+  ///
+  (defret svarlist-addr-p-of-vl-instarray-replicated-port-assigns
+    (implies (sv::svarlist-addr-p (sv::svex-vars (sv::driver->value conn-driver)))
+             (sv::svarlist-addr-p (sv::assigns-vars assigns)))
+    :hints(("Goal" :in-theory (enable sv::assigns-vars)))))
+
+(define vl-instarray-replicated-port-aliases
+  ((port-lhs sv::lhs-p)
+   (instname stringp)
+   (conn-lhs sv::lhs-p)
+   (instindex integerp
+              "index of the current instance")
+   (instoffset natp "number of instances left")
+   (inst-incr integerp "1 or -1 depending on the direction of the range"))
+  :guard (and (sv::svarlist-addr-p (sv::lhs-vars port-lhs))
+              (sv::svarlist-addr-p (sv::lhs-vars conn-lhs)))
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  :returns (aliases sv::lhspairs-p)
+  (b* (((when (zp instoffset)) nil)
+       (instindex (lifix instindex))
+       (lhs1 (sv::lhs-add-namespace (string-fix instname)
+                                    (sv::lhs-add-namespace instindex port-lhs))))
+    (cons (cons (sv::lhs-fix conn-lhs) lhs1)
+          (vl-instarray-replicated-port-aliases
+           port-lhs instname conn-lhs
+           (+ instindex (lifix inst-incr))
+           (1- instoffset)
+           inst-incr)))
+  ///
+  (defret svarlist-addr-p-of-vl-instarray-replicated-port-aliases
+    (implies (sv::svarlist-addr-p (sv::lhs-vars conn-lhs))
+             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+
+  
+
+
 
 (define vl-portinfo-to-svex-assign-or-alias ((x vl-portinfo-p)
-                                             (instname stringp))
+                                             (instname stringp)
+                                             (range vl-maybe-range-p)) 
 
   :returns (mv (warnings vl-warninglist-p)
                (assigns sv::assigns-p)
                (aliases sv::lhspairs-p))
-  :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
+  :guard (and (sv::svarlist-addr-p (vl-portinfo-vars x))
+              (vl-maybe-range-resolved-p range))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable sv::name-p))))
   (b* ((instname (string-fix instname))
+       (range (vl-maybe-range-fix range))
        (warnings nil))
     (vl-portinfo-case x
       :bad (mv (ok) nil nil)
       :blank (mv (ok) nil nil )
-      :interface
-      (b* ((port-lhs-scoped (sv::lhs-add-namespace instname x.port-lhs)))
-        (mv (ok) nil (list (cons port-lhs-scoped x.conn-lhs))))
+      ;; :interface
+      ;; (b* ((port-lhs-scoped (sv::lhs-add-namespace instname x.port-lhs)))
+      ;;   (mv (ok) nil (list (cons port-lhs-scoped x.conn-lhs))))
       :regular
-      (b* ((port-lhs-scoped (sv::lhs-add-namespace instname x.port-outer-lhs))
-           ((when (sv::lhssvex-p x.conn-svex))
-            (mv (ok)
-                nil
-                (list (cons port-lhs-scoped (sv::svex->lhs x.conn-svex))))))
-        (mv (if (eq x.port-dir :vl-output)
-                (warn :type :vl-port-direction-mismatch
-                      :msg  "Non-LHS expression ~a1 on output port ~s0"
-                      :args (list x.portname x.conn-expr))
-              (ok))
-            (list (cons port-lhs-scoped (sv::make-driver :value x.conn-svex)))
-            nil))))
+      (b* ((lhsp (sv::lhssvex-p x.conn-svex))
+           ((when (and (not lhsp) x.interfacep))
+            (mv (fatal :type :vl-interfaceport-bad-connection
+                       :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
+                       :args (list x.portname x.conn-expr))
+                nil nil))
+           (warnings (if (and (not lhsp) (eq x.port-dir :vl-output))
+                         (warn :type :vl-port-direction-mismatch
+                               :msg  "Non-LHS expression ~a1 on output port ~s0"
+                               :args (list x.portname x.conn-expr))
+                       (ok)))
+           (conn (if lhsp (sv::svex->lhs x.conn-svex) (sv::make-driver :value x.conn-svex))))
+        (if range
+            (b* ((size (vl-range-size range))
+                 (msb (vl-resolved->val (vl-range->msb range)))
+                 (incr (if (vl-range-revp range) 1 -1)))
+              (if x.replicatedp
+                  ;; connection aliased/assigned to each of the port array LHSes
+                  (if lhsp
+                      (mv (ok) nil (vl-instarray-replicated-port-aliases
+                                    x.port-lhs instname conn msb size incr))
+                    (mv (ok)
+                        (vl-instarray-replicated-port-assigns
+                         x.port-lhs instname conn msb size incr)
+                        nil))
+                ;; connection aliased or assigned to concatenation of port array LHSes
+                (b* ((port-lhs (vl-instarray-nonreplicated-port-lhs
+                                x.port-lhs instname msb size incr)))
+                  (if lhsp
+                      (mv (ok) nil (list (cons conn port-lhs)))
+                    (mv (ok) (list (cons port-lhs conn)) nil)))))
+          (b* ((port-lhs (sv::lhs-add-namespace instname x.port-lhs)))
+            (if lhsp
+                (mv (ok) nil (list (cons port-lhs conn)))
+              (mv (ok) (list (cons port-lhs conn)) nil)))))))
+                                    
+      ;; (b* ((lhsp (sv::lhssvex-p x.conn-svex))
+      ;;      ((when lhsp
+      ;;       (mv (ok) nil
+      ;;           (list (cons (sv::lhs-add-namespace instname x.port-lhs)
+      ;;                       (sv::svex->lhs x.conn-svex)))))
+      ;;      ((when (sv::lhssvex-p x.conn-svex))
+      ;;       (mv (ok)
+      ;;           nil
+      ;;           (list (cons port-lhs-scoped (sv::svex->lhs x.conn-svex)))))
+      ;;      ((when x.interfacep)
+      ;;       (mv (fatal :type :vl-interfaceport-bad-connection
+      ;;                  :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
+      ;;                  :args (list x.portname x.conn-expr))
+      ;;           nil nil)))
+
+      ;;   (mv (if (eq x.port-dir :vl-output)
+      ;;           (warn :type :vl-port-direction-mismatch
+      ;;                 :msg  "Non-LHS expression ~a1 on output port ~s0"
+      ;;                 :args (list x.portname x.conn-expr))
+      ;;         (ok))
+      ;;       (list (cons port-lhs-scoped (sv::make-driver :value x.conn-svex)))
+      ;;       nil))))
   ///
   (defret var-of-vl-portinfo-to-svex-assign-or-alias
     (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
@@ -1306,8 +1593,10 @@ constructed separately.)</p>"
   (defmvtypes vl-portinfo-to-svex-assign-or-alias (nil true-listp true-listp)))
 
 (define vl-portinfolist-to-svex-assigns/aliases ((x vl-portinfolist-p)
-                                                  (instname stringp))
-  :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
+                                                 (instname stringp)
+                                                 (range vl-maybe-range-p))
+  :guard (and (sv::svarlist-addr-p (vl-portinfolist-vars x))
+              (vl-maybe-range-resolved-p range))
   :guard-hints (("goal" :in-theory (enable vl-portinfolist-vars)))
   :returns (mv (warnings vl-warninglist-p)
                (assigns sv::assigns-p)
@@ -1315,9 +1604,9 @@ constructed separately.)</p>"
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil nil))
        ((wmv warnings assigns1 aliases1)
-        (vl-portinfo-to-svex-assign-or-alias (car x) instname))
+        (vl-portinfo-to-svex-assign-or-alias (car x) instname range))
        ((wmv warnings assigns2 aliases2)
-        (vl-portinfolist-to-svex-assigns/aliases (cdr x) instname)))
+        (vl-portinfolist-to-svex-assigns/aliases (cdr x) instname range)))
     (mv warnings
         (append assigns1 assigns2)
         (append aliases1 aliases2)))
@@ -1348,214 +1637,56 @@ constructed separately.)</p>"
        ;;            :args (list y.name inst-modname))
        ;;      nil))
        ;; (connection-lhs (sv::svex->lhs connection-svex))
-(define vl-portinfo-instarray-nested-alias ((x vl-portinfo-p)
-                                            (instindex integerp
-                                                       "declared index of this instance")
-                                            (instoffset natp
-                                                        "number of instances that come after this one"))
-  :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
-  :returns (aliases sv::lhspairs-p)
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable sv::name-p))))
-  :short "Produces the alias for the connection between an instance array
-module's wire for a given port and some particular instance's port."
-  :long "<p>As noted in @(see vl-hierarchy-svex-translation), we replace each
-instance array with a single instance of new module representing the array:</p>
-
-@({
-  module b (input [3:0] bi, output [2:0] bo);
-  endmodule
-
-  module a ();
-   wire [3:0] abi;
-   wire [11:0] abo;
-   b barray [3:0] (.bi(abi+4'b10), .bo(abo));
-  endmodule
- })
-<p>becomes:</p>
-@({
-  module b ();
-    wire [3:0] bi;
-    wire [2:0] bo;
-  endmodule
-
-  module arrayinst##a.binst ();
-   wire [3:0] bi;
-   wire [11:0] bo;
-
-   b <3> ();
-   alias <3>.bi = bi;
-   alias <3>.bo = bo[11:9];
-
-   b <2> ();
-   alias <2>.bi = bi;
-   alias <2>.bo = bo[8:6];
-
-   b <1> ();
-   alias <1>.bi = bi;
-   alias <1>.bo = bo[5:3];
-
-   b <0> ();
-   alias <0>.bi = bi;
-   alias <0>.bo = bo[2:0];
-  endmodule
-
-  module a ();
-
-   wire [3:0] abi;
-   wire [11:0] abo;
-
-   arrayinst##a.binst binst ();
-   assign binst.bi = abi+4'b10;
-   alias  binst.bo = abo;
- endmodule
- })
-
-<p>This function produces one of the aliases inside the @('arrayinst##a.binst')
-module.  It always aliases the port expression of the given port with either
-the whole local wire for that port (i.e., @('<3>.bi = bi')) or part of that
-wire (i.e., @('<3>.bo = bo[11:9]')).  It decides this per the Verilog spec
-based on the relative widths of the port expression and port connection
-expression: they must either be the same (in which case the whole wire goes to
-all copies of the port) or the connection expression must be N times the size
-of the port expression, where N is the number of elements in the array; in this
-case, the local wire for the port is the size of the whole port connection
-expression and a different segment of it is passed to each port copy.</p>
-
-<p>The other major function used to produce this intermediate module is @(see
-vl-instarray-port-wiredecls), which produces (in the example) the declarations</p>
-@({
-   wire [3:0] bi;
-   wire [11:0] bo;
- })
-<p>from the new arrayinst module.</p>"
-  (vl-portinfo-case x
-    :regular
-    (b* ((instindex (lifix instindex))
-         (instoffset (lnfix instoffset))
-         (shift (if x.replicatedp
-                    0
-                  (* x.port-size instoffset)))
-         (port-inner-lhs (sv::lhs-add-namespace instindex x.port-inner-lhs))
-         (port-outer-lhs (sv::lhs-concat
-                          x.port-size
-                          (sv::lhs-rsh shift x.port-outer-lhs)
-                          nil)))
-      (list (cons port-inner-lhs port-outer-lhs)))
-    :otherwise nil)
-  ///
-  (defret vars-of-vl-portinfo-instarray-nested-alias
-    (implies (sv::svarlist-addr-p (vl-portinfo-vars x))
-             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
-    :hints(("Goal" :in-theory (enable sv::lhspairs-vars))))
-
-  (defret true-listp-of-vl-portinfo-instarray-nested-alias
-    (true-listp aliases)
-    :rule-classes :type-prescription))
-
-(define vl-portinfolist-instarray-nested-aliases
-  ((x vl-portinfolist-p)
-   (instindex integerp
-              "declared index of this instance")
-   (instoffset natp
-               "number of instances that come after this one"))
-  :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
-  :prepwork ((local (in-theory (enable vl-portinfolist-vars))))
-  :returns (aliases sv::lhspairs-p)
-  (if (atom x)
-      nil
-    (append (vl-portinfo-instarray-nested-alias (car x) instindex instoffset)
-            (vl-portinfolist-instarray-nested-aliases (cdr x) instindex instoffset)))
-  ///
-  (defret vars-of-vl-portinfolist-instarray-nested-aliases
-    (implies (sv::svarlist-addr-p (vl-portinfolist-vars x))
-             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
-    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
 
 
+;; (define vl-instarray-port-wiredecls ((x vl-portinfo-p)
+;;                                      (arraysize posp))
+;;   :prepwork ((local (in-theory (enable sv::name-p))))
+;;   :returns (wires sv::wirelist-p)
+;;   ;; :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
+;;   :guard-hints ((and stable-under-simplificationp
+;;                      '(:in-theory (enable sv::name-p))))
+;;   :short "Produces the wire declaration for the wire of an instance array module
+;;           that consolidates all occurrences of a particular port."
+;;   :long "<p>See @(see vl-portinfo-instarray-nested-alias) for more
+;; details on dealing with modinst arrays.</p>"
+;;   (vl-portinfo-case x
+;;     :regular
+;;     (b* ((xwidth (if x.replicatedp x.port-size (* x.port-size (acl2::lposfix arraysize))))
+;;          (portwire (sv::make-wire :name x.portname
+;;                                     :width xwidth
+;;                                     :low-idx 0)))
+;;       (list portwire))
+;;     :otherwise nil)
+;;   ///
+;;   (defret true-listp-of-vl-instarray-port-wiredecls
+;;     (true-listp wires)
+;;     :rule-classes :type-prescription))
 
-
-(define vl-instarray-nested-aliases
-  ((x vl-portinfolist-p)
-   (instindex integerp)
-   (instoffset natp)
-   (inst-incr integerp)
-   (inst-modname sv::modname-p))
-  :guard (sv::svarlist-addr-p (vl-portinfolist-vars x))
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable sv::name-p))))
-  :returns (mv (aliases sv::lhspairs-p)
-               (modinsts sv::modinstlist-p))
-  (b* ((instindex (lifix instindex))
-       (inst-modname (sv::modname-fix inst-modname))
-
-       ((when (zp instoffset)) (mv nil nil))
-       (aliases1
-        (vl-portinfolist-instarray-nested-aliases x instindex (1- instoffset)))
-       ((mv aliases2 modinsts2)
-        (vl-instarray-nested-aliases
-         x
-         (+ (lifix instindex) (lifix inst-incr))
-         (1- instoffset)
-         inst-incr
-         inst-modname)))
-    (mv (append-without-guard aliases1 aliases2)
-        (cons (sv::make-modinst :instname instindex
-                                  :modname inst-modname)
-              modinsts2)))
-  ///
-  (defret vars-of-vl-instarray-nested-instance-alias
-    (implies (sv::svarlist-addr-p (vl-portinfolist-vars x))
-             (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
-    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
-
-
-
-(define vl-instarray-port-wiredecls ((x vl-portinfo-p)
-                                     (arraysize posp))
-  :prepwork ((local (in-theory (enable sv::name-p))))
-  :returns (wires sv::wirelist-p)
-  ;; :guard (sv::svarlist-addr-p (vl-portinfo-vars x))
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable sv::name-p))))
-  :short "Produces the wire declaration for the wire of an instance array module
-          that consolidates all occurrences of a particular port."
-  :long "<p>See @(see vl-instarray-plainarg-nested-instance-alias) for more
-details on dealing with modinst arrays.</p>"
-  (vl-portinfo-case x
-    :regular
-    (b* ((xwidth (if x.replicatedp x.port-size (* x.port-size (acl2::lposfix arraysize))))
-         (portwire (sv::make-wire :name x.portname
-                                    :width xwidth
-                                    :low-idx 0)))
-      (list portwire))
-    :otherwise nil)
-  ///
-  (defret true-listp-of-vl-instarray-port-wiredecls
-    (true-listp wires)
-    :rule-classes :type-prescription))
-
-(define vl-instarray-portlist-wiredecls ((x vl-portinfolist-p)
-                                         (arraysize posp))
-  :returns (wires sv::wirelist-p)
-  (if (atom x)
-      nil
-    (append (vl-instarray-port-wiredecls (car x) arraysize)
-            (vl-instarray-portlist-wiredecls (cdr x) arraysize))))
+;; (define vl-instarray-portlist-wiredecls ((x vl-portinfolist-p)
+;;                                          (arraysize posp))
+;;   :returns (wires sv::wirelist-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (vl-instarray-port-wiredecls (car x) arraysize)
+;;             (vl-instarray-portlist-wiredecls (cdr x) arraysize))))
 
 
 
 
 (define vl-modinst->svex-assigns/aliases ((x vl-modinst-p)
-                                          (conf vl-svexconf-p)
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p)
                                           (wires   sv::wirelist-p)
                                           (assigns sv::assigns-p)
                                           (aliases sv::lhspairs-p)
-                                          (context-mod sv::modname-p))
+                                          (context-mod sv::modname-p)
+                                          (self-lsb maybe-natp))
   :returns (mv (warnings vl-warninglist-p)
                (wires   sv::wirelist-p "Wires representing instantiated interfaces")
                (assigns1 sv::assigns-p  "Assignments for nontrivial port expressions")
                (aliases1 sv::lhspairs-p "Aliases for trivial port expressions")
+               (width    natp :rule-classes :type-prescription "Width if this is an interface instance")
                (modinsts sv::modinstlist-p "The instance created")
                (modalist sv::modalist-p    "Possibly a new module implementing an instance array."))
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
@@ -1573,26 +1704,27 @@ how VL module instances are translated.</p>"
        (assigns (sv::assigns-fix assigns))
        (aliases (sv::lhspairs-fix aliases))
        (context-mod (sv::modname-fix context-mod))
-       ((vl-svexconf conf))
        (warnings nil)
 
        ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
         (mv (fatal :type :vl-modinst->svex-fail
                    :msg "~a0: Unexpectedly had named arglist"
                    :args (list x))
-            wires assigns aliases
+            wires assigns aliases 0
             nil nil))
        (x.plainargs (vl-arguments->args x.portargs))
-       ((mv inst-mod inst-ss) (vl-scopestack-find-definition/ss x.modname conf.ss))
+       ((mv inst-mod inst-ss) (vl-scopestack-find-definition/ss x.modname ss))
        ((unless (and inst-mod
                      (or (eq (tag inst-mod) :vl-module)
                          (eq (tag inst-mod) :vl-interface))))
         (mv (fatal :type :vl-modinst->svex-fail
                   :msg "~a0: Unknown module ~s1"
                   :args (list x x.modname))
-            wires assigns aliases
+            wires assigns aliases 0
             nil nil))
        (inst-ss (vl-scopestack-push inst-mod inst-ss))
+       (inst-scopes (vl-elabscopes-push-scope inst-mod 
+                                              (vl-elabscopes-root scopes)))
        (i.ports (if (eq (tag inst-mod) :vl-module)
                     (vl-module->ports inst-mod)
                   (vl-interface->ports inst-mod)))
@@ -1603,40 +1735,40 @@ how VL module instances are translated.</p>"
         (mv (fatal :type :vl-modinst->svex-fail
                   :msg "~a0: Mismatched portlist length"
                   :args (list x))
-            wires assigns aliases
+            wires assigns aliases 0
             nil nil))
        ((unless (vl-maybe-range-resolved-p x.range))
         (mv (fatal :type :vl-modinst->svex-fail
                   :msg "~a0: Unresolved instance array range"
                   :args (list x))
-            wires assigns aliases nil nil))
+            wires assigns aliases 0 nil nil))
        (arraywidth (and x.range (vl-range-size x.range)))
 
        ((unless x.instname)
         (mv (fatal :type :Vl-modinst->svex-fail
                    :msg "~a0: Unnamed module/interface instance not allowed"
                    :args (list x))
-            wires assigns aliases nil nil))
+            wires assigns aliases 0 nil nil))
 
        ((wmv warnings portinfo :ctx x)
         (vl-plainarglist-portinfo
-         x.plainargs i.ports 0 conf inst-modname inst-ss arraywidth))
+         x.plainargs i.ports 0 ss scopes inst-modname inst-ss inst-scopes arraywidth))
 
        ((wmv warnings portassigns portaliases :ctx x)
-        (vl-portinfolist-to-svex-assigns/aliases portinfo x.instname))
+        (vl-portinfolist-to-svex-assigns/aliases portinfo x.instname x.range))
        (assigns (append-without-guard portassigns assigns))
        (aliases (append-without-guard portaliases aliases))
 
-       ((wmv warnings ifwires ifaliases :ctx x)
+       ((wmv warnings ifwires ifaliases arrwidth iface-width :ctx x)
         (if (eq (tag inst-mod) :vl-interface)
-            (vl-interfaceinst->svex x.instname x.modname x conf.ss)
-          (mv nil nil nil)))
+            (vl-interfaceinst->svex x.instname x.modname x ss self-lsb arraywidth)
+          (mv nil nil nil 0 nil)))
        (wires   (append-without-guard ifwires wires))
        (aliases (append-without-guard ifaliases aliases))
 
        ((unless arraywidth)
         ;; no instance array -> we're done.
-        (mv (vl-warninglist-add-ctx warnings x) wires assigns aliases
+        (mv (vl-warninglist-add-ctx warnings x) wires assigns aliases arrwidth
             (list (sv::make-modinst :instname x.instname :modname x.modname))
             nil))
 
@@ -1645,20 +1777,26 @@ how VL module instances are translated.</p>"
        (modinst (sv::make-modinst :instname x.instname
                                     :modname array-modname))
 
-       (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
-       ((mv arraymod-aliases arraymod-modinsts)
+       ;; (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
+       ((mv arraymod-aliases arraymod-modinsts arraymod-ifacewires)
         (vl-instarray-nested-aliases
          portinfo
          (vl-range-msbidx x.range)
          arraywidth
          (if (vl-range-revp x.range) 1 -1)
-         inst-modname))
+         inst-modname iface-width))
 
-       (arraymod (sv::make-module :wires arraymod-wiredecls
+       (arraymod-selfwire (and (eq (tag inst-mod) :vl-interface)
+                               (posp arrwidth)
+                               (list (sv::make-wire :name :self :width arrwidth :low-idx 0))))
+
+       (arraymod (sv::make-module :wires (append arraymod-selfwire
+                                                 ;; arraymod-wiredecls
+                                                 arraymod-ifacewires)
                                     :insts arraymod-modinsts
                                     :aliaspairs arraymod-aliases)))
 
-    (mv warnings wires assigns aliases
+    (mv warnings wires assigns aliases arrwidth
         (list modinst)
         (list (cons array-modname arraymod))))
   ///
@@ -1678,35 +1816,42 @@ how VL module instances are translated.</p>"
 
 
 (define vl-modinstlist->svex-assigns/aliases ((x vl-modinstlist-p)
-                                              (conf vl-svexconf-p)
+                                              (ss vl-scopestack-p)
+                                              (scopes vl-elabscopes-p)
                                               (wires   sv::wirelist-p)
                                               (assigns sv::assigns-p)
                                               (aliases sv::lhspairs-p)
-                                              (context-mod sv::modname-p))
+                                              (context-mod sv::modname-p)
+                                              (self-lsb maybe-natp))
   :short "Collects svex module components for a list of module/interface instances,
           by collecting results from @(see vl-modinst->svex-assigns/aliases)."
   :returns (mv (warnings vl-warninglist-p)
                (wires1   sv::wirelist-p)
                (assigns1 sv::assigns-p)
                (aliases1 sv::lhspairs-p)
+               (width    natp :rule-classes :type-prescription)
                (modinsts sv::modinstlist-p)
                (modalist sv::modalist-p))
+  :verify-guards nil
   (b* ((warnings nil)
        ((when (atom x))
         (mv nil
             (sv::wirelist-fix wires)
             (sv::assigns-fix assigns)
-            (sv::lhspairs-fix aliases)
+            (sv::lhspairs-fix aliases) 0
             nil nil))
-       ((wmv warnings wires assigns aliases insts1 modalist1)
-        (vl-modinst->svex-assigns/aliases (car x) conf wires assigns aliases context-mod))
-       ((wmv warnings wires assigns aliases insts2 modalist2)
-        (vl-modinstlist->svex-assigns/aliases (cdr x) conf wires assigns aliases context-mod)))
+       (self-lsb (maybe-natp-fix self-lsb))
+       ((wmv warnings wires assigns aliases width2 insts2 modalist2)
+        (vl-modinstlist->svex-assigns/aliases (cdr x) ss scopes wires assigns aliases context-mod self-lsb))
+       ((wmv warnings wires assigns aliases width1 insts1 modalist1)
+        (vl-modinst->svex-assigns/aliases (car x) ss scopes wires assigns aliases context-mod (and self-lsb (+ self-lsb width2)))))
     (mv warnings
         wires assigns aliases
+        (+ width1 width2)
         (append-without-guard insts1 insts2)
         (append-without-guard modalist1 modalist2)))
   ///
+  (verify-guards vl-modinstlist->svex-assigns/aliases)
   (defret vars-of-vl-modinstlist->svex-assigns/aliases-assigns
     (implies (sv::svarlist-addr-p (sv::assigns-vars assigns))
              (sv::svarlist-addr-p (sv::assigns-vars assigns1))))
@@ -1778,6 +1923,43 @@ how VL module instances are translated.</p>"
              (not (member v (sv::svex-vars svex))))))
 
 
+(define vl-fixup-wide-gate-input ((in sv::svex-p))
+  :returns (fixed-in sv::svex-p)
+  :short "Wrap an input to a gate instance in a truncation expression."
+  :long "<p>Consider an AND gate with wide inputs like this:</p>
+
+         @({
+              wire out;
+              wire [1:0] in1, in2;
+              and(out, in1, in2);
+         })
+
+         <p>NCV and VCS complain if the output is more than a single bit, but
+         they accept wide inputs.  They also behave in different ways in this
+         case: NCV does a reduction or on the input, while VCS truncates it and
+         just operates on the bottom bit.</p>
+
+         <p>Here we mimic VCS's behavior, wrapping each input expression
+         @('in') into a @('(zerox 1 in)') expression.  (We warn about this
+         situation elsewhere.)</p>"
+
+  (sv::svcall sv::zerox
+              (sv::make-svex-quote :val 1)
+              in)
+  ///
+  (defret vars-of-vl-fixup-wide-gate-input
+    (implies (not (member v (sv::svex-vars in)))
+             (not (member v (sv::svex-vars fixed-in))))))
+
+(defprojection vl-fixup-wide-gate-inputs ((x sv::svexlist-p))
+  :returns (fixed-inputs sv::svexlist-p)
+  (vl-fixup-wide-gate-input x)
+  ///
+  (defret vars-of-vl-fixup-wide-gate-inputs
+    (implies (not (member v (sv::svexlist-vars x)))
+             (not (member v (sv::svexlist-vars fixed-inputs))))))
+
+
 (define vl-gatetype-names/dirs/assigns ((type vl-gatetype-p)
                                         (nargs natp))
   :returns (mv (err (iff (vl-msg-p err) err))
@@ -1814,17 +1996,25 @@ how VL module instances are translated.</p>"
        (if (< nargs 2)
            (mv (vmsg "Need 2 or more arguments for ~x0" type) nil nil nil nil)
          (b* ((ins (vl-gatetypenames-count-up (1- nargs) 1 "in"))
-              (svex-ins (svex-vars-from-names ins))
+              (svex-ins (vl-fixup-wide-gate-inputs (svex-vars-from-names ins)))
               (assigns  (list (cons (svex-lhs-from-name "out")
-                                    (sv::make-driver
-                                     :value
-                                     (case type
-                                       (:vl-and  (svcall-join 'sv::bitand svex-ins))
-                                       (:vl-nand (sv::svcall sv::bitnot (svcall-join 'sv::bitand svex-ins)))
-                                       (:vl-or   (svcall-join 'sv::bitor svex-ins))
-                                       (:vl-nor  (sv::svcall sv::bitnot (svcall-join 'sv::bitor svex-ins)))
-                                       (:vl-xor  (svcall-join 'sv::bitxor svex-ins))
-                                       (:vl-xnor (sv::svcall sv::bitnot (svcall-join 'sv::bitxor svex-ins))))))))
+                                    (if (eql (len svex-ins) 1)
+                                        (sv::make-driver
+                                         :value
+                                         (case type
+                                           ((:vl-and :vl-or :vl-xor)
+                                            (sv::svcall sv::unfloat (car svex-ins)))
+                                           ((:vl-nand :vl-nor :vl-xnor)
+                                            (sv::svcall sv::bitnot (car svex-ins)))))
+                                      (sv::make-driver
+                                       :value
+                                       (case type
+                                         (:vl-and  (svcall-join 'sv::bitand svex-ins))
+                                         (:vl-nand (sv::svcall sv::bitnot (svcall-join 'sv::bitand svex-ins)))
+                                         (:vl-or   (svcall-join 'sv::bitor svex-ins))
+                                         (:vl-nor  (sv::svcall sv::bitnot (svcall-join 'sv::bitor svex-ins)))
+                                         (:vl-xor  (svcall-join 'sv::bitxor svex-ins))
+                                         (:vl-xnor (sv::svcall sv::bitnot (svcall-join 'sv::bitxor svex-ins)))))))))
               (portnames (cons "out" ins))
               (portdirs (cons :vl-output (repeat (1- nargs) :vl-input))))
          (mv nil nil assigns portnames portdirs))))
@@ -1880,7 +2070,8 @@ how VL module instances are translated.</p>"
   (defret svarlist-addr-p-of-vl-gatetype-names/dirs/assigns
     (sv::svarlist-addr-p (sv::assigns-vars assigns))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable sv::assigns-vars))))))
+                 '(:in-theory (enable sv::assigns-vars
+                                      vl-fixup-wide-gate-inputs))))))
 
 (define svex-gateinst-wirelist ((names string-listp))
   :returns (wires sv::wirelist-p)
@@ -1924,7 +2115,8 @@ how VL module instances are translated.</p>"
 
 
 (define vl-gateinst->svex-assigns/aliases ((x vl-gateinst-p)
-                                          (conf vl-svexconf-p)
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p)
                                           (wires   sv::wirelist-p)
                                           (assigns sv::assigns-p)
                                           (aliases sv::lhspairs-p)
@@ -1951,7 +2143,6 @@ how VL module instances are translated.</p>"
        (assigns (sv::assigns-fix assigns))
        (aliases (sv::lhspairs-fix aliases))
        (context-mod (sv::modname-fix context-mod))
-       ((vl-svexconf conf))
        (warnings nil)
 
        (nargs (len x.args))
@@ -1978,12 +2169,12 @@ how VL module instances are translated.</p>"
                    :args (list x))
             wires assigns aliases nil nil))
 
-       ((wmv warnings portinfo)
+       ((wmv warnings portinfo :ctx x)
         (vl-gate-plainarglist-portinfo
-         x.args portnames portdirs 0 conf arraywidth))
+         x.args portnames portdirs 0 ss scopes arraywidth))
 
        ((wmv warnings portassigns portaliases :ctx x)
-        (vl-portinfolist-to-svex-assigns/aliases portinfo x.name))
+        (vl-portinfolist-to-svex-assigns/aliases portinfo x.name x.range))
        (assigns (append-without-guard portassigns assigns))
        (aliases (append-without-guard portaliases aliases))
 
@@ -2002,16 +2193,17 @@ how VL module instances are translated.</p>"
        (modinst (sv::make-modinst :instname x.name
                                     :modname array-modname))
 
-       (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
-       ((mv arraymod-aliases arraymod-modinsts)
+       ;; (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
+       ((mv arraymod-aliases arraymod-modinsts arraymod-ifacewires)
         (vl-instarray-nested-aliases
          portinfo
          (vl-range-msbidx x.range)
          arraywidth
          (if (vl-range-revp x.range) 1 -1)
-         gate-modname))
+         gate-modname
+         nil)) ;; not an interface
 
-       (arraymod (sv::make-module :wires arraymod-wiredecls
+       (arraymod (sv::make-module :wires arraymod-ifacewires
                                     :insts arraymod-modinsts
                                     :aliaspairs arraymod-aliases)))
 
@@ -2031,7 +2223,8 @@ how VL module instances are translated.</p>"
 
 
 (define vl-gateinstlist->svex-assigns/aliases ((x vl-gateinstlist-p)
-                                              (conf vl-svexconf-p)
+                                              (ss vl-scopestack-p)
+                                              (scopes vl-elabscopes-p)
                                               (wires   sv::wirelist-p)
                                               (assigns sv::assigns-p)
                                               (aliases sv::lhspairs-p)
@@ -2052,9 +2245,9 @@ how VL module instances are translated.</p>"
             (sv::lhspairs-fix aliases)
             nil nil))
        ((wmv warnings wires assigns aliases insts1 modalist1)
-        (vl-gateinst->svex-assigns/aliases (car x) conf wires assigns aliases context-mod))
+        (vl-gateinst->svex-assigns/aliases (car x) ss scopes wires assigns aliases context-mod))
        ((wmv warnings wires assigns aliases insts2 modalist2)
-        (vl-gateinstlist->svex-assigns/aliases (cdr x) conf wires assigns aliases context-mod)))
+        (vl-gateinstlist->svex-assigns/aliases (cdr x) ss scopes wires assigns aliases context-mod)))
     (mv warnings
         wires assigns aliases
         (append-without-guard insts1 insts2)
@@ -2101,12 +2294,381 @@ how VL module instances are translated.</p>"
         (mv (warn :type :vl-gatedelay->svex-fail
                   :msg "Complex gatedelay ~x0"
                   :args (list x))
+            nil))
+       ((when (< val 0))
+        (mv (warn :type :vl-gatedelay->svex-fail
+                  :msg "Negative gatedelay ~x0"
+                  :args (list x))
             nil)))
     (mv nil val)))
 
+(defines vl-streaming-unpack-to-svex-assign
+  :verify-guards nil
+  :prepwork ((local (in-theory (disable acl2::consp-under-iff-when-true-listp
+                                        sv::svarlist-addr-p-when-subsetp-equal
+                                        rationalp-implies-acl2-numberp
+                                        acl2::list-fix-when-len-zero
+                                        acl2::true-listp-member-equal
+                                        sv::svarlist-addr-p-by-badguy
+                                        sv::svarlist-addr-p-when-not-consp
+                                        vl-warninglist-p-when-not-consp
+                                        vl-warninglist-p-when-subsetp-equal
+                                        sv::assigns-p-when-not-consp))))
+  (define vl-streaming-unpack-to-svex-assign
+    ((lhs vl-expr-p)
+     (rhs sv::svex-p)
+     (rhs-size natp "remaining number of least-significant bits in the RHS that
+                     haven't been used yet")
+     (ss vl-scopestack-p)
+     (scopes vl-elabscopes-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                   (and (sv::assigns-p assigns)
+                                        (sv::svarlist-addr-p (sv::assigns-vars assigns)))))
+                 (size (equal size (mv-nth 3 (vl-expr-to-svex-untyped lhs ss scopes)))
+                       :hints ((and stable-under-simplificationp
+                                    '(:expand ((vl-expr-to-svex-untyped lhs ss scopes)
+                                               (:free (a b) (sv::assigns-vars (cons a b)))))))))
+    :measure (vl-expr-count lhs)
+    :guard (b* (((mv & & & lhs-size) (vl-expr-to-svex-untyped lhs ss scopes)))
+             (and (natp lhs-size)
+                  (>= rhs-size lhs-size)))
+;; Illustration: suppose LHS is {<< 5 {{<< 3 {a}}, b}}, rhs is c, a is 9 bits,
+;; b is 7 bits, c is 24 bits.  Steps:
+;;  Recur on the list {{<< 3 {a}}, b}  with rhs {<< 5 {c}}.
+;;   Recur on the first element {<< 3 {a}}; size is 9 and size of RHS is 24
+;;          so RHS becomes {<< 5 {c}} >> 15, size 9.
+;;    Recur on the list {a} with rhs {<< 3 {{<< 5 {c}} >> 14}}.
+;;     Recur on a: base case -- convert a and produce:
+;;      a = {<< 3 {{<< 5 {c}} >> 14}}
+;;   Recur on the second element b; since a used 9 bits, b is 7 bits, and rhs is 24 bits,
+;;          so RHS becomes {<< 5 {c}} >> 8, size 6    (because 24-9-7=8).
+;;         base case -- convert b and produce b = {<< 5 {c}} >> 8.
+
+  (b* ((lhs (vl-expr-fix lhs))
+       (warnings nil)
+       (rhs-size (lnfix rhs-size))
+       ((wmv warnings ?svex ?type lhs-size)
+        (vl-expr-to-svex-untyped lhs ss scopes))
+       ;; We know lhs-size exists by the guard.
+       ;; Adjust the shift and size of the RHS to recur
+       (shift (- rhs-size lhs-size))
+       (shifted-rhs (sv::svcall sv::rsh (svex-int shift) rhs)))
+
+    (vl-expr-case lhs
+      :vl-stream
+      (b* (((mv err slicesize)
+            (if (eq lhs.dir :left)
+                (vl-slicesize-resolve lhs.size ss scopes)
+              ;; irrelevant
+              (mv nil 1)))
+           ((when err)
+            (mv (fatal :type :vl-expr-to-svex-fail
+                       :msg "Failed to resolve slice size of streaming ~
+                               concat expression ~a0: ~@1"
+                       :args (list lhs err))
+                nil lhs-size))
+           (new-rhs (if (eq lhs.dir :left)
+                        (sv::svcall sv::blkrev
+                                    (svex-int lhs-size)
+                                    (svex-int slicesize)
+                                    shifted-rhs)
+                      shifted-rhs))
+           ((mv warnings assigns)
+            (vl-streamexprlist-unpack-to-svex-assign 
+             lhs.parts new-rhs lhs-size ss scopes)))
+        (mv warnings assigns lhs-size))
+      :otherwise
+      (b* (((wmv warnings svex-lhs ?lhs-type)
+            (vl-expr-to-svex-lhs lhs ss scopes)))
+        (mv warnings (list (cons svex-lhs (sv::make-driver :value shifted-rhs))) lhs-size)))))
+
+  (define vl-streamexpr-unpack-to-svex-assign
+    ((lhspart vl-streamexpr-p)
+     (rhs sv::svex-p)
+     (rhs-size natp)
+     (ss vl-scopestack-p)
+     (scopes vl-elabscopes-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                   (and (sv::assigns-p assigns)
+                                        (sv::svarlist-addr-p (sv::assigns-vars assigns)))))
+                 (lhspart-size (implies (mv-nth 2 (vl-streamexpr-to-svex lhspart ss scopes))
+                                        (equal lhspart-size
+                                               (mv-nth 2 (vl-streamexpr-to-svex lhspart ss scopes))))
+                               :hints ((and stable-under-simplificationp
+                                            '(:expand ((vl-streamexpr-to-svex lhspart ss scopes)))))))
+    :guard (b* (((mv & & size) (vl-streamexpr-to-svex lhspart ss scopes)))
+             (and size (>= rhs-size size)))
+    :measure (vl-streamexpr-count lhspart)
+    (b* (((vl-streamexpr lhspart) (vl-streamexpr-fix lhspart))
+         (rhs-size (lnfix rhs-size)))
+      ;; We know there's no 'with' because vl-streamexpr-to-svex wouldn't have produced a size.
+
+      (vl-streaming-unpack-to-svex-assign lhspart.expr rhs rhs-size ss scopes)))
+      
+         
+
+  (define vl-streamexprlist-unpack-to-svex-assign
+    ((lhsparts vl-streamexprlist-p)
+     (rhs sv::svex-p)
+     (rhs-size natp)
+     (ss vl-scopestack-p)
+     (scopes vl-elabscopes-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                   (and (sv::assigns-p assigns)
+                                        (sv::svarlist-addr-p (sv::assigns-vars assigns))))))
+    :measure (vl-streamexprlist-count lhsparts)
+    :guard (b* (((mv & & size) (vl-streamexprlist-to-svex lhsparts ss scopes)))
+             (and size (>= rhs-size size)))
+    (b* ((lhsparts (vl-streamexprlist-fix lhsparts))
+         (rhs-size (lnfix rhs-size))
+         ((when (atom lhsparts)) (mv nil nil))
+         (warnings nil)
+         ((wmv warnings assigns1 size1)
+          (vl-streamexpr-unpack-to-svex-assign (car lhsparts) rhs rhs-size ss scopes))
+         ((wmv warnings assigns2)
+          (vl-streamexprlist-unpack-to-svex-assign (cdr lhsparts) rhs (- rhs-size size1) ss scopes)))
+      (mv warnings (append-without-guard assigns1 assigns2))))
+  ///
+  (verify-guards vl-streaming-unpack-to-svex-assign
+    :hints (("goal" :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:expand ((vl-expr-to-svex-untyped lhs ss scopes)
+                            (vl-streaming-concat-to-svex lhs ss scopes)
+                            (vl-streamexprlist-to-svex lhsparts ss scopes)
+                            (vl-streamexpr-to-svex lhspart ss scopes)))))
+    :otf-flg t)
+
+  (deffixequiv-mutual vl-streaming-unpack-to-svex-assign))
+
+
+(define vl-streaming-unpack-to-svex-assign-top
+  ((lhs vl-expr-p)
+   (rhs sv::svex-p)
+   (orig-x vl-assign-p)
+   (rhs-size natp "remaining number of least-significant bits in the RHS that
+                     haven't been used yet")
+   (ss vl-scopestack-p)
+   (scopes vl-elabscopes-p))
+  :short "Resolve an assignment where the LHS is a streaming concatenation, after
+          converting the RHS expression to svex (untyped)."
+
+  :returns (mv (warnings vl-warninglist-p)
+               (assigns (implies (sv::svarlist-addr-p (sv::svex-vars rhs))
+                                 (and (sv::assigns-p assigns)
+                                      (sv::svarlist-addr-p (sv::assigns-vars assigns))))))
+  :guard (vl-expr-case lhs :vl-stream)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:expand ((vl-expr-to-svex-untyped lhs ss scopes)
+                                (vl-streaming-concat-to-svex lhs ss scopes)))))
+  (b* (((vl-stream lhs) (vl-expr-fix lhs))
+       (rhs-size (lnfix rhs-size))
+       (orig-x (vl-assign-fix orig-x))
+       (warnings nil)
+       ((wmv warnings ?lhs-svex ?lhs-type lhs-size)
+        (vl-expr-to-svex-untyped lhs ss scopes))
+       ((unless lhs-size)
+        (mv (fatal :type :vl-bad-stream-assignment
+                   :msg "~a0: couldn't size LHS streaming concatenation"
+                   :args (list orig-x))
+            nil))
+       ((mv err slicesize)
+        (if (eq lhs.dir :left)
+            (vl-slicesize-resolve lhs.size ss scopes)
+          ;; irrelevant
+          (mv nil 1)))
+       ((when err)
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Failed to resolve slice size of streaming ~
+                               concat expression ~a0: ~@1"
+                   :args (list lhs err))
+            nil))
+       ((mv warnings rhs rhs-size)
+        (cond ((< rhs-size lhs-size)
+               ;; Concat onto the RHS enough zeros so that it matches.
+               (mv (fatal :type :vl-bad-stream-assignment
+                          :msg "~a0: SystemVerilog prohibits streaming assignments
+                                   where a streaming concatenation expression (either
+                                   LHS or RHS) is larger than the other."
+                          :args (list orig-x))
+                   (sv::svcall sv::concat (svex-int (- lhs-size rhs-size))
+                               (svex-int 0)
+                               rhs)
+                   lhs-size))
+              (t (mv warnings rhs rhs-size))))
+       (rhs-bitstream (if (eq lhs.dir :left)
+                          (sv::svcall sv::blkrev
+                                      (svex-int rhs-size)
+                                      (svex-int slicesize)
+                                      rhs)
+                        rhs))
+       (rhs-shift (if (< lhs-size rhs-size)
+                      (sv::svcall sv::rsh (svex-int (- rhs-size lhs-size)) rhs-bitstream)
+                    rhs-bitstream))
+       ((wmv warnings assigns)
+        (vl-streamexprlist-unpack-to-svex-assign lhs.parts rhs-shift lhs-size ss scopes)))
+    (mv warnings assigns))
+
+  :long "<p>To see how simulators treat streaming concatenations on the LHS, it
+is most instructive to look at some examples.</p>
+
+<p>First, consider the example in \"sv/cosims/stream3/test.sv\":</p>
+
+@({
+  logic [3:0] in;
+  logic [3:0] out;
+  assign {<< 3 {out}} = in;
+ })
+
+<p>When @('{<< 3 {a}}') occurs on the RHS of an assignment (and @('a') is 4
+bits wide), it basically means the same thing as @('{ a[2:0], a[3] }').  So we
+might think that we'd get the same results for @('guess1') if we assign it
+as:</p>
+
+@({
+ logic [3:0] guess1;
+ assign { guess1[2:0], guess1[3] } = in;
+})
+
+<p>But this isn't the case, at least in the major commercial simulators, VCS
+and NCVerilog. Instead, when we run it on the following inputs:</p>
+
+@({
+ 0001
+ 0010
+ 0100
+ 1000
+ })
+
+<p>we get the following outputs:</p>
+
+@({
+ out: 0010, guess1: 1000
+ out: 0100, guess1: 0001
+ out: 1000, guess1: 0010
+ out: 0001, guess1: 0100
+ })
+
+<p>Actually, what this corresponds to is:</p>
+
+@({
+ assign out = { in[2:0], in[3] };
+ })
+<p>or:</p>
+@({
+ assign out = {<< 3 {in}};
+ })
+
+<p>This doesn't make a lot of sense, but the pattern holds generally: if you
+see a streaming concatenation on the LHS, it means the same as if you put it on
+the RHS.  (A complication in testing this rule is that the LHS and RHS need to
+be the same size for both to be allowed.)</p>
+
+<p>This rule is complicated by the fact that streaming concatenations can be
+nested, and can have more than one expression concatenated together.  It is
+also not clear how to treat cases where the RHS has more bits than the LHS.  We
+reverse engineered the behavior of VCS using the example in
+\"sv/cosims/stream4/test.sv\". (NCVerilog doesn't fully support multiple
+streaming expressions inside a concatenation on the LHS.)</p>
+
+@({
+  logic [31:0] in;
+  logic [8:0] out1;
+  logic [6:0] out2;
+  assign {<< 5 {{<< 3 {out1}}, out2}} = in[31:0];
+ })
+
+<p>When run on the input pattern</p>
+@({
+ 00000000000000000000000000000001
+ 00000000000000000000000000000010
+ 00000000000000000000000000000100
+ ...
+})
+<p>this produces the results:</p>
+
+@({
+ out1 000010000, out2 0000000
+ out1 000100000, out2 0000000
+ out1 000000001, out2 0000000
+ out1 000000010, out2 0000000
+ out1 000000100, out2 0000000
+ out1 000000000, out2 1000000
+ out1 001000000, out2 0000000
+ out1 010000000, out2 0000000
+ out1 100000000, out2 0000000
+ out1 000001000, out2 0000000
+ out1 000000000, out2 0000010
+ out1 000000000, out2 0000100
+ out1 000000000, out2 0001000
+ out1 000000000, out2 0010000
+ out1 000000000, out2 0100000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000000
+ out1 000000000, out2 0000001
+})
+
+<p>This turns out to be equivalent to the following:</p>
+
+@({
+ logic [31:0] temp1;
+ logic [15:0] temp2;
+ logic [8:0] temp3;
+ logic [6:0] temp4;
+ assign temp1 = {<< 5 {in[31:0]}};
+ assign temp2 = temp1 >> 16;
+ assign {temp3, temp4} = temp2;
+ assign out2 = temp4;
+ assign out1 = {<< 3 {temp3}};
+ })
+
+<p>It's not clear why we should think this is the correct behavior, but we at
+least can derive an algorithm from it:</p>
+
+<ol>
+
+<li>Move the outermost streaming concatenation operator to the
+RHS (obtaining temp1, in the example).</li>
+
+<li>Compute the bit widths of LHS and RHS and right-shift the RHS by
+@('rhswidth - lhswidth') (obtaining temp2, in this example).</li>
+
+<li>Chop up the RHS into chunks matching the sizes of the concatenated
+subexpressions of the LHS (obtaining temp3, temp4).</li>
+
+<li>Make a new assignment of each chunk to its corresponding LHS subexpression,
+and for each assignment created that has a LHS streaming concatenation, repeat
+this process.  (Thus we assign out2 to temp4 and end up assigning out1 to
+@('{<< 3 {temp3}}')).</li>
+
+</ol>
+
+<p>Note that when repeating the process for the last step, we can skip step 2,
+because the sizes match by construction.</p>")
+
+
+
+#||
+
+(trace$
+ #!vl
+ (vl-assign->svex-assign
+  :entry (list 'vl-assign->svex-assign
+               (with-local-ps (vl-pp-assign x)))
+  :exit (list 'vl-assign->svex-assign
+              (cadr values))))
+||#
+
+
+
 
 (define vl-assign->svex-assign ((x vl-assign-p)
-                                (conf vl-svexconf-p))
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (assigns sv::assigns-p "The assignment"))
   :short "Turn a VL assignment into an SVEX assignment or delayed assignment."
@@ -2117,14 +2679,27 @@ expressions, then converts the LHS into a @(see sv::lhs-p).</p>
 multi-tick we'd have to generate new names for the intermediate states.</p>"
   :prepwork ((local (in-theory (enable (force)))))
   (b* (((vl-assign x) (vl-assign-fix x))
-       ((vl-svexconf conf))
        (warnings nil)
+       ((when (vl-expr-case x.lvalue :vl-stream))
+        (b* (((wmv warnings rhs ?rhs-type rhs-size)
+              (vl-expr-to-svex-untyped x.expr ss scopes))
+             ((unless rhs-size)
+              (mv warnings nil))
+             ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
+             (rhs (if delay (sv::svex-add-delay rhs delay) rhs))
+             
+             ((wmv warnings assigns)
+              (vl-streaming-unpack-to-svex-assign-top x.lvalue rhs x rhs-size ss scopes)))
+          (mv warnings assigns)))
+
        ((wmv warnings lhs lhs-type :ctx x)
-        (vl-expr-to-svex-lhs x.lvalue conf))
+        (vl-expr-to-svex-lhs x.lvalue ss scopes))
        ((unless lhs-type) (mv warnings nil))
        ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
-       ((wmv warnings svex-rhs :ctx x)
-        (vl-expr-to-svex-datatyped x.expr lhs-type conf))
+       ((wmv warnings type-err svex-rhs :ctx x)
+        (vl-expr-to-svex-datatyped x.expr x.lvalue lhs-type ss scopes :compattype :assign))
+       ((wmv warnings :ctx x)
+        (vl-type-error-basic-warn x.expr nil type-err x.lvalue lhs-type ss))
        ;; BOZO deal with drive strengths
        ((when (not delay))
         (mv warnings (list (cons lhs (sv::make-driver :value svex-rhs)))))
@@ -2132,14 +2707,14 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
     (mv nil (list (cons lhs (sv::make-driver :value svex-rhs)))))
 
   ///
-  (defmvtypes vl-assign->svex-assign (nil true-listp))
 
   (defret vars-of-vl-assign->svex-assign-assigns
     (sv::svarlist-addr-p (sv::assigns-vars assigns))
     :hints(("Goal" :in-theory (enable sv::assigns-vars)))))
 
 (define vl-assigns->svex-assigns ((x vl-assignlist-p)
-                                  (conf vl-svexconf-p)
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p)
                                   (assigns sv::assigns-p))
   :short "Collects svex module components for a list of assignments, by collecting
           results from @(see vl-assign->svex-assign)."
@@ -2149,10 +2724,10 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
       (mv nil
           (sv::assigns-fix assigns))
     (b* ((warnings nil)
-         ((wmv warnings assigns1) (vl-assign->svex-assign (car x) conf))
+         ((wmv warnings assigns1) (vl-assign->svex-assign (car x) ss scopes))
          ((wmv warnings assigns)
-          (vl-assigns->svex-assigns (cdr x) conf
-                                    (append assigns1 assigns))))
+          (vl-assigns->svex-assigns (cdr x) ss scopes
+                                    (append-without-guard assigns1 assigns))))
       (mv warnings assigns)))
   ///
 
@@ -2160,6 +2735,64 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
    (assigns1 :name vars-of-vl-assigns->svex-assigns-assigns
              (implies (sv::svarlist-addr-p (sv::assigns-vars assigns))
                       (sv::svarlist-addr-p (sv::assigns-vars assigns1))))))
+
+
+(define vl-alias->svex-alias ((x vl-alias-p)
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (aliases sv::lhspairs-p))
+  :short "Turn a VL alias into an SVEX alias."
+  :long "<p>This just straightforwardly converts the LHS and RHS to svex
+expressions, then @(see sv::lhs-p) objects.</p>"
+  :prepwork ((local (in-theory (enable (force)))))
+  (b* (((vl-alias x) (vl-alias-fix x))
+       (warnings nil)
+       ((wmv warnings lhs lhs-type :ctx x)
+        (vl-expr-to-svex-lhs x.lhs ss scopes))
+       ((wmv warnings rhs rhs-type :ctx x)
+        (vl-expr-to-svex-lhs x.rhs ss scopes))
+       ((unless (and lhs-type rhs-type))
+        (mv warnings nil))
+       (err (vl-check-datatype-compatibility lhs-type rhs-type :equiv))
+       ((when err)
+        (mv (fatal :type :vl-bad-alias
+                   :msg "~a0: Incompatible LHS/RHS types: ~@1."
+                   :args (list x err))
+            nil)))
+    (mv nil (list (cons lhs rhs))))
+
+  ///
+  (defmvtypes vl-alias->svex-alias (nil true-listp))
+
+  (defret vars-of-vl-alias->svex-alias
+    (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
+    :hints(("Goal" :in-theory (enable sv::lhspairs-vars)))))
+
+
+(define vl-aliases->svex-aliases ((x vl-aliaslist-p)
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p)
+                                  (aliases sv::lhspairs-p))
+  :short "Collects svex module components for a list of aliases by collecting
+          results from @(see vl-alias->svex-alias)."
+  :returns (mv (warnings vl-warninglist-p)
+               (aliases1 sv::lhspairs-p))
+  (if (atom x)
+      (mv nil
+          (sv::lhspairs-fix aliases))
+    (b* ((warnings nil)
+         ((wmv warnings aliases1) (vl-alias->svex-alias (car x) ss scopes))
+         ((wmv warnings aliases)
+          (vl-aliases->svex-aliases (cdr x) ss scopes
+                                    (append aliases1 aliases))))
+      (mv warnings aliases)))
+  ///
+
+  (more-returns
+   (aliases1 :name vars-of-vl-aliases->svex-aliases-aliases
+             (implies (sv::svarlist-addr-p (sv::lhspairs-vars aliases))
+                      (sv::svarlist-addr-p (sv::lhspairs-vars aliases1))))))
 
 
 
@@ -2225,6 +2858,9 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
   ;;   (hons-copy
   ;;    (sv::modname-fix
   ;;     `(:datatype . ,(vl-scopestack-namespace conf `(,(vl-usertype->name x))))))))
+
+
+
 
 
 (define vl-datatype-elem->mod-components
@@ -2302,27 +2938,15 @@ ourstruct, above.)</p>"
         ;; Simple vector datatype and not within a data structure where we need
         ;; to alias this to the self.  Just return the wire with no insts/aliases.
         (mv wire nil nil))
-       (var (sv::address->svar (sv::make-address
-                                  :path (sv::make-path-wire :name name))))
-       (wire-lhs (list (sv::make-lhrange :w subwire.width
-                                           :atom (sv::make-lhatom-var :name var :rsh 0))))
        ((mv insts aliases1)
         (if submod
-            (b* ((modinst (sv::make-modinst :instname name :modname submod))
-                 (subself-var (sv::address->svar
-                               (sv::make-address
-                                :path (sv::make-path-scope :namespace name :subpath :self))))
-                 (subself-lhs (list (sv::make-lhrange :w subwire.width
-                                                        :atom (sv::make-lhatom-var
-                                                               :name subself-var :rsh 0)))))
-              (mv (list modinst) (list (cons wire-lhs subself-lhs))))
+            (b* ((modinst (sv::make-modinst :instname name :modname submod)))
+              (mv (list modinst)
+                  (vlsv-aggregate-subalias name subwire.width)))
           (mv nil nil)))
        (aliases2
         (if self-lsb
-            (b* ((self-lhs (list (sv::make-lhrange
-                                  :w subwire.width
-                                  :atom (sv::make-lhatom-var :name :self :rsh self-lsb)))))
-              (list (cons wire-lhs self-lhs)))
+            (vlsv-aggregate-superalias name subwire.width self-lsb)
           nil)))
     (mv wire insts (append aliases2 aliases1)))
   ///
@@ -2990,6 +3614,10 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                     (modalist-fix x)
                     (:free (x) (modalist-vars (cons x y))))))))
 
+(define maybe-nat ((flag) (num natp))
+  :returns (res maybe-natp :rule-classes :type-prescription)
+  (and flag (lnfix num)))
+
 
 (defines vl-genblob->svex-modules
   :prepwork ((local (defthm modname-p-when-consp
@@ -3007,28 +3635,102 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
              (local (defthm name-p-when-anonymo
                       (sv::name-p (cons :anonymous x))
                       :hints(("Goal" :in-theory (enable sv::name-p)))))
+             (local (defthm name-p-when-vl-scopeid-p
+                      (implies (vl-scopeid-p x)
+                               (sv::name-p x))
+                      :hints(("Goal" :in-theory (enable sv::name-p)))))
              (local (in-theory (disable double-containment
                                         vl-warninglist-p-when-not-consp
                                         sv::modalist-p-when-not-consp)))
              (fty::set-deffixequiv-mutual-default-hints
               ((acl2::just-expand-mrec-default-hint 'fty::fnname id nil world)))
              (std::set-returnspec-mrec-default-hints
-              ((acl2::just-expand-mrec-default-hint 'std::fnname id nil world)))
+              ((acl2::just-expand-mrec-default-hint 'std::fnname id nil world)
+               (and stable-under-simplificationp
+                    `(:in-theory (e/d (sv::svarlist-addr-p-by-badguy)
+                                      ,(acl2::recursivep 'std::fnname t world))))))
              (local (in-theory (disable sv::svarlist-addr-p-when-subsetp-equal
                                         acl2::subsetp-member
                                         acl2::consp-under-iff-when-true-listp
                                         acl2::append-under-iff
                                         acl2::append-atom-under-list-equiv
                                         acl2::member-when-atom
+                                        acl2::subsetp-append1
+                                        acl2::subsetp-when-atom-right
+                                        acl2::subsetp-when-atom-left
+                                        acl2::consp-append
                                         member-equal-when-member-equal-of-cdr-under-iff
-                                        default-cdr default-car)))
+                                        default-cdr default-car
+                                        acl2::maybe-natp-when-natp
+                                        sv::svarlist-addr-p-by-badguy
+                                        hons-shrink-alist-when-not-consp
+                                        sv::svarlist-addr-p-when-not-consp
+                                        acl2::append-when-not-consp
+                                        consp-when-member-equal-of-vl-elabscopes-p)))
              (local (in-theory (enable sv::modalist-vars))))
   :verify-guards nil
 
+  (define vl-genblock->svex-modules
+    ((x vl-genblock-p)
+     (elabindex  "outside of the scope")
+     (modname sv::modname-p)
+     (modalist sv::modalist-p)
+     (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
+                           the lsb of the outer block's wire at which to alias
+                           the inner block's wire"))
+    :returns (mv (warnings vl-warninglist-p)
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (insts     sv::modinstlist-p)
+                 (wires     sv::wirelist-p "containing, for interfaces, the block's wire")
+                 (aliases   (and (sv::lhspairs-p aliases)
+                                 (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+                            "when interface, aliases between the new wire and the
+                             self of the block, and between the new wire and the
+                             self of the outer block")
+                 (width natp "total width of all wires inside the genblock")
+                 (new-elabindex))
+    :measure (vl-genblob-genblock-count x)
+    (b* ((modname (sv::modname-fix modname))
+         (modalist (sv::modalist-fix modalist))
+         (self-lsb (maybe-natp-fix self-lsb))
+         ((vl-genblock x) (vl-genblock-fix x))
+         (warnings nil)
+         ((unless x.name)
+          (mv (fatal :type :vl-programming-error
+                     :msg "Expected block to be named: ~a0"
+                     :args (list x))
+              modalist
+              nil nil nil 0
+              elabindex))
+         (modname (if (atom modname)
+                      (list modname :genblock x.name)
+                    (append-without-guard modname (list :genblock x.name))))
+         (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock :id x.name))
+         ((wmv warnings mod modalist width elabindex)
+          (vl-genblob->svex-modules genblob elabindex modname modalist self-lsb))
+         (modalist (hons-acons modname mod modalist))
+         (modinst (sv::make-modinst :modname modname
+                                    :instname x.name))
+         ((unless (and self-lsb (not (eql width 0))))
+          (mv warnings modalist
+              (list modinst) nil nil 0 elabindex))
+
+         (wire (sv::make-wire :name x.name :width width :low-idx 0))
+         (aliases (vlsv-aggregate-aliases x.name width self-lsb)))
+
+      (mv warnings modalist (list modinst)
+          (list wire) aliases width elabindex)))
+
   (define vl-genblob->svex-modules ((x vl-genblob-p)
-                                    (ss vl-scopestack-p)
+                                    (elabindex "outside of the genblob scope")
                                     (modname sv::modname-p)
-                                    (modalist sv::modalist-p))
+                                    (modalist sv::modalist-p)
+                                    (interfacep "determines whether we create :self
+                                                 wires aliased to the concatenation
+                                                 of all the variables"))
     :short "Given a @(see vl-genblob), translate its contents into an svex @(see
             sv::module)."
     :long "<p>Mostly, this function delegates its work to other functions:</p>
@@ -3038,184 +3740,245 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 <li>@(see vl-modinstlist->svex-assigns/aliases) to process module instances.</li>
 </ul>
 <p>It also creates new modules for any generate blocks/arrays present.</p>"
-  :returns (mv (warnings vl-warninglist-p)
-               (mod (and (sv::module-p mod)
-                         (sv::svarlist-addr-p
-                          (sv::module-vars mod))))
-               (modalist1
-                (and (sv::modalist-p modalist1)
-                     (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                              (sv::svarlist-addr-p (sv::modalist-vars modalist1))))))
-  :measure (vl-genblob-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (mod (and (sv::module-p mod)
+                           (sv::svarlist-addr-p
+                            (sv::module-vars mod))))
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (width natp :rule-classes :type-prescription)
+                 (new-elabindex))
+    :measure (vl-genblob-count x)
 
-  (b* ((warnings nil)
-       (ss (vl-scopestack-push (vl-genblob-fix x) ss))
-       (blobconf (make-vl-svexconf :ss ss))
-       ((vl-genblob x))
-       ((wmv ?ok warnings ?new-x blobconf)
-        ;; new-x isn't really relevant since we've already run
-        ;; unparameterization before; we're just doing this to generate the
-        ;; tables.
-        (vl-genblob-elaborate x blobconf))
+    (b* ((warnings nil)
+         (elabindex (vl-elabindex-push (vl-genblob-fix x)))
+         ((vl-genblob x))
+         ((wmv ?ok warnings ?new-x elabindex)
+          ;; new-x isn't really relevant since we've already run
+          ;; unparameterization before; we're just doing this to generate the
+          ;; tables.
+          (vl-genblob-elaborate x elabindex))
+         (elabindex (vl-elabindex-sync-scopes))
+         (ss (vl-elabindex->ss))
+         (scopes (vl-elabindex->scopes))
 
-       ((wmv warnings ?width wires aliases datainsts modalist)
-        (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist)
-                              nil)) ;; no :self aliases
-       ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns blobconf nil))
-       ((wmv warnings wires assigns aliases insts arraymod-alist)
-        (vl-modinstlist->svex-assigns/aliases x.modinsts blobconf wires assigns aliases modname))
-       ((wmv warnings wires assigns aliases ginsts gatemod-alist)
-        (vl-gateinstlist->svex-assigns/aliases x.gateinsts blobconf wires assigns aliases modname))
-       (modalist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist)))
+         ((wmv warnings vars-width wires aliases datainsts modalist)
+          (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist)
+                                interfacep))
+         ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns ss scopes nil))
+         ((wmv warnings aliases) (vl-aliases->svex-aliases x.aliases ss scopes aliases))
+         ((wmv warnings wires assigns aliases insts-width insts arraymod-alist)
+          (vl-modinstlist->svex-assigns/aliases x.modinsts ss scopes wires assigns aliases modname (maybe-nat interfacep vars-width)))
+         
+         ((wmv warnings wires assigns aliases ginsts gatemod-alist)
+          (vl-gateinstlist->svex-assigns/aliases x.gateinsts ss scopes wires assigns aliases modname))
+         
+         ((wmv warnings ifportwires ifportinsts ifportaliases ifportmod-alist ifports-width)
+          (vl-interfaceports->svex x.ifports (vl-elabindex->ss) 
+                                   (maybe-nat interfacep (+ vars-width insts-width))
+                                   modname))
+         
+         (modalist (hons-shrink-alist ifportmod-alist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist))))
 
-       ((wmv warnings always-assigns)
-        (vl-alwayslist->svex x.alwayses blobconf))
+         ((wmv warnings always-assigns)
+          (vl-alwayslist->svex x.alwayses ss scopes))
+         ((wmv warnings) (vl-initiallist-size-warnings x.initials ss scopes))
+         ((wmv warnings) (vl-finallist-size-warnings x.finals ss scopes))
 
-       ;; (delays (sv::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
+         ;; (delays (sv::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
 
-       (- (vl-svexconf-free blobconf))
+         ((wmv warnings modalist gen-insts gen-wires gen-aliases gen-width elabindex)
+          (vl-generates->svex-modules
+           x.generates elabindex modname modalist
+           (maybe-nat interfacep (+ vars-width insts-width ifports-width))))
 
-       ((wmv warnings modalist gen-insts)
-        (vl-generates->svex-modules
-         x.generates 0 ss modname modalist))
+         (totalwidth (+ vars-width insts-width ifports-width gen-width))
 
-       (module (sv::make-module :wires wires
-                                  :insts (append-without-guard gen-insts datainsts ginsts insts)
+         (self-wire (and interfacep
+                         (not (eql totalwidth 0))
+                         (list (sv::make-wire :name :self :width totalwidth :low-idx 0))))
+
+         (module (sv::make-module :wires (append-without-guard self-wire ifportwires wires gen-wires)
+                                  :insts (append-without-guard ifportinsts datainsts ginsts insts gen-insts)
                                   :assigns (append-without-guard always-assigns assigns)
-                                  :aliaspairs aliases))
-       (modalist (hons-shrink-alist arraymod-alist modalist)))
-    (mv warnings module modalist)))
+                                  :aliaspairs (append-without-guard ifportaliases aliases gen-aliases)))
+         (modalist (hons-shrink-alist arraymod-alist modalist))
+         (elabindex (vl-elabindex-undo)))
+      (mv warnings module modalist totalwidth elabindex)))
 
-  (define vl-generates->svex-modules ((x vl-genelementlist-p)
-                                      (index natp)
-                                      (ss vl-scopestack-p)
-                                      (modname sv::modname-p)
-                                      (modalist sv::modalist-p))
+  (define vl-generates->svex-modules
+    ((x vl-genelementlist-p)
+     (elabindex)
+     (modname sv::modname-p)
+     (modalist sv::modalist-p)
+     (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
+                           the lsb of the outer block's wire at which to alias
+                           the inner block's wire"))
 
     :returns (mv (warnings vl-warninglist-p)
                  (modalist1
                   (and (sv::modalist-p modalist1)
                        (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                 (insts     sv::modinstlist-p))
+                 (insts     sv::modinstlist-p)
+                 (wires     sv::wirelist-p)
+                 (aliases   (and (sv::lhspairs-p aliases)
+                                 (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+                            "when interface, aliases between the new wire and the
+                             self of the block, and between the new wire and the
+                             self of the outer block")
+                 (width     natp :rule-classes :type-prescription)
+                 (new-elabindex))
     :measure (vl-genblob-generates-count x)
     (b* ((warnings nil)
-         ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil))
-         ((wmv warnings modalist insts1)
-          (vl-generate->svex-modules
-           (car x) (lnfix index) ss modname modalist))
-         ((wmv warnings modalist insts2)
+         (self-lsb (maybe-natp-fix self-lsb))
+         ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil nil nil 0 elabindex))
+         ((wmv warnings modalist insts2 wires2 aliases2 width2 elabindex)
           (vl-generates->svex-modules
-           (cdr x) (1+ (lnfix index)) ss modname modalist)))
-      (mv warnings modalist (append-without-guard insts1 insts2))))
+           (cdr x) elabindex modname modalist self-lsb))
+         ((wmv warnings modalist insts1 wires1 aliases1 width1 elabindex)
+          (vl-generate->svex-modules
+           (car x) elabindex modname modalist (and self-lsb (+ self-lsb width2)))))
+      (mv warnings modalist
+          (append-without-guard insts1 insts2)
+          (append-without-guard wires1 wires2)
+          (append-without-guard aliases1 aliases2)
+          (+ width1 width2)
+          elabindex)))
 
-    (define vl-generate->svex-modules ((x vl-genelement-p)
-                                       (index natp)
-                                       (ss vl-scopestack-p)
-                                       (modname sv::modname-p)
-                                       (modalist sv::modalist-p))
-      :returns (mv (warnings vl-warninglist-p)
-                   (modalist1
-                    (and (sv::modalist-p modalist1)
-                         (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                                  (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts      sv::modinstlist-p))
-      :measure (vl-genblob-generate-count x)
-      (b* ((warnings nil))
-        (vl-genelement-case x
-          :vl-genblock
-          (b* ((modname (sv::modname-fix modname))
-               (index (lnfix index))
-               (modname (if (atom modname)
-                            (list modname :genblock (or x.name index))
-                          (append-without-guard modname (list :genblock (or x.name index)))))
-               (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock))
-               ((wmv warnings mod modalist)
-                (vl-genblob->svex-modules genblob ss modname modalist)))
-            (mv warnings (hons-acons modname mod modalist)
-                (list (sv::make-modinst :modname modname
-                                          :instname (or x.name (list :anonymous index))))))
 
-          :vl-genarray
-          (b* ((modname (sv::modname-fix modname))
-               (index (lnfix index))
-               (modname (if (atom modname)
-                            (list modname :genarray (or x.name index))
-                          (append-without-guard modname (list :genarray (or x.name index)))))
-               ;; BOZO This is a weird thing to do, but at the moment we need it
-               ;; to make our scopes work out.  To fix this, see the discussion
-               ;; under vl-path-scope->svex-addr and fix that first.
-               (ss (vl-scopestack-push (make-vl-genblob) ss))
-               ((wmv warnings modalist block-insts)
-                (vl-genarrayblocks->svex-modules x.blocks ss modname modalist))
-               (arraymod (sv::make-module :insts block-insts))
-               (modalist (hons-acons modname arraymod modalist)))
-            (mv warnings modalist
-                (list (sv::make-modinst :modname modname
-                                          :instname (or x.name (list :anonymous index))))))
-          :otherwise
-          (mv (warn :type :vl-module->svex-fail
-                    :msg "Unresolved generate block: ~a0"
-                    :args (list (vl-genelement-fix x)))
-              (sv::modalist-fix modalist) nil))))
+  (define vl-generate->svex-modules
+    ((x vl-genelement-p)
+     (elabindex)
+     (modname sv::modname-p)
+     (modalist sv::modalist-p)
+     (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
+                           the lsb of the outer block's wire at which to alias
+                           the inner block's wire"))
+    :returns (mv (warnings vl-warninglist-p)
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (insts      sv::modinstlist-p)
+                 (wires     sv::wirelist-p)
+                 (aliases   (and (sv::lhspairs-p aliases)
+                                 (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+                            "when interface, aliases between the new wire and the
+                             self of the block, and between the new wire and the
+                             self of the outer block")
+                 (width     natp :rule-classes :type-prescription)
+                 (new-elabindex))
+    :measure (vl-genblob-generate-count x)
+    (b* ((warnings nil)
+         (modalist (sv::modalist-fix modalist))
+         (x (vl-genelement-fix x)))
+      (vl-genelement-case x
+        :vl-genbegin
+        (vl-genblock->svex-modules x.block elabindex modname modalist self-lsb)
 
-    (define vl-genarrayblocks->svex-modules ((x vl-genarrayblocklist-p)
-                                             (ss vl-scopestack-p)
-                                             (modname sv::modname-p)
-                                             (modalist sv::modalist-p))
-      :returns (mv (warnings vl-warninglist-p)
-                   (modalist1
-                    (and (sv::modalist-p modalist1)
-                         (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                                  (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts sv::modinstlist-p))
-      :measure (vl-genblob-genarrayblocklist-count x)
-      (b* ((warnings nil)
-           ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil))
-           ((wmv warnings modalist insts1)
-            (vl-genarrayblock->svex-modules (car x) ss modname modalist))
-           ((wmv warnings modalist insts2)
-            (vl-genarrayblocks->svex-modules (cdr x) ss modname modalist)))
-        (mv warnings modalist (append-without-guard insts1 insts2))))
+        :vl-genarray
+        (b* ((modname (sv::modname-fix modname))
+             ((unless x.name)
+              (mv (fatal :type :vl-programming-error
+                         :msg "Expected generate array to be named: ~a0"
+                         :args (list x))
+                  modalist nil nil nil 0 elabindex))
+             (modname (if (atom modname)
+                          (list modname :genarray x.name)
+                        (append-without-guard modname (list :genarray x.name))))
+             ;; This is a weird thing to do, but at the moment we need it to
+             ;; make our scopes work out.  See the discussion under
+             ;; vl-scopecontext-to-addr.
+             (elabindex (vl-elabindex-push (make-vl-genblob :scopetype :vl-genarray
+                                                            :id x.name)))
+             ((wmv warnings modalist block-insts block-wires block-aliases block-width elabindex)
+              (vl-genblocks->svex-modules x.blocks elabindex modname modalist self-lsb))
+             (arraymod (sv::make-module :insts block-insts
+                                        :wires block-wires
+                                        :aliaspairs block-aliases))
+             (modalist (hons-acons modname arraymod modalist))
+             (elabindex (vl-elabindex-undo))
+             ((unless (and self-lsb (not (eql block-width 0))))
+              (mv warnings modalist
+                  (list (sv::make-modinst :modname modname
+                                          :instname x.name))
+                  nil nil block-width elabindex))
 
-    (define vl-genarrayblock->svex-modules ((x vl-genarrayblock-p)
-                                            (ss vl-scopestack-p)
-                                            (modname sv::modname-p)
-                                            (modalist sv::modalist-p))
-      :returns (mv (warnings vl-warninglist-p)
-                   (modalist1
-                    (and (sv::modalist-p modalist1)
-                         (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                                  (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
-                   (insts sv::modinstlist-p))
-      :measure (vl-genblob-genarrayblock-count x)
-      (b* ((warnings nil)
-           ((vl-genarrayblock x))
-           (modname (sv::modname-fix modname))
-           (modname (append-without-guard modname (list x.index)))
-           (genblob (vl-sort-genelements x.elems :scopetype :vl-genarrayblock))
-           ((wmv warnings mod modalist)
-            (vl-genblob->svex-modules genblob ss modname modalist)))
-        (mv warnings (hons-acons modname mod modalist)
-            (list (sv::make-modinst :modname modname :instname x.index)))))
-    ///
-    (verify-guards vl-genblob->svex-modules)
+             (array-wire (sv::make-wire :name x.name :width block-width :low-idx 0))
+             (aliases (vlsv-aggregate-aliases x.name block-width self-lsb)))
+          (mv warnings modalist
+              (list (sv::make-modinst :modname modname
+                                      :instname x.name))
+              (list array-wire)
+              aliases
+              block-width
+              elabindex))
 
-    (local (in-theory (disable cons-equal
-                               vl-genblob->svex-modules
-                               vl-generates->svex-modules
-                               vl-generate->svex-modules
-                               vl-genarrayblocks->svex-modules
-                               vl-genarrayblock->svex-modules)))
+        :otherwise
+        (mv (fatal :type :vl-module->svex-fail
+                   :msg "Unresolved generate block: ~a0"
+                   :args (list (vl-genelement-fix x)))
+            (sv::modalist-fix modalist) nil nil nil 0
+            elabindex))))
 
-    (deffixequiv-mutual vl-genblob->svex-modules))
+  (define vl-genblocks->svex-modules
+    ((x vl-genblocklist-p)
+     (elabindex)
+     (modname sv::modname-p)
+     (modalist sv::modalist-p)
+     (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
+                           the lsb of the outer block's wire at which to alias
+                           the inner block's wire"))
+    :returns (mv (warnings vl-warninglist-p)
+                 (modalist1
+                  (and (sv::modalist-p modalist1)
+                       (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+                                (sv::svarlist-addr-p (sv::modalist-vars modalist1)))))
+                 (insts sv::modinstlist-p)
+                 (wires sv::wirelist-p)
+                 (aliases   (and (sv::lhspairs-p aliases)
+                                 (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+                            "when interface, aliases between the new wire and the
+                             self of the block, and between the new wire and the
+                             self of the outer block")
+                 (width natp :rule-classes :type-prescription)
+                 (new-elabindex))
+    :measure (vl-genblob-genblocklist-count x)
+    (b* ((warnings nil)
+         (self-lsb (maybe-natp-fix self-lsb))
+         ((when (atom x)) (mv (ok) (sv::modalist-fix modalist) nil nil nil 0 elabindex))
+         ((wmv warnings modalist insts2 wires2 aliases2 width2 elabindex)
+          (vl-genblocks->svex-modules (cdr x) elabindex modname modalist self-lsb))
+         ((wmv warnings modalist insts1 wires1 aliases1 width1 elabindex)
+          (vl-genblock->svex-modules (car x) elabindex modname modalist
+                                     (and self-lsb (+ self-lsb width2)))))
+      (mv warnings modalist
+          (append-without-guard insts1 insts2)
+          (append-without-guard wires1 wires2)
+          (append-without-guard aliases1 aliases2)
+          (+ width1 width2)
+          elabindex)))
+  ///
+  (verify-guards vl-genblob->svex-modules)
+
+  (local (in-theory (disable cons-equal
+                             vl-genblob->svex-modules
+                             vl-generates->svex-modules
+                             vl-generate->svex-modules
+                             vl-genblocks->svex-modules
+                             vl-genblock->svex-modules)))
+
+  (deffixequiv-mutual vl-genblob->svex-modules))
 
 
 
 
 
 (define vl-module->svex-module ((name stringp)
-                                (ss vl-scopestack-p)
+                                (elabindex "global scope")
                                 (modalist sv::modalist-p))
   :short "Translate a VL module into an svex module, adding any auxiliary modules
           necessary."
@@ -3229,38 +3992,32 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist1))))
-                          :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
+                          :hints(("Goal" :in-theory (enable sv::modalist-vars))))
+               (new-elabindex))
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
                                (vl-scope-p x))))
              (local (in-theory (enable sv::modname-p))))
   (b* ((modalist (sv::modalist-fix modalist))
        (name (string-fix name))
-       (x (vl-scopestack-find-definition name ss))
+       (x (vl-scopestack-find-definition name (vl-elabindex->ss)))
        (warnings nil)
        ((unless (and x (eq (tag x) :vl-module)))
         (mv (warn :type :vl-module->svex-fail
                   :msg "Module not found: ~s0"
                   :args (list name))
-            (sv::modalist-fix modalist)))
+            (sv::modalist-fix modalist)
+            elabindex))
        ((vl-module x) x)
        (genblob (vl-module->genblob x))
-       ((wmv warnings mod modalist)
-        (vl-genblob->svex-modules genblob ss x.name modalist))
-       ((sv::module mod))
-       ((wmv warnings ifwires ifinsts ifaliases)
-        (vl-interfaceports->svex x.ifports ss))
-       (mod (sv::change-module
-             mod
-             :wires (append-without-guard ifwires mod.wires)
-             :insts (append-without-guard ifinsts mod.insts)
-             :aliaspairs (append-without-guard ifaliases mod.aliaspairs))))
-    (mv warnings (hons-acons x.name mod modalist))))
+       ((wmv warnings mod modalist ?width elabindex)
+        (vl-genblob->svex-modules genblob elabindex x.name modalist nil)))
+    (mv warnings (hons-acons x.name mod modalist) elabindex)))
 
 
 (define vl-modulelist->svex-modalist
   ((x vl-modulelist-p)
-   (ss vl-scopestack-p)
+   (elabindex "global scope")
    (modalist sv::modalist-p))
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -3268,20 +4025,24 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
-                                 (sv::modalist-vars modalist1))))))
-  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist)))
+                                 (sv::modalist-vars modalist1)))))
+               (new-elabindex))
+  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-module->name (car x)))
-       ((mv warnings modalist) (vl-module->svex-module name ss modalist))
-
-       ((mv reportcard modalist) (vl-modulelist->svex-modalist (cdr x) ss modalist)))
+       ((mv warnings modalist elabindex)
+        (vl-module->svex-module name elabindex modalist))
+       
+       ((mv reportcard modalist elabindex)
+        (vl-modulelist->svex-modalist (cdr x) elabindex modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)
-        modalist)))
+        modalist
+        elabindex)))
 
 
 (define vl-interface->svex-module ((name stringp)
-                                   (ss vl-scopestack-p)
+                                   (elabindex "global scope")
                                    (modalist sv::modalist-p))
   :returns (mv (warnings vl-warninglist-p)
                (modalist1 (and (sv::modalist-p modalist1)
@@ -3290,7 +4051,8 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist1))))
-                          :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
+                          :hints(("Goal" :in-theory (enable sv::modalist-vars))))
+               elabindex)
   :prepwork ((local (defthm vl-scope-p-when-vl-interface-p-strong
                       (implies (vl-interface-p x)
                                (vl-scope-p x))))
@@ -3302,34 +4064,26 @@ much like that generated for a struct; it has a :self wire that is aliased to
 the concatenation of all its other declared wires.</p>"
   (b* ((modalist (sv::modalist-fix modalist))
        (name (string-fix name))
-       (x (vl-scopestack-find-definition name ss))
+       (x (vl-scopestack-find-definition name (vl-elabindex->ss)))
        (warnings nil)
        ((unless (and x (eq (tag x) :vl-interface)))
         (mv (warn :type :vl-interface->svex-fail
                   :msg "Interface not found: ~s0"
                   :args (list name))
-            (sv::modalist-fix modalist)))
+            (sv::modalist-fix modalist)
+            elabindex))
        ((vl-interface x) x)
-       (?ss (vl-scopestack-push x ss))
-       ;; CONVENTION: This returns only the vardecls whose types were
-       ;; successfully resolved.  In interfaces, we consider only these
-       ;; variables.  Any other variables won't have aliases set up so they'll
-       ;; just be floating.
-       ((wmv warnings totalwidth wires aliases datainsts modalist)
-        (vl-vardecllist->svex x.vardecls (sv::modalist-fix modalist) t))
-       (selfwire (and (not (eql totalwidth 0))
-                      (sv::make-wire :name :self :width totalwidth :low-idx 0)))
-       (mod (sv::make-module :wires (if selfwire (cons selfwire wires) wires)
-                               :insts datainsts
-                               :aliaspairs aliases)))
+       (genblob (vl-interface->genblob x))
+       ((wmv warnings mod modalist ?width elabindex)
+        (vl-genblob->svex-modules genblob elabindex x.name modalist t)))
     (mv warnings
-        (hons-acons (sv::modname-fix name) mod modalist))))
+        (hons-acons (sv::modname-fix name) mod modalist)
+        elabindex)))
 
 (define vl-interfacelist->svex-modalist
   ((x vl-interfacelist-p)
-   (ss vl-scopestack-p)
+   (elabindex "global scope")
    (modalist sv::modalist-p))
-  :parents (sv::svex)
   :returns (mv (warnings vl-reportcard-p)
                (modalist1 (and (sv::modalist-p modalist1)
                                (implies
@@ -3337,16 +4091,18 @@ the concatenation of all its other declared wires.</p>"
                                  (sv::modalist-vars modalist))
                                 (sv::svarlist-addr-p
                                  (sv::modalist-vars modalist1))))
-                          :hints(("Goal" :in-theory (enable sv::modalist-vars)))))
-  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist)))
+                          :hints(("Goal" :in-theory (enable sv::modalist-vars))))
+               (new-elabindex))
+  (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-interface->name (car x)))
-       ((mv warnings modalist) (vl-interface->svex-module name ss modalist))
+       ((mv warnings modalist elabindex) (vl-interface->svex-module name elabindex modalist))
 
-       ((mv reportcard modalist) (vl-interfacelist->svex-modalist (cdr x) ss modalist)))
+       ((mv reportcard modalist elabindex) (vl-interfacelist->svex-modalist (cdr x) elabindex modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)
-        modalist)))
+        modalist
+        elabindex)))
 
 
 (define vl-design->svex-modalist ((x vl-design-p))
@@ -3364,9 +4120,10 @@ this translation.</p>"
                               (sv::svarlist-addr-p
                                (sv::modalist-vars svexmods)))))
   (b* (((vl-design x) (vl-design-fix x))
-       (ss (vl-scopestack-init x))
-       ((mv reportcard1 modalist) (vl-modulelist->svex-modalist x.mods ss nil))
-       ((mv reportcard2 modalist) (vl-interfacelist->svex-modalist x.interfaces ss modalist))
+       ((local-stobjs elabindex) (mv reportcard modalist elabindex))
+       (elabindex (vl-elabindex-init x))
+       ((mv reportcard1 modalist elabindex) (vl-modulelist->svex-modalist x.mods elabindex nil))
+       ((mv reportcard2 modalist elabindex) (vl-interfacelist->svex-modalist x.interfaces elabindex modalist))
        (reportcard (vl-clean-reportcard (append-without-guard reportcard1 reportcard2))))
     (vl-scopestacks-free)
-    (mv reportcard modalist)))
+    (mv reportcard modalist elabindex)))

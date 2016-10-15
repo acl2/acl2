@@ -122,59 +122,50 @@ experiment with using @(see force).</p>
   (defthm commutativity-2-of-*
     (equal (* x (* y z))
            (* y (* x z)))
-    :hints (("Goal" :use (:instance
-                          (:functional-instance acl2-asg::commutativity-2-of-op
-                                                (acl2-asg::equiv equal)
-                                                (acl2-asg::pred (lambda (x) t))
-                                                (acl2-asg::op binary-*))
-                          (acl2-asg::x x)
-                          (acl2-asg::y y)
-                          (acl2-asg::z z)))))
+    :hints (("Goal" :use (:functional-instance acl2-asg::commutativity-2-of-op
+                                               (acl2-asg::equiv equal)
+                                               (acl2-asg::pred (lambda (x) t))
+                                               (acl2-asg::op binary-*)))))
 
   (defthm functional-self-inversion-of-/
     (equal (/ (/ x)) (fix x))
-    :hints (("Goal" :use ((:instance (:functional-instance
-                                      acl2-agp::Involution-of-inv
-                                      (acl2-agp::equiv equal)
-                                      (acl2-agp::pred (lambda (x)
-                                                        (and (acl2-numberp x)
-                                                             (not (equal x 0)))))
-                                      (acl2-agp::op binary-*)
-                                      (acl2-agp::id (lambda () 1))
-                                      (acl2-agp::inv unary-/))
-                                     (acl2-agp::x x))))))
+    :hints (("Goal" :use (:functional-instance
+                          acl2-agp::Involution-of-inv
+                          (acl2-agp::equiv equal)
+                          (acl2-agp::pred (lambda (x)
+                                            (and (acl2-numberp x)
+                                                 (not (equal x 0)))))
+                          (acl2-agp::op binary-*)
+                          (acl2-agp::id (lambda () 1))
+                          (acl2-agp::inv unary-/)))))
 
   (defthm distributivity-of-/-over-*
     (equal (/ (* x y))
            (* (/ x) (/ y)))
-    :hints (("Goal" :use ((:instance (:functional-instance
-                                      acl2-agp::Distributivity-of-inv-over-op
-                                      (acl2-agp::equiv equal)
-                                      (acl2-agp::pred (lambda (x)
-                                                        (and (acl2-numberp x)
-                                                             (not (equal x 0)))))
-                                      (acl2-agp::op binary-*)
-                                      (acl2-agp::id (lambda () 1))
-                                      (acl2-agp::inv unary-/))
-                                     (acl2-agp::x x)
-                                     (acl2-agp::y y))))))
+    :hints (("Goal" :use (:functional-instance
+                          acl2-agp::Distributivity-of-inv-over-op
+                          (acl2-agp::equiv equal)
+                          (acl2-agp::pred (lambda (x)
+                                            (and (acl2-numberp x)
+                                                 (not (equal x 0)))))
+                          (acl2-agp::op binary-*)
+                          (acl2-agp::id (lambda () 1))
+                          (acl2-agp::inv unary-/)))))
 
   (defthm /-cancellation-on-right
     (implies (and (fc (acl2-numberp x))
                   (fc (not (equal x 0))))
              (equal (* x y (/ x))
                     (fix y)))
-    :hints (("Goal" :use ((:instance (:functional-instance
-                                      acl2-agp::inv-cancellation-on-right
-                                      (acl2-agp::equiv equal)
-                                      (acl2-agp::pred (lambda (x)
-                                                        (and (acl2-numberp x)
-                                                             (not (equal x 0)))))
-                                      (acl2-agp::op binary-*)
-                                      (acl2-agp::id (lambda () 1))
-                                      (acl2-agp::inv unary-/))
-                                     (acl2-agp::x x)
-                                     (acl2-agp::y y))))))
+    :hints (("Goal" :use (:functional-instance
+                          acl2-agp::inv-cancellation-on-right
+                          (acl2-agp::equiv equal)
+                          (acl2-agp::pred (lambda (x)
+                                            (and (acl2-numberp x)
+                                                 (not (equal x 0)))))
+                          (acl2-agp::op binary-*)
+                          (acl2-agp::id (lambda () 1))
+                          (acl2-agp::inv unary-/)))))
 
   (defthm /-cancellation-on-left
     (implies (and (fc (acl2-numberp x))
@@ -191,18 +182,15 @@ experiment with using @(see force).</p>
                    (acl2-numberp x)
                    (acl2-numberp y))
               (equal (equal x y) t))
-     :hints (("Goal" :use ((:instance (:functional-instance
-                                       acl2-agp::Right-cancellation-for-op
-                                       (acl2-agp::equiv equal)
-                                       (acl2-agp::pred (lambda (x)
-                                                         (and (acl2-numberp x)
-                                                              (not (equal x 0)))))
-                                       (acl2-agp::op binary-*)
-                                       (acl2-agp::id (lambda () 1))
-                                       (acl2-agp::inv unary-/))
-                                      (acl2-agp::x x)
-                                      (acl2-agp::y y)
-                                      (acl2-agp::z z)))))))
+     :hints (("Goal" :use (:functional-instance
+                           acl2-agp::Right-cancellation-for-op
+                           (acl2-agp::equiv equal)
+                           (acl2-agp::pred (lambda (x)
+                                             (and (acl2-numberp x)
+                                                  (not (equal x 0)))))
+                           (acl2-agp::op binary-*)
+                           (acl2-agp::id (lambda () 1))
+                           (acl2-agp::inv unary-/))))))
 
   (defthm right-cancellation-for-*
     (equal (equal (* x z) (* y z))
@@ -245,17 +233,15 @@ experiment with using @(see force).</p>
                          (equal (* x y) 1))
                     (equal y (/ x)))
            :rule-classes nil
-           :hints (("Goal" :use (:instance (:functional-instance
-                                            acl2-agp::Uniqueness-of-op-inverses
-                                            (acl2-agp::equiv equal)
-                                            (acl2-agp::pred (lambda (x)
-                                                              (and (acl2-numberp x)
-                                                                   (not (equal x 0)))))
-                                            (acl2-agp::op binary-*)
-                                            (acl2-agp::id (lambda () 1))
-                                            (acl2-agp::inv unary-/))
-                                           (acl2-agp::x x)
-                                           (acl2-agp::y y))))))
+           :hints (("Goal" :use (:functional-instance
+                                 acl2-agp::Uniqueness-of-op-inverses
+                                 (acl2-agp::equiv equal)
+                                 (acl2-agp::pred (lambda (x)
+                                                   (and (acl2-numberp x)
+                                                        (not (equal x 0)))))
+                                 (acl2-agp::op binary-*)
+                                 (acl2-agp::id (lambda () 1))
+                                 (acl2-agp::inv unary-/))))))
 
   (defthm equal-/
     (implies (and (fc (acl2-numberp x))
@@ -364,16 +350,14 @@ of negations."
                          (fc (acl2-numberp y)))
                     (equal (* x (- y))
                            (- (* x y))))
-           :hints (("Goal" :use ((:instance (:functional-instance
-                                             acl2-crg::functional-commutativity-of-minus-times-right
-                                             (acl2-crg::equiv equal)
-                                             (acl2-crg::pred acl2-numberp)
-                                             (acl2-crg::plus binary-+)
-                                             (acl2-crg::times binary-*)
-                                             (acl2-crg::zero (lambda () 0))
-                                             (acl2-crg::minus unary--))
-                                            (acl2-crg::x x)
-                                            (acl2-crg::y y)))))
+           :hints (("Goal" :use (:functional-instance
+                                 acl2-crg::functional-commutativity-of-minus-times-right
+                                 (acl2-crg::equiv equal)
+                                 (acl2-crg::pred acl2-numberp)
+                                 (acl2-crg::plus binary-+)
+                                 (acl2-crg::times binary-*)
+                                 (acl2-crg::zero (lambda () 0))
+                                 (acl2-crg::minus unary--))))
            :rule-classes nil))
 
   (defthm functional-commutativity-of-minus-*-right

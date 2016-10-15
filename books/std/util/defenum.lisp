@@ -180,7 +180,7 @@ fast alist or other schemes, based on the elements it is given.</p>")
                ,body))
 
        (long (str::cat (or long "")
-                       "<p>This is an ordinary @(see defenum).</p>"
+                       "<p>This is an ordinary @(see std::defenum).</p>"
                        "@(def " (symbol-name name) ")"))
 
        (doc `(defxdoc ,name

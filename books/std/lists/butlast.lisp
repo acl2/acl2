@@ -36,39 +36,41 @@
 (include-book "abstract")
 (local (include-book "take"))
 
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z)) (+ y (+ x z)))))
-
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
-
 (local (in-theory (enable take-redefinition)))
 
-(defthm butlast-redefinition
-  (equal (butlast x n)
-         (if (>= (nfix n) (len x))
-             nil
-           (cons (car x)
-                 (butlast (cdr x) n))))
-  :rule-classes ((:definition :clique (butlast)
-                  :controller-alist ((butlast t t)))))
+(defsection std/lists/butlast
+  :parents (std/lists butlast)
+  :short "Lemmas about @(see butlast) available in the @(see std/lists)
+  library."
 
-(defun butlast-induction (x n)
-  (if (>= (nfix n) (len x))
-      nil
-    (cons (car x)
-          (butlast-induction (cdr x) n))))
+  "<p>The usual definition of @('butlast') is in terms of @(see take).  But
+  it's often more convenient to reason about @('butlast') directly.  In that
+  case, its recursive redefinition may be what you want:</p>"
 
-(defthm use-butlast-induction
-  t
-  :rule-classes ((:induction
-                  :pattern (butlast x n)
-                  :scheme (butlast-induction x n))))
+  (defthm butlast-redefinition
+    (equal (butlast x n)
+           (if (>= (nfix n) (len x))
+               nil
+             (cons (car x)
+                   (butlast (cdr x) n))))
+    :rule-classes ((:definition :clique (butlast)
+                    :controller-alist ((butlast t t)))))
 
+  (defun butlast-induction (x n)
+    (if (>= (nfix n) (len x))
+        nil
+      (cons (car x)
+            (butlast-induction (cdr x) n))))
 
-(def-listp-rule element-list-p-of-butlast
-  (implies (element-list-p (double-rewrite x))
-           (element-list-p (butlast x n))))
+  (defthm use-butlast-induction
+    t
+    :rule-classes ((:induction
+                    :pattern (butlast x n)
+                    :scheme (butlast-induction x n))))
+
+  "<p>For use with @(see std::deflist):</p>"
+
+  (def-listp-rule element-list-p-of-butlast
+    (implies (element-list-p (double-rewrite x))
+             (element-list-p (butlast x n)))))
 

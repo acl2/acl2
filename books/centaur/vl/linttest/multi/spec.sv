@@ -431,6 +431,35 @@ module m12 ;
 endmodule
 
 
+module m13 ;
+
+  logic clk;
+  logic nowarn_w1;
+  logic nowarn_w2;
+  logic q;
+
+  initial begin
+    nowarn_w1 = 1;
+  end
+
+  final begin
+    nowarn_w2 = 1;
+    nowarn_w1 = 0;
+  end
+
+  always @(posedge clk) nowarn_w1 = q;
+  always @(posedge clk) nowarn_w2 = q;
+
+  logic nowarn_w3;
+  parameter foo = 1;
+  generate
+      if (foo) assign nowarn_w3 = 1;
+      else assign nowarn_w3 = 0;
+  endgenerate
+
+endmodule
+
+
 
 // BOZO more things to eventually support and check
 //  - more testing of structures/fields

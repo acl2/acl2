@@ -1,11 +1,39 @@
+; AIGNET - And-Inverter Graph Networks
+; Copyright (C) 2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
 (include-book "semantics")
-
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
@@ -953,6 +981,20 @@
     :rule-classes :type-prescription))
 
 (defsection gatesimp
+  :parents (aignet-construction)
+  :short "Structure encoding AIGNET construction settings for how much to try to
+          simplify and whether to use hashing"
+  :long "<p>A simple bit-encoded pair of @('level'), a natural number
+determining how hard to try to simplify new AND nodes, and @('hashp'), a
+Boolean value.  Created with @('(mk-gatesimp level hashp)'), field accessors
+are @('(gatesimp-level gatesimp)') and @('(gatesimp-hashp gatesimp)').</p>
+
+<p>The @('level') values correspond to the levels of simplification found in the paper:</p>
+<blockquote>
+R. Brummayer and A. Biere.  Local two-level And-Inverter Graph minimization
+without blowup.  Proc. MEMCIS 6 (2006): 32-38,
+</blockquote>
+<p>Values of @('level') greater than 4 are treated the same as level 4.</p>"
   (local (in-theory (disable len-update-nth)))
   (local (in-theory (enable* acl2::ihsext-recursive-redefs
                              acl2::ihsext-bounds-thms
@@ -992,11 +1034,14 @@
     :hints(("Goal" :in-theory (enable mk-gatesimp)))
     :rule-classes :type-prescription))
 
-(define aignet-hash-and ((lit1 litp)
+(define aignet-hash-and ((lit1 litp "Literal to AND with lit2")
                          (lit2 litp)
-                         (gatesimp natp)
-                         strash
+                         (gatesimp natp "Configuration for how much simplification to try and whether to use hashing")
+                         (strash "Stobj containing the aignet's structural hash table")
                          aignet)
+  :parents (aignet-construction)
+  :short "Add an AND node to an AIGNET, or find a node already representing the required logical expression."
+  :long "<p>See @(see aignet-construction).</p>"
   (declare (type (integer 0 *) lit1)
            (type (integer 0 *) lit2)
            (type (integer 0 *) gatesimp)
@@ -1190,6 +1235,10 @@ to be done if non-<tt>NIL</tt>.</p>")
                         (gatesimp natp)
                         strash
                         aignet)
+  :parents (aignet-construction)
+  :short "Add a node to an AIGNET representing the OR of the given literals, or
+find a node already representing the required logical expression."
+  :long "<p>See @(see aignet-construction).</p>"
   :inline t
   :guard (and (fanin-litp f0 aignet)
               (fanin-litp f1 aignet))

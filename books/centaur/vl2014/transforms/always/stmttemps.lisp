@@ -158,7 +158,7 @@ so that later transforms just need to deal with compatible assignments.</p>")
        ;; some crazy rhs, so there's not a good way to name it, really.  The
        ;; width we use for the temp wire is the LHS's width.  The truncation,
        ;; if any, moves to the new assign statement we make.
-       (loc                      (vl-modelement-loc elem))
+       (loc                      (vl-modelement->loc elem))
        ((vl-delta delta)         delta)
        ((mv temp-name nf)        (vl-namefactory-indexed-name "vl_rhs" delta.nf))
        ((mv temp-expr temp-decl) (vl-occform-mkwire temp-name lw :loc loc))
@@ -215,7 +215,7 @@ so that later transforms just need to deal with compatible assignments.</p>")
                      :args (list elem x x.condition)
                      :fatalp t)))
 
-       (loc                      (vl-modelement-loc elem))
+       (loc                      (vl-modelement->loc elem))
        ((vl-delta delta)         delta)
        ((mv temp-name nf)        (vl-namefactory-indexed-name "vl_test" delta.nf))
        ((mv temp-expr temp-decl) (vl-occform-mkwire temp-name 1 :loc loc))

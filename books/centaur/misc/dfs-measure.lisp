@@ -31,9 +31,9 @@
 ; dfs-measure.lisp - a measure for depth-first search termination arguments
 
 (in-package "ACL2")
-(include-book "suffixp")
+(include-book "std/lists/suffixp" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "misc/hons-help" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 
@@ -181,10 +181,11 @@
 
 (defthm dfs-collect-suffixp-cons
   (suffixp stack (dfs-collect nodes edges (cons x stack)))
-  :hints(("Goal" :use (:instance suffixp-trans1
-                       (a stack) (b (cons x stack))
+  :hints(("Goal" :use (:instance suffixp-transitive
+                       (a stack)
+                       (b (cons x stack))
                        (c (dfs-collect nodes edges (cons x stack))))
-          :in-theory (disable suffixp-trans1))))
+          :in-theory (disable suffixp-transitive))))
 
 (verify-guards dfs-collect)
 

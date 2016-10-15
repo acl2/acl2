@@ -33,7 +33,7 @@
 (include-book "../mlib/typedecide")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (in-theory (enable acl2::arith-equiv-forwarding lnfix)))
 ;; (local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))
@@ -1733,7 +1733,6 @@ minor warning for assignments where the rhs is a constant.</p>"
            acl2::natp-rw
            posp-when-member-equal-of-pos-listp
            natp-when-member-equal-of-nat-listp
-           (:ruleset tag-reasoning)
            acl2::car-when-all-equalp
            member-equal-when-member-equal-of-cdr-under-iff
            (:ruleset basic-arithmetic-rules)

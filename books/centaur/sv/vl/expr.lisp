@@ -29,14 +29,17 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
+(include-book "trunc")
 (include-book "../mods/svmods")
 (include-book "../svex/lattice")
 (include-book "../svex/rewrite-base")
 (include-book "centaur/vl/mlib/hid-tools" :dir :system)
 (include-book "centaur/vl/mlib/selfsize" :dir :system)
 (include-book "centaur/vl/mlib/typedecide" :dir :system)
+(include-book "centaur/vl/mlib/elabindex" :dir :system)
+
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (defxdoc vl-expr-svex-translation
@@ -45,7 +48,7 @@
 sv::svex) expressions."
 
   :long "<p>The top-level function for converting a VL expression into a @(see
-sv::svex) expression is @(see vl-expr->svex).</p>
+sv::svex) expression is @(see vl-expr-to-svex).</p>
 
 <p>We assume that the expressions we are dealing with are sized.</p>
 
@@ -141,25 +144,65 @@ would therefore incur some overhead.</p>")
            :hints(("Goal" :in-theory (enable len)))))
 
 
-(fty::defalist vl-svexalist :key-type vl-scopeexpr :val-type sv::svex-p)
+;; (fty::defalist vl-svexalist :key-type vl-scopeexpr :val-type sv::svex-p)
 
-(fty::defalist vl-fnportalist :key-type vl-scopeexpr :val-type vl-portdecllist)
+;; (fty::defalist vl-fnportalist :key-type vl-scopeexpr :val-type vl-portdecllist)
 
 
-(defprod vl-svexconf
-  :short "Static configuration object for expr to svex conversion."
-  ((ss vl-scopestack-p
-       "The scopestack at the source location of the expression.")
-   (typeov vl-typeoverride-p "Scopeexprs mapped to resolved types")
-   (fns    vl-svexalist-p "Function definition table")
-   (fnports vl-fnportalist-p "Function portlist table")
-   (params vl-svexalist-p "Parameter definition table")))
+;; (defprod vl-svexconf
+;;   :short "Static configuration object for expr to svex conversion."
+;;   ((ss vl-scopestack-p
+;;        "The scopestack at the source location of the expression.")
+;;    (typeov vl-typeoverride-p "Scopeexprs mapped to resolved types")
+;;    (fns    vl-svexalist-p "Function definition table")
+;;    (fnports vl-fnportalist-p "Function portlist table")
+;;    (params vl-svexalist-p "Parameter definition table")))
 
-(define vl-svexconf-free ((x vl-svexconf-p))
-  (b* (((vl-svexconf x)))
-    (progn$ (fast-alist-free x.typeov)
-            (fast-alist-free x.fns)
-            (fast-alist-free x.params))))
+;; (define vl-svexconf-free ((x vl-svexconf-p))
+;;   (b* (((vl-svexconf x)))
+;;     (progn$ (fast-alist-free x.typeov)
+;;             (fast-alist-free x.fns)
+;;             (fast-alist-free x.params))))
+
+
+(define vl-integer-arithclass-p ((x vl-arithclass-p))
+  :inline t
+  (or (vl-arithclass-equiv x :vl-signed-int-class)
+      (vl-arithclass-equiv x :vl-unsigned-int-class))
+  ///
+  (defthm vl-integer-arithclass-p-of-vl-exprsign->arithclass
+    (vl-integer-arithclass-p (vl-exprsign->arithclass x))
+    :hints(("Goal" :in-theory (enable vl-exprsign->arithclass)))))
+
+
+(define vl-integer-arithclass->exprsign ((x vl-arithclass-p))
+  :guard (vl-integer-arithclass-p x)
+  :returns (sign vl-exprsign-p)
+  :inline t
+  (if (vl-arithclass-equiv x :vl-signed-int-class)
+      :vl-signed
+    :vl-unsigned))
+
+
+(local (defthm symbolp-of-vl-datatype-arithclass
+         (let ((ret (mv-nth 1 (vl-datatype-arithclass x))))
+           (and (symbolp ret)
+                (not (equal ret t))
+                (not (equal ret nil))))
+         :rule-classes :type-prescription
+         :hints(("Goal"
+                 :in-theory (disable type-when-vl-arithclass-p)
+                 :use ((:instance type-when-vl-arithclass-p
+                        (x (mv-nth 1 (vl-datatype-arithclass x)))))))))
+
+(local (defthm vl-integer-arithclass-p-of-vl-arithclass-max
+         (implies (and (vl-integer-arithclass-p x)
+                       (vl-integer-arithclass-p y))
+                  (vl-integer-arithclass-p (vl-arithclass-max x y)))
+         :hints(("Goal" :in-theory (enable vl-arithclass-max
+                                           vl-arithclass-rank
+                                           vl-integer-arithclass-p)))))
+
 
 
 (define svex-x ()
@@ -211,7 +254,7 @@ would therefore incur some overhead.</p>")
 (define svex-extend ((type vl-exprsign-p)
                      (width natp)
                      (x sv::svex-p))
-  :parents (vl-expr->svex)
+  :parents (vl-expr-to-svex)
   :short "Returns an svex representing the sign- or zero-extension of x at the given width."
 
   :long "<p>We don't have to extend/truncate operands when translating VL
@@ -219,14 +262,9 @@ expressions like @('a & b'), but we do need to do it to the inputs of
 expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   :returns (sv sv::svex-p)
-  (b* ((extend (if (eq (vl-exprsign-fix type) :vl-signed) 'sv::signx 'sv::zerox))
-       (width (lnfix width))
-       ((when (eq (sv::svex-kind x) :quote))
-        (sv::svex-quote
-         (if (eq (vl-exprsign-fix type) :vl-signed)
-             (sv::4vec-sign-ext (sv::2vec width) (sv::svex-quote->val x))
-           (sv::4vec-zero-ext (sv::2vec width) (sv::svex-quote->val x))))))
-    (sv::make-svex-call :fn extend :args (list (svex-int width) x)))
+  (if (vl-exprsign-equiv type :vl-signed)
+      (sv::svex-signx width x)
+    (sv::svex-zerox width x))
   ///
   (defthm svex-vars-of-svex-extend
     (implies (not (member v (sv::svex-vars x)))
@@ -278,7 +316,12 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                  ((when (svexlist-variable-free-p args))
                   (svex-quote (svex-apply x.fn (svexlist-eval args nil))))
                  (args-eval (svexlist-xeval args))
-                 (res (svex-apply (if (eq x.fn '===) '== x.fn) args-eval)))
+                 (res (svex-apply
+                       (case x.fn
+                         (=== '==)
+                         (==? 'safer-==?)
+                         (otherwise x.fn))
+                       args-eval)))
               (if (4vec-xfree-p res)
                   (svex-quote res)
                 (svex-call x.fn args)))
@@ -304,6 +347,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable svex-eval-when-4vec-xfree-of-minval-apply
                                         svex-eval-when-4vec-xfree-of-minval-apply-===
+                                        svex-eval-when-4vec-xfree-of-minval-apply-==?
                                         eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
@@ -528,18 +572,25 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
       (b* ((type (vl-scope->scopetype ss.top))
            ((mv err incr)
             (case type
-              ;; These are the two expected cases.  Genblocks are one-to-one
-              ;; with svex module nestings.  Genarrayblocks have an additional
-              ;; nesting level in svex-world: one level for the whole array,
-              ;; one level for the individual blocks.
-              (:vl-genblock (mv nil 1))
-              (:vl-genarrayblock (mv nil 1))
-              (:vl-fundecl         (mv nil 1))
-              (:vl-anonymous-scope (mv nil 1))
-              ;; Perhaps someday we'll need to add something about
-              ;; statememts/functions/tasks here, but for the moment all that
-              ;; is taken care of elsewhere (and complicated scoping stuff
-              ;; isn't allowed in those contexts).
+              ;; This says that each generate block and generate array
+              ;; correspond to a single nesting of scopes in terms of SV
+              ;; modules, and that blockstmt and forstmt scopes don't
+              ;; correspond to additional nesting levels.  Basically, for the
+              ;; former, we need to be sure to keep the scopes corresponding,
+              ;; whereas for the latter the vl-svstmt transform takes care of
+              ;; scoping and basically gets rid of local variables, so there
+              ;; are no corresponding scopes in SV world.
+              (:vl-genblock        (mv nil 1))
+              (:vl-genarrayblock   (mv nil 1))
+              (:vl-genarray        (mv nil 1))
+              (:vl-blockstmt       (mv nil 0))
+              (:vl-forstmt         (mv nil 0))
+
+              ;; bozo -- this was 1 but I think it should be 0 for the same
+              ;; reasons as blockstmt/forstmt.
+              (:vl-fundecl         (mv nil 0))
+
+              ;; (:vl-anonymous-scope (mv nil 1))
               (otherwise
                (mv (vmsg "Tried to go ~x0 level~s1 up through a scope of type ~x2"
                          vl-levels (if (eql vl-levels 1) "" "s") type)
@@ -585,10 +636,14 @@ module, you might just be inside the block within the module (so only two
 levels deep).  In translating between these we assume that VL scopes basically
 consist of a single global scope, the single module scope, and some number of
 nested block scopes.  In translating to svex, we require that the number of
-levels up only includes these nested block scopes.  We also need to compensate
-for a peculiarity: in VL, only one level of scopestack is used for a generate
-array, but in svex there's a scope nested around all of the entries in the
-array as well.  Vl-upscope-to-svex-upscope accounts for these issues.</p>
+levels up only includes these nested block scopes.  We also need to be careful
+to be consistent with our scoping conventions -- most particularly, a generate
+array (the elaborated result of a generate loop) has a level of scoping for the
+array itself, and an additional one for each of the blocks in the array (the
+replicated loop bodies).  On the other hand, statement scopes are handled by
+the vl-svstmt transform which eliminates local variables, so subscopes within
+statements are not related to svex scopes. Vl-upscope-to-svex-upscope accounts
+for these issues.</p>
 
 <p>For package and module contexts, we produce an error because variables in
 those scopes aren't yet supported.  We also return an address, however, because
@@ -618,7 +673,13 @@ ignored.</p>"
                 (sv::make-address :scope :root
                                     :path (sv::make-path-scope
                                            :namespace (vl-module->name x.mod)
-                                           :subpath path)))))
+                                           :subpath path)))
+    :interface (mv (vmsg "Module-scoped variables aren't yet supported")
+                   (sv::make-address :scope :root
+                                     :path (sv::make-path-scope
+                                            :namespace (vl-interface->name x.iface)
+                                            :subpath path)))
+    ))
 
 (define vl-seltrace-type ((x vl-seltrace-p)
                           (base-type vl-datatype-p))
@@ -782,24 +843,36 @@ ignored.</p>"
 
 |#
 
-(define vl-datatype-index-shift-amount ((x vl-datatype-p)
-                                        (idx sv::svex-p))
+(define vl-datatype-slot-width/range ((x vl-datatype-p))
   :guard (vl-datatype-resolved-p x)
   :returns (mv (err (iff (vl-msg-p err) err))
-               (shift (implies (not err) (sv::svex-p shift))))
+               (slotwidth natp :rule-classes :type-prescription)
+               (range-left integerp :rule-classes :type-prescription)
+               (range-right integerp :rule-classes :type-prescription))
   (b* ((x (vl-maybe-usertype-resolve x))
        ((mv err ?caveat slottype dim) (vl-datatype-remove-dim x))
-       ((when err) (mv err nil))
+       ((when err) (mv err 0 0 0))
        ((mv err size) (vl-datatype-size slottype))
-       ((when err) (mv err nil))
-       ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) nil))
+       ((when err) (mv err 0 0 0))
+       ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) 0 0 0))
        ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "unsized packed dimension on array type ~a0" x) nil))
+        (mv (vmsg "unsized packed dimension on array type ~a0" x) 0 0 0))
        ((vl-range range) (vl-packeddimension->range dim))
        ((unless (vl-range-resolved-p range))
-        (mv (vmsg "unresolved packed dimension on array type ~a0" x) nil))
+        (mv (vmsg "unresolved packed dimension on array type ~a0" x) 0 0 0))
        (msb (vl-resolved->val range.msb))
-       (lsb (vl-resolved->val range.lsb))
+       (lsb (vl-resolved->val range.lsb)))
+    (mv nil size msb lsb)))
+  
+
+(define vl-index-shift-amount ((size natp)
+                               (msb integerp)
+                               (lsb integerp)
+                               (idx sv::svex-p))
+  :returns (shift (implies (not err) (sv::svex-p shift)))
+  (b* ((size (lnfix size))
+       (msb (lifix msb))
+       (lsb (lifix lsb))
        ((when (>= msb lsb))
         ;; BOZO: If we use this function to get the shift amount for the LSB of
         ;; an ascending partselect, e.g. [4:6], on a declared range with equal
@@ -811,109 +884,123 @@ ignored.</p>"
         ;; we're accessing.  Oddly enough, this seems to agree with VCS
         ;; (ncverilog seems to return all Xes when any part of the select is
         ;; out of bounds).
-        (mv nil (sv::svex-reduce-consts
-                 (sv::svcall * (svex-int size)
-                               (sv::svcall sv::b- idx (svex-int lsb)))))))
-    (mv nil (sv::svex-reduce-consts
-             (sv::svcall * (svex-int size)
-                           (sv::svcall sv::b- (svex-int lsb) idx)))))
+        (sv::svex-reduce-consts
+         (sv::svcall * (svex-int size)
+                     (sv::svcall sv::b- idx (svex-int lsb))))))
+    (sv::svex-reduce-consts
+     (sv::svcall * (svex-int size)
+                 (sv::svcall sv::b- (svex-int lsb) idx))))
+  ///
+  (defret vars-of-vl-index-shift-amount
+    (implies (not (member v (sv::svex-vars idx)))
+             (not (member v (sv::svex-vars shift))))))
+
+(define vl-datatype-index-shift-amount ((x vl-datatype-p)
+                                        (idx sv::svex-p))
+  :guard (vl-datatype-resolved-p x)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (shift (implies (not err) (sv::svex-p shift))))
+  (b* (((mv err size msb lsb) (vl-datatype-slot-width/range x))
+       ((when err) (mv err nil)))
+    (mv nil (vl-index-shift-amount size msb lsb idx)))
   ///
   (defret vars-of-vl-datatype-index-shift-amount
     (implies (and (not err)
                   (not (member v (sv::svex-vars idx))))
              (not (member v (sv::svex-vars shift))))))
+               
 
 
-#!sv
-(define 4vec-lsb-shift ((shift-amt 4vec-p)
-                        (x 4vec-p))
-  :returns (res 4vec-p)
-  (if (2vec-p shift-amt)
-      (b* ((sh (2vec->val shift-amt)))
-        (if (< sh 0)
-            (4vec-concat (2vec (- sh)) (4vec-x) x)
-          (4vec-rsh (2vec sh) x)))
-    (4vec-x)))
+;; #!sv
+;; (define 4vec-lsb-shift ((shift-amt 4vec-p)
+;;                         (x 4vec-p))
+;;   :returns (res 4vec-p)
+;;   (if (2vec-p shift-amt)
+;;       (b* ((sh (2vec->val shift-amt)))
+;;         (if (< sh 0)
+;;             (4vec-concat (2vec (- sh)) (4vec-x) x)
+;;           (4vec-rsh (2vec sh) x)))
+;;     (4vec-x)))
 
-#!sv
-(define svex-lsb-shift ((shift-amt svex-p)
-                        (x svex-p))
-  :short "Adjust an expression for the LSB end of a select."
-  :long "<p>When computing the svex for an array access like @('v[i]'),
-typically you wanto to right-shift @('v') by some number of bits, depending on
-@('i') and the declared range of @('v').  But if @('i') is out of the bounds of
-that declared range, you instead want to return @('X').  More generally, if you
-have a ranged select like @('v[u:i]'), then if @('i') is out of bounds on the
-LSB side of the declared range, you want to concatenate some number of @('X')
-bits onto @('v').  This computes that shifted/concatenated version of @('v'),
-if the shift amount is computed elsewhere.</p>"
+;; #!sv
+;; (define svex-lsb-shift ((shift-amt svex-p)
+;;                         (x svex-p))
+;;   :short "Adjust an expression for the LSB end of a select."
+;;   :long "<p>When computing the svex for an array access like @('v[i]'),
+;; typically you wanto to right-shift @('v') by some number of bits, depending on
+;; @('i') and the declared range of @('v').  But if @('i') is out of the bounds of
+;; that declared range, you instead want to return @('X').  More generally, if you
+;; have a ranged select like @('v[u:i]'), then if @('i') is out of bounds on the
+;; LSB side of the declared range, you want to concatenate some number of @('X')
+;; bits onto @('v').  This computes that shifted/concatenated version of @('v'),
+;; if the shift amount is computed elsewhere.</p>"
 
-  :returns (res svex-p)
-  (b* ((sh (svex-reduce-consts shift-amt)))
-    (svex-case sh
-      :quote (if (2vec-p sh.val)
-                 (if (<= 0 (2vec->val sh.val))
-                     (svex-rsh (2vec->val sh.val) x)
-                   (svex-concat (- (2vec->val sh.val)) (svex-x) x))
-               (svex-x))
-      :otherwise ;; (b* ((concat-amt (svcall ?
-                 ;;                                (svcall < sh (vl::svex-int 0))
-                 ;;                                (svcall u- sh)
-                 ;;                                (vl::svex-int 0)))
-                 ;;      (rsh-amt    (svcall ?
-                 ;;                                (svcall < sh (vl::svex-int 0))
-                 ;;                                (vl::svex-int 0)
-                 ;;                                sh)))
-                 ;;   (svcall concat
-                 ;;           concat-amt
-                 ;;           (svex-x)
-                 ;;           (svcall rsh rsh-amt x)))
-      (svcall ?
-              (svcall < sh (vl::svex-int 0))
-              ;; if the shift is negative, we're concatenating Xes, otherwise
-              ;; we're right-shifting.
-              (svcall concat (svcall u- sh) (svex-x) x)
-              (svcall rsh sh x))))
-  ///
-  (local (defthm 4vec-<-of-non-2vec
-           (implies (not (2vec-p x))
-                    (equal (4vec-< x y) (4vec-x)))
-           :hints(("Goal" :in-theory (enable 4vec-<)))))
+;;   :returns (res svex-p)
+;;   (b* ((sh (svex-reduce-consts shift-amt)))
+;;     (svex-case sh
+;;       :quote (if (2vec-p sh.val)
+;;                  (if (<= 0 (2vec->val sh.val))
+;;                      (svex-rsh (2vec->val sh.val) x)
+;;                    (svex-concat (- (2vec->val sh.val)) (svex-x) x))
+;;                (svex-x))
+;;       :otherwise ;; (b* ((concat-amt (svcall ?
+;;                  ;;                                (svcall < sh (vl::svex-int 0))
+;;                  ;;                                (svcall u- sh)
+;;                  ;;                                (vl::svex-int 0)))
+;;                  ;;      (rsh-amt    (svcall ?
+;;                  ;;                                (svcall < sh (vl::svex-int 0))
+;;                  ;;                                (vl::svex-int 0)
+;;                  ;;                                sh)))
+;;                  ;;   (svcall concat
+;;                  ;;           concat-amt
+;;                  ;;           (svex-x)
+;;                  ;;           (svcall rsh rsh-amt x)))
+;;       (svcall ?
+;;               (svcall < sh (vl::svex-int 0))
+;;               ;; if the shift is negative, we're concatenating Xes, otherwise
+;;               ;; we're right-shifting.
+;;               (svcall concat (svcall u- sh) (svex-x) x)
+;;               (svcall rsh sh x))))
+;;   ///
+;;   (local (defthm 4vec-<-of-non-2vec
+;;            (implies (not (2vec-p x))
+;;                     (equal (4vec-< x y) (4vec-x)))
+;;            :hints(("Goal" :in-theory (enable 4vec-<)))))
 
-  (local (defthm 4vec-uminus-of-non-2vec
-           (implies (not (2vec-p x))
-                    (equal (4vec-uminus x) (4vec-x)))
-           :hints(("Goal" :in-theory (enable 4vec-uminus)))))
+;;   (local (defthm 4vec-uminus-of-non-2vec
+;;            (implies (not (2vec-p x))
+;;                     (equal (4vec-uminus x) (4vec-x)))
+;;            :hints(("Goal" :in-theory (enable 4vec-uminus)))))
 
-  (local (defthm 4vec-concat-of-non-2vec
-           (implies (not (2vec-p x))
-                    (equal (4vec-concat x y z) (4vec-x)))
-           :hints(("Goal" :in-theory (enable 4vec-concat)))))
+;;   (local (defthm 4vec-concat-of-non-2vec
+;;            (implies (not (2vec-p x))
+;;                     (equal (4vec-concat x y z) (4vec-x)))
+;;            :hints(("Goal" :in-theory (enable 4vec-concat)))))
 
-  (local (in-theory (disable 4vec->lower-when-2vec-p)))
+;;   (local (in-theory (disable 4vec->lower-when-2vec-p)))
 
 
-  (local (defthm svex-quote->val-of-reduce-consts
-           (implies (equal (svex-kind (svex-reduce-consts x)) :quote)
-                    (equal (svex-eval x env)
-                           (svex-quote->val (svex-reduce-consts x))))
-           :hints (("goal" :use ((:instance svex-reduce-consts-correct))
-                    :in-theory (e/d (svex-eval-when-quote)
-                                    (svex-reduce-consts-correct))))))
+;;   (local (defthm svex-quote->val-of-reduce-consts
+;;            (implies (equal (svex-kind (svex-reduce-consts x)) :quote)
+;;                     (equal (svex-eval x env)
+;;                            (svex-quote->val (svex-reduce-consts x))))
+;;            :hints (("goal" :use ((:instance svex-reduce-consts-correct))
+;;                     :in-theory (e/d (svex-eval-when-quote)
+;;                                     (svex-reduce-consts-correct))))))
 
-  (defthm svex-lsb-shift-correct
-    (equal (svex-eval (svex-lsb-shift shift-amt x) env)
-           (4vec-lsb-shift (svex-eval shift-amt env)
-                           (svex-eval x env)))
-    :hints(("Goal" :in-theory (enable svex-apply svexlist-eval 4vec-lsb-shift)
-            :rw-cache-state nil)
-           (and stable-under-simplificationp
-                '(:in-theory (enable 4vec-< 4vec-? 3vec-? 4vec-uminus)))))
+;;   (defthm svex-lsb-shift-correct
+;;     (equal (svex-eval (svex-lsb-shift shift-amt x) env)
+;;            (4vec-lsb-shift (svex-eval shift-amt env)
+;;                            (svex-eval x env)))
+;;     :hints(("Goal" :in-theory (enable svex-apply svexlist-eval 4vec-lsb-shift)
+;;             :rw-cache-state nil)
+;;            (and stable-under-simplificationp
+;;                 '(:in-theory (enable 4vec-< 4vec-? 3vec-? 4vec-uminus)))))
 
-  (defthm vars-of-svex-lsb-shift
-    (implies (and (not (member v (svex-vars shift-amt)))
-                  (not (member v (svex-vars x))))
-             (not (member v (svex-vars (svex-lsb-shift shift-amt x)))))))
+;;   (defthm vars-of-svex-lsb-shift
+;;     (implies (and (not (member v (svex-vars shift-amt)))
+;;                   (not (member v (svex-vars x))))
+;;              (not (member v (svex-vars (svex-lsb-shift shift-amt x)))))))
 
 (define vl-seltrace-split ((x vl-seltrace-p)
                            (unres-count (equal (vl-seltrace-unres-count x)
@@ -992,7 +1079,7 @@ if the shift amount is computed elsewhere.</p>"
        ((unless size) (mv (vmsg "Could not size datatype ~s0" type) (svex-x)))
 
        ((when (atom x))
-        (mv nil (sv::svcall sv::concat (svex-int size) base-svex (svex-x))))
+        (mv nil (sv::svex-concat size base-svex (svex-x))))
 
 
        ;; Unres-count nonzero implies (consp x)
@@ -1021,9 +1108,7 @@ if the shift amount is computed elsewhere.</p>"
                        base-svex
                        outer-ss))
        ((when err) (mv err (svex-x))))
-    (mv err (sv::svcall sv::concat (svex-int size)
-                          (sv::svex-lsb-shift shift-amt rest)
-                          (svex-x))))
+    (mv err (sv::svcall sv::partsel shift-amt (svex-int size) rest)))
   ///
   (local (in-theory (disable (:d vl-seltrace-to-svex-vector))))
 
@@ -1200,15 +1285,8 @@ the way.</li>
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
   (b* (((vl-plusminus psel))
-       ((mv err ?caveat ?basetype dim) (vl-datatype-remove-dim type))
+       ((mv err slotsize dim-msb dim-lsb) (vl-datatype-slot-width/range type))
        ((when err) (mv err (svex-x)))
-       ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "Unsized dimension") (svex-x)))
-       ((vl-range dimrange) (vl-packeddimension->range dim))
-       ((unless (vl-range-resolved-p dimrange))
-        (mv (vmsg "Unresolved dimension") (svex-x)))
-       (dim-msb (vl-resolved->val dimrange.msb))
-       (dim-lsb (vl-resolved->val dimrange.lsb))
        (downp (<= dim-lsb dim-msb))
        (sel-lsb (if downp
                     (if psel.minusp
@@ -1223,10 +1301,10 @@ the way.</li>
                     ;; base is the msb, compute the lsb
                     (sv::svcall + base-svex
                                 (sv::svcall + (svex-int -1) width-svex)))))
-       ((mv err shift-amt)
-        (vl-datatype-index-shift-amount type sel-lsb))
-       ((when err) (mv err (svex-x))))
-    (mv nil (sv::svex-lsb-shift shift-amt x)))
+       (shift-amt
+        (vl-index-shift-amount slotsize dim-msb dim-lsb sel-lsb))
+       (width (sv::svex-reduce-consts (sv::svcall * (svex-int slotsize) width-svex))))
+    (mv nil (sv::svcall sv::partsel shift-amt width x)))
 
   ///
   (defret vars-of-vl-plusminus-partselect->svex
@@ -1250,7 +1328,7 @@ the way.</li>
   ((x vl-operandinfo-p)
    (indices sv::svexlist-p)
    (ss vl-scopestack-p)
-   (params vl-svexalist-p))
+   (scopes vl-elabscopes-p))
 
 
 
@@ -1319,31 +1397,38 @@ the way.</li>
        ((unless (vl-hidtrace-resolved-p x.hidtrace))
         (fail (vmsg "Unresolved hid indices")))
        ((vl-hidstep decl) (car x.hidtrace))
+       (decl-scopes (vl-elabscopes-traverse (rev decl.elabpath) scopes))
+       (info (vl-elabscopes-item-info x.declname decl-scopes))
+       (item (or info decl.item))
 
        ((mv err base-svex)
-        (if (eq (tag decl.item) :vl-vardecl)
-            (b* (;; ((mv unres-sels res-sels)
-                 ;;  (vl-seltrace-split x.seltrace
-                 ;;                     (vl-seltrace-unres-count x.seltrace)))
-                 ;; If we have a bunch of resolved selects, we can encode them
-                 ;; as either an explicit select (right shift + concat) or as a
-                 ;; name, where eventually this will be resolved to a shift by
-                 ;; alias resolution.  Let's go with the former for now since
-                 ;; the latter won't work for elaboration, where we don't yet
-                 ;; have a complete module hierarchy.
-                 ((mv err base-var)
-                  ;; Note we're passing NIL as the seltrace here, so it's
-                  ;; really only making a variable of the part corresponding to
-                  ;; the vardecl (hid), with no selects.
-                  (vl-seltrace-to-svex-var nil x ss)))
-              (mv err base-var))
-          (b* ((look (cdr (hons-get x.prefixname (vl-svexalist-fix params))))
-               ((unless look)
-                ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
-                (mv (vmsg "Parameter definition not found") nil))
-               ((unless (sv::svex-addr-p look))
-                (mv (vmsg "Parameter expression malformed") nil)))
-            (mv nil look))))
+        (b* (((when (eq (tag item) :vl-vardecl))
+              (b* (;; ((mv unres-sels res-sels)
+                   ;;  (vl-seltrace-split x.seltrace
+                   ;;                     (vl-seltrace-unres-count x.seltrace)))
+                   ;; If we have a bunch of resolved selects, we can encode them
+                   ;; as either an explicit select (right shift + concat) or as a
+                   ;; name, where eventually this will be resolved to a shift by
+                   ;; alias resolution.  Let's go with the former for now since
+                   ;; the latter won't work for elaboration, where we don't yet
+                   ;; have a complete module hierarchy.
+                   ((mv err base-var)
+                    ;; Note we're passing NIL as the seltrace here, so it's
+                    ;; really only making a variable of the part corresponding to
+                    ;; the vardecl (hid), with no selects.
+                    (vl-seltrace-to-svex-var nil x ss)))
+                (mv err base-var)))
+             ((when (member (tag item) '(:vl-modinst
+                                         :vl-interfaceport)))
+              (vl-seltrace-to-svex-var nil x ss))
+             (paramval (b* (((unless (eq (tag item) :vl-paramdecl)) nil)
+                            ((vl-paramdecl item)))
+                         (vl-paramtype-case item.type
+                           :vl-explicitvalueparam item.type.final-value
+                           :otherwise nil)))
+             ((unless paramval)
+              (mv (vmsg "Parameter value is not resolved") nil)))
+          (mv nil (sv::svex-quote paramval))))
        ((when err) (fail err))
 
        (unres-count (vl-seltrace-unres-count x.seltrace))
@@ -1460,12 +1545,10 @@ the way.</li>
              (sv::svarlist-addr-p (sv::svex-vars lsp-expr)))))
 
 
-
-
 (define vl-operandinfo-to-svex ((x vl-operandinfo-p)
                                 (indices sv::svexlist-p)
                                 (ss vl-scopestack-p)
-                                (params vl-svexalist-p))
+                                (scopes vl-elabscopes-p))
   :prepwork (;; (local (defthm seltrace-index-count-in-terms-of-operandinfo
              ;;          (equal (vl-seltrace-index-count (vl-operandinfo->seltrace x))
              ;;                 (- (vl-operandinfo-index-count x)
@@ -1495,19 +1578,19 @@ the way.</li>
        ((when err) (mv err (svex-x)))
        ((unless size)
         (mv (vmsg "Unsizable datatype ~a0" x.type) (svex-x)))
-       ((mv & signedness) (vl-datatype-signedness x.type))
-
+       ((mv ?caveat class) (vl-datatype-arithclass x.type))
        ((mv err lsp-expr ?lsp-type dyn-expr)
         (vl-operandinfo-to-svex-longest-static-prefix
-         x indices ss params))
+         x indices ss scopes))
 
        ((when err) (mv err (svex-x)))
 
        (res-base (sv::svex-replace-var dyn-expr *svex-longest-static-prefix-var* lsp-expr)))
-    (clear-memoize-table 'sv::svex-replace-var)
+    ;; (clear-memoize-table 'sv::svex-replace-var)
     (mv nil (sv::svex-reduce-consts
-             (if signedness
-                 (svex-extend signedness size res-base)
+             (if (vl-integer-arithclass-p class)
+                 (svex-extend (vl-integer-arithclass->exprsign class) size res-base)
+               ;; Something like an interface, array, etc.
                res-base))))
   ///
 
@@ -1612,31 +1695,55 @@ the way.</li>
                            :exec (vl-datatype-$unpacked_dimensions x.res))
          :otherwise 0))))
 
-
+(define vl-datatype-syscall-remove-dims ((n natp)
+                                         (type vl-datatype-p))
+  :guard (vl-datatype-resolved-p type)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (final-dim (implies (not err) (vl-packeddimension-p final-dim))))
+  :measure (nfix n)
+  (b* (((mv err ?caveat new-type dim)
+        (vl-datatype-remove-dim type))
+       ((when err) (mv err nil))
+       ((when (zp n)) (mv nil dim)))
+    (vl-datatype-syscall-remove-dims (1- n) new-type)))
 
 
 (define vl-datatype-syscall-to-svex ((orig-x vl-expr-p)
                                      (fn stringp)
                                      (type vl-datatype-p)
-                                     (conf vl-svexconf-p))
+                                     (index maybe-natp)
+                                     (ss vl-scopestack-p)
+                                     (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (res sv::Svex-p))
-  (b* (((vl-svexconf conf))
-       (warnings nil)
+  (b* ((warnings nil)
+       (fn (string-fix fn))
+       (index (maybe-natp-fix index))
+       (orig-x (vl-expr-fix orig-x))
+       ((when (and index (zp index)))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Dimension argument of 0 is illegal in array query system calls: ~a0"
+                   :args (list orig-x))
+            (svex-x)))
+       ((when (and index (member-equal fn '("$bits" "$dimensions" "$unpacked_dimensions"))))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Dimension argument is illegal: ~a0"
+                   :args (list orig-x))
+            (svex-x)))
+
        ((mv err type)
-        (vl-datatype-usertype-resolve type conf.ss :typeov conf.typeov))
+        (vl-datatype-usertype-resolve type ss :scopes scopes))
        ((when err)
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't resolve datatype in ~a0: ~@1"
-                   :args (list (vl-expr-fix orig-x) err))
-            (svex-x)))
-       (fn (string-fix fn)))
+                   :args (list orig-x err))
+            (svex-x))))
     (cond ((equal fn "$bits")
            (b* (((mv err size) (vl-datatype-size type))
                 ((when (or err (not size)))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't size datatype in ~a0: ~@1"
-                            :args (list (vl-expr-fix orig-x) (or err "unsizable datatype")))
+                            :args (list orig-x (or err "unsizable datatype")))
                      (svex-x))))
              (mv (ok) (svex-int size))))
           ((equal fn "$dimensions")
@@ -1651,15 +1758,15 @@ the way.</li>
                               "$high"
                               "$size"))
            ;; Deals with the outermost dimension
-           (b* (((mv err & & dim)
-                 (vl-datatype-remove-dim type))
+           (b* (((mv err dim)
+                 (vl-datatype-syscall-remove-dims (if index (1- index) 0) type))
                 ((when (or err
                            ;; BOZO some of these might work for unsized dimensions
                            (vl-packeddimension-case dim :unsized)
                            (not (vl-range-resolved-p (vl-packeddimension->range dim)))))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't resolve outermost dimension for ~a0: ~@1"
-                            :args (list (vl-expr-fix orig-x)
+                            :args (list orig-x
                                         (or err "unresolved dimension")))
                      (svex-x)))
                 (dim.range (vl-packeddimension->range dim))
@@ -1688,9 +1795,9 @@ the way.</li>
                     (mv nil
                         (svex-int (vl-range-size dim.range)))))))
 
-          (t (mv (fatal :type :vl-expr-to-svex-fail
+          (t (mv (fatal :type :vl-expr-unsupported
                         :msg "Unrecognized system function: ~a0"
-                        :args (list (vl-expr-fix orig-x)))
+                        :args (list orig-x))
                  (svex-x)))))
 
 
@@ -1745,12 +1852,13 @@ the way.</li>
     :hints(("Goal" :in-theory (enable repeat)))))
 
 (Define vl-datatypelist-usertype-resolve ((x vl-datatypelist-p)
-                                          (ss vl-scopestack-p))
+                                          (ss vl-scopestack-p)
+                                          (scopes vl-elabscopes-p))
   :returns (mv (err (iff (vl-msg-p err) err))
                (new-x vl-datatypelist-p))
   (b* (((when (atom x)) (mv nil nil))
-       ((mv err1 x1) (vl-datatype-usertype-resolve (car x) ss))
-       ((mv err2 x2) (vl-datatypelist-usertype-resolve (cdr x) ss)))
+       ((mv err1 x1) (vl-datatype-usertype-resolve (car x) ss :scopes scopes))
+       ((mv err2 x2) (vl-datatypelist-usertype-resolve (cdr x) ss scopes)))
     (mv (or err1 err2)
         (cons x1 x2)))
   ///
@@ -1789,28 +1897,18 @@ the way.</li>
   (b* ((op (vl-unaryop-fix op))
        (body
         (case op
-          (:vl-unary-plus   (sv::svex-fix arg))
+          (:vl-unary-plus   (sv::svcall sv::xdet arg))
           (:vl-unary-minus  (sv::svcall sv::u- arg))
           (:vl-unary-bitnot (sv::svcall sv::bitnot arg))
           (:vl-unary-lognot (sv::svcall sv::bitnot (sv::svcall sv::uor arg)))
-          (:vl-unary-bitand (sv::svcall sv::uand   (sv::svcall sv::signx
-                                                                     (svex-int (lnfix arg-size))
-                                                                     arg)))
+          (:vl-unary-bitand (sv::svcall sv::uand   (sv::svex-signx arg-size arg)))
           (:vl-unary-nand   (sv::svcall sv::bitnot
-                                          (sv::svcall sv::uand
-                                                        (sv::svcall sv::signx
-                                                                      (svex-int (lnfix arg-size))
-                                                                      arg))))
+                                          (sv::svcall sv::uand (sv::svex-signx arg-size arg))))
           (:vl-unary-bitor  (sv::svcall sv::uor     arg))
           (:vl-unary-nor    (sv::svcall sv::bitnot  (sv::svcall sv::uor    arg)))
-          (:vl-unary-xor    (sv::svcall sv::uxor    (sv::svcall sv::zerox
-                                                                      (svex-int (lnfix arg-size))
-                                                                      arg)))
+          (:vl-unary-xor    (sv::svcall sv::uxor    (sv::svex-zerox arg-size arg)))
           (:vl-unary-xnor   (sv::svcall sv::bitnot
-                                          (sv::svcall sv::uxor
-                                                        (sv::svcall sv::zerox
-                                                                      (svex-int (lnfix arg-size))
-                                                                      arg)))))))
+                                          (sv::svcall sv::uxor (sv::svex-zerox arg-size arg)))))))
     (mv (and (not body)
              (vmsg "Operator not implemented: ~s0" (vl-unaryop-string op)))
         (if body
@@ -1834,10 +1932,10 @@ the way.</li>
   (b* ((op (vl-binaryop-fix op))
        (body
         (case op
-          (:vl-binary-plus    (sv::svcall +            left right))
+          (:vl-binary-plus    (sv::svcall +          left right))
           (:vl-binary-minus   (sv::svcall sv::b-     left right))
-          (:vl-binary-times   (sv::svcall *            left right))
-          (:vl-binary-div     (sv::svcall /            left right))
+          (:vl-binary-times   (sv::svcall *          left right))
+          (:vl-binary-div     (sv::svcall /          left right))
           (:vl-binary-rem     (sv::svcall sv::%      left right))
           (:vl-binary-eq      (sv::svcall sv::==     left right))
           (:vl-binary-neq     (sv::svcall sv::bitnot (sv::svcall sv::==     left right)))
@@ -1846,9 +1944,9 @@ the way.</li>
           (:vl-binary-wildeq  (sv::svcall sv::==?    left right))
           (:vl-binary-wildneq (sv::svcall sv::bitnot (sv::svcall sv::==?    left right)))
           (:vl-binary-logand  (sv::svcall sv::bitand (sv::svcall sv::uor    left)
-                                                         (sv::svcall sv::uor    right)))
+                                                     (sv::svcall sv::uor    right)))
           (:vl-binary-logor   (sv::svcall sv::bitor  (sv::svcall sv::uor    left)
-                                                         (sv::svcall sv::uor    right)))
+                                                     (sv::svcall sv::uor    right)))
           (:vl-binary-lt      (sv::svcall sv::<      left right))
           (:vl-binary-lte     (sv::svcall sv::bitnot (sv::svcall sv::<      right left)))
           (:vl-binary-gt      (sv::svcall sv::<      right left))
@@ -1857,14 +1955,22 @@ the way.</li>
           (:vl-binary-bitor   (sv::svcall sv::bitor  left right))
           (:vl-binary-xor     (sv::svcall sv::bitxor left right))
           (:vl-binary-xnor    (sv::svcall sv::bitnot (sv::svcall sv::bitxor left right)))
+          (:vl-binary-power   (sv::svcall sv::pow    left right))
+          ;; Shift amounts need to be zero-extended -- right arg is always
+          ;; treated as unsigned per SV spec 11.4.10.
           (:vl-binary-shr     (sv::svcall sv::rsh
-                                            right
-                                            (sv::svcall sv::zerox
-                                                          (svex-int (lnfix left-size))
-                                                          left)))
-          (:vl-binary-shl     (sv::svcall sv::lsh    right left))
-          (:vl-binary-ashr    (sv::svcall sv::rsh    right left))
-          (:vl-binary-ashl    (sv::svcall sv::lsh    right left))
+                                          ;; Weird case: 
+                                          (sv::svex-zerox right-size right)
+                                          (sv::svex-zerox left-size left)))
+          (:vl-binary-shl     (sv::svcall sv::lsh
+                                          (sv::svex-zerox right-size right)
+                                          left))
+          (:vl-binary-ashr    (sv::svcall sv::rsh
+                                          (sv::svex-zerox right-size right)
+                                          left))
+          (:vl-binary-ashl    (sv::svcall sv::lsh
+                                          (sv::svex-zerox right-size right)
+                                          left))
           (:vl-implies        (sv::svcall sv::bitor
                                             (sv::svcall sv::bitnot
                                                           (sv::svcall sv::uor    left))
@@ -1901,8 +2007,7 @@ the way.</li>
   (defthm vars-of-svex-concat-list-aux
     (implies (and (not (member v (sv::svexlist-vars x)))
                   (not (member v (sv::svex-vars acc))))
-             (not (member v (sv::svex-vars (svex-concat-list-aux widths x
-                                                                   acc)))))))
+             (not (member v (sv::svex-vars (svex-concat-list-aux widths x acc)))))))
 
 (define svex-concat-list ((widths nat-listp) (x sv::svexlist-p))
   ;; Because Verilog concats go MSB to LSB, we do this tail-recursively,
@@ -1956,14 +2061,7 @@ the way.</li>
     (implies (not (member v (sv::svexlist-vars x)))
              (not (member v (sv::svex-vars concat))))))
 
-(define vl-compare-datatypes ((a vl-datatype-p)
-                              (b vl-datatype-p))
-  :returns (err (iff (vl-msg-p err) err))
-  (if (vl-datatype-equiv a b)
-      nil
-    ;; We'll see how often this bites us...
-    (vmsg "Mismatching datatypes: ~a0, ~a1"
-          (vl-datatype-fix a) (vl-datatype-fix b))))
+
 
 
 
@@ -1995,6 +2093,7 @@ the way.</li>
                             nil
                           (vmsg "Key ~a0 not in valid range" key.key))
                       (vmsg "Key ~a0 not resolved" key.key))
+              :structmem (vmsg "Struct member name key ~a0 not valid for array patterns." key.name)
               :type (vmsg "Datatype key ~a0 not valid for array patterns" key.type)
               :default nil)))
     (or err
@@ -2040,7 +2139,7 @@ the way.</li>
     :hints(("Goal" :in-theory (enable vl-svex-keyvallist-vars)))))
 
 
-(define vl-svex-keyval-index-lookup ((n natp)
+(define vl-svex-keyval-index-lookup ((n integerp)
                                      (x vl-svex-keyvallist-p))
   :measure (len (vl-svex-keyvallist-fix x))
   :returns (ans (implies ans (sv::svex-p ans)))
@@ -2050,7 +2149,7 @@ the way.</li>
        ((when (vl-patternkey-case key
                 :expr (and (vl-expr-resolved-p key.key)
                            (eql (vl-resolved->val key.key)
-                                (lnfix n)))
+                                (lifix n)))
                 :otherwise nil))
         (cdar x)))
     (vl-svex-keyval-index-lookup n (cdr x)))
@@ -2061,10 +2160,10 @@ the way.</li>
              (not (member v (sv::svex-vars ans))))
     :hints(("Goal" :in-theory (enable vl-svex-keyvallist-vars)))))
 
-(define vl-array-assignpat-keyval-resolve ((lsb natp)
-                                           (msb natp)
+(define vl-array-assignpat-keyval-resolve ((lsb integerp)
+                                           (msb integerp)
                                            (x vl-svex-keyvallist-p))
-  :measure (abs (- (nfix lsb) (nfix msb)))
+  :measure (abs (- (ifix lsb) (ifix msb)))
   ;; BOZO only returning one of the errors...
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex-membs sv::svexlist-p
@@ -2075,14 +2174,14 @@ the way.</li>
                   (vl-svex-keyval-default-lookup x)))
        (err1 (and (not first)
                   (vmsg "No assignment pattern entry for array index ~x0"
-                        (lnfix msb))))
-       ((when (eql (lnfix lsb) (lnfix msb)))
+                        (lifix msb))))
+       ((when (eql (lifix lsb) (lifix msb)))
         ;; Last one
         (mv err1
             (list (or first (svex-x)))))
-       (next (if (< (lnfix lsb) (lnfix msb))
-                 (- (lnfix msb) 1)
-               (+ (lnfix msb) 1)))
+       (next (if (< (lifix lsb) (lifix msb))
+                 (- (lifix msb) 1)
+               (+ (lifix msb) 1)))
        ((mv err rest)
         (vl-array-assignpat-keyval-resolve lsb next x)))
     (mv (or err1 err)
@@ -2090,7 +2189,7 @@ the way.</li>
   ///
   (defret len-of-vl-array-assignpat-keyval-resolve
     (equal (len svex-membs)
-           (+ 1 (abs (- (nfix msb) (nfix lsb))))))
+           (+ 1 (abs (- (ifix msb) (ifix lsb))))))
   (defthm len-of-vl-array-assignpat-keyval-resolve-range
     (implies (vl-range-resolved-p range)
              (b* (((vl-range range)))
@@ -2109,13 +2208,13 @@ the way.</li>
     :hints(("Goal" :in-theory (enable vl-svex-keyvallist-vars)))))
 
 
-(define vl-simple-idexpr-name ((x vl-expr-p))
-  :returns (name (iff (stringp name) name))
-  (vl-expr-case x
-    :vl-index (and (vl-partselect-case x.part :none)
-                   (atom x.indices)
-                   (vl-simple-id-name x.scope))
-    :otherwise nil))
+;; (define vl-simple-idexpr-name ((x vl-expr-p))
+;;   :returns (name (iff (stringp name) name))
+;;   (vl-expr-case x
+;;     :vl-index (and (vl-partselect-case x.part :none)
+;;                    (atom x.indices)
+;;                    (vl-simple-id-name x.scope))
+;;     :otherwise nil))
 
 (define vl-check-struct-assignpat-keys ((pairs vl-keyvallist-p)
                                         (membs vl-structmemberlist-p))
@@ -2125,19 +2224,27 @@ the way.</li>
        ((when (atom pairs)) nil)
        (key (caar pairs))
        (err (vl-patternkey-case key
-              :expr (b* ((name (vl-simple-idexpr-name key.key))
-                         ((unless name)
-                          (vmsg "Bad expression for struct assignment pattern key: ~a0" key.key))
-                         ((unless (vl-find-structmember name membs))
-                          (vmsg "Not a field name: ~a0" key.key)))
-                      nil)
+              ;; We used to leave these as expressions, but now they should be
+              ;; structmem fields, so we shouldn't see any complex expressions
+              ;; being mixed in.
+              ;; :expr (b* ((name (vl-simple-idexpr-name key.key))
+              ;;            ((unless name)
+              ;;             (vmsg "Bad expression for struct assignment pattern key: ~a0" key.key))
+              ;;            ((unless (vl-find-structmember name membs))
+              ;;             (vmsg "Not a field name: ~a0" key.key)))
+              ;;         nil)
+              :expr
+              (vmsg "Array indexing key ~a0 not valid for struct patterns" key.key)
+              :structmem
+              (if (vl-find-structmember key.name membs)
+                  nil
+                (vmsg "Not a field name: ~a0" key.name))
               :type
               ;; BOZO could support these someday
               (vmsg "Datatype key ~a0 not valid for struct patterns" key.type)
               :default nil)))
     (or err
         (vl-check-struct-assignpat-keys (cdr pairs) membs))))
-
 
 (define vl-keyval-default-lookup ((x vl-keyvallist-p))
   :measure (len (vl-keyvallist-fix x))
@@ -2163,8 +2270,10 @@ the way.</li>
        ((when (atom x)) nil)
        (key (caar x))
        ((when (vl-patternkey-case key
-                :expr (equal (vl-simple-idexpr-name key.key)
-                             (string-fix name))
+                ;; From back when things were expressions:
+                ;; :expr (equal (vl-simple-idexpr-name key.key)
+                ;;              (string-fix name))
+                :structmem (equal key.name (string-fix name))
                 :otherwise nil))
         (cdar x)))
     (vl-keyval-member-lookup name (cdr x)))
@@ -2342,21 +2451,22 @@ the way.</li>
                            (ss vl-scopestack-p))
   :returns (mv (err (iff (vl-msg-p err) err))
                (decl (implies (not err) (vl-fundecl-p decl)))
-               (decl-ss (implies (not err) (vl-scopestack-p decl-ss))))
+               (decl-ss (implies (not err) (vl-scopestack-p decl-ss)))
+               (elabpath vl-elabtraversal-p))
   (b* (((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x ss))
-       ((when err) (mv err nil trace))
+       ((when err) (mv err nil nil nil))
        ((unless (vl-hidtrace-resolved-p trace))
         (mv (vmsg "Function ~a0 has unresolved indices??"
                   :args (list (vl-scopeexpr-fix x)))
-            nil nil))
+            nil nil nil))
        ((vl-hidstep lookup) (car trace))
        ((unless (eq (tag lookup.item) :vl-fundecl))
         (mv (vmsg "Function name ~a0 does not refer to a fundecl but instead ~
                    ~a1"
                    :args (list (vl-scopeexpr-fix x) lookup.item))
-            nil nil)))
-    (mv nil lookup.item lookup.ss)))
+            nil nil nil)))
+    (mv nil lookup.item lookup.ss lookup.elabpath)))
 
 
 (define vl-streamexprlist-has-with ((x vl-streamexprlist-p))
@@ -2374,7 +2484,8 @@ the way.</li>
 
 
 (define vl-slicesize-resolve ((x vl-slicesize-p)
-                              (conf vl-svexconf-p))
+                              (ss vl-scopestack-p)
+                              (scopes vl-elabscopes-p))
   :returns (mv (err (iff (vl-msg-p err) err))
                (size (implies (not err) (posp size)) :rule-classes :type-prescription))
   (b* ((x (vl-slicesize-fix x)))
@@ -2384,10 +2495,9 @@ the way.</li>
                   (mv (vmsg "Slice size is unresolved expression") nil))
                  (val (vl-resolved->val x.expr))
                  ((unless (posp val))
-                  (mv (vmsg "Slice size must be nonzero") nil)))
+                  (mv (vmsg "Slice size must be positive") nil)))
               (mv nil val))
-      :type (b* (((vl-svexconf conf))
-                 ((mv err type) (vl-datatype-usertype-resolve x.type conf.ss :typeov conf.typeov))
+      :type (b* (((mv err type) (vl-datatype-usertype-resolve x.type ss :scopes scopes))
                  ((when err) (mv err nil))
                  ((mv err size) (vl-datatype-size type))
                  ((when err) (mv err nil))
@@ -2397,11 +2507,11 @@ the way.</li>
 
 (define vl-size-to-unsigned-logic ((x posp))
   :returns (type vl-datatype-p)
-  (make-vl-coretype :name :vl-logic
-                    :pdims (list (vl-range->packeddimension
-                                  (make-vl-range
-                                   :msb (vl-make-index (1- (pos-fix x)))
-                                   :lsb (vl-make-index 0)))))
+  (hons-copy (make-vl-coretype :name :vl-logic
+                               :pdims (list (vl-range->packeddimension
+                                             (make-vl-range
+                                              :msb (vl-make-index (1- (pos-fix x)))
+                                              :lsb (vl-make-index 0))))))
   ///
   (defret vl-size-to-unsigned-logic-type-ok
     (vl-datatype-resolved-p type)))
@@ -2473,6 +2583,107 @@ the way.</li>
                          (mv "impossible" nil nil)))))
 
 
+(local (defthm vl-expr-count-helper-for-inside
+         (implies (equal (vl-expr-kind x) :vl-inside)
+                  (< (+ (VL-EXPR-COUNT (VL-INSIDE->ELEM X))
+                        (VL-VALUERANGELIST-COUNT (VL-INSIDE->SET X)))
+                     (VL-EXPR-COUNT X)))
+         :rule-classes :linear
+         :hints(("Goal" :expand ((vl-expr-count x))))))
+
+;; (define vl-datatype-compatibility-warning ((a vl-datatype-p)
+;;                                            (b vl-datatype-p)
+;;                                            (x vl-expr-p)
+;;                                            (compattype vl-typecompat-p)
+;;                                            (warnings vl-warninglist-p))
+;;   :guard (and (vl-datatype-resolved-p a)
+;;               (vl-datatype-resolved-p b))
+;;   :returns (new-warnings vl-warninglist-p)
+;;   (b* ((errmsg (vl-check-datatype-compatibility a b compattype)))
+;;     (if errmsg
+;;         (fatal :type :vl-expr-to-svex-fail
+;;                :msg "~a0 doesn't have the required type. ~@1"
+;;                :args (list (vl-expr-fix x) errmsg))
+;;       (ok))))
+
+
+(define vl-datatype-size-warn ((type vl-datatype-p)
+                               (x vl-expr-p)
+                               (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (size maybe-natp :rule-classes :type-prescription))
+  :guard (vl-datatype-resolved-p type)
+  (b* ((type (vl-datatype-fix type))
+       (x (vl-expr-fix x))
+       ((mv err size) (vl-datatype-size type))
+       ((when (or err (not size)))
+        (mv (warn :type :vl-expr-to-svex-fail
+                  :msg "Couldn't size datatype ~a0 for expression ~a1: ~@2"
+                  :args (list type x (or err "unsizeable")))
+            nil)))
+    (mv (ok) size)))
+
+(define vl-convert-dollarsign-to-expr ((x vl-expr-p) (dollar-expr vl-expr-p))
+  :returns (new-x vl-expr-p)
+  (b* ((x (vl-expr-fix x))
+       (dollar-expr (vl-expr-fix dollar-expr)))
+    (vl-expr-case x
+      :vl-special (if (vl-specialkey-equiv x.key :vl-$)
+                      dollar-expr
+                    x)
+      :otherwise x))
+  ///
+  (defret vl-expr-count-of-convert-dollarsign-to-expr
+    (< (vl-expr-count new-x) (+ (vl-expr-count dollar-expr)
+                                (vl-expr-count x)))
+    :rule-classes :linear))
+
+(define vl-err->fatal ((err (implies err (vl-msg-p err)))
+                       &key
+                       (type symbolp)
+                       (msg stringp)
+                       (args true-listp)
+                       ((fn symbolp) '__function__)
+                       ((acc vl-warninglist-p) 'warnings))
+  :returns (warnings vl-warninglist-p)
+  (b* ((warnings acc)
+       (msg (string-fix msg))
+       (args (mbe :logic (list-fix args) :exec args)))
+    (if err
+        (fatal :type type :msg "~@0: ~@1"
+               :args (list (make-vl-msg :msg msg
+                                        :args args)
+                           err)
+               :fn fn)
+      (ok))))
+
+(define vl-streaming-concat-trunc/extend ((bitstream sv::svex-p)
+                                          (target-size natp)
+                                          (concat-size natp))
+  :returns (ans sv::svex-p)
+  (b* ((target-size (lnfix target-size))
+       (concat-size (lnfix concat-size)))
+    (cond ((> target-size concat-size)
+           (sv::svcall sv::concat
+                       (svex-int (- target-size concat-size))
+                       (svex-int 0)
+                       bitstream))
+          ((< target-size concat-size)
+           ;; This is an error, but NCV still runs it.
+           (sv::svex-rsh (- concat-size target-size) bitstream))
+          (t (sv::svex-fix bitstream))))
+  ///
+  (defret vars-of-vl-streaming-concat-trunc/extend
+    (implies (not (member v (sv::svex-vars bitstream)))
+             (not (member v (sv::svex-vars ans))))))
+
+(define vl-trunc/extend-type-err ((lhs-size natp)
+                                  (rhs-selfsize natp))
+  :returns (err vl-maybe-type-error-p)
+  (and (not (equal (lnfix lhs-size)
+                   (lnfix rhs-selfsize)))
+       (make-vl-type-error-trunc/extend :lhs-size lhs-size :rhs-selfsize rhs-selfsize)))
+
 
 (defines vl-expr-to-svex
   :ruler-extenders :all
@@ -2489,15 +2700,53 @@ the way.</li>
                                         sv::svex-alist-p-when-not-consp
                                         sv::svarlist-addr-p-when-subsetp-equal
                                         acl2::member-when-atom
-                                        cons-equal)))
-             (local (defthm consp-by-len-equal-1
-                      (implies (equal (len x) 1)
-                               (consp x))
-                      :hints(("Goal" :in-theory (enable len))))))
+                                        acl2::consp-of-append
+                                        ;; consp-by-len-equal-1
+                                        acl2::append-atom-under-list-equiv
+                                        acl2::len-of-append)))
+             ;; (local (defthm consp-by-len-equal-1
+             ;;          (implies (equal (len x) 1)
+             ;;                   (consp x))
+             ;;          :hints(("Goal" :in-theory (enable len)))))
+             (local (defthm and*-open
+                      (implies (acl2::rewriting-negative-literal `(binary-and* ,x ,y))
+                               (iff (and* x y)
+                                    (and x y)))
+                      :hints(("Goal" :in-theory (enable and*)))))
 
+             (local (defthm or*-open
+                      (implies (acl2::rewriting-positive-literal `(binary-or* ,x ,y))
+                               (iff (or* x y)
+                                    (or x y)))
+                      :hints(("Goal" :in-theory (enable or*)))))
+             
+             ;; (local (defthm and*-lhs
+             ;;          (implies (and* x y)
+             ;;                   x)
+             ;;          :hints(("Goal" :in-theory (enable and*)))
+             ;;          :rule-classes :forward-chaining))
 
+             ;; (local (defthm and*-rhs
+             ;;          (implies (and* x y)
+             ;;                   y)
+             ;;          :hints(("Goal" :in-theory (enable and*)))
+             ;;          :rule-classes :forward-chaining))
+             ;; (local (defcong iff iff (and* x y) 1 :hints(("Goal" :in-theory (enable and*)))))
+             ;; (local (defcong iff iff (and* x y) 2 :hints(("Goal" :in-theory (enable and*)))))
+             )
+
+ #||
+
+  (trace$ #!vl (vl-expr-to-svex-untyped
+  :entry (list 'vl-expr-to-svex-untyped (with-local-ps (vl-pp-expr x)))
+  :exit (b* (((list warnings svex type size) values))
+    (list 'vl-expr-to-svex-untyped
+       (with-local-ps (vl-print-warnings warnings))
+       svex (and type (with-local-ps (vl-pp-datatype type))) size))))
+ ||#
   (define vl-expr-to-svex-untyped ((x vl-expr-p)
-                                   (conf vl-svexconf-p))
+                                   (ss vl-scopestack-p)
+                                   (scopes vl-elabscopes-p))
     :short "Convert an expression to svex, and return its datatype."
     :long "<p>In some cases we need to convert an expression and also check what
 type it is returning.  For example, if the expression is the port connection of
@@ -2515,70 +2764,153 @@ vector.</p>"
                  (type (and (vl-maybe-datatype-p type)
                             (implies type
                                      (vl-datatype-resolved-p type))))
-                 (size maybe-natp))
+                 (size maybe-natp :rule-classes :type-prescription))
     :measure (two-nats-measure (vl-expr-count x) 20)
     (b* ((warnings nil)
          (x (vl-expr-fix x)))
       (vl-expr-case x
         :vl-index (b* (((wmv warnings svex type)
-                        (vl-index-expr-to-svex x conf))
+                        (vl-index-expr-to-svex x ss scopes))
                        ((unless type)
                         (mv warnings svex type nil))
-                       ((mv err size) (vl-datatype-size type))
-                       ((when (or err (not size)))
-                        (mv (warn :type :vl-expr-to-svex-fail
-                                  :msg "Couldn't size datatype ~a0 for expression ~a1: ~@2"
-                                  :args (list type x (or err "unsizeable")))
-                            svex type nil)))
+                       ((mv warnings size) (vl-datatype-size-warn type x warnings)))
                     (mv warnings svex type size))
         :vl-cast (vl-casttype-case x.to
-                   :type (b* (((vl-svexconf conf))
-                              ((mv err type)
-                               (vl-datatype-usertype-resolve x.to.type conf.ss :typeov conf.typeov))
+                   :type (b* (((mv err type)
+                               (vl-datatype-usertype-resolve x.to.type ss :scopes scopes))
                               ((when err)
                                (mv (fatal :type :vl-expr-to-svex-fail
                                           :msg "Usertypes not resolved in cast ~a0: ~@1"
                                           :args (list x err))
                                    (svex-x) nil nil))
-                              ((wmv warnings svex)
-                               (vl-expr-to-svex-datatyped x.expr type conf))
-                              ((mv err size) (vl-datatype-size type))
-                              ((when (or err (not size)))
-                               (mv (warn :type :vl-expr-to-svex-fail
-                                         :msg "Couldn't size datatype ~a0 for expression ~a1: ~@2"
-                                         :args (list type x (or err "unsizeable")))
-                                   svex type nil)))
+                              ((wmv warnings type-err svex)
+                               (vl-expr-to-svex-datatyped x.expr nil type ss scopes :compattype :cast))
+                              ((wmv warnings) (vl-typecast-type-error-warn type-err x ss))
+                              ((mv warnings size) (vl-datatype-size-warn type x warnings)))
                            (mv warnings svex type size))
                    :size (b* (((unless (vl-expr-resolved-p x.to.size))
                                (mv (fatal :type :vl-expr-to-svex-fail
                                           :msg "Unresolved size cast: ~a0"
                                           :args (list x))
                                    (svex-x) nil nil))
-                              ((mv warnings svex size)
-                               (vl-expr-to-svex-selfdet x.expr (vl-resolved->val x.to.size) conf)))
+                              (castsize  (vl-resolved->val x.to.size))
+                              ((unless (posp castsize))
+                               (mv (fatal :type :vl-expr-to-svex-fail
+                                          :msg "Zero or negative size cast: ~a0"
+                                          :args (list x))
+                                   (svex-x) nil nil))
+                              ((mv warnings svex ?size)
+                               (vl-expr-to-svex-selfdet x.expr castsize ss scopes)))
                            (mv warnings svex
-                               (and (posp size)
-                                    (vl-size-to-unsigned-logic size))
-                               size))
+                               (vl-size-to-unsigned-logic castsize)
+                               castsize))
                    :otherwise
                    (b* (((wmv warnings svex size)
-                         (vl-expr-to-svex-selfdet x nil conf)))
+                         (vl-expr-to-svex-selfdet x nil ss scopes)))
                      (mv warnings svex
                          (and (posp size)
                               (vl-size-to-unsigned-logic size))
                          size)))
+
+        :vl-call
+        (b* (((when x.systemp)
+              (b* (((mv warnings svex size)
+                    (vl-expr-to-svex-selfdet x nil ss scopes)))
+                (mv warnings svex
+                    (and (posp size)
+                         (vl-size-to-unsigned-logic size))
+                    size)))
+             ((wmv warnings svex ftype)
+              (vl-funcall-to-svex x ss scopes))
+             ((unless ftype)
+              (mv warnings svex nil nil))
+             ((mv warnings size) (vl-datatype-size-warn ftype x warnings)))
+          (mv warnings
+              svex ftype size))
+        
+        :vl-stream
+        (b* (((mv warnings svex size)
+              (vl-streaming-concat-to-svex x ss scopes)))
+          ;; BOZO A streaming concat shouldn't really exist in the middle of
+          ;; some other expression unless there is a cast around it.  However,
+          ;; we want to call vl-expr-to-svex-untyped in some top-level contexts
+          ;; where a streaming concat should be allowed.  In those contexts the
+          ;; size is important but not the type.  So here we'll return NIL as
+          ;; the type even if we got a good size.
+          (mv warnings svex nil size))
+
         :otherwise
         (b* (((wmv warnings svex size)
-              (vl-expr-to-svex-selfdet x nil conf)))
+              (vl-expr-to-svex-selfdet x nil ss scopes)))
           (mv warnings svex
               (and (posp size)
                    (vl-size-to-unsigned-logic size))
               size)))))
 
 
+#||
+ (trace$ #!vl (vl-streaming-concat-to-svex
+  :entry (list 'vl-streaming-concat-to-svex
+                (with-local-ps (vl-pp-expr x)))
+  :exit (cons 'vl-streaming-concat-to-svex (cdr values))))
+
+||#
+  (define vl-streaming-concat-to-svex ((x vl-expr-p)
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p))
+    :guard (vl-expr-case x :vl-stream)
+    :measure (two-nats-measure (vl-expr-count x) 15)
+    :returns (mv (warnings vl-warninglist-p)
+                 (svex (and (sv::svex-p svex)
+                            (sv::svarlist-addr-p (sv::svex-vars svex))))
+                 (size maybe-natp))
+    (b* (((vl-stream x) (vl-expr-fix x))
+         ((unless (mbt (vl-expr-case x :vl-stream)))
+          ;; termination
+          (mv nil (svex-x) nil))
+         (warnings nil)
+         ((mv err slicesize) (if (eq x.dir :left)
+                                 (vl-slicesize-resolve x.size ss scopes)
+                               ;; irrelevant
+                               (mv nil 1)))
+         ((when err)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Failed to resolve slice size of streaming ~
+                               concat expression ~a0: ~@1"
+                     :args (list x err))
+              (svex-x) nil))
+         ((wmv warnings concat concat-size) (vl-streamexprlist-to-svex x.parts ss scopes))
+         ((unless concat-size)
+          ;; Already warned, presumably.
+          (mv warnings (svex-x) nil))
+
+         (bitstream (if (eq x.dir :right)
+                        concat
+                      (sv::svcall sv::blkrev
+                                  (svex-int concat-size)
+                                  (svex-int slicesize)
+                                  concat))))
+      ;; In SV, we'd now stick the bitstream into a container of the
+      ;; appropriate datatype.  But in svex, everything's just kept as a
+      ;; bitstream, so we're already done.
+      (mv warnings bitstream concat-size)))
+ #||
+ (trace$ #!vl (vl-expr-to-svex-selfdet
+               :entry (list 'vl-expr-to-svex-selfdet
+                             (with-local-ps (vl-pp-expr x))
+  :orig (with-local-ps (vl-pp-origexpr x))
+  ctxsize)
+               :exit (b* (((list warnings svex size) values))
+                       (list 'vl-expr-to-svex-selfdet
+                             (with-local-ps (vl-print-warnings warnings))
+                             svex size))))
+
+ ||#
+
   (define vl-expr-to-svex-selfdet ((x vl-expr-p)
                                    (ctxsize maybe-natp)
-                                   (conf vl-svexconf-p))
+                                   (ss vl-scopestack-p)
+                                   (scopes vl-elabscopes-p))
     :short "Translates a VL expression to svex in a self-determined context, perhaps
             with a context size."
     :long "<p>This function sign- or zero-extends the result so that other
@@ -2589,7 +2921,6 @@ functions can assume all bits of it are good.</p>"
                        "Size if available.  If not, we've already warned about it."))
     :measure (two-nats-measure (vl-expr-count x) 10)
     (b* ((x (vl-expr-fix x))
-         ((vl-svexconf conf))
          (ctxsize (maybe-natp-fix ctxsize))
          (opacity (vl-expr-opacity x))
          (warnings nil)
@@ -2599,14 +2930,17 @@ functions can assume all bits of it are good.</p>"
                      :args (list x))
               (svex-x)
               nil))
-         ((wmv warnings signedness) (vl-expr-typedecide x conf.ss conf.typeov))
-         ((unless signedness)
+         ((wmv warnings class) (vl-expr-typedecide x ss scopes))
+         ((unless (vl-integer-arithclass-p class))
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Couldn't decide signedness of expression ~a0."
-                     :args (list x))
+                     :msg (if (vl-arithclass-equiv class :vl-error-class)
+                              "Couldn't decide signedness of expression ~a0."
+                            "Unsupported arithmetic class of expression ~a0: ~s1")
+                     :args (list x class))
               (svex-x)
               nil))
-         ((wmv warnings size) (vl-expr-selfsize x conf.ss conf.typeov))
+         (signedness (vl-integer-arithclass->exprsign class))
+         ((wmv warnings size) (vl-expr-selfsize x ss scopes))
          ((unless size)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Couldn't size expression ~a0."
@@ -2619,19 +2953,33 @@ functions can assume all bits of it are good.</p>"
                      size))
          ((wmv warnings svex)
           (if (eq opacity :opaque)
-              (vl-expr-to-svex-opaque x conf)
-            (vl-expr-to-svex-transparent x finalsize signedness conf))))
+              (vl-expr-to-svex-opaque x ss scopes)
+            (vl-expr-to-svex-transparent x finalsize signedness ss scopes)))
+         (signedness
+          ;; [Jared] On 2016-03-18 we discovered that we were incorrectly
+          ;; treating extension integers like '1 as signed, when the standard
+          ;; says they are unsigned.  After fixing that, we found we needed to
+          ;; add a special case for extints here.  Why?  If we have something
+          ;; like assign foo[3:0] = '1, then the '1 is context-determined, so
+          ;; normally we would sign/zero-extend it to the desired width based
+          ;; on its type.  But extints are special and basically we still need
+          ;; to sign-extend 'x or '1 even though they are unsigned.
+          (if (vl-expr-case x
+                :vl-literal (vl-value-case x.val :vl-extint)
+                :otherwise nil)
+              :vl-signed
+            signedness)))
       (mv warnings (svex-extend signedness ext-size svex) finalsize)))
 
   (define vl-expr-to-svex-vector ((x vl-expr-p)
                                   (size natp)
                                   (signedness vl-exprsign-p)
-                                  (conf vl-svexconf-p))
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p))
     :measure (two-nats-measure (vl-expr-count x) 6)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
     (b* ((x (vl-expr-fix x))
-         ((vl-svexconf conf))
          (opacity (vl-expr-opacity x))
          (warnings nil)
          ((when (eq opacity :special))
@@ -2640,15 +2988,15 @@ functions can assume all bits of it are good.</p>"
                      :args (list x))
               (svex-x)))
          ((unless (eq opacity :opaque))
-          (vl-expr-to-svex-transparent x size signedness conf))
-         ((wmv warnings selfsize) (vl-expr-selfsize x conf.ss conf.typeov))
+          (vl-expr-to-svex-transparent x size signedness ss scopes))
+         ((wmv warnings selfsize) (vl-expr-selfsize x ss scopes))
          ((unless selfsize)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Sizing of ~a0 failed unexpectedly."
                      :args (list x))
               (svex-x)))
          ((wmv warnings svex)
-          (vl-expr-to-svex-opaque x conf))
+          (vl-expr-to-svex-opaque x ss scopes))
          (size
           ;; Special case for extints -- they get sign/zero-extended at their
           ;; context size, not their self size.
@@ -2659,11 +3007,11 @@ functions can assume all bits of it are good.</p>"
             selfsize)))
       (mv warnings (svex-extend signedness size svex))))
 
-
   (define vl-expr-to-svex-transparent ((x vl-expr-p)
                                        (size natp)
                                        (signedness vl-exprsign-p)
-                                       (conf vl-svexconf-p))
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p))
     :guard (equal (vl-expr-opacity x) :transparent)
     :measure (two-nats-measure (vl-expr-count x) 4)
     :returns (mv (warnings vl-warninglist-p)
@@ -2678,47 +3026,48 @@ functions can assume all bits of it are good.</p>"
                          :args (list x))
                   (svex-x)))
              ((wmv warnings subexp)
-              (vl-expr-to-svex-vector x.arg size signedness conf))
+              (vl-expr-to-svex-vector x.arg size signedness ss scopes))
              ((wmv err svex)
               (vl-unaryop-to-svex x.op subexp size size signedness)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to convert expression ~a0: ~@1"
-                         :args (list x err))
-                (ok))
+          (mv (vl-err->fatal err  :type :vl-expr-to-svex-fail
+                             :msg "Failed to convert expression ~a0"
+                             :args (list x))
               svex))
         :vl-binary
         ;; Two categories: either transparent in just the first operand, or both.
         (b* (((wmv warnings left-svex)
-              (vl-expr-to-svex-vector x.left size signedness conf))
-             ((wmv warnings right-svex)
+              (vl-expr-to-svex-vector x.left size signedness ss scopes))
+             ((wmv warnings right-svex right-size)
               (if (member x.op '(:vl-binary-power
                                  :vl-binary-shl
                                  :vl-binary-shr
                                  :vl-binary-ashl
                                  :vl-binary-ashr))
                   ;; Transparent only in the first operand.
-                  (b* (((wmv warnings right-svex &)
-                        (vl-expr-to-svex-selfdet x.right nil conf)))
-                    (mv warnings right-svex))
+                  (vl-expr-to-svex-selfdet x.right nil ss scopes)
                 ;; Transparent in both operands.
-                (vl-expr-to-svex-vector x.right size signedness conf)))
+                (b* (((mv warnings right-svex)
+                      (vl-expr-to-svex-vector x.right size signedness ss scopes)))
+                  (mv warnings right-svex size))))
              ((wmv err svex)
-              (vl-binaryop-to-svex x.op left-svex right-svex size size size signedness)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to convert expression ~a0: ~@1"
-                         :args (list x err))
-                (ok))
+              (vl-binaryop-to-svex x.op left-svex right-svex size
+                                   ;; Presumably we don't get here if we don't
+                                   ;; get a size for the right arg.  But in any
+                                   ;; case we've already warned about it.
+                                   (or right-size size)
+                                   size signedness)))
+          (mv (vl-err->fatal err :type :vl-expr-to-svex-fail
+                             :msg "Failed to convert expression ~a0"
+                             :args (list x))
               svex))
 
         :vl-qmark
         (b* (((wmv warnings test-svex ?test-size)
-              (vl-expr-to-svex-selfdet x.test nil conf))
+              (vl-expr-to-svex-selfdet x.test nil ss scopes))
              ((wmv warnings then-svex)
-              (vl-expr-to-svex-vector x.then size signedness conf))
+              (vl-expr-to-svex-vector x.then size signedness ss scopes))
              ((wmv warnings else-svex)
-              (vl-expr-to-svex-vector x.else size signedness conf)))
+              (vl-expr-to-svex-vector x.else size signedness ss scopes)))
           (mv (ok)
               (sv::svcall sv::? test-svex then-svex else-svex)))
 
@@ -2730,45 +3079,236 @@ functions can assume all bits of it are good.</p>"
         :otherwise
         (mv (ok) (prog2$ (impossible) (svex-x))))))
 
+  (define vl-inside-expr-cases-to-svex
+    ;; Process ELEM inside { RANGE, VAL, RANGE, ... }
+    ((elem          vl-expr-p           "LHS expression to check for set membership.")
+     (elem-selfsize natp                "Pre-computed self-determined size of lhs.")
+     (elem-type     vl-exprsign-p       "Pre-computed self-determined signedness of the lhs.")
+     (set           vl-valuerangelist-p "RHS expressions and ranges.")
+     (ss            vl-scopestack-p)
+     (scopes        vl-elabscopes-p)
+     (fullexpr      vl-expr-p           "Context for error messages."))
+    :measure (two-nats-measure (+ (vl-expr-count elem) (vl-valuerangelist-count set)) 0)
+    :returns (mv (warnings vl-warninglist-p)
+                 (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
+    (b* ((warnings nil)
+         (fullexpr (vl-expr-fix fullexpr))
+         (set      (vl-valuerangelist-fix set))
+         ((when (atom set))
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Inside expression with no cases: ~a0"
+                     :args (list fullexpr))
+              (svex-x)))
+         ((when (atom (cdr set)))
+          ;; Singleton set, so no need to wrap it in an OR.
+          (vl-inside-expr-case-to-svex elem elem-selfsize elem-type (car set) ss scopes fullexpr))
+         ;; Else, just OR together the membership checks.
+         ((wmv warnings in-first-svex) (vl-inside-expr-case-to-svex elem elem-selfsize elem-type (car set) ss scopes fullexpr))
+         ((wmv warnings in-rest-svex)  (vl-inside-expr-cases-to-svex elem elem-selfsize elem-type (cdr set) ss scopes fullexpr))
+         (in-any-svex                  (sv::svcall sv::bitor in-first-svex in-rest-svex)))
+      (mv warnings in-any-svex)))
+
+  (define vl-inside-expr-case-to-svex
+    ;; Process a single ELEM inside { RANGE }
+    ((elem          vl-expr-p           "LHS expression to check for set membership.")
+     (elem-selfsize natp                "Pre-computed self-determined size of lhs.")
+     (elem-type     vl-exprsign-p       "Pre-computed self-determined signedness of the lhs.")
+     (range         vl-valuerange-p     "Single member (or range) of the set.")
+     (ss            vl-scopestack-p)
+     (scopes        vl-elabscopes-p)
+     (fullexpr      vl-expr-p           "Context for error messages."))
+    :measure (two-nats-measure (+ (vl-expr-count elem) (vl-valuerange-count range)) 5)
+    :returns (mv (warnings vl-warninglist-p)
+                 (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
+    (b* ((warnings nil)
+         (elem-selfsize (lnfix elem-selfsize))
+         (elem-type     (vl-exprsign-fix elem-type))
+         (elem-class    (vl-exprsign->arithclass elem-type))
+         (elem          (vl-expr-fix elem))
+         (fullexpr      (vl-expr-fix fullexpr)))
+      (vl-valuerange-case range
+        :valuerange-single
+        (b* (((wmv warnings rhs-size)  (vl-expr-selfsize range.expr ss scopes))
+             ((wmv warnings rhs-class) (vl-expr-typedecide range.expr ss scopes))
+             ((unless (and* rhs-size (vl-integer-arithclass-p rhs-class)))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of expression ~a0"
+                         :args (list range.expr))
+                  (svex-x)))
+             (final-size               (max elem-selfsize rhs-size))
+             (final-class              (vl-arithclass-max elem-class rhs-class))
+             (final-type               (vl-integer-arithclass->exprsign final-class))
+             ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem final-size final-type ss scopes))
+             ((wmv warnings rhs-svex)  (vl-expr-to-svex-vector range.expr final-size final-type ss scopes))
+             ((mv err svex)
+              (vl-binaryop-to-svex :vl-binary-wildeq elem-svex rhs-svex final-size final-size 1 :vl-unsigned))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert expression ~a0 ==? ~a1 for inside expr ~a2: ~@3"
+                         :args (list elem range.expr fullexpr err))
+                  (svex-x))))
+          (mv (ok) svex))
+        :valuerange-range
+        (b* (;; The range can have a dollar sign to mean the lowest or highest
+             ;; value in the range.  Note that NCVerilog says that, e.g., 1'bx
+             ;; inside { [$:$] } is X instead of true.  (Our version of VCS
+             ;; doesn't seem to support $ signs yet, so we can't test this on
+             ;; both simulators.)  I think a nice, easy way to handle this is
+             ;; to just replace $ signs with elem itself.  That'll turn things
+             ;; into A <= A comparisons, which will be true unless there are
+             ;; X/Z bits, and that seems like what NCV does.
+             (low   (vl-convert-dollarsign-to-expr range.low elem))
+             (high  (vl-convert-dollarsign-to-expr range.high elem))
+
+             ;; Context will be the max size/sign of expr, low, and high, so we
+             ;; need to know the types and sizes of everything in play...
+             ((wmv warnings low-size)  (vl-expr-selfsize   low ss scopes))
+             ((wmv warnings low-class) (vl-expr-typedecide low ss scopes))
+             ((unless (and* low-size (vl-integer-arithclass-p low-class)))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of expression ~a0"
+                         :args (list low))
+                  (svex-x)))
+             ((wmv warnings high-size)  (vl-expr-selfsize   high ss scopes))
+             ((wmv warnings high-class) (vl-expr-typedecide high ss scopes))
+             ((unless (and* high-size (vl-integer-arithclass-p high-class)))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of expression ~a0"
+                         :args (list high))
+                  (svex-x)))
+
+             ;; First guess -- all sizes matter
+             ;; (final-size               (max elem-selfsize (max low-size high-size)))
+             ;; (final-type               (vl-exprsign-max elem-type (vl-exprsign-max low-type high-type)))
+             ;; ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem final-size final-type ss scopes))
+             ;; ((wmv warnings low-svex)  (vl-expr-to-svex-vector low  final-size final-type ss scopes))
+             ;; ((wmv warnings high-svex) (vl-expr-to-svex-vector high final-size final-type ss scopes))
+             ;; ((mv err low<=elem-svex)
+             ;;  (vl-binaryop-to-svex :vl-binary-lte low-svex elem-svex final-size final-size 1 :vl-unsigned))
+             ;; ((when err)
+             ;;  (mv (fatal :type :vl-expr-to-svex-fail
+             ;;             :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+             ;;             :args (list low elem fullexpr err))
+             ;;      (svex-x)))
+             ;; ((mv err elem<=high-svex)
+             ;;  (vl-binaryop-to-svex :vl-binary-lte elem-svex high-svex final-size final-size 1 :vl-unsigned))
+             ;; ((when err)
+             ;;  (mv (fatal :type :vl-expr-to-svex-fail
+             ;;             :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+             ;;             :args (list elem high fullexpr err))
+             ;;      (svex-x)))
+             ;; (final-svex (sv::svcall sv::bitand low<=elem-svex elem<=high-svex)))
+
+             ;; New guess -- do comparisons independently
+             (lowcmp-size              (max elem-selfsize low-size))
+             (lowcmp-class             (vl-arithclass-max elem-class low-class))
+             (lowcmp-type              (vl-integer-arithclass->exprsign lowcmp-class))
+             ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem lowcmp-size lowcmp-type ss scopes))
+             ((wmv warnings low-svex)  (vl-expr-to-svex-vector low  lowcmp-size lowcmp-type ss scopes))
+             ((mv err low<=elem-svex)
+              (vl-binaryop-to-svex :vl-binary-lte low-svex elem-svex lowcmp-size lowcmp-size 1 :vl-unsigned))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+                         :args (list low elem fullexpr err))
+                  (svex-x)))
+
+             (highcmp-size             (max elem-selfsize high-size))
+             (highcmp-class            (vl-arithclass-max elem-class high-class))
+             (highcmp-type             (vl-integer-arithclass->exprsign highcmp-class))
+             ((wmv warnings elem-svex) (vl-expr-to-svex-vector elem highcmp-size highcmp-type ss scopes))
+             ((wmv warnings high-svex) (vl-expr-to-svex-vector high highcmp-size highcmp-type ss scopes))
+             ((mv err elem<=high-svex)
+              (vl-binaryop-to-svex :vl-binary-lte elem-svex high-svex highcmp-size highcmp-size 1 :vl-unsigned))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert ~a0 <= ~a1 for inside expr ~a2: ~@3"
+                         :args (list elem high fullexpr err))
+                  (svex-x)))
+             (final-svex (sv::svcall sv::bitand low<=elem-svex elem<=high-svex)))
+          (mv (ok) final-svex)))))
+
+
+
+  (define vl-typequery-syscall-args-extract ((x vl-expr-p)
+                                             (ss vl-scopestack-p)
+                                             (scopes vl-elabscopes-p))
+    ;; A syscall like $size(...) or $bits(...) takes a type like integer, or
+    ;; an expression like foo, or a type and expression argument where the
+    ;; expression is something like an array dimension into the type, or an
+    ;; expression and an index.  Here we are just consolidating these cases
+    ;; so that we can get the type and the index no matter what format the
+    ;; arguments are in.
+    :guard (vl-expr-case x :vl-call)
+    :measure (two-nats-measure (vl-expr-count x) 3)
+    :returns (mv (okp)
+                 (warnings vl-warninglist-p)
+                 (type vl-maybe-datatype-p)
+                 (index (iff (vl-expr-p index) index)))
+    (b* (((unless (mbt (vl-expr-case x :vl-call)))
+          (mv nil nil nil nil))
+         ((vl-call x) (vl-expr-fix x))
+         (warnings nil)
+         ;; Bozo -- to optimize proof time, maybe pull some of this
+         ;; junk out into a different function in the mutual recursion.
+         (args-ok (if x.typearg
+                      (or (atom x.args) (atom (cdr x.args)))
+                    (and (consp x.args)
+                         (or (atom (cdr x.args))
+                             (atom (cddr x.args))))))
+         ((unless args-ok)
+          (mv nil
+              (fatal :type :vl-expr-unsupported
+                     :msg "Unsupported system call: ~a0 (bad arity for type query)"
+                     :args (list x))
+              nil nil))
+         ((when x.typearg)
+          (mv t nil x.typearg (and (consp x.args) (car x.args))))
+         ((mv warnings ?arg-svex type ?size)
+          (vl-expr-to-svex-untyped (car x.args) ss scopes)))
+      (mv t warnings type (and (consp (cdr x.args)) (cadr x.args)))))
+
+
+
   (define vl-expr-to-svex-opaque ((x vl-expr-p)
-                                  (conf vl-svexconf-p))
+                                  (ss vl-scopestack-p)
+                                  (scopes vl-elabscopes-p))
     :guard (equal (vl-expr-opacity x) :opaque)
     :measure (two-nats-measure (vl-expr-count x) 4)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
     (b* ((x (vl-expr-fix x))
-         (warnings nil)
-         ((vl-svexconf conf)))
+         (ss (vl-scopestack-fix ss))
+         (scopes (vl-elabscopes-fix scopes))
+         (warnings nil))
       (vl-expr-case x
 
         :vl-literal
         (b* (((mv err svex) (vl-value-to-svex x.val)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to convert expression ~a0: ~@1"
-                         :args (list x err))
-                (ok))
+          (mv (vl-err->fatal err
+                             :type :vl-expr-to-svex-fail
+                             :msg "Failed to convert expression ~a0"
+                             :args (list x))
               svex))
 
         :vl-index
         (b* (((wmv warnings svex &)
-              (vl-index-expr-to-svex x conf)))
+              (vl-index-expr-to-svex x ss scopes)))
           (mv warnings svex))
 
         :vl-unary
         ;; All the opaque unary operations have 1-bit results and
         ;; selfdetermined operands.
-        (b* (((wmv warnings arg-svex arg-size) (vl-expr-to-svex-selfdet x.arg nil conf))
+        (b* (((wmv warnings arg-svex arg-size) (vl-expr-to-svex-selfdet x.arg nil ss scopes))
              ((unless arg-size)
               ;; already warned
               (mv warnings (svex-x)))
              ((mv err svex)
               (vl-unaryop-to-svex x.op arg-svex arg-size 1 :vl-unsigned)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to convert expression ~a0: ~@1"
-                         :args (list x err))
-                (ok))
+          (mv (vl-err->fatal err
+                             :type :vl-expr-to-svex-fail
+                             :msg "Failed to convert expression ~a0"
+                             :args (list x))
               svex))
 
         :vl-binary
@@ -2777,50 +3317,49 @@ functions can assume all bits of it are good.</p>"
         ;; larger of the two.
         (b* (((when (member x.op '(:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)))
               ;; Logicals -- self-determined operands
-              (b* (((wmv warnings left-svex left-size) (vl-expr-to-svex-selfdet x.left nil conf))
-                   ((wmv warnings right-svex right-size) (vl-expr-to-svex-selfdet x.right nil conf))
-                   ((unless (and left-size right-size))
+              (b* (((wmv warnings left-svex left-size) (vl-expr-to-svex-selfdet x.left nil ss scopes))
+                   ((wmv warnings right-svex right-size) (vl-expr-to-svex-selfdet x.right nil ss scopes))
+                   ((unless (and* left-size right-size))
                     ;; already warned
                     (mv warnings (svex-x)))
                    ;; It doesn't matter if these are sign- or zero-extended.
                    ((mv err svex)
                     (vl-binaryop-to-svex x.op left-svex right-svex left-size right-size 1 :vl-unsigned)))
-                (mv (if err
-                        (fatal :type :vl-expr-to-svex-fail
-                               :msg "Failed to convert expression ~a0: ~@1"
-                               :args (list x err))
-                      (ok))
+                (mv (vl-err->fatal err
+                                   :type :vl-expr-to-svex-fail
+                                   :msg "Failed to convert expression ~a0"
+                                   :args (list x))
                     svex)))
              ;; Vectors -- find sizes first
-             ((wmv warnings left-size) (vl-expr-selfsize x.left conf.ss conf.typeov))
-             ((wmv warnings right-size) (vl-expr-selfsize x.right conf.ss conf.typeov))
-             ((wmv warnings left-type) (vl-expr-typedecide x.left conf.ss conf.typeov))
-             ((wmv warnings right-type) (vl-expr-typedecide x.right conf.ss conf.typeov))
-             ((unless (and left-size right-size left-type right-type))
+             ((wmv warnings left-size) (vl-expr-selfsize x.left ss scopes))
+             ((wmv warnings right-size) (vl-expr-selfsize x.right ss scopes))
+             ((wmv warnings left-class) (vl-expr-typedecide x.left ss scopes))
+             ((wmv warnings right-class) (vl-expr-typedecide x.right ss scopes))
+             ((unless (and* left-size right-size
+                            (vl-integer-arithclass-p left-class)
+                            (vl-integer-arithclass-p right-class)))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Failed to find size and signedness of expression ~a0"
-                         :args (list (if (and left-size left-type)
-                                             x.right
-                                           x.left)))
+                         :args (list (if (and left-size (vl-integer-arithclass-p left-class))
+                                         x.right
+                                       x.left)))
                   (svex-x)))
              ;; Size each under the max size
-             (arg-size (max left-size right-size))
-             (arg-type (vl-exprsign-max left-type right-type))
-             ((wmv warnings left-svex)
-              (vl-expr-to-svex-vector x.left arg-size arg-type conf))
-             ((wmv warnings right-svex)
-              (vl-expr-to-svex-vector x.right arg-size arg-type conf))
+             (arg-size  (max left-size right-size))
+             (arg-class (vl-arithclass-max left-class right-class))
+             (arg-type  (vl-integer-arithclass->exprsign arg-class))
+             ((wmv warnings left-svex) (vl-expr-to-svex-vector x.left arg-size arg-type ss scopes))
+             ((wmv warnings right-svex) (vl-expr-to-svex-vector x.right arg-size arg-type ss scopes))
              ((mv err svex)
               (vl-binaryop-to-svex x.op left-svex right-svex arg-size arg-size 1 :vl-unsigned)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to convert expression ~a0: ~@1"
-                         :args (list x err))
-                (ok))
+          (mv (vl-err->fatal err
+                             :type :vl-expr-to-svex-fail
+                             :msg "Failed to convert expression ~a0"
+                             :args (list x))
               svex))
 
         :vl-concat
-        (b* (((wmv warnings svexes sizes) (vl-exprlist-to-svex-selfdet x.parts conf))
+        (b* (((wmv warnings svexes sizes) (vl-exprlist-to-svex-selfdet x.parts ss scopes))
              ((when (member nil sizes))
               ;; already warned
               (mv warnings (svex-x)))
@@ -2828,23 +3367,37 @@ functions can assume all bits of it are good.</p>"
           (mv (ok) svex))
 
         :vl-multiconcat
-        (b* (((wmv warnings svexes sizes) (vl-exprlist-to-svex-selfdet x.parts conf))
+        (b* (((wmv warnings svexes sizes) (vl-exprlist-to-svex-selfdet x.parts ss scopes))
              ((unless (vl-expr-resolved-p x.reps))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Unresolved reps in multiple concatenation ~a0"
                          :args (list x))
                   (svex-x)))
+             (reps (vl-resolved->val x.reps))
+             ((unless (<= 0 reps))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Negative value for reps in multiple concatenation ~a0"
+                         :args (list x))
+                  (svex-x)))
              ((when (member nil sizes))
               (mv warnings (svex-x)))
              (svex
-              (svex-multiconcat (vl-resolved->val x.reps) svexes sizes)))
+              (svex-multiconcat reps svexes sizes)))
           (mv (ok) svex))
 
         :vl-inside
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Not yet supported: ~a0"
-                   :args (list x))
-            (svex-x))
+        (b* (((wmv warnings elem-selfsize) (vl-expr-selfsize x.elem ss scopes))
+             ((wmv warnings elem-class)    (vl-expr-typedecide x.elem ss scopes))
+             ((unless (and* elem-selfsize
+                            (vl-integer-arithclass-p elem-class)))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Failed to find size and signedness of inside expression lhs: ~a0"
+                         :args (list x))
+                  (svex-x)))
+             (elem-type (vl-integer-arithclass->exprsign elem-class))
+             ((wmv warnings svex)
+              (vl-inside-expr-cases-to-svex x.elem elem-selfsize elem-type x.set ss scopes x)))
+          (mv (ok) svex))
 
         :vl-call
         (if x.systemp
@@ -2855,9 +3408,22 @@ functions can assume all bits of it are good.</p>"
                              :args (list x))
                       (svex-x)))
 
+                 ((when (member-equal simple-name '("$signed" "$unsigned")))
+                  ;; Same as a signedness cast -- don't need to do anything but check arity.
+                  (b* (((unless (and (consp x.args)
+                                     (not (consp (cdr x.args)))
+                                     (not x.typearg)))
+                        (mv (fatal :type :vl-expr-to-svex-fail
+                                   :msg "Bad arity for system call ~a0"
+                                   :args (list x))
+                            (svex-x)))
+                       ((mv warnings svex &)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings svex)))
+
                  ((when (vl-unary-syscall-p "$clog2" x))
                   (b* (((wmv warnings arg-svex ?size)
-                        (vl-expr-to-svex-selfdet (car x.args) nil conf)))
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
                     (mv warnings
                         (sv::svcall sv::clog2 arg-svex))))
 
@@ -2865,31 +3431,32 @@ functions can assume all bits of it are good.</p>"
                  ;; basically act on datatypes, and if an expression is given
                  ;; instead, they run on the type of the expression.
 
-                 ((when (and (atom x.args)
-                             x.typearg))
-                  (vl-datatype-syscall-to-svex x simple-name x.typearg conf))
 
-                 ((unless (and (not x.typearg)
-                               (eql (len x.args) 1)))
-                  (mv (fatal :type :vl-expr-to-svex-fail
-                             :msg "Unsupported system call: ~a0"
+                 ((wmv args-ok warnings type index)
+                  (vl-typequery-syscall-args-extract x ss scopes))
+
+                 ((unless (and args-ok type))
+                  ;; already warned
+                  (mv warnings (svex-x)))
+
+                 ((when (and index
+                             (not (and (vl-expr-resolved-p index)
+                                       (<= 0 (vl-resolved->val index))))))
+                  (mv (fatal :type :vl-expr-unsupported
+                             :msg "Unsupported system call: ~a0 ~
+                                         (dimension argument not resolved to ~
+                                         nonnegative constant)"
                              :args (list x))
                       (svex-x)))
 
-                 ;; Resolve the expression to its type.
-                 ((wmv warnings ?arg-svex type ?size)
-                  (vl-expr-to-svex-untyped (car x.args) conf))
-
-                 ((unless type)
-                  ;; Already warned
-                  (mv warnings (svex-x)))
-
                  ((wmv warnings svex)
-                  (vl-datatype-syscall-to-svex x simple-name type conf)))
+                  (vl-datatype-syscall-to-svex x simple-name type
+                                               (and index (vl-resolved->val index))
+                                               ss scopes)))
               (mv warnings svex))
 
           (b* (((wmv warnings svex &)
-                (vl-funcall-to-svex x conf)))
+                (vl-funcall-to-svex x ss scopes)))
             (mv warnings svex)))
 
         :vl-cast
@@ -2900,21 +3467,30 @@ functions can assume all bits of it are good.</p>"
         ;; creating that struct.  So we have to use vl-expr-to-svex-datatyped
         ;; here.
         (vl-casttype-case x.to
-          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss
-                                                                     :typeov conf.typeov))
+          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type ss
+                                                                     :scopes scopes))
                      ((when err)
                       (mv (fatal :type :vl-expr-to-svex-fail
                                  :msg "Usertypes not resolved in cast ~a0: ~@1"
                                  :args (list x err))
-                          (svex-x))))
-                  (vl-expr-to-svex-datatyped x.expr to-type conf))
+                          (svex-x)))
+                     ((wmv warnings type-err svex)
+                      (vl-expr-to-svex-datatyped x.expr nil to-type ss scopes :compattype :cast))
+                     ((wmv warnings) (vl-typecast-type-error-warn type-err x ss)))
+                  (mv warnings svex))
           :size (b* (((unless (vl-expr-resolved-p x.to.size))
                       (mv (fatal :type :vl-expr-to-svex-fail
                                  :msg "Unresolved size cast: ~a0"
                                  :args (list x))
                           (svex-x)))
+                     (size (vl-resolved->val x.to.size))
+                     ((unless (<= 0 size))
+                      (mv (fatal :type :vl-expr-to-svex-fail
+                                 :msg "Negative size cast: ~a0"
+                                 :args (list x))
+                          (svex-x)))
                      ((mv warnings svex &)
-                      (vl-expr-to-svex-selfdet x.expr (vl-resolved->val x.to.size) conf)))
+                      (vl-expr-to-svex-selfdet x.expr size ss scopes)))
                   (mv warnings svex))
           :signedness
           ;; Don't need to do anything about the signedness here; it only
@@ -2922,12 +3498,12 @@ functions can assume all bits of it are good.</p>"
           ;; indicate that the signedness cast is opaque, so we fortunately
           ;; don't need a contextsize.
           (b* (((mv warnings svex &)
-                (vl-expr-to-svex-selfdet x.expr nil conf)))
+                (vl-expr-to-svex-selfdet x.expr nil ss scopes)))
             (mv warnings svex))
           :const
           ;; What does this even mean?
           (b* (((mv warnings svex &)
-                (vl-expr-to-svex-selfdet x.expr nil conf)))
+                (vl-expr-to-svex-selfdet x.expr nil ss scopes)))
             (mv warnings svex)))
 
 
@@ -2937,18 +3513,53 @@ functions can assume all bits of it are good.</p>"
                          :msg "Untyped assignment pattern: ~a0"
                          :args (list x))
                   (svex-x)))
-             ((mv err pattype) (vl-datatype-usertype-resolve x.pattype conf.ss :typeov conf.typeov))
+             ((mv err pattype) (vl-datatype-usertype-resolve x.pattype ss :scopes scopes))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in pattern ~a0: ~@1"
                          :args (list x err))
-                  (svex-x))))
-          (vl-assignpat-to-svex x.pat pattype conf x))
+                  (svex-x)))
+             ((wmv warnings type-err svex)
+              (vl-assignpat-to-svex x.pat pattype ss scopes x))
+             ((wmv warnings) (vl-assignpat-cast-type-error-warn type-err x ss)))
+          (mv warnings svex))
         :otherwise
         (mv (ok) (prog2$ (impossible) (svex-x))))))
 
+#||
+
+ (defttag foo)
+  (trace$ #!vl (vl-index-expr-to-svex
+                :entry (list 'vl-index-expr-to-svex (with-local-ps (vl-pp-expr x)))
+                :exit (b* (((list ?warnings ?svex ?type) values))
+                        (list 'vl-index-expr-to-svex
+                              (with-local-ps (vl-print-warnings warnings))))))
+
+#!vl
+ (defun traces (names)
+  (if (Atom names)
+      nil
+    (cons (let ((fn (car names)))
+            `(trace$ (,fn :entry '(,fn)
+                          :exit (b* ((warnings (car values)))
+                                  (list ',fn (with-local-ps (vl-print-warnings warnings)))))))
+          (traces (cdr names)))))
+
+#!vl
+ (defmacro do-traces (&rest names)
+  (cons 'er-progn
+        (traces names)))
+
+#!vl
+ (do-traces vl-expr-to-svex-datatyped-fn
+           vl-expr-to-svex-untyped
+           vl-index-expr-to-svex
+           vl-streamexpr-to-svex)
+||#
+
   (define vl-index-expr-to-svex ((x vl-expr-p)
-                                 (conf vl-svexconf-p))
+                                 (ss vl-scopestack-p)
+                                 (scopes vl-elabscopes-p))
     :guard (vl-expr-case x :vl-index)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex))))
@@ -2960,39 +3571,38 @@ functions can assume all bits of it are good.</p>"
          ((unless (mbt (vl-expr-case x :vl-index)))
           (impossible) ;; need this case for measure
           (mv (ok) (svex-x) nil))
-         ((vl-svexconf conf))
          (x (vl-expr-fix x))
-         ((mv err opinfo) (vl-index-expr-typetrace x conf.ss conf.typeov))
+         ((mv err opinfo) (vl-index-expr-typetrace x ss scopes))
          ((when err)
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Failed to convert expression ~a0: ~@1"
+                     :msg "Failed to convert expression typetrace ~a0: ~@1"
                      :args (list x err))
               (svex-x) nil))
          ((vl-operandinfo opinfo))
          ((wmv warnings svex-indices ?sizes)
           (vl-exprlist-to-svex-selfdet
-           (vl-operandinfo->indices opinfo) conf))
+           (vl-operandinfo->indices opinfo) ss scopes))
          ((vl-hidstep decl) (car opinfo.hidtrace))
          ((mv err svex)
-          (vl-operandinfo-to-svex opinfo svex-indices conf.ss conf.params)))
-      (mv (if err
-              (fatal :type :vl-expr-to-svex-fail
-                     :msg "Failed to convert expression ~a0: ~@1"
-                     :args (list x err))
-            (ok))
+          (vl-operandinfo-to-svex opinfo svex-indices ss scopes)))
+      (mv (vl-err->fatal err
+                         :type :vl-expr-to-svex-fail
+                         :msg "Failed to convert expression ~a0"
+                         :args (list x))
           svex
           opinfo.type)))
 
-;; (trace$ #!vl (vl-funcall-to-svex
-;;               :entry (list 'vl-funcall-to-svex
-;;                            (with-local-ps (vl-pp-expr x)))
-;;               :exit (list 'vl-funcall-to-svex
-;;                           (with-local-ps (vl-print-warnings (car values)))
-;;                           (and (caddr values)
-;;                                (with-local-ps (vl-pp-datatype (caddr values)))))))
+  ;; (trace$ #!vl (vl-funcall-to-svex
+  ;;               :entry (list 'vl-funcall-to-svex
+  ;;                            (with-local-ps (vl-pp-expr x)))
+  ;;               :exit (list 'vl-funcall-to-svex
+  ;;                           (with-local-ps (vl-print-warnings (car values)))
+  ;;                           (and (caddr values)
+  ;;                                (with-local-ps (vl-pp-datatype (caddr values)))))))
 
   (define vl-funcall-to-svex ((x vl-expr-p)
-                              (conf vl-svexconf-p))
+                              (ss vl-scopestack-p)
+                              (scopes vl-elabscopes-p))
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex))))
                  (type (and (vl-maybe-datatype-p type)
@@ -3004,34 +3614,35 @@ functions can assume all bits of it are good.</p>"
          ((unless (mbt (vl-expr-case x :vl-call)))
           (impossible) ;; need this case for measure
           (mv (ok) (svex-x) nil))
-         ((vl-svexconf conf))
          ((vl-call x) (vl-expr-fix x))
-         ;; ((mv err fnname trace) (vl-funname->svex-funname x.name conf.ss))
-         (expr (cdr (hons-get x.name conf.fns)))
-         ((unless expr)
+         ((mv err trace ?context ?tail) (vl-follow-scopeexpr x.name ss))
+         ((when err)
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Function hasn't been preprocessed: ~a0"
-                     :args (list x))
+                     :msg "Failed lookup of function ~a0"
+                     :args (list x.name))
               (svex-x) nil))
-         (rettype (cdr (hons-get x.name conf.typeov)))
-         ((unless rettype)
+         ((vl-hidstep step) (car trace))
+         ((unless (eq (tag step.item) :vl-fundecl))
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Function hasn't been preprocessed (return type missing): ~a0"
-                     :args (list x))
+                     :msg "Lookup of function ~a0 yielded ~a1"
+                     :args (list x.name step.item))
               (svex-x) nil))
-         ((unless (vl-datatype-resolved-p rettype))
+         (decl-scopes (vl-elabscopes-traverse (rev step.elabpath) scopes))
+         (info (vl-elabscopes-item-info (vl-fundecl->name step.item) decl-scopes))
+         (item (or info step.item))
+         ((unless (eq (tag item) :vl-fundecl))
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Lookup of function ~a0 yielded ~a1"
+                     :args (list x.name item))
+              (svex-x) nil))
+         ((vl-fundecl item))
+         ;; ((mv err fnname trace) (vl-funname->svex-funname x.name ss))
+         ((unless (vl-datatype-resolved-p item.rettype))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Function hasn't been preprocessed (return type unresolved): ~a0"
                      :args (list x))
               (svex-x) nil))
-         (portdecl-look (hons-get x.name conf.fnports))
-         ((unless portdecl-look)
-          (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Function hasn't been preprocessed (port declarations missing): ~a0"
-                     :args (list x))
-              (svex-x) nil))
-         (portdecls (cdr portdecl-look))
-         (port-types (vl-portdecllist->types portdecls))
+         (port-types (vl-portdecllist->types item.portdecls))
          ((unless (vl-datatypelist-resolved-p port-types))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Function hasn't been preprocessed (unresolved ~
@@ -3044,33 +3655,66 @@ functions can assume all bits of it are good.</p>"
                            supposed to be ~x1 ports"
                      :args (list x (len port-types)))
               (svex-x) nil))
-         ((wmv warnings args-svex)
+         ((unless item.function)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Function hasn't been preprocessed (unresolved ~
+                           body function): ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         ((wmv warnings type-errs args-svex)
           (vl-exprlist-to-svex-datatyped
            x.args
            port-types
-           conf))
-         (comp-alist (vl-function-pair-inputs-with-actuals portdecls args-svex))
+           ss scopes :compattype :assign))
+         ((wmv warnings) (vl-subexpr-type-error-list-warn x type-errs ss))
+         (comp-alist (vl-function-pair-inputs-with-actuals item.portdecls args-svex))
          ((with-fast comp-alist))
-         (ans (sv::svex-subst-memo expr comp-alist)))
+         (ans (sv::svex-subst-memo item.function comp-alist)))
       (clear-memoize-table 'sv::svex-subst-memo)
-      (mv (ok) ans rettype)))
+      (mv (ok) ans item.rettype)))
 
-  (define vl-expr-to-svex-datatyped ((x vl-expr-p)
+#||
+
+ (trace$ #!vl (vl-expr-to-svex-datatyped-fn
+  :entry (list 'vl-expr-to-svex-datatyped
+                (with-local-ps (vl-pp-expr x))
+                (with-local-ps (vl-pp-datatype type))
+                (vl-scopestack->hashkey ss)
+                (strip-cars scopes))
+  ::exit (list 'vl-expr-to-svex-datatyped
+                (with-local-ps (vl-print-warnings (car values)))
+                (cadr values))))
+
+||#
+
+  (define vl-expr-to-svex-datatyped ((x    vl-expr-p)
+                                     (lhs  vl-maybe-expr-p
+                                           "LHS, if applicable, for truncation warnings.")
                                      (type vl-datatype-p)
-                                     (conf vl-svexconf-p))
+                                     (ss vl-scopestack-p)
+                                     (scopes vl-elabscopes-p)
+                                     &key
+                                     ((compattype vl-typecompat-p) ':equiv)
+                                     (explicit-cast-p booleanp))
     :guard (vl-datatype-resolved-p type)
     :measure (two-nats-measure (vl-expr-count x) 16)
     :returns (mv (warnings vl-warninglist-p)
+                 (type-err vl-maybe-type-error-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
     (b* ((x (vl-expr-fix x))
+         (lhs (vl-maybe-expr-fix lhs))
          (type (vl-datatype-fix type))
+         (ss (Vl-scopestack-fix ss))
+         (scopes (vl-elabscopes-fix scopes))
+         (compattype (vl-typecompat-fix compattype))
          (warnings nil)
-         ((vl-svexconf conf))
          (opacity (vl-expr-opacity x))
          (packedp (vl-datatype-packedp type))
-         ((when (and packedp
+         ((when (and packedp 
                      (not (eq opacity :special))
-                     (not (vl-expr-case x :vl-pattern))))
+                     (not (vl-expr-case x :vl-pattern))
+                     ;; note: qmark might have a pattern inside it
+                     (not (vl-expr-case x :vl-qmark))))
           ;; A non-special opacity generally means the expression is
           ;; vector-like, and I think that if the datatype is packed we get the
           ;; right results by simply treating the expression as a vector with
@@ -3081,148 +3725,171 @@ functions can assume all bits of it are good.</p>"
                 (mv (fatal :type :vl-expr-to-svex-fail
                            :msg "Couldn't size packed datatype ~a0"
                            :args (list (vl-datatype-fix type)))
+                    nil
                     (svex-x)))
-               ((wmv warnings svex &)
-                (vl-expr-to-svex-selfdet x size conf)))
-            (mv warnings svex))))
+               ((wmv warnings svex ?rhs-size) (vl-expr-to-svex-selfdet x size ss scopes))
+               
+               ;; ((wmv warnings) (vl-maybe-warn-about-implicit-truncation lhs size x rhs-size ss))
+               ((mv & x-selfsize) (vl-expr-selfsize x ss scopes))
+               ((unless x-selfsize)
+                ;; Some kind of error.
+                (mv warnings nil svex))
+               ;; ((wmv warnings)
+               ;;  (if (and x-selfsize
+               ;;           ;; [Jared] Previously we didn't exclude casts here,
+               ;;           ;; but that meant that VL-Lint issued warnings about
+               ;;           ;; cases like foo_t'(bar) where the logic designer was
+               ;;           ;; explicitly using a cast to extend bar to additional
+               ;;           ;; bits.  Designers complained about these warnings,
+               ;;           ;; so, we now suppress extension warnings in case of
+               ;;           ;; casts.  We originally tried to just check whether
+               ;;           ;; compattype was :cast, but that gets used in more
+               ;;           ;; places so we add an explicit-cast-p argument.
+               ;;           (not explicit-cast-p))
+               ;;      (vl-maybe-warn-about-implicit-extension size x-selfsize x ss)
+               ;;    nil))
+               (type-err (vl-trunc/extend-type-err size x-selfsize)))
+            (mv warnings type-err svex))))
 
       (vl-expr-case x
         :vl-index
         (b* (((wmv warnings svex itype)
-              (vl-index-expr-to-svex x conf))
+              (vl-index-expr-to-svex x ss scopes))
              ((unless itype)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Couldn't find type for expression: ~a0"
                          :args (list x))
+                  nil
                   svex))
-             (err (vl-compare-datatypes type itype)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Type mismatch: ~a0 has type ~a1 but ~
-                               should be ~a2. More: ~@3"
-                         :args (list x itype (vl-datatype-fix type) err))
-                (ok))
-              svex))
+             (type-err (vl-datatype-compatibility-type-error type itype compattype)))
+          (mv warnings type-err svex))
 
         :vl-qmark
         (b* (((wmv warnings test-svex ?test-size)
-              (vl-expr-to-svex-selfdet x.test nil conf))
-             ((wmv warnings then-svex)
-              (vl-expr-to-svex-datatyped x.then type conf))
-             ((wmv warnings else-svex)
-              (vl-expr-to-svex-datatyped x.else type conf)))
-          (mv (ok)
-              (sv::svcall sv::? test-svex then-svex else-svex)))
+              (vl-expr-to-svex-selfdet x.test nil ss scopes))
+             ((wmv warnings type-err1 then-svex)
+              ;; BOZO should we really pass the lhs down here?  Maybe?
+              (vl-expr-to-svex-datatyped x.then lhs type ss scopes
+                                         :compattype compattype
+                                         :explicit-cast-p explicit-cast-p))
+             ((wmv warnings type-err2 else-svex)
+              (vl-expr-to-svex-datatyped x.else lhs type ss scopes
+                                         :compattype compattype
+                                         :explicit-cast-p explicit-cast-p))
+             (svex (sv::svcall sv::? test-svex then-svex else-svex))
+
+             ;; [Jared] historically we didn't need to do anything special
+             ;; here, but in commit aad0bcb6b181dcba68385ff764a967a3528db506 we
+             ;; tweaked the check for vector-like expressions above (packed,
+             ;; non-special, not pattern, not qmark) to include ?: expressions
+             ;; in order to support expressions like a ? '{...} : '{...}.
+             ;; Unfortunately, that means we no longer get fussy size warnings
+             ;; for expressions like a ? b[3:0] : c[7:0] and similar.
+             ;;
+             ;; As a dumb way to restore these warnings, we now explicitly call
+             ;; vl-expr-selfsize here, even though we don't care what size it
+             ;; thinks things are.  We are just using it to generate warnings.
+             ;; See vl-expr-selfsize for details and note that it properly
+             ;; doesn't cause a warning if the arguments don't have self-sizes.
+             ((wmv warnings ?ignored-size) (vl-expr-selfsize x ss scopes))
+
+             (type-err (vl-type-error-qmark-combine x type-err1 type-err2)))
+          (mv warnings type-err svex))
 
         :vl-call
         (b* (((when x.systemp)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "System call ~a0 supposed to return unpacked type ~a1"
                          :args (list x (vl-datatype-fix type)))
+                  nil
                   (svex-x)))
              ((wmv warnings svex ftype)
-              (vl-funcall-to-svex x conf))
+              (vl-funcall-to-svex x ss scopes))
              ((unless ftype)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Couldn't find type for expression: ~a0"
                          :args (list x))
+                  nil
                   svex))
-             (err (vl-compare-datatypes type ftype)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Type mismatch: ~a0 has type ~a1 but ~
-                               should be ~a2. More: ~@3"
-                         :args (list x ftype (vl-datatype-fix type) err))
-                (ok))
-              svex))
+             (type-err (vl-datatype-compatibility-type-error type ftype compattype)))
+          (mv warnings type-err svex))
 
         :vl-cast
         (vl-casttype-case x.to
-          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss :typeov conf.typeov))
+          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type ss :scopes scopes))
                      ((when err)
                       (mv (fatal :type :vl-expr-to-svex-fail
                                  :msg "Usertypes not resolved in cast ~a0: ~@1"
                                  :args (list x err))
+                          nil
                           (svex-x)))
-                     ((wmv warnings svex)
-                      (vl-expr-to-svex-datatyped x.expr to-type conf))
-                     (err (vl-compare-datatypes type to-type)))
-                  (mv (if err
-                          (fatal :type :vl-expr-to-svex-fail
-                                 :msg "Type mismatch: ~a0 has type ~a1 but ~
-                               should be ~a2. More: ~@3"
-                                 :args (list x x.to (vl-datatype-fix type) err))
-                        (ok))
-                      svex))
-          :const ;; Maybe we just ignore this?
-          (vl-expr-to-svex-datatyped x.expr type conf)
+                     ((wmv warnings type-err1 svex)
+                      ;; We're casting to a new type so don't pass the lhs down.
+                      (vl-expr-to-svex-datatyped x.expr nil to-type ss scopes
+                                                 :compattype :cast
+                                                 :explicit-cast-p t))
+                     ((wmv warnings) (vl-typecast-type-error-warn type-err1 x ss))
+                     (type-err (vl-datatype-compatibility-type-error type to-type compattype)))
+                  (mv warnings type-err svex))
+          :const
+          ;; Maybe we just ignore this?
+          ;; No idea whether we should pass lhs down.  Or anything else.  Sigh.
+          (vl-expr-to-svex-datatyped x.expr lhs type ss scopes :compattype compattype)
           :otherwise
           ;; This seems bogus, we have a non-packed type but we're casting to a
           ;; signedness or size.
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "~s0 cast in non-vector context: ~a1"
-                     :args (list (if (eq x.kind :signedness)
+                     :args (list (if* (eq x.kind :signedness)
                                      "Signedness"
                                    "Size")
                                  x))
+              nil
               (svex-x)))
 
         :vl-mintypmax
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Don't yet support mintypmax expressions: ~a0."
                    :args (list x))
+            nil
             (svex-x))
 
         :vl-pattern
         (b* (((unless x.pattype)
-              (vl-assignpat-to-svex x.pat type conf x))
+              (vl-assignpat-to-svex x.pat type ss scopes x))
              ((mv err pattype)
-              (vl-datatype-usertype-resolve x.pattype conf.ss :typeov conf.typeov))
+              (vl-datatype-usertype-resolve x.pattype ss :scopes scopes))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in pattern ~a0: ~@1"
                          :args (list x err))
+                  nil
                   (svex-x)))
-             ((wmv warnings svex)
-              (vl-assignpat-to-svex x.pat pattype conf x))
-             (err (if (and packedp (vl-datatype-packedp pattype))
-                      nil
-                    (vl-compare-datatypes type pattype))))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Type mismatch: ~a0 has type ~a1 but ~
-                               should be ~a2. More: ~@3"
-                         :args (list x pattype (vl-datatype-fix type) err))
-                (ok))
-              svex))
+             ((wmv warnings type-err svex)
+              (vl-assignpat-to-svex x.pat pattype ss scopes x))
+             ((wmv warnings) (vl-assignpat-cast-type-error-warn type-err x ss))
+             (type-err (vl-datatype-compatibility-type-error type pattype compattype)))
+          (mv warnings type-err svex))
 
         :vl-special
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Don't yet support ~a0."
                    :args (list x))
+            nil
             (svex-x))
 
         :vl-stream
-        (b* (((mv err slicesize) (if (eq x.dir :left)
-                                     (vl-slicesize-resolve x.size conf)
-                                   ;; irrelevant
-                                   (mv nil 1)))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Failed to resolve slice size of streaming ~
-                               concat expression ~a0: ~@1"
-                         :args (list x err))
-                  (svex-x)))
-             ((wmv warnings concat concat-size) (vl-streamexprlist-to-svex x.parts conf))
-             ((unless concat-size)
-              ;; Already warned, presumably.
-              (mv warnings (svex-x)))
+        (b* (((wmv warnings bitstream concat-size)
+              (vl-streaming-concat-to-svex x ss scopes))
+             ((unless (posp concat-size))
+              (mv warnings nil (svex-x)))
              ((mv err target-size) (vl-datatype-size type))
              ((when (or err (not (posp target-size))))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Problem sizing datatype ~a0 for streaming concat ~a1: ~@2"
                          :args (list type x
-                                     (or err (if target-size "size zero" "unsizable"))))
+                                     (or* err (if target-size "size zero" "unsizable"))))
+                  nil
                   (svex-x)))
              (warnings (if (> concat-size target-size)
                            (warn :type :vl-streaming-concat-error
@@ -3231,22 +3898,17 @@ functions can assume all bits of it are good.</p>"
                                        SystemVerilog says this is an error."
                                  :args (list x type))
                          warnings))
-
-             (bitstream (if (eq x.dir :right)
-                            concat
-                          (sv::svcall sv::blkrev
-                                        (svex-int target-size)
-                                        (svex-int slicesize)
-                                        concat))))
-             ;; In SV, we'd now stick the bitstream into a container of the
-             ;; appropriate datatype.  But in svex, everything's just kept as a
-             ;; bitstream, so we're already done.
-          (mv warnings bitstream))
+             (ans (vl-streaming-concat-trunc/extend bitstream target-size concat-size)))
+          ;; In SystemVerilog, we'd now stick the bitstream into a container of the
+          ;; appropriate datatype.  But in svex, everything's just kept as a
+          ;; bitstream, so we're already done.
+          (mv warnings nil ans))
 
         :vl-tagged
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Don't yet support ~a0."
                    :args (list x))
+            nil
             (svex-x))
 
 
@@ -3255,10 +3917,12 @@ functions can assume all bits of it are good.</p>"
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Vector expression ~a0 doesn't fit in unpacked type ~a1"
                    :args (list x (vl-datatype-fix type)))
+            nil
             (svex-x)))))
 
   (define vl-streamexprlist-to-svex ((x vl-streamexprlist-p)
-                                     (conf vl-svexconf-p))
+                                     (ss vl-scopestack-p)
+                                     (scopes vl-elabscopes-p))
     :measure (two-nats-measure (vl-streamexprlist-count x) 0)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (sv::svex-p svex)
@@ -3266,17 +3930,18 @@ functions can assume all bits of it are good.</p>"
                  (size maybe-natp :rule-classes :type-prescription))
     (b* ((warnings nil)
          ((when (atom x)) (mv warnings (svex-x) 0))
-         ((wmv warnings svex1 size1) (vl-streamexpr-to-svex (car x) conf))
-         ((wmv warnings svex2 size2) (vl-streamexprlist-to-svex (cdr x) conf))
+         ((wmv warnings svex1 size1) (vl-streamexpr-to-svex (car x) ss scopes))
+         ((wmv warnings svex2 size2) (vl-streamexprlist-to-svex (cdr x) ss scopes))
          ((unless (and size1 size2))
           ;; already warned
           (mv warnings (svex-x) nil)))
       (mv warnings
-          (sv::svcall sv::concat (svex-int size2) svex2 svex1)
+          (sv::svex-concat size2 svex2 svex1)
           (+ size1 size2))))
 
   (define vl-streamexpr-to-svex ((x vl-streamexpr-p)
-                                 (conf vl-svexconf-p))
+                                 (ss vl-scopestack-p)
+                                 (scopes vl-elabscopes-p))
     :measure (two-nats-measure (vl-streamexpr-count x) 200)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (sv::svex-p svex)
@@ -3284,60 +3949,39 @@ functions can assume all bits of it are good.</p>"
                  (size maybe-natp :rule-classes :type-prescription))
     (b* (((vl-streamexpr x))
          ((mv warnings svex ?type size)
-          (vl-expr-to-svex-untyped x.expr conf)))
+          (vl-expr-to-svex-untyped x.expr ss scopes)))
 
       (vl-arrayrange-case x.part
         :none (mv warnings svex size) ;; already warned if size is nil
         :otherwise
-        (b* (((unless type) (mv warnings svex nil)) ;; already warned
-             ((mv err ?caveat basetype dim1) (vl-datatype-remove-dim type))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad type ~a0 from expression ~a1 in streaming concat: ~@2"
-                         :args (list type x.expr err))
-                  (svex-x) nil))
-             ((mv err basesize) (vl-datatype-size basetype))
-             ((when (or err (not (posp basesize))))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Unsizable basetype ~a0 from expression ~a1 in ~
-                               streaming concat: ~@2"
-                         :args (list type x.expr (or err
-                                                     (if basesize "zero size" "unsizable"))))
-                  (svex-x) nil))
-             ((when (vl-packeddimension-case dim1 :unsized))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Array range on unsized array expression ~a0 in streaming concat"
-                         :args (list x.expr))
-                  (svex-x) nil))
-             ((vl-range dimrange) (vl-packeddimension->range dim1))
-             ((unless (vl-range-resolved-p dimrange))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Array range unresolved on unsized array ~
-                               expression ~a0 in streaming concat"
-                         :args (list x.expr))
-                  (svex-x) nil))
-             (dim-msb (vl-resolved->val dimrange.msb))
-             (dim-lsb (vl-resolved->val dimrange.lsb))
-             ((mv err relative-lsb width)
-              (vl-arrayrange->rel-lsb-and-width x.part dim-lsb dim-msb))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad array range in streaming concat on expression ~a0: ~@1"
-                         :args (list x.expr err))
-                  (svex-x) nil))
-             (shift (* relative-lsb basesize))
-             (size (* width basesize)))
-          (mv warnings
-              (sv::svcall sv::rsh (svex-int shift) svex)
-              size)))))
+        (mv (fatal :type :vl-unsupported-expression
+                   :msg "Streaming concatenations using the 'with' keyword ~
+                         are unsupported: ~a0"
+                   :args (list (vl-streamexpr-fix x)))
+            (svex-x) nil))))
+#||
 
+ (trace$ #!vl (vl-assignpat-to-svex
+  :entry (list 'vl-assignpat-to-svex
+                (with-local-ps (vl-pp-assignpat x))
+                (with-local-ps (vl-pp-datatype type))
+                (vl-scopestack->hashkey ss)
+                (strip-cars scopes)
+                (with-local-ps (vl-pp-expr orig-x)))
+  ::exit (list 'vl-assignpat-to-svex
+                (with-local-ps (vl-print-warnings (car values)))
+                (cadr values))))
+
+||#
   (define vl-assignpat-to-svex ((x vl-assignpat-p)
                                 (type vl-datatype-p)
-                                (conf vl-svexconf-p)
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p)
                                 (orig-x vl-expr-p))
     :guard (vl-datatype-resolved-p type)
     :measure (two-nats-measure (vl-assignpat-count x) 16)
     :returns (mv (warnings vl-warninglist-p)
+                 (type-err vl-maybe-type-error-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
     (b* ((orig-x (vl-expr-fix orig-x))
          (warnings nil)
@@ -3352,35 +3996,40 @@ functions can assume all bits of it are good.</p>"
                ;; Never an error because we have dims.
                ((when (vl-packeddimension-case dim :unsized))
                 (mv (fatal :type :vl-expr-to-svex-fail
-                           :msg "unsized dimension in type of assignment patter ~a0"
+                           :msg "unsized dimension in type of assignment pattern ~a0"
                            :args (list orig-x))
+                    nil
                     (svex-x)))
                (range (vl-packeddimension->range dim))
                ((unless (vl-range-resolved-p range))
                 (mv (fatal :type :vl-expr-to-svex-fail
                            :msg "unresolved dimension in type of assignment pattern ~a0"
                            :args (list orig-x))
+                    nil
                     (svex-x))))
-            (vl-array-assignpat-to-svex x slottype range conf orig-x))))
+            (vl-array-assignpat-to-svex x slottype range ss scopes orig-x))))
       (vl-datatype-case type
         :vl-struct
-        (vl-struct-assignpat-to-svex x type.members conf orig-x)
+        (vl-struct-assignpat-to-svex x type.members ss scopes orig-x)
         :otherwise
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Bad type ~a0 for assignment pattern ~a1"
                    :args (list type orig-x))
+            nil
             (svex-x)))))
 
 
   (define vl-array-assignpat-to-svex ((x vl-assignpat-p)
                                       (slottype vl-datatype-p)
                                       (range vl-range-p)
-                                      (conf vl-svexconf-p)
+                                      (ss vl-scopestack-p)
+                                      (scopes vl-elabscopes-p)
                                       (orig-x vl-expr-p))
     :guard (and (vl-range-resolved-p range)
                 (vl-datatype-resolved-p slottype))
     :measure (two-nats-measure (vl-assignpat-count x) 10)
     :returns (mv (warnings vl-warninglist-p)
+                 (type-err vl-maybe-type-error-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
     (b* ((orig-x (vl-expr-fix orig-x))
          (warnings nil)
@@ -3394,14 +4043,16 @@ functions can assume all bits of it are good.</p>"
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Couldn't size assignpattern slot type ~a0 (expr: ~a1)"
                      :args (list slottype orig-x))
+              nil
               (svex-x)))
          (arrsize (vl-range-size range))
          ((vl-range range))
-         ((wmv warnings svex-subexprs)
+         ((wmv warnings type-errs svex-subexprs)
           (vl-exprlist-to-svex-datatyped
            subexprs
            (repeat (len subexprs) slottype)
-           conf)))
+           ss scopes :compattype :assign))
+         ((wmv warnings) (vl-subexpr-type-error-list-warn orig-x type-errs ss)))
       (vl-assignpat-case x
         :positional
         (b* (((unless (eql (len subexprs) arrsize))
@@ -3409,14 +4060,18 @@ functions can assume all bits of it are good.</p>"
                          :msg "Wrong number of elements in positional assignment ~
                                pattern ~a0. (Range: [~a1, ~a2].)"
                          :args (list orig-x range.msb range.lsb))
+                  ;; BOZO someday this could be a type error instead of a warning
+                  nil
                   (svex-x))))
           (mv (ok)
+              nil
               (svex-concat-list (repeat (len subexprs) slotsize) svex-subexprs)))
         :repeat
         (b* (((unless (vl-expr-resolved-p x.reps))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Unresolved repetition count in assignment pattern: ~a0"
                          :args (list orig-x))
+                  nil
                   (svex-x)))
              (reps (vl-resolved->val x.reps))
              ((unless (eql (* reps (len subexprs)) arrsize))
@@ -3424,8 +4079,11 @@ functions can assume all bits of it are good.</p>"
                          :msg "Wrong number of elements in positional assignment ~
                                pattern ~a0. (Range: [~a1, ~a2].)"
                          :args (list orig-x range.msb range.lsb))
+                  ;; BOZO someday this could be a type error instead of a warning
+                  nil
                   (svex-x))))
           (mv (ok)
+              nil
               (svex-multiconcat reps svex-subexprs (repeat (len subexprs) slotsize))))
         :keyval
         (b* ((err (vl-check-array-assignpat-keys x.pairs range))
@@ -3433,6 +4091,8 @@ functions can assume all bits of it are good.</p>"
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Bad key in assignment pattern ~a0: ~@1"
                          :args (list orig-x err))
+                  ;; BOZO someday this could be a type error instead of a warning
+                  nil
                   (svex-x)))
              (svex-keyvals (pairlis$ (alist-keys x.pairs) svex-subexprs))
              ((mv err svex-slots)
@@ -3440,16 +4100,17 @@ functions can assume all bits of it are good.</p>"
                (vl-resolved->val range.lsb)
                (vl-resolved->val range.msb)
                svex-keyvals)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad key/val assignment pattern ~a0: ~@1"
-                         :args (list orig-x err))
-                (ok))
+          (mv (vl-err->fatal err
+                             :type :vl-expr-to-svex-fail
+                             :msg "Bad key/val assignment pattern ~a0"
+                             :args (list orig-x))
+              nil
               (svex-concat-list (repeat arrsize slotsize) svex-slots))))))
 
   (define vl-struct-assignpat-keyval-resolve ((x vl-keyvallist-p)
                                               (membs vl-structmemberlist-p)
-                                              (conf vl-svexconf-p)
+                                              (ss vl-scopestack-p)
+                                              (scopes vl-elabscopes-p)
                                               (orig-x vl-expr-p))
     :guard (vl-structmemberlist-resolved-p membs)
     :measure (two-nats-measure (vl-keyvallist-count x)
@@ -3468,28 +4129,30 @@ functions can assume all bits of it are good.</p>"
          ((vl-structmember m1) (car membs))
          (first (or (vl-keyval-member-lookup m1.name x)
                     (vl-keyval-default-lookup x)))
-         ((wmv warnings first)
-          (if first
-              (vl-expr-to-svex-datatyped
-               first m1.type conf)
-            (mv (fatal :type :vl-expr-to-svex-fail
-                       :msg "No entry for struct member ~s1 in ~
-                                  assignment pattern ~a1"
-                       :args (list m1.name orig-x))
-                (svex-x))))
          ((wmv warnings rest)
           (vl-struct-assignpat-keyval-resolve
-           x (cdr membs) conf orig-x)))
-      (mv warnings
-          (cons first rest))))
+           x (cdr membs) ss scopes orig-x)))
+      (if first
+          (b* (((wmv warnings type-err first-sv)
+                (vl-expr-to-svex-datatyped
+                 first nil m1.type ss scopes :compattype :assign))
+               ((wmv warnings) (vl-struct-assignpat-keyval-type-err-warn orig-x m1 first type-err ss)))
+            (mv warnings (cons first-sv rest)))
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "No entry for struct member ~s1 in ~
+                                  assignment pattern ~a1"
+                   :args (list m1.name orig-x))
+            (cons (svex-x) rest)))))
 
   (define vl-struct-assignpat-to-svex ((x vl-assignpat-p)
                                        (membs vl-structmemberlist-p)
-                                       (conf vl-svexconf-p)
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p)
                                        (orig-x vl-expr-p))
     :measure (two-nats-measure (vl-assignpat-count x) 10)
     :guard (vl-structmemberlist-resolved-p membs)
     :returns (mv (warnings vl-warninglist-p)
+                 (type-err vl-maybe-type-error-p)
                  (svex (and (sv::svex-p svex) (sv::svarlist-addr-p (sv::svex-vars svex)))))
     (b* ((orig-x (vl-expr-fix orig-x))
          (warnings nil)
@@ -3499,6 +4162,7 @@ functions can assume all bits of it are good.</p>"
                      :msg "Couldn't size struct members for assignment ~
                            pattern ~a0"
                      :args (list orig-x))
+              nil
               (svex-x))))
       (vl-assignpat-case x
         :positional
@@ -3507,17 +4171,22 @@ functions can assume all bits of it are good.</p>"
                          :msg "Wrong number of entries in positional ~
                                assignment pattern ~a0"
                          :args (list orig-x))
+                  ;; BOZO someday this could be a type error instead of a warning
+                  nil
                   (svex-x)))
              (types (vl-structmemberlist->types membs))
-             ((wmv warnings svex-vals)
-              (vl-exprlist-to-svex-datatyped x.vals types conf)))
+             ((wmv warnings type-errs svex-vals)
+              (vl-exprlist-to-svex-datatyped x.vals types ss scopes :compattype :assign))
+             ((wmv warnings) (vl-subexpr-type-error-list-warn orig-x type-errs ss)))
           (mv (ok)
+              nil
               (svex-concat-list widths svex-vals)))
         :repeat
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Repetitions not supported for struct-typed ~
                          assignment patterns: ~a0"
                    :args (list orig-x))
+            nil
             (svex-x))
         :keyval
         (b* ((err (vl-check-struct-assignpat-keys x.pairs membs))
@@ -3525,41 +4194,45 @@ functions can assume all bits of it are good.</p>"
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Bad key in assignment pattern ~a0: ~@1"
                          :args (list orig-x err))
+                  ;; BOZO someday this could be a type error instead of a warning
+                  nil
                   (svex-x)))
-             ((mv err svex-membs)
+             ((wmv warnings svex-membs)
               (vl-struct-assignpat-keyval-resolve
-               x.pairs membs conf orig-x)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad key/val assignment pattern ~a0: ~@1"
-                         :args (list orig-x err))
-                (ok))
+               x.pairs membs ss scopes orig-x)))
+          (mv warnings
+              nil
               (svex-concat-list widths svex-membs))))))
 
   (define vl-exprlist-to-svex-datatyped ((x vl-exprlist-p)
                                          (types vl-datatypelist-p)
-                                         (conf vl-svexconf-p))
+                                         (ss vl-scopestack-p)
+                                         (scopes vl-elabscopes-p)
+                                         &key ((compattype vl-typecompat-p) ':equiv))
     :guard (and (equal (len types) (len x))
                 (vl-datatypelist-resolved-p types))
     :measure (two-nats-measure (vl-exprlist-count x) 10)
     :returns (mv (warnings vl-warninglist-p)
+                 (type-errs vl-subexpr-type-error-list-p)
                  (svexes
                   (and (sv::svexlist-p svexes)
                        (equal (len svexes) (len x))
                        (true-listp svexes)
                        (sv::svarlist-addr-p (sv::svexlist-vars svexes)))))
     (b* ((warnings nil)
-         ((when (atom x)) (mv (ok) nil))
-         ((wmv warnings first)
+         ((when (atom x)) (mv (ok) nil nil))
+         ((wmv warnings type-err1 first)
           (vl-expr-to-svex-datatyped
-           (car x) (car types) conf))
-         ((wmv warnings rest)
+           (car x) nil (car types) ss scopes :compattype compattype))
+         ((wmv warnings type-errs2 rest)
           (vl-exprlist-to-svex-datatyped
-           (cdr x) (cdr types) conf)))
-      (mv warnings (cons first rest))))
+           (cdr x) (cdr types) ss scopes :compattype compattype))
+         (type-errs (vl-subexpr-type-error-list-combine (car x) (car types) type-err1 type-errs2)))
+      (mv warnings type-errs (cons first rest))))
 
   (define vl-exprlist-to-svex-selfdet ((x vl-exprlist-p)
-                                       (conf vl-svexconf-p))
+                                       (ss vl-scopestack-p)
+                                       (scopes vl-elabscopes-p))
     :measure (two-nats-measure (vl-exprlist-count x) 10)
     :returns (mv (warnings vl-warninglist-p)
                  (svexes
@@ -3575,26 +4248,17 @@ functions can assume all bits of it are good.</p>"
          ((when (atom x)) (mv (ok) nil nil))
          ((wmv warnings first size1)
           (vl-expr-to-svex-selfdet
-           (car x) nil conf))
+           (car x) nil ss scopes))
          ((wmv warnings rest rest-sizes)
           (vl-exprlist-to-svex-selfdet
-           (cdr x) conf)))
+           (cdr x) ss scopes)))
       (mv warnings (cons first rest)
           (cons size1 rest-sizes))))
   ///
-  (local (in-theory (disable vl-expr-to-svex-vector
-                             vl-expr-to-svex-transparent
-                             vl-expr-to-svex-opaque
-                             vl-index-expr-to-svex
-                             vl-funcall-to-svex
-                             vl-expr-to-svex-datatyped
-                             vl-assignpat-to-svex
-                             vl-array-assignpat-to-svex
-                             vl-struct-assignpat-keyval-resolve
-                             vl-struct-assignpat-to-svex
-                             vl-exprlist-to-svex-datatyped
-                             vl-exprlist-to-svex-selfdet
-                             )))
+
+  (local
+   (make-event
+    `(in-theory (disable . ,(flag::get-clique-members 'vl-expr-to-svex-vector (w state))))))
 
   (with-output :off (event)
     (verify-guards vl-expr-to-svex-selfdet
@@ -3612,6 +4276,11 @@ functions can assume all bits of it are good.</p>"
   (deffixequiv-mutual vl-expr-to-svex
     :hints ((acl2::just-expand-mrec-default-hint 'vl-expr-to-svex-selfdet id t world)
             '(:do-not-induct t))))
+
+;; (set-default-hints
+;;  '((and (equal (acl2::parse-clause-id "Subgoal *1/30.53'''") id)
+;;         '(:in-theory nil))))
+
 
 #||
 (include-book
@@ -3672,10 +4341,23 @@ functions can assume all bits of it are good.</p>"
 ||#
 
 
+#||
 
+(trace$ #!vl (vl-expr-to-svex-lhs
+              :entry (list 'vl-expr-to-svex-lhs
+                           (with-local-ps (vl-pp-expr x)))
+              :exit (list 'vl-expr-to-svex-lhs (cadr values))))
+
+(trace$ #!vl (vl-expr-to-svex-untyped
+              :entry (list 'vl-expr-to-svex-untyped
+                           (with-local-ps (vl-pp-expr x)))
+              :exit (list 'vl-expr-to-svex-untyped (cadr values) (cadddr values))))
+
+||#
 
 (define vl-expr-to-svex-lhs ((x vl-expr-p)
-                             (conf vl-svexconf-p))
+                             (ss vl-scopestack-p)
+                             (scopes vl-elabscopes-p))
   :returns (mv (warnings vl-warninglist-p)
                (svex (and (sv::lhs-p svex)
                           (sv::svarlist-addr-p (sv::lhs-vars svex))))
@@ -3685,17 +4367,21 @@ functions can assume all bits of it are good.</p>"
   (b* ((warnings nil)
        ((wmv warnings svex type)
         (vl-expr-case x
-          :vl-index (vl-index-expr-to-svex x conf)
+          :vl-index (vl-index-expr-to-svex x ss scopes)
           :vl-concat (b* (((wmv warnings svex size)
-                           (vl-expr-to-svex-selfdet x nil conf))
+                           (vl-expr-to-svex-selfdet x nil ss scopes))
                           ((unless (posp size))
                            (mv warnings svex nil)))
                        (mv warnings svex
-                           (make-vl-coretype :name :vl-logic
-                                             :pdims (list (vl-range->packeddimension
-                                                           (make-vl-range
-                                                            :msb (vl-make-index (1- size))
-                                                            :lsb (vl-make-index 0)))))))
+                           (vl-size-to-unsigned-logic size)))
+          :vl-stream (b* (((wmv warnings svex size)
+                           (vl-streaming-concat-to-svex x ss scopes))
+                          ((unless (posp size))
+                           (mv (fatal :type :vl-expr-to-svex-fail
+                                      :msg "Bad LHS: zero-size streaming concat"
+                                      :args (list (vl-expr-fix x)))
+                               (svex-x) nil)))
+                       (mv warnings svex (vl-size-to-unsigned-logic size)))
           :otherwise (mv (fatal :type :vl-expr-to-svex-fail
                                 :msg "Bad LHS expression: ~a0"
                                 :args (list (vl-expr-fix x)))
@@ -3711,7 +4397,7 @@ functions can assume all bits of it are good.</p>"
                    :args (list type (vl-expr-fix x) err))
             nil nil))
        (lhssvex (sv::svex-concat size
-                                   (sv::svex-lhsrewrite svex 0 size)
+                                   (sv::svex-lhsrewrite svex size)
                                    (sv::svex-z)))
        ((unless (sv::lhssvex-p lhssvex))
         (mv (fatal :type :vl-expr->svex-lhs-fail
@@ -3731,7 +4417,9 @@ functions can assume all bits of it are good.</p>"
 
 (define vl-expr-to-svex-maybe-typed ((x vl-expr-p)
                                      (type vl-maybe-datatype-p)
-                                     (conf vl-svexconf-p))
+                                     (ss vl-scopestack-p)
+                                     (scopes vl-elabscopes-p)
+                                     &key ((compattype vl-typecompat-p) ':equiv))
   :guard (or (not type) (vl-datatype-resolved-p type))
   :guard-debug t
   :guard-hints (("goal" :in-theory (enable vl-maybe-datatype-p)))
@@ -3741,10 +4429,11 @@ functions can assume all bits of it are good.</p>"
                (res-type (and (vl-maybe-datatype-p res-type)
                               (and (implies res-type
                                             (vl-datatype-resolved-p res-type)))))
-               (res-size maybe-natp :rule-classes :type-prescription))
+               (res-size maybe-natp :rule-classes :type-prescription)
+               (type-err vl-maybe-type-error-p))
   (b* ((type (vl-maybe-datatype-fix type)))
     (if type
-        (b* (((mv warnings svex) (vl-expr-to-svex-datatyped x type conf))
+        (b* (((mv warnings type-err svex) (vl-expr-to-svex-datatyped x nil type ss scopes :compattype compattype))
              ((mv err size) (vl-datatype-size type))
              ((when (or err (not size)))
               (mv (warn :type :vl-expr-to-svex-fail
@@ -3753,11 +4442,13 @@ functions can assume all bits of it are good.</p>"
                                     (or err "unsizable")))
                   svex
                   (and (mbt (vl-datatype-resolved-p type)) type)
-                  nil)))
+                  nil type-err)))
           (mv warnings svex
               (and (mbt (vl-datatype-resolved-p type)) type)
-              size))
-      (vl-expr-to-svex-untyped x conf))))
+              size type-err))
+      (b* (((mv warnings svex res-type res-size)
+            (vl-expr-to-svex-untyped x ss scopes)))
+        (mv warnings svex res-type res-size nil)))))
 
 
 (define vl-upperlower-to-bitlist ((upper integerp)
@@ -3815,63 +4506,12 @@ functions can assume all bits of it are good.</p>"
 
 
 
-(define vl-expr-consteval ((x vl-expr-p)
-                           (conf vl-svexconf-p)
-                           &key
-                           ((ctxsize maybe-natp) 'nil))
-  :short "Return an expression equivalent to @('x'), resolved to a constant value if possible."
-  :long "<p>Works on vector expressions (including packed arrays/structs/unions).</p>
 
-<p>At the moment, it only works if the expression evaluates to something
-2-valued, i.e., no Xes or Zs.</p>"
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-expr-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-expr-fix x))))))
-  (b* ((warnings nil)
-       ((wmv warnings svex size)
-        (vl-expr-to-svex-selfdet x ctxsize conf))
-       ((vl-svexconf conf))
-       ((wmv warnings signedness) (vl-expr-typedecide x conf.ss conf.typeov))
-       ((when (or (vl-some-warning-fatalp warnings)
-                  (not size)
-                  (eql size 0)))
-        (mv warnings nil (vl-expr-fix x)))
-       (svex (sv::svex-reduce-consts svex))
-       (val (sv::svex-case svex
-              :quote svex.val
-              :otherwise nil))
-       ((unless val)
-        (mv warnings nil (vl-expr-fix x)))
-       (new-x (make-vl-literal :val (vl-4vec-to-value val size
-                                                      :signedness (or signedness :vl-signed)))))
-    (mv warnings t new-x)))
-
-(define vl-exprlist-consteval ((x vl-exprlist-p)
-                               (conf vl-svexconf-p))
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-exprlist-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-exprlist-fix x))))
-                      :hints (("goal" :induct t)
-                              (and stable-under-simplificationp
-                                   '(:expand ((vl-exprlist-fix x)))))))
-  :verify-guards nil
-  (b* ((warnings nil)
-       ((when (atom x)) (mv (ok) nil nil))
-       ((wmv warnings changedp1 new-x1) (vl-expr-consteval (car x) conf))
-       ((wmv warnings changedp2 new-x2) (vl-exprlist-consteval (cdr x) conf))
-       (changedp (or changedp1 changedp2)))
-    (mv warnings
-        changedp
-        (mbe :logic (cons new-x1 new-x2)
-             :exec (if changedp
-                       (cons new-x1 new-x2)
-                     x))))
-  ///
-  (verify-guards vl-exprlist-consteval)
-  (defret len-of-vl-exprlist-consteval
-    (equal (len new-x)
-           (len x))))
+(define vl-expr-needs-type-context ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (vl-expr-case x
+    :vl-qmark (or (vl-expr-needs-type-context x.then)
+                  (vl-expr-needs-type-context x.else))
+    :vl-pattern t
+    :vl-stream t
+    :otherwise nil))

@@ -33,18 +33,6 @@
 
 (local (xdoc::set-default-parents std/basic))
 
-(defsection bitp
-  :parents (std/basic logops-definitions)
-  :short "Bit recognizer.  @('(bitp b)') recognizes 0 and 1."
-  :long "<p>This is a predicate form of the @(see type-spec) declaration
-@('(TYPE BIT b)').</p>"
-
-  (defun-inline bitp (b)
-    (declare (xargs :guard t))
-    (or (eql b 0)
-        (eql b 1)))
-  )
-
 (defsection bfix
   :parents (std/basic logops-definitions bitp)
   :short "Bit fix.  @('(bfix b)') is a fixing function for @(see bitp)s.  It
@@ -55,7 +43,14 @@
     (declare (xargs :guard t))
     (if (eql b 1)
         1
-      0)))
+      0))
+
+  (defthm bitp-bfix
+    (bitp (bfix b)))
+
+  (defthm bfix-bitp
+    (implies (bitp b)
+             (equal (bfix b) b))))
 
 (defsection lbfix
   :parents (std/basic logops-definitions bitp)
@@ -66,16 +61,6 @@ expands to just @('b')."
 
   (defmacro lbfix (x)
     `(mbe :logic (bfix ,x) :exec ,x)))
-
-(defsection bitp-basics
-  :extension bitp
-
-  (defthm bitp-bfix
-    (bitp (bfix b)))
-
-  (defthm bfix-bitp
-    (implies (bitp b)
-             (equal (bfix b) b))))
 
 (defsection maybe-bitp
   :parents (std/basic bitp)
@@ -94,7 +79,7 @@ satisfies @('maybe-bitp'), then either it is a @(see bitp) or nothing.</p>"
   (defthm maybe-bitp-compound-recognizer
     (implies (maybe-bitp x)
              (or (not x)
-                 (natp x)))
+                 (bitp x)))
     :rule-classes :compound-recognizer))
 
 (defsection lnfix
@@ -432,3 +417,25 @@ code that is violating guards), it just causes a hard error.</p>"
   (defun impossible ()
     (declare (xargs :guard nil))
     (er hard 'impossible "Provably impossible")))
+
+
+(defsection impliez
+
+  ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+  
+  :parents (std/basic)
+  
+  :short "Logical implication defined via @(tsee if)."
+
+  :long
+  "<p>Since @(tsee implies) is a function,
+  guards in the consequent must be verified
+  without assuming the antecedent.
+  @('impliez') is a macro that expands to an @(tsee if),
+  so guards in the consequent can be verified
+  assuming the antecedent.</p>"
+
+  "<p>@(def impliez)</p>"
+
+  (defmacro impliez (p q)
+    `(if ,p ,q t)))

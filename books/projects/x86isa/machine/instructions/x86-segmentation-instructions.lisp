@@ -7,7 +7,10 @@
 
 (include-book "../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(local (include-book "guard-helpers"))
+(local (include-book "../guard-helpers"))
+
+;; No alignment check is done for these instructions because they are
+;; supervisor-level instructions.
 
 ;; ======================================================================
 ;; INSTRUCTION: LGDT
@@ -46,8 +49,7 @@
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
-       (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+       (cpl (cpl x86))
        ((when (not (equal cpl 0)))
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the source operand is not a memory location, then #GP is
@@ -63,10 +65,15 @@
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ;; Fetch the memory operand:
+       (inst-ac? nil)
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         0 10 inst-ac?
+         t ;; Memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -78,6 +85,15 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; Load the memory operand in the GDTR register.
        (gdtr-limit
@@ -92,7 +108,7 @@
        ;; Update the x86 state:
        (x86 (!stri *gdtr* gdtr x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LIDT
@@ -131,8 +147,7 @@
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
-       (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+       (cpl (cpl x86))
        ((when (not (equal cpl 0)))
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the source operand is not a memory location, then #GP is
@@ -148,10 +163,15 @@
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ;; Fetch the memory operand:
+       (inst-ac? nil)
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         0 10 inst-ac?
+         t ;; Memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -163,6 +183,15 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; Load the memory operand in the IDTR register.
        (idtr-limit
@@ -177,7 +206,7 @@
        ;; Update the x86 state:
        (x86 (!stri *idtr* idtr x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LLDT
@@ -225,8 +254,7 @@ a non-canonical form, raise the SS exception.</p>"
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
-       (cs-segment (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-       (cpl (the (unsigned-byte 2) (seg-sel-layout-slice :rpl cs-segment)))
+       (cpl (cpl x86))
        ((when (not (equal cpl 0)))
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the lock prefix is used, then the #UD exception is
@@ -238,10 +266,15 @@ a non-canonical form, raise the SS exception.</p>"
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ;; Fetch the memory operand:
+       (inst-ac? nil)
        ((mv flg0 selector (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 2 p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         0 2 inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -253,6 +286,15 @@ a non-canonical form, raise the SS exception.</p>"
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; Getting the selector's components:
        ((the (unsigned-byte 13) sel-index)
@@ -374,6 +416,6 @@ a non-canonical form, raise the SS exception.</p>"
        (x86
         (!ssr-hiddeni *ldtr* ldtr-hidden x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

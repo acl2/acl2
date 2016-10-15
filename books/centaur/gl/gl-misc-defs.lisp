@@ -31,6 +31,7 @@
 (in-package "ACL2")
 
 (include-book "ihs/basic-definitions" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 
 ; cert_param: (non-acl2r)
 
@@ -127,7 +128,7 @@
 ; recursive steps since we know that once the number has been coerced to a
 ; natural, it will stay positive as we recur.
 
-  (local (include-book "std/misc/two-nats-measure" :dir :system))
+  (local (include-book "std/basic/two-nats-measure" :dir :system))
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
   (local (in-theory (enable ash logbitp acl2-count)))
@@ -219,9 +220,21 @@
 
   (table gl::preferred-defs 'logcons$inline 'logcons-for-gl)
 
+  (defun ensure-negative (x)
+    (declare (xargs :guard (integerp x)))
+    (if (<= 0 x)
+        (lognot x)
+      x))
+
+  (defthm ensure-negative-when-negative
+    (implies (acl2::negp x)
+             (equal (ensure-negative x) x)))
+
   (defthmd logtail-for-gl
     (equal (logtail pos i)
-           (ash i (- (nfix pos)))))
+           (if (zp pos)
+               (ifix i)
+             (ash i (ensure-negative (- (pos-fix pos)))))))
 
   (table gl::preferred-defs 'logtail$inline 'logtail-for-gl)
 

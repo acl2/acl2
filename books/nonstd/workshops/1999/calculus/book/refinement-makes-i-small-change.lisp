@@ -91,7 +91,7 @@
                                map-rcfn map-rcfn-refinement
                                dotprod span small-if-<-small abs
                                riemann-rcfn-refinement riemann-rcfn
-                               ;; I did the proof in the proof-checker
+                               ;; I did the proof in the proof-builder
                                ;; without the following.
                                ;; Unfortunately it throws off the
                                ;; automatic proof unless I disable it.

@@ -42,7 +42,7 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -55,14 +55,14 @@
      (size-key symbolp "key under which the array size is stored")
      ;; (type symbolp "identifier for the kind of typed record")
      )
-    :legiblep nil
+    :layout :tree
     :tag :array)
 
   (std::defaggregate scalar-fieldinfo
     ((key symbolp "key under which the typed record is stored")
      ;; (type symbolp "identifier for element type")
      )
-    :legiblep nil
+    :layout :tree
     :tag :scalar)
 
   (defund fieldinfo-p (x)

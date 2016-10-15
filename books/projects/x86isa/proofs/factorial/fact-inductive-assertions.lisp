@@ -3,13 +3,12 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 (set-irrelevant-formals-ok t)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-
 
 ;; ======================================================================
 
@@ -430,6 +429,11 @@
                             x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
+           :in-theory (e/d* ()
+                            (get-prefixes-opener-lemma-group-1-prefix
+                             get-prefixes-opener-lemma-group-2-prefix
+                             get-prefixes-opener-lemma-group-3-prefix
+                             get-prefixes-opener-lemma-group-4-prefix))
            :cases ((equal (n32 (- (n32-to-i32 (n32 (rgfi *rdi* x86))) 1)) 0)))
           ("Subgoal 2"
            :in-theory (e/d*
@@ -441,7 +445,8 @@
                         imul-spec-32
                         gpr-sub-spec-4
 
-                        opcode-execute
+                        top-level-opcode-execute
+                        two-byte-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
                         wr64
@@ -471,7 +476,14 @@
                         rr32)
                        (create-canonical-address-list
                         (create-canonical-address-list)
-                        Loop-Inv-To-Loop-Inv))
+                        Loop-Inv-To-Loop-Inv
+                        (:linear bitops::logior-<-0-linear-2)
+                        (:rewrite acl2::ifix-when-not-integerp)
+                        (:linear bitops::logior-<-0-linear-1)
+                        get-prefixes-opener-lemma-group-1-prefix
+                        get-prefixes-opener-lemma-group-2-prefix
+                        get-prefixes-opener-lemma-group-3-prefix
+                        get-prefixes-opener-lemma-group-4-prefix))
            :use ((:instance Loop-Inv-To-Loop-Inv
                             (n0 n0)
                             (n (loghead 32 (rgfi *rdi* x86)))
@@ -487,7 +499,7 @@
                         imul-spec-32
                         gpr-sub-spec-4
 
-                        opcode-execute
+                        top-level-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
                         wr64
@@ -517,7 +529,14 @@
                        (create-canonical-address-list
                         (create-canonical-address-list)
                         Loop-Inv-To-Halt
-                        Loop-Inv-to-Halt-helper))
+                        Loop-Inv-to-Halt-helper
+                        get-prefixes-opener-lemma-group-1-prefix
+                        get-prefixes-opener-lemma-group-2-prefix
+                        get-prefixes-opener-lemma-group-3-prefix
+                        get-prefixes-opener-lemma-group-4-prefix
+                        (:linear bitops::logior-<-0-linear-2)
+                        (:rewrite acl2::ifix-when-not-integerp)
+                        (:linear bitops::logior-<-0-linear-1)))
            :use ((:instance Loop-Inv-to-Halt-helper
                             (n (loghead 32 (rgfi *rdi* x86)))
                             (a (loghead 32 (rgfi *rax* x86))))
@@ -538,7 +557,7 @@
              gpr-and-spec-4
              jcc/cmovcc/setcc-spec
 
-             opcode-execute
+             top-level-opcode-execute
              !rgfi-size
              x86-operand-to-reg/mem
              wr64
@@ -563,7 +582,41 @@
              zf-spec
              pf-spec32)
             (create-canonical-address-list
-             (create-canonical-address-list))))
+             (create-canonical-address-list)
+             (:rewrite get-prefixes-opener-lemma-group-4-prefix)
+             (:rewrite get-prefixes-opener-lemma-group-3-prefix)
+             (:rewrite get-prefixes-opener-lemma-group-2-prefix)
+             (:rewrite get-prefixes-opener-lemma-group-1-prefix)
+             (:rewrite combine-bytes-of-rb-of-1-address-in-programmer-level-mode)
+             (:definition combine-bytes)
+             (:rewrite acl2::ash-0)
+             (:rewrite acl2::zip-open)
+             (:rewrite rb-in-terms-of-nth-and-pos)
+             (:rewrite acl2::zp-when-integerp)
+             (:rewrite acl2::equal-of-booleans-rewrite)
+             (:rewrite canonical-address-p-limits-thm-3)
+             (:rewrite default-+-2)
+             (:rewrite acl2::zp-when-gt-0)
+             (:definition byte-listp)
+             (:linear unsigned-byte-p-of-combine-bytes)
+             (:linear size-of-combine-bytes)
+             (:rewrite default-<-2)
+             (:rewrite default-+-1)
+             (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+             (:definition n08p$inline)
+             (:rewrite loghead-of-non-integerp)
+             (:rewrite default-<-1)
+             (:definition nth)
+             (:rewrite subset-p-cdr-y)
+             (:rewrite acl2::ifix-when-not-integerp)
+             (:rewrite acl2::logtail-identity)
+             (:rewrite canonical-address-p-limits-thm-2)
+             (:rewrite canonical-address-p-limits-thm-1)
+             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+             (:rewrite get-prefixes-opener-lemma-zero-cnt)
+             (:rewrite combine-bytes-rb-in-terms-of-rb-subset-p)
+             (:rewrite x86p-x86-fetch-decode-execute)
+             (:definition create-canonical-address-list))))
           ("Subgoal 2"
            :in-theory (e/d (x86-fetch-decode-execute
                             rr32)
@@ -579,7 +632,7 @@
            (equal (inv n0 addr (x86-run k (x86-fetch-decode-execute x86)))
                   (inv n0 addr (x86-fetch-decode-execute (x86-run k x86)))))
   :hints (("Goal" :in-theory (e/d (x86-run-and-x86-fetch-decode-and-execute-commutative)
-                                  ()))))
+                                  ((:meta acl2::mv-nth-cons-meta))))))
 
 (defthm Inv-Inv-x86-run
   (implies (and (x86p x86)
@@ -588,7 +641,10 @@
   :hints (("Goal" :induct (x86-run k x86)
            :in-theory (e/d (x86-run
                             inv-x86-run-and-x86-fetch-decode-and-execute-commutative)
-                           (assertions)))))
+                           (assertions
+                            (:rewrite x86-fetch-decode-execute-opener)
+                            (:rewrite get-prefixes-opener-lemma-no-prefix-byte)
+                            (:meta acl2::mv-nth-cons-meta))))))
 
 ;; ======================================================================
 

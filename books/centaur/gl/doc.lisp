@@ -51,9 +51,9 @@ that arise in @(see acl2::hardware-verification) and other contexts.  It plays
 an important role in the verification of arithmetic units and microcode
 routines at <a href='http://www.centtech.com/'>Centaur Technology</a>.</p>
 
-<p>GL <b>requires ACL2(h)</b> because it makes extensive use of @(see
-acl2::hons-and-memoization).  Some optional parts of GL also require <see
-topic='@(url defttag)'>trust tags</see>.</p>
+<p>GL makes extensive use of @(see acl2::hons-and-memoization).  Some
+optional parts of GL also require <see topic='@(url defttag)'>trust
+tags</see>.</p>
 
 <p>GL translates ACL2 problems into Boolean problems that can be solved by
 automatic @(see acl2::boolean-reasoning) tools.  When this approach can be
@@ -155,10 +155,9 @@ anyone who wants to extend GL.</dd>
 
 <dt>The documentation for @(see acl2::hons-and-memoization).</dt>
 
-<dd>GL makes heavy use of the ACL2(h) extension for hash consing and
-memoization.  GL users will likely want to be aware of the basics of ACL2(h),
-and of commands like @(see hons-summary), @(see hons-wash), and @(see
-acl2::set-max-mem).</dd>
+<dd>GL makes heavy use of hash consing and memoization.  GL users will likely
+want to be aware of the basics of @(see hons-and-memoization), and of commands
+like @(see hons-summary), @(see hons-wash), and @(see acl2::set-max-mem).</dd>
 
 </dl>
 
@@ -223,8 +222,7 @@ ACL2</a>.  In ACL2 Workshop 2009, ACM, 2009.  Pages 20-24.</li>
 written as a raw Lisp extension of the ACL2 kernel, so using it meant trusting
 this additional code.  In contrast, GL is implemented as ACL2 books and its
 proof procedure is formally verified by ACL2, so the only code we have to trust
-besides ACL2 is the ACL2(h) extension that provides @(see
-acl2::hons-and-memoization).</p>")
+is in ACL2, including its @(see acl2::hons-and-memoization) features.</p>")
 
 
 (defxdoc debugging

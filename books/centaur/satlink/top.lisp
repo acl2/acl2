@@ -127,10 +127,10 @@ with many solvers.)</p>
 open source, recommended</h3>
 
 <p>Based on our experiences using @(see gl) for proofs about hardware modules
-at Centaur, we usually try Glucose first.  Version 3.0 or 4.0 should work with
-Satlink without any modifications.  (We have also successfully used earlier
-versions with Satlink, but occasionally needed to patch them in minor ways,
-e.g., to print counterexamples.)</p>
+at Centaur, we usually try Glucose first.  On Linux, version 3.0 or 4.0 should
+work with Satlink without modification.  (We have also successfully used
+earlier versions with Satlink, but occasionally needed to patch them in minor
+ways, e.g., to print counterexamples.)</p>
 
 <p>Quick instructions:</p>
 
@@ -141,11 +141,14 @@ e.g., to print counterexamples.)</p>
 <li>Verify that @('glucose-3.0/simp/glucose --help') prints a help message</li>
 </ul>
 
-<p>(NOTE for Mac users: If you are building Glucose 3.0 or 4.0 on a Mac, the
-build might fail.  In that case, a solution may be to make the two replacements
-shown below, where the the first in each pair (@('<')) is the Mac version,
-while the second in each pair (@('>')) is the original source.  (Thanks to
-Marijn Heule for these suggestions.)</p>
+<p>(NOTE for Mac and FreeBSD/PCBSD users: If you are building Glucose 3.0 or
+4.0, the build might fail.  In that case, a solution may be first to make the
+replacements shown below, where the the first in each pair (@('<')) is the
+Mac/FreeBSD/PCBSD version, while the second in each pair (@('>')) is the
+original source.  (Thanks to Marijn Heule and Warren Hunt for these
+suggestions.)</p>
+
+<p>In file @('../glucose-3.0/core/SolverTypes.h'):</p>
 
 @({
 <     // friend Lit mkLit(Var var, bool sign = false);
@@ -159,9 +162,19 @@ var + var + (int)sign; return p; }
 
 })
 
-<p>End of NOTE for Mac users.)</p>
+<p>In the file @('../glucose-3.0/utils/System.cc') comment the line below, but
+note that this is probably only necessary for FreeBSD/PCBSD, not for Mac:</p>
 
-<p>Now create a shell script, somewhere in your @('$PATH'), named @('glucose'):</p>
+@({
+   <   // double MiniSat::memUsedPeak(void) { return memUsed(); }
+   ---
+   >   double MiniSat::memUsedPeak(void) { return memUsed(); }
+})
+
+<p>End of NOTE for Mac and FreeBSD/PCBSD users.)</p>
+
+<p>Now create a shell script as follows, somewhere in your @('$PATH'), named
+@('glucose').  Note that the order of the arguments is important.</p>
 
 @({
     #!/bin/sh
@@ -307,8 +320,8 @@ and the various files in @('centaur/regression').</p>")
 
   :long "<p>For higher confidence (at some cost to runtime), some SAT solvers
 are able to produce UNSAT proofs.  Small programs such as <a
-href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a> can check these
-proofs, to ensure the SAT solver reasoned correctly.</p>
+href='http://www.cs.utexas.edu/~marijn/drat-trim/'>drat-trim</a> can check
+these proofs, to ensure the SAT solver reasoned correctly.</p>
 
 <p>Satlink now includes Perl scripts that can make use of this capability for
 the Glucose and Riss3g solvers.  In particular, see the following scripts:</p>
@@ -327,8 +340,8 @@ the Glucose and Riss3g solvers.  In particular, see the following scripts:</p>
 <li>When Glucose reports SAT, we just exit (because Satlink can check the
 satisfying assignment itself); or</li>
 
-<li>When Glucose reports UNSAT, we check the proof using the Drup-Trim unsat
-proof checker.  We only print an \"s UNSATISFIABLE\" line if Drup-Trim says
+<li>When Glucose reports UNSAT, we check the proof using the Drat-Trim unsat
+proof checker.  We only print an \"s UNSATISFIABLE\" line if Drat-Trim says
 that the proof is ok.</li>
 
 </ul>
@@ -346,8 +359,9 @@ solver and the verifier in real time, interrupt it, etc.</p>
 <li>Install @('glucose') and/or @('riss3g') as described in @(see
 sat-solver-options), and</li>
 
-<li>Install the <a href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a>
-program as @('drup-trim') somewhere in your PATH.</li>
+<li>Install the <a
+href='http://www.cs.utexas.edu/~marijn/drat-trim/'>drat-trim</a> program as
+@('drat-trim') somewhere in your PATH.</li>
 
 </ul>
 

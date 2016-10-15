@@ -201,6 +201,17 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; temp-rip right now points to the rel8 byte.  Add 1 to
+           ;; temp-rip to account for rel8 when computing the length
+           ;; of this instruction.
+           (+ 1 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*) start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*) rel8/next-rip) x86)
         (if branch-cond
@@ -208,6 +219,7 @@
           (mv nil (+ 1 temp-rip) x86)))
        ((when flg)
         (!!ms-fresh :rim-size-error flg))
+
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (if branch-cond
             (+ (+ 1 temp-rip) ;; rip of the next instruction
@@ -227,7 +239,7 @@
         (!!ms-fresh :virtual-memory-error temp-rip))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-two-byte-jcc
 
@@ -311,6 +323,18 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; temp-rip right now points to the rel32 byte.  Add 4 to
+           ;; temp-rip to account for rel32 when computing the length
+           ;; of this instruction.
+           (+ 4 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*)
                    rel32/next-rip)
@@ -371,6 +395,19 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size+1*)
+           ;; temp-rip right now points to the rel8 byte.  Add 1 to
+           ;; temp-rip to account for rel8 when computing the length
+           ;; of this instruction.
+           (+ 1 temp-rip))
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        (register-size (if p4? 4 8))
@@ -435,6 +472,67 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+  :body
+
+  ;; Note, opcode here denotes the second byte of the two-byte opcode.
+
+  (b* ((ctx 'x86-cmovcc)
+
+       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?)
+        (!!ms-fresh :lock-prefix prefixes))
+       (p2 (prefixes-slice :group-2-prefix prefixes))
+
+       ((the (integer 1 8) operand-size)
+        (select-operand-size nil rex-byte nil prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? t)
+       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         #.*rgf-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
+        (+ temp-rip increment-RIP-by))
+       ((when (mbe :logic (not (canonical-address-p temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :virtual-memory-error temp-rip))
+       ;; If the instruction goes beyond 15 bytes, stop. Change to an
+       ;; exception later.
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
+
+       ;; Update the x86 state:
+       (x86
+        (if branch-cond
+            (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
+                        reg/mem rex-byte x86)
+          x86))
+       (x86 (!rip temp-rip x86)))
+    x86)
+
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'CMOVO #x0F40 '(:nil nil)
@@ -468,63 +566,7 @@
     (add-to-implemented-opcodes-table 'CMOVLE #x0F4E '(:nil nil)
                                       'x86-cmovcc)
     (add-to-implemented-opcodes-table 'CMOVNLE #x0F4F '(:nil nil)
-                                      'x86-cmovcc))
-
-  :body
-
-  ;; Note, opcode here denotes the second byte of the two-byte opcode.
-
-  (b* ((ctx 'x86-cmovcc)
-
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
-
-       (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
-
-       ;; Update the x86 state:
-       (x86
-        (if branch-cond
-            (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
-                        reg/mem rex-byte x86)
-          x86))
-       (x86 (!rip temp-rip x86)))
-      x86))
+                                      'x86-cmovcc)))
 
 (def-inst x86-setcc
 
@@ -554,40 +596,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'SETO #x0F90 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNO #x0F91 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETC #x0F92 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNC #x0F93 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETZ #x0F94 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNZ #x0F95 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETBE #x0F96 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNBE #x0F97 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETS #x0F98 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNS #x0F99 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETP #x0F9A '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNP #x0F9B '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETL #x0F9C '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNL #x0F9D '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETLE #x0F9E '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNLE #x0F9F '(:nil nil)
-                                      'x86-setcc))
 
   :body
 
@@ -606,7 +614,9 @@
        ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((mv flg1 v-addr)
@@ -656,16 +666,52 @@
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
        ;; Update the x86 state:
+       (inst-ac? t)
        (val (if branch-cond 1 0))
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem 1 val
-                                (the (signed-byte
-                                      #.*max-linear-address-size+1*) v-addr)
-                                rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem
+         1 inst-ac? nil ;; Not a memory pointer operand
+         val (the (signed-byte #.*max-linear-address-size+1*) v-addr)
+         rex-byte r/m mod x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'SETO #x0F90 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNO #x0F91 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETC #x0F92 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNC #x0F93 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETZ #x0F94 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNZ #x0F95 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETBE #x0F96 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNBE #x0F97 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETS #x0F98 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNS #x0F99 '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETP #x0F9A '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNP #x0F9B '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETL #x0F9C '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNL #x0F9D '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETLE #x0F9E '(:nil nil)
+                                      'x86-setcc)
+    (add-to-implemented-opcodes-table 'SETNLE #x0F9F '(:nil nil)
+                                      'x86-setcc)))
 
 ;; ======================================================================

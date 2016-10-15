@@ -35,6 +35,7 @@
 (include-book "file-measure")
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "base"))
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "std/lists/append" :dir :system))

@@ -32,7 +32,7 @@
 (include-book "../expr")
 (include-book "../util/defs")
 (local (include-book "../util/arithmetic"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (non-parallel-book))
 
@@ -404,10 +404,9 @@
 
 (defsection vl-one-bit-constants
   :short "Already-sized, one-bit constants."
-
-  :long "<p>Care should be taken when using these constants because they are
-already annotated with their final widths and types, and @(see
-expression-sizing) is a very complex topic.</p>"
+  :long "<p>The names of these constants are historic relics from a time when
+VL's expressions had size annotations.  We should probably get rid of these, it
+looks like they are now mainly used in @(see udp-elim).</p>"
 
   (defconst |*sized-1'b0*|
     (hons-copy (make-vl-literal
@@ -447,10 +446,12 @@ selects.</p>"
 
 (define vl-resolved->val ((x vl-expr-p))
   :guard (vl-expr-resolved-p x)
-  :returns (val natp :rule-classes :type-prescription)
+  :returns (val integerp :rule-classes :type-prescription)
   :short "Get the value from a resolved expression."
-  :long "<p>Guaranteed to return a natural number.</p>"
-  (vl-constint->value (vl-literal->val x))
+  (b* (((vl-constint x) (vl-literal->val x)))
+    (if (eq x.origsign :vl-signed)
+        (acl2::logext x.origwidth x.value)
+      x.value))
   :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p))))
 
 (deflist vl-exprlist-resolved-p (x)
@@ -459,7 +460,7 @@ selects.</p>"
 
 (defprojection vl-exprlist-resolved->vals ((x vl-exprlist-p))
   :guard (vl-exprlist-resolved-p x)
-  :returns (vals nat-listp)
+  :returns (vals integer-listp)
   (vl-resolved->val x))
 
 
@@ -937,8 +938,8 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-valuerange->subexprs ((x vl-valuerange-p))
   :returns (subexprs vl-exprlist-p)
   (vl-valuerange-case x
-    :single (list x.expr)
-    :range  (vl-range->subexprs x.range))
+    :valuerange-single (list x.expr)
+    :valuerange-range  (list x.low x.high))
   ///
   (defret vl-exprlist-count-of-vl-valuerange->subexprs
     (<= (vl-exprlist-count subexprs)
@@ -954,8 +955,9 @@ construct fast alists binding identifiers to things, etc.</p>"
   :returns (new-x vl-valuerange-p)
   :verify-guards nil
   (vl-valuerange-case x
-    :single (vl-expr->valuerange (car subexprs))
-    :range (vl-range->valuerange (vl-range-update-subexprs x.range subexprs)))
+    :valuerange-single (make-vl-valuerange-single :expr (first subexprs))
+    :valuerange-range (make-vl-valuerange-range :low (first subexprs)
+                                                :high (second subexprs)))
   ///
   (verify-guards vl-valuerange-update-subexprs
     :hints ((and stable-under-simplificationp
@@ -1200,11 +1202,11 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-expr->subexprs ((x vl-expr-p))
   :returns (subexprs vl-exprlist-p)
   (vl-expr-case x
-    :vl-index
-    (append-without-guard (vl-scopeexpr->subexprs x.scope)
-                          x.indices
-                          (vl-partselect->subexprs x.part))
-
+    :vl-special nil
+    :vl-literal nil
+    :vl-index (append-without-guard (vl-scopeexpr->subexprs x.scope)
+                                    x.indices
+                                    (vl-partselect->subexprs x.part))
     :vl-unary (list x.arg)
     :vl-binary (list x.left x.right)
     :vl-qmark (list x.test x.then x.else)
@@ -1219,8 +1221,7 @@ construct fast alists binding identifiers to things, etc.</p>"
                :otherwise (list x.expr))
     :vl-inside (cons x.elem (vl-valuerangelist->subexprs x.set))
     :vl-tagged (and x.expr (list x.expr))
-    :vl-pattern (vl-assignpat->subexprs x.pat)
-    :otherwise nil)
+    :vl-pattern (vl-assignpat->subexprs x.pat))
   ///
   (defret vl-exprlist-count-of-vl-expr->subexprs
     (< (vl-exprlist-count subexprs)
@@ -1534,8 +1535,10 @@ construct fast alists binding identifiers to things, etc.</p>"
                     (append (vl-expr-varnames (car x))
                             (vl-exprlist-varnames (cdr x)))
                   nil)
-         :exec (with-local-nrev
-                 (vl-exprlist-varnames-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-varnames-nrev x nrev)))))
   ///
   (defthm true-listp-of-vl-expr-varnames
     (true-listp (vl-expr-varnames x))
@@ -1682,8 +1685,10 @@ expression, with repetition.</p>"
                      (append (vl-expr-ops (car x))
                              (vl-exprlist-ops (cdr x)))
                    nil)
-         :exec (with-local-nrev
-                 (vl-exprlist-ops-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev
+                   (vl-exprlist-ops-nrev x nrev)))))
    ///
    (defthm true-listp-of-vl-expr-ops
      (true-listp (vl-expr-ops x))
@@ -1831,7 +1836,9 @@ throughout the expression, with repetition.  The resulting list may contain any
                     (append (vl-expr-values (car x))
                             (vl-exprlist-values (cdr x)))
                   nil)
-         :exec (with-local-nrev (vl-exprlist-values-nrev x nrev))))
+         :exec (if (atom x)
+                   nil
+                 (with-local-nrev (vl-exprlist-values-nrev x nrev)))))
   ///
   (defthm true-listp-of-vl-expr-values
     (true-listp (vl-expr-values x))
@@ -1930,54 +1937,6 @@ throughout the expression, with repetition.  The resulting list may contain any
            (nfix width))))
 
 
-(defsection vl-exprsign-max
-  :parents (vl-expr-typedecide)
-  :short "@(call vl-exprsign-max) is given @(see vl-exprsign-p)s as arguments;
-it returns @(':vl-unsigned') if any argument is unsigned, or @(':vl-signed')
-when all arguments are signed."
-
-  (local (in-theory (enable vl-exprsign-p)))
-
-  (defund vl-exprsign-max-fn (x y)
-    (declare (xargs :guard (and (vl-exprsign-p x)
-                                (vl-exprsign-p y))))
-    ;; Goofy MBE stuff is just to make sure this function breaks if we ever add
-    ;; support for reals or other types.
-    (let ((x-fix (mbe :logic (case (vl-exprsign-fix x)
-                               (:vl-signed   :vl-signed)
-                               (otherwise    :vl-unsigned))
-                      :exec x))
-          (y-fix (mbe :logic (case (vl-exprsign-fix y)
-                               (:vl-signed   :vl-signed)
-                               (otherwise    :vl-unsigned))
-                      :exec y)))
-      (if (or (eq x-fix :vl-unsigned)
-              (eq y-fix :vl-unsigned))
-          :vl-unsigned
-        :vl-signed)))
-
-  (defmacro vl-exprsign-max (x y &rest rst)
-    (xxxjoin 'vl-exprsign-max-fn (cons x (cons y rst))))
-
-  (add-binop vl-exprsign-max vl-exprsign-max-fn)
-
-  (local (in-theory (enable vl-exprsign-max-fn)))
-
-  (defthm vl-exprsign-p-of-vl-exprsign-max
-    (vl-exprsign-p (vl-exprsign-max x y)))
-
-  (defthm type-of-vl-exprsign-max
-    (and (symbolp (vl-exprsign-max x y))
-         (not (equal t (vl-exprsign-max x y)))
-         (not (equal nil (vl-exprsign-max x y))))
-    :rule-classes :type-prescription)
-
-  (defthm vl-exprsign-max-of-vl-exprsign-max
-    (equal (vl-exprsign-max (vl-exprsign-max x y) z)
-           (vl-exprsign-max x (vl-exprsign-max y z))))
-
-  (deffixequiv vl-exprsign-max-fn :args ((x vl-exprsign-p) (y vl-exprsign-p))))
-
 
 (define vl-expr-add-atts ((new-atts vl-atts-p)
                           (x        vl-expr-p))
@@ -2014,13 +1973,13 @@ when all arguments are signed."
 
 
 
-(define vl-make-index ((n natp))
+(define vl-make-index ((n integerp))
   :short "Safely create a constant integer atom whose value is n."
   :long "<p>The expression we create doesn't have a type, because it would
 depend on the context.  In many cases it might suffice to use an integer type;
 in this case see @(see vl-make-integer).</p>"
   :returns (index vl-expr-p)
-  (let* ((value (lnfix n))
+  (let* ((value (lifix n))
          (width (+ 1 (integer-length value))))
     (if (<= width 31)
         ;; Prefer to make indices that look like plain decimal numbers, I
@@ -2031,12 +1990,12 @@ in this case see @(see vl-make-integer).</p>"
           :val (make-vl-constint :origwidth 32
                                  :origsign :vl-signed
                                  :wasunsized t
-                                 :value value)))
+                                 :value (acl2::loghead 32 value))))
       (hons-copy
        (make-vl-literal
         :val (make-vl-constint :origwidth width
                                :origsign :vl-signed
-                               :value value)))))
+                               :value (acl2::loghead width value))))))
   ///
   (defthm vl-expr-kind-of-vl-make-index
     (eq (vl-expr-kind (vl-make-index n)) :vl-literal))
@@ -2045,15 +2004,23 @@ in this case see @(see vl-make-integer).</p>"
     (vl-expr-resolved-p (vl-make-index n))
     :hints(("Goal" :in-theory (enable vl-expr-resolved-p))))
 
+  (local (defthm logext-of-greater-than-integer-length
+           (implies (and (posp n)
+                         (< (integer-length x) n))
+                    (equal (acl2::logext n x) (ifix x)))
+           :hints(("Goal" :in-theory (enable bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
+
+
   (defthm vl-resolved->val-of-vl-make-index
     (equal (vl-resolved->val (vl-make-index n))
-           (nfix n))
+           (ifix n))
     :hints(("Goal" :in-theory (enable vl-resolved->val))))
 
-  (deffixequiv vl-make-index :args ((n natp))))
+  (deffixequiv vl-make-index :args ((n integerp))))
 
 
-(define vl-make-integer ((n natp)
+(define vl-make-integer ((n integerp)
                          &key ((bits posp) '32))
   :guard (unsigned-byte-p bits n)
   :short "Safely create a well-typed constant integer atom whose value is n."
@@ -2065,7 +2032,7 @@ in this case see @(see vl-make-integer).</p>"
       :val (make-vl-constint :origwidth bits
                              :origsign :vl-signed
                              :wasunsized t
-                             :value value))))
+                             :value (acl2::loghead bits value)))))
   ///
   (defthm vl-expr-kind-of-vl-make-integer
     (eq (vl-expr-kind (vl-make-integer n :bits bits)) :vl-literal))
@@ -2076,10 +2043,10 @@ in this case see @(see vl-make-integer).</p>"
 
   (defthm vl-resolved->val-of-vl-make-integer
     (equal (vl-resolved->val (vl-make-integer n :bits bits))
-           (acl2::loghead (pos-fix bits) (nfix n)))
+           (acl2::logext (pos-fix bits) (nfix n)))
     :hints(("Goal" :in-theory (enable vl-resolved->val))))
 
-  (deffixequiv vl-make-integer :args ((n natp))))
+  (deffixequiv vl-make-integer :args ((n integerp))))
 
 
 
@@ -2438,7 +2405,7 @@ otherwise, it is a single-bit wide.</p>"
   (define vl-range-lsbidx ((x (and (vl-range-p x)
                                    (vl-range-resolved-p x))))
     :short "Extract the LSB (right) index from a resolved @(see vl-range)."
-    :returns (lsb natp :rule-classes :type-prescription)
+    :returns (lsb integerp :rule-classes :type-prescription)
     (b* (((vl-range x) x))
       (vl-resolved->val x.lsb)))
 
@@ -2447,14 +2414,14 @@ otherwise, it is a single-bit wide.</p>"
     :short "Extract the LSB (right) index from a resolved @(see
             vl-maybe-range); treats the empty range as @('[0:0]'),
             i.e., its LSB index is 0."
-    :returns (rsh natp :rule-classes :type-prescription)
+    :returns (rsh integerp :rule-classes :type-prescription)
     (b* (((unless x) 0))
       (vl-range-lsbidx x)))
 
   (define vl-range-msbidx ((x (and (vl-range-p x)
                                    (vl-range-resolved-p x))))
     :short "Extract the MSB (left) index from a resolved @(see vl-range)."
-    :returns (msb natp :rule-classes :type-prescription)
+    :returns (msb integerp :rule-classes :type-prescription)
     (b* (((vl-range x) x))
       (vl-resolved->val x.msb)))
 
@@ -2462,7 +2429,7 @@ otherwise, it is a single-bit wide.</p>"
                                          (vl-maybe-range-resolved-p x))))
     :short "Extract the MSB (left) index from a resolved @(see vl-maybe-range);
             treats the empty range as @('[0:0]'), i.e., its MSB is 0."
-    :returns (rsh natp :rule-classes :type-prescription)
+    :returns (rsh integerp :rule-classes :type-prescription)
     (b* (((unless x) 0))
       (vl-range-msbidx x)))
 
@@ -2470,7 +2437,7 @@ otherwise, it is a single-bit wide.</p>"
                                     (vl-range-resolved-p x))))
     :short "Extract the lesser of the @('msb') and @('lsb') of a resolved @(see
             vl-range)."
-    :returns (lowidx natp :rule-classes :type-prescription)
+    :returns (lowidx integerp :rule-classes :type-prescription)
     (min (vl-range-msbidx x) (vl-range-lsbidx x)))
 
   (define vl-maybe-range-lowidx ((x (and (vl-range-p x)
@@ -2478,7 +2445,7 @@ otherwise, it is a single-bit wide.</p>"
     :short "Extract the lesser of the @('msb') and @('lsb') of a resolved @(see
             vl-maybe-range); treats the empty range as @('[0:0]'), i.e., its
             low index is 0."
-    :returns (lowidx natp :rule-classes :type-prescription)
+    :returns (lowidx integerp :rule-classes :type-prescription)
     (if x (vl-range-msbidx x) 0))
 
   (define vl-range-revp ((x (and (vl-range-p x)

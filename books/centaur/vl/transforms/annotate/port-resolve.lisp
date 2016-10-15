@@ -43,6 +43,17 @@
 
 (local (xdoc::set-default-parents port-resolve))
 
+
+;; BOZO temporary shim until we figure out how case/kind macros should work for
+;; transparent sums.
+(defmacro vl-port-kind (x) `(tag (vl-port-fix ,x)))
+
+(defmacro vl-port-case (x &key vl-interfaceport vl-regularport)
+  `(if (eq (vl-port-kind ,x) :vl-interfaceport)
+       ,vl-interfaceport
+     ,vl-regularport))
+
+
 ;; ===================== Fixing up ANSI Ports ====================================
 
 
@@ -161,7 +172,7 @@ is specified.
 
 
 (define vl-ansi-portdecl-to-regularport-from-previous-regularport
-  ((x vl-ansi-portdecl-p)
+  ((x         vl-ansi-portdecl-p)
    (prev      vl-portdecl-p "Previous portdecl.")
    (prev-var  vl-vardecl-p  "Previous vardecl.")
    (warnings  vl-warninglist-p))
@@ -184,18 +195,34 @@ is specified.
         (make-vl-regularport :name x.name
                              :expr (vl-idexpr x.name)
                              :loc x.loc)
-        (list (make-vl-portdecl :name x.name
-                                :dir prev.dir
-                                :nettype prev.nettype
-                                :type prev.type
-                                :atts x.atts
-                                :loc x.loc))
-        (list (make-vl-vardecl :name x.name
-                               :nettype prev.nettype
-                               :type prev.type
-                               :varp prev-var.varp
-                               :atts x.atts
-                               :loc x.loc)))))
+        ;; For better structure sharing, we want to CHANGE- the previous
+        ;; port/var instead of MAKE-ing new ones.
+        (list (change-vl-portdecl prev
+                                  :name x.name
+                                  :loc x.loc
+                                  :atts x.atts
+                                  :dir prev.dir
+                                  :nettype prev.nettype
+                                  :type prev.type))
+        (list (change-vl-vardecl prev-var
+                                 :name x.name
+                                 :loc x.loc
+                                 :type prev.type
+                                 :nettype prev.nettype
+                                 :varp prev-var.varp
+                                 :atts (if x.atts
+                                           (hons '("VL_ANSI_PORT_VARDECL") x.atts)
+                                         (hons-copy '(("VL_ANSI_PORT_VARDECL"))))
+                                 ;; All of the following should be never
+                                 ;; actually do anything, but it should be
+                                 ;; safe...
+                                 :initval nil
+                                 :constp nil
+                                 :lifetime nil
+                                 :vectoredp nil
+                                 :scalaredp nil
+                                 :delay nil
+                                 :cstrength nil)))))
 
 
 (local (defthm len-of-collect-regular-ports-when-car
@@ -203,14 +230,21 @@ is specified.
                        (consp ports))
                   (posp (len (vl-collect-regular-ports ports))))
          :hints(("Goal" :expand ((vl-collect-regular-ports ports))
-                 :in-theory (enable vl-port-kind vl-regularport-fix vl-port-fix tag)))
+                 :in-theory (enable vl-regularport-fix
+                                    vl-port-fix
+                                    ;tag
+                                    )))
          :rule-classes :type-prescription))
 
 (local (defthm vl-port-kind-of-vl-regularport
          (equal (vl-port-kind (vl-regularport name expr loc))
-                :vl-regularport)
-         :hints(("Goal" :in-theory (enable vl-port-kind vl-regularport tag)))))
+                :vl-regularport)))
+         ;; :hints(("Goal" :in-theory (enable vl-regularport
+         ;;                                   tag
+         ;;                                   )))))
 
+
+(local (in-theory (enable tag-reasoning)))
 
 (define vl-ansi-portdecl-to-regularport
   ((x vl-ansi-portdecl-p)
@@ -279,7 +313,9 @@ is specified.
                                :nettype nettype
                                :type type
                                :varp x.varp
-                               :atts x.atts
+                               :atts (if x.atts
+                                         (hons '("VL_ANSI_PORT_VARDECL") x.atts)
+                                       (hons-copy '(("VL_ANSI_PORT_VARDECL"))))
                                :loc x.loc)))))
 
 
@@ -342,13 +378,21 @@ is specified.
 
 
 ;; BOZO this is horrible
-(local (defthm vl-port-kind-to-tag
-         (implies (vl-port-p x)
-                  (equal (vl-port-kind x) (tag x)))
-         :hints(("Goal" :in-theory (enable vl-port-p vl-port-kind
-                                           vl-interfaceport-p
-                                           vl-regularport-p
-                                           tag)))))
+;; (local (defthm vl-port-kind-to-tag
+;;          (implies (vl-port-p x)
+;;                   (equal (vl-port-kind x) (tag x)))
+;;          :hints(("Goal" :in-theory (enable vl-port-p vl-port-kind
+;;                                            vl-interfaceport-p
+;;                                            vl-regularport-p
+;;                                            tag)))))
+
+(local (defthm tag-when-vl-interfaceport-p-unrestricted
+         (implies (vl-interfaceport-p x)
+                  (equal (tag x) :vl-interfaceport))))
+
+(local (defthm tag-when-vl-regularport-p-unrestricted
+         (implies (vl-regularport-p x)
+                  (equal (tag x) :vl-regularport))))
 
 
 
@@ -550,6 +594,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
                                     x.temps
                                     :loaditems
                                     (append-without-guard
+                                     (vl-modelementlist->genelements portdecls)
                                      (vl-modelementlist->genelements vardecls)
                                      x.temps.loaditems)))))
 
@@ -597,7 +642,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
 ;; and remove the vardecl.  Remove the interfaceports from the loaditems and
 ;; vardecls.  Go through the ports and replace the interfaceports.
 
-;; 4. This is done in lint/portcheck.lisp.
+;; 4. This is done in basicsanity
 
 
 
@@ -704,8 +749,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
         (vl-loaditems-remove-interfaceport-decls loaditems ss))
        (ifport-alist (make-fast-alist ifport-alist))
        (vardecls (with-local-nrev
-                   (vl-fast-delete-vardecls (alist-keys ifport-alist) ifport-alist
-                                            x.vardecls nrev)))
+                   (vl-fast-delete-vardecls (alist-keys ifport-alist) ifport-alist x.vardecls nrev)))
        (ports (vl-ports-resolve-interfaces x.ports ifport-alist)))
     (change-vl-module x
                       :vardecls vardecls
@@ -737,8 +781,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
         (vl-loaditems-remove-interfaceport-decls loaditems ss))
        (ifport-alist (make-fast-alist ifport-alist))
        (vardecls (with-local-nrev
-                   (vl-fast-delete-vardecls (alist-keys ifport-alist) ifport-alist
-                                            x.vardecls nrev)))
+                   (vl-fast-delete-vardecls (alist-keys ifport-alist) ifport-alist x.vardecls nrev)))
        (ports (vl-ports-resolve-interfaces x.ports ifport-alist)))
     (change-vl-interface x
                          :vardecls vardecls

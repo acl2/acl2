@@ -36,7 +36,7 @@
 
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (defun g-binary-logeqv-of-numbers (x y)
   (declare (xargs :guard (and (general-numberp x)

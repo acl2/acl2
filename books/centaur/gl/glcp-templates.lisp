@@ -225,7 +225,7 @@
                   :stobjs ,*glcp-stobjs*))
         (b* ((pathcond (lbfr-hyp-fix pathcond))
              ((when (zp clk))
-              (glcp-interp-error "The clock ran out.~%"))
+              (glcp-interp-error "The clock ran out."))
              ((glcp-er xobj)
               (interp-term x alist contexts . ,*glcp-common-inputs*))
              ((unless (glcp-term-obj-p xobj))
@@ -1162,12 +1162,12 @@ In ~@0: the bindings don't satisfy shape-spec-bindingsp: ~x1"
             ((unless (acl2::fast-no-duplicatesp (shape-spec-list-indices obj)))
              (glcp-error
               (acl2::msg "~
-In ~@0: the shape spec indices contain duplicates: ~x0"
+In ~@0: the shape spec indices contain duplicates: ~x1"
                          id (acl2::duplicated-members (shape-spec-list-indices obj)))))
             ((unless (acl2::fast-no-duplicatesp (shape-spec-list-vars obj)))
              (glcp-error
               (acl2::msg "~
-In ~@0: the shape spec vars contain duplicates: ~x0"
+In ~@0: the shape spec vars contain duplicates: ~x1"
                          id (acl2::duplicated-members (shape-spec-list-vars obj)))))
             ((unless (subsetp-equal vars bound-vars))
              (flush-hons-get-hash-table-link obligs)

@@ -42,6 +42,8 @@
                   :resizable t)
   :renaming ((adj-list-arrayi ai)
              (update-adj-list-arrayi ui))
+; Matt K. mod: :doc is no longer supported for defthm after v7-1
+#||
   :doc "Graph represented as an adjacency list array.
         Key is vertex-index.
         Value is a record with the following fields:
@@ -49,6 +51,7 @@
         :adj - (nat-list) list of indexes of adjacent vertices
         :seen - boolean (bit) indicating wether this vertex has been visited
         :cc - (nat) indicating the connected component this vertex belongs to"
+||#
   :inline t)
 
 (defrec vinfo%

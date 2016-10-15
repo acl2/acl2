@@ -56,6 +56,7 @@
 (include-book "support")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
+; cert_param: (non-cmucl)
 
 (gl::def-gl-clause-processor sv-tutorial-glcp)
 
@@ -178,7 +179,7 @@ vl::vl-design->svex-design):</p>
 <p>This runs a series of Verilog to Verilog transforms on the parse tree to
 simplify it, and finally transforms the simplified hierarchy into an svex
 design.  It returns the resulting svex design, an object of type @(see
-svex::design), as well as two additional Verilog designs: the portion of the
+sv::design), as well as two additional Verilog designs: the portion of the
 original design that survived the simplification process, and the portion that
 failed for one reason or another.  You can view pretty-printed versions of
 these:</p>
@@ -195,7 +196,7 @@ print its warnings:</p>
 @(`(:code ($ alu-print-good-reportcard))`)
 
 <p>The svex design @('*alu-svex-design*') is an object of type @(see
-svex::design), and this is a small enough design that you can print it in
+sv::design), and this is a small enough design that you can print it in
 full:</p>
 
 @({(without-evisc *alu-svex-design*)})

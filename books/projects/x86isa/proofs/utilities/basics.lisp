@@ -17,19 +17,13 @@
   :short "Basic utilities for x86 machine-code proofs"
   )
 
+(defsection x86-programs-proof-debugging
+  :parents (proof-utilities x86isa)
+  )
+
 ;; ======================================================================
 ;; Some useful arithmetic theorems, currently placed here because
 ;; they've yet to find a good home:
-
-(defthm loghead-smaller
-  (implies (and (equal (loghead n x) 0)
-                (natp n)
-                (<= m n))
-           (equal (loghead m x) 0))
-  :hints (("Goal" :in-theory (e/d*
-                              (acl2::ihsext-recursive-redefs
-                               acl2::ihsext-inductions)
-                              ()))))
 
 (defthm loghead-unequal
   (implies (and (signed-byte-p x a)
@@ -132,8 +126,8 @@
   (x86-fn-untranslate
    '(XR ':ctr)
    '(?x)
-   (gl-int 0 1 18)
-   '(*MSW* *CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
+   (gl-int 0 1 17)
+   '(*CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
            *CR8* *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
            *XCR0*))))
 
@@ -143,8 +137,8 @@
   (x86-fn-untranslate
    '(XW ':ctr)
    '(?v ?x)
-   (gl-int 0 1 18)
-   '(*MSW* *CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
+   (gl-int 0 1 17)
+   '(*CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
            *CR8* *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
            *XCR0*))))
 
@@ -159,12 +153,15 @@
    '(?x)
    ;; Note that in case of MSRs, the indices 0 through 7 are actually
    ;; the values of the constants *IA32_EFER-IDX*, *IA32_FS_BASE-IDX*,
-   ;; and so on.  The constants below have the correct register
-   ;; addresses, as specified by the Intel manuals. See
-   ;; utilities/constants.lisp for details.
+   ;; and so on.
+
+   ;; The following constants without the -IDX suffix correspond to
+   ;; the correct register addresses, as specified by the Intel
+   ;; manuals. See define-model-specific-registers in
+   ;; portcullis/shart-dot-constants.lisp for details.
    (gl-int 0 1 7)
-   '(*IA32_EFER* *IA32_FS_BASE* *IA32_GS_BASE* *IA32_KERNEL_GS_BASE*
-                 *IA32_STAR* *IA32_LSTAR* *IA32_FMASK*))))
+   '(*IA32_EFER-IDX* *IA32_FS_BASE-IDX* *IA32_GS_BASE-IDX* *IA32_KERNEL_GS_BASE-IDX*
+                     *IA32_STAR-IDX* *IA32_LSTAR-IDX* *IA32_FMASK-IDX*))))
 
 (make-event
  (cons
@@ -173,8 +170,8 @@
    '(XW ':msr)
    '(?v ?x)
    (gl-int 0 1 7)
-   '(*IA32_EFER* *IA32_FS_BASE* *IA32_GS_BASE* *IA32_KERNEL_GS_BASE*
-                 *IA32_STAR* *IA32_LSTAR* *IA32_FMASK*))))
+   '(*IA32_EFER-IDX* *IA32_FS_BASE-IDX* *IA32_GS_BASE-IDX* *IA32_KERNEL_GS_BASE-IDX*
+                     *IA32_STAR-IDX* *IA32_LSTAR-IDX* *IA32_FMASK-IDX*))))
 
 ;; Flags:
 
@@ -185,8 +182,8 @@
    '(flgi)
    '(?x)
    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(*cf* *pf* *af* *zf* *sf* *tf* *if* *df* *of*
-          *iopl *nt* *rf* *vm* *ac* *vif* *vip* *id*))))
+   '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
+          *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
 
 
 (make-event
@@ -196,8 +193,8 @@
    '(!flgi)
    '(?v ?x)
    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(*cf* *pf* *af* *zf* *sf* *tf* *if* *df* *of*
-          *iopl *nt* *rf* *vm* *ac* *vif* *vip* *id*))))
+   '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
+          *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
 
 (acl2::optimize-untranslate-patterns)
 

@@ -1,0 +1,73 @@
+TODO:
+
+======================================================================
+
+--- Check all instructions that take immediate operands for the
+    behavior for all values of 66H and REX.W.
+    
+    Like the 66H size prefix, 64-bit operand size override has no
+    effect on byte-specific operations.
+ 
+    For non-byte operations: if a 66H prefix is used with
+    prefix (REX.W = 1), 66H is ignored.
+
+    If a 66H override is used with REX and REX.W = 0, the operand size
+    is 16 bits.
+
+======================================================================
+
+-- Dmitry Nadezhin noted the following:
+
+>     Two-byte opcodes #x20 #x21 #x22 #x23 with register formats Cd and Dd
+>     ignore mod field in modr/m byte. Do they fetch SIB byte when modr/m
+>     byte requires it ?
+>     A comment from qemu sources says about these commands:
+>            /* Ignore the mod bits (assume (modrm&0xc0)==0xc0).
+>              * AMD documentation (24594.pdf) and testing of
+>              * intel 386 and 486 processors all show that the mod bits
+>              * are assumed to be 1's, regardless of actual values.
+>              */
+>
+
+I haven't tested this exact case on x86isa or the real machine, so
+this is guesswork.
+
+SIB byte is fetched only when r/m = #b100 and mod != #b11.  If mod is
+always assumed to be #b11 by qemu, then this has the same observable
+effect as not fetching the SIB byte.  However, I think x86isa will
+fetch the SIB byte anyway because instruction decoding is done in
+two-byte-opcode-decode-and-execute, which is before the instruction
+dispatch.  Hmmm, if comments in qemu are correct, then I have to think
+about how to fix this.  This might mean re-writing the
+fetch-decode-execute functions to account for exceptions like these...
+
+======================================================================
+
+--- Dmitry Nadezhin pointed out the following:
+
+>  Some branch instructions don't fetch their offset bytes when no jump is taken.
+>     Suppose that these offset is on the next page and this page is forbidden for execution.
+>     I expect a fault with the rip of this instruction.
+>     x86isa will be silently increment rip. Next instruction will generate a fault but with the next-rip.
+>     The instructions are:
+>     #xE0 x86-loop
+>     #xE1 x86-loop
+>     #xE2 x86-loop
+>     #xE3 x86-jrcxz
+>     #x0F #x80 x86-two-byte-jcc
+>     ....
+>     #x0F #x8F x86-two-byte-jcc
+
+When x86isa generates a fault or exception, it essentially says all
+bets are off, which means that the faulty x86 state may or may not be
+an accurate representation of a real x86 machine.  Since we don't
+support faults and exceptions yet, I'm inclined to leave this as it
+is.
+
+That being said, I would like to make x86isa as accurate as possible.
+However, a downside to always fetching offset bytes for such
+conditional instructions is that it will slow down execution speed,
+especially when paging is on (in the system-level mode, where each
+memory access goes through address translation).
+
+======================================================================

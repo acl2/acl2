@@ -19,7 +19,7 @@ data last modified: [2014-08-06]
 ; DATA CONSTRUCTOR TABLE
 (table data-constructor-table nil nil :clear)
 
-(defconst *register-data-constructor-keywords*
+(defconst *register-data-constructor-keywords* 
   '(:verbose :hints :proper :rule-classes :local-events :export-defthms :theory-name :recordp))
 
 
@@ -33,8 +33,7 @@ data last modified: [2014-08-06]
          (ctx 'register-data-constructor))
     `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
        (make-event
-        (cons 'progn
-              (register-data-constructor-fn ',recog-constr-pair ',pred-dex-lst ',keys ',ctx (w state)))))))
+        (register-data-constructor-fn ',recog-constr-pair ',pred-dex-lst ',keys ',ctx (w state))))))
 
 
 
@@ -85,37 +84,45 @@ data last modified: [2014-08-06]
        (proper (if (assoc :proper kwd-alist) (get1 :proper kwd-alist) t))
        (recordp (get1 :recordp kwd-alist))
        (dest-pred-alist (pairlis$ dex-names dpreds))
-       (kwd-alist (acons :arity (len dex-names) (acons :recog recog (acons :dest-pred-alist dest-pred-alist kwd-alist)))))
-
-    `((defthm ,(s+ conx-name '-CONSTRUCTOR-PRED)
-         (implies ,hyp
-                  (,recog (,conx-name . ,dex-names)))
-         :hints ,hints
-         :rule-classes ,rule-classes)
-
-       (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS)
-         (implies (,recog x)
-                  (and . ,(list-up-lists dpreds (apply-to-x-lst dex-names))))
-         :hints ,hints
-         :rule-classes ,(if recordp (cons ':generalize rule-classes) rule-classes))
-
-
-       ,@(and proper
-              `((defthm ,(s+ conx-name '-ELIM-RULE)
-                  (implies (,recog x)
-                           (equal (,conx-name . ,(apply-to-x-lst dex-names))
-                                  x))
-                  :hints ,hints
-                  :rule-classes ,(if (or recordp rule-classes) '(:elim) rule-classes))
+       (kwd-alist (acons :arity (len dex-names) (acons :recog recog (acons :dest-pred-alist dest-pred-alist kwd-alist))))
+       )
+        
+    `(ENCAPSULATE
+      nil
+      (LOGIC)
+      (WITH-OUTPUT
+       :SUMMARY (ACL2::FORM) :ON (ERROR)
+       (PROGN
+        (defthm ,(s+ conx-name '-CONSTRUCTOR-PRED)
+          (implies ,hyp
+                   (,recog (,conx-name . ,dex-names)))
+          :hints ,hints
+          :rule-classes ,rule-classes)
+        
+        (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS)
+          (implies (,recog x)
+                   (and . ,(list-up-lists dpreds (apply-to-x-lst dex-names))))
+          :hints ,hints
+          :rule-classes ,(if recordp (cons ':generalize rule-classes) rule-classes))
 
 
-                (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER)
-                  (implies ,hyp
-                           (and . ,(get-proper-dex-theorems conx-name dex-names)))
-                  :hints ,hints
-                  :rule-classes ,rule-classes)))
-       ;local
-       ;export-defthms TODO
-
-       (TABLE DATA-CONSTRUCTOR-TABLE ',conx-name ',kwd-alist))))
+        ,@(and proper
+               `((defthm ,(s+ conx-name '-ELIM-RULE)
+                   (implies (,recog x)
+                            (equal (,conx-name . ,(apply-to-x-lst dex-names))
+                                   x))
+                   :hints ,hints
+                   :rule-classes ,(if (or recordp rule-classes) '(:elim) rule-classes))
+                 
+                 
+                 (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER)
+                   (implies ,hyp
+                            (and . ,(get-proper-dex-theorems conx-name dex-names)))
+                   :hints ,hints
+                   :rule-classes ,rule-classes)))
+;local 
+;export-defthms TODO
+        (TABLE DATA-CONSTRUCTOR-TABLE ',conx-name ',kwd-alist)
+        (VALUE-TRIPLE :REGISTERED)
+        )))))
 

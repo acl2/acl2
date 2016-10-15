@@ -66,8 +66,8 @@ culminate in</p>
     (VL-MODULE->MODNAMESPACE X) : MODULE -> STRING LIST
 })
 
-<p>Which returns a list of all names found the module's namespace.  Note that
-any reasonable module is required to have a unique modnamespace.</p>
+<p>Which returns a list of all names found in the module's namespace.  Note
+that any reasonable module is required to have a unique modnamespace.</p>
 
 <p>BOZO this does not get named blocks.  Unclear how nested blocks are supposed
 to be handled.  We do at least get function and task names, and names from

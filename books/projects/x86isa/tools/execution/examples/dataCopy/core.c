@@ -1,6 +1,6 @@
 #include "stdio.h"
 
-void copyData (int* src, int* dst, int n) {
+void copyData (int* src, int* dst, unsigned int n) {
 
   int* dstEnd = dst + n;
 

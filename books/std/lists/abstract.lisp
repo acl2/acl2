@@ -97,7 +97,7 @@ additional keyword arguments as well; the following shows an elaborate example.<
 
 <p>To briefly describe the keyword arguments:</p>
 <ul>
-<li>@(':hints'), @(':rule-classes'), and @(':otf-flg) are the same as in @(see
+<li>@(':hints'), @(':rule-classes'), and @(':otf-flg') are the same as in @(see
 defthm) and do not affect what is stored for later instantiation</li>
 <li>@(':requirement') restricts this rule to only apply to certain kinds of
 typed lists; see the section \"Variants and Requirements\" below</li>

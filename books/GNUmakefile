@@ -148,6 +148,14 @@ ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
+# The build of saved_acl2 may succeed even if the directory name has
+# spaces, but book certification will almost surely fail, so we
+# disallow such a build.  Comment out the three lines below if you
+# want to take your chances nonetheless!
+ifneq (,$(word 2, $(ACL2_SYSTEM_BOOKS)))
+$(error Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+endif
+
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
 
 # Here is an undocumented way to specify a different shell, e.g., sh.
@@ -256,13 +264,14 @@ $(info Determining whether Glucose is installed)
 # GLUCOSE_EXISTS
 GLUCOSE_EXISTS := $(shell glucose --version 2>/dev/null)
 ifdef GLUCOSE_EXISTS
-  OS_HAS_GLUCOSE := 1
+  OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
-$(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
-# BOZO TODO figure out how to do this right.  For now, just say that SMTLINK
-OS_HAS_SMTLINK :=
-
+$(info Determining whether Z3 is installed, for use by SMTLink)
+SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
+ifdef SMTLINK_EXISTS
+  OS_HAS_SMTLINK ?= 1
+endif # ifdef SMTLINK_EXISTS
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
@@ -336,7 +345,7 @@ OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 
-# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+# We use "{...}" delimiters to avoid errors in version 3.80 of make.
 ${info Excluding books that need ACL2(h) [...]}
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
@@ -363,6 +372,11 @@ ${info Excluding non-SBCL books: [$(CERT_PL_NON_SBCL)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_SBCL), $(OK_CERTS))
 endif
 
+ifeq (CMU, $(ACL2_HOST_LISP))
+${info Excluding non-CMUCL books: [$(CERT_PL_NON_CMUCL)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_CMUCL), $(OK_CERTS))
+endif
+
 ifeq (GCL, $(ACL2_HOST_LISP))
 ${info Excluding non-GCL books: [$(CERT_PL_NON_GCL)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_GCL), $(OK_CERTS))
@@ -370,7 +384,7 @@ endif
 
 ifeq ($(ACL2_HAS_ANSI), )
 
-# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+# We use "{...}" delimiters to avoid errors in version 3.80 of make.
 ${info Excluding books that need ANSI Common Lisp [...]}
 OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
 
@@ -382,7 +396,7 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
 endif
 
 ifeq ($(OS_HAS_SMTLINK), )
-$(info Excluding books that need Smtlink: [$(CERT_PL_USES_SMTLINK)])
+$(info Excluding books that need SMTLINK: [$(CERT_PL_USES_SMTLINK)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_SMTLINK), $(OK_CERTS))
 endif
 
@@ -506,19 +520,20 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
 
 
-# SLOW_BOOKS is a list of books that are too slow to include as part
-# of an ordinary regression.  There are currently comments in some of
-# the corresponding Makefiles that explain something about these
-# books.  WARNING: It is probably a bad idea to include targets here
-# that are in ACL2_CUSTOM_TARGETS: SLOW_BOOKS is removed from OK_CERTS
-# just below, but later, ACL2_CUSTOM_TARGETS adds its targets to
-# OK_CERTS.
+# SLOW_BOOKS is a list of books that are too slow (or in any way
+# undesirable) to include as part of an ordinary regression.  There
+# are currently comments in some of the corresponding Makefiles that
+# explain something about these books.  WARNING: It is probably a bad
+# idea to include targets here that are in ACL2_CUSTOM_TARGETS:
+# SLOW_BOOKS is removed from OK_CERTS just below, but later,
+# ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
 
 # Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
 # that we want to add back in when using target "everything" instead
 # of the default target, "all".
 
 ADDED_BOOKS := \
+  books/misc/check-acl2-exports.cert \
   coi/defung/defung-stress-long.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
@@ -723,7 +738,7 @@ ACL2_CUSTOM_TARGETS := \
 
 # It is currently only recommended to test the toothbrush mechanism
 # for Lisps that compile on-the-fly, namely CCL and SBCL, since that
-# mechanism doeswn't use (or depend on) compiled files in the main
+# mechanism doesn't use (or depend on) compiled files in the main
 # ACL2 directory.  We might revisit that decision if there is reason
 # to do so.
 ifeq ($(TB_LISP), )
@@ -821,11 +836,13 @@ ifdef ACL2_COMP
 # projects/security/des/ depends on GL and hence centaur/, we don't
 # exclude its books.)  We might not need to skip the y86 books, but
 # since some Lisps have trouble certifying those, we play it safe and
-# skip them.
+# skip them.  Books under build/test/ present a problem because of
+# dollar signs ($) in filenames, which doesn't seem worth solving.
 $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
               $(filter-out models/y86%, \
-                $(OK_CERTS)))
+                $(filter-out build/test%, \
+                  $(OK_CERTS))))
 
 ifndef NO_RESCAN
 
@@ -869,11 +886,25 @@ BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
 
 # These depend on centaur/misc/memory-mgmt-logic, which will be
 # uncertified in other lisps and hence we won't get the target
-# compiled file:
+# compiled file (but see comment at the end of this list before
+# making further additions):
 BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += std/strings/pretty-tests.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/subset.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/param.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/witness.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/vl2014/loader/top.$(ACL2_COMP_EXT)
+# Note: The list above (of books that depend on
+# centaur/misc/memory-mgmt-logic) is incomplete.  In particular,
+# failures can be expected for centaur/ubdds/lite and
+# centaur/esim/defmodules.  If we add those, then we get more
+# failures; six attempts didn't reach closure.  Future releases might
+# attempt to do a better job with this.
+
+# Some attempts fail presumably due to dollar signs in filenames:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard build/test/*.cert))
 
 # dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
 # overflow in during the load of the expansion file -- perhaps not
@@ -886,9 +917,8 @@ BOOKS_SKIP_COMP += workshops/1999/knuth-91/aof.$(ACL2_COMP_EXT) \
 
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2002/cowles-flat/support/*.cert))
-
-# The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
+BOOKS_SKIP_COMP += demos/meta-wf-guarantee-example.$(ACL2_COMP_EXT)
 
 # The .acl2 file for ccg.lisp specifies no compilation, so we exclude
 # that books and books that include it.
@@ -906,6 +936,12 @@ BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2
 # system/pcert/acl2x-pcert-test-2-include.lisp.  So we simply exclude
 # that directory.
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard system/pcert/*.cert))
+
+# I've seen an error with the following that seemed difficult to
+# debug, but it doesn't seem important to figure that out, so let's
+# just skip it; could have something to do with the use of pcert on an
+# included book.
+BOOKS_SKIP_COMP += make-event/local-elided-include.$(ACL2_COMP_EXT)
 
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EXT) \
@@ -925,6 +961,7 @@ BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
 
 # Has readtime conditionals #+cmucl and #-cmucl:
 BOOKS_SKIP_COMP += std/io/read-string-tests.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += tools/oracle-time-tests.$(ACL2_COMP_EXT)
 
 # CLISP says: "Lisp stack overflow":
 BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)
@@ -1118,6 +1155,9 @@ hints: $(filter hints/%, $(OK_CERTS))
 .PHONY: ihs
 ihs: $(filter ihs/%, $(OK_CERTS))
 
+.PHONY: kestrel
+kestrel: $(filter kestrel/%, $(OK_CERTS))
+
 .PHONY: make-event
 make-event: $(filter make-event/%, $(OK_CERTS))
 
@@ -1297,24 +1337,25 @@ dummy:
 
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world
-# after including each book.  Note that the two problematic
+# after including each book.  Note that we skip two problematic
 # directories for world-checking, hacking/ and
-# workshops/2007/dillinger-et-al/code/ override the
-# chk-include-book-worlds target by setting environment variable
-# ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS in order to skip this check.  The
-# problem seems likely to be that in many of the books in these two
-# directories, the first bad triple is a GLOBAL-VALUE for either the
-# unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
-# unbinding of the PREDEFINED property for PROGN! (indicating a use of
-# :REDEF); presumably these books mess with raw mode.  Since we have
-# had such problems with acl2s/ccg/ccg.lisp (presumably because it includes
-# hacking/hacker), we exclude that book too.
+# workshops/2007/dillinger-et-al/code/.  The problem seems likely to
+# be that in many of the books in these two directories, the first bad
+# triple is a GLOBAL-VALUE for either the unknown property
+# EXTEND-PROGN! or RETRACT-PROGN!, or else is an unbinding of the
+# PREDEFINED property for PROGN! (indicating a use of :REDEF);
+# presumably these books mess with raw mode.  Since we have had such
+# problems with acl2s/ccg/ccg.lisp (presumably because it includes
+# hacking/hacker), we exclude all books in that directory.  Finally,
+# we exclude books in books/build/test/, since some have caused
+# problems; there's nothing of interest in those books from a world
+# perspective, so it's not worth figuring out the problem.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/ccg.bkchk.out, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/doc.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
@@ -1406,20 +1447,42 @@ special: $(BOOKS_SPECIAL_OUT)
 
 # VL Toolkit
 
-centaur/vl/bin/vl: centaur/vl/kit/top.cert
-	@echo "Making VL Verilog Toolkit"
-	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
-	@ls -la centaur/vl/bin/vl
+.PHONY: vl vl2014 vl_linttest sv_failtest
+
+vl: centaur/vl/bin/vl \
+    centaur/sv/cosims/cosim-core \
+    vl_linttest \
+    sv_failtest
+
+vl2014: centaur/vl2014/bin/vl2014
 
 centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
 	@echo "Making VL Verilog Toolkit, 2014 Edition"
 	@cd centaur/vl2014/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
 	@ls -la centaur/vl2014/bin/vl2014
 
+centaur/vl/bin/vl: centaur/vl/kit/top.cert
+	@echo "Making VL Verilog Toolkit"
+	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@ls -la centaur/vl/bin/vl
 
-.PHONY: vl vl2014
-vl: centaur/vl/bin/vl
-vl2014: centaur/vl2014/bin/vl2014
+centaur/sv/cosims/cosim-core: centaur/sv/cosims/cosims.cert centaur/sv/cosims/make-cosim.lsp
+	@echo "Making SV Cosims Tester"
+	@cd centaur/sv/cosims; $(MAKE) cosim-core
+	@ls -la centaur/sv/cosims/cosim-core
+
+vl_linttest : centaur/vl/bin/vl
+	@echo "Making VL linttests"
+	@cd centaur/vl/linttest; $(MAKE)
+
+sv_failtest : centaur/sv/cosims/cosim-core
+	@echo "Making SV failtests"
+	@cd centaur/sv/failtest; $(MAKE) passing
+
+sv_cosims : centaur/sv/cosims/cosim-core
+	@echo "Making SV cosim tests"
+	@echo "NOTE: This will fail unless you have commercial simulators ncverilog and vcs in your path!"
+	@cd centaur/sv/cosims; $(MAKE) passing
 
 
 .PHONY: clean_vl
@@ -1604,4 +1667,3 @@ TAGS : $(CERT_PL_SOURCES)
 # cert-flags instead of certify-book commands.  Alternately, maybe the scheme
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
-

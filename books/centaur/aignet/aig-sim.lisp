@@ -29,11 +29,11 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
 (include-book "from-hons-aig")
 (include-book "eval")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (disable nth update-nth
                            acl2::nth-with-large-index
                            set::double-containment)))
@@ -104,10 +104,7 @@
         (cw "Bad variable: not mapped to a nonnegated reg node: ~x0~%" (caar initvals))
         (aig-fast-biteval-set-regs (cdr initvals) varmap vals aignet))
        (nxst (reg-id->nxst id aignet))
-       (- (and (int= nxst 0)
-               (cw "Warning: unconnected register: ~x0~%" (caar initvals))))
-       (target (if (int= nxst 0) id nxst))
-       (vals (set-bit target (if (cdar initvals) 1 0)
+       (vals (set-bit nxst (if (cdar initvals) 1 0)
                       vals)))
     (aig-fast-biteval-set-regs (cdr initvals) varmap vals aignet))
   ///

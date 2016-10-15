@@ -7,7 +7,7 @@
 
 (include-book "../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(local (include-book "guard-helpers"))
+(local (include-book "../guard-helpers"))
 
 ;; ======================================================================
 ;; INSTRUCTION: SYSCALL
@@ -48,6 +48,15 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
@@ -152,7 +161,7 @@
        ;; (- (cw "~%~%X86-SYSCALL: If SYSCALL does not return the result you ~
        ;;         expected, then you might want to check whether these ~
        ;;         books were compiled using X86ISA_EXEC set to t. See ~
-       ;;         :doc build-instructions.~%~%"))
+       ;;         :doc x86isa-build-instructions.~%~%"))
 
 
        ((when (ms x86))
@@ -196,6 +205,15 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
@@ -359,7 +377,7 @@
 
        (x86 (!seg-hiddeni *ss* ss-hidden-descriptor x86)))
 
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: SYSRET
@@ -386,7 +404,13 @@ REX.W + 0F 07: SYSRET</p>
   (add-to-implemented-opcodes-table 'SYSRET #x0F07 '(:nil nil)
                                     'x86-sysret)
 
-  :prepwork ((local (in-theory (e/d* (sysret-guard-helpers) ()))))
+  :prepwork ((local (in-theory (e/d* (sysret-guard-helpers) ())))
+
+             (local
+              (defthm sysret-guard-helper
+                (implies (and (signed-byte-p 48 temp-rip)
+                              (signed-byte-p 48 start-rip))
+                         (signed-byte-p 49 (+ (- start-rip) temp-rip))))))
 
   :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 wr64)
                                         (unsigned-byte-p
@@ -395,6 +419,15 @@ REX.W + 0F 07: SYSRET</p>
   :body
 
   (b* ((ctx 'x86-sysret)
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ((when (not (logbitp #.*w* rex-byte)))
         (!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))
@@ -549,6 +582,6 @@ REX.W + 0F 07: SYSRET</p>
 
        (x86 (!seg-hiddeni *ss* ss-hidden-descriptor x86)))
 
-      x86))
+    x86))
 
 ;; ======================================================================

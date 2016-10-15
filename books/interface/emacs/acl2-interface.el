@@ -1,17 +1,17 @@
 
 ;; Add interface for various acl2 buffers.
-;; Sep 20 94 MKS 
+;; Sep 20 94 MKS
 
 ;; ----------------------------------------------------------------------
 ;; USER SETTINGS
 
 ;; The following controls what features of the interfaces get used.
 ;; These settings mirror those in start-inferior-acl2.el.
-;; You can override these setting by setting them in your .emacs file.  
+;; You can override these setting by setting them in your .emacs file.
 
-;; The variable, *acl2-user-map-interface*, is an alist of modes . (list of features). 
+;; The variable, *acl2-user-map-interface*, is an alist of modes . (list of features).
 ;; The features currently supported are: menu-bar, pop-up-menu, and keys.
-;; The default below says add them all.  
+;; The default below says add them all.
 
 ;; Before the menu-bar, popup-menu or keys are defined we check
 ;; the following alist to see what the user wants.
@@ -127,7 +127,7 @@
        (:entry "Event ..." "pe '%s"  :arg event :to-top)
        (:entry "Event! ..." "pe! '%s" :arg event :to-top)
        (:entry "Back through ..."  "pbt '%s" :arg event :to-top)
-       
+
        (:entry "Command ..." "pc '%s"  :arg cd :to-top)
        (:entry "Command block ..." "pcb '%s" :arg cd :to-top)
        (:entry "Full Command block ..." "pcb! '%s" :arg cd :to-top)
@@ -148,12 +148,12 @@
        (:entry "Load ..." "ld \"%s\"" :arg filename)
        (:entry "Compile all" "comp t")
        (:entry "Compile ..." "comp '%s" :arg symbol)
-	
+
        (:menu "Accumulated Persistence"
 	(:entry "Activate" "accumulated-persistence t")
 	(:entry "Deactivate" "accumulated-persistence nil")
-	(:menu "Display statistics ordered by" 
-	 (:entry "frames" "show-accumulated-persistence :frames")  
+	(:menu "Display statistics ordered by"
+	 (:entry "frames" "show-accumulated-persistence :frames")
 	 (:entry "times tried" "show-accumulated-persistence :tries")
 	 (:entry "ratio" "show-accumulated-persistence :ratio")))
 
@@ -161,9 +161,9 @@
 	(:entry "Start general rule monitoring" "brr t")
 	(:entry "Stop general rule monitoring" "brr nil")
 	(:entry "Print monitored runes"  "monitored-runes")
-	(:entry "Monitor rune: ..." "monitor '(:definition %s) 't" :arg event)
-	(:entry "Unmonitor rune: ..." "unmonitor '(:definition %s)" :arg event)
-	;; (:entry "Conditionally exit break-rewrite" "ok-if") 
+	(:entry "Monitor rune: ..." "monitor '%s 't" :arg event)
+	(:entry "Unmonitor rune: ..." "unmonitor '%s" :arg event)
+	;; (:entry "Conditionally exit break-rewrite" "ok-if")
 	;; Above needs an argument.
 	(:label "")
 	(:menu "Commands"
@@ -261,7 +261,7 @@
 	(:menu "Prompt"
   	 (:entry "On" "set-ld-prompt t")
 	 (:entry "Off" "set-ld-prompt nil"))
-	(:menu "Skip proofs" 
+	(:menu "Skip proofs"
 	 (:entry "On" "set-ld-skip-proofs t")
 	 (:entry "Off" "set-ld-skip-proofs nil"))
 	(:menu "Verbose: on"
@@ -273,7 +273,7 @@
 	(:menu "HACKERS. DANGER!"		;advanced
 	 (:entry "Redefinition permitted!" "redef!"))))
 
-      (:menu "Books"	
+      (:menu "Books"
        (:entry "Print connected book directory" "cbd")
        (:entry "Set connected book directory ..." "set-cbd %s" :arg filename)
        (:entry "Certify-book ..." "certify-book \"%s\"" :arg filename)
@@ -308,7 +308,7 @@
 ;; ----------------------------------------------------------------------
 ;; inferior acl2 keys
 
-(defconst inferior-acl2-keys 
+(defconst inferior-acl2-keys
   '(("\C-x\C-e" acl2-eval-last-sexp)
     ("\C-c\C-l" acl2-load-file)
     ("\C-c\C-a" acl2-show-arglist)
@@ -374,7 +374,7 @@
 ;; Prooftree mode
 
 ;; ----------------------------------------------------------------------
-;; Prooftree mode menu-bar menu.  
+;; Prooftree mode menu-bar menu.
 
 (defconst prooftree-menu-bar
   '((:menu "Prooftree"
@@ -426,7 +426,7 @@
    (list 'prooftree-subkeymap "?" 'checkpoint-help)
    (list 'prooftree-subkeymap "o" 'prooftree-select-other-frame)
    (list 'prooftree-subkeymap "b" 'visit-proof-tree)
-   (list 'prooftree-subkeymap "B" 'visit-proof-tree-other-frame)))         
+   (list 'prooftree-subkeymap "B" 'visit-proof-tree-other-frame)))
 
 (define-interface prooftree-mode	;mode
                   prooftree-mode-map	;mode-map
@@ -447,10 +447,10 @@
 (provide 'acl2-interface)
 
 ;; ======================================================================
-;; TODO: 
+;; TODO:
 ;;
 ;; ======================================================================
-;; LOG: 
+;; LOG:
 ;;
 
 

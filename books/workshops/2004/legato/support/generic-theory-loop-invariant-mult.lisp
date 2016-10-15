@@ -173,7 +173,7 @@
 		      0
 		    (+ 1 (mod a (expt 2 i))))))
   :hints (("Goal"
-	   :in-theory (disable simplify-mod-+-mod))))
+	   :in-theory (disable simplify-mod-+-mod-weak))))
 
 (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                              hist pspv)))
@@ -208,7 +208,20 @@
   :hints (("Goal"
 	   :nonlinearp t
 	   :induct (ind-2 f1 x c low a f1p xp cp lowp ap f2 i)
-	   :in-theory (disable (:rewrite mod-zero . 1)))))
+	   :in-theory (disable (:rewrite mod-zero . 1)))
+          ("Subgoal *1/2.10.1'"
+
+; Matt K. mod for April 2016 mod after adding type-set bit for {1}: I really
+; hate adding this hint, but this was the final change needed in order to get
+; the "everything" regression to pass, and this is a proof that one needn't
+; expect to be preserved by heuristic changes.  If we were to change source
+; function obj-table to substitute *1* for a term with type-set *ts-one*, then
+; this proof would again go through; but other proofs would fail (see the
+; comment in obj-table).  For possible evidence that this is a fragile proof,
+; note that I was able to get a rewrite-stack overflow when messing around in
+; the proof-builder.
+
+           :cases ((equal j 1)))))
 
 ;;; The identification of an invariant.is the key user contribution.
 

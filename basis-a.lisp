@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -25,12 +25,6 @@
 ; books/system/toothbrush/README.
 
 (in-package "ACL2")
-
-(defmacro defn (f a &rest r)
-  `(defun ,f ,a (declare (xargs :guard t)) ,@r))
-
-(defmacro defnd (f a &rest r)
-  `(defund ,f ,a (declare (xargs :guard t)) ,@r))
 
 ; Essay on Wormholes
 
@@ -467,7 +461,7 @@
 
 ; It was an oversight that a symbol with a symbol-name of "*" has always been
 ; considered a constant rather than a variable.  The intention was to view "*"
-; as a delimeter -- thus, even "**" is probably OK for a constant since the
+; as a delimiter -- thus, even "**" is probably OK for a constant since the
 ; empty string is delimited.  But it doesn't seem important to change this
 ; now.  If we do make such a change, consider the following (at least).
 
@@ -514,7 +508,7 @@
 
 (defun arglistp (lst)
   (and (arglistp1 lst)
-       (no-duplicatesp lst)))
+       (no-duplicatesp-eq lst)))
 
 (defun find-first-bad-arg (args)
 
@@ -701,6 +695,12 @@
 ; call such i the last-index, and it is initially 0.  Note that state global
 ; 'iprint-ar is thus always bound to an installed ACL2 array.
 
+; When state global 'iprint-fal has a non-nil value (which is exactly when
+; set-iprint was last called with a non-nil value of :share), it is a
+; fast-alist that inverts iprint-ar in the following sense: for every pair (i
+; . v) in iprint-ar with 1 <= i <= last-index, (v . i) is in the value of
+; 'iprint-fal.  See :doc set-iprint for more about :share.
+
 ; We have to face a fundamental question: Do we use acons or aset1 as we
 ; encounter a new form to assign to some #@i# during those recursive
 ; subroutines?  The latter is dangerous in case we interrupt before installing
@@ -743,12 +743,13 @@
 ; It is tempting to cause an error when the user submits a form containing some
 ; #@j# and #@k# such that j <= last-index < k.  In such a case, k is from
 ; before the rollover and j is from after the rollover, so these couldn't have
-; been stored during a prettyprint of the same form.  But we avoid considering
-; this restriction because the user might want to read a list of forms that
-; include some prettyprinted before the last rollover and others printed after
-; the last rollover.  At any time, the reader is happy with #@j# for any index
-; j <= last-index and also any j below the maximum index before the last
-; rollover (initially 0).
+; been stored during a prettyprint of the same form.  By default we avoid this
+; restriction, because the user might want to read a list that includes some
+; forms prettyprinted before the last rollover and other forms printed after
+; the last rollover.  But if iprint sharing is on, then a subform that had been
+; printed before rollover might include iprint indices that have since changed,
+; which might be highly confusing.  So we make the above restriction on indices
+; when iprint sharing is on, as documented in :doc set-iprint.
 
 ; We need to be sure that the global iprint-ar is installed as an ACL2 array, in
 ; order to avoid slow-array-warnings.  See the comment in
@@ -776,33 +777,29 @@
          (aref1 'sharp-atsign-ar *sharp-atsign-ar* i))
         (t (make-sharp-atsign i))))
 
-(defun update-iprint-alist (iprint-alist val)
+(defun update-iprint-alist-fal (iprint-alist iprint-fal-new iprint-fal-old val)
 
 ; We are doing iprinting.  Iprint-alist is either a positive integer,
 ; representing the last-index but no accumulated iprint-alist, or else is a
 ; non-empty alist of entries (i . val_i).  See the Essay on Iprinting.
 
-  (cond ((consp iprint-alist)
-         (let ((i (1+ (caar iprint-alist))))
-           (acons i val iprint-alist)))
-        (t ; iprint-alist is a natp
-         (acons (1+ iprint-alist) val nil))))
-
-#+(or acl2-loop-only (not hons))
-(defn hons-equal (x y)
-  (declare (xargs :mode :logic))
-  ;; Has an under-the-hood implementation
-  (equal x y))
-
-(defn hons-assoc-equal (key alist)
-  (declare (xargs :mode :logic))
-  (cond ((atom alist)
-         nil)
-        ((and (consp (car alist))
-              (hons-equal key (caar alist)))
-         (car alist))
-        (t
-         (hons-assoc-equal key (cdr alist)))))
+  (let ((pair (and iprint-fal-old
+                   (or (hons-get val iprint-fal-new)
+                       (hons-get val iprint-fal-old)))))
+    (cond (pair
+           (mv (cdr pair) iprint-alist iprint-fal-new))
+          ((consp iprint-alist)
+           (let ((index (1+ (caar iprint-alist))))
+             (mv index
+                 (acons index val iprint-alist)
+                 (and iprint-fal-old
+                      (hons-acons val index iprint-fal-new)))))
+          (t
+           (let ((index (1+ iprint-alist)))
+             (mv index
+                 (acons index val nil)
+                 (and iprint-fal-old
+                      (hons-acons val index iprint-fal-new))))))))
 
 ; We now define the most elementary eviscerator, the one that implements
 ; *print-level* and *print-length*.  In this same pass we also arrange to
@@ -812,7 +809,8 @@
 
 (mutual-recursion
 
-(defun eviscerate1 (x v max-v max-n alist evisc-table hiding-cars iprint-alist)
+(defun eviscerate1 (x v max-v max-n alist evisc-table hiding-cars
+                      iprint-alist iprint-fal-new iprint-fal-old eager-p)
 
 ; Iprint-alist is either a symbol, indicating that we are not doing iprinting; a
 ; positive integer, representing the last-index but no accumulated iprint-alist;
@@ -820,60 +818,104 @@
 ; Note that if iprint-alist is a symbol, then it is nil if no evisceration has
 ; been done based on print-length or print-level, else t.
 
-  (let ((temp (or (hons-assoc-equal x alist)
-                  (hons-assoc-equal x evisc-table))))
+; If iprint-fal-old is nil (i.e., if iprinting is off), then eager-p is
+; essentially irrelevant; but as a sanity check, we insist that eager-p is nil
+; in that case (as enforced by the assert$ call below).
+
+  (let* ((temp (or (hons-assoc-equal x alist)
+                   (hons-assoc-equal x evisc-table)))
+         (eager-pair (and eager-p
+                          (null (cdr temp))
+                          (consp x)
+                          (assert$
+                           iprint-fal-old
+                           (or (hons-get x iprint-fal-new)
+                               (hons-get x iprint-fal-old))))))
     (cond ((cdr temp)
            (mv (cond ((stringp (cdr temp))
                       (cons *evisceration-mark* (cdr temp)))
                      (t (cdr temp)))
-               iprint-alist))
+               iprint-alist
+               iprint-fal-new))
           ((atom x)
            (mv (cond ((eq x *evisceration-mark*) *anti-evisceration-mark*)
                      (t x))
-               iprint-alist))
+               iprint-alist
+               iprint-fal-new))
+          (eager-pair
+           (mv (cons *evisceration-mark*
+                     (get-sharp-atsign (cdr eager-pair)))
+               iprint-alist
+               iprint-fal-new))
           ((= v max-v)
            (cond ((symbolp iprint-alist)
-                  (mv *evisceration-hash-mark* t))
+                  (mv *evisceration-hash-mark* t iprint-fal-new))
                  (t
-                  (let ((iprint-alist (update-iprint-alist iprint-alist x)))
+                  (mv-let (index iprint-alist iprint-fal-new)
+                    (update-iprint-alist-fal iprint-alist
+                                             iprint-fal-new
+                                             iprint-fal-old
+                                             x)
                     (mv (cons *evisceration-mark*
-                              (get-sharp-atsign (caar iprint-alist)))
-                        iprint-alist)))))
+                              (get-sharp-atsign index))
+                        iprint-alist
+                        iprint-fal-new)))))
           ((member-eq (car x) hiding-cars)
-           (mv *evisceration-hiding-mark* iprint-alist))
+           (mv *evisceration-hiding-mark* iprint-alist iprint-fal-new))
           (t (eviscerate1-lst x (1+ v) 0 max-v max-n alist evisc-table
-                              hiding-cars iprint-alist)))))
+                              hiding-cars iprint-alist
+                              iprint-fal-new iprint-fal-old eager-p)))))
 
 (defun eviscerate1-lst (lst v n max-v max-n alist evisc-table hiding-cars
-                            iprint-alist)
-  (let ((temp (or (hons-assoc-equal lst alist)
-                  (hons-assoc-equal lst evisc-table))))
+                            iprint-alist iprint-fal-new iprint-fal-old eager-p)
+  (let* ((temp (or (hons-assoc-equal lst alist)
+                   (hons-assoc-equal lst evisc-table)))
+         (eager-pair (and eager-p
+                          (null (cdr temp))
+                          (consp lst)
+                          (assert$
+                           iprint-fal-old
+                           (or (hons-get lst iprint-fal-new)
+                               (hons-get lst iprint-fal-old))))))
     (cond
      ((cdr temp)
       (mv (cond ((stringp (cdr temp))
                  (cons *evisceration-mark* (cdr temp)))
                 (t (cdr temp)))
-          iprint-alist))
+          iprint-alist
+          iprint-fal-new))
      ((atom lst)
       (mv (cond ((eq lst *evisceration-mark*) *anti-evisceration-mark*)
                 (t lst))
-          iprint-alist))
+          iprint-alist
+          iprint-fal-new))
+     (eager-pair
+      (mv (cons *evisceration-mark*
+                (get-sharp-atsign (cdr eager-pair)))
+          iprint-alist
+          iprint-fal-new))
      ((= n max-n)
       (cond ((symbolp iprint-alist)
-             (mv (list *evisceration-ellipsis-mark*) t))
-            (t
-             (let ((iprint-alist (update-iprint-alist iprint-alist lst)))
-               (mv (cons *evisceration-mark*
-                         (get-sharp-atsign (caar iprint-alist)))
-                   iprint-alist)))))
-     (t (mv-let (first iprint-alist)
-                (eviscerate1 (car lst) v max-v max-n alist evisc-table
-                             hiding-cars iprint-alist)
-                (mv-let (rest iprint-alist)
-                        (eviscerate1-lst (cdr lst) v (1+ n)
-                                         max-v max-n alist evisc-table
-                                         hiding-cars iprint-alist)
-                        (mv (cons first rest) iprint-alist)))))))
+             (mv (list *evisceration-ellipsis-mark*) t iprint-fal-new))
+            (t (mv-let (index iprint-alist iprint-fal-new)
+                 (update-iprint-alist-fal iprint-alist
+                                          iprint-fal-new
+                                          iprint-fal-old
+                                          lst)
+                 (mv (cons *evisceration-mark*
+                           (get-sharp-atsign index))
+                     iprint-alist
+                     iprint-fal-new)))))
+     (t (mv-let (first iprint-alist iprint-fal-new)
+          (eviscerate1 (car lst) v max-v max-n alist evisc-table
+                       hiding-cars iprint-alist
+                       iprint-fal-new iprint-fal-old eager-p)
+          (mv-let (rest iprint-alist iprint-fal-new)
+            (eviscerate1-lst (cdr lst) v (1+ n)
+                             max-v max-n alist evisc-table
+                             hiding-cars iprint-alist
+                             iprint-fal-new iprint-fal-old eager-p)
+            (mv (cons first rest) iprint-alist iprint-fal-new)))))))
 )
 
 (mutual-recursion
@@ -907,7 +949,7 @@
 )
 
 (defun eviscerate (x print-level print-length alist evisc-table hiding-cars
-                     iprint-alist)
+                     iprint-alist iprint-fal-new iprint-fal-old eager-p)
 
 ; See also eviscerate-top, which takes iprint-ar from the state and installs a
 ; new iprint-ar in the state, and update-iprint-alist, which describes the role
@@ -956,15 +998,23 @@
 
          (cond ((eviscerate1p x alist evisc-table hiding-cars)
                 (eviscerate1 x 0 -1 -1 alist evisc-table hiding-cars
-                             iprint-alist))
-               (t (mv x iprint-alist))))
-        (t (eviscerate1 x 0
+
+; Since we are not eviscerating based on print-level or print-length, there is
+; no involvement of iprinting, so we pass nil for the remaining arguments.
+
+                             nil nil nil nil))
+               (t (mv x iprint-alist iprint-fal-new))))
+        (t (eviscerate1 (if eager-p (hons-copy x) x)
+                        0
                         (or print-level -1)
                         (or print-length -1)
                         alist
                         evisc-table
                         hiding-cars
-                        iprint-alist))))
+                        iprint-alist
+                        iprint-fal-new
+                        iprint-fal-old
+                        eager-p))))
 
 (defun eviscerate-simple (x print-level print-length alist evisc-table
                             hiding-cars)
@@ -972,11 +1022,19 @@
 ; This wrapper for eviscerate avoids the need to pass back multiple values when
 ; the iprint-alist is nil and we don't care if evisceration has occurred.
 
-  (mv-let (result null-iprint-alist)
-          (eviscerate x print-level print-length alist evisc-table hiding-cars
-                      nil)
-          (assert$ (symbolp null-iprint-alist)
-                   result)))
+  (mv-let (result null-iprint-alist null-iprint-fal)
+    (eviscerate x print-level print-length alist evisc-table hiding-cars
+                nil nil
+
+; We normally pass in the current value of state global 'iprint-fal for the
+; last argument, iprint-fal-old, of eviscerate.  However, since iprint-alist is
+; nil, we know that it's fine to pass in nil for iprint-fal-old, and similarly
+; for eager-p.
+
+                nil nil)
+    (assert$ (and (booleanp null-iprint-alist)
+                  (null null-iprint-fal))
+             result)))
 
 (defun aset1-lst (name alist ar)
   (declare (xargs :guard (eqlable-alistp alist))) ; really nat-alistp
@@ -1055,6 +1113,49 @@
                                              acc
                                            (cons (car ar) acc))))))
 
+(defun iprint-fal-name (iprint-fal)
+  (if (consp iprint-fal)
+      (cdr (last iprint-fal))
+    iprint-fal))
+
+(defun iprint-eager-p (iprint-fal)
+  (eq (iprint-fal-name iprint-fal)
+      :eager))
+
+(defun init-iprint-fal (sym state)
+
+; Warning: Consider also calling init-iprint-ar when calling this function.
+
+; The initial value of state global 'iprint-fal is nil if we are not to re-use
+; indices, and otherwise is the atom, :iprint-fal.  We choose a keyword so that
+; fast-alist-summary can print that name nicely in any package.
+
+  (declare (xargs :guard (symbolp sym)))
+  (let* ((old-iprint-fal (f-get-global 'iprint-fal state))
+         (old-iprint-name (iprint-fal-name old-iprint-fal))
+         (new-iprint-fal (cond ((null sym) nil)
+                               ((eq sym t)
+                                :iprint-fal)
+                               ((eq sym :same)
+                                old-iprint-name)
+                               (t sym))))
+    (prog2$ (and (consp old-iprint-fal) ; optimization
+                 (fast-alist-free old-iprint-fal))
+            (pprogn (f-put-global 'iprint-fal new-iprint-fal state)
+                    (mv (cond
+                         ((eq old-iprint-name new-iprint-fal)
+                          nil)
+                         (new-iprint-fal
+                          (msg "Iprinting is enabled with~@0 sharing, with a ~
+                                fast-alist whose name is ~x1."
+                               (if (iprint-eager-p new-iprint-fal)
+                                   " eager"
+                                 "")
+                               new-iprint-fal))
+                         (t
+                          (msg "Iprinting is enabled without sharing.")))
+                        state)))))
+
 (defun rollover-iprint-ar (iprint-alist last-index state)
 
 ; We assume that iprinting is enabled.  Install a new iprint-ar, whose last
@@ -1122,23 +1223,53 @@
                                    old-iprint-ar
 
 ; If we change the :order to < from :none, then we need to reverse iprint-alist
-; just below.  But first read the comment in disable-iprint-ar to see why we
+; just below.  But first read the comment in disable-iprint-ar to see why
 ; changing the :order from :none requires some thought.
 
                                    iprint-alist))))))
-    (f-put-global 'iprint-ar new-iprint-ar state)))
+    (mv-let (msg state)
+      (init-iprint-fal :same state)
+      (declare (ignore msg))
+      (f-put-global 'iprint-ar new-iprint-ar state))))
 
-(defun update-iprint-ar (iprint-alist state)
+(defun update-iprint-fal-rec (iprint-fal-new iprint-fal-old)
+  (cond ((atom iprint-fal-new) iprint-fal-old)
+        (t (update-iprint-fal-rec (cdr iprint-fal-new)
+                                  (hons-acons (caar iprint-fal-new)
+                                              (cdar iprint-fal-new)
+                                              iprint-fal-old)))))
+
+(defun update-iprint-fal (iprint-fal-new state)
+  (cond
+   ((atom iprint-fal-new) state) ; optimization
+   (t (f-put-global 'iprint-fal
+                    (update-iprint-fal-rec iprint-fal-new
+                                           (f-get-global 'iprint-fal state))
+                    state))))
+
+(defun update-iprint-ar-fal (iprint-alist iprint-fal-new iprint-fal-old state)
 
 ; We assume that iprinting is enabled.  Iprint-alist is known to be a consp.
-; We update state global 'iprint-ar by updating iprint-ar with the pairs in
-; iprint-alist.
+; We update state globals 'iprint-ar and 'iprint-fal by updating them with the
+; pairs in iprint-alist and iprint-fal-new, respectively.
 
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
+
+; We throw away iprint-fal-new, because we only want to re-use indices below
+; last-index -- re-use of larger indices could quickly leave us pointing to
+; stale values when re-printing (say, using without-evisc) recently-printed
+; values.
+
            (rollover-iprint-ar iprint-alist last-index state))
           (t
-           (f-put-global 'iprint-ar
+           (assert$
+            (or (null iprint-fal-old) ; might have passed in nil at top level
+                (equal (f-get-global 'iprint-fal state)
+                       iprint-fal-old))
+            (pprogn
+             (update-iprint-fal iprint-fal-new state)
+             (f-put-global 'iprint-ar
 
 ; We know last-index <= (iprint-hard-bound state), and it is an invariant that
 ; this hard bound is less than the dimension of (@ iprint-ar).  See the
@@ -1146,10 +1277,10 @@
 ; less than that dimension, hence we can update with aset1 without encountering
 ; out-of-bounds indices.
 
-                         (aset1-lst 'iprint-ar
-                                    (acons 0 last-index iprint-alist)
-                                    (f-get-global 'iprint-ar state))
-                         state)))))
+                           (aset1-lst 'iprint-ar
+                                      (acons 0 last-index iprint-alist)
+                                      (f-get-global 'iprint-ar state))
+                           state)))))))
 
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)
@@ -1158,15 +1289,24 @@
 ; in addition to returning the evisceration of x.  See eviscerate and the Essay
 ; on Iprinting for more details.
 
-  (mv-let (result iprint-alist)
-          (eviscerate x print-level print-length alist evisc-table hiding-cars
-                      (and (iprint-enabledp state)
-                           (iprint-last-index state)))
-          (let ((state (cond ((eq iprint-alist t)
-                              (f-put-global 'evisc-hitp-without-iprint t state))
-                             ((atom iprint-alist) state)
-                             (t (update-iprint-ar iprint-alist state)))))
-            (mv result state))))
+  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+    (mv-let (result iprint-alist iprint-fal-new)
+      (eviscerate x print-level print-length alist evisc-table hiding-cars
+                  (and (iprint-enabledp state)
+                       (iprint-last-index state))
+                  nil iprint-fal-old (iprint-eager-p iprint-fal-old))
+      (fast-alist-free-on-exit
+       iprint-fal-new
+       (let ((state
+              (cond
+               ((eq iprint-alist t)
+                (f-put-global 'evisc-hitp-without-iprint t state))
+               ((atom iprint-alist) state)
+               (t (update-iprint-ar-fal iprint-alist
+                                        iprint-fal-new
+                                        iprint-fal-old
+                                        state)))))
+         (mv result state))))))
 
 ; Essay on the ACL2 Prettyprinter
 
@@ -1817,6 +1957,7 @@
           (+f acc
               (cond ((eql x #\Newline) 9)
                     ((eql x #\Rubout) 8)
+                    ((eql x #\Return) 8)
                     ((eql x #\Space) 7)
                     ((eql x #\Page) 6)
                     ((eql x #\Tab) 5)
@@ -2554,6 +2695,21 @@
                     (fmt-tilde-s1 s (1+f i) maximum (1+f col)
                                   channel state)))))))))
 
+(defun fmt-tilde-cap-s1 (s i maximum col channel state)
+  (declare (type (signed-byte 30) i maximum col)
+           (type string s))
+  (the2s
+   (signed-byte 30)
+   (cond ((not (< i maximum))
+          (mv col state))
+         (t
+          (let ((c (charf s i)))
+            (declare (type character c))
+            (pprogn
+             (princ$ c channel state)
+             (fmt-tilde-cap-s1 s (1+f i) maximum (1+f col)
+                               channel state)))))))
+
 (defun fmt-var (s alist i maximum)
   (declare (type (signed-byte 30) i maximum)
            (type string s))
@@ -2567,6 +2723,9 @@
                  i (char s (+f i 2)) alist s)))))
 
 (defun splat-atom (x print-base print-radix indent col channel state)
+
+; See also splat-atom!, which ignores margins.
+
   (let* ((sz (flsz-atom x print-base print-radix 0 state))
          (too-bigp (> (+ col sz) (fmt-hard-right-margin state))))
     (pprogn (if too-bigp
@@ -2576,6 +2735,15 @@
             (prin1$ x channel state)
             (mv (if too-bigp (+ indent sz) (+ col sz))
                 state))))
+
+(defun splat-atom! (x print-base print-radix col channel state)
+
+; See also splat-atom, which takes account of margins by possibly printing
+; newlines.
+
+  (pprogn (prin1$ x channel state)
+          (mv (flsz-atom x print-base print-radix col state)
+              state)))
 
 ; Splat, below, prints out an arbitrary ACL2 object flat, introducing
 ; the single-gritch notation for quote and breaking lines between lexemes
@@ -3049,6 +3217,46 @@
                            (cons #\1 str))
                      0 10 col channel state nil)))))))))))
 
+(defun fmt-tilde-cap-s (s col channel state)
+
+; This variant of fmt-tilde-s avoids printing newlines during the printing of
+; s.
+
+  (declare (type (signed-byte 30) col))
+  (the2s
+   (signed-byte 30)
+   (cond
+    ((acl2-numberp s)
+     (splat-atom! s (print-base) (print-radix) col channel state))
+    ((stringp s)
+     (fmt-tilde-cap-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+                       channel state))
+    (t
+     (let ((str (symbol-name s)))
+       (cond
+        ((keywordp s)
+         (cond
+          ((needs-slashes str state)
+           (splat-atom! s (print-base) (print-radix) col channel state))
+          (t (fmt0 ":~S0" (list (cons #\0 str)) 0 4 col channel state nil))))
+        ((symbol-in-current-package-p s state)
+         (cond
+          ((needs-slashes str state)
+           (splat-atom! s (print-base) (print-radix) col channel state))
+          (t (fmt-tilde-cap-s1 str 0
+                               (the-fixnum! (length str) 'fmt-tilde-s)
+                               col channel state))))
+        (t
+         (let ((p (symbol-package-name s)))
+           (cond
+            ((or (needs-slashes p state)
+                 (needs-slashes str state))
+             (splat-atom! s (print-base) (print-radix) col channel state))
+            (t (fmt0 "~S0::~S1"
+                     (list (cons #\0 p)
+                           (cons #\1 str))
+                     0 10 col channel state nil)))))))))))
+
 (defun fmt0 (s alist i maximum col channel state evisc-tuple)
   (declare (type (signed-byte 30) i maximum col)
            (type string s))
@@ -3398,6 +3606,12 @@
                                          channel state)
                             (fmt0 s alist (+f i 3) maximum col channel
                                   state evisc-tuple))))
+             (#\S (maybe-newline
+                   (mv-letc (col state)
+                            (fmt-tilde-cap-s (fmt-var s alist i maximum) col
+                                             channel state)
+                            (fmt0 s alist (+f i 3) maximum col channel
+                                  state evisc-tuple))))
              (#\Space (let ((fmt-hard-right-margin
                              (fmt-hard-right-margin state)))
                         (declare (type (signed-byte 30) fmt-hard-right-margin))
@@ -3692,7 +3906,6 @@
      defstobj defabsstobj
      defpkg
      deflabel
-     defdoc
      deftheory
      defchoose
      verify-guards
@@ -3887,6 +4100,14 @@
 
 ; See the Essay on STOBJS-IN and STOBJS-OUT.
 
+; Note that even though the guard implies (not (member-eq fn
+; *stobjs-out-invalid*)), we keep the member-eq test in the code in case
+; stobjs-out is called from a :program-mode function, since in that case the
+; guard may not hold.
+
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w)
+                              (not (member-eq fn *stobjs-out-invalid*)))))
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
@@ -3894,7 +4115,7 @@
          (er hard! 'stobjs-out
              "Implementation error: Attempted to find stobjs-out for ~x0."
              fn))
-        (t (getprop fn 'stobjs-out '(nil) 'current-acl2-world w))))
+        (t (getpropc fn 'stobjs-out '(nil) w))))
 
 ; The ACL2 Record Facilities
 
@@ -4399,7 +4620,7 @@
 
 (defmacro defrec (name field-lst cheap &optional recog-name)
 
-; Warning: If when cheap = nil, the car of a record is no longer name, then 
+; Warning: If when cheap = nil, the car of a record is no longer name, then
 ; consider changing the definition or use of record-type.
 
 ; A recognizer with guard t has is defined using recog-name, if supplied; else,
@@ -4512,22 +4733,8 @@
           (formal-bindings (cdr vars)))))
 
 (defrec io-record
-
-; WARNING:  We rely on the shape of this record in io-record-forms.
-
-; Note: As of Version_3.4 we do not use any io-marker other than :ctx.  Earlier
-; versions might not have made any real use of those either, writing but not
-; reading them.
-
   (io-marker . form)
   t)
-
-(defmacro io-record-forms (io-records)
-
-; WARNING:  If you change this macro, consider changing (defrec io-record ...)
-; too.
-
-  `(strip-cdrs ,io-records))
 
 (defun push-io-record (io-marker form state)
   (f-put-global 'saved-output-reversed
@@ -4556,7 +4763,8 @@
                      (cursor-at-top 'nil cursor-at-top-argp)
                      (pop-up 'nil pop-up-argp)
                      (default-bindings 'nil)
-                     (chk-translatable 't))
+                     (chk-translatable 't)
+                     (io-marker 'nil))
 
 ; Typical use (io? error nil (mv col state) (x y) (fmt ...)), meaning execute
 ; the fmt statement unless 'error is on 'inhibit-output-lst.  The mv expression
@@ -4693,7 +4901,7 @@
                     :ld-prompt nil))))
      (t `(pprogn
           (cond ((saved-output-token-p ',token state)
-                 (push-io-record nil ; io-marker
+                 (push-io-record ,io-marker
                                  (list 'let
                                        (list ,@(formal-bindings vars))
                                        ',expansion)
@@ -4877,21 +5085,48 @@
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled))))
 
-(defun warning1-body (ctx summary str alist state)
+(defun warning1-body (ctx summary str+ alist state)
+
+; Str+ is either a string or a pair (str . raw-alist), where raw-alist is to be
+; used in place of str and the input alist if we are in raw-warning-format
+; mode.
+
   (let ((channel (f-get-global 'proofs-co state)))
     (pprogn
      (if summary
          (push-warning summary state)
        state)
-     (mv-let
-      (col state)
-      (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
-           (list (cons #\0 (if summary 1 0))
-                 (cons #\1 summary))
-           channel state nil)
-      (mv-let (col state)
-              (fmt-in-ctx ctx col channel state)
-              (fmt-abbrev str alist col channel state "~%~%"))))))
+     (cond
+      ((f-get-global 'raw-warning-format state)
+       (cond ((consp str+)
+              (fms "~y0"
+                   (list (cons #\0 (list :warning summary
+                                         (cons (list :ctx ctx)
+                                               (cdr str+)))))
+                   channel state nil))
+             (t
+              (fms "(:WARNING ~x0~t1~y2)~%"
+                   (list (cons #\0 summary)
+                         (cons #\1 10) ; (length "(:WARNING ")
+                         (cons #\2
+                               (list (cons :ctx ctx)
+                                     (cons :fmt-string str+)
+                                     (cons :fmt-alist alist))))
+                   channel state nil))))
+      (t (let ((str (cond ((consp str+)
+                           (assert$ (and (stringp (car str+))
+                                         (alistp (cdr str+)))
+                                    (car str+)))
+                          (t str+))))
+           (mv-let
+             (col state)
+             (fmt "ACL2 Warning~#0~[~/ [~s1]~]"
+                  (list (cons #\0 (if summary 1 0))
+                        (cons #\1 summary))
+                  channel state nil)
+             (mv-let (col state)
+               (fmt-in-ctx ctx col channel state)
+               (fmt-abbrev str alist col channel state "~%~%")))))))))
 
 (defmacro warning1-form (commentp)
 
@@ -4933,34 +5168,6 @@
 ; user's summary, str and alist, and then two carriage returns.
 
   (warning1-form nil))
-
-(defmacro warning$ (&rest args)
-
-; A typical use of this macro might be:
-; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
-; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
-; If the second argument is wrapped in a one-element list, as in
-; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
-; then that argument is quoted, and no check will be made for whether the
-; warning is disabled, presumably because we are in a context where we know the
-; warning is enabled.
-
-  (list 'warning1
-        (car args)
-
-; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
-; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
-; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
-; of warning$ be that conses are quoted in the second argument position.
-
-        (if (consp (cadr args))
-            (kwote (cadr args))
-          (cadr args))
-        (caddr args)
-        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                             #\5 #\6 #\7 #\8 #\9)
-                           (cdddr args))
-        'state))
 
 (defmacro warning-disabled-p (summary)
 
@@ -5075,8 +5282,7 @@
   ((congruent-to . non-memoizable)
    (recognizer . creator)
    field-templates
-   inline
-   doc)
+   inline)
   nil)
 
 (defun packn1 (lst)
@@ -5172,7 +5378,7 @@
 ; nil) of course).
 
   (and (symbolp name)
-       (getprop name 'const nil 'current-acl2-world w)))
+       (getpropc name 'const nil w)))
 
 (defun fix-stobj-array-type (type wrld)
 
@@ -5237,12 +5443,12 @@
                   :updater-name updater-name
                   :length-name length-name
                   :resize-name resize-name
-                  :resizable resizable) 
+                  :resizable resizable)
             (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
 
 (defconst *defstobj-keywords*
-  '(:renaming :doc :inline :congruent-to :non-memoizable))
+  '(:renaming :inline :congruent-to :non-memoizable))
 
 ; The following function is used to implement a slighly generalized
 ; form of macro args, namely one in which we can provide an arbitrary
@@ -5298,20 +5504,18 @@
 
 ; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
 
-; We unpack the args to get the renamed field descriptors.  We return a list of
-; the form (namep create-name fields doc inline congruent-to), where: namep is
-; the name of the recognizer for the single-threaded object; create-name is the
-; name of the constructor for the stobj; fields is a list corresponding to the
-; field descriptors, but normalized with respect to the renaming, types, etc.;
-; doc is the doc string, or nil if no doc string is supplied; inline is t if
-; :inline t was specified in the defstobj event, else nil; and congruent-to is
-; the :congruent-to field of the defstobj event (default: nil).  A field in
-; fields is of the form (recog-name type init accessor-name updater-name
-; length-name resize-name resizable).  The last three fields are nil unless
-; type has the form (ARRAY ptype (n)), in which case ptype is a primitive type
-; and n is a positive integer.  Init is the evg of a constant term, i.e.,
-; should be quoted to be a treated as a term.  Doc is the value of the :doc
-; keyword arg in args.
+; We unpack the args to get the renamed field descriptors.  We return a
+; defstobj-template with fields (namep create-name fields inline congruent-to),
+; where: namep is the name of the recognizer for the single-threaded object;
+; create-name is the name of the constructor for the stobj; fields is a list
+; corresponding to the field descriptors, but normalized with respect to the
+; renaming, types, etc.; inline is t if :inline t was specified in the defstobj
+; event, else nil; and congruent-to is the :congruent-to field of the defstobj
+; event (default: nil).  A field in fields is of the form (recog-name type init
+; accessor-name updater-name length-name resize-name resizable).  The last
+; three fields are nil unless type has the form (ARRAY ptype (n)), in which
+; case ptype is a primitive type and n is a positive integer.  Init is the evg
+; of a constant term, i.e., should be quoted to be a treated as a term.
 
   (mv-let
    (erp field-descriptors key-alist)
@@ -5330,7 +5534,6 @@
          (list* 'defstobj name args)))
     (t
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
-           (doc (cdr (assoc-eq :doc key-alist)))
            (inline (cdr (assoc-eq :inline key-alist)))
            (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
            (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
@@ -5340,7 +5543,6 @@
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
              :non-memoizable non-memoizable
-             :doc doc
              :inline inline
              :congruent-to congruent-to))))))
 
@@ -5494,7 +5696,7 @@
 
   (cond ((eq stobj 'state) 'state-p)
         ((not (symbolp stobj)) nil)
-        (wrld (caddr (getprop stobj 'stobj nil 'current-acl2-world wrld)))
+        (wrld (caddr (getpropc stobj 'stobj nil wrld)))
         (t
          #-acl2-loop-only
          (let ((d (get (the-live-var stobj)
@@ -5519,6 +5721,11 @@
               get-stobj-creator must not be called inside the ACL2 loop (as ~
               is the case here) with wrld = nil."
              `(get-stobj-creator ,stobj nil)))))
+
+(defmacro the$ (type val)
+  (cond ((eq type t)
+         val)
+        (t `(the ,type ,val))))
 
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
@@ -5647,13 +5854,14 @@
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
-            (the ,array-etype
-                 (,vref (the ,simple-type (svref ,var ,n))
-                        (the (and fixnum (integer 0 *)) i))))
+            (the$ ,array-etype
+                  (,vref (the ,simple-type (svref ,var ,n))
+                         (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
             (declare (type (and fixnum (integer 0 *)) i)
-                     (type ,array-etype v))
+                     ,@(and (not (eq array-etype t))
+                            `((type ,array-etype v))))
             ,@(and inline (list *stobj-inline-declare*))
             (progn
               #+hons (memoize-flush ,flush-var)
@@ -5661,9 +5869,11 @@
 ; See the long comment below for the updater in the scalar case, about
 ; supporting *1* functions.
 
-              (setf (,vref (the ,simple-type (svref ,var ,n))
+              (setf (,vref ,(if (eq simple-type t)
+                                `(svref ,var ,n)
+                              `(the ,simple-type (svref ,var ,n)))
                            (the (and fixnum (integer 0 *)) i))
-                    (the ,array-etype v))
+                    (the$ ,array-etype v))
               ,var))))
         ((eq scalar-type t)
          `((,accessor-name (,var)
@@ -5695,19 +5905,20 @@
           (not stobj-creator) ; scalar-type is t for stobj-creator
           `((,accessor-name (,var)
                             ,@(and inline (list *stobj-inline-declare*))
-                            (the ,scalar-type
-                                 (aref (the (simple-array ,scalar-type (1))
-                                            (svref ,var ,n))
-                                       0)))
+                            (the$ ,scalar-type
+                                  (aref (the (simple-array ,scalar-type (1))
+                                             (svref ,var ,n))
+                                        0)))
             (,updater-name (v ,var)
-                           (declare (type ,scalar-type v))
+                           ,@(and (not (eq scalar-type t))
+                                  `((declare (type ,scalar-type v))))
                            ,@(and inline (list *stobj-inline-declare*))
                            (progn
                              #+hons (memoize-flush ,flush-var)
                              (setf (aref (the (simple-array ,scalar-type (1))
                                               (svref ,var ,n))
                                          0)
-                                   (the ,scalar-type v))
+                                   (the$ ,scalar-type v))
                              ,var)))))))
      (defstobj-field-fns-raw-defs
        var flush-var inline (1+ n) (cdr field-templates))))))
@@ -5771,15 +5982,39 @@
                                 :initial-element ',init)
                   (defstobj-raw-init-fields (cdr field-templates)))))))))
 
+(defun defstobj-raw-init-setf-forms (var index raw-init-fields acc)
+  (cond ((endp raw-init-fields) acc) ; no need to reverse
+        (t (defstobj-raw-init-setf-forms
+             var
+             (1+ index)
+             (cdr raw-init-fields)
+             (cons `(setf (svref ,var ,index)
+                          ,(car raw-init-fields))
+                   acc)))))
+
 (defun defstobj-raw-init (template)
 
 ; This function generates the initialization code for the live object
 ; representing the stobj name.
 
-  (let ((field-templates (access defstobj-template template :field-templates)))
-    `(coerce ; GCL complains when VECTOR is called on more than 64 arguments.
-      (list ,@(defstobj-raw-init-fields field-templates))
-      'vector)))
+  (let* ((field-templates (access defstobj-template template :field-templates))
+         (raw-init-fields (defstobj-raw-init-fields field-templates))
+         (len (length field-templates)))
+    `(cond
+      ((< ,len call-arguments-limit)
+
+; This check is necessary because GCL complains when VECTOR is called on more
+; than 64 arguments.  Actually, the other code -- where LIST is called instead
+; of VECTOR -- is in principle just as problematic when field-templates is at
+; least as long as call-arguments-limit.  However, GCL has (through 2015 at
+; least) been forgiving when LIST is called with too many arguments (as per
+; call-arguments-limit).
+
+       (vector ,@raw-init-fields))
+      (t
+       (let ((v (make-array$ ,len)))
+         ,@(defstobj-raw-init-setf-forms 'v 0 raw-init-fields nil)
+         v)))))
 
 (defun defstobj-component-recognizer-calls (field-templates n var ans)
 
@@ -5832,7 +6067,7 @@
   (and x
        (symbolp x)
        (if (eq known-stobjs t)
-           (getprop x 'stobj nil 'current-acl2-world w)
+           (getpropc x 'stobj nil w)
          (member-eq x known-stobjs))))
 
 (defun translate-stobj-type-to-guard (x var wrld)
@@ -5951,7 +6186,7 @@
 (defun congruent-stobj-rep (name wrld)
   (assert$
    wrld ; use congruent-stobj-rep-raw if wrld is not available
-   (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
+   (or (getpropc name 'congruent-stobj-rep nil wrld)
        name)))
 
 (defun all-but-last (l)
@@ -6155,11 +6390,10 @@
 ; book.  Either way, ok-p would be false when this code is executed by loading
 ; the compiled file.
 
-; We do not check the :doc, :inline, or :congruent-to fields, because these
-; incur no proof obligations.  If a second pass of encapsulate, or inclusion of
-; a book, exposes a later non-local defstobj that is redundant with an earlier
-; local one, then any problems will be caught during local compatibility
-; checks.
+; We do not check the :inline :congruent-to fields, because these incur no
+; proof obligations.  If a second pass of encapsulate, or inclusion of a book,
+; exposes a later non-local defstobj that is redundant with an earlier local
+; one, then any problems will be caught during local compatibility checks.
 
                          )))
          (cond
@@ -6218,6 +6452,18 @@
 ; (such as *initial-global-table*) is independent of the host Common Lisp
 ; implementation.  That is important to avoid trivial soundness bugs based on
 ; variance of a defconst value from one underlying Lisp to another.
+
+#-acl2-loop-only
+(defun our-pwd ()
+
+; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
+; variable is not necessarily maintained, for example in Solaris/SunOS as one
+; make invokes another make in a different directory.
+
+  (pathname-os-to-unix
+   (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
+   (get-os)
+   *the-live-state*))
 
 #-acl2-loop-only
 (initialize-state-globals)
@@ -6389,6 +6635,13 @@
 
                     ,@(cond ((eq st 'state)
                              '((*inside-with-local-state* t)
+                               (*wormholep*
+
+; We are in a local state, so it is irrelevant whether or not we are in a
+; wormhole, since (conceptually at least) the local state will be thrown away
+; after making changes to it.
+
+                                nil)
                                (*file-clock* *file-clock*)
                                (*t-stack* *t-stack*)
                                (*t-stack-length* *t-stack-length*)
@@ -6813,15 +7066,12 @@
   status)
 
 (defmacro good-bye (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 (defmacro exit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 (defmacro quit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
   `(good-bye-fn ,status))
 
 ; Saving an Executable Image
@@ -6841,6 +7091,17 @@
 
   #-acl2-loop-only
   (progn
+
+    (when (not (our-probe-file (directory-namestring exec-filename)))
+
+; Without this check, CCL will create a directory for us; yet SBCL will not.
+; We prefer consistent behavior across all Lisps.  Here we choose to require
+; the directory to exist already, to prevent users from creating directories
+; they don't want by mistake.
+
+      (error "~s is unable to save to file ~s, because its directory does not ~
+              exist."
+             'save-exec exec-filename))
 
 ; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.

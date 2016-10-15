@@ -28,6 +28,8 @@
 //
 // Original author: Sol Swords <sswords@centtech.com>
 
+// BOZO this test has nothing to do with gates, should be renamed.
+
 module sub (input logic [3:0] a,
 	    input logic [3:0] b,
 	    output logic [3:0] res0,

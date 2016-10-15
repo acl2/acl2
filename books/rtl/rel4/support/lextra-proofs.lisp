@@ -102,7 +102,7 @@
 ; Matt K.:  The original proof fails using v2-8-alpha-12-30-03.  I don't know
 ; why, but I do notice that the induction heuristics are getting in the way,
 ; because the problem goal (the one with the hint below) goes through in the
-; proof-checker.  So we use the proof-checker proof.
+; proof-builder.  So we use the proof-builder proof.
 
 #|
 (local

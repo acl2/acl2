@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-02-05")
+  "VL2014 Syntax 2016-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -933,7 +933,9 @@ expression-sizing) for details.</p>")
 
 (defprojection vl-portlist->names ((x vl-portlist-p))
   :parents (vl-portlist-p)
-  :nil-preservingp t
+  ;; [Jared] no longer true due to new transsum implementation, but probably
+  ;; not really a very good idea in the first place.
+  ;; :nil-preservingp t
   (vl-port->name x)
   ///
   (defthm string-listp-of-vl-portlist->names
@@ -2301,20 +2303,22 @@ respectively.</p>"
    vl-paramdecl
    vl-import))
 
-(defthmd vl-blockitem-possible-tags
-  (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-paramdecl)
-               (equal (tag x) :vl-import)))
-  :rule-classes :forward-chaining)
+;; [Jared] now automatic: tag-when-vl-blockitem-p-forward
+;; (defthmd vl-blockitem-possible-tags
+;;   (implies (vl-blockitem-p x)
+;;            (or (equal (tag x) :vl-vardecl)
+;;                (equal (tag x) :vl-paramdecl)
+;;                (equal (tag x) :vl-import)))
+;;   :rule-classes :forward-chaining)
 
-(defthmd vl-blockitem-fix-possible-tags
-  (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
-      (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
-      (equal (tag (vl-blockitem-fix x)) :vl-import))
-  :hints (("goal" :use ((:instance vl-blockitem-possible-tags
-                         (x (vl-blockitem-fix x))))))
-  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x))))))
+;; [Jared] now automatic: tag-of-vl-blockitem-fix-forward
+;; (defthmd vl-blockitem-fix-possible-tags
+;;   (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
+;;       (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
+;;       (equal (tag (vl-blockitem-fix x)) :vl-import))
+;;   :hints (("goal" :use ((:instance vl-blockitem-possible-tags
+;;                          (x (vl-blockitem-fix x))))))
+;;   :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x))))))
 
 (defthm vl-blockitem-fix-type
   (consp (vl-blockitem-fix x))
@@ -2348,7 +2352,7 @@ respectively.</p>"
                                 (vardecls-acc vl-vardecllist-p)
                                 (paramdecls-acc vl-paramdecllist-p)
                                 (imports-acc vl-importlist-p))
-  :prepwork ((local (in-theory (enable vl-blockitem-fix-possible-tags))))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (mv (vardecls vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p)
                (imports vl-importlist-p))
@@ -3641,16 +3645,17 @@ initially kept in a big, mixed list.</p>"
 
 (encapsulate nil
 
-  (defthm tag-when-vl-genelement-p-forward
-    (implies (vl-genelement-p x)
-             (or (equal (tag x) :vl-genbase)
-                 (equal (tag x) :vl-genloop)
-                 (equal (tag x) :vl-genif)
-                 (equal (tag x) :vl-gencase)
-                 (equal (tag x) :vl-genblock)
-                 (equal (tag x) :vl-genarray)))
-    :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
-    :rule-classes :forward-chaining)
+  ;; [Jared] now automatic
+  ;; (defthm tag-when-vl-genelement-p-forward
+  ;;   (implies (vl-genelement-p x)
+  ;;            (or (equal (tag x) :vl-genbase)
+  ;;                (equal (tag x) :vl-genloop)
+  ;;                (equal (tag x) :vl-genif)
+  ;;                (equal (tag x) :vl-gencase)
+  ;;                (equal (tag x) :vl-genblock)
+  ;;                (equal (tag x) :vl-genarray)))
+  ;;   :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
+  ;;   :rule-classes :forward-chaining)
 
   (local (defthm vl-genelement-p-of-vl-genelement-fix-forward-for-tag
            (vl-genelement-p (vl-genelement-fix x))
@@ -3786,7 +3791,7 @@ do this is to wrap it using @('(vl-context x)').</p>
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
-  :layout :tree
+  :layout :fulltree
 
   ((name       stringp
                :rule-classes :type-prescription
@@ -4403,8 +4408,8 @@ are:</p>
            expression representation allows us to directly represent @('$') as
            a @(see vl-keyguts) atom, so in case of ranges like @('##[1:$]'),
            @('right') is just the expression for @('$').  Other examples:
-           @('right') is @('nil') in @('##5'), @('20') in @('##[10:20]), @('$')
-           in @('##[*]), and @('$') in @('##[+]).  Supposed to be a constant
+           @('right') is @('nil') in @('##5'), @('20') in @('##[10:20]'), @('$')
+           in @('##[*]'), and @('$') in @('##[+]').  Supposed to be a constant
            expression that produces a non-negative integer value that is at
            least as large as @('left')."))
 

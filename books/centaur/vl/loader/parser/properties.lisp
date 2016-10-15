@@ -47,10 +47,10 @@ and for a description of the modified grammar that we target.</p>")
 (local (xdoc::set-default-parents parse-property))
 
 (defval *vl-trivially-true-property-expr*
-  :parents (vl-seqthen)
+  :parents (vl-propexpr)
   :short "A @(see vl-propexpr) that is just <i>true</i>."
 
-  :long "<p>This is useful as the implicit first step in a @(see vl-seqthen)
+  :long "<p>This is useful as the implicit first step in a @(see vl-propthen)
 that a user might write without a leading expression.  That is, if the user
 writes something like:</p>
 
@@ -173,7 +173,7 @@ But such expressions are equivalent to just having an else branch of
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  :long "<p>See @(see vl-cycledelayrange).  Grammar rules are as follows:</p>
+  :long "<p>Grammar rules are as follows:</p>
 
 @({
     cycle_delay_range ::= '##' constant_primary
@@ -495,7 +495,7 @@ have</p>
 
 
 (defparser vl-parse-event-expression-fragment ()
-  :parents (vl-parse-sequence-list-of-arguments)
+  :parents (vl-parse-property-list-of-arguments)
   :short "Special subset of @('event_expression') for use only in
 @('sequence_list_of_actuals')."
 

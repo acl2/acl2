@@ -162,9 +162,18 @@ To certify this book, first, create a world with the following package:
 (defthm
   not-prime1p-lemma
   (implies (and (integerp y)
+
+; Matt K. mod 5/2016 (type-set bit for {1}): Originally the following
+; hypothesis was instead (dividesp z x), and was last.  After our type-set
+; changes, where this lemma was applied to prove divisors-of-primep, the
+; free-variable match failed for the old version of this lemma.  The problem
+; was that D was on the type-alist with type *ts-integer>1*; neither (< 1 D)
+; nor (< D 2) was on the type-alist.  Since dividesp is enabled, here we place
+; what amounts to the expanded form of (dividesp z x).
+
+                (equal (acl2::nonneg-int-mod x z) 0)
 		(< 1 z)
-		(<= z y)
-		(dividesp z x))
+		(<= z y))
 	   (not (prime1p x y))))
 
 (defun

@@ -91,7 +91,7 @@
  })
 
  <p>Notice the space in front of the results.  This indicates that what is
- actually returned is an <see topic=\"@(url ERROR-TRIPLES)\">error
+ actually returned is an <see topic=\"@(url ERROR-TRIPLE)\">error
  triple</see>, for example as follows in the final case above.</p>
 
  @({
@@ -108,7 +108,7 @@
  in user-level syntax, @('hints') (which is optional) is a list of @(see hints)
  such as might be given to @(tsee defthm), and a @('verbose') (which is
  optional, @('nil') by default) allows output from the prover if non-@('nil').
- The result is an <see topic=\"@(url ERROR-TRIPLES)\">error triple</see>,
+ The result is an <see topic=\"@(url ERROR-TRIPLE)\">error triple</see>,
  <tt>(mv nil val state)</tt>, where <tt>val</tt> is a list, each member of
  which is of the form @('(<simplified-term> <simplified-hypothesis-1>
  ... <simplified-hypothesis-k>)'), where @('<simplified-term>') and each

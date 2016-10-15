@@ -37,6 +37,8 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-verify-guards-eagerness 2)
 
+(local (in-theory (e/d (bitops::signed-byte-p-of-ash-split)
+                       (unsigned-byte-p signed-byte-p))))
 
 (defsection combine-functions
   :parents (read-bytes$)

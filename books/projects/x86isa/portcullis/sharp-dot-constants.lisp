@@ -65,6 +65,7 @@
 (defconst *2^32*      (expt 2 32))
 (defconst *2^35*      (expt 2 35))
 (defconst *2^43*      (expt 2 43))
+(defconst *2^44*      (expt 2 44))
 (defconst *2^45*      (expt 2 45))
 (defconst *2^47*      (expt 2 47))
 (defconst *-2^47*     (- (expt 2 47)))
@@ -166,6 +167,16 @@
 (defconst *OP-SP* 0)
 (defconst *OP-DP* 1)
 
+;; Single/Double FP conversions:
+
+(defconst *SP-TO-DP* 0)
+(defconst *DP-TO-SP* 1)
+
+;; SIMD packs:
+
+(defconst *LOW-PACK*  0)
+(defconst *HIGH-PACK* 1)
+
 ;; IDs: Comparison Instructions
 
 (defconst *OP-CMPEQ*      0)
@@ -251,26 +262,29 @@
 ;;    or LDMXCSR instructions, will result in a general-protection
 ;;    exception (#GP) being generated.
 
-(defconst *mxcsr-ie*  0) ;; Invalid Operation Flag
-(defconst *mxcsr-de*  1) ;; Denormal Flag
-(defconst *mxcsr-ze*  2) ;; Divide-by-Zero Flag
-(defconst *mxcsr-oe*  3) ;; Overflow Flag
-(defconst *mxcsr-ue*  4) ;; Underflow Flag
-(defconst *mxcsr-pe*  5) ;; Precision Flag
-(defconst *mxcsr-daz* 6) ;; Denormals are Zeros
-(defconst *mxcsr-im*  7) ;; Invalid Operation Mask
-(defconst *mxcsr-dm*  8) ;; Denormal Mask
-(defconst *mxcsr-zm*  9) ;; Divide-by-Zero Mask
-(defconst *mxcsr-om* 10) ;; Overflow Mask
-(defconst *mxcsr-um* 11) ;; Underflow Mask
-(defconst *mxcsr-pm* 12) ;; Precision Mask
-(defconst *mxcsr-rc* 13) ;; Rounding Control
-(defconst *mxcsr-fz* 15) ;; Flush to Zero
+(defconst *mxcsr-ie*        0) ;; Invalid Operation Flag
+(defconst *mxcsr-de*        1) ;; Denormal Flag
+(defconst *mxcsr-ze*        2) ;; Divide-by-Zero Flag
+(defconst *mxcsr-oe*        3) ;; Overflow Flag
+(defconst *mxcsr-ue*        4) ;; Underflow Flag
+(defconst *mxcsr-pe*        5) ;; Precision Flag
+(defconst *mxcsr-daz*       6) ;; Denormals are Zeros
+(defconst *mxcsr-im*        7) ;; Invalid Operation Mask
+(defconst *mxcsr-dm*        8) ;; Denormal Mask
+(defconst *mxcsr-zm*        9) ;; Divide-by-Zero Mask
+(defconst *mxcsr-om*       10) ;; Overflow Mask
+(defconst *mxcsr-um*       11) ;; Underflow Mask
+(defconst *mxcsr-pm*       12) ;; Precision Mask
+(defconst *mxcsr-rc*       13) ;; Rounding Control
+(defconst *mxcsr-fz*       15) ;; Flush to Zero
+(defconst *mxcsr-reserved* 16) ;; Reserved
+
 
 (defconst *mxcsr-names*
   (list *mxcsr-ie* *mxcsr-de*  *mxcsr-ze* *mxcsr-oe* *mxcsr-ue*
         *mxcsr-pe* *mxcsr-daz* *mxcsr-im* *mxcsr-dm* *mxcsr-zm*
-        *mxcsr-om* *mxcsr-um*  *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*))
+        *mxcsr-om* *mxcsr-um*  *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
+        *mxcsr-reserved*))
 
 
 ;; Access RGF or XMM
@@ -354,6 +368,19 @@
 (defconst *max-linear-address-size*  48)
 (defconst *max-linear-address-size+1* (1+ *max-linear-address-size*))
 (defconst *max-linear-address-size+2* (+ 2 *max-linear-address-size*))
+(defconst *max-linear-address-size+3* (+ 3 *max-linear-address-size*))
+(defconst *max-linear-address-size+4* (+ 4 *max-linear-address-size*))
+(defconst *max-linear-address-size+5* (+ 5 *max-linear-address-size*))
+(defconst *max-linear-address-size+6* (+ 6 *max-linear-address-size*))
+(defconst *max-linear-address-size+7* (+ 7 *max-linear-address-size*))
+(defconst *max-linear-address-size+8* (+ 8 *max-linear-address-size*))
+(defconst *max-linear-address-size+9* (+ 9 *max-linear-address-size*))
+(defconst *max-linear-address-size+10* (+ 10 *max-linear-address-size*))
+(defconst *max-linear-address-size+11* (+ 11 *max-linear-address-size*))
+(defconst *max-linear-address-size+12* (+ 12 *max-linear-address-size*))
+(defconst *max-linear-address-size+13* (+ 13 *max-linear-address-size*))
+(defconst *max-linear-address-size+14* (+ 14 *max-linear-address-size*))
+(defconst *max-linear-address-size+15* (+ 15 *max-linear-address-size*))
 (defconst *max-linear-address-size-1* (1- *max-linear-address-size*))
 (defconst *2^max-linear-address-size-1* (expt 2 *max-linear-address-size-1*))
 (defconst *-2^max-linear-address-size-1* (- *2^max-linear-address-size-1*))
@@ -394,7 +421,7 @@
 
   0)
 
-(defconst *initial-mem-array-pages* 10) ; arbitrary
+(defconst *initial-mem-array-pages* 2) ; arbitrary
 
 (defconst *2^x-byte-pseudo-page*
   ;; Log size of pseudo page; i.e.; for 128MB pseudo pages, this is 27
@@ -485,9 +512,7 @@
 ;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
 (defun define-control-registers ()
 
-  `(defconsts (*MSW* ;; Control status register: msw is only 32 bits
-                     ;; even in 64 bit mode?
-               *CR0* ;; cr0 controls operating mode and states of
+  `(defconsts (*CR0* ;; cr0 controls operating mode and states of
                      ;; processor
                *CR1* ;; cr1 is reserved
                *CR2* ;; cr2 holds the page fault linear address (the
@@ -505,7 +530,7 @@
                *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
                *XCR0*
                *control-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 18))
+     ,(b* ((lst (gl-int 0 1 17))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 

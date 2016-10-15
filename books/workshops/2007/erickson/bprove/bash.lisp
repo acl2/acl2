@@ -41,7 +41,7 @@
 
 ; More details:
 
-; This book defines a utility similar to the proof-checker's bash command, but
+; This book defines a utility similar to the proof-builder's bash command, but
 ; for use in the top-level loop.  The input term can be a user-level term,
 ; i.e., it need not be translated.  Thus this bash utility is given a term, and
 ; it returns an error triple (mv erp termlist state) where if erp is not nil,
@@ -125,7 +125,7 @@ ACL2 !>
      ((thints (translate-hints
                name-tree
 
-; Keep the following in sync with the definition of the proof-checker :bash
+; Keep the following in sync with the definition of the proof-builder :bash
 ; command.
 
                (append
@@ -165,7 +165,7 @@ ACL2 !>
      ((thints (translate-hints
                name-tree
 
-; Keep the following in sync with the definition of the proof-checker :bash
+; Keep the following in sync with the definition of the proof-builder :bash
 ; command.
 
                (append

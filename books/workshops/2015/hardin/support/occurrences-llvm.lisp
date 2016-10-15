@@ -120,7 +120,7 @@
             (and (integerp v)
                  (integer-listp x)))))
 
- (in-theory (disable integer-listp integer-listp len nth update-nth))
+ (in-theory (disable integer-listp len nth update-nth))
 )
 
 ;; Since we're in the LL2 package, it is convenient to define
@@ -298,8 +298,7 @@
 
 (defthm sem-preamble-0-n-ge-1-pc
   (implies
-   (and (sp s)
-        (hyps s)
+   (and (hyps s)
         (program-inv s)
         (occurrences-programp s)
         (>= (nth 1 (rd :locals s)) 1))
@@ -307,11 +306,7 @@
 
 (defthm preamble-index-=-0
   (implies
-   (and (sp s)
-        (INTEGER-LISTP (RD :MEMORY S))
-        (INTEGER-LISTP (RD :LOCALS S))
-        (INTEGER-LISTP (RD :STACK S))
-        (> (LEN (RD :LOCALS S)) 16)
+   (and (hyps s)
         (occurrences-programp s)
         (program-inv s)
         (= 0 (RD :PC S)))
@@ -319,11 +314,7 @@
 
 (defthm preamble-num-occur-=-0
   (implies
-   (and (sp s)
-        (INTEGER-LISTP (RD :MEMORY S))
-        (INTEGER-LISTP (RD :LOCALS S))
-        (INTEGER-LISTP (RD :STACK S))
-        (> (LEN (RD :LOCALS S)) 16)
+   (and (hyps s)
         (occurrences-programp s)
         (program-inv s)
         (= 0 (RD :PC S)))
@@ -331,11 +322,7 @@
 
 (defthm preamble-N-unchanged
   (implies
-   (and (sp s)
-        (INTEGER-LISTP (RD :MEMORY S))
-        (INTEGER-LISTP (RD :LOCALS S))
-        (INTEGER-LISTP (RD :STACK S))
-        (> (LEN (RD :LOCALS S)) 16)
+   (and (hyps s)
         (occurrences-programp s)
         (program-inv s)
         (= 0 (RD :PC S)))
@@ -343,11 +330,7 @@
 
 (defthm preamble-base-addr-unchanged
   (implies
-   (and (sp s)
-        (INTEGER-LISTP (RD :MEMORY S))
-        (INTEGER-LISTP (RD :LOCALS S))
-        (INTEGER-LISTP (RD :STACK S))
-        (> (LEN (RD :LOCALS S)) 16)
+   (and (hyps s)
         (occurrences-programp s)
         (program-inv s)
         (= 0 (RD :PC S)))
@@ -361,7 +344,7 @@
   :focus-regionp (lambda (pc) (>= pc 8))
   :root-name loop
   :hyps+ ((occurrences-programp s)
-          (loop-inv s) (program-inv s)
+          (loop-inv s) (hyps s)
           (<= (+ (nth 0 (rd :locals s)) (nth 1 (rd :locals s)))
               (len (rd :memory s))))
   :annotations ((clk-loop-8 (declare (xargs :measure (clk-8-measure s))))
@@ -476,8 +459,7 @@
   (implies
    (and (sp s)
         (integerp val)
-        (integer-listp (rd :memory s))
-        (= (len (rd :memory s)) (len (rd :memory s))))
+        (integer-listp (rd :memory s)))
    (= (occur-arr-iter (len (rd :memory s)) 0 val s)
       (occurlist val (rd :memory s)))))
 
@@ -485,8 +467,7 @@
   (implies
    (and (sp s)
         (integerp val)
-        (integer-listp (rd :memory s))
-        (= (len (rd :memory s)) (len (rd :memory s))))
+        (integer-listp (rd :memory s)))
    (= (occur-arr-tailrec 0 0 val s)
       (occurlist val (rd :memory s)))))
 

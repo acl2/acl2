@@ -51,14 +51,14 @@
 
 (define vl-index-selfsize ((x vl-expr-p "the index expression")
                            (ss vl-scopestack-p)
-                           (typeov vl-typeoverride-p))
+                           (scopes vl-elabscopes-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (new-warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
   (b* ((x (vl-expr-fix x))
        (warnings  nil)
        ;; We'll leave complaining about the signedness caveats to typedecide
-       ((mv err opinfo) (vl-index-expr-typetrace x ss typeov))
+       ((mv err opinfo) (vl-index-expr-typetrace x ss scopes))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Failed to find the type of ~a0: ~@1"
@@ -102,7 +102,7 @@
          (design (make-vl-design :mods (list mod)))
          (ss (vl-scopestack-push mod (vl-scopestack-init design)))
          ((mv warnings size)
-          (vl-index-selfsize expr ss nil)))
+          (vl-index-selfsize expr ss (vl-elabscopes-init))))
       (if (and (not warnings)
                (eql size 1))
           '(value-triple :ok)
@@ -110,7 +110,7 @@
             "Bad result: ~x0~%" (list warnings size)))))))
 
 
-(defines vl-interesting-size-values
+(defines vl-interesting-size-atoms
   :parents (vl-tweak-fussy-warning-type)
   :short "Heuristic for tweaking fussy size warnings."
   :long "<p>Our basic goal is to gather all the atoms throughout an expression
@@ -129,74 +129,216 @@ only meant as a heuristic for generating more useful warnings.</p>"
                                         acl2::member-of-cons
                                         ))))
 
-  (define vl-expr-interesting-size-values ((x vl-expr-p))
+  (define vl-expr-interesting-size-atoms ((x vl-expr-p))
     :measure (vl-expr-count x)
     :verify-guards nil
-    :returns (vals vl-valuelist-p)
+    :returns (vals vl-exprlist-p)
     (vl-expr-case x
-      :vl-literal (list x.val)
-      :vl-binary (case x.op
-                   ((:vl-binary-power
-                     :vl-binary-shr
-                     :vl-binary-shl
-                     :vl-binary-ashr
-                     :vl-binary-ashl)
-                    (vl-expr-interesting-size-values x.left))
-                   ((:vl-binary-plus
-                     :vl-binary-minus
-                     :vl-binary-times
-                     :vl-binary-div
-                     :vl-binary-rem
-                     :vl-binary-bitand
-                     :vl-binary-bitor
-                     :vl-binary-xor
-                     :vl-binary-xnor)
-                    (append (vl-expr-interesting-size-values x.left)
-                            (vl-expr-interesting-size-values x.right))))
-      :vl-unary (case x.op
-                  ((:vl-unary-plus
-                    :vl-unary-minus
-                    :vl-unary-bitnot)
-                   (vl-expr-interesting-size-values x.arg)))
-      :vl-concat (vl-exprlist-interesting-size-values x.parts)
-      :vl-multiconcat (vl-exprlist-interesting-size-values x.parts)
-      :otherwise nil))
+      :vl-literal (list (vl-expr-fix x))
+      :vl-index   (list (vl-expr-fix x))
+      :vl-unary
+      (case x.op
+        ((:vl-unary-plus :vl-unary-minus :vl-unary-bitnot)
+         ;; These are "transparent" to sizing, so yes, go inside
+         ;; and get the interesting atoms in the argument.
+         (vl-expr-interesting-size-atoms x.arg))
+        ((:vl-unary-lognot :vl-unary-bitand :vl-unary-nand
+          :vl-unary-bitor :vl-unary-nor :vl-unary-xor
+          :vl-unary-xnor)
+         ;; These all just generate 1-bit results, so anything
+         ;; inside of them is not interesting to sizing.
+         nil)
+        ((:vl-unary-preinc :vl-unary-predec
+          :vl-unary-postinc :vl-unary-postdec)
+         ;; I think we want to go through these.
+         (vl-expr-interesting-size-atoms x.arg))
+        (otherwise (impossible)))
+      :vl-binary
+      (case x.op
+        ((:vl-binary-logand :vl-binary-logor
+          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+          :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+          :vl-binary-wildeq :vl-binary-wildneq
+          :vl-implies :vl-equiv)
+         ;; These always generate one-bit results, so there's no
+         ;; reason to go into their args.
+         nil)
+        ((:vl-binary-plus :vl-binary-minus
+          :vl-binary-times :vl-binary-div :vl-binary-rem
+          :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
+          )
+         ;; Both arguments affect sizing,
+         (append (vl-expr-interesting-size-atoms x.left)
+                 (vl-expr-interesting-size-atoms x.right)))
+        ((:vl-binary-power :vl-binary-shr :vl-binary-shl
+          :vl-binary-ashr :vl-binary-ashl)
+         ;; Only the first argument affects the self-size.
+         (vl-expr-interesting-size-atoms x.left))
+        ((:vl-binary-assign
+          :vl-binary-plusassign :vl-binary-minusassign
+          :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+          :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+          :vl-binary-shlassign :vl-binary-shrassign
+          :vl-binary-ashlassign :vl-binary-ashrassign)
+         ;; Only the left hand side affects the size.
+         (vl-expr-interesting-size-atoms x.left))
+        (otherwise (impossible)))
 
-  (define vl-exprlist-interesting-size-values ((x vl-exprlist-p))
+      :vl-qmark
+      ;; Size of the condition is irrelevant.
+      (append (vl-expr-interesting-size-atoms x.then)
+              (vl-expr-interesting-size-atoms x.else))
+
+      ;; sswords: changed vl-concat and vl-multiconcat to not return any atoms.
+      ;; If there is an unsized integer in a concatenation, that's a bit
+      ;; strange to begin with.
+      :vl-concat nil
+      :vl-multiconcat nil
+      :vl-mintypmax nil
+      :vl-call      nil
+      :vl-stream    nil
+      :vl-cast      nil ;; bozo?
+      :vl-inside    nil
+      :vl-tagged    nil ;; bozo?
+      :vl-pattern   nil
+      :vl-special   nil))
+
+  (define vl-exprlist-interesting-size-atoms ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
-    :returns (vals vl-valuelist-p)
+    :returns (vals vl-exprlist-p)
     (if (atom x)
         nil
-      (append (vl-expr-interesting-size-values (car x))
-              (vl-exprlist-interesting-size-values (Cdr x)))))
+      (append (vl-expr-interesting-size-atoms (car x))
+              (vl-exprlist-interesting-size-atoms (cdr x)))))
   ///
-  (defrule true-listp-of-vl-expr-interesting-size-values
-    (true-listp (vl-expr-interesting-size-values x))
+  (defrule true-listp-of-vl-expr-interesting-size-atoms
+    (true-listp (vl-expr-interesting-size-atoms x))
     :rule-classes :type-prescription)
-
-  (defrule true-listp-of-vl-exprlist-interesting-size-values
-    (true-listp (vl-exprlist-interesting-size-values x))
+  (defrule true-listp-of-vl-exprlist-interesting-size-atoms
+    (true-listp (vl-exprlist-interesting-size-atoms x))
     :rule-classes :type-prescription)
+  (verify-guards vl-expr-interesting-size-atoms
+    :hints(("Goal" :in-theory (enable (:e tau-system) member-equal))))
+  (deffixequiv-mutual vl-interesting-size-atoms))
 
-  (verify-guards vl-expr-interesting-size-values)
+#||
+(trace$ #!vl (vl-operandinfo->type$inline :entry (list 'vl-operandinfo->type)
+                                          :exit (list 'vl-operandinfo->type
+                                                      (with-local-ps (vl-pp-datatype value)))))
+(trace$ #!Vl (vl-is-unsized-int :entry (list 'vl-is-unsized-int (with-local-ps (vl-pp-expr x)) x)))
+||#
 
-  (deffixequiv-mutual vl-interesting-size-values))
 
 
-(define vl-collect-unsized-ints ((x vl-valuelist-p))
+;; BOZO this should look at the elabscopes too
+(define vl-unsized-index-p
+  :short "Identify occurrences of basic, unsized parameters."
+  ((x  vl-expr-p)
+   (ss vl-scopestack-p))
+  :long "<p>We often run into cases like</p>
+
+@({
+    parameter foo = 5;
+    ...
+    assign w[3:0] = foo;
+})
+
+<p>It was annoying to get truncation warnings about this sort of thing.  So,
+here, as a heuristic, we are looking for expression like @('foo') which are
+references to untyped parameters.</p>"
+  :prepwork ((local (in-theory (enable vl-paramdecl-p-when-wrong-tag
+                                       vl-vardecl-p-when-wrong-tag))))
+  (vl-expr-case x
+    :vl-index
+    (b* (((when (or x.indices
+                    (not (vl-partselect-case x.part :none))))
+          ;; something like foo[3] or foo[3:0] is not a plain parameter
+          nil)
+         ((mv err trace ?context tail) (vl-follow-scopeexpr x.scope ss))
+         ((when err)
+          ;; don't know what it is, don't assume it's a plain parameter
+          nil)
+         ((when (vl-hidexpr-case tail :dot))
+          ;; reference into a structure or something, not a plain parameter
+          nil)
+         (item (vl-hidstep->item (car trace)))
+         ((when (mbe :logic (vl-paramdecl-p item)
+                     :exec (eq (tag item) :vl-paramdecl)))
+          (b* (((vl-paramdecl item)))
+            (vl-paramtype-case item.type
+              :vl-implicitvalueparam t
+              :vl-typeparam nil
+              :vl-explicitvalueparam
+              (and (vl-datatype-resolved-p item.type.type)
+                   (b* (((mv err size) (vl-datatype-size item.type.type)))
+                     (and (not err)
+                          (equal size 32)))))))
+         ((when (mbe :logic (vl-vardecl-p item)
+                     :exec (eq (tag item) :vl-vardecl)))
+          (b* (((vl-vardecl item)))
+            (vl-datatype-case item.type
+              :vl-coretype (member item.type.name '(:vl-int :vl-integer))
+              :otherwise nil))))
+      nil)
+    :otherwise nil))
+
+;; (b* (((mv err opinfo) (vl-index-expr-typetrace x1 ss scopes))
+;;                      ((when err) nil)
+;;                      ((vl-operandinfo opinfo)))
+;;                   (vl-datatype-case opinfo.type
+;;                     :vl-coretype (or (and (atom opinfo.type.pdims)
+;;                                           (atom opinfo.type.udims)
+;;                                           (or (vl-coretypename-equiv opinfo.type.name :vl-int)
+;;                                               (vl-coretypename-equiv opinfo.type.name :vl-integer)))
+;;                                      (and (eql (len opinfo.type.pdims) 1)
+;;                                           (vl-coretypename-equiv opinfo.type.name :vl-logic)
+;;                                           (eql 
+;;                     :vl-enum (vl-datatype-case opinfo.type.basetype
+;;                                :vl-coretype (and (atom opinfo.type.basetype.pdims)
+;;                                                  (atom opinfo.type.basetype.udims)
+;;                                                  (or (vl-coretypename-equiv opinfo.type.basetype.name :vl-int)
+;;                                                      (vl-coretypename-equiv opinfo.type.basetype.name :vl-integer)))
+;;                                :otherwise nil)
+;;                     :otherwise nil))
+
+(define vl-is-unsized-int ((x vl-expr-p)
+                           (ss vl-scopestack-p)
+                           (scopes vl-elabscopes-p))
+  (declare (ignore scopes)) ;; bozo should be using scopes in vl-unsized-parameter-index-p
+  (b* ((x1 (vl-expr-fix x)))
+    (vl-expr-case x1
+      :vl-literal (vl-value-case x1.val
+                    :vl-constint x1.val.wasunsized
+                    :otherwise nil)
+      :vl-index (vl-unsized-index-p x ss)
+      :otherwise nil)))
+
+
+(define vl-collect-unsized-ints
+  ((x vl-exprlist-p)
+   (ss       vl-scopestack-p  "Scope where the expression occurs.")
+   (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
   :parents (vl-tweak-fussy-warning-type)
   :returns (sub-x vl-exprlist-p)
-  (b* (((when (atom x)) nil)
-       (x1 (car x))
-       (keep (vl-value-case x1
-               :vl-constint x1.wasunsized
-               :otherwise nil)))
+  (b* (((when (atom x))
+        nil)
+       (x1 (vl-expr-fix (car x)))
+       (keep (vl-is-unsized-int x1 ss scopes)))
     (if keep
-        (cons (make-vl-literal :val x1)
-              (vl-collect-unsized-ints (cdr x)))
-      (vl-collect-unsized-ints (cdr x))))
+        (cons x1 (vl-collect-unsized-ints (cdr x) ss scopes))
+      (vl-collect-unsized-ints (cdr x) ss scopes))))
+
+(define vl-collect-resolved-exprs ((x vl-exprlist-p))
+  :parents (vl-tweak-fussy-warning-type)
+  :returns (sub-x vl-exprlist-p)
+  (if (atom x)
+      nil
+    (if (vl-expr-resolved-p (car x))
+        (cons (vl-expr-fix (car x))
+              (vl-collect-resolved-exprs (cdr x)))
+      (vl-collect-resolved-exprs (cdr x))))
   ///
-  (defret vl-exprlist-resolved-p-of-vl-collect-unsized-ints
+  (defret vl-exprlist-resolved-p-of-vl-collect-resolved-exprs
     (vl-exprlist-resolved-p sub-x)
     :hints(("Goal" :in-theory (enable vl-expr-resolved-p)))))
 
@@ -220,17 +362,27 @@ only meant as a heuristic for generating more useful warnings.</p>"
     :vl-literal (vl-value-case x.val :vl-extint)
     :otherwise nil))
 
-
+(define ints-probably-fit-p ((size natp)
+                             (consts integer-listp))
+  (if (atom consts)
+      t
+    (and (b* ((size (lnfix size)))
+           (or (unsigned-byte-p size (car consts))
+               (and (< 0 size)
+                    (signed-byte-p size (car consts)))))
+         (ints-probably-fit-p size (cdr consts)))))
 
 (define vl-tweak-fussy-warning-type
-  :parents (vl-op-selfsize)
+  :parents (vl-expr-selfsize)
   :short "Heuristically categorize fussy warnings according to severity."
   ((type  symbolp   "Base warning type, which we may adjust.")
    (a     vl-expr-p "LHS expression, i.e., A in: A + B, or C ? A : B")
    (b     vl-expr-p "RHS expression, i.e., B in: A + B, or C ? A : B")
    (asize natp      "Self-determined size of A.")
    (bsize natp      "Self-determined size of B.")
-   (op    symbolp   "The particular operation."))
+   (op    symbolp   "The particular operation.")
+   (ss       vl-scopestack-p  "Scope where the expression occurs.")
+   (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
   :returns
   (adjusted-type symbolp :rule-classes :type-prescription
                  "@('NIL') for <i>do not warn</i>, or some other warning type
@@ -278,8 +430,13 @@ details.</p>"
         ;; size of whatever is around them.
         nil)
 
-       (a-fits-b-p (and (vl-expr-resolved-p a) (unsigned-byte-p bsize (vl-resolved->val a))))
-       (b-fits-a-p (and (vl-expr-resolved-p b) (unsigned-byte-p asize (vl-resolved->val b))))
+       (a-fits-b-p (and (vl-expr-resolved-p a) 
+                        (or (unsigned-byte-p bsize (vl-resolved->val a))
+                            (and (< 0 bsize) (signed-byte-p bsize (vl-resolved->val a))))))
+       (b-fits-a-p (and (vl-expr-resolved-p b)
+                        (or (unsigned-byte-p asize (vl-resolved->val b))
+                            (and (< 0 asize)
+                                 (signed-byte-p asize (vl-resolved->val b))))))
        ((when (and (or a-fits-b-p b-fits-a-p)
                    (member op '(:vl-binary-eq :vl-binary-neq
                                 :vl-binary-ceq :vl-binary-cne
@@ -290,12 +447,29 @@ details.</p>"
         ;; fits into the width of foo, so this isn't really wrong.
         nil)
 
+       ;; If the lesser-sized argument is a +, it's probably intended that the
+       ;; size of that plus be increased to accomodate carry-outs.  We could
+       ;; refine this by checking whether the maximum possible value of the sum
+       ;; requires the greater number of bits, but for now we'll make it a
+       ;; minor warning anyway.
+       (a-plusp (vl-expr-case a 
+                  :vl-binary (vl-binaryop-equiv a.op :vl-binary-plus)
+                  :otherwise nil))
+       (b-plusp (vl-expr-case b
+                  :vl-binary (vl-binaryop-equiv b.op :vl-binary-plus)
+                  :otherwise nil))
+       ;; Change the type to return if unmodified by the tests below.
+       (ret-type (if (if (< asize bsize) a-plusp b-plusp)
+                     (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)
+                   type))
+
+
        (a32p (eql asize 32))
        (b32p (eql bsize 32))
        ((unless (or a32p b32p))
         ;; Neither op is 32 bits, so this doesn't seem like it's related to
         ;; unsized numbers, go ahead and warn.
-        type)
+        ret-type)
 
        ;; Figure out which one is 32-bit and which one is not.  We assume
        ;; they aren't both 32 bits, since otherwise we shouldn't be called.
@@ -304,10 +478,11 @@ details.</p>"
        ;; Collect up interesting unsized ints in the 32-bit expression.  If it
        ;; has unsized ints, they're probably the reason it's 32 bits.  After
        ;; collecting them, see if they fit into the size of the other expr.
-       (atoms         (vl-expr-interesting-size-values expr-32))
-       (unsized       (vl-collect-unsized-ints atoms))
-       (unsized-fit-p (nats-below-p (ash 1 size-other)
-                                    (vl-exprlist-resolved->vals unsized)))
+       (atoms         (vl-expr-interesting-size-atoms expr-32))
+       (unsized       (vl-collect-unsized-ints atoms ss scopes))
+       (unsized-fit-p (ints-probably-fit-p size-other
+                                  (vl-exprlist-resolved->vals
+                                   (vl-collect-resolved-exprs unsized))))
        ((unless unsized-fit-p)
         ;; Well, hrmn, there's some integer here that doesn't fit into the size
         ;; of the other argument.  This is especially interesting because
@@ -324,11 +499,12 @@ details.</p>"
 
     ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
     ;; warning.
-    type))
+    ret-type))
+
 
 (define vl-binary->original-operator ((x vl-expr-p))
   :guard (vl-expr-case x :vl-binary)
-  :parents (origexprs)
+  :parents (vl-binaryop-selfsize)
   :short "Get the original operator from a binary expression."
   :returns (op vl-binaryop-p)
   (b* (((vl-binary x))
@@ -345,7 +521,9 @@ details.</p>"
   :short "Main function for computing self-determined expression sizes."
   ((x         vl-expr-p)
    (left-size  maybe-natp)
-   (right-size maybe-natp))
+   (right-size maybe-natp)
+   (ss       vl-scopestack-p  "Scope where the expression occurs.")
+   (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
   :guard
   (vl-expr-case x :vl-binary)
   :returns
@@ -353,15 +531,13 @@ details.</p>"
       (size     maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We attempt to determine the size of the binary operator expression.  We
-assume that each argument has already had its self-size computed successfully
-and that the results of these computations are given as the @('arg-sizes').</p>
+  :long "<p>We attempt to determine the size of the binary operator expression.
+We assume that each argument has already had its self-size computed
+successfully and that the results of these computations are given as the
+@('arg-sizes').</p>
 
 <p>This function basically implements Verilog-2005 Table 5-22, or
-SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
+SystemVerilog-2012 Table 11-21.</p>"
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
 
 
@@ -394,14 +570,22 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         ;; similarly to ordinary equality comparisons.
         :vl-binary-wildeq :vl-binary-wildneq)
        (b* (((unless (and left-size right-size))
-             (mv (ok) nil))
+             ;; [Jared]: historically we returned NIL here as the size.
+             ;; However, I found that this sometimes caused problems in lint
+             ;; checks like oddexpr, where even if we have trouble figuring out
+             ;; the size of some subexpression, we should still be able to know
+             ;; that a comparison always produces a single-bit answer.  I think
+             ;; it should be OK to return 1 here.  Otherwise, why would it be OK
+             ;; to return 1 above, for things like :vl-binary-logand, without
+             ;; checking their argument sizes?
+             (mv (ok) 1))
             (type (and (/= left-size right-size)
                        (vl-tweak-fussy-warning-type :vl-fussy-size-warning-1
                                                     x.left
                                                     x.right
                                                     left-size
                                                     right-size
-                                                    x.op)))
+                                                    x.op ss scopes)))
             (warnings
              (if (not type)
                  (ok)
@@ -447,7 +631,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                                                     x.right
                                                     left-size
                                                     right-size
-                                                    x.op)))
+                                                    x.op ss scopes)))
             (warnings
              (if (not type)
                  (ok)
@@ -575,15 +759,13 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
       (size     maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We attempt to determine the size of the unary operator expression.  We
-assume that each argument has already had its self-size computed successfully
-and that the results of these computations are given as the @('arg-sizes').</p>
+  :long "<p>We attempt to determine the size of the unary operator expression.
+We assume that each argument has already had its self-size computed
+successfully and that the results of these computations are given as the
+@('arg-sizes').</p>
 
 <p>This function basically implements Verilog-2005 Table 5-22, or
-SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
+SystemVerilog-2012 Table 11-21.</p>"
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
 
   (b* (((vl-unary x) (vl-expr-fix x))
@@ -687,7 +869,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
 (define vl-funcall-selfsize ((x vl-expr-p)
                              (ss vl-scopestack-p)
-                             (typeov vl-typeoverride-p))
+                             (scopes vl-elabscopes-p))
   :guard (vl-expr-case x :vl-call (not x.systemp) :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
@@ -703,23 +885,28 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
        ((vl-hidstep lookup) (car trace))
        ((unless (eq (tag lookup.item) :vl-fundecl))
         (mv (fatal :type :vl-selfsize-fail
-                  :msg "In function call ~a0, function name does not ~
+                   :msg "In function call ~a0, function name does not ~
                         refer to a fundecl but instead ~a1"
-                  :args (list x lookup.item))
+                   :args (list x lookup.item))
             nil))
        ((vl-fundecl lookup.item))
+       (fnscopes (vl-elabscopes-traverse (rev lookup.elabpath) scopes))
+       (info (vl-elabscopes-item-info lookup.item.name fnscopes))
+       (item (or info lookup.item))
+       ((unless (eq (tag item) :vl-fundecl))
+        ;; note: it looks like we're doing this twice but it's different this time
+        (mv (fatal :type :vl-selfsize-fail
+                   :msg "In function call ~a0, function name does not ~
+                        refer to a fundecl but instead ~a1"
+                   :args (list x item))
+            nil))
+       ((vl-fundecl item))
        ((mv err rettype)
-        (b* ((look (hons-get x.name (vl-typeoverride-fix typeov)))
-             ((when look)
-              (if (vl-datatype-resolved-p (cdr look))
-                  (mv nil (cdr look))
-                (mv (vmsg "Programming error: Type override was unresolved")
-                    nil))))
-          (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss :typeov typeov)))
+        (vl-datatype-usertype-resolve item.rettype lookup.ss))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Couldn't resolve return type ~a0 of function ~a1: ~@2"
-                   :args (list lookup.item.rettype
+                   :args (list item.rettype
                                (vl-scopeexpr->expr x.name)
                                err))
             nil))
@@ -757,28 +944,33 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                          (vl-expr-fix (car x))))
          :hints(("Goal" :in-theory (enable vl-exprlist-fix)))))
 
+#||
+(trace$ #!vl (vl-expr-selfsize
+              :entry (list 'vl-expr-selfsize
+                           (with-local-ps (vl-pp-expr x))
+                           (vl-scopestack->hashkey ss)
+                           (strip-cars scopes))
+              :exit (b* (((list ?warnings ?size) values))
+                      (list 'vl-expr-selfsize
+                            (with-local-ps (vl-print-warnings warnings))
+                            size))))
+
+||#
+
 (defines vl-expr-selfsize
-  :parents (vl-expr-size)
+  :parents (expr-tools)
   :short "Computation of self-determined expression sizes."
 
-  :long "<p><b>Warning</b>: these functions should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>Some failures are expected, e.g., we do not know how to size some system
-calls.  In these cases we do not cause any warnings.  But in other cases, a
-failure might mean that the expression is malformed in some way, e.g., maybe it
-references an undefined wire or contains a raw, \"unindexed\" reference to an
-array.  In these cases we generate fatal warnings.</p>
-
-<p>BOZO we might eventually add as inputs the full list of modules and a
-modalist so that we can look up HIDs.  An alternative would be to use the
-annotations left by @(see vl-design-follow-hids) like (e.g.,
-@('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
+  :long "<p>Some failures are expected, e.g., we do not know how to size some
+system calls.  In these cases we do not cause any warnings.  But in other
+cases, a failure might mean that the expression is malformed in some way, e.g.,
+maybe it references an undefined wire or contains a raw, \"unindexed\"
+reference to an array.  In these cases we generate fatal warnings.</p>"
 
   (define vl-expr-selfsize
     ((x        vl-expr-p        "Expression whose size we are to compute.")
      (ss       vl-scopestack-p  "Scope where the expression occurs.")
-     (typeov   vl-typeoverride-p "Precomputed overrides for parameter and function types"))
+     (scopes   vl-elabscopes-p "Precomputed overrides for parameter and function types"))
     :returns
     (mv (warnings vl-warninglist-p)
         (size     maybe-natp :rule-classes :type-prescription))
@@ -790,30 +982,31 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
       (vl-expr-case x
         :vl-special (mv (ok) nil)
         :vl-literal (mv (ok) (vl-value-selfsize x.val))
-        :vl-index (vl-index-selfsize x ss typeov)
+        :vl-index (vl-index-selfsize x ss scopes)
 
         ;; BOZO In some cases we could deduce a size for the expression even if
         ;; we can't get the size of an operand -- e.g. unary bitand, etc.  Are we
         ;; type-checking or just trying to get the size?
-        :vl-unary (b* (((mv warnings argsize) (vl-expr-selfsize x.arg ss typeov))
+        :vl-unary (b* (((mv warnings argsize) (vl-expr-selfsize x.arg ss scopes))
                        ((wmv warnings ans) (vl-unaryop-selfsize x argsize)))
                     (mv warnings ans))
 
-        :vl-binary (b* (((wmv warnings leftsize) (vl-expr-selfsize x.left ss typeov))
-                        ((wmv warnings rightsize) (vl-expr-selfsize x.right ss typeov))
+        :vl-binary (b* (((wmv warnings leftsize) (vl-expr-selfsize x.left ss scopes))
+                        ((wmv warnings rightsize) (vl-expr-selfsize x.right ss scopes))
                         ((wmv warnings ans) (vl-binaryop-selfsize x leftsize
-                                                                  rightsize)))
+                                                                  rightsize
+                                                                  ss scopes)))
                      (mv warnings ans))
 
         ;; Note: We used to fail if we couldn't size the test.  Should we?
-        :vl-qmark (b* (((wmv warnings thensize) (vl-expr-selfsize x.then ss typeov))
-                       ((wmv warnings elsesize) (vl-expr-selfsize x.else ss typeov))
+        :vl-qmark (b* (((wmv warnings thensize) (vl-expr-selfsize x.then ss scopes))
+                       ((wmv warnings elsesize) (vl-expr-selfsize x.else ss scopes))
                        ((unless (and thensize elsesize))
                         (mv (ok) nil))
                        (warningtype (and (/= thensize elsesize)
                                          (vl-tweak-fussy-warning-type
                                           :vl-fussy-size-warning-3
-                                          x.then x.else thensize elsesize :vl-qmark)))
+                                          x.then x.else thensize elsesize :vl-qmark ss scopes)))
                        (warnings
                         (if warningtype
                             (warn :type warningtype
@@ -836,7 +1029,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
         :vl-mintypmax (mv (ok) nil)
 
-        :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss typeov))
+        :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss scopes))
                         ((when (member nil part-sizes))
                          (mv warnings nil)))
                      (mv warnings (sum-nats part-sizes)))
@@ -848,11 +1041,18 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                                              resolved."
                                          :args (list x))
                                   nil))
+                             (reps (vl-resolved->val x.reps))
+                             ((unless (<= 0 reps))
+                              (mv (fatal :type :vl-unresolved-multiplicity
+                                         :msg "cannot size ~a0 because its ~
+                                             multiplicity is negative."
+                                         :args (list x))
+                                  nil))
                              ((mv warnings part-sizes)
-                              (vl-exprlist-selfsize x.parts ss typeov))
+                              (vl-exprlist-selfsize x.parts ss scopes))
                              ((when (member nil part-sizes))
                               (mv warnings nil)))
-                          (mv (ok) (* (vl-resolved->val x.reps) (sum-nats part-sizes))))
+                          (mv (ok) (* reps (sum-nats part-sizes))))
 
         ;; Streaming concatenations need to be treated specially.  They sort of
         ;; have a self-size -- the number of bits available -- but can't be
@@ -864,12 +1064,22 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         :vl-stream (mv (ok) nil)
 
         :vl-call (if x.systemp
-                     (vl-syscall-selfsize x)
-                   (vl-funcall-selfsize x ss typeov))
+                     (b* ((name (vl-simple-id-name x.name))
+                          ((unless (member-equal name '("$signed" "$unsigned")))
+                           (vl-syscall-selfsize x))
+                          ((unless (and (consp x.args)
+                                        (atom (cdr x.args))
+                                        (not x.typearg)))
+                           (mv (fatal :type :vl-selfsize-fail
+                                      :msg "Bad arguments to system call ~a0"
+                                      :args (list x))
+                               nil)))
+                       (vl-expr-selfsize (car x.args) ss scopes))
+                   (vl-funcall-selfsize x ss scopes))
 
         :vl-cast (vl-casttype-case x.to
                    :type (b* (((mv err to-type)
-                               (vl-datatype-usertype-resolve x.to.type ss :typeov typeov))
+                               (vl-datatype-usertype-resolve x.to.type ss :scopes scopes))
                               ((when err)
                                (mv (fatal :type :vl-selfsize-fail
                                           :msg "Failed to resolve the type in ~
@@ -886,13 +1096,19 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                               ((unless (vl-datatype-packedp to-type))
                                (mv (ok) nil)))
                            (mv (ok) size))
-                   :size (b* (((when (vl-expr-resolved-p x.to.size))
-                               (mv (ok) (vl-resolved->val x.to.size))))
-                           (mv (fatal :type :vl-selfsize-fail
-                                      :msg "Unresolved size in cast expression ~a0"
-                                      :args (list x))
-                               nil))
-                   :otherwise (vl-expr-selfsize x.expr ss typeov))
+                   :size (b* (((unless (vl-expr-resolved-p x.to.size))
+                               (mv (fatal :type :vl-selfsize-fail
+                                          :msg "Unresolved size in cast expression ~a0"
+                                          :args (list x))
+                                   nil))
+                              (size (vl-resolved->val x.to.size))
+                              ((unless (<= 0 size))
+                               (mv (fatal :type :vl-selfsize-fail
+                                          :msg "Negative size in cast expression ~a0"
+                                          :args (list x))
+                                   nil)))
+                           (mv (ok) size))
+                   :otherwise (vl-expr-selfsize x.expr ss scopes))
 
 
         ;; returns a single bit
@@ -904,7 +1120,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         ;; these are special like streaming concatenations, only well typed by
         ;; context, unless they have a datatype.
         :vl-pattern (b* (((unless x.pattype) (mv (ok) nil))
-                         ((mv err pattype) (vl-datatype-usertype-resolve x.pattype ss :typeov typeov))
+                         ((mv err pattype) (vl-datatype-usertype-resolve x.pattype ss :scopes scopes))
                          ((when err)
                           (mv (fatal :type :vl-selfsize-fail
                                      :msg "Failed to resolve the type in ~
@@ -925,7 +1141,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
   (define vl-exprlist-selfsize
     ((x vl-exprlist-p)
      (ss       vl-scopestack-p  "Scope where the expression occurs.")
-     (typeov vl-typeoverride-p))
+     (scopes vl-elabscopes-p))
     :returns
     (mv (warnings vl-warninglist-p)
         (sizes     vl-maybe-nat-listp))
@@ -933,8 +1149,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
     :flag :list
     (b* ((warnings nil)
          ((when (atom x)) (mv (ok) nil))
-         ((wmv warnings first) (vl-expr-selfsize (car x) ss typeov))
-         ((wmv warnings rest) (vl-exprlist-selfsize (cdr x) ss typeov)))
+         ((wmv warnings first) (vl-expr-selfsize (car x) ss scopes))
+         ((wmv warnings rest) (vl-exprlist-selfsize (cdr x) ss scopes)))
       (mv warnings (cons first rest))))
 
   ///
@@ -945,8 +1161,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
   (local
    (defthm-vl-expr-selfsize-flag
      (defthm true-listp-of-vl-exprlist-selfsize
-       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss typeov)))
-       :hints ('(:expand ((vl-exprlist-selfsize x ss typeov))))
+       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss scopes)))
+       :hints ('(:expand ((vl-exprlist-selfsize x ss scopes))))
        :rule-classes :type-prescription
        :flag :list)
      :skip-others t))

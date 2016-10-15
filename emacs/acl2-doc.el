@@ -1,27 +1,22 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
-; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; This file contains code for browsing ACL2 community book
 ; system/doc/acl2-doc.lisp, which contains the ACL2 system
@@ -71,7 +66,8 @@
      (defv *acl2-doc-state* nil)
      (defv *acl2-doc-limit-topic* nil)
      (defv *acl2-doc-topics-ht* nil)
-     (defv *acl2-doc-children-ht* nil)))
+     (defv *acl2-doc-children-ht* nil)
+     (defv *acl2-doc-show-help-message* nil)))
 
 (acl2-doc-init-vars)
 
@@ -207,8 +203,7 @@ then restart the ACL2-Doc browser to view that manual."
        ((and (file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
 	     (y-or-n-p
 	      (format "Run gunzip on %s? "
-		      *acl2-doc-rendered-combined-pathname-gzipped*
-		      *acl2-doc-rendered-combined-pathname*)))
+		      *acl2-doc-rendered-combined-pathname-gzipped*)))
 	(shell-command-to-string
 	 (format "gunzip %s"
 		 *acl2-doc-rendered-combined-pathname-gzipped*))
@@ -287,9 +282,9 @@ then restart the ACL2-Doc browser to view that manual."
   (nth 1 *acl2-doc-state*))
 
 ; Based on http://ergoemacs.org/emacs/elisp_syntax_coloring.html:
-(setq acl2-doc-keywords
-      '(("\\[\\([^ \t]*\\)\\]"
-	 . 1)))
+(defvar acl2-doc-keywords
+  '(("\\[\\([^ \t]*\\)\\]"
+     . 1)))
 
 ; Can be modified by user; set to the desired link color, or nil if none.
 (defv *acl2-doc-link-color* "#0000FF") ; blue
@@ -360,11 +355,15 @@ then restart the ACL2-Doc browser to view that manual."
   (let ((name (car (cdr entry)))
 	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
 			 "ACL2 User's Manual"
-		       "ACL2+Books Manual")))
+		       "ACL2+Books Manual"))
+	(help-msg (if *acl2-doc-show-help-message*
+		      "; type h for help"
+		    "")))
+    (setq *acl2-doc-show-help-message* nil)
     (if (eq (acl2-doc-state-top-name) name)
-	(message "At the top node of the %s"
-		 manual-name)
-      (message "Topic: %s (%s)" name manual-name))))
+	(message "At the top node of the %s%s"
+		 manual-name help-msg)
+      (message "Topic: %s (%s)%s" name manual-name help-msg))))
 
 (defun acl2-doc-where ()
   (interactive)
@@ -517,6 +516,9 @@ then restart the ACL2-Doc browser to view that manual."
 
   (interactive (with-syntax-table lisp-mode-syntax-table
 		 (acl2-doc-completing-read "Go to topic" nil)))
+  (when (not (equal (buffer-name (current-buffer))
+		    *acl2-doc-buffer-name*))
+    (setq *acl2-doc-show-help-message* t))
   (acl2-doc-display name))
 
 (defun acl2-doc-go! ()
@@ -531,12 +533,8 @@ then restart the ACL2-Doc browser to view that manual."
 (defun acl2-doc-top ()
   "Go to the top topic."
   (interactive)
-  (acl2-doc-go (acl2-doc-state-top-name))
-  (let ((manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
-			 "ACL2 User's Manual"
-		       "ACL2+Books Manual")))
-    (message "At the top node of the %s; type h for help"
-	     manual-name)))
+  (setq *acl2-doc-show-help-message* t)
+  (acl2-doc-go (acl2-doc-state-top-name)))
 
 (defun acl2-doc (&optional clear)
 
@@ -549,6 +547,7 @@ typing `:doc acl2-doc' in the ACL2 read-eval-print loop.
 \\{acl2-doc-mode-map}"
 
   (interactive "P")
+  (setq *acl2-doc-show-help-message* t)
   (cond (clear
 	 (acl2-doc-reset nil)
 	 (acl2-doc-top))
@@ -630,12 +629,9 @@ Please report this error to the ACL2 implementors."))))
   "Quit the ACL2-Doc browser."
 
   (interactive)
-  (if (not (equal (buffer-name) *acl2-doc-buffer-name*))
-      (error
-       "Return to %s buffer (e.g., using C-t g) before running acl2-doc-quit"
-       *acl2-doc-buffer-name*))
   (acl2-doc-update-top-history-entry)
-  (quit-window))
+  (while (equal major-mode 'acl2-doc-mode) ; quit acl2-doc-history etc. too
+    (quit-window)))
 
 (defun acl2-doc-initialize (&optional toggle)
 

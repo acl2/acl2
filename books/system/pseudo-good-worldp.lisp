@@ -713,8 +713,13 @@
 
           (or (null cert-annotations)
               (cert-annotationsp cert-annotations t))
-          (or (integerp chk-sum)
-              (eq chk-sum nil))))
+          (case-match chk-sum
+            (((':BOOK-LENGTH . book-length)
+              (':BOOK-WRITE-DATE . book-write-date))
+             (and (natp book-length)
+                  (natp book-write-date)))
+            (& (or (integerp chk-sum)
+                   (eq chk-sum nil))))))
     (& nil)))
 
 (defun pseudo-include-book-alist-entry-listp (x local-markers-allowedp)
@@ -1369,26 +1374,16 @@
 ; This is a list of fully elaborated rule classes as returned by translate-rule-classes.
 ; For the present purposes we just check that it is an alist mapping keywords to keyword alists.
 
-(defun keyword-alistp (x)
-
-; A keyword alist is an even length true list in which the elements in the even
-; (0-based) positions are keywords, (:key1 val1 :key2 val2 ...).
-
-  (cond ((atom x) (null x))
-        ((atom (cdr x)) nil)
-        (t (and (keywordp (car x))
-                (keyword-alistp (cddr x))))))
-
-(defun keyword-to-keyword-alist-alistp (x)
+(defun keyword-to-keyword-value-list-alistp (x)
   (cond ((atom x) (null x))
         (t (and (consp (car x))
                 (keywordp (car (car x)))
-                (keyword-alistp (cdr (car x)))
-                (keyword-to-keyword-alist-alistp (cdr x))))))
+                (keyword-value-listp (cdr (car x)))
+                (keyword-to-keyword-value-list-alistp (cdr x))))))
 
 (defun classesp (sym val)
   (declare (ignore sym))
-  (keyword-to-keyword-alist-alistp val))
+  (keyword-to-keyword-value-list-alistp val))
 
 
 ;-----------------------------------------------------------------
@@ -1560,10 +1555,10 @@
 
 ; This is a list of def-body records:
 ; (defrec def-body
-;  ((nume hyp . concl) . (recursivep formals rune . controller-alist))
+;  ((nume hyp . concl) equiv . (recursivep formals rune . controller-alist))
 ;  t)
 
-; meaning (implies hyp (EQUAL (sym . formals) concl)), with recursivep listing
+; meaning (implies hyp (equiv (sym . formals) concl)), with recursivep listing
 ; the fns in the clique and controll-alist being the map from fn symbols to
 ; controller masks.  Rune and nume justify it.
 
@@ -1583,11 +1578,13 @@
 
 (defun pseudo-def-bodyp (x)
   (case-match x
-    (((nume hyp . concl) . (recursivep formals rune . controller-alist))
+    (((nume hyp . concl) equiv . (recursivep formals rune . controller-alist))
      (and (pseudo-numep nume)
           (or (null hyp)                ; means there is no hyp
               (pseudo-termp hyp))
           (pseudo-termp concl)
+          (and (symbolp equiv)
+               equiv) ; equality is represented by equal, not nil
           (pseudo-function-symbol-listp recursivep nil)
           (pseudo-arglistp formals)
           (pseudo-runep rune)
@@ -2706,10 +2703,10 @@
                            ABSOLUTE-EVENT-NUMBER
                            UNNORMALIZED-BODY
 
-; The following property is set by primordial-event-macro-and-fn for ;
-; ld-skip-proofsp and default-defun-mode-from-state.  (def-bodies is also set ;
-; for other primitives, like skip-when-logic and include-book-fn, but they ;
-; remain in :program mode and so the setting isn't shadowed out) ;
+; The following property is set by primordial-event-macro-and-fn for
+; ld-skip-proofsp and default-defun-mode-from-state.  (Def-bodies is also set
+; for other primitives, like skip-when-logic and include-book-fn, but they
+; remain in :program mode and so the setting isn't shadowed out.)
 
                            DEF-BODIES
 

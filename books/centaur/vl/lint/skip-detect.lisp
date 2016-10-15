@@ -56,7 +56,7 @@
 
 
 (defxdoc skip-detection
-  :parents (lint)
+  :parents (vl-lint)
   :short "We try to detect missing signals from expressions."
 
   :long "<p>Related wires often have similar names, e.g., in one module we
@@ -96,7 +96,7 @@ assign bcNxtWCBEntSrc_P =
 
 (defaggregate sd-key
   :tag :sd-key
-  :legiblep nil
+  :layout :fulltree
   :short "Keys are derived from wire names and are the basis of our skip
           detection."
 
@@ -282,6 +282,7 @@ patterns, producing a @(see sd-patalist-p)."
 
 (defaggregate sd-problem
   :tag :sd-problem
+  :layout :fulltree
   :short "An alleged problem noticed by skip detection."
   ((type symbolp :rule-classes :type-prescription
          "What kind of problem this is.  At the moment the type is always
@@ -507,11 +508,11 @@ collecting any problems that have been reported.</p>"
 
 <ul>
 
-<li>@('ctxexprs') is an @(see vl-exprctxalist-p) that associates expressions
+<li>@('ctxexprs') is an @(see vl-ctxexprlist) that associates expressions
 with their contexts.  Generally we expect that this alist includes every
 expression in a module.</li>
 
-<li>@('global-pats') is the @(see sd-patalist-p) that was constructed for all
+<li>@('global-pats') is the @(see sd-patalist) that was constructed for all
 names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 </ul>

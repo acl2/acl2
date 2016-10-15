@@ -1,7 +1,7 @@
 (acl2::in-package "ACL2")
 
-(ld "data-structures/define-u-package.lsp" :dir :system)
-(ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)
+(include-book "data-structures/portcullis" :dir :system)
+(include-book "coi/symbol-fns/portcullis" :dir :system)
 
 (defpkg "DEFDATA"
   (append 
@@ -81,7 +81,11 @@
      )
    (union-eq
     defdata::*defdata-exports*
-    (union-eq *acl2-exports*
+    (union-eq (set-difference-eq
+               *acl2-exports*
+; Matt K. mod 12/20/2015: Avoid name conflict with macros defined in
+; cgen/utilities.lisp.
+               '(acl2::access acl2::change))
               *common-lisp-symbols-from-main-lisp-package*))))
 
 

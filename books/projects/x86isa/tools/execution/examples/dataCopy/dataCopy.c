@@ -19,10 +19,12 @@ void printIntArray (int* x, int n) {
 
 int main () {
 
+  // static allows memory to be allocated on the heap instead of the
+  // stack.  Of course, segfault may still occur on some systems.
   int i;
-  int src[1024], dst[1024], numElems;
-  numElems = 1024;
-  
+  static int src[268435456], dst[268435456], numElems; // 268435456 = 2^28
+  numElems = 268435456; // 2^28 4-byte elements, i.e., 1GB
+
   // Source initialization:
   for (i = 0; i < numElems; i++)
     src[i] = i;
@@ -32,7 +34,7 @@ int main () {
   printf("\nValue at end address of the source: %llu\n", (uint64_t)*(src+numElems-1));
 
   printf("\nSome elements of source before data copy:\n");
-  printIntArray (src, 5);
+  printIntArray (src, 20);
 
   printf("\nNumber of elements to copy: %d\n", numElems);
   copyData(src, dst, numElems);
@@ -42,8 +44,8 @@ int main () {
   printf("\nValue at end address of the destination: %llu\n", (uint64_t)*(dst+numElems-1));
 
   printf("\nSome elements of source after data copy:\n");
-  printIntArray (src, 5);
+  printIntArray (src, 20);
   printf("\nSome elements of destination after data copy:\n");
-  printIntArray (dst, 5);
+  printIntArray (dst, 20);
 
 }

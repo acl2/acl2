@@ -36,61 +36,62 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "data-structures/list-defthms" :dir :system)
+(include-book "std/util/defval" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "tools/flag" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
-(local (in-theory (disable nth update-nth
-                           acl2::nfix-when-not-natp
+(local (in-theory (disable nth
+                           update-nth
                            resize-list
+                           make-list-ac
+                           acl2::nfix-when-not-natp
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
                            set::double-containment
                            set::sets-are-true-lists
-                           make-list-ac)))
-
-
-(local (in-theory (disable true-listp-update-nth
+                           true-listp-update-nth
                            acl2::nth-with-large-index)))
 
-(defmacro const-type () 0)
-(defmacro gate-type () 1)
-(defmacro in-type () 2)
-(defmacro out-type () 3)
 
-(defmacro const-ctype () :const)
-(defmacro gate-ctype () :gate)
-(defmacro in-ctype () :input)
-(defmacro out-ctype () :output)
+(defsection sequential-type
+  :parents (representation)
+  :short "Sequential type of a logical AIG @(see node)."
 
+  :long "<p>Recall that AIG nodes are represented as lists like @('(:pi)'),
+@('(:gate fanin0 fanin1)'), etc.</p>
 
-(make-event
- `(defmacro pi-stype () :pi))
+<p>The <b>sequential type</b> of such a type is just its leading keyword.  The
+valid sequential types are:</p>
 
-(make-event
- `(defmacro reg-stype () :reg))
+<ul>
+  <li>@(':const') for the special constant node</li>
+  <li>@(':gate') for an AND gate nodes</li>
+  <li>@(':pi') or @(':po') for primary input/output nodes</li>
+  <li>@(':reg') for register nodes (register outputs)</li>
+  <li>@(':nxst') for next state nodes (register inputs)</li>
+</ul>
 
-(make-event
- `(defmacro po-stype () :po))
+<p>See also @(see combinational-type) for a combinational (instead of
+sequential) view of AIG node types.</p>"
 
-(make-event
- `(defmacro nxst-stype () :nxst))
-
-(make-event
- `(defmacro gate-stype () :gate))
-
-(make-event
- `(defmacro const-stype () :const))
+  (defmacro pi-stype () :pi)
+  (defmacro reg-stype () :reg)
+  (defmacro po-stype () :po)
+  (defmacro nxst-stype () :nxst)
+  (defmacro gate-stype () :gate)
+  (defmacro const-stype () :const))
 
 (define stypep (x)
+  :parents (sequential-type)
+  :short "Recognizer for valid @(see sequential-type) keywords."
   (consp (member x (list (pi-stype)
                          (reg-stype)
                          (po-stype)
@@ -100,6 +101,8 @@
 
 (define stype-fix (x)
   :returns (stype stypep)
+  :parents (sequential-type)
+  :short "Fixing function for @(see sequential-type) keywords."
   (if (stypep x)
       x
     (const-stype))
@@ -107,6 +110,18 @@
   (defthm stype-fix-when-stypep
     (implies (stypep x)
              (equal (stype-fix x) x))))
+
+(define stype-equiv (x y)
+  :parents (sequential-type)
+  :short "Equivalence relation for @(see sequential-type) keywords."
+  :enabled t
+  (equal (stype-fix x) (stype-fix y))
+  ///
+  (defequiv stype-equiv)
+  (defcong stype-equiv equal (stype-fix x) 1)
+  (defthm stype-fix-under-stype-equiv
+    (stype-equiv (stype-fix x) x)))
+
 
 ;; (defthm stype-fix-possibilities
 ;;   (or (equal (stype-fix x) (const-stype))
@@ -119,36 +134,79 @@
 ;;   :rule-classes ((:forward-chaining :trigger-terms
 ;;                   ((stype-fix x)))))
 
-
-
-;; This is just (car x), but it fixes it to one of the above things.
-(define stype (x)
+(define stype ((x "A logical AIG node."))
   :returns (stype stypep)
-  (stype-fix (and (consp x) (car x))))
-
-
-(defthm stype-possibilities
-  (or (equal (stype x) (const-stype))
-      (equal (stype x) (gate-stype))
-      (equal (stype x) (pi-stype))
-      (equal (stype x) (po-stype))
-      (equal (stype x) (reg-stype))
-      (equal (stype x) (nxst-stype)))
-  :hints(("Goal" :in-theory (enable stype stype-fix stypep)))
-  :rule-classes ((:forward-chaining :trigger-terms
-                  ((stype x)))))
-
-
-(define stype-equiv (x y)
-  :enabled t
-  (equal (stype-fix x) (stype-fix y))
+  :parents (sequential-type)
+  :short "Get the @(see sequential-type) keyword from an AIG node."
+  :long "<p>This is just @('(car x)'), but it fixes the result to be one of
+  the valid sequential type keywords.</p>"
+  (stype-fix (and (consp x) (car x)))
   ///
-  (defequiv stype-equiv)
-  (defcong stype-equiv equal (stype-fix x) 1)
-  (defthm stype-fix-under-stype-equiv
-    (stype-equiv (stype-fix x) x)))
+  (defthm stype-possibilities
+    (or (equal (stype x) (const-stype))
+        (equal (stype x) (gate-stype))
+        (equal (stype x) (pi-stype))
+        (equal (stype x) (po-stype))
+        (equal (stype x) (reg-stype))
+        (equal (stype x) (nxst-stype)))
+    :hints(("Goal" :in-theory (enable stype stype-fix stypep)))
+    :rule-classes ((:forward-chaining :trigger-terms
+                    ((stype x)))))
+
+  (defthm stype-not-const-implies-nonempty
+    (implies (not (equal (stype (car x)) (const-stype)))
+             (consp x))
+    :rule-classes ((:forward-chaining :trigger-terms
+                    ((stype (car x)))))))
+
+
+(define regp ((x stypep))
+  :returns (regp bitp)
+  :parents (sequential-type)
+  :short "Determine if a @(see sequential-type) code is a register, i.e., is it
+  a @(':reg') (register output) or @(':nxst') (register input) node.  Note: returns
+  a @(see bitp)."
+  (if (member (stype-fix x) (list (reg-stype) (nxst-stype)))
+      1
+    0)
+  ///
+  (defcong stype-equiv equal (regp x) 1)
+
+  (defthm regp-not-zero-implies-nonempty
+    (implies (not (equal (regp (stype (car x))) 0))
+             (consp x))
+    :rule-classes ((:forward-chaining :trigger-terms
+                    ((regp (stype (car x))))))))
+
+
+
+
+(defsection combinational-type
+  :parents (representation)
+  :short "Combinational type of a logical AIG @(see node)."
+  :long "<p>Recall that a sequential AIG can be viewed as a combinational AIG
+  by ignoring the distinction between register and primary inputs/outputs.</p>
+
+  <p>We can implement the combinational view of AIG nodes by mapping the @(see
+  sequential-type) of a node to a combinational type.  The valid combinational
+  type keywords are:</p>
+
+  <ul>
+  <li>@(':const') for the special constant node</li>
+  <li>@(':gate') for an AND gate node</li>
+  <li>@(':input') for a combinational input (primary input or register <b>output</b>)</li>
+  <li>@(':output') for a combinational output (primary input or register <b>input</b>)</li>
+  </ul>"
+
+  (defmacro const-ctype () :const)
+  (defmacro gate-ctype () :gate)
+  (defmacro in-ctype () :input)
+  (defmacro out-ctype () :output))
 
 (define ctypep (x)
+  :parents (combinational-type)
+  :short "Recognizer for valid @(see combinational-type) keywords."
+  :returns bool
   (member x (list (in-ctype)
                   (out-ctype)
                   (gate-ctype)
@@ -156,6 +214,8 @@
 
 (define ctype-fix (x)
   :returns (ctype ctypep)
+  :parents (combinational-type)
+  :short "Fixing function for @(see combinational-type) keywords."
   (if (ctypep x)
       x
     (const-ctype))
@@ -165,6 +225,9 @@
              (equal (ctype-fix x) x))))
 
 (define ctype-equiv (x y)
+  :parents (combinational-type)
+  :short "Equivalence relation for @(see combinational-type) keywords."
+  :returns bool
   :enabled t
   (equal (ctype-fix x) (ctype-fix y))
   ///
@@ -182,7 +245,10 @@
 ;;                   ((ctype-fix x))))
 ;;   :hints(("Goal" :in-theory (enable ctype-fix ctypep))))
 
-(defconst *stype-ctype-map*
+(defval *stype-ctype-map*
+  :parents (ctype)
+  :showdef nil
+  :showval t
   `((,(const-stype) . ,(const-ctype))
     (,(gate-stype) . ,(gate-ctype))
     (,(nxst-stype) . ,(out-ctype))
@@ -192,9 +258,11 @@
 
 (define ctype ((x stypep))
   :returns (type ctypep)
+  :parents (combinational-type)
+  :short "Map a @(see sequential-type) keyword to its @(see combinational-type) keywords."
+  :prepwork ((local (in-theory (enable stype-fix stypep))))
   (let ((x (stype-fix x)))
     (cdr (assoc x *stype-ctype-map*)))
-  :prepwork ((local (in-theory (enable stype-fix stypep))))
   ///
   (defthm ctype-possibilities
     (or (equal (ctype x) (const-ctype))
@@ -205,34 +273,94 @@
                     ((ctype x))))
     :hints(("Goal" :in-theory (enable ctype ctypep))))
 
-  (defcong stype-equiv equal (ctype x) 1))
+  (defcong stype-equiv equal (ctype x) 1)
 
-(defconst *ctype-code-map*
-  `((,(in-ctype) . ,(in-type))
-    (,(out-ctype) . ,(out-type))
-    (,(gate-ctype) . ,(gate-type))
-    (,(const-ctype) . ,(const-type))))
+  (defthm ctype-not-const-implies-nonempty
+    (implies (not (equal (ctype (stype (car x))) (const-ctype)))
+             (consp x))
+    :rule-classes ((:forward-chaining :trigger-terms
+                    ((ctype (stype (car x)))))))
+
+  (defthm stype-by-ctype
+    (and (equal (equal (ctype (stype x)) (const-ctype))
+                (equal (stype x) (const-stype)))
+         (equal (equal (ctype (stype x)) (gate-ctype))
+                (equal (stype x) (gate-stype)))
+         (implies (equal (regp (stype x)) 1)
+                  (and (equal (equal (ctype (stype x)) (in-ctype))
+                              (equal (stype x) (reg-stype)))
+                       (equal (equal (ctype (stype x)) (out-ctype))
+                              (equal (stype x) (nxst-stype)))))
+         (implies (not (equal (regp (stype x)) 1))
+                  (and (equal (equal (ctype (stype x)) (in-ctype))
+                              (equal (stype x) (pi-stype)))
+                       (equal (equal (ctype (stype x)) (out-ctype))
+                              (equal (stype x) (po-stype))))))
+    :hints(("goal" :in-theory (enable stype ctype regp))))
+
+  (defthm stype-not-const-fwd
+    (implies (not (equal (stype x) (const-stype)))
+             (not (equal (ctype (stype x)) (const-ctype))))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype x)))))
+
+  (defthm stype-not-gate-fwd
+    (implies (not (equal (stype x) (gate-stype)))
+             (not (equal (ctype (stype x)) (gate-ctype))))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype x)))))
+
+  (defthm ctype-not-in-fwd
+    (implies (not (equal (ctype (stype x)) (in-ctype)))
+             (and (not (equal (stype x) (pi-stype)))
+                  (not (equal (stype x) (reg-stype)))))
+    :rule-classes ((:forward-chaining :trigger-terms ((ctype (stype x))))))
+
+  (defthm ctype-not-out-fwd
+    (implies (not (equal (ctype (stype x)) (out-ctype)))
+             (and (not (equal (stype x) (po-stype)))
+                  (not (equal (stype x) (nxst-stype)))))
+    :rule-classes ((:forward-chaining :trigger-terms ((ctype (stype x)))))))
+
 
 
 (define typecodep (x)
-  (and (natp x) (< x 4)))
+  :parents (typecode)
+  :short "Recognizer for valid @(see typecode)s."
+  (and (natp x)
+       (< x 4)))
 
 (define typecode-fix (x)
-  (if (typecodep x) x 0)
+  :returns (code typecodep)
+  :parents (typecode)
+  :short "Fixing function for @(see typecode)s."
+  (if (typecodep x)
+      x
+    0)
   ///
   (local (in-theory (enable typecodep)))
-
-  (defthm typecodep-of-typecode-fix
-    (typecodep (typecode-fix x)))
 
   (defthm typecode-fix-when-typecodep
     (implies (typecodep x)
              (equal (typecode-fix x)
                     x))))
 
+(defmacro const-type () 0)
+(defmacro gate-type () 1)
+(defmacro in-type () 2)
+(defmacro out-type () 3)
+
+(defval *ctype-code-map*
+  :parents (typecode)
+  :showdef nil
+  :showval t
+  `((,(in-ctype) . ,(in-type))
+    (,(out-ctype) . ,(out-type))
+    (,(gate-ctype) . ,(gate-type))
+    (,(const-ctype) . ,(const-type))))
 
 (define typecode ((x ctypep))
+  :parents (representation)
   :returns (code natp :rule-classes (:rewrite :type-prescription))
+  :short "Numeric encoding of a @(see combinational-type) keyword."
   :prepwork ((local (in-theory (enable ctype-fix ctypep))))
   (cdr (assoc (ctype-fix x) *ctype-code-map*))
   ///
@@ -244,8 +372,10 @@
     (typecodep (typecode x))))
 
 (define code->ctype ((x typecodep))
-  :prepwork ((local (in-theory (enable typecode-fix typecodep))))
   :returns (ctype ctypep)
+  :prepwork ((local (in-theory (enable typecode-fix typecodep))))
+  :parents (typecode)
+  :short "Get the @(see combinational-type) keyword from its numeric encoding."
   (car (rassoc (typecode-fix x) *ctype-code-map*))
   ///
   (local (in-theory (enable typecode ctype-fix ctypep)))
@@ -264,107 +394,51 @@
                 (equal (ctype-fix x) (code->ctype code))))))
 
 
-(define regp ((x stypep))
-  :returns (regp bitp)
-  (if (member (stype-fix x) (list (reg-stype) (nxst-stype)))
-      1
-    0)
-  ///
-  (defcong stype-equiv equal (regp x) 1))
+(defsection node
+  :parents (representation)
+  :short "Reference guide for the basic functions for working with individual
+  AIG nodes."
+  :long "<p>See also @(see network) for network-related functions.</p>")
 
-
-
-(defthm stype-not-const-implies-nonempty
-  (implies (not (equal (stype (car x)) (const-stype)))
-           (consp x))
-  :rule-classes ((:forward-chaining :trigger-terms
-                  ((stype (car x))))))
-
-(defthm ctype-not-const-implies-nonempty
-  (implies (not (equal (ctype (stype (car x))) (const-ctype)))
-           (consp x))
-  :rule-classes ((:forward-chaining :trigger-terms
-                  ((ctype (stype (car x)))))))
-
-(defthm regp-not-zero-implies-nonempty
-  (implies (not (equal (regp (stype (car x))) 0))
-           (consp x))
-  :rule-classes ((:forward-chaining :trigger-terms
-                  ((regp (stype (car x)))))))
-
-
-
-(defthm stype-by-ctype
-  (and (equal (equal (ctype (stype x)) (const-ctype))
-              (equal (stype x) (const-stype)))
-       (equal (equal (ctype (stype x)) (gate-ctype))
-              (equal (stype x) (gate-stype)))
-       (implies (equal (regp (stype x)) 1)
-                (and (equal (equal (ctype (stype x)) (in-ctype))
-                            (equal (stype x) (reg-stype)))
-                     (equal (equal (ctype (stype x)) (out-ctype))
-                            (equal (stype x) (nxst-stype)))))
-       (implies (not (equal (regp (stype x)) 1))
-                (and (equal (equal (ctype (stype x)) (in-ctype))
-                            (equal (stype x) (pi-stype)))
-                     (equal (equal (ctype (stype x)) (out-ctype))
-                            (equal (stype x) (po-stype))))))
-  :hints(("goal" :in-theory (enable stype ctype regp))))
-
-
-(defthm stype-not-const-fwd
-  (implies (not (equal (stype x) (const-stype)))
-           (not (equal (ctype (stype x)) (const-ctype))))
-  :rule-classes ((:forward-chaining :trigger-terms ((stype x)))))
-
-(defthm stype-not-gate-fwd
-  (implies (not (equal (stype x) (gate-stype)))
-           (not (equal (ctype (stype x)) (gate-ctype))))
-  :rule-classes ((:forward-chaining :trigger-terms ((stype x)))))
-
-(defthm ctype-not-in-fwd
-  (implies (not (equal (ctype (stype x)) (in-ctype)))
-           (and (not (equal (stype x) (pi-stype)))
-                (not (equal (stype x) (reg-stype)))))
-  :rule-classes ((:forward-chaining :trigger-terms ((ctype (stype x))))))
-
-(defthm ctype-not-out-fwd
-  (implies (not (equal (ctype (stype x)) (out-ctype)))
-           (and (not (equal (stype x) (po-stype)))
-                (not (equal (stype x) (nxst-stype)))))
-  :rule-classes ((:forward-chaining :trigger-terms ((ctype (stype x))))))
-
-
-
-
-
+(local (xdoc::set-default-parents node))
 
 ;; (defun const-node ()
 ;;   (declare (xargs :guard t))
 ;;   '(:const))
+
 ;; (defun const-node-p (node)
 ;;   (declare (xargs :guard t))
 ;;   (equal node (const-node)))
 
-
 (make-event
- `(defun pi-node ()
-    (declare (xargs :guard t))
+ `(define pi-node ()
+    :short "Construct a primary input node."
+    :returns node
+    :enabled t
     '(,(pi-stype))))
 
-(defun pi-node-p (node)
-  (declare (xargs :guard t))
+(define pi-node-p (node)
+  :short "Recognizer a valid primary input node."
+  :returns bool
+  :enabled t
   (equal node (pi-node)))
 
 (make-event
- `(defun reg-node ()
-    (declare (xargs :guard t))
+ `(define reg-node ()
+    :short "Construct a register (output) node."
+    :returns node
+    :enabled t
     '(,(reg-stype))))
-(defun reg-node-p (node)
-  (declare (xargs :guard t))
+
+(define reg-node-p (node)
+  :short "Recognize a valid register (output) node."
+  :returns bool
+  :enabled t
   (equal node (reg-node)))
 
 (define gate-node-p (node)
+  :short "Recognize a valid AND gate node."
+  :returns bool
   (and (true-listp node)
        (equal (len node) 3)
        (equal (first node) (gate-stype))
@@ -381,6 +455,7 @@
 
 (define gate-node ((f0 litp) (f1 litp))
   :returns (gate gate-node-p :hints(("Goal" :in-theory (enable gate-node-p))))
+  :short "Construct an AND gate node with particular fanin @(see literal)s."
   (list (gate-stype) (lit-fix f0) (lit-fix f1))
   ///
   (defthm stype-of-gate-node
@@ -389,8 +464,9 @@
     :hints(("Goal" :in-theory (enable stype)))))
 
 (define gate-node->fanin0 ((gate gate-node-p))
-  :prepwork ((local (in-theory (enable gate-node-p))))
   :returns (lit litp)
+  :short "Access the first fanin @(see literal) from an AND gate node."
+  :prepwork ((local (in-theory (enable gate-node-p))))
   (lit-fix (second gate))
   ///
   (defthm gate-node->fanin0-of-gate-node
@@ -399,8 +475,9 @@
     :hints(("Goal" :in-theory (enable gate-node)))))
 
 (define gate-node->fanin1 ((gate gate-node-p))
-  :prepwork ((local (in-theory (enable gate-node-p))))
   :returns (lit litp)
+  :short "Access the second fanin @(see literal) from an AND gate node."
+  :prepwork ((local (in-theory (enable gate-node-p))))
   (lit-fix (third gate))
   ///
   (defthm gate-node->fanin1-of-gate-node
@@ -409,6 +486,7 @@
     :hints(("Goal" :in-theory (enable gate-node)))))
 
 (define po-node-p (node)
+  :short "Recognize a valid primary output node."
   (and (true-listp node)
        (equal (len node) 2)
        (equal (first node) (po-stype))
@@ -423,7 +501,8 @@
                    :forward-chaining)))
 
 (define po-node ((f litp))
-  :returns (po po-node-p :hints(("Goal" :in-theory (enable po-node-p))))
+  :returns (node po-node-p :hints(("Goal" :in-theory (enable po-node-p))))
+  :short "Construct a primary output node with a particular fanin @(see literal)."
   (list (po-stype) (lit-fix f))
   ///
   (defthm stype-of-po-node
@@ -432,8 +511,9 @@
     :hints(("Goal" :in-theory (enable stype)))))
 
 (define po-node->fanin ((po po-node-p))
-  :prepwork ((local (in-theory (enable po-node-p))))
   :returns (lit litp)
+  :short "Access the fanin @(see literal) from a primary output node."
+  :prepwork ((local (in-theory (enable po-node-p))))
   (lit-fix (second po))
   ///
   (defthm po-node->fanin-of-po-node
@@ -442,8 +522,9 @@
     :hints(("Goal" :in-theory (enable po-node)))))
 
 
-
 (define nxst-node-p (node)
+  :short "Recognize a valid next-state (register input) node."
+  :returns bool
   (and (true-listp node)
        (equal (len node) 3)
        (equal (first node) (nxst-stype))
@@ -459,7 +540,9 @@
                    :forward-chaining)))
 
 (define nxst-node ((f litp) (reg natp))
-  :returns (ri nxst-node-p :hints(("Goal" :in-theory (enable nxst-node-p))))
+  :returns (node nxst-node-p :hints(("Goal" :in-theory (enable nxst-node-p))))
+  :short "Construct a next-state (register input) node that connects an
+          update fanin @(see literal) to a particular register number."
   (list (nxst-stype) (lit-fix f) (lnfix reg))
   ///
   (defthm stype-of-nxst-node
@@ -468,8 +551,10 @@
     :hints(("Goal" :in-theory (enable stype)))))
 
 (define nxst-node->fanin ((ri nxst-node-p))
-  :prepwork ((local (in-theory (enable nxst-node-p))))
   :returns (lit litp)
+  :short "Access the fanin @(see literal) from a next-state (register input)
+          node, i.e., its update function."
+  :prepwork ((local (in-theory (enable nxst-node-p))))
   (lit-fix (second ri))
   ///
   (defthm nxst-node->fanin-of-nxst-node
@@ -478,8 +563,9 @@
     :hints(("Goal" :in-theory (enable nxst-node)))))
 
 (define nxst-node->reg ((ri nxst-node-p))
-  :prepwork ((local (in-theory (enable nxst-node-p))))
   :returns (id natp)
+  :short "Access the register number from a next-state (register input) node."
+  :prepwork ((local (in-theory (enable nxst-node-p))))
   (lnfix (third ri))
   ///
   (defthm nxst-node->reg-of-nxst-node
@@ -487,13 +573,14 @@
            (lnfix reg))
     :hints(("Goal" :in-theory (enable nxst-node)))))
 
-
-(defun const-node-p (node)
-  (declare (xargs :guard t))
+(define const-node-p (node)
+  :short "Recognize the special constant node."
+  :enabled t
   (eq node nil))
 
 
 (define node-p (x)
+  :short "Recognize any valid node."
   (or (pi-node-p x)
       (reg-node-p x)
       (gate-node-p x)
@@ -532,48 +619,158 @@
     (equal (node-p (nxst-node f reg))
            t)))
 
-
-
-
-
-
 (define node->type ((node node-p))
+  :returns (typecode natp :rule-classes :type-prescription)
+  :parents (node typecode)
+  :short "Get the combinational @(see typecode) from a logical node."
   :enabled t
   (typecode (ctype (stype node))))
 
+
 (define io-node->regp ((node node-p))
+  :short "Check whether a node is a @(':reg') (register output) or
+  @(':nxst') (register input) node.  Note: returns a @(see bitp)."
+  :returns (bit bitp)
   :enabled t
   (regp (stype node)))
 
+(define proper-node-p (x)
+  :short "Recognizer for any node except for the special constant node."
+  :enabled t
+  (and (node-p x)
+       (not (const-node-p x))))
+
+(define co-node->fanin ((node node-p))
+  :guard (equal (node->type node) (out-type))
+  :returns (lit litp)
+  :short "Access the fanin @(see literal) from a combinational output node,
+          i.e., from a primary output or a next-state (register input) node."
+  :prepwork ((local (in-theory (e/d (node->type
+                                     io-node->regp)
+                                    ((force))))))
+
+  (lit-fix (if (equal (io-node->regp node) 1)
+               (nxst-node->fanin node)
+             (po-node->fanin node)))
+  ///
+  (defthm co-node->fanin-of-po-node
+    (equal (co-node->fanin (po-node f))
+           (lit-fix f)))
+  (defthm co-node->fanin-of-nxst-node
+    (equal (co-node->fanin (nxst-node f n))
+           (lit-fix f))))
+
+(defsection aignet-case
+  :short "Macro for @(see combinational-type) case splits."
+  :long "<p>Syntax:</p>
+  @({
+      (aignet-case typecode
+        :const ...
+        :gate ...
+        :in ...
+        :out ...)
+  })
+
+  <p>Where @('typecode') is the @(see typecode) for this node, i.e., it is a
+  number, not a @(see combinational-type) keyword.</p>
+
+  <p>See also @(see aignet-seq-case) for a sequential version.</p>"
+
+  (defmacro aignet-case (type &key const gate in out)
+    ;; [Jared] added "the" forms only to try to ensure that type/regp are
+    ;; being used in a sensible way.
+    `(case (the (unsigned-byte 2) ,type)
+       (,(gate-type)      ,gate)
+       (,(in-type)        ,in)
+       (,(out-type)       ,out)
+       (otherwise         ,const))))
+
+(defsection aignet-seq-case
+  :short "Macro for @(see sequential-type) case splits."
+  :long "<p>Basic example:</p>
+  @({
+      (aignet-seq-case typecode reg-bit
+        :pi ...
+        :po ...
+        :reg ...
+        :nxst ...
+        :gate ...
+        :const ...)
+  })
+
+  <p>Where @('typecode') is the @(see typecode) for this node, i.e., it is a
+  number, not a @(see sequential-type) keyword, and where @('reg-bit') is a
+  @(see bitp) such as from @(see regp).</p>
+
+  <p>Alternately, you can combine:</p>
+
+  <ul>
+
+  <li>The @(':pi') and @(':reg') (register output) cases into a
+  @(':ci') (combinational input) case.</li>
+
+  <li>The @(':po') and @(':nxst') (register input) cases into a
+  @(':co') (combinational output) case.</li>
+
+  </ul>
+
+  <p>That is, using this combined syntax you can write:</p>
+
+  @({
+      (aignet-seq-case typecode reg-bit
+        :ci ...
+        :co ...
+        :gate ...
+        :const ...)
+  })"
+
+  (defmacro aignet-seq-case (type regp &rest keys)
+    ;; we can't use keyword args because "pi" can't be used as a formal
+    (declare (xargs :guard (and (keyword-value-listp keys)
+                                (not (and (assoc-keyword :ci keys)
+                                          (or (assoc-keyword :pi keys)
+                                              (assoc-keyword :reg keys))))
+                                (not (and (assoc-keyword :co keys)
+                                          (or (assoc-keyword :po keys)
+                                              (assoc-keyword :nxst keys)))))))
+    ;; [Jared] added "the" forms only to try to ensure that type/regp are
+    ;; being used in a sensible way.
+    `(case (the (unsigned-byte 2) ,type)
+       (,(gate-type) ,(cadr (assoc-keyword :gate keys)))
+       (,(in-type)   ,(if (assoc-keyword :ci keys)
+                          (cadr (assoc-keyword :ci keys))
+                        `(if (int= 1 (the bit ,regp))
+                             ,(cadr (assoc-keyword :reg keys))
+                           ,(cadr (assoc-keyword :pi keys)))))
+       (,(out-type)  ,(if (assoc-keyword :co keys)
+                          (cadr (assoc-keyword :co keys))
+                        `(if (int= 1 (the bit ,regp))
+                             ,(cadr (assoc-keyword :nxst keys))
+                           ,(cadr (assoc-keyword :po keys)))))
+       (otherwise    ,(cadr (assoc-keyword :const keys))))))
 
 
+(defsection network
+  :parents (representation)
+  :short "Reference guide for basic functions for working with the AIG network,
+  i.e., a list of @(see node)s.")
 
-
-
-
-
+(local (xdoc::set-default-parents network))
 
 (std::deflist node-listp (x)
               (node-p x)
               :true-listp t
               :elementp-of-nil t)
 
-(define proper-node-p (x)
-  (and (node-p x)
-       (not (const-node-p x)))
-  :enabled t)
-
 (std::deflist proper-node-listp (x)
-              (proper-node-p x)
-              :true-listp t)
-
-(defthmd proper-node-listp-implies-node-listp
-  (implies (proper-node-listp x)
-           (node-listp x))
-  :hints(("Goal" :in-theory (enable proper-node-listp
-                                    node-listp))))
-
-
+  (proper-node-p x)
+  :true-listp t
+  ///
+  (defthmd proper-node-listp-implies-node-listp
+    (implies (proper-node-listp x)
+             (node-listp x))
+    :hints(("Goal" :in-theory (enable proper-node-listp
+                                      node-listp)))))
 
 
 (local
@@ -586,8 +783,10 @@
 (local (in-theory (enable (:induction acl2::fast-list-equiv))))
 
 (define node-count (x)
-  ;; This is just (len x).  But it's convenient (?) to have a different
-  ;; function in order to know we're talking about aignets specifically.
+  :short "Alias for @(see len) that is only for use on Aignets."
+  :long "<p>This is just @('(len x)') but we use a new function so that we can
+  write more expensive rewrite rules than would be appropriate for
+  @('len').</p>"
   (if (atom x)
       0
     (+ 1 (node-count (cdr x))))
@@ -608,7 +807,14 @@
   (defcong list-equiv equal (node-count x) 1))
 
 
-(define stype-count (type x)
+(define stype-count ((type stypep)
+                     (x node-listp))
+  :returns (count natp :rule-classes :type-prescription)
+  :short "@(call stype-count) counts the number of @(see node)s whose
+  @(see sequential-type) is @('type') in the node list @('x')."
+  :long "<p>This is a key function in the logical story of Aignet input,
+  output, and register numbering.  See @(see representation) for more
+  details.</p>"
   (cond ((atom x) 0)
         ((equal (stype-fix type) (stype (car x)))
          (+ 1 (stype-count type (cdr x))))
@@ -635,88 +841,36 @@
     :rule-classes :forward-chaining))
 
 
+(define aignet-extension-p ((new "Perhaps an extension of @('old').")
+                            (old "Original @('aignet') that @('new') may extend."))
+  :returns bool
+  :parents (network)
+  :short "@(call aignet-extension-p) determines if the aignet @('new') is the
+result of building some new nodes onto another aignet @('old')."
 
+  :long "<p>Another way of looking at this is that the aignet @('new') is an
+extension of @('old') if @('old') is some suffix of @('new').</p>
 
-(mutual-recursion
- (defun subtermp (x y)
-   (declare (xargs :guard t))
-   (or (equal x y)
-       (and (consp y)
-            (not (eq (car y) 'quote))
-            (subtermp-list x (cdr y)))))
- (defun subtermp-list (x y)
-   (declare (xargs :guard t))
-   (if (atom y)
-       nil
-     (or (subtermp x (car y))
-         (subtermp-list x (cdr y))))))
+<p>This is a transitive, reflexive relation. This is a useful concept because
+every @('aignet')-modifying function that doesn't reinitialize the AIG produces
+an extension of its input, and this relation implies many useful things.</p>
 
+<p>In particular, any ID of the original aignet is an ID of the new aignet, and
+the node of that ID (and its entire suffix) is the same in both aignets.  This
+implies, for example, that the evaluations of nodes existing in the first are
+the same as their evaluations in the second.</p>"
 
-(defsection aignet-extension-bind-inverse
-  ;; Table aignet-extension-bind-inverse, holding the various functions that look
-  ;; up suffixes of the aignet -- such as lookup-id, lookup-stype,
-  ;; lookup-reg->nxst.
-
-  ;; Each entry is a key just bound to T, and the key is a term where the
-  ;; variable NEW is in the position of the new aignet.
-  (table aignet-lookup-fns
-         nil
-         '(((cdr new) . t)
-           ((lookup-id n new) . t)
-           ((lookup-reg->nxst n new) . t)
-           ((lookup-stype n stype new) . t)) :clear)
-
-  (defmacro add-aignet-lookup-fn (term)
-    `(table aignet-lookup-fns ',term t))
-
-  (defun aignet-extension-bind-scan-lookups (term var table)
-    (Declare (Xargs :mode :program))
-    (b* (((when (atom table)) nil)
-         ((mv ok subst) (acl2::simple-one-way-unify
-                         (caar table) term nil))
-         ((unless ok)
-          (aignet-extension-bind-scan-lookups term var (cdr table)))
-         (new (cdr (assoc 'new subst))))
-      `((,var . ,new))))
-
-
-  (defun aignet-extension-bind-inverse-fn (x var mfc state)
-    (declare (xargs :mode :program
-                    :stobjs state)
-             (ignorable mfc))
-    (aignet-extension-bind-scan-lookups
-     x var (table-alist 'aignet-lookup-fns (w state))))
-
-  (defmacro aignet-extension-bind-inverse (&key (new 'new)
-                                                (orig 'orig))
-    `(and (bind-free (aignet-extension-bind-inverse-fn
-                      ,orig ',new mfc state)
-                     (,new))
-          (aignet-extension-p ,new ,orig))))
-
-
-(define aignet-extension-p (y x)
-  (or (equal x y)
-      (and (consp y)
-           (aignet-extension-p (cdr y) x)))
+  (or (equal old new)
+      (and (consp new)
+           (aignet-extension-p (cdr new) old)))
   ///
   (defthm node-count-when-aignet-extension
     (implies (aignet-extension-p y x)
              (<= (node-count x) (node-count y)))
     :rule-classes ((:linear :trigger-terms ((node-count x)))))
 
-  (defthm node-count-when-aignet-extension-bind-inverse
-    (implies (aignet-extension-bind-inverse :orig x :new y)
-             (<= (node-count x) (node-count y)))
-    :rule-classes ((:linear :trigger-terms ((node-count x)))))
-
   (defthm stype-count-when-aignet-extension
     (implies (aignet-extension-p y x)
-             (<= (stype-count k x) (stype-count k y)))
-    :rule-classes ((:linear :trigger-terms ((stype-count k x)))))
-
-  (defthm stype-count-when-aignet-extension-bind-inverse
-    (implies (aignet-extension-bind-inverse :orig x :new y)
              (<= (stype-count k x) (stype-count k y)))
     :rule-classes ((:linear :trigger-terms ((stype-count k x)))))
 
@@ -727,25 +881,8 @@
     :rule-classes ((:linear :trigger-terms
                     ((node-count (cdr x))))))
 
-  (defthm node-count-cdr-when-aignet-extension-inverse
-    (implies (and (aignet-extension-bind-inverse :orig x :new y)
-                  (or (consp x) (consp y)))
-             (< (node-count (cdr x)) (node-count y)))
-    :rule-classes ((:linear :trigger-terms
-                    ((node-count (cdr x))))))
-
   (defthm stype-count-cdr-when-aignet-extension-p
     (implies (and (aignet-extension-p y x)
-                  (equal type (stype (car x)))
-                  (or (not (equal (stype-fix type) (const-stype)))
-                      (consp x)))
-             (< (stype-count type (cdr x))
-                (stype-count type y)))
-    :rule-classes ((:linear :trigger-terms
-                    ((stype-count type (cdr x))))))
-
-  (defthm stype-count-cdr-when-aignet-extension-inverse
-    (implies (and (aignet-extension-bind-inverse :orig x :new y)
                   (equal type (stype (car x)))
                   (or (not (equal (stype-fix type) (const-stype)))
                       (consp x)))
@@ -802,15 +939,262 @@
                   (consp z))
              (aignet-extension-p y (cdr z)))))
 
+(defsection aignet-extension-bind-inverse
+  :parents (aignet-extension-p)
+  :short "Find an appropriate free variable binding that is an aignet-extension of a bound variable."
+  :long "<p>An example rule using this utility:</p>
+@({
+ (defthm lookup-id-in-extension-inverse
+     (implies (and (aignet-extension-bind-inverse :orig orig :new new)
+                   (<= (nfix id) (node-count orig)))
+              (equal (lookup-id id orig)
+                     (lookup-id id new))))
+ })
+
+<p>Suppose this rule matches on the term @('(lookup-id id (lookup-reg->nxst n
+aignet))').  Therefore, @('orig') is bound to @('(lookup-reg->nxst n aignet)').
+The invocation of @('aignet-extension-bind-inverse') knows that the second
+argument of @('lookup-reg->nxst') is an aignet that is (likely) an extension of
+the lookup (because the lookup finds some suffix of that argument).  So it
+binds @('new') to @('aignet'), in this case.  Thus, this rule can be used
+instead of a whole series of rules about individual functions that look up some
+suffix of an aignet, such as:</p>
+@({
+     (implies (<= (nfix id) (node-count (lookup-reg->nxst n aignet))))
+              (equal (lookup-id id (lookup-reg->nxst n aignet))
+                     (lookup-id id aignet)))
+
+     (implies (<= (nfix id) (node-count (lookup-stype n stype aignet))))
+              (equal (lookup-id id (lookup-stype n stype aignet))
+                     (lookup-id id aignet)))
+ })
+<p>etc.</p>
+
+<p>See also @(see aignet-extension-binding) for a similar macro that finds a
+binding for a suffix aignet from a term giving some extension.</p>"
+  ;; Table aignet-extension-bind-inverse, holding the various functions that look
+  ;; up suffixes of the aignet -- such as lookup-id, lookup-stype,
+  ;; lookup-reg->nxst.
+
+  ;; Each entry is a key just bound to T, and the key is a term where the
+  ;; variable NEW is in the position of the new aignet.
+  (table aignet-lookup-fns
+         nil
+         '(((cdr new) . t)
+           ((lookup-id n new) . t)
+           ((lookup-reg->nxst n new) . t)
+           ((lookup-stype n stype new) . t)
+           ((find-max-fanin new) . t))
+         :clear)
+
+  (defmacro add-aignet-lookup-fn (term)
+    `(table aignet-lookup-fns ',term t))
+
+  (defun aignet-extension-bind-scan-lookups (term var table)
+    (Declare (Xargs :mode :program))
+    (b* (((when (atom table)) nil)
+         ((mv ok subst) (acl2::simple-one-way-unify
+                         (caar table) term nil))
+         ((unless ok)
+          (aignet-extension-bind-scan-lookups term var (cdr table)))
+         (new (cdr (assoc 'new subst))))
+      `((,var . ,new))))
+
+
+  (defun aignet-extension-bind-inverse-fn (x var mfc state)
+    (declare (xargs :mode :program
+                    :stobjs state)
+             (ignorable mfc))
+    (aignet-extension-bind-scan-lookups
+     x var (table-alist 'aignet-lookup-fns (w state))))
+
+  (defmacro aignet-extension-bind-inverse (&key (new 'new)
+                                                (orig 'orig))
+    `(and (bind-free (aignet-extension-bind-inverse-fn
+                      ,orig ',new mfc state)
+                     (,new))
+          (aignet-extension-p ,new ,orig)))
+
+  
+
+  (defthm node-count-when-aignet-extension-bind-inverse
+    (implies (aignet-extension-bind-inverse :orig x :new y)
+             (<= (node-count x) (node-count y)))
+    :rule-classes ((:linear :trigger-terms ((node-count x)))))
+
+  (defthm stype-count-when-aignet-extension-bind-inverse
+    (implies (aignet-extension-bind-inverse :orig x :new y)
+             (<= (stype-count k x) (stype-count k y)))
+    :rule-classes ((:linear :trigger-terms ((stype-count k x)))))
+
+  (defthm node-count-cdr-when-aignet-extension-inverse
+    (implies (and (aignet-extension-bind-inverse :orig x :new y)
+                  (or (consp x) (consp y)))
+             (< (node-count (cdr x)) (node-count y)))
+    :rule-classes ((:linear :trigger-terms
+                    ((node-count (cdr x))))))
+
+  (defthm stype-count-cdr-when-aignet-extension-inverse
+    (implies (and (aignet-extension-bind-inverse :orig x :new y)
+                  (equal type (stype (car x)))
+                  (or (not (equal (stype-fix type) (const-stype)))
+                      (consp x)))
+             (< (stype-count type (cdr x))
+                (stype-count type y)))
+    :rule-classes ((:linear :trigger-terms
+                    ((stype-count type (cdr x)))))))
+
+
+(defsection aignet-extension-binding
+  :parents (aignet-extension-p)
+  :short "A strategy for making use of @(see aignet-extension-p) in rewrite rules."
+
+  :long "<p>Rewrite rules using @(see aignet-extension-p) are a little odd.
+For example, suppose we want a rewrite rule just based on the definition,
+e.g.,</p>
+
+@({
+    (implies (and (aignet-extension-p new-aignet orig-aignet)
+                  (aignet-idp id orig-aignet))
+             (equal (lookup-id id new-aignet)
+                    (lookup-id id orig-aignet)))
+})
+
+<p>This isn't a very good rewrite rule because it has to match the free
+variable @('orig-aignet').  However, we can make it much better with a @(see
+bind-free) strategy.  We'll check the syntax of new-aignet to see if it is a
+call of a aignet-updating function.  Then, we'll use the @('aignet') input of
+that function as the binding for @('orig-aignet') @('aignet-extension-binding')
+is a macro that implements this binding strategy.  In this case, it can be used
+as follows:</p>
+
+@({
+ (implies (and (aignet-extension-binding :new new-aignet :orig orig-aignet)
+               (aignet-idp id orig-aignet))
+          (equal (lookup-id id new-aignet)
+                 (lookup-id id orig-aignet)))
+ })
+
+<p>For a given invocation of @('aignet-extension-binding'), it is assumed that
+the @('new') argument is a currently bound variable and the @('orig') argument
+is a variable that needs a binding.</p>
+
+<p>See also @(see aignet-extension-bind-inverse) for a similar macro that
+instead binds a new aignet given an invocation of some function that finds a
+suffix.</p>"
+
+  (defun simple-search-type-alist (term typ type-alist unify-subst)
+    (declare (xargs :mode :program))
+    (cond ((endp type-alist)
+           (mv nil unify-subst))
+          ((acl2::ts-subsetp (cadr (car type-alist)) typ)
+           (mv-let (ans unify-subst)
+             (acl2::one-way-unify1 term (car (car type-alist)) unify-subst)
+             (if ans
+                 (mv t unify-subst)
+               ;; note: one-way-unify1 is a no-change-loser so unify-subst is
+               ;; unchanged below
+               (simple-search-type-alist term typ (cdr type-alist)
+                                         unify-subst))))
+          (t (simple-search-type-alist term typ (cdr type-alist) unify-subst))))
+
+
+  ;; Note: We used to iterate find-prev-stobj-binding so that we could take the
+  ;; term, e.g., (aignet-add-in (aignet-add-in aignet)) and find aignet,
+  ;; instead of just the inner (aignet-add-in aignet).  But I think this is
+  ;; generally counterproductive to our rewriting strategy and we never used
+  ;; that option (the :iters keyword for aignet-extension-binding) in our
+  ;; codebase so I am now removing it.
+
+  ;; Additional possible strategic thing: keep aignet-modifying functions that
+  ;; don't produce an extension in a table and don't bind their inputs.
+  (defun find-prev-stobj-binding (new-term state)
+    (declare (xargs :guard (pseudo-termp new-term)
+                    :stobjs state
+                    :mode :program))
+    (b* (((mv valnum function args)
+          (case-match new-term
+            (('mv-nth ('quote valnum) (function . args) . &)
+             (mv (and (symbolp function) valnum) function args))
+            ((function . args)
+             (mv (and (symbolp function) 0) function args))
+            (& (mv nil nil nil))))
+         ((unless valnum) (mv nil nil))
+         ((when (or (eq function 'if)
+                    (eq function 'return-last)))
+          ;; Can't call stobjs-out on either of these
+          (mv nil nil))
+         ((when (and (eq function 'cons)
+                     (int= valnum 0)))
+          ;; special case for update-nth.
+          (mv t (nth 1 args)))
+         (w (w state))
+         (stobjs-out (acl2::stobjs-out function w))
+         (formals (acl2::formals function w))
+         (stobj-out (nth valnum stobjs-out))
+         ((unless stobj-out) (mv nil nil))
+         (pos (position stobj-out formals))
+         ((unless pos) (mv nil nil)))
+      (mv t (nth pos args))))
+
+
+  (defun prev-stobj-binding (new-term prev-var mfc state)
+    (declare (xargs :guard (and (pseudo-termp new-term)
+                                (symbolp prev-var))
+                    :stobjs state
+                    :mode :program)
+             (ignore mfc))
+    (b* (((mv ok prev-term) (find-prev-stobj-binding new-term state)))
+      (if (and ok (not (equal new-term prev-term)))
+          `((,prev-var . ,prev-term))
+        `((do-not-use-this-long-horrible-variable
+           . do-not-use-this-long-horrible-variable)))))
+
+
+  (defmacro aignet-extension-binding (&key (new 'new)
+                                           (orig 'orig))
+    `(and (bind-free (prev-stobj-binding ,new ',orig mfc state))
+          ;; do we need this syntaxp check?
+          ;; (syntaxp (not (subtermp ,new ,orig)))
+          (aignet-extension-p ,new ,orig)))
+
+  (defthm aignet-extension-p-transitive-rw
+    (implies (and (aignet-extension-binding :new aignet3 :orig aignet2)
+                  (aignet-extension-p aignet2 aignet1))
+             (aignet-extension-p aignet3 aignet1))
+    :hints(("Goal" :in-theory (enable aignet-extension-p-transitive))))
+
+
+
+
+  (defthm aignet-extension-implies-node-count-gte
+    (implies (aignet-extension-binding)
+             (<= (node-count orig) (node-count new)))
+    :rule-classes ((:linear :trigger-terms ((node-count new)))))
+
+  (defthm aignet-extension-implies-stype-count-gte
+    (implies (aignet-extension-binding)
+             (<= (stype-count stype orig)
+                 (stype-count stype new)))
+    :rule-classes ((:linear :trigger-terms ((stype-count stype new)))))
+
+  (defthmd aignet-extension-p-implies-consp
+    (implies (and (aignet-extension-binding)
+                  (consp orig))
+             (consp new))
+    :hints(("Goal" :in-theory (enable aignet-extension-p)))))
 
 
 
 
 
-
-(define lookup-id ((id natp)
-                     (aignet node-listp))
-  :returns (suffix node-listp :hyp (node-listp aignet))
+(define lookup-id ((id     natp)
+                   (aignet node-listp))
+  :returns (suffix node-listp :hyp (node-listp aignet)
+                   "Tail of the aignet up to (and including) the @('id')th
+                    @(see node).")
+  :short "Core function for looking up an AIG node in the logical AIG network
+  by its ID."
   (cond ((endp aignet) aignet)
         ((equal (node-count aignet) (lnfix id))
          aignet)
@@ -865,6 +1249,23 @@
     :rule-classes :type-prescription)
   (defthm lookup-id-of-nil
     (equal (lookup-id x nil) nil))
+  (defthm lookup-id-of-cons
+    (equal (lookup-id id (cons node rest))
+           (if (equal (nfix id) (+ 1 (node-count rest)))
+               (cons node rest)
+             (lookup-id id rest))))
+  (defthm lookup-id-of-node-count
+    (equal (lookup-id (node-count x) x)
+           x))
+  (defthm node-count-of-lookup-id-when-consp
+    (implies (consp (lookup-id id aignet))
+             (equal (node-count (lookup-id id aignet))
+                    id)))
+  (defthm posp-when-consp-of-lookup-id
+    (implies (consp (lookup-id id aignet))
+             (posp id))
+    :rule-classes :forward-chaining)
+
   ;; (defun check-not-known-natp (term mfc state)
   ;;   (declare (xargs :mode :program :stobjs state))
   ;;   (not (acl2::ts-subsetp (acl2::mfc-ts term mfc state)
@@ -882,15 +1283,21 @@
     :rule-classes :forward-chaining))
 
 
-(define lookup-stype ((n natp)
-                      (stype stypep)
+(define lookup-stype ((n      natp)
+                      (stype  stypep)
                       (aignet node-listp))
   :returns (suffix node-listp :hyp (node-listp aignet))
-  (cond ((endp aignet) aignet)
+  :short "Core function for looking up an input, output, or register in the
+  logical AIG network by its IO number."
+  :long "<p>See @(see representation) to understand IO numbers and IO
+  lookups.</p>"
+  (cond ((endp aignet)
+         aignet)
         ((and (equal (stype (car aignet)) (stype-fix stype))
               (equal (stype-count stype (cdr aignet)) (lnfix n)))
          aignet)
-        (t (lookup-stype n stype (cdr aignet))))
+        (t
+         (lookup-stype n stype (cdr aignet))))
   ///
   (defcong nat-equiv equal (lookup-stype n stype aignet) 1)
   (defcong stype-equiv equal (lookup-stype n stype aignet) 2
@@ -945,15 +1352,113 @@
   (defthm stype-of-lookup-stype
     (implies (consp (lookup-stype n stype aignet))
              (equal (stype (car (lookup-stype n stype aignet)))
-                    (stype-fix stype)))))
+                    (stype-fix stype))))
+
+  
+  (defthm aignet-extension-simplify-lookup-stype
+    (implies (and (aignet-extension-binding)
+                  (consp (lookup-stype n stype orig)))
+             (equal (lookup-stype n stype new)
+                    (lookup-stype n stype orig)))
+    :hints(("Goal" :in-theory (enable lookup-stype
+                                      aignet-extension-p))))
+
+  (defthm aignet-extension-simplify-lookup-stype-when-counts-same
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count stype new)
+                         (stype-count stype orig)))
+             (equal (lookup-stype n stype new)
+                    (lookup-stype n stype orig)))
+    :hints(("Goal" :in-theory (enable aignet-extension-p
+                                      lookup-stype))))
+
+  (defthm aignet-extension-simplify-lookup-stype-inverse
+    (implies (and (aignet-extension-bind-inverse)
+                  (consp (lookup-stype n stype orig)))
+             (equal (lookup-stype n stype orig)
+                    (lookup-stype n stype new)))))
 
 
-;; NOTE this is different from the other lookups: it's by ID of the
-;; corresponding RO node, not IO number.  I think the asymmetry is worth it
-;; though.
-(define lookup-reg->nxst ((reg-id natp)
+(define find-max-fanin ((aignet node-listp))
+  :returns (suffix node-listp :hyp (node-listp aignet))
+  :short "Finds the longest suffix whose first node is a fanin type, i.e. not a
+          combinational output."
+  (cond ((endp aignet) aignet)
+        ((not (equal (ctype (stype (car aignet))) (out-ctype)))
+         aignet)
+        (t (find-max-fanin (cdr aignet))))
+  ///
+  (defcong list-equiv list-equiv (find-max-fanin aignet) 1)
+
+  (defthm find-max-fanin-aignet-extension-p
+    (aignet-extension-p aignet (find-max-fanin aignet)))
+
+  (defthm find-max-fanin-of-cons-fanin
+    (implies (not (equal (ctype (stype node)) (out-ctype)))
+             (equal (find-max-fanin (cons node aignet))
+                    (cons node aignet))))
+
+  (defthm find-max-fanin-of-cons-output
+    (implies (equal (ctype (stype node)) (out-ctype))
+             (equal (find-max-fanin (cons node aignet))
+                    (find-max-fanin aignet))))
+  
+  (defthm node-count-of-find-max-fanin
+    (<= (node-count (find-max-fanin aignet))
+        (node-count aignet))
+    :rule-classes :linear)
+
+  (defthm node-count-of-find-max-fanin-of-extension-inverse
+    (implies (aignet-extension-bind-inverse)
+             (<= (node-count (find-max-fanin orig))
+                 (node-count (find-max-fanin new))))
+    :hints(("Goal" :in-theory (enable find-max-fanin aignet-extension-p)))
+    :rule-classes ((:linear :trigger-terms ((node-count (find-max-fanin orig))))))
+
+  (defthm node-count-of-find-max-fanin-of-extension
+    (implies (aignet-extension-binding)
+             (<= (node-count (find-max-fanin orig))
+                 (node-count (find-max-fanin new))))
+    :hints(("Goal" :in-theory (enable find-max-fanin aignet-extension-p)))
+    :rule-classes ((:linear :trigger-terms ((node-count (find-max-fanin new))))))
+
+  (defthm node-count-of-suffix-less-than-max-fanin-when-not-output
+    (implies (and (syntaxp (not (and (consp orig) (eq (car orig) 'find-max-fanin))))
+                  (aignet-extension-bind-inverse)
+                  (not (equal (ctype (stype (car orig))) :output)))
+             (<= (node-count orig) (node-count (find-max-fanin new))))
+    :rule-classes ((:linear :trigger-terms ((node-count orig)))))
+
+  (defthmd id-less-than-max-fanin-by-stype
+    (implies (and (not (equal (stype (car (lookup-id id aignet))) :po))
+                  (not (equal (stype (car (lookup-id id aignet))) :nxst))
+                  ;; this hyp: just because if id is out of bounds, we get const type.
+                  (not (equal (stype (car (lookup-id id aignet))) :const))
+                  (natp id))
+             (<= id (node-count (find-max-fanin aignet))))
+    :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype (car (lookup-id id aignet)))))))
+
+  (defthmd id-less-than-max-fanin-by-ctype
+    (implies (and (not (equal (ctype (stype (car (lookup-id id aignet)))) :output))
+                  ;; this hyp: just because if id is out of bounds, we get const type.
+                  (not (equal (ctype (stype (car (lookup-id id aignet)))) :const))
+                  (natp id))
+             (<= id (node-count (find-max-fanin aignet))))
+    :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
+    :rule-classes ((:forward-chaining :trigger-terms ((ctype (stype (car (lookup-id id aignet)))))))))
+
+
+
+(define lookup-reg->nxst ((reg-id natp "Node ID (not the register number) for this register.")
                           (aignet node-listp))
   :returns (suffix node-listp :hyp (node-listp aignet))
+  :short "Look up the next-state node that corresponds to particular register
+  node."
+  :long "<p><b>Note</b>: This is different from the other lookups: it's by ID
+  of the corresponding RO node, not IO number.  I think the asymmetry is worth
+  it though.</p>"
+
   (cond ((endp aignet) aignet)
         ((and (equal (stype (car aignet)) (nxst-stype))
               (b* ((ro (nxst-node->reg (car aignet))))
@@ -1006,11 +1511,6 @@
              (not (consp (lookup-reg->nxst id aignet))))))
 
 
-
-
-
-
-
 ;; (defthm node-by-stype-types
 ;;   (implies (node-p node)
 ;;            (and (equal (equal (ctype (stype node)) (const-type))
@@ -1032,28 +1532,59 @@
 ;;   :hints(("Goal" :in-theory (enable node-p))))
 
 
-
-(define co-node->fanin ((node node-p))
-  :guard (equal (node->type node) (out-type))
-  :returns (lit litp)
-  (lit-fix (if (equal (io-node->regp node) 1)
-               (nxst-node->fanin node)
-             (po-node->fanin node)))
-  :prepwork ((local (in-theory (e/d (node->type
-                                     io-node->regp)
-                                    ((force))))))
+(define aignet-idp ((id     natp)
+                    (aignet node-listp))
+  :short "Check whether a node ID is in bounds for this network."
+  (<= (lnfix id) (node-count aignet))
   ///
-  (defthm co-node->fanin-of-po-node
-    (equal (co-node->fanin (po-node f))
-           (lit-fix f)))
-  (defthm co-node->fanin-of-nxst-node
-    (equal (co-node->fanin (nxst-node f n))
-           (lit-fix f))))
+  (defthm bound-when-aignet-idp
+    (implies (aignet-idp id aignet)
+             (<= (nfix id) (node-count aignet))))
+  (local (defthm <=-when-<-+-1
+           (implies (and (< x (+ 1 y))
+                         (integerp x) (integerp y))
+                    (<= x y))))
+  (defthm aignet-idp-in-extension
+    (implies (and (aignet-extension-p aignet2 aignet)
+                  (aignet-idp id aignet))
+             (aignet-idp id aignet2)))
+  (defcong nat-equiv equal (aignet-idp id aignet) 1)
+  (defcong list-equiv equal (aignet-idp id aignet) 2)
+
+  (defthm lookup-id-implies-aignet-idp
+    (implies (consp (lookup-id id aignet))
+             (aignet-idp id aignet))
+    :hints(("Goal" :in-theory (enable lookup-id))))
+
+  (defthm aignet-idp-of-node-count-of-extension
+    (implies (aignet-extension-p aignet prev)
+             (aignet-idp (node-count prev) aignet))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+
+  (defthm aignet-idp-of-0
+    (aignet-idp 0 aignet)
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  ;; already has inverse
+  (defthm aignet-extension-simplify-lookup-id
+    (implies (and (aignet-extension-binding)
+                  (aignet-idp id orig))
+             (equal (lookup-id id new)
+                    (lookup-id id orig))))
+
+  (defthm aignet-extension-simplify-aignet-idp
+    (implies (and (aignet-extension-binding)
+                  (aignet-idp id orig))
+             (aignet-idp id new))))
 
 
-
-(define aignet-litp ((lit litp)
+(define aignet-litp ((lit    litp)
                      (aignet node-listp))
+  :short "Check if a @(see literal) is valid for use as a fanin to another node."
+  :long "<p>We return true only if the ID for the literal is in bounds for the
+  network and refers to a node of acceptable type.  In particular, the literal
+  may not refer to any combinational output node, i.e., it may not be a primary
+  output and may also not be a next-state (register input) node.</p>"
   (and (<= (lit-id lit)
            (node-count aignet))
        (not (equal (node->type (car (lookup-id (lit-id lit) aignet)))
@@ -1072,79 +1603,69 @@
                   (aignet-litp lit orig))
              (aignet-litp lit new)))
   (defcong lit-equiv equal (aignet-litp lit aignet) 1)
-  (defcong list-equiv equal (aignet-litp lit aignet) 2))
+  (defcong list-equiv equal (aignet-litp lit aignet) 2)
 
-(define aignet-idp ((id natp) aignet)
-  (<= (lnfix id) (node-count aignet))
-  ///
-  (defthm bound-when-aignet-idp
-    (implies (aignet-idp id aignet)
-             (<= (nfix id) (node-count aignet))))
-  (local (defthm <=-when-<-+-1
-           (implies (and (< x (+ 1 y))
-                         (integerp x) (integerp y))
-                    (<= x y))))
-  (defthm aignet-idp-in-extension
-    (implies (and (aignet-extension-p aignet2 aignet)
-                  (aignet-idp id aignet))
-             (aignet-idp id aignet2)))
-  (defcong nat-equiv equal (aignet-idp id aignet) 1)
-  (defcong list-equiv equal (aignet-idp id aignet) 2)
   (defthm aignet-idp-when-aignet-litp
     (implies (aignet-litp lit aignet)
              (aignet-idp (lit-id lit) aignet))
-    :hints(("Goal" :in-theory (enable aignet-litp)))))
+    :hints(("Goal" :in-theory (enable aignet-idp))))
 
+  (defthm aignet-litp-of-0-and-1
+    (and (aignet-litp 0 aignet)
+         (aignet-litp 1 aignet)))
 
-(defsection aignet-case
-  (defmacro aignet-case (type &key const gate in out)
-    `(case ,type
-       (,(gate-type)      ,gate)
-       (,(in-type)        ,in)
-       (,(out-type)       ,out)
-       (otherwise         ,const)))
+  (defthm aignet-litp-of-mk-lit-lit-id
+    (equal (aignet-litp (mk-lit (lit-id lit) neg) aignet)
+           (aignet-litp lit aignet)))
 
-  (defmacro aignet-seq-case (type regp &rest keys)
-    ;; we can't use keyword args because "pi" can't be used as a formal
-    (declare (xargs :guard (and (keyword-value-listp keys)
-                                (not (and (assoc-keyword :ci keys)
-                                          (or (assoc-keyword :pi keys)
-                                              (assoc-keyword :reg keys))))
-                                (not (and (assoc-keyword :co keys)
-                                          (or (assoc-keyword :po keys)
-                                              (assoc-keyword :nxst keys)))))))
-    `(case ,type
-       (,(gate-type) ,(cadr (assoc-keyword :gate keys)))
-       (,(in-type)   ,(if (assoc-keyword :ci keys)
-                          (cadr (assoc-keyword :ci keys))
-                        `(if (int= 1 ,regp)
-                             ,(cadr (assoc-keyword :reg keys))
-                           ,(cadr (assoc-keyword :pi keys)))))
-       (,(out-type)  ,(if (assoc-keyword :co keys)
-                          (cadr (assoc-keyword :co keys))
-                        `(if (int= 1 ,regp)
-                             ,(cadr (assoc-keyword :nxst keys))
-                           ,(cadr (assoc-keyword :po keys)))))
-       (otherwise    ,(cadr (assoc-keyword :const keys))))))
+  (defthm aignet-litp-of-mk-lit-0
+    (aignet-litp (mk-lit 0 neg) aignet))
+  
+  (defthm aignet-litp-implies-id-lte-max-fanin
+    (implies (aignet-litp lit aignet)
+             (<= (lit-id lit)
+                 (node-count (find-max-fanin aignet))))
+    :hints(("Goal" :in-theory (enable aignet-litp find-max-fanin)))
+    :rule-classes :forward-chaining)
+
+  (defthm aignet-extension-simplify-aignet-litp
+    (implies (and (aignet-extension-binding)
+                  (aignet-litp lit orig))
+             (aignet-litp lit new))))
 
 
 (define aignet-nodes-ok ((aignet node-listp))
+  :short "Basic well-formedness constraints for the AIG network."
+  :long "<p>We require that:</p>
+
+  <ul>
+
+  <li>Each fanin is a well-formed in the sense of @(see aignet-litp), i.e., it
+  exists somewhere ``earlier'' in the network (in the suffix of the list) so
+  that the network is topologically ordered, and it is not a combinational
+  output node.</li>
+
+  <li>Each next-state (register input) node must refer to a valid register that
+  exists somewhere earlier in the network.</li>
+
+  </ul>"
+
   (if (endp aignet)
       t
     (and (aignet-seq-case
-          (node->type (car aignet))
-          (io-node->regp (car aignet))
-          :ci   t
-          :po   (aignet-litp (co-node->fanin (car aignet))
-                             (cdr aignet))
-          :nxst   (and (aignet-litp (co-node->fanin (car aignet))
-                                  (cdr aignet))
-                     (aignet-idp (nxst-node->reg (car aignet))
-                                 (cdr aignet)))
-          :gate (let ((f0 (gate-node->fanin0 (car aignet)))
-                      (f1 (gate-node->fanin1 (car aignet))))
-                  (and (aignet-litp f0 (cdr aignet))
-                       (aignet-litp f1 (cdr aignet)))))
+           (node->type (car aignet))
+           (io-node->regp (car aignet))
+           :ci   t
+           :po   (aignet-litp (co-node->fanin (car aignet))
+                              (cdr aignet))
+           :nxst   (and (aignet-litp (co-node->fanin (car aignet))
+                                     (cdr aignet))
+                        (aignet-idp (nxst-node->reg (car aignet))
+                                    (cdr aignet)))
+           :gate (let ((f0 (gate-node->fanin0 (car aignet)))
+                       (f1 (gate-node->fanin1 (car aignet))))
+                   (and (aignet-litp f0 (cdr aignet))
+                        (aignet-litp f1 (cdr aignet)))))
          (aignet-nodes-ok (cdr aignet))))
   ///
   (defthm proper-node-list-when-aignet-nodes-ok
@@ -1264,7 +1785,43 @@
                   (aignet-nodes-ok y))
              (aignet-nodes-ok x))
     :hints(("Goal" :in-theory (enable aignet-extension-p aignet-nodes-ok)
-            :induct (aignet-nodes-ok y)))))
+            :induct (aignet-nodes-ok y))))
+
+  (defthm id-less-than-max-fanin-when-aignet-litp
+    (implies (aignet-litp lit aignet)
+             (<= (lit-id lit) (node-count (find-max-fanin aignet))))
+    :hints(("Goal" :in-theory (enable aignet-litp find-max-fanin)))
+    :rule-classes nil)
+
+  (defthm gate-fanin0-less-than-max-fanin
+    (let ((suffix (lookup-id n aignet)))
+      (implies (and (aignet-nodes-ok aignet)
+                    (equal (node->type (car suffix)) (gate-type)))
+               (<= (lit-id (gate-node->fanin0 (car suffix)))
+                   (node-count (find-max-fanin aignet)))))
+    :hints (("goal" :use ((:instance id-less-than-max-fanin-when-aignet-litp
+                           (lit (gate-node->fanin0 (car (lookup-id n aignet))))))))
+    :rule-classes :linear)
+
+  (defthm gate-fanin1-less-than-max-fanin
+    (let ((suffix (lookup-id n aignet)))
+      (implies (and (aignet-nodes-ok aignet)
+                    (equal (node->type (car suffix)) (gate-type)))
+               (<= (lit-id (gate-node->fanin1 (car suffix)))
+                   (node-count (find-max-fanin aignet)))))
+    :hints (("goal" :use ((:instance id-less-than-max-fanin-when-aignet-litp
+                           (lit (gate-node->fanin1 (car (lookup-id n aignet))))))))
+    :rule-classes :linear)
+
+  (defthm co-fanin-less-than-max-fanin
+    (let ((suffix (lookup-id n aignet)))
+      (implies (and (aignet-nodes-ok aignet)
+                    (equal (node->type (car suffix)) (out-type)))
+               (<= (lit-id (co-node->fanin (car suffix)))
+                   (node-count (find-max-fanin aignet)))))
+    :hints (("goal" :use ((:instance id-less-than-max-fanin-when-aignet-litp
+                           (lit (co-node->fanin (car (lookup-id n aignet))))))))
+    :rule-classes :linear))
 
 
 
@@ -1285,12 +1842,21 @@
          :rule-classes :linear))
 
 
-(define aignet-lit-fix ((x litp)
+(define aignet-lit-fix ((x      litp)
                         (aignet node-listp))
+  :short "@(call aignet-lit-fix) fixes the @(see literal) @('x') to be a valid
+  literal for this AIG network."
+  :long "<p>If @('x') is a valid literal in the sense of @(see aignet-litp), it
+  is returned unchanged:</p>
+
+  @(def aignet-lit-fix-when-aignet-litp)
+
+  <p>Otherwise we adjust it to refer to the constant node, which is
+  unconditionally valid.</p>"
   :verify-guards nil
   :measure (node-count aignet)
   :hints ('(:in-theory (enable lookup-id-in-bounds)))
-  :returns (fix)
+  :returns (fix litp)
   (b* ((id (lit-id x))
        (look (lookup-id id aignet))
        ((unless (consp look))
@@ -1302,8 +1868,6 @@
          (lit-neg x))))
     (lit-fix x))
   ///
-  (defthm litp-of-aignet-lit-fix
-    (litp (aignet-lit-fix x aignet)))
   (verify-guards aignet-lit-fix)
 
   (local (defthm lookup-id-in-extension-bind-inverse
@@ -1359,10 +1923,24 @@
   (defcong list-equiv equal (aignet-lit-fix lit aignet) 2
     :hints (("goal" :induct (aignet-lit-fix-ind2a lit aignet acl2::aignet-equiv)
              :expand ((:free (aignet)
-                       (aignet-lit-fix lit aignet)))))))
+                       (aignet-lit-fix lit aignet))))))
+
+  (defthm aignet-lit-fix-id-lte-max-fanin
+    (<= (lit-id (aignet-lit-fix lit aignet))
+        (node-count (find-max-fanin aignet)))
+    :hints(("Goal" :use ((:instance aignet-litp-implies-id-lte-max-fanin
+                          (lit (aignet-lit-fix lit aignet))))
+            :in-theory (disable aignet-litp-implies-id-lte-max-fanin)))
+    :rule-classes :linear))
+
 
 (define aignet-id-fix ((x natp) aignet)
   :returns (id natp :rule-classes :type-prescription)
+  :short "@(call aignet-id-fix) fixes the id @('x') to be in bounds for this
+  AIG network."
+  :long "<p>If @('x') is in bounds then we return it unchanged.  If it is out
+  of bounds, we coerce it to refer to the implicit constant node, which is
+  valid in any network.</p>"
   (if (<= (lnfix x) (node-count aignet))
       (lnfix x)
     0)
@@ -1370,10 +1948,12 @@
   (defthm aignet-idp-of-aignet-id-fix
     (aignet-idp (aignet-id-fix x aignet) aignet)
     :hints(("Goal" :in-theory (enable aignet-idp))))
+
   (defthm aignet-id-fix-id-val-linear
     (<= (aignet-id-fix id aignet)
         (node-count aignet))
     :rule-classes :linear)
+
   (defthm aignet-id-fix-when-aignet-idp
     (implies (aignet-idp id aignet)
              (equal (aignet-id-fix id aignet)

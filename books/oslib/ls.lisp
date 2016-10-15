@@ -35,6 +35,17 @@
 (include-book "file-types")
 (include-book "centaur/quicklisp/osicat" :dir :system)
 
+
+; [Jared] hopefully temporary.  CMUCL path problems that are biting us
+; in dirname are also biting us here.  In particular,
+;
+;    (uiop:ensure-directory-pathname (uiop:parse-native-namestring "."))
+;
+; causes an error, but probably shouldn't.  I've reported this to the
+; CMUCL/UIOP folks and maybe they will fix it.
+
+; cert_param: (non-cmucl)
+
 ; (depends-on "ls-raw.lsp")
 
 (defttag oslib)

@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -88,16 +88,24 @@
 (encapsulate
  ()
 
- (local
-  (defthm stringp-read-file-into-string1
-    (implies (car (read-file-into-string1 channel state ans bound))
-             (stringp (car (read-file-into-string1 channel state ans
-                                                   bound))))))
+; At one the following local lemma seemed to be helpful, but it is not
+; currently necessary.  If we simplify read-file-into-string2, for example by
+; removing ec-call, then perhaps we will need this lemma once again.
+
+;(local
+; (defthm stringp-read-file-into-string1
+;   (implies (car (read-file-into-string1 channel state ans bound))
+;            (stringp (car (read-file-into-string1 channel state ans
+;                                                  bound))))))
 
  (verify-termination-boot-strap read-file-into-string2) ; and guards
  )
 
 (verify-termination-boot-strap read-file-into-string) ; and guards
+
+; miscellaneous
+
+(verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -1077,7 +1085,7 @@
   (declare (xargs :stobjs state
                   :guard (symbolp name)))
   (let ((wrld (w state)))
-    (or (getprop name 'theorem nil 'current-acl2-world wrld)
+    (or (getpropc name 'theorem nil wrld)
         (mv-let (flg prop)
                 (constraint-info name wrld)
                 (cond ((eq prop *unknown-constraints*)
@@ -1233,7 +1241,7 @@
        ((':formula name)
         (meta-extract-formula name st))
        ((':lemma fn n)
-        (let* ((lemmas (getprop fn 'lemmas nil 'current-acl2-world (w st)))
+        (let* ((lemmas (getpropc fn 'lemmas nil (w st)))
                (rule (nth n lemmas)))
 
 ; The use of rewrite-rule-term below relies on the fact that the 'LEMMAS
@@ -1268,8 +1276,8 @@
 
 ;   (time nice make ACL2_DEVEL=d)
 ;   cd books
-;   make clean
-;   ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
+;   make clean ACL2=`pwd`/../saved_acl2d
+;   time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
 ;   cd ..
 ;   (time nice make -j 8 devel-check ACL2=`pwd`/saved_acl2d)
 
@@ -1286,6 +1294,34 @@
 
 (verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
 
+(verify-termination-boot-strap acl2-system-namep) ; and guards
+
+(mutual-recursion
+
+(defun system-pseudo-termp (x w)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (plist-worldp w))
+                  :mode :logic))
+  (cond ((atom x) (symbolp x))
+        ((eq (car x) 'quote)
+         (and (consp (cdr x))
+              (null (cdr (cdr x)))))
+        ((not (true-listp x)) nil)
+        ((not (system-pseudo-term-listp (cdr x) w)) nil)
+        (t (if (symbolp (car x))
+               (acl2-system-namep (car x) w)
+             (system-pseudo-termp (caddr (car x)) w)))))
+
+(defun system-pseudo-term-listp (lst w)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (plist-worldp w))
+                  :mode :logic))
+  (cond ((atom lst) (equal lst nil))
+        (t (and (system-pseudo-termp (car lst) w)
+                (system-pseudo-term-listp (cdr lst) w)))))
+
+)
+
 (defun pair-fns-with-measured-subsets (fns wrld acc)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld)
@@ -1295,11 +1331,16 @@
             (cdr fns)
             wrld
             (cons (let* ((fn (car fns))
-                         (justification (getprop fn 'justification nil
-                                                 'current-acl2-world wrld))
-                         (ms (and (consp justification) ; for guard
-                                  (consp (cdr justification)) ; for guard
-                                  (access justification justification :subset))))
+                         (justification (getpropc fn 'justification nil wrld))
+                         (ms0 (and (weak-justification-p justification) ; for guard
+                                   (access justification justification
+                                           :measure)))
+                         (ms (and ms0
+                                  (if (and (pseudo-termp ms0) ; for guard
+                                           (system-pseudo-termp ms0 wrld))
+                                      ms0
+                                    (cons :? (access justification
+                                                     justification :subset))))))
                     (cons fn ms))
                   acc)))))
 
@@ -1318,8 +1359,7 @@
           nil))
         ((and (eq (cadar wrld) 'symbol-class)
               (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
-              (getprop (caar wrld) 'predefined nil 'current-acl2-world
-                       installed-wrld))
+              (getpropc (caar wrld) 'predefined nil installed-wrld))
          (new-verify-guards-fns1 (cdr wrld)
                                  installed-wrld
                                  (cons (caar wrld) acc)))
@@ -1336,7 +1376,14 @@
   (let ((wrld (w state)))
     (new-verify-guards-fns1 wrld wrld nil)))
 
+; An error occurred when moving this below, because arities-okp is to be put
+; into :logic mode and calls logicp.
+(verify-termination-boot-strap logicp) ; and guards
+
 (defconst *system-verify-guards-alist*
+
+; Each member of each cdr below is of the form (fn . nil), for non-recursive
+; fn, or else (fn . measure).
 
 ; Each cdr was produced by evaluating
 ; (new-verify-guards-fns state)
@@ -1345,62 +1392,97 @@
 ; For example, cdr of the entry for "system/top" is produced by evaluating:
 ; (include-book "system/top" :dir :system).
 ; The indicated books need to be certified using an ACL2 executable that was
-; built with feature :acl2-devel set, but this takes about 2.5 minutes on a
-; fast machine in Feb. 2013, as follows:
+; built with feature :acl2-devel set, but this should take only a couple of
+; minutes or so.  It assumes that the only alist entry below is for
+; "system/top" and that ACL2 is your ACL2 sources directory.  Note: Replace
+; "saved_acl2d" as necessary, e.g., "ccl-saved_acl2d".
 
-; make -j 8 regression ACL2_BOOK_DIRS=system ACL2=<:acl2-devel version>
-
-; Each member of each cdr below is of the form (fn . measured-subset).
+; cd ACL2
+; make clean-books ACL2=`pwd`/saved_acl2d
+; cd books
+; (time nice ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert)
+; cd ACL2
+; make devel-check ACL2=`pwd`/saved_acl2d
 
 ; Note that it is not necessary to do a full regression with an :acl2-devel
 ; executable; only the books in the keys of this alist need to be certified.
 
   '(("system/top"
+     (>=-LEN ACL2-COUNT X)
+     (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
+     (ALL->=-LEN ACL2-COUNT LST)
+     (ALL-FFN-SYMBS ACL2-COUNT TERM)
+     (ALL-FFN-SYMBS-LST ACL2-COUNT LST)
      (ARGLISTP)
-     (ARGLISTP1 LST)
-     (ARITIES-OKP USER-TABLE)
+     (ARGLISTP1 ACL2-COUNT LST)
+     (ARITIES-OKP ACL2-COUNT USER-TABLE)
      (ARITY)
+     (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
      (CONS-TERM1-MV2)
      (DUMB-NEGATE-LIT)
      (FETCH-DCL-FIELD)
-     (FETCH-DCL-FIELDS LST)
-     (FETCH-DCL-FIELDS1 LST)
-     (FETCH-DCL-FIELDS2 KWD-LIST)
-     (FIND-DOT-DOT I FULL-PATHNAME)
-     (FIND-FIRST-BAD-ARG ARGS)
+     (FETCH-DCL-FIELDS ACL2-COUNT LST)
+     (FETCH-DCL-FIELDS1 ACL2-COUNT LST)
+     (FETCH-DCL-FIELDS2 ACL2-COUNT KWD-LIST)
+     (FFNNAMEP ACL2-COUNT TERM)
+     (FFNNAMEP-LST ACL2-COUNT L)
+     (FIND-DOT-DOT NFIX
+                   (BINARY-+ (LENGTH FULL-PATHNAME)
+                             (UNARY-- I)))
+     (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
+     (FORMALIZED-VARLISTP ACL2-COUNT VARLIST)
      (LAMBDA-KEYWORDP)
+     (LATEST-BODY)
      (LEGAL-CONSTANTP1)
      (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
      (LEGAL-VARIABLEP)
-     (MERGE-SORT-TERM-ORDER L)
-     (MERGE-TERM-ORDER L2 L1)
+     (LOGIC-FNS-LIST-LISTP ACL2-COUNT X)
+     (LOGIC-FNS-LISTP ACL2-COUNT LST)
+     (LOGIC-FNSP ACL2-COUNT TERM)
+     (LOGIC-TERM-LIST-LISTP)
+     (LOGIC-TERM-LISTP)
+     (LOGIC-TERMP)
+     (MACRO-ARGS)
+     (MAKE-LAMBDA-APPLICATION)
+     (MERGE-SORT-TERM-ORDER ; . (STEPS-TO-NIL L)
+      :? L)
+     (MERGE-TERM-ORDER ; . (BINARY-+ (STEPS-TO-NIL L1) (STEPS-TO-NIL L2))
+      :? L2 L1)
      (META-EXTRACT-CONTEXTUAL-FACT)
      (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
-     (PLAUSIBLE-DCLSP LST)
-     (PLAUSIBLE-DCLSP1 LST)
-     (PLIST-WORLDP-WITH-FORMALS ALIST)
-     (STRIP-DCLS LST)
-     (STRIP-DCLS1 LST)
-     (STRIP-KEYWORD-LIST LST)
-     (SUBCOR-VAR FORM)
-     (SUBCOR-VAR-LST FORMS)
-     (SUBCOR-VAR1 VARS)
+     (PLAUSIBLE-DCLSP ACL2-COUNT LST)
+     (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
+     (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+     (REMOVE-LAMBDAS)
+     (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
+     (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
+     (STOBJS-OUT)
+     (STRIP-CADRS ACL2-COUNT X)
+     (STRIP-DCLS ACL2-COUNT LST)
+     (STRIP-DCLS1 ACL2-COUNT LST)
+     (STRIP-KEYWORD-LIST ACL2-COUNT LST)
+     (SUBCOR-VAR ACL2-COUNT FORM)
+     (SUBCOR-VAR-LST ACL2-COUNT FORMS)
+     (SUBCOR-VAR1 ACL2-COUNT VARS)
      (SUBLIS-VAR)
      (SUBLIS-VAR-LST)
-     (SUBLIS-VAR1 FORM)
-     (SUBLIS-VAR1-LST L)
+     (SUBLIS-VAR1 ACL2-COUNT FORM)
+     (SUBLIS-VAR1-LST ACL2-COUNT L)
      (SUBST-EXPR)
      (SUBST-EXPR-ERROR)
-     (SUBST-EXPR1 TERM)
-     (SUBST-EXPR1-LST ARGS)
-     (SUBST-VAR FORM)
-     (SUBST-VAR-LST L)
-     (TERM-LIST-LISTP L)
-     (TERM-LISTP X)
+     (SUBST-EXPR1 ACL2-COUNT TERM)
+     (SUBST-EXPR1-LST ACL2-COUNT ARGS)
+     (SUBST-VAR ACL2-COUNT FORM)
+     (SUBST-VAR-LST ACL2-COUNT L)
+     (TERM-LIST-LISTP ACL2-COUNT L)
+     (TERM-LISTP ACL2-COUNT X)
      (TERM-ORDER)
      (TERM-ORDER1)
-     (TERMP X))))
+     (TERMIFY-CLAUSE-SET ACL2-COUNT CLAUSES)
+     (TERMP ACL2-COUNT X)
+     (THROW-NONEXEC-ERROR-P)
+     (THROW-NONEXEC-ERROR-P1))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))
@@ -1444,13 +1526,19 @@
   (cond ((endp fns-alist) acc)
         (t (system-verify-guards-fn-1
             (cdr fns-alist)
-            (cons `(skip-proofs (verify-termination-boot-strap ; and guards
-                                 ,(caar fns-alist)
-                                 ,@(let ((ms (cdar fns-alist)))
-                                     (and ms
-                                          `((declare (xargs :measure
-                                                            (:? ,@ms))))))))
-                  acc)))))
+            (list* `(skip-proofs (verify-termination-boot-strap
+                                  ,(caar fns-alist)
+                                  ,@(let ((measure (cdar fns-alist)))
+                                      (and measure
+                                           `((declare (xargs :measure
+                                                             ,measure)))))))
+
+; Normally the following verify-guards will be redundant.  However, if the
+; original defun specified xargs :verify-guards nil, then this will be
+; necessary.  (An example as of this writing is remove-lambdas.)
+
+                   `(skip-proofs (verify-guards ,(caar fns-alist)))
+                   acc)))))
 
 (defun cons-absolute-event-numbers (fns-alist wrld acc)
   (declare (xargs :guard (and (symbol-alistp fns-alist)
@@ -1460,8 +1548,8 @@
         (t (cons-absolute-event-numbers
             (cdr fns-alist)
             wrld
-            (acons (or (getprop (caar fns-alist) 'absolute-event-number nil
-                                'current-acl2-world wrld)
+            (acons (or (getpropc (caar fns-alist) 'absolute-event-number nil
+                                 wrld)
                        (er hard? 'cons-absolute-event-numbers
                            "The 'absolute-event-number property is missing ~
                             for ~x0."
@@ -1583,7 +1671,12 @@
                 (assoc fn user-table))
            (equal (arity fn w) (cdr (assoc fn user-table)))))
 
-(in-theory (disable arity arities-okp))
+(defthm arities-okp-implies-logicp
+  (implies (and (arities-okp user-table w)
+                (assoc fn user-table))
+           (logicp fn w)))
+
+(in-theory (disable arity arities-okp logicp))
 
 )
 
@@ -1597,7 +1690,7 @@
 ; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.
 
   (memoize 'fchecksum-obj :stats nil :forget t)
-  (memoize 'expansion-alist-pkg-names-memoize :stats nil :forget t)
+  (memoize 'pkg-names-memoize :stats nil :forget t)
 
 ; Comment on memoizing a worse-than function:
 

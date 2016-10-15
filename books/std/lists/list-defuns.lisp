@@ -31,7 +31,6 @@
 ; definitions, e.g., from Centaur libraries.
 
 (in-package "ACL2")
-(include-book "std/util/bstar" :dir :system)
 
 ; This book is intended to be a rather bare-minimum set of list definitions.
 ; Historically it included most of the books in the std/lists library and then
@@ -39,19 +38,6 @@
 ; However, to really optimize things and avoid having lots of dependencies, we
 ; now prove the bare-minimum theorems inline and avoid including the other
 ; books.
-
-(local (defthm commutativity-2-of-+
-         (equal (+ x (+ y z))
-                (+ y (+ x z)))))
-
-(local (defthm fold-consts-in-+
-         (implies (and (syntaxp (quotep x))
-                       (syntaxp (quotep y)))
-                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
-
-(local (defthm distributivity-of-minus-over-+
-         (equal (- (+ x y)) (+ (- x) (- y)))))
-
 
 (defund list-fix-exec (x)
   (declare (xargs :guard t))
@@ -232,6 +218,12 @@
            (equal (car x) (car y))
            (prefixp (cdr x) (cdr y)))
     t))
+
+(defund suffixp (x y)
+  (declare (xargs :guard t))
+  (or (equal x y)
+      (and (consp y)
+           (suffixp x (cdr y)))))
 
 (defund flatten (x)
   (declare (xargs :guard t))

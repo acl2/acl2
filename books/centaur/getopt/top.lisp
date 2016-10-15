@@ -36,7 +36,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "parsers")
 (include-book "xdoc/word-wrap" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
 
 (defxdoc getopt
@@ -688,11 +688,12 @@ and so forth.  This only applies to visible options."
           (make-parse-long-cases basename (cdr formals) world))))
 
 (define make-parse-long ((basename symbolp)
+                         (pred     symbolp)
                          (formals  formallist-p)
                          (world    plist-worldp))
   (b* ((parse-foo  (parser-name basename))
        (parse-long (parser-name-long basename))
-       (foop       (std::da-recognizer-name basename)))
+       (foop       (std::da-recognizer-name basename pred)))
     `(define ,parse-long
        :parents (,parse-foo)
        ((longname stringp
@@ -730,11 +731,12 @@ and so forth.  This only applies to visible options."
              (len args))
          :rule-classes ((:rewrite) (:linear))))))
 
-(define make-parse-bundle ((basename symbolp))
+(define make-parse-bundle ((basename symbolp)
+                           (pred     symbolp))
   (b* ((parse-foo    (parser-name basename))
        (parse-long   (parser-name-long basename))
        (parse-bundle (parser-name-bundle basename))
-       (foop         (std::da-recognizer-name basename)))
+       (foop         (std::da-recognizer-name basename pred)))
     `(define ,parse-bundle
        :parents (,parse-foo)
        ((longnames string-listp "The already-expanded out names of the bundled
@@ -765,6 +767,7 @@ and so forth.  This only applies to visible options."
          :rule-classes ((:rewrite) (:linear))))))
 
 (define make-parse-aux ((basename symbolp)
+                        (pred     symbolp)
                         (formals  formallist-p)
                         (world    plist-worldp))
   (b* ((parse-foo    (parser-name basename))
@@ -773,7 +776,7 @@ and so forth.  This only applies to visible options."
        (parse-short->long      (parser-name-short->long basename))
        (parse-short->long-list (parser-name-short->long-list basename))
        (parse-bundle (parser-name-bundle basename))
-       (foop         (std::da-recognizer-name basename))
+       (foop         (std::da-recognizer-name basename pred))
        (plain        (collect-plain-options formals world))
        (plain-longnames (formallist->longnames plain)))
     `(define ,parse-aux
@@ -858,11 +861,11 @@ and so forth.  This only applies to visible options."
              (mv err acc rest)))
          (,parse-aux rest acc seen skipped)))))
 
-(define make-parse ((basename symbolp))
+(define make-parse ((basename symbolp) (pred symbolp))
   (b* ((parse-foo   (parser-name basename))
        (parse-aux   (parser-name-aux basename))
        (default-foo (default-name basename))
-       (foop        (std::da-recognizer-name basename))
+       (foop        (std::da-recognizer-name basename pred))
        (foop-link (b* ((acc (str::revappend-chars "<see topic='" nil))
                        (acc (xdoc::file-name-mangle foop acc))
                        (acc (str::revappend-chars "'>" acc))
@@ -1032,7 +1035,7 @@ and so forth.  This only applies to visible options."
   (b* (((std::agginfo info) info)
        (visible      (drop-hidden-options info.efields))
        (- (sanity-check-formals info.name visible world))
-       (foop         (std::da-recognizer-name info.name))
+       (foop         (std::da-recognizer-name info.name info.pred))
        (usage-const  (intern-in-package-of-symbol
                       (cat "*" (symbol-name info.name) "-USAGE*")
                       info.name))
@@ -1048,11 +1051,11 @@ and so forth.  This only applies to visible options."
                                    (str::strprefixp
                                     set-difference-equal))))
 
-           ,(make-parse-long info.name visible world)
+           ,(make-parse-long info.name info.pred visible world)
            ,(make-parse-short->long info.name visible)
-           ,(make-parse-bundle info.name)
-           ,(make-parse-aux info.name visible world)
-           ,(make-parse info.name)
+           ,(make-parse-bundle info.name info.pred)
+           ,(make-parse-aux info.name info.pred visible world)
+           ,(make-parse info.name info.pred)
            (defsection ,usage-const
              :parents (,foop)
              :short "Automatically generated usage message."
@@ -1073,7 +1076,3 @@ and so forth.  This only applies to visible options."
              (agginfo (std::get-aggregate ',name world)))
           (value
            (defoptions-fn agginfo world)))))))
-
-
-
-

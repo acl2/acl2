@@ -413,7 +413,7 @@
 (defaggregate vl-vardeclassign
   :parents (vl-parse-datatype vl-build-vardecls)
   :short "Temporary structure used when parsing variable declarations."
-  :legiblep nil
+  :layout :fulltree
   ((id   stringp :rule-classes :type-prescription)
    (dims vl-packeddimensionlist-p "BOZO not sufficiently general.")
    (expr vl-maybe-expr-p          "BOZO not sufficiently general."))

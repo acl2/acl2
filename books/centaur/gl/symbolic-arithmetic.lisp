@@ -146,7 +146,7 @@ for computing:</p>
     (if (and (consp (car x))
              (eql (len (car x)) 2)
              (symbolp (caar x))
-             (member (cadar x) '(n i p b u s)))
+             (member (cadar x) '(n i p b u s ru rs)))
         (defsymbolic-check-formals (cdr x))
       (er hard? 'defsymbolic-check-formals
           "Bad formal: ~x0" (car x)))))
@@ -157,7 +157,7 @@ for computing:</p>
     (if (and (consp (car x))
              (>= (len (car x)) 2)
              (symbolp (caar x))
-             (member (cadar x) '(n i p b u s))
+             (member (cadar x) '(n i p b u s ru rs))
              (or (member (cadar x) '(n i))
                  (eql (len (car x)) 3)))
         (defsymbolic-check-returns (cdr x))
@@ -174,7 +174,9 @@ for computing:</p>
                   (p `(acl2::pos-fix ,(caar x)))
                   (b `(bfr-eval ,(caar x) env))
                   (u `(bfr-list->u ,(caar x) env))
-                  (s `(bfr-list->s ,(caar x) env))))
+                  (s `(bfr-list->s ,(caar x) env))
+                  (ru `(bfr-list->u (acl2::rev ,(caar x)) env))
+                  (rs `(bfr-list->s (acl2::rev ,(caar x)) env))))
           (defsymbolic-formals-pair-with-evals (cdr x)))))
 
 (defun defsymbolic-define-formals (x)
@@ -184,6 +186,7 @@ for computing:</p>
             (n `(,(caar x) natp))
             (i `(,(caar x) integerp))
             (p `(,(caar x) posp))
+            ((u s ru rs) `(,(caar x) true-listp))
             (t (caar x)))
           (defsymbolic-define-formals (cdr x)))))
 
@@ -193,7 +196,8 @@ for computing:</p>
     (append (case (cadar x)
               (n `((natp ,(caar x))))
               (i `((integerp ,(caar x))))
-              (p `((posp ,(caar x)))))
+              (p `((posp ,(caar x))))
+              ((u s ru rs) `((true-listp ,(caar x)))))
             (defsymbolic-guards (cdr x)))))
 
 (defun defsymbolic-define-returns1 (x)
@@ -203,7 +207,7 @@ for computing:</p>
             (n `(,(caar x) natp :rule-classes :type-prescription))
             (i `(,(caar x) integerp :rule-classes :type-prescription))
             (p `(,(caar x) posp :rule-classes :type-prescription))
-            (b (caar x))
+            (b `(,(caar x) t))
             (t `(,(caar x) true-listp :rule-classes :type-prescription)))
           (defsymbolic-define-returns1 (cdr x)))))
 
@@ -213,19 +217,33 @@ for computing:</p>
         (car rets)
       (cons 'mv rets))))
 
+(defun defsymbolic-spec-term (formal-evals retspec)
+  (if (eql (len retspec) 3)
+      (sublis formal-evals (third retspec))
+    (if (and (eql (len retspec) 5)
+             (eq (fourth retspec) :cond))
+        `(implies ,(sublis formal-evals (fifth retspec))
+                  ,(sublis formal-evals (third retspec)))
+      (er hard? 'defsymbolic "bad return-spec: ~x0~%" retspec))))
+
 (defun defsymbolic-return-specs (x formal-evals)
   (if (atom x)
       nil
-    (append (case (cadar x)
-              ((n i p) (and (third (car x))
-                            `((equal ,(caar x)
-                                     ,(sublis formal-evals (third (car x)))))))
-              (b `((equal (bfr-eval ,(caar x) env)
-                          ,(sublis formal-evals (third (car x))))))
-              (u `((equal (bfr-list->u ,(caar x) env)
-                          ,(sublis formal-evals (third (car x))))))
-              (s `((equal (bfr-list->s ,(caar x) env)
-                          ,(sublis formal-evals (third (car x)))))))
+    (append (b* ((spec-term (defsymbolic-spec-term formal-evals (car x))))
+              (case (cadar x)
+                ((n i p) (and (third (car x))
+                              `((equal ,(caar x)
+                                       ,spec-term))))
+                (b `((equal (bfr-eval ,(caar x) env)
+                            ,spec-term)))
+                (u `((equal (bfr-list->u ,(caar x) env)
+                            ,spec-term)))
+                (s `((equal (bfr-list->s ,(caar x) env)
+                            ,spec-term)))
+                (ru `((equal (bfr-list->u (acl2::rev ,(caar x)) env)
+                             ,spec-term)))
+                (rs `((equal (bfr-list->s (acl2::rev ,(caar x)) env)
+                             ,spec-term)))))
             (defsymbolic-return-specs (cdr x) formal-evals))))
 
 (defun defsymbolic-not-depends-on (x)
@@ -233,14 +251,14 @@ for computing:</p>
       nil
     (append (case (cadar x)
               (b `((not (pbfr-depends-on varname param ,(caar x)))))
-              ((u s) `((not (pbfr-list-depends-on varname param ,(caar x))))))
+              ((u s ru rs) `((not (pbfr-list-depends-on varname param ,(caar x))))))
             (defsymbolic-not-depends-on (cdr x)))))
 
 (defun induct/expand-fn (fn id world)
   (declare (xargs :mode :program))
   (and (not (acl2::access acl2::clause-id id :pool-lst))
        (let ((formals (formals fn world)))
-         (append (and (recursivep fn world)
+         (append (and (recursivep fn t world)
                       `(:induct (,fn . ,formals)))
                  `(:expand ((,fn . ,formals))
                    :in-theory (disable (:d ,fn)))))))
@@ -252,7 +270,8 @@ for computing:</p>
   (declare (xargs :mode :program))
   (b* (((mv kwd-alist other-kws other-args)
         (extract-some-keywords
-         '(:spec :returns :correct-hints :depends-hints :correct-hyp :abstract) args nil))
+         '(:spec :returns :correct-hints :depends-hints :correct-hyp :abstract :guard-hints)
+         args nil))
        ((unless (eql (len other-args) 2))
         (er hard? 'defsymbolic-fn "Need formals and body in addition to keyword args"))
        (formals (car other-args))
@@ -281,9 +300,12 @@ for computing:</p>
     `(progn
        (define ,exec-name ,(defsymbolic-define-formals formals)
          ,@other-kws
+         :verify-guards nil
          :returns ,(defsymbolic-define-returns returns)
          ,(subst exec-name name body)
          ///
+         (verify-guards ,exec-name
+           :hints ,(cdr (assoc :guard-hints kwd-alist)))
          (defthm ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name exec-name) "-CORRECT")
                    exec-name)
@@ -379,9 +401,9 @@ for computing:</p>
   :abstract nil
   (if c
       (if (eq c t)
-          (list-fix v1)
+          (llist-fix v1)
         (bfr-ite-bvv-fn-aux c v1 v0))
-    (list-fix v0)))
+    (llist-fix v0)))
 
 (defthm bfr-ite-bvv-fn-of-const-tests
   (and (equal (bfr-ite-bvv-fn t v1 v0) (list-fix v1))
@@ -400,9 +422,9 @@ for computing:</p>
         :exec (let ((bfr-ite-bvv-test ,c))
                 (if bfr-ite-bvv-test
                     (if (eq bfr-ite-bvv-test t)
-                        (list-fix ,v1)
+                        (llist-fix ,v1)
                       (bfr-ite-bvv-fn-aux bfr-ite-bvv-test ,v1 ,v0))
-                  (list-fix ,v0)))))
+                  (llist-fix ,v0)))))
 
 (add-macro-alias bfr-ite-bvv bfr-ite-bvv-fn)
 
@@ -427,9 +449,9 @@ for computing:</p>
   :abstract nil
   (if c
       (if (eq c t)
-          (list-fix v1)
+          (llist-fix v1)
         (bfr-ite-bss-fn-aux c v1 v0))
-    (list-fix v0)))
+    (llist-fix v0)))
 
 (defthm bfr-ite-bss-fn-of-const-tests
   (and (equal (bfr-ite-bss-fn t v1 v0) (list-fix v1))
@@ -448,9 +470,9 @@ for computing:</p>
         :exec (let ((bfr-ite-bss-test ,c))
                 (if bfr-ite-bss-test
                     (if (eq bfr-ite-bss-test t)
-                        (list-fix ,v1)
+                        (llist-fix ,v1)
                       (bfr-ite-bss-fn-aux bfr-ite-bss-test ,v1 ,v0))
-                  (list-fix ,v0)))))
+                  (llist-fix ,v0)))))
 
 (add-macro-alias bfr-ite-bss bfr-ite-bss-fn)
 
@@ -468,7 +490,7 @@ for computing:</p>
   :measure (acl2::pos-fix n)
   (b* ((n (lposfix n))
        ((mv head tail ?end) (first/rest/end x))
-       ((when end) (list-fix x))
+       ((when end) (llist-fix x))
        ((when (eql n 1)) (bfr-sterm head)))
     (bfr-scons head (bfr-logext-ns (1- n) tail)))
   :correct-hints (("goal" :induct (bfr-logext-ns n x))
@@ -479,7 +501,7 @@ for computing:</p>
                              (x s))
   :returns (xx s (logtail place x))
   (if (or (zp place) (s-endp x))
-      (list-fix x)
+      (llist-fix x)
     (bfr-logtail-ns (1- place) (scdr x))))
 
 (defsymbolic bfr-+-ss ((c b)
@@ -582,6 +604,11 @@ for computing:</p>
   :returns (bound posp :rule-classes :type-prescription)
   (max (len x) 1)
   ///
+  (local 
+   (defthm s-endp-true-by-len
+     (implies (<= (len x) 1)
+              (s-endp x))
+     :hints(("Goal" :in-theory (enable s-endp)))))
   (defthm integer-length-bound-s-correct
     (< (integer-length (bfr-list->s x env))
        (integer-length-bound-s x))
@@ -655,23 +682,59 @@ for computing:</p>
               (bfr-scons nil rest)))
   :correct-hints ('(:in-theory (enable logcons))))
 
+(define syntactically-true-p (x)
+  :returns (true-p booleanp)
+  (eq x t)
+  ///
+  (std::defretd syntactically-true-p-implies
+    (implies (syntactically-true-p x)
+             (equal (bfr-eval x env) t)))
+
+  (std::defretd syntactically-true-p-rewrite
+    (implies (and (acl2::rewriting-negative-literal `(syntactically-true-p ,x))
+                  (bind-free '((env . env)) (env)))
+             (iff (syntactically-true-p x)
+                  (and (equal (bfr-eval x env) t)
+                       (hide (syntactically-true-p x)))))
+    :hints (("goal" :expand ((:free (x) (hide x)))))))
+
+
 (defsymbolic bfr-<-=-ss ((a s) (b s))
   :measure (+ (len a) (len b))
   :returns (mv (a<b b (< a b))
                (a=b b (= a b)))
+  :correct-hints ('(:in-theory (e/d (syntactically-true-p-rewrite))
+                    :do-not-induct t))
   (b* (((mv head1 tail1 end1) (first/rest/end a))
        ((mv head2 tail2 end2) (first/rest/end b))
        ((when (and end1 end2))
-        (mv (bfr-and head1 (bfr-not head2))
-            (bfr-iff head1 head2)))
+        (b* ((less (bfr-and head1 (bfr-not head2))))
+          (mv less
+              (if (syntactically-true-p less) nil (bfr-iff head1 head2)))))
        ((mv rst< rst=)
-        (bfr-<-=-ss tail1 tail2)))
-    (mv (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))
-        (bfr-and rst= (bfr-iff head1 head2)))))
+        (bfr-<-=-ss tail1 tail2))
+       (less (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))))
+    (mv less
+        (if (syntactically-true-p less) nil (bfr-and rst= (bfr-iff head1 head2))))))
+
+(define syntactically-zero-p ((x true-listp))
+  :returns (result booleanp)
+  (b* (((mv head tail end) (first/rest/end x)))
+    (and (eq head nil)
+         (or end
+             (syntactically-zero-p tail))))
+  ///
+  (std::defretd syntactically-zero-p-implies
+    (implies (syntactically-zero-p x)
+             (equal (bfr-list->s x env) 0))))
 
 (defsymbolic bfr-<-ss ((a s) (b s))
   :returns (a<b b (< a b))
-  (b* (((mv head1 tail1 end1) (first/rest/end a))
+  :correct-hints ('(:in-theory (enable syntactically-zero-p-implies)))
+  (b* (((when (syntactically-zero-p b))
+        ;; Special case for (< x 0) -- very common
+        (bfr-sign-s a))
+       ((mv head1 tail1 end1) (first/rest/end a))
        ((mv head2 tail2 end2) (first/rest/end b))
        ((when (and end1 end2))
         (bfr-and head1 (bfr-not head2)))
@@ -683,18 +746,34 @@ for computing:</p>
                              (b s))
   :returns (a-app-b s (logapp n a b))
   (b* (((when (zp n))
-        (list-fix b))
+        (llist-fix b))
        ((mv first rest &) (first/rest/end a)))
     (bfr-scons first (bfr-logapp-nss (1- n) rest b))))
+
+(defsymbolic bfr-logapp-nus-aux ((n n)
+                             (a u)
+                             (b s))
+  :returns (a-app-b s (logapp n a b))
+  (b* (((when (zp n))
+        (llist-fix b))
+       ((mv first rest) (car/cdr a)))
+    (bfr-scons first (bfr-logapp-nus-aux (1- n) rest b))))
+
+(defsymbolic bfr-loghead-nu ((n n)
+                             (a u))
+  :returns (head s (loghead n a))
+  (b* (((when (or (zp n) (atom a))) '(nil))
+       ((mv first rest) (car/cdr a)))
+    (bfr-scons first (bfr-loghead-nu (1- n) rest))))
 
 (defsymbolic bfr-logapp-nus ((n n)
                              (a u)
                              (b s))
   :returns (a-app-b s (logapp n a b))
-  (b* (((when (zp n))
-        (list-fix b))
-       ((mv first rest) (car/cdr a)))
-    (bfr-scons first (bfr-logapp-nus (1- n) rest b))))
+  :correct-hints ('(:in-theory (enable syntactically-zero-p-implies)))
+  (b* (((when (syntactically-zero-p b))
+        (bfr-loghead-nu n a)))
+    (bfr-logapp-nus-aux n a b)))
 
 (defsymbolic bfr-ash-ss ((place p)
                     (n s)
@@ -1057,7 +1136,7 @@ for computing:</p>
   :returns (m s (mod a b))
   :prepwork ((local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)
-               (list-fix a)
+               (llist-fix a)
                (bfr-logext-ns (integer-length-bound-s b)
                               (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
                                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
@@ -1087,7 +1166,7 @@ for computing:</p>
                                         acl2::integer-length**)))
              (local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)
-               (list-fix a)
+               (llist-fix a)
                (b* (((mv & babs bneg) (bfr-sign-abs-not-s b))
                     ((mv asign aabs &) (bfr-sign-abs-not-s a))
                     (m (bfr-mod-ss-aux aabs babs bneg)))
@@ -1103,49 +1182,179 @@ for computing:</p>
                                           integer-length-of-mod))))))
 
 
-(defun s-take (n x)
-  (declare (xargs :guard (natp n)))
+(define s-take ((n natp) (x true-listp))
   (b* (((when (zp n)) (bfr-sterm nil))
-       ((mv first rest &) (first/rest/end x)))
-    (bfr-ucons first (s-take (1- n) rest))))
-
-(defthm deps-of-s-take
-  (implies (not (pbfr-list-depends-on k p x))
-           (not (pbfr-list-depends-on k p (s-take n x)))))
-
-
-(defthm s-take-correct
-  (equal (bfr-list->u (s-take n x) env)
-         (loghead n (bfr-list->s x env)))
-  :hints (("goal" :induct (s-take n x)
-           :in-theory (enable* acl2::ihsext-recursive-redefs))))
+       ((mv first rest end) (first/rest/end x))
+       ((when (and end (eq first nil)))
+        '(nil)))
+    (bfr-ucons first (s-take (1- n) rest)))
+  ///
+  (defthm deps-of-s-take
+    (implies (not (pbfr-list-depends-on k p x))
+             (not (pbfr-list-depends-on k p (s-take n x)))))
 
 
+  (defthm s-take-correct
+    (equal (bfr-list->u (s-take n x) env)
+           (loghead n (bfr-list->s x env)))
+    :hints (("goal" :induct (s-take n x)
+             :in-theory (enable* acl2::ihsext-recursive-redefs)))))
 
-(defsymbolic bfr-logapp-uss ((w n)
-                             (n u)
-                             (x s)
-                             (y s))
-  :returns (app s (logapp (* n w) x y))
-  :prepwork ((local (in-theory (enable logcons)))
+
+(defsymbolic bfr-logapp-russ ((n ru)
+                              (x s)
+                              (y s))
+  :returns (app s (logapp n x y))
+  :prepwork ((local (in-theory (enable logcons acl2::rev)))
              (local (defthm logapp-loghead-logtail
                       (implies (equal z (logapp w1 (logtail w x) y))
                                (equal (logapp w (loghead w x) z)
                                       (logapp (+ (nfix w) (nfix w1)) x y)))
                       :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
-                                                         bitops::ihsext-inductions))))))
+                                                         bitops::ihsext-inductions)))))
+             (local (defthm loghead-of-len-of-bfr-list
+                      (implies (<= (len lst) (nfix n))
+                               (equal (loghead n (bfr-list->u lst env))
+                                      (bfr-list->u lst env)))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions
+                                                         (:i nthcdr))
+                              :induct (nthcdr n lst)
+                              :expand ((bfr-list->u lst env)
+                                       (:free (x) (loghead n x)))))))
+             (local (defthm logapp-1-is-plus-ash
+                      (equal (logapp n x 1)
+                             (+ (ash 1 (nfix n)) (loghead n x)))
+                      :hints(("Goal" :in-theory (enable logapp bitops::ash-is-expt-*-x)))))
+             (local (defthm bfr-list->u-of-append
+                      (Equal (bfr-list->u (append a b) env)
+                             (logapp (len a)
+                                     (bfr-list->u a env)
+                                     (bfr-list->u b env)))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions
+                                                         append))))))
   (if (atom n)
-      (list-fix y)
+      (llist-fix y)
     (if (b* (((mv x1 & xend) (first/rest/end x))
              ((mv y1 & yend) (first/rest/end y)))
           (and xend
                yend
                (equal x1 y1)))
-        (list-fix x)
+        (llist-fix x)
       (bfr-ite-bss
        (car n)
-       (bfr-logapp-nus (lnfix w) (s-take w x)
-                       (bfr-logapp-uss
-                        (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
-                        y))
-       (bfr-logapp-uss (ash (lnfix w) 1) (cdr n) x y)))))
+       (b* ((w (ash 1 (len (cdr n)))))
+         (bfr-logapp-nus w (s-take w x)
+                         (bfr-logapp-russ (cdr n) (bfr-logtail-ns w x) y)))
+       (bfr-logapp-russ (cdr n) x y)))))
+    
+
+;; (defsymbolic bfr-logapp-uss ((w n)
+;;                              (n u)
+;;                              (x s)
+;;                              (y s))
+;;   :returns (app s (logapp (* n w) x y))
+;;   :prepwork ((local (in-theory (enable logcons)))
+;;              (local (defthm logapp-loghead-logtail
+;;                       (implies (equal z (logapp w1 (logtail w x) y))
+;;                                (equal (logapp w (loghead w x) z)
+;;                                       (logapp (+ (nfix w) (nfix w1)) x y)))
+;;                       :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+;;                                                          bitops::ihsext-inductions))))))
+;;   (if (atom n)
+;;       (llist-fix y)
+;;     (if (b* (((mv x1 & xend) (first/rest/end x))
+;;              ((mv y1 & yend) (first/rest/end y)))
+;;           (and xend
+;;                yend
+;;                (equal x1 y1)))
+;;         (llist-fix x)
+;;       (bfr-ite-bss
+;;        (car n)
+;;        (bfr-logapp-nus (lnfix w) (s-take w x)
+;;                        (bfr-logapp-uss
+;;                         (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
+;;                         y))
+;;        (bfr-logapp-uss (ash (lnfix w) 1) (cdr n) x y)))))
+
+
+
+(local
+ (defsection expt-lemmas
+   (defthm expt-of-0
+     (equal (expt base 0) 1)
+     :hints(("Goal" :in-theory (enable expt))))
+
+
+   (defthm expt-of-*-2
+     (implies (natp exp)
+              (equal (expt base (* 2 exp))
+                     (* (expt base exp)
+                        (expt base exp))))
+     :hints(("Goal" :in-theory (enable expt))))))
+
+
+;; (local
+;;  (defthm expt-base-decompose
+;;    (implies (and (posp exp) (integerp base))
+;;             (equal (expt base exp)
+;;                    (* (if (eql (logcar exp) 1) base 1)
+;;                       (expt (* base base) (logcdr exp)))))
+;;    :hints (("goal" :use ((:instance acl2::logcar-logcdr-elim
+;;                           (i exp))
+;;                          (:instance acl2::exponents-add-for-nonneg-exponents
+;;                           (r base) (i (* 2 (logcdr exp))) (j (logcar exp)))
+;;                          (:instance acl2::exponents-add-for-nonneg-exponents
+;;                           (r base) (i (logcdr exp)) (j (logcdr exp))))
+;;             :in-theory (e/d (logcons) (acl2::logcar-logcdr-elim
+;;                                        bitops::logcons-destruct
+;;                                        acl2::exponents-add-for-nonneg-exponents))))))
+
+;; (define expt-impl ((base integerp)
+;;                    (exp natp))
+;;   :measure (nfix exp)
+;;   (if (mbe :logic (or (zp exp) (zp (logcdr exp)))
+;;            :exec (zp (logcdr exp)))
+;;       (if (eql (logcar exp) 1) base 1)
+;;     (let ((rest (expt-impl (* base base) (logcdr exp))))
+;;       (if (eql (logcar exp) 1)
+;;           (* base rest)
+;;         rest)))
+;;   ///
+
+;;   (defthm expt-impl-correct
+;;     (implies (and (integerp base) (natp exp))
+;;              (equal (expt-impl base exp)
+;;                     (expt base exp)))))
+
+
+(define all-nil ((x))
+  (if (atom x)
+      t
+    (and (eq (car x) nil)
+         (all-nil (cdr x))))
+  ///
+  (defthm all-nil-when-atom
+    (implies (atom x) (all-nil x)))
+
+  (defthmd zero-when-all-nil
+    (implies (all-nil x)
+             (equal (bfr-list->u x env) 0))))
+
+;; Note: We don't have a symbolic counterpart for expt yet, but this is used in
+;; SV and it could easily be used in GL as well so we wrote it here.
+(defsymbolic bfr-expt-su ((b s)
+                          (e u))
+  :measure (len e)
+  :returns (b^e s (expt b e))
+  (b* (((when (all-nil e)) '(t nil))
+       ((when (all-nil (cdr e)))
+        (bfr-ite-bss (car e) b '(t nil)))
+       (rest (bfr-expt-su (bfr-*-ss b b) (cdr e))))
+    (bfr-ite-bss (car e)
+                 (bfr-*-ss b rest)
+                 rest))
+  :correct-hints ('(:in-theory (enable zero-when-all-nil
+                                       logcons))))
+

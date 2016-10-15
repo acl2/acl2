@@ -1,85 +1,20 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(local (include-book "arithmetic-5/top" :dir :system))
+
+(local (include-book "basic"))
+(local (include-book "bits"))
+(include-book "definitions")
 
 (local (encapsulate ()
 
-(local (include-book "../rel9-rtl-pkg/lib/top"))
-
-(local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "../rel9-rtl-pkg/lib/log"))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| mod-logand))
-
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
-
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
-
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
-
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x)
-                      ,(cadr x)
-                      (cat ,@(cddr x))
-                      ,(cat-size (cddr x))))))
 
 
 ;;;**********************************************************************
@@ -198,8 +133,6 @@
            (equal (fl (* (expt 2 (- n)) (logxor x y)))
                   (logxor (fl (* (expt 2 (- n)) x)) (fl (* (expt 2 (- n)) y)))))
   :hints (("Goal" :use ((:instance fl-logxor (k n) (n 0))))))
-
-(local (include-book "bits"))
 
 (local-defthmd logand-cat-1
   (implies (and (case-split (integerp x1))
@@ -739,76 +672,6 @@
   :hints (("Goal" :use lognot-logxor)))
 
 ))
-
-;;************************************************************************************
-
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
-
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
-
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
-
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x)
-                      ,(cadr x)
-                      (cat ,@(cddr x))
-                      ,(cat-size (cddr x))))))
-
 
 ;;;**********************************************************************
 ;;;                       LOGAND, LOGIOR, and LOGXOR

@@ -31,6 +31,7 @@
 (in-package "SV")
 (include-book "../mods/lhs")
 (include-book "std/util/defmapappend" :dir :system)
+(include-book "std/util/defenum" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
@@ -50,6 +51,8 @@
 (defxdoc svstmt.lisp :parents (svstmt))
 (local (xdoc::set-default-parents svstmt.lisp))
 
+(defenum svjump-p (:break :continue :return))
+
 (deftypes svstmt
   (fty::deftagsum svstmt
     :parents (sv)
@@ -66,7 +69,22 @@
      :layout :tree)
     (:while
      ((cond svex)
-      (body svstmtlist))))
+      (body svstmtlist)
+      (next svstmtlist
+            "Increment of a for loop.  When running a while loop we always check
+             the condition, then run the body, then run the next, then recur. 
+             But if there is a continue statement, we need to jump to after the
+             body but before the next, because in a for loop the increment still
+             happens after a continue.")))
+    (:scope
+     ((locals svarlist)
+      (body svstmtlist)))
+    ;; Note: 'return foo' gets translated as 'assign fnname = foo; return'
+    (:jump 
+     ((type svjump-p
+            :rule-classes
+            (:rewrite
+             (:forward-chaining :trigger-terms ((svstmt-jump->type x))))))))
   (deflist svstmtlist :elt-type svstmt :true-listp nil :elementp-of-nil nil))
 
 
@@ -85,7 +103,12 @@
            (svstmtlist-vars x.else))
       :while (append-without-guard
               (svex-vars x.cond)
-              (svstmtlist-vars x.body))))
+              (svstmtlist-vars x.body)
+              (svstmtlist-vars x.next))
+      :scope (append-without-guard
+              (svarlist-fix x.locals)
+              (svstmtlist-vars x.body))
+      :otherwise nil))
   (define svstmtlist-vars ((x svstmtlist-p))
     :returns (vars svarlist-p)
     :measure (svstmtlist-count x)
@@ -115,8 +138,15 @@
     :hints (("goal" :expand ((svstmt-vars (svstmt-if cond then else))))))
 
   (defthm svstmt-vars-of-while
-    (equal (svstmt-vars (svstmt-while cond body))
+    (equal (svstmt-vars (svstmt-while cond body next))
            (append (svex-vars cond)
+                   (svstmtlist-vars body)
+                   (svstmtlist-vars next)))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body next))))))
+
+  (defthm svstmt-vars-of-scope
+    (equal (svstmt-vars (svstmt-scope locals body))
+           (append (svarlist-fix locals)
                    (svstmtlist-vars body)))
-    :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body)))))))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-scope locals body)))))))
 

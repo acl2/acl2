@@ -31,7 +31,7 @@
 (in-package "GL")
 (include-book "bfr")
 (include-book "ihs/logops-definitions" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (defsection bvec
@@ -141,12 +141,11 @@ the same names to their (Boolean) results."
     :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 
-(define s-endp (v)
+(define s-endp ((v true-listp))
   :short "Are we at the end of a signed bit vector?"
   :inline t
   ;; MBE just for a simpler logical definition
-  (mbe :logic (atom (cdr v))
-       :exec (or (atom v) (atom (cdr v))))
+  (atom (cdr v))
   ///
   (defthm s-endp-of-list-fix
     (equal (s-endp (acl2::list-fix x))
@@ -158,19 +157,22 @@ the same names to their (Boolean) results."
     :rule-classes :compound-recognizer))
 
 
+(local (defthm acl2-count-of-list-fix
+         (<= (acl2-count (list-fix x)) (acl2-count x))
+         :rule-classes :linear))
 
-(define scdr (v)
-  :returns (cdr)
+(define scdr ((v true-listp))
+  :returns (cdr true-listp :rule-classes :type-prescription)
   :short "Like @(see logcdr) for signed bvecs."
   :long "<p>See @(see bvec).  For a signed bit vector, the final bit is the
 sign bit, which we must implicitly extend out to infinity.</p>"
   :inline t
   ;; MBE just for a simpler logical definition
-  (mbe :logic (if (atom (cdr v))
-                  ;; No more bits, so don't CDR the vector any more.
-                  v
-                (cdr v))
-       :exec (if (or (atom v) (atom (cdr v))) v (cdr v)))
+  (let ((v (llist-fix v)))
+    (if (atom (cdr v))
+        ;; No more bits, so don't CDR the vector any more.
+        v
+      (cdr v)))
   ///
   (defthm pbfr-list-depends-on-scdr
     (implies (not (pbfr-list-depends-on k p x))
@@ -210,13 +212,13 @@ sign bit, which we must implicitly extend out to infinity.</p>"
 
   (defthm scdr-when-s-endp
     (implies (s-endp x)
-             (equal (scdr x) x))
+             (equal (scdr x) (list-fix x)))
     :hints(("Goal" :in-theory (enable scdr s-endp)))
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 
-(define first/rest/end (x)
+(define first/rest/end ((x true-listp))
   :short "Deconstruct a signed bit vector."
   :enabled t
   (declare (xargs :guard t
@@ -233,7 +235,7 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   (if x -1 0))
 
 
-(define bfr-list->s ((x   "BFR to interpret as a signed number.")
+(define bfr-list->s ((x   true-listp "BFR list to interpret as a signed number.")
                      (env "Environment to evaluate the BFRs under."))
   :short "Signed interpretation of a BFR list under some environment."
   :enabled t ;; bozo for backwards compatibility
@@ -275,8 +277,9 @@ sign bit, which we must implicitly extend out to infinity.</p>"
     :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 
-(define bfr-snorm (v)
-  (if (atom v) '(nil) v)
+(define bfr-snorm ((v true-listp))
+  :returns (vv true-listp :rule-classes :type-prescription)
+  (if (atom v) '(nil) (llist-fix v))
   ///
   (defthm s-endp-of-bfr-snorm
     (equal (s-endp (bfr-snorm v))
@@ -297,21 +300,21 @@ sign bit, which we must implicitly extend out to infinity.</p>"
     (equal (bfr-list->s (bfr-snorm v) env)
            (bfr-list->s v env))
     :hints(("Goal" :in-theory (e/d (bfr-list->s)
-                                   (bfr-snorm))))))
+                                   (bfr-snorm)))))
 
-(define bfr-scons (b v)
+  (defthm bfr-snorm-of-list-fix
+    (equal (bfr-snorm (list-fix x)) (bfr-snorm x))))
+
+(define bfr-scons (b (v true-listp))
   :short "Like @(see logcons) for signed bvecs."
+  :returns (s true-listp :rule-classes :type-prescription)
   (if (atom v)
       (if b (list b nil) '(nil))
     (if (and (atom (cdr v))
              (hons-equal (car v) b))
-        v
-      (cons b v)))
+        (llist-fix v)
+      (cons b (llist-fix v))))
   ///
-  (defthm true-listp-of-bfr-scons
-    (implies (true-listp b)
-             (true-listp (bfr-scons a b)))
-    :rule-classes :type-prescription)
 
   (defthm scdr-of-bfr-scons
     (equal (scdr (bfr-scons b v))
@@ -343,7 +346,10 @@ sign bit, which we must implicitly extend out to infinity.</p>"
     (implies (and (not (pbfr-depends-on k p b))
                   (not (pbfr-list-depends-on k p x)))
              (not (pbfr-list-depends-on k p (bfr-scons b x))))
-    :hints(("Goal" :in-theory (enable bfr-scons pbfr-list-depends-on)))))
+    :hints(("Goal" :in-theory (enable bfr-scons pbfr-list-depends-on))))
+
+  (defthm bfr-scons-of-list-fix
+    (equal (bfr-scons b (list-fix v)) (bfr-scons b v))))
 
 
 (define bfr-sterm (b)
@@ -389,9 +395,9 @@ environment."
         ((eql n -1) '(t))
         (t (bfr-scons (equal (logcar n) 1) (i2v (logcdr n)))))
   ///
-  (defthm true-listp-of-i2v
-    (true-listp (i2v n))
-    :rule-classes :type-prescription)
+  ;; (defthm true-listp-of-i2v
+  ;;   (true-listp (i2v n))
+  ;;   :rule-classes :type-prescription)
 
   (defthm bfr-list->s-of-i2v
     (equal (bfr-list->s (i2v n) env)
@@ -432,16 +438,13 @@ environment."
     :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 
-(define bfr-ucons (b x)
+(define bfr-ucons (b (x true-listp))
   :short "Like @(see logcons) for unsigned bvecs."
+  :returns (new-x true-listp :rule-classes :type-prescription)
   (if (and (atom x) (not b))
       nil
-    (cons b x))
+    (cons b (llist-fix x)))
   ///
-  (defthm true-listp-of-bfr-ucons
-    (implies (true-listp b)
-             (true-listp (bfr-ucons a b)))
-    :rule-classes :type-prescription)
 
   (defthm bfr-list->u-of-bfr-ucons
     (equal (bfr-list->u (bfr-ucons b x) env)
@@ -453,7 +456,11 @@ environment."
     (implies (and (not (pbfr-depends-on k p b))
                   (not (pbfr-list-depends-on k p x)))
              (not (pbfr-list-depends-on k p (bfr-ucons b x))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
+
+  (defthm bfr-ucons-of-list-fix
+    (equal (bfr-ucons b (list-fix x))
+           (bfr-ucons b x))))
 
 
 (define n2v (n)
@@ -480,7 +487,7 @@ environment."
 
 
 
-(define v2i (v)
+(define v2i ((v true-listp))
   ;; BOZO it would be natural to express bfr-list->s as a function that produced
   ;; a list of booleans, which we then interpreted using v2i
   :short "Convert a (pure constant) signed bvec into an integer."
@@ -516,7 +523,7 @@ environment."
     :hints(("Goal" :in-theory (enable bfr-scons s-endp scdr i2v)))))
 
 
-(define v2n (v)
+(define v2n ((v true-listp))
   :short "Convert an unsigned bvec into the corresponding natural."
   :enabled t ;; BOZO for backwards compatibility
   (if (atom v)
@@ -534,4 +541,3 @@ environment."
            (nfix x))
     :hints(("Goal" :in-theory (enable bfr-ucons
                                       n2v)))))
-

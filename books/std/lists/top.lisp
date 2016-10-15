@@ -37,6 +37,7 @@
 
 (include-book "append")
 (include-book "all-equalp")
+(include-book "bits-equiv")
 (include-book "duplicity")
 (include-book "equiv")
 (include-book "final-cdr")
@@ -49,6 +50,7 @@
 (include-book "len")
 (include-book "list-fix")
 (include-book "mfc-utils")
+(include-book "nats-equiv")
 (include-book "no-duplicatesp")
 (include-book "nth")
 (include-book "nthcdr")
@@ -64,6 +66,7 @@
 (include-book "set-difference")
 (include-book "sublistp")
 (include-book "subseq")
+(include-book "suffixp")
 (include-book "take")
 (include-book "true-listp")
 (include-book "update-nth")

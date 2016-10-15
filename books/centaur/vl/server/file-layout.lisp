@@ -33,11 +33,11 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "oslib/ls" :dir :system)
-(include-book "../kit/zipformat")
+(include-book "../kit/zipfile")
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
 (defsection file-layout
-  :parents (server)
+  :parents (vl-server)
   :short "Where we look for translation data."
 
   :long "<p>The VL server looks in a particular root directory for its

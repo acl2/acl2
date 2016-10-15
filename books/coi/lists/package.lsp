@@ -31,11 +31,8 @@
 #!ACL2
 (in-package "ACL2")
 
-;; BOZO switch these to include-books of suitable portculli
-(ld "../adviser/adviser-defpkg.lsp")
-(ld "../util/debug-defpkg.lsp")
-(ld "../util/def-defpkg.lsp")
-
+(include-book "../adviser/portcullis")
+(include-book "../util/portcullis")
 
 (defpkg "LIST"
   (set-difference-eq
@@ -60,3 +57,20 @@
       )
     ;)
     '(fix)))
+
+
+
+;; This list should be considered a rough draft.  We might want to include
+;; other things, particularly:
+;;
+;;   - names of theorems that often should be enabled or disabled?
+;;   - names of new functions as we add them?
+;;   - names of variables used throughout our theorems?
+
+#!LIST
+(defconst *exports*
+  '(finalcdr memberp firstn repeat
+    cdddddr cddddddr caddddddr cadddddr caddddr
+    ))
+
+

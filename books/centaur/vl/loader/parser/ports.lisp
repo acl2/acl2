@@ -709,8 +709,7 @@ begin with one of:</p>
   :short "SystemVerilog-2012 only.  Top-level function for parsing port lists
 in both ANSI and non-ANSI styles."
 
-  :long "<p>See @(see sv-ansi-portdecls) and @(see sv-non-ansi-portdecls).  We
-match the following, contrived grammar rule:</p>
+  :long "<p>We match the following, contrived grammar rule:</p>
 
 @({
    vl_module_port_list ::= list_of_ports
@@ -815,7 +814,7 @@ portdecl-sign).</p>")
 (defaggregate vl-parsed-port-identifier
   :short "Temporary structure created during port parsing."
   :tag nil
-  :legiblep nil
+  :layout :fulltree
   ((name  vl-idtoken-p
           "Identifier for the port being declared.")
    (udims vl-packeddimensionlist-p
@@ -838,6 +837,43 @@ any unpacked dimensions.</p>"
                                           :udims nil)
           (vl-parsed-port-identifier-list-from-idtokenlist (cdr x)))))
 
+
+(define vl-build-subsequent-portdecls
+  :parents (vl-build-portdecls)
+  :long "<p>We have sometimes encountered very long port lists like @('input
+  a0, a1, ...;').  In these cases, we can win big for memory usage by reusing
+  structure when we build the subsequent port declarations, by CHANGE-ing the
+  declaration of @('a0') instead of MAKE-ing fresh ports.</p>"
+  ((x         vl-parsed-port-identifier-list-p
+              "The subsequent ports, @('a1, ...')")
+   (base-decl vl-portdecl-p
+              "Possibly the portdecl for @('a0'), but more generally it may be
+               a portdecl that we are ``abusing'' to reuse structure.  In
+               particular, if @('a0') has unpacked dimensions, then
+               @('base-decl') is like @('a0') except that it does NOT have such
+               dimensions."))
+  :returns (portdecls vl-portdecllist-p)
+  (b* (((when (atom x))
+        nil)
+       ((vl-parsed-port-identifier x1) (car x))
+       (basetype (vl-portdecl->type base-decl))
+       (- (or (not (vl-datatype->udims basetype))
+              (raise "Base datatype already has unpacked dimensions?")))
+       (type1 (if (consp x1.udims)
+                  (vl-datatype-update-udims x1.udims basetype)
+                basetype)))
+    (cons (change-vl-portdecl base-decl
+                              :name    (vl-idtoken->name x1.name)
+                              :loc     (vl-token->loc x1.name)
+                              :type    type1)
+          (vl-build-subsequent-portdecls (cdr x) base-decl)))
+  ///
+  (more-returns
+   (portdecls true-listp :rule-classes :type-prescription)
+   (portdecls (equal (len portdecls) (len x)) :name len-of-vl-build-subsequent-portdecls)
+   (portdecls (equal (consp portdecls) (consp x)) :name consp-of-vl-build-subsequent-portdecls)
+   (portdecls (iff portdecls (consp x)) :name vl-build-subsequent-portdecls-under-iff)))
+
 (define vl-build-portdecls
   :short "Main loop for creating real @(see vl-portdecl)s."
   ((x        vl-parsed-port-identifier-list-p)
@@ -852,26 +888,59 @@ any unpacked dimensions.</p>"
        ((vl-parsed-port-identifier x1) (car x))
        (- (or (not (vl-datatype->udims type))
               (raise "Base datatype already has unpacked dimensions?")))
-       (type1 (if (consp x1.udims)
-                  (vl-datatype-update-udims x1.udims type)
-                type)))
-    (cons (make-vl-portdecl :name    (vl-idtoken->name x1.name)
-                            :loc     (vl-token->loc x1.name)
-                            :dir     dir
-                            :nettype nettype
-                            :type    type1
-                            :atts    atts)
-          (vl-build-portdecls (cdr x)
-                              :dir     dir
-                              :nettype nettype
-                              :type    type
-                              :atts    atts)))
+       (basedecl (make-vl-portdecl
+                  :name    (vl-idtoken->name x1.name)
+                  :loc     (vl-token->loc x1.name)
+                  :type    type
+                  :dir     dir
+                  :nettype nettype
+                  :atts    atts))
+       ((when (consp x1.udims))
+        ;; Nasty case.  We have something like "input logic [3:0] a0 [1:0], a1,
+        ;; a2, ...;" The first declaration has its own udims that are NOT part
+        ;; of the basetype that is to be inferred across these decls.  We'll
+        ;; have to rebuild its declaration because basedecl is wrong.  Seems
+        ;; easiest to abuse the aux function for this.
+        (vl-build-subsequent-portdecls x basedecl)))
+    ;; Else, there are no udims, so basetype is correct for x1, and hence
+    ;; the whole basedecl is correct.
+    (cons basedecl
+          (vl-build-subsequent-portdecls (cdr x) basedecl)))
   ///
   (more-returns
    (portdecls true-listp :rule-classes :type-prescription)
    (portdecls (equal (len portdecls) (len x)) :name len-of-vl-build-portdecls)
    (portdecls (equal (consp portdecls) (consp x)) :name consp-of-vl-build-portdecls)
    (portdecls (iff portdecls (consp x)) :name vl-build-portdecls-under-iff)))
+
+
+(define vl-build-subsequent-netdecls-for-ports
+  :parents (vl-build-netdecls-for-ports)
+  :short "See @(see vl-build-subsequent-portdecls).  This is identical but for
+          the vardecls instead of the portdecls."
+  ((x        vl-parsed-port-identifier-list-p)
+   (basedecl vl-vardecl-p))
+  :returns (netdecls vl-vardecllist-p)
+  (b* (((when (atom x))
+        nil)
+       ((vl-parsed-port-identifier x1) (car x))
+       (basetype (vl-vardecl->type basedecl))
+       (- (or (not (vl-datatype->udims basetype))
+              (raise "Base datatype already has unpacked dimensions?")))
+       (type1 (if (consp x1.udims)
+                  (vl-datatype-update-udims x1.udims basetype)
+                basetype)))
+    (cons (change-vl-vardecl basedecl
+                             :name (vl-idtoken->name x1.name)
+                             :loc  (vl-token->loc x1.name)
+                             :type type1)
+          (vl-build-subsequent-netdecls-for-ports (cdr x) basedecl)))
+  ///
+  (more-returns
+   (netdecls true-listp :rule-classes :type-prescription)
+   (netdecls (equal (len netdecls) (len x)) :name len-of-vl-build-subsequent-netdecls)
+   (netdecls (equal (consp netdecls) (consp x)) :name consp-of-vl-build-subsequent-netdecls)
+   (netdecls (iff netdecls (consp x)) :name vl-build-subsequent-netdecls-under-iff)))
 
 (define vl-build-netdecls-for-ports
   :short "Main loop for creating the associated @(see vl-vardecl)s."
@@ -886,25 +955,26 @@ any unpacked dimensions.</p>"
        ((vl-parsed-port-identifier x1) (car x))
        (- (or (not (vl-datatype->udims type))
               (raise "Base datatype already has unpacked dimensions?")))
-       (type1 (if (consp x1.udims)
-                  (vl-datatype-update-udims x1.udims type)
-                type)))
-    (cons (make-vl-vardecl :name (vl-idtoken->name x1.name)
-                           :loc  (vl-token->loc x1.name)
-                           :nettype nettype
-                           :type type1
-                           :atts atts
-                           ;; BOZO are these right?  I think so?  I think there
-                           ;; isn't a way to declare these in a port, at least
-                           ;; in Verilog-2005?
-                           :vectoredp nil
-                           :scalaredp nil
-                           :delay nil
-                           :cstrength nil)
-          (vl-build-netdecls-for-ports (cdr x)
-                                       :type     type
-                                       :nettype  nettype
-                                       :atts     atts)))
+       (basedecl (make-vl-vardecl :name (vl-idtoken->name x1.name)
+                                  :loc  (vl-token->loc x1.name)
+                                  :nettype nettype
+                                  :type type
+                                  :atts atts
+                                  ;; I think these are right because there isn't any way
+                                  ;; to declare these as part of the port declaration?
+                                  :varp nil
+                                  :constp nil
+                                  :lifetime nil
+                                  :vectoredp nil
+                                  :scalaredp nil
+                                  :delay nil
+                                  :cstrength nil))
+       ((when (consp x1.udims))
+        ;; Basedecl isn't right because its type doesn't have the udims.
+        (vl-build-subsequent-netdecls-for-ports x basedecl)))
+    ;; Else, the basedecl is correct, so use it.
+    (cons basedecl
+          (vl-build-subsequent-netdecls-for-ports (cdr x) basedecl)))
   ///
   (more-returns
    (netdecls true-listp :rule-classes :type-prescription)
@@ -927,7 +997,7 @@ any unpacked dimensions.</p>"
             (vl-vardecllist-p  (cdr val))))
   (b* ((atts (if complete-p
                  atts
-               (cons '("VL_INCOMPLETE_DECLARATION") atts)))
+               (hons '("VL_INCOMPLETE_DECLARATION") atts)))
        (portdecls (vl-build-portdecls x
                                       :dir      dir
                                       :nettype  nettype
@@ -942,7 +1012,7 @@ any unpacked dimensions.</p>"
                                                 :nettype  nettype
                                                 ;; Make sure the variables are marked as
                                                 ;; implicit to avoid pretty-printing them.
-                                                :atts     (cons '("VL_PORT_IMPLICIT") atts)))))
+                                                :atts     (hons '("VL_PORT_IMPLICIT") atts)))))
     (cons portdecls netdecls))
   ///
   (defthm true-listp-of-vl-make-ports-and-maybe-nets-1
@@ -1421,15 +1491,9 @@ rate, if this is correct, then when we are parsing a port and see @('identifier
 . identifier'), we can be sure it is an interface.</p>
 
 <p>The other tricky possibility is that we have a port such as @('foo_t foo').
-In this case, @('foo_t') might be an interface or a data type.  However, by
-adopting the VCS/NCV rule of \"types have to be declared first\", we can, at
-parse time, simply ask whether the initial identifier happens to be the name of
-a defined type.  This is implemented in @(see vl-parse-ansi-port-header).</p>
-
-<p>With interfaces out of the way, we only need to distinguish between variable
-port and net port types.  This is relatively easy since we can again just ask
-if the first identifier we see happens to be the name of a data type.  This is
-implemented in @(see vl-parse-port-declaration-head-2012).</p>")
+In this case, @('foo_t') might be an interface or a data type.  We do basic
+parsing in @(see vl-parse-port-declaration-head-2012) and then resolve whether
+we got a datatype or interface after parsing, in @(see port-resolve).</p>")
 
 (local (xdoc::set-default-parents parse-port-types))
 
@@ -1464,7 +1528,19 @@ seen.</p>"
          :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 
-
+(defparser vl-parse-datatype-only-if-followed-by-id ()
+  :result (vl-maybe-datatype-p val)
+  :resultp-of-nil t
+  :fails never
+  :count strong-on-value
+  (b* ((backup (vl-tokstream-save))
+       ((mv err val tokstream)
+        (vl-parse-datatype))
+       ((when (and (not err)
+                   (vl-is-token? :vl-idtoken)))
+        (mv err val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
+    (mv nil nil tokstream)))
 
 (defparser vl-parse-port-declaration-head-2012 ()
   :short "Matches @('net_port_type') or @('variable_port_type').  Assumes that
@@ -1482,8 +1558,6 @@ an identifier (i.e., a port name) must follow."
                          | 'var' data_type
                          | 'var' [signing] {packed_dimension}
 })
-
-<p>We assume that we have already ruled out interface ports.</p>
 
 <p>(*) Since VL doesn't support user-defined net types, we don't implement the
 second @('net_port_type') case.</p>
@@ -1527,18 +1601,22 @@ second @('net_port_type') case.</p>
          ;; (2) variable_port_type ::= 'var'                                    "empty implicit case"
          ;;
          ;; In the empty case, we expect that an identifier (the port name)
-         ;; follows.  However, a data_type can also be an identifier!
-         ;;
-         ;; To disambiguate, we'll backtrack based on whether we find the right
-         ;; kind of token after we finish parsing a datatype.  If it's an identi
-         (when (and (vl-is-token? :vl-idtoken)
-                    (not (vl-parsestate-is-user-defined-type-p
-                          (vl-idtoken->name (car (vl-tokstream->tokens)))
-                          (vl-tokstream->pstate))))
-           ;; Identifier that is not a known type.  We must be in the empty
-           ;; implicit case then, i.e., this is a plain old "var" port.
-           (return (make-vl-parsed-portdecl-head :nettype nil
-                                                 :var-p t)))
+         ;; follows.  However, a data_type can also start with an identifier
+         ;; and can even just be an identifier!  So we have to be extra careful
+         ;; in this case.
+         (when (vl-is-token? :vl-idtoken)
+           (type := (vl-parse-datatype-only-if-followed-by-id))
+           (return
+            (if type
+                ;; Found (and matched) a datatype followed by an ID.  So we're
+                ;; in the explicit case.
+                (make-vl-parsed-portdecl-head :nettype nil
+                                              :var-p t
+                                              :type type)
+              ;; No datatype, so we just have var ID, i.e., we're in the empty
+              ;; implicit case.  We haven't eaten the ID.
+              (make-vl-parsed-portdecl-head :nettype nil
+                                            :var-p t))))
 
          ;; The only remaining possibility is that we have:
          ;; (1) variable_port_type ::= 'var' data_type                          "explicit case"
@@ -1576,16 +1654,18 @@ second @('net_port_type') case.</p>
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
        ;; (2) net_port_type  ::= [net_type]                                   "empty implicit case"
        ;;
-       ;; Similar to the 'var' case, we disambiguate by looking for an idtoken
-       ;; that is not a data type.  (That's the only valid way to be in the
-       ;; empty implicit case.)
-       (when (and (vl-is-token? :vl-idtoken)
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Empty implicit case.
-         (return (make-vl-parsed-portdecl-head :nettype nettype
-                                               :var-p nil)))
+       ;; Similar to the 'var' case above.
+       (when (vl-is-token? :vl-idtoken)
+         (type := (vl-parse-datatype-only-if-followed-by-id))
+         (return
+          (if type
+              ;; Explicit type case
+              (make-vl-parsed-portdecl-head :nettype nettype
+                                            :var-p nil
+                                            :type type)
+            ;; Empty implicit case
+            (make-vl-parsed-portdecl-head :nettype nettype
+                                          :var-p nil))))
 
        ;; The only remaining possibility is that we must have:
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
@@ -2086,16 +2166,5 @@ except for the initial attributes.  Used for port declarations within modules."
 
 
 
-
-
-(define vl-genelementlist->portdecls ((x vl-genelementlist-p))
-  :returns (portdecls vl-portdecllist-p)
-  (if (atom x)
-      nil
-    (if (and (eq (vl-genelement-kind (car x)) :vl-genbase)
-             (eq (tag (vl-genbase->item (car x))) :vl-portdecl))
-        (cons (vl-genbase->item (car x))
-              (vl-genelementlist->portdecls (cdr x)))
-      (vl-genelementlist->portdecls (cdr x)))))
 
 

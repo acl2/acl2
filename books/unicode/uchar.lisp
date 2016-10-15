@@ -63,25 +63,25 @@
 ; standard.
 ;
 ; Here are some of the basic definitions, taken right from the Unicode
-; standard, version 4.0.1.
+; standard, version 8.0.0.
 
 
 ; =============================================================================
 ; From Section 3.4
 ;
-;   D3: Abstract Character: A unit of information used for the organization,
+;   D7: Abstract character: A unit of information used for the organization,
 ;   control, or representation of textual data.
 ;
 ;     - When representing data, the nature of that data is generally symbolic
 ;     as opposed to some other kind of data (for example, aural or visual).
-;     Example of such symbolic data include letters, ideographics, digits,
-;     punctuation, technical symbols, and dingbats.
+;     Examples of such symbolic data include letters, ideographs, digits,
+;     punctuation,  technical symbols, and dingbats.
 ;
 ;     - An abstract character has no concrete form and should not be confused
 ;     with a glyph.
 ;
 ;     - An abstract character does not necessarily correspond to what a user
-;     thinks of as a "character", and shoudl not be confused with a grapheme.
+;     thinks of as a "character" and should not be confused with a grapheme.
 ;
 ;     - The abstract characters encoded by the Unicode Standard are known as
 ;     Unicode abstract characters.
@@ -89,18 +89,36 @@
 ;     - Abstract characters not directly encoded by the Unicode Standard can
 ;     often be represented by the use of combining character sequences.
 ;
-;   D4: Abstract Character Sequence: An ordered sequence of abstract characters.
+;   D8: Abstract character sequence: An ordered sequence of one or more
+;   abstract characters.
 ;
-;   D4a: Unicode Codespace: A range of integers from 0 to 10FFFF(16).
+;   D9: Unicode codespace: A range of integers from 0 to 10FFFF(16).
 ;
 ;     - This particular range is defined for the codespace in the Unicode
-;     Standard.  Other character encoding standards may use other codespaces.
+;     Standard. Other character encoding standards may use other codespaces.
 ;
-;   D4b: Code Point: Any value in the Unicode codespace.
+;   D10: Code point: Any value in the Unicode codespace.
 ;
-;     - A code point is also known as a Code Position.
+;     - A code point is also known as a code position.
 ;
-;   D5: Encoded Character: An association (or mapping) between an abstract
+;     - See D77 for the definition of code unit.
+;
+;   D10a: Code point type: Any of the seven fundamental classes of code points
+;   in the standard: Graphic, Format, Control, Private-Use, Surrogate,
+;   Noncharacter, Reserved.
+;
+;     - See Table 2-3 for a summary of the meaning and use of each class.
+;
+;     - For Noncharacter, see also D14 Noncharacter.
+;
+;     - For Reserved, see also D15 Reserved code point.
+;
+;     - For Private-Use, see also D49 Private-use code point.
+;
+;     - For Surrogate, see also D71 High-surrogate code point and D73
+;     Low-surrogate code point.
+;
+;   D11: Encoded character: An association (or mapping) between an abstract
 ;   character and a code point.
 ;
 ;     - An encoded character is also referred to as a coded character.
@@ -111,19 +129,19 @@
 ;     code point.
 ;
 ;     - Occasionally, for compatibility with other standards, a single
-;     abstract character may correspond to more than one point.  For example,
+;     abstract character may correspond to more than one code point - for example,
 ;     [symbol I can't type in ascii] corresponds both to U+00C5 (LATIN CAPITAL
 ;     LETTER A WITH RING ABOVE) and to U+212B (ANGSTROM SIGN).
 ;
 ;     - A single abstract character may also be represented by a sequence of
-;     code points.  For example, LATIN CAPITAL LETTER G WITH ACUTE may be
+;     code points - for example, LATIN CAPITAL LETTER G WITH ACUTE may be
 ;     represented by the sequence <U+0047 LATIN CAPITAL LETTER G, U+0301
-;     COMBINING ACUTE ACCENT> rather than begin mapped to a single code point.
+;     COMBINING ACUTE ACCENT>, rather than being mapped to a single code point.
 ;
 ; =============================================================================
 
 
-; Now, Unciode is quite a bit more complicated than ASCII.  After all, in
+; Now, Unicode is quite a bit more complicated than ASCII.  After all, in
 ; ASCII, every character takes only one byte.  This means you don't have to
 ; worry about byte order when writing to files or transmitting across networks,
 ; and so forth.  Similarly, there is little worry about the size of an ASCII
@@ -144,24 +162,23 @@
 ; =============================================================================
 ; From Section 3.9
 ;
-;   The Unicode standard supports three character encoding forms: UTF-32,
-;   UTF-16, and UTF-8.  Each encoding maps the Unicode code points
+;   The Unicode Standard supports three character encoding forms: UTF-32,
+;   UTF-16, and UTF-8. Each encoding form maps the Unicode code points
 ;   U+0000..U+D7FF and U+E000..U+10FFFF to unique code unit sequences.  The
-;   size of each code unit is specified for each encoding form.  This section
+;   size of the code unit is specified for each encoding form.  This section
 ;   presents the formal definition of each of these encoding forms.
 ;
-;   D28: Unicode scalar value: Any Unicode code point except high-surrogate and
+;   D76: Unicode scalar value: Any Unicode code point except high-surrogate and
 ;   low-surrogate code points.
 ;
 ;     - As a result of this definition, the set of Unicode scalar values
-;     consists of the ranges 0..D7FF(16) and E000..10FFFF(16), inclusive.
-
+;     consists of the ranges 0 to D7FF(16) and E000(16) to 10FFFF(16), inclusive.
 ;
-;   D28a: Code unit: The minimal bit combination that can represent a unit
+;   D77: Code unit: The minimal bit combination that can represent a unit
 ;   of encoded text for processing or interchange.
 ;
 ;     - Code units are particular units of computer storage.  Other character
-;     encoding standards typically use code units defined as 8-bit units, or
+;     encoding standards typically use code units defined as 8-bit units - that is,
 ;     octets.  The Unicode Standard uses 8-bit code units in the UTF-8 encoding
 ;     form, 16-bit code units in the UTF-16 encoding form, and 32-bit code
 ;     units in the UTF-32 encoding form.
@@ -173,25 +190,28 @@
 ;     used to represent an encoded character in isolation.  This restriction
 ;     applies to isolated surrogate code units in UTF-16 and to the bytes 80-FF
 ;     in UTF-8.  Similar restrictions apply for the implementations of other
-;     character encoding standards: for example, the bytes 81-9F, E0-FC in SJIS
+;     character encoding standards; for example, the bytes 81-9F, E0-FC in SJIS
 ;     (Shift-JIS) cannot represent an encoded character by themselves.
 ;
+;     - For information on use of wchar_t or other programming language types to
+;     represent Unicode code units, see "ANSI/ISO C wchar_t" in Section 5.2,
+;     Programming Languages and Data Types.
 ;
-;   D28b: Code unit sequence: An ordered sequence of one or more code units.
+;   D78: Code unit sequence: An ordered sequence of one or more code units.
 ;
 ;     - When the code unit is an 8-bit unit, a code unit sequence may also be
 ;     referred to as a byte sequence.
 ;
-;     - Note that a code unit sequence may consist of a single code unit.
+;     - A code unit sequence may consist of a single code unit.
 ;
 ;     - In the context of programming languages, the value of a string data
 ;     type basically consists of a code unit sequence.  Informally, a code unit
 ;     sequence is itself just referred to as a string, and a byte sequence is
 ;     referred to as a byte string.  Care must be taken in making this
 ;     terminological equivalence, however, because the formally defined concept
-;     of string may have additional requirements or complications in
+;     of a string may have additional requirements or complications in
 ;     programming languages.  For example, a string is defined as a pointer to
-;     char in the C language, and is conventionally terminated with a NULL
+;     char in the C language and is conventionally terminated with a NULL
 ;     character.  In object-oriented languages, a string is a complex object,
 ;     with associated methods, and its value may or may not consist of merely a
 ;     code unit sequence.
@@ -199,17 +219,17 @@
 ;     - Depending on the structure of a character encoding standard, it may be
 ;     necessary to use a code unit sequence (of more than one unit) to
 ;     represent a single encoded character.  For example, the code unit in SJIS
-;     is a byte: Encoded characters such as "a" can be represented with a
+;     is a byte: encoded characters such as "a" can be represented with a
 ;     single byte in SJIS, whereas ideographs require a sequence of two code
 ;     units.  The Unicode Standard also makes use of code unit sequences whose
 ;     length is greater than one code unit.
 ;
 ;
-;   D29: A Unicode Encoding Form assigns each Unicode scalar value to a unique
-;   code point sequence.
+;   D79: A Unicode encoding form assigns each Unicode scalar value to a unique
+;   code unit sequence.
 ;
 ;     - For historical reasons, the Unicode encoding forms are also referred to
-;     as Unicode (or UCS) transformation formats (UTF).  That term is, however,
+;     as Unicode (or UCS) transformation formats (UTF).  That term is actually
 ;     ambiguous between its usage for encoding forms and encoding schemes.
 ;
 ;     - The mapping of the set of Unicode scalar values to the set of code unit
@@ -220,7 +240,7 @@
 ;     value unambiguously from that code unit sequence.
 ;
 ;     - The mapping of the set of Unicode scalar values to the set of code unit
-;     sequences for a Unicode encoding form is not onto.  In other words for
+;     sequences for a Unicode encoding form is not onto.  In other words, for
 ;     any given encoding form, there exist code unit sequences that have no
 ;     associated Unicode scalar value.
 ;
@@ -231,9 +251,8 @@
 ;     high-surrogate and low-surrogate code points, which are excluded by
 ;     definition from the set of Unicode scalar values.
 ;
-;
-;   D29a: Unicode string: A code unit sequence containing code units of a
-;   particular encoding form.
+;   D80: Unicode string: A code unit sequence containing code units of a
+;   particular Unicode encoding form.
 ;
 ;     - In the rawest form, Unicode strings may be implemented simply as arrays
 ;     of the appropriate integral data type, consisting of a sequence of code
@@ -243,61 +262,101 @@
 ;     Unicode encoding form.  It is not permissible to mix forms within a
 ;     string.
 ;
-;   D29b: Unicode 8-bit string: A Unicode string containing only UTF-8 code
+;   D81: Unicode 8-bit string: A Unicode string containing only UTF-8 code
 ;   units.
 ;
-;   D29c: Unicode 16-bit string: A Unicode string containing only UTF-16 code
+;   D82: Unicode 16-bit string: A Unicode string containing only UTF-16 code
 ;   units.
 ;
-;   D29d: Unicode 32-bit string: A Unicode string containing only UTF-32 code
+;   D83: Unicode 32-bit string: A Unicode string containing only UTF-32 code
 ;   units.
 ;
-;   D30: Ill formed: A Unicode code sequence that purports to be a Unicode
-;   encoding form is called ill formed if and only if it does not follow the
+;   D84: Ill-formed: A Unicode code unit sequence that purports to be in a Unicode
+;   encoding form is called ill-formed if and only if it does not follow the
 ;   specification of that Unicode encoding form.
 ;
 ;     - Any code unit sequence that would correspond to a code point outside
-;     the range of Unicode scalar values would, for example, be ill-formed.
+;     the defined range of Unicode scalar values would, for example, be ill-formed.
 ;
 ;     - UTF-8 has some strong constraints on the possible byte ranges for
 ;     leading and trailing bytes.  A violation of those constraints would
 ;     produce a code unit sequence that could not be mapped to a Unicode
 ;     scalar value, resulting in an ill-formed code unit sequence.
 ;
-;   D30a: Well formed: A Unicode code unit sequence that purports to be in a
+;   D84a: Ill-formed code unit subsequence: A non-empty subsequence of a
+;   Unicode code unit sequence X which does not contain any code units which
+;   also belong to any minimal well-formed subsequence of X.
+;
+;     - In other words, an ill-formed code unit subsequence cannot overlap with
+;     a minimal well-formed subsequence.
+;
+;   D85: Well-formed: A Unicode code unit sequence that purports to be in a
 ;   Unicode encoding form is called well-formed if and only if it does follow
 ;   the specification of that Unicode encoding form.
 ;
-;     - A Unicode code unit sequence that consists entirely of a sequence of
-;     well formed Unicode code unit sequences (all of the same Unicode
-;     encoding form) is itself a well-formed Unicode code unit sequence.
+;   D85a: Minimal well-formed code unit subsequence: A well-formed Unicode code
+;   unit sequence that maps to a single Unicode scalar value.
 ;
-;   D30b: Well Formed UTF-8 Code Unit Sequence: A well formed Unicode code
+;     - For UTF-8, see the specification in D92 and Table 3-7.
+;
+;     - For UTF-16, see the specification in D91.
+;
+;     - For UTF-32, see the specification in D90.
+;
+;   A well-formed Unicode code unit sequence can be partitioned into one or
+;   more minimal well-formed code unit sequences for the given Unicode encoding
+;   form.  Any Unicode code unit sequence can be partitioned into subsequences
+;   that are either well-formed or ill-formed.  The sequence as a whole is
+;   well-formed if and only if it contains no ill-formed subsequence.  The
+;   sequence as a whole is ill-formed if and only if it contains at least one
+;   ill-formed subsequence.
+;
+;   D86: Well-formed UTF-8 code unit sequence: A well-formed Unicode code
 ;   unit sequence of UTF-8 code units.
 ;
-;   D30c: Well Formed UTF-16 Code Unit Sequence: A well formed Unicode code
+;     - The UTF-8 code unit sequence <41 C3 B1 42> is well-formed, because it
+;     can be partitioned into subsequences, all of which match the
+;     specification for UTF-8 in Table 3-7.  It consists of the following
+;     minimal well-formed code unit subsequences: <41>, <C3 B1>, and <42>.
+;
+;     - The UTF-8 code unit sequence <41 C2 C3 B1 42> is ill-formed, because it
+;     contains one ill-formed subsequence.  There is no subsequence for the C2
+;     byte which matches the specification for UTF-8 in Table 3-7.  The code
+;     unit sequence is partitioned into one minimal well-formed code unit
+;     subsequence, <41>, followed by one ill-formed code unit subsequence,
+;     <C2>, followed by two minimal well-formed code unit subsequences, <C3 B1>
+;     and <42>.
+;
+;     - In isolation, the UTF-8 code unit sequence <C2 C3> would be ill-formed,
+;     but in the context of the UTF-8 code unit sequence <41 C2 C3 B1 42>,
+;     <C2 C3> does not constitute an ill-formed code unit subsequence, because
+;     the C3 byte is actually  the  first  byte  of  the  minimal well-formed
+;     UTF-8 code unit subsequence <C3 B1>. Ill-formed code unit subsequences do
+;     not overlap with minimal well-formed code unit subsequences.
+;
+;   D87: Well-formed UTF-16 code unit sequence: A well-formed Unicode code
 ;   unit sequence of UTF-16 code units.
 ;
-;   D30d: Well Formed UTF-32 Code Unit Sequence: A well formed Unicode code
+;   D88: Well-formed UTF-32 code unit sequence: A well-formed Unicode code
 ;   unit sequence of UTF-32 code units.
 ;
-;   D30e: In a Unicode encoding form: A Unicode string is said to be in a
-;   particular Unicode encoding form if and only if it consists of a well
-;   formed Unicode code unit sequence of that Unicode encoding form.
+;   D89: In a Unicode encoding form: A Unicode string is said to be in a
+;   particular Unicode encoding form if and only if it consists of a
+;   well-formed Unicode code unit sequence of that Unicode encoding form.
 ;
 ;     - A Unicode string consisting of a well-formed UTF-8 code unit sequence
 ;     is said to be in UTF-8.  Such a Unicode string is referred to as a valid
 ;     UTF-8 string, or a UTF-8 string for short.
 ;
-;     - A Unicode string consisting of a well formed UTF-16 code unit sequence
+;     - A Unicode string consisting of a well-formed UTF-16 code unit sequence
 ;     is said to be in UTF-16.  Such a Unicode string is referred to as a valid
 ;     UTF-16 string, or a UTF-16 string for short.
 ;
-;     - A Unicode string consisting of a well formed UTF-32 code unit sequence
+;     - A Unicode string consisting of a well-formed UTF-32 code unit sequence
 ;     is said to be in UTF-32.  Such a Unicode string is referred to as a valid
 ;     UTF-32 string, or a UTF-32 string for short.
 ;
-;   Unicode strings need not contained well formed code unit sequences under
+;   Unicode strings need not contain well-formed code unit sequences under
 ;   all conditions.  This is equivalent to saying that a particular Unicode
 ;   string need not be in a Unicode encoding form.
 ;
@@ -305,23 +364,29 @@
 ;     takes the two Unicode 16-bit strings, <004D D800> and <DF02 004D>, each
 ;     of which contains an ill-formed UTF-16 code unit sequence, and
 ;     concatenates them to form another Unicode string <004D D800 DF02 004D>,
-;     which contains a well formed UTF-16 code unit sequence.  The first two
+;     which contains a well-formed UTF-16 code unit sequence.  The first two
 ;     Unicode strings are not in UTF-16, but the resultant Unicode string is.
 ;
 ;     - As another example, the code unit sequence <C0 80 61 F3> is a Unicode
 ;     8-bit string, but does not consist of a well-formed UTF-8 code unit
 ;     sequence.  That code unit sequence could not result from the
-;     specification of the UTF-8 encoding form, and is thus ill formed.  (The
-;     same code sequence could, of course, be well formed in the context of
+;     specification of the UTF-8 encoding form and is thus ill-formed.  (The
+;     same code unit sequence could, of course, be well-formed in the context of
 ;     some other character encoding standard using 8-bit code units, such as
 ;     ISO/IEC 8859-1, or vendor code pages.)
 ;
-;   If, on the other hand, a Unicode string purports to be in a Unicode
-;   encoding form, then it must contain only a well formed code unit sequence.
-;   If there is an ill-formed code unit sequence in a source Unicode string,
-;   then a conformant process that verifies that the Unicode string is in a
-;   Unicode encoding form must reject the ill-formed code unit sequence.  (See
-;   conformance clause C12).
+;   If a Unicode string purports to be in a Unicode encoding form, then it must
+;   not contain any ill-formed code unit subsequence.
+;
+;   If a process which verifies that a Unicode string is in a Unicode encoding
+;   form encounters an ill-formed code unit subsequence in that string, then it
+;   must not identify that string as being in that Unicode encoding form.
+;
+;   A process which interprets a Unicode string must not interpret any
+;   ill-formed code unit subsequences in the string as characters.  (See
+;   conformance clause C10.) Furthermore, such a process must not treat any
+;   adjacent well-formed code unit sequences as being part of those ill-formed
+;   code unit sequences.
 ;
 ; =============================================================================
 
@@ -339,7 +404,7 @@
         (<= ,x ,high)))
 
 (defun uchar? (x)
-  "Recognizer for unicode scalar values."
+  "Recognizer for Unicode scalar values."
   (and (integerp x)
        (or (in-range? x 0 #xD7FF)
            (in-range? x #xE000 #x10FFFF))))
@@ -367,14 +432,14 @@
 ; aggressive with bit operations to compact our memory usage.  But, this is
 ; very simple.
 ;
-; Although unicode strings are actually defined by the spec with respect to a
+; Although Unicode strings are actually defined by the spec with respect to a
 ; particular encoding form, we will call our code unit sequence recognizer
 ; ustring?, in recognition of the fact that the ONLY encoding form we will
 ; internally support is this uchar-based system, so WE have only one concept
-; of a unicode string.
+; of a Unicode string.
 
 (defun ustring? (x)
-  "Recognizer for unicode code unit sequences."
+  "Recognizer for Unicode code unit sequences."
   (if (atom x)
       (null x)
     (and (uchar? (car x))
@@ -451,4 +516,3 @@
   "Convert an ASCII string into a Unicode string."
   (declare (xargs :guard (stringp x)))
   (charlist=>ustring (coerce x 'list)))
-

@@ -133,7 +133,7 @@ we ignore file names.</p>"
                   (item-map vl-commentmap-p)
                   &key (ps 'ps))
        :returns (mv (item-map vl-commentmap-p) ps)
-       :parents (vl-make-item-map-for-ppc-module)
+       :verbosep t
        (b* (((when (atom x))
              (mv (vl-commentmap-fix item-map) ps))
             ((mv str ps)
@@ -159,13 +159,21 @@ we ignore file names.</p>"
 (def-vl-ppmap :list cassertionlist :elem cassertion)
 
 
+(local (defthm vl-genelementlist-fix-when-atom
+         ;; bozo ??? why do we need this?
+         (implies (atom x)
+                  (equal (vl-genelementlist-fix x)
+                         nil))))
+
+(def-vl-ppmap :list genelementlist :elem genelement)
+
+
 ;; This one's a bit different because it takes a scopestack
 (define vl-modinstlist-ppmap ((x  vl-modinstlist-p)
                               (ss vl-scopestack-p)
                               (item-map vl-commentmap-p)
                               &key (ps 'ps))
   :returns (mv (item-map vl-commentmap-p) ps)
-       :parents (vl-make-item-map-for-ppc-module)
   (b* (((when (atom x))
         (mv (vl-commentmap-fix item-map) ps))
        ((mv str ps)
@@ -198,7 +206,7 @@ we ignore file names.</p>"
        (str1 (cdar x)))
     (cons (cons loc1
                 (cat "<span class=\"vl_cmt\">"
-                     (vl-html-encode-string str1 tabsize)
+                     (str::html-encode-string str1 tabsize)
                      "</span>"))
           (vl-html-encode-commentmap (cdr x) tabsize))))
 
@@ -231,8 +239,10 @@ we ignore file names.</p>"
          (cons (car x)
                (vl-remove-empty-commentmap-entries (cdr x))))
        :exec
-       (with-local-nrev
-         (vl-remove-empty-commentmap-entries-exec x nrev)))
+       (if (atom x)
+           nil
+         (with-local-nrev
+           (vl-remove-empty-commentmap-entries-exec x nrev))))
   ///
   (defthm vl-remove-empty-commentmap-entries-exec-removal
     (equal (vl-remove-empty-commentmap-entries-exec x nrev)
@@ -253,33 +263,84 @@ we ignore file names.</p>"
 
   (b* (((when (atom x))
         ps)
-       ((when (atom (cdr x)))
-        (vl-print-markup (cdr (first x))))
-       ((when (atom (cddr x)))
-        (vl-ps-seq (vl-print-markup (cdr (first x)))
-                   (vl-print-markup (cdr (second x)))))
-       ((list first second third) x)
-       ((when (and (equal (car first) (car second))
-                   (not (equal (car first) (car third)))))
-        ;; To make our output nicer, we insert a newline if there are multiple
-        ;; elements at the same location after printing those elements.
-        (vl-ps-seq (vl-print-markup (cdr (first x)))
-                   (vl-print-markup (cdr (second x)))
-                   (vl-println "")
-                   (vl-pp-encoded-commentmap (cddr x)))))
-    ;; Otherwise, first and second are unrelated or part of the same
-    ;; group as third, so don't insert a newline.
-    (vl-ps-seq (vl-print-markup (cdr (first x)))
-               (vl-pp-encoded-commentmap (cdr x)))))
 
-(define vl-make-item-map-for-ppc-module
-  ((x        vl-module-p)
-   (ss       vl-scopestack-p "Should already be extended with @('x').")
-   &key (ps 'ps))
-  :returns (mv (map vl-commentmap-p) ps)
-  :parents (vl-ppc-module)
-  :short "Build a commentmap that has the encoded items for a module."
-  (b* (((vl-module x) x)
+       ;; Print item 1.
+       (ps (vl-print-markup (cdr (first x))))
+       ((when (atom (cdr x)))
+        ps)
+
+       ;; Maybe insert a newline between item1 and item2.
+       ;;
+       ;; The idea here: if the original source code had a gap of more
+       ;; than 2 lines, then we will insert an extra gap.  If the
+       ;; user's code is on contiguous lines, say:
+       ;;
+       ;;    wire w1;
+       ;;    wire w2;
+       ;;
+       ;; then we don't want to add an extra newline because they are
+       ;; likely grouping up related logic.  But, if the user wrote
+       ;; something like:
+       ;;
+       ;;    wire w1;
+       ;;
+       ;;    wire w2;
+       ;;
+       ;; Then they probably had some reason for wanting this gap, so
+       ;; we will try to preserve it.
+       ((list* first second rest) x)
+       ((vl-location loc1) (car first))
+       ((vl-location loc2) (car second))
+       (ps (if (or (not (equal loc1.filename loc2.filename))
+                   (< (+ 1 loc1.line) loc2.line))
+               (vl-println "")
+             ps))
+
+       ;; If there is no item3, just print item2 and we're done.
+       ((when (atom rest))
+        (vl-print-markup (cdr second)))
+
+       ;; Maybe insert an extra newline between item2 and item3.
+       ;;
+       ;; The idea here: If there are multiple elements at the same line, then
+       ;; we will insert a newline after printing them.  This causes input
+       ;; source like
+       ;;
+       ;;    wire a, b, c;
+       ;;    wire d;
+       ;;
+       ;; to be printed as a block like:
+       ;;
+       ;;    wire a;
+       ;;    wire b;
+       ;;    wire c;
+       ;;
+       ;;    wire d;
+       ;;
+       ;; Which at least preserves the sort of major groupings of things.
+
+       (third (car rest))
+       (loc3 (car third))
+       ((when (and (equal loc1 loc2)
+                   (not (equal loc1 loc3))))
+        (vl-ps-seq (vl-print-markup (cdr second))
+                   (vl-println "")
+                   (vl-pp-encoded-commentmap rest))))
+
+    ;; Otherwise, first and second are unrelated or part of the same group as
+    ;; third, so don't insert a newline, just print items 2...  as normal.
+    (vl-pp-encoded-commentmap (cdr x))))
+
+
+
+
+(define vl-genblob-populate-item-map ((x    vl-genblob-p)
+                                      (ss   vl-scopestack-p)
+                                      (imap vl-commentmap-p)
+                                      &key (ps 'ps))
+  :returns (mv (imap vl-commentmap-p)
+               ps)
+  (b* (((vl-genblob x))
 
        ;; For efficiency, our ppmap functions destroy the current contents of
        ;; the printer's state, so we are going to go ahead and save them before
@@ -288,18 +349,18 @@ we ignore file names.</p>"
        (col    (vl-ps->col))
        (misc   (vl-ps->misc))
 
-       (ps     (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
-
-       (imap nil)
-
        ;; Note: portdecls need to come before vardecls, so that after stable
        ;; sorting any implicit portdecls are still listed before their
        ;; correspondign vardecl; Verilog-XL won't tolerate it the other way;
        ;; see make-implicit-wires for more details.  The vardecls should come
        ;; before any instances/assignments, so that things are declared before
        ;; use.
+
+       ;; BOZO check this for completeness
+       (ps (vl-progindent-block-start))
        ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
+       ((mv imap ps) (vl-typedeflist-ppmap x.typedefs imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
        ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
        ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
@@ -313,18 +374,16 @@ we ignore file names.</p>"
        ((mv imap ps) (vl-sequencelist-ppmap x.sequences imap))
        ((mv imap ps) (vl-assertionlist-ppmap x.assertions imap))
        ((mv imap ps) (vl-cassertionlist-ppmap x.cassertions imap))
-
-       ;; Why are we reversing the imap when we're going to sort it anyway?  I
-       ;; think the answer is that some module elements may share a location,
-       ;; and since our sort is stable we want to preserve their original order
-       ;; in the lists above, if possible.
-       (imap (rev imap))
+       ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
+       ((mv imap ps) (vl-genelementlist-ppmap x.generates imap))
+       (ps (vl-progindent-block-end))
 
        ;; Now that we are done generating the ppmap, restore the previous state
        ;; of the ps.
-       (ps   (vl-ps-update-rchars rchars))
-       (ps   (vl-ps-update-col col))
-       (ps   (vl-ps-update-misc misc)))
+
+       (ps (vl-ps-update-rchars rchars))
+       (ps (vl-ps-update-col col))
+       (ps (vl-ps-update-misc misc)))
     (mv imap ps)))
 
 (define vl-ppc-module ((x  vl-module-p)
@@ -345,10 +404,19 @@ submodules in HTML mode.</p>"
 
   (b* (((vl-module x) (vl-module-fix x))
        (ss (vl-scopestack-push x ss))
+       (ps (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
 
        ;; The item map binds module item locations to their printed
        ;; representations.
-       ((mv imap ps) (vl-make-item-map-for-ppc-module x ss))
+
+       (imap nil)
+       ((mv imap ps) (vl-genblob-populate-item-map (vl-module->genblob x) ss imap))
+       (imap
+        ;; Note: why are we reversing the imap when we're going to sort it
+        ;; anyway?  I think the answer is that some module elements may share a
+        ;; location, and since our sort is stable we want to preserve their
+        ;; original order in the lists above, if possible.
+        (rev imap))
 
        (comments (vl-add-newlines-after-block-comments x.comments))
        (comments (if (vl-ps->htmlp)
@@ -360,13 +428,13 @@ submodules in HTML mode.</p>"
        (guts     (vl-remove-empty-commentmap-entries guts)))
 
     (vl-ps-seq (vl-when-html (vl-println-markup "<div class=\"vl_src\">"))
-               (vl-pp-atts x.atts)
+               (if x.atts (vl-pp-atts x.atts) ps)
                (vl-ps-span "vl_key" (vl-print "module "))
                (vl-print-modname x.name)
                (vl-print " (")
                (vl-pp-portlist x.ports)
                (vl-println ");")
-               (vl-pp-encoded-commentmap guts)
+               (vl-progindent-block (vl-pp-encoded-commentmap guts))
                (vl-ps-span "vl_key" (vl-println "endmodule"))
                (vl-println "")
                (vl-when-html (vl-println-markup "</div>")))))
@@ -400,34 +468,23 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
 
 
 
+(define vl-ppc-interface ((x vl-interface-p) (ss vl-scopestack-p)  &key (ps 'ps))
+  (b* (((vl-interface x) (vl-interface-fix x))
+       (ss (vl-scopestack-push x ss))
+       (ps (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
 
+       ;; The item map binds module item locations to their printed
+       ;; representations.
 
-
-
-(define vl-make-item-map-for-ppc-interface ((x vl-interface-p) &key (ps 'ps))
-  ;; This is based on vl-make-item-map-for-ppc-module.
-  ;; See the comments there for an explanation.
-  :returns (mv (map vl-commentmap-p) ps)
-  (b* (((vl-interface x))
-       (rchars (vl-ps->rchars))
-       (col    (vl-ps->col))
-       (misc   (vl-ps->misc))
        (imap nil)
-       ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
-       ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
-       ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
-       ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
-       ;; BOZO add generates
-       ;; ((mv imap ps) (vl-generatelist-ppmap x.generates imap))
-       (imap (rev imap))
-       (ps   (vl-ps-update-rchars rchars))
-       (ps   (vl-ps-update-col col))
-       (ps   (vl-ps-update-misc misc)))
-    (mv imap ps)))
+       ((mv imap ps) (vl-genblob-populate-item-map (vl-interface->genblob x) ss imap))
+       (imap
+        ;; Note: why are we reversing the imap when we're going to sort it
+        ;; anyway?  I think the answer is that some module elements may share a
+        ;; location, and since our sort is stable we want to preserve their
+        ;; original order in the lists above, if possible.
+        (rev imap))
 
-(define vl-ppc-interface ((x vl-interface-p) &key (ps 'ps))
-  (b* (((vl-interface x))
-       ((mv imap ps) (vl-make-item-map-for-ppc-interface x))
        (comments     (vl-add-newlines-after-block-comments x.comments))
        (comments     (if (vl-ps->htmlp)
                          (vl-html-encode-commentmap comments (vl-ps->tabsize))
@@ -435,36 +492,44 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
        (guts         (cwtime (vl-commentmap-entry-sort (append comments imap))
                              :mintime 1/2
                              :name vl-commentmap-entry-sort)))
-    (vl-ps-seq (vl-ps-span "vl_cmt"
-                           (vl-print "// ")
-                           (vl-print-loc x.minloc)
-                           (vl-println ""))
-               (if x.atts
+
+
+    (vl-ps-seq (if x.atts
                    (vl-ps-seq (vl-pp-atts x.atts)
                               (vl-print " "))
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "interface "))
                (vl-print-modname x.name)
-               (vl-println "; ")
-               (if x.ports
-                   (vl-println "// BOZO add pretty-printing of ports!")
-                 ps)
+               (vl-print " (")
+               (vl-pp-portlist x.ports)
+               (vl-println ");")
                (vl-pp-encoded-commentmap guts)
-               (if x.generates
-                   (vl-println "// BOZO add pretty-printing of generate statements!")
-                 ps)
                (vl-ps-span "vl_key" (vl-println "endinterface"))
                (vl-println ""))))
 
-(define vl-ppc-interfacelist ((x vl-interfacelist-p) &key (ps 'ps))
+(define vl-ppc-interfacelist ((x vl-interfacelist-p) (ss vl-scopestack-p) &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq (vl-ppc-interface (car x))
-               (vl-ppc-interfacelist (cdr x)))))
+    (vl-ps-seq (vl-ppc-interface (car x) ss)
+               (vl-ppc-interfacelist (cdr x) ss))))
 
-(define vl-ppc-package ((x vl-package-p) &key (ps 'ps))
-  (b* (((vl-package x)))
+(define vl-ppc-package ((x vl-package-p) (ss vl-scopestack-p) &key (ps 'ps))
+  (b* (((vl-package x) (vl-package-fix x))
+       (ss (vl-scopestack-push x ss))
+       (ps (vl-pp-set-portnames nil))
+
+       (imap nil)
+       ((mv imap ps) (vl-genblob-populate-item-map (vl-package->genblob x) ss imap))
+       (imap (rev imap))
+
+       (comments     (vl-add-newlines-after-block-comments x.comments))
+       (comments     (if (vl-ps->htmlp)
+                         (vl-html-encode-commentmap comments (vl-ps->tabsize))
+                       comments))
+       (guts         (cwtime (vl-commentmap-entry-sort (append comments imap))
+                             :mintime 1/2
+                             :name vl-commentmap-entry-sort)))
     (vl-ps-seq
      (if x.atts
          (vl-ps-seq (vl-pp-atts x.atts)
@@ -473,8 +538,8 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
      (vl-ps-span "vl_key"
                  (vl-print "package "))
      (vl-print-modname x.name)
-     (vl-println "")
-     (vl-print "BOZO implement printing of packages!\n")
+     (vl-println ";")
+     (vl-pp-encoded-commentmap guts)
      (vl-println "")
      (vl-ps-span "vl_key" (vl-println "endpackage")))))
 

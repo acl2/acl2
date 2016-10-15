@@ -1,5 +1,33 @@
-
-
+; Centaur Miscellaneous Books
+; Copyright (C) 2008-2011 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original authors: Sol Swords <sswords@centtech.com>
+;                   Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 
@@ -11,7 +39,7 @@
 (include-book "clause-processors/sublis-var-meaning" :dir :system)
 (include-book "std/util/defaggrify-defrec" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -159,6 +187,13 @@
                   (alistp x))
          :hints(("Goal" :in-theory (enable pseudo-term-substp)))))
 
+; Matt K. mod, 1/7/2016: The use of (logbitp-reasoning) makes ACL2(p) with
+; waterfall-parallelism enabled complain that "the form (LOGBITP-REASONING) was
+; expected to represent an ordinary value, not an error triple (mv erp val
+; state), as would be acceptable in a serial execution of ACL2.  So I'll turn
+; off waterfall parallelism here.
+(local (set-waterfall-parallelism nil))
+
 ;; Check whether a term's sign is known.  Returns :nonnegative, :nonpositive, or nil.
 (define ts-check-sign ((x pseudo-termp)
                        mfc state)
@@ -257,7 +292,9 @@
     :hints (("goal" :use ((:instance boundrw-ev-meta-extract-typeset
                            (term x)))
              :in-theory (disable boundrw-ev-meta-extract-typeset
-                                 bitops::logand-with-negated-bitmask))
+                                 bitops::logand-with-negated-bitmask
+; Matt K. mod 5/2016 (type-set bit for {1}):
+                                 bitp-loghead-1))
             (logbitp-reasoning)))
 
   (defret ts-check-sign-strict-negative-correct
@@ -310,7 +347,9 @@
     :hints (("goal" :use ((:instance boundrw-ev-meta-extract-typeset
                            (term x)))
              :in-theory (disable boundrw-ev-meta-extract-typeset
-                                 bitops::logand-with-negated-bitmask))
+                                 bitops::logand-with-negated-bitmask
+; Matt K. mod 5/2016 (type-set bit for {1}):
+                                 bitp-loghead-1))
             (logbitp-reasoning))))
 
 (define ts-check-rational ((x pseudo-termp)

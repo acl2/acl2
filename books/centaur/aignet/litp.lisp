@@ -32,16 +32,14 @@
 (in-package "AIGNET")
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (set-tau-auto-mode nil)
 
-
-(define litp (x)
-  :parents (aignet)
+(defsection literal
+  :parents (representation)
   :short "Representation of a literal (a Boolean variable or its negation)."
-
-  :long "<p>Think of a <b>LITERAL</b> as an abstract data type that can either
+  :long "<p>Think of a <b>literal</b> as an abstract data type that can either
 represent a Boolean variable or its negation.  More concretely, you can think
 of a literal as an structure with two fields:</p>
 
@@ -54,77 +52,58 @@ represented as a @(see bitp).</li>
 <p>In the implementation, we use an efficient natural-number encoding rather
 than some kind of cons structure: @('neg') is the bottom bit of the literal,
 and @('id') is the remaining bits.  (This trick exploits the representation of
-identifiers as natural numbers.)</p>"
+identifiers as natural numbers.)</p>")
 
+(local (xdoc::set-default-parents literal))
+
+(define litp (x)
+  :short "Recognizer for a @(see literal)."
   (natp x)
-
   ;; Not :type-prescription, ACL2 infers that automatically
   :returns (bool booleanp :rule-classes :tau-system)
-
   ///
-
   (defthm litp-type
     ;; BOZO similar questions as for idp-type
     (implies (litp x)
              (natp x))
     :rule-classes (:tau-system :compound-recognizer)))
 
-
 (local (in-theory (enable litp)))
 
-
 (define to-lit ((nat natp))
-  :parents (litp)
-  :short "Raw constructor for literals."
+  :short "Raw constructor for @(see literal)s."
   :long "<p>This exposes the underlying representation of literals.  You
 should generally use @(see mk-lit) instead.</p>"
-
   (lnfix nat)
-
   :inline t
   :returns (lit litp :rule-classes (:rewrite :tau-system)))
 
-
 (define lit-val ((lit litp))
-  :parents (litp)
-  :short "Raw value of a literal."
+  :short "Raw value of a @(see literal)."
   :long "<p>This exposes the underlying representation of literals.  You should
 generally use @(see lit-id) and @(see lit-neg) instead.</p>"
-
   (lnfix lit)
-
   :inline t
   ;; Not :type-prescription, ACL2 infers that automatically
   :returns (nat natp :rule-classes (:rewrite :tau-system)))
 
 (local (in-theory (enable to-lit lit-val)))
 
-
 (define lit-equiv ((x litp) (y litp))
-  :parents (litp)
-  :short "Basic equivalence relation for literals."
+  :short "Basic equivalence relation for @(see literal)s."
   :enabled t
-
   (int= (lit-val x) (lit-val y))
-
   ///
-
   (defequiv lit-equiv)
   (defcong lit-equiv equal (lit-val x) 1)
   (defcong nat-equiv equal (to-lit x) 1))
 
-
 (define lit-fix ((x litp))
-  :parents (litp)
-  :short "Basic fixing function for literals."
-
+  :short "Basic fixing function for @(see literal)s."
   (to-lit (lit-val x))
-
   :inline t
   :returns (x-fix litp)
-
   ///
-
   (defcong lit-equiv equal (lit-fix x) 1)
 
   (defthm lit-fix-of-lit
@@ -138,9 +117,8 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 
 (defsection lit-raw-theorems
-  :parents (litp)
-  :short "Basic theorems about raw literal functions like @(see to-lit) and
-@(see lit-val)."
+  :short "Basic theorems about raw @(see literal) functions like @(see to-lit)
+and @(see lit-val)."
 
   (defthm lit-val-of-to-lit
     (equal (lit-val (to-lit x))
@@ -215,28 +193,21 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 
 (define lit-id ((lit litp))
-  :parents (litp)
-  :short "Access the @('id') component of a literal."
+  :short "Access the @('id') component of a @(see literal)."
   (declare (type (integer 0 *) lit))
   (ash (lit-val lit) -1)
-
   :inline t
   :returns (id natp :rule-classes (:rewrite :type-prescription))
-
   ///
   (defcong lit-equiv equal (lit-id lit) 1))
 
 
 (define lit-neg ((lit litp))
-  :parents (litp)
-  :short "Access the @('neg') bit of a literal."
-
+  :short "Access the @('neg') bit of a @(see literal)."
   (declare (type (integer 0 *) lit))
   (logand 1 (lit-val lit))
-
   :inline t
   :returns (neg bitp)
-
   ///
 
   (defthm natp-of-lit-neg
@@ -261,15 +232,11 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 
 (define mk-lit ((id natp) (neg bitp))
-  :parents (litp)
-  :short "Construct a literal with the given @('id') and @('neg')."
-
+  :short "Construct a @(see literal) with the given @('id') and @('neg')."
   (declare (type (integer 0 *) id)
            (type bit neg))
-
   (to-lit (logior (ash (lnfix id) 1)
                   (acl2::lbfix neg)))
-
   :inline t
   ;; BOZO type-prescription doesn't make sense unless we strenghten
   ;; the compound-recognizer rule for litp?
@@ -320,8 +287,7 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 
 (define lit-negate ((lit litp))
-  :parents (litp)
-  :short "Efficiently negate a literal."
+  :short "Efficiently negate a @(see literal)."
   :enabled t
   :inline t
   (declare (type (integer 0 *) lit))
@@ -335,15 +301,13 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 
 (define lit-negate-cond ((lit litp) (c bitp))
-  :parents (litp)
-  :short "Efficiently negate a literal."
+  :short "Efficiently negate a @(see literal)."
   :long "<p>When @('c') is 1, we negate @('lit').  Otherwise, when @('c') is 0,
 we return @('lit') unchanged.</p>"
   :enabled t
   :inline t
   (declare (type (integer 0 *) lit)
            (type bit c))
-
   (mbe :logic (b* ((id (lit-id lit))
                    (neg (acl2::b-xor (lit-neg lit) c)))
                 (mk-lit id neg))
@@ -364,9 +328,7 @@ we return @('lit') unchanged.</p>"
 
 
 (define lit-listp (x)
-  :parents (litp)
-  :short "Recognize a list of literals."
-
+  :short "Recognize a list of @(see literal)s."
   (if (atom x)
       (eq x nil)
     (and (litp (car x))
@@ -390,9 +352,7 @@ we return @('lit') unchanged.</p>"
 
 
 (define lit-list-listp (x)
-  :parents (litp)
   :short "Recognize a list of @(see lit-listp)s."
-
   (if (atom x)
       (eq x nil)
     (and (lit-listp (car x))

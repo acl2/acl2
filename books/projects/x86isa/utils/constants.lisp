@@ -194,6 +194,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                             ;; Enable Bit
     (0               19  1) ;; 0 (Reserved)
     (:cr4-smep       20  1) ;; Supervisor Mode Execution Prevention
+    (:cr4-smap       21  1)
     ;; Bit
     ;;  (0               21 43) ;; 0 (Reserved)
 
@@ -203,7 +204,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *cr4-layout* 0 ;; 64
                    ;; A lesser value here avoids
                    ;; bignum creation.
-                   21)
+                   22)
   :rule-classes nil)
 
 (defconst *cr8-layout*
@@ -345,11 +346,11 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pm       12  1) ;; Precision Mask
     (:rc       13  2) ;; Rounding Control
     (:fz       15  1) ;; Flush to Zero
-;   (:reserved 16 16) ;; Reserved bits
+    (:reserved 16 16) ;; Reserved bits
     ))
 
 (defthm mxcsr-layout-ok
-  (layout-constant-alistp *mxcsr-layout* 0 16)
+  (layout-constant-alistp *mxcsr-layout* 0 32)
   :rule-classes nil)
 
 ;; The constants defined by the following events (and NOT the events
@@ -600,17 +601,28 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; This constant defines the common bit-fields for page table
   ;; structure entries.
 
-  '((:p        0  1) ;; Page present
-    (:r/w      1  1) ;; Read/Write
-    (:u/s      2  1) ;; User/supervisor
-    (:pwt      3  1) ;; Page-level Write-Through
-    (:pcd      4  1) ;; Page-level Cache-Disable
-    (:a        5  1) ;; Accessed
-    (:d        6  1) ;; Dirty
-    (:ps       7  1) ;; Page size
-    (0         8 55) ;; These bits can be accessed via the specific
-                     ;; layout constants.
-    (:xd      63  1) ;; Execute Disable
+  ;; The field reference-addr refers to the 40 bits in a paging
+  ;; structure entry that contain the address of the inferior paging
+  ;; structure. If this paging entry maps a page (PS=1) instead of
+  ;; referencing an inferior structure (PS=0), do not use the
+  ;; reference-addr field to access the address of the page. Use
+  ;; dedicated macros (e.g., those defined in context of
+  ;; *ia32e-pdpte-1GB-page-layout*) in that case, because unlike
+  ;; reference-addr, the address of the mapped page is contained in
+  ;; different-sized fields for each paging structure.
+
+  '((:p              0  1)  ;; Page present
+    (:r/w            1  1)  ;; Read/Write
+    (:u/s            2  1)  ;; User/supervisor
+    (:pwt            3  1)  ;; Page-level Write-Through
+    (:pcd            4  1)  ;; Page-level Cache-Disable
+    (:a              5  1)  ;; Accessed
+    (:d              6  1)  ;; Dirty
+    (:ps             7  1)  ;; Page size
+    (0               8  4)  ;; Ignored
+    (:reference-addr 12 40) ;; Address of inferior paging table
+    (0               52 11) ;; Ignored and/or Reserved
+    (:xd             63 1)  ;; Execute Disable
     ))
 
 (defthm ia32e-page-tables-layout-ok
@@ -822,16 +834,12 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defmacro mxcsr-slice (flg mxcsr)
   (slice flg mxcsr
-         ;; 32
-         16 ;; Top bits are reserved.  A lesser value here avoids
-            ;; bignum creation.
+         32
          *mxcsr-layout*))
 
 (defmacro !mxcsr-slice (flg val mxcsr)
   (!slice flg val mxcsr
-          ;; 32
-          16 ;; Top bits are reserved.  A lesser value here avoids
-             ;; bignum creation.
+          32
           *mxcsr-layout*))
 
 (defmacro ia32_efer-slice (flg ia32_efer)
@@ -862,13 +870,13 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defmacro cr4-slice (flg cr4)
   (slice flg cr4 ;; 64
-         21      ;; Top bits are reserved.  A lesser value here avoids
+         22      ;; Top bits are reserved.  A lesser value here avoids
                  ;; bignum creation.
          *cr4-layout*))
 
 (defmacro !cr4-slice (flg val cr4)
   (!slice flg val cr4 ;; 64
-          21          ;; Top bits are reserved. A lesser value here avoids
+          22          ;; Top bits are reserved. A lesser value here avoids
                       ;; bignum creation.
           *cr4-layout*))
 

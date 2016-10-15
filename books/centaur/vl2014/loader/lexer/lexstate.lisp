@@ -79,7 +79,7 @@ particular standard we're implementing.</p>"
 (defaggregate vl-lexstate
   :parents (lexstate)
   :short "Internal representation of the lexer's configuration."
-  :legiblep nil
+  :layout :fulltree
   :tag nil
 
   ((kwdtable vl-keyword-table-p

@@ -32,7 +32,7 @@
 (include-book "a4vec")
 (include-book "tools/templates" :dir :system)
 (include-book "xdoc/alter" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/arith-lemmas" :dir :system))
@@ -162,16 +162,96 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
 ; ugly, but, we hope, effective.
 
 
+(define sv::aig-i2v-aux ((x integerp)
+                         (idx natp)
+                         (length (eql length (integer-length x))))
+  :returns (bitlist)
+  :measure (nfix (- (integer-length x) (nfix idx)))
+  :guard (<= idx (integer-length x))
+  (b* ((x (lifix x))
+       (idx (lnfix idx))
+       (length (mbe :logic (integer-length x) :exec length))
+       ((when (mbe :logic (>= idx length)
+                   :exec (eql idx length)))
+        (sv::aig-sterm (logbitp idx x))))
+    (sv::aig-scons (logbitp idx x)
+                   (sv::aig-i2v-aux x (1+ idx) length)))
+  ///
+  (local (defthm aig-eval-of-logbitp
+           (equal (acl2::aig-eval (logbitp n x) env)
+                  (logbitp n x))
+           :hints(("Goal" :in-theory (enable acl2::aig-eval)))))
+
+  (local (Defthm logtail-past-integer-length
+           (implies (<= (integer-length x) (nfix idx))
+                    (Equal (logtail idx x)
+                           (if (logbitp idx x) -1 0)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+  ;; (local (Defthm logtail-before-integer-length-not-minus1-or-0
+  ;;          (implies (< (nfix idx) (integer-length x))
+  ;;                   (and (not (equal (logtail idx x) -1))
+  ;;                        (not (equal (logtail idx x) 0))))
+  ;;          :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+  ;;                                             bitops::ihsext-inductions)))))
+
+  (local (defthm logtail-of-idx-minus-1
+           (implies (posp n)
+                    (equal (logtail (+ -1 n) x)
+                           (logcons (acl2::bool->bit (logbitp (+ -1 n) x))
+                                    (logtail n x))))
+           :hints(("Goal" :in-theory (enable* ;; bitops::ihsext-recursive-redefs
+                                              ;; bitops::ihsext-inductions
+                                              bitops::equal-logcons-strong)))))
+           
+  ;; (local (in-theory (disable S-ENDP-OF-BFR-SCONS)))
+
+  (defthm aig-list->s-of-bfr-snorm
+    (Equal (sv::aig-list->s (bfr-snorm x) env)
+           (sv::aig-list->s x env))
+    :hints(("Goal" :in-theory (enable sv::aig-list->s))))
+
+
+  ;; (local (defthm logtail-of-logcdr
+  ;;          (equal (logtail n (logcdr x))
+  ;;                 (logcdr (logtail n x)))
+  ;;          :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+  ;;                                             bitops::ihsext-inductions)))))
+
+  (local (defthm logtail-+1-not-zero-by-logbitp
+           (implies (and (not (equal (logtail n x) 0))
+                         (not (logbitp n x)))
+                    (not (equal 0 (logtail (+ 1 (nfix n)) x))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+  (local (defthm logtail-+1-not-minus1-by-logbitp
+           (implies (and (not (equal (logtail n x) -1))
+                         (logbitp n x))
+                    (not (equal -1 (logtail (+ 1 (nfix n)) x))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
+
+
+  (std::defret aig-i2v-aux-correct
+    (equal (sv::aig-list->s bitlist env)
+           (logtail idx x))
+    :hints(("Goal" :induct (sv::aig-i2v-aux x idx length)
+            :expand (;; (logtail (+ 1 (nfix idx)) x)
+                     ;; (logtail idx x)
+                     ;; (logbitp idx x)
+                     )
+            :in-theory (enable* bitops::equal-logcons-strong)
+            ))))
+       
+                   
+
 
 (define sv::aig-i2v ((x integerp))
   :returns (aig)
   :short "Like @(see gl::i2v) but for AIGs only."
-  :measure (integer-length x)
-  :prepwork ((local (in-theory (enable acl2::integer-length**))))
-  (cond ((zip x) nil)
-        ((eql x -1) '(t))
-        (t (sv::aig-scons (logbitp 0 x)
-                          (sv::aig-i2v (logcdr x)))))
+  (sv::aig-i2v-aux x 0 (integer-length x))
   ///
   (defthm aig-i2v-correct
     (equal (sv::aig-list->s (sv::aig-i2v x) env)
@@ -189,22 +269,29 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
                   (p `(acl2::pos-fix ,(caar x)))
                   (b `(sv::aig-eval ,(caar x) env))
                   (u `(sv::aig-list->u ,(caar x) env))
-                  (s `(sv::aig-list->s ,(caar x) env))))
+                  (s `(sv::aig-list->s ,(caar x) env))
+                  (ru `(sv::aig-list->u (acl2::rev ,(caar x)) env))
+                  (rs `(sv::aig-list->s (acl2::rev ,(caar x)) env))))
           (defsymbolic-formals-pair-with-evals-aig (cdr x)))))
 
 (defun defsymbolic-return-specs-aig (x formal-evals)
   (if (atom x)
       nil
-    (append (case (cadar x)
-              ((n i p) (and (third (car x))
-                            `((equal ,(caar x)
-                                     ,(sublis formal-evals (third (car x)))))))
-              (b `((equal (sv::aig-eval ,(caar x) env)
-                          ,(sublis formal-evals (third (car x))))))
-              (u `((equal (sv::aig-list->u ,(caar x) env)
-                          ,(sublis formal-evals (third (car x))))))
-              (s `((equal (sv::aig-list->s ,(caar x) env)
-                          ,(sublis formal-evals (third (car x)))))))
+    (append (b* ((spec-term (defsymbolic-spec-term formal-evals (car x))))
+              (case (cadar x)
+                ((n i p) (and (third (car x))
+                              `((equal ,(caar x)
+                                       ,spec-term))))
+                (b `((equal (sv::aig-eval ,(caar x) env)
+                            ,spec-term)))
+                (u `((equal (sv::aig-list->u ,(caar x) env)
+                            ,spec-term)))
+                (s `((equal (sv::aig-list->s ,(caar x) env)
+                            ,spec-term)))
+                (ru `((equal (sv::aig-list->u (acl2::rev ,(caar x)) env)
+                             ,spec-term)))
+                (rs `((equal (sv::aig-list->s (acl2::rev ,(caar x)) env)
+                             ,spec-term)))))
             (defsymbolic-return-specs-aig (cdr x) formal-evals))))
 
 ;; (defmacro sv::aig-and* (&rest args)
@@ -251,7 +338,7 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
                                                         :pkg-sym 'sv::pkg)))
        ((mv kwd-alist other-kws other-args)
         (extract-some-keywords
-         '(:spec :returns :correct-hints :depends-hints :correct-hyp :abstract) args nil))
+         '(:spec :returns :correct-hints :depends-hints :correct-hyp :guard-hints :abstract) args nil))
        ((unless (eql (len other-args) 2))
         (er hard? 'defsymbolic-fn "Need formals and body in addition to keyword args"))
        (formals (car other-args))
@@ -284,10 +371,13 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
     `(progn
        (define ,exec-name ,(defsymbolic-define-formals formals)
          ,@other-kws
+         :verify-guards nil
          :returns ,(defsymbolic-define-returns returns)
          :progn t
          ,body
          ///
+         (verify-guards ,exec-name
+           :hints ,(cdr (assoc :guard-hints kwd-alist)))
          (table bfr-aig-subst ',old-exec-name ',exec-name)
 
          (defthm ,(intern-in-package-of-symbol
@@ -348,11 +438,17 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
                          bitops::ihsext-inductions))))
 
 
-(local (defthm integer-length-bound-s-correct-aig
-         (< (integer-length (sv::aig-list->s x env))
-            (integer-length-bound-s x))
-         :hints(("Goal" :in-theory (enable integer-length-bound-s)))
-         :rule-classes :linear))
+(local
+ (encapsulate nil
+   (local (defthm s-endp-by-len
+            (implies (<= (len x) 1)
+                     (s-endp x))
+            :hints(("Goal" :in-theory (enable s-endp)))))
+   (defthm integer-length-bound-s-correct-aig
+     (< (integer-length (sv::aig-list->s x env))
+        (integer-length-bound-s x))
+     :hints(("Goal" :in-theory (enable integer-length-bound-s)))
+     :rule-classes :linear)))
 
 (defthm integer-length-bound-s-correct-aig
   (< (integer-length (sv::aig-list->s x env))
@@ -432,3 +528,7 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
            head-before-bfr-ite-bss
            nil *defsymbolic-aig-subst*)))
      (cons 'progn (append events1 events2 events3)))))
+
+
+
+

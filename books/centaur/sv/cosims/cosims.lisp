@@ -35,7 +35,7 @@
 (include-book "../svtv/debug")
 (include-book "oslib/file-types" :dir :system)
 (include-book "std/bitsets/bignum-extract-opt" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :System))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable len nth)))
@@ -150,9 +150,13 @@
     (or (if exactp
             (equal output-spec output-impl)
           (4vec-[= output-impl output-spec))
-        (cw "Test failed: input:~%~s0~%output (spec):~%~s1~%output (impl):~%~s2~%~x3~%~x4~%"
+        (cw "Test failed: input:~%~s0~%output (spec):~%~s1~%output (vl/sv):~%~s2~%~x3~%~x4~%"
             input-line output-line
-            (sv::vcd-4vec-bitstr output-impl (length output-line))
+            (let* ((str (sv::vcd-4vec-bitstr output-impl (length output-line)))
+                   (padlen (nfix (- 128 (length str))))
+                   (pad (coerce (make-list padlen :initial-element #\0) 'string)))
+              ;; gross hack to make it 128 bits
+              (cat pad str))
             output-spec output-impl))))
 
 (define cosims-compare-stv ((input-lines string-listp)
@@ -172,6 +176,81 @@
        (test1 (cosim-compare-stv (car input-lines) (car output-lines) exactp stv))
        (rest (cosims-compare-stv (cdr input-lines) (cdr output-lines) exactp stv)))
     (and test1 rest)))
+
+
+
+
+(define cosims-compare-cycle ((input-line stringp)
+                              (output-line stringp)
+                              (exactp)
+                              (updates svex-alist-p)
+                              (nextstates svex-alist-p)
+                              (currst svex-env-p)
+                              (reset  bitp))
+  :returns (mv (ok "spec and implementation results were equal")
+               (nextst svex-env-p))
+  :guard (svex-lookup "out" updates)
+  (b* ((currst (svex-env-fix currst))
+       (reset (lbfix reset))
+       ((when (equal (vl::string-fix input-line) "")) (mv t currst))
+       (input-4vec (str->4vec input-line))
+       (output-spec (str->4vec output-line))
+       (eval-alist0 `(("in" . ,input-4vec) ("clk" . 0) ("reset" . ,reset) . ,currst))
+       (nextst0 (with-fast-alist eval-alist0 (svex-alist-eval nextstates eval-alist0)))
+       (- (clear-memoize-table 'svex-eval))
+       (eval-alist1 `(("in" . ,input-4vec) ("clk" . 1) ("reset" . 0) . ,nextst0))
+       ((with-fast eval-alist1))
+       (output-impl (4vec-zero-ext 128 (svex-eval (svex-lookup "out" updates) eval-alist1)))
+       (nextst (svex-alist-eval nextstates eval-alist1))
+       (- (clear-memoize-table 'svex-eval))
+       (ok
+        (or (if exactp
+                (equal output-spec output-impl)
+              (4vec-[= output-impl output-spec))
+            (cw "Test failed: input:~%~s0~%output (spec):~%~s1~%output (vl/sv):~%~s2~%~x3~%~x4~%"
+                input-line output-line
+                (let* ((str (sv::vcd-4vec-bitstr output-impl (length output-line)))
+                       (padlen (nfix (- 128 (length str))))
+                       (pad (coerce (make-list padlen :initial-element #\0) 'string)))
+                  ;; gross hack to make it 128 bits
+                  (cat pad str))
+                output-spec output-impl))))
+    (and ok (cw "Test passed: input:~%~s0~%output:~%~s1~%" input-line output-line))
+    (mv ok nextst)))
+
+
+(define cosims-compare-cycles ((input-lines string-listp)
+                               (output-lines string-listp)
+                               (exactp)
+                               (updates svex-alist-p)
+                               (nextstates svex-alist-p)
+                               (currst svex-env-p)
+                               (reset bitp))
+  :guard (and (eql (len input-lines) (len output-lines))
+              (svex-lookup "out" updates))
+  (b* (((when (atom input-lines)) t)
+       ((mv ok1 nextst) (cosims-compare-cycle (car input-lines) (car output-lines)
+                                              exactp updates nextstates currst reset)))
+    (and (cosims-compare-cycles (cdr input-lines) (cdr output-lines) exactp updates nextstates nextst 0)
+         ok1)))
+
+(define cosims-compare ((input-lines string-listp)
+                        (output-lines string-listp)
+                        (exactp)
+                        (updates svex-alist-p)
+                        (nextstates svex-alist-p))
+  :guard (and (eql (len input-lines) (len output-lines))
+              (svex-lookup "out" updates))
+  :prepwork ((local (in-theory (disable vl::string-listp-when-no-nils-in-vl-maybe-string-listp
+                                        string-listp
+                                        member))))
+  :guard-hints (("goal" :expand ((string-listp input-lines)
+                                 (string-listp output-lines))))
+  :hooks ((:fix :hints(("Goal" :expand ((str::string-list-fix input-lines)
+                                        (str::string-list-fix output-lines))))))
+  (cosims-compare-cycles input-lines output-lines exactp updates nextstates nil 1))
+
+
 
 
 

@@ -1,5 +1,0 @@
-(in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-(include-book "centaur/fty/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
-

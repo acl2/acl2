@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -201,7 +201,7 @@
           "Before changing the status of waterfall-parallelism, either (1) ~
            override hints must be removed from the default-hints-table or (2) ~
            waterfall-parallelism hacks must be enabled.  (1) can be achieved ~
-           by calling ~x0.  (2) can be achived by calling ~x1."
+           by calling ~x0.  (2) can be achieved by calling ~x1."
           '(set-override-hints nil)
           '(set-waterfall-parallelism-hacks-enabled t)))
      (t (value nil)))))
@@ -244,6 +244,11 @@
               (er soft ctx
                   "Parallel execution must be enabled before enabling ~
                    waterfall parallelism.  See :DOC set-parallel-execution"))
+             ((and val (f-get-global 'gstackp state))
+              (er soft ctx
+                  "You must disable brr (e.g., with :BRR NIL) before turning ~
+                   on waterfall-parallelism.  See :DOC ~
+                   unsupported-waterfall-parallelism-features."))
              (t
               (pprogn
 

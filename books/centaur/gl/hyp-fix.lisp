@@ -32,8 +32,8 @@
 (include-book "bfr")
 (include-book "bfr-param")
 (include-book "bfr-reasoning")
-(include-book "centaur/misc/absstobjs" :dir :system)
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
 
@@ -346,6 +346,22 @@
              (equal (equal 1 (calist-lookup x calist))
                     (and (calist-lookup x calist)
                          (acl2::aig-eval x env))))))
+
+(local
+
+; At least two lemmas below, eval-constraint-alist-witness and
+; constraint-alist-assume-aig-contradictionp, required this Matt K. mod April
+; 2016 for the addition of a type-set-bit for the set {1}.  The improved
+; type-prescription rule for calist-lookup$inline made progress in the proof
+; that was harmful.  (Technical note: When assume-true-false-rec never used an
+; equality (equal term 1) to extend the false-type-alist by subtracting
+; *ts-one* from the type of term, we didn't have this problem.  It arose when
+; we tweaked that heuristic to allow this extension when term is a variable,
+; which was important to do for the sake of bitp-compound-recognizer; see the
+; Essay on Strong Handling of *ts-one* in ACL2 source function
+; assume-true-false-rec.)
+
+ (in-theory (disable (:t calist-lookup$inline))))
 
 (define eval-constraint-alist-witness (x env)
   :measure (len x)

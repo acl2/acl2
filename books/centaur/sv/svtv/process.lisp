@@ -431,19 +431,14 @@
   :verbosep t
   (b* (((acl2::local-stobjs moddb aliases)
         (mv svtv moddb aliases))
-       ;; Make a moddb, canonical alias table, and flattened
-       ;; (non-alias-normalized) assignments from the design.  These are
-       ;; expressed terms of indexed variable names.
-       ((mv err assigns moddb aliases)
-        (svex-design-flatten design))
+       ;; Make a moddb, canonical alias table, and flattened, alias-normalized
+       ;; assignments from the design.
+       ((mv err assigns delays moddb aliases)
+        (svex-design-flatten-and-normalize design))
        ((when err) (raise "Error flattening design: ~@0" err)
         (mv nil moddb aliases))
        ;; get the index of the top-level module within the moddb
        (modidx (moddb-modname-get-index (design->top design) moddb))
-       ;; Translate the alias table into named variables.
-       (aliases (aliases-indexed->named aliases (make-modscope-top :modidx modidx) moddb))
-       ;; Alias-normalize the assignments and make a delay table
-       ((mv assigns delays) (svex-normalize-assigns assigns aliases))
 
        ;; Process the timing diagram into internal form
        (orig-ins ins)
@@ -522,6 +517,11 @@
                   (svtv-compile
                    0 nphases ins ovlines outs initst updates-for-outs next-states in-vars)
                   :mintime 1))
+
+       (has-duplicate-outputs (acl2::hons-dups-p (svex-alist-keys outexprs)))
+       ((when has-duplicate-outputs)
+        (raise "Duplicated output variable: ~x0" (car has-duplicate-outputs))
+        (mv nil moddb aliases))
 
        (outexprs (if simplify
                      (svex-alist-normalize-concats
@@ -748,6 +748,7 @@
                     labels
                     simplify
                     pre-simplify
+                    define-macros
                     parents short long)
   :guard (modalist-addr-p (design->modalist design))
   :irrelevant-formals-ok t
@@ -778,7 +779,7 @@
                  long
                (str::cat "<h3>Simulation Diagram</h3>
 
-<p>This is a <see topic='@(url svex-stvs)'>svex symbolic test vector</see>
+<p>This is a <see topic='@(url sv::svex-stvs)'>svex symbolic test vector</see>
 defined with @(see sv::defsvtv).</p>"
                          (or (svtv-to-xml svtv labels)
                              "Error generating diagram")
@@ -825,7 +826,6 @@ defined with @(see sv::defsvtv).</p>"
        (invar-defaults (defsvtv-default-names invars))
        (cmds `((defconst ,stvconst ',svtv)
 
-
                (defconst ,modconst ,design-const)
 
                (defund ,name-mod ()
@@ -858,103 +858,107 @@ defined with @(see sv::defsvtv).</p>"
                  (in-theory (disable (,name)))
                  (add-to-ruleset! svtv-execs '((,name))))
 
-               (define ,name-autohyps (&key . ,invar-defaults)
-                 ,(svtv-autohyps svtv))
+               ,@(if define-macros
+                     `((define ,name-autohyps (&key . ,invar-defaults)
+                         ,(svtv-autohyps svtv))
 
-               (defmacro ,name-autohyps-body ()
-                 ',(svtv-autohyps svtv))
+                       (defmacro ,name-autohyps-body ()
+                         ',(svtv-autohyps svtv))
 
-               (define ,name-alist-autohyps ((x alistp))
-                 :guard-hints
-                 (("Goal" :in-theory (e/d** (consp-of-assoc-when-alistp
-                                             (eqlablep)
-                                             acl2::assoc-eql-exec-is-assoc-equal))))
-                 (declare (ignorable x)) ;; for the case where there are no input vars
-                 (b* (((acl2::assocs . ,invars) x))
-                   (,name-autohyps)))
+                       (define ,name-alist-autohyps ((x alistp))
+                         :guard-hints
+                         (("Goal" :in-theory
+                           (e/d** (consp-of-assoc-when-alistp
+                                   (eqlablep)
+                                   acl2::assoc-eql-exec-is-assoc-equal))))
+                         (declare (ignorable x)) ;; incase there are no input vars
+                         (b* (((acl2::assocs . ,invars) x))
+                           (,name-autohyps)))
 
-               (add-to-ruleset! gl::shape-spec-obj-in-range-backchain
-                                ,name-autohyps-fn)
+                       (add-to-ruleset! gl::shape-spec-obj-in-range-backchain
+                                        ,name-autohyps-fn)
 
-               (add-to-ruleset! gl::shape-spec-obj-in-range-open
-                                ,name-autohyps-fn)
+                       (add-to-ruleset! gl::shape-spec-obj-in-range-open
+                                        ,name-autohyps-fn)
 
-               (add-to-ruleset! svtv-autohyps ,name-autohyps-fn)
-               (add-to-ruleset! svtv-alist-autohyps ,name-alist-autohyps)
+                       (add-to-ruleset! svtv-autohyps ,name-autohyps-fn)
+                       (add-to-ruleset! svtv-alist-autohyps ,name-alist-autohyps)
 
-               (define ,name-autoins (&key . ,invar-defaults)
-                 ,(svtv-autoins svtv))
+                       (define ,name-autoins (&key . ,invar-defaults)
+                         ,(svtv-autoins svtv))
 
-               (defthm ,(intern-in-package-of-symbol
-                         (str::cat (symbol-name name) "-AUTOINS-LOOKUP")
-                         name)
-                 (implies (syntaxp (quotep k))
-                          (equal (assoc k (,name-autoins))
-                                 (case k
-                                   . ,(autoins-lookup-cases invars))))
-                 :hints (("goal" :in-theory (e/d** (,name-autoins-fn
-                                                    assoc-of-acons
-                                                    assoc-of-nil
-                                                    car-cons cdr-cons
-                                                    member-equal))
-                          ,@(if (consp invars)
-                                `(:cases ,(autoins-lookup-casesplit invars 'k))
-                              nil))))
-               (defmacro ,name-autoins-body ()
-                 ',(svtv-autoins svtv))
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat (symbol-name name) "-AUTOINS-LOOKUP")
+                                 name)
+                         (implies (syntaxp (quotep k))
+                                  (equal (assoc k (,name-autoins))
+                                         (case k
+                                           . ,(autoins-lookup-cases invars))))
+                         :hints (("goal" :in-theory (e/d** (,name-autoins-fn
+                                                            assoc-of-acons
+                                                            assoc-of-nil
+                                                            car-cons cdr-cons
+                                                            member-equal))
+                                  ,@(if (consp invars)
+                                        `(:cases ,(autoins-lookup-casesplit invars 'k))
+                                      nil))))
+                       (defmacro ,name-autoins-body ()
+                         ',(svtv-autoins svtv))
 
-               (define ,name-alist-autoins ((x alistp))
-                 :guard-hints
-                 (("Goal" :in-theory (e/d** (consp-of-assoc-when-alistp
-                                             (eqlablep)
-                                             acl2::assoc-eql-exec-is-assoc-equal))))
-                 (declare (ignorable x)) ;; for the case where there are no input vars
-                 (b* (((acl2::assocs . ,invars) x))
-                   (,name-autoins)))
+                       (define ,name-alist-autoins ((x alistp))
+                         :guard-hints
+                         (("Goal" :in-theory
+                           (e/d** (consp-of-assoc-when-alistp
+                                   (eqlablep)
+                                   acl2::assoc-eql-exec-is-assoc-equal))))
+                         (declare (ignorable x)) ;; in case there are no input vars
+                         (b* (((acl2::assocs . ,invars) x))
+                           (,name-autoins)))
 
-               (add-to-ruleset! svtv-autoins ,name-autoins-fn)
-               (add-to-ruleset! svtv-alist-autoins ,name-alist-autoins)
+                       (add-to-ruleset! svtv-autoins ,name-autoins-fn)
+                       (add-to-ruleset! svtv-alist-autoins ,name-alist-autoins)
 
-               (defthm ,(intern-in-package-of-symbol
-                         (str::cat (symbol-name name) "-ALIST-AUTOINS-IDEMPOTENT")
-                         name)
-                 (equal (,name-alist-autoins (,name-alist-autoins x))
-                        (,name-alist-autoins x))
-                 :hints(("Goal" :in-theory (e/d** (,name-alist-autoins
-                                                   ,name-autoins-fn
-                                                   assoc-of-acons
-                                                   car-cons cdr-cons
-                                                   (assoc))))))
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat (symbol-name name) "-ALIST-AUTOINS-IDEMPOTENT")
+                                 name)
+                         (equal (,name-alist-autoins (,name-alist-autoins x))
+                                (,name-alist-autoins x))
+                         :hints(("Goal" :in-theory (e/d** (,name-alist-autoins
+                                                           ,name-autoins-fn
+                                                           assoc-of-acons
+                                                           car-cons cdr-cons
+                                                           (assoc))))))
 
-               (defthm ,(intern-in-package-of-symbol
-                         (str::cat (symbol-name name) "-ALIST-AUTOINS-LOOKUP")
-                         name)
-                 (equal (assoc k (,name-alist-autoins x))
-                        (and (member k (svtv->ins ,stvconst))
-                             (cons k (cdr (assoc k x)))))
-                 :hints (("goal" :in-theory (e/d** (,name-alist-autoins
-                                                    ,name-autoins-fn
-                                                    assoc-of-acons
-                                                    assoc-of-nil
-                                                    car-cons cdr-cons
-                                                    member-equal
-                                                    (svtv->ins))))))
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat (symbol-name name) "-ALIST-AUTOINS-LOOKUP")
+                                 name)
+                         (equal (assoc k (,name-alist-autoins x))
+                                (and (member k (svtv->ins ,stvconst))
+                                     (cons k (cdr (assoc k x)))))
+                         :hints (("goal" :in-theory (e/d** (,name-alist-autoins
+                                                            ,name-autoins-fn
+                                                            assoc-of-acons
+                                                            assoc-of-nil
+                                                            car-cons cdr-cons
+                                                            member-equal
+                                                            (svtv->ins))))))
 
 
-               (defthm ,(intern-in-package-of-symbol
-                         (str::cat (symbol-name name) "-ALIST-AUTOHYPS-OF-AUTOINS")
-                         name)
-                 (equal (,name-alist-autohyps (,name-alist-autoins x))
-                        (,name-alist-autohyps x))
-                 :hints(("Goal" :in-theory (e/d** (,name-alist-autohyps
-                                                   ,name-alist-autoins
-                                                   ,name-autoins-fn
-                                                   assoc-of-acons
-                                                   car-cons cdr-cons
-                                                   (assoc))))))
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat (symbol-name name) "-ALIST-AUTOHYPS-OF-AUTOINS")
+                                 name)
+                         (equal (,name-alist-autohyps (,name-alist-autoins x))
+                                (,name-alist-autohyps x))
+                         :hints(("Goal" :in-theory (e/d** (,name-alist-autohyps
+                                                           ,name-alist-autoins
+                                                           ,name-autoins-fn
+                                                           assoc-of-acons
+                                                           car-cons cdr-cons
+                                                           (assoc))))))
 
-               (defmacro ,name-autobinds ()
-                 ',(svtv-autobinds svtv))))
+                       (defmacro ,name-autobinds ()
+                         ',(svtv-autobinds svtv)))
+                   nil)))
        (cmds (if (not want-xdoc-p)
                  cmds
                (cons `(defxdoc ,name
@@ -976,11 +980,13 @@ defined with @(see sv::defsvtv).</p>"
                         short
                         long
                         (simplify 't)
-                        (pre-simplify 't)) ;; should this be t by default?
+                        (pre-simplify 't) ;; should this be t by default?
+                        (define-macros 't))
   (b* (((unless (xor design mod))
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
-                   ,(or design mod) ',(or design mod) ,labels ,simplify ,pre-simplify
+                   ,(or design mod) ',(or design mod) ,labels ,simplify
+                   ,pre-simplify ,define-macros
                    ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format
@@ -1175,6 +1181,7 @@ decomposition proof.</li>
                   (inalist     "Alist mapping input names to @(see 4vec) values")
                   &key
                   ((skip "List of output names that should NOT be computed")   'nil)
+                  ((include "List of output names that SHOULD be computed")    'nil)
                   ((boolvars "For symbolic execution, assume inputs are Boolean-valued") 't)
                   ((simplify "For symbolic execution, apply svex rewriting to the SVTV") 'nil)
                   ((quiet "Don't print inputs/outputs")  'nil)
@@ -1218,9 +1225,10 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
        (boolmasks (hons-copy
                    (and boolvars
                         (svar-boolmasks-limit-to-bound-vars keys svtv.inmasks))))
-       (outs (b* (((unless (consp skip)) svtv.outexprs)
-                  (outkeys (difference (mergesort (svex-alist-keys svtv.outexprs))
-                                       (mergesort skip))))
+       (outs (b* (((unless (or skip include)) svtv.outexprs)
+                  (outkeys (or include
+                               (difference (mergesort (svex-alist-keys svtv.outexprs))
+                                           (mergesort skip)))))
                (acl2::fal-extract outkeys svtv.outexprs)))
        (res
         (mbe :logic (svex-alist-eval-for-symbolic outs
@@ -1314,7 +1322,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (implies (and (syntaxp (and (quotep skips)
                                 (not (equal skips ''nil))))
                   (not (member signal skips)))
-             (equal (assoc signal (svtv-run svtv inalist :skip skips))
+             (equal (assoc signal (svtv-run svtv inalist :skip skips :boolvars boolvars :quiet quiet))
                     (assoc signal (svtv-run svtv inalist))))
  :hints(("Goal" :in-theory (enable svtv-run)))))
 
@@ -1367,21 +1375,6 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
 
 
 
-
-(define svtv-easy-bindings-inside-mix ((x "Some arguments inside of a :mix")
-                                      (svtv svtv-p))
-  :parents (svtv-easy-bindings)
-  (cond ((atom x)
-         nil)
-        ((symbolp (car x))
-         ;; Should be an SVTV input.
-         (cons `(:nat ,(car x) ,(svtv->in-width (car x) svtv))
-               (svtv-easy-bindings-inside-mix (cdr x) svtv)))
-        (t
-         ;; Anything else is illegal inside mix.
-         (raise "Inside a :mix you can only have symbols (the names of svtv ~
-                 inputs), so ~x0 is illegal." (car x)))))
-
 (define svtv-easy-bindings-main ((x   "Some arguments to easy-bindings")
                                 (svtv svtv-p))
   (cond ((atom x)
@@ -1390,16 +1383,24 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
          ;; Should be an SVTV input.
          (cons `(:nat ,(car x) ,(svtv->in-width (car x) svtv))
                (svtv-easy-bindings-main (cdr x) svtv)))
-        ((and (consp (car x))
-              (equal (caar x) :mix))
-         (let ((things-to-mix (cdar x)))
-           (if (consp things-to-mix)
-               (cons `(:mix . ,(svtv-easy-bindings-inside-mix things-to-mix svtv))
-                     (svtv-easy-bindings-main (cdr x) svtv))
-             (raise ":MIX with no arguments? ~x0" (car x)))))
+        ((atom (car x))
+         (raise "Illegal argumen to svtv-easy-bindings: ~x0" (car x)))
+        ((or (eq (caar x) :nat)
+             (eq (caar x) :int)
+             (eq (caar x) :bool)
+             (eq (caar x) :skip))
+         (cons (car x) (svtv-easy-bindings-main (cdr x) svtv)))
+        ((or (eq (caar x) :mix)
+             (eq (caar x) :seq))
+         (let ((elems (cdar x)))
+           (cons (cons (caar x) (svtv-easy-bindings-main elems svtv))
+                 (svtv-easy-bindings-main (cdr x) svtv))))
+        ((eq (caar x) :rev)
+         (cons (cons :rev (svtv-easy-bindings-main (cdar x) svtv))
+               (svtv-easy-bindings-main (cdr x) svtv)))
         (t
          (raise "Arguments to svtv-easy-bindings should be input names or ~
-                 (:mix input-name-list), so ~x0 is illegal." (car x)))))
+                 a :mix, :seq, or :rev form, so ~x0 is illegal." (car x)))))
 
 (program)
 
@@ -1458,10 +1459,60 @@ irrelevant inputs are removed.</p>"
     (gl::auto-bindings-fn
      (append binds
              ;; bozo ugly, but workable enough...
-             (svtv-easy-bindings-inside-mix unbound svtv))))
+             (svtv-easy-bindings-main unbound svtv))))
   ///
   (defmacro stv-easy-bindings (&rest args) (cons 'svtv-easy-bindings args))
   (add-macro-alias stv-easy-bindings svtv-easy-bindings))
+
+
+(define svtv-flex-bindings
+  :hooks nil
+  :parents (symbolic-test-vector)
+  :short "Generating G-bindings from an SVTV using @(see gl::flex-bindings)."
+
+  ((svtv   "The SVTV you are dealing with."
+          svtv-p)
+   (order "The variable order you want to use.")
+   &key
+   (arrange "Arrangement of the indices."))
+
+  (b* ((binds   (svtv-easy-bindings-main order svtv))
+       (arrange1 (or arrange
+                     (gl::auto-bindings-list-collect-arrange
+                      (gl::auto-bind-xlate-list binds nil))))
+       (unbound (set-difference-equal (svtv->ins svtv)
+                                      (strip-cars (strip-cdrs arrange1))))
+       (unbound-binds (svtv-easy-bindings-main unbound svtv))
+       (unbound-arrange (gl::auto-bindings-list-collect-arrange
+                         (gl::auto-bind-xlate-list unbound-binds nil))))
+    (gl::flex-bindings-fn
+     (append binds unbound-binds)
+     (append arrange1 unbound-arrange)
+     0))
+  ///
+  (defmacro stv-flex-bindings (&rest args) (cons 'svtv-flex-bindings args))
+  (add-macro-alias stv-flex-bindings svtv-flex-bindings))
+
+
+(define svtv-flex-param-bindings ((svtv svtv-p)
+                                  (in-alist
+                                   "Each element is (list case-spec-alist auto-bindings)
+                                    or (list case-spec-alist auto-bindings :arrange arrange)"))
+  :hooks nil
+  :parents (symbolic-test-vector)
+  :short "Generating parametrized g-bindings from an SVTV using @(see gl::flex-bindings)."
+  (b* (((when (atom in-alist)) nil)
+       (case1 (car in-alist))
+       ((unless (and (true-listp case1)
+                     (or (eql (len case1) 2)
+                         (and (eql (len case1) 4)
+                              (eq (nth 2 case1) :arrange)))))
+        (raise "Unsupported entry in svtv-flex-param-bindings: ~x0" case1))
+       ((list params auto-bindings ?arrange-keyword arrange) case1))
+    (cons (list params (svtv-flex-bindings svtv auto-bindings :arrange arrange))
+          (svtv-flex-param-bindings svtv (cdr in-alist)))))
+       
+       
 
 
 

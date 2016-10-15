@@ -106,16 +106,16 @@
 
 (defun acl2::colon-xdoc-initialized (state)
 
-; This interface function was added by Matt K. so that the proof-checker can
+; This interface function was added by Matt K. so that the proof-builder can
 ; determine if xdoc is ready to go.  If we only use the ld-keyword-aliases to
 ; determine that xdoc is available, then events will be submitted when xdoc is
-; invoked from within the proof-checker (see colon-xdoc-init).  This would
-; cause a weird complaint about make-event when exiting the proof-checker.
+; invoked from within the proof-builder (see colon-xdoc-init).  This would
+; cause a weird complaint about make-event when exiting the proof-builder.
 
 ; In general, it seems best only to submit events at the top-level of the ACL2
 ; loop, so that ACL2 can handle them properly, for example laying down
 ; command-markers appropriately.  This interface function can be used by other
-; applications (besides the proof-checker) in order to avoid calling xdoc when
+; applications (besides the proof-builder) in order to avoid calling xdoc when
 ; this would create events.
 
 ; This function is in the ACL2 package so that it can be run even when the
@@ -128,19 +128,21 @@
 (defmacro colon-xdoc-init ()
   '(with-output :off (summary event observation prove proof-tree)
      (make-event
-      (if (not (acl2::colon-xdoc-initialized state))
+      (if (acl2::colon-xdoc-initialized state)
+          '(value-triple :invisible)
         `(progn
            (include-book ;; newlines to fool dependency scanner
             "xdoc/defxdoc-raw" :dir :system :ttags :all)
            (include-book
             "xdoc/topics" :dir :system)
            (include-book
-            "xdoc/display" :dir :system)
+            "system/doc/acl2-doc-wrap" :dir :system)
+           (include-book
+            "xdoc/display" :dir :system :ttags :all)
            (encapsulate ()
-            (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
-            (local (set-inhibit-warnings "Documentation")))
-           (table xdoc 'colon-xdoc-support-loaded t))
-        '(value-triple :invisible)))))
+             (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
+             (local (set-inhibit-warnings "Documentation")))
+           (table xdoc 'colon-xdoc-support-loaded t))))))
 
 (defmacro xdoc (name)
   (declare (xargs :guard (or (symbolp name)
@@ -153,8 +155,9 @@
        (progn
          (colon-xdoc-init)
          (make-event
-          (b* (((mv all-xdoc-topics state)
-                (with-guard-checking t (all-xdoc-topics state)))
+          (b* (((mv & all-xdoc-topics state)
+                (acl2::with-guard-checking-error-triple
+                 t (all-xdoc-topics state)))
                ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
 
@@ -211,23 +214,29 @@
   `(table xdoc 'doc
           (xdoc-prepend-fn ',name ,long world)))
 
-(defun order-subtopics-fn (name order world)
+(defun order-subtopics-fn (name order flg world)
   (declare (xargs :mode :program))
   (let* ((all-topics (xdoc::get-xdoc-table world))
-         (old-topic  (xdoc::find-topic name all-topics)))
+         (old-topic  (xdoc::find-topic name all-topics))
+         (ctx 'order-subtopics))
     (cond ((not old-topic)
-           (er hard? 'order-subtopics "Topic ~x0 wasn't found." name))
-          ((not (symbol-listp order))
-           (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
+           (er hard? ctx "Topic ~x0 wasn't found." name))
+          ((not (symbol-listp (fix-true-list order)))
+           (er hard? ctx "Subtopics list contains a non-symbol: ~x0" order))
+          ((not (booleanp flg))
+           (er hard? ctx "Optional argument is not Boolean: ~x0" flg))
           (t
            (let* ((other-topics (remove-equal old-topic all-topics))
-                  (new-topic    (acons :suborder order
+                  (new-topic    (acons :suborder
+                                       (if flg
+                                           (append order flg)
+                                         order)
                                        (delete-assoc :suborder old-topic))))
              (cons new-topic other-topics))))))
 
-(defmacro order-subtopics (name order)
+(defmacro order-subtopics (name order &optional flg)
   `(table xdoc 'doc
-          (order-subtopics-fn ',name ',order world)))
+          (order-subtopics-fn ',name ',order ',flg world)))
 
 (defund extract-keyword-from-args (kwd args)
   (declare (xargs :guard (keywordp kwd)))

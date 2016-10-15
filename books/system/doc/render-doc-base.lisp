@@ -27,8 +27,9 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; 10/29/2013, 12/2013: Mods made by Matt Kaufmann to support Emacs-based
-;   ACL2-Doc browser
+
+; 10/29/2013, 12/2013, 5/2016: Mods made by Matt Kaufmann to support
+; Emacs-based ACL2-Doc browser
 
 (in-package "XDOC")
 (include-book "xdoc/display" :dir :system)
@@ -188,16 +189,23 @@
                          t ;; disable autolinking to avoid auto links in text mode
                          state))
        ((mv err tokens) (parse-xml text))
-
-       ((when err)
-        (cw "Error rendering xdoc topic ~x0:~%~%" name)
-        (b* ((state (princ$ err *standard-co* state))
-             (state (newline *standard-co* state))
-             (state (newline *standard-co* state)))
-          (er hard? 'make-topic-text "Failed to process topic ~x0.~%" name)
-          (mv nil state)))
-
-       (merged-tokens (reverse (merge-text tokens nil 0 nil)))
+       ((mv tokens state)
+        (if (not err)
+            (mv tokens state)
+          (b* ((- (cw "Error rendering xdoc topic ~x0:~%~%" name))
+               (state (princ$ err *standard-co* state))
+               (state (newline *standard-co* state))
+               (state (newline *standard-co* state))
+               ((mv & tokens) (parse-xml "Error rendering topic")))
+            (mv tokens state))))
+       ((mv err topic-to-rendered-table state)
+        (topic-to-rendered-table-init state))
+       ((when err) ; impossible?
+        (mv (er hard 'render-topic
+                "Unexpected implementation error!")
+            state))
+       (merged-tokens (reverse (merge-text tokens nil 0 nil
+                                           topic-to-rendered-table)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 

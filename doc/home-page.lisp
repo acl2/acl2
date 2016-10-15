@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v7-1/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v7-2/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-7-1                            ;;; g   ; current release notes
+    note-7-2                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -212,7 +212,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 7.0</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 7.1</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -262,10 +262,11 @@ href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
 extensions, which were developed by the individuals shown.  <b>NOTE:</b>Not
-included in this list is ACL2(h), because it is now the default build of ACL2:
-that is, ACL2 is <a href=\"~sm\">hons-enabled</a> by default.  Thanks to Bob
-Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
-contributions; see the <a href=\"~sk\">acknowledgments</a>.
+included in this list is what was formerly known as \"ACL2(h)\", because it is
+now the default build of ACL2: that is, ACL2 builds are now <a
+href=\"~sm\">hons-enabled</a>.  Thanks to Bob Boyer, Warren A. Hunt, Jr., Jared
+Davis, and Sol Swords for their contributions; see the <a
+href=\"~sk\">acknowledgments</a>.
 
   <UL>
   <LI><A HREF=\"~sl\">ACL2(r)</A><BR>
@@ -338,12 +339,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~s2\">ACL2+Books Manual</A> <i>(recommended)</i></li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.2)</li>
 
-<li><A HREF=\"~s3\">ACL2+Books Manual</A> for
-\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions</li>
+<li><A HREF=\"~s3\">ACL2+Books Manual</A> (for
+\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions)</li>
 
-<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A></li>
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.2)</li>
 
 </ul>
 

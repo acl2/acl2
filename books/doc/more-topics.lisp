@@ -32,10 +32,22 @@
 (include-book "xdoc/top" :dir :system)
 
 
-(defsection arithmetic
+(defsection math
   :parents (top)
+  :short "Math-related libraries: arithmetic, algebra, bit-vectors.")
+
+(defsection algebra
+  :parents (math)
+  :short "Libraries to reason about algebraic structures, e.g. groups, rings, fields, polynomials.")
+
+(defsection arithmetic
+  :parents (math)
   :short "Libraries for reasoning about basic arithmetic, bit-vector
 arithmetic, modular arithmetic, etc.")
+
+(defsection bit-vectors
+  :parents (math)
+  :short "Libraries for reasoning about bit vectors.")
 
 (defsection boolean-reasoning
   :parents (top)
@@ -128,11 +140,17 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
 (defsection hardware-verification
   :parents (top)
   :short "Libraries for working with hardware description languages, modeling
-circuits, etc.")
+ circuits, etc."
+ :long "Also see the (probably incomplete) <a
+ href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>page
+ of ACL2-related publications</a>.")
 
 (defsection software-verification
   :parents (top)
-  :short "Software verification projects, tools, etc.")
+  :short "Software verification projects, tools, etc."
+  :long "Also see the (probably incomplete) <a
+ href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>page
+ of ACL2-related publications</a>.")
 
 (defxdoc macro-libraries
   :parents (top macros)

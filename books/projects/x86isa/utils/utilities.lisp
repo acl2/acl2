@@ -10,6 +10,7 @@
 (include-book "misc/definline" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
+(include-book "centaur/gl/def-gl-rule" :dir :system)
 ;; (include-book "centaur/bitops/fast-logext" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -385,11 +386,11 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
 
         `(progn
 
-           (local
-            (def-gl-thm ,gl-name
-              :hyp ,hyp
-              :concl ,concl
-              :g-bindings ,g-bindings))
+           (gl::def-gl-ruledl
+            ,gl-name
+            :hyp ,hyp
+            :concl ,concl
+            :g-bindings ,g-bindings)
 
            (defthm ,name
              (implies ,hyp ,concl)
@@ -553,7 +554,7 @@ constants and functions; it also proves some associated lemmas.</p>"
   (cons 'progn (np-defs lst)))
 
 (defuns-np 1 2 3 4 5 6 8 9 11 12 16 17 18 20 21 22 24 25 26 27 28
-  30 32 33 35 43 45 47 48 49 51 52 59 60 64 65 80 112 120 128)
+  30 32 33 35 43 44 45 47 48 49 51 52 59 60 64 65 80 112 120 128)
 
 
 (defmacro n-size (n x)

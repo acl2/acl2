@@ -30,8 +30,8 @@
 
 (in-package "SV")
 (include-book "lhs")
-(include-book "std/misc/two-nats-measure" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(include-book "std/basic/two-nats-measure" :dir :system)
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -1079,24 +1079,18 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
 
 (defines svex-subst-from-svexarr
   :verify-guards nil
-  ;; Note: Not currently memoized because this would slow down creation of
-  ;; svexarr.  This function is not currently used on expressions after they
-  ;; have been composed together, so they tend to be small enough to operate on
-  ;; without memoization.
   (define svex-subst-from-svexarr ((x svex-p) svexarr)
-    :guard (and (svarlist-boundedp (svex-vars x) (svexs-length svexarr))
-                (svarlist-addr-p (svexarr-vars svexarr)))
+    :guard (svarlist-boundedp (svex-vars x) (svexs-length svexarr))
     :returns (xx svex-p)
     :measure (svex-count x)
     (svex-case x
-      :var (svex-add-delay (get-svex (svar-index x.name) svexarr)
-                           (svar->delay x.name))
+      :var (svex-add-delay-top (get-svex (svar-index x.name) svexarr)
+                               (svar->delay x.name))
       :quote (svex-fix x)
-      :call (svex-call x.fn (svexlist-subst-from-svexarr x.args svexarr))))
+      :call (svex-call* x.fn (svexlist-subst-from-svexarr x.args svexarr))))
 
   (define svexlist-subst-from-svexarr ((x svexlist-p) svexarr)
-    :guard (and (svarlist-boundedp (svexlist-vars x) (svexs-length svexarr))
-                (svarlist-addr-p (svexarr-vars svexarr)))
+    :guard (svarlist-boundedp (svexlist-vars x) (svexs-length svexarr))
     :returns (xx svexlist-p)
     :measure (svexlist-count x)
     (if (atom x)
@@ -1122,8 +1116,7 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
 
   ;; BOZO memoizing this likely makes all svexarr operations slow
   (define svex-subst-from-svexarr-memo-ok ((x svex-p) svexarr)
-    :guard (and (svarlist-boundedp (svex-vars x) (svexs-length svexarr))
-                (svarlist-addr-p (svexarr-vars svexarr)))
+    :guard (svarlist-boundedp (svex-vars x) (svexs-length svexarr))
     :inline t
     :ignore-ok t
     (eq (svex-kind x) :call))
@@ -1132,8 +1125,7 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
 
 (define assigns-subst ((x assigns-p) aliases svexarr)
   :guard (and (svarlist-boundedp (assigns-vars x) (aliass-length aliases))
-              (svarlist-boundedp (assigns-vars x) (svexs-length svexarr))
-              (svarlist-addr-p (svexarr-vars svexarr)))
+              (svarlist-boundedp (assigns-vars x) (svexs-length svexarr)))
   :guard-hints (("goal" :expand ((assigns-vars x))))
   :returns (xx assigns-p)
   :measure (len (assigns-fix x))

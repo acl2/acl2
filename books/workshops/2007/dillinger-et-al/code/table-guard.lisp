@@ -19,7 +19,7 @@
           %redundant%)
          (old-guard
           %er1%)
-         ((getprop name 'table-alist nil 'current-acl2-world %wrld%)
+         ((getpropc name 'table-alist nil %wrld%)
           %er2%)
          (t
           %rest%))
@@ -28,7 +28,7 @@
            %redundant%)
           ((and old-guard (not (ttag %wrld%)))
            %er1%)
-          ((and (getprop name 'table-alist nil 'current-acl2-world %wrld%)
+          ((and (getpropc name 'table-alist nil %wrld%)
                 (not (ttag %wrld%)))
            %er2%)
           (t
@@ -59,7 +59,7 @@
        (if ',skip-proof
          (value nil)
          (thm-fn `(implies ,old-guard ,(car new-guard-cons))
-                 state ',hints nil nil))
+                 state ',hints nil))
        (value `(table ,',name nil nil :guard ,(car new-guard-cons)))))))
 
 ; adds specified key to acl2-defaults-table with guard for its value.

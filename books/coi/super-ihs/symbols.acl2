@@ -28,6 +28,6 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-
 (ld "symbols-defpkg.lsp")
+(ld "symbols.lsp")
 (certify-book "symbols" ? t)

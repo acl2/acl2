@@ -60,10 +60,15 @@
         (select-operand-size
          select-byte-operand rex-byte nil prefixes))
 
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -125,7 +130,7 @@
             x86)))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: IMUL
@@ -179,10 +184,14 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size select-byte-operand rex-byte nil prefixes))
 
-
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -234,7 +243,7 @@
           x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-imul-Op/En-RM
 
@@ -271,11 +280,15 @@
 
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size nil rex-byte nil prefixes))
-
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -318,7 +331,7 @@
           x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-imul-Op/En-RMI
 
@@ -372,12 +385,16 @@
           (if (equal reg/mem-size 2)
               2
             4)))
-
+       (inst-ac? t)
        ((mv flg0 reg/mem
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib imm-size x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         imm-size ;; imm-size bytes of immediate data
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -433,6 +450,6 @@
           x86))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

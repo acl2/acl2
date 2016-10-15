@@ -32,12 +32,13 @@
 (include-book "config")
 (include-book "read-file")
 (include-book "find-file")
-(include-book "lexer/lexer")
-(include-book "preprocessor/preprocessor")
-(include-book "parser/parser")
+(include-book "lexer/top")
+(include-book "preprocessor/top")
+(include-book "parser/top")
 (include-book "filemap")
 (include-book "inject-comments")
 (include-book "inject-warnings")
+(include-book "translateoff")
 (include-book "../mlib/flat-warnings")
 (include-book "../mlib/print-warnings")
 (include-book "../mlib/scopestack")
@@ -52,15 +53,18 @@
 
 (defxdoc loader
   :parents (vl)
-  :short "Finds and loads Verilog source files."
+  :short "Finds and loads Verilog or SystemVerilog source files&mdash;generally
+the first step toward using VL to work with a hardware design."
 
-  :long "<p>Most Verilog designs involve many files spread out across multiple
+  :long "<h3>Introduction</h3>
+
+<p>Most Verilog designs involve many files spread out across multiple
 directories.  To really load a high-level module @('top'), we typically need
 to:</p>
 
 <ul>
 
-<li>start by parsing its file, say @('top.v'), then</li>
+<li>start by parsing its file, say @('top.v') or @('top.sv'), then</li>
 
 <li>figure out which supporting descriptions are used within @('top') and </li>
 
@@ -69,34 +73,80 @@ directories.</li>
 
 </ul>
 
-<p>Our top-level function for loading Verilog files, @(see vl-load), implements
-such a scheme.  It has various options (see @(see vl-loadconfig-p)) that allow
-you to specify the search paths and extensions to use when looking for files,
-etc.</p>
+<p>VL's top-level function for loading Verilog files, @(see vl-load),
+implements such a scheme.  It has various options (see @(see vl-loadconfig))
+that allow you to specify the search paths and extensions to use when looking
+for files, etc.  A typical command to load a design might look something like
+this:</p>
 
-
-<h3>VL-Only Comments</h3>
-
-<p>VL supports a special comment syntax:</p>
 @({
-//+VL single-line version
-/*+VL multi-line version */
+     (defconsts (*loadresult* state)
+       (vl::vl-load (vl::make-vl-loadconfig
+                     :start-files (list \"top.v\")
+                     :search-path (list \"/path/to/lib1\"
+                                        \"/path/to/lib2\")
+                     :include-dirs (list \"/path/to/includes1\"
+                                         \"/path/to/includes2\")
+                     :defines (make-vl-initial-defines \"FORMAL\")
+                     :edition :system-verilog-2012)))
 })
 
-<p>Which can be used to hide VL-specific code from other tools, e.g., if you
-need your modules to work with an older Verilog implementation that doesn't
-support Verilog-2005 style attributes, you might write something like:</p>
+<p>The resulting @('*loadresult*') will be a @(see vl-loadresult), which among
+other things will contain the @(see vl-design) that has been loaded.  The next
+step after loading is typically to <b>annotate</b> the design using @(see
+vl-annotate-design), and then to further processing it in whatever way is
+suitable for your particular flow.</p>
+
+<h3>Supported Constructs and Workarounds</h3>
+
+<p>For general background on what VL supports, see @(see
+supported-constructs).</p>
+
+<p>A common problem when working with a Verilog or SystemVerilog design is that
+you want to process the design with many tools, and these tools may not all
+support quite the same constructs.  One common way to work around these issues
+is with @(see preprocessor) directives.  For instance, you might write
+something like:</p>
 
 @({
-//+VL (* my_attribute *)
-assign foo = bar;
+     `ifndef FORMAL
+        ... something VL can't handle ...
+     `else
+        ... replacement for VL ...
+     `endif
 })
 
-<p>There is also a special, more concise syntax for attributes:</p>
+<p>Note that @(see vl-load) does not automatically set up any such @('`define')
+directives by default, but it's easy to give custom @('defines') in your @(see
+vl-loadconfig).</p>
+
+<p>Besides the preprocessor, VL also supports a special comment syntax that can
+be used to hide VL-specific code from other tools:</p>
 
 @({
-//@VL my_attribute
-})")
+    //+VL single-line version
+    /*+VL multi-line version */
+})
+
+<p>For instance, if you need your modules to work with an old Verilog
+implementation that doesn't support Verilog-2005 style attributes, you might
+write something like:</p>
+
+@({
+    //+VL (* my_attribute *)
+    assign foo = bar;
+})
+
+<p>VL will still parse the @('(* my_attribute *)') part since it is in this
+special comment.  VL also provides a special, more concise syntax for
+attributes:</p>
+
+@({
+    //@VL my_attribute
+})
+
+<p>Note that you can also disable these special comments with the @('strictp')
+option on your @(see vl-loadconfig).</p>")
 
 (local (xdoc::set-default-parents loader))
 
@@ -112,7 +162,9 @@ assign foo = bar;
               "Top-level descriptions (modules, packages, interfaces, etc.)  we
                have loaded so far.  These descriptions have been only minimally
                transformed, and are intended to capture the actual source code
-               in the files on disk.")
+               in the files on disk.  These are always kept in the reverse
+               order that they are encountered (i.e., accumulator style), which
+               is important for lexical scoping.")
 
    (descalist  t
                "Fast alist of description names, for fast lookups."
@@ -233,7 +285,7 @@ warning that maybe something is amiss with file loading.</p>")
 
 (define vl-load-merge-descriptions
   :short "Merge newly found Verilog descriptions with previously loaded
-descriptions, warning about any multiply defined descriptions."
+          descriptions, warning about any multiply defined descriptions."
   ((new        vl-descriptionlist-p)
    (old        vl-descriptionlist-p)
    (descalist  (equal descalist (vl-make-descalist old)))
@@ -243,11 +295,11 @@ descriptions, warning about any multiply defined descriptions."
                               :hyp (equal descalist (vl-make-descalist old)))
                (reportcard vl-reportcard-p))
   :long "<p>As a simple rule, we always keep the first definition of any
-description we encounter.  This function is responsible for enforcing this
-rule: we merge some newly parsed descriptions in with the already-parsed
-descriptions.  If there are any name clashes, the original definition wins, and
-we add a warning to the @('reportcard') to say that the original definition is
-being kept.</p>"
+         description we encounter.  This function is responsible for enforcing
+         this rule: we merge some newly parsed descriptions in with the
+         already-parsed descriptions.  If there are any name clashes, the
+         original definition wins, and we add a warning to the @('reportcard')
+         to say that the original definition is being kept.</p>"
   :hooks (:fix)
   :prepwork ((local (in-theory (enable vl-make-descalist))))
   (b* ((old        (vl-descriptionlist-fix old))
@@ -279,7 +331,10 @@ being kept.</p>"
        ;; encountered, e.g., as a barbaric way to override problematic
        ;; definitions.
        (warning (make-vl-warning
-                 :type :vl-multidef-mod
+                 ;; Formerly this was :vl-multidef-mod, but that's not
+                 ;; a good warning name when it's something other than a
+                 ;; module.
+                 :type :vl-warn-multidef
                  :msg "~m0 is defined multiple times.  Keeping the old ~
                        definition (~a1) and ignoring the new one (~a2)."
                  :args (list newname1
@@ -457,6 +512,7 @@ descriptions.</li>
        (pstate-backup pstate)
 
        ((mv successp descs pstate)
+        ;; Note that these descriptions are returned in parse order.
         (time$ (vl-parse cleaned pstate st.config)
                :msg "; ~s0: parse: ~st sec, ~sa bytes~%"
                :args (list filename)
@@ -465,18 +521,18 @@ descriptions.</li>
        ((unless successp)
         ;; In practice this should be rare.  See vl-parse-module-declaration:
         ;; We work hard to make sure that parse errors that occur within a
-        ;; module only kill that particular module.
-
-        ;; At any rate, following our convention, we want to add nothing but
-        ;; warnings to the parse state.  That means unwinding and restoring
-        ;; the pstate-backup that we had.
-        (b* ((-      (vl-parsestate-free pstate))
+        ;; module only kill that particular module.  But, in case of top level
+        ;; errors, we might still run into problems.  Following our convention,
+        ;; we want to add nothing but warnings to the parse state.  That means
+        ;; unwinding and restoring the pstate-backup that we had.
+        (b* ((new-warnings (vl-parsestate->warnings pstate))
+             (-      (vl-parsestate-free pstate))
              (pstate (vl-parsestate-restore pstate-backup))
              (w      (make-vl-warning :type :vl-parse-failed
                                       :msg "Parsing failed for ~s0."
                                       :args (list filename)
                                       :fn __function__))
-             (pstate (vl-parsestate-add-warning w pstate))
+             (pstate (vl-parsestate-set-warnings (cons w new-warnings) pstate))
              (st     (change-vl-loadstate st :pstate pstate)))
           (mv st state)))
 
@@ -484,21 +540,26 @@ descriptions.</li>
        ;; extended, etc.
 
        (descs
+        ;; Note that this preserves the order of descs.
         (time$ (vl-descriptionlist-inject-comments descs comment-map)
                :msg "; ~s0: comment: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime st.config.mintime))
 
        ;; Try to associate low-level, "early" warnings (e.g., from the lexer)
-       ;; with the appropriate modules.
+       ;; with the appropriate modules.  Note that this preserves the order of
+       ;; descs.
        ((mv descs pstate)
         (b* ((warnings (vl-parsestate->warnings pstate))
+             (warnings (vl-commentmap-translate-off-warnings comment-map warnings))
              ((mv descs warnings)
               (vl-descriptionlist-inject-warnings descs warnings))
              (pstate (change-vl-parsestate pstate :warnings warnings)))
           (mv descs pstate)))
 
-       ;; Merge new descriptions into previous descriptions.
+       ;; Merge new descriptions into previous descriptions.  Note that this
+       ;; (modulo dropping later descriptions) revappends the descs onto
+       ;; sc.descs.
        ((mv descs descalist reportcard)
         (time$ (vl-load-merge-descriptions descs st.descs st.descalist st.reportcard)
                :msg "; ~s0: merge: ~st sec, ~sa bytes~%"
@@ -556,14 +617,44 @@ descriptions.</li>
        ((mv filename warnings state)
         (vl-find-basename/extension name config.search-exts config.search-path
                                     warnings state))
-       ((unless filename)
-        (b* ((warnings (warn :type :vl-warn-find-failed
-                             :msg "Unable to find a file for ~s0."
-                             :args (list name))))
-          (mv (vl-loadstate-set-warnings warnings)
-              state)))
+       (st (vl-loadstate-set-warnings warnings))
 
-       (st (vl-loadstate-set-warnings warnings)))
+       ((unless filename)
+        ;; Historically we issued a warning here that said we were unable to
+        ;; find a file for this module.  However, this could lead to incorrect
+        ;; warnings.  For example, consider the following case:
+        ;;
+        ;;    mylib/mymod.sv:
+        ;;       module mymod_helper ... endmodule;
+        ;;       module mymod ... endmodule;
+        ;;
+        ;;    top.sv:
+        ;;
+        ;;       module top ;
+        ;;         mymod_helper foo (...);
+        ;;         mymod bar (...);
+        ;;       endmodule
+        ;;
+        ;; If we start by loading top.sv, then we'll find that we're missing
+        ;; both definitions for mymod_helper and mymod and we'll go looking for
+        ;; them.  At this point:
+        ;;
+        ;;   - If we happen to choose to look for mymod first, we'll load them
+        ;;     both and everything will be fine.
+        ;;
+        ;;   - If we instead look for mymod_helper first, we won't find any
+        ;;     file named mymod_helper.sv, so we'll give up and issue a
+        ;;     warning.  But then we'll go look for mymod, find mymod.sv, and
+        ;;     load mymod and mymod_helper.  So everything ends up being just
+        ;;     fine and we still end up with all the modules loaded.  But we're
+        ;;     also left with a stupid warning that incorrectly says we didn't
+        ;;     find mymod_helper.
+        ;;
+        ;; To avoid this, we need to (1) not issue any warnings here, and
+        ;; instead (2) only issue warnings about modules we didn't find at the
+        ;; end of flushing out the design.  Well, luckily we're already doing
+        ;; this, see the vl-search-failed warning below.
+        (mv st state)))
 
     (vl-load-file filename st state))
   ///
@@ -841,7 +932,7 @@ you might want to attach some other kind of report here.</p>
                (vl-print-warnings floating-warnings)
                (vl-println ""))))
 
-       (multidef-warnings (vl-keep-warnings '(:vl-multidef-mod) regular-warnings))
+       (multidef-warnings (vl-keep-warnings '(:vl-warn-multidef) regular-warnings))
        (- (or (not multidef-warnings)
               (vl-cw-ps-seq
                (vl-ps-update-autowrap-col 68)

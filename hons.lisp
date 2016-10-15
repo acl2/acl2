@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -32,6 +32,55 @@
 
 (in-package "ACL2")
 
+(defmacro defn (f a &rest r)
+  `(defun ,f ,a (declare (xargs :guard t)) ,@r))
+
+(defmacro defnd (f a &rest r)
+  `(defund ,f ,a (declare (xargs :guard t)) ,@r))
+
+#+(or acl2-loop-only (not hons))
+(defn hons-equal (x y)
+  (declare (xargs :mode :logic))
+  ;; Has an under-the-hood implementation
+  (equal x y))
+
+(defn hons-assoc-equal (key alist)
+  (declare (xargs :mode :logic))
+  (cond ((atom alist)
+         nil)
+        ((and (consp (car alist))
+              (hons-equal key (caar alist)))
+         (car alist))
+        (t
+         (hons-assoc-equal key (cdr alist)))))
+
+#+(or acl2-loop-only (not hons))
+(defn hons-get (key alist)
+  (declare (xargs :mode :logic))
+  ;; Has an under-the-hood implementation
+  (hons-assoc-equal key alist))
+
+#+(or acl2-loop-only (not hons))
+(defn hons-acons (key val alist)
+  (declare (xargs :mode :logic))
+  ;; Has an under-the-hood implementation
+  (cons (cons key val) alist))
+
+#+(or acl2-loop-only (not hons))
+(defmacro fast-alist-free-on-exit-raw (alist form)
+  ;; Has an under-the-hood implementation
+  (declare (ignore alist))
+  form)
+
+#+(or acl2-loop-only (not hons))
+(defn fast-alist-free (alist)
+  (declare (xargs :mode :logic))
+  ;; Has an under-the-hood implementation
+  alist)
+
+(defmacro fast-alist-free-on-exit (alist form)
+  `(return-last 'fast-alist-free-on-exit-raw ,alist ,form))
+
 #+(or acl2-loop-only (not hons))
 (defn hons-copy (x)
   ;; Has an under-the-hood implementation
@@ -47,9 +96,6 @@
 (defn hons (x y)
   ;; Has an under-the-hood implementation
   (cons x y))
-
-; See basis-a.lisp for hons-equal, which supports hons-assoc-equal, which
-; supports eviscerate1.
 
 #+(or acl2-loop-only (not hons))
 (defn hons-equal-lite (x y)
@@ -116,16 +162,6 @@
          (cdr warning))))
 
 #+(or acl2-loop-only (not hons))
-(defn hons-get (key alist)
-  ;; Has an under-the-hood implementation
-  (hons-assoc-equal key alist))
-
-#+(or acl2-loop-only (not hons))
-(defn hons-acons (key val alist)
-  ;; Has an under-the-hood implementation
-  (cons (cons key val) alist))
-
-#+(or acl2-loop-only (not hons))
 (defn hons-acons! (key val alist)
   ;; Has an under-the-hood implementation
   (cons (cons key val) alist))
@@ -180,11 +216,6 @@
   (len (fast-alist-fork alist nil)))
 
 #+(or acl2-loop-only (not hons))
-(defn fast-alist-free (alist)
-  ;; Has an under-the-hood implementation
-  alist)
-
-#+(or acl2-loop-only (not hons))
 (defn fast-alist-summary ()
   ;; Has an under-the-hood implementation
   nil)
@@ -206,15 +237,6 @@
 
 (defmacro with-stolen-alist (alist form)
   `(return-last 'with-stolen-alist-raw ,alist ,form))
-
-#+(or acl2-loop-only (not hons))
-(defmacro fast-alist-free-on-exit-raw (alist form)
-  ;; Has an under-the-hood implementation
-  (declare (ignore alist))
-  form)
-
-(defmacro fast-alist-free-on-exit (alist form)
-  `(return-last 'fast-alist-free-on-exit-raw ,alist ,form))
 
 (defn cons-subtrees (x al)
   (cond ((atom x)

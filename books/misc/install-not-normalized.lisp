@@ -48,16 +48,19 @@ This comment motivates the macro install-not-normalized, defined below.
 
 (in-package "ACL2")
 
+(defun install-not-normalized-name (name)
+  (declare (xargs :guard (symbolp name)))
+  (intern-in-package-of-symbol (concatenate 'string
+                                            (symbol-name name)
+                                            "$NOT-NORMALIZED")
+                               name))
+
 (defun install-not-normalized-fn-1 (name wrld clique)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
   (let* ((formals (formals name wrld))
          (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
-         (defthm-name (intern-in-package-of-symbol
-                       (concatenate 'string
-                                    (symbol-name name)
-                                    "$NOT-NORMALIZED")
-                       name))
+         (defthm-name (install-not-normalized-name name))
          (controller-alist (let* ((def-bodies
                                     (getprop name 'def-bodies nil
                                              'current-acl2-world wrld))
@@ -69,6 +72,7 @@ This comment motivates the macro install-not-normalized, defined below.
     `((defthm ,defthm-name
         (equal (,name ,@formals)
                ,body)
+        :hints (("Goal" :by ,name))
         :rule-classes ((:definition :install-body t
                                     ,@(and clique
                                            (list :clique
@@ -80,33 +84,52 @@ This comment motivates the macro install-not-normalized, defined below.
       (in-theory (disable ,name)))))
 
 (defun install-not-normalized-fn-lst (fns wrld all-fns)
-  (declare (xargs :guard (and fns
-                              (symbol-listp fns)
+  (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
-  (cond ((endp (cdr fns))
-         (install-not-normalized-fn-1 (car fns) wrld all-fns))
+  (cond ((endp fns)
+         nil)
         (t (append (install-not-normalized-fn-1 (car fns) wrld all-fns)
                    (install-not-normalized-fn-lst (cdr fns) wrld all-fns)))))
 
-(defun install-not-normalized-fn (name wrld nestp)
+(defun install-not-normalized-fn (name wrld allp)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
-  (let ((fns (and nestp
-                  (getprop name 'recursivep nil 'current-acl2-world wrld))))
-    (cond ((and (true-listp fns)
-                (cdr fns))
-           (cond ((symbol-listp fns)
-                  (install-not-normalized-fn-lst fns wrld fns))
-                 (t (er hard? 'install-not-normalized-fn
-                        "Surprise!  Not a non-empty symbol-listp: ~x0"
-                        fns))))
-          (t (install-not-normalized-fn-1 name wrld nil)))))
+  (let ((fns (getprop name 'recursivep nil 'current-acl2-world wrld)))
+    (if (symbol-listp fns) ; for guard verification
+        (install-not-normalized-fn-lst (or (and allp fns)
+                                           (list name))
+                                       wrld fns)
+      (er hard? 'install-not-normalized-fn
+          "Surprise!  Not a non-empty symbol-listp: ~x0"
+          fns))))
 
-(defmacro install-not-normalized (name &optional (nestp 't))
+(defmacro install-not-normalized (name &optional (allp 't))
+
+; Alessandro Coglio sent the following example, which failed until taking his
+; suggestion to use encapsulate (originally we used progn) and call
+; set-ignore-ok.
+
+;   (include-book "misc/install-not-normalized" :dir :system)
+;   (include-book "std/util/define" :dir :system)
+;   (define f (x) x)
+;   (install-not-normalized f) ; error
+
+; The problem was that the DEFINE generated the term ((LAMBDA (__FUNCTION__ X)
+; X) 'F X).
+
   (declare (xargs :guard (and name (symbolp name))))
   `(make-event
-    (cons 'progn
-          (install-not-normalized-fn ',name (w state) ,nestp))))
+    (list* 'encapsulate
+           ()
+           '(set-ignore-ok t) ; see comment above
+           '(set-irrelevant-formals-ok t) ; perhaps not necessary, but harmless
+           (install-not-normalized-fn ',name (w state) ,allp))))
+
+(defun fn-is-body-name (name)
+  (declare (xargs :guard (symbolp name)))
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name name) "$IS-BODY")
+   name))
 
 (defmacro fn-is-body (name &key hints thm-name rule-classes)
   (declare (xargs :guard (and name (symbolp name))))
@@ -116,9 +139,7 @@ This comment motivates the macro install-not-normalized, defined below.
            (formals (formals name wrld))
            (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld)))
       (list* 'defthm
-             (or ',thm-name (intern-in-package-of-symbol
-                             (concatenate 'string (symbol-name name) "$IS-BODY")
-                             name))
+             (or ',thm-name (fn-is-body-name name))
              (list 'equal
                    (cons name formals)
                    body)
@@ -330,12 +351,12 @@ This comment motivates the macro install-not-normalized, defined below.
   :parents (proof-automation)
   :short "Install an unnormalized definition"
   :long "<p>By default, ACL2 simplifies the definitions by ``normalizing''
- their bodies.  If you prefer that ACL2 avoid such simplification when
- expanding a function call, then you can assigning the value of @('nil') to
- @(tsee xargs) keyword @(':normalize') (see @(see defun)) instead of the
- default value of @('t').  But that might not be a reasonable option, for
- example because the definition in question occurs in an included book that you
- prefer not to edit.  An alternative is to call a macro,
+ their bodies; see @(see normalize).  If you prefer that ACL2 avoid such
+ simplification when expanding a function call, then you can assigning the
+ value of @('nil') to @(tsee xargs) keyword @(':normalize') (see @(see defun))
+ instead of the default value of @('t').  But that might not be a reasonable
+ option, for example because the definition in question occurs in an included
+ book that you prefer not to edit.  An alternative is to call a macro,
  @('install-not-normalized').</p>
 
  @({
@@ -355,11 +376,17 @@ This comment motivates the macro install-not-normalized, defined below.
  forms install a non-normalized definition for every function symbol defined in
  that event, while the third form only handles @('NAME').  By ``handle'', we
  mean that a rule of class @('(:definition :install-body t)') is installed,
- with suitable additional fields for keywords @(':clique') and
- @(':controller-alist') when more than one name is handled.  The name of the
- rule generated for function @('F') is the symbol @('F$NOT-NORMALIZED'), that
- is, the result of modifying the @(tsee symbol-name) of @('F') by adding the
- suffix @('\"$NOT-NORMALIZED\"').</p>
+ with suitable additional fields when appropriate for keywords @(':clique') and
+ @(':controller-alist').  The name of the rule generated for function @('F') is
+ the symbol @('F$NOT-NORMALIZED'), that is, the result of modifying the @(tsee
+ symbol-name) of @('F') by adding the suffix @('\"$NOT-NORMALIZED\"').  To
+ obtain that name programmatically:</p>
+
+ @({
+ ACL2 !>(install-not-normalized-name 'foo)
+ FOO$NOT-NORMALIZED
+ ACL2 !>
+ })
 
  <p>For a somewhat related utility, see @(see fn-is-body).</p>
 
@@ -377,12 +404,20 @@ This comment motivates the macro install-not-normalized, defined below.
  })
 
  <p>Evaluation of the form above generates a @(tsee defthm) event whose name is
- @(tsee thm-name) &mdash; by default, the result of adding the suffix
- \"$IS-BODY\" to @('fn'), which is a function symbol.  That event is of the
- form @('(equal (fn x1 ... xn) <body>)'), where @('(x1 ... xn)') is the list of
- formal parameters of @('fn') and @('<body>') is the body of @('fn').  If
- @(':hints') or @(':rule-classes') are supplied, they will be attached to the
- generated @('defthm') form.</p>
+ @('thm-name') &mdash; by default, the result of adding the suffix \"$IS-BODY\"
+ to @('fn'), which is a function symbol.  To obtain that name
+ programmatically:</p>
+
+ @({
+ ACL2 !>(fn-is-body-name 'foo)
+ FOO$IS-BODY
+ ACL2 !>
+ })
+
+ <p>That event is of the form @('(equal (fn x1 ... xn) <body>)'), where @('(x1
+ ... xn)') is the list of formal parameters of @('fn') and @('<body>') is the
+ body of @('fn').  If @(':hints') or @(':rule-classes') are supplied, they will
+ be attached to the generated @('defthm') form.</p>
 
  <p>For a somewhat related utility, see @(see install-not-normalized).</p>
 

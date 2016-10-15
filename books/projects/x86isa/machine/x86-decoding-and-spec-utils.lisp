@@ -189,7 +189,11 @@ field conveying useful information. </li>
      (mod            :type (unsigned-byte 2) "mod field of ModR/M byte")
      (sib            :type (unsigned-byte 8) "Sib byte")
      ;; num-imm-bytes is needed for computing the next RIP when
-     ;; RIP-relative addressing is done.
+     ;; RIP-relative addressing is done.  Note that this argument is
+     ;; only relevant when the operand addressing mode is I, i.e.,
+     ;; when the operand value is encoded in subsequent bytes of the
+     ;; instruction. For details, see *Z-addressing-method-info* in
+     ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
                      "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
      x86)
@@ -344,9 +348,7 @@ field conveying useful information. </li>
                      p4 temp-RIP rex-byte r/m mod sib
                      num-imm-bytes x86))
           4)
-      :rule-classes :linear))
-
-  )
+      :rule-classes :linear)))
 
 ;; ======================================================================
 
@@ -384,12 +386,106 @@ field conveying useful information. </li>
 
   (local (xdoc::set-default-parents read-operands-and-write-results))
 
-  (define x86-operand-from-modr/m-and-sib-bytes
+  (define alignment-checking-enabled-p (x86)
+    :prepwork ((local (in-theory (e/d* (flgi) ()))))
+    :returns (enabled booleanp :rule-classes :type-prescription)
+    :short "Checking if alignment is enabled"
+    :long "<p> Source: Intel Manuals, Volume 3, Section 6.15, Exception
+  and Interrupt Reference:</p>
 
-    ((reg-type      :type (unsigned-byte  1) "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
+ <sf>Interrupt 17 Alignment Check Exception (#AC)
+
+ Exception Class: Fault.
+
+ Description: Indicates that the processor detected an unaligned
+ memory operand when alignment checking was enabled. Alignment checks
+ are only carried out in data (or stack) accesses (not in code fetches
+ or system segment accesses). An example of an alignment-check
+ violation is a word stored at an odd byte address, or a doubleword
+ stored at an address that is not an integer multiple of 4.
+
+ Note that the alignment check exception (#AC) is generated only for
+ data types that must be aligned on word, doubleword, and quadword
+ boundaries. A general-protection exception (#GP) is generated 128-bit
+ data types that are not aligned on a 16-byte boundary.
+
+ To enable alignment checking, the following conditions must be true:
+   - AM flag in CR0 register is set.
+   - AC flag in the EFLAGS register is set.
+   - The CPL is 3 (protected mode or virtual-8086 mode).
+
+Alignment-check exceptions (#AC) are generated only when operating at
+privilege level 3 (user mode). Memory references that default to
+privilege level 0, such as segment descriptor loads, do not generate
+alignment-check exceptions, even when caused by a memory reference
+made from privilege level 3.</sf>"
+
+    (b* ((cr0 (the (unsigned-byte 32) (n32 (ctri *cr0* x86))))
+         (AM  (cr0-slice :cr0-am cr0))
+         (AC (mbe :logic (flgi *ac* x86)
+                  :exec (rflags-slice :ac (the (unsigned-byte 32) (rflags x86)))))
+         (CPL (cpl x86)))
+      (and (equal AM 1)
+           (equal AC 1)
+           (equal CPL 3)))
+
+    ///
+
+    (defthm alignment-checking-enabled-p-and-xw
+      (implies (and (not (equal fld :ctr))
+                    (not (equal fld :seg-visible))
+                    (not (equal fld :rflags)))
+               (equal (alignment-checking-enabled-p (xw fld index val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-xw-ctr
+      (implies (case-split (or (not (equal index *cr0*))
+                               (and (equal index *cr0*)
+                                    (equal (cr0-slice :cr0-am val)
+                                           (cr0-slice :cr0-am (xr :ctr *cr0* x86))))))
+               (equal (alignment-checking-enabled-p (xw :ctr index val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-xw-rflags
+      (implies (equal (rflags-slice :ac val)
+                      (rflags-slice :ac (xr :rflags 0 x86)))
+               (equal (alignment-checking-enabled-p (xw :rflags 0 val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-xw-seg-visible
+      (implies (case-split (or (not (equal index *cs*))
+                               (and (equal index *cs*)
+                                    (equal (seg-sel-layout-slice :rpl val)
+                                           (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86))))))
+               (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
+                      (alignment-checking-enabled-p x86))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
+      (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-lst x86)))
+             (alignment-checking-enabled-p x86))
+      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ()))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-2-rb
+      (equal (alignment-checking-enabled-p (mv-nth 2 (rb l-addrs r-w-x x86)))
+             (alignment-checking-enabled-p x86))
+      :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+    (defthm alignment-checking-enabled-p-and-mv-nth-2-las-to-pas
+      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+             (alignment-checking-enabled-p x86))))
+
+  (define x86-operand-from-modr/m-and-sib-bytes
+    ((reg-type      :type (unsigned-byte  1)
+                    "@('reg-type') is @('*rgf-access*') for GPRs, and @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
-     (p2            :type (unsigned-byte  8) "Segment Override Prefix")
-     (p4?           :type (or t nil)         "Address-Size Override Prefix Present?")
+     (inst-ac?      booleanp
+                    "@('t') if instruction does alignment checking, @('nil') otherwise.")
+     (memory-ptr?   booleanp
+                    "@('t') if the operand is a memory operand of the form m16:16, m16:32, or m16:64")
+     (p2            :type (unsigned-byte  8)
+                    "Segment Override Prefix")
+     (p4?           :type (or t nil)
+                    "Address-Size Override Prefix Present?")
      (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
@@ -404,6 +500,10 @@ field conveying useful information. </li>
                  (member operand-size '(1 2 4 8)))
                 (t (member operand-size '(4 8 16))))
              (member operand-size '(member 1 2 4 6 8 10 16)))
+    :guard-hints (("Goal" :in-theory (e/d* ()
+                                           (las-to-pas
+                                            unsigned-byte-p
+                                            signed-byte-p))))
 
     :returns
     (mv flg
@@ -473,6 +573,52 @@ field conveying useful information. </li>
           (mv 'x86-operand-from-modr/m-and-sib-bytes-Non-Canonical-Address-Encountered
               0 0 0 x86))
 
+         ((when
+              ;; Check alignment for memory accesses.
+              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
+              ;; Alignment of Words, Doublewords, and Double
+              ;; Quadwords:
+
+              ;; "The natural boundaries for words,
+              ;; double words, and quadwords are even-numbered
+              ;; addresses, addresses evenly divisible by four,
+              ;; and addresses evenly divisible by eight,
+              ;; respectively. A natural boundary for a double
+              ;; quadword is any address evenly divisible by 16."
+              (and (not (equal mod #b11))
+                   inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   ;; operand-size: (member 1 2 4 6 8 10 16)
+                   (case operand-size
+                     ;; A memory operand of the form m16:32 requires a
+                     ;; read of 6 bytes.  The natural boundary of the
+                     ;; 32-bit portion is an address divisible by 4,
+                     ;; which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (6   (not (equal (logand v-addr #b11) 0)))
+                     ;; A memory operand of the form m16:64 requires a
+                     ;; read of 10 bytes.  The natural boundary of the
+                     ;; 64-bit portion is an address divisible by 8,
+                     ;; which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (10  (not (equal (logand v-addr #b111) 0)))
+                     (otherwise
+                      (if (and memory-ptr?
+                               (eql operand-size 4))
+                          ;; If the 32-bit operand is of type m16:16,
+                          ;; instead of being aligned at an address
+                          ;; divisible by 4, it should be aligned at
+                          ;; an even address.
+                          (not (equal (logand v-addr #b1) 0))
+                        (not (equal (logand v-addr
+                                            (the (integer 0 15)
+                                              (- operand-size 1)))
+                                    0)))))))
+          (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
+              0 0 0 x86))
+
          ((mv ?flg2 operand x86)
           (if (equal mod #b11)
               (if (int= reg-type #.*rgf-access*)
@@ -480,11 +626,14 @@ field conveying useful information. </li>
                                      rex-byte x86) x86)
                 (mv nil (xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
                                    x86) x86))
-            (rm-size operand-size v-addr :x x86)))
+            ;; The operand is being fetched from the memory, not the
+            ;; instruction stream. That's why we have :r instead of :x
+            ;; below.
+            (rm-size operand-size v-addr :r x86)))
          ((when flg2)
           (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
-        (mv nil operand increment-RIP-by v-addr x86))
+      (mv nil operand increment-RIP-by v-addr x86))
 
     ///
 
@@ -493,9 +642,11 @@ field conveying useful information. </li>
                 (equal bound (ash operand-size 3))
                 (x86p x86))
       :bound bound
-      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
-                        reg-type operand-size p2 p4? temp-RIP rex-byte r/m mod sib
-                        num-imm-bytes x86))
+      :concl (mv-nth 1
+                     (x86-operand-from-modr/m-and-sib-bytes
+                      reg-type operand-size inst-ac? memory-ptr? p2 p4?
+                      temp-RIP rex-byte r/m mod sib
+                      num-imm-bytes x86))
       :gen-linear t
       :gen-type t)
 
@@ -505,35 +656,38 @@ field conveying useful information. </li>
                 (not (equal mod #b11))
                 (x86p x86))
       :bound bound
-      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
-                        reg-type operand-size p2 p4? temp-RIP rex-byte r/m mod sib
-                        num-imm-bytes x86))
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes reg-type
+                                                              operand-size inst-ac? memory-ptr? p2 p4?
+                                                              temp-RIP rex-byte r/m mod sib num-imm-bytes
+                                                              x86))
       :gen-linear t
       :gen-type t)
 
     (defthm integerp-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-type-prescription
       (implies (force (x86p x86))
                (natp (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
-                                reg-type operand-size p2 p4 temp-RIP rex-byte r/m mod sib
-                                num-imm-bytes x86))))
+                                reg-type operand-size inst-ac?
+                                memory-ptr? p2 p4 temp-RIP rex-byte
+                                r/m mod sib num-imm-bytes x86))))
       :hints (("Goal" :in-theory (e/d (rm-size) ())))
       :rule-classes :type-prescription)
 
     (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-linear<=4
       (implies (x86p x86)
                (<= (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
-                              reg-type operand-size p2 p4 temp-RIP rex-byte r/m mod sib
-                              num-imm-bytes x86))
-                   4))
+                              reg-type operand-size inst-ac?
+                              memory-ptr? p2 p4 temp-RIP rex-byte r/m
+                              mod sib num-imm-bytes x86)) 4))
       :hints (("Goal" :in-theory (e/d (rm-size) ())))
       :rule-classes :linear)
 
     (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes
       :hyp (forced-and (x86p x86))
       :bound 48
-      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-                        reg-type operand-size p2 p4 temp-rip rex-byte r/m mod sib
-                        num-imm-bytes x86))
+      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes reg-type
+                                                              operand-size inst-ac? memory-ptr? p2 p4
+                                                              temp-rip rex-byte r/m mod sib num-imm-bytes
+                                                              x86))
       :gen-linear t
       :gen-type t)
 
@@ -541,12 +695,16 @@ field conveying useful information. </li>
       (implies (forced-and (x86p x86))
                (canonical-address-p
                 (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-                           reg-type operand-size p2 p4 temp-rip rex-byte r/m mod sib
+                           reg-type operand-size inst-ac? memory-ptr?
+                           p2 p4 temp-rip rex-byte r/m mod sib
                            num-imm-bytes x86))))))
 
   (define x86-operand-to-reg/mem
-
     ((operand-size :type (member 1 2 4 6 8 10 16))
+     (inst-ac?      booleanp
+                    "@('t') if instruction does alignment checking, @('nil') otherwise")
+     (memory-ptr?   booleanp
+                    "@('t') if the operand is a memory operand of the form m16:16, m16:32, or m16:64")
      (operand      :type (integer 0 *))
      (v-addr       :type (signed-byte #.*max-linear-address-size*))
      (rex-byte     :type (unsigned-byte 8))
@@ -554,7 +712,7 @@ field conveying useful information. </li>
      (mod          :type (unsigned-byte 2))
      x86)
 
-    :long "<p> The reason why the type of v-addr here is i64p instead
+    :long "<p>The reason why the type of v-addr here is i64p instead
     of i49p is that the v-addr might be obtained from a 64-bit
     register or be a 64-bit value in the memory.  Also note that this
     v-addr includes the FS or GS-base if the appropriate prefix
@@ -570,28 +728,76 @@ field conveying useful information. </li>
                                   operand rex-byte x86)))
             (mv nil x86)))
 
+         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
+         ((when
+              ;; Check alignment for memory accesses.
+              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
+              ;; Alignment of Words, Doublewords, and Double
+              ;; Quadwords:
+
+              ;; "The natural boundaries for words,
+              ;; double words, and quadwords are even-numbered
+              ;; addresses, addresses evenly divisible by four,
+              ;; and addresses evenly divisible by eight,
+              ;; respectively. A natural boundary for a double
+              ;; quadword is any address evenly divisible by 16."
+              (and inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   ;; operand-size: (member 1 2 4 6 8 10 16)
+                   (case operand-size
+                     ;; A memory operand of the form m16:32 requires a
+                     ;; write of 6 bytes.  The natural boundary of the
+                     ;; 32-bit portion is an address divisible by 4,
+                     ;; which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (6   (not (equal (logand v-addr #b11) 0)))
+                     ;; A memory operand of the form m16:64 requires a
+                     ;; write of 10 bytes.  The natural boundary of
+                     ;; the 64-bit portion is an address divisible by
+                     ;; 8, which guarantees that the 16-bit portion is
+                     ;; also at its natural boundary (an even
+                     ;; address).
+                     (10  (not (equal (logand v-addr #b111) 0)))
+                     (otherwise
+                      (if (and memory-ptr?
+                               (eql operand-size 4))
+                          ;; If the 32-bit operand is of type m16:16,
+                          ;; instead of being aligned at an address
+                          ;; divisible by 4, it should be aligned at
+                          ;; an even address.
+                          (not (equal (logand v-addr #b1) 0))
+                        (not (equal (logand v-addr
+                                            (the (integer 0 15)
+                                              (- operand-size 1)))
+                                    0)))))))
+          (mv t x86))
+
          ((mv flg x86)
           (wm-size operand-size v-addr operand x86)))
-        (mv flg x86))
+      (mv flg x86))
 
     ///
 
     (defthm x86p-x86-operand-to-reg/mem
       (implies (force (x86p x86))
-               (x86p (mv-nth 1 (x86-operand-to-reg/mem operand-size
-                                                       operand v-addr
-                                                       rex-byte r/m mod
-                                                       x86))))
+               (x86p
+                (mv-nth
+                 1
+                 (x86-operand-to-reg/mem
+                  operand-size inst-ac?
+                  memory-ptr? operand v-addr rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
   (define x86-operand-to-xmm/mem
-
-    ((operand-size :type (member 4 8 16))
-     (operand      :type (integer 0 *))
-     (v-addr       :type (signed-byte #.*max-linear-address-size*))
-     (rex-byte     :type (unsigned-byte 8))
-     (r/m          :type (unsigned-byte 3))
-     (mod          :type (unsigned-byte 2))
+    ((operand-size  :type (member 4 8 16))
+     (inst-ac?      booleanp
+                    "@('t') if instruction does alignment checking, @('nil') otherwise")
+     (operand       :type (integer 0 *))
+     (v-addr        :type (signed-byte #.*max-linear-address-size*))
+     (rex-byte      :type (unsigned-byte 8))
+     (r/m           :type (unsigned-byte 3))
+     (mod           :type (unsigned-byte 2))
      x86)
 
     :long "<p> The reason why the type of v-addr here is i64p instead
@@ -607,18 +813,42 @@ field conveying useful information. </li>
                                   operand x86)))
             (mv nil x86)))
 
+         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
+         ((when
+              ;; Check alignment for memory accesses.
+              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
+              ;; Alignment of Words, Doublewords, and Double
+              ;; Quadwords:
+
+              ;; "The natural boundaries for words,
+              ;; double words, and quadwords are even-numbered
+              ;; addresses, addresses evenly divisible by four,
+              ;; and addresses evenly divisible by eight,
+              ;; respectively. A natural boundary for a double
+              ;; quadword is any address evenly divisible by 16."
+              (and inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   ;; operand-size: (member 4 8 16)
+                   (not (equal (logand
+                                v-addr
+                                (the (integer 0 15)
+                                  (- operand-size 1)))
+                               0))))
+          (mv t x86))
+
          ((mv flg x86)
           (wm-size operand-size v-addr operand x86)))
-        (mv flg x86))
+      (mv flg x86))
 
     ///
 
     (defthm x86p-x86-operand-to-xmm/mem
       (implies (force (x86p x86))
-               (x86p (mv-nth 1 (x86-operand-to-xmm/mem operand-size
-                                                       operand v-addr
-                                                       rex-byte r/m mod
-                                                       x86))))
+               (x86p
+                (mv-nth
+                 1
+                 (x86-operand-to-xmm/mem
+                  operand-size inst-ac? operand v-addr rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force))))))))
 
 ;; ======================================================================
@@ -659,12 +889,16 @@ field conveying useful information. </li>
 ;; ----------------------------------------------------------------------
 
 (defmacro def-inst
-  (name &key (operation 'nil)
-        (sp/dp 'nil)
+  (name &key
         ;; Will raise an error as a part of calling
         ;; add-to-implemented-opcodes-table when def-inst is expanded
         ;; and "implemented" is not an embedded event form.
         (implemented 't)
+        (operation   'nil)
+        (sp/dp       'nil)
+        (dp-to-sp    'nil)
+        (high/low    'nil)
+        (trunc       'nil)
         body parents short long
         inline enabled guard-debug guard
         guard-hints (verify-guards 't) prepwork thms
@@ -672,11 +906,14 @@ field conveying useful information. </li>
 
   (if body
       `(define ,name
-         (,@(and operation `((operation :type (integer 0 8))))
+         (,@(and operation `((operation :type (integer 0 36))))
           ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
+          ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
+          ,@(and high/low  `((high/low  :type (integer 0 1))))
+          ,@(and trunc     `((trunc     booleanp)))
           (start-rip :type (signed-byte   #.*max-linear-address-size*))
           (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes  :type (unsigned-byte 43))
+          (prefixes  :type (unsigned-byte 44))
           (rex-byte  :type (unsigned-byte 8))
           (opcode    :type (unsigned-byte 8))
           (modr/m    :type (unsigned-byte 8))
@@ -727,7 +964,7 @@ field conveying useful information. </li>
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 43)))
+   (prefixes      :type (unsigned-byte 44)))
 
   :inline t
   :parents (x86-decoding-and-spec-utils)

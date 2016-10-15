@@ -859,6 +859,142 @@ pointer, or opcode registers\).</em></p>"
 
 ;; ======================================================================
 
+(defsection characterizing-undefined-behavior
+
+  :parents (machine)
+
+  :short "An @('undef') field in the @('x86') state feeds unknown
+  values to processor components that are undefined"
+
+  :long "<p>The @('undef') field is used to feed unknown values to
+processor components that are undefined, as per the Intel
+specifications.  For example, the @('SF'), @('ZF'), @('AF'), and
+@('PF') rflags are undefined after a @('MUL') instruction is
+executed.</p>
+
+<p>The principle behind the @('undef') field is quite like that of the
+@('oracle') sub-field of the @('env') field \(see @(see
+environment-field)\).  We describe our use of the @('undef') field by
+comparing it to the @('oracle') sub-field.</p>
+
+<p>For reasoning about programs that involve commonly occurring
+\"undefined events\" \(like flag computations\), using the @('oracle')
+sub-field can be quite tedious, since it has to be carefully
+initialized; i.e., a list of appropriate \(symbolic or concrete\)
+values has to be associated with the instruction pointer where any
+such undefined event occurs.  Imagine doing that for @('SF'), @('ZF'),
+@('AF'), and @('PF') every time a @('MUL') instruction is executed.
+The reason why we need this initialization is because the only way to
+access the @('oracle') is through the functions @(see pop-x86-oracle)
+and @(see env-read); @('pop-x86-oracle') expects the @('oracle') to
+contain information in a specific format, and @('env-read') will give
+us nothing unless we put something in to begin with.</p>
+
+<p>On the other hand, the @('undef') field doesn't require any such
+initialization.  The @('undef') field contains a natural number that
+is increased every time an undefined value is pulled for use \(using
+the constrained function @('create-undef')\) from a pool of undefined
+values; thus, every access of the @('undef') field causes it to
+contain a new value which is used to seed a unique undefined
+value. See @(see undef-read) for details.</p>
+
+<p>There is a reason why we enforced that tediousness in the case of
+the @('oracle') sub-field: it provides a way of tracking any
+computation that relies on the @('env') field. Such computations don't
+happen often, and when they do, it'd probably be better if we knew
+exactly what we are expecting from the environment.  Initializing the
+@('oracle') is a way of expressing these expectations. However, in the
+case of undefined values, we aren't really expecting anything from the
+environment.  All we want is a sort of infinite pool of arbitary
+values, seeded from @('undef') in our case, that we don't know
+anything about.  As such, we wouldn't be able to prove that a value
+obtained from @('undef') is equal \(or not\) to any other value,
+either obtained from @('undef') or not.  This is exactly what we need
+when reasoning about undefined values --- an undefined value is
+different from another undefined value, and also all the known
+values.</p>"
+
+  )
+
+(encapsulate
+  ( ((create-undef *) => *) )
+
+  (local
+   (defun create-undef (x)
+     (nfix x)))
+
+  (defthm integerp-create-undef
+    (integerp (create-undef x))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm natp-create-undef
+    (natp (create-undef x))
+    :rule-classes (:rewrite :type-prescription)))
+
+(define unsafe-!undef (v x86)
+
+  :long " <p>Note that @('unsafe-!undef') is enabled, not untouchable,
+  and non-executable.  It can be used in proof attempts but not during
+  execution.</p>
+
+ <p>@('unsafe-!undef') should be used judiciously because updating the
+  @('undef') field with a value it held previously might contaminate
+  our 'pool of undefined values', i.e., @(see undef-read) might then
+  produce a call of @('create-undef') that collides with a previous
+  call of @('create-undef'), which would make the result of an
+  equality test between them equal instead of indeterminate.</p>
+
+  <p>An example of an acceptable use of @('unsafe-!undef') is to
+  specify the @('undef') field in a final x86 state during a proof
+  attempt.</p>"
+
+  :non-executable t
+  :enabled t
+  :returns (x86 x86p :hyp :guard)
+  :parents (undef-read)
+  (!undef v x86))
+
+(define undef-read-logic (x86)
+  :enabled t
+  :returns (mv (unknown natp :rule-classes :type-prescription)
+               (x86     x86p :hyp (x86p x86)))
+  :parents (undef-read)
+
+  (b* ((undef-seed (nfix (undef x86)))
+       (new-unknown (create-undef undef-seed))
+       (x86 (!undef (1+ undef-seed) x86)))
+    (mv new-unknown x86)))
+
+(define undef-read (x86)
+  ;; TO-DO@Shilpi: I'll need to add more args to this function if I
+  ;; need the corresponding raw Lisp function to have more info.
+  :inline nil
+  :enabled t
+  :returns (mv (unknown natp :rule-classes :type-prescription)
+               (x86     x86p :hyp (x86p x86)))
+  :parents (characterizing-undefined-behavior)
+
+  :short "Get a unique unknown to be used when reasoning about
+    undefined values in the processor"
+  :long "<p>See @(see characterizing-undefined-behavior) for more
+  details.</p>
+
+  <p>The accessor and updater functions of the @('undef') field are
+  untouchable so that the only way to create a new seed for unknowns
+  is via this function.</p>"
+
+  (undef-read-logic x86))
+
+;; We make the following two functions untouchable so that they cannot
+;; be used on their own outside function undef-read-logic.
+
+(push-untouchable
+ (!undef
+  !undef$inline)
+ t)
+
+;; ======================================================================
+
 (defsection rflags-Reads-and-Writes
   :parents (rflag-specifications x86-register-readers-and-writers)
   :short "Reading from and writing to the @('rflags') register in the @('x86') state"
@@ -876,17 +1012,17 @@ pointer, or opcode registers\).</em></p>"
     :parents (rflags-Reads-and-Writes)
 
     (b* ((rflags (the (unsigned-byte 32) (rflags x86))))
-        (mbe :logic
-             (part-select rflags :low flg
-                          :width (if (equal flg *iopl*)
-                                     2 1))
-             :exec
-             (the (unsigned-byte 2)
-               (logand (if (equal flg #.*iopl*) 3 1)
-                       (the (unsigned-byte 32)
-                         (ash (the (unsigned-byte 32) rflags)
-                              (the (integer -32 0)
-                                (- (the (integer 0 32) flg)))))))))
+      (mbe :logic
+           (part-select rflags :low flg
+                        :width (if (equal flg *iopl*)
+                                   2 1))
+           :exec
+           (the (unsigned-byte 2)
+             (logand (if (equal flg #.*iopl*) 3 1)
+                     (the (unsigned-byte 32)
+                       (ash (the (unsigned-byte 32) rflags)
+                            (the (integer -32 0)
+                              (- (the (integer 0 32) flg)))))))))
 
 
     ///
@@ -947,9 +1083,9 @@ pointer, or opcode registers\).</em></p>"
                (logior
                 (the (unsigned-byte 32) (logand rflags mask))
                 (the (unsigned-byte 32) (ash val flg))))))))
-        (!rflags (mbe :logic (n32 new-rflags)
-                      :exec new-rflags)
-                 x86))
+      (!rflags (mbe :logic (n32 new-rflags)
+                    :exec new-rflags)
+               x86))
 
     ///
 
@@ -977,149 +1113,58 @@ pointer, or opcode registers\).</em></p>"
                       (part-install val
                                     (xr :rflags 0 x86)
                                     :low flg
-                                    :width (if (equal flg *iopl*) 2 1))))))
+                                    :width (if (equal flg *iopl*) 2 1)))))
 
-  )
 
-;; ======================================================================
-;; Characterizing Undefined Behavior
-
-(defsection characterizing-undefined-behavior
-
-  :parents (machine)
-
-  :short "An @('undef') field in the @('x86') state feeds unknown
-  values to processor components that are undefined"
-
-  :long "<p>The @('undef') field is used to feed unknown values to
-processor components that are undefined, as per the Intel
-specifications.  For example, the @('SF'), @('ZF'), @('AF'), and
-@('PF') rflags are undefined after a @('MUL') instruction is
-executed.</p>
-
-<p>The principle behind the @('undef') field is quite like that of the
-@('oracle') sub-field of the @('env') field \(see @(see
-environment-field)\).  We describe our use of the @('undef') field by
-comparing it to the @('oracle') sub-field.</p>
-
-<p>For reasoning about programs that involve commonly occurring
-\"undefined events\" \(like flag computations\), using the @('oracle')
-sub-field can be quite tedious, since it has to be carefully
-initialized; i.e., a list of appropriate \(symbolic or concrete\)
-values has to be associated with the instruction pointer where any
-such undefined event occurs.  Imagine doing that for @('SF'), @('ZF'),
-@('AF'), and @('PF') every time a @('MUL') instruction is executed.
-The reason why we need this initialization is because the only way to
-access the @('oracle') is through the functions @(see pop-x86-oracle)
-and @(see env-read); @('pop-x86-oracle') expects the @('oracle') to
-contain information in a specific format, and @('env-read') will give
-us nothing unless we put something in to begin with.</p>
-
-<p>On the other hand, the @('undef') field doesn't require any such
-initialization.  The @('undef') field contains a natural number that
-is increased every time an undefined value is pulled for use \(using
-the constrained function @('create-undef')\) from a pool of undefined
-values; thus, every access of the @('undef') field causes it to
-contain a new value which is used to seed a unique undefined
-value. See @(see undef-read) for details.</p>
-
-<p>There is a reason why we enforced that tediousness in the case of
-the @('oracle') sub-field: it provides a way of tracking any
-computation that relies on the @('env') field. Such computations don't
-happen often, and when they do, it'd probably be better if we knew
-exactly what we are expecting from the environment.  Initializing the
-@('oracle') is a way of expressing these expectations. However, in the
-case of undefined values, we aren't really expecting anything from the
-environment.  All we want is a sort of infinite pool of arbitary
-values, seeded from @('undef') in our case, that we don't know
-anything about.  As such, we wouldn't be able to prove that a value
-obtained from @('undef') is equal \(or not\) to any other value,
-either obtained from @('undef') or not.  This is exactly what we need
-when reasoning about undefined values --- an undefined value is
-different from another undefined value, and also all the known
-values.</p>"
-
-  )
-
-(encapsulate
- ( ((create-undef *) => *) )
-
- (local
-  (defun create-undef (x)
-    (nfix x)))
-
- (defthm natp-create-undef
-   (natp (create-undef x)))
-
- )
-
-(define safe-!undef (v x86)
-  ;; We will make !undef untouchable (in x86-row-wow-thms.lisp, after
-  ;; proving all row/wow thms in terms of !undef; note that
-  ;; safe-!undef is enabled and not untouchable) and will use
-  ;; safe-!undef instead.  This function is smashed in raw Lisp --- if
-  ;; called during evaluation, it causes an error.  It can be safely
-  ;; used during proof attempts.
-  :inline nil
-  :enabled t
-  :returns (x86 x86p :hyp :guard)
-  :parents (undef-read)
-  (!undef v x86))
-
-(define undef-read-logic (x86)
-  :enabled t
-  :returns (mv (unknown natp :rule-classes :type-prescription)
-               (x86     x86p :hyp (x86p x86)))
-  :parents (undef-read)
-
-  (b* ((undef-seed (nfix (undef x86)))
-       (new-unknown (create-undef undef-seed))
-       (x86 (safe-!undef (1+ undef-seed) x86)))
-      (mv new-unknown x86)))
-
-(define undef-read (x86)
-  ;; TO-DO@Shilpi: I'll need to add more args to this function if I
-  ;; need the corresponding raw Lisp function to have more info.
-  :inline nil
-  :enabled t
-  :returns (mv (unknown natp :rule-classes :type-prescription)
-               (x86     x86p :hyp (x86p x86)))
-  :parents (characterizing-undefined-behavior)
-
-  :short "Get a unique unknown to be used when reasoning about
-    undefined values in the processor"
-  :long "<p>See @(see characterizing-undefined-behavior) for more
-  details.</p>
-
-  <p>The accessor and updater functions of the @('undef') field are
-  untouchable so that the only way to create a new seed for unknowns
-  is via this function.  These functions have been made untouchable
-  after various RoW/WoW lemmas have been proved about them \(see @(see
-  x86-RoW-WoW-thms)\).</p>"
-
-  (undef-read-logic x86))
+    (defthmd !flgi-open-to-xw-rflags
+      ;; Rewriting (!flgi ...) to (xw :rflags ...) so that rules like
+      ;; ia32e-la-to-pa-xw-rflags-not-ac can be applied when trying to
+      ;; prove ia32e-la-to-pa-values-and-!flgi.
+      (implies (x86p x86)
+               (equal (!flgi index value x86)
+                      (if (equal index *iopl*)
+                          (xw :rflags 0
+                              (logior (ash (loghead 2 value) 12)
+                                      (logand 4294955007 (xr :rflags 0 x86)))
+                              x86)
+                        (if (not (equal index *ac*))
+                            (xw :rflags 0
+                                (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                        (logand (xr :rflags 0 x86)
+                                                (loghead 32 (lognot (expt 2 (nfix index))))))
+                                x86)
+                          (!flgi index value x86)))))
+      :hints (("Goal" :in-theory (e/d* (!flgi) ()))))))
 
 (define undef-flg-logic (x86)
   :enabled t
+  :prepwork ((local (in-theory (e/d* () (undef-read)))))
   :parents (!flgi-undefined)
+  :returns (mv (unknown natp :rule-classes :type-prescription)
+               (x86     x86p :hyp (x86p x86)))
   (undef-read x86))
 
 (define undef-flg (x86)
   ;; I have smashed this function under the hood.  This is a tad more
-  ;; efficient than smashing undef-read because it helps us avoid
-  ;; calling n01 while execution.  This saves one call to the builtin
-  ;; LOGAND that might create bignums, potentially.
+  ;; efficient than smashing just undef-read when flags are assigned
+  ;; undefined values because it helps us avoid calling n01 while
+  ;; execution.  This saves one call to the builtin LOGAND that might
+  ;; create bignums, potentially.
   :inline nil
   :enabled t
+  :prepwork ((local (in-theory (e/d* () (undef-flg-logic)))))
+  :returns (mv (unknown-bit bitp :rule-classes :type-prescription)
+               (x86         x86p :hyp (x86p x86)))
   :parents (!flgi-undefined)
   (b* (((mv val x86)
         (undef-flg-logic x86)))
-      (mv (n01 val) x86)))
+    (mv (n01 val) x86)))
 
 (define !flgi-undefined
   ((flg :type (member #.*cf* #.*pf* #.*af* #.*zf* #.*sf* #.*of*))
    x86)
 
+  :prepwork ((local (in-theory (e/d* () (undef-flg)))))
   :inline t
   :parents (x86-register-readers-and-writers characterizing-undefined-behavior)
 
@@ -1133,11 +1178,44 @@ using the @(see undef-read) function.</p>"
   (b* (((mv (the (unsigned-byte 1) val) x86)
         (undef-flg x86))
        (x86 (!flgi flg val x86)))
-      x86))
+    x86))
+
+(local (include-book "centaur/gl/gl" :dir :system))
+
+(local
+ (def-gl-thm write-user-rflags-mbe-proof
+   :hyp (and (n32p user-flags-vector)
+             (n32p rflags))
+   :concl (equal (logior
+                  (ash (loghead 1 (bool->bit (logbitp 11 user-flags-vector))) 11)
+                  (logand
+                   4294965247
+                   (logior
+                    (ash (loghead 1 (bool->bit (logbitp 7 user-flags-vector))) 7)
+                    (logand
+                     4294967167
+                     (logior
+                      (ash (loghead 1 (bool->bit (logbitp 6 user-flags-vector))) 6)
+                      (logand
+                       4294967231
+                       (logior
+                        (ash (loghead 1 (bool->bit (logbitp 4 user-flags-vector))) 4)
+                        (logand
+                         4294967279
+                         (logior (ash (loghead 1 (bool->bit (logbitp 2 user-flags-vector))) 2)
+                                 (logand 4294967291
+                                         (logior (loghead 1 user-flags-vector)
+                                                 (logand 4294967294 rflags))))))))))))
+                 (logior (logand 2261 user-flags-vector)
+                         (logand 4294965034 rflags)))
+
+   :g-bindings (gl::auto-bindings
+                (:nat user-flags-vector 32)
+                (:nat rflags 32))))
 
 (define write-user-rflags
-  ((flgs  :type (unsigned-byte 32))
-   (mask  :type (unsigned-byte 32))
+  ((user-flags-vector :type (unsigned-byte 32))
+   (undefined-mask    :type (unsigned-byte 32))
    x86)
 
   :inline t
@@ -1149,84 +1227,97 @@ using the @(see undef-read) function.</p>"
   :long "<p>We set the undefined flags, which are indicated by
   @('mask'), to the value returned by @(see undef-read).</p>"
 
-  :guard-hints (("Goal" :in-theory (e/d (!flgi) ())))
+  :guard-hints (("Goal" :in-theory (e/d (!flgi) (unsigned-byte-p))))
   :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  (b* ((flgs (mbe :logic (n32 flgs) :exec flgs))
-       (mask (mbe :logic (n32 mask) :exec mask)))
+  (b* ((user-flags-vector
+        (mbe :logic (n32 user-flags-vector) :exec user-flags-vector))
+       (undefined-mask
+        (mbe :logic (n32 undefined-mask) :exec undefined-mask))
+       ((the (unsigned-byte 32) input-rflags)
+        (mbe :logic (n32 (rflags x86)) :exec (rflags x86)))
+       (x86
+        (mbe :logic (b* ((x86 (!flgi #.*cf* (rflags-slice :cf user-flags-vector) x86))
+                         (x86 (!flgi #.*pf* (rflags-slice :pf user-flags-vector) x86))
+                         (x86 (!flgi #.*af* (rflags-slice :af user-flags-vector) x86))
+                         (x86 (!flgi #.*zf* (rflags-slice :zf user-flags-vector) x86))
+                         (x86 (!flgi #.*sf* (rflags-slice :sf user-flags-vector) x86))
+                         (x86 (!flgi #.*of* (rflags-slice :of user-flags-vector) x86)))
+                      x86)
+             :exec (b* ((user-flags-layout
+                         ;; (!rflags-slice
+                         ;;  :cf 1
+                         ;;  (!rflags-slice
+                         ;;   :pf 1
+                         ;;   (!rflags-slice
+                         ;;    :af 1
+                         ;;    (!rflags-slice
+                         ;;     :zf 1
+                         ;;     (!rflags-slice
+                         ;;      :sf 1
+                         ;;      (!rflags-slice
+                         ;;       :of 1 0))))))
+                         #x8D5)
+                        (flags-without-undefined-values
+                         (logior (logand (logxor user-flags-layout #.*2^32-1*) input-rflags)
+                                 (logand user-flags-layout user-flags-vector))))
+                     (!rflags flags-without-undefined-values x86)))))
 
-      (if (equal mask 0)
+    (if (equal undefined-mask 0)
+        x86
+      (b* ((x86 (if (equal (rflags-slice :cf undefined-mask) 1)
+                    (!flgi-undefined #.*cf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :pf undefined-mask) 1)
+                    (!flgi-undefined #.*pf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :af undefined-mask) 1)
+                    (!flgi-undefined #.*af* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :zf undefined-mask) 1)
+                    (!flgi-undefined #.*zf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :sf undefined-mask) 1)
+                    (!flgi-undefined #.*sf* x86)
+                  x86))
+           (x86 (if (equal (rflags-slice :of undefined-mask) 1)
+                    (!flgi-undefined #.*of* x86)
+                  x86)))
+        x86)))
 
-          (!rflags flgs x86)
+  ///
 
-        (b* ((x86 (!rflags flgs x86))
+  (local (in-theory (e/d (undef-read) ())))
 
-             (x86 (if (equal (rflags-slice :cf mask) 1)
-                      (!flgi-undefined #.*cf* x86)
-                    x86))
+  (defthm xr-write-user-rflags
+    (implies (and (not (equal fld :rflags))
+                  (not (equal fld :undef)))
+             (equal (xr fld index (write-user-rflags flags mask x86))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
 
-             (x86 (if (equal (rflags-slice :pf mask) 1)
-                      (!flgi-undefined #.*pf* x86)
-                    x86))
+  (defthm xr-write-user-rflags-no-mask
+    ;; Do we need this?
+    (implies (not (equal fld :rflags))
+             (equal (xr fld index (write-user-rflags flags 0 x86))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
 
-             (x86 (if (equal (rflags-slice :af mask) 1)
-                      (!flgi-undefined #.*af* x86)
-                    x86))
+  (defthm rflags-and-write-user-rflags-no-mask
+    (equal (write-user-rflags user-flags-vector 0 x86)
+           (b* ((x86 (!flgi #.*cf* (rflags-slice :cf user-flags-vector) x86))
+                (x86 (!flgi #.*pf* (rflags-slice :pf user-flags-vector) x86))
+                (x86 (!flgi #.*af* (rflags-slice :af user-flags-vector) x86))
+                (x86 (!flgi #.*zf* (rflags-slice :zf user-flags-vector) x86))
+                (x86 (!flgi #.*sf* (rflags-slice :sf user-flags-vector) x86))
+                (x86 (!flgi #.*of* (rflags-slice :of user-flags-vector) x86)))
+             x86))
+    :hints (("Goal" :in-theory (e/d* (flgi !flgi !flgi-undefined) (force (force)))))))
 
-             (x86 (if (equal (rflags-slice :zf mask) 1)
-                      (!flgi-undefined #.*zf* x86)
-                    x86))
 
-             (x86 (if (equal (rflags-slice :sf mask) 1)
-                      (!flgi-undefined #.*sf* x86)
-                    x86))
-
-             (x86 (if (equal (rflags-slice :of mask) 1)
-                      (!flgi-undefined #.*of* x86)
-                    x86)))
-            x86))))
-
-;; [Shilpi]: I need more rules about when mask is not 0. I think I want to keep
-;; write-user-rflags disabled most of the time...
-
-(defthm xr-write-user-rflags
-  (implies (and (not (equal fld :rflags))
-                (not (equal fld :undef)))
-           (equal (xr fld index (write-user-rflags flags mask x86))
-                  (xr fld index x86)))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi-undefined) (force (force))))))
-
-(defthm xr-write-user-rflags-no-mask
-  ;; Do we need this?
-  (implies (not (equal fld :rflags))
-           (equal (xr fld index (write-user-rflags flags 0 x86))
-                  (xr fld index x86)))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi-undefined) (force (force))))))
-
-(defthm rflags-and-write-user-rflags-no-mask
-  (equal (xr :rflags 0 (write-user-rflags flags 0 x86))
-         (loghead 32 flags))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
-
-(defthm read-zf-using-flgi-from-write-user-rflags
-  (implies (equal (rflags-slice :zf mask) 0)
-           (equal (flgi *zf* (write-user-rflags flags mask x86))
-                  (bool->bit (logbitp *zf* flags))))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
-
-(defthm write-user-rflags-and-xw
-  (implies (and (not (equal fld :rflags))
-                (not (equal fld :undef)))
-           (equal (write-user-rflags flags mask (xw fld index value x86))
-                  (xw fld index value (write-user-rflags flags mask x86))))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
-
-(defthm write-user-rflags-write-user-flags-when-no-mask
-  (equal (write-user-rflags flags1 0 (write-user-rflags flags2 0 x86))
-         (write-user-rflags flags1 0 x86))
-  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi !flgi-undefined) ()))))
+;; ======================================================================
 
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)

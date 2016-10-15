@@ -35,6 +35,8 @@
 (include-book "centaur/aig/aig-base" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
+
 ;; Translating from Hons AIGs to aignets.
 
 ;; We need a memoization table so that we don't revisit AIG nodes we've already
@@ -747,7 +749,12 @@
                  (make-varmap vars t varmap aignet)
                  (bound-to-regs-in-varmap
                   vars varmap aignet)))
-      :hints(("Goal" :in-theory (enable good-varmap-p))))
+      :hints(("Goal" :in-theory (e/d (good-varmap-p)
+
+; Matt K. mod 5/2016 (type-set bit for {1}): type-set of bit allowed linear
+; arithmetic to make progress that sent proof in a different direction.
+
+                                     ((:t regp))))))
 
     (defthm num-ins-of-make-varmap
       (equal (stype-count (pi-stype) (mv-nth 1 (make-varmap vars nil acc aignet)))

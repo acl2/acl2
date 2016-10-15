@@ -56,7 +56,7 @@
 ; make-partition-rec by make-partition satisfies the nonnegativity hypothesis
 ; of rule mesh-make-partition-rec.  If it is not clear that this is indeed the
 ; issue, then see file mesh-make-partition_info.txt for an annotated transcript
-; of a proof-checker session that leads us to this fact.
+; of a proof-builder session that leads us to this fact.
 
 ; Lemma hack2 below states that the delta in question is indeed nonnegative.
 ; We have to work a bit in order to prove hack2.  It seems clear if the

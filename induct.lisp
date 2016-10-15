@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -531,8 +531,7 @@
   (cond
    ((null induction-rules)
     (let* ((fn (ffn-symb term))
-           (machine (getprop fn 'induction-machine nil
-                             'current-acl2-world wrld)))
+           (machine (getpropc fn 'induction-machine nil wrld)))
       (cond
        ((null machine) nil)
        (t
@@ -556,12 +555,12 @@
         (intrinsic-suggested-induction-cand
          term
          (formals fn wrld)
-         (getprop fn 'quick-block-info
-                  '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                  'current-acl2-world wrld)
-         (getprop fn 'justification
-                  '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                  'current-acl2-world wrld)
+         (getpropc fn 'quick-block-info
+                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                   wrld)
+         (getpropc fn 'justification
+                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                   wrld)
          machine
          xterm
          ttree
@@ -592,7 +591,7 @@
   (cond
    ((flambdap (ffn-symb term)) nil)
    (t (suggested-induction-cands1
-       (getprop (ffn-symb term) 'induction-rules nil 'current-acl2-world wrld)
+       (getpropc (ffn-symb term) 'induction-rules nil wrld)
        term type-alist xterm ttree seen ens wrld))))
 )
 
@@ -1452,8 +1451,7 @@
 ; non pr fns supported.
 
   (cond ((null lst) 0)
-        ((getprop (ffn-symb (car lst)) 'primitive-recursive-defunp nil
-                  'current-acl2-world wrld)
+        ((getpropc (ffn-symb (car lst)) 'primitive-recursive-defunp nil wrld)
          (induction-complexity1 (cdr lst) wrld))
         (t (1+ (induction-complexity1 (cdr lst) wrld)))))
 
@@ -2230,6 +2228,7 @@
 ; understood to be implicitly conjoined and we therefore produce a
 ; conjunction expressed as (if cl1 cl2 nil).
 
+  (declare (xargs :guard (pseudo-term-list-listp clauses)))
   (cond ((null clauses) *t*)
         ((null (cdr clauses)) (disjoin (car clauses)))
         (t (mcons-term* 'if
@@ -2443,6 +2442,13 @@
 
 ; Warning: This function should be called under (io? prove ...).
 
+  (declare (xargs
+
+; Avoid blow-up from (skip-proofs (verify-termination ...)), which otherwise
+; takes a long time (e.g., when executed on behalf of community books utility
+; verify-guards-program).
+
+            :normalize nil))
   (cond
    ((and (gag-mode)
          (or (eq (gag-mode-evisc-tuple state) t)
@@ -2567,8 +2573,10 @@
                                       :tests-and-alists-lst))
                              (let*-abstractionp state)
                              wrld))
-                  (cons #\g (access candidate winning-candidate
-                                    :xinduction-term))
+                  (cons #\g (untranslate (access candidate winning-candidate
+                                                 :xinduction-term)
+                                         nil
+                                         wrld))
                   (cons #\h (if (access candidate winning-candidate :xancestry)
                                 1 0))
                   (cons #\i (tilde-*-untranslate-lst-phrase
@@ -2600,7 +2608,7 @@
         ((flambda-applicationp term)
          (union-eq (rec-fnnames (lambda-body (ffn-symb term)) wrld)
                    (rec-fnnames-lst (fargs term) wrld)))
-        ((getprop (ffn-symb term) 'recursivep nil 'current-acl2-world wrld)
+        ((getpropc (ffn-symb term) 'recursivep nil wrld)
          (add-to-set-eq (ffn-symb term)
                         (rec-fnnames-lst (fargs term) wrld)))
         (t (rec-fnnames-lst (fargs term) wrld))))
@@ -2612,7 +2620,7 @@
 
 )
 
-(defun induct-msg/lose (pool-name induct-hint-val state)
+(defun induct-msg/lose (pool-name induct-hint-val pspv state)
 
 ; We print the message that no induction was suggested.
 
@@ -2631,7 +2639,6 @@
               (cons #\?
                     (and induct-hint-val ; optimization
                          (let* ((wrld (w state))
-                                (ens (ens state))
                                 (all-fns (all-fnnames induct-hint-val))
                                 (rec-fns (rec-fnnames induct-hint-val wrld)))
                            (cond
@@ -2649,14 +2656,16 @@
                               defined recursively, so they cannot suggest ~
                               induction schemes.)")
                             ((and (all-variablep (fargs induct-hint-val))
-                                  (not (enabled-runep
-                                        (list :induction (car rec-fns))
-                                        ens
-                                        wrld))
-                                  (not (enabled-runep
-                                        (list :definition (car rec-fns))
-                                        ens
-                                        wrld)))
+                                  (let ((ens (ens-from-pspv pspv)))
+                                    (and
+                                     (not (enabled-runep
+                                           (list :induction (car rec-fns))
+                                           ens
+                                           wrld))
+                                     (not (enabled-runep
+                                           (list :definition (car rec-fns))
+                                           ens
+                                           wrld)))))
                              (msg "  (Note that ~x0 (including its :induction ~
                                    rune) is disabled, so it cannot suggest an ~
                                    induction scheme.  Consider providing an ~
@@ -2674,17 +2683,22 @@
 ; the hint settings into the pspv it returns.  Most of the content of
 ; the hint-settings is loaded into the rewrite-constant of the pspv.
 
-(defun@par load-hint-settings-into-rcnst (hint-settings rcnst cl-id wrld ctx
-                                                        state)
+(defun@par load-hint-settings-into-rcnst (hint-settings rcnst
+                                                        incrmt-array-name-info
+                                                        wrld ctx state)
 
 ; Certain user supplied hint settings find their way into the rewrite-constant.
 ; They are :expand, :restrict, :hands-off, and :in-theory.  Our convention is
 ; that if a given hint key/val is provided it replaces what was in the rcnst.
 ; Otherwise, we leave the corresponding field of rcnst unchanged.
 
-; Cl-id is either a clause-id or nil.  If it is a clause-id and we install a
-; new enabled structure, then we we will use that clause-id to build the array
-; name, rather than simply incrementing a suffix.
+; Incrmt-array-name-info is either a clause-id, a keyword, or nil.  If it is a
+; clause-id and we install a new enabled structure, then we will use that
+; clause-id to build the array name, rather than simply incrementing a suffix.
+; Otherwise incrmt-array-name-info is a keyword.  A keyword value should be
+; used for calls made by user applications, for example in community book
+; books/tools/easy-simplify.lisp, so that enabled structures maintained by the
+; ACL2 system do not lose their associated von Neumann arrays.
 
   (er-let*@par
    ((new-ens
@@ -2695,7 +2709,7 @@
         (cdr (assoc-eq :in-theory hint-settings))
         nil
         (access rewrite-constant rcnst :current-enabled-structure)
-        (or cl-id t)
+        (or incrmt-array-name-info t)
         nil
         wrld ctx state))
       (t (value@par (access rewrite-constant rcnst
@@ -3104,8 +3118,9 @@
 ; 'lose signal.
 
            (pprogn (io? prove nil state
-                        (induct-hint-val pool-name)
-                        (induct-msg/lose pool-name induct-hint-val state))
+                        (induct-hint-val pool-name new-pspv)
+                        (induct-msg/lose pool-name induct-hint-val new-pspv
+                                         state))
                    (mv 'lose nil pspv state))))))))))
 
 ; We now define the elimination of irrelevance.  Logically this ought

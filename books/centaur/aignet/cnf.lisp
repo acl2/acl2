@@ -38,6 +38,7 @@
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (include-book "centaur/aignet/bit-lemmas" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
@@ -319,12 +320,14 @@ correctness criterion we've described.</p>
                   (and stable-under-simplificationp
                        '(:in-theory (enable acl2::b-and))))))
 
+  (local (in-theory (enable id-less-than-max-fanin-by-stype)))
+
 
   (define lit-collect-supergate ((lit litp)
                                  top use-muxes
                                  (supergate lit-listp)
                                  aignet-refcounts aignet)
-    :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+    :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                 (fanin-litp lit aignet)
                 (true-listp supergate))
     :measure (lit-id lit)
@@ -800,9 +803,8 @@ correctness criterion we've described.</p>
 
   (defmacro sat-lit-extension-binding (&key (new 'sat-lits2)
                                          (orig 'sat-lits1)
-                                         (fall-through 't)
-                                         (iters '1))
-    `(bind-free (prev-stobj-binding ,new ',orig ',iters mfc state)
+                                         (fall-through 't))
+    `(bind-free (prev-stobj-binding ,new ',orig mfc state)
                 . ,(if fall-through nil `((,orig)))))
 
   ;; expands sat-lit-extension-p if it appears as a positive literal
@@ -2128,7 +2130,7 @@ correctness criterion we've described.</p>
   (mutual-recursion
    (defun aignet-lit->cnf (x use-muxes aignet-refcounts sat-lits aignet cnf)
      (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                     :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                     :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                                  (litp x) (fanin-litp x aignet)
                                  (sat-lits-wfp sat-lits aignet))
                      :verify-guards nil
@@ -2183,7 +2185,7 @@ correctness criterion we've described.</p>
 
    (defun aignet-lit-list->cnf (x use-muxes aignet-refcounts sat-lits aignet cnf)
      (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                     :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                     :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
                                  (lit-listp x)
                                  (aignet-lit-listp x aignet)
                                  (sat-lits-wfp sat-lits aignet))

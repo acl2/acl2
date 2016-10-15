@@ -121,7 +121,7 @@
         x
       (acons :parents parents x))))
 
-(defun force-root-parents (all-topics)
+(defun force-missing-parents (all-topics)
   ;; Assumes the topics have been normalized.
   (declare (xargs :mode :program))
   (b* (((when (atom all-topics))
@@ -131,12 +131,12 @@
        (parents (cdr (assoc :parents topic)))
        ((when (or (equal name 'acl2::top)
                   (consp parents)))
-        (cons topic (force-root-parents (cdr all-topics))))
-       (- (cw "Relinking top-level ~x0 to be a child of ~x1.~%" name 'acl2::top))
+        (cons topic (force-missing-parents (cdr all-topics))))
+       (- (cw "Missing parents: forcing ~x0 to be a child of ~x1.~%" name 'missing-parents))
        (new-topic
-        (cons (cons :parents '(acl2::top))
+        (cons (cons :parents '(missing-parents))
               topic)))
-    (cons new-topic (force-root-parents (cdr all-topics)))))
+    (cons new-topic (force-missing-parents (cdr all-topics)))))
 
 (defun normalize-parents-list (x)
 
@@ -262,7 +262,7 @@ command, along the following lines:</p>
 ;;         (acc (str::revappend-chars "<hindex_short id=\"" acc))
 ;;         (acc (revappend id-chars acc))
 ;;         (acc (str::revappend-chars "\">" acc))
-;;         ((mv acc state) (preprocess-main short name dir topics-fal base-pkg state acc))
+;;         ((mv acc state) (preprocess-main short name dir topics-fal nil base-pkg state acc))
 ;;         (acc (str::revappend-chars "</hindex_short>" acc))
 
 ;;         (acc (str::revappend-chars "<hindex_children id=\"" acc))

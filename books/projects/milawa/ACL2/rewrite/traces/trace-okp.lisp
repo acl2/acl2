@@ -226,7 +226,9 @@
                               (rw.trace-list-okp x defs)
                               (logic.formula-listp thms)
                               (logic.arity-tablep atbl))
-                  :measure (two-nats-measure (rank x) 0)))
+; Removed after v7-2 by Matt K. since the definition is non-recursive:
+;                 :measure (two-nats-measure (rank x) 0)
+                  ))
   (rw.flag-trace-env-okp 'list x defs thms atbl))
 
 (defthmd definition-of-rw.trace-env-okp

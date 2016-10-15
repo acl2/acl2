@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "4vec-base")
 (include-book "4vec-subtypes")
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "centaur/4v-sexpr/4v-logic" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/bitops/parity" :dir :system)
@@ -103,8 +103,7 @@ to explicitly replicate/extend comparison results.</p>
 <p>It is critical that these functions support efficient symbolic simulation
 with @(see gl).  However, the logical definitions of these functions are
 typically not relevant to this, because we use a custom translation from @(see
-expressions) into @(see acl2::aig)s; see @(see svex-symbolic-evaluation) for
-details.</p>")
+expressions) into @(see acl2::aig)s; see @(see bit-blasting) for details.</p>")
 
 (xdoc::defpointer boolean-convention 4vec-operations)
 
@@ -564,6 +563,14 @@ corresponding bits of the two inputs as follows:</p>
 
   (deffixequiv 4vec-resor))
 
+(defmacro 4vec-bit-limit () (expt 2 24))
+
+(defmacro 4vec-very-large-integer-warning (n)
+  `(prog2$ (cw "!!!!!!!! Danger -- if you continue, ~x0 will create a ~x1-bit ~
+               value -- examine the backtrace to diagnose.~%"
+               std::__function__ ,n)
+           (break$)))
+  
 
 (define 4vec-zero-ext ((n 4vec-p "Position to truncate/zero-extend at.")
                        (x 4vec-p "The @(see 4vec) to truncate/zero-extend."))
@@ -579,12 +586,20 @@ bits.</p>"
 
   (if (and (2vec-p n)
            (<= 0 (2vec->val n)))
-      (if-2vec-p (x)
-                 (2vec (loghead (2vec->val n) (2vec->val x)))
-                 (b* (((4vec x))
-                      (nval (2vec->val n)))
-                   (4vec (loghead nval x.upper)
-                         (loghead nval x.lower))))
+      (progn$ (and (>= (2vec->val n) (4vec-bit-limit))
+                   (b* (((4vec x)))
+                     ;; can only create a very large integer from a
+                     ;; not-very-large integer by zero extension if x is
+                     ;; negative or x/z-extended
+                     (or (< x.upper 0)
+                         (< x.lower 0)))
+                   (4vec-very-large-integer-warning (2vec->val n)))
+              (if-2vec-p (x)
+                         (2vec (loghead (2vec->val n) (2vec->val x)))
+                         (b* (((4vec x))
+                              (nval (2vec->val n)))
+                           (4vec (loghead nval x.upper)
+                                 (loghead nval x.lower)))))
     (4vec-x))
   ///
   (deffixequiv 4vec-zero-ext))
@@ -888,13 +903,26 @@ negative.  In this case, the result is infinite Xes.</p>"
 
   (if (and (2vec-p width)
            (<= 0 (2vec->val width)))
-      (b* ((wval (2vec->val width)))
-        (if-2vec-p (low high)
-                   (2vec (logapp wval (2vec->val low) (2vec->val high)))
+      (progn$ (and (>= (2vec->val width) (4vec-bit-limit))
                    (b* (((4vec low))
                         ((4vec high)))
-                     (4vec (logapp wval low.upper high.upper)
-                           (logapp wval low.lower high.lower)))))
+                     ;; can only create a very large integer from a
+                     ;; not-very-large integer by zero extension if x is
+                     ;; negative or x/z-extended
+                     (or (if (< low.upper 0)
+                             (not (eql high.upper -1))
+                           (not (eql high.upper 0)))
+                         (if (< low.lower 0)
+                             (not (eql high.lower -1))
+                           (not (eql high.lower 0)))))
+                   (4vec-very-large-integer-warning (2vec->val width)))
+              (b* ((wval (2vec->val width)))
+                (if-2vec-p (low high)
+                           (2vec (logapp wval (2vec->val low) (2vec->val high)))
+                           (b* (((4vec low))
+                                ((4vec high)))
+                             (4vec (logapp wval low.upper high.upper)
+                                   (logapp wval low.lower high.lower))))))
     (4vec-x))
   ///
   (deffixequiv 4vec-concat
@@ -902,6 +930,23 @@ negative.  In this case, the result is infinite Xes.</p>"
            (low   4vec)
            (high  4vec))))
 
+
+(define 4vec-shift-core ((amt integerp "Shift amount.")
+                         (src 4vec-p "Source operand."))
+  :returns (shift 4vec-p)
+  (b* ((amt (lifix amt)))
+    (prog2$ (and (>= amt (4vec-bit-limit))
+                 (b* (((4vec src)))
+                   (not (and (eql src.upper 0)
+                             (eql src.lower 0))))
+                 (4vec-very-large-integer-warning amt))
+            (if-2vec-p (src)
+                       (2vec (ash (2vec->val src) amt))
+                       (b* (((4vec src)))
+                         (4vec (ash src.upper amt)
+                               (ash src.lower amt))))))
+  ///
+  (deffixequiv 4vec-shift-core))
 
 (define 4vec-rsh ((amt 4vec-p "Shift amount.")
                   (src 4vec-p "Source operand."))
@@ -932,12 +977,7 @@ where shift amounts are always treated as unsigned.</li>
 Xes.</p>"
 
   (if (2vec-p amt)
-      (if-2vec-p (src)
-                 (2vec (ash (2vec->val src) (- (2vec->val amt))))
-                 (b* (((4vec src))
-                      (shamt (- (2vec->val amt))))
-                   (4vec (ash src.upper shamt)
-                         (ash src.lower shamt))))
+      (4vec-shift-core (- (2vec->val amt)) src)
     (4vec-x))
   ///
   (deffixequiv 4vec-rsh
@@ -970,12 +1010,7 @@ unsigned.</li>
 Xes.</p>"
 
   (if (2vec-p amt)
-      (if-2vec-p (src)
-                 (2vec (ash (2vec->val src) (2vec->val amt)))
-                 (b* (((4vec src))
-                      (shamt (2vec->val amt)))
-                   (4vec (ash src.upper shamt)
-                         (ash src.lower shamt))))
+      (4vec-shift-core (2vec->val amt) src)
     (4vec-x))
   ///
   (deffixequiv 4vec-lsh
@@ -1414,6 +1449,60 @@ affect this operation and update the docs accordingly once it's fixed.</p>"
            (elses 4vec))))
 
 
+(define 3vec-?* ((test 4vec-p)
+                (then 4vec-p)
+                (else 4vec-p))
+  :parents (3vec-operations)
+  :returns (choice 4vec-p)
+  :short "Atomic if-then-else of @(see 4vec)s, with a @(see 3vec) test.  Has
+the property that when branches are equal, the result is equal to the branch,
+regardless of the test."
+
+  :long "<p>The difference between this and @(see 3vec-?) is that when the test is X and the branches are both Z, here we return Z whereas @(see 3vec-?) returns X.</p>"
+
+  (b* (((4vec test))
+       ((when (eql test.upper 0)) ;; test is false
+        (4vec-fix else))
+       ((when (not (eql test.lower 0))) ;; test is true
+        (4vec-fix then))
+       ;; otherwise, test is X
+       ((4vec then))
+       ((4vec else)))
+    ;; Truth table for case where test is X:
+    ;; e\t   1  0  X  Z --> upper:     lower:
+    ;; 1     1  X  X  X     1 1 1 1    1 0 0 0
+    ;; 0     X  0  X  X     1 0 1 1    0 0 0 0
+    ;; X     X  X  X  X     1 1 1 1    0 0 0 0
+    ;; Z     X  X  X  Z     1 1 1 0    0 0 0 1
+    (4vec ;; upper is set unless both are 0 or both are Z - meaning, unless
+          ;; both have upper == 0 and lower equal.
+     (logior then.upper else.upper (logxor then.lower else.lower))
+     ;; lower is set if both are 1 or both are Z -- meaning, both lowers are 1
+     ;; and uppers are equal.
+     (logand (logeqv then.upper else.upper) then.lower else.lower)))
+
+  ///
+  (deffixequiv 3vec-?*))
+
+;; (defconst *zx10* (make-4vec :upper #b0110 :lower #b1010))
+;; (3vec-?* (4vec-x) *zx10* *zx10*)
+
+
+(define 4vec-?* ((test 4vec-p) (then 4vec-p) (else 4vec-p))
+  :returns (choice 4vec-p)
+  :short "Atomic if-then-else of @(see 4vec)s.   Has the property that when branches
+          are equal, the result is equal to the branch, regardless of the
+          test."
+
+  (3vec-?* (3vec-fix test) then else)
+  ///
+  (deffixequiv 4vec-?*
+    :args ((test 3vec)
+           (then 4vec)
+           (else 4vec))))
+
+
+
 
 ;; ---------- BOZO could generally use better documentation below here ---------
 
@@ -1518,7 +1607,9 @@ bb cc dd'), which are then reversed.</p>"
         (loghead nbits x))
        (next-nbits (- nbits blocksz))
        (rest (rev-blocks next-nbits blocksz (ash x (- blocksz)))))
-    (logapp next-nbits rest (loghead blocksz x))))
+    (logapp next-nbits rest (loghead blocksz x)))
+  ///
+  (deffixequiv rev-blocks))
 
 (define rev-block-index ((i natp)
                          (nbits natp)
@@ -1583,7 +1674,7 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
   ;; BOZO can probably strengthen the equivalences
   (deffixequiv 4vec-rev-blocks))
 
-(define 4vec-wildeq ((a 4vec-p) (b 4vec-p))
+(define 4vec-wildeq-safe ((a 4vec-p) (b 4vec-p))
   :short "True if for every pair of corresponding bits of a and b, either they
           are equal or the bit from b is Z."
   :returns (res 4vec-p)
@@ -1592,9 +1683,35 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
        (zmask (logand (lognot b.upper) b.lower))) ;; b is z
     (3vec-reduction-and (3vec-bitor eq (2vec zmask))))
   ///
-  (deffixequiv 4vec-wildeq
+  (deffixequiv 4vec-wildeq-safe
     :args ((a 3vec)
            (b 4vec))))
+
+(define 4vec-wildeq ((a 4vec-p) (b 4vec-p))
+  :short "True if for every pair of corresponding bits of a and b, either they
+          are equal or the bit from b is X or Z."
+  :long "<p>This is the Verilog semantics for the @('==?') operator. Like ===,
+this violates monotonicity, i.e. it doesn't respect the idea that X represents
+an unknown.</p>"
+  :returns (res 4vec-p)
+  (b* ((eq (3vec-bitnot (4vec-bitxor a b))) ;; 4vec-bitxor-redef
+       ((4vec b))
+       (zxmask (logxor b.upper b.lower))) ;; b is z or x
+    (3vec-reduction-and (3vec-bitor eq (2vec zxmask))))
+  ///
+  (local (defthm logxor-of-3vec-fix
+           (equal (logxor (logand l u)
+                          (logior l u))
+                  (logxor l u))
+           :hints ((logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable bool->bit))))))
+
+  (deffixequiv 4vec-wildeq
+    :args ((a 3vec)
+           (b 3vec))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable 3vec-fix))))))
 
 (define 4vec-symwildeq ((a 4vec-p) (b 4vec-p))
   :short "Symmetric wildcard equality: true if for every pair of corresponding
@@ -1622,6 +1739,113 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
   (deffixequiv 4vec-clog2
     :args ((a 2vecnatx))
     :hints(("Goal" :in-theory (enable 2vecnatx-fix)))))
+
+
+(local (defthm expt-neg1-integerp
+         (integerp (expt -1 n))
+         :hints (("goal" :in-theory (enable expt)))))
+
+(define 4vec-pow ((base 4vec-p) (exp 4vec-p))
+  :short "Power operator (** in SystemVerilog)."
+  :long "<p>See Table 11-4 in IEEE System Verilog Spec.</p>"
+  :returns (res 4vec-p)
+  (if (and (2vec-p base)
+           (2vec-p exp))
+      (b* ((base (2vec->val base))
+           (exp (2vec->val exp))
+           ((when (or (natp exp)
+                      (eql base 1)
+                      (eql base -1)))
+            (2vec (expt base exp)))
+           ((when (eql base 0)) (4vec-x))) ;; 0 to negative power
+        (2vec 0)) ;; a <= -2 or a >= 2, b negative.
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-pow
+    :args ((base 2vecx) (exp 2vecx))
+    :hints(("Goal" :in-theory (enable 2vecx-fix)))))
+
+
+
+(define 4vec-part-select ((lsb 4vec-p)
+                          (width 4vec-p)
+                          (in 4vec-p))
+  :short "Part select operation: select @('width') bits of @('in') starting at @('lsb')."
+  :returns (res 4vec-p)
+  (if (and (2vec-p lsb)
+           (2vec-p width)
+           (<= 0 (2vec->val width)))
+      (b* ((lsbval (2vec->val lsb))
+           ((when (<= 0 lsbval))
+            (4vec-zero-ext width (4vec-rsh lsb in))))
+        (4vec-zero-ext width (4vec-concat (2vec (- lsbval)) (4vec-x) in)))
+    (4vec-x)))
+
+(define 4vec-part-install ((lsb 4vec-p)
+                           (width 4vec-p)
+                           (in 4vec-p)
+                           (val 4vec-p))
+  :short "Part install operation: replace @('width') bits of @('in') starting at
+          @('lsb') with the least-significant bits of @('val')."
+  :returns (res 4vec-p)
+  (if (and (2vec-p lsb)
+           (2vec-p width)
+           (<= 0 (2vec->val width)))
+      (b* ((lsbval (2vec->val lsb))
+           (widthval (2vec->val width))
+           ((when (<= 0 lsbval))
+            ;; normal case: result is LSB bits of in, followed by val, followed by more in
+            (4vec-concat lsb in (4vec-concat width val (4vec-rsh (2vec (+ lsbval widthval)) in))))
+           ((when (<= widthval (- lsbval)))
+            ;; if we're writing width bits starting more than width bits below 0, in is unchanged
+            (4vec-fix in)))
+        ;; otherwise, we're writing, for example,
+        ;; 5 bits starting at -3 -- which means 2 bits of val starting at 3, followed by in starting at bit 2.
+        (4vec-concat (2vec (+ widthval lsbval))
+                     (4vec-rsh (2vec (- lsbval)) val)
+                     (4vec-rsh (2vec (+ widthval lsbval)) in)))
+    (4vec-x))
+  ///
+  (local (in-theory (disable unsigned-byte-p)))
+
+  ;; some sanity checks
+  (defthm 4vec-part-install-of-part-select
+    (implies (and (2vec-p lsb) (2vec-p width) (<= 0 (2vec->val width)))
+             (equal (4vec-part-install lsb width in (4vec-part-select lsb width in))
+                    (4vec-fix in)))
+    :hints(("Goal" :in-theory (enable 4vec-part-select
+                                      4vec-zero-ext
+                                      4vec-concat
+                                      4vec-rsh
+                                      4vec-shift-core))
+           (logbitp-reasoning :prune-examples nil)))
+
+
+  (defthm 4vec-part-select-of-install
+    (implies (and (2vec-p lsb) (2vec-p width)
+                  (<= 0 (2vec->val width)))
+             (equal (4vec-part-select lsb width (4vec-part-install lsb width in val))
+                    (if (< (2vec->val lsb) 0)
+                        (if (< (- (2vec->val lsb)) (2vec->val width))
+                            (4vec-concat (2vec (- (2vec->val lsb)))
+                                         (4vec-x)
+                                         (4vec-zero-ext
+                                          (2vec (+ (2vec->val width) (2vec->val lsb)))
+                                          (4vec-rsh (2vec (- (2vec->val lsb))) val)))
+                          (4vec-zero-ext width (4vec-x)))
+                      (4vec-zero-ext width val))))
+    :hints(("Goal" :in-theory (enable 4vec-part-select
+                                      4vec-zero-ext
+                                      4vec-concat
+                                      4vec-rsh
+                                      4vec-shift-core))
+           (logbitp-reasoning :prune-examples nil))))
+
+
+
+
+
+
 
 ;;ANNA: Converting 4vec-p / 4veclist-p to string(s) of 0s, 1s, Xs, and Zs
 ;;MSB first
@@ -1691,4 +1915,13 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
      (4vec-p-to-stringp (car x))
      (4veclist-p-to-stringp (cdr x))))
   )
+
+
+(define 4vec-xfree-p ((x 4vec-p))
+  :parents (4vec-[= svex-xeval)
+  :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
+relationship with @(see svex-xeval)."
+  (b* (((4vec x) x))
+    (eql -1 (logior (lognot x.upper) x.lower))))
+
 

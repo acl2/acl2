@@ -177,6 +177,7 @@
 
 (defaggregate vl-tokstream-backup
   :tag nil
+  :layout :fulltree
   ((tokens vl-tokenlist-p)
    (pstate vl-parsestate-p)))
 
@@ -353,7 +354,7 @@ frequently.</p>")
   ;; the guard verification of mv-lets.
   nil)
 
-(defun defparser-fn (name formals args)
+(defun defparser-fn (name formals args single-p)
   (declare (xargs :guard (and (symbolp name)
                               (true-listp formals)
                               ;; Tokstream and config will be provided automatically
@@ -397,220 +398,235 @@ frequently.</p>")
                            `(and ;(force (vl-tokenlist-p tokens))
                                  ,(adjust-guard-for-theorems (cdr guard)))
                          `(and ;(force (vl-tokenlist-p tokens))
-                           t))))
-    `(define ,name
-       ,(append formals
-                '(&key
-                  (tokstream 'tokstream)
-                  ((config vl-loadconfig-p) 'config)
-                  ))
-       :returns (mv (errmsg?)
-                    (value)
-                    (new-tokstream))
-       ,@(and parents       `(:parents ,(cdr parents)))
-       ,@(and short         `(:short ,(cdr short)))
-       ,@(and long          `(:long ,(cdr long)))
-       ,@(and guard         `(:guard ,(cdr guard)))
-       ,@(and guard-debug   `(:guard-debug ,(cdr guard-debug)))
-       ,@(and verify-guards `(:verify-guards ,(cdr verify-guards)))
-       ,@(and prepwork      `(:prepwork ,(cdr prepwork)))
-       :measure ,measure
-       ,@decls
-       (declare (ignorable config))
-       ;; (b* ((pstate (mbe :logic (vl-parsestate-fix pstate)
-       ;;                   :exec pstate))
-       ;;      (tokens   (mbe :logic (vl-tokenlist-fix tokens)
-       ;;                     :exec tokens)))
-       ;;   ,body)
-       ,body
-       ///
+                           t)))
+       (define-form    `(define ,name
+                          ,(append formals
+                                   '(&key
+                                     (tokstream 'tokstream)
+                                     ((config vl-loadconfig-p) 'config)
+                                     ))
+                          :returns (mv (errmsg?)
+                                       (value)
+                                       (new-tokstream))
+                          ,@(and parents       `(:parents ,(cdr parents)))
+                          ,@(and short         `(:short ,(cdr short)))
+                          ,@(and long          `(:long ,(cdr long)))
+                          ,@(and guard         `(:guard ,(cdr guard)))
+                          ,@(and guard-debug   `(:guard-debug ,(cdr guard-debug)))
+                          ,@(and verify-guards `(:verify-guards ,(cdr verify-guards)))
+                          ,@(and prepwork      `(:prepwork ,(cdr prepwork)))
+                          :measure ,measure
+                          ,@decls
+                          (declare (ignorable config))
+                          ;; (b* ((pstate (mbe :logic (vl-parsestate-fix pstate)
+                          ;;                   :exec pstate))
+                          ;;      (tokens   (mbe :logic (vl-tokenlist-fix tokens)
+                          ;;                     :exec tokens)))
+                          ;;   ,body)
+                          ,body
+                          ///
 
-       (ACL2::add-to-ruleset defparser-type-prescriptions '((:t ,name)))
+                          (ACL2::add-to-ruleset defparser-type-prescriptions '((:t ,name)))
 
-       ;; (defthm ,(intern-in-package-of-symbol
-       ;;           (cat (symbol-name name) "-OF-VL-TOKENLIST-FIX")
-       ;;           name)
-       ;;   (equal (,fn-name . ,(subst '(vl-tokenlist-fix tokens) 'tokens fn-formals))
-       ;;          (,fn-name . ,fn-formals))
-       ;;   :hints(("Goal"
-       ;;           :expand ((,fn-name . ,(subst '(vl-tokenlist-fix tokens)
-       ;;                                        'tokens fn-formals))
-       ;;                    (,fn-name . ,fn-formals)))))
+                          ;; (defthm ,(intern-in-package-of-symbol
+                          ;;           (cat (symbol-name name) "-OF-VL-TOKENLIST-FIX")
+                          ;;           name)
+                          ;;   (equal (,fn-name . ,(subst '(vl-tokenlist-fix tokens) 'tokens fn-formals))
+                          ;;          (,fn-name . ,fn-formals))
+                          ;;   :hints(("Goal"
+                          ;;           :expand ((,fn-name . ,(subst '(vl-tokenlist-fix tokens)
+                          ;;                                        'tokens fn-formals))
+                          ;;                    (,fn-name . ,fn-formals)))))
 
-       ;; (defthm ,(intern-in-package-of-symbol
-       ;;           (cat (symbol-name name) "-OF-VL-PARSESTATE-FIX")
-       ;;           name)
-       ;;   (equal (,fn-name . ,(subst '(vl-parsestate-fix pstate)
-       ;;                              'pstate fn-formals))
-       ;;          (,fn-name . ,fn-formals))
-       ;;   :hints(("Goal"
-       ;;           :expand ((,fn-name . ,(subst '(vl-parsestate-fix pstate)
-       ;;                                        'pstate fn-formals))
-       ;;                    (,fn-name . ,fn-formals)))))
+                          ;; (defthm ,(intern-in-package-of-symbol
+                          ;;           (cat (symbol-name name) "-OF-VL-PARSESTATE-FIX")
+                          ;;           name)
+                          ;;   (equal (,fn-name . ,(subst '(vl-parsestate-fix pstate)
+                          ;;                              'pstate fn-formals))
+                          ;;          (,fn-name . ,fn-formals))
+                          ;;   :hints(("Goal"
+                          ;;           :expand ((,fn-name . ,(subst '(vl-parsestate-fix pstate)
+                          ;;                                        'pstate fn-formals))
+                          ;;                    (,fn-name . ,fn-formals)))))
 
-       ;; ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
-       ;;       nil
-       ;;     `((defthm ,(intern-in-package-of-symbol
-       ;;                 (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
-       ;;                 name)
-       ;;         (vl-tokenlist-p (mv-nth 2 (,name . ,formals)))
-       ;;         :hints (,@(if hint-chicken-switch
-       ;;                       nil
-       ;;                     `((expand-and-maybe-induct-hint
-       ;;                        '(,fn-name . ,fn-formals))))))
+                          ;; ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
+                          ;;       nil
+                          ;;     `((defthm ,(intern-in-package-of-symbol
+                          ;;                 (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
+                          ;;                 name)
+                          ;;         (vl-tokenlist-p (mv-nth 2 (,name . ,formals)))
+                          ;;         :hints (,@(if hint-chicken-switch
+                          ;;                       nil
+                          ;;                     `((expand-and-maybe-induct-hint
+                          ;;                        '(,fn-name . ,fn-formals))))))
 
-       ;;       (defthm ,(intern-in-package-of-symbol
-       ;;                 (cat "VL-PARSESTATE-P-OF-" (symbol-name name))
-       ;;                 name)
-       ;;         (vl-parsestate-p (mv-nth 3 (,name . ,formals)))
-       ;;         :hints (,@(if hint-chicken-switch
-       ;;                       nil
-       ;;                     `((expand-and-maybe-induct-hint
-       ;;                        '(,fn-name . ,fn-formals))))))))
+                          ;;       (defthm ,(intern-in-package-of-symbol
+                          ;;                 (cat "VL-PARSESTATE-P-OF-" (symbol-name name))
+                          ;;                 name)
+                          ;;         (vl-parsestate-p (mv-nth 3 (,name . ,formals)))
+                          ;;         :hints (,@(if hint-chicken-switch
+                          ;;                       nil
+                          ;;                     `((expand-and-maybe-induct-hint
+                          ;;                        '(,fn-name . ,fn-formals))))))))
 
-       ,@(cond ((not fails)
-                nil)
-               ((equal (symbol-name fails) "NEVER")
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-NEVER-FAILS")
-                            name)
-                    (not (mv-nth 0 (,name . ,formals)))
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals) :disable '((force)))))))))
-               ((equal (symbol-name fails) "GRACEFULLY")
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-FAILS-GRACEFULLY")
-                            name)
-                    (implies (mv-nth 0 (,name . ,formals))
-                             (not (mv-nth 1 (,name . ,formals))))
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals) :disable '((force)))))))
-                  (defthm ,(intern-in-package-of-symbol
-                            (cat "VL-WARNING-P-OF-" (symbol-name name))
-                            name)
-                    (iff (vl-warning-p (mv-nth 0 (,name . ,formals)))
-                         (mv-nth 0 (,name . ,formals)))
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals) :disable '((force)))))))))
-               (t
-                (er hard? 'defparser "Bad :fails: ~s0." fails)))
+                          ,@(cond ((not fails)
+                                   nil)
+                                  ((equal (symbol-name fails) "NEVER")
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-NEVER-FAILS")
+                                               name)
+                                       (not (mv-nth 0 (,name . ,formals)))
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals) :disable '((force)))))))))
+                                  ((equal (symbol-name fails) "GRACEFULLY")
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-FAILS-GRACEFULLY")
+                                               name)
+                                       (implies (mv-nth 0 (,name . ,formals))
+                                                (not (mv-nth 1 (,name . ,formals))))
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals) :disable '((force)))))))
+                                     (defthm ,(intern-in-package-of-symbol
+                                               (cat "VL-WARNING-P-OF-" (symbol-name name))
+                                               name)
+                                       (iff (vl-warning-p (mv-nth 0 (,name . ,formals)))
+                                            (mv-nth 0 (,name . ,formals)))
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals) :disable '((force)))))))))
+                                  (t
+                                   (er hard? 'defparser "Bad :fails: ~s0." fails)))
 
-       ,@(cond ((not result)
-                nil)
-               (t
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-RESULT")
-                            name)
-                    ,(cond
-                      ((and resultp-of-nil
-                            (cdr resultp-of-nil)
-                            (equal (symbol-name fails) "GRACEFULLY"))
-                       ;; On failure val is nil, and resultp is true of
-                       ;; nil, so resultp is always true of val.
-                       `(implies ,thm-hyps
-                                 ,(ACL2::subst `(mv-nth 1 (,name . ,formals))
-                                               'val result)))
+                          ,@(cond ((not result)
+                                   nil)
+                                  (t
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-RESULT")
+                                               name)
+                                       ,(cond
+                                         ((and resultp-of-nil
+                                               (cdr resultp-of-nil)
+                                               (equal (symbol-name fails) "GRACEFULLY"))
+                                          ;; On failure val is nil, and resultp is true of
+                                          ;; nil, so resultp is always true of val.
+                                          `(implies ,thm-hyps
+                                                    ,(ACL2::subst `(mv-nth 1 (,name . ,formals))
+                                                                  'val result)))
 
-                      ((and resultp-of-nil
-                            (not (cdr resultp-of-nil))
-                            (equal (symbol-name fails) "GRACEFULLY"))
-                       ;; Resultp is not true of nil, and fails
-                       ;; gracefully, so result is true exactly when
-                       ;; it does not fail.
-                       `(implies ,thm-hyps
-                                 (equal ,(ACL2::subst
-                                          `(mv-nth 1 (,name . ,formals))
-                                          'val result)
-                                        (not (mv-nth 0 (,name . ,formals))))))
+                                         ((and resultp-of-nil
+                                               (not (cdr resultp-of-nil))
+                                               (equal (symbol-name fails) "GRACEFULLY"))
+                                          ;; Resultp is not true of nil, and fails
+                                          ;; gracefully, so result is true exactly when
+                                          ;; it does not fail.
+                                          `(implies ,thm-hyps
+                                                    (equal ,(ACL2::subst
+                                                             `(mv-nth 1 (,name . ,formals))
+                                                             'val result)
+                                                           (not (mv-nth 0 (,name . ,formals))))))
 
-                      (t
-                       ;; We don't know enough to make the theorem
-                       ;; better, so just make it conditional.
-                       `(implies (and (not (mv-nth 0 (,name . ,formals)))
-                                      ,thm-hyps)
-                                 ,(ACL2::subst
-                                   `(mv-nth 1 (,name . ,formals))
-                                   'val result))))
-                    :hints (,@(if hint-chicken-switch
-                                  nil
-                                `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,fn-formals))))
-                            . ,result-hints)))))
+                                         (t
+                                          ;; We don't know enough to make the theorem
+                                          ;; better, so just make it conditional.
+                                          `(implies (and (not (mv-nth 0 (,name . ,formals)))
+                                                         ,thm-hyps)
+                                                    ,(ACL2::subst
+                                                      `(mv-nth 1 (,name . ,formals))
+                                                      'val result))))
+                                       :hints (,@(if hint-chicken-switch
+                                                     nil
+                                                   `((expand-and-maybe-induct-hint
+                                                      '(,fn-name . ,fn-formals))))
+                                               . ,result-hints)))))
 
-       ,@(cond ((not true-listp)
-                nil)
-               (t
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-TRUE-LISTP")
-                            name)
-                    (true-listp (mv-nth 1 (,name . ,formals)))
-                    :rule-classes :type-prescription
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals)
-                                  :disable '((force))))))))))
+                          ,@(cond ((not true-listp)
+                                   nil)
+                                  (t
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-TRUE-LISTP")
+                                               name)
+                                       (true-listp (mv-nth 1 (,name . ,formals)))
+                                       :rule-classes :type-prescription
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals)
+                                                     :disable '((force))))))))))
 
-       ,@(cond ((not count)
-                nil)
-               ((equal (symbol-name count) "WEAK")
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-COUNT-WEAK")
-                            name)
-                    (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
-                        (vl-tokstream-measure))
-                    :rule-classes ((:rewrite) (:linear))
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals)
-                                  :disable '((force)))))))))
+                          ,@(cond ((not count)
+                                   nil)
+                                  ((equal (symbol-name count) "WEAK")
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-COUNT-WEAK")
+                                               name)
+                                       (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                           (vl-tokstream-measure))
+                                       :rule-classes ((:rewrite) (:linear))
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals)
+                                                     :disable '((force)))))))))
 
-               ((equal (symbol-name count) "STRONG")
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-COUNT-STRONG")
-                            name)
-                    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
-                             (vl-tokstream-measure))
-                         (implies (not (mv-nth 0 (,name . ,formals)))
-                                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
-                                     (vl-tokstream-measure))))
-                    :rule-classes ((:rewrite) (:linear))
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals)
-                                  :disable '((force)))))))))
+                                  ((equal (symbol-name count) "STRONG")
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-COUNT-STRONG")
+                                               name)
+                                       (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                                (vl-tokstream-measure))
+                                            (implies (not (mv-nth 0 (,name . ,formals)))
+                                                     (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                                        (vl-tokstream-measure))))
+                                       :rule-classes ((:rewrite) (:linear))
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals)
+                                                     :disable '((force)))))))))
 
-               ((equal (symbol-name count) "STRONG-ON-VALUE")
-                `((defthm ,(intern-in-package-of-symbol
-                            (cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
-                            name)
-                    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
-                             (vl-tokstream-measure))
-                         (implies (mv-nth 1 (,name . ,formals))
-                                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
-                                     (vl-tokstream-measure))))
-                    :rule-classes ((:rewrite) (:linear))
-                    :hints(,@(if hint-chicken-switch
-                                 '(("Goal" :in-theory (disable (force))))
-                               `((expand-and-maybe-induct-hint
-                                  '(,fn-name . ,fn-formals)
-                                  :disable '((force)))))))))
+                                  ((equal (symbol-name count) "STRONG-ON-VALUE")
+                                   `((defthm ,(intern-in-package-of-symbol
+                                               (cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
+                                               name)
+                                       (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                                (vl-tokstream-measure))
+                                            (implies (mv-nth 1 (,name . ,formals))
+                                                     (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                                        (vl-tokstream-measure))))
+                                       :rule-classes ((:rewrite) (:linear))
+                                       :hints(,@(if hint-chicken-switch
+                                                    '(("Goal" :in-theory (disable (force))))
+                                                  `((expand-and-maybe-induct-hint
+                                                     '(,fn-name . ,fn-formals)
+                                                     :disable '((force)))))))))
 
-               (t
-                (er hard? 'defparser "Bad :count: ~s0." count)))
+                                  (t
+                                   (er hard? 'defparser "Bad :count: ~s0." count)))
 
-       . ,rest-events)))
+                          . ,rest-events)))
+    (if single-p
+        `(encapsulate
+           ()
+
+; The generated parser can sensibly be recursive or non-recursive, and in the
+; recursive case, by default we want to use a particular measure which isn't
+; just acl2-count.  So, it seems convenient not to have to give an explicit
+; measure when you introduce a recursive function (since we know what measure
+; it should be), and it seems like it should not be an error to introduce a
+; non-recursive parser.  Given all of that, we turn off the default check for
+; recursion when providing a :measure.
+
+           (set-bogus-measure-ok t)
+           ,define-form)
+      define-form)))
 
 (defmacro defparser (name formals &rest args)
-  (defparser-fn name formals args))
+  (defparser-fn name formals args t))
 
 (defun defparser-top-fn (name guard resulttype state)
   (declare (xargs :mode :program :stobjs state))
@@ -660,12 +676,15 @@ frequently.</p>")
        (name1    (second form1))
        (formals1 (third form1))
        (args1    (rest-n 3 form1)))
-    (cons (defparser-fn name1 formals1 args1)
+    (cons (defparser-fn name1 formals1 args1 nil)
           (expand-defparsers (cdr forms)))))
 
 (defmacro defparsers (name &rest defparser-forms)
   ;; (defparsers expr (defparser parse-expr ...) (defparser parse-exprlist ...))
-  `(defines ,name . ,(expand-defparsers defparser-forms)))
+  `(encapsulate ; See the comment on the encapsulate in defparser-fn
+     ()
+     (set-bogus-measure-ok t)
+     (defines ,name . ,(expand-defparsers defparser-forms))))
 
 
 (define vl-is-token?
@@ -1337,7 +1356,7 @@ allowed in Verilog-2005.</p>
 <p>An @('vl-endinfo-p') structure is just a temporary structure used by our
 parser when we encounter such an ending.</p>"
 
-  :legiblep nil
+  :layout :fulltree
 
   ((name maybe-stringp :rule-classes :type-prescription
          "The name we matched after the colon, e.g., @('foo') above.")

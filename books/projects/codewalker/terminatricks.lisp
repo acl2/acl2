@@ -2046,7 +2046,7 @@
          (mv-let (erp val state)
                  (with-prover-step-limit!
                   step-limit
-                  (thm-fn conjecture state hints otf-flg nil))
+                  (thm-fn conjecture state hints otf-flg))
                  (declare (ignore val))
                  (value (if (eq memo-alist t)
                             (not erp)
@@ -3647,6 +3647,7 @@
 ; Use new measure patterns in subsequent analysis and save for event
 ; generation so we don't have to recompute them.
          (er-progn
+          (set-bogus-measure-ok t) ; added by Matt K. 2/20/2016
           (assign new-measure-patterns
                   new-measure-patterns)
 ; ``Admit'' the defun with a bogus measure just to grab the tmach.  Then

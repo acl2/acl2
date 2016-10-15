@@ -1,15 +1,40 @@
-
+; AIGNET - And-Inverter Graph Networks
+; Copyright (C) 2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
-;; (include-book "centaur/aignet/idp" :dir :system)
 (include-book "litp")
 (include-book "centaur/misc/arrays" :dir :system)
-(include-book "centaur/misc/bitarr" :dir :system)
-(include-book "aignet-absstobj")
+(include-book "std/stobjs/bitarr" :dir :system)
+(include-book "misc/definline" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))
-
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ;; might be useful for memo tables in places
@@ -353,7 +378,7 @@
 
 
 (defsection litarr
-  (acl2::def-1d-arr :arrname litarr
+  (acl2::def-1d-arr litarr
                     :slotname lit
                     :pred litp
                     :fix lit-fix$inline
@@ -579,7 +604,7 @@
 
 (defsection u32arr
 
-  (acl2::def-1d-arr :arrname u32arr
+  (acl2::def-1d-arr u32arr
                     :slotname u32
                     :pred natp
                     :fix nfix
@@ -589,6 +614,11 @@
                              (u32s-length . u32-length)
                              (resize-u32s . resize-u32)))
 
+  (defun set-u32-ec-call (n v u32arr)
+    (declare (xargs :stobjs u32arr
+                    :guard t))
+    (ec-call (set-u32_ n v u32arr)))
+
   (definline set-u32 (n v u32arr)
     (declare (xargs :stobjs u32arr
                     :guard (and (natp n)
@@ -597,7 +627,7 @@
     (mbe :logic (set-u32_ n (nfix v) u32arr)
          :exec (if (< (the (integer 0 *) v) (expt 2 32))
                    (set-u32_ n v u32arr)
-                 (ec-call (set-u32_ n v u32arr)))))
+                 (set-u32-ec-call n v u32arr))))
 
   ;; (defun u32arr-sizedp (u32arr aignet)
   ;;   (declare (xargs :stobjs (u32arr aignet)

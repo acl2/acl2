@@ -572,9 +572,11 @@ To use at UW:
   alist2-functions
   '(alist2p aset2 aref2 compress2 header dimensions maximum-length
     default)
-  :doc "A theory of all functions specific to 2-dimensional alists.
-        This theory must be DISABLEd in order for the lemmas
-        exported by the alist2 book to be applicable.")
+; Matt K. mod 10/30/2015: :doc is no longer supported for deftheory.
+; :doc "A theory of all functions specific to 2-dimensional alists.
+;       This theory must be DISABLEd in order for the lemmas
+;       exported by the alist2 book to be applicable."
+  )
 
 (deftheory
   alist2-lemmas
@@ -594,7 +596,9 @@ To use at UW:
   alist2-disabled-lemmas
   '(alist2p-aref2-aset2-equal
     alist2p-aref2-aset2-not-equal)
-  :doc "A theory of all rules exported DISABLEd by the alist2 book.
-        Note that in order for these rules to be applicable you
-        will first need to (DISABLE ALIST2-FUNCTIONS).")
+; Matt K. mod 10/30/2015: :doc is no longer supported for deftheory.
+; :doc "A theory of all rules exported DISABLEd by the alist2 book.
+;       Note that in order for these rules to be applicable you
+;       will first need to (DISABLE ALIST2-FUNCTIONS)."
+  )
 

@@ -212,8 +212,8 @@
                                  MARK-LOCAL-INCLUDED-BOOKS
                                  CHK-RAISE-PORTCULLIS1
                                  CHK-RAISE-PORTCULLIS2
-                                 TILDE-*-BOOK-CHECK-SUMS-PHRASE
-                                 TILDE-*-BOOK-CHECK-SUMS-PHRASE1
+                                 TILDE-*-BOOK-HASH-PHRASE1
+                                 TILDE-*-BOOK-HASH-PHRASE
                                  INCLUDE-BOOK-ER
                                  *ILL-FORMED-CERTIFICATE-MSG*
                                  CHK-IN-PACKAGE CERTIFICATE-FILEP
@@ -511,7 +511,7 @@
                                  REMOVE-LAMBDAS-LST
                                  REMOVE-LAMBDAS UNPRETTYIFY
                                  UNPRETTYIFY/ADD-HYPS-TO-PAIRS VERIFY
-                                 PROOF-CHECKER PRINT-PC-STATE PRINT-GOAL
+                                 PROOF-BUILDER PRINT-PC-STATE PRINT-GOAL
                                  PRINT-DEFTHM STATE-FROM-INSTRUCTIONS
                                  STATE-STACK-FROM-INSTRUCTIONS
                                  PRINT-UNPROVED-GOALS-MESSAGE VERIFY-FN
@@ -1973,13 +1973,13 @@
                         STRIP-CADRS
                         ALL->=-LEN >=-LEN EQUIVALENCE-RELATIONP
                         GUARD-LST GUARD DEFUN-MODE
-                        PROGRAM-TERM-LISTP PROGRAM-TERMP
-                        LOGICALP PROGRAMP FDEFUN-MODE
+                        LOGIC-TERM-LIST-LISTP LOGIC-TERM-LISTP LOGIC-TERMP
+                        LOGIC-FNS-LIST-LISTP LOGIC-FNS-LISTP LOGIC-FNSP
+                        LOGICP PROGRAMP FDEFUN-MODE
                         SYMBOL-CLASS BODY STOBJS-OUT STOBJS-IN
-                        ARITY FORMALS COMPARE-CHECK-SUMS
-                        MAKE-CHECK-SUMS-FILE READ-FILE
+                        ARITY FORMALS READ-FILE
                         READ-FILE-ITERATE GET-CHECK-SUMS-LST
-                        CHECK-SUM-FILE CHECK-SUM-OBJ
+                        CHECK-SUM-OBJ
                         CHECK-SUM-OBJ1 CHECK-SUM-STRING
                         CHECK-SUM-STRING2 CHECK-SUM-STRING1
                         CHECK-SUM-NATURAL CHECK-SUM-INC

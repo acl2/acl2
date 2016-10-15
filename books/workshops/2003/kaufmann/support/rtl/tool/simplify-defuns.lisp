@@ -1,19 +1,6 @@
 ; simplify-defuns.lisp  --  see simplify-defuns.txt for documentation
 ; Copyright (C) 2002 Matt Kaufmann
-
-; This book is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
-
-; This book is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this book; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TABLE OF CONTENTS
@@ -63,7 +50,7 @@
          (hint-settings state)
          (cond ((null hint-settings)
                 (mv nil state))
-               (t (thanks-for-the-hint nil hint-settings state))) ;BB
+               (t (thanks-for-the-hint nil hint-settings nil state))) ;BB
          (er-let* ((pspv (load-hint-settings-into-pspv
                           t hint-settings saved-pspv nil wrld ctx state)))
            (cond

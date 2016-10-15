@@ -8,7 +8,7 @@
 ;; Original Author: Olin Shivers <shivers@cs.cmu.edu>
 ;; Keywords: processes, lisp
 
-;;; This file is part of GNU Emacs.
+;;; This file is for use with GNU Emacs.
 
 ;;; GNU Emacs is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -279,7 +279,7 @@ of `inferior-acl2-program').  Runs the hooks from
 			 (read-string "Run lisp: " inferior-acl2-program)
 		       inferior-acl2-program)))
   (if (not (executable-find inferior-acl2-program))
-      (error "ACL2 executable not found; evaluate %s"
+      (error "ACL2 executable not found; in Emacs, evaluate a suitable form:\n%s"
 	     '(setq inferior-acl2-program "<path_to_acl2>")))
   (if (not (comint-check-proc "*inferior-acl2*"))
       (let ((cmdlist (inferior-acl2-args-to-list cmd)))

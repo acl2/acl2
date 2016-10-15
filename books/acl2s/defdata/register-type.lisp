@@ -31,7 +31,7 @@ data last modified: [2014-08-06]
 ; domain of the fixer) and pass it through the enumerator definition
 ; to obtain the result of the fixer function. But we will probably use
 ; a separate F interpretation to directly generate a fixer from the
-; core defdata expressopn. Like P, we will store P^-1 in the builtin
+; core defdata expression. Like P, we will store P^-1 in the builtin
 ; combinator table.
 
 
@@ -55,11 +55,11 @@ data last modified: [2014-08-06]
   (b* (((mv kwd-alist rest) (extract-keywords ctx *register-type-keywords* args nil))
        ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
        ((unless (proper-symbolp name)) (er hard? ctx "~| ~x0 should be a proper symbol.~%" name))
-
-
+       
+       
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
-
+       
        (enum (get1 :enumerator kwd-alist))
        (enum/acc (get1 :enum/acc kwd-alist))
        (enum-formals (acl2::formals enum wrld))
@@ -77,11 +77,11 @@ data last modified: [2014-08-06]
         (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum enum-name))
        ((when (eq enum/acc enum/acc-name))
         (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum/acc enum/acc-name))
-
+       
        (enum/acc-default (s+ enum/acc-name '|-BUILTIN|))
        (kwd-alist (put-assoc-eq :enumerator enum-name kwd-alist))
        (kwd-alist (put-assoc-eq :enum/acc enum/acc-name kwd-alist))
-
+       
        (kwd-alist (put-assoc-eq :size (or (get1 :size kwd-alist) 't) kwd-alist))
        (kwd-alist (put-assoc-eq :theory-name (or (get1 :theory-name kwd-alist) (s+ name 'theory)) kwd-alist))
 
@@ -95,33 +95,40 @@ data last modified: [2014-08-06]
        (- (cw "** default value of ~x0 is ~x1" enum default-val))
 
        )
+    
+    `(ENCAPSULATE
+      nil
+      (LOGIC)
+      (WITH-OUTPUT
+       :SUMMARY (ACL2::FORM) :ON (ERROR)
+       (PROGN
+        ;;(defstub ,enum-name (*) => *)
+        (encapsulate 
+         (((,enum-name *) => * :formals ,enum-formals :guard ,enum-guard))
+         (local (defun ,enum-name ,enum-formals
+                  (declare (xargs :guard ,enum-guard))
+                  (declare (ignorable . ,enum-formals))
+                  ',default-val)))
+        
+        ;;(defstub ,enum/acc-name (* *) => (mv * *))
+        ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum-name))
+        (encapsulate 
+         (((,enum/acc-name * *) => (mv * *) :formals ,enum/acc-formals :guard ,enum/acc-guard))
+         (local (defun ,enum/acc-name ,enum/acc-formals
+                  (declare (xargs :guard ,enum/acc-guard))
+                  (declare (ignorable . ,enum/acc-formals))
+                  (mv ',default-val 0))))
 
+        (DEFTTAG :defdata-attach)
+        (DEFATTACH (,enum-name ,enum) :skip-checks t)
+        (DEFATTACH (,enum/acc-name ,(or enum/acc enum/acc-default)) :skip-checks t)
+        (DEFTTAG nil)
+        (TABLE TYPE-METADATA-TABLE ',name ',kwd-alist)
+        (VALUE-TRIPLE :REGISTERED)
+        )))
+     ))
 
-  `( ;(IN-THEORY (DISABLE ,enum))
-    ;;(defstub ,enum-name (*) => *)
-    (encapsulate
-       (((,enum-name *) => * :formals ,enum-formals :guard ,enum-guard))
-       (local (defun ,enum-name ,enum-formals
-                (declare (xargs :guard ,enum-guard))
-                (declare (ignorable . ,enum-formals))
-                ',default-val)))
-
-    ;;(defstub ,enum/acc-name (* *) => (mv * *))
-    ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum-name))
-    (encapsulate
-       (((,enum/acc-name * *) => (mv * *) :formals ,enum/acc-formals :guard ,enum/acc-guard))
-       (local (defun ,enum/acc-name ,enum/acc-formals
-                (declare (xargs :guard ,enum/acc-guard))
-                (declare (ignorable . ,enum/acc-formals))
-                (mv ',default-val 0))))
-
-    (DEFTTAG :defdata-attach)
-    (DEFATTACH (,enum-name ,enum) :skip-checks t)
-    (DEFATTACH (,enum/acc-name ,(or enum/acc enum/acc-default)) :skip-checks t)
-    (DEFTTAG nil)
-    (TABLE TYPE-METADATA-TABLE ',name ',kwd-alist))))
-
-(defmacro register-type (name &rest keys)
+(defmacro register-type (name &rest keys) 
   (b* ((verbosep (let ((lst (member :verbose keys)))
                    (and lst (cadr lst))))
        (ctx 'register-type)
@@ -129,8 +136,7 @@ data last modified: [2014-08-06]
         (er hard ctx "~| Keyword args predicate, enumerator are mandatory.~%")))
     `(with-output ,@(if verbosep '(:on :all) '(:on error)) :stack :push
        (make-event
-        (cons 'progn
-              (register-type-fn ',name ',keys ',ctx (current-package state) (w state)))))))
+        (register-type-fn ',name ',keys ',ctx (current-package state) (w state))))))
 
 
 

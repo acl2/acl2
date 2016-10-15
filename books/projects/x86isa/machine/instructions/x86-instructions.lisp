@@ -35,9 +35,7 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "x86-subroutine-instructions"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-
-;; [Shilpi]: Add FP instructions to their own book.
-(include-book "floating-point"
+(include-book "fp/x86-floating-point-instructions"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -309,23 +307,19 @@ Digital Random Number Generator Guide</a> for more details.</p>"
           (if (logbitp #.*w* rex-byte)
               8
             4)))
-       ((mv rand-and-cf x86)
+       ((mv cf rand x86)
         (HW_RND_GEN operand-size x86))
 
        ;; (- (cw "~%~%HW_RND_GEN: If RDRAND does not return the result you ~
        ;;         expected (or returned an error), then you might want to check whether these ~
        ;;         books were compiled using x86isa_exec set to t. See ~
-       ;;         :doc build-instructions.~%~%"))
+       ;;         :doc x86isa-build-instructions.~%~%"))
 
        ((when (ms x86))
         (!!ms-fresh :x86-rdrand (ms x86)))
-       ((when (or (not (consp rand-and-cf))
-                  (not (unsigned-byte-p (ash operand-size 3) (car rand-and-cf)))
-                  (not (unsigned-byte-p 1 (cdr rand-and-cf)))))
+       ((when (or (not (unsigned-byte-p 1 cf))
+                  (not (unsigned-byte-p (ash operand-size 3) rand))))
         (!!ms-fresh :x86-rdrand-ill-formed-outputs (ms x86)))
-
-       (rand (car rand-and-cf))
-       (cf (cdr rand-and-cf))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
@@ -337,124 +331,6 @@ Digital Random Number Generator Guide</a> for more details.</p>"
                    (x86 (!flgi #.*sf* 0 x86))
                    (x86 (!flgi #.*of* 0 x86)))
               x86))
-       (x86 (!rip temp-rip x86)))
-      x86))
-
-;; ======================================================================
-;; INSTRUCTION: CMPSS/CMPSD
-;; ======================================================================
-
-;; Floating-Point Instruction:
-
-(def-inst x86-cmpss/cmpsd-Op/En-RMI
-
-  ;; Shilpi to Cuong: Put as many type decl. as necessary --- look at
-  ;; (disassemble$ x86-cmpss/cmpsd-Op/En-RMI) to figure out where you
-  ;; need them.
-
-  :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPSD #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI)
-    (add-to-implemented-opcodes-table 'CMPSS #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI))
-
-  :short "Compare scalar single/double precision floating-point values"
-
-  :long
-  "<h3>Op/En = RMI: \[OP XMM, XMM/M, IMM\]</h3>
-  F3 0F C2: CMPSS xmm1, xmm2/m32, imm8<br/>
-  F2 0F C2: CMPSD xmm1, xmm2/m64, imm8<br/>"
-
-  :sp/dp t
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :body
-  (b* ((ctx 'x86-cmpss/cmpsd-Op/En-RMI)
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       ((the (integer 4 8) operand-size)
-        (if (equal sp/dp #.*OP-DP*) 8 4))
-
-       (xmm-index ;; Shilpi: Type Decl.?
-        (reg-index reg rex-byte #.*r*))
-       (xmm
-        (xmmi-size operand-size xmm-index x86))
-
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-
-       (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
-
-       ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) ?v-addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes #.*xmm-access* operand-size
-                                               p2 p4? temp-rip
-                                               rex-byte r/m mod sib 1 x86))
-
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
-
-       ((mv flg1 (the (unsigned-byte 8) imm) x86)
-        (rm-size 1 (the (signed-byte #.*max-linear-address-size*) temp-rip) :x x86))
-
-       ((when flg1)
-        (!!ms-fresh :rm-size-error flg1))
-
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (1+ temp-rip))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
-
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
-
-       ((mv flg2 result (the (unsigned-byte 32) mxcsr))
-        (if (equal sp/dp #.*OP-DP*)
-            (dp-sse-cmp (n02 imm) xmm xmm/mem (mxcsr x86))
-          (sp-sse-cmp (n02 imm) xmm xmm/mem (mxcsr x86))))
-
-       ((when flg2)
-        (if (equal sp/dp #.*OP-DP*)
-            (!!ms-fresh :dp-cmp flg2)
-          (!!ms-fresh :sp-cmp flg2)))
-
-       ;; Update the x86 state:
-       (x86 (!mxcsr mxcsr x86))
-
-       (x86 (!xmmi-size operand-size xmm-index result x86))
-
        (x86 (!rip temp-rip x86)))
       x86))
 

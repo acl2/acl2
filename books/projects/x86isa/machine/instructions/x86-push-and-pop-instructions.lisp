@@ -20,14 +20,68 @@
   :short "PUSH: 50+rw/rd"
   :long "<p>Op/En: O</p>
    <p><tt>50+rw/rd r16/r64</tt>: \[PUSH E\]</p>
-   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>
-
-<p>PUSH doesn't have a separate instruction semantic function, unlike
-other opcodes like ADD, SUB, etc. I've just coupled the decoding with
-the execution in this case.</p>"
+   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+  :body
+
+  (b* ((ctx 'x86-push-general-register)
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock)
+        (!!ms-fresh :lock-prefix prefixes))
+
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :group-3-prefix prefixes)))
+       ((the (integer 1 8) operand-size)
+        (if p3?
+            2
+          ;; 4-byte operand size is N.E. in 64-bit mode
+          ;; See http://www.x86-64.org/documentation/assembly.html
+          8))
+       (rsp (rgfi *rsp* x86))
+       (new-rsp (- rsp operand-size))
+       ((when (not (canonical-address-p new-rsp)))
+        (!!ms-fresh :new-rsp-not-canonical new-rsp)) ;; #SS
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand
+                                new-rsp
+                                (the (integer 0 15)
+                                  (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :new-rsp-not-aligned new-rsp)) ;; #AC
+
+       ;; See "Z" in http://ref.x86asm.net/geek.html#x50
+       (reg (mbe :logic (loghead 3 opcode)
+                 :exec (the (unsigned-byte 3)
+                         (logand #x07 opcode))))
+       ;; See Intel Table 3.1, p.3-3, Vol. 2-A
+       (val (rgfi-size operand-size (reg-index reg rex-byte #.*b*) rex-byte
+                       x86))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       ;; Update the x86 state:
+       ((mv flg x86)
+        (wm-size operand-size
+                 (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                 val x86))
+       ((when flg) ;; Would also handle bad rsp values.
+        (!!ms-fresh :SS-error-wm-size-error flg))
+
+       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
+       (x86 (!rip temp-rip x86)))
+
+    x86)
+
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'PUSH #x50 '(:nil nil)
@@ -45,50 +99,7 @@ the execution in this case.</p>"
     (add-to-implemented-opcodes-table 'PUSH #x56 '(:nil nil)
                                       'x86-push-general-register)
     (add-to-implemented-opcodes-table 'PUSH #x57 '(:nil nil)
-                                      'x86-push-general-register))
-
-  :body
-
-  (b* ((ctx 'x86-push-general-register)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
-       ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          ;; See http://www.x86-64.org/documentation/assembly.html
-          8))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp operand-size))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp))
-
-       ;; See "Z" in http://ref.x86asm.net/geek.html#x50
-       (reg (mbe :logic (loghead 3 opcode)
-                 :exec (the (unsigned-byte 3)
-                         (logand #x07 opcode))))
-       ;; See Intel Table 3.1, p.3-3, Vol. 2-A
-       (val (rgfi-size operand-size (reg-index reg rex-byte #.*b*) rex-byte
-                       x86))
-
-       ;; Update the x86 state:
-
-       ((mv flg x86)
-        (wm-size operand-size
-                 (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                 val x86))
-       ((when flg) ;; Would also handle bad rsp values.
-        (!!ms-fresh :SS-error-wm-size-error flg))
-
-       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
-       (x86 (!rip temp-rip x86)))
-
-      x86))
+                                      'x86-push-general-register)))
 
 (def-inst x86-push-Ev
   :parents (one-byte-opcodes)
@@ -108,15 +119,12 @@ extension (ModR/m.reg = 6).</p>"
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
   :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #xFF '(:reg 6)
-                                      'x86-push-Ev))
+  (progn (add-to-implemented-opcodes-table 'PUSH #xFF '(:reg 6) 'x86-push-Ev))
 
   :body
 
   (b* ((ctx 'x86-push-Ev)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -137,12 +145,27 @@ extension (ModR/m.reg = 6).</p>"
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp))
+        (!!ms-fresh :new-rsp-not-canonical new-rsp)) ;; #SS
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand
+                                new-rsp
+                                (the (integer 0 15)
+                                  (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :new-rsp-not-aligned new-rsp)) ;; #AC
 
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size
+         ;; inst-ac? is nil here because we only need increment-RIP-by
+         ;; from this function.
+         nil
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -176,7 +199,7 @@ extension (ModR/m.reg = 6).</p>"
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 (def-inst x86-push-I
 
@@ -222,7 +245,11 @@ decoding with the execution in this case.</p>"
        ((the (integer 1 8) imm-size)
         (if (equal opcode #x6A)
             1
-          (if p3? 2 4)))
+          (if (logbitp #.*w* rex-byte)
+              4
+            (if p3?
+                2
+              4))))
        ((the (integer 1 8) operand-size)
         (if p3?
             2
@@ -331,6 +358,15 @@ the execution in this case.</p>"
        ((the (unsigned-byte 16) val)
         (seg-visiblei (if (eql opcode #xA0) *FS* *GS*) x86))
 
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Update the x86 state:
 
        ((mv flg x86)
@@ -367,30 +403,10 @@ the execution in this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'POP #x58 '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x59 '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5A '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5B '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5C '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5D '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5E '(:nil nil)
-                                      'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5F '(:nil nil)
-                                      'x86-pop-general-register))
-
   :body
 
   (b* ((ctx 'x86-pop-general-register)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -404,7 +420,12 @@ the execution in this case.</p>"
           8))
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :rsp-not-canonical rsp))
+        (!!ms-fresh :rsp-not-canonical rsp)) ;; #SS
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :rsp-not-aligned rsp)) ;; #AC
 
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
@@ -417,11 +438,21 @@ the execution in this case.</p>"
 
        ((mv flg0 val x86)
         (rm-size operand-size rsp :r x86))
-       ((when flg0) ;; #SS exception?
+       ((when flg0)
         (!!ms-fresh :rm-size-error flg0))
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x58.
        (reg (logand opcode #x07))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
        ;; Update the x86 state:
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86
@@ -430,7 +461,18 @@ the execution in this case.</p>"
                     val rex-byte x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86)
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'POP #x58 '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x59 '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x5A '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x5B '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x5C '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x5D '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x5E '(:nil nil) 'x86-pop-general-register)
+    (add-to-implemented-opcodes-table 'POP #x5F '(:nil nil) 'x86-pop-general-register)))
 
 (def-inst x86-pop-Ev
   :parents (one-byte-opcodes)
@@ -476,7 +518,12 @@ extension (ModR/m.reg = 0).</p>"
 
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :rsp-not-canonical rsp))
+        (!!ms-fresh :rsp-not-canonical rsp)) ;; #SS
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :rsp-not-aligned rsp)) ;; #AC
 
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
@@ -490,13 +537,15 @@ extension (ModR/m.reg = 0).</p>"
 
        ((mv flg0 val x86)
         (rm-size operand-size rsp :r x86))
-       ((when flg0) ;; #SS exception?
+       ((when flg0)
         (!!ms-fresh :rm-size-error flg0))
 
        ((mv flg1 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg1) ;; #SS exception?
         (!!ms-fresh :x86-effective-addr-error flg1))
 
@@ -527,7 +576,9 @@ extension (ModR/m.reg = 0).</p>"
 
        ((mv flg3 x86)
         (x86-operand-to-reg/mem
-         operand-size val v-addr rex-byte r/m mod x86))
+         operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         val v-addr rex-byte r/m mod x86))
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
@@ -552,12 +603,11 @@ extension (ModR/m.reg = 0).</p>"
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-
        ;; Update the x86 state:
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 ;; (def-inst x86-pop-segment-register
 ;;   :parents (one-byte-opcodes)
@@ -706,7 +756,12 @@ extension (ModR/m.reg = 0).</p>"
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp))
+        (!!ms-fresh :new-rsp-not-canonical new-rsp)) ;; #SS
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand new-rsp (the (integer 0 15) (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :new-rsp-not-aligned new-rsp)) ;; #AC
 
        ((the (unsigned-byte 32) eflags) (rflags x86))
 
@@ -719,17 +774,22 @@ extension (ModR/m.reg = 0).</p>"
           ;; zeroed out.
           (otherwise (logand #x3cffff eflags))))
 
+       ;; We don't need to check for valid length for one-byte
+       ;; instructions.  The length will be more than 15 only if
+       ;; get-prefixes fetches 15 prefixes, and that error will be
+       ;; caught in x86-fetch-decode-execute, that is, before control
+       ;; reaches this function.
+
        ;; Update the x86 state:
        ((mv flg x86)
         (wm-size operand-size
                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
                  eflags x86))
-       ;; Raise a #SS exception.
-       ((when flg) ; Would also handle "bad" rsp values.
+       ((when flg)
         (!!ms-fresh :wm-size-error flg))
        (x86 (!rip temp-rip x86))
        (x86 (!rgfi *rsp* new-rsp x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: POPF/POPFQ
@@ -745,9 +805,8 @@ extension (ModR/m.reg = 0).</p>"
   ;; loads the lower 32 bits into rflags, and zero-extends the upper
   ;; bits of eflags."
 
-  ;; TO-DO@Shilpi: Since we do not support the CS segment in our model
-  ;; yet, we do not have any notion of privileges.  For the time
-  ;; being, I am going to assume that the CPL is 0.
+  ;; TO-DO@Shilpi: For the time being, I am going to assume that the
+  ;; CPL is 0.
 
   ;; 64-bit mode operation of x86-popf:
 
@@ -813,7 +872,12 @@ extension (ModR/m.reg = 0).</p>"
           8))
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :rsp-not-canonical rsp))
+        (!!ms-fresh :rsp-not-canonical rsp)) ;; #SS
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :rsp-not-aligned rsp)) ;; #AC
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
        ;; Raise a #SS exception.
@@ -826,7 +890,7 @@ extension (ModR/m.reg = 0).</p>"
 
        ((mv flg0 val x86)
         (rm-size operand-size rsp :r x86))
-       ((when flg0) ;; #SS exception?
+       ((when flg0)
         (!!ms-fresh :rm-size-error flg0))
 
        ((the (unsigned-byte 32) val)
@@ -854,6 +918,12 @@ extension (ModR/m.reg = 0).</p>"
                   (x86 (!flgi #.*vif* 0 x86)))
              x86))))
 
+       ;; We don't need to check for valid length for one-byte
+       ;; instructions.  The length will be more than 15 only if
+       ;; get-prefixes fetches 15 prefixes, and that error will be
+       ;; caught in x86-fetch-decode-execute, that is, before control
+       ;; reaches this function.
+
        ((when (mbe :logic (not (canonical-address-p temp-rip))
                    :exec (<= #.*2^47*
                              (the (signed-byte
@@ -861,6 +931,6 @@ extension (ModR/m.reg = 0).</p>"
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

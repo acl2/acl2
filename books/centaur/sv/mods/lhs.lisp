@@ -34,16 +34,19 @@
 (include-book "../svex/4vmask")
 (include-book "../svex/vars")
 (include-book "../svex/rsh-concat")
-(include-book "centaur/misc/1d-arr" :dir :system)
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/1d-arr" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "std/alists/hons-remove-assoc" :dir :system) ;; bozo
 (include-book "defsort/defsort" :dir :system)
+(local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/lists/update-nth" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/alists/fast-alist-clean" :dir :system))
+(local (include-book "centaur/vl/util/default-hints" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
 
@@ -106,15 +109,58 @@
                   (lhssvex-p xx)))))))
 
 
-(fty::deftagsum lhatom
-  :parents (lhs)
-  (:z nil)
-  (:var ((name svar-p)
-         (rsh natp :rule-classes :type-prescription))))
+(encapsulate nil
+  (local (defthm car-of-svar
+           (implies (and (svar-p x)
+                         (consp x))
+                    (equal (car x) :var))
+           :hints(("Goal" :in-theory (enable svar-p)))))
+  (local (defthm cdr-of-svar
+           (implies (and (svar-p x)
+                         (consp x))
+                    (consp (cdr x)))
+           :hints(("Goal" :in-theory (enable svar-p)))))
+
+;; var         rsh       0             1
+;; :z                  (:z . 0)    (:z . 1)
+;; :var                :var        (:var . 1)
+;; atom                atom        (atom . 1)
+;; (:var . rest)   (:var . rest)  ((:var . rest) . 1)
+
+  (fty::defflexsum lhatom
+    (:z
+     :cond (eq x :z)
+     :fields nil
+     :ctor-body ':z)
+    (:var
+     :cond t
+     :shape (or (atom x)
+                (and (eq (car x) :var)
+                     (svar-p x))
+                (or (eq (car x) :z)
+                    (not (eql 0 (cdr x)))))
+     :fields ((name :acc-body (if (or (atom x)
+                                      (and (eq (car x) :var)
+                                           (consp (cdr x))))
+                                  x
+                                (car x))
+                    :type svar)
+              (rsh :acc-body (if (or (atom x)
+                                     (and (eq (car x) :var)
+                                          (consp (cdr x))))
+                                 0
+                               (cdr x))
+                   :type natp
+                   :rule-classes (:rewrite :type-prescription)))
+     :ctor-body (if (and (eql 0 rsh)
+                         (not (eq name :z)))
+                    name
+                  (cons name rsh)))))
+
 
 (local (defthm lhatom-z-by-kind
            (implies (lhatom-p x)
-                    (equal (equal '(:z) x)
+                    (equal (equal :z x)
                            (equal (lhatom-kind x) :z)))
            :hints (("goal" :use lhatom-fix-when-z
                     :in-theory (disable lhatom-fix-when-z)))))
@@ -138,7 +184,7 @@
   :returns (xx svex-p)
   (lhatom-case x
     :z (svex-quote (4vec-z))
-    :var (svex-call 'rsh (list (svex-quote (2vec x.rsh)) (svex-var x.name))))
+    :var (svex-rsh x.rsh (svex-var x.name)))
   ///
   (deffixequiv lhatom->svex)
 
@@ -148,10 +194,46 @@
     :hints(("Goal" :in-theory (enable lhatom-eval svex-eval svex-apply
                                       4veclist-nth-safe svexlist-eval)))))
 
-(defprod lhrange
-  :parents (lhs)
-  ((w   posp :rule-classes :type-prescription)
-   (atom lhatom)))
+(encapsulate nil
+  (local
+   (defthm integerp-car-of-lhatom
+     (implies (lhatom-p x)
+              (not (integerp (car x))))
+     :hints(("Goal" :in-theory (enable lhatom-p svar-p)))))
+
+  (defflexsum lhrange
+    :parents (lhs)
+    :kind nil
+    (:lhrange
+     :cond t
+     :shape (or (and (consp x)
+                     (integerp (car x))
+                     (not (eql (car x) 1)))
+                (lhatom-p x))
+     :fields ((w :acc-body (if (and (consp x)
+                                    (integerp (car x)))
+                               (car x)
+                             1)
+                 :type posp
+                 :rule-classes (:rewrite :type-prescription))
+              (atom :acc-body (if (and (consp x)
+                                       (integerp (car x)))
+                                  (cdr x)
+                                x)
+                    :type lhatom))
+     :ctor-body (if (eql w 1)
+                    atom
+                  (cons w atom))
+     :type-name lhrange))
+
+  (defthm lhrange-type
+    (let ((x (lhrange w atom)))
+      (or (consp x)
+          (and (symbolp x)
+               (not (booleanp x)))
+          (stringp x)))
+    :hints(("Goal" :in-theory (enable lhatom-fix)))
+    :rule-classes :type-prescription))
 
 (define lhrange-eval ((x lhrange-p) (env svex-env-p))
   :parents (lhrange)
@@ -182,7 +264,7 @@
 
 
 (deflist lhs :elt-type lhrange :true-listp t
-  :parents (svex)
+  :parents (svmods)
   :short "A shorthand format for an expression consisting of a concatenation of parts of variables."
   :long "<p>LHS objects are used in flattening the module hierarchy.  They are
 called LHS objects because they are also used to represent the left-hand sides
@@ -191,6 +273,8 @@ of assignments.</p>
 <p>An LHS object is simply a list of @(see lhrange) objects.  The meaning of an
 LHS object is the concatenations of the bits of all of its lhrange objects, in
 the order given (LSBs-first).</p>")
+
+
 
 (define lhs-eval ((x lhs-p) (env svex-env-p))
   :parents (lhs)
@@ -375,7 +459,7 @@ the order given (LSBs-first).</p>")
                     (lhs-eval (list x y) env)))
     :hints(("Goal" :in-theory (e/d (lhrange-eval
                                     lhs-eval lhatom-eval
-                                      4vec-concat 4vec-rsh)
+                                      4vec-concat 4vec-rsh 4vec-shift-core)
                                    (bitops::logapp-of-j-0))))))
 
   ;; (defthm lhrange-combine-width
@@ -433,6 +517,15 @@ the order given (LSBs-first).</p>")
   ;;                   (lhrange (+ (lhrange->w x) (lhrange->w y))
   ;;                            (lhrange->atom x))))))
 
+
+
+(local (defthmd lhrange->atom-when-z
+         (implies (equal (lhatom-kind (lhrange->atom x)) :z)
+                  (equal (lhrange->atom x) :z))
+         :hints (("goal" :use ((:instance lhatom-fix-when-z
+                                (x (lhrange->atom x))))
+                  :in-theory (disable lhatom-fix-when-z)))))
+
 (define lhs-cons ((x lhrange-p) (y lhs-p))
   :returns (cons lhs-p)
   (if (atom y)
@@ -480,13 +573,6 @@ the order given (LSBs-first).</p>")
   ;;   (implies (eql (len (lhs-cons x y)) (+ 1 (len y)))
   ;;            (equal (lhs-cons (car (lhs-cons x y)) (cdr (lhs-cons x y)))
   ;;                   (lhs-cons x y))))
-
-  (local (defthmd lhrange->atom-when-z
-           (implies (equal (lhatom-kind (lhrange->atom x)) :z)
-                    (equal (lhrange->atom x) '(:z)))
-           :hints (("goal" :use ((:instance lhatom-fix-when-z
-                                  (x (lhrange->atom x))))
-                    :in-theory (disable lhatom-fix-when-z)))))
 
   (defthm lhs-cons-of-lhs-cons
     (implies (lhrange-combine x y)
@@ -536,6 +622,7 @@ the order given (LSBs-first).</p>")
     (implies (not (consp x))
              (equal (lhs-norm x) nil))
     :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
 
   (defthm lhs-norm-of-lhs-cons
     (equal (lhs-norm (lhs-cons x y))
@@ -608,13 +695,6 @@ the order given (LSBs-first).</p>")
   ///
   (deffixequiv lhs-concat)
 
-  (local (defthmd lhrange->atom-when-z
-           (implies (equal (lhatom-kind (lhrange->atom x)) :z)
-                    (equal (lhrange->atom x) '(:z)))
-           :hints (("goal" :use ((:instance lhatom-fix-when-z
-                                  (x (lhrange->atom x))))
-                    :in-theory (disable lhatom-fix-when-z)))))
-
   (local (defthm lhrange-identity
            (implies (equal a (lhrange->atom x))
                     (equal (lhrange (lhrange->w x) a)
@@ -684,7 +764,7 @@ the order given (LSBs-first).</p>")
             :in-theory (e/d (lhs-eval lhrange-eval lhatom-eval)
                             ((:d lhs-rsh))))
            (and stable-under-simplificationp
-                '(:in-theory (e/d (4vec-rsh 4vec-concat)
+                '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core)
                                   (lhs-rsh))))))
 
   (defthm lhs-width-of-lhs-rsh
@@ -822,7 +902,7 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (e/d (lhatom-vars)
                                    ((:d svex->lhs-bound)
                                     append default-car default-cdr not
-                                    member acl2::subsetp-member))
+                                    member))
             :induct (svex->lhs-bound w x)
             :expand ((svex->lhs-bound w x)))))
 
@@ -851,7 +931,7 @@ the order given (LSBs-first).</p>")
                               4vec-index-p)
                              ((:d svex->lhs-bound))))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (4vec-rsh 4vec-concat) (svex->lhs-bound)))))))
+                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core) (svex->lhs-bound)))))))
 
 
 (define svex->lhs ((x svex-p))
@@ -881,7 +961,7 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (e/d (lhatom-vars)
                                    ((:d svex->lhs)
                                     append default-car default-cdr not
-                                    member acl2::subsetp-member))
+                                    member))
             :induct (svex->lhs x)
             :expand ((svex->lhs x)))))
 
@@ -907,7 +987,7 @@ the order given (LSBs-first).</p>")
                               4vec-index-p)
                              ((:d svex->lhs))))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (4vec-rsh 4vec-concat) (svex->lhs)))))))
+                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core) (svex->lhs)))))))
 
 
 (fty::deftagsum lhbit
@@ -935,7 +1015,7 @@ the order given (LSBs-first).</p>")
     (equal (lhbit-eval (lhatom-bitproj idx x) env)
            (4vec-bit-index idx (lhatom-eval x env)))
     :hints(("Goal" :in-theory (enable lhbit-eval lhatom-eval
-                                      4vec-bit-index 4vec-rsh)))))
+                                      4vec-bit-index 4vec-rsh 4vec-shift-core)))))
 
 (define lhrange-bitproj ((idx natp) (x lhrange-p))
   :returns (bit lhbit-p)
@@ -1023,7 +1103,7 @@ the order given (LSBs-first).</p>")
             :induct (ind idx w x y)
             :do-not-induct t)
            (and stable-under-simplificationp
-                '(:expand ((lhatom-bitproj idx '(:z))))))
+                '(:expand ((lhatom-bitproj idx :z)))))
     :otf-flg t)
 
   (defthm lhs-bitproj-of-lhs-rsh
@@ -1208,7 +1288,9 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (enable lhs-rest)))))
 
 (define lhs-decomp-aux ((w posp) (prev lhatom-p) (x lhs-p))
-  :measure (len x)
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len x)
   :verify-guards nil
   :enabled t
   (mbe :logic (mv (lhs-first-aux w prev x)
@@ -1375,49 +1457,11 @@ the order given (LSBs-first).</p>")
                    (append a b)))))
 
 
-(define svex-rsh ((sh natp) (x svex-p))
-  :returns (rsh svex-p)
-  (if (zp sh)
-      (svex-fix x)
-    (svex-call 'rsh (list (svex-quote (2vec sh)) x)))
-  ///
-  (deffixequiv svex-rsh)
-
-  (defthm svex-rsh-correct
-    (equal (svex-eval (svex-rsh sh x) env)
-           (svex-eval (svex-call 'rsh (list (svex-quote (2vec (nfix sh))) x)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
-            :expand ((:free (f a) (svex-eval (svex-call f a) env))
-                     (svex-eval 0 env)))))
-
-  (defthm svex-rsh-vars
-    (implies (not (member v (svex-vars x)))
-             (not (member v (svex-vars (svex-rsh sh x)))))))
-
-(define svex-concat ((w natp) (x svex-p) (y svex-p))
-  :returns (concat svex-p)
-  (if (zp w)
-      (svex-fix y)
-    (svex-call 'concat (list (svex-quote (2vec w)) x y)))
-  ///
-  (deffixequiv svex-concat)
-
-  (defthm svex-concat-correct
-    (equal (svex-eval (svex-concat w x y) env)
-           (svex-eval (svex-call 'concat (list (svex-quote (2vec (nfix w))) x y)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
-            :expand ((:free (f a) (svex-eval (svex-call f a) env))
-                     (svex-eval 0 env)))))
-
-  (defthm svex-concat-vars
-    (implies (and (not (member v (svex-vars x)))
-                  (not (member v (svex-vars y))))
-             (not (member v (svex-vars (svex-concat w x y)))))))
 
 
 
 
-(define svex-lhsrewrite ((x svex-p) (shift natp) (w natp))
+(define svex-lhsrewrite-aux ((x svex-p) (shift natp) (w natp))
   :returns (xx svex-p)
   :verify-guards nil
   :measure (svex-count x)
@@ -1437,30 +1481,14 @@ the order given (LSBs-first).</p>")
                      (xw (2vec->val (svex-quote->val (first x.args))))
                      ((when (<= xw shift))
                       (svex-concat xw (svex-quote (4vec-z))
-                                   (svex-lhsrewrite (third x.args)
+                                   (svex-lhsrewrite-aux (third x.args)
                                                     (- shift xw)
                                                     w)))
                      ((when (<= (+ shift w) xw))
-                      (svex-lhsrewrite (second x.args) shift w))
-                     (low (svex-lhsrewrite (second x.args) shift (- xw shift)))
-                     (high (svex-lhsrewrite (third x.args) 0 (- (+ shift w) xw))))
+                      (svex-lhsrewrite-aux (second x.args) shift w))
+                     (low (svex-lhsrewrite-aux (second x.args) shift (- xw shift)))
+                     (high (svex-lhsrewrite-aux (third x.args) 0 (- (+ shift w) xw))))
                   (svex-concat xw low high)))
-        (zerox
-         (b* (((unless (and (eql (len x.args) 2)
-                            (eq (svex-kind (first x.args)) :quote)
-                            (4vec-index-p (svex-quote->val (first x.args)))))
-               (svex-fix x))
-              (xw (2vec->val (svex-quote->val (first x.args))))
-              ((when (<= xw shift))
-               (svex-concat xw (svex-quote (4vec-z))
-                            (svex-lhsrewrite 0
-                                             (- shift xw)
-                                             w)))
-              ((when (<= (+ shift w) xw))
-               (svex-lhsrewrite (second x.args) shift w))
-              (low (svex-lhsrewrite (second x.args) shift (- xw shift)))
-              (high (svex-lhsrewrite 0 0 (- (+ shift w) xw))))
-           (svex-concat xw low high)))
         (signx
          (b* (((unless (and (eql (len x.args) 2)
                             (eq (svex-kind (first x.args)) :quote)
@@ -1470,22 +1498,22 @@ the order given (LSBs-first).</p>")
               ((when (<= xw shift))
                (svex-fix x))
               ((when (<= (+ shift w) xw))
-               (svex-lhsrewrite (second x.args) shift w)))
+               (svex-lhsrewrite-aux (second x.args) shift w)))
            (svex-fix x)))
         (rsh (b* (((unless (and (eql (len x.args) 2)
                                 (eq (svex-kind (first x.args)) :quote)
                                 (4vec-index-p (svex-quote->val (first x.args)))))
                    (svex-fix x))
                   (xsh (2vec->val (svex-quote->val (first x.args)))))
-               (svex-rsh xsh (svex-lhsrewrite (second x.args) (+ shift xsh) w))))
+               (svex-rsh xsh (svex-lhsrewrite-aux (second x.args) (+ shift xsh) w))))
         (otherwise (svex-fix x)))))
   ///
-  (deffixequiv svex-lhsrewrite
+  (deffixequiv svex-lhsrewrite-aux
     :hints (("goal" :induct t
-             :expand ((svex-lhsrewrite (svex-fix x) shift w)
-                      (svex-lhsrewrite x (nfix shift) w)
-                      (svex-lhsrewrite x shift (nfix w))))))
-  (verify-guards svex-lhsrewrite)
+             :expand ((svex-lhsrewrite-aux (svex-fix x) shift w)
+                      (svex-lhsrewrite-aux x (nfix shift) w)
+                      (svex-lhsrewrite-aux x shift (nfix w))))))
+  (verify-guards svex-lhsrewrite-aux)
 
   (local (defthm 4vec-zero-ext-is-concat
            (equal (4vec-zero-ext n x)
@@ -1509,11 +1537,11 @@ the order given (LSBs-first).</p>")
                              (2vec->val extw)))
                     (equal (4vec-concat w (4vec-rsh shift (4vec-sign-ext extw x)) y)
                            (4vec-concat w (4vec-rsh shift x) y)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-sign-ext)))))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-sign-ext)))))
 
 
-  (defthm svex-lhsrewrite-correct-lemma
-    (equal (4vec-concat (2vec (nfix w)) (4vec-rsh (2vec (nfix shift)) (svex-eval (svex-lhsrewrite x shift w) env)) (4vec-z))
+  (defthm svex-lhsrewrite-aux-correct-lemma
+    (equal (4vec-concat (2vec (nfix w)) (4vec-rsh (2vec (nfix shift)) (svex-eval (svex-lhsrewrite-aux x shift w) env)) (4vec-z))
            (4vec-concat (2vec (nfix w)) (4vec-rsh (2vec (nfix shift)) (svex-eval x env)) (4vec-z)))
     :hints (("goal" :expand ((svex-eval x env)
                              (:free (fn args) (svex-eval (svex-call fn args) env))
@@ -1525,14 +1553,196 @@ the order given (LSBs-first).</p>")
                                 equal-of-4vec-concat)
              :induct t)))
 
+  (defthm svex-lhsrewrite-aux-vars
+    (implies (not (member v (svex-vars x)))
+             (not (member v (svex-vars (svex-lhsrewrite-aux x sh w)))))
+    :hints (("goal" :induct (svex-lhsrewrite-aux x sh w)
+             :expand ((svex-lhsrewrite-aux x sh w)
+                      (svex-vars x))
+             :in-theory (disable (:d svex-lhsrewrite-aux)
+                                 member)))))
+
+(define svex-int ((x integerp))
+  :returns (svex svex-p)
+  :inline t
+  (svex-quote (2vec (lifix x)))
+  ///
+  (defret svex-int-correct
+    (equal (svex-eval svex env) (2vec (ifix x))))
+
+  (defret svex-int-vars
+    (equal (svex-vars (svex-int x)) nil)))
+
+
+
+(define svex-lhs-preproc-blkrev ((nbits natp)
+                                 (blocksz posp)
+                                 (x svex-p))
+  :returns (blkrev svex-p)
+  :measure (nfix nbits)
+  :verify-guards nil
+  (b* ((nbits (lnfix nbits))
+       (blocksz (lposfix blocksz))
+       ((when (< nbits blocksz))
+        (svcall concat (svex-int nbits) x 0))
+       (next-nbits (- nbits blocksz))
+       (rest (svex-lhs-preproc-blkrev next-nbits blocksz (svcall rsh (svex-int blocksz) x))))
+    (svcall concat (svex-quote (2vec next-nbits)) rest
+            (svcall concat (svex-int blocksz) x 0)))
+  ///
+  (verify-guards svex-lhs-preproc-blkrev)
+  (defret svex-lhs-preproc-blkrev-correct
+    (equal (svex-eval blkrev env)
+           (4vec-rev-blocks (2vec (nfix nbits)) (2vec (pos-fix blocksz))
+                            (svex-eval x env)))
+    :hints (("goal" :induct t)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable svex-apply svexlist-eval 4vec-concat 4vec-rsh 4vec-shift-core
+                                      4vec-rev-blocks rev-blocks)))))
+
+  (defret svex-lhs-preproc-blkrev-vars
+    (equal (svex-vars blkrev)
+           (svex-vars x))
+    :hints(("Goal" :in-theory (enable svexlist-vars)))))
+
+(defines svex-lhs-preproc
+  :verify-guards nil
+  (define svex-lhs-preproc ((x svex-p))
+    :short "Preprocesses an expression into one that only contains concat, rsh, and
+          signx operators."
+    :long "<p>Handles zerox, blkrev, bitsel operators.</p>"
+    :measure (svex-count x)
+    :returns (new-x svex-p)
+    (b* ((x (svex-fix x)))
+      (svex-case x
+        :call (case x.fn
+                ((concat rsh signx)
+                 (change-svex-call x :args (svexlist-lhs-preproc x.args)))
+
+                ((partsel)
+                 (b* (((unless (and (eql (len x.args) 3)
+                                    (svex-case (first x.args) :quote)
+                                    (4vec-index-p (svex-quote->val (first x.args)))))
+                       x))
+                   (svcall concat
+                           (second x.args)
+                           (svcall rsh (first x.args)
+                                   (svex-lhs-preproc (third x.args)))
+                           0)))
+
+                (zerox
+                 (b* (((unless (eql (len x.args) 2)) x))
+                   (svcall concat
+                           (svex-lhs-preproc (first x.args))
+                           (svex-lhs-preproc (second x.args))
+                           0)))
+
+                (blkrev
+                 (b* (((unless (and (eql (len x.args) 3)
+                                    (svex-case (first x.args) :quote)
+                                    (4vec-index-p (svex-quote->val (first x.args)))
+                                    (svex-case (second x.args) :quote)
+                                    (2vec-p (svex-quote->val (second x.args)))
+                                    (< 0 (2vec->val (svex-quote->val (second x.args))))))
+                       x))
+                   (svex-lhs-preproc-blkrev
+                    (2vec->val (svex-quote->val (first x.args)))
+                    (2vec->val (svex-quote->val (second x.args)))
+                    (svex-lhs-preproc (third x.args)))))
+
+                (bitsel
+                 (b* (((unless (and (eql (len x.args) 2)
+                                    (svex-case (first x.args) :quote)
+                                    (4vec-index-p (svex-quote->val (first x.args)))))
+                       x))
+                   (svcall concat 1 (svcall rsh (first x.args)
+                                            (svex-lhs-preproc (second x.args)))
+                           0)))
+                (otherwise x))
+      :otherwise x)))
+
+  (define svexlist-lhs-preproc ((x svexlist-p))
+    :measure (svexlist-count x)
+    :returns (new-x svexlist-p)
+    (if (atom x)
+        nil
+      (cons (svex-lhs-preproc (car x))
+            (svexlist-lhs-preproc (cdr x)))))
+  ///
+  (local (in-theory (disable svex-lhs-preproc svexlist-lhs-preproc)))
+
+  (local (defthm 4vec-zero-ext-to-concat
+           (equal (4vec-zero-ext n x) (4vec-concat n x 0))
+           :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-concat)))))
+
+  (local (defthm 4vec-bit-extract-to-concat
+           (implies (4vec-index-p n)
+                    (equal (4vec-bit-extract n x) (4vec-concat 1 (4vec-rsh n x) 0)))
+           :hints(("Goal" :in-theory (enable 4vec-bit-extract 4vec-concat 4vec-rsh 4vec-shift-core
+                                             4vec-bit-index)))))
+
+  (local (defthm 4vec-part-select-to-concat
+           (implies (4vec-index-p lsb)
+                    (equal (4vec-part-select lsb width x)
+                           (4vec-concat width (4vec-rsh lsb x) 0)))
+           :hints(("Goal" :in-theory (enable 4vec-part-select))
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable 4vec-concat))))))
+
+  (defthm-svex-lhs-preproc-flag
+    (defthm svex-lhs-preproc-correct
+      (equal (svex-eval (svex-lhs-preproc x) env)
+             (svex-eval x env))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable svex-apply 4veclist-nth-safe)
+                     :expand ((:free (x) (nth 2 x))))))
+      :flag svex-lhs-preproc)
+    (defthm svexlist-lhs-preproc-correct
+      (equal (svexlist-eval (svexlist-lhs-preproc x) env)
+             (svexlist-eval x env))
+      :flag svexlist-lhs-preproc)
+    :hints ((acl2::just-expand-mrec-default-hint 'svex-lhs-preproc id t world)))
+
+  (defthm-svex-lhs-preproc-flag
+    (defthm svex-lhs-preproc-vars
+      (equal (svex-vars (svex-lhs-preproc x))
+             (svex-vars x))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable svexlist-vars))))
+      :flag svex-lhs-preproc)
+    (defthm svexlist-lhs-preproc-vars
+      (equal (svexlist-vars (svexlist-lhs-preproc x))
+             (svexlist-vars x))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable svexlist-vars))))
+      :flag svexlist-lhs-preproc)
+    :hints ((acl2::just-expand-mrec-default-hint 'svex-lhs-preproc id t world)))
+
+  (deffixequiv-mutual svex-lhs-preproc)
+  (verify-guards svex-lhs-preproc))
+
+
+
+(define svex-lhsrewrite ((x svex-p)
+                         (width natp))
+  :returns (new-x svex-p)
+  (b* ((preproc (svex-lhs-preproc x)))
+    (svex-lhsrewrite-aux preproc 0 width))
+  ///
+  (defthm svex-lhsrewrite-correct-lemma
+    (equal (4vec-concat (2vec (nfix w)) (svex-eval (svex-lhsrewrite x w) env) (4vec-z))
+           (4vec-concat (2vec (nfix w)) (svex-eval x env) (4vec-z)))
+    :hints (("goal" :use ((:instance svex-lhsrewrite-aux-correct-lemma
+                           (shift 0) (x (svex-lhs-preproc x))))
+             :in-theory (disable svex-lhsrewrite-aux-correct-lemma))))
+
   (defthm svex-lhsrewrite-vars
     (implies (not (member v (svex-vars x)))
-             (not (member v (svex-vars (svex-lhsrewrite x sh w)))))
-    :hints (("goal" :induct (svex-lhsrewrite x sh w)
-             :expand ((svex-lhsrewrite x sh w)
-                      (svex-vars x))
-             :in-theory (disable (:d svex-lhsrewrite)
-                                 member)))))
+             (not (member v (svex-vars (svex-lhsrewrite x w)))))))
+  
+    
+      
+  
 
 ;; { a[3:0], b[2:1] } = foo
 
@@ -1845,32 +2055,36 @@ bits of @('foo'):</p>
     :hints(("Goal" :in-theory (enable netassigns-vars svex-alist-vars svex-alist-keys)))))
 
 
+;; (define svar-indexedp ((x svar-p))
+;;   (and (svar-addr-p x)
+;;        (address->index (svar->address x))
+;;        t)
+;;   ///
+;;   (defthmd svar-addr-p-when-svar-indexedp
+;;     (implies (svar-indexedp x)
+;;              (svar-addr-p x))))
+
 (define svar-indexedp ((x svar-p))
-  (and (svar-addr-p x)
-       (address->index (svar->address x))
-       t)
-  ///
-  (defthmd svar-addr-p-when-svar-indexedp
-    (implies (svar-indexedp x)
-             (svar-addr-p x))))
+  (natp (svar->name x)))
 
 (define svar-index ((x svar-p))
   :guard (svar-indexedp x)
   :guard-hints (("goal" :in-theory (enable svar-indexedp)))
   :returns (idx natp :rule-classes :type-prescription)
-  (lnfix (address->index (svar->address x)))
+  :inline t
+  (lnfix (svar->name x))
   ///
   (deffixequiv svar-index
     :hints(("Goal" :in-theory (enable svar-fix svar-p)))))
 
 (define svar-set-index ((x svar-p) (idx natp))
-  :guard (svar-addr-p x)
+  ;; :guard (svar-addr-p x)
   :Returns (xx (and (svar-p xx)
                     (svar-indexedp xx))
                :hints(("Goal" :in-theory (enable svar-indexedp
                                                  svar->address
                                                  svar-addr-p))))
-  (change-svar x :name (change-address (svar->address x) :index (lnfix idx)))
+  (change-svar x :name (lnfix idx))
   ///
   (defthm svar-index-of-svar-set-index
     (equal (svar-index (svar-set-index x idx))
@@ -1879,8 +2093,7 @@ bits of @('foo'):</p>
 
 
 
-(acl2::def-1d-arr
-  :arrname lhsarr
+(acl2::def-1d-arr lhsarr
   :slotname lhs
   :pred lhs-p
   :fix lhs-fix$inline
@@ -2024,8 +2237,7 @@ bits of @('foo'):</p>
 
 
 
-(acl2::def-1d-arr
-  :arrname svexarr
+(acl2::def-1d-arr svexarr
   :slotname svex
   :pred svex-p
   :fix svex-fix$inline
@@ -2136,9 +2348,9 @@ bits of @('foo'):</p>
   (if (atom x)
       (svex-quote (4vec-z))
     (b* (((lhrange xf) (car x)))
-      (svex-call 'concat (list (svex-quote (2vec xf.w))
-                               (lhatom->svex xf.atom)
-                               (lhs->svex (cdr x))))))
+      (svex-concat xf.w 
+                   (lhatom->svex xf.atom)
+                   (lhs->svex (cdr x)))))
   ///
   (deffixequiv lhs->svex)
 
@@ -2523,7 +2735,7 @@ bits of @('foo'):</p>
              (lhatom-normorderedp bound offset x)))
 
   (defthm lhatom-normorderedp-of-z
-    (lhatom-normorderedp bound offset '(:z)))
+    (lhatom-normorderedp bound offset :z))
 
   (defthm lhatom-normorderedp-implies-svarlist-bounded
     (implies (lhatom-normorderedp bound offset x)
@@ -2873,3 +3085,16 @@ bits of @('foo'):</p>
         (mv mask-acc conf-acc))
        ((mv mask-acc conf-acc) (lhs-check-masks (caar x) mask-acc conf-acc)))
     (assigns-check-masks (cdr x) mask-acc conf-acc)))
+
+
+
+
+(define make-simple-lhs (&key (width posp)
+                              ((rsh natp) '0)
+                              (var svar-p))
+  :returns (lhs lhs-p)
+  (list (sv::make-lhrange :w width :atom (sv::make-lhatom-var :name var :rsh rsh)))
+  ///
+  (defret vars-of-make-simple-lhs
+    (equal (lhs-vars lhs) (list (svar-fix var)))
+    :hints(("Goal" :in-theory (enable lhatom-vars)))))

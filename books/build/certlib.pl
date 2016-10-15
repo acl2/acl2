@@ -845,7 +845,7 @@ sub debug_print_event {
 sub get_include_book {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = "^[^;]*\\([\\s]*include-book[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my $regexp = "^[^;]*\\([\\s]*include-book[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	debug_print_event($base, "include_book", \@res);
@@ -858,7 +858,7 @@ sub get_include_book {
 sub get_depends_on {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = "\\([\\s]*depends-on[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my $regexp = "\\([\\s]*depends-on[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	debug_print_event($base, "depends_on", \@res);
@@ -880,7 +880,7 @@ sub get_depends_on {
 sub get_depends_rec {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = "\\([\\s]*depends-rec[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my $regexp = "\\([\\s]*depends-rec[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	debug_print_event($base, "depends_rec", \@res);
@@ -893,7 +893,7 @@ sub get_depends_rec {
 sub get_loads {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	debug_print_event($base, "loads", \@res);
@@ -982,7 +982,7 @@ sub get_ld {
     my ($base,$the_line,$events) = @_;
 
     # Check for LD commands
-    my $regexp = "^[^;]*\\([\\s]*ld[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my $regexp = "^[^;]*\\([\\s]*ld[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	debug_print_event($base, "ld", \@res);

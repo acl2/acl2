@@ -30,14 +30,15 @@
 
 (in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "part-select")
 
-(local (include-book "ihs-extensions"))
-(local (include-book "signed-byte-p"))
-(local (in-theory (enable bitops::ash-1-removal)))
-
+(local (include-book "ihsext-basics"))
+(local (include-book "equal-by-logbitp"))
+;; (local (include-book "signed-byte-p"))
+;; (local (in-theory (enable bitops::ash-1-removal)))
+(local (in-theory (disable logmask)))
 ;; ======================================================================
 
 (defsection bitops/part-install
@@ -69,8 +70,9 @@ some value.")
   (local
    (defthm logmask-and-ash
      (implies (natp n)
-              (equal (logmask n)
-                     (+ -1 (ash 1 n))))))
+              (equal (+ -1 (ash 1 n))
+                     (logmask n)))
+     :hints(("Goal" :in-theory (enable logmask ash-1-removal)))))
 
   (defun-inline part-install-width-low (val x width low)
     (declare (xargs :guard (and (integerp x)
@@ -131,6 +133,8 @@ some value.")
            (er hard? 'part-install
                "Need either :low and :width, or :low and :high."))))
 
+  (add-macro-alias part-install part-install-width-low$inline)
+
   (defthm unsigned-byte-p-=-n-of-part-install-width-low
     (implies (and (unsigned-byte-p n x)
                   (<= (+ width low) n)
@@ -154,117 +158,130 @@ some value.")
 
 ;; ======================================================================
 
+; Matt K. addition: Avoid ACL2(p) failure due to logbitp-reasoning.
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (acl2::non-parallel-book))
+
 (defsection part-select-and-part-install
   :parents (bitops/part-install bitops/part-select)
   :short "Interactions between @('part-select') and @('part-install')"
 
-  (local
-   (encapsulate
-    ()
-    (local (include-book "arithmetic-5/top" :dir :system))
 
-    (defthm loghead-b-of-lognot-ash-a-where-a->=-b
-      (implies (and (natp a)
-                    (natp b)
-                    (integerp x)
-                    (<= b a))
-               (equal (loghead b (lognot (ash x a)))
-                      (1- (ash 1 b))))
-      :hints (("Goal" :in-theory (e/d (loghead lognot) ()))))
+  (defthm logbitp-of-part-select-split
+    (equal (logbitp n (part-select-width-low x width low))
+           (and (< (nfix n) (nfix width))
+                (logbitp (+ (nfix n) (nfix low)) x)))
+    :hints(("Goal" :in-theory (enable part-select-width-low))))
 
-    ))
+  (defthm logbitp-of-part-install-split
+    (equal (logbitp n (part-install-width-low val x width low))
+           (if (and (< (nfix n) (+ (nfix low) (nfix width)))
+                    (<= (nfix low) (nfix n)))
+               (logbitp (- (nfix n) (nfix low)) val)
+             (logbitp n x)))
+    :hints(("Goal" :in-theory (enable part-install-width-low))))
 
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
+  ;; (local
+  ;;  (encapsulate
+  ;;   ()
+  ;;   (local (include-book "arithmetic-5/top" :dir :system))
 
-  (local
-   (defthm loghead-with-zero-or-negative-size-=-0
-     (implies (<= n 0)
-              (equal (loghead n x) 0))
-     :hints (("Goal" :in-theory (e/d (loghead**) ())))))
+  ;;   (defthm loghead-b-of-lognot-ash-a-where-a->=-b
+  ;;     (implies (and (natp a)
+  ;;                   (natp b)
+  ;;                   (integerp x)
+  ;;                   (<= b a))
+  ;;              (equal (loghead b (lognot (ash x a)))
+  ;;                     (1- (ash 1 b))))
+  ;;     :hints (("Goal" :in-theory (e/d (loghead lognot) ()))))
 
-  (local
-   (defthm lognot-of-logmask
-     (implies (natp width)
-              (equal (lognot (logmask width))
-                     (- (ash 1 width))))
-     :hints (("Goal" :in-theory (e/d (ifix lognot expt) ())))))
+  ;;   ))
 
-  (local
-   (defthm logcdr-minus-logcons-0-n
-     (implies (integerp n)
-              (equal (logcdr (- (logcons 0 n)))
-                     (- n)))
-     :hints (("Goal" :in-theory (e/d (logcdr logcons floor) ())))))
+  ;; (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-  (local
-   (defthm loghead-lognot-and-logmask
-     (implies (natp width)
-              (equal (loghead width (lognot (logmask width))) 0))
-     :hints (("Goal" :in-theory
-              (e/d* (ihsext-recursive-redefs ihsext-inductions)
-                    (logmask ash-1-removal))))))
+  ;; (local
+  ;;  (defthm loghead-with-zero-or-negative-size-=-0
+  ;;    (implies (<= n 0)
+  ;;             (equal (loghead n x) 0))
+  ;;    :hints (("Goal" :in-theory (e/d (loghead**) ())))))
+
+  ;; (local
+  ;;  (defthm lognot-of-logmask
+  ;;    (implies (natp width)
+  ;;             (equal (lognot (logmask width))
+  ;;                    (- (ash 1 width))))
+  ;;    :hints (("Goal" :in-theory (e/d (ifix lognot expt) ())))))
+
+  ;; (local
+  ;;  (defthm logcdr-minus-logcons-0-n
+  ;;    (implies (integerp n)
+  ;;             (equal (logcdr (- (logcons 0 n)))
+  ;;                    (- n)))
+  ;;    :hints (("Goal" :in-theory (e/d (logcdr logcons floor) ())))))
+
+  ;; (local
+  ;;  (defthm loghead-lognot-and-logmask
+  ;;    (implies (natp width)
+  ;;             (equal (loghead width (lognot (logmask width))) 0))
+  ;;    :hints (("Goal" :in-theory
+  ;;             (e/d* (ihsext-recursive-redefs ihsext-inductions)
+  ;;                   (logmask ash-1-removal))))))
 
   (defthm part-select-and-part-install-same
-    (implies (natp width)
-             (equal (part-select-width-low
-                     (part-install-width-low val x width low)
-                     width low)
-                    (loghead width val)))
-    :hints (("Goal" :in-theory (disable
-                                logmask lognot-of-logmask
-                                ash-1-removal logand-with-negated-bitmask))))
+    (equal (part-select-width-low
+            (part-install-width-low val x width low)
+            width low)
+           (loghead width val))
+    :hints ((logbitp-reasoning)))
 
-  (defthm logtail-a-of-logmask-b-where-a->=-b
-    (implies (and (natp a)
-                  (natp b)
-                  (integerp x)
-                  (<= b a))
-             (equal (logtail a (logmask b))
-                    0))
-    :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
-                                      ihsext-inductions logcar logcdr)
-                                     (ash-1-removal)))))
+  ;; (defthm logtail-a-of-logmask-b-where-a->=-b
+  ;;   (implies (and (natp a)
+  ;;                 (natp b)
+  ;;                 (integerp x)
+  ;;                 (<= b a))
+  ;;            (equal (logtail a (logmask b))
+  ;;                   0))
+  ;;   :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+  ;;                                     ihsext-inductions logcar logcdr)
+  ;;                                    (ash-1-removal)))))
 
   (defthm part-select-and-part-install-completely-different-1
-    (implies (and (<= (+ low-i width-i) low-s)
-                  (natp low-s)
-                  (natp width-i)
-                  (natp low-i))
+    (implies (<= (+ (nfix low-i) (nfix width-i)) (nfix low-s))
              (equal (part-select-width-low
                      (part-install-width-low val x width-i low-i)
                      width-s low-s)
                     (part-select-width-low x width-s low-s)))
-    :hints (("Goal" :in-theory (e/d () (ash-1-removal logmask)))))
+    :hints ((logbitp-reasoning)))
 
-  (local
-   (defthm loghead-b-of-shift-by-a-where-a->=-b
-     (implies (and (natp a)
-                   (natp b)
-                   (<= b a))
-              (equal (loghead b (ash x a))
-                     0))
-     :hints (("Goal" :in-theory (e/d () (loghead-of-ash))
-              :use ((:instance loghead-of-ash
-                               (n b)
-                               (x x)
-                               (m a)))))))
+  ;; (local
+  ;;  (defthm loghead-b-of-shift-by-a-where-a->=-b
+  ;;    (implies (and (natp a)
+  ;;                  (natp b)
+  ;;                  (<= b a))
+  ;;             (equal (loghead b (ash x a))
+  ;;                    0))
+  ;;    :hints (("Goal" :in-theory (e/d () (loghead-of-ash))
+  ;;             :use ((:instance loghead-of-ash
+  ;;                              (n b)
+  ;;                              (x x)
+  ;;                              (m a)))))))
 
 
   (defthm part-select-and-part-install-completely-different-2
-    (implies (and (<= (+ low-s width-s) low-i)
-                  (natp width-s)
-                  (natp low-s)
-                  (natp low-i))
+    (implies (<= (+ (nfix low-s) (nfix width-s)) (nfix low-i))
              (equal (part-select-width-low
                      (part-install-width-low val x width-i low-i)
                      width-s low-s)
                     (part-select-width-low x width-s low-s)))
-    :hints (("Goal" :in-theory (e/d () (ash-1-removal logmask)))))
+    :hints ((logbitp-reasoning)))
 
   ;; [Shilpi]: Prove theorems about over-lapping bit portions of
   ;; select and install?
 
-  )
+  (defthmd part-install-in-terms-of-logapp
+    (equal (part-install val x :width width :low low)
+           (logapp low x (logapp width val (logtail (+ (nfix low) (nfix width)) x))))
+    :hints ((logbitp-reasoning))))
 
 
 ;; ======================================================================

@@ -293,35 +293,6 @@ encoding.</p>"
                 (vl-println? "}"))))
 
 
-(define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :short "Special, custom JSON encoder for warnings."
-
-  :long "<p>We probably don't want to use the ordinary aggregate-encoding stuff
-to print @(see vl-warning-p) objects, since the types in the @(':args') field
-are dynamic and, besides, who wants to reimplement @(see vl-cw) in other
-languages.  Instead, it's probably more convenient to just go ahead and convert
-the warning into a printed message here.  We'll include both HTML and plain
-TEXT versions of the message.</p>"
-
-  (b* (((vl-warning x) x)
-       (text (with-local-ps (vl-cw-obj x.msg x.args)))
-       (html (with-local-ps
-               (vl-ps-update-htmlp t)
-               ;; For the module browser, the warnings get word wrapped by the
-               ;; browser anyway, so don't try to wrap them ourselves or things
-               ;; get weird looking.
-               (vl-ps-update-autowrap-col 100000)
-               (vl-cw-obj x.msg x.args))))
-    (jp-object :tag    (vl-print "\"warning\"")
-               :fatalp (jp-bool x.fatalp)
-               :type   (jp-str (symbol-name x.type))
-               :fn     (jp-str (symbol-name x.fn))
-               :text   (jp-str text)
-               :html   (jp-str html))))
-
-(add-json-encoder vl-warning-p jp-warning)
-
 (defmacro def-vl-jp-list (type &key newlines)
   (declare (xargs :guard (maybe-natp newlines)))
   (b* ((mksym-package-symbol 'vl::foo)
@@ -354,6 +325,39 @@ TEXT versions of the message.</p>"
                     (vl-println? "]")))
        (add-json-encoder ,list-p ,list-print))))
 
+
+(define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :short "Special, custom JSON encoder for warnings."
+
+  :long "<p>We probably don't want to use the ordinary aggregate-encoding stuff
+to print @(see vl-warning-p) objects, since the types in the @(':args') field
+are dynamic and, besides, who wants to reimplement @(see vl-cw) in other
+languages.  Instead, it's probably more convenient to just go ahead and convert
+the warning into a printed message here.  We'll include both HTML and plain
+TEXT versions of the message.</p>"
+
+  (b* (((vl-warning x) x)
+       (text (with-local-ps (if x.context
+                                (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
+                              (vl-cw-obj x.msg x.args))))
+       (html (with-local-ps
+               (vl-ps-update-htmlp t)
+               ;; For the module browser, the warnings get word wrapped by the
+               ;; browser anyway, so don't try to wrap them ourselves or things
+               ;; get weird looking.
+               (vl-ps-update-autowrap-col 100000)
+               (if x.context
+                   (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
+                 (vl-cw-obj x.msg x.args)))))
+    (jp-object :tag    (vl-print "\"warning\"")
+               :fatalp (jp-bool x.fatalp)
+               :type   (jp-str (symbol-name x.type))
+               :fn     (jp-str (symbol-name x.fn))
+               :text   (jp-str text)
+               :html   (jp-str html))))
+
+(add-json-encoder vl-warning-p jp-warning)
 (def-vl-jp-list warning :newlines 4)
 
 
@@ -1113,15 +1117,24 @@ which could not hold such large values.</p>")
                   :lvalue (vl-jp-expr x.lvalue)
                   :atts   (vl-jp-atts x.atts))
 
-       :vl-enablestmt
+       :vl-callstmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)
+                  :
                   :args   (vl-jp-exprlist x.args)
                   :atts   (vl-jp-atts x.atts))
 
        :vl-disablestmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)
+                  :atts   (vl-jp-atts x.atts))
+
+       :vl-breakstmt
+       (jp-object :tag    (jp-sym kind)
+                  :atts   (vl-jp-atts x.atts))
+
+       :vl-continuestmt
+       (jp-object :tag    (jp-sym kind)
                   :atts   (vl-jp-atts x.atts))
 
        :vl-returnstmt
@@ -1178,7 +1191,7 @@ which could not hold such large values.</p>")
 
        :vl-blockstmt
        (jp-object :tag        (jp-sym kind)
-                  :sequential (jp-bool x.sequentialp)
+                  :blocktype  (jp-sym x.blocktype)
                   :name       (jp-maybe-string x.name)
                   :imports    (vl-jp-importlist x.imports)
                   :paramdecls (vl-jp-paramdecllist x.paramdecls)

@@ -45,10 +45,8 @@
                                (canonical-address-p temp-rip)))
   :implemented
   (progn
-    (add-to-implemented-opcodes-table 'PUSHF #xA4 '(:nil nil)
-                                      'x86-movs)
-    (add-to-implemented-opcodes-table 'PUSHF #xA5 '(:nil nil)
-                                      'x86-movs))
+    (add-to-implemented-opcodes-table 'MOVS #xA4 '(:nil nil) 'x86-movs)
+    (add-to-implemented-opcodes-table 'MOVS #xA5 '(:nil nil) 'x86-movs))
 
   :body
 
@@ -57,8 +55,17 @@
        (lock? (equal #.*lock* group-1-prefix))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
@@ -80,11 +87,20 @@
                    ;; A 32-bit address is always canonical.
                    (not (canonical-address-p src-addr))))
         (!!ms-fresh :src-addr-not-canonical src-addr))
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when
+            ;; Check alignment for memory accesses.
+            (and inst-ac?
+                 (not (equal (logand
+                              (the (signed-byte #.*max-linear-address-size*) src-addr)
+                              (the (integer 0 15)
+                                (- operand-size 1)))
+                             0))))
+        (!!ms-fresh :src-addr-not-aligned src-addr))
 
        ((mv flg0 src x86)
         (rm-size operand-size
-                 (the (signed-byte
-                       #.*max-linear-address-size*) src-addr)
+                 (the (signed-byte #.*max-linear-address-size*) src-addr)
                  :r x86))
        ((when flg0)
         (!!ms-fresh :src-rm-size-error flg0))
@@ -97,6 +113,15 @@
                    ;; A 32-bit address is always canonical.
                    (not (canonical-address-p dst-addr))))
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
+       ((when
+            ;; Check alignment for memory accesses.
+            (and inst-ac?
+                 (not (equal (logand
+                              (the (signed-byte #.*max-linear-address-size*) dst-addr)
+                              (the (integer 0 15)
+                                (- operand-size 1)))
+                             0))))
+        (!!ms-fresh :dst-addr-not-aligned dst-addr))
        (original-dst-addr dst-addr)
 
        ;; A repeating string operation can be suspended by an exception or
@@ -202,7 +227,7 @@
               (!rgfi *rdi* (the (signed-byte
                                  #.*max-linear-address-size+1*)
                              dst-addr) x86))))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMPS/CMPSB/CMPSW/CMPSD/CMPSQ
@@ -237,20 +262,26 @@
                                (canonical-address-p temp-rip)))
   :implemented
   (progn
-    (add-to-implemented-opcodes-table 'CMPS #xA6 '(:nil nil)
-                                      'x86-cmps)
-    (add-to-implemented-opcodes-table 'CMPS #xA7 '(:nil nil)
-                                      'x86-cmps))
+    (add-to-implemented-opcodes-table 'CMPS #xA6 '(:nil nil) 'x86-cmps)
+    (add-to-implemented-opcodes-table 'CMPS #xA7 '(:nil nil) 'x86-cmps))
 
   :body
 
   (b* ((ctx 'x86-cmps)
        (group-1-prefix (the (unsigned-byte 8) (prefixes-slice :group-1-prefix prefixes)))
        (lock? (equal #.*lock* group-1-prefix))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
        ((the (integer 4 8) counter/addr-size)
@@ -270,6 +301,16 @@
                    ;; A 32-bit address is always canonical.
                    (not (canonical-address-p src-addr))))
         (!!ms-fresh :src-addr-not-canonical src-addr))
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when
+            ;; Check alignment for memory accesses.
+            (and inst-ac?
+                 (not (equal (logand
+                              (the (signed-byte #.*max-linear-address-size*) src-addr)
+                              (the (integer 0 15)
+                                (- operand-size 1)))
+                             0))))
+        (!!ms-fresh :src-addr-not-aligned src-addr))
        ((mv flg0 src x86)
         (rm-size operand-size src-addr :r x86))
        ((when flg0)
@@ -282,6 +323,15 @@
                    ;; A 32-bit address is always canonical.
                    (not (canonical-address-p dst-addr))))
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
+       ((when
+            ;; Check alignment for memory accesses.
+            (and inst-ac?
+                 (not (equal (logand
+                              (the (signed-byte #.*max-linear-address-size*) dst-addr)
+                              (the (integer 0 15)
+                                (- operand-size 1)))
+                             0))))
+        (!!ms-fresh :dst-addr-not-aligned dst-addr))
        ((mv flg0 dst x86)
         (rm-size operand-size dst-addr :r x86))
        ((when flg0)
@@ -386,7 +436,7 @@
               (!rgfi *rdi* (the (signed-byte
                                  #.*max-linear-address-size+1*)
                              dst-addr) x86))))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: STOS/STOSB/STOSW/STOSD/STOSQ
@@ -405,10 +455,8 @@
 
   :implemented
   (progn
-    (add-to-implemented-opcodes-table 'PUSHF #xAA '(:nil nil)
-                                      'x86-stos)
-    (add-to-implemented-opcodes-table 'PUSHF #xAB '(:nil nil)
-                                      'x86-stos))
+    (add-to-implemented-opcodes-table 'STOS #xAA '(:nil nil) 'x86-stos)
+    (add-to-implemented-opcodes-table 'STOS #xAB '(:nil nil) 'x86-stos))
 
   :body
 
@@ -417,6 +465,16 @@
        (lock? (equal #.*lock* group-1-prefix))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+       
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
@@ -445,6 +503,16 @@
        ;; Update the x86 state:
 
        ;; Writing rAX to the memory:
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when
+            ;; Check alignment for memory accesses.
+            (and inst-ac?
+                 (not (equal (logand
+                              (the (signed-byte #.*max-linear-address-size*) dst-addr)
+                              (the (integer 0 15)
+                                (- operand-size 1)))
+                             0))))
+        (!!ms-fresh :dst-addr-not-aligned dst-addr))
        ((mv flg0 x86)
         (wm-size operand-size dst-addr rAX x86))
        ((when flg0)
@@ -511,6 +579,6 @@
                                  #.*max-linear-address-size+1*)
                              dst-addr) x86))))
 
-      x86))
+    x86))
 
 ;; ======================================================================

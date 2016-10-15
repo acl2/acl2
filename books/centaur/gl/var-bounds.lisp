@@ -35,7 +35,7 @@
 (include-book "gtypes")
 (include-book "bvar-db")
 (include-book "param")
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (defsection bfr-vars-bounded
   (defun-sk bfr-vars-bounded (n x)
@@ -665,6 +665,11 @@
   (local (defthm boolean-listp-n2v
            (boolean-listp (n2v n))
            :hints(("Goal" :in-theory (e/d (bfr-ucons) (logcar logcdr))))))
+
+  (defthm pbfr-list-vars-bounded-of-list-fix
+    (Equal (pbfr-list-vars-bounded k p (list-fix in))
+           (pbfr-list-vars-bounded k p in))
+    :hints(("Goal" :in-theory (enable pbfr-list-vars-bounded))))
 
   (defthm gobj-vars-bounded-of-mk-g-number
     (implies (and (pbfr-list-vars-bounded k p rn)

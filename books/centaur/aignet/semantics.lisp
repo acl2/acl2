@@ -29,33 +29,31 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-(include-book "add-ons/hash-stobjs" :dir :system)
 (include-book "arrays")
-(include-book "centaur/misc/2d-arr" :dir :system)
+(include-book "aignet-absstobj")
+(include-book "add-ons/hash-stobjs" :dir :system)
+(include-book "std/stobjs/2d-arr" :dir :system)
 (include-book "centaur/misc/iter" :dir :system)
-(include-book "centaur/misc/natarr" :dir :system)
+(include-book "std/stobjs/natarr" :dir :system)
 (include-book "centaur/misc/nth-equiv" :dir :system)
 (include-book "clause-processors/stobj-preservation" :dir :system)
 (include-book "clause-processors/generalize" :dir :system)
 (include-book "clause-processors/find-subterms" :dir :system)
-
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
-(local (in-theory (disable nth update-nth
-                           acl2::nfix-when-not-natp
+(local (in-theory (disable nth
+                           update-nth
                            resize-list
+                           make-list-ac
+                           true-listp-update-nth
+                           acl2::nfix-when-not-natp
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
                            set::double-containment
                            set::sets-are-true-lists
-                           make-list-ac)))
-
-(local (include-book "std/lists/nth" :dir :system))
-
-
-(local (in-theory (disable true-listp-update-nth
                            acl2::nth-when-zp
                            acl2::nth-with-large-index)))
 
@@ -81,10 +79,6 @@
 ;; BOZO move somewhere else
 (defrefinement nth-equiv bits-equiv :hints(("Goal" :in-theory (enable bits-equiv))))
 
-(defmacro const-type () 0)
-(defmacro gate-type () 1)
-(defmacro in-type () 2)
-(defmacro out-type () 3)
 
 ;; (defsection aignet-untranslate
 ;;   (defun untranslate-preproc-node-types (term wrld)
@@ -108,28 +102,23 @@
 
 ;; (in-theory (disable acl2::aignetp))
 
+;;  BOZO there must be a pre-existing version of this function?
+(mutual-recursion
+ (defun subtermp (x y)
+   (declare (xargs :guard t))
+   (or (equal x y)
+       (and (consp y)
+            (not (eq (car y) 'quote))
+            (subtermp-list x (cdr y)))))
+ (defun subtermp-list (x y)
+   (declare (xargs :guard t))
+   (if (atom y)
+       nil
+     (or (subtermp x (car y))
+         (subtermp-list x (cdr y))))))
 
 
 (defsection misc
-
-  (defthm lookup-id-implies-aignet-idp
-    (implies (consp (lookup-id id aignet))
-             (aignet-idp id aignet))
-    :hints(("Goal" :in-theory (enable aignet-idp lookup-id))))
-
-  (defthm aignet-idp-of-node-count-of-extension
-    (implies (aignet-extension-p aignet prev)
-             (aignet-idp (node-count prev) aignet))
-    :hints(("Goal" :in-theory (enable aignet-extension-p
-                                      aignet-idp))))
-
-  (defthm lookup-id-of-cons
-    (equal (lookup-id id (cons node rest))
-           (if (equal (nfix id) (+ 1 (node-count rest)))
-               (cons node rest)
-             (lookup-id id rest)))
-    :hints(("Goal" :in-theory (enable lookup-id))))
-
 
   (defun equiv-search-type-alist (type-alist goaltype equiv lhs rhs unify-subst wrld)
     (declare (xargs :mode :program))
@@ -195,12 +184,6 @@
       (or (match-equiv-or-refinement equiv var (car terms) mfc state)
           (match-equiv-or-refinement-lst equiv var (cdr terms) mfc state))))
 
-
-  (defthm lookup-id-of-node-count
-    (equal (lookup-id (node-count x) x)
-           x)
-    :hints(("Goal" :in-theory (enable lookup-id))))
-
   (defthm lookup-id-of-node-count-bind
     (implies (and (bind-free (match-equiv-or-refinement-lst
                               'acl2::nat-equiv$inline 'id
@@ -213,38 +196,7 @@
                   (aignet-extension-p y x))
              (equal (lookup-id id y)
                     x))
-    :hints(("Goal" :in-theory (e/d () (nat-equiv)))))
-
-  (defthm node-count-of-lookup-id-when-consp
-    (implies (consp (lookup-id id aignet))
-             (equal (node-count (lookup-id id aignet))
-                    id))
-    :hints(("Goal" :in-theory (enable lookup-id))))
-
-  (defthm posp-when-consp-of-lookup-id
-    (implies (consp (lookup-id id aignet))
-             (posp id))
-    :hints(("Goal" :in-theory (enable lookup-id)))
-    :rule-classes :forward-chaining)
-
-  (defthm aignet-idp-of-0
-    (aignet-idp 0 aignet)
-    :hints(("Goal" :in-theory (enable aignet-idp))))
-
-  (defthm aignet-litp-of-0-and-1
-    (and (aignet-litp 0 aignet)
-         (aignet-litp 1 aignet))
-    :hints(("Goal" :in-theory (enable aignet-litp))))
-
-  (defthm aignet-litp-of-mk-lit-lit-id
-    (equal (aignet-litp (mk-lit (lit-id lit) neg) aignet)
-           (aignet-litp lit aignet))
-    :hints(("Goal" :in-theory (enable aignet-litp))))
-
-  (defthm aignet-litp-of-mk-lit-0
-    (aignet-litp (mk-lit 0 neg) aignet)
-    :hints(("Goal" :in-theory (enable aignet-litp)))))
-
+    :hints(("Goal" :in-theory (e/d () (nat-equiv))))))
 
 (defsection ionum-uniqueness
 
@@ -311,195 +263,33 @@
     :hints(("Goal" :in-theory (disable nat-equiv)))))
 
 
-(defsection aignet-lit-listp
-
-  (defun aignet-lit-listp (x aignet)
-    (declare (xargs :stobjs aignet
-                    :guard (lit-listp x)))
-    (if (atom x)
-        (eq x nil)
-      (and (fanin-litp (car x) aignet)
-           (aignet-lit-listp (cdr x) aignet)))))
-
-
-(defsection aignet-extension-p
-  :parents (aignet-logic)
-  :short "Predicate that says that one aignet is the result of building some new
-nodes onto another aignet"
-  :long "<p>Aignet A is an extension of B if B is a suffix of A.  That is, A
-consists of B along with maybe some additional nodes built on top of it; this
-is a transitive, reflexive relation. This is a useful concept because every
-aignet-modifying function that doesn't reinitialize the AIG produces an
-extension of its input, and this relation implies many useful things.  The most
-basic is that any ID of the original aignet is an ID of the new aignet, and the
-node of that ID (and its entire suffix) is the same in both aignets.  This
-implies, for example, that the evaluations of nodes existing in the first are
-the same as their evaluations in the second.</p>
-
-<p>Rewrite rules using aignet-extension-p are a little odd.  For example, suppose we
-want a rewrite rule just based on the definition, e.g.,
-<code>
- (implies (and (aignet-extension-p new-aignet orig-aignet)
-               (aignet-idp id orig-aignet))
-          (equal (nth-node id new-aignet)
-                 (nth-node id orig-aignet)))
-</code>
-This isn't a very good rewrite rule because it has to match the free variable
-orig-aignet.  However, we can make it much better with a bind-free strategy.
-We'll check the syntax of new-aignet to see if it is a call of a
-aignet-updating function.  Then, we'll use the aignet input of that function as the
-binding for orig-aignet.</p>
-"
-
-
-  (defun simple-search-type-alist (term typ type-alist unify-subst)
-    (declare (xargs :mode :program))
-    (cond ((endp type-alist)
-           (mv nil unify-subst))
-          ((acl2::ts-subsetp (cadr (car type-alist)) typ)
-           (mv-let (ans unify-subst)
-             (acl2::one-way-unify1 term (car (car type-alist)) unify-subst)
-             (if ans
-                 (mv t unify-subst)
-               ;; note: one-way-unify1 is a no-change-loser so unify-subst is
-               ;; unchanged below
-               (simple-search-type-alist term typ (cdr type-alist)
-                                         unify-subst))))
-          (t (simple-search-type-alist term typ (cdr type-alist) unify-subst))))
-
-
-  ;; Additional possible strategic thing: keep aignet-modifying functions that
-  ;; don't produce an extension in a table and don't bind their inputs.
-  (defun find-prev-stobj-binding (new-term state)
-    (declare (xargs :guard (pseudo-termp new-term)
-                    :stobjs state
-                    :mode :program))
-    (b* (((mv valnum function args)
-          (case-match new-term
-            (('mv-nth ('quote valnum) (function . args) . &)
-             (mv (and (symbolp function) valnum) function args))
-            ((function . args)
-             (mv (and (symbolp function) 0) function args))
-            (& (mv nil nil nil))))
-         ((unless valnum) (mv nil nil))
-         ((when (or (eq function 'if)
-                    (eq function 'return-last)))
-          ;; Can't call stobjs-out on either of these
-          (mv nil nil))
-         ((when (and (eq function 'cons)
-                     (int= valnum 0)))
-          ;; special case for update-nth.
-          (mv t (nth 1 args)))
-         (w (w state))
-         (stobjs-out (acl2::stobjs-out function w))
-         (formals (acl2::formals function w))
-         (stobj-out (nth valnum stobjs-out))
-         ((unless stobj-out) (mv nil nil))
-         (pos (position stobj-out formals))
-         ((unless pos) (mv nil nil)))
-      (mv t (nth pos args))))
-
-  (defun iterate-prev-stobj-binding (n new-term state)
-    (declare (xargs :guard (and (pseudo-termp new-term)
-                                (natp n))
-                    :stobjs state
-                    :mode :program))
-    (if (zp n)
-        new-term
-      (mv-let (ok next-term)
-        (find-prev-stobj-binding new-term state)
-        (if ok
-            (iterate-prev-stobj-binding (1- n) next-term state)
-          new-term))))
-
-  (defun prev-stobj-binding (new-term prev-var iters mfc state)
-    (declare (xargs :guard (and (pseudo-termp new-term)
-                                (symbolp prev-var))
-                    :stobjs state
-                    :mode :program)
-             (ignore mfc))
-    (let ((prev-term (iterate-prev-stobj-binding iters new-term state)))
-      (if (equal new-term prev-term)
-          `((do-not-use-this-long-horrible-variable
-             . do-not-use-this-long-horrible-variable))
-        `((,prev-var . ,prev-term)))))
-
-  (defmacro aignet-extension-binding (&key (new 'new)
-                                           (orig 'orig)
-                                           (iters '1))
-    `(and (bind-free (prev-stobj-binding ,new ',orig ',iters mfc state))
-          (aignet-extension-p ,new ,orig)
-          (syntaxp (not (subtermp ,new ,orig)))))
-
-  (defthm aignet-extension-p-transitive-rw
-    (implies (and (aignet-extension-binding :new aignet3 :orig aignet2)
-                  (aignet-extension-p aignet2 aignet1))
-             (aignet-extension-p aignet3 aignet1))
-    :hints(("Goal" :in-theory (enable aignet-extension-p-transitive))))
-
-  ;; already has inverse
-  (defthm aignet-extension-simplify-lookup-id
-    (implies (and (aignet-extension-binding)
-                  (aignet-idp id orig))
-             (equal (lookup-id id new)
-                    (lookup-id id orig))))
-
-  (defthm aignet-extension-simplify-lookup-stype
-    (implies (and (aignet-extension-binding)
-                  (consp (lookup-stype n stype orig)))
-             (equal (lookup-stype n stype new)
-                    (lookup-stype n stype orig)))
-    :hints(("Goal" :in-theory (enable lookup-stype
-                                      aignet-extension-p))))
-
-  (defthm aignet-extension-simplify-lookup-stype-when-counts-same
-    (implies (and (aignet-extension-binding)
-                  (equal (stype-count stype new)
-                         (stype-count stype orig)))
-             (equal (lookup-stype n stype new)
-                    (lookup-stype n stype orig)))
-    :hints(("Goal" :in-theory (enable aignet-extension-p
-                                      lookup-stype))))
-
-  (defthm aignet-extension-simplify-lookup-stype-inverse
-    (implies (and (aignet-extension-bind-inverse)
-                  (consp (lookup-stype n stype orig)))
-             (equal (lookup-stype n stype orig)
-                    (lookup-stype n stype new))))
-
-  (defthm aignet-extension-simplify-aignet-idp
-    (implies (and (aignet-extension-binding)
-                  (aignet-idp id orig))
-             (aignet-idp id new)))
-
-  (defthm aignet-extension-simplify-aignet-litp
-    (implies (and (aignet-extension-binding)
-                  (aignet-litp lit orig))
-             (aignet-litp lit new)))
-
+(define aignet-lit-listp ((x lit-listp) aignet)
+  :enabled t
+  (if (atom x)
+      (eq x nil)
+    (and (fanin-litp (car x) aignet)
+         (aignet-lit-listp (cdr x) aignet)))
+  ///
   (defthm aignet-extension-implies-aignet-lit-listp
     (implies (and (aignet-extension-binding)
                   (aignet-lit-listp lits orig))
-             (aignet-lit-listp lits new)))
+             (aignet-lit-listp lits new))))
 
-  (defthm aignet-extension-implies-node-count-gte
-    (implies (aignet-extension-binding)
-             (<= (node-count orig) (node-count new)))
-    :rule-classes ((:linear :trigger-terms ((node-count new)))))
-
-  (defthm aignet-extension-implies-stype-count-gte
-    (implies (aignet-extension-binding)
-             (<= (stype-count stype orig)
-                 (stype-count stype new)))
-    :rule-classes ((:linear :trigger-terms ((stype-count stype new)))))
-
-  (defthmd aignet-extension-p-implies-consp
+(define aignet-id-listp ((x nat-listp) aignet)
+  :enabled t
+  (if (atom x)
+      (eq x nil)
+    (and (id-existsp (car x) aignet)
+         (aignet-id-listp (cdr x) aignet)))
+  ///
+  (defthm aignet-extension-implies-aignet-id-listp
     (implies (and (aignet-extension-binding)
-                  (consp orig))
-             (consp new))
-    :hints(("Goal" :in-theory (enable aignet-extension-p)))))
+                  (aignet-id-listp ids orig))
+             (aignet-id-listp ids new))))
+
 
 (defsection preservation-thms
+
   (acl2::def-stobj-preservation-macros
    :name aignet
    :default-stobjname aignet
@@ -523,14 +313,17 @@ binding for orig-aignet.</p>
                   (consp x))
          :rule-classes ((:forward-chaining :trigger-terms ((car x))))))
 
-(defsection semantics
-  :parents (aignet-logic)
-  :short "Combinational semantics of aignets"
-  :long "<p>The combinational semantics of aignets is given by the function
-ID-EVAL.  This takes an aignet, a node ID, and assignments to the primary
-inputs and registers, and produces the value of that ID under those
-assignments.</p>"
-  (defstobj-clone aignet-invals bitarr :strsubst (("BIT" . "AIGNET-INVAL")))
+
+(defsection aignet-invals
+  :parents (semantics)
+  :short "Bit array for the primary inputs to an aignet."
+
+  (defstobj-clone aignet-invals bitarr :strsubst (("BIT" . "AIGNET-INVAL"))))
+
+(encapsulate
+  nil
+
+
   (defstobj-clone aignet-regvals bitarr :strsubst (("BIT" . "AIGNET-REGVAL")))
 
   ; (local (in-theory (enable gate-orderedp co-orderedp)))
@@ -895,37 +688,19 @@ assignments.</p>"
     (and (equal (lit-eval 0 invals regvals aignet) 0)
          (equal (lit-eval 1 invals regvals aignet) 1))))
 
-(defsection semantics-seq
-  :parents (aignet-logic)
-  :short "Sequential semantics of aignets"
-  :long "<p>The sequential semantics of aignets is given by the function
-LIT-EVAL-SEQ.  This takes an aignet, a time frame number, a literal, a 2D bit
-array assigning values to the primary inputs on each frame, and an initial
-assignment to the registers.  It produces the value of that literal under those
-sequential assignments.</p>
-
-<p>The following theorem describes @('lit-eval-seq') in terms of combinational evaluation:
- @(thm lit-eval-seq-in-terms-of-lit-eval)</p>
-
-<p>Here, @('frame-regvals') is a function that creates a register value array
-from the previous frame's sequential evaluations of the next-state nodes
-corresponding to each register.  That is, to get the value of a literal at a
-particular timeframe, first evaluate the register next-states at the previous
-timeframe, then combinationally evaluate the literal with the resulting
-register values and the current frame's input values.</p>"
+(encapsulate nil ;; defsection semantics-seq
 
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
   (local (in-theory (enable acl2::make-list-ac-redef)))
   (local (in-theory (disable acl2::make-list-ac-removal)))
 
-  (acl2::def2darr frames
-                  :prefix frames
-                  :elt-type bit
-                  :elt-typep bitp
-                  :default-elt 0
-                  :elt-fix acl2::bfix
-                  :elt-guard (bitp x))
+  (acl2::def-2d-arr frames
+    :prefix frames
+    :pred bitp
+    :type-decl bit
+    :default-val 0
+    :fix bfix)
 
   (defstobj-clone initsts bitarr :strsubst (("BIT" . "INITSTS")))
 
@@ -1197,7 +972,7 @@ register values and the current frame's input values.</p>"
 
 
 (defsection comb-equiv
-  :parents (aignet-logic)
+  :parents (semantics)
   :short "Combinational equivalence of aignets"
   :long "<p>We consider two aignets to be combinationally equivalent if:
 <ul>
@@ -1278,7 +1053,7 @@ same input/register assignment.</li></ul>
 
 
 (defsection seq-equiv
-  :parents (aignet-logic)
+  :parents (semantics)
   :short "Sequential equivalence of aignets"
   :long "<p>We consider two aignets to be sequentially equivalent if:
 <ul>
@@ -1407,7 +1182,7 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
 
 
 (defsection seq-equiv-init
-  :parents (aignet-logic)
+  :parents (semantics)
   :short "Sequential equivalence of aignets on a particular initial state"
   :long "<p>See @(see seq-equiv).  This variant additionally takes the initial
 state of each aignet as an argument, and requires that they always produce the

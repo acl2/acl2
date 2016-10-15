@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "preprocessor")
+(include-book "top")
 (include-book "print-defines")
 (local (include-book "../../util/arithmetic"))
 

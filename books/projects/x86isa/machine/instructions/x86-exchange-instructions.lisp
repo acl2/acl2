@@ -75,9 +75,8 @@
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        (select-byte-operand (equal opcode #x86))
-       (reg/mem-size (select-operand-size select-byte-operand rex-byte nil
-                                          prefixes))
-
+       (reg/mem-size (select-operand-size select-byte-operand rex-byte nil prefixes))
+       (inst-ac? t)
        ;; Fetch the first operand and put it in val1.
        ;; If the opcode is #x90+rw/rd, we let rax be the first operand.
        ;; For other opcodes, we let the operand specified by the r/m field to
@@ -85,10 +84,13 @@
        ((mv flg0 val1 (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (if (equal (ash opcode -4) 9) ;; #x90+rw/rd
-            (mv nil (rgfi-size reg/mem-size *rax* rex-byte x86)
-                0 0 x86)
+            (mv nil (rgfi-size reg/mem-size *rax* rex-byte x86) 0 0 x86)
           (x86-operand-from-modr/m-and-sib-bytes
-           #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86)))
+           #.*rgf-access* reg/mem-size inst-ac?
+           nil ;; Not a memory pointer operand
+           p2 p4? temp-rip rex-byte r/m mod sib
+           0 ;; No immediate operand
+           x86)))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
        ((when (mbe :logic (not (canonical-address-p v-addr))
@@ -106,6 +108,15 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; Fetch the second operand and put it in val2.
        ;; If the opcode is #x90+rw/rd, we let the contents of the register
@@ -129,9 +140,11 @@
             (let ((x86 (!rgfi-size reg/mem-size *rax* val2 rex-byte
                                    x86)))
               (mv nil x86))
-          (x86-operand-to-reg/mem reg/mem-size val2
-                                  (the (signed-byte #.*max-linear-address-size*) v-addr)
-                                  rex-byte r/m mod x86)))
+          (x86-operand-to-reg/mem
+           reg/mem-size inst-ac?
+           nil ;; Not a memory pointer operand
+           val2 (the (signed-byte #.*max-linear-address-size*) v-addr)
+           rex-byte r/m mod x86)))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem-error flg2))
@@ -146,7 +159,7 @@
                       x86)))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMPXCHG
@@ -191,12 +204,16 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size select-byte-operand rex-byte nil prefixes))
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
-
+       (inst-ac? t)
        ;; Fetch the first (destination) operand:
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -208,6 +225,15 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
 
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
@@ -225,9 +251,11 @@
             (let ((register (rgfi-size reg/mem-size
                                        (reg-index reg rex-byte #.*r*) rex-byte
                                        x86)))
-              (x86-operand-to-reg/mem reg/mem-size register
-                                      (the (signed-byte #.*max-linear-address-size*) v-addr)
-                                      rex-byte r/m mod x86))
+              (x86-operand-to-reg/mem
+               reg/mem-size inst-ac?
+               nil ;; Not a memory pointer operand
+               register (the (signed-byte #.*max-linear-address-size*) v-addr)
+               rex-byte r/m mod x86))
           ;; rAX != reg/mem or ZF == 0
           ;; Put the destination operand into the accumulator.
           (let ((x86 (!rgfi-size reg/mem-size *rax* reg/mem rex-byte x86)))
@@ -237,7 +265,7 @@
         (!!ms-fresh :x86-operand-to-reg/mem-error flg1))
 
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: NOP
@@ -266,8 +294,15 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes)))
-      ;; Update the x86 state:
-      (!rip temp-rip x86)))
+
+    ;; We don't need to check for valid length for one-byte
+    ;; instructions.  The length will be more than 15 only if
+    ;; get-prefixes fetches 15 prefixes, and that error will be
+    ;; caught in x86-fetch-decode-execute, that is, before control
+    ;; reaches this function.
+
+    ;; Update the x86 state:
+    (!rip temp-rip x86)))
 
 (def-inst x86-two-byte-nop
 
@@ -304,7 +339,9 @@
        ((mv flg0 (the (signed-byte 64) ?v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr flg0))
 
@@ -316,8 +353,16 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :next-rip-invalid temp-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================

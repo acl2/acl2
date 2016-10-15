@@ -1,4 +1,6 @@
-;  Copyright (C) 2000 Panagiotis Manolios and J Strother Moore
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Panagiotis Manolios and J Strother Moore, 2000
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; Modified May 2004 by Matt Kaufmann, in order to allow stobjs.  Thanks to John
 ; Matthews for providing a motivating example.  NOTE:  Do not use a :stobjs

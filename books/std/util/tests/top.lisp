@@ -42,6 +42,7 @@
 (include-book "defmapappend")
 (include-book "defprojection")
 (include-book "defredundant")
+(include-book "defrule")
 (include-book "defval")
 
 ||#

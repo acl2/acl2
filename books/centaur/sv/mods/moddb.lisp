@@ -32,8 +32,8 @@
 (include-book "svmods")
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "add-ons/hash-stobjs" :dir :system)
-(include-book "centaur/misc/absstobjs" :dir :system)
-(include-book "tools/clone-stobj" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (include-book "misc/records" :dir :system)
 (include-book "centaur/misc/stobj-swap" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
@@ -43,7 +43,7 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 (local (include-book "std/alists/hons-assoc-equal" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "clause-processors/generalize" :dir :system))
@@ -135,7 +135,7 @@ of three times each.)</p>"
 
 
 (defxdoc moddb
-  :parents (svex)
+  :parents (sv)
   :short "A database object that provides a unique numbering of all the wires in
           a module hierarchy."
   :long "<p>A moddb is a stobj that provides a fast method of enumerating wires
@@ -143,17 +143,22 @@ and a compact, high-performance mapping between these indices and their
 names/declarations.  It is used in @(see svex-compilation) to avoid more memory
 hungry methods of mapping hierarchical wire names to values.</p>
 
-<p>A moddb is a nested stobj structure with the following fields:</p>
+<p>A moddb is a nested stobj structure defined as follows:</p>
+
+@(def moddb)
+
+<p>where:</p>
 <ul>
-<li>@(see moddb->nmods) contains the number of modules in the database.</li>
-<li>@(see moddb->mods) is an array of @(see elab-mod) structures, which we
+<li>@('moddb->nmods') contains the number of modules in the database.</li>
+<li>@('moddb->mods') is an array of @(see elab-mod) structures, which we
 describe below, of which @('moddb->nmods') are valid.</li>
-<li>@(see moddb->modname-idxes) is a hash table mapping module names to indices.</li>
+<li>@('moddb->modname-idxes') is a hash table mapping module names to indices.</li>
 </ul>
 
-<p>@(csee moddb->mods) and @(see moddb->modname-idxes) constitute a two-way
-mapping between module names and module indices.  It is a requirement of a
-well-formed moddb that both of the following hold:</p>
+<p>Together, @('moddb->mods') and @('moddb->modname-idxes') constitute a
+two-way mapping between module names and module indices.  It is a requirement
+of a well-formed moddb that both of the following hold:</p>
+
 @({
   (implies (and (natp i) (< i (moddb->nmods moddb)))
            (equal (moddb->modname-idxes-get
@@ -169,7 +174,7 @@ well-formed moddb that both of the following hold:</p>
                   name))
  })
 
-<p>The @(see moddb->mods) field is an array of @(see elab-mod) stobjs.  Thus, a
+<p>The @('moddb->mods') field is an array of @(see elab-mod) stobjs.  Thus, a
 moddb is a nested stobj -- see @(see acl2::nested-stobjs).  An elab-mod is an
 abstract stobj; more detailed documentation of its accessors/updaters is in
 @(see elab-mod).  Generally speaking, an elab-mod has a name, an array of
@@ -184,13 +189,7 @@ instances.</p>
 <p>To create a moddb, users should always use @(see module->db) to put the
 dependencies of some module in a @(see modalist) into the database.  Any other
 updates to a moddb require careful consideration of well-formedness
-invariants.</p>
-
-<p>
-
-</p>
-
-")
+invariants.</p>")
 
 
 (defxdoc elab-mod
@@ -2530,7 +2529,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (take n mods) mods
       :hints(("Goal" :in-theory (e/d (elab-modlist-norm
                                       my-open-take)
-                                     (acl2::take-when-atom)))))
+                                     (acl2::take-when-atom
+; Matt K. mod 5/2016 (type-set bit for {1}):
+                                      acl2::<-0-+-negative-1)))))
 
     (fty::deffixcong elab-modlist-norm-equiv moddb-norm-equiv
       (update-nth *moddb->modsi* mods moddb) mods)
@@ -5923,7 +5924,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
           ((elab-mod (moddb->modsi modidx moddb)))
           (b* ((idx (elab-mod-wirename->idx path.name elab-mod))
                ((unless idx)
-                (mv (msg "Missing: ~s0" path.name)
+                (mv (msg "In module ~x0: Missing: ~s1" (elab-mod->name elab-mod) path.name)
                     nil nil))
                (wire (elab-mod-wiretablei idx elab-mod)))
             (mv nil idx wire)))
@@ -5939,25 +5940,28 @@ checked to see if it is a valid bitselect and returned as a separate value."
                      ;; it might be that both work.
            wireidx wire  ;; bitselect case
            offset submod     ;; submod case
+           modname
            err)              ;; neither
           ((elab-mod (moddb->modsi modidx moddb)))
           (b* (;; first check for bitselect.  The next path component must be
                ;; the end and must have a name that's a natural.
                (wireidx (and bit (elab-mod-wirename->idx path.namespace elab-mod)))
                (instidx (elab-mod-instname->idx path.namespace elab-mod))
+               (modname (elab-mod->name elab-mod))
                ((unless (or instidx wireidx))
-                (mv nil nil nil nil (msg "missing: ~s0" path.namespace))))
+                (mv nil nil nil nil modname (msg "missing: ~s0" path.namespace))))
 
             (mv wireidx
                 (and wireidx (elab-mod-wiretablei wireidx elab-mod))
                 (and instidx (elab-mod->inst-wireoffset instidx elab-mod))
                 (and instidx (elab-mod->inst-modidx instidx elab-mod))
+                modname
                 nil)))
-         ((when err) (mv err nil nil nil))
+         ((when err) (mv (msg "In module ~x0: ~@1" modname err) nil nil nil))
          ((mv err submod-wire rest-index bitsel)
           (if submod
               (moddb-path->wireidx/decl path.subpath submod moddb)
-            (mv (msg "missing submod: ~s0" path.namespace)
+            (mv (msg "In module ~x0: missing submod: ~s1" modname path.namespace)
                 nil nil nil)))
          ((unless err) (mv nil submod-wire (+ offset rest-index) bitsel))
          ((unless wire) (mv err nil nil nil))
@@ -5965,7 +5969,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
          (in-bounds (and (>= bit wire.low-idx)
                          (< bit (+ wire.low-idx wire.width))))
          ((unless in-bounds)
-          (mv (msg "bitselect out of bounds: ~x0" bit) nil nil nil)))
+          (mv (msg "In module ~x0: bitselect out of bounds: ~x1" modname bit) nil nil nil)))
       (mv nil wire wireidx bit)))
   ///
 
@@ -6055,7 +6059,12 @@ checked to see if it is a valid bitselect and returned as a separate value."
 
   (b* (((mv err & idx bitsel)
         (moddb-path->wireidx/decl path modidx moddb))
-       ((when err) (raise "~@0" err))
+       ((when err)
+        (b* (((stobj-get name)
+              ((elab-mod (moddb->modsi modidx moddb)))
+              (elab-mod->name elab-mod)))
+          (raise "Error looking up ~x1: ~@0~%from module: ~x2"
+                          err path name)))
        ((when bitsel) (raise "Didn't expect a bit select: ~x0" path)))
     idx)
   ///
@@ -6944,6 +6953,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
           (and (not quiet) (cw "Warning! Module ~x0 not found in moddb.~%" name))
           (modalist-named->indexed (cdr x) moddb :quiet quiet))
          ((mv err1 first) (module-named->indexed mod modidx moddb))
+         (- (clear-memoize-table 'svex-named->indexed))
          ((mv err2 rest) (modalist-named->indexed (cdr x) moddb :quiet quiet)))
       (mv (or err1 err2) (cons (cons name first) rest)))
     ///
@@ -7216,9 +7226,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
        ((wire xf) (elab-mod-wiretablei idx elab-mod))
        (widx (+ (lnfix idx) (lnfix offset)))
        (lhs (list (lhrange xf.width (lhatom-var
-                                     (address->svar
-                                      (make-address :path (make-path-wire :name xf.name)
-                                                    :index widx))
+                                     (make-svar :name widx)
+                                     ;; (address->svar
+                                     ;;  (make-address :path (make-path-wire :name xf.name)
+                                     ;;                :index widx))
                                      0))))
        (lhsarr (set-lhs widx lhs lhsarr)))
     ;; (cw "set ~x0 to ~x1~%" widx lhs)
@@ -7238,9 +7249,11 @@ checked to see if it is a valid bitselect and returned as a separate value."
                     (< (nfix n) (len lhsarr)))
                (b* (((wire xf) (elab-mod-wiretablei (- (nfix n) (nfix offset)) elab-mod)))
                  (list (lhrange xf.width (lhatom-var
-                                          (address->svar
-                                           (make-address :path (make-path-wire :name xf.name)
-                                                         :index (nfix n))) 0))))
+                                          (make-svar :name (nfix n))
+                                          ;; (address->svar
+                                          ;;  (make-address :path (make-path-wire :name xf.name)
+                                          ;;                :index (nfix n)))
+                                          0))))
              (lhs-fix (nth n lhsarr))))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
@@ -7510,20 +7523,30 @@ checked to see if it is a valid bitselect and returned as a separate value."
          (mod (modalist-lookup name modalist))
          ((unless mod)
           (mv nil (list name) nil nil))
-         (local-aliases (and mod (module->aliaspairs mod)))
-         (local-assigns (and mod (module->assigns mod)))
-         ;; (local-delays  (and mod (module->delays mod)))
-         ((mv varfails1 abs-aliases) (lhspairs->absindexed local-aliases scope moddb))
-         ((mv varfails2 abs-assigns) (assigns->absindexed local-assigns scope moddb))
-         ;; ((mv varfails3 abs-delays)  (svar-map->absindexed local-delays scope moddb))
-         ((mv varfails4 modfails rest-aliases rest-assigns)
-          (svex-modinsts->flatten 0 ninsts scope modalist moddb)))
-      (mv (append-without-guard varfails1 varfails2 varfails4)
-          modfails
-          (append-without-guard abs-aliases rest-aliases)
-          (append-without-guard abs-assigns rest-assigns)
-          ;; (append-without-guard abs-delays rest-delays)
-          )))
+         (local-aliases (module->aliaspairs mod))
+         (local-assigns (module->assigns mod)))
+            
+      (time$
+       (b* (;; (local-delays  (and mod (module->delays mod)))
+            ((mv varfails1 abs-aliases) (lhspairs->absindexed local-aliases scope moddb))
+            ((mv varfails2 abs-assigns) (assigns->absindexed local-assigns scope moddb))
+            ;; We're never going to come back to this particular place in the
+            ;; instantiation hierarchy -- i.e. we'll never call
+            ;; svex->absindexed again with the same scope argument, so these
+            ;; memoization tables aren't worth anything once we're done here.
+            (- (clear-memoize-table 'svex->absindexed))
+            ;; ((mv varfails3 abs-delays)  (svar-map->absindexed local-delays scope moddb))
+            ((mv varfails4 modfails rest-aliases rest-assigns)
+             (svex-modinsts->flatten 0 ninsts scope modalist moddb)))
+         (mv (append-without-guard varfails1 varfails2 varfails4)
+             modfails
+             (append-without-guard abs-aliases rest-aliases)
+             (append-without-guard abs-assigns rest-assigns)
+             ;; (append-without-guard abs-delays rest-delays)
+             ))
+       :msg "; svex-mod->flatten ~x0: ~st sec, ~sa bytes, ~x1 instances, ~x2 aliases, ~x3 assigns~%"
+       :args (list name ninsts (len local-aliases) (len local-assigns))
+       :mintime 1)))
 
   (define svex-modinsts->flatten ((n natp)
                                   (ninsts)

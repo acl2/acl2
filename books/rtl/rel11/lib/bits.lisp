@@ -39,7 +39,9 @@
 		(< x (expt 2 k))))
   :rule-classes :forward-chaining)
 
-(defun nats (n) (if (zp n) () (cons (1- n) (nats (1- n)))))
+(defun nats (n)
+  (declare (xargs :guard (natp n)))
+  (if (zp n) () (cons (1- n) (nats (1- n)))))
 
 (defthm bvecp-member
   (implies (and (natp n)
@@ -543,6 +545,8 @@
   :rule-classes ())
 
 (defun sumbits (x n)
+  (declare (xargs :guard (and (integerp x)
+                              (natp n))))
   (if (zp n)
       0
     (+ (* (expt 2 (1- n)) (bitn x (1- n)))
@@ -562,22 +566,24 @@
 	     (equal (sumbits x n)
 		    x)))
 
-(defun all-bits-p (b k)
-  (if (zp k)
-      t
-    (and (or (= (nth (1- k) b) 0)
-	     (= (nth (1- k) b) 1))
-	 (all-bits-p b (1- k)))))
+(defnd all-bits-p (b k)
+  (if (posp k)
+      (and (consp b)
+           (all-bits-p (cdr b) (1- k))
+           (or (equal (car b) 0)
+               (equal (car b) 1)))
+    (and (true-listp b)
+         (equal k 0))))
 
 (defun sum-b (b k)
+  (declare (xargs :guard (all-bits-p b k)))
   (if (zp k)
       0
     (+ (* (expt 2 (1- k)) (nth (1- k) b))
        (sum-b b (1- k)))))
 
 (defthmd sum-bitn
-  (implies (and (natp n)
-		(all-bits-p b n)
+  (implies (and (all-bits-p b n)
 	        (natp k)
 		(< k n))
            (equal (bitn (sum-b b n) k)
@@ -586,9 +592,11 @@
 ;; The next lemma can be used to prove equality of two bit vectors by
 ;; proving that they have the same value at bit n for all n.
 
-(defun bit-diff (x y)
-  (declare (xargs :measure (+ (abs (ifix x)) (abs (ifix y)))))
-  (if (or (not (integerp x)) (not (integerp y)) (= x y))
+(defn bit-diff (x y)
+  (declare (xargs :measure (:? x y)))
+  (if (or (not (integerp x))
+          (not (integerp y))
+          (= x y))
       ()
     (if (= (bitn x 0) (bitn y 0))
         (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
@@ -671,14 +679,14 @@
 ;; at least 1 data/size pair, but we do not need to specify this in the guard,
 ;; and leaving it out of the guard simplifies the guard proof.
 
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
+(defn formal-+ (x y)
   (if (and (acl2-numberp x) (acl2-numberp y))
       (+ x y)
     (list '+ x y)))
 
 (defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
+  (declare (xargs :guard (and (true-listp x)
+                              (evenp (length x)))))
   (if (endp (cddr x))
       (cadr x)
     (formal-+ (cadr x)
@@ -886,26 +894,16 @@
 		      (bitn x (- i n))
 		    0)))))
 
-;; We introduce mbe for MULCAT not because we want particularly fast execution,
-;; but because the existing logic definition does not satisfy the guard of cat,
-;; which can't be changed because of the guard of bits.
-
 (defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))))
-  (mbe :logic (if (and (integerp n) (> n 0))
-                  (cat (mulcat l (1- n) x)
-                       (* l (1- n))
-                       x
-                       l)
-                0)
-       :exec  (cond ((eql n 1)
-                     (bits x (1- l) 0))
-                    ((and (integerp n) (> n 0))
-                     (cat (mulcat l (1- n) x)
-                          (* l (1- n))
-                          x
-                          l))
-                    (t 0))))
+  (declare (xargs :guard (and (natp l)
+                              (natp n)
+                              (natp x))))
+  (if (and (integerp n) (> n 0))
+      (cat (mulcat l (1- n) x)
+           (* l (1- n))
+           x
+           l)
+    0))
 
 (defthm mulcat-nonnegative-integer-type
   (and (integerp (mulcat l n x))
@@ -955,6 +953,8 @@
 (defsection-rtl |Signed Integer Formats| |Bit Vectors|
 
 (defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
@@ -975,6 +975,9 @@
                   (bits r i j))))
 
 (defund sextend (m n r)
+  (declare (xargs :guard (and (natp m)
+                              (natp n)
+                              (integerp r))))
   (bits (si r n) (1- m) 0))
 
 (defthmd si-sextend

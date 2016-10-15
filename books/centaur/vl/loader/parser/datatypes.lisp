@@ -263,13 +263,15 @@
             (when entry.takes-dimensionsp
               (dims := (vl-parse-0+-packed-dimensions)))
             (return
-             (make-vl-coretype :name entry.coretypename
-                               :signedp (if signing
-                                            (if (eq (vl-token->type signing) :vl-kwd-signed)
-                                                t
-                                              nil)
-                                          entry.default-signedp)
-                               :pdims dims))))))
+             (let ((ans (make-vl-coretype :name entry.coretypename
+                                    :signedp (if signing
+                                                 (if (eq (vl-token->type signing) :vl-kwd-signed)
+                                                     t
+                                                   nil)
+                                               entry.default-signedp)
+                                    :pdims dims)))
+               (mbe :logic ans
+                    :exec (if (atom dims) (hons-copy ans) ans))))))))
 
 
 
@@ -387,19 +389,28 @@
           (:= (vl-match))
           (value := (vl-parse-expression)))
 
-        (return (make-vl-enumitem
-                 :name (vl-idtoken->name name)
-                 :range (cond ((not left)
-                               nil)
-                              ((not right)
-                               ;; See Table 6-10 on Page 80.  A single index should introduce
-                               ;; names foo0 through fooN-1.
-                               (make-vl-range :msb (vl-make-index 0)
-                                              :lsb (vl-make-index (vl-inttoken->value left))))
-                              (t
-                               (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
-                                              :lsb (vl-make-index (vl-inttoken->value right)))))
-                 :value value))))
+        (when (and left
+                   (not right)
+                   (equal (vl-inttoken->value left) 0))
+          ;; See Table 6-10 on Page 80.  A special case is that a single index,
+          ;; like foo[3], should introduce names foo0, foo1, foo2 (but not
+          ;; foo3).  A corner case is foo[0].  Per the table, "N shall be a
+          ;; positive integral number."  If it isn't, it doesn't make sense.
+          (return-raw
+           (vl-parse-error "Illegal enum item index [0].")))
+
+        (return
+         (make-vl-enumitem
+          :name (vl-idtoken->name name)
+          :range (cond ((not left)
+                        nil)
+                       ((not right)
+                        (make-vl-range :msb (vl-make-index 0)
+                                       :lsb (vl-make-index (- (vl-inttoken->value left) 1))))
+                       (t
+                        (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
+                                       :lsb (vl-make-index (vl-inttoken->value right)))))
+          :value value))))
 
 (defparser vl-parse-1+-enum-name-declarations-separated-by-commas ()
   :result (vl-enumitemlist-p val)
@@ -432,7 +443,7 @@
 (defaggregate vl-vardeclassign
   :parents (vl-parse-datatype vl-build-vardecls)
   :short "Temporary structure used when parsing variable declarations."
-  :legiblep nil
+  :layout :fulltree
   ((id   stringp :rule-classes :type-prescription)
    (dims vl-packeddimensionlist-p "BOZO not sufficiently general.")
    (expr vl-maybe-expr-p          "BOZO not sufficiently general."))

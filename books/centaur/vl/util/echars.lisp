@@ -39,7 +39,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
 (include-book "xdoc/alter" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "misc/assert" :dir :system))
@@ -134,10 +134,10 @@ character with its location.</p>")
         (let* ((line-shift (the (unsigned-byte 60) (ash (the (unsigned-byte 30) line) 30)))
                (col-shift  (the (unsigned-byte 30) (ash (the (unsigned-byte 22) col) 8))))
           (the (unsigned-byte 60)
-            (logior (the (unsigned-byte 60)
-                      (logior (the (unsigned-byte 60) line-shift)
-                              (the (unsigned-byte 30) col-shift)))
-                    (the (unsigned-byte 8) code))))
+               (logior (the (unsigned-byte 60)
+                            (logior (the (unsigned-byte 60) line-shift)
+                                    (the (unsigned-byte 30) col-shift)))
+                       (the (unsigned-byte 8) code))))
       ;; Degenerate case: something too big, just make a cons structure
       (cons (cons line col) code))
     ///
@@ -155,16 +155,16 @@ character with its location.</p>")
                    :hyp :fguard
                    :rule-classes ((:rewrite)
                                   (:type-prescription :corollary
-                                                      (implies (vl-echarpack-p x)
-                                                               (natp (vl-echarpack->code x))))
+                                   (implies (vl-echarpack-p x)
+                                            (natp (vl-echarpack->code x))))
                                   (:linear :corollary
-                                           (implies (vl-echarpack-p x)
-                                                    (< (vl-echarpack->code x) 256)))))
+                                   (implies (vl-echarpack-p x)
+                                            (< (vl-echarpack->code x) 256)))))
     :inline t
     (if (consp x)
         (the (unsigned-byte 8) (cdr x))
       (the (unsigned-byte 8)
-        (logand (the (unsigned-byte 60) x) #xFF)))
+           (logand (the (unsigned-byte 60) x) #xFF)))
     ///
     (defthm vl-echarpack->code-of-vl-echarpack
       (implies (and (force (unsigned-byte-p 8 code))
@@ -183,7 +183,7 @@ character with its location.</p>")
     (if (consp x)
         (the (integer 0 *) (caar x))
       (the (unsigned-byte 30)
-        (ash (the (unsigned-byte 60) x) -30)))
+           (ash (the (unsigned-byte 60) x) -30)))
     ///
     (defthm vl-echarpack->line-of-vl-echarpack
       (implies (and (force (unsigned-byte-p 8 code))
@@ -201,9 +201,9 @@ character with its location.</p>")
     (if (consp x)
         (the (integer 0 *) (cdar x))
       (the (unsigned-byte 60)
-        (logand (the (unsigned-byte 22) (1- (expt 2 22)))
-                (the (unsigned-byte 52)
-                  (ash (the (unsigned-byte 60) x) -8)))))
+           (logand (the (unsigned-byte 22) (1- (expt 2 22)))
+                   (the (unsigned-byte 52)
+                        (ash (the (unsigned-byte 60) x) -8)))))
     ///
     (defthm vl-echarpack->col-of-vl-echarpack
       (implies (and (force (unsigned-byte-p 8 code))
@@ -290,8 +290,8 @@ character with its location.</p>")
     :short "High-level accessor: get the character from an @(see vl-echar-p)."
     :inline t
     (the character
-      (code-char (the (unsigned-byte 8)
-                   (vl-echarpack->code (vl-echar-raw->pack x)))))
+         (code-char (the (unsigned-byte 8)
+                         (vl-echarpack->code (vl-echar-raw->pack x)))))
     ///
     (deffixequiv vl-echar->char)
     (defthm vl-echar->char-of-vl-echar
@@ -300,15 +300,54 @@ character with its location.</p>")
       :hints(("Goal" :in-theory (e/d (char-fix)
                                      ((force)))))))
 
+
+
+  (define vl-echarpack->linecol ((x vl-echarpack-p))
+    :verify-guards nil
+    :inline t
+    :enabled t
+    (mbe :logic (make-vl-linecol :line (vl-echarpack->line x)
+                                 :col  (vl-echarpack->col x))
+         :exec
+         (if (consp x)
+             ;; Unlikely case that the thing is somehow too big, eh, whatever.
+             (make-vl-linecol :line (vl-echarpack->line x)
+                              :col  (vl-echarpack->col x))
+           (the (unsigned-byte 52)
+                (ash (the (unsigned-byte 60) x) -8))))
+    ///
+    (local (defthm xx1
+             (implies (and (< x (expt 2 60))
+                           (natp x))
+                      (< (acl2::logtail 30 x) (expt 2 30)))
+             :rule-classes :linear
+             :hints(("Goal"
+                     :in-theory (disable bitops::unsigned-byte-p-of-logtail)
+                     :use ((:instance bitops::unsigned-byte-p-of-logtail
+                            (acl2::size 30)
+                            (acl2::size1 30)
+                            (acl2::i x)))))))
+    (verify-guards vl-echarpack->linecol$inline
+      :hints(("Goal" :in-theory (enable vl-echarpack-p
+                                        vl-linecol
+                                        vl-echarpack->line
+                                        vl-echarpack->col))
+             (acl2::equal-by-logbitp-hammer))))
+
   (define vl-echar->loc ((x vl-echar-p))
     :returns (loc vl-location-p)
     :parents (vl-echar-p)
     :short "High-level accessor: get the location from an @(see vl-echar-p)."
     :long "<p>Note that this has to construct a @(see vl-location-p) object.</p>"
     (b* (((vl-echar-raw x) x))
-      (make-vl-location :filename x.filename
-                        :line (vl-echarpack->line x.pack)
-                        :col  (vl-echarpack->col x.pack)))
+      (mbe :logic
+           (make-vl-location :filename x.filename
+                             :line (vl-echarpack->line x.pack)
+                             :col  (vl-echarpack->col x.pack))
+           :exec
+           (cons (vl-echarpack->linecol x.pack)
+                 (hons :vl-location x.filename))))
+    :guard-hints(("Goal" :in-theory (enable vl-location)))
     ///
     (deffixequiv vl-echar->loc)
     (defthm vl-echar->loc-of-vl-echar
@@ -320,10 +359,8 @@ character with its location.</p>")
    (let ((name 'vl-echar)
          (fields '(char loc)))
      `(progn
-        ,(std::da-make-maker-fn name fields nil)
-        ,(std::da-make-maker name fields)
-        ,(std::da-make-changer-fn name fields)
-        ,(std::da-make-changer name fields)
+        ,(std::da-make-maker name fields nil)
+        ,(std::da-make-changer name fields nil)
         ,(std::da-make-binder name fields))))
 
   ;; Rudimentary testing of defaggregate stuff
@@ -533,8 +570,10 @@ handling more sensible.</p>"
             (col  (if (eql x1 #\Newline) 0 (+ 1 col))))
          (cons echar
                (vl-echarlist-from-chars-fn (cdr x) filename line col)))
-       :exec (with-local-nrev
-              (vl-echarlist-from-chars-aux x filename line col nrev)))
+       :exec (if (atom x)
+                 nil
+               (with-local-nrev
+                 (vl-echarlist-from-chars-aux x filename line col nrev))))
   ///
   (defthm true-listp-of-vl-echarlist-from-chars-fn
     (true-listp (vl-echarlist-from-chars-fn x filename line col))

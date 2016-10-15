@@ -55,13 +55,13 @@
 ; keep that list of properties in sync with raw-acl2-exports1.
 
   (declare (xargs :guard (plist-worldp wrld)))
-  (let ((doc-alist (global-val 'documentation-alist wrld)))
+  (let ((doc-alist *acl2-system-documentation*))
     (cond ((alistp doc-alist)
            (raw-acl2-exports1 doc-alist
-                                   (pkg-witness "ACL2")
-                                   wrld
-                                   allp
-                                   nil))
+                              (pkg-witness "ACL2")
+                              wrld
+                              allp
+                              nil))
           (t (er hard? 'raw-acl2-exports
                  "Expected ~x0 to be an alistp!")))))
 
@@ -83,6 +83,10 @@
   '(*UNTROUBLESOME-CHARACTERS*
     ADD-DIVE-INTO-MACRO
     BDD
+    BOOK-HASH
+    CHAR-DOWNCASE ; should probably be documented (noticed by Alessandro Coglio)
+    CHAR-UPCASE ; should probably be documented (noticed by Alessandro Coglio)
+    CHARACTERP-RETURN ; should add to *acl2-exports*
     CHECK-SUM
     COMP-GCL
     COUNT ; defined in books/coi/bags/basic.lisp
@@ -93,14 +97,74 @@
     INTERSECTP ; defined in books/finite-set-theory/osets/outer.lisp
     LOOP-STOPPER
     MBE1
+    NEAR-MISSES ; should add to *acl2-exports*
     NON-LINEAR-ARITHMETIC
     NORMALIZE
-    PROOF-CHECKER
+    POS-LISTP ; should add to *acl2-exports*
+    PROOF-BUILDER
+    PSEUDO-TERM-LISTP ; should add to *acl2-exports*
     REDEFINED-NAMES
     REMOVE-DIVE-INTO-MACRO
     REWRITE
+    SET-SERIALIZE-CHARACTER-SYSTEM ; probably should add to *acl2-exports*
     TYPE-SET
     WATERFALL
+; Some of the following might be added to *acl2-exports*, but perhaps not; they
+; come from defpointers to system-utilities.
+    ALL-CALLS
+    BODY
+    CONJOIN
+    CONS-COUNT-BOUNDED
+    CONS-TERM
+    DEFINED-CONSTANT
+    DISJOIN
+    DISJOIN2
+    ENABLED-NUMEP
+    ENABLED-RUNEP
+    FARGN
+    FARGS
+    FCONS-TERM
+    FCONS-TERM*
+    FDEFUN-MODE
+    FFN-SYMB
+    FFN-SYMB-P
+    FFNNAMEP
+    FFNNAMEP-LST
+    FLAMBDA-APPLICATIONP
+    FLAMBDAP
+    FN-SYMB
+    FORMALS
+    FQUOTEP
+    GENVAR
+    GET-BRR-LOCAL
+    GET-EVENT
+    GET-SKIPPED-PROOFS-P
+    IMPLICATE
+    LAMBDA-APPLICATIONP
+    LAMBDA-BODY
+    LAMBDA-FORMALS
+    LOGICP
+    MAKE-LAMBDA
+    MERGE-SORT-LEXORDER
+    NVARIABLEP
+    PRETTYIFY-CLAUSE
+    PROGRAMP
+    RECURSIVEP
+    RW-CACHE-STATE
+    STOBJS-IN
+    STOBJS-OUT
+    SUBCOR-VAR
+    SUBLIS-VAR
+    SUBST-EXPR
+    SUBST-VAR
+    SYMBOL-CLASS
+    TRANS-EVAL
+    TRANSLATE
+    TRANSLATE-CMP
+    TRANSLATE1
+    TRANSLATE1-CMP
+    TRANSLATE11
+    VARIABLEP
     ))
 
 (defun missing-from-acl2-exports (wrld)

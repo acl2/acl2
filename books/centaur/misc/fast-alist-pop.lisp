@@ -76,6 +76,48 @@ by linearly traversing the alist.</p>")
         (and (consp x)
              (cdr x)))))
 
+(defxdoc fast-alist-pop*
+  :parents (fast-alists)
+  :short "@('fast-alist-pop*') removes the first key-value pair from a fast alist, rebinding that key to its previous value in the backing hash table.  That value must be provided as a second argument."
+  :long "<p>This is a user extension to the ACL2 (in particular, ACL2H) system.
+It may eventually be added to acl2h proper, but until then it requires a trust
+tag since it hasn't been thoroughly vetted for soundness.</p>
+
+<p>Logically, fast-alist-pop* is just @('CDR').  However, it has a special
+side-effect when called on a fast alist (see @(see hons-acons)).  A fast alist
+has a backing hash table mapping its keys to their corresponding (unshadowed)
+pairs, which supports constant-time alist lookup.  @(see Hons-acons) adds
+key/value pairs to the alist and its backing hash table, and @(see hons-get)
+performs constant-time lookup by finding the backing hash table and looking up
+the key in the table.  However, logically, hons-get is just @(see
+hons-assoc-equal), a more traditional alist lookup function that traverses the
+alist until it finds the matching key.  Correspondingly, fast-alist-pop is
+logically just CDR, but it removes the key/value pair corresponding to the CAR
+of the alist from its backing hash table.</p>
+
+<p>To maintain both the consistency of the alist with the backing hash table
+and constant-time performance, fast-alist-pop has a guard requiring that the
+key of that first pair not be bound in the cdr of the alist.  Otherwise, simply
+removing that pair from the hash table would not be correct, since the key
+would remain in the alist bound to some value, which could only be discovered
+by linearly traversing the alist.</p>")
+
+(defun fast-alist-pop* (prev-binding x)
+  "Has an under-the-hood definition."
+  (declare (xargs :guard (and (consp x)
+                              (consp (car x))
+                              (equal (hons-assoc-equal (caar x) (cdr x)) prev-binding)))
+           (ignorable prev-binding))
+  (mbe :logic (cdr x)
+       :exec
+       (progn$
+        #+hons
+        (er hard? 'fast-alist-pop*
+            "Under the hood definition not installed?")
+        (and (consp x)
+             (cdr x)))))
+
+
 ; (depends-on "fast-alist-pop-raw.lsp")
 #+hons
 (include-raw "fast-alist-pop-raw.lsp")

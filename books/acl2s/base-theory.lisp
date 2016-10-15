@@ -17,12 +17,16 @@
 ; due to the algorithm not being as general as it can be. See the
 ; acl2s-issues file. Second, I made one pass through the
 ; documentation of ACL2-built-ins. I should check again and I
-; should check functions defined in the books we load
+; should check functions defined in the books we load 
 
 (sig append ((listof :a) (listof :a)) => (listof :a))
 (sig acl2::rev ((listof :a)) => (listof :a))
-(sig nth (nat (listof :a)) => :a
+(sig nth (nat (listof :a)) => :a 
      :satisfies (< x1 (len x2)))
+; PETE: I added and removed the sig below because it caused the
+; theorem prover to get super slow.
+;(sig car ((listof :a)) => :a :satisfies (consp x1)) ;new: check
+(sig cons (:a (listof :a)) => (listof :a))
 (sig acl2::fix-true-list ((listof :a)) => (listof :a))
 (sig last ((listof :a)) => (listof :a))
 (sig acl2::repeat (nat :a) => (listof :a)) ;renamed from replicate-fn
@@ -48,6 +52,8 @@
 (sig put-assoc-equal (:a :b (alistof :a :b)) => (alistof :a :b))
 (sig pairlis$ ((listof :a) (listof :b)) => (alistof :a :b)
      :satisfies (= (len x1) (len x2)))
+(sig update-nth (nat :a (listof :a)) => (listof :a) ;new: check
+     :satisfies (<= x1 (len x3)))
 
 (include-book "arithmetic-5/top" :dir :system)
 
@@ -87,18 +93,35 @@
   :rule-classes ((:rewrite)))
 
 (defthm numerator-1-decreases
-  (implies (rationalp n)
+  (implies (rationalp n) 
            (< (numerator (- n 1))
               (numerator n)))
-  :hints (("goal"
-           :use ((:instance ACL2::|(* r (denominator r))|
+  :hints (("goal" 
+           :use ((:instance ACL2::|(* r (denominator r))| 
                   (acl2::r n))
-                 (:instance ACL2::|(* r (denominator r))|
+                 (:instance ACL2::|(* r (denominator r))| 
                   (acl2::r (- n 1)))
                  )
            :in-theory (disable ACL2::|(* r (denominator r))|)))
   :rule-classes ((:linear) (:rewrite)))
 
+(defun posp-ind (n)
+  (if (or (zp n) (equal n 1))
+    n
+    (posp-ind (- n 1))))
+
+(defthm numerator-n-decreases
+  (implies (and (rationalp r)
+                (<= n r)
+                (integerp n)
+                (< 0 n))
+           (< (numerator (+ (- n) r))
+                    (numerator r)))
+  :hints (("goal" :induct (posp-ind n))
+          ("subgoal *1/2.2" 
+           :use ((:instance numerator-1-decreases 
+                            (n (+ r (- n) 1))))))
+  :rule-classes ((:linear) (:rewrite)))
 
 
 

@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -158,7 +158,7 @@
 ;   #   (defparameter cl-user::*acl2-optimize-form*
 ;   #     '(OPTIMIZE (COMPILATION-SPEED 0) (DEBUG 0) (SPEED 0) (SPACE 0)
 ;   #                (SAFETY 3)))
-;   # 
+;   #
 
 ;   # Now start CCL and evaluate:
 
@@ -249,7 +249,18 @@
                                     our-safety)
                             our-safety)
                    0))
-              )))
+              )
+             #+ccl
+             ,@(let ((our-stack-access
+                      (if (boundp 'common-lisp-user::*acl2-stack-access*)
+                          (symbol-value 'common-lisp-user::*acl2-stack-access*)
+                        nil)))
+                 (if our-stack-access
+                     (progn (format t "Note: Setting :STACK-ACCESS to ~s."
+                                    our-stack-access)
+                            `((:stack-access ,our-stack-access)))
+                   nil))
+              ))
 
 (proclaim *acl2-optimize-form*)
 
@@ -949,15 +960,15 @@
     #+acl2-par "multi-threading-raw"
     #+hons "serialize-raw"
     "axioms"
+    "hons"      ; but only get special under-the-hood treatment with #+hons
+    #+hons "hons-raw" ; avoid possible inlining of hons fns in later sources
     "basis-a"   ; to be included in any "toothbrush"
     "memoize"   ; but only get special under-the-hood treatment with #+hons
-    "hons"      ; but only get special under-the-hood treatment with #+hons
     "serialize" ; but only get special under-the-hood treatment with #+hons
     "basis-b"   ; not to be included in any "toothbrush"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
-    #+hons "hons-raw"
     #+hons "memoize-raw"
     "translate"
     "type-set-a"
@@ -971,16 +982,16 @@
     "bdd"
     "other-processes"
     "induct"
-    "proof-checker-pkg"
+    "proof-builder-pkg"
     "doc"
     "history-management"
     "prove"
     "defuns"
-    "proof-checker-a"
+    "proof-builder-a"
     "defthm"
     "other-events"
     "ld"
-    "proof-checker-b"
+    "proof-builder-b"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last
@@ -1039,7 +1050,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 7.1"
+                      "ACL2 Version 7.2"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -1334,7 +1345,15 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
            ,@forms))
 
-  #-(or sbcl cmu)
+  #+lispworks
+  `(with-redefinition-suppressed
+    (handler-bind
+     ((style-warning (lambda (c)
+                       (declare (ignore c))
+                       (invoke-restart 'muffle-warning))))
+     ,@forms))
+
+  #-(or sbcl cmu lispworks)
   `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)
@@ -1348,11 +1367,7 @@ ACL2 from scratch.")
 ; The handler-bind form given in with-warnings-suppressed for sbcl and cmucl is
 ; sufficient; we do not need anything further here.  But even with the addition
 ; of style-warnings (as commented there), that form doesn't seem to work for
-; CCL, Allegro CL, Lispworks, or CLISP.  So we bind some globals instead.
-
-  #+lispworks
-  `(let ((compiler::*compiler-warnings* nil))
-     ,@forms)
+; CCL, Allegro CL, or CLISP.  So we bind some globals instead.
 
   #+allegro
   `(handler-bind
@@ -1369,7 +1384,7 @@ ACL2 from scratch.")
   `(let ((ccl::*suppress-compiler-warnings* t))
      ,@forms)
 
-  #-(or lispworks allegro clisp ccl)
+  #-(or allegro clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)
@@ -1616,11 +1631,7 @@ which is saved just in case it's needed later.")
    #\.
    #'sharp-dot-read))
 
-(defun define-sharp-atsign ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\@
-   #'sharp-atsign-read))
+; Define-sharp-atsign is defined in interface-raw.lisp.
 
 (defun define-sharp-bang ()
   (set-new-dispatch-macro-character
@@ -1687,7 +1698,7 @@ which is saved just in case it's needed later.")
 
     (when do-all-changes
       (define-sharp-dot)
-      (define-sharp-atsign)
+;     (define-sharp-atsign) ; see interface-raw.lisp
       (define-sharp-bang)
       (define-sharp-u))
 
@@ -1716,7 +1727,7 @@ which is saved just in case it's needed later.")
           (copy-readtable *acl2-readtable*))
         (let ((*readtable* *acl2-readtable*))
           (define-sharp-dot)
-          (define-sharp-atsign)
+;         (define-sharp-atsign) ; see interface-raw.lisp
           (define-sharp-bang)
           (define-sharp-u)
           (set-dispatch-macro-character
@@ -1877,7 +1888,7 @@ which is saved just in case it's needed later.")
 ;
 ; So, we manage this simply by modifying the character reader so that
 ; the #\ notation only works for single characters and for Space, Tab,
-; Newline, Page, and Rubout; an error is caused otherwise.
+; Newline, Page, Rubout, and Return; an error is caused otherwise.
 
 ; Our algorithm for reading character objects starting with #\ is
 ; quite simple.  We accumulate characters until encountering a
@@ -1885,8 +1896,8 @@ which is saved just in case it's needed later.")
 ; *acl2-read-character-terminators*.  The result must be either a
 ; single standard character or else one of the names (up to case,
 ; which we ignore in the multiple-character case) SPACE, TAB, NEWLINE,
-; PAGE, and RUBOUT.  Otherwise we cause an error.  Note that if we do
-; NOT cause an error, then any dpANS-compliant Common Lisp
+; PAGE, RUBOUT, and RETURN.  Otherwise we cause an error.  Note that
+; if we do NOT cause an error, then any dpANS-compliant Common Lisp
 ; implementation's character reader would behave the same way, because
 ; dpANS says (in the section ``Sharpsign Backslash'') the following.
 
@@ -2102,7 +2113,7 @@ You are using version ~s.~s.~s."
               (let ((source (make-pathname :name name
                                            :type *lisp-extension*)))
                 (load source)
-                (or (equal name "proof-checker-pkg")
+                (or (equal name "proof-builder-pkg")
                     (progn
                       (compile-file source)
                       (load-compiled
@@ -2178,8 +2189,8 @@ You are using version ~s.~s.~s."
                        *compiled-file-extension*)))
       (dolist (name *acl2-files*)
         (or (equal name "defpkgs")
-            (if (equal name "proof-checker-pkg")
-                (load "proof-checker-pkg.lisp")
+            (if (equal name "proof-builder-pkg")
+                (load "proof-builder-pkg.lisp")
               (load-compiled (make-pathname :name name
                                             :type extension)))))
       (load "defpkgs.lisp")
@@ -2197,16 +2208,37 @@ You are using version ~s.~s.~s."
 ;                            DECLARATIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We use XARGS in DECLARE forms.  By making this proclamation, we
-; suppress compiler warnings.
+; We use XARGS and IRRELEVANT in DECLARE forms.  By making this proclamation,
+; we suppress compiler warnings.
 
 (declaim (declaration xargs))
+(declaim (declaration irrelevant))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            EXITING LISP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defparameter *acl2-panic-exit-status* nil)
+
+#+ccl
+(defun common-lisp-user::acl2-exit-lisp-ccl-report (status)
+
+; Gary Byers says (email, 1/12/2016) that he believes that the first of 5
+; values returned by (GCTIME) is the sum of the other four, which are full and
+; then 3 levels of ephemeral/generational.  He also says that these are
+; reported in internal-time-units, which are microseconds on x8664.
+
+  (declare (ignore status))
+  (format t
+          "~%(ccl::total-bytes-allocated) = ~s~%(ccl::gctime) ~
+           = ~s~%(ccl::gccounts) = ~s~%~%"
+          (ccl::total-bytes-allocated)
+          (multiple-value-list (ccl::gctime))
+          (multiple-value-list (ccl::gccounts))))
+
+#+cltl2
+(defvar common-lisp-user::*acl2-exit-lisp-hook*
+  nil)
 
 (defun exit-lisp (&optional (status '0 status-p))
 
@@ -2218,6 +2250,9 @@ You are using version ~s.~s.~s."
 ; calls to send-die-to-worker-threads and stop-multiprocessing, they should be
 ; removed.
 
+  (when (fboundp common-lisp-user::*acl2-exit-lisp-hook*)
+    (funcall common-lisp-user::*acl2-exit-lisp-hook* status)
+    (setq common-lisp-user::*acl2-exit-lisp-hook* nil))
   #+(and acl2-par lispworks)
   (when mp::*multiprocessing*
     (send-die-to-worker-threads)
@@ -2306,24 +2341,52 @@ You are using version ~s.~s.~s."
 ; So starting with Version_2.6 we put the constants here, since this file
 ; (acl2.lisp) is not compiled and hence is only loaded once.
 
-; A slight complication is that *slashable-array* uses *slashable-chars*, which
-; in turn is used in the definition of function some-slashable.  (There are
-; other such examples, but we'll focus on that one.)  So, defconst
-; *slashable-chars* needs to be defined in the ACL2 loop even though, as of
-; Version_2.5, it was used in the definition of *slashable-array*, which we
-; want to include in the present file.  So we inline the defconsts below.
-
 (defconstant *slashable-array*
+
+; The list below comes from evaluating the following form in the supported
+; Lisps (Allegro CL, CCL, CMUCL, GCL, LispWorks, SBCL) and taking the union.
+; A similar form is found in check-slashable.
+
+;   (loop for i from 0 to 255
+;         when (let ((str (coerce (list (code-char i)
+;                                       #\A #\B
+;                                       (code-char i)
+;                                       #\U #\V
+;                                       (code-char i))
+;                                 'string)))
+;                (not (eq (ignore-errors (read-from-string str))
+;                         (intern str "CL-USER"))))
+;         collect i)
+
+; Our use of the form above is justified by the following paragraph from the
+; ANSI standard (also quoted in may-need-slashes-fn).
+
+;    When printing a symbol, the printer inserts enough single escape and/or
+;    multiple escape characters (backslashes and/or vertical-bars) so that if
+;    read were called with the same *readtable* and with *read-base* bound to
+;    the current output base, it would return the same symbol (if it is not
+;    apparently uninterned) or an uninterned symbol with the same print name
+;    (otherwise).
+
   (let ((ar (make-array 256 :initial-element nil)))
-    (dolist (ch
-
-; Inline *slashable-chars*; see the comment above.
-
-             '(#\Newline #\Page #\Space #\" #\# #\' #\( #\) #\, #\: #\; #\\ #\`
-               #\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m #\n #\o #\p
-               #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z #\|))
-            (setf (aref ar (char-code ch))
-                  t))
+    (loop for i in
+          '(0 1 2 3 4 5 6 7
+              8 9 10 11 12 13 14 15 16 17 18 19 20 21
+              22 23 24 25 26 27 28 29 30 31 32 34 35
+              39 40 41 44 58 59 92 96 97 98 99 100 101
+              102 103 104 105 106 107 108 109 110 111
+              112 113 114 115 116 117 118 119 120 121
+              122 124 127 128 129 130 131 132 133 134
+              135 136 137 138 139 140 141 142 143 144
+              145 146 147 148 149 150 151 152 153 154
+              155 156 157 158 159 160 168 170 175 178
+              179 180 181 184 185 186 188 189 190 224
+              225 226 227 228 229 230 231 232 233 234
+              235 236 237 238 239 240 241 242 243 244
+              245 246 248 249 250 251 252 253 254 255)
+          do
+          (setf (aref ar i)
+                t))
     ar))
 
 (defconstant *suspiciously-first-numeric-array*

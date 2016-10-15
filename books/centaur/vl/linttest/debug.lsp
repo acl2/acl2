@@ -34,10 +34,20 @@
 (in-package "VL")
 (set-debugger-enable t)
 (break-on-error t)
+(set-slow-alist-action :break)
 (ld "centaur/jared-customization.lsp" :dir :system)
+(include-book "centaur/vl/loader/parser/tests/base" :dir :system)
+(with-redef (defconst *vl-shadowcheck-debug* t))
+(vl-trace-warnings)
+
+(define vl-pps-exprlist ((x vl-exprlist-p))
+  (if (atom x)
+      nil
+    (cons (vl-pps-expr (Car x))
+          (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./trunc/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./lucid/temp.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -54,11 +64,230 @@
                     :include-dirs  config.include-dirs)))
     (vl-load loadconfig)))
 
-(defconsts *lintres*
-  (run-vl-lint-main (vl-loadresult->design *loadres*)
-                    *lintconfig*))
+(defconsts (*lintres* state)
+  (b* ((res (run-vl-lint-main (vl-loadresult->design *loadres*)
+                              *lintconfig*))
+       (state (vl-lint-report-wrap res state)))
+    (mv res state)))
 
-(vl-lint-report-wrap *lintres* state)
+(trace$ (vl-lucid-maybe-push-genvar-scope
+         :entry (list 'vl-lucid-maybe-push-genvar-scope name
+                      :genvarp genvarp
+                      :ss (vl-scopestack->path ss))
+         :exit (list 'vl-lucid-maybe-push-genvar-scope
+                     :ss (vl-scopestack->path value))))
+
+(trace$ (vl-genblob-luciddb-init
+         :entry (list 'vl-genblob-luciddb-init (vl-genblob->id x)
+                      :ss (vl-scopestack->path ss)
+                      :db (with-local-ps (vl-pp-luciddb db)))
+         :exit (list 'vl-genblob-luciddb-init
+                     (with-local-ps (vl-pp-luciddb value)))))
+
+(trace$ (vl-luciddb-init
+         :entry (list 'vl-luciddb-init '<design>)
+         :exit (list 'vl-luciddb-init
+                     (with-local-ps (vl-pp-luciddb value)))))
+
+(trace$ (vl-lucid-dissect-database
+         :entry (list 'vl-lucid-dissect-database
+                      (with-local-ps (vl-pp-luciddb db)))
+         :exit (b* ((reportcard acl2::value))
+                 (list 'vl-lucid-dissect-database
+                       (with-local-ps (vl-print-reportcard reportcard :elide nil))))))
+
+(trace$ (vl-lucid-dissect-pair
+         :entry (list 'vl-lucid-dissect-pair
+                      (with-local-ps (vl-pp-lucidkey key))
+                      (with-local-ps (vl-pp-lucidval val)))
+         :exit (b* ((reportcard acl2::value))
+                 (list 'vl-lucid-dissect-pair
+                       (with-local-ps (vl-print-reportcard reportcard :elide nil))))))
+
+
+(trace$ (vl-lucid-dissect
+         :entry (list 'vl-lucid-dissect '<st>)
+         :exit (b* ((reportcard acl2::value))
+                 (list 'vl-lucid-dissect
+                       (with-local-ps (vl-print-reportcard reportcard :elide nil))))))
+
+(trace$ (vl-apply-reportcard
+         :entry (list 'vl-apply-reportcard
+                      '<design>
+                      (with-local-ps (vl-print-reportcard reportcard :elide nil)))
+         :exit (list 'vl-apply-reportcard
+                     :new-interfaces
+                     (vl-design->interfaces acl2::value))))
+
+(trace$ (vl-lint-print-warnings-fn
+         :entry (list 'vl-lint-print-warnings
+                      :filename filename
+                      :label label
+                      :types types
+                      :reportcard (with-local-ps (vl-print-reportcard reportcard :elide nil)))
+         :exit (list 'vl-lint-print-warnings)))
+
+(trace$ (vl-interfacelist-gather-reportcard
+         :entry (list 'vl-interfacelist-gather-reportcard x
+                      :acc (with-local-ps (vl-print-reportcard reportcard :elide nil)))
+         :exit (with-local-ps (vl-print-reportcard acl2::value :elide nil))))
+                      
+
+(trace$ vl-apply-reportcard 
+
+(vl-pps-modulelist (vl-design->mods (vl-loadresult->design *loadres*)))
+(top-level (with-local-ps (vl-pp-interfacelist (vl-design->interfaces (vl-loadresult->design *loadres*)) nil)))
+
+(vl-interface->parse-temps
+ (vl-find-interface "i1" (vl-design->interfaces (vl-loadresult->design *loadres*))))
+
+
+
+
+
+
+(trace$ (vl-make-implicit-wires-aux
+         :entry (list 'vl-make-implicit-wires-aux
+                      (with-local-ps (vl-cw "~a0~%" x))
+                      st
+                      (vl-warnings-to-string warnings))
+         :exit
+         (list 'vl-make-implicit-wires-aux
+               (vl-warnings-to-string (first values))
+               (with-local-ps (vl-cw "~a0~%" (second values))))))
+
+
+(define vl-debug-lexscope-entry ((x vl-lexscope-entry-p))
+  (b* (((vl-lexscope-entry x)))
+    (append '(:lexentry)
+            (if x.direct-pkg (list :direct x.direct-pkg) nil)
+            (if x.wildpkgs   (cons :wild x.wildpkgs) nil)
+            (list (with-local-ps (vl-cw "~a0" x.decl))))))
+
+(define vl-debug-lexscope ((x vl-lexscope-p))
+  (if (atom x)
+      nil
+    (cons (list (caar x) (vl-debug-lexscope-entry (cdar x)))
+          (vl-debug-lexscope (cdr x)))))
+
+(define vl-debug-lexscopes ((x vl-lexscopes-p))
+  (if (atom x)
+      nil
+    (cons (list (len x) (vl-debug-lexscope (car x)))
+          (vl-debug-lexscopes (cdr x)))))
+
+(trace$ (vl-scopestack-nesting-level
+         :entry (list 'vl-scopestack-nesting-level :ss (vl-scopestack->path x))))
+
+(trace$ (vl-scopestack-find-item/context
+         :entry (list 'vl-scopestack-find-item/context name :ss (vl-scopestack->path ss))
+         :exit (b* (((list item ss pkg) acl2::values))
+                 (list 'vl-scopestack-find-item/context
+                       :found (with-local-ps (vl-cw "~a0~%" item))
+                       :path (vl-scopestack->path ss)
+                       :pkgname pkg))))
+
+(trace$ (vl-lexscopes-find
+         :entry (list 'vl-lexscope-find name :in (vl-debug-lexscope scope))))
+
+(trace$ (vl-lexscopes-find
+         :entry (list 'vl-lexscopes-find name :scopes (vl-debug-lexscopes scopes))))
+
+
+
+
+
+
+
+(trace$ vl-tweak-fussy-warning-type)
+(trace$ nats-below-p)
+(trace$ vl-collect-unsized-ints)
+(trace$ vl-expr-interesting-size-atoms)
+
+(trace$ vl-idexpr-p$inline)
+(trace-parser vl-parse-patternkey-fn)
+
+
+
+(trace$ (vl-binaryop-selfsize :entry (list 'vl-binaryop-selfsize (vl-pps-expr x) left-size right-size)))
+(trace$ (vl-expr-selfsize :entry (list 'vl-expr-selfsize (vl-pps-expr x))
+                          :exit (list 'vl-expr-selfsize
+                                      (vl-warnings-to-string (car acl2::values))
+                                      (second acl2::values))))
+
+
+(trace$ (vl-maybe-warn-about-implicit-truncation
+         :entry (list 'vl-maybe-warn-about-implicit-truncation
+                      :lhs (and lvalue (vl-pps-expr lvalue))
+                      :lw lw
+                      :rhs (vl-pps-expr expr)
+                      :ew ew)
+         :exit (list 'vl-maybe-warn-about-implicit-truncation
+                     (vl-warnings-to-string (first acl2::values)))))
+
+(trace$ (vl-maybe-warn-about-implicit-extension
+         :entry (list 'vl-maybe-warn-about-implicit-extension
+                      :lhs-size lhs-size
+                      :x-selfsize x-selfsize
+                      :x (vl-pps-expr x))
+         :exit (list 'vl-maybe-warn-about-implicit-extension
+                     (vl-warnings-to-string (first acl2::values)))))
+
+(trace$ (vl-assignstmt->svstmts
+         :entry (list 'vl-assignstmt->svstmts
+                      :lhs (vl-pps-expr lhs)
+                      :rhs (vl-pps-expr rhs)
+                      :blockingp blockingp)
+         :exit (b* (((list ok warnings res) acl2::values))
+                 (list 'vl-assignstmt->svstmts
+                       :ok ok
+                       :warnings (vl-warnings-to-string warnings)
+                       :res res))))
+
+(trace$ (vl-procedural-assign->svstmts
+         :entry (list 'vl-procedural-assign->svstmts
+                      :lhs (vl-pps-expr lhs)
+                      :rhs rhssvex
+                      :blockingp blockingp)
+         :exit (b* (((list ok warnings svstmts shift) acl2::values))
+                 (list 'vl-procedural-assign->svstmts
+                       :ok ok
+                       :warnings (vl-warnings-to-string warnings)
+                       :svstmts svstmts
+                       :shift shift))))
+
+
+(trace$ (vl-collect-toobig-constant-atoms
+         :entry (list 'vl-collect-toobig-constant-atoms
+                      :width width
+                      :exprs (vl-pps-exprlist x))
+         :exit (list 'vl-collect-toobig-constant-atoms
+                     :toobig (vl-pps-exprlist (car acl2::values)))))
+
+(trace$ (vl-expr-interesting-size-atoms
+         :entry (list 'vl-expr-interesting-size-atoms (vl-pps-expr x))
+         :exit (list 'vl-expr-interesting-size-atoms (vl-pps-exprlist (car acl2::values)))))
+
+(trace$ (vl-unsized-atom-p
+         :entry (list 'vl-unsized-atom-p (vl-pps-expr x))))
+
+(trace$ (vl-some-unsized-atom-p
+         :entry (list 'vl-some-unsized-atom-p (vl-pps-exprlist x))))
+
+(trace$ (vl-follow-scopeexpr-fn
+         :entry (list 'vl-follow-scopeexpr
+                      :expr (with-local-ps (vl-pp-scopeexpr x))
+                      :ss-path (vl-scopestack->path ss))
+         :exit (b* (((list err trace ?context tail) acl2::values))
+                 (list 'vl-follow-scopeexpr
+                       :err err
+                       :item (vl-hidstep->item (car trace))
+                       :tail (with-local-ps (vl-pp-hidexpr tail))))))
+
+
+
+
+(trace$ duplicated-members)
 
 
 
@@ -134,7 +363,7 @@
 
 (vl-design->packages (vl-loadresult->design *loadres*))
 
-(vl-trace-warnings)
+
 
 
 ;; Lucid Tracing
@@ -297,173 +526,3 @@
 
 
 
-
-
-
-((:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                . :VL-WIRE)
-               NIL NIL)
-  (NIL NIL)
-  (NIL)
-  NIL
-  :VL-LOCATION "./lucid1/temp.v" 5 . 2)
- (:VL-MODULE ((("mh1" NIL)
-               NIL NIL
-               (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 4 . 2)
-               (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 5 . 2)
-               (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 6 . 2)
-               (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                              . :VL-WIRE)
-                             NIL NIL)
-                (NIL NIL)
-                (NIL)
-                NIL
-                :VL-LOCATION "./lucid1/temp.v" 7 . 2))
-              (NIL NIL)
-              NIL NIL)
-  ((NIL NIL)
-   NIL NIL
-   :VL-LOCATION "./lucid1/temp.v" 1 . 0)
-  ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
-   "mh1")
-  (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
-    .
-    "// These will get set hierarchically in mh2.
-"))
-  NIL)
- :GLOBAL :VL-DESIGN
- ((("VL Syntax 2015-01-12"
-    (:VL-MODULE ((("mh1" NIL)
-                  NIL NIL
-                  (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 4 . 2)
-                  (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 5 . 2)
-                  (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 6 . 2)
-                  (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
-                                 . :VL-WIRE)
-                                NIL NIL)
-                   (NIL NIL)
-                   (NIL)
-                   NIL
-                   :VL-LOCATION "./lucid1/temp.v" 7 . 2))
-                 (NIL NIL)
-                 NIL NIL)
-     ((NIL NIL)
-      NIL NIL
-      :VL-LOCATION "./lucid1/temp.v" 1 . 0)
-     ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
-      "mh1")
-     (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
-       .
-       "// These will get set hierarchically in mh2.
-"))
-     NIL)
-    (:VL-MODULE
-     ((("mh2" NIL) NIL NIL)
-      (NIL NIL)
-      ((:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 16 . 2)
-       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 17 . 2)
-       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unused")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 19 . 2)
-       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_unused")
-                       NIL))
-                     NIL)
-                    (:NONATOM (:VL-HID-DOT)
-                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
-                      (:ATOM (:VL-HIDPIECE . "w1_normal")
-                       NIL))
-                     NIL))
-        NIL NIL
-        :VL-LOCATION "./lucid1/temp.v" 20 . 2))
-      NIL
-      (:VL-MODINST (("inst1" . "mh1")
-                    NIL
-                    :VL-PARAMARGS-PLAIN NIL)
-       ((:VL-ARGUMENTS-PLAIN NIL))
-       NIL NIL
-       :VL-LOCATION "./lucid1/temp.v" 13 . 6)
-      (:VL-MODINST (("inst2" . "mh1")
-                    NIL
-                    :VL-PARAMARGS-PLAIN NIL)
-       ((:VL-ARGUMENTS-PLAIN NIL))
-       NIL NIL
-       :VL-LOCATION "./lucid1/temp.v" 14 . 6))
-     ((NIL NIL)
-      NIL NIL
-      :VL-LOCATION "./lucid1/temp.v" 11 . 0)
-     ((:VL-LOCATION "./lucid1/temp.v" 22 . 0)
-      "mh2")
-     NIL NIL))
-   NIL)
-  (NIL)
-  NIL)
- ((NIL) NIL)
- (NIL)
- NIL)

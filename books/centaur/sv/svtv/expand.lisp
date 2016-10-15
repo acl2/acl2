@@ -38,7 +38,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (local (in-theory (disable nth update-nth)))
-(local (include-book "centaur/misc/arith-equivs" :dir :System))
+(local (include-book "std/basic/arith-equivs" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc expand.lisp :parents (svex-stvs))
@@ -258,7 +258,7 @@
        ((when err) (mv err nil))
        ((mv err wire wireidx bitsel) (moddb-path->wireidx/decl path modidx moddb))
        ((when err)
-        (mv (msg "Wire not found: ~s0" x) nil))
+        (mv (msg "Wire not found: ~s0 -- ~@1" x err) nil))
        ((when (and bitsel range-msb))
         (mv (msg "Shouldn't have a part-select of a bit-select: ~s0" x) nil))
        ((wire wire) wire)

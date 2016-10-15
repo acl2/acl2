@@ -62,6 +62,7 @@ my %reqparams = ("hons-only"      => "HONS_ONLY",
 		 "uses-acl2r"     => "USES_ACL2R",
 		 "non-acl2r"      => "NON_ACL2R",
 		 "ccl-only"       => "CCL_ONLY",
+		 'non-cmucl'      => "NON_CMUCL",
 		 'non-lispworks'  => "NON_LISPWORKS",
 		 'non-allegro'    => "NON_ALLEGRO",
 		 'non-sbcl'       => "NON_SBCL",
@@ -150,7 +151,10 @@ The following forms are recognized:
 
  - (include-book "<bookname>" [:dir :<dirname>])
      Adds the included book\'s :cert file as a dependency of the
-current book.
+current book.  Note: Adding a comment \";; no_port\" on the same line
+after the closing parenthesis will override the build system\'s default
+behavior of loading the .port file for the included book before certifying
+the containing book; see the xdoc topic pre-certify-book-commands.
 
  - (add-include-book-dir :<dirname> "<dirpath>")
      Registers an association between the given dirname and dirpath so
@@ -181,7 +185,8 @@ if it were part of the current file.
      Cert_param directives control various things about how the file
 gets certified, such as whether it uses provisional certification
 (pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
-expansion (acl2xskip).
+expansion (acl2xskip).  See the \"cert_param\" xdoc topic for various
+other variables that can be set.
 
 See the documentation topic BOOKS-CERTIFICATION for supported uses of
 cert.pl.

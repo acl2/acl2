@@ -33,13 +33,13 @@
 (include-book "rewrite-rules")
 (include-book "concat-rw")
 (include-book "centaur/vl/util/cwtime" :dir :system)
+(include-book "centaur/nrev/pure" :dir :system)
 (include-book "lattice")
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
-(defxdoc svex-rewrite.lisp :parents (svex-rewriting))
-(local (xdoc::set-default-parents svex-rewrite.lisp))
+(local (xdoc::set-default-parents rewriting))
 
 
 (local (std::add-default-post-define-hook :fix))
@@ -88,143 +88,113 @@
              (not (member v (svex-vars (svex-norm-call fn args)))))))
 
 
-(define svex-locally-rewrite ((mask 4vmask-p) (x svex-p) (limit natp))
-  :returns (newx svex-p)
-  :measure (nfix limit)
-  (b* (((when (zp limit)) (svex-fix x))
-       ((unless (eq (svex-kind x) :call))
-        (svex-fix x))
-       ((svex-call x) x)
-       ((mv successp pat subst)
-        (svex-rewrite-fncall-once mask x.fn x.args t))
-       ((unless successp) (svex-fix x)))
-    ;; The pattern is small -- just the RHS of a rewrite rule, so svex-subst
-    ;; (not -memo) is good
-    (svex-locally-rewrite mask (svex-subst pat subst) (1- limit)))
+
+(defines svex-multirefs
+  :verify-guards nil
+  (define svex-multirefs ((x svex-p)
+                          (seen svex-key-alist-p)
+                          (multiref svex-key-alist-p))
+    :returns (mv (seen-out svex-key-alist-p)
+                 (multiref-out svex-key-alist-p))
+    :measure (svex-count x)
+    (b* ((seen (svex-key-alist-fix seen))
+         (multiref (svex-key-alist-fix multiref))
+         (x (svex-fix x)))
+      (svex-case x
+        :call
+        (b* ((seenp (hons-get x seen))
+             ((when seenp)
+              (mv seen (svex-set-multiref x multiref)))
+             (seen (hons-acons x t seen)))
+          (svexlist-multirefs x.args seen multiref))
+        :otherwise (mv seen multiref))))
+  (define svexlist-multirefs ((x svexlist-p)
+                              (seen svex-key-alist-p)
+                              (multiref svex-key-alist-p))
+    :returns (mv (seen-out svex-key-alist-p)
+                 (multiref-out svex-key-alist-p))
+    :measure (svexlist-count x)
+    (b* ((seen (svex-key-alist-fix seen))
+         (multiref (svex-key-alist-fix multiref)))
+      (if (atom x)
+          (mv seen multiref)
+        (b* (((mv seen multiref) (svex-multirefs (car x) seen multiref)))
+          (svexlist-multirefs (cdr x) seen multiref)))))
   ///
-  (defthm svex-locally-rewrite-correct
-    (equal (4vec-mask mask (svex-eval (svex-locally-rewrite mask x limit) env))
-           (4vec-mask mask (svex-eval x env))))
+  (verify-guards svex-multirefs)
+  (deffixequiv-mutual svex-multirefs))
 
-  (defthm vars-of-svex-locally-rewrite
-    (implies (not (member v (svex-vars x)))
-             (not (member v (svex-vars (svex-locally-rewrite mask x limit)))))))
+(define svexlist-multirefs-top ((x svexlist-p))
+  :returns (multirefs svex-key-alist-p)
+  (b* (((mv seen multirefs) (svexlist-multirefs x nil nil)))
+    (fast-alist-free seen)
+    multirefs))
 
-
-(define svex-args-rewrite-locally ((args svexlist-p) (masks 4vmasklist-p))
-  :guard (eql (len masks) (len args))
-  :returns (args1 svexlist-p)
-  :hooks ((:fix :hints (("goal" :expand ((4vmasklist-fix masks))))))
-  (if (atom args)
-      nil
-    (cons (b* (((when (eql 0 (mbe :logic (4vmask-fix (car masks)) :exec (car masks))))
-                (svex-x)))
-            (svex-locally-rewrite (car masks) (car args) 10))
-          (svex-args-rewrite-locally (cdr args) (cdr masks))))
-  ///
-
-  (defthm len-svex-args-rewrite-locally
-    (equal (len (svex-args-rewrite-locally x masks))
-           (len x)))
-
-  (local (in-theory (disable pick-a-point-subset-strategy)))
-
-  (defthm svex-args-rewrite-locally-correct
-    (equal (4veclist-mask masks (svexlist-eval (svex-args-rewrite-locally x masks) env))
-           (4veclist-mask masks (svexlist-eval x env)))
-    :hints(("Goal" :in-theory (enable svexlist-eval 4veclist-mask)
-            :induct (svex-args-rewrite-locally x masks))
-           (and stable-under-simplificationp
-                '(:use ((:instance svex-locally-rewrite-correct
-                         (mask -1) (x (car x)) (limit 10)))
-                  :in-theory (disable svex-locally-rewrite-correct)))))
-
-
-  (defthm svex-args-rewrite-locally-apply-correct
-    (equal (4vec-mask mask (svex-apply fn (svexlist-eval
-                                           (svex-args-rewrite-locally
-                                            args
-                                            (svex-argmasks mask fn args))
-                                           env)))
-           (4vec-mask mask (svex-apply fn (svexlist-eval args env))))
-    :hints (("goal" :use ((:instance svex-argmasks-correct
-                           (args args)
-                           (args1 (svexlist-eval
-                                   (svex-args-rewrite-locally
-                                    args (svex-argmasks mask fn args))
-                                   env))))
-             :in-theory (disable svex-argmasks-correct
-                                 svex-argmasks-correct2))))
-
-  (defthm svex-args-rewrite-locally-apply-correct-from-neg-1-mask
-    (equal (svex-apply fn (svexlist-eval
-                           (svex-args-rewrite-locally
-                            args
-                            (svex-argmasks -1 fn args))
-                           env))
-           (svex-apply fn (svexlist-eval args env)))
-    :hints (("goal" :use ((:instance svex-args-rewrite-locally-apply-correct
-                           (mask -1)))
-             :in-theory (disable svex-args-rewrite-locally-apply-correct))))
-
-  (defthm vars-of-svex-args-rewrite-locally
-    (implies (not (member v (svexlist-vars args)))
-             (not (member v (svexlist-vars (svex-args-rewrite-locally args masks)))))))
 
 (defines svex-rewrite-fncall
   :verify-guards nil
   (define svex-rewrite-fncall ((clk natp)
                                (mask 4vmask-p)
                                (fn fnsym-p)
-                               (args svexlist-p))
+                               (args svexlist-p)
+                               (in-multirefp)
+                               (out-multirefs svex-key-alist-p))
     :returns (xx svex-p)
     :well-founded-relation acl2::nat-list-<
     :measure (list clk 0)
     (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
-         ((when (eql mask 0)) (svex-x))
-         (masks (svex-argmasks mask fn args))
-         (args (svex-args-rewrite-locally args masks))
-         ((mv okp rhs sigma) (svex-rewrite-fncall-once mask fn args nil))
-         ((unless okp) (svex-norm-call fn args))
+         (out-multirefs (svex-key-alist-fix out-multirefs))
+         ((when (eql mask 0)) 0)
+         ((mv okp rhs sigma) (svex-rewrite-fncall-once mask fn args in-multirefp out-multirefs))
+         ((unless okp) (svex-norm-call fn args)
+          ;; (b* ((res (svex-norm-call fn args))
+          ;;      (out-multirefs (if in-multirefp (hons-acons res t out-multirefs) out-multirefs)))
+          ;;   (mv res out-multirefs))
+          )
          ((when (zp clk))
           (cw "Clock ran out!~%")
           (break$)
           (svex-norm-call fn args)))
-      (svex-rewrite-under-subst (1- clk) mask rhs sigma)))
+      (svex-rewrite-under-subst (1- clk) mask rhs sigma in-multirefp out-multirefs)))
 
   (define svex-rewrite-under-subst ((clk natp)
                                     (mask 4vmask-p)
                                     (x svex-p)
-                                    (sigma svex-alist-p))
+                                    (sigma svex-alist-p)
+                                    (in-multirefp)
+                                    (out-multirefs svex-key-alist-p))
     :returns (xx svex-p)
     :guard (subsetp-equal (svex-vars x) (svex-alist-keys sigma))
     :measure (list clk (svex-count x))
     (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
-         ((when (eql mask 0)) (svex-x)))
+         (out-multirefs (svex-key-alist-fix out-multirefs))
+         ((when (eql mask 0)) 0))
       (svex-case x
         :var (mbe :logic (svex-fix (svex-lookup x.name sigma))
-                  :exec (svex-lookup x.name sigma))
-        :quote (mbe :logic (svex-fix x) :exec x)
+                      :exec (svex-lookup x.name sigma))
+        :quote (svex-quote (4vec-mask-to-zero mask x.val))
         :call (b* ((masks (svex-argmasks -1 x.fn x.args))
                    ;; Note: we could use mask instead of -1 above, but in cases
                    ;; where the rewrites of different terms have common
                    ;; subterms, it might cause them to diverge.
-                   ;; There are still possible divergences, however.
-                   (args (svexlist-rewrite-under-subst clk masks x.args sigma)))
-                (svex-rewrite-fncall clk mask x.fn args)))))
+                   ;; BOZO We should do experiments with this
+                   (args (svexlist-rewrite-under-subst clk masks x.args sigma out-multirefs)))
+                (svex-rewrite-fncall clk mask x.fn args in-multirefp out-multirefs)))))
 
   (define svexlist-rewrite-under-subst ((clk natp)
                                         (masks 4vmasklist-p)
                                         (x svexlist-p)
-                                        (sigma svex-alist-p))
+                                        (sigma svex-alist-p)
+                                        (out-multirefs svex-key-alist-p))
     :returns (xx svexlist-p)
     :measure (list clk (svexlist-count x))
     :guard (and (equal (len x) (len masks))
                 (subsetp-equal (svexlist-vars x) (svex-alist-keys sigma)))
-    (if (atom x)
-        nil
-      (cons (svex-rewrite-under-subst clk (car masks) (car x) sigma)
-            (svexlist-rewrite-under-subst clk (cdr masks) (cdr x) sigma))))
+    (b* ((out-multirefs (svex-key-alist-fix out-multirefs)))
+      (if (atom x)
+          nil
+        (cons (svex-rewrite-under-subst clk (car masks) (car x) sigma nil out-multirefs)
+              (svexlist-rewrite-under-subst clk (cdr masks) (cdr x) sigma out-multirefs)))))
   ///
   (local (defthm svarlist-p-implies-true-listp
            (implies (svarlist-p x)
@@ -270,48 +240,79 @@
 
   (defthm-svex-rewrite-fncall-flag
     (defthm svex-rewrite-fncall-rw
-      (equal (4vec-mask mask (svex-eval (svex-rewrite-fncall clk mask fn args) env))
+      (equal (4vec-mask mask (svex-eval (svex-rewrite-fncall clk mask fn args in-multirefp out-multirefs) env))
              (4vec-mask mask (svex-eval (svex-call fn args) env)))
-      :hints ('(:expand ((svex-rewrite-fncall clk mask fn args))))
+      :hints ('(:expand ((svex-rewrite-fncall clk mask fn args in-multirefp out-multirefs))))
       :flag svex-rewrite-fncall)
     (defthm svex-rewrite-under-subst-rw
-      (equal (4vec-mask mask (svex-eval (svex-rewrite-under-subst clk mask x sigma) env))
+      (equal (4vec-mask mask (svex-eval (svex-rewrite-under-subst clk mask x sigma in-multirefp out-multirefs) env))
              (4vec-mask mask (svex-eval (svex-subst x sigma) env)))
-      :hints ('(:expand ((svex-rewrite-under-subst clk mask x sigma)
+      :hints ('(:expand ((svex-rewrite-under-subst clk mask x sigma in-multirefp out-multirefs)
                          (:free (env) (svex-eval x env)))))
       :flag svex-rewrite-under-subst)
     (defthm svexlist-rewrite-under-subst-rw
       (equal (4veclist-mask masks (svexlist-eval
-                                   (svexlist-rewrite-under-subst clk masks x sigma)
+                                   (svexlist-rewrite-under-subst clk masks x sigma out-multirefs)
                                    env))
              (4veclist-mask masks (svexlist-eval (svexlist-subst x sigma) env)))
-      :hints ('(:expand ((svexlist-rewrite-under-subst clk masks x sigma))))
+      :hints ('(:expand ((svexlist-rewrite-under-subst clk masks x sigma out-multirefs))))
       :flag svexlist-rewrite-under-subst))
+
+  (defthm svex-rewrite-fncall-nomasks-correct
+    (equal (svex-eval (svex-rewrite-fncall clk -1 fn args in-multirefp out-multirefs) env)
+           (svex-eval (svex-call fn args) env))
+    :hints (("goal" :use ((:instance svex-rewrite-fncall-rw (mask -1)))
+             :in-theory (e/d (4vec-mask) (svex-rewrite-fncall-rw)))))
 
 
   (defthm-svex-rewrite-fncall-flag
     (defthm svex-rewrite-fncall-vars
       (implies (not (member v (svexlist-vars args)))
-               (not (member v (svex-vars (svex-rewrite-fncall clk mask fn args)))))
-      :hints ('(:expand ((svex-rewrite-fncall clk mask fn args))))
+               (not (member v (svex-vars (svex-rewrite-fncall clk mask fn args in-multirefp out-multirefs)))))
+      :hints ('(:expand ((svex-rewrite-fncall clk mask fn args in-multirefp out-multirefs))))
       :flag svex-rewrite-fncall)
     (defthm svex-rewrite-under-subst-vars
       (implies (not (member v (svex-alist-vars sigma)))
-               (not (member v (svex-vars (svex-rewrite-under-subst clk mask x sigma)))))
-      :hints ('(:expand ((svex-rewrite-under-subst clk mask x sigma)
+               (not (member v (svex-vars (svex-rewrite-under-subst clk mask x sigma in-multirefp out-multirefs)))))
+      :hints ('(:expand ((svex-rewrite-under-subst clk mask x sigma in-multirefp out-multirefs)
                          (:free (env) (svex-eval x env)))))
       :flag svex-rewrite-under-subst)
     (defthm svexlist-rewrite-under-subst-vars
       (implies (not (member v (svex-alist-vars sigma)))
-               (not (member v (svexlist-vars (svexlist-rewrite-under-subst clk masks x sigma)))))
-      :hints ('(:expand ((svexlist-rewrite-under-subst clk masks x sigma))))
+               (not (member v (svexlist-vars (svexlist-rewrite-under-subst clk masks x sigma out-multirefs)))))
+      :hints ('(:expand ((svexlist-rewrite-under-subst clk masks x sigma out-multirefs))))
       :flag svexlist-rewrite-under-subst)))
+
+(defsection svcall-rw
+  :parents (svex)
+  :short "Safely construct an @(see svex) for a function call, with rewriting."
+
+  :long "<p>@('(call svcall-rw)') constructs an @(see svex) that is equivalent
+to the application of @('fn') to the given @('args').  This macro is ``safe''
+in that, at compile time, it ensures that @('fn') is one of the known @(see
+functions) and that it is being given the right number of arguments.</p>
+
+@(def svcall-rw)"
+
+  (defun svcall-rw-fn (fn args)
+    (declare (xargs :guard t))
+    (b* ((look (assoc fn *svex-op-table*))
+         ((unless look)
+          (er hard? 'svcall "Svex function doesn't exist: ~x0" fn))
+         (formals (third look))
+         ((unless (eql (len formals) (len args)))
+          (er hard? 'svcall "Wrong arity for call of ~x0" fn)))
+      `(svex-rewrite-fncall 1000 -1 ',fn (list . ,args) t t)))
+
+  (defmacro svcall-rw (fn &rest args)
+    (svcall-rw-fn fn args)))
+
 
 
 
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
 
@@ -429,7 +430,27 @@
         (implies (and (svexlist-toposort-p sort)
                       (equal (strip-cars contents) (svexlist-fix sort)))
                  (svexlist-toposort-p sort1)))
-      :flag svexlist-toposort)))
+      :flag svexlist-toposort))
+
+  (define svexlist-count-calls-aux ((x svexlist-p) (acc natp))
+    :returns (call-count natp :rule-classes :type-prescription)
+    (if (atom x)
+        (lnfix acc)
+      (svexlist-count-calls-aux (cdr x)
+                                (+ (let ((x1 (car x)))
+                                     (svex-case x1 :call 1 :otherwise 0))
+                                   (lnfix acc)))))
+
+  (define svexlist-count-calls ((x svexlist-p))
+    ;; Has nothing to do with svex-toposort, but you can use
+    ;; svexlist-count-calls of svex-toposort instead of svex-opcount.
+    ;; Tail recursive because it blew up on us before.
+    :returns (call-count natp :rule-classes :type-prescription)
+    :inline t
+    (svexlist-count-calls-aux x 0)))
+
+                      
+
 
 (defsection svex-argmasks-okp
   ;; (svex-argmasks-okp x mask argmasks) if
@@ -860,42 +881,233 @@
     :hints (("goal" :use ((:instance svexlist-compute-masks-partly-complete))))))
 
 
+
+
+
+(defalist svex-svex-memo :key-type svex :val-type svex)
+
+(defthm svex-p-of-lookup-in-svex-svex-memo
+  (implies (and (svex-svex-memo-p memo)
+                (hons-assoc-equal k memo))
+           (svex-p (cdr (hons-assoc-equal k memo)))))
+
+
+(defsection svex-rewrite-memo-correct
+  (defun-sk svex-rewrite-memo-correct1 (x masks env)
+    (forall (key)
+            (b* ((lookup (hons-assoc-equal key x))
+                 (mask (svex-mask-lookup key masks))
+                 (val (cdr lookup)))
+              (implies lookup
+                       (equal (4vec-mask mask (svex-eval val env))
+                              (4vec-mask mask (svex-eval key env)))))))
+
+  (in-theory (disable svex-rewrite-memo-correct1
+                      svex-rewrite-memo-correct1-necc))
+
+
+  (define svex-rewrite-memo-correct ((x svex-svex-memo-p)
+                                     (masks svex-mask-alist-p)
+                                     (env svex-env-p))
+    (ec-call (svex-rewrite-memo-correct1 (svex-svex-memo-fix x)
+                                         (svex-mask-alist-fix masks)
+                                         (svex-env-fix env)))
+    ///
+    (defthm svex-rewrite-memo-correct-of-empty
+      (implies (atom x)
+               (svex-rewrite-memo-correct x masks env))
+      :hints(("Goal" :in-theory (enable svex-rewrite-memo-correct
+                                        svex-rewrite-memo-correct1)))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm svex-rewrite-memo-correct-implies
+      (implies (svex-rewrite-memo-correct x masks env)
+               (b* ((lookup (hons-assoc-equal key (svex-svex-memo-fix x)))
+                    (mask (svex-mask-lookup key masks))
+                    (val (cdr lookup)))
+                 (implies lookup
+                          (equal (4vec-mask mask (svex-eval val env))
+                                 (4vec-mask mask (svex-eval key env))))))
+      :hints(("Goal" :use ((:instance svex-rewrite-memo-correct1-necc
+                            (x (svex-svex-memo-fix x))
+                            (key key)
+                            (masks (svex-mask-alist-fix masks))
+                            (env (svex-env-fix env)))))))
+
+    (defthm svex-rewrite-memo-correct-implies-fix
+      (implies (svex-rewrite-memo-correct x masks env)
+               (b* ((lookup (hons-assoc-equal (svex-fix key) (svex-svex-memo-fix x)))
+                    (mask (svex-mask-lookup key masks))
+                    (val (cdr lookup)))
+                 (implies lookup
+                          (equal (4vec-mask mask (svex-eval val env))
+                                 (4vec-mask mask (svex-eval key env))))))
+      :hints(("Goal" :use ((:instance svex-rewrite-memo-correct1-necc
+                            (x (svex-svex-memo-fix x))
+                            (key (svex-fix key))
+                            (masks (svex-mask-alist-fix masks))
+                            (env (svex-env-fix env)))))))
+
+    (deffixequiv svex-rewrite-memo-correct)
+
+    (defthm svex-rewrite-memo-correct-cons
+      (implies (svex-rewrite-memo-correct x masks env)
+               (iff (svex-rewrite-memo-correct
+                     (cons (cons y y1) x) masks env)
+                    (equal (4vec-mask (svex-mask-lookup y masks)
+                                      (svex-eval y env))
+                           (4vec-mask (svex-mask-lookup y masks)
+                                      (svex-eval y1 env)))))
+      :hints (("goal" :cases (svex-rewrite-memo-correct
+                     (cons (cons y y1) x) masks env)
+               :in-theory (disable svex-rewrite-memo-correct))
+              (and stable-under-simplificationp
+                   (let ((term (assoc 'svex-rewrite-memo-correct clause)))
+                     (and term
+                          `(:expand (,term)))))
+              (and stable-under-simplificationp
+                   (let ((term (assoc 'svex-rewrite-memo-correct1 clause)))
+                     (and term
+                          `(:expand (,term)))))
+              (and stable-under-simplificationp
+                   '(:use ((:instance svex-rewrite-memo-correct-implies
+                            (x (cons (cons y y1) x))
+                            (key (svex-fix y))))
+                     :in-theory (disable svex-rewrite-memo-correct-implies
+                                         svex-rewrite-memo-correct))))
+      :otf-flg t)))
+
+(defsection svex-rewrite-memo-vars-ok
+  (defun-sk svex-rewrite-memo-vars-ok1 (x var)
+    (forall (key)
+            (b* ((lookup (hons-assoc-equal key x))
+                 (val (cdr lookup)))
+              (implies (and lookup
+                            (not (member var (svex-vars key))))
+                       (not (member var (svex-vars val))))))
+    :rewrite :direct)
+
+  (in-theory (disable svex-rewrite-memo-vars-ok1
+                      svex-rewrite-memo-vars-ok1-necc))
+
+  (define svex-rewrite-memo-vars-ok ((x svex-svex-memo-p)
+                                     (var))
+    (ec-call (svex-rewrite-memo-vars-ok1 (svex-svex-memo-fix x)
+                                         var))
+    ///
+    (defthm svex-rewrite-memo-vars-ok-of-empty
+      (implies (atom atom)
+               (svex-rewrite-memo-vars-ok atom var))
+      :hints(("Goal" :in-theory (enable svex-rewrite-memo-vars-ok
+                                        svex-rewrite-memo-vars-ok1)))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm svex-rewrite-memo-vars-ok-implies
+      (implies (svex-rewrite-memo-vars-ok x var)
+               (b* ((x (svex-svex-memo-fix x))
+                    (lookup (hons-assoc-equal key x))
+                    (val (cdr lookup)))
+                 (implies (and lookup
+                               (not (member var (svex-vars key))))
+                          (not (member var (svex-vars val))))))
+      :hints(("Goal" :use ((:instance svex-rewrite-memo-vars-ok1-necc
+                            (x (svex-svex-memo-fix x))
+                            (var var))))))
+
+
+    (deffixequiv svex-rewrite-memo-vars-ok)
+
+    
+
+    (defthm svex-rewrite-memo-vars-ok-cons-1
+      (implies (and (svex-rewrite-memo-vars-ok x var)
+                    (member var (svex-vars y)))
+               (svex-rewrite-memo-vars-ok
+                (cons (cons y y1) x) var))
+      :hints (("goal" :expand ((:free (y y1 x var)
+                                (svex-rewrite-memo-vars-ok1
+                                 (cons (cons y y1) x) var))))))
+
+    (defthm svex-rewrite-memo-vars-ok-cons-2
+      (implies (and (svex-rewrite-memo-vars-ok x var)
+                    (not (member var (svex-vars y1))))
+               (svex-rewrite-memo-vars-ok
+                (cons (cons y y1) x) var))
+      :hints (("goal" :expand ((:free (y y1 x var)
+                                (svex-rewrite-memo-vars-ok1
+                                 (cons (cons y y1) x) var))))))))
+
+
 (defines svex-rewrite
   :verify-guards nil
   (define svex-rewrite ((x svex-p)
-                        (masks svex-mask-alist-p))
-    :returns (xx svex-p)
+                        (masks svex-mask-alist-p)
+                        (multirefs svex-key-alist-p)
+                        (out-multirefs svex-key-alist-p)
+                        (memo svex-svex-memo-p))
+    :returns (mv (xx svex-p)
+                 (out-multirefs svex-key-alist-p)
+                 (memo svex-svex-memo-p))
     :measure (svex-count x)
     (b* ((x (mbe :logic (svex-fix x) :exec x))
+         (masks (svex-mask-alist-fix masks))
+         (multirefs (svex-key-alist-fix multirefs))
+         (out-multirefs (svex-key-alist-fix out-multirefs))
+         (memo (svex-svex-memo-fix memo))
+
          (kind (svex-kind x))
-         ((when (eq kind :quote)) x)
          (mask (svex-mask-lookup x masks))
-         ((when (eql mask 0)) (svex-x))
-         ((when (eq kind :var)) x)
+         ((when (eq kind :quote))
+          ;; Normalizing constants under the global masks may help to make
+          ;; terms like (logand x #xFFFF0000) and (logand x #xFFFFFFFF) turn
+          ;; into the same logand, if it turns out that we never care about the
+          ;; lower 16 bits.
+          (mv (svex-quote (4vec-mask-to-zero mask (svex-quote->val x))) out-multirefs memo))
+         ((when (eql mask 0)) (mv 0 out-multirefs memo))
+         ((when (eq kind :var)) (mv x out-multirefs memo))
+         (multirefp (svex-get-multiref x multirefs))
+         (memo? (and multirefp (hons-get x memo)))
+         ((when memo?)
+          (mv (cdr memo?) out-multirefs memo))
          ((svex-call x) x)
-         (args (svexlist-rewrite x.args masks))
-         ;; (argmasks (svex-argmasks mask x.fn args))
-         ;; (args (svex-args-rewrite-under-masks args argmasks))
-         )
-      (svex-rewrite-fncall 1000 mask (svex-call->fn x) args)))
+         ((mv args out-multirefs memo)
+          (svexlist-rewrite x.args masks multirefs out-multirefs memo))
+         (res (svex-rewrite-fncall 10000 mask (svex-call->fn x) args multirefp out-multirefs))
+         ((unless multirefp)
+          (mv res out-multirefs memo)))
+      (mv res
+          (svex-set-multiref res out-multirefs)
+          (hons-acons x res memo))))
 
   (define svexlist-rewrite ((x svexlist-p)
-                            (masks svex-mask-alist-p))
-    :returns (xx svexlist-p)
+                            (masks svex-mask-alist-p)
+                            (multirefs svex-key-alist-p)
+                            (out-multirefs svex-key-alist-p)
+                            (memo svex-svex-memo-p))
+    :returns (mv (xx svexlist-p)
+                 (out-multirefs svex-key-alist-p)
+                 (memo svex-svex-memo-p))
     :measure (svexlist-count x)
-    (if (atom x)
-        nil
-      (cons (svex-rewrite (car x) masks)
-            (svexlist-rewrite (cdr x) masks))))
+    (b* ((out-multirefs (svex-key-alist-fix out-multirefs))
+         (memo (svex-svex-memo-fix memo))
+         ((When (atom x)) (mv nil out-multirefs memo))
+         ((mv car out-multirefs memo)
+          (svex-rewrite (car x) masks multirefs out-multirefs memo))
+         ((mv cdr out-multirefs memo)
+          (svexlist-rewrite (cdr x) masks multirefs out-multirefs memo)))
+      (mv (cons car cdr) out-multirefs memo)))
   ///
   (verify-guards svex-rewrite)
 
   (fty::deffixequiv-mutual svex-rewrite
     :hints (("goal" :expand ((svexlist-fix x)))))
 
-  (defthm len-of-svexlist-rewrite
-    (equal (len (svexlist-rewrite x masks))
-           (len x)))
+  (defthm-svex-rewrite-flag len-of-svexlist-rewrite
+    (defthm len-of-svexlist-rewrite
+      (equal (len (mv-nth 0 (svexlist-rewrite x masks multirefs out-multirefs memo)))
+             (len x))
+      :flag svexlist-rewrite)
+    :skip-others t)
 
   (local (acl2::defexample svex-argmasks-okp-example
            :pattern (4vec-mask mask (svex-apply fn (svexlist-eval args env)))
@@ -904,45 +1116,73 @@
 
   (defthm-svex-rewrite-flag
     (defthm svex-rewrite-correct
-      (implies (svex-mask-alist-complete masks)
-               (equal (4vec-mask (svex-mask-lookup x masks)
-                                 (svex-eval (svex-rewrite x masks) env))
-                      (4vec-mask (svex-mask-lookup x masks)
-                                 (svex-eval x env))))
+      (b* (((mv res out-multirefs1 memo1) (svex-rewrite x masks multirefs out-multirefs memo))
+           (mask (svex-mask-lookup x masks)))
+        (implies (and (svex-rewrite-memo-correct memo masks env)
+                      (svex-mask-alist-complete masks))
+                 (and (svex-rewrite-memo-correct memo1 masks env)
+                      (equal (4vec-mask mask (svex-eval res env))
+                             (4vec-mask mask (svex-eval x env))))))
       :hints ('(:expand ((:free (f a env) (svex-eval (svex-call f a) env))
-                         (:free (env) (svex-eval x env)))
+                         (:free (env) (svex-eval x env))
+                         (svex-rewrite x masks multirefs out-multirefs memo))
                 :do-not-induct t)
               (acl2::witness)
               (acl2::witness))
       :flag svex-rewrite)
     (defthm svexlist-rewrite-correct
-      (implies (svex-mask-alist-complete masks)
-               (equal (4veclist-mask (svex-argmasks-lookup x masks)
-                                     (svexlist-eval (svexlist-rewrite x masks) env))
-                      (4veclist-mask (svex-argmasks-lookup x masks)
-                                     (svexlist-eval x env))))
-      :hints ('(:expand ((svex-argmasks-lookup x masks))))
+      (b* (((mv res out-multirefs1 memo1) (svexlist-rewrite x masks multirefs out-multirefs memo))
+           (argmasks (svex-argmasks-lookup x masks)))
+        (implies (and (svex-rewrite-memo-correct memo masks env)
+                      (svex-mask-alist-complete masks))
+                 (and (svex-rewrite-memo-correct memo1 masks env)
+                      (equal (4veclist-mask argmasks (svexlist-eval res env))
+                             (4veclist-mask argmasks (svexlist-eval x env))))))
+      :hints ('(:expand ((svex-argmasks-lookup x masks)
+                         (svexlist-rewrite x masks multirefs out-multirefs memo))))
       :flag svexlist-rewrite))
 
   (defthm-svex-rewrite-flag
     (defthm svex-rewrite-vars
-      (implies (not (member v (svex-vars x)))
-               (not (member v (svex-vars (svex-rewrite x masks)))))
+      (b* (((mv res out-multirefs1 memo1) (svex-rewrite x masks multirefs out-multirefs memo)))
+        (implies (svex-rewrite-memo-vars-ok memo v)
+                 (and (svex-rewrite-memo-vars-ok memo1 v)
+                      (implies (not (member v (svex-vars x)))
+                               (not (member v (svex-vars res)))))))
       :hints ('(:expand ((svex-vars x)
-                         (svex-rewrite x masks))
+                         (svex-rewrite x masks multirefs out-multirefs memo))
                 :do-not-induct t)
               ;; (acl2::witness)
               ;; (acl2::witness)
               )
       :flag svex-rewrite)
     (defthm svexlist-rewrite-vars
-      (implies (not (member v (svexlist-vars x)))
-               (not (member v (svexlist-vars (svexlist-rewrite x masks)))))
-      :hints ('(:expand ((svexlist-rewrite x masks))))
+      (b* (((mv res out-multirefs1 memo1) (svexlist-rewrite x masks multirefs out-multirefs memo)))
+        (implies (svex-rewrite-memo-vars-ok memo v)
+                 (and (svex-rewrite-memo-vars-ok memo1 v)
+                      (implies (not (member v (svexlist-vars x)))
+                               (not (member v (svexlist-vars res)))))))
+      :hints ('(:expand ((svexlist-rewrite x masks multirefs out-multirefs memo))))
       :flag svexlist-rewrite masks))
 
-  (memoize 'svex-rewrite
-           :condition '(eq (svex-kind x) :call)))
+  (defthm-svex-rewrite-flag
+    (defthm true-listp-of-svexlist-rewrite
+      (true-listp (mv-nth 0 (svexlist-rewrite x masks multirefs out-multirefs memo)))
+      :flag svexlist-rewrite)
+    :skip-others t)
+  (defthm-svex-rewrite-flag
+    (defthm svexlist-rewrite-breakdown
+      (equal (list (mv-nth 0 (svexlist-rewrite x masks multirefs out-multirefs memo))
+                   (mv-nth 1 (svexlist-rewrite x masks multirefs out-multirefs memo))
+                   (mv-nth 2 (svexlist-rewrite x masks multirefs out-multirefs memo)))
+             (svexlist-rewrite x masks multirefs out-multirefs memo))
+      :hints ('(:expand ((svexlist-rewrite x masks multirefs out-multirefs memo))))
+      :flag svexlist-rewrite)
+    :skip-others t))
+
+
+
+
 
 
 (defines svex-maskfree-rewrite
@@ -955,11 +1195,10 @@
          ((when (eq kind :quote)) x)
          ((when (eq kind :var)) x)
          ((svex-call x) x)
-         (args (svexlist-maskfree-rewrite x.args))
+         (args (svexlist-maskfree-rewrite x.args)))
          ;; (argmasks (svex-argmasks mask x.fn args))
          ;; (args (svex-args-rewrite-under-masks args argmasks))
-         )
-      (svex-rewrite-fncall 1000 -1 (svex-call->fn x) args)))
+      (svex-rewrite-fncall 1000 -1 (svex-call->fn x) args t t)))
 
   (define svexlist-maskfree-rewrite ((x svexlist-p))
     :returns (xx svexlist-p)
@@ -992,7 +1231,8 @@
                          (svex-maskfree-rewrite x))
                 :use ((:instance svex-rewrite-fncall-rw
                        (clk 1000) (mask -1) (fn (svex-call->fn x))
-                       (args (svexlist-maskfree-rewrite (svex-call->args x)))))
+                       (args (svexlist-maskfree-rewrite (svex-call->args x)))
+                       (in-multirefp t) (out-multirefs t)))
                 :in-theory (e/d (4vec-mask) (svex-rewrite-fncall-rw))
                 :do-not-induct t)
               ;; (acl2::witness)
@@ -1026,6 +1266,28 @@
   (memoize 'svex-maskfree-rewrite
            :condition '(eq (svex-kind x) :call)))
 
+(define svexlist-maskfree-rewrite-nrev ((x svexlist-p)
+                                        acl2::nrev)
+  :returns new-nrev
+  (b* ((acl2::nrev (acl2::nrev-fix acl2::nrev))
+       ((when (atom x)) acl2::nrev)
+       (first (svex-maskfree-rewrite (car x)))
+       (acl2::nrev (acl2::nrev-push first acl2::nrev)))
+    (svexlist-maskfree-rewrite-nrev (cdr x) acl2::nrev))
+  ///
+  (defret svexlist-maskfree-rewrite-nrev-removal
+    (b* ((out-spec (svexlist-maskfree-rewrite x)))
+      (equal new-nrev
+             (append acl2::nrev out-spec)))
+    :hints(("Goal" :induct t
+            :expand ((svexlist-maskfree-rewrite x))))))
+
+(define svexlist-maskfree-rewrite-top ((x svexlist-p))
+  :enabled t
+  (mbe :logic (svexlist-maskfree-rewrite x)
+       :exec (acl2::with-local-nrev (svexlist-maskfree-rewrite-nrev x acl2::nrev))))
+       
+
 
 (define svexlist-mask-acons ((x svexlist-p) (mask 4vmask-p) (al svex-mask-alist-p))
   :verify-guards nil
@@ -1051,11 +1313,41 @@
            (append (svexlist-fix x) (svex-mask-alist-keys al)))
     :hints(("Goal" :in-theory (enable svexlist-fix)))))
 
+
+(define svexlist-mask-alist/toposort ((x svexlist-p))
+  :returns (mv (mask-al svex-mask-alist-p)
+               (toposort (and (svexlist-p toposort)
+                              (svexlist-toposort-p toposort))))
+  (b* (((mv toposort al) (cwtime (svexlist-toposort x nil nil) :mintime 1))
+       (- (fast-alist-free al))
+       (mask-al
+        (cwtime (svexlist-compute-masks toposort (svexlist-mask-acons x -1 nil)) :mintime 1)))
+    (mv mask-al toposort))
+  ///
+  (fty::deffixequiv svexlist-mask-alist/toposort)
+
+  (defret svexlist-mask-alist/toposort-complete
+    (svex-mask-alist-complete mask-al))
+
+  (defret svexlist-mask-alist/toposort-lookup
+    (implies (member-equal (svex-fix y) (svexlist-fix x))
+             (equal (svex-mask-lookup y mask-al)
+                    -1)))
+
+  (defret svex-argmasks-lookup-of-svexlist-mask-alist/toposort
+    (implies (subsetp-equal (svexlist-fix y) (svexlist-fix x))
+             (equal (svex-argmasks-lookup y mask-al)
+                    (replicate (len y) -1)))
+    :hints(("Goal" :induct (len y)
+            :in-theory (e/d (replicate) (svexlist-mask-alist/toposort))
+            :expand ((svexlist-fix y)
+                     (:free (x) (svex-argmasks-lookup y x)))))))
+
+
 (define svexlist-mask-alist ((x svexlist-p))
   :returns (mask-al svex-mask-alist-p)
-  (b* (((mv toposort al) (cwtime (svexlist-toposort x nil nil) :mintime 1))
-       (- (fast-alist-free al)))
-    (cwtime (svexlist-compute-masks toposort (svexlist-mask-acons x -1 nil)) :mintime 1))
+  (b* (((mv mask-al ?toposort) (svexlist-mask-alist/toposort x)))
+    mask-al)
   ///
   (fty::deffixequiv svexlist-mask-alist)
 
@@ -1074,7 +1366,13 @@
     :hints(("Goal" :induct (len y)
             :in-theory (e/d (replicate) (svexlist-mask-alist))
             :expand ((svexlist-fix y)
-                     (:free (x) (svex-argmasks-lookup y x)))))))
+                     (:free (x) (svex-argmasks-lookup y x))))))
+
+  (defthm svexlist-mask-alist/toposort-to-mask-alist
+    (equal (svexlist-mask-alist/toposort x)
+           (mv (svexlist-mask-alist x)
+               (mv-nth 0 (svexlist-toposort x nil nil))))
+    :hints(("Goal" :in-theory (enable svexlist-mask-alist/toposort)))))
 
 ;; (define svexlist-mask-alist-for-given-masks ((x svexlist-p) (masks svex-mask-alist-p))
 ;;   (b* (((mv toposort al
@@ -1082,7 +1380,16 @@
 
 (define svex-rewrite-top ((x svex-p))
   :returns (xx svex-p)
-  (svex-rewrite x (svexlist-mask-alist (list x)))
+  (b* ((list (list x))
+       (masks (svexlist-mask-alist list))
+       (multirefs (svexlist-multirefs-top list))
+       ((mv res out-multirefs memo)
+        (svex-rewrite x masks multirefs nil nil)))
+    (fast-alist-free out-multirefs)
+    (fast-alist-free memo)
+    (fast-alist-free masks)
+    (fast-alist-free multirefs)
+    res)
   ;; (b* (((mv toposort al) (svex-toposort x nil nil))
   ;;      (- (fast-alist-free al))
   ;;      (masks (svexlist-compute-masks toposort (svex-mask-acons x -1 nil))))
@@ -1094,7 +1401,10 @@
     (equal (svex-eval (svex-rewrite-top x) env)
            (svex-eval x env))
     :hints (("goal" :use ((:instance svex-rewrite-correct
-                           (masks (svexlist-mask-alist (list x)))))
+                           (masks (svexlist-mask-alist (list x)))
+                           (memo nil)
+                           (multirefs (svexlist-multirefs-top (list x)))
+                           (out-multirefs nil)))
              :in-theory (disable svex-rewrite-correct))
             (acl2::witness)))
 
@@ -1106,27 +1416,125 @@
 
 
 
-(define svexlist-rewrite-top ((x svexlist-p) &key (verbosep 'nil))
+(define svexlist-rewrite-under-masks ((x svexlist-p) (masks svex-mask-alist-p)
+                                      &key (verbosep 'nil))
+  :short "Rewrite the list of expressions under the provided mask alist, which should already be complete."
   :returns (xx svexlist-p)
-  (b* ((- (and verbosep (cw "opcount before rewrite: ~x0~%" (svexlist-opcount x))))
-       (masks (svexlist-mask-alist x))
-       (x (cwtime (svexlist-rewrite x masks) :mintime 1))
+  (b* ((multirefs (svexlist-multirefs-top x))
+       (- (and verbosep (cw "opcount before rewrite: ~x0 multiply-referenced: ~x1~%"
+                            (cwtime (svexlist-opcount x))
+                            (len multirefs))))
+       ((mv new-x out-multirefs memo)
+        (cwtime (svexlist-rewrite x masks multirefs nil nil) :mintime 1))
        (- (clear-memoize-table 'svex-rewrite)
-          (fast-alist-free masks)
-          (and verbosep (cw "opcount after rewrite: ~x0~%" (time$ (svexlist-opcount x)
-                                                                  :msg "; svexlist-opcount: ~st sec, ~sa bytes.~%"))))
+          (fast-alist-free memo)
+          (fast-alist-free out-multirefs)
+          (fast-alist-free multirefs)
+          (and verbosep (cw "opcount after rewrite: ~x0~%" (cwtime (svexlist-opcount new-x)))))
        ;; (x (cwtime (svexlist-normalize-concats x)))
        )
     ;; (and verbosep (cw "opcount after norm-concats: ~x0~%" (svexlist-opcount x)))
-    x)
+    new-x)
+  ///
+  (fty::deffixequiv svexlist-rewrite-under-masks)
+
+  (defthm svexlist-rewrite-under-masks-correct
+    (implies (svex-mask-alist-complete masks)
+             (equal (4veclist-mask (svex-argmasks-lookup x masks)
+                                   (svexlist-eval (svexlist-rewrite-under-masks x masks :verbosep verbosep) env))
+                    (4veclist-mask (svex-argmasks-lookup x masks)
+                                   (svexlist-eval x env))))
+    :hints (("goal" :use ((:instance svexlist-rewrite-correct
+                           (multirefs (svexlist-multirefs-top x))
+                           (out-multirefs nil) (memo nil)))
+             :in-theory (disable svexlist-rewrite-correct))
+            (acl2::witness)))
+
+  (defthm len-of-svexlist-rewrite-under-masks
+    (equal (len (svexlist-rewrite-under-masks x masks :verbosep verbosep))
+           (len x)))
+
+  (defthm vars-of-svexlist-rewrite-under-masks
+    (implies (not (member v (svexlist-vars x)))
+             (not (member v (svexlist-vars (svexlist-rewrite-under-masks x masks :verbosep verbosep)))))))
+
+(define svexlist-rewrite-nrev ((x svexlist-p)
+                               (masks svex-mask-alist-p)
+                               (multirefs svex-key-alist-p)
+                               (out-multirefs svex-key-alist-p)
+                               (memo svex-svex-memo-p)
+                               acl2::nrev)
+  :returns (mv new-nrev
+               (out-multirefs1 svex-key-alist-p)
+               (memo1 svex-svex-memo-p))
+  (if (atom x)
+      (b* ((acl2::nrev (acl2::nrev-fix acl2::nrev)))
+        (mv acl2::nrev
+            (svex-key-alist-fix out-multirefs)
+            (svex-svex-memo-fix memo)))
+    (b* (((mv first out-multirefs memo) (svex-rewrite (car x) masks multirefs out-multirefs memo))
+         (acl2::nrev (acl2::nrev-push first acl2::nrev)))
+      (svexlist-rewrite-nrev (cdr x) masks multirefs out-multirefs memo acl2::nrev)))
+  ///
+  (defret svexlist-rewrite-nrev-removal
+    (b* (((mv out-spec out-multirefs1-spec memo1-spec)
+          (svexlist-rewrite x masks multirefs out-multirefs memo)))
+      (and (equal new-nrev
+                  (append acl2::nrev out-spec))
+           (equal out-multirefs1 out-multirefs1-spec)
+           (equal memo1 memo1-spec)))
+    :hints(("Goal" :induct t
+            :expand ((svexlist-rewrite x masks multirefs out-multirefs memo))))))
+  
+
+
+(define svexlist-rewrite-top ((x svexlist-p) &key (verbosep 'nil))
+  :returns (xx svexlist-p)
+  (b* (((mv masks toposort) (svexlist-mask-alist/toposort x))
+       (multirefs (svexlist-multirefs-top x))
+       (multiref-count (len multirefs))
+       (- (and verbosep (cw "opcount before rewrite: ~x0 multiply-referenced: ~x1~%"
+                            (svexlist-count-calls toposort)
+                            multiref-count)))
+       ((mv new-x out-multirefs memo)
+        (mbe :logic (svexlist-rewrite x masks multirefs
+                                      ;; fast alist sizes
+                                      multiref-count multiref-count)
+             :exec (with-local-stobj acl2::nrev
+                     (mv-let (new-x out-multirefs memo acl2::nrev)
+                       (b* (((mv acl2::nrev out-multirefs memo)
+                             (cwtime (svexlist-rewrite-nrev
+                                      x masks multirefs
+                                      multiref-count ;; out-multirefs
+                                      multiref-count ;; memo
+                                      acl2::nrev)
+                                     :mintime 1))
+                            ((mv new-x acl2::nrev) (acl2::nrev-finish acl2::nrev)))
+                         (mv new-x out-multirefs memo acl2::nrev))
+                       (mv new-x out-multirefs memo)))))
+       (- (clear-memoize-table 'svex-rewrite)
+          (fast-alist-free masks)
+          (fast-alist-free memo)
+          (fast-alist-free out-multirefs)
+          (fast-alist-free multirefs)
+          (and verbosep (cw "opcount after rewrite: ~x0~%" (cwtime (svexlist-opcount new-x)))))
+       ;; (x (cwtime (svexlist-normalize-concats x)))
+       )
+    ;; (and verbosep (cw "opcount after norm-concats: ~x0~%" (svexlist-opcount x)))
+    new-x)
   ///
   (fty::deffixequiv svexlist-rewrite-top)
+
+  
 
   (defthm svexlist-rewrite-top-correct
     (equal (svexlist-eval (svexlist-rewrite-top x :verbosep verbosep) env)
            (svexlist-eval x env))
     :hints (("goal" :use ((:instance svexlist-rewrite-correct
-                           (masks (svexlist-mask-alist x))))
+                           (masks (svexlist-mask-alist x))
+                           (multirefs (svexlist-multirefs-top x))
+                           (out-multirefs (len (svexlist-multirefs-top x)))
+                           (memo (len (svexlist-multirefs-top x)))))
              :in-theory (disable svexlist-rewrite-correct))
             (acl2::witness)))
 
@@ -1208,6 +1616,9 @@
   (defthm keys-of-svex-alist-rewrite-top
     (iff (svex-lookup v (svex-alist-rewrite-top x :verbosep verbosep))
          (svex-lookup v x))))
+
+
+
 
 
 (define svexlist-rewrite-fixpoint ((x svexlist-p) &key ((count natp) '4) (verbosep 'nil))

@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "eval")
 (include-book "vars")
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
 (local (defthm setp-singleton
@@ -56,14 +56,14 @@ simplifications. For example, suppose we are in a context where only the bottom
 
 <h5>Interface</h5>
 <ul>
-<li>@('svex-rewrite'), @('svexlist-rewrite') recursively rewrites an expression
-or list of expressions under a given mask alist</li>
-<li>@('svexlist-rewrite-top'), @('svex-alist-rewrite-top') computes a mask
+<li>@(see svex-rewrite), @(see svexlist-rewrite) recursively rewrites an
+expression or list of expressions under a given mask alist</li>
+<li>@(see svexlist-rewrite-top), @(see svex-alist-rewrite-top) computes a mask
 alist for a list or alist of expressions and rewrites it under that mask
 alist</li>
-<li>@('svexlist-rewrite-fixpoint'), @('svex-alist-rewrite-fixpoint') repeatedly
-applies @('-rewrite-top') until it reaches a fixpoint (or an iteration limit
-runs out).</li>
+<li>@(see svexlist-rewrite-fixpoint), @(see svex-alist-rewrite-fixpoint)
+repeatedly applies @('-rewrite-top') until it reaches a fixpoint (or an
+iteration limit runs out).</li>
 </ul>")
 
 (local (xdoc::set-default-parents rewriting))
@@ -603,7 +603,8 @@ substitution are left in place."
             (svexlist-replace-var (cdr x) var repl))))
   ///
   (verify-guards svexlist-replace-var)
-  (memoize 'svex-replace-var :condition '(svex-case x :call)))
+  ;; (memoize 'svex-replace-var :condition '(svex-case x :call))
+  )
 
 (define svex-alist-compose ((x svex-alist-p) (a svex-alist-p))
   :prepwork ((local (in-theory (enable svex-alist-p))))

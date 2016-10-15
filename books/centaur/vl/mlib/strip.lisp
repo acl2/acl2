@@ -33,15 +33,16 @@
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
 
 (defxdoc stripping-functions
   :parents (mlib)
-  :short "Functions for throwing away attributes, widths, etc., so that
-expressions and module elements can be compared using @(see equal)."
+  :short "Functions for throwing away attributes, widths, locations, etc., so
+that expressions and module elements can be compared using @(see equal)."
 
-  :long "<p>In many basic kinds of @(see lint)ing and well-formedness checking,
-it is useful to be able to compare module elements using @('equal').  But
-@('equal') can report that elements are different because of, e.g., their
+  :long "<p>In many basic kinds of @(see vl-lint) checks and well-formedness
+checking, it is useful to be able to compare module elements using @('equal').
+But @('equal') can report that elements are different because of, e.g., their
 location information, widths and other annotations on expressions, and other
 kinds of semantically irrelevant attributes.</p>
 
@@ -59,23 +60,25 @@ details.</p>")
 
 (fty::defvisitor-template strip ((x :object))
   :returns (new-x :update)
-  :field-fns ((atts (lambda (x) (declare (ignore x)) nil)))
-  :prod-fns ((vl-special     (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-literal     (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-index       (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-unary       (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-binary      (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-qmark       (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-mintypmax   (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-concat      (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-multiconcat (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-call        (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-cast        (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-inside      (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-tagged      (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-pattern     (type (lambda (x) (declare (ignore x)) nil))))
+  :field-fns ((atts (lambda (x) (declare (ignore x)) nil))
+              (loc  (lambda (x) (declare (ignore x)) *vl-fakeloc*)))
+  :prod-fns ((vl-usertype (res (lambda (x) (declare (ignore x)) nil))))
   :fnname-template <type>-strip)
+
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
 
 (fty::defvisitors vl-strip
   :template strip
-  :types (vl-modinstlist vl-gateinstlist vl-assignlist vl-stmt))
+  :types (vl-modinstlist
+          vl-gateinstlist
+          vl-assignlist
+          vl-always
+          vl-initial
+          vl-final
+          vl-sequence
+          vl-property
+          vl-fundecl
+          vl-taskdecl
+          vl-alias
+          vl-stmt))

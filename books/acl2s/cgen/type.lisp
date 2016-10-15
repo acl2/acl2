@@ -31,30 +31,30 @@
     ((eq ts-decoded '*TS-IMPROPER-CONS*)         '(acl2s::improper-cons) );;; conses that are not proper
     ((eq ts-decoded '*TS-STRING*)                '(acl2s::string) );;; strings
     ((eq ts-decoded '*TS-CHARACTER*)             '(acl2s::character) );;; characters
-
+    
 ;non-primitive types but defined in ground acl2 theory and base.lisp
     ((eq ts-decoded '*TS-UNKNOWN*)               '(acl2s::all) );should give out error?
     ((eq ts-decoded '*TS-NON-NIL* )              '(acl2s::all-but-nil))
     ((eq ts-decoded '*TS-ACL2-NUMBER*)           '(acl2s::acl2-number) )
     ((eq ts-decoded '*TS-RATIONAL-ACL2-NUMBER*)  '(acl2s::acl2-number) )
     ((eq ts-decoded '*TS-RATIONAL* )             '(acl2s::rational) )
-    ((eq ts-decoded '*TS-TRUE-LIST-OR-STRING*)   '(acl2s::true-list acl2s::string))
+    ((eq ts-decoded '*TS-TRUE-LIST-OR-STRING*)   '(acl2s::true-list acl2s::string)) 
     ((eq ts-decoded '*TS-SYMBOL*   )             '(acl2s::symbol) )
     ((eq ts-decoded '*TS-INTEGER*   )            '(acl2s::integer) )
     ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(acl2s::negative-rational '0))
     ((eq ts-decoded '*TS-NON-NEGATIVE-RATIONAL*) '(acl2s::positive-rational '0))
     ((eq ts-decoded '*TS-NEGATIVE-RATIONAL* )    '(acl2s::negative-rational) )
     ((eq ts-decoded '*TS-POSITIVE-RATIONAL* )    '(acl2s::positive-rational) )
-    ((eq ts-decoded '*TS-NON-NEGATIVE-INTEGER*)  '(acl2s::nat));(0 pos))
-    ((eq ts-decoded '*TS-NON-POSITIVE-INTEGER*)  '(acl2s::neg '0))
+    ((eq ts-decoded '*TS-NON-NEGATIVE-INTEGER*)  '(acl2s::nat));(0 pos)) 
+    ((eq ts-decoded '*TS-NON-POSITIVE-INTEGER*)  '(acl2s::neg '0)) 
     ((eq ts-decoded '*TS-RATIO*)                 '(acl2s::ratio) )
     ((eq ts-decoded '*TS-CONS*  )                '(acl2s::cons) )
     ((eq ts-decoded '*TS-BOOLEAN*)               '(acl2s::boolean) )
     ((eq ts-decoded '*TS-TRUE-LIST*)             '(acl2s::true-list) )
-
+    
     ((eq ts-decoded '*TS-EMPTY*)                 '(acl2s::empty));is it possible?
     (t  (if (consp ts-decoded)
-            (cond
+            (cond 
              ((equal 'TS-UNION (car ts-decoded))
               (get-types-from-type-set-decoded-lst (cdr ts-decoded) nil))
              ((and (equal 'TS-COMPLEMENT (car ts-decoded))
@@ -62,12 +62,12 @@
               '(acl2s::atom))
              (t '(acl2s::all)))
           '(acl2s::all)))))
-
+ 
 (defun get-types-from-type-set-decoded-lst (ts-lst ans)
    (if (endp ts-lst)
      ans
-     (get-types-from-type-set-decoded-lst
-      (cdr ts-lst)
+     (get-types-from-type-set-decoded-lst 
+      (cdr ts-lst) 
       (append (acl2::get-type-from-type-set-decoded (car ts-lst))
               ans))))
  )
@@ -82,7 +82,7 @@
       (list typ))))
 
 (defun get-types-from-type-set-lst (ts-lst)
-  (declare (xargs :mode :program
+  (declare (xargs :mode :program 
                   :guard (integer-listp ts-lst)))
   (if (endp ts-lst)
     nil
@@ -106,10 +106,10 @@
          (ts (if (consp ts-info) (cadr ts-info) nil)))
      (if ts
          (let ((types (get-type-list-from-type-set ts)))
-          (get-var-types-from-type-alist acl2-type-alist
-                                          (cdr freevars)
+          (get-var-types-from-type-alist acl2-type-alist 
+                                          (cdr freevars) 
                                           (acons var types ans)))
-       (get-var-types-from-type-alist acl2-type-alist
+       (get-var-types-from-type-alist acl2-type-alist 
                                        (cdr freevars) ans)))))
 
 (defun decode-acl2-type-alist (acl2-type-alist freevars)
@@ -134,7 +134,7 @@
   "the default dumb type-alist with all variables associated with TOP i.e acl2s::all"
   (declare (xargs :guard (symbol-listp vars))) ;use proper-symbol-listp
   (pairlis$ vars (make-list (len vars)
-                            :initial-element
+                            :initial-element 
                             (list 'ACL2S::ALL))))
 
 
@@ -159,8 +159,8 @@
 
 
 (defmacro get-acl2-type-alist (cl &optional vars ens)
-  `(get-acl2-type-alist-fn ,cl
-                           ,(or vars '(acl2::all-vars1-lst cl '()))
+  `(get-acl2-type-alist-fn ,cl 
+                           ,(or vars `(acl2::all-vars1-lst ,cl '()))
                            ,(or ens '(acl2::ens state))
                            state))
 
@@ -168,7 +168,7 @@
 
 
 
-; utility fn to print if verbose flag is true
+; utility fn to print if verbose flag is true 
 (defmacro cw? (verbose-flag &rest rst)
   `(if ,verbose-flag
      (cw ,@rst)
@@ -207,7 +207,7 @@
 ;;       ans
 ;;     (tau-alist-clauses (cdr clauses) sign ens wrld state
 ;;                        (append (tau-alist-clause (car clauses) sign ens wrld state) ans))))
-
+      
 
 
 (defun all-vals (key alist)
@@ -235,9 +235,9 @@
       ans
     (b* ((tau (car taus))
            (interval (acl2::access acl2::tau tau :interval)))
-    (conjoin-tau-interval-lst (cdr taus)
+    (conjoin-tau-interval-lst (cdr taus) 
                               (acl2::conjoin-intervals interval ans)))))
-
+  
 
 (defun tau-interval-alist (var-taus-alist)
 ;[var . taus] -> [var . interval]
@@ -245,7 +245,7 @@
   (if (endp var-taus-alist)
       '()
     (b* (((cons var taus) (car var-taus-alist))
-         (interval (conjoin-tau-interval-lst taus nil)) ;nil represents the universal interval
+         (interval (conjoin-tau-interval-lst taus nil)) ;nil represents the universal interval 
          )
       (if (null interval) ;universal
           (tau-interval-alist (cdr var-taus-alist))
@@ -263,10 +263,10 @@
       tau-interval-alist))
 
 (defmacro tau-interval-alist-clause (cl &optional vars ens)
-  `(tau-interval-alist-clause-fn ,cl
+  `(tau-interval-alist-clause-fn ,cl 
                                  ,(or vars '(all-vars-lst cl))
                                  ,(or ens '(acl2::ens state))
-                                 state))
+                                 state))     
 
 
 
@@ -286,17 +286,17 @@
 
 ;; ;redundant from defdata.lisp
 ;; (defrec types-info%
-;;   (size
-;;    predicate
+;;   (size 
+;;    predicate 
 ;;    enumerator enum-uniform
 ;;    enumerator-test enum-uniform-test
 ;;    recursivep derivedp consistentp
 ;;    type-class defs) NIL)
-
+ 
 
 
 (defmacro   verbose-stats-flag ( vl)
-  `(> ,vl 2))
+  `(> ,vl 2)) 
 
 (defmacro   debug-flag ( vl)
   `(> ,vl 3))
@@ -317,7 +317,7 @@
          (cw? (verbose-stats-flag vl)
               "~|CEgen/Note: ~x0 or ~x1 not a name. ~ Meet returning universal type ALL.~|" typ1 typ2)
          'acl2s::all))
-
+                     
        (typ1-al-entry (assoc-eq typ1 M))
        (typ2-al-entry (assoc-eq typ2 M))
        ((unless (and typ1-al-entry typ2-al-entry))
@@ -338,16 +338,16 @@
 ;;        ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
 ;;        ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
 
-; choose the one that was defined later (earlier in
+; choose the one that was defined later (earlier in 
 ; reverse chronological order)
        (all-types (strip-cars (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld)))
        )
-   (if (< (position-eq typ1 all-types) (position-eq typ2 all-types))
-       typ1
+   (if (< (position-eq typ1 all-types) (position-eq typ2 all-types)) 
+       typ1 
      typ2)))
 
 (def dumb-type-alist-infer-from-term (term vl wrld  ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp) 
               -> symbol-alistp)
         :doc "main aux function to infer type-alist from term")
   (declare (xargs :verify-guards nil))
@@ -356,13 +356,13 @@
   (f* ((add-eq-typ... (t1) (if (acl2::equivalence-relationp R wrld)
                                (put-assoc x (list t1) ans.)
                              ans.)))
-
+    
 ; Copied from v-cs%-alist-from-term. Keep in sync!
   (case-match term
-
+    
 ;the following is a rare case (I found it when the conclusion is nil
 ;and its negation is 'T
-    (('quote c) (declare (ignore c))  ans.) ;ignore quoted constant terms
+    (('quote c) (declare (ignore c))  ans.) ;ignore quoted constant terms 
 
 ;TODO possible field variable (i.e f is a getter/selector) Note that
 ; term cannot have a lambda applicaton/let, so the car of the term is
@@ -371,23 +371,23 @@
 
 ;x has to be an atom below, otherwise, we would have caught that case above.
     (('not x)      (put-assoc x (list ''nil) ans.))
-
+    
     ((P x)   (b* ((tname (defdata::is-type-predicate P wrld))
                   ((unless tname) ans.)
                   (curr-typs-entry (assoc-eq x ans.))
-                  ((unless (and curr-typs-entry
+                  ((unless (and curr-typs-entry 
                                 (consp (cdr curr-typs-entry))))
 ; no or invalid entry, though this is not possible, because we call it with
 ; default type-alist of ((x . ('ACL2S::ALL)) ...)
                    ans.)
                   (curr-typs (cdr curr-typs-entry))
-                  (- (cw? (and (verbose-stats-flag vl)
+                  (- (cw? (and (verbose-stats-flag vl) 
                                (consp (cdr curr-typs)))
                           "~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cdr curr-typs)))
-
+                     
                   (curr-typ (car curr-typs))
                   ((when (defdata::possible-constant-value-p curr-typ)) ans.)
-
+                   
                   (final-typ (meet tname curr-typ vl wrld)))
                (put-assoc x (list final-typ) ans.)))
 
@@ -399,12 +399,12 @@
     ((R ('quote c) x)    (add-eq-typ... (kwote c)))
     ;((R x (f . args))    (add-eq-constraint... (acl2::cons-term f args)))
     ;((R (f . args) x)    (add-eq-constraint... (acl2::cons-term f args)))
-
+    
     ;; has to be a (R t1 t2 ...) or atomic term
     (&                   ans.))))
 
 (def dumb-type-alist-infer-from-terms (H vl wrld  ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  
                                  symbol-alistp) -> symbol-alistp)
         :doc "aux function for dumb extraction of defdata types from terms in H")
   (declare (xargs :verify-guards nil))
@@ -415,7 +415,7 @@
       (dumb-type-alist-infer-from-terms (cdr H) vl wrld ans.))))
 
 (def dumb-type-alist-infer (H vars vl wrld)
-  (decl :sig ((pseudo-term-listp proper-symbol-listp fixnum plist-worldp)
+  (decl :sig ((pseudo-term-listp proper-symbol-listp fixnum plist-worldp) 
               -> symbol-alistp)
         :doc "dumb infer defdata types from terms in H")
   (declare (xargs :verify-guards nil))
@@ -452,7 +452,7 @@
                                                (mv typ2 typ1)))
                                  (M (table-alist 'defdata::type-metadata-table wrld))
                                  (P (defdata::predicate-name dt M))
-
+                                 
                                  ((unless (defdata::plausible-predicate-functionp P wrld)) ;abort before calling ev-fncall on non-function
                                   (prog2$ (cw? (debug-flag vl)
                                                "~|CEGen/Warning:: ~x0: Bad args to eval-and-get-meet: ~x1 ~x2. ~|" ctx typ1 typ2)
@@ -460,7 +460,7 @@
                                  ;; args to ev-fncall-w is a list of evaluated values.
                                  ((mv erp res) (acl2::ev-fncall-w P (list (if (quotep st) ;possible bug caught, what if st is not quoted!
                                                                               (acl2::unquote st)
-                                                                            st))
+                                                                            st)) 
                                                                   wrld nil nil t nil nil))
                                  (- (cw? (and erp (debug-flag vl))
                                          "~|CEgen/Error:: ~x0: while calling ev-fncall-w on ~x1~|" ctx (cons P (list st))))
@@ -477,7 +477,7 @@
          (types2-entry (assoc-eq var A2))
          (types2 (if types2-entry (cdr types2-entry) '(ACL2S::ALL)))
          (typ2 (get-type... types2))
-         ((unless (and (possible-defdata-type-p typ1)
+         ((unless (and (possible-defdata-type-p typ1) 
                        (possible-defdata-type-p typ2)))
           (mv t '()))
          ((mv erp rest) (meet-type-alist (cdr A1) A2 vl wrld ))
@@ -498,3 +498,60 @@
             (t
              (b* (((mv erp ans) (eval-and-get-meet typ1 typ2)))
                (mv erp (acons var (list ans) rest)))))))))
+
+
+;; ; copied from misc/total-order/fast-<<
+;; (defun atom-distance (x y)
+;;   (declare (xargs :guard (atom x)))
+;;   (and (atom y) ;if y is not atom then distance is infinite which is represented by nil
+;;        (cond ((integerp x)
+;;              (cond ((integerp y) (< x y))
+;;                    ((real/rationalp y) (< x y))
+;;                    (t t)))
+;;             ((symbolp x)
+;;              (if (symbolp y)
+;;                  (and (not (eq x y)) (symbol-< x y) t)
+;;                (not (or (integerp y)
+;;                         (stringp y)
+;;                         (characterp y)
+;;                         (real/rationalp y)
+;;                         (complex/complex-rationalp y)))))
+;;             ((stringp x)
+;;              (cond ((stringp y) (and (string< x y) t))
+;;                    ((integerp y) nil)
+;;                    ((symbolp y) t)
+;;                    (t (not (or (characterp y)
+;;                                (real/rationalp y)
+;;                                (complex/complex-rationalp y))))))
+;;             ((characterp x)
+;;              (cond ((characterp y)
+;;                     (< (char-code x) (char-code y)))
+;;                    (t (not (or (integerp y)
+;;                                (real/rationalp y)
+;;                                (complex/complex-rationalp y))))))
+;;             ((real/rationalp x)
+;;              (cond ((integerp y) (< x y))
+;;                    ((real/rationalp y) (< x y))
+;;                    (t t)))
+;;             ((real/rationalp y) nil)
+;;             ((complex/complex-rationalp x)
+;;              (cond ((complex/complex-rationalp y)
+;;                     (or (< (realpart x) (realpart y))
+;;                         (and (= (realpart x) (realpart y))
+;;                              (< (imagpart x) (imagpart y)))))
+;;                    (t t)))
+;;             ((or (symbolp y)
+;;                  (stringp y)
+;;                  (characterp y)
+;;                  (complex/complex-rationalp y))
+;;              nil)
+;;             (t (and (bad-atom<= x y)
+;;                     (not (equal x y)))))
+  
+;; (defun distance (x y)
+;;   (declare (xargs :guard t))
+;;   (cond ((atom x) (atom-distance x y))
+;;         ((atom y) nil)
+;;         ((equal (car x) (car y))
+;;          (fast-<< (cdr x) (cdr y)))
+;;         (t (fast-<< (car x) (car y)))))

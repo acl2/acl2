@@ -31,13 +31,15 @@
 (in-package "VL")
 (include-book "../parsetree")
 (include-book "../mlib/stmt-tools")
+(include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
 
 (defsection lint-warning-suppression
-  :parents (lint warnings)
+  :parents (vl-lint warnings)
   :short "An attribute- mechanism for suppressing particular @(see warnings)
-when using @(see lint)."
+when using @(see vl-lint)."
 
   :long "<p>This is quick and dirty, but probably is actually a pretty
 effective and reasonable way to deal with suppressing unwanted warnings from
@@ -92,8 +94,35 @@ either upper or lower case, treating - and _ as equivalent, and with or without
        (x (str::strsubst "-" "_" x)))
     (str::istrprefixp "lint_ignore" x)))
 
-(define vl-lint-ignore-att-mash ((x (and (stringp x)
-                                         (vl-lint-ignore-att-p x))))
+(local (defthm char-of-str-fix
+         (equal (char (str-fix x) n)
+                (char x n))
+         :hints(("Goal" :in-theory (enable str-fix)))))
+
+(local (defthm strprefixp-impl-of-str-fix
+         (equal (str::strprefixp-impl a (str-fix x) m n oldl xl)
+                (str::strprefixp-impl a x m n oldl xl))
+         :hints(("Goal" :in-theory (e/d ((:i str::strprefixp-impl)) (char (force) (tau-system)))
+                 :induct (str::strprefixp-impl a x m n oldl xl)
+                 :expand ((:free (a x) (str::strprefixp-impl a x m n oldl xl))))
+                (and stable-under-simplificationp
+                     '(:expand ((:free (x) (str::strprefixp-impl a x 1 1 oldl xl))))))))
+
+(local (defthm strsubst-aux-of-str-fix
+         (equal (str::strsubst-aux a b (str-fix x) n xl oldl acc)
+                (str::strsubst-aux a b x n xl oldl acc))
+         :hints(("Goal" :in-theory (e/d ((:i str::strsubst-aux)) (char (force) (tau-system)))
+                 :induct (str::strsubst-aux a b x n xl oldl acc)
+                 :expand ((:free (x) (str::strsubst-aux a b x n xl oldl acc)))))))
+
+(local (defthm strsubst-of-str-fix
+         (equal (str::strsubst a b (str-fix x))
+                (str::strsubst a b x))
+         :hints(("Goal" :in-theory (e/d (str::strsubst))
+                 :do-not-induct t))))
+
+(define vl-lint-ignore-att-mash ((x stringp))
+  :guard (vl-lint-ignore-att-p x)
   ;; Note: the guard ensures that x starts with lint_ignore
   (b* ((x (str::strsubst "-" "_" x))
        ((when (equal (length x) (length "lint_ignore")))
@@ -109,7 +138,6 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 (define vl-lint-attname-says-ignore ((attname stringp)
                                      (mashed-warning-type stringp))
   :returns (ignorep booleanp :rule-classes :type-prescription)
-  :hooks nil
   (b* (((unless (vl-lint-ignore-att-p attname))
         nil)
        (mashed-att (vl-lint-ignore-att-mash attname))
@@ -143,12 +171,29 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 
 (define vl-lint-atts-say-ignore ((atts vl-atts-p)
                                  (mashed-warning-type stringp))
-  :hooks nil
   :returns (ignorep booleanp :rule-classes :type-prescription)
-  (if (atom atts)
-      nil
-    (or (vl-lint-attname-says-ignore (caar atts) mashed-warning-type)
-        (vl-lint-atts-say-ignore (cdr atts) mashed-warning-type))))
+  :measure (len (vl-atts-fix atts))
+  (b* ((atts (vl-atts-fix atts)))
+    (if (atom atts)
+        nil
+      (or (vl-lint-attname-says-ignore (caar atts) mashed-warning-type)
+          (vl-lint-atts-say-ignore (cdr atts) mashed-warning-type)))))
+
+(fty::defvisitor-template vl-lint-scan-for-ignore  ((x :object)
+                                                    (mwtype stringp))
+  :returns (ignorep (:join (or ignorep1 ignorep)
+                     :tmp-var ignorep1
+                     :initial nil)
+                    booleanp :rule-classes :type-prescription)
+  :type-fns ((vl-atts vl-lint-atts-say-ignore))
+  :fnname-template <type>-scan-for-ignore)
+
+(set-bogus-measure-ok t)
+
+(fty::defvisitors vl-lint-scan-for-ignore-genelement
+  :template vl-lint-scan-for-ignore
+  :types (vl-genelement))
+  
 
 
 ; So, where do we look for these attributes?  Most VL warnings include a
@@ -169,54 +214,49 @@ either upper or lower case, treating - and _ as equivalent, and with or without
         (if (eq (car x) :vl-module)
             ;; Don't descend into whole modules
             nil
-          (or
-           ;; Recognize certain constructs that have attributes
-           (case (car x)
-             ((:vl-special
-               :vl-literal
-               :vl-index
-               :vl-unary
-               :vl-binary
-               :vl-qmark
-               :vl-mintypmax
-               :vl-concat
-               :vl-multiconcat
-               :vl-stream
-               :vl-call
-               :vl-cast
-               :vl-inside
-               :vl-tagged
-               :vl-pattern)
-              (and (vl-expr-p x)
-                   (vl-lint-atts-say-ignore (vl-expr->atts x) mwtype)))
-             (:vl-assign       (and (vl-assign-p x)        (vl-lint-atts-say-ignore (vl-assign->atts x)        mwtype)))
-             (:vl-modinst      (and (vl-modinst-p x)       (vl-lint-atts-say-ignore (vl-modinst->atts x)       mwtype)))
-             (:vl-gateinst     (and (vl-gateinst-p x)      (vl-lint-atts-say-ignore (vl-gateinst->atts x)      mwtype)))
-             (:vl-portdecl     (and (vl-portdecl-p x)      (vl-lint-atts-say-ignore (vl-portdecl->atts x)      mwtype)))
-             (:vl-vardecl      (and (vl-vardecl-p x)       (vl-lint-atts-say-ignore (vl-vardecl->atts x)       mwtype)))
-             (:vl-paramdecl    (and (vl-paramdecl-p x)     (vl-lint-atts-say-ignore (vl-paramdecl->atts x)     mwtype)))
-             (:vl-fundecl      (and (vl-fundecl-p x)       (vl-lint-atts-say-ignore (vl-fundecl->atts x)       mwtype)))
-             (:vl-taskdecl     (and (vl-taskdecl-p x)      (vl-lint-atts-say-ignore (vl-taskdecl->atts x)      mwtype)))
-             (:vl-always       (and (vl-always-p x)        (vl-lint-atts-say-ignore (vl-always->atts x)        mwtype)))
-             (:vl-initial      (and (vl-initial-p x)       (vl-lint-atts-say-ignore (vl-initial->atts x)       mwtype)))
-             (:vl-plainarg     (and (vl-plainarg-p x)      (vl-lint-atts-say-ignore (vl-plainarg->atts x)      mwtype)))
-             (:vl-namedarg     (and (vl-namedarg-p x)      (vl-lint-atts-say-ignore (vl-namedarg->atts x)      mwtype)))
+          ;; Recognize certain constructs that have attributes
+          (case (car x)
+            ((:vl-special
+              :vl-literal
+              :vl-index
+              :vl-unary
+              :vl-binary
+              :vl-qmark
+              :vl-mintypmax
+              :vl-concat
+              :vl-multiconcat
+              :vl-stream
+              :vl-call
+              :vl-cast
+              :vl-inside
+              :vl-tagged
+              :vl-pattern)
+             (and (vl-expr-p x) (vl-expr-scan-for-ignore x mwtype)))
+            (:vl-assign       (and (vl-assign-p x)        (vl-assign-scan-for-ignore x        mwtype)))
+            (:vl-modinst      (and (vl-modinst-p x)       (vl-modinst-scan-for-ignore x       mwtype)))
+            (:vl-gateinst     (and (vl-gateinst-p x)      (vl-gateinst-scan-for-ignore x      mwtype)))
+            (:vl-portdecl     (and (vl-portdecl-p x)      (vl-portdecl-scan-for-ignore x      mwtype)))
+            (:vl-vardecl      (and (vl-vardecl-p x)       (vl-vardecl-scan-for-ignore x       mwtype)))
+            (:vl-paramdecl    (and (vl-paramdecl-p x)     (vl-paramdecl-scan-for-ignore x     mwtype)))
+            (:vl-fundecl      (and (vl-fundecl-p x)       (vl-fundecl-scan-for-ignore x       mwtype)))
+            (:vl-taskdecl     (and (vl-taskdecl-p x)      (vl-taskdecl-scan-for-ignore x      mwtype)))
+            (:vl-always       (and (vl-always-p x)        (vl-always-scan-for-ignore x        mwtype)))
+            (:vl-initial      (and (vl-initial-p x)       (vl-initial-scan-for-ignore x       mwtype)))
+            (:vl-plainarg     (and (vl-plainarg-p x)      (vl-plainarg-scan-for-ignore x      mwtype)))
+            (:vl-namedarg     (and (vl-namedarg-p x)      (vl-namedarg-scan-for-ignore x      mwtype)))
 
 
-             ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
-               :vl-enablestmt :vl-disablestmt :vl-eventtriggerstmt
-               :vl-casestmt :vl-ifstmt :vl-foreverstmt :vl-waitstmt
-               :vl-whilestmt :vl-forstmt :vl-blockstmt :vl-repeatstmt :vl-timingstmt)
-              (and (vl-stmt-p x)
-                   (vl-lint-atts-say-ignore (vl-stmt->atts x) mwtype)))
+            ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
+              :vl-callstmt :vl-disablestmt :vl-eventtriggerstmt
+              :vl-casestmt :vl-ifstmt :vl-foreverstmt :vl-waitstmt
+              :vl-repeatstmt :vl-whilestmt :vl-forstmt
+              :vl-breakstmt :vl-continuestmt :vl-blockstmt
+              :vl-timingstmt :vl-returnstmt :vl-assertstmt
+              :vl-cassertstmt)
+             (and (vl-stmt-p x)
+                  (vl-stmt-scan-for-ignore x mwtype)))
 
-             (otherwise nil))
-           ;; Just because we didn't find it in the atts of this whole object
-           ;; doesn't mean we want to necessarily stop looking.  let's keep
-           ;; looking down, so that if there's an ignore decl inside an
-           ;; expression inside this element, we'll still honor it.  We don't
-           ;; need to descend into the CAR since it's just a symbol.
-           (vl-lint-scan-for-ignore (cdr x) mwtype)))))
+            (otherwise nil)))))
     (or (vl-lint-scan-for-ignore (car x) mwtype)
         (vl-lint-scan-for-ignore (cdr x) mwtype))))
 
@@ -225,7 +265,9 @@ either upper or lower case, treating - and _ as equivalent, and with or without
   (b* (((when (atom x))
         nil)
        ((vl-warning x1) (car x))
-       ((when (vl-lint-scan-for-ignore x1.args (vl-warning-type-mash x1.type)))
+       (type (vl-warning-type-mash x1.type))
+       ((when (or (vl-lint-scan-for-ignore x1.context type)
+                  (vl-lint-scan-for-ignore x1.args type)))
         (vl-lint-suppress-warnings (cdr x))))
     (cons (vl-warning-fix (car x))
           (vl-lint-suppress-warnings (cdr x)))))

@@ -42,7 +42,7 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
 (include-book "xdoc/alter" :dir :system)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "misc/assert" :dir :system))
@@ -384,10 +384,8 @@ bounds."
    (let ((name 'vl-echar)
          (fields '(char loc)))
      `(progn
-        ,(std::da-make-maker-fn name fields nil)
-        ,(std::da-make-maker name fields)
-        ,(std::da-make-changer-fn name fields)
-        ,(std::da-make-changer name fields)
+        ,(std::da-make-maker name fields nil)
+        ,(std::da-make-changer name fields nil)
         ,(std::da-make-binder name fields))))
 
   ;; Rudimentary testing of defaggregate stuff

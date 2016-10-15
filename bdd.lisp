@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -372,7 +372,6 @@
   (and (leafp cst)
        (if (quotep (trm cst))
            (not (cst-nilp cst))
-         (and (nvariablep (trm cst))
 
 ; Consider other types here besides cons, e.g., that of numbers.  We may want
 ; to pass in a list of functions that have been checked to have type-sets that
@@ -380,7 +379,7 @@
 ; below against such a list.  This list of function symbols could be determined
 ; easily from the list of all function symbols in op-alist.
 
-              (eq (ffn-symb (trm cst)) 'cons)))))
+         (ffn-symb-p (trm cst) 'cons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; II. OP-ALIST ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,9 +427,7 @@
          (let ((test (fargn x 1))
                (tbr (fargn x 2))
                (fbr (fargn x 3)))
-           (and (not (variablep test))
-                (not (fquotep test))
-                (eq (ffn-symb test) 'equal)
+           (and (ffn-symb-p test 'equal)
                 (let ((v (fargn test 1)))
                   (and (variablep v)
                        (let ((b (fargn test 2)))
@@ -540,7 +537,7 @@
 ; rules.
 
                 (first-boolean-type-prescription
-                 (getprop fn 'type-prescriptions nil 'current-acl2-world wrld)
+                 (getpropc fn 'type-prescriptions nil wrld)
                  ens
                  formals)
                 (and rune
@@ -564,9 +561,7 @@
                               "We had thought we had a rewrite rule with :lhs ~
                                being a call of ~x0, but the :lhs is ~x1."
                               fn lhs))
-                      (nvariablep rhs)
-                      (not (fquotep rhs))
-                      (eq (ffn-symb rhs) fn)
+                      (ffn-symb-p rhs fn)
                       (variablep (fargn lhs 1))
                       (variablep (fargn lhs 2))
                       (not (eq (fargn lhs 1) (fargn lhs 2)))
@@ -619,9 +614,9 @@
    ((eq fn 'equal)
     (fn-rune-nume 'equal nil nil wrld))
    (t (equivalence-rune1 fn
-                         (getprop fn 'congruences
-                                  '(:error "See equivalence-rune.")
-                                  'current-acl2-world wrld)))))
+                         (getpropc fn 'congruences
+                                   '(:error "See equivalence-rune.")
+                                   wrld)))))
 
 (defun commutative-p (fn ens wrld)
 
@@ -632,7 +627,7 @@
        (if (equivalence-relationp fn wrld)
            (equivalence-rune fn wrld)
            (commutative-p1 fn
-                           (getprop fn 'lemmas nil 'current-acl2-world wrld)
+                           (getpropc fn 'lemmas nil wrld)
                            ens))))
 
 ; To memoize the various merging operations we will hash on the opcodes.
@@ -663,8 +658,8 @@
                 (cons (list* (car fns)
                              i
                              (commutative-p (car fns) ens wrld)
-                             (and (not (getprop (car fns) 'constrainedp nil
-                                                'current-acl2-world wrld))
+                             (and (not (getpropc (car fns) 'constrainedp nil
+                                                 wrld))
                                   (enabled-xfnp (car fns) ens wrld)
                                   (fn-rune-nume (car fns) nil t wrld))
                              (bool-mask (car fns)
@@ -1226,9 +1221,8 @@
    ((endp fns) (mv all-fns bdd-rules-alist))
    (t (mv-let (new-fns nondef-rules def-rules)
               (bdd-rules-alist1
-               (recursivep (car fns) wrld)
-               (append (getprop
-                        (car fns) 'lemmas nil 'current-acl2-world wrld)
+               (recursivep (car fns) t wrld)
+               (append (getpropc (car fns) 'lemmas nil wrld)
                        (extra-rules-for-bdds (car fns) wrld))
                ens
                (cons (car fns) all-fns)

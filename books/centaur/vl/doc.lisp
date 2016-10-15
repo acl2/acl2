@@ -92,15 +92,15 @@ verification with ACL2.  This is the basis for much of Centaur's formal
 verification efforts.</li>
 
 <li>The VL @(see kit) is a standalone command-line program that you can build
-on top of ACL2 and VL.  It provides various high-level commands to, e.g., @(see
-lint)ing, preprocess, collect source code into a single file, and so on.  It
-also provides an interactive shell for an instant way to start up ACL2 with VL
+on top of ACL2 and VL.  It provides some high-level commands that you can use
+to do things like lint your design directly from the command line.  It also
+provides an interactive shell for an instant way to start up ACL2 with VL
 already loaded.</li>
 
 <li>VL has been used to build a web-based ``module browser'' that lets you see
 the source code for our modules with, e.g., hyperlinks for navigating between
-wires and following wires.  This is now integrated into the VL @(see kit);
-@(see server).</li>
+wires and following wires.  This is now integrated into the VL @(see kit); see
+@(see vl-server).</li>
 
 <li>(unreleased) We have used VL to implement <i>samev</i>, a sequential
 equivalence checking tool with a tick-based timing model that handles both RTL
@@ -137,9 +137,9 @@ vl-ppcs-module) and perhaps more generally the VL @(see printer).</p>
 
 <p>After getting a feel for how modules are represented, it would be good to
 look at the available @(see transforms).  For instance, you might look at the
-code for @(see vl-simplify) to see the transforms used in the @(see esim) flow.
-You could also look at @('run-vl-lint-main') which uses a different
-transformation sequence for toward linting.</p>
+code for @('run-vl-lint-main') to see a transformation sequence geared toward
+linting.  You might also see @(see vl-design->svex-design) to see how the new
+@(see sv) flow works.</p>
 
 <p>If you are going to write any Verilog-processing tools of your own, you
 should probably read through how VL deals with @(see warnings) and then take a
@@ -178,7 +178,7 @@ SystemVerilog features like structures, arrays, interfaces, and hierarchical
 identifiers.  It does not currently handle transistor-level constructs or
 simulation constructs like dynamic arrays, tasks, classes, etc.</li>
 
-<li>The @(see lint)er flow can cope with richer SystemVerilog designs.  It is
+<li>The @(see vl-lint) flow can cope with richer SystemVerilog designs.  It is
 not especially bothered by transistor-level constructs.  It cannot handle some
 simulation constructs, but is able to ignore many constructs when it does not
 truly understand them.</li>
@@ -258,11 +258,11 @@ e.g., perhaps a module declares @('wire [3:0] foo') and then later declares
 @('integer foo'), or perhaps we are trying to instantiate a module that is not
 defined.</li>
 
-<li>Our @(see lint) checks might notice \"code smells\" where even though the
-input Verilog is semantically well-formed, it is somehow strange and looks like
-it could be an error.  For instance, perhaps there are multiple assignments to
-the same wire, or expressions like @('a & b') where @('a') and @('b') have
-different sizes.</li>
+<li>Our @(see vl-lint) checks might notice \"code smells\" where even though
+the input Verilog is semantically well-formed, it is somehow strange and looks
+like it could be an error.  For instance, perhaps there are multiple
+assignments to the same wire, or expressions like @('a & b') where @('a') and
+@('b') have different sizes.</li>
 
 </ul>
 
@@ -446,14 +446,131 @@ any superior design elements as having fatal warnings somewhere below.  See
 they are created (e.g., between print statements or other kinds of
 tracing.)</li>
 
-<li>Warnings are heavily used in VL's @(see lint)er, which features some
-special mechanisms for <b>suppressing warnings</b>; see @(see
+<li>Warnings are heavily used in @(see vl-lint), which features some special
+mechanisms for <b>suppressing warnings</b>; see @(see
 lint-warning-suppression).</li>
 
 </ul>")
 
 
 
+(defxdoc vl-patternkey-ambiguity
+  :parents (vl-patternkey supported-constructs)
+  :short "Notes about our handling of @(see vl-patternkey)s."
 
+  :long "<p>The keys in assignment patterns can be expressions (which should
+resolve to array indexes, for array patterns), structure member names, type
+names, or the special keyword @('default').  Here are some examples:</p>
 
+@({
+    '{ 0: a, 1: b, 2: c, default: 0 }    // assign to some array indices, default others...
+    '{ foo: 3, bar: 5 }                  // assign to struct members by name (maybe)
+    '{ integer: 5, opcode_t: 7 }         // assign to struct members by type (maybe)
+})
 
+<p>Simple names are particularly ambiguous here.  For instance, a name like
+@('place') might perhaps refer to any of (1) a parameter value to be used as an
+array index, as in:</p>
+
+@({
+     int arr [3:0];
+     parameter place = 0;
+     assign arr = '{place: 3, default: 0 };
+})
+
+<p>or (2) a structure member name, as in:</p>
+
+@({
+     typedef struct { int place; int value; } slot_t;
+     slot_t s = '{ place: 3, value: 4 };
+})
+
+<p>or (3) the name of some type, as in:</p>
+
+@({
+     typedef logic [3:0] place;
+     typedef struct { place src; place dest; int data; } msg_t;
+     msg_t m = '{ place: 0, data: 0 };
+})
+
+<p>This ambiguity is problematic in early parts of @(see annotate), such as
+@(see shadowcheck), where we want to check that, e.g., wires are used declared
+before they are used.  Here, because of type parameters, we might not be able
+to tell the names of a structure's members until elaboration time.  For
+example, suppose there is no type named @('place') and that, in some module, we
+are have a type parameter @('mytype_t') and an assignment like:</p>
+
+@({
+     mytype_t foo = '{ place: 0, ... }
+})
+
+<p>In this case, we won't know whether @('place') is the name of a structure
+field of @('mytype_t') until elaboration provides us with a definition for
+@('mytype_t').  If @('mytype_t') ends up having a member named @('place'), then
+it's fine for @('place') not to be declared here.  But if it doesn't have such
+a member, then the only way this makes sense is for @('place') to be the name
+of some parameter that's being used as an array index, in which case @('place')
+needs to be declared here.</p>
+
+<p>Rather than further intertwine shadowcheck and elaborate, our approach is to
+avoid this ambiguity by require that all simple names used in assignment
+pattern keys <b>must</b> be either the names of types or structure members.
+Although NCVerilog doesn't impose this restriction, it appears that our
+behavior matches that of VCS.  For instance, when we submit the following to
+VCS J-2014.12-SP3-1:</p>
+
+@({
+    module foo1 ;
+      int arr [3:0];
+      parameter place = 0;
+      assign arr = '{place: 3, default: 0 };
+    endmodule
+})
+
+<p>we find that it reports the following error:</p>
+
+@({
+    Error-[IAP] Illegal assignment pattern
+    test.sv, 5
+    foo1, \"place:3\"
+      Assignment pattern is illegal due to: Assignment Pattern with named fields 
+      cannot be assigned to a non-structure target
+})
+
+<h3>Implementation notes, disambiguation strategy</h3>
+
+<p>Upon parsing a @(see vl-patternkey) there are four possibilities:</p>
+
+<ol>
+<li>It is the @('default') keyword, which is no problem.</li>
+<li>It is unambiguously an index expression, e.g., @('3 + 5').</li>
+<li>It is unambiguously a built-in type expression, e.g., @('integer').</li>
+<li>It is ambiguously a simple name like @('foo'), which might be a structure
+member, type name, or parameter name.</li>
+</ol>
+
+<p>To reduce insanity we are going to assume that any such @('foo') must not
+be a parameter.</p>
+
+<p>At parse time, after dealing with @('default'), we try to parse an
+expression and then (to account for core type names like @('integer') which
+aren't expressions) fall back to trying to parse a type.  If we get anything
+other than a simple name then it's already unambiguous.</p>
+
+<p>On the other hand, if we get an expression which is a simple name, then we
+will <b>immediately convert it to a structmem</b> instead of an <b>expr</b>
+@(see vl-patternkey).  Note that we don't yet know whether it's a structure
+name or a type name; structmems will need to be further disambiguated before
+we're sure they aren't types.</p>
+
+<p>During shadowcheck, we have enough information to tell whether a structmem
+is actually a type.  We can then check for tricky shadowing as per usual.  Type
+disambiguation can then make the final conversion of structmems to types as
+necessary.</p>
+
+<p>Later on, in svex conversion: if we encounter a struct pattern, we should
+probably also explicitly check that any type keys such as @('foo_t') are NOT
+also the names of structure members.  If so, there might be confusion about
+what we are assigning to.  We might want this to be smart enough to handle
+things like @('struct mystruct { foo foo; bar bar; }'), or maybe those aren't
+handled by other Verilog tools anyway.</p>")

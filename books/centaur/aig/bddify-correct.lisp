@@ -33,7 +33,7 @@
 (include-book "bddify")
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
-(include-book "centaur/misc/suffixp" :dir :system)
+(include-book "std/lists/suffixp" :dir :system)
 (include-book "clause-processors/witness-cp" :dir :system)
 (include-book "clause-processors/just-expand" :dir :system)
 (include-book "centaur/misc/universal-equiv" :dir :system)
@@ -1489,10 +1489,6 @@
 (local
  (progn
    (in-theory (enable suffixp))
-   (defthm suffixp-transitive
-     (implies (and (suffixp a b)
-                   (suffixp b c))
-              (suffixp a c)))
 
    (defthm suffixp-transitive-3
      (implies (and (suffixp a b)
@@ -1530,14 +1526,6 @@
      (implies (suffixp x y)
               (equal (<= (len y) (len x))
                      (equal x y))))
-
-   (encapsulate nil
-     (local (include-book "arithmetic/top-with-meta" :dir :system))
-     (defthmd suffixp-equals-nthcdr
-       (equal (suffixp x y)
-              (equal x (nthcdr (- (len y) (len x)) y)))
-       :hints (("Subgoal *1/1.2"
-                :use suffixp-len-<=))))
 
    (defthm suffixp-len
      (implies (suffixp x y)
@@ -2539,7 +2527,8 @@
                          abs-bdd-al-okp
                          bdds-compatible-for-al-suffix
                          bdds-compatible-for-al-cons
-                         suffixp-self assign-for-bdd-al-suffix
+                         suffixp-of-self
+                         assign-for-bdd-al-suffix
                          suffixp-len len
 ;                     (:REWRITE |(equal (- x) (- y))|)
 ;                     (:REWRITE |(< (- x) (- y))|)
@@ -2986,7 +2975,7 @@
              (b* ((ans
                    (aig-bddify-list-var-weakening
                     x al max-count fmemo memo bdd-al nxtbdd n))
-                  ((mv bdds aigs new-fmemo exact)
+                  ((mv bdds aigs new-fmemo ?new-memo exact)
                    ans)
                   (exact-bdds (aig-q-compose-list x al)))
                (and
@@ -3046,7 +3035,7 @@
                 (abs-fmemo-okp fmemo al)
                 (equal nxtbdd (qv var-depth)))
            (b* ((ans (aig-bddify-list-iter1 tries x al fmemo nxtbdd var-depth
-                                            maybe-wash-args))
+                                            maybe-wash-args map))
                 ((mv bdds new-aigs exact) ans)
                 (exact-bdds (aig-q-compose-list x al)))
              (and (implies exact (bdd-equiv-list bdds exact-bdds))
@@ -3072,9 +3061,9 @@
                                   ((:type-prescription bdd-al-max-depth)
                                    (:type-prescription posfix-type)))
           :induct (aig-bddify-list-iter1 tries x al fmemo nxtbdd var-depth
-                                         maybe-wash-args)
+                                         maybe-wash-args map)
           :expand ((aig-bddify-list-iter1 tries x al fmemo (qv var-depth)
-                                          var-depth maybe-wash-args)))
+                                          var-depth maybe-wash-args map)))
          '(:use ((:instance aig-bddify-list-x-weakening-ok
                             (max (posfix (cadr (car tries))))
                             (memo 'memo))
@@ -3168,7 +3157,7 @@
 
 (defthm aig-bddify-list-iter1-true-listp
   (true-listp (mv-nth 0 (aig-bddify-list-iter1
-                         tries x al fmemo nxtbdd var-depth maybe-wash-args)))
+                         tries x al fmemo nxtbdd var-depth maybe-wash-args map)))
   :hints(("Goal" :in-theory (e/d* (aig-bddify-list-iter1)
                                   (aig-bddify-list-x-weakening
                                    aig-bddify-list-var-weakening)))))

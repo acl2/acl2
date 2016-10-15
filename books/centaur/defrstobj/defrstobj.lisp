@@ -33,8 +33,8 @@
 (include-book "generic")
 (include-book "misc/records" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
-(include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "std/lists/nth" :dir :system)
 (include-book "std/lists/resize-list" :dir :system)
 (include-book "std/lists/len" :dir :system)
@@ -674,14 +674,16 @@ records book.  See @(see def-typed-record).</p>")
   (let ((recognizer (access-defstobj-template x :recognizer))
         (creator (access-defstobj-template x :creator))
         (field-templates (access-defstobj-template x :field-templates))
-        (doc (access-defstobj-template x :doc))
+; Matt K. mod: :doc is no longer supported for defstobj after v7-1
+        ;; (doc (access-defstobj-template x :doc))
         (inline (access-defstobj-template x :inline))
         (congruent-to (access-defstobj-template x :congruent-to))
         (non-memoizable (access-defstobj-template x :non-memoizable)))
     (list recognizer
           creator
           field-templates
-          doc
+; Matt K. mod: :doc is no longer supported for defstobj after v7-1
+          ;; doc
           inline
           congruent-to
           non-memoizable)))
@@ -705,7 +707,10 @@ records book.  See @(see def-typed-record).</p>")
        (name$c        (mksym name '$c))
        (st-fields$c   (make-$c-fields st-fields mksym-pkg))
        (st-template   (defstobj-template name$c (append st-fields$c st-kw-part) wrld))
-       ((list recog$c create$c st$c-fld-templates ?doc ?inline ?congruent-to
+       ((list recog$c create$c st$c-fld-templates
+; Matt K. mod: :doc is no longer supported for defstobj after v7-1
+              ;; ?doc
+              ?inline ?congruent-to
               ?non-memoizable)
         ;; BOZO this has to be kept in sync with defstobj-template.
         (destructure-defstobj-template st-template))

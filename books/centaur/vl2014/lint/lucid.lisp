@@ -196,7 +196,7 @@ read/written.</p>"
 (local (xdoc::set-default-parents vl-lucidstate-init))
 
 (define vl-scope-luciddb-init-aux
-  :parents (vl-luciddb-initialize-scope)
+  :parents (vl-scope-luciddb-init)
   ((locals vl-scopeitem-alist-p "The local variables declared in some scope.")
    (ss vl-scopestack-p          "Scopestack for our current location.")
    (db vl-luciddb-p             "Database we're initializing."))
@@ -582,7 +582,7 @@ created when we process their packages, etc.</p>"
                          (occ   vl-lucidocc-p)
                          (db    vl-luciddb-p)
                          (ctx   vl-context1-p))
-  :parents (vl-lucidstate-mark-used)
+  :parents (vl-lucidstate-mark)
   :returns (new-db vl-luciddb-p)
   (b* ((db   (vl-luciddb-fix db))
        (occ  (vl-lucidocc-fix occ))

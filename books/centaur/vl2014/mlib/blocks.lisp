@@ -77,33 +77,35 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
       :tag :vl-genblob
       :layout :tree)
 
-    (define vl-modelement-loc ((x vl-modelement-p))
-      :parents (vl-modelement)
-      :short "Get the location of any @(see vl-modelement-p)."
-      :returns (loc vl-location-p
-                    :hints(("Goal" :in-theory (enable vl-modelement-fix
-                                                      (tau-system)))))
-      (b* ((x (vl-modelement-fix x)))
-        (case (tag x)
-          . ,(project-over-modelement-types
-              '(:vl-__type__       (vl-__type__->loc x))))))
+    ;; [Jared] no, use vl-modelement->loc instead.
+    ;; (define vl-modelement-loc ((x vl-modelement-p))
+    ;;   :parents (vl-modelement)
+    ;;   :short "Get the location of any @(see vl-modelement-p)."
+    ;;   :returns (loc vl-location-p
+    ;;                 :hints(("Goal" :in-theory (enable vl-modelement-fix
+    ;;                                                   (tau-system)))))
+    ;;   (b* ((x (vl-modelement-fix x)))
+    ;;     (case (tag x)
+    ;;       . ,(project-over-modelement-types
+    ;;           '(:vl-__type__       (vl-__type__->loc x))))))
 
-    (define vl-genelement-loc ((x vl-genelement-p))
-      :parents (vl-genelement)
-      :short "Get the location of any @(see vl-genelement-p)."
-      :returns (loc vl-location-p
-                    :hints(("Goal" :in-theory (enable vl-genelement-fix))))
-      (vl-genelement-case x
-        :vl-genbase (vl-modelement-loc x.item)
-        :vl-genloop   x.loc
-        :vl-genif     x.loc
-        :vl-gencase   x.loc
-        :vl-genblock  x.loc
-        :vl-genarray  x.loc))
+    ;; [Jared] no, we already have vl-genelement->loc
+    ;; (define vl-genelement-loc ((x vl-genelement-p))
+    ;;   :parents (vl-genelement)
+    ;;   :short "Get the location of any @(see vl-genelement-p)."
+    ;;   :returns (loc vl-location-p
+    ;;                 :hints(("Goal" :in-theory (enable vl-genelement-fix))))
+    ;;   (vl-genelement-case x
+    ;;     :vl-genbase (vl-modelement-loc x.item)
+    ;;     :vl-genloop   x.loc
+    ;;     :vl-genif     x.loc
+    ;;     :vl-gencase   x.loc
+    ;;     :vl-genblock  x.loc
+    ;;     :vl-genarray  x.loc))
 
     (local (defun my-default-hint (fnname id clause world)
              (declare (xargs :mode :program))
-             (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+             (and (eql (len (acl2::recursivep fnname t world)) 1) ;; singly recursive
                   (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
                     (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
                          (cond ((not pool-lst)
@@ -165,7 +167,8 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
                           ,@(project-over-modelement-types
                              'vl-modelementlist-p-when-vl-__type__list-p)
                           (:rules-of-class :type-prescription :here)
-                          (:ruleset tag-reasoning))))))
+                          ;(:ruleset tag-reasoning)
+                          )))))
 
     (define vl-sort-genelements
       :parents (genblob)

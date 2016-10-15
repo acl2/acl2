@@ -32,6 +32,9 @@
 ;
 ; This file is adapted from the Milawa Theorem Prover, Copyright (C) 2005-2009
 ; Kookamara LLC, which is also available under an MIT/X11 style license.
+;
+; Contribution by Alessandro Coglio (coglio@kestrel.edu):
+; Add support for :PRED option of DEFAGGREGATE.
 
 (in-package "STD")
 (include-book "da-base")
@@ -42,8 +45,6 @@
 (set-state-ok t)
 
 (program)
-
-(def-ruleset! tag-reasoning nil)
 
 (defxdoc defaggregate
   :parents (std/util)
@@ -158,9 +159,9 @@ theorems:</p>
 
 <p>These theorems seem to perform well and settle most questions regarding the
 disjointness of different kinds of aggregates.  In case the latter rules become
-expensive, we always add them to the @('tag-ruleset'), so you can disable this
-<see topic='@(url acl2::rulesets)'>ruleset</see> to turn off almost all
-tag-related reasoning.</p>
+expensive, we always add them to the @('tag-reasoning') ruleset, so you can
+disable this <see topic='@(url acl2::rulesets)'>ruleset</see> to turn off
+almost all tag-related reasoning.</p>
 
 
 <h3>Syntax of Fields</h3>
@@ -211,39 +212,32 @@ documentation for the aggregate in a sensible way.</p>
 
 <h3>Options</h3>
 
-<h4>Legibility</h4>
+<h4>Layout</h4>
 
-<p>By default, an aggregate is represented in a <i>legible</i> way, which means
-the fields of each instance are laid out in an alist.  When such an object is
-printed, it is easy to see what the value of each field is.</p>
+<p>By default, aggregates are represented with @(':layout :alist'), but you can
+also choose other layouts.</p>
 
-<p>However, the structure can be made <i>illegible</i>, which means it will be
-packed into a cons tree of minimum depth.  For instance, a structure whose
-fields are @('(foo bar baz)') might be laid out as @('((tag . foo) . (bar
-. baz))').  This can be more efficient because the structure has fewer
-conses.</p>
+<p>The @(':alist') format provides the best readability/debuggability but is
+the worst layout for execution/memory efficiency.  This layout represents
+instances of your structure using an alist-like format where the name of each
+field is next to its value.  When printing such an object you can easily see
+the fields and their values, but creating these objects requires additional
+consing to put the field names on, etc.</p>
 
-<p>We prefer to use legible structures because they can be easier to understand
-when they arise in debugging and proofs.  For instance, compare:</p>
+<p>The @(':tree') or @(':fulltree') layouts provides the best efficiency and
+worst readability.  They pack the fields into a compact tree structure, without
+their names.  In @(':tree') mode, any @('(nil . nil)') pairs are compressed
+into just @('nil').  In @(':fulltree') mode this compression doesn't happen,
+which might marginally save time if you know your fields will never be in pairs
+of @('nil')s.  Tree-based structures require minimal consing, and each accessor
+simply follows some minimal, fixed car/cdr path into the object.  The objects
+print as horrible blobs of conses that can be hard to inspect.</p>
 
-<ul>
- <li>Legible: @('(:point3d (x . 5) (y . 6) (z . 7))')</li>
- <li>Illegible: @('(:point3d 5 6 . 7)')</li>
-</ul>
+<p>The @(':list') layout strikes a middle ground, with the fields of the object
+laid out as a plain list.  Accessing the fields of such a structure may require
+more @('cdr') operations than for a @(':tree') layout, but at least when you
+print them it is still pretty easy to tell what the fields are.</p>
 
-<p>On the other hand, illegible structures have a more consistent structure,
-which can occasionally be useful.  It's usually best to avoid reasoning about
-the underlying structure of an aggregate.  But, sometimes there are exceptions
-to this rule.  With illegible structures, you know exactly how each object will
-be laid out, and for instance you can prove that two @('point3d') structures
-will be equal exactly when their components are equal (which is not a theorem
-for legible structures.)</p>
-
-<p>A middle ground between legibility and illegibility is to use @(':legiblep
-:ordered'), which still uses an alist representation for readability, but
-requires a strict ordering and that no other keys be present.  Such structures
-provide the same regularity benefits as illegible structures, and performance
-between that of ordinary legible and illegible structures.</p>
 
 <h4>Honsed Aggregates</h4>
 
@@ -253,14 +247,19 @@ build the object using ordinary conses.  However, when @(':hons') is set to
 
 <p>Honsing is only appropriate for some structures.  It is a bit slower than
 consing, and should typically not be used for aggregates that will be
-constructed and used in an ephemeral manner.</p>
+constructed and used in an ephemeral manner.  If you are going to hons your
+structures, you should probably use a @(':tree') or @(':fulltree') layout.</p>
 
-<p>Because honsing is somewhat at odds with the memory-inefficiency of legible
-structures, @(':hons t') implies @(':legiblep nil').</p>
 
 <h4>Other Options</h4>
 
 <dl>
+
+<dt>:pred</dt>
+
+<dd>Name of the recognizer for the aggregate -- must be a valid symbol for a
+new function. Defaults to @('agg-p'), where @('agg') is the name of the
+aggregate.</dd>
 
 <dt>:mode</dt>
 
@@ -537,6 +536,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 (def-primitive-aggregate agginfo
   (tag     ;; The :tag for the aggregate, a symbol
    name    ;; The base name for the aggregate
+   pred    ;; The name of the recognizer
    fields  ;; The field names with no extra info, a symbol-list
    efields ;; The parsed formallist-p that has basic type requirements.
    ;; It'd be easy to add additional fields later on.
@@ -652,6 +652,12 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                            `(and ,@(strip-cadrs require))
                            honsp layout))
 
+(defun da-make-remaker (basename tag plain-fields require honsp layout pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
+  (da-make-remaker-raw basename tag plain-fields
+                       `(and ,@(strip-cadrs require))
+                       honsp layout pred))
+
 (defun da-make-honsed-constructor
   (basename
    tag
@@ -710,15 +716,16 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 ;;                  (da-insert-debugging-statements-into-require (cdr require))))))
 
 ;; bozo removed debugp for now
-(defun da-make-recognizer (basename tag plain-fields require layout)
+(defun da-make-recognizer (basename tag plain-fields require layout pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-recognizer-raw basename tag plain-fields
                           `(and ,@(strip-cadrs require))
-                          layout))
+                          layout pred))
 
 #||
 (da-make-recognizer 'taco :taco '(shell meat cheese lettuce sauce)
                  '((shell-p-of-taco->shell (shellp shell)))
-                   t)
+                   t nil)
 
 ;; (DEFUND TACO-P (X)
 ;;         (DECLARE (XARGS :GUARD T))
@@ -745,30 +752,36 @@ would have had to call @('(student->fullname x)').  For instance:</p>
             (da-fields-recognizer-map basename (cdr fields)))
     nil))
 
-(defun da-make-requirement-of-recognizer (name require map accnames)
+(defun da-make-requirement-of-recognizer (name require map accnames pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (let ((rule-classes (if (eq (third require) :rule-classes)
                           (fourth require)
                         :rewrite)))
     `(defthm ,(first require)
-       (implies (force (,(da-recognizer-name name) ,(da-x name)))
+       (implies (force (,(da-recognizer-name name pred) ,(da-x name)))
                 ,(ACL2::sublis map (second require)))
        :rule-classes ,rule-classes
        :hints(("Goal"
                :in-theory
                (union-theories
-                '(,(da-recognizer-name name) . ,accnames)
+                '(,(da-recognizer-name name pred) . ,accnames)
                 (theory 'defaggregate-basic-theory)))))))
 
-(defun da-make-requirements-of-recognizer-aux (name require map accnames)
+(defun da-make-requirements-of-recognizer-aux (name require map accnames pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (if (consp require)
-      (cons (da-make-requirement-of-recognizer name (car require) map accnames)
-            (da-make-requirements-of-recognizer-aux name (cdr require) map accnames))
+      (cons (da-make-requirement-of-recognizer name (car require)
+                                               map accnames pred)
+            (da-make-requirements-of-recognizer-aux name (cdr require)
+                                                    map accnames pred))
     nil))
 
-(defun da-make-requirements-of-recognizer (name require fields)
+(defun da-make-requirements-of-recognizer (name require fields pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-requirements-of-recognizer-aux name require
                                           (da-fields-recognizer-map name fields)
-                                          (da-accessor-names name fields)))
+                                          (da-accessor-names name fields)
+                                          pred))
 
 
 (defun da-field-doc (x acc base-pkg state)
@@ -833,10 +846,11 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        (acc (str::revappend-chars "</ul>" acc)))
     (mv acc state)))
 
-(defun da-main-autodoc (name fields parents short long base-pkg state)
+(defun da-main-autodoc (name fields parents short long base-pkg pred state)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (b* ( ;; We begin by constructing the :long string
        (acc  nil)
-       (foop (da-recognizer-name name))
+       (foop (da-recognizer-name name pred))
        (acc  (str::revappend-chars "<p>@(call " acc))
        (acc  (str::revappend-chars (xdoc::full-escape-symbol foop) acc))
        (acc  (str::revappend-chars ") is a @(see std::defaggregate) of the following fields.</p>" acc))
@@ -852,10 +866,11 @@ would have had to call @('(student->fullname x)').  For instance:</p>
            :long ,long)
         state)))
 
-(defun da-field-autodoc (name field)
+(defun da-field-autodoc (name field pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formal-p field)))
   (b* (((formal field) field)
-       (foop      (da-recognizer-name name))
+       (foop      (da-recognizer-name name pred))
        (accessor  (da-accessor-name name field.name))
 
        ;; Create the short string.
@@ -871,11 +886,12 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        :parents (,foop)
        :short ,short)))
 
-(defun da-fields-autodoc (name fields)
+(defun da-fields-autodoc (name fields pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formallist-p fields)))
   (if (consp fields)
-      (cons (da-field-autodoc name (car fields))
-            (da-fields-autodoc name (cdr fields)))
+      (cons (da-field-autodoc name (car fields) pred)
+            (da-fields-autodoc name (cdr fields) pred))
     nil))
 
 (defconst *nl* (str::implode (list #\Newline)))
@@ -927,17 +943,15 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 (da-ctor-optional-call 'change-honsed-foo "x" '(lettuce cheese meat))
 ||#
 
-(defun da-ctor-autodoc (name fields honsp)
+(defun da-ctor-autodoc (name fields honsp pred)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (and (symbolp name)
                               (formallist-p fields))))
   (b* ((foo                (da-constructor-name name))
-       (foo-p              (da-recognizer-name name))
+       (foo-p              (da-recognizer-name name pred))
        (honsed-foo         (da-honsed-constructor-name name))
-       (make-foo-fn        (da-maker-fn-name name))
        (make-foo           (da-maker-name name))
        (make-honsed-foo    (da-honsed-maker-name name))
-       (make-honsed-foo-fn (da-honsed-maker-fn-name name))
-       (change-foo-fn      (da-changer-fn-name name))
        (change-foo         (da-changer-name name))
 
        (see-foo-p           (xdoc::see foo-p))
@@ -966,11 +980,8 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
        (def-foo                (str::cat "@(def " (xdoc::full-escape-symbol foo) ")"))
        (def-honsed-foo         (str::cat "@(def " (xdoc::full-escape-symbol honsed-foo) ")"))
-       (def-make-foo-fn        (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn) ")"))
        (def-make-foo           (str::cat "@(def " (xdoc::full-escape-symbol make-foo) ")"))
-       (def-make-honsed-foo-fn (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo-fn) ")"))
        (def-make-honsed-foo    (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo) ")"))
-       (def-change-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol change-foo-fn) ")"))
        (def-change-foo         (str::cat "@(def " (xdoc::full-escape-symbol change-foo) ")")))
 
     (list
@@ -1054,8 +1065,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 <p>This is an ordinary @('make-') macro introduced by @(see
                 std::defaggregate).</p>"
 
-                def-make-foo
-                def-make-foo-fn))
+                def-make-foo))
 
      `(defxdoc ,make-honsed-foo
         :parents (,foo-p)
@@ -1078,8 +1088,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 <p>This is an ordinary honsing @('make-') macro introduced by
                 @(see std::defaggregate).</p>"
 
-                def-make-honsed-foo
-                def-make-honsed-foo-fn))
+                def-make-honsed-foo))
 
      `(defxdoc ,change-foo
         :parents (,foo-p)
@@ -1099,21 +1108,22 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 <p>This is an ordinary @('change-') macro introduced by @(see
                 std::defaggregate).</p>"
 
-                def-change-foo
-                def-change-foo-fn)))))
+                def-change-foo)))))
 
-(defun da-autodoc (name fields honsp parents short long base-pkg state)
+(defun da-autodoc (name fields honsp parents short long base-pkg pred state)
+  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formallist-p fields)))
   (b* (((mv main state)
-        (da-main-autodoc name fields parents short long base-pkg state))
-       (ctors     (da-ctor-autodoc name fields honsp))
-       (accessors (da-fields-autodoc name fields)))
+        (da-main-autodoc name fields parents short long base-pkg pred state))
+       (ctors     (da-ctor-autodoc name fields honsp pred))
+       (accessors (da-fields-autodoc name fields pred)))
     (mv (cons main (append ctors accessors)) state)))
 
 (defconst *da-valid-keywords*
   '(:tag
-    :legiblep
+    :layout
     :hons
+    :pred
     :mode
     :parents
     :short
@@ -1194,6 +1204,10 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        ((unless (or (stringp long) (not long)))
         (mv (raise "~x0: :long must be a string (or nil)" name) state))
 
+       (pred (cdr (assoc :pred kwd-alist)))
+       ((unless (symbolp pred))
+        (mv (raise "~x0: :pred must be a symbol." name) state))
+
        (mode (or (cdr (assoc :mode kwd-alist)) current-defun-mode))
        ((unless (member mode '(:logic :program)))
         (mv (raise "~x0: :mode must be :logic or :program" name) state))
@@ -1202,12 +1216,9 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        ((unless (booleanp already-definedp))
         (mv (raise "~x0: :already-definedp should be a boolean." name) state))
 
-       (legiblep (if (assoc :legiblep kwd-alist)
-                     (cdr (assoc :legiblep kwd-alist))
-                   t))
-       ((unless (or (booleanp legiblep)
-                    (eq legiblep :ordered)))
-        (mv (raise "~x0: :legiblep should be a boolean or :ordered." name) state))
+       (layout (or (cdr (assoc :layout kwd-alist)) :alist))
+       ((unless (member layout '(:alist :list :tree :fulltree)))
+        (mv (raise "~x0: :layout must be :alist, :list, :tree, or :fulltree." name) state))
 
        (honsp (cdr (assoc :hons kwd-alist)))
        ((unless (booleanp honsp))
@@ -1227,16 +1238,8 @@ would have had to call @('(student->fullname x)').  For instance:</p>
         (mv (raise "~x0: The names given to :require must be unique." name) state))
 
        (x        (da-x name))
-       (foop     (da-recognizer-name name))
+       (foop     (da-recognizer-name name pred))
        (make-foo (da-constructor-name name))
-
-       (layout (cond ((or honsp (not legiblep))
-                       ;; forces illegible
-                       :illegible)
-                     ((eq legiblep :ordered)
-                      :ordered)
-                     (t
-                      :legible)))
 
        (foop-of-make-foo
         (intern-in-package-of-symbol (str::cat (symbol-name foop)
@@ -1244,9 +1247,10 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                                                (symbol-name make-foo))
                                      name))
        ((mv doc-events state)
-        (da-autodoc name efields honsp parents short long base-pkg state))
+        (da-autodoc name efields honsp parents short long base-pkg pred state))
 
        (agginfo (make-agginfo :name    name
+                              :pred    pred
                               :tag     tag
                               :fields  field-names
                               :efields efields))
@@ -1282,10 +1286,11 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
            ,@(if already-definedp
                  nil
-               (list (da-make-recognizer name tag field-names require layout)))
+               (list (da-make-recognizer name tag field-names require layout pred)))
            ,(da-make-constructor name tag field-names require honsp layout)
            ,(da-make-honsed-constructor name tag field-names require layout)
-           ,@(da-make-accessors name tag field-names layout)
+           ,@(da-make-accessors name tag field-names layout pred)
+           ,@(da-make-remaker name tag field-names require honsp layout pred)
 
            ,@(and
               (eq mode :logic)
@@ -1384,18 +1389,12 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                                           (theory 'defaggregate-basic-theory)))))
 
                 ,@(da-make-accessors-of-constructor name field-names)
-                ,@(da-make-requirements-of-recognizer name require field-names)))
+                ,@(da-make-requirements-of-recognizer name require field-names pred)))
 
            ,(da-make-binder name all-binder-names)
-
-           ,(da-make-changer-fn name field-names)
-           ,(da-make-changer name field-names)
-
-           ,(da-make-maker-fn name field-names field-defaults)
-           ,(da-make-maker name field-names)
-
-           ,(da-make-honsed-maker-fn name field-names field-defaults)
-           ,(da-make-honsed-maker name field-names)
+           ,(da-make-changer name field-names (da-maybe-remake-name name honsp layout))
+           ,(da-make-maker name field-names field-defaults)
+           ,(da-make-honsed-maker name field-names field-defaults)
 
            (with-output :stack :pop
              (progn . ,other-events))

@@ -47,8 +47,7 @@
   ((player-count player-count-p
                  "Number of players, denoted with symbols instead of integers.")
    (ball ball-p))
-  :legiblep
-  :ordered)
+  :layout :list)
 
 (define set-sport-to-basketball
   ((sport sport-p))

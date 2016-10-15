@@ -6,13 +6,6 @@
 (local (acl2::allow-arith5-help))
 (local (in-theory (acl2::enable-arith5)))
 
-;; The following lemmas from arithmetic-5 have given me trouble:
-#|
-(local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
-                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
-|#
-
 ;;;**********************************************************************
 ;;;                       FLOOR and CEILING
 ;;;**********************************************************************
@@ -510,8 +503,13 @@
 ;;;                         CHOP-R
 ;;;**********************************************************************
 
-(defmacro radixp (r)
-  `(and (integerp ,r) (>= ,r 2)))
+(defnd radixp (b)
+  (and (integerp b) (>= b 2)))
+
+(defrule radixp-forward
+  (implies (radixp b)
+           (and (integerp b) (>= b 2)))
+  :rule-classes :forward-chaining)
 
 (defund chop-r (x k r)
   (declare (xargs :guard (and (real/rationalp x)
@@ -612,6 +610,8 @@
 ;;;**********************************************************************
 
 (defund chop (x k)
+  (declare (xargs :guard (and (real/rationalp x)
+                              (integerp k))))
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
 (local (defrule |chop as chop-r|

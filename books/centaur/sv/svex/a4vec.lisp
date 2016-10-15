@@ -35,7 +35,7 @@
 (local (xdoc::set-default-parents bit-blasting))
 
 
-(define aig-list->s ((x   "AIG list to evaluate.")
+(define aig-list->s ((x   true-listp "AIG list to evaluate.")
                      (env "AIG environment to evaluate it under."))
   :parents (a4vec)
   :returns (ans integerp :rule-classes :type-prescription)
@@ -49,7 +49,7 @@
       (logcons (bool->bit (aig-eval first env))
                (aig-list->s rest env)))))
 
-(define aig-list->u ((x   "AIG list to evaluate.")
+(define aig-list->u ((x   true-listp "AIG list to evaluate.")
                      (env "AIG environment to evaluate it under."))
   :parents (a4vec)
   :returns (ans natp :rule-classes :type-prescription)
@@ -64,7 +64,9 @@
 
 (defprod a4vec
   :short "A symbolic 4vec, with lists of AIGs for the upper and lower bits."
-  :layout :tree
+  ;; [Jared] might be switch to a regular :tree, but we rely on it being a cons
+  ;; for a4veclist-nth, so better to just make it a proper cons.
+  :layout :fulltree
   ((upper true-listp "List of AIGs for the upper bits.")
    (lower true-listp "List of AIGs for the lower bits."))
   :long "<p>See @(see a4vec-eval); the semantics are given by @(see
@@ -115,3 +117,10 @@ aig-list->s).</p>")
     (equal (len (a4veclist-eval x env))
            (len x))
     :hints(("Goal" :in-theory (enable a4veclist-eval)))))
+
+
+(define a4vec-constantp ((x a4vec-p))
+  (b* (((a4vec x)))
+    (and (boolean-listp x.upper)
+         (boolean-listp x.lower))))
+

@@ -19,7 +19,7 @@
 ;; ===================================================================
 
 (defxdoc remove-hyps
-  :parents (debugging)
+  :parents (proof-automation debugging)
   :short "Macro for defining a theorem with a minimal set of hypotheses"
   :long "<p>Suppose E is an admissible event of the form @('(defthm
   name (implies hyps ...))').  Then submitting instead the form @('(remove-hyps
@@ -114,7 +114,11 @@
 ;; erp val state).  In the typical case, erp is nil; then if val is nil then
 ;; the event failed, and otherwise the event succeeded with val prover steps.
 ;; If erp is not nil, then all bets are off (but this should be rare).
-(defun event-steps (form verbose-p state)
+(defun event-steps (form verbose-p extra-forms state)
+
+; Extra-forms is a list of forms, possibly empty, where each evaluates to state
+; and is to be evaluated only if form evaluates successfully.
+
   (let ((new-form
          ;; The progn will revert the state if one of the events fails, which we
          ;; guarantee with an ill-formed event (the defconst event below).
@@ -138,6 +142,7 @@
                                                      state)
                                                     1)
                                                 state)
+                                  ,@extra-forms
                                   (value '(value-triple nil))))
               ;; Cause a failure by using an ill-formed defconst event.
               (defconst *bad*) ; Note the missing second argument!
@@ -186,7 +191,7 @@
                                   (revappend rev-init-hyps (cdr rest-hyps))
                                   concl kwd-alist))))
         ; Try the new event.
-        (er-let* ((event-steps (event-steps form verbose-p state)))
+        (er-let* ((event-steps (event-steps form verbose-p nil state)))
           ; Recur with the cdr of the unknown hypotheses, but...
           (remove-hyps-formula-1
            name
@@ -203,7 +208,7 @@
 ;; may be removed from hyps to provide a form whose proof nevertheless succeeds.
 (defun remove-hyps-formula (form name hyps concl kwd-alist verbose-p ctx state)
   ; Try the original event and obtain the number of steps.
-  (er-let* ((steps (event-steps form verbose-p state)))
+  (er-let* ((steps (event-steps form verbose-p nil state)))
     (cond
      ; If the original event failed, then we simply fail.
      ((null steps)

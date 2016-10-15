@@ -48,8 +48,10 @@
     ;; Including this type-prescription rule improves the type-prescriptions of
     ;; some subsequent functions such as upcase-string.
     acl2::stringp-of-implode
+    acl2::pos-fix
 
     ;; eqv.lisp
+    character-list-fix
     charlisteqv
     charlisteqv-is-an-equivalence
 
@@ -133,6 +135,8 @@
     revappend-natchars
     natstr
     natstr-list
+    intstr
+    intstr-list
     natsize-slow
     natsize-fast
     natsize
@@ -225,6 +229,8 @@
     html-quote
     repeated-revappend
     distance-to-tab
+    html-encode-next-col
+    html-encode-push
     html-encode-chars-aux
     html-encode-string-aux
     html-encode-string
@@ -324,5 +330,15 @@
     symbol-list-names
     intern-list-fn
     intern-list
+
+    ;; url-encode
+    url-encode-char
+    make-url-encode-array
+    *url-encode-array*
+    fast-url-encode-char
+    url-encode-chars-aux
+    url-encode-chars
+    url-encode-string-aux
+    url-encode-string
     ))
 

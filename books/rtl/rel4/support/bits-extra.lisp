@@ -237,42 +237,84 @@
                y
                n)
          (lior x y n))
-  :hints (("Goal" :in-theory (e/d (lior) (logior lior-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lior)
+                                  (logior
+                                   lior-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd lior-bits-2
   (equal (lior x
                (bits y (1- n) 0)
                n)
          (lior x y n))
-  :hints (("Goal" :in-theory (e/d (lior) (logior lior-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lior)
+                                  (logior
+                                   lior-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd land-bits-1
   (equal (land (bits x (1- n) 0)
                y
                n)
          (land x y n))
-  :hints (("Goal" :in-theory (e/d (land) (logior land-commutative)))))
+  :hints (("Goal" :in-theory (e/d (land)
+                                  (logior
+                                   land-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd land-bits-2
   (equal (land x
                (bits y (1- n) 0)
                n)
          (land x y n))
-  :hints (("Goal" :in-theory (e/d (land) (logior land-commutative)))))
+  :hints (("Goal" :in-theory (e/d (land)
+                                  (logior
+                                   land-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd lxor-bits-1
   (equal (lxor (bits x (1- n) 0)
                y
                n)
          (lxor x y n))
-  :hints (("Goal" :in-theory (e/d (lxor) (logior lxor-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lxor)
+                                  (logior
+                                   lxor-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 (defthmd lxor-bits-2
   (equal (lxor x
                (bits y (1- n) 0)
                n)
          (lxor x y n))
-  :hints (("Goal" :in-theory (e/d (lxor) (logior lxor-commutative)))))
+  :hints (("Goal" :in-theory (e/d (lxor)
+                                  (logior
+                                   lxor-commutative
+
+; Matt K. mod for assume-true-false improvement for calls of the form (integerp
+; (+ k term)).
+
+                                   (force))))))
 
 ; Proof of lior-slice:
 
@@ -339,7 +381,7 @@
                        0                     j)
                   (- (expt 2 i) (expt 2 j))))
   ;; The following hint is very weird!!  It can't be on Goal or Goal'.  The
-  ;; idea came from a proof-checker proof.  I should investigate....
+  ;; idea came from a proof-builder proof.  I should investigate....
   :hints (("Goal''" :in-theory (enable cat expt)))
   :rule-classes nil)
 

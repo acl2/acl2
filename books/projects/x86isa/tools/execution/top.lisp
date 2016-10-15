@@ -21,7 +21,7 @@
   other value of @('X86ISA_EXEC') except @('t'), then instructions
   like @('SYSCALL') and @('RDRAND') will not be available for
   execution, though reasoning about them will still be possible. See
-  @(see Build-Instructions) for details.</p>
+  @(see x86isa-build-instructions) for details.</p>
 
 <p>First, obtain the x86 machine-code version of the program
 you want to execute on the model. Note that we support only <a
@@ -451,6 +451,8 @@ remember to initialize the x86 state appropriately.</p>
 (define init-system-level-mode
   ((paging-base-addr :type (unsigned-byte 52))
    x86)
+  ;; TO-DO: I should have the 40-bit wide PDB as the input, instead of
+  ;; the 52-bit wide physical address of the PML4 Table.
 
   :parents (program-execution)
   :short "Switches the model to the system-level mode and load our

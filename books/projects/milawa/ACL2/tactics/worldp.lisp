@@ -206,19 +206,22 @@
   :hints(("Goal" :in-theory (enable tactic.world-env-okp))))
 
 (defthm rw.theory-list-env-okp-of-range-of-tactic.world->theories
-  (implies (force (tactic.world-env-okp world axioms thms))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+  (implies (tactic.world-env-okp world axioms thms)
            (equal (rw.theory-list-env-okp (range (tactic.world->theories world)) thms)
                   t))
   :hints(("Goal" :in-theory (enable tactic.world-env-okp))))
 
 (defthm subsetp-of-tactic.world->defs-and-axioms
-  (implies (force (tactic.world-env-okp world axioms thms))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+  (implies (tactic.world-env-okp world axioms thms)
            (equal (subsetp (tactic.world->defs world) axioms)
                   t))
   :hints(("Goal" :in-theory (enable tactic.world-env-okp))))
 
 (defthm rw.rule-list-env-okp-of-tactic.world->allrules
-  (implies (force (tactic.world-env-okp world axioms thms))
+; Matt K. mod for v7-2: Don't force assumption below with free variable.
+  (implies (tactic.world-env-okp world axioms thms)
            (equal (rw.rule-list-env-okp (tactic.world->allrules world) thms)
                   t))
   :hints(("Goal" :in-theory (enable tactic.world-env-okp))))

@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -417,8 +417,8 @@
 
   (cond
    ((flambda-applicationp term) nominations)
-   (t (let ((rule (getprop (ffn-symb term) 'eliminate-destructors-rule
-                           nil 'current-acl2-world wrld)))
+   (t (let ((rule (getpropc (ffn-symb term) 'eliminate-destructors-rule nil
+                            wrld)))
         (cond
          ((or (null rule)
               (not (enabled-numep (access elim-rule rule :nume) ens)))
@@ -562,8 +562,8 @@
   (cond ((null lst) 0)
         (t (+ (if (flambda-applicationp (car lst))
                   (max-level-no (lambda-body (ffn-symb (car lst))) wrld)
-                  (or (getprop (ffn-symb (car lst)) 'level-no
-                               nil 'current-acl2-world wrld)
+                  (or (getpropc (ffn-symb (car lst)) 'level-no
+                                nil wrld)
                       0))
               (sum-level-nos (cdr lst) wrld)))))
 
@@ -616,8 +616,8 @@
      ((null nominations) nil)
      (t
       (let* ((dterm (pick-highest-sum-level-nos nominations wrld nil -1))
-             (rule (getprop (ffn-symb dterm) 'eliminate-destructors-rule
-                            nil 'current-acl2-world wrld))
+             (rule (getpropc (ffn-symb dterm) 'eliminate-destructors-rule
+                             nil wrld))
              (alist (pairlis$ (fargs (access elim-rule rule :destructor-term))
                               (fargs dterm))))
         (change elim-rule rule
@@ -1216,6 +1216,12 @@
                    (owned-vars process mine-flg (cdr history))))
         (t (owned-vars process mine-flg (cdr history)))))
 
+(defun ens-from-pspv (pspv)
+  (access rewrite-constant
+          (access prove-spec-var pspv
+                  :rewrite-constant)
+          :current-enabled-structure))
+
 (defun eliminate-destructors-clause (clause hist pspv wrld state)
 
 ; This is the waterfall processor that eliminates destructors.
@@ -1232,11 +1238,7 @@
                                                hist))
                                   (owned-vars 'eliminate-destructors-clause nil
                                               hist)
-                                  (access rewrite-constant
-                                          (access prove-spec-var
-                                                  pspv
-                                                  :rewrite-constant)
-                                          :current-enabled-structure)
+                                  (ens-from-pspv pspv)
                                   wrld
                                   t)
    (cond (elim-seq (mv 'hit clauses
@@ -1503,9 +1505,10 @@
         ((fquotep term) nil)
         ((flambda-applicationp term) nil)
         (t (and (all-variablep (fargs term))
-                (let ((rule (getprop (ffn-symb term)
-                                     'eliminate-destructors-rule
-                                     nil 'current-acl2-world wrld)))
+                (let ((rule (getpropc (ffn-symb term)
+                                      'eliminate-destructors-rule
+                                      nil
+                                      wrld)))
                   (and rule
                        (enabled-numep (access elim-rule rule :nume)
                                       ens)))))))
@@ -1909,11 +1912,7 @@
 
   (mv-let (direction lit equiv lhs rhs len-tail)
           (first-fertilize-lit cl cl hist
-                               (access rewrite-constant
-                                       (access prove-spec-var
-                                               pspv
-                                               :rewrite-constant)
-                                       :current-enabled-structure)
+                               (ens-from-pspv pspv)
                                wrld)
           (cond
            ((null direction) (mv 'miss nil nil nil))
@@ -1932,11 +1931,7 @@
                                            direction
                                            cross-fert-flg
                                            delete-lit-flg
-                                           (access rewrite-constant
-                                                   (access prove-spec-var
-                                                           pspv
-                                                           :rewrite-constant)
-                                                   :current-enabled-structure)
+                                           (ens-from-pspv pspv)
                                            wrld
                                            state
                                            nil)
@@ -2023,8 +2018,7 @@
 
   (cond ((flambdap fn) nil)
         ((eq fn 'cons) nil)
-        (t (let ((rule (getprop fn 'eliminate-destructors-rule nil
-                                'current-acl2-world wrld)))
+        (t (let ((rule (getpropc fn 'eliminate-destructors-rule nil wrld)))
              (cond ((and rule
                          (enabled-numep (access elim-rule rule :nume) ens))
                     nil)
@@ -2259,11 +2253,7 @@
    ((not (assoc-eq 'being-proved-by-induction
                    (access prove-spec-var pspv :pool)))
     (mv 'miss nil nil nil))
-   (t (let* ((ens (access rewrite-constant
-                          (access prove-spec-var
-                                  pspv
-                                  :rewrite-constant)
-                          :current-enabled-structure))
+   (t (let* ((ens (ens-from-pspv pspv))
              (terms (generalizable-terms cl ens wrld)))
         (cond
          ((null terms)

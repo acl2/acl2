@@ -264,24 +264,24 @@
 
 
     (defthm integer-length-when-less-than-exp
-      (implies (and (natp x)
-                    (< x (expt 2 y))
+      (implies (and (< x (expt 2 y))
+                    (natp x)
                     (natp y))
                (<= (integer-length x) y))
       :rule-classes :linear)
 
     (defthm integer-length-when-greater-than-exp
-      (implies (and (natp x)
-                    (<= (expt 2 y) x)
+      (implies (and (<= (expt 2 y) x)
+                    (natp x)
                     (integerp y))
                (< y (integer-length x)))
       :rule-classes :linear)
 
 
     (defthmd integer-length-unique
-      (implies (and (posp x) (posp y)
-                    (<= (expt 2 (1- y)) x)
-                    (< x (expt 2 y)))
+      (implies (and (<= (expt 2 (1- y)) x)
+                    (< x (expt 2 y))
+                    (posp x) (posp y))
                (equal (integer-length x) y))))
 
 
@@ -291,3 +291,7 @@
 ;;            (< (integer-length x) n))
 ;;   :rule-classes ((:rewrite)
 ;;                  (:linear)))
+
+
+
+

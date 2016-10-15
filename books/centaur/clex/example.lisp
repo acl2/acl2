@@ -97,7 +97,7 @@ to state and prove.</p>")
   :long "<p>I make these tagless and illegible so that they're more
 compact, which is useful when running the examples.</p>"
   :tag nil
-  :legiblep nil)
+  :layout :fulltree)
 
 (deflist tokenlist-p (x)
   (token-p x)

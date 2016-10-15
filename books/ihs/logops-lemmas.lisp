@@ -408,6 +408,14 @@
     (and (equal (logxor 0 i) (ifix i))
          (equal (logxor -1 i) (lognot i)))))
 
+(defsection ihs/logite-lemmas
+  :parents (logite logops-lemmas)
+  :short "Lemmas about @(see logite) from the @(see logops-lemmas) book."
+
+  (defthm simplify-logite
+    (and (equal (logite 0 then else) (ifix else))
+         (equal (logite -1 then else) (ifix then)))))
+
 (local (in-theory (disable ash lognot lognotu logand logior logxor logeqv logorc1)))
 
 
@@ -483,10 +491,22 @@
        (equal (b-orc2 x 1) (bfix x))
        (equal (b-orc2 x x) 1)
        (equal (b-orc2 x (b-not x)) (bfix x))
-       (equal (b-orc2 (b-not x) x) (b-not x)))
+       (equal (b-orc2 (b-not x) x) (b-not x))
+
+       (equal (b-ite 1 then else) (bfix then))
+       (equal (b-ite 0 then else) (bfix else))
+       (equal (b-ite test 1 0) (bfix test))
+       (equal (b-ite test 0 1) (b-not test))
+       (equal (b-ite test then then) (bfix then))
+       (equal (b-ite test then 0)    (b-and test then))
+       (equal (b-ite test then 1)    (b-ior (b-not test) then))
+       (equal (b-ite test then test) (b-and test then))
+       (equal (b-ite test 1 else) (b-ior test else))
+       (equal (b-ite test 0 else) (b-and (b-not test) else))
+       (equal (b-ite test test else) (b-ior test else)))
 
   :enable (bitp b-and b-ior b-xor b-not b-eqv b-nand b-nor
-                b-andc1 b-andc2 b-orc1 b-orc2))
+                b-andc1 b-andc2 b-orc1 b-orc2 b-ite))
 
 
 ;;;****************************************************************************
@@ -624,6 +644,9 @@
 
   (defthm bitp-loghead-1
     (bitp (loghead 1 i))
+    ;; [Jared] 2016-04-08: changing this to a type-prescription now that bitp
+    ;; is a good type-prescription
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable bitp loghead)))))
 
 
@@ -1674,7 +1697,7 @@ definitions of logical operations."
                (equal (logand x (logior y z))
                       (logior (logand x y) (logand x z))))
       :hints (("Goal" :induct (logcdr-induction-3 x y z)
-               :in-theory (enable ifix)))))
+               :in-theory (enable ifix bfix)))))
 
   (encapsulate ()
     (local (defthm logand-logxor-lemma
@@ -2242,7 +2265,9 @@ definitions of logical operations."
              (equal (equal (logext size (+ i j)) (logext size (+ i k)))
                     (equal (logext size j) (logext size k))))
     :hints (("Goal"
-             :in-theory (enable bitp logext*)
+             :in-theory (e/d (bitp b-and b-xor logext*)
+; Modified April 2016 by Matt K. with addition of type-set bit for {1}.
+                             ((:t b-not$inline)))
              :restrict ((logext-+ ((size size) (i i) (j j))
                                   ((size size) (i i) (j k))
                                   ((size size) (i 1) (j (* 2 l)))

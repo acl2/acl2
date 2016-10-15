@@ -1,10 +1,38 @@
+; AIGNET - And-Inverter Graph Networks
+; Copyright (C) 2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-
 (include-book "semantics")
-
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
@@ -67,9 +95,6 @@ literal:</p>
  @(thm aignet-vals->invals-of-aignet-regvals->vals)
  @(thm aignet-vals->regvals-of-aignet-regvals->vals)
  @(thm aignet-vals->regvals-of-aignet-invals->vals)
-
-<p>See @(see aignet-seq-eval) for discussion of sequential evaluation.</p>
-
 
 <p>The difference between @('aignet-eval') and @('aignet-eval-frame') is that
 aignet-eval-frame is designed to be used as part of a sequential simulation.
@@ -747,8 +772,6 @@ and the inputs from the appropriate frame.</p>
        :const (set-bit nid 0 vals)
        :pi    vals
        :reg   (b* ((nxst (reg-id->nxst nid aignet))
-                   ((when (int= nxst 0))
-                    vals)
                    (val (get-bit nxst vals)))
                 (set-bit nid val vals))))
     :index n

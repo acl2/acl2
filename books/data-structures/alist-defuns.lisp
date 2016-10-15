@@ -35,7 +35,7 @@
 ; is good at deciding when to open recursive functions. An expert user
 ; can choose to disable them explicitly.
 ;
-; Non-recursive functions are globally disabled by the book list-defthms.
+; Non-recursive functions are globally disabled by the book alist-defthms.
 ;
 ; * Equality
 ;

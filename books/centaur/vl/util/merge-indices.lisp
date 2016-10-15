@@ -32,46 +32,39 @@
 (include-book "defs")
 (local (include-book "arithmetic"))
 
-(defsection vl-match-contiguous-indices
-  :parents (vl-verilogify-emodwirelist)
-  :short "Identify one strictly increasing segment of a @(see
-vl-maybe-nat-listp)."
+(deflist vl-maybe-integer-listp (x)
+  (maybe-integerp x)
+  :elementp-of-nil t
+  :true-listp t
+  :parents (utilities)
+  :rest
+  ((defrule integer-listp-when-no-nils-in-vl-maybe-integer-listp
+     (implies (and (not (member-equal nil x))
+                   (vl-maybe-integer-listp x))
+              (integer-listp x)))))
 
-  :long "<p>@(call vl-match-contiguous-indices) tries to consume the leading
-portion of @('x') if it counts up from @('n').  It returns @('(mv range-end
-rest)').  Here's an illustrative example:</p>
+(define vl-match-contiguous-indices ((n maybe-integerp         "Index to try to count up from.")
+                                     (x vl-maybe-integer-listp "List whose elements we are to collect."))
+  :returns (mv (range-end maybe-integerp         :hyp :fguard)
+               (rest      vl-maybe-integer-listp :hyp :fguard))
+  :parents (vl-merge-contiguous-indices)
+  :short "Identify one strictly increasing segment of a @(see
+vl-maybe-integer-listp)."
+  :long "<p>We try to consume the leading portion of @('x') if it counts up
+from @('n').  For example:</p>
 
 @({
- (vl-match-contiguous-indices 1 '(2 3 4 5 10 11 12))
-   -->
- (mv 5 (10 11 12))
-})
-
-<p>We use when collapsing emod names into Verilog-style names; see @(see
-vl-merge-contiguous-indices).</p>"
-
-  (defund vl-match-contiguous-indices (n x)
-    (declare (xargs :guard (and (maybe-natp n)
-                                (vl-maybe-nat-listp x))
-                    :measure (len x)))
-    (if (or (not (natp n))
-            (atom x)
-            (not (equal (car x) (+ n 1))))
-        (mv n x)
-      (vl-match-contiguous-indices (+ n 1) (cdr x))))
-
-  (local (in-theory (enable vl-match-contiguous-indices)))
-
-  (defthm maybe-natp-of-vl-match-contiguous-indices
-    (implies (and (force (maybe-natp n))
-                  (force (vl-maybe-nat-listp x)))
-             (maybe-natp (mv-nth 0 (vl-match-contiguous-indices n x)))))
-
-  (defthm vl-maybe-nat-listp-of-vl-match-contiguous-indices
-    (implies (and (force (maybe-natp n))
-                  (force (vl-maybe-nat-listp x)))
-             (vl-maybe-nat-listp (mv-nth 1 (vl-match-contiguous-indices n x)))))
-
+    (vl-match-contiguous-indices 1 '(2 3 4 5 10 11 12))
+      -->
+    (mv 5 (10 11 12))
+})"
+  :measure (len x)
+  (if (or (not (integerp n))
+          (atom x)
+          (not (equal (car x) (+ n 1))))
+      (mv n x)
+    (vl-match-contiguous-indices (+ n 1) (cdr x)))
+  ///
   (defthm len-of-vl-match-contiguous-indices
     (implies (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
              (< (len (mv-nth 1 (vl-match-contiguous-indices n x)))
@@ -85,25 +78,24 @@ vl-merge-contiguous-indices).</p>"
 
   (defthm vl-match-contiguous-indices-monotonic-on-success
     (implies (and (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
-                  (force (maybe-natp n))
-                  (force (vl-maybe-nat-listp x)))
+                  (force (maybe-integerp n))
+                  (force (vl-maybe-integer-listp x)))
              (< n (mv-nth 0 (vl-match-contiguous-indices n x))))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm vl-match-contiguous-indices-exists-on-success
     (implies (and (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
-                  (force (maybe-natp n))
-                  (force (vl-maybe-nat-listp x)))
-             (natp (mv-nth 0 (vl-match-contiguous-indices n x))))))
-
+                  (force (maybe-integerp n))
+                  (force (vl-maybe-integer-listp x)))
+             (integerp (mv-nth 0 (vl-match-contiguous-indices n x))))))
 
 (define vl-merged-index-p (x)
   :parents (vl-merge-contiguous-indices)
   (or (not x)
-      (natp x)
+      (integerp x)
       (and (consp x)
-           (natp (car x))
-           (natp (cdr x))
+           (integerp (car x))
+           (integerp (cdr x))
            (< (car x) (cdr x)))))
 
 (deflist vl-merged-index-list-p (x)
@@ -111,35 +103,28 @@ vl-merge-contiguous-indices).</p>"
   :elementp-of-nil t
   :parents (vl-merge-contiguous-indices))
 
-(defsection vl-merge-contiguous-indices
-  :parents (vl-verilogify-emodwirelist)
-  :short "Transform a @(see vl-maybe-nat-listp) by combining contiguous
-sequences of indices into @('(low . high)') pairs."
 
+
+(define vl-merge-contiguous-indices ((x vl-maybe-integer-listp))
+  :parents (utilities)
+  :short "Transform a @(see vl-maybe-integer-listp) by combining contiguous
+sequences of indices into @('(low . high)') pairs."
   :long "<p>For example:</p>
 
 @({
- (vl-merge-contiguous-indices '(1 2 3 5 6 7 8 9 10 15 17 18))
-  -->
- ((1 . 3) (5 . 10) 15 (17 . 18))
+     (vl-merge-contiguous-indices '(1 2 3 5 6 7 8 9 10 15 17 18))
+       -->
+     ((1 . 3) (5 . 10) 15 (17 . 18))
 })"
+  :measure (len x)
+  :returns (indices vl-merged-index-list-p :hyp :fguard
+                    :hints(("Goal" :in-theory (enable vl-merged-index-p))))
 
-  (defund vl-merge-contiguous-indices (x)
-    (declare (xargs :guard (vl-maybe-nat-listp x)
-                    :measure (len x)))
-    (if (atom x)
-        nil
-      (mv-let (range-end rest)
-        (vl-match-contiguous-indices (car x) (cdr x))
-        (if (equal (car x) range-end)
-            (cons (car x)
-                  (vl-merge-contiguous-indices (cdr x)))
-          (cons (cons (car x) range-end)
-                (vl-merge-contiguous-indices rest))))))
-
-  (local (in-theory (enable vl-merge-contiguous-indices
-                            vl-merged-index-p)))
-
-  (defthm vl-merged-index-list-p-of-vl-merge-contiguous-indices
-    (implies (force (vl-maybe-nat-listp x))
-             (vl-merged-index-list-p (vl-merge-contiguous-indices x)))))
+  (b* (((when (atom x))
+        nil)
+       ((mv range-end rest) (vl-match-contiguous-indices (car x) (cdr x)))
+       ((when (equal (car x) range-end))
+        (cons (car x)
+              (vl-merge-contiguous-indices (cdr x)))))
+    (cons (cons (car x) range-end)
+          (vl-merge-contiguous-indices rest))))

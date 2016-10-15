@@ -108,7 +108,7 @@
             (,main-thread-state :starting)
             (,ans nil)
             (,suppressed-error nil)
-            (,start-alloc (heap-bytes-allocated))
+            (,start-alloc (fudge-heap-bytes-allocated))
             (,start-time  (get-internal-real-time)))
 
        (oracle-timelimit-debug "OTL: Running ~s:~%" ',form)
@@ -257,7 +257,7 @@
        (oracle-timelimit-debug " -- End of catch --~%")
 
        (let ((,end-time    (get-internal-real-time))
-             (,end-alloc   (heap-bytes-allocated)))
+             (,end-alloc   (fudge-heap-bytes-allocated)))
          (oracle-timelimit-debug "OTL: Start time ~s, end time ~s~%" ,start-time ,end-time)
          (oracle-timelimit-debug "OTL: Start alloc ~s, end alloc ~s~%" ,start-alloc ,end-alloc)
          (oracle-timelimit-debug "OTL: Successful ontime finish? ~s~%"

@@ -32,15 +32,17 @@
 (include-book "../svex/vars")
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defprojection" :dir :System)
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-
-(define name-p (x)
+(defxdoc name
   :parents (svmods)
   :short "Type of the names of wires, module instances, and namespaces (such as
-          datatype fields)."
+          datatype fields).")
+
+(define name-p (x)
+  :parents (name)
   (or (stringp x)    ;; normal wire/instance/field names
       (integerp x)   ;; array indices
       (eq x :self)   ;; special name for a datatype's self wire -- see vl-datatype->mods
@@ -48,7 +50,7 @@
            (eq (car x) :anonymous))))
 
 (define name-fix ((x name-p))
-  :parents (name-p)
+  :parents (name)
   :returns (xx name-p)
   :hooks nil
   (mbe :logic (if (name-p x) x '(:anonymous))
@@ -59,12 +61,17 @@
              (equal (name-fix x) x))))
 
 (defsection name-equiv
-  :parents (name-p)
-  (fty::deffixtype name :pred name-p :fix name-fix :equiv name-equiv
-    :define t :forward t))
+  :parents (name)
+  (fty::deffixtype name
+    :pred name-p
+    :fix name-fix
+    :equiv name-equiv
+    :define t
+    :forward t))
 
 
 (fty::defflexsum path
+  :parents (svmods)
   :short "Type of a path to a wire in svex modules, expressed relative to the local scope."
   ;; :prepwork ((local (defthm car-of-name-fix
   ;;                     (implies (consp (name-fix x))
@@ -96,6 +103,7 @@
 
 
 (define path-append ((x path-p) (y path-p))
+  :parents (path)
   :returns (new-path path-p)
   :measure (path-count x)
   :verify-guards nil
@@ -105,26 +113,16 @@
   ///
   (verify-guards path-append))
 
+
+(defxdoc addr-scope
+  :parents (address)
+  :short "Scope for an @(see address-p).")
+
 (define addr-scope-p (x)
+  :parents (addr-scope)
   (or (natp x)
       (eq x :root))
   ///
-  (define addr-scope-fix ((x addr-scope-p))
-    :returns (xx addr-scope-p)
-    :hooks nil
-    (mbe :logic (if (eq x :root) x (nfix x))
-         :exec x)
-    ///
-    (defthm addr-scope-fix-when-addr-scope-p
-      (implies (addr-scope-p x)
-               (equal (addr-scope-fix x) x)))
-
-    (fty::deffixtype addr-scope
-      :pred addr-scope-p
-      :fix addr-scope-fix
-      :equiv addr-scope-equiv
-      :define t :forward t))
-
   (defthm addr-scope-possibilities
     (implies (addr-scope-p x)
              (or (equal x :root)
@@ -134,6 +132,27 @@
   (defthm addr-scope-p-when-natp
     (implies (natp x)
              (addr-scope-p x))))
+
+(define addr-scope-fix ((x addr-scope-p))
+  :parents (addr-scope)
+  :returns (xx addr-scope-p)
+  :hooks nil
+  (mbe :logic (if (eq x :root) x (nfix x))
+       :exec x)
+  ///
+  (defthm addr-scope-fix-when-addr-scope-p
+    (implies (addr-scope-p x)
+             (equal (addr-scope-fix x) x))))
+
+(defsection addr-scope-equiv
+  :parents (addr-scope)
+  (fty::deffixtype addr-scope
+    :pred addr-scope-p
+    :fix addr-scope-fix
+    :equiv addr-scope-equiv
+    :define t
+    :forward t))
+
 
 
 ;; (fty::defprod address
@@ -152,7 +171,7 @@
 
 
 (fty::defflexsum address
-  :parents (svex)
+  :parents (svmods)
   :short "Convention for referring to wires in expressions and lvalues."
   :long "<p>This is a product type containing a path, scope qualifier, and
 index.  The scope qualifier is either a natural number (indicating that
@@ -213,20 +232,15 @@ address with empty index and scope qualifier 0.</p>"
                            (x (address->scope x))))))
     :rule-classes ((:forward-chaining :trigger-terms ((address->scope x))))))
 
-(defxdoc address.lisp
-  :parents (address))
 
-(local (xdoc::set-default-parents address.lisp))
-
+(local (xdoc::set-default-parents address))
 
 (define address->svar ((x address-p))
-  :parents (address)
   :short "Turn an address into a variable name."
   :returns (xvar svar-p)
   (make-svar :name (address-fix x)))
 
 (define svar-addr-p ((x svar-p))
-  :parents (address)
   :short "An svar containing an address."
   (address-p (svar->name x))
   ///
@@ -324,13 +338,20 @@ address with empty index and scope qualifier 0.</p>"
                     (implies (svar-addr-p x)
                              (svar-addr-p xx)))
                :hints(("Goal" :in-theory (enable svar-addr-p))))
-  (change-svar x :delay (+ (lnfix delay) (svar->delay x))))
+  (change-svar x :delay (+ (lnfix delay) (svar->delay x)))
+  ///
+  (defthm svar-add-delay-when-zero
+    (equal (svar-add-delay x 0) (svar-fix x))))
 
 (std::defprojection svarlist-add-delay ((x svarlist-p) (delay natp))
   :returns (xx (and (svarlist-p xx)
                     (implies (svarlist-addr-p x)
                              (svarlist-addr-p xx))))
-  (svar-add-delay x delay))
+  (svar-add-delay x delay)
+  ///
+  (defthm svarlist-add-delay-when-0
+    (equal (svarlist-add-delay x 0)
+           (svarlist-fix x))))
 
 (defines svex-add-delay
   (define svex-add-delay ((x svex-p) (delay natp))
@@ -380,7 +401,26 @@ address with empty index and scope qualifier 0.</p>"
       :hints('(:in-theory (enable svexlist-vars))
              (and stable-under-simplificationp
                   '(:in-theory (enable))))
+      :flag svexlist-add-delay))
+
+  (defthm-svex-add-delay-flag
+    (defthm svex-add-delay-when-0
+      (equal (svex-add-delay x 0)
+             (svex-fix x))
+      :flag svex-add-delay)
+    (defthm svexlist-add-delay-when-0
+      (equal (svexlist-add-delay x 0)
+             (svexlist-fix x))
       :flag svexlist-add-delay)))
+
+(define svex-add-delay-top ((x svex-p)
+                            (delay natp))
+  :enabled t
+  :hooks nil
+  (mbe :logic (svex-add-delay x delay)
+       :exec (if (zp delay)
+                 x
+               (svex-add-delay x delay))))
 
 
 (define svex-alist-add-delay ((x svex-alist-p) (delay natp))
@@ -418,3 +458,16 @@ address with empty index and scope qualifier 0.</p>"
    (new-x :name vars-of-svex-alist-add-delay
           (implies (svarlist-addr-p (svex-alist-vars x))
                    (svarlist-addr-p (svex-alist-vars new-x))))))
+
+
+(define make-simple-svar ((name name-p))
+  :returns (var (and (svar-p var)
+                     (svar-addr-p var)))
+  (sv::address->svar (make-address :path (make-path-wire :name name))))
+
+(define make-scoped-svar ((scope name-p)
+                          (name name-p))
+  :short "Make an svar for a name under a single scope level, e.g. foo.bar"
+  :returns (var (and (svar-p var)
+                     (svar-addr-p var)))
+  (sv::address->svar (make-address :path (make-path-scope :namespace scope :subpath (make-path-wire :name name)))))

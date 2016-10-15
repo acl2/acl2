@@ -35,6 +35,7 @@
 ; instead of the following, we get a name conflict.
 (include-book "std/system/non-parallel-book" :dir :system)
 
+(include-book "xdoc/defxdoc-raw" :dir :system) ; for xdoc::all-xdoc-topics
 
  ;; Disabling waterfall parallelism because the include-books are too slow with
  ;; it enabled, since waterfall parallelism unmemoizes the six or so functions
@@ -67,13 +68,7 @@
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "centaur/aig/top" :dir :system)
 
-(include-book "centaur/aignet/aig-sim" :dir :system)
-(include-book "centaur/aignet/copying" :dir :system)
-(include-book "centaur/aignet/from-hons-aig-fast" :dir :system)
-(include-book "centaur/aignet/prune" :dir :system)
-(include-book "centaur/aignet/to-hons-aig" :dir :system)
-(include-book "centaur/aignet/types" :dir :system)
-(include-book "centaur/aignet/vecsim" :dir :system)
+(include-book "centaur/aignet/top" :dir :system)
 
 ; The rest of ihs is included elsewhere transitively.
 ; We load logops-lemmas first so that the old style :doc-strings don't get
@@ -88,6 +83,7 @@
 
 (include-book "centaur/clex/example" :dir :system)
 (include-book "centaur/nrev/demo" :dir :system)
+(include-book "centaur/lispfloat/top" :dir :system)
 
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 
@@ -161,10 +157,8 @@
 
 (include-book "centaur/vl/doc" :dir :system)
 
-;; This rule causes type determination to take forever in VL for some reason
-(in-theory (disable consp-append
-                    true-listp-append
-                    (:t append)))
+;; Try to avoid some expensive type-prescription problems
+(in-theory (disable true-listp-append (:t append)))
 
 (include-book "centaur/vl/kit/top" :dir :system)
 (include-book "centaur/vl/mlib/atts" :dir :system)
@@ -195,9 +189,13 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
+(include-book "tools/removable-runes" :dir :system)
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
+(include-book "tools/defthmg" :dir :system)
+(include-book "tools/memoize-prover-fns" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
+(include-book "system/event-names" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
 ;; BOZO should we put them back in?
@@ -224,6 +222,7 @@
 (include-book "rtl/rel11/lib/sqrt" :dir :system)
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "centaur/fty/bitstruct" :dir :system)
 
 (include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)
@@ -232,18 +231,25 @@
 (include-book "misc/seq" :dir :system)
 (include-book "misc/seqw" :dir :system)
 (include-book "misc/defpm" :dir :system)
+(include-book "misc/defpun" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
+(include-book "misc/defmac" :dir :system)
 
 (include-book "make-event/proof-by-arith" :dir :system)
 
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
 
-(include-book "data-structures/top" :dir :system)
 (include-book "acl2s/doc" :dir :system)
 
 (include-book "projects/doc" :dir :system)
 
+(include-book "kestrel/top" :dir :system)
+
+;; [Jared] keep these near the end to avoid expensive type prescription rules,
+;; especially related to consp-append.
+(include-book "data-structures/top" :dir :system)
+(include-book "data-structures/memories/memory" :dir :system)
 
 
 #||
@@ -421,7 +427,8 @@
  (er-progn (xdoc::save "./manual"
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
-                       :redef-okp t)
+                       :redef-okp t
+                       :logo-image "./acl2-big.png")
            (value `(value-triple :manual))))
 
 (value-triple
@@ -442,30 +449,10 @@
 
 (include-book "system/doc/render-doc-base" :dir :system)
 
-(defttag :open-output-channel!)
+(include-book "xdoc/save-rendered" :dir :system)
 
-#!XDOC
-(make-event
- (time$
-  (state-global-let*
-   ((current-package "ACL2" set-current-package-state))
-   (b* ((all-topics (time$
-                     (force-root-parents
-                      (maybe-add-top-topic
-                       (normalize-parents-list ; Should we clean-topics?
-                        (get-xdoc-table (w state)))))))
-        ((mv rendered state)
-         (time$ (render-topics all-topics all-topics state)))
-        (rendered (time$ (split-acl2-topics rendered nil nil nil)))
-        (outfile (acl2::extend-pathname (cbd)
-                                        "../system/doc/rendered-doc-combined.lsp"
-                                        state))
-        (- (cw "Writing ~s0~%" outfile))
-        ((mv channel state) (open-output-channel! outfile :character state))
-        ((unless channel)
-         (cw "can't open ~s0 for output." outfile)
-         (acl2::silent-error state))
-        (state (princ$ "; Documentation for acl2+books
+(defconst *rendered-doc-combined-header*
+  "; Documentation for acl2+books
 ; WARNING: GENERATED FILE, DO NOT HAND EDIT!
 ; The contents of this file are derived from the full acl2+books
 ; documentation.  For license and copyright information, see community book
@@ -475,19 +462,19 @@
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ; LICENSE for more details.
+")
 
-(in-package \"ACL2\")
-
-(defconst *acl2+books-documentation* '"
-                      channel state))
-       (state (time$ (fms! "~x0"
-                    (list (cons #\0 rendered))
-                    channel state nil)))
-       (state (fms! ")" nil channel state nil))
-       (state (newline channel state))
-       (state (close-output-channel channel state)))
-      (value '(value-triple :ok))))))
-
+(make-event
+ (time$
+  (xdoc::save-rendered
+   (extend-pathname (cbd)
+                    "../system/doc/rendered-doc-combined.lsp"
+                    state)
+   *rendered-doc-combined-header*
+   '*acl2+books-documentation*
+   t ; force-missing-parents-p
+   t ; maybe-add-top-topic-p
+   state)))
 
 
 (local
@@ -521,7 +508,8 @@
       "new-doc.lsp")
      (xdoc::save "./manual"
                  :redef-okp t
-                 :zip-p nil)
+                 :zip-p nil
+                 :logo-image "./acl2-big.png")
      (value `(value-triple :manual)))))
 
 

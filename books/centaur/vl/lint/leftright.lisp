@@ -39,7 +39,7 @@
 
 
 (defxdoc leftright-check
-  :parents (lint)
+  :parents (vl-lint)
   :short "Check for strange expressions like @('A [op] A')."
 
   :long "<p>This is a heuristic for generating warnings, inspired by PVS
@@ -61,7 +61,9 @@ these are pretty minor and uninteresting.</p>")
 
 (defenum vl-op-ac-p
   (:vl-binary-plus
-   :vl-binary-times
+   ;; We previously included :vl-binary-times here, but after this warning came
+   ;; up a few times, we decided that we don't want to warn about A*A.
+   ;; :vl-binary-times
    :vl-binary-logand
    :vl-binary-logor
    :vl-binary-bitand
@@ -196,6 +198,14 @@ of this function by memoizing @(see vl-expr-strip).</p>"
          ;; Not unique, so actually compute it.
          (hons-duplicated-members x))))
 
+;; [Jared] bozo why is this suddenly needed???
+(local (defthm true-listp-of-vl-exprlist-strip
+         (true-listp (vl-exprlist-strip x))
+         :hints(("Goal"
+                 :induct (len x)
+                 :expand ((vl-exprlist-strip x))
+                 :in-theory (enable vl-exprlist-strip)))))
+
 ;; BOZO we are repeatedly stripping the expression -- consider not doing that.
 
 (fty::defvisitor-template vl-expr-leftright-template
@@ -229,6 +239,10 @@ of this function by memoizing @(see vl-expr-strip).</p>"
 
   :fnname-template <type>-leftright-check)
 
+(local (defthm true-listp-of-vl-exprlist-strip
+         (true-listp (vl-exprlist-strip x))
+         :hints (("goal" :induct (len x)
+                  :expand (vl-exprlist-strip x)))))
 
 (local (in-theory (disable acl2::member-of-cons
                            (:t append))))
@@ -330,7 +344,10 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                    ;; about them in certain cases...
                    (suppress-p
                     (and
-                     (member x.op '(:vl-binary-plus :vl-binary-times))
+                     (member x.op '(:vl-binary-plus
+                                    ;; We no longer consider * anyway
+                                    ;; :vl-binary-times
+                                    ))
                      (or
                       ;; Index computations, especially those involving
                       ;; parameters, often have duplicate arguments.  For

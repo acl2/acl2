@@ -30,7 +30,7 @@
 
 module test ();
 
-   localparam nCycles = 1024;
+   localparam nCycles = 1040;
 
   reg [127:0] inputs [nCycles-1:0];
   reg [127:0] outputs [nCycles-1:0];
@@ -39,6 +39,7 @@ module test ();
   reg [127:0] out;
 
   reg clk;
+  reg reset;
 
    spec specinst (.*);
 
@@ -48,16 +49,19 @@ module test ();
      $dumpfile("test.vcd");
      $dumpvars();
      clk = 0;
-     $readmemb("inputs.data", inputs);
+     reset = 1;
+     $readmemb(`infile, inputs, 0, nCycles-1);
      for (i=0; i<nCycles; i++) begin
        in = inputs[i];
        #2;
        clk = 1;
-       #5;
-       clk = 0;
+       reset = 0;
        #3;
        outputs[i] = out;
+       #2;
+       clk = 0;
+       #3;
      end
-     $writememb(`outfile, outputs);
+     $writememb(`outfile, outputs, 0, nCycles-1);
    end
 endmodule

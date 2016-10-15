@@ -1,7 +1,7 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2015, Regents of the University of Texas
+# ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+# Copyright (C) 2016, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -124,12 +124,22 @@ endif
 
 $(info ACL2_WD is $(ACL2_WD))
 
-# The default build for ACL2 includes support for hash cons, function
-# memoization, and applicative hash tables (see :doc hons-and-memoization).  In
-# order to avoid including those features, comment out the following line, or
-# supply "ACL2_HONS=" on the command line, or set environment variable
-# ACL2_HONS to the empty string.
-ACL2_HONS ?= h
+# The build of saved_acl2 may succeed even if the directory name has
+# spaces, but book certification will almost surely fail, so we
+# disallow such a build.  Comment out the three lines below if you
+# want to take your chances nonetheless!
+ifneq (,$(word 2, $(ACL2_WD)))
+$(error Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
+endif
+
+# ACL2 includes support for hash cons, function memoization, and
+# applicative hash tables (see :doc hons-and-memoization).  In order
+# to avoid including those features, you can try commenting out the
+# following line.  We do not claim to support such builds.  However,
+# you are welcome to try, and there is a reasonable chance that you
+# will succeed in building a usable executable.
+
+ACL2_HONS := h
 
 # The variable ACL2_REAL should be defined for the non-standard
 # version and not for the standard version.  Non-standard ACL2 images
@@ -142,7 +152,9 @@ ACL2_HONS ?= h
 # guard-verified functions or writing out arithmetic lemma data to
 # ~/write-arithmetic-goals.lisp.  Variable ACL2_HONS is h by default,
 # but when its value is the empty string, then suffix "c" is
-# generated, to create an ACL2(c) build.
+# generated, to create an ACL2(c) build -- BUT NOTE that after
+# Version_7.1, change ACL2-HONS at your own risk -- it might work, but
+# we no longer claim to support it!
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned four variables instead.
 
@@ -169,12 +181,20 @@ PREFIX =
 PREFIXsaved_acl2 = ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 = ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
-# One may define ACL2_SAFETY to provide a safety setting.  We recommend
+ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
+$(info ACL2 is $(ACL2))
+
+# One may define ACL2_SAFETY and/or (only useful for CCL) ACL2_STACK_ACCESS
+# to provide a safety or :stack-access setting.  We recommend
 # ACL2_SAFETY = 3
 # for careful error checking.  This can cause significant slowdown and for
 # some Lisp implementations, the regression might not even complete.  For
 # CCL we have had success with safety 3.
+# NOTE: The use of ACL2_STACK_ACCESS relies on recognition by CCL of the
+# :stack-access keyword for optimize expressions, hence will only have
+# effect for CCL versions starting with 16678.
 ACL2_SAFETY =
+ACL2_STACK_ACCESS =
 
 # Set ACL2_COMPILER_DISABLED, say with ACL2_COMPILER_DISABLED=t, to
 # build the image with (SET-COMPILER-ENABLED NIL STATE), thus
@@ -188,6 +208,12 @@ ACL2_COMPILER_DISABLED =
 
 # See *acl2-egc-on* for an explanation of the following variable.
 ACL2_EGC_ON =
+
+# The following supplies a value for *acl2-exit-lisp-hook*, which
+# should be a symbol in the "COMMON-LISP-USER" package.  For example,
+# for CCL consider:
+# make ACL2_EXIT_LISP_HOOK='acl2-exit-lisp-ccl-report'.
+ACL2_EXIT_LISP_HOOK =
 
 # The following is not advertised.  It allows more symbol allocation
 # when ACL2 package is created; if specified, its value should be a
@@ -216,8 +242,9 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            non-linear.lisp tau.lisp\
            rewrite.lisp simplify.lisp bdd.lisp\
            other-processes.lisp induct.lisp prove.lisp\
-           proof-checker-a.lisp history-management.lisp defuns.lisp defthm.lisp\
-           other-events.lisp ld.lisp proof-checker-b.lisp interface-raw.lisp\
+           proof-builder-a.lisp history-management.lisp defuns.lisp\
+           defthm.lisp other-events.lisp ld.lisp proof-builder-b.lisp\
+           proof-builder-pkg.lisp interface-raw.lisp\
            serialize.lisp serialize-raw.lisp\
            defpkgs.lisp
 
@@ -270,6 +297,9 @@ acl2r.lisp:
 	if [ "$(ACL2_SAFETY)" != "" ] ; then \
 	echo "(defparameter *acl2-safety* $(ACL2_SAFETY))" >> acl2r.lisp ;\
 	fi
+	if [ "$(ACL2_STACK_ACCESS)" != "" ] ; then \
+	echo "(defparameter *acl2-stack-access* $(ACL2_STACK_ACCESS))" >> acl2r.lisp ;\
+	fi
 	if [ "$(ACL2_SIZE)" != "" ] ; then \
 	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> acl2r.lisp ;\
 	fi
@@ -278,6 +308,9 @@ acl2r.lisp:
 	fi
 	if [ "$(ACL2_EGC_ON)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> acl2r.lisp ;\
+	fi
+	if [ "$(ACL2_EXIT_LISP_HOOK)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EXIT-LISP-HOOK* (QUOTE $(ACL2_EXIT_LISP_HOOK)))' >> acl2r.lisp ;\
 	fi
 
 .PHONY: chmod_image
@@ -365,7 +398,7 @@ compile:
 	@$(MAKE) check_compile_ok
 
 .PHONY: copy-distribution
-copy-distribution:
+copy-distribution: acl2r.lisp
 # WARNING: Execute this from an ACL2 source directory.
 # You must manually rm -r ${DIR} before this or it will fail without doing
 # any damage.
@@ -373,7 +406,6 @@ copy-distribution:
 # match what lisp returns from truename.
 	rm -f workxxx
 	rm -f workyyy
-	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}")' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -390,7 +422,8 @@ copy-distribution:
 #TAGS:
 #	@echo 'Skipping building of a tags table.'
 
-TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources}
+# We include acl2r.lisp so that we build ACL2(h) and not ACL2(c).
+TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources} acl2r.lisp
 	rm -f TAGS
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
@@ -401,7 +434,7 @@ TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources}
 	if [ -f TAGS ] ; then chmod 644 TAGS ; fi
 
 # The following remakes TAGS even if TAGS is up to date.  This target can be
-# useful when building a hons or parallel version after a normal version, or
+# useful when building a parallel version after a normal version, or
 # vice-versa.
 .PHONY: TAGS!
 TAGS!:  acl2r
@@ -469,6 +502,7 @@ init: acl2-proclaims.lisp
 	$(MAKE) do_saved
 	rm -f workxxx
 	$(MAKE) chmod_image
+	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
 
 # The following "proofs" target assumes that files for the specified LISP have
 # been compiled.  We use :load-acl2-proclaims nil so that we don't
@@ -485,7 +519,7 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC acl2-manual
+.PHONY: DOC acl2-manual check-acl2-exports
 
 # The next target, DOC, is the target that should generally be used
 # for rebuilding the ACL2 User's Manual.
@@ -503,6 +537,9 @@ DOC: acl2-manual STATS
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
 	$(MAKE) doc.lisp doc/home-page.html
+
+check-acl2-exports:
+	cd books ; rm -f misc/check-acl2-exports.cert ; $(MAKE) ACL2=$(ACL2) misc/check-acl2-exports.cert
 
 # We remove doc/HTML before rebuilding it, in order to make sure that
 # it is up to date.  We could do that removal in doc/create-doc
@@ -544,30 +581,17 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 
 books/system/doc/rendered-doc.lsp:
 	rm -f books/system/doc/rendered-doc.lsp
-ifndef ACL2
-	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
-endif
-
 
 .PHONY: STATS
 
 # See the Essay on Computing Code Size in the ACL2 source code.
 STATS:
-	@if [ "$(ACL2)" = "" ]; then \
-	    ACL2="../${PREFIXsaved_acl2}" ;\
-	    export ACL2 ;\
-	    ACL2_SOURCES="$(sources)" ;\
-	    export ACL2_SOURCES ;\
-	    doc/create-acl2-code-size ;\
-	else \
-	    ACL2=$(ACL2) ;\
-	    export ACL2 ;\
-	    ACL2_SOURCES="$(sources)" ;\
-	    export ACL2_SOURCES ;\
-	    doc/create-acl2-code-size ;\
-	fi
+	@ACL2=$(ACL2) ;\
+	export ACL2 ;\
+	ACL2_SOURCES="$(sources)" ;\
+	export ACL2_SOURCES ;\
+	doc/create-acl2-code-size
 
 .PHONY: clean
 clean:
@@ -604,10 +628,6 @@ large: acl2r full init
 large-acl2r:
 	$(MAKE) large ACL2_REAL=r
 
-.PHONY: large-acl2h
-large-acl2h:
-	$(MAKE) large ACL2_HONS=h
-
 .PHONY: large-acl2d
 large-acl2d:
 	$(MAKE) large ACL2_DEVEL=d
@@ -639,11 +659,7 @@ move-large:
 # log.
 .PHONY: certify-books
 certify-books:
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
-endif
 
 # Certify books that are not up-to-date, even those less likely to be
 # included in other books.  Success can generally be determined by
@@ -652,61 +668,35 @@ endif
 .PHONY: regression
 regression:
 	uname -a
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
-endif
 
 .PHONY: regression-everything
 regression-everything:
 	uname -a
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
-endif
 
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} certify-books
-else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
-endif
 
 # Do regression tests from scratch.
 # Success can generally be determined by checking for the absence of ** in the
 # log.
 .PHONY: regression-fresh
 regression-fresh: clean-books
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} regression
-else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
-endif
 
 .PHONY: regression-everything-fresh
 regression-everything-fresh: clean-books
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} regression-everything
-else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
-endif
 
 # The following allows for a relatively short test, in response to a request
 # from GCL maintainer Camm Maguire.
 .PHONY: certify-books-short
 certify-books-short:
 	uname -a
-ifndef ACL2
-	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} basic
-else
-	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
-endif
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
 
 # The following target assumes that we are using an image built with
 # ACL2_DEVEL set, and then have certified the books mentioned in
@@ -767,11 +757,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} moreclean
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
-endif
 
 # This following should be executed inside the acl2-sources directory.
 # You probably need to be the owner of all files in order for the chmod
@@ -857,15 +843,11 @@ our-develenv.cl:
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds:
 	uname -a
-ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
-else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
-endif
 
 # Simple targets that ignore variables not mentioned below,
 # including: ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED,
-# ACL2_EGC_ON, and ACL2_SIZE:
+# ACL2_EGC_ON, ACL2_SIZE, and ACL2_EXIT_LISP_HOOK:
 
 saved_acl2: $(ACL2_DEPS)
 	echo "Making ACL2 on $(LISP)"
@@ -886,23 +868,3 @@ saved_acl2pr: $(ACL2_DEPS)
 	echo "Making ACL2(pr) on $(LISP)"
 	time $(MAKE) LISP=$(LISP) ACL2_PAR=p ACL2_REAL=r
 	ls -lah saved_acl2pr
-
-saved_acl2c: $(ACL2_DEPS)
-	echo "Making ACL2(c) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS=
-	ls -lah saved_acl2c
-
-saved_acl2cp: $(ACL2_DEPS)
-	echo "Making ACL2(cp) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_PAR=p
-	ls -lah saved_acl2cp
-
-saved_acl2cr: $(ACL2_DEPS)
-	echo "Making ACL2(cr) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_REAL=r
-	ls -lah saved_acl2cr
-
-saved_acl2cpr: $(ACL2_DEPS)
-	echo "Making ACL2(cpr) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL=r
-	ls -lah saved_acl2cpr

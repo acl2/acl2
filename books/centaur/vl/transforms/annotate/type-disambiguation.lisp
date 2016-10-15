@@ -101,13 +101,18 @@
                           :initial nil)
                          vl-warninglist-p)
                (new-x :update))
-  :fnname-template <type>-type-disambiguate)
-
+  :fnname-template <type>-type-disambiguate
+  :type-fns ((vl-fundecl vl-fundecl-type-disambiguate)
+             (vl-taskdecl vl-taskdecl-type-disambiguate)
+             (vl-paramvalue vl-paramvalue-type-disambiguate)))
 
 (local (in-theory (disable cons-equal
                            acl2::true-listp-append
                            (:t append)
                            append)))
+
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
 
 (fty::defvisitor vl-expr-type-disambiguate
   :template type-disambiguate
@@ -208,33 +213,109 @@
     :measure (two-nats-measure (vl-stmt-count x) 1)
     (b* ((ss (vl-stmt-case x
                :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
-               :vl-forstmt (vl-scopestack-push (vl-forstmt->blockscope x) ss)
+               :vl-forstmt
+               ;; BOZO this is probably not right.  We probably need to fix up types
+               ;; in the initial declarations before pushing the scope.  Think about it.
+               (vl-scopestack-push (vl-forstmt->blockscope x) ss)
                :otherwise ss)))
-      (vl-stmt-type-disambiguate-aux x ss))))
+      (vl-stmt-case x
+        :vl-callstmt
+        ;; The first argument might be a datatype.
+        (b* ((arg-to-disambiguate (and (not x.typearg)
+                                       (consp x.args)
+                                       (car x.args)))
+             ((unless arg-to-disambiguate)
+              (vl-stmt-type-disambiguate-aux x ss))
+             (warnings nil)
+             ((wmv warnings type)
+              (vl-expr-to-datatype arg-to-disambiguate ss))
+             ((unless type)
+              ;; It wasn't a type, so there's nothing special to do.
+              (vl-stmt-type-disambiguate-aux x ss))
+             ;; Move arg1 over to become the typearg.
+             ((wmv warnings id) (vl-scopeexpr-type-disambiguate x.id ss))
+             ((wmv warnings other-args) (vl-exprlist-type-disambiguate (cdr x.args) ss))
+             (new-x (change-vl-callstmt x
+                                        :id id
+                                        :typearg type
+                                        :args other-args)))
+          (mv warnings new-x))
+        :otherwise
+        (vl-stmt-type-disambiguate-aux x ss)))))
+
+
+(fty::defvisitors vl-paramvalue-type-disambiguate-deps
+  :template type-disambiguate
+  :dep-types (vl-paramvalue))
+
+(define vl-paramvalue-type-disambiguate ((x vl-paramvalue-p)
+                                         (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-paramvalue-p))
+  (vl-paramvalue-case x
+    :type (b* (((mv warnings type)
+                (vl-datatype-type-disambiguate x.type ss)))
+            (mv warnings (change-vl-paramvalue-type x :type type)))
+    :expr (b* (((mv warnings expr)
+                (vl-expr-type-disambiguate x.expr ss))
+               ((wmv warnings type)
+                (vl-expr-to-datatype expr ss)))
+            (mv warnings
+                (if type
+                    (make-vl-paramvalue-type :type type)
+                  (change-vl-paramvalue-expr x :expr expr))))))
+
 
 (fty::defvisitors vl-fundecl-type-disambiguate-deps
   :template type-disambiguate
-  :dep-types (vl-fundecl))
+  :dep-types (vl-fundecl vl-taskdecl))
 
+(define vl-fundecl-type-disambiguate ((x  vl-fundecl-p)
+                                      (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-fundecl-p))
+  ;; See the comments in scopestack.lisp.  We follow the One True Way to
+  ;; process a Function: we must process the return type in the outer scope,
+  ;; then push the scope, then process everything else, even the ports.
+  (b* (((vl-fundecl x) (vl-fundecl-fix x))
+       (warnings nil)
+       ((wmv warnings rettype)    (vl-datatype-type-disambiguate x.rettype ss))
+       (ss                        (vl-scopestack-push (vl-fundecl->blockscope x) ss))
+       ((wmv warnings portdecls)  (vl-portdecllist-type-disambiguate x.portdecls ss))
+       ((wmv warnings vardecls)   (vl-vardecllist-type-disambiguate x.vardecls ss))
+       ((wmv warnings paramdecls) (vl-paramdecllist-type-disambiguate x.paramdecls ss))
+       ((wmv warnings typedefs)   (vl-typedeflist-type-disambiguate x.typedefs ss))
+       ((wmv warnings body)       (vl-stmt-type-disambiguate x.body ss))
+       (new-x (change-vl-fundecl x
+                                 :rettype rettype
+                                 :portdecls portdecls
+                                 :vardecls vardecls
+                                 :paramdecls paramdecls
+                                 :typedefs typedefs
+                                 :body body)))
+    (mv warnings new-x)))
 
-
-(set-bogus-mutual-recursion-ok t)
-
-(fty::defvisitor vl-fundecl-type-disambiguate
-  :template type-disambiguate
-  :type vl-fundecl
-  :renames ((vl-fundecl vl-fundecl-type-disambiguate-aux))
-  :type-fns ((vl-fundecl vl-fundecl-type-disambiguate))
-  :measure 0
-
-  (define vl-fundecl-type-disambiguate ((x vl-fundecl-p)
-                                     (ss vl-scopestack-p))
-
-    :returns (mv (warnings vl-warninglist-p)
-                 (new-x vl-fundecl-p))
-    :measure 1
-    (b* ((ss (vl-scopestack-push (vl-fundecl->blockscope x) ss)))
-      (vl-fundecl-type-disambiguate-aux x ss))))
+(define vl-taskdecl-type-disambiguate ((x  vl-taskdecl-p)
+                                       (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-taskdecl-p))
+  ;; See the comments in scopestack.lisp.  We follow the One True Way to
+  ;; process a Task: we push the whole thing and then process all of it.
+  (b* (((vl-taskdecl x) (vl-taskdecl-fix x))
+       (warnings nil)
+       (ss                        (vl-scopestack-push (vl-taskdecl->blockscope x) ss))
+       ((wmv warnings portdecls)  (vl-portdecllist-type-disambiguate x.portdecls ss))
+       ((wmv warnings vardecls)   (vl-vardecllist-type-disambiguate x.vardecls ss))
+       ((wmv warnings paramdecls) (vl-paramdecllist-type-disambiguate x.paramdecls ss))
+       ((wmv warnings typedefs)   (vl-typedeflist-type-disambiguate x.typedefs ss))
+       ((wmv warnings body)       (vl-stmt-type-disambiguate x.body ss))
+       (new-x (change-vl-taskdecl x
+                                  :portdecls portdecls
+                                  :vardecls vardecls
+                                  :paramdecls paramdecls
+                                  :typedefs typedefs
+                                  :body body)))
+    (mv warnings new-x)))
 
 (fty::defvisitors vl-genelement-type-disambiguate-deps
   :template type-disambiguate
@@ -243,36 +324,53 @@
 (fty::defvisitor vl-genelement-type-disambiguate
   :template type-disambiguate
   :type vl-genelement
-  :renames ((vl-genelement vl-genelement-type-disambiguate-aux)
-            (vl-genarrayblock vl-genarrayblock-type-disambiguate-aux))
-  :type-fns ((vl-genelement vl-genelement-type-disambiguate)
-             (vl-genarrayblock vl-genarrayblock-type-disambiguate))
+  :renames ((vl-genblock vl-genblock-type-disambiguate-aux)
+            (vl-genelement vl-genelement-type-disambiguate-aux))
+  :type-fns ((vl-genblock vl-genblock-type-disambiguate)
+             (vl-genelement vl-genelement-type-disambiguate))
   :measure (two-nats-measure :count 0)
 
-  (define vl-genelement-type-disambiguate ((x vl-genelement-p)
-                                           (ss vl-scopestack-p))
+  (define vl-genblock-type-disambiguate ((x vl-genblock-p)
+                                         (ss vl-scopestack-p))
+    
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-genblock-p))
+    :measure (two-nats-measure (vl-genblock-count x) 1)
+    ;; BOZO This isn't following the scoping discipline for genarrays but we
+    ;; don't expect them to exist yet when we run this transform.  To correct
+    ;; this we'd just add a special case for genarrays (customize
+    ;; vl-genelement-type-disambiguate) that pushes the scope like in
+    ;; vl-follow-hidexpr-aux.
+    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genblock->elems x)
+                                                      :scopetype :vl-genblock
+                                                      :id (vl-genblock->name x))
+                                 ss)))
+      (vl-genblock-type-disambiguate-aux x ss)))
 
+  (define vl-genelement-type-disambiguate ((x vl-genelement-p)
+                                         (ss vl-scopestack-p))
+    
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-genelement-p))
     :measure (two-nats-measure (vl-genelement-count x) 1)
-    (b* ((ss (vl-genelement-case x
-               :vl-genblock (vl-scopestack-push (vl-sort-genelements x.elems) ss)
-               :otherwise ss)))
-      (vl-genelement-type-disambiguate-aux x ss)))
-
-  (define vl-genarrayblock-type-disambiguate ((x vl-genarrayblock-p)
-                                           (ss vl-scopestack-p))
-
-    :returns (mv (warnings vl-warninglist-p)
-                 (new-x vl-genarrayblock-p))
-    :measure (two-nats-measure (vl-genarrayblock-count x) 1)
-    (b* ((ss (vl-scopestack-push (vl-sort-genelements (vl-genarrayblock->elems x)) ss)))
-      (vl-genarrayblock-type-disambiguate-aux x ss))))
+    (vl-genelement-case x
+      :vl-genloop
+      (b* (((unless x.genvarp)
+            (vl-genelement-type-disambiguate-aux x ss))
+           (loop-scope (vl-sort-genelements
+                        (list (vl-genbase
+                               (make-vl-genvar :name x.var :loc x.loc)))
+                        :scopetype :vl-genarray
+                        :id (vl-genblock->name x.body)))
+           (ss (vl-scopestack-push loop-scope ss)))
+        (vl-genelement-type-disambiguate-aux x ss))
+      :otherwise (vl-genelement-type-disambiguate-aux x ss))))
 
 (fty::defvisitors vl-module-type-disambiguate-deps
   :template type-disambiguate
   :dep-types (vl-module))
 
+(set-bogus-mutual-recursion-ok t)
 (fty::defvisitor vl-module-type-disambiguate
   :template type-disambiguate
   :type vl-module
@@ -286,6 +384,8 @@
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-module-p))
     :measure 1
+    ;; Note: this obeys the One True Way to Process a Module described in
+    ;; vl-scopestack-push.
     (b* ((ss (vl-scopestack-push (vl-module-fix x) ss))
          ((mv warnings new-x)
           (vl-module-type-disambiguate-aux x ss))
@@ -305,11 +405,12 @@
   :measure 0
 
   (define vl-interface-type-disambiguate ((x vl-interface-p)
-                                       (ss vl-scopestack-p))
-
+                                          (ss vl-scopestack-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-interface-p))
     :measure 1
+    ;; Note: this obeys the One True Way to Process a Module described in
+    ;; vl-scopestack-push.
     (b* ((ss (vl-scopestack-push (vl-interface-fix x) ss))
          ((mv warnings new-x)
           (vl-interface-type-disambiguate-aux x ss))
@@ -362,7 +463,4 @@
         (vl-design-type-disambiguate-aux x ss))
        ((vl-design new-x)))
     (change-vl-design new-x :warnings (append-without-guard warnings new-x.warnings))))
-
-
-
 

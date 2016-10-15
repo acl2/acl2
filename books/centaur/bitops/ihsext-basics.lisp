@@ -38,7 +38,7 @@
 ;; here are left still enabled.  Perhaps accumulated-persistence will find the
 ;; important ones.
 
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
@@ -78,6 +78,7 @@ off looking at the source code.</p>")
                    simplify-logior
                    commutativity-of-logxor
                    simplify-logxor
+                   simplify-logite
                    simplify-bit-functions
                    unsigned-byte-p-base-case
                    unsigned-byte-p-0
@@ -126,12 +127,12 @@ off looking at the source code.</p>")
 
 (defconst *ihs-extensions-disables*
   '(floor mod expt ash evenp oddp
-          logbitp logbit logior logand lognot logxor
+          logbitp logbit logior logand lognot logxor logite
           logcons logcar logcdr loghead logtail
           integer-length
           logmaskp logext logapp logrev
           b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
-          b-not b-and b-ior b-xor bfix bitp
+          b-not b-and b-ior b-xor b-ite bfix bitp
           logcount))
 
 
@@ -1192,9 +1193,9 @@ off looking at the source code.</p>")
                     (lognot (logcdr i))))
     :hints(("Goal"
             :use ((:instance acl2::lognot*
-                             (i (ifix i))))))
+                   (i (ifix i))))))
     :rule-classes ((:definition :clique (lognot)
-                                :controller-alist ((lognot t)))))
+                    :controller-alist ((lognot t)))))
 
   (add-to-ruleset ihsext-redefs '(lognot**))
 
@@ -1210,7 +1211,7 @@ off looking at the source code.</p>")
                  (t (logcons (b-not (logcar i))
                              (lognot (logcdr i))))))
     :hints (("goal" :use ((:instance acl2::lognot*
-                                     (i (ifix i))))
+                           (i (ifix i))))
              :in-theory (disable lognot acl2::lognot*)))
     :rule-classes ((:definition
                     :clique (lognot)
@@ -1293,9 +1294,9 @@ off looking at the source code.</p>")
                     (> (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
             :use ((:instance acl2::<-on-others
-                             (x (lognot i)) (y j))
+                   (x (lognot i)) (y j))
                   (:instance acl2::<-on-others
-                             (x (lognot k)) (y (ifix i)))))))
+                   (x (lognot k)) (y (ifix i)))))))
 
   (defthm lognot->-const
     (implies (and (syntaxp (quotep j))
@@ -1304,9 +1305,9 @@ off looking at the source code.</p>")
                     (< (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
             :use ((:instance acl2::<-on-others
-                             (y (lognot i)) (x j))
+                   (y (lognot i)) (x j))
                   (:instance acl2::<-on-others
-                             (y (lognot j)) (x (ifix i)))))))
+                   (y (lognot j)) (x (ifix i)))))))
 
   (defthm lognot-equal-const
     (implies (and (syntaxp (quotep j))
@@ -1315,9 +1316,16 @@ off looking at the source code.</p>")
                     (equal (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot))))
 
+  (defthm integer-length-of-lognot
+    (equal (integer-length (lognot x))
+           (integer-length x))
+    :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                       ihsext-recursive-redefs))))
+
   (add-to-ruleset ihsext-basic-thms '(lognot-<-const
                                       lognot->-const
-                                      lognot-equal-const)))
+                                      lognot-equal-const
+                                      integer-length-of-lognot)))
 
 
 
@@ -1378,7 +1386,7 @@ off looking at the source code.</p>")
   (defthm logand-of-logcons-right
     (equal (logand c (logcons a b))
            (logcons (b-and a (logcar c))
-                    (logand b (logcdr c))))
+                    (logand (logcdr c) b)))
     :hints(("Goal" :in-theory (enable logand**))))
 
   (defthmd logand$
@@ -1600,7 +1608,7 @@ off looking at the source code.</p>")
   (defthm logior-of-logcons-right
     (equal (logior c (logcons a b))
            (logcons (b-ior a (logcar c))
-                    (logior b (logcdr c))))
+                    (logior (logcdr c) b)))
     :hints(("Goal" :in-theory (enable logior**
                                       b-not b-and b-ior))))
 
@@ -2560,6 +2568,147 @@ off looking at the source code.</p>")
     :hints(("Goal" :in-theory (enable unsigned-byte-p)))
     :rule-classes :forward-chaining))
 
+(defsection logite**
+
+  (local (in-theory (enable logite)))
+
+  ;; (defthmd logite-when-zip
+  ;;   (implies (or (zip i) (zip j))
+  ;;            (equal (logite i j) 0)))
+
+  ;; (add-to-ruleset ihsext-bad-type-thms '(logite-when-zip))
+
+  ;; (defthm logite-of-ifix-1
+  ;;   (equal (logite (ifix a) b)
+  ;;          (logite a b)))
+
+  ;; (defthm logite-of-ifix-2
+  ;;   (equal (logite b (ifix a))
+  ;;          (logite b a)))
+
+  ;; (add-to-ruleset ihsext-basic-thms '(logite-of-ifix-1 logite-of-ifix-2))
+
+  (local (in-theory (enable* ihsext-bad-type-thms)))
+  (local (in-theory (disable logite)))
+
+  (defthmd logite**
+    ;; Better than logite* since there are no hyps; but must case-split manually.
+    (equal (logite test then else)
+           (logcons (b-ite (logcar test) (logcar then) (logcar else))
+                    (logite (logcdr test) (logcdr then) (logcdr else))))
+    :hints(("Goal" :in-theory (enable logite logand** logior**)))
+    :rule-classes
+    ((:definition :clique (logite)
+      :controller-alist ((logite t t t)))))
+
+  (add-to-ruleset ihsext-redefs '(logite**))
+
+  (defthm logite-of-logcons-test
+    (equal (logite (logcons a b) then else)
+           (logcons (b-ite a (logcar then) (logcar else))
+                    (logite b (logcdr then) (logcdr else))))
+    :hints(("Goal" :expand (logite (logcons a b) then else))))
+
+  (defthm logite-of-logcons-then
+    (equal (logite test (logcons a b) else)
+           (logcons (b-ite (logcar test) a (logcar else))
+                    (logite (logcdr test) b (logcdr else))))
+    :hints(("Goal" :in-theory (enable logite**))))
+
+  (defthm logite-of-logcons-else
+    (equal (logite test then (logcons a b))
+           (logcons (b-ite (logcar test) (logcar then) a)
+                    (logite (logcdr test) (logcdr then) b)))
+    :hints(("Goal" :in-theory (enable logite**))))
+
+
+  (defthmd logite$
+    ;; Bozo maybe we should have a version that only terminates based on one
+    ;; input or the other? maybe better case-splitting/induction schemes
+    (equal (logite test then else)
+           (cond ((zip test) (ifix else))
+                 ((eql test -1) (ifix then))
+                 (t (logcons (b-ite (logcar test) (logcar then) (logcar else))
+                             (logite (logcdr test) (logcdr then) (logcdr else))))))
+    :hints (("goal" :in-theory (enable logite logand$ logior$)))
+    :rule-classes ((:definition
+                    :clique (logite)
+                    :controller-alist ((logite t nil nil)))))
+
+  (add-to-ruleset ihsext-recursive-redefs '(logite$))
+
+  ;; (theory-invariant (not (active-runep '(:definition logite*)))
+  ;;                   :key |Use LOGITE** or LOGITE$ instead of LOGITE*|)
+
+  (local (in-theory (enable integer-length**)))
+
+  (defun logite-ind (test then else)
+    (declare (xargs :measure (integer-length test)))
+    (cond ((zip test) (ifix else))
+          ((eql test -1) (ifix then))
+          (t (logite-ind (logcdr test) (logcdr then) (logcdr else)))))
+
+  (defthmd logite-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logite test then else)
+                    :scheme (logite-ind test then else))))
+
+  (add-to-ruleset ihsext-inductions '(logite-induct))
+
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions)))
+
+  (defthm logcar-of-logite
+    (equal (logcar (logite test then else))
+           (b-ite (logcar test) (logcar then) (logcar else)))
+    :hints (("Goal" :expand (logite test then else))))
+
+
+  (defthm logcdr-of-logite
+    (equal (logcdr (logite test then else))
+           (logite (logcdr test) (logcdr then) (logcdr else)))
+    :hints(("Goal" :use logite**
+            :in-theory (disable logite$))))
+
+  (defthm logbitp-of-logite
+    (equal (logbitp a (logite test then else))
+           (bit->bool (b-ite (logbit a test)
+                            (logbit a then)
+                            (logbit a else))))
+    :hints(("Goal" :induct (and (logbitp a test)
+                                (logbitp a then)
+                                (logbitp a else))
+            :in-theory (enable bool->bit))))
+
+  (defthm loghead-of-logite
+    (equal (loghead a (logite test then else))
+           (logite (loghead a test)
+                  (loghead a then)
+                  (loghead a else)))
+    :hints(("Goal" :in-theory (disable loghead-identity))))
+
+  (defthm logtail-of-logite
+    (equal (logtail a (logite test then else))
+           (logite (logtail a test)
+                  (logtail a then)
+                  (logtail a else)))
+    :hints(("Goal" :in-theory (disable logtail-identity
+                                       acl2::logtail-equal-0))))
+
+  (add-to-ruleset ihsext-basic-thms '(logcar-of-logite
+                                      logcdr-of-logite
+                                      logbitp-of-logite
+                                      loghead-of-logite))
+
+  (defthm unsigned-byte-p-of-logite
+    (implies (and (unsigned-byte-p n then)
+                  (unsigned-byte-p n else))
+             (unsigned-byte-p n (logite test then else)))
+    :hints(("Goal" :in-theory (disable (force) unsigned-byte-p)))))
+
+
+
 
 (defsection logsquash**
 
@@ -2908,7 +3057,42 @@ off looking at the source code.</p>")
 
   (defthm signed-byte-p-n-minus1
     (equal (signed-byte-p n -1)
-           (< 0 (nfix n)))))
+           (< 0 (nfix n))))
+
+  (local (defun signed-byte-p-of-logtail-ind (size1 size i)
+           (if (zp size)
+               (list size1 i)
+             (signed-byte-p-of-logtail-ind (1+ size1) (1- size) i))))
+
+  (defthm signed-byte-p-of-logtail
+    (equal (signed-byte-p size (logtail shift i))
+           (and (posp size)
+                (signed-byte-p (+ size (nfix shift)) (ifix i))))
+    :hints (("goal" :induct (signed-byte-p-of-logtail-ind size shift i))))
+
+  (defthm signed-byte-p-of-logcdr
+    (equal (signed-byte-p width (logcdr x))
+           (and (posp width)
+                (signed-byte-p (+ 1 width) (ifix x)))))
+
+
+  (local (in-theory (disable minus-to-lognot)))
+
+  (local (defun signed-byte-of-ash-ind (shift n)
+           (declare (xargs :measure (abs (ifix shift))))
+           (if (zip shift)
+               n
+             (if (< 0 shift)
+                 (signed-byte-of-ash-ind (1- shift) (1- n))
+               (signed-byte-of-ash-ind (1+ shift) (1+ n))))))
+
+  (defthm signed-byte-p-of-ash-split
+    (equal (signed-byte-p n (ash x shift))
+           (and (posp n)
+                (or (zip x)
+                    (signed-byte-p (- n (ifix shift)) x))))
+    :hints(("Goal" :in-theory (enable signed-byte-p** ash**)
+            :induct (signed-byte-of-ash-ind shift n)))))
 
 
 
@@ -2958,6 +3142,14 @@ off looking at the source code.</p>")
                           (:instance logapp-fixes
                                      (size (1- size)) (i (logcdr i))))
              :in-theory (disable logapp (force)
+
+; Matt K. mod 5/2016 (type-set bit for {1}): the addition of a type-set bit for
+; the set {1} sent the proof in a different direction with this rewrite rule.
+; Monitoring this rule shows that (EQUAL (BINARY-+ '-1 SIZE) '0) rewrites to
+; (EQUAL SIZE '1), so with the new type-set bit for {1}, it isn't surprising
+; that the proof goes in a different direction than before.
+
+                                 acl2::equal-constant-+
                                  acl2::int-equiv-implies-equal-logapp-2
                                  acl2::int-equiv-implies-equal-logapp-3
                                  acl2::nat-equiv-implies-equal-logapp-1)))
@@ -3537,6 +3729,27 @@ off looking at the source code.</p>")
     :hints(("Goal" :in-theory (e/d (unsigned-byte-p**)
                                    (unsigned-byte-p))
             :induct (logmask width))))
+
+  (local (defthmd signed-byte-p-of-logmask-lemma
+           (signed-byte-p (+ 1 (nfix width)) (logmask width))
+           :hints(("Goal" :in-theory (e/d* (signed-byte-p** logmask**
+                                                            ihsext-inductions)
+                                           (signed-byte-p logmask))
+                   :induct (logmask width)))))
+
+  (defthm signed-byte-p-monotonicity
+    (implies (and (signed-byte-p a x)
+                  (<= a b)
+                  (integerp b))
+             (signed-byte-p b x))
+    :hints(("Goal" :in-theory (enable signed-byte-p**))))
+
+  (defthm signed-byte-p-of-logmask
+    (implies (and (posp width2)
+                  (<= (+ 1 (nfix width)) width2))
+             (signed-byte-p width2 (logmask width)))
+    :hints(("Goal" :use signed-byte-p-of-logmask-lemma
+            :in-theory (disable signed-byte-p logmask))))
 
   (defthmd ash-minus-1-is-logmask
     (implies (natp n)

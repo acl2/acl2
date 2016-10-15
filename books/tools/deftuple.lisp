@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 (include-book "types-misc")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 (program)
 
 

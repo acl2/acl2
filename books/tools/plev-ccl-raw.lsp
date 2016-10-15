@@ -65,61 +65,61 @@
 ; Redefined here to deal with Clozure related things that the ACL2
 ; plev-fn cannot access.
 
-  (defparameter *print-length* length)
+  (setq *print-length* length)
 
-  (defparameter *print-level* level)
+  (setq *print-level* level)
 
-  (defparameter *print-circle* circle)
+  (setq *print-circle* circle)
 
-  (defparameter *print-lines* lines)
+  (setq *print-lines* lines)
 
-  (defparameter *print-pretty* pretty)
+  (setq *print-pretty* pretty)
 
-  (defparameter *print-readably* readably)
-
-  #+Clozure
-  (defparameter ccl::*print-array* t)
+  (setq *print-readably* readably)
 
   #+Clozure
-  (defparameter ccl::*backtrace-print-level* level)
+  (setq ccl::*print-array* t)
 
   #+Clozure
-  (defparameter ccl::*backtrace-print-length* length)
+  (setq ccl::*backtrace-print-level* level)
 
   #+Clozure
-  (defparameter ccl::*trace-print-level* level)
+  (setq ccl::*backtrace-print-length* length)
 
   #+Clozure
-  (defparameter ccl::*trace-print-length* length)
+  (setq ccl::*trace-print-level* level)
 
   #+Clozure
-  (defparameter ccl::*error-print-circle* circle)
+  (setq ccl::*trace-print-length* length)
 
   #+Clozure
-  (defparameter ccl::*error-print-level* level)
+  (setq ccl::*error-print-circle* circle)
 
   #+Clozure
-  (defparameter ccl::*error-print-length* length)
+  (setq ccl::*error-print-level* level)
 
   #+Clozure
-  (defparameter ccl::*print-string-length* (and (integerp length)
-                                                ;; Jared increased this to 3000 because
-                                                ;; 300 is way too small.
-                                                (max length 3000)))
+  (setq ccl::*error-print-length* length)
 
   #+Clozure
-  (defparameter ccl::*print-simple-vector* (and (integerp length)
-                                                (max length 300)))
+  (setq ccl::*print-string-length* (and (integerp length)
+                                        ;; Jared increased this to 3000 because
+                                        ;; 300 is way too small.
+                                        (max length 3000)))
 
   #+Clozure
-  (defparameter ccl::*print-simple-bit-vector* (and (integerp length)
+  (setq ccl::*print-simple-vector* (and (integerp length)
+                                        (max length 300)))
+
+  #+Clozure
+  (setq ccl::*print-simple-bit-vector* (and (integerp length)
                                                     (max length 300)))
 
   #+Clozure
-  (defparameter ccl::*print-abbreviate-quote* t)
+  (setq ccl::*print-abbreviate-quote* t)
 
   #+Clozure
-  (defparameter ccl::*print-structure* t)
+  (setq ccl::*print-structure* t)
 
   (let* ((old-tuple (abbrev-evisc-tuple state))
          (new-tuple (list (car old-tuple) level length

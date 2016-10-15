@@ -43,13 +43,26 @@
 (defun get-formals (fn world)
   (getprop fn 'formals nil 'current-acl2-world world))
 
-(defun get-body (fn world)
-  ;; This gets the original, normalized or non-normalized body based on what
-  ;; the user typed for the :normalize xarg.  The use of "last" skips past
-  ;; any other :definition rules that have been added since then.
-  (access def-body
-          (car (last (getprop fn 'def-bodies nil 'current-acl2-world world)))
-          :concl))
+(defun get-body (fn latest-def world)
+  ;; If latest-def is nil (the default for make-flag), this gets the original,
+  ;; normalized or non-normalized body based on what the user typed for the
+  ;; :normalize xarg.  The use of "last" skips past any other :definition rules
+  ;; that have been added since then.
+  (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
+         (body (if latest-def
+                   (car bodies)
+                 (car (last bodies)))))
+    (if (access def-body body :hyp)
+        (er hard 'get-body
+            "Attempt to call get-body on a body with a non-nil hypothesis, ~x0"
+            (access def-body body :hyp))
+      (if (not (eq (access def-body body :equiv)
+                   'equal))
+          (er hard 'get-body
+              "Attempt to call get-body for an equivalence relation other ~
+               than equal, ~x0"
+              (access def-body body :equiv))
+        (access def-body body :concl)))))
 
 
 (defun inv-build-lemma-from-context (concl hyps context)
@@ -212,7 +225,7 @@
                            (get-induction (caar alist) (w state))
                            full-alist (cdar alist) simpl-hints state)
                         (gather-invariant-reqs
-                         (get-body (caar alist) (w state))
+                         (get-body (caar alist) nil (w state))
                          (list `(:hyp ,(cdar alist)))
                          full-alist simpl-hints state nil))))
              (mv-let (rest-names rest-thms state)

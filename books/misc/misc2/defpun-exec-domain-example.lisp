@@ -108,8 +108,11 @@ show how, if it did, we could have used the macro itself via defexec.
 
 (defexec executable-fact (x)
   (declare (xargs :guard (natp x)
-                  :measure (nfix x)
-                  :verify-guards nil))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive.  Instead, added exec-xargs below.
+;                 :measure (nfix x)
+                  :verify-guards nil)
+           (exec-xargs :measure (nfix x)))
   (mbe :logic (fact x)
        :exec (if (equal x 0) 1 (* x (executable-fact (- x 1))))))
 

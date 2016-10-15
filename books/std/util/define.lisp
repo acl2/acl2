@@ -264,6 +264,12 @@ difference can sometimes cause problems in later theorems.  Setting
 @(':no-function t') will avoid binding @('__function__') for better backwards
 compatibility.</dd>
 
+<dt>@(':hooks hooks')</dt>
+
+<dd>(Advanced feature).  Override which @(see post-define-hook)s are to be
+executed.  For instance, @(':hooks nil') can be used to disable all such
+hooks.</dd>
+
 </dl>
 
 <h4>@('Returns') Specifications</h4>
@@ -824,6 +830,7 @@ form is usually an adequate work-around.</p>")
    formals     ;; already parsed, macro parts removed
 
    rest-events ;; events in the /// part
+   pe-entry    ;; raw form to use in the PE-table
    ))
 
 (table define)
@@ -862,10 +869,50 @@ form is usually an adequate work-around.</p>")
 
 ; ----------------- Hooks -----------------------------------------------------
 
-; WARNING: Undocumented, experimental feature; all details may change.
+(defxdoc post-define-hook
+  :parents (define)
+  :short "A way to extend @(see define) to carry out additional behaviors."
+  :long "<p>The @(see define) macro can be configured with ``hooks'' to
+automatically generate and submit certain additional events.  For instance, the
+@(see fty::fixequiv-hook) extends define to automatically prove certain
+congruence rules.</p>
 
-; Hook function signature:
-;    my-hook-name : defguts * user-args * state -> (mv er val state)
+<p>This is an advanced and somewhat experimental feature.  To introduce a new
+post-define hook, first define a function of the signature:</p>
+
+@({
+     (my-hook-fn defguts user-args state) -> (mv er val state)
+})
+
+<p>Here:</p>
+
+<ul>
+
+<li>the @('defguts') argument is a structure which will have information from
+the @('define') itself, see the comments in @('std/util/define.lisp') for
+details</li>
+
+<li>the @('user-args') are any arguments that can be passed to your hook
+function at @('define') time via the @(':hooks') argument, or via the default
+post-define hook mechanism.</li>
+
+<li>the return value is an ordinary ACL2 error triple, where the @('val')
+should be some additional events to submit.</li>
+
+</ul>
+
+<p>Once your function is defined, you can register it as a post-define hook as
+follows:</p>
+
+@({
+     (add-post-define-hook :myhook my-hook-fn)
+})
+
+<p>And subsequently it will be legal to use @(':hooks ((:myhook ...))') or
+similar.  Define can also be configured with default post-define hooks, see
+@('add-default-post-define-hook') in the @('std/util/define.lisp') source code;
+also see the @('std/util/tests/define.lisp') file for some working
+examples.</p>")
 
 (defun remove-from-alist (key alist)
   (cond ((atom alist)
@@ -959,7 +1006,8 @@ form is usually an adequate work-around.</p>")
         (er hard? 'post-hook-make-events "Invalid post-define hook specifier: ~x0" spec1))
        (look (assoc hook-kwd hooks-alist))
        ((unless look)
-        (er hard? 'post-hook-make-events "Post-define hook not found: ~x0." hook-kwd))
+        (er hard? 'post-hook-make-events "Post-define hook not found: ~x0.  Known hooks: ~&1."
+            hook-kwd (strip-cars hooks-alist)))
        (hook-fn (cdr look))
        (event1 `(make-event (,hook-fn ',guts ',user-args state))))
     (cons event1
@@ -993,7 +1041,62 @@ form is usually an adequate work-around.</p>")
         (sort-formal-guards-aux guards wrld (acl2::default-state-vars nil))))
     (append simple complex)))
 
+(defun keep-assocs (keys-to-keep alist)
+  (cond ((atom alist)
+         nil)
+        ((member (caar alist) keys-to-keep)
+         (cons (car alist)
+               (keep-assocs keys-to-keep (cdr alist))))
+        (t
+         (keep-assocs keys-to-keep (cdr alist)))))
 
+
+(defun prettify-returnspec-for-pe (returnspec)
+  ;; For the :pe display, we don't want to include things like :hints for the
+  ;; returns specifiers, but it's definitely nice to include a simplified
+  ;; :returns information.
+  (b* (((returnspec x) returnspec)
+       ((when (and (eq x.return-type t)
+                   (equal x.doc "")))
+        x.name))
+    (append (list x.name)
+            (cond ((eq x.return-type t)
+                   nil)
+                  ((and (tuplep 2 x.return-type)
+                        (equal (second x.return-type) x.name))
+                   ;; Simple return type, use concise syntax
+                   (list (first x.return-type)))
+                  (t
+                   ;; Complex return type, use full syntax
+                   (list x.return-type)))
+            (if (eq x.hyp t)
+                nil
+              `(:hyp ,x.hyp))
+            (if (eq x.rule-classes :rewrite)
+                nil
+              `(:rule-classes ,x.rule-classes))
+            (if (equal x.doc "") nil (list x.doc)))))
+
+(defun prettify-returnspecs-for-pe-aux (returnspecs)
+  (if (atom returnspecs)
+      nil
+    (cons (prettify-returnspec-for-pe (car returnspecs))
+          (prettify-returnspecs-for-pe-aux (cdr returnspecs)))))
+
+(defun prettify-returnspecs-for-pe (returnspecs)
+  (cond ((atom returnspecs)
+         nil)
+        ((atom (cdr returnspecs))
+         (prettify-returnspec-for-pe (car returnspecs)))
+        (t
+         (cons 'mv (prettify-returnspecs-for-pe-aux returnspecs)))))
+
+(defun convert-kwd-alist-back-into-plist (kwd-alist)
+  (if (atom kwd-alist)
+      nil
+    (list* (caar kwd-alist)
+           (cdar kwd-alist)
+           (convert-kwd-alist-back-into-plist (cdr kwd-alist)))))
 
 (defun parse-define
   (name            ; User-level name, e.g., FOO
@@ -1096,6 +1199,47 @@ form is usually an adequate work-around.</p>")
        (t-proof-name  (if t-proof (ACL2::packn (LIST name-fn '|-| t-proof)) nil))
 
        (returnspecs   (parse-returnspecs name returns world))
+
+       (pe-entry
+        `(define ,name ,raw-formals
+           ;; Documentation string, if simple enough...
+           ,@(b* ((short (cdr (assoc :short kwd-alist)))
+                  ((when (stringp short))
+                   `(:short ,short))
+                  ((when (or short (cdr (assoc :long kwd-alist))))
+                   ;; There's documentation but it's too complex to print nicely
+                   ;; right now, let's just tell the user there's docs available.
+                   `("Documentation is available via :doc.")))
+               ;; No documentation, skip this part.
+               nil)
+           ;; Returnspecs, cleaned up to remove hint stuff
+           ,@(and (consp returnspecs)
+                  (list :returns (prettify-returnspecs-for-pe returnspecs)))
+           ;; We also don't want to see other ugly proof-related things like
+           ;; :hints and :guard-debug and stuff like that, so keep only the
+           ;; things that seem most valuable/short.
+           ,@(convert-kwd-alist-back-into-plist
+              (keep-assocs '(:inline :non-executable :well-founded-relation :measure)
+                           kwd-alist))
+           ,@traditional-decls/docs
+           ,body))
+
+       (guard-verification-will-happen-anyway-p
+        ;; Design decision: define will ignore set-verify-guards-eagerness 1
+        ;; and always try to verify guards.  (I think I much more frequently
+        ;; have guards of T than want to not verify guards.)  We could do this
+        ;; by always adding an explicit (declare (xargs :guard t)).  But that's
+        ;; a bit ugly, so work harder and only add it if there are no guards
+        ;; coming from other places like extended formals, type declarations,
+        ;; etc.
+        (or (consp formal-types)
+            (consp formal-guards)
+            (assoc :guard kwd-alist)
+            (assoc :guard embedded-xargs-alist)
+            ;; BOZO eventually could also look for type declarations in
+            ;; the traditional decls/docs
+            ))
+
        (main-def
         `(;; Historically we used defund unless the function was enabled-p.
           ;; But this ran afoul of Issue 464 for DEFINE forms that were
@@ -1131,12 +1275,7 @@ form is usually an adequate work-around.</p>")
 ; don't have further dependencies, e.g., don't rely on the top-level :guard
 
            ,@(cond ((atom formal-guards)
-                    ;; Design decision: I prefer to put in a declaration here
-                    ;; instead of leaving it out.  This makes define trigger
-                    ;; guard verification even with eagerness 1.  I think I
-                    ;; much more frequently have guards of T than want to not
-                    ;; verify guards.
-                    `((declare (xargs :guard t))))
+                    nil)
                    ((atom (cdr formal-guards))
                     `((declare (xargs :guard ,(car formal-guards)))))
                    (t
@@ -1165,6 +1304,10 @@ form is usually an adequate work-around.</p>")
            ,@(and xargs
                   `((declare (xargs . ,xargs))))
 
+           ;; Just in case there is nothing else to provoke guard verification:
+           ,@(and (not guard-verification-will-happen-anyway-p)
+                  `((declare (xargs :guard t))))
+
            ,final-body
            )))
 
@@ -1178,6 +1321,7 @@ form is usually an adequate work-around.</p>")
                   :formals     formals
                   :rest-events (xdoc::make-xdoc-fragments rest-events)
                   :t-proof     (if t-proof (cons t-proof-name t-hints) nil)
+                  :pe-entry    pe-entry
                   )))
 
 (defun add-signature-from-guts (guts)
@@ -1288,6 +1432,13 @@ form is usually an adequate work-around.</p>")
             (value (if events
                        `(with-output :stack :pop (progn . ,events))
                      '(value-triple :invisible)))))
+
+         ;; BOZO using name-fn here is kind of weird, but otherwise we see ugly
+         ;; output when there are macro arguments involved because ACL2 shows us
+         ;; our nice output and then says, "oh but this is really a macro" and
+         ;; then shows us the ugly macro.  But targeting name-fn instead seems
+         ;; to do the right thing.
+         (acl2::extend-pe-table ,guts.name-fn ,guts.pe-entry)
 
          ,@(and guts.rest-events
                 `((with-output :stack :pop
@@ -1632,23 +1783,10 @@ the @(':pre-bind') argument accepts a list of @(see b*) bindings that occur
 before the binding of the return values.  You may also just want to not share
 names between your formals and returns.</p>")
 
-(defun defret-fn (name args disablep world)
+(defun defret-core (name concl-term kwd-alist disablep guts world)
   (b* ((__function__ 'defret)
-       ((mv kwd-alist args)
-        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind
-                                            :otf-flg)
-                          args nil))
-       ((unless (consp args))
-        (raise "No body"))
-       ((when (cdr args))
-        (raise "Extra junk: ~x0" (cdr args)))
-       (concl-term (car args))
-       (fn (let ((look (assoc :fn kwd-alist)))
-             (if look (cdr look) (get-define-current-function world))))
-       (guts (cdr (assoc fn (get-define-guts-alist world))))
-       ((unless guts)
-        (raise "No define-guts for ~x0" fn))
        ((defguts guts) guts)
+       (fn guts.name)
        ((unless guts.returnspecs)
         (raise "No return names provided for ~x0" fn))
        (names (returnspeclist->names guts.returnspecs))
@@ -1671,10 +1809,29 @@ names between your formals and returns.</p>")
                 `(implies ,hyp ,concl)
               concl)))
     `(,(if disablep 'defthmd 'defthm) ,name
-       ,thm
-       ,@(and hints?        `(:hints ,(cdr hints?)))
-       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-       ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+      ,thm
+      ,@(and hints?        `(:hints ,(cdr hints?)))
+      ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
+      ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+
+
+(defun defret-fn (name args disablep world)
+  (b* ((__function__ 'defret)
+       ((mv kwd-alist args)
+        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind
+                                            :otf-flg)
+                          args nil))
+       ((unless (consp args))
+        (raise "No body"))
+       ((when (cdr args))
+        (raise "Extra junk: ~x0" (cdr args)))
+       (concl-term (car args))
+       (fn (let ((look (assoc :fn kwd-alist)))
+             (if look (cdr look) (get-define-current-function world))))
+       (guts (cdr (assoc fn (get-define-guts-alist world))))
+       ((unless guts)
+        (raise "No define-guts for ~x0" fn)))
+    (defret-core name concl-term kwd-alist disablep guts world)))
 
 
 (defmacro defret (name &rest args)

@@ -6,7 +6,7 @@
 
 
 (in-package "ACL2")
-(include-book "tools/bstar" :dir :system) 
+(include-book "std/util/bstar" :dir :system)
 (include-book "./helper")
 (include-book "./config")
 (include-book "./SMT-run")

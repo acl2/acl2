@@ -74,8 +74,10 @@ routine for gathering comments.</p>"
               (cw "; vl-gather-comments: min/max have different filenames.~%")))
 
         ;; Actual implementation:
-        (with-local-nrev
-          (vl-gather-comments-nrev min max cmap nrev))))
+        (if (atom cmap)
+            nil
+          (with-local-nrev
+            (vl-gather-comments-nrev min max cmap nrev)))))
   ///
   (defthm vl-gather-comments-nrev-removal
     (equal (vl-gather-comments-nrev min max cmap nrev)
@@ -303,6 +305,8 @@ and max, gathering their comments.</p>"
       (:vl-paramdecl  (vl-paramdecl->loc x))
       (:vl-import     (vl-import->loc x))
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (:vl-dpiimport  (vl-dpiimport->loc x))
+      (:vl-dpiexport  (vl-dpiexport->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
@@ -324,6 +328,8 @@ and max, gathering their comments.</p>"
       (:vl-paramdecl  (vl-paramdecl->loc x))
       (:vl-import     (vl-import->loc x))
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (:vl-dpiimport  (vl-dpiimport->loc x))
+      (:vl-dpiexport  (vl-dpiexport->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))

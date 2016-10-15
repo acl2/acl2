@@ -245,29 +245,6 @@ elements.")
                          (not (stringp x))))
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
-(define vl-scopeexpr-top-immdeps
-  ((x vl-scopeexpr-p)
-   (ans vl-immdeps-p)
-   &key
-   ((ss  vl-scopestack-p  "Our current scope.") 'ss)
-   ((ctx acl2::any-p      "Context for warnings.") 'ctx))
-  :returns (ans vl-immdeps-p)
-  (vl-scopeexpr-case x
-    :end (vl-hidexpr-case x.hid
-           :end (vl-immdeps-add-item x.hid.name ans)
-           :dot (b* ((name (vl-hidindex->name x.hid.first)))
-                  (if (eq name :vl-$root)
-                      (vl-immdeps-fix ans)
-                    (vl-immdeps-add-item name ans))))
-    :colon
-    (if (stringp x.first)
-        (vl-immdeps-add-item x.first ans)
-      ;; BOZO think about other scopes.
-      ;; local:: is just something to do with randomize, I don't think we care yet.
-      ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
-      ;; or we might want to just not support it.
-      (vl-immdeps-fix ans))))
-
 
 
 (fty::defvisitor-template immdeps ((x :object)
@@ -277,29 +254,37 @@ elements.")
                                    ((ctx acl2::any-p) 'ctx))
   :returns (ans1 (:acc ans :fix (vl-immdeps-fix ans)) vl-immdeps-p)
   :field-fns ((atts :skip))
-  :prod-fns ((vl-special     (type :skip))
-             (vl-literal     (type :skip))
-             (vl-index       (type :skip))
-             (vl-unary       (type :skip))
-             (vl-binary      (type :skip))
-             (vl-qmark       (type :skip))
-             (vl-mintypmax   (type :skip))
-             (vl-concat      (type :skip))
-             (vl-multiconcat (type :skip))
-             (vl-call        (type :skip))
-             (vl-cast        (type :skip))
-             (vl-inside      (type :skip))
-             (vl-tagged      (type :skip))
-             (vl-pattern     (type :skip)))
   :fnname-template <type>-immdeps)
+
+; Added by Matt K. 2/20/2016, pending possible mod by Sol to defvisitor.
+(set-bogus-measure-ok t)
 
 ;; Not dealing with anything that might add a scope yet.
 (fty::defvisitor vl-expr-immdeps
   :template immdeps
   :type expressions-and-datatypes
-  :type-fns ((vl-scopeexpr vl-scopeexpr-immdeps-fn))
-  :renames ((vl-scopeexpr vl-scopeexpr-immdeps-aux))
+  :type-fns ((vl-scopeexpr vl-scopeexpr-immdeps-fn)
+             (vl-expr vl-expr-immdeps-fn))
+  :omit-types (vl-scopeexpr)
+  :renames ((vl-expr vl-expr-immdeps-aux))
   :measure (two-nats-measure :count 0)
+
+  (define vl-expr-immdeps ((x vl-expr-p)
+                                (ans vl-immdeps-p)
+                                &key
+                                ((ss vl-scopestack-p) 'ss)
+                                ((ctx acl2::any-p) 'ctx))
+    :returns (ans1 vl-immdeps-p)
+    :measure (two-nats-measure (vl-expr-count x) 1)
+    (vl-expr-case x
+      :vl-call (if x.systemp
+                   ;; Skip the function name.
+                   (b* ((ans (vl-maybe-datatype-immdeps x.typearg ans)))
+                     (vl-exprlist-immdeps x.args ans))
+                 (vl-expr-immdeps-aux x ans))
+      :otherwise
+      (vl-expr-immdeps-aux x ans)))
+
   (define vl-scopeexpr-immdeps ((x vl-scopeexpr-p)
                                 (ans vl-immdeps-p)
                                 &key
@@ -307,7 +292,33 @@ elements.")
                                 ((ctx acl2::any-p) 'ctx))
     :returns (ans1 vl-immdeps-p)
     :measure (two-nats-measure (vl-scopeexpr-count x) 1)
-    (vl-scopeexpr-immdeps-aux x (vl-scopeexpr-top-immdeps x ans))))
+    (vl-scopeexpr-case x
+      :end (b* ((ans (vl-hidexpr-immdeps x.hid ans))) ;; Analyzes the indices within the hid
+             (vl-hidexpr-case x.hid
+               ;; Bare name, no dots, no package -- depend on it
+               :end (vl-immdeps-add-item x.hid.name ans)
+               ;; Dotted name, no package -- depend on the outermost scope.
+               :dot (b* ((name (vl-hidindex->name x.hid.first)))
+                      (if (eq name :vl-$root)
+                          (vl-immdeps-fix ans)
+                        (vl-immdeps-add-item name ans)))))
+    :colon
+    ;; Pkg::hid - depend on the package, and scan the indices of the hid.
+    ;; Don't allow nested colon operators.
+    (b* ((ans (if (stringp x.first)
+                  (vl-immdeps-add-pkgdep x.first ans)
+                ;; BOZO think about other scopes.
+                ;; local:: is just something to do with randomize, I don't think we care yet.
+                ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
+                ;; or we might want to just not support it.
+                (vl-immdeps-fix ans))))
+      (vl-scopeexpr-case x.rest
+        :end (vl-hidexpr-immdeps x.rest.hid ans) ;; analyze the indices inside the hid
+        :colon (vl-immdeps-add-error
+                ans :type :vl-bad-scopeexpr
+                :msg "Nested colon operators in scopeexprs are not supported: ~a0"
+                :args (list (vl-scopeexpr-fix x))
+                :fatalp t))))))
 
 (fty::defvisitors vl-misc-immdeps
   :template immdeps
@@ -920,6 +931,8 @@ elements.")
     (:vl-genvar        ans) ;; no dependencies
     (:vl-property      (vl-property-immdeps x ans))
     (:vl-sequence      (vl-sequence-immdeps x ans))
+    (:vl-dpiimport     ans) ;; I don't think we care?
+    (:vl-dpiexport     ans) ;; I don't think we care?
     (:vl-assertion     (vl-assertion-top-immdeps x ans))
     (:vl-cassertion    (vl-cassertion-top-immdeps x ans))
     (otherwise         (vl-modport-immdeps x ans))))
@@ -933,8 +946,23 @@ elements.")
                   :expand ((vl-genelement-immdeps x ans)
                            (vl-genelementlist-immdeps x ans)
                            (vl-gencaselist-immdeps x ans)
-                           (vl-genarrayblocklist-immdeps x ans)
-                           (vl-genarrayblock-immdeps x ans))))
+                           (vl-genblocklist-immdeps x ans)
+                           (vl-genblock-immdeps x ans))))
+
+  (define vl-genblock-immdeps ((x   vl-genblock-p)
+                               (ans vl-immdeps-p)
+                               &key
+                               ((ss vl-scopestack-p) 'ss))
+    :returns (new-ans vl-immdeps-p)
+    :measure (vl-genblock-count x)
+    :flag :genblock
+    (b* (((vl-genblock x) x)
+         (scope (vl-sort-genelements x.elems
+                                     :scopetype :vl-genblock
+                                     :id x.name))
+         (ss    (vl-scopestack-push scope ss))
+         (ans   (vl-genelementlist-immdeps x.elems ans)))
+      ans))
 
   (define vl-genelement-immdeps ((x   vl-genelement-p)
                                  (ans vl-immdeps-p)
@@ -950,7 +978,18 @@ elements.")
          (ctx x)
          (ans (vl-immdeps-fix ans)))
       (vl-genelement-case x
+        (:vl-genbase  (vl-modelement-immdeps x.item ans))
+        (:vl-genbegin (vl-genblock-immdeps x.block ans))
+        (:vl-genif    (b* ((ans (vl-expr-immdeps x.test ans))
+                           (ans (vl-genblock-immdeps x.then ans))
+                           (ans (vl-genblock-immdeps x.else ans)))
+                        ans))
+        (:vl-gencase  (b* ((ans (vl-expr-immdeps x.test ans))
+                           (ans (vl-gencaselist-immdeps x.cases ans))
+                           (ans (vl-genblock-immdeps x.default ans)))
+                        ans))
         (:vl-genloop
+         ;; BOZO this seems like an awkward place to do this scope stuff.
          (b* (;; Make a fake param for the loop counter, the type and such are irrelevant
               (fake-param (make-vl-paramdecl :name x.var
                                              :type (make-vl-implicitvalueparam)
@@ -960,28 +999,11 @@ elements.")
               (ss         (vl-scopestack-push fake-scope ss))
               (ans        (vl-expr-immdeps x.continue ans))
               (ans        (vl-expr-immdeps x.nextval ans))
-              (ans        (vl-genelement-immdeps x.body ans)))
-           ans))
-        (:vl-genif
-         (b* ((ans (vl-expr-immdeps x.test ans))
-              (ans (vl-genelement-immdeps x.then ans))
-              (ans (vl-genelement-immdeps x.else ans)))
-           ans))
-        (:vl-gencase
-         (b* ((ans (vl-expr-immdeps x.test ans))
-              (ans (vl-gencaselist-immdeps x.cases ans))
-              (ans (vl-genelement-immdeps x.default ans)))
-           ans))
-        (:vl-genblock
-         (b* ((scope (vl-sort-genelements x.elems))
-              (ss    (vl-scopestack-push scope ss))
-              (ans (vl-genelementlist-immdeps x.elems ans)))
+              (ans        (vl-genblock-immdeps x.body ans)))
            ans))
         (:vl-genarray
-         (b* ((ans (vl-genarrayblocklist-immdeps x.blocks ans)))
-           ans))
-        (:vl-genbase
-         (vl-modelement-immdeps x.item ans)))))
+         (b* ((ans (vl-genblocklist-immdeps x.blocks ans)))
+           ans)))))
 
   (define vl-genelementlist-immdeps ((x   vl-genelementlist-p)
                                      (ans vl-immdeps-p)
@@ -1011,39 +1033,25 @@ elements.")
           ans)
          ((cons exprs block) (car x))
          (ans (vl-exprlist-immdeps exprs ans))
-         (ans (vl-genelement-immdeps block ans)))
+         (ans (vl-genblock-immdeps block ans)))
       (vl-gencaselist-immdeps (cdr x) ans)))
 
-  (define vl-genarrayblocklist-immdeps ((x   vl-genarrayblocklist-p)
+  (define vl-genblocklist-immdeps ((x   vl-genblocklist-p)
                                         (ans vl-immdeps-p)
                                         &key
                                         ((ss vl-scopestack-p) 'ss))
     :returns (new-ans vl-immdeps-p)
-    :measure (vl-genarrayblocklist-count x)
-    :flag :genarrayblocklist
-    (b* ((x   (vl-genarrayblocklist-fix x))
+    :measure (vl-genblocklist-count x)
+    :flag :genblocklist
+    (b* ((x   (vl-genblocklist-fix x))
          (ans (vl-immdeps-fix ans))
          ((when (atom x))
           ans)
-         (ans (vl-genarrayblock-immdeps (car x) ans)))
-      (vl-genarrayblocklist-immdeps (cdr x) ans)))
-
-  (define vl-genarrayblock-immdeps ((x   vl-genarrayblock-p)
-                                    (ans vl-immdeps-p)
-                                    &key
-                                    ((ss vl-scopestack-p) 'ss))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-genarrayblock-count x)
-    :flag :genarrayblock
-    (b* (((vl-genarrayblock x))
-         (scope (vl-sort-genelements x.elems))
-         (ss    (vl-scopestack-push scope ss)))
-      (vl-genelementlist-immdeps x.elems ans)))
+         (ans (vl-genblock-immdeps (car x) ans)))
+      (vl-genblocklist-immdeps (cdr x) ans)))
 
   ///
-
   (verify-guards vl-genelement-immdeps-fn)
-
   (deffixequiv-mutual vl-genelement-immdeps))
 
 
@@ -1173,7 +1181,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-udp-immdeps* ((x     vl-udp-p)
                          (graph vl-immdepgraph-p)
                          &key
-                         (ss vl-scopestack-p))
+                         ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-udp x) (vl-udp-fix x))
@@ -1190,7 +1198,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-config-immdeps* ((x     vl-config-p)
                             (graph vl-immdepgraph-p)
                             &key
-                            (ss vl-scopestack-p))
+                            ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-config x) (vl-config-fix x))
@@ -1201,11 +1209,18 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 
 (def-vl-immdeps*-list vl-configlist vl-config)
 
+#||
+(trace$ #!vl (vl-package-immdeps*-fn
+              :entry (list 'vl-package-immdeps
+                           (with-local-ps (vl-pp-package x))
+                           graph
+                           (vl-scopestack->hashkey ss)))) 
 
+||#
 (define vl-package-immdeps* ((x     vl-package-p)
                              (graph vl-immdepgraph-p)
                              &key
-                             (ss vl-scopestack-p))
+                             ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (b* (((vl-package x) (vl-package-fix x))
        (ss  (vl-scopestack-push x ss))
@@ -1223,21 +1238,31 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-interface-immdeps* ((x vl-interface-p)
                                (graph vl-immdepgraph-p)
                                &key
-                               (ss vl-scopestack-p))
+                               ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (b* (((vl-interface x) (vl-interface-fix x))
        (ss  (vl-scopestack-push x ss))
        (ans (make-vl-immdeps))
+       (ans (vl-importlist-immdeps     x.imports    ans))
        (ans (vl-portlist-immdeps       x.ports      ans))
        (ans (vl-portdecllist-immdeps   x.portdecls  ans))
-       (ans (vl-paramdecllist-immdeps  x.paramdecls ans))
-       (ans (vl-vardecllist-immdeps    x.vardecls   ans))
        (ans (vl-modportlist-immdeps    x.modports   ans))
-       (ans (vl-genelementlist-immdeps x.generates  ans))
-       (ans (vl-importlist-immdeps     x.imports    ans))
-       ;; BOZO shouldn't this have functions?  But there aren't
-       ;; any in the parse-tree representation
-       )
+       (ans (vl-vardecllist-immdeps    x.vardecls   ans))
+       (ans (vl-paramdecllist-immdeps  x.paramdecls ans))
+       (ans (vl-fundecllist-immdeps    x.fundecls   ans))
+       (ans (vl-taskdecllist-immdeps   x.taskdecls  ans))
+       (ans (vl-typedeflist-immdeps    x.typedefs   ans))
+       (ans (vl-propertylist-immdeps   x.properties ans))
+       (ans (vl-sequencelist-immdeps   x.sequences  ans))
+       (ans (vl-modinstlist-immdeps    x.modinsts   ans))
+       (ans (vl-assignlist-immdeps     x.assigns    ans))
+       (ans (vl-aliaslist-immdeps      x.aliases    ans))
+       (ans (vl-assertionlist-immdeps  x.assertions ans))
+       (ans (vl-cassertionlist-immdeps x.cassertions ans))
+       (ans (vl-alwayslist-immdeps     x.alwayses   ans))
+       (ans (vl-initiallist-immdeps    x.initials   ans))
+       (ans (vl-finallist-immdeps      x.finals     ans))
+       (ans (vl-genelementlist-immdeps x.generates  ans)))
     (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
 
 (def-vl-immdeps*-list vl-interfacelist vl-interface)
@@ -1247,7 +1272,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
 (define vl-program-immdeps* ((x     vl-program-p)
                              (graph vl-immdepgraph-p)
                             &key
-                            (ss vl-scopestack-p))
+                            ((ss vl-scopestack-p) 'ss))
   :returns (new-graph vl-immdepgraph-p)
   (declare (ignorable ss))
   (b* (((vl-program x) (vl-program-fix x))

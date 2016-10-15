@@ -35,7 +35,6 @@
 (include-book "centaur/misc/vecs-ints" :dir :system)
 (include-book "centaur/misc/hons-sets" :dir :system)
 (include-book "centaur/misc/fast-alists" :dir :system)
-(include-book "centaur/misc/patterns" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "data-structures/no-duplicates" :dir :system))

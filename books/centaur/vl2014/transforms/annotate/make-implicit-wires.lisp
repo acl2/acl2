@@ -42,7 +42,9 @@
 (local (defthm vl-modelement-p-when-vl-blockitem-p
          (implies (vl-blockitem-p x)
                   (vl-modelement-p x))
-         :hints(("Goal" :in-theory (enable vl-blockitem-p vl-modelement-p)))))
+         :hints(("Goal" :in-theory (enable tag-reasoning
+                                           vl-blockitem-p
+                                           vl-modelement-p)))))
 
 (local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
          (implies (vl-blockitemlist-p x)
@@ -1113,6 +1115,9 @@ don't care, but it might be good to look into this again.</p>"
 
        (new-decl (make-vl-vardecl :name    portdecl.name
                                   :type    portdecl.type
+                                  ;; [Jared] patch 2016-02-24: I want implicit wires to be
+                                  ;; printed as "wire" instead of "logic" for legacy tools
+                                  :nettype :vl-wire
                                   :atts    (cons (cons "VL_PORT_IMPLICIT" nil) portdecl.atts)
                                   :loc     portdecl.loc)))
     (cons new-decl

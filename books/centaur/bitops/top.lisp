@@ -51,7 +51,7 @@
 (include-book "signed-byte-p")
 
 (defxdoc bitops
-  :parents (acl2::arithmetic)
+  :parents (acl2::bit-vectors)
   :short "Bitops is <a href='http://www.centtech.com/'>Centaur Technology</a>'s
 library for reasoning about bit-vector arithmetic.  It grew out of an extension
 to the venerable @(see acl2::ihs) library, and is now fairly comprehensive."

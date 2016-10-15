@@ -43,7 +43,7 @@
 ; -----------------------------------------------------------------------------
 
 (defxdoc-raw ts-queue
-  :parents (server)
+  :parents (vl-server)
   :short "Primitive thread-safe, shared queue."
 
   :long "<p>Note that when using this queue, there is no way for the producer
@@ -121,7 +121,7 @@ estimate.  This is because the length of the queue can change immediately after
 ; -----------------------------------------------------------------------------
 
 (defxdoc-raw vls-transdb
-  :parents (server)
+  :parents (vl-server)
   :short "Translations database for the VL Server."
 
   :long "<p>At a first approximation, the translation database acts like an
@@ -169,6 +169,21 @@ a bleeding edge zip.</p>")
   (load-queue  (make-ts-queue)))
 
 (defparameter *vls-transdb* (make-vls-transdb))
+
+#||
+
+;; For interactive debugging:
+
+(in-package "VL")
+(ld `((defconst *data* ',(car (vls-transdb-loaded *vls-transdb*)))))
+(lp)
+(defconst *design*
+  (progn$ (cw "~%*** Loading design ~s0 into *design* ***~%" (car *data*))
+          (vls-data->orig (cdr *data*))))
+
+;; Then go off and explore it however.
+
+||#
 
 
 
@@ -291,10 +306,6 @@ a bleeding edge zip.</p>")
                                      vls-loader-thread: ~a~%"
                                    condition))))))
 
-
-#+hons
-(acl2::mf-multiprocessing t)
-
 ;; BOZO do not do this.
 (defun acl2::bad-lisp-objectp (x)
   ;; Unsound hack to make loading faster and avoid stack overflows.  It seems
@@ -307,16 +318,23 @@ a bleeding edge zip.</p>")
   (defun maybe-start-support-threads ()
     (unless support-started
       (bt:make-thread 'vls-scanner-thread
-                                    ;(list :name "vls-scanner-thread"
-                                    ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
-                                    ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
-                                    ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
-                                    )
-      (bt:make-thread 'vls-loader-thread
-                                    ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
-                                    ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
-                                    ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
-                                    )
+                                      ;(list :name "vls-scanner-thread"
+                                      ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
+                                      ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
+                                      ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
+                                      )
+      ;; sswords -- use big stacks for loader thread, for ccl at least
+      (let
+        #+ccl
+        ((ccl::*default-control-stack-size* (* 20 (expt 2 20)))
+         (ccl::*default-value-stack-size* (* 256 (expt 2 20))))
+        #-ccl
+        ()
+        (bt:make-thread 'vls-loader-thread
+                                        ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
+                                        ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
+                                        ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
+                        ))
       (setq support-started t))))
 
 (defun vls-loaded-translations (db)
@@ -516,6 +534,21 @@ a bleeding edge zip.</p>")
   (defun start-fn (port public-dir root-dir)
     (cw "Setting *vls-root* = ~x0~%" root-dir)
     (setq *vls-root* root-dir)
+    ;; Since the server is multithreaded and lots of VL functions use hons and
+    ;; memoization, we need to enable multithreaded memoization support.
+    ;;
+    ;; We used to do this whenever server-raw.lsp was loaded, but that meant
+    ;; that the whole VL executable was built with multithreaded memoization
+    ;; enabled, which could slow-down single-threaded things (e.g., linting).
+    ;; Deferring this until server start slows down starting up the server, but
+    ;; it seems unlikely that we care about that.
+    ;;
+    ;; I don't think we care about turning this off.  Better to just leave it
+    ;; on instead of turning it off in stop.  After all, if you're starting and
+    ;; stopping the server, you're probably just hacking on it, and you'd rather
+    ;; just leave multithreaded memoization enabled instead of paying the price
+    ;; of rememoizing everything all the time.
+    (acl2::mf-multiprocessing t t)
     (maybe-start-support-threads)
     (when vl-server
       (stop))
@@ -546,6 +579,10 @@ a bleeding edge zip.</p>")
       (cl-user::format t ";~%")
       (cl-user::format t "; ----------------------------------------------------------------~%~%")
       (add-handlers)
+      #+ccl
+      (setq ccl::*default-control-stack-size*  (* 15 (expt 2 20)))
+      #+ccl
+      (setq ccl::*default-value-stack-size* (* 196 (expt 2 20)))
       (setq vl-server server))
     nil))
 

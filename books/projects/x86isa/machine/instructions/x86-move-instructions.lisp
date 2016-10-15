@@ -68,7 +68,9 @@
        ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((mv flg1 v-addr)
@@ -118,14 +120,17 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
+       (inst-ac? t)
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem operand-size register v-addr rex-byte
-                                r/m mod x86))
+        (x86-operand-to-reg/mem
+         operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         register v-addr rex-byte r/m mod x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-mov-Op/En-RM
 
@@ -175,9 +180,14 @@
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -205,7 +215,148 @@
        (x86 (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                         reg/mem rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
+
+(def-inst x86-mov-Op/En-FD
+
+  ;; Op/En: FD
+  ;; [OP rAX, Moffs]
+  ;; A0: MOV AL,         moffs8
+  ;; A1: MOV AX/EAX/RAX, moffs16/moffs32/moffs64
+
+  :parents (one-byte-opcodes)
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'MOV #xA0 '(:nil nil)
+                                      'x86-mov-Op/En-FD)
+    (add-to-implemented-opcodes-table 'MOV #xA1 '(:nil nil)
+                                      'x86-mov-Op/En-FD))
+  :body
+
+  (b* ((ctx 'x86-mov-Op/En-FD)
+
+       ;; This instruction does not require a ModR/M byte.
+
+       ;; Get prefixes:
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+
+       ;; The Intel manual says the following:
+
+       ;; Under the MOV instruction description:
+
+       ;; The moffs8, moffs16, moffs32 and moffs64 operands specify a
+       ;; simple offset relative to the segment base, where 8, 16, 32
+       ;; and 64 refer to the size of the data. The address-size
+       ;; attribute of the instruction determines the size of the
+       ;; offset, either 16, 32 or 64 bits.
+
+       ;; Under the "Instruction Column in the Opcode Summary Table":
+
+       ;; moffs8, moffs16, moffs32, moffs64   A simple memory variable
+       ;; (memory offset) of type byte, word, or doubleword used by
+       ;; some variants of the MOV instruction. The actual address is
+       ;; given by a simple offset relative to the segment base. No
+       ;; ModR/M byte is used in the instruction. The number shown
+       ;; with moffs indicates its size, which is determined by the
+       ;; address-size attribute of the instruction.
+
+       ;; Under "Codes for Addressing Method":
+
+       ;; O The instruction has no ModR/M byte. The offset of the
+       ;; operand is coded as a word or double word (depending on
+       ;; address size attribute) in the instruction. No base
+       ;; register, index register, or scaling factor can be applied
+       ;; (for example, MOV (A0 A3)).
+
+       ((the (integer 1 8) operand-size)
+        (if (equal opcode #xA0)
+            1
+          (if (and (equal opcode #xA1)
+                   (logbitp #.*w* rex-byte))
+              8
+            (if p3? ;; See Table 3-4, P. 3-26, Intel Vol. 1.
+                2
+              4))))
+       ((the (integer 1 8) offset-size)
+        ;; See Table 3-4, P. 3-26, Intel Vol. 1.
+        (if p4? 4 8))
+
+       ;; Get the offset:
+       ((mv flg offset x86)
+        (rim-size offset-size temp-rip :x x86))
+       ((when flg) (!!ms-fresh :rim-size-error flg))
+
+       ;; Check if the above memory read caused any problems:
+       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
+        (+ temp-rip offset-size))
+       ((when (mbe :logic (not (canonical-address-p temp-rip))
+                   :exec (<= #.*2^47*
+                             (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               temp-rip))))
+        (!!ms-fresh :virtual-memory-error temp-rip))
+       ;; If the instruction goes beyond 15 bytes, stop. Change to an
+       ;; exception later.
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       ;; Get the segment base (which is zero for every segment but FS
+       ;; and GS in the 64-bit mode):
+       ((mv flg v-addr)
+        (case p2
+          (0 (mv nil offset))
+          ;; I don't really need to check whether FS and GS base are
+          ;; canonical or not.  On the real machine, if the MSRs
+          ;; containing these bases are assigned non-canonical
+          ;; addresses, an exception is raised.
+          (#.*fs-override*
+           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
+                  (fs-base (n64-to-i64 nat-fs-base)))
+             (if (not (canonical-address-p fs-base))
+                 (mv 'Non-Canonical-FS-Base fs-base)
+               (mv nil (+ fs-base offset)))))
+          (#.*gs-override*
+           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
+                  (gs-base (n64-to-i64 nat-gs-base)))
+             (if (not (canonical-address-p gs-base))
+                 (mv 'Non-Canonical-GS-Base gs-base)
+               (mv nil (+ gs-base offset)))))
+          (t (mv 'Unidentified-P2 offset))))
+       ((when flg)
+        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg))
+       ((when (not (canonical-address-p v-addr)))
+        (!!ms-fresh :Non-Canonical-V-Addr v-addr))
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((when (and inst-ac?
+                   (not (equal (logand v-addr (the (integer 0 15) (- operand-size 1)))
+                               0))))
+        (!!ms-fresh :memory-access-not-aligned v-addr))
+
+       ;; Get data from v-addr:
+       ((mv flg data x86)
+        (rm-size operand-size v-addr :r x86))
+       ((when flg) (!!ms-fresh :rm-size-error flg))
+
+       ;; Write the data to rAX:
+       (x86 (!rgfi-size operand-size *rax* data rex-byte x86))
+       (x86 (!rip temp-rip x86)))
+    x86))
 
 (def-inst x86-mov-Op/En-OI
 
@@ -272,7 +423,7 @@
                  (<= opcode #xB7))
             1
           (if (and (<= #xB8 opcode) ;; B8 +rw
-                   (<= opcode #xBE) ;; CUONG: Change to bf?
+                   (<= opcode #xBF)
                    (logbitp #.*w* rex-byte))
               8
             (if p3?
@@ -349,24 +500,26 @@
                    (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
-       ((the (integer 1 8) operand-size)
+       ((the (integer 1 8) imm-size)
         (if (equal opcode #xC6)
             1
-          (if p3?
-              ;; See Table 3-4, P. 3-26, Intel Vol. 1.
-              2 ;; 16-bit operand-size
-            4)))
+          (if (logbitp #.*w* rex-byte)
+              4
+            (if p3?
+                2
+              4))))
        ((the (integer 1 8) reg/mem-size)
         (if (and (equal opcode #xC7)
                  (logbitp #.*w* rex-byte))
             8
-          operand-size))
+          imm-size))
 
        ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
           (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
-                              operand-size x86)))
+                              imm-size ;; bytes of immediate data
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
        ((mv flg1 v-addr)
@@ -404,11 +557,11 @@
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg2 imm x86)
-        (rm-size operand-size temp-rip :x x86))
+        (rm-size imm-size temp-rip :x x86))
        ((when flg2)
         (!!ms-fresh :imm-rm-size-error flg2))
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip operand-size))
+        (+ temp-rip imm-size))
        ((when (mbe :logic (not (canonical-address-p temp-rip))
                    :exec (<= #.*2^47*
                              (the (signed-byte
@@ -431,14 +584,17 @@
               imm))
 
        ;; Update the x86 state:
+       (inst-ac? t)
        ((mv flg3 x86)
-        (x86-operand-to-reg/mem reg/mem-size imm v-addr rex-byte
-                                r/m mod x86))
+        (x86-operand-to-reg/mem
+         reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         imm v-addr rex-byte r/m mod x86))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LEA
@@ -488,7 +644,9 @@
         (if (equal mod #b11)
             ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
             (mv "Source operand is not a memory location" 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib 0 x86)))
+          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
 
@@ -541,7 +699,7 @@
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*)
                         M rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: MOVSXD/MOVSLQ
@@ -582,10 +740,15 @@
                    (prefixes-slice :group-4-prefix prefixes)))
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size nil rex-byte t prefixes))
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -619,7 +782,7 @@
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem
                         rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 (def-inst x86-two-byte-movsxd
 
@@ -662,11 +825,15 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        (reg/mem-size (if (equal opcode #xBE) 1 2))
-
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -710,7 +877,7 @@
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem
                         rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: MOVZX
@@ -753,10 +920,15 @@
                    (prefixes-slice :group-4-prefix prefixes)))
 
        (reg/mem-size (if (equal opcode #xB6) 1 2))
+       (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size p2 p4? temp-rip rex-byte r/m mod sib 0 x86))
+         #.*rgf-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         p2 p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -786,6 +958,106 @@
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem
                         rex-byte x86))
        (x86 (!rip temp-rip x86)))
-      x86))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: MOV to/from Control Registers
+;; ======================================================================
+
+(def-inst x86-mov-control-regs-Op/En-MR
+
+  ;; Move control register to GPR
+
+  ;; Op/En: MR
+  ;; [OP R/M, REG]
+  ;; 0F 20/r:         MOV r64, CR0-CR7
+  ;; REX.R + 0F 20/0: MOV r64, CR8
+
+  ;; From Intel Manuals, Vol 2A, "MOV Move to/from Control
+  ;; Register":
+
+  ;; At the opcode level, the reg field within the ModR/M byte
+  ;; specifies which of the control registers is loaded or read. The 2
+  ;; bits in the mod field are ignored. The r/m field specifies the
+  ;; general-purpose register loaded or read. Attempts to reference
+  ;; CR1, CR5, CR6, CR7, and CR9 CR15 result in undefined opcode (#UD)
+  ;; exceptions.
+
+  ;; In 64-bit mode, the instruction s default operation size
+  ;; is 64 bits. The REX.R prefix must be used to access
+  ;; CR8. Use of REX.B permits access to additional registers
+  ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
+  ;; ignored. Use of the REX.R prefix to specify a register
+  ;; other than CR8 causes an invalid-opcode exception. See the
+  ;; summary chart at the beginning of this section for encoding
+  ;; data and limits.
+
+
+  :parents (two-byte-opcodes)
+  :guard-hints (("Goal" :in-theory (e/d () ())))
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  :implemented
+  (add-to-implemented-opcodes-table 'MOV #x0F20 '(:nil nil)
+                                    'x86-mov-control-regs-Op/En-MR)
+
+  :body
+
+  (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
+
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+           temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+           start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       ;; The r/m field specifies the GPR (destination).
+       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       ;; MOD field is ignored.
+       ;; The reg field specifies the control register (source).
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       (cpl (cpl x86))
+       ((when (not (equal 0 cpl)))
+        (!!ms-fresh :cpl!=0 cpl))
+       ;; *operand-size-override* and REX.W are ignored.
+
+       ;; Get value from the control register
+       ((mv flg ctr-index)
+        (if (logbitp #.*r* rex-byte)
+            (if (equal reg 0)
+                (mv nil *cr8*)
+              (mv t reg))
+          (if (and (not (equal reg #.*cr1*))
+                   (not (equal reg #.*cr5*))
+                   (not (equal reg #.*cr6*))
+                   (not (equal reg #.*cr7*)))
+              (mv nil reg)
+            (mv t reg))))
+       ((when flg)
+        ;; #UD Exception (if an attempt is made to access CR1, CR5,
+        ;; CR6, or CR7 or if the REX.R prefix is used to specify a
+        ;; register other than CR8)
+        (!!ms-fresh :ctr-index-illegal (cons 'ModR/M.reg reg)))
+       (ctr-val (the (unsigned-byte 64) (ctri ctr-index x86)))
+
+       ;; Update the x86 state:
+       (x86
+        (!rgfi-size 8 (reg-index r/m rex-byte #.*b*) ctr-val rex-byte x86))
+       ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
+       (x86 (!flgi-undefined #.*cf* x86))
+       (x86 (!flgi-undefined #.*pf* x86))
+       (x86 (!flgi-undefined #.*af* x86))
+       (x86 (!flgi-undefined #.*zf* x86))
+       (x86 (!flgi-undefined #.*sf* x86))
+       (x86 (!flgi-undefined #.*of* x86))
+       (x86 (!rip temp-rip x86)))
+    x86))
 
 ;; ======================================================================

@@ -208,7 +208,7 @@
 (defun skip-declaration (x n xl start-n)
   ;; Read through ?>
   "Returns (MV ERR N NIL)"
-  (b* (((when (>= (- n 1) xl))
+  (b* (((when (>= (+ 1 n) xl))
         (mv (str::cat "<? ... ?> declaration never closes." *nls*
                       "Nearby text: {" (error-context x start-n xl) "}" *nls*)
             n nil))
@@ -220,7 +220,7 @@
 (defun skip-entity-stuff (x n xl start-n)
   ;; Read through ]>
   "Returns (MV ERR N NIL)"
-  (b* (((when (>= (- n 1) xl))
+  (b* (((when (>= (+ 1 n) xl))
         (mv (str::cat "<! ... ]> declaration never closes." *nls*
                       "Nearby text: {" (error-context x start-n xl) "}" *nls*)
             n nil))
@@ -401,7 +401,7 @@
   (b* (((when (atom x))
         (if open-tags
             (mv (str::cat (opentok-name (car open-tags)) " tag is never closed.")
-                nil open-tags)
+                loc open-tags)
           (mv nil nil nil)))
        ((when (opentok-p (car x)))
         (find-tag-imbalance (cdr x) (cons (car x) open-tags) (+ 1 loc)))

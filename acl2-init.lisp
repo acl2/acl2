@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -265,8 +265,9 @@ implementations.")
 ; but it doesn't currently seem worth the trouble to figure that out.
 #+(and hons (not cltl2))
 (progn
-  (format t "~%ERROR: It is illegal to build a hons-enabled version~%~
-             of ACL2 in this non-ANSI Common Lisp.  See :DOC hons-enabled.~%~%")
+; ACL2(c) deprecated: no longer says "build a hons-enabled version of ACL2".
+  (format t "~%ERROR: It is illegal to build ACL2 in this non-ANSI Common ~
+             Lisp.~%~%")
   (acl2::exit-lisp))
 
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
@@ -446,6 +447,193 @@ implementations.")
   #-(or gcl lispworks allegro cmu sbcl clisp ccl)
   (error "SYSTEM-CALL is not yet defined in this Lisp."))
 
+(defun read-file-by-lines (file &optional delete-after-reading)
+  (let ((acc nil)
+        (eof '(nil))
+        missing-newline-p)
+    (with-open-file
+     (s file :direction :input)
+     (loop (multiple-value-bind (line temp)
+               (read-line s nil eof)
+             (cond ((eq line eof)
+                    (return acc))
+                   (t
+                    (setq missing-newline-p temp)
+                    (setq acc
+                          (if acc
+                              (concatenate 'string acc (string #\Newline) line)
+                            line)))))))
+    (when delete-after-reading
+      (delete-file file))
+    (if missing-newline-p
+        acc
+      (concatenate 'string acc (string #\Newline)))))
+
+(defun getpid$ ()
+
+; This function is intended to return the process id.  But it may return nil
+; instead, depending on the underlying lisp platform.
+
+  (let ((fn
+         #+allegro 'excl::getpid
+         #+gcl 'si::getpid
+         #+sbcl 'sb-unix::unix-getpid
+         #+cmu 'unix::unix-getpid
+         #+clisp (or (let ((fn0 (find-symbol "PROCESS-ID" "SYSTEM")))
+                       (and (fboundp fn0) ; CLISP 2.34
+                            fn0))
+                     (let ((fn0 (find-symbol "PROGRAM-ID" "SYSTEM")))
+                       (and (fboundp fn0) ; before CLISP 2.34
+                            fn0)))
+         #+ccl 'ccl::getpid
+         #+lispworks 'system::getpid
+         #-(or allegro gcl sbcl cmu clisp ccl lispworks) nil))
+    (and fn
+         (fboundp fn)
+         (funcall fn))))
+
+(defun system-call+ (string arguments)
+
+; Warning: Keep this in sync with system-call.
+
+  (let* (exit-code ; assigned below
+         #+(or gcl clisp)
+         (tmp-file (format nil
+                           "~a/tmp~s"
+                           (or (f-get-global 'tmp-dir *the-live-state*)
+                               "/tmp")
+                           (getpid$)))
+         no-error
+         (output-string
+          (our-ignore-errors
+           (prog1
+               #+gcl ; does wildcard expansion
+             (progn (setq exit-code
+                          (si::system
+                           (let ((result string))
+                             (dolist
+                               (x arguments)
+                               (setq result (concatenate 'string result " " x)))
+                             (concatenate 'string result " > " tmp-file))))
+                    (read-file-by-lines tmp-file t))
+             #+lispworks ; does wildcard expansion (see comment below)
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (system::call-system-showing-output
+
+; It was tempting to use (cons string arguments).  This would cause the given
+; command, string, to be applied to the given arguments, without involving the
+; shell.  But then a command such as "ls" would not work; one would have to
+; provide a string such as "/bin/ls".  So instead of using a list here, we use
+; a string, which according to the LispWorks manual will invoke the shell,
+; which will find commands (presumably including built-ins and also using the
+; user's path).
+
+                      (let ((result string))
+                        (dolist
+                          (x arguments)
+                          (setq result (concatenate 'string result " " x)))
+                        result)
+                      :output-stream s
+                      :prefix ""
+                      :show-cmd nil
+                      :kill-process-on-abort t))
+               #+windows ; process is returned above, not exit code
+               (setq exit-code nil))
+             #+allegro ; does wildcard expansion
+             (multiple-value-bind
+                 (stdout-lines stderr-lines exit-status)
+                 (excl.osi::command-output
+                  (let ((result string))
+                    (dolist
+                      (x arguments)
+                      (setq result (concatenate 'string result " " x)))
+                    result))
+               (declare (ignore stderr-lines))
+               (setq exit-code exit-status)
+               (let ((acc nil))
+                 (loop for line in stdout-lines
+                       do
+                       (setq acc
+                             (if acc
+                                 (concatenate 'string
+                                              acc
+                                              (string #\Newline)
+                                              line)
+                               line)))
+                 acc))
+             #+cmu
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (ext:process-exit-code
+                                      (common-lisp-user::run-program
+                                       string arguments
+                                       :output s)))
+                               1))
+                           temp
+                         1))))
+             #+sbcl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (sb-ext:process-exit-code
+                                      (sb-ext:run-program string arguments
+                                                          :output s
+                                                          :search t)))
+                               1))
+                           temp
+                         1))))
+             #+clisp
+             (progn (setq exit-code
+                          (or (ext:run-program string
+                                               :arguments arguments
+                                               :output tmp-file)
+                              0))
+                    (read-file-by-lines tmp-file t))
+             #+ccl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let* ((proc
+                             (ccl::run-program string arguments
+                                               :output s
+                                               :wait t))
+                            (status (multiple-value-list
+                                     (ccl::external-process-status proc))))
+                       (if (not (and (consp status)
+                                     (eq (car status) :EXITED)
+                                     (consp (cdr status))
+                                     (integerp (cadr status))))
+                           1 ; just some non-zero exit code here
+                         (cadr status)))))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (declare (ignore string arguments))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (error "SYSTEM-CALL is not yet defined in this Lisp.")
+             (setq no-error t)))))
+    (values (cond ((integerp exit-code)
+                   exit-code)
+                  ((null exit-code)
+                   (if no-error 0 1))
+                  (t (format t
+                             "WARNING: System-call produced non-integer, ~
+                              non-nil exit code:~%~a~%"
+                             exit-code)
+                     0))
+            (if (stringp output-string)
+                output-string
+              ""))))
+
 (defun our-probe-file (filename)
 
 ; Use this function instead of probe-file if filename might be a directory.
@@ -459,10 +647,10 @@ implementations.")
 
   #+gcl
   (or (probe-file filename)
-      (let ((x (and (not (equal filename ""))
-                    (cond ((eql (char filename (1- (length filename))) #\/)
-                           filename)
-                          (t (concatenate 'string filename "/"))))))
+      (equal filename "")
+      (let ((x (cond ((eql (char filename (1- (length filename))) #\/)
+                      filename)
+                     (t (concatenate 'string filename "/")))))
         (directory x)))
   #-gcl
   (probe-file filename))
@@ -685,6 +873,16 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
+(defun git-commit-hash ()
+  (multiple-value-bind
+   (exit-code hash)
+   (ignore-errors (system-call+ "git" '("rev-parse" "HEAD")))
+   (cond ((not (and (eql exit-code 0)
+                    (stringp hash)))
+          "[UNKNOWN]                               ")
+         (t (coerce (remove #\Newline (coerce hash 'list))
+                    'string)))))
+
 (defconstant *acl2-snapshot-string*
 
 ; Notes to developers (users should ignore this!):
@@ -699,21 +897,26 @@ implementations.")
 ; ""
 
 ; Normally:
-  "
+
+  (format
+   nil
+   "
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
+ + (git commit hash: ~a).        +
  + The authors of ACL2 consider such distributions to be experimental; +
  + they may be incomplete, fragile, and unable to pass our own         +
  + regression tests.                                                   +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 "
+   (git-commit-hash))
   )
 
 (defvar *saved-string*
   (concatenate
    'string
    "~% ~a built ~a.~
-    ~% Copyright (C) 2015, Regents of the University of Texas"
+    ~% Copyright (C) 2016, Regents of the University of Texas"
    "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
@@ -1443,9 +1646,18 @@ implementations.")
 
 ; Indeed, we have exceeded that in a version of community book
 ; books/centaur/gl/solutions.lisp using ACL2(h) built on CMUCL.  So we use the
-; maximum possible value just below.
+; maximum possible value just below, which for darwin (at least on Matt's
+; Macbook pro) is only 1150.
 
-                        1632
+; Starting with CMUCL snapshot-2016-01, -dynamic-space-size can be 0, meaning
+; that the maximum heap allocation will be used (thanks to Raymond Toy for this
+; option).
+
+                        (if (string>=
+                             (subseq (lisp-implementation-version) 0 16)
+                             "snapshot-2016-01")
+                            0
+                          #+darwin 1150 #-darwin 1632)
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)
@@ -1501,23 +1713,25 @@ implementations.")
 ; sufficient for that book.  Fortunately, 16000 was sufficient.
 
 ; These are unusual books, in that they allocate an array of size 2^32.
-; Therefore we only increase the value to 16000 under #+hons; after all, the
-; ACL2 regression (as opposed to ACL2(h)) does not certify the y86 books in
-; ACL2.  If --dynamic-space-size 16000 causes a problem for some ACL2(h) users,
-; a simple solution will be for them to edit saved_acl2 or for them to build
-; ACL2 after defining this variable to be smaller than 16000 (though some
-; community book certifications may fail under under books/models/y86/, which
-; are done by default for ACL2(h)).
+; Indeed, the x86 books do not all certify in 32-bit SBCL; we found an error in
+; a certification attempt for community book
+; books/models/y86/y86-two-level-abs/common/x86-state-concrete.lisp,
+; complaining that the array dimension of 1677721600 is too large.  Therefore
+; we only increase the value to 16000 in 64-bit SBCL.  If --dynamic-space-size
+; 16000 causes a problem for some users, a simple solution will be for them to
+; edit saved_acl2 or for them to build ACL2 after defining this variable to be
+; smaller than 16000 (at the risk of certification failure for some x86 and y86
+; books).
 
 ; On 32-bit systems, 16000 may be too large.  We tried it on a 32-bit Linux
 ; system and got an error upon starting ACL2: "--dynamic-space-size argument is
-; out of range: 16000".  So we revert to our earlier value of 2000 for such
-; systems, even if we are doing an ACL2(h) build.  (The y86 books will likely
-; fail in this case, but we expect ACL2(h) users will generally be on 64-bit
-; systems.)
-
-; BUT: In October 2014 Jared Davis reported a failure for ACL2 (not ACL2(h)),
-; so we make this value 16000 regardless of feature :hons.
+; out of range: 16000".  We have thus reverted to our earlier value of 2000 for
+; such systems.  Harsh Raju Chamarthi reported that this value was still too
+; large for his Linux system, so at his suggestion, we tried lowering the
+; 32-bit value to 1024.  However community book
+; books/centaur/fty/tests/deftranssum.lisp then failed to certify, reporting:
+; "Heap exhausted during allocation: 43372544 bytes available, 67108872
+; requested."
 
   #+x86-64 16000
   #-x86-64 2000)
@@ -1679,7 +1893,10 @@ implementations.")
                         Allegro 5.0 or later.")))
              (sysout-dxl
               (unix-full-pathname sysout-name "dxl")))
-        (write-acl2rc (our-pwd))
+        (write-acl2rc
+         (our-truename ; our-pwd, without converting to ACL2/Unix pathname
+          ""
+          "NOTE: Calling OUR-TRUENAME from save-acl2-in-allegro-aux"))
         (with-open-file ; write to nsaved_acl2
          (str sysout-name :direction :output)
          (write-exec-file
@@ -1753,7 +1970,10 @@ implementations.")
 
 #+clisp
 (defun save-acl2-in-clisp-aux (sysout-name mem-name host-lisp-args inert-args)
-  (let ((save-dir (our-pwd))
+  (let ((save-dir
+         (our-truename ; our-pwd, without converting to ACL2/Unix pathname
+          ""
+          "NOTE: Calling OUR-TRUENAME from save-acl2-in-clisp-aux"))
         (eventual-sysout-mem
          (unix-full-pathname mem-name "mem"))
         (sysout-mem

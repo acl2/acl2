@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "svex")
 (local (include-book "clause-processors/just-expand" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 ;; A context-alist maps svexes to contexts in which they occur.  A context is

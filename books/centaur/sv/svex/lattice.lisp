@@ -140,7 +140,7 @@ acl2::4v-monotonicity).</p>"
                              BITOPS::LOGBITP-WHEN-BIT
                              2VEC-P$INLINE
                              (:t logbitp)
-                             acl2::bit-functions-type
+                             ;acl2::bit-functions-type
                              bitops::logbitp-of-mask
                              acl2::bfix-when-not-1
                              bitops::logand-with-bitmask
@@ -227,10 +227,14 @@ acl2::4v-monotonicity).</p>"
                             3vec-reduction-and
                             3vec-?
                             3vec-bit?
+                            3vec-?*
                             3vec-==
                             4vec-onset
                             4vec-offset
-                            4vec-rev-blocks)))
+                            4vec-rev-blocks
+                            4vec-part-select
+                            4vec-part-install
+                            4vec-shift-core)))
 
   (def-4vec-monotonicity 4vec-fix)
   (def-4vec-monotonicity 3vec-fix)
@@ -270,11 +274,15 @@ acl2::4v-monotonicity).</p>"
   (def-4vec-monotonicity 4vec-==)
   (def-4vec-monotonicity 4vec-?)
   (def-4vec-monotonicity 4vec-bit?)
+  (def-4vec-monotonicity 4vec-?*)
   (def-4vec-monotonicity 4vec-bit-extract)
   (def-4vec-monotonicity 4vec-rev-blocks)
-  (def-4vec-monotonicity 4vec-wildeq)
+  (def-4vec-monotonicity 4vec-wildeq-safe)
   (def-4vec-monotonicity 4vec-symwildeq)
   (def-4vec-monotonicity 4vec-clog2)
+  (def-4vec-monotonicity 4vec-pow)
+  (def-4vec-monotonicity 4vec-part-select)
+  (def-4vec-monotonicity 4vec-part-install)
 
   (local (in-theory (enable (:t logbitp)
                              bit->bool)))
@@ -283,7 +291,16 @@ acl2::4v-monotonicity).</p>"
     (4vec-[= (4vec-== a b) (4vec-=== a b))
     :hints(("Goal" :in-theory (enable 4vec-=== 4vec-== 3vec-== 3vec-fix
                                       4vec-fix-is-4vec-of-fields))
-           (bitops::logbitp-reasoning))))
+           (bitops::logbitp-reasoning)))
+
+  (defthm 4vec-wildeq-safe-[=-wildeq
+    (4vec-[= (4vec-wildeq-safe a b) (4vec-wildeq a b))
+    :hints(("Goal" :in-theory (enable 4vec-wildeq 4vec-wildeq-safe
+                                      4vec-fix-is-4vec-of-fields
+                                      4vec-bitxor))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil))))))
 
 
 (defsection 4veclist-[=
@@ -360,18 +377,20 @@ an approximation of its value in @('y')?"
 
 (defsection svex-apply-monotonocity
   :parents (svex-apply 4vec-[=)
-  :short "@(see svex-apply) is almost always monotonic."
+  :short "@(see svex-apply) is almost always monotonic :-("
 
   (defthm svex-apply-monotonic
     (implies (and (4veclist-[= x y)
-                  (not (eq (fnsym-fix fn) '===)))
+                  (not (eq (fnsym-fix fn) '===))
+                  (not (eq (fnsym-fix fn) '==?)))
              (4vec-[= (svex-apply fn x) (svex-apply fn y)))
     :hints(("Goal" :in-theory (e/d (svex-apply)
                                    (2vec-p 2vec->val))))))
 
 
 (defund bit-n (n x)
-  ;; BOZO why???
+  ;; This is just a function that secretly equals logbitp.  It exists so we can
+  ;; rewrite logbitp to it in some bad cases and not have the rewriter loop.
   (logbitp n x))
 
 
@@ -388,8 +407,12 @@ any environment."
                          (svex-xeval x)))
               (and stable-under-simplificationp
                    '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
-                                     (4vec-==-[=-===))
+                                     (4vec-==-[=-===
+                                      4vec-wildeq-safe-[=-wildeq))
                      :use ((:instance 4vec-==-[=-===
+                            (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                            (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env))))
+                           (:instance 4vec-wildeq-safe-[=-wildeq
                             (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
                             (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))))
                      :do-not-induct t)))
@@ -461,13 +484,13 @@ any environment."
 
 
 
-(define 4vec-xfree-p ((x 4vec-p))
-  :parents (4vec-[= svex-xeval)
-  :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
-relationship with @(see svex-xeval)."
-  (b* (((4vec x) x))
-    (eql -1 (logior (lognot x.upper) x.lower)))
-  ///
+(defsection 4vec-xfree-p-basics
+  :parents (4vec-xfree-p)
+  :short "Some lemmas about @(see 4vec-xfree-p) in the
+  @('sv/svex/lattice.lisp') book."
+
+  (local (in-theory (enable 4vec-xfree-p)))
+
   (local (defthm equal-of-4vecs
            (implies (and (4vec-p a)
                          (4vec-p b))
@@ -489,6 +512,7 @@ relationship with @(see svex-xeval)."
   (defthmd svex-eval-when-4vec-xfree-of-minval-apply
     (implies (and (syntaxp (not (equal env ''nil)))
                   (not (eq (fnsym-fix fn) '===))
+                  (not (eq (fnsym-fix fn) '==?))
                   (4vec-xfree-p (svex-apply fn (svexlist-xeval args))))
              (equal (svex-apply fn (svexlist-eval args env))
                     (svex-apply fn (svexlist-xeval args))))
@@ -507,4 +531,15 @@ relationship with @(see svex-xeval)."
                            (n (svex-call '=== args))))
              :in-theory (disable svex-eval-when-4vec-xfree-of-minval
                                  equal-of-4vecs 4vec-xfree-p)
-             :expand ((svex-xeval (svex-call '=== args)))))))
+             :expand ((svex-xeval (svex-call '=== args))))))
+
+  (defthmd svex-eval-when-4vec-xfree-of-minval-apply-==?
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-p (svex-apply 'safer-==? (svexlist-xeval args))))
+             (equal (svex-apply '==? (svexlist-eval args env))
+                    (svex-apply 'safer-==? (svexlist-xeval args))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                           (n (svex-call '==? args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-of-minval
+                                 equal-of-4vecs 4vec-xfree-p)
+             :expand ((svex-xeval (svex-call '==? args)))))))

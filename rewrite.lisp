@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -474,8 +474,7 @@
 ; -- which isn't equiv2 -- so we skip it.
 
          (member-eq equiv2
-                    (cdr (getprop equiv1 'coarsenings nil
-                                  'current-acl2-world wrld))))))
+                    (cdr (getpropc equiv1 'coarsenings nil wrld))))))
 
 ; The above function determines if one equivalence symbol is a
 ; refinement of another.  More often we want to know whether a symbol
@@ -530,8 +529,7 @@
 
   (cond ((eq equiv 'equal) *fake-rune-for-anonymous-enabled-rule*)
         ((null geneqv) nil)
-        (t (geneqv-refinementp1 (getprop equiv 'coarsenings nil
-                                         'current-acl2-world wrld)
+        (t (geneqv-refinementp1 (getpropc equiv 'coarsenings nil wrld)
                                 geneqv))))
 
 ; We now define the function which constructs the list of generated
@@ -628,8 +626,8 @@
   (cond
    ((null geneqv) nil)
    (t (cons (cons (car geneqv)
-                  (cdr (getprop (access congruence-rule (car geneqv) :equiv)
-                                'coarsenings nil 'current-acl2-world wrld)))
+                  (cdr (getpropc (access congruence-rule (car geneqv) :equiv)
+                                'coarsenings nil wrld)))
             (pair-congruence-rules-with-coarsenings (cdr geneqv) wrld)))))
 
 (defun add-to-cr-and-coarsenings
@@ -702,12 +700,11 @@
    ((null geneqv1) old-crs-and-coarsenings)
    (t (union-geneqv1 (cdr geneqv1)
                      (add-to-cr-and-coarsenings (car geneqv1)
-                                                (getprop
+                                                (getpropc
                                                  (access congruence-rule
                                                          (car geneqv1)
                                                          :equiv)
-                                                 'coarsenings nil
-                                                 'current-acl2-world wrld)
+                                                 'coarsenings nil wrld)
                                                 old-crs-and-coarsenings
                                                 t)
                      wrld))))
@@ -926,8 +923,7 @@
 ; never call geneqv-lst on 'IF.
 
          (list *geneqv-iff* geneqv geneqv))
-        (t (let ((congruences (getprop fn 'congruences nil
-                                       'current-acl2-world wrld)))
+        (t (let ((congruences (getpropc fn 'congruences nil wrld)))
              (cond
               ((null congruences) nil)
               ((null geneqv)
@@ -1089,8 +1085,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-                  (not (getprop fn 'constrainedp nil
-                                'current-acl2-world wrld)))))
+                  (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: This code is supposed to be the same as in rewrite.  Keep them in sync
 ; and see the comment there for explanations.
@@ -1360,7 +1355,7 @@
                         (t (mv (equal-mod-alist2 (cadr (cdr pair))
                                                  (cddr (cdr pair))
                                                  term
-                                                 term-alist) 
+                                                 term-alist)
                                alist))))
                  ((null term-alist) ; optimization
                   (mv (equal term (cdr pair))
@@ -1918,7 +1913,7 @@
 ; at hand to illustrate the danger of careless substitution with
 ; remove-trivial-equivalences and fertilize-clause, we can imagine that such
 ; dangers exist.  Finally support for pequivs is provided in the function
-; geneqv-at-subterm-top, used in the proof-checker, but is not provided in the
+; geneqv-at-subterm-top, used in the proof-builder, but is not provided in the
 ; code the warns about missing opportunities for the use of double-rewrite
 ; (e.g., double-rewrite-opportunities).
 
@@ -2112,7 +2107,7 @@
   (cond
    ((flambdap fn) ; no chance of a match by child rewrite call
     (mv nil nil))
-   (t (let* ((prop (getprop fn 'pequivs nil 'current-acl2-world wrld))
+   (t (let* ((prop (getpropc fn 'pequivs nil wrld))
              (shallow-pequiv-alist (pequivs-property-field prop :shallow)))
         (cond
          ((not pequiv-info) ; no pequivs for which to take the "next"
@@ -2371,9 +2366,7 @@
 
 (defun member-complement-term2 (fn lhs rhs cl)
   (cond ((null cl) nil)
-        ((and (nvariablep (car cl))
-              (not (fquotep (car cl)))
-              (eq (ffn-symb (car cl)) 'not)
+        ((and (ffn-symb-p (car cl) 'not)
               (comm-equal fn lhs rhs (fargn (car cl) 1)))
          cl)
         (t (member-complement-term2 fn lhs rhs (cdr cl)))))
@@ -2384,9 +2377,7 @@
 ; This fn is equivalent to (member-equal `(not ,lit) cl).
 
   (cond ((null cl) nil)
-        ((and (nvariablep (car cl))
-              (not (fquotep (car cl)))
-              (eq (ffn-symb (car cl)) 'not)
+        ((and (ffn-symb-p (car cl) 'not)
               (equal lit (fargn (car cl) 1)))
          cl)
         (t (member-complement-term1 lit (cdr cl)))))
@@ -2826,8 +2817,7 @@
          (cond ((equal term (cadr assumptions)) 'f)
                (t (if-interp-assumed-value3 term (cddr assumptions)))))
         ((equal (car assumptions) term) 't)
-        ((and (not (variablep (car assumptions)))
-              (eq (ffn-symb (car assumptions)) 'INTEGERP)
+        ((and (ffn-symb-p (car assumptions) 'INTEGERP)
               (equal (fargn term 1) (fargn (car assumptions) 1)))
          't)
         (t (if-interp-assumed-value3 term (cdr assumptions)))))
@@ -2841,8 +2831,7 @@
   (cond ((null assumptions) nil)
         ((eq (car assumptions) :not)
          (cond ((equal term (cadr assumptions)) 'f)
-               ((and (not (variablep (cadr assumptions)))
-                     (eq (ffn-symb (cadr assumptions)) 'RATIONALP)
+               ((and (ffn-symb-p (cadr assumptions) 'RATIONALP)
                      (equal (fargn term 1) (fargn (cadr assumptions) 1)))
                 'f)
                (t (if-interp-assumed-value4 term (cddr assumptions)))))
@@ -2944,8 +2933,7 @@
 ; of (NOT (EQUAL x 'const2)) when x is known to be a different 'const1.  To see
 ; the simple case of this function, skip to the T clause of this cond.
 
-           (cond ((and (nvariablep test)
-                       (eq (ffn-symb test) 'equal)
+           (cond ((and (ffn-symb-p test 'equal)
                        (or (quotep (fargn test 1))
                            (quotep (fargn test 2))))
                   (cond ((quotep (fargn test 1))
@@ -2997,8 +2985,7 @@
                    known-constants)))))
         (t
          (let ((test (car assumptions)))
-           (cond ((and (nvariablep test)
-                       (eq (ffn-symb test) 'equal)
+           (cond ((and (ffn-symb-p test 'equal)
                        (or (quotep (fargn test 1))
                            (quotep (fargn test 2))))
                   (cond
@@ -3156,16 +3143,13 @@
                         (quotep (cadr ac)))
                    *nil*)
                   ((and (equal (car ac) *t*)
-                        (nvariablep (cadr ac))
-;                       (not (fquotep (cadr ac)))
-                        (eq (ffn-symb (cadr ac)) 'equal))
+                        (ffn-symb-p (cadr ac) 'equal))
 
 ; Note:  (equal t (equal a b)) = (equal a b).
 
                    (cadr ac))
                   ((and (equal (cadr ac) *t*)
-                        (nvariablep (car ac))
-                        (eq (ffn-symb (car ac)) 'equal))
+                        (ffn-symb-p (car ac) 'equal))
                    (car ac))
                   (t (fcons-term fn ac))))
 
@@ -3238,9 +3222,7 @@
         (t (ret-stack (cdr lst) (cdr stack)))))
 
 (defun extra-info-lit-p (lit)
-  (and (nvariablep lit)
-;      (not (fquotep lit))
-       (eq (ffn-symb lit) 'not)
+  (and (ffn-symb-p lit 'not)
        (let ((atm (fargn lit 1)))
          (and (nvariablep atm)
               (eq (ffn-symb atm) *extra-info-fn*)))))
@@ -3619,9 +3601,7 @@
 
   (declare (xargs :guard (pseudo-termp term)))
   (cond
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'if)
+   ((and (ffn-symb-p term 'if)
          (equal (fargn term 3) *nil*))
 
 ; Term is of the form (if p q 'nil).  We will strip the branches of each in
@@ -3718,6 +3698,28 @@
                arg1)
               (t nil))))))
 
+(defun find-subsumer-replacement-rec (cl l len-cl)
+  (declare (xargs :guard (and (pseudo-term-listp cl)
+                              (pseudo-term-list-listp l)
+                              (equal len-cl (length cl)))))
+
+; See find-subsumer-replacement.
+
+  (cond ((null l) (mv nil nil))
+        ((> (len (car l)) len-cl)
+
+; Although in principle it seems that (car l) could "almost subsume" cl (in the
+; sense of arg1-almost-subsumes-arg2 below), we rather expect that to be rare,
+; since "almost subsume" is a sort of subset relation.
+
+         (find-subsumer-replacement-rec cl (cdr l) len-cl))
+        (t (let ((here (arg1-almost-subsumes-arg2 (car l) cl)))
+             (cond ((eq here 'subsumed) (mv here (car l)))
+                   (t (mv-let (rst cl0)
+                        (find-subsumer-replacement-rec cl (cdr l) len-cl)
+                        (cond ((eq rst 'subsumed) (mv rst cl0))
+                              (t (mv (or here rst) nil))))))))))
+
 (defun find-subsumer-replacement (cl l)
   (declare (xargs :guard (and (pseudo-term-listp cl)
                               (pseudo-term-list-listp l))))
@@ -3729,13 +3731,7 @@
 ; means that somewhere in l we found a clause that when resolved with cl
 ; produces a resolvent that subsumes cl.
 
-  (cond ((null l) (mv nil nil))
-        (t (let ((here (arg1-almost-subsumes-arg2 (car l) cl)))
-             (cond ((eq here 'subsumed) (mv here (car l)))
-                   (t (mv-let (rst cl0)
-                              (find-subsumer-replacement cl (cdr l))
-                              (cond ((eq rst 'subsumed) (mv rst cl0))
-                                    (t (mv (or here rst) nil))))))))))
+  (find-subsumer-replacement-rec cl l (length cl)))
 
 (defun remove-one-complement (lit cl)
   (declare (xargs :guard (and (pseudo-termp lit)
@@ -4123,20 +4119,19 @@
 
 (defun obj-table (term ts ts-ttree obj geneqv wrld ttree)
 
-; This function is (mv term' ttree'), where term' is equivalent modulo
-; geneqv (see the essay on Equivalence, Refinements and Congruence-
-; based Rewriting) to term and ttree' includes ttree and may include
-; additional stuff.  Depending on ts, the type-set of term (which is
-; supported by the ts-ttree), we may coerce term to 0, t, or nil.
+; This function is (mv term' ttree'), where term' is equivalent modulo geneqv
+; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
+; to term and ttree' includes ttree and may include additional stuff.
+; Depending on ts, the type-set of term (which is supported by the ts-ttree),
+; we may coerce term to 0, 1, t, or nil.
 
-; Note: This function used to depend on the objective, obj, of the
-; rewrite.  When obj was nil, that dependency prevented obj-table from
-; reducing term to t when term was known to have non-nil type-set.
-; That, in turn, caused relieve-hyp to force (not term), even though
-; (not term) was known nil.  We now reduce term to t, nil or 0 as
-; appropriate by the geneqv and ts, regardless of obj.  However, we have
-; left the obj parameter in place, in case we someday want to restore
-; dependency on it.
+; Note: This function used to depend on the objective, obj, of the rewrite.
+; When obj was nil, that dependency prevented obj-table from reducing term to t
+; when term was known to have non-nil type-set.  That, in turn, caused
+; relieve-hyp to force (not term), even though (not term) was known nil.  We
+; now reduce term to t, nil or 0 as appropriate by the geneqv and ts,
+; regardless of obj.  However, we have left the obj parameter in place, in case
+; we someday want to restore dependency on it.
 
   (declare (ignore obj))
   (cond
@@ -4154,6 +4149,50 @@
    ((ts= ts *ts-zero*)
     (mv *0*
         (cons-tag-trees ts-ttree ttree)))
+
+; After a new type-set bit for the set {1}, we considered adding a case for
+; (ts= ts *ts-one*), to return (mv *1* (cons-tag-trees ts-ttree ttree)) in that
+; case to coerce the term to '1.  However, some books failed.  For example, a
+; problem in community book books/demos/proofs/tightness-lemma-proof.lisp
+; simplifies to the following example.
+
+;   (defun i-from (n len)
+;     (cond ((zp len) nil)
+;           (t (cons n
+;                    (i-from (1+ n) (1- len))))))
+;   (defthm <-0-+-negative-1
+;     (iff (< 0 (+ (- y) x)) (< y x)))
+;   (defthm consp-i-from
+;     (equal (consp (i-from i len))
+;            (not (zp len))))
+
+; The problem was presumably that under a proof by induction, obj-table was
+; replacing the goal
+
+;   (IMPLIES (AND (NOT (ZP LEN)) (ZP (+ -1 LEN)))
+;            (CONSP (I-FROM I LEN)))
+
+; by the goal
+
+;   (IMPLIES (AND (NOT (ZP LEN)) (<= LEN 1))
+;            (CONSP (I-FROM I 1)))
+
+; and although the term (I-FROM I LEN) was a term to be expanded under
+; induction, (I-FROM I 1) was not.  We had 27 other failures that might have
+; been due to this same problem, but we didn't investigate them.  Instead, we
+; are omitting a case here for *ts-one*.
+
+; We have also had problems when including this (deleted) case, depending on
+; other heuristics involving *ts-one*, for the lemma symbolic-computation in
+; models/jvm/m5/demo.lisp, projects/symbolic/m5/demo.lisp, and
+; books/workshops/2003/moore_vcg/support/.  Sol Swords noticed that a
+; forward-chaining lemma, (implies (and (integerp (+ 1 k)) (acl2-numberp k))
+; (integerp k)), solves that problem; but without this case, we don't need that
+; lemma.
+
+; For more discussion regarding *ts-one*, see the Essay on Strong Handling of
+; *ts-one*.
+
    (t (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
         (cond
          (rune
@@ -4176,8 +4215,7 @@
                (cond (rune
                       (mv *t* (push-lemma rune ttree)))
                      (t (mv term ttree)))))))
-   ((and (nvariablep term)
-         (eq (ffn-symb term) 'if))
+   ((ffn-symb-p term 'if)
 
 ; Is this case important?  It doesn't seem so, and we were tempted to delete it
 ; when we modified find-rewriting-equivalence after Version_3.0.1 to look for
@@ -4187,8 +4225,7 @@
 ; compatibility.
 
     (mv term ttree))
-   ((and (nvariablep term)
-         (eq (ffn-symb term) 'hide)
+   ((and (ffn-symb-p term 'hide)
          (let ((e (fargn term 1)))
            (case-match e
              (('rewrite-equiv (equiv x x))
@@ -4756,8 +4793,10 @@
 ;   are stored this way rather than as :subclass 'definition.
 
 ; 'meta - a rule justified by a metatheorem.  In this case, the lhs is the
-;   the metafunction symbol to be applied, and hyps is a function of one (term)
-;   argument that generates a hypothesis for the metatheorem.
+;   metafunction symbol to be applied, and hyps is a function of one (term)
+;   argument that generates a hypothesis for the metatheorem.  In this case the
+;   :heuristic-info is of the form (name fn thm-name1 hyp-fn thm-name2)
+;   . combined-arities-alist); see rewrite-with-lemma.
 
 ; Rockwell Addition: The recursivep property used to be the fn name if the
 ; fn in question was singly recursive.  Now it is a singleton list (fn).
@@ -4779,7 +4818,7 @@
            ((variablep hyp) nil)
            ((fquotep hyp) nil)
            ((flambda-applicationp hyp) nil)
-           (t (getprop (ffn-symb hyp) 'lemmas nil 'current-acl2-world wrld)))))
+           (t (getpropc (ffn-symb hyp) 'lemmas nil wrld)))))
 
 (defun search-ground-units1
   (hyp unify-subst lemmas type-alist ens force-flg wrld ttree)
@@ -4912,6 +4951,9 @@
 
 (defun tautologyp (term wrld)
 
+; Warning: Keep this list below of function names in sync with those in
+; possible-trivial-clause-p.
+
 ; If this function returns t, then term is a theorem.  With the intended
 ; application in mind, namely the recognition of "trivial corollaries" while
 ; processing rule classes, we check for the "most common" tautology, (implies p
@@ -4919,9 +4961,7 @@
 ; an if-tautology.  This function can be made as fancy as you want, as long as
 ; it recognizes theorems.
 
-  (cond ((and (nvariablep term)
-              (not (fquotep term))
-              (eq (ffn-symb term) 'implies)
+  (cond ((and (ffn-symb-p term 'implies)
               (equal (fargn term 1) (fargn term 2)))
          t)
         (t (if-tautologyp
@@ -4950,8 +4990,8 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-               zerop synp return-last plusp minusp listp mv-list wormhole-eval
-               force case-split double-rewrite)
+               zerop synp return-last plusp minusp listp mv-list cons-with-hint
+               wormhole-eval force case-split double-rewrite)
              term wrld)))))
 
 (defun make-true-list-cons-nest (term-lst)
@@ -5567,26 +5607,27 @@
         (t (and (dumb-occur-lst (car args) top-clause)
                 (all-args-occur-in-top-clausep (cdr args) top-clause)))))
 
-(defun cons-count-bounded-ac (x i)
+(defun cons-count-bounded-ac (x i max)
 
-; We accumulate into i the number of conses in x, bounding our result by
-; (fn-count-evg-max-val), which should not be less than i.  We choose
-; (fn-count-evg-max-val) as our bound simply because that bound is used in the
-; similar computation of fn-count-evg.
+; We accumulate into i the number of conses in x, bounding our result by max,
+; which should not be less than i.
 
-  (declare (type (signed-byte 30) i))
+  (declare (type (signed-byte 30) i max))
   (the (signed-byte 30)
-    (cond ((atom x) i)
-          (t (let ((i (cons-count-bounded-ac (cdr x) i)))
-               (declare (type (signed-byte 30) i))
-               (cond ((>= i (fn-count-evg-max-val))
-                      (fn-count-evg-max-val))
-                     (t
-                      (cons-count-bounded-ac (car x) (1+f i)))))))))
+       (cond ((atom x) i)
+             (t (let ((i (cons-count-bounded-ac (cdr x) i max)))
+                  (declare (type (signed-byte 30) i))
+                  (cond ((>= i max) max)
+                        (t (cons-count-bounded-ac (car x) (1+f i) max))))))))
 
 (defun cons-count-bounded (x)
+
+; We return the number of conses in x, except we bound our result by
+; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
+; because that bound is used in the similar computation of fn-count-evg.
+
   (the (signed-byte 30)
-    (cons-count-bounded-ac x 0)))
+    (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
 
 (mutual-recursion
 
@@ -6454,25 +6495,6 @@
 ; better idea would be to connect the goal stack to the comment window
 ; and actually display it so that persistence became visual again.
 
-
-; The uses of acl2-loop-only below are simply to give us a debugging
-; tool for stack overflows.  When a stack overflow occurs, set :brr t.
-; Then provoke the overflow.  Exit from the break and from LP.  In raw
-; lisp type
-; (cw-gstack)
-; to see the gstack near the point of overflow.
-
-; In addition, if one then reenters LP and does
-; :monitor (:rewrite car-cons) t
-; :q
-; then one can do
-; (brkpt1 '(:rewrite car-cons) nil nil nil nil nil *deep-gstack* *the-live-state*)
-; to walk around the stack.
-
-; Furthermore, one can interrupt ACL2 anytime with ctrl-c and do
-; (cw-gstack)
-; from within the Raw Lisp Break to see what is happening.  Continue with :r.
-
 #-acl2-loop-only
 (defparameter *deep-gstack* nil)
 
@@ -6562,7 +6584,7 @@
                       (nth-update " the result of the nth/update rewriter")
                       (multiply-alists2 " the product of two polys")
                       (forced-assumption " a forced assumption")
-                      (proof-checker " proof-checker top level")
+                      (proof-builder " proof-builder top level")
                       (otherwise (er hard 'tilde-@-bkptr-phrase
                                      "When ~x0 calls ~x1 we get an unrecognized ~
                                       bkptr, ~x2."
@@ -7065,13 +7087,13 @@
 ; frames until we find one binding var-name.  We return the value with which
 ; var-name is paired, or else nil if no binding is found.
 
-  (cond ((null stack) nil)
+  (cond ((endp stack) nil)
         (t (let ((temp (assoc-eq var-name (cdar stack))))
              (cond (temp (cdr temp))
                    (t (lookup-brr-stack var-name (cdr stack))))))))
 
 (defun clean-brr-stack1 (gstack stack)
-  (cond ((null stack)
+  (cond ((endp stack)
          nil)
         ((equal gstack (caar stack)) stack)
         (t (clean-brr-stack1 gstack (cdr stack)))))
@@ -7607,7 +7629,7 @@
 
 (defun ts< (x y)
 
-; This is just a heuristic order for the type-alist command (proof-checker and
+; This is just a heuristic order for the type-alist command (proof-builder and
 ; break-rewrite).  First comes t, then non-nil, then nil, and finally we sort
 ; by type inclusion.
 
@@ -7753,7 +7775,7 @@
           (t result))))
 
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
-                     gstack state)
+                     gstack rcnst state)
 
 ; #+ACL2-PAR note: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
@@ -7792,6 +7814,7 @@
                      (unify-subst . ,unify-subst)
                      (type-alist . ,type-alist)
                      (ancestors . ,ancestors)
+                     (rcnst . ,rcnst)
                      (initial-ttree . ,initial-ttree))))
      '(pprogn
        (push-brr-stack-frame state)
@@ -9409,8 +9432,66 @@
 
 (defun extend-unify-subst (alist unify-subst)
 
-; We attempt to keep all terms in quote-normal form, which explains the
-; modification of val just below.
+; We attempt to keep all terms in quote-normal form, which explains the use of
+; sublis-var-lst below.  There are also three related calls, all of the form
+; (sublis-var nil X), in rewrite-with-lemma.
+
+; We wondered if for large problems, the cost of exploring large terms might
+; not be worth the benefit of maintaining quote-normal form, so we tried
+; replacing the pairlis$ call below with, simply, alist.  However, we found
+; relatively little benefit, as we now describe.
+
+; Below are timings from 4 different configurations.  In all cases, we
+; abstained from doing anything else on the laptop during the run.  So the
+; differences you see are real, up to GC time.  All the runs were conducted
+; sequentially in the same image.
+;
+; The first configuration, A, is as reported in the Stateman paper (by J Moore)
+; at the 2015 ACL2 Workshop.  The relevant fact is that sublis-var1 is memoized
+; when the substitution is nil and the term has a HIDE on it.  Three runs were
+; done to see if the time would stabilize.  The time reported in the paper was
+; 275 seconds.
+;
+; ; A runs:
+; ; 388.94 seconds realtime, 382.18 seconds runtime
+; ; 265.68 seconds realtime, 262.71 seconds runtime
+; ; 274.68 seconds realtime, 272.27 seconds runtime
+;
+; The next configuration is the same as A except that here, sublis-var1 is not
+; memoized.  So here you see the extra cost of the sublis-var nil calls.
+;
+; ; B runs:
+; ; 485.81 seconds realtime, 482.91 seconds runtime
+; ; 494.81 seconds realtime, 491.70 seconds runtime
+;
+; The next configuration is with the change described above, as follows: we
+; replaced the pairlis$ call with the variable, alist, and replaced each
+; (sublis-var nil X) call in rewrite-with-lemma by the corresponding X.  Note
+; that sublis-var is not memoized here either.
+;
+; ; C runs:
+; ; 281.10 seconds realtime, 278.37 seconds runtime
+; ; 284.11 seconds realtime, 281.30 seconds runtime
+;
+; So eliminating the call has about the same effect on time as memoizing it.
+;
+; The final experiment leaves memoization on (for sublis-var1 with nil
+; substitution and a term beginning with HIDE) but also includes the
+; modifications described above, that is, to avoid the (sublis-var nil ...)
+; call in this function and the three such calls in rewrite-with-lemma.
+
+; D runs:
+; 273.10 seconds realtime, 270.52 seconds runtime
+; 299.00 seconds realtime, 277.31 seconds runtime
+
+; This suggests that memoizing sublis-var as Stateman does and eliminating
+; these sublis-var calls is marginally worse than just memoizing sublis-var (as
+; in A).  That seems rather unlikely, so we are willing to conclude that the
+; differences are just noise.  So we have decided to keep these four calls of
+; sublis-var-lst or sublis-var, which will avoid the potential pain of
+; modifying some books to accommodate their removal.  (Actually no regression
+; books as of early November 2015 needed to be modified; but other user books
+; might need to be.)
 
   (append (pairlis$ (strip-cars alist)
                     (sublis-var-lst nil (strip-cdrs alist)))
@@ -10358,8 +10439,7 @@
 ; In the case of a synp hypothesis, our possible restriction of unify-subst is
 ; based on the variables occurring free in the term that is to be evaluated.
 
-                         (cond ((and (nvariablep hyp)
-                                     (eq (ffn-symb hyp) 'synp))
+                         (cond ((ffn-symb-p hyp 'synp)
                                 (let ((qterm (fargn hyp 3)))
                                   (assert$ (quotep qterm)
                                            (unquote qterm))))
@@ -10945,6 +11025,11 @@
 ; of full-range that correspond (positionally) to members of
 ; full-domain that belong to sub-domain.
 
+  (declare (xargs :guard (and (symbol-listp full-domain)
+                              (true-listp sub-domain)
+                              (true-listp full-range)
+                              (eql (length full-domain)
+                                   (length full-range)))))
   (if (endp full-domain)
       nil
     (if (member-eq (car full-domain) sub-domain)
@@ -10967,6 +11052,11 @@
 ;
 ; Note that the irrelevant formal y has been eliminated.
 
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-termp body)
+                              (true-listp actuals)
+                              (eql (length formals)
+                                   (length actuals)))))
   (let ((vars (all-vars body)))
     (cond
      ((null vars)
@@ -10974,7 +11064,7 @@
      ((equal formals actuals)
       body)
      ((set-difference-eq vars formals)
-      (er hard 'make-lambda-application
+      (er hard? 'make-lambda-application
           "Unexpected unbound vars ~x0"
           (set-difference-eq vars formals)))
      (t
@@ -11105,14 +11195,91 @@
         (and val ; optimization
              (member-eq fn val)))))
 
-(defun collect-bad-fn-arity-pairs (alist wrld)
+(defun collect-bad-fn-arity-info (alist wrld bad-arity-alist non-logic-fns)
   (cond
-   ((endp alist) nil)
-   ((equal (arity (car (car alist)) wrld)
-           (cdr (car alist)))
-    (collect-bad-fn-arity-pairs (cdr alist) wrld))
-   (t (cons (car alist)
-            (collect-bad-fn-arity-pairs (cdr alist) wrld)))))
+   ((endp alist)
+    (if (or bad-arity-alist non-logic-fns)
+        (cons (reverse bad-arity-alist) ; preserve original order
+              non-logic-fns)
+      nil))
+   (t (let ((arity (arity (car (car alist)) wrld)))
+        (collect-bad-fn-arity-info
+         (cdr alist)
+         wrld
+         (if (or (null arity) ; handled below
+                 (eql arity (cdr (car alist))))
+             bad-arity-alist
+           (cons (car alist) bad-arity-alist))
+         (if (or (null arity)
+                 (programp (car (car alist)) wrld))
+             (cons (car (car alist))
+                   non-logic-fns)
+           non-logic-fns))))))
+
+(defun bad-arities-msg (name token fn hyp-fn wf-thm-name1 wf-thm-name2
+                             bad-arity-info)
+  (msg
+   "The ~s0 ~x1 has a now-invalid well-formedness guarantee.  Its ~s2, ~x3, ~
+    ~#4~[was proved in ~x7 to return a ~x6~/and its corresponding hypothesis ~
+    metafunction, ~x5, were proved in ~x7 and ~x8 to return ~x6s~] under the ~
+    assumption that certain function symbols were in :logic mode and had ~
+    certain arities.  But that assumption is now invalid, presumably because of ~
+    redefinition.  ~@9We cannot trust the well-formedness guarantee."
+   (if (eq token :META)
+       "metatheorem"
+     "clause-processor correctness theorem")
+   name
+   (if (eq token :META)
+       (if fn
+           "metafunction"
+         "hypothesis metafunction")
+     "clause-processor")
+   (or fn hyp-fn)
+   (if (and fn hyp-fn) 1 0)
+   hyp-fn
+   (if (eq token :META)
+       'LOGIC-TERMP
+     'LOGIC-TERM-LIST-LISTP)
+   wf-thm-name1
+   wf-thm-name2
+   (let ((bad-arities-alist (car bad-arity-info))
+         (non-logic-fns (cdr bad-arity-info)))
+     (msg "~@0~@1"
+          (if (null bad-arities-alist)
+              ""
+            (msg "The following alist pairs function symbols with their ~
+                  assumed arities: ~X01.  Each symbol had the specified arity ~
+                  when ~x2 was proved but this is no longer the case.  "
+                 bad-arities-alist nil name))
+          (if (null non-logic-fns)
+              ""
+            (msg "The symbol~#0~[ ~x0 is no longer a :logic mode function ~
+                  symbol~/s ~&0 are no longer :logic mode function symbols~] ~
+                  even though this was the case when ~x2 was proved.  "
+                 non-logic-fns nil name))))))
+
+(mutual-recursion
+
+(defun all-ffn-symbs (term ans)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp ans))))
+  (cond
+   ((variablep term) ans)
+   ((fquotep term) ans)
+   (t (all-ffn-symbs-lst (fargs term)
+                         (cond ((flambda-applicationp term)
+                                (all-ffn-symbs (lambda-body (ffn-symb term))
+                                               ans))
+                               (t (add-to-set-eq (ffn-symb term) ans)))))))
+
+(defun all-ffn-symbs-lst (lst ans)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-listp ans))))
+  (cond ((endp lst) ans)
+        (t (all-ffn-symbs-lst (cdr lst)
+                              (all-ffn-symbs (car lst) ans)))))
+
+)
 
 (mutual-recursion
 
@@ -11525,7 +11692,7 @@
                     (cond
                      ((and
                        (or (flambdap fn)
-                           (logicalp fn wrld))
+                           (logicp fn wrld))
                        (all-quoteps rewritten-args)
                        (or
                         (flambda-applicationp term)
@@ -11535,9 +11702,7 @@
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                             (not (getprop fn 'constrainedp nil
-                                           'current-acl2-world
-                                           wrld)))))
+                             (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable counterpart of the fn (or just go into the lambda
@@ -11657,8 +11822,7 @@
 
                            (rewrite-with-lemmas1
                             term
-                            (getprop (ffn-symb new-term) 'lemmas nil
-                                     'current-acl2-world wrld)))
+                            (getpropc (ffn-symb new-term) 'lemmas nil wrld)))
                           (declare (ignore rewrittenp))
                           (mv step-limit term1 ttree)))))))
 
@@ -11681,9 +11845,7 @@
    3
    (signed-byte 30)
    (cond
-    ((and (nvariablep test)
-          (not (fquotep test))
-          (eq (ffn-symb test) 'if)
+    ((and (ffn-symb-p test 'if)
           (equal (fargn test 2) *nil*)
           (equal (fargn test 3) *t*))
 
@@ -11804,14 +11966,17 @@
                          (rewrite-entry (rewrite right alist 3)
                                         :type-alist false-type-alist
                                         :ttree (rw-cache-enter-context ttree))
-                         (let ((ttree (rw-cache-exit-context ttree ttree1)))
-                           (prepend-step-limit
-                            2
-                            (rewrite-if1 test
-                                         rewritten-left rewritten-right
-                                         type-alist geneqv ens
-                                         (ok-to-force rcnst)
-                                         wrld ttree))))))))))))))
+                         (mv-let
+                           (rewritten-term ttree)
+                           (rewrite-if1 test
+                                        rewritten-left rewritten-right
+                                        type-alist geneqv ens
+                                        (ok-to-force rcnst)
+                                        wrld
+                                        (rw-cache-exit-context ttree ttree1))
+                           (rewrite-entry
+                            (rewrite-with-lemmas
+                             rewritten-term))))))))))))))
 
 (defun rewrite-args (args alist bkptr rewritten-args-rev
                           deep-pequiv-lst shallow-pequiv-lst
@@ -12296,9 +12461,7 @@
   (the-mv
    6
    (signed-byte 30)
-   (cond ((and (nvariablep hyp0)
-               (not (fquotep hyp0))
-               (eq (ffn-symb hyp0) 'synp))
+   (cond ((ffn-symb-p hyp0 'synp)
           (mv-let (wonp failure-reason unify-subst ttree)
                   (relieve-hyp-synp rune hyp0 unify-subst rdepth type-alist wrld
                                     state fnstack ancestors backchain-limit
@@ -12729,7 +12892,7 @@
 
         (let* ((hyp (car hyps))
                (forcep1 (and (nvariablep hyp)
-                             (not (fquotep hyp))
+;                            (not (fquotep hyp))
                              (or (eq (ffn-symb hyp) 'force)
                                  (eq (ffn-symb hyp) 'case-split))))
                (forcer-fn (and forcep1 (ffn-symb hyp)))
@@ -12901,15 +13064,15 @@
        ))))))
 
 (defun relieve-hyps1-free-2
-  (hyp lemmas forcer-fn forcep ens force-flg
-       rune target hyps backchain-limit-lst
-       unify-subst bkptr unify-subst0
-       ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
-       rdepth step-limit
-       type-alist obj geneqv pequiv-info wrld state fnstack ancestors
-       backchain-limit
-       simplify-clause-pot-lst rcnst gstack
-       ttree)
+    (hyp lemmas forcer-fn forcep ens force-flg
+         rune target hyps backchain-limit-lst
+         unify-subst bkptr unify-subst0
+         ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
+         rdepth step-limit
+         type-alist obj geneqv pequiv-info wrld state fnstack ancestors
+         backchain-limit
+         simplify-clause-pot-lst rcnst gstack
+         ttree)
 
 ; We search ground units in an attempt to extend unify-subst to make term true,
 ; As with relieve-hyps1-free-1, we return a relieve-hyps-ans, a
@@ -12937,156 +13100,152 @@
                  unify-subst)
               unify-subst)))
        (mv-let
-        (force-flg ttree)
-        (cond
-         ((not forcep)
-          (mv nil ttree))
-         (t (force-assumption
-             rune
-             target
-             (sublis-var fully-bound-unify-subst hyp)
-             type-alist
-             nil
-             (immediate-forcep
-              forcer-fn
-              (access rewrite-constant rcnst
-                      :current-enabled-structure))
-             force-flg
-             ttree)))
-        (cond
-         (force-flg
-          (mv-let
-           (cached-failure-reason-free cached-failure-reason)
-           (rw-cached-failure-pair fully-bound-unify-subst rw-cache-alist)
-           (cond
-            (cached-failure-reason
-             (mv step-limit nil
-                 (and (f-get-global 'gstackp state) ; cons optimization
-                      (list                         ; failure-reason-lst
-                       (cons fully-bound-unify-subst
-                             (cons 'cached cached-failure-reason))))
+         (force-flg ttree)
+         (cond
+          ((not forcep)
+           (mv nil ttree))
+          (t (force-assumption
+              rune
+              target
+              (sublis-var fully-bound-unify-subst hyp)
+              type-alist
+              nil
+              (immediate-forcep
+               forcer-fn
+               (access rewrite-constant rcnst
+                       :current-enabled-structure))
+              force-flg
+              ttree)))
+         (cond
+          (force-flg
+           (mv-let
+             (cached-failure-reason-free cached-failure-reason)
+             (rw-cached-failure-pair fully-bound-unify-subst rw-cache-alist)
+             (cond
+              (cached-failure-reason
+               (mv step-limit nil
+                   (and (f-get-global 'gstackp state) ; cons optimization
+                        (list                         ; failure-reason-lst
+                         (cons fully-bound-unify-subst
+                               (cons 'cached cached-failure-reason))))
+                   unify-subst0
+                   (accumulate-rw-cache t ttree ttree0)
+                   allp rw-cache-alist-new))
+              (t
+               (sl-let
+                (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                                  inferior-rw-cache-alist-new)
+                (rewrite-entry
+                 (relieve-hyps1 rune target (cdr hyps)
+                                (cdr backchain-limit-lst)
+                                fully-bound-unify-subst
+                                (1+ bkptr)
+                                unify-subst0 ttree0 allp
+                                (cdr cached-failure-reason-free)
+                                nil)
+                 :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                 )
+                (let ((rw-cache-alist-new
+                       (extend-rw-cache-alist-free
+                        rcnst
+                        fully-bound-unify-subst
+                        inferior-rw-cache-alist-new
+                        rw-cache-alist-new)))
+                  (cond (relieve-hyps-ans
+                         (mv step-limit relieve-hyps-ans
+                             nil ; failure-reason-lst
+                             unify-subst1 ttree1 allp rw-cache-alist-new))
+                        (t
+                         (mv step-limit nil
+                             (and (f-get-global 'gstackp state) ; cons optimization
+                                  (list (cons fully-bound-unify-subst
+                                              failure-reason)))
+                             unify-subst0
+                             (accumulate-rw-cache t ttree1 ttree0)
+                             allp
+                             (rw-cache-add-failure-reason
+                              rcnst
+                              fully-bound-unify-subst
+                              failure-reason
+                              rw-cache-alist-new))))))))))
+          (t (mv step-limit nil
+                 nil ; failure-reason-lst
                  unify-subst0
                  (accumulate-rw-cache t ttree ttree0)
-                 allp rw-cache-alist-new))
-            (t
-             (sl-let
-              (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
-                                inferior-rw-cache-alist-new)
-              (rewrite-entry
-               (relieve-hyps1 rune target (cdr hyps)
-                              (cdr backchain-limit-lst)
-                              fully-bound-unify-subst
-                              (1+ bkptr)
-                              unify-subst0 ttree0 allp
-                              (cdr cached-failure-reason-free)
-                              nil)
-               :obj nil :geneqv nil :pequiv-info nil ; all ignored
-               )
-              (let ((rw-cache-alist-new
-                     (extend-rw-cache-alist-free
-                      rcnst
-                      fully-bound-unify-subst
-                      inferior-rw-cache-alist-new
-                      rw-cache-alist-new)))
-                (cond (relieve-hyps-ans
-                       (mv step-limit relieve-hyps-ans
-                           nil ; failure-reason-lst
-                           unify-subst1 ttree1 allp rw-cache-alist-new))
-                      (t
-                       (mv step-limit nil
-                           (and (f-get-global 'gstackp state) ; cons optimization
-                                (list (cons fully-bound-unify-subst
-                                            failure-reason)))
-                           unify-subst0
-                           (accumulate-rw-cache t ttree1 ttree0)
-                           allp
-                           (rw-cache-add-failure-reason
-                            rcnst
-                            fully-bound-unify-subst
-                            failure-reason
-                            rw-cache-alist-new))))))))))
-         (t (mv step-limit nil
-                nil ; failure-reason-lst
-                unify-subst0
-                (accumulate-rw-cache t ttree ttree0)
-                allp rw-cache-alist-new))))))
+                 allp rw-cache-alist-new))))))
     (t
      (mv-let
-      (winp new-unify-subst new-ttree rest-lemmas)
-      (search-ground-units1
-       hyp unify-subst lemmas type-alist
-       ens force-flg wrld ttree)
-      (cond
-       (winp
-        (mv-let
-         (cached-failure-reason-free cached-failure-reason)
-         (rw-cached-failure-pair new-unify-subst rw-cache-alist)
-         (sl-let
-          (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
-                            inferior-rw-cache-alist-new)
-          (cond
-           (cached-failure-reason
-            (mv step-limit nil
-                (and (f-get-global 'gstackp state) ; cons optimization
-                     (list                         ; failure-reason-lst
-                      (cons new-unify-subst
-                            (cons 'cached cached-failure-reason))))
-                unify-subst ttree allp nil))
-           (t
-            (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                          (cdr backchain-limit-lst)
-                                          new-unify-subst
-                                          (1+ bkptr)
-                                          unify-subst0 ttree0 allp
-                                          (cdr cached-failure-reason-free)
-                                          nil)
-                           :obj nil :geneqv nil :pequiv-info nil ; all ignored
-                           :ttree new-ttree)))
-          (let ((rw-cache-alist-new
-                 (extend-rw-cache-alist-free rcnst
-                                             new-unify-subst
-                                             inferior-rw-cache-alist-new
-                                             rw-cache-alist-new)))
+       (winp new-unify-subst new-ttree rest-lemmas)
+       (search-ground-units1 hyp unify-subst lemmas type-alist ens force-flg
+                             wrld ttree)
+       (cond
+        (winp
+         (mv-let
+           (cached-failure-reason-free cached-failure-reason)
+           (rw-cached-failure-pair new-unify-subst rw-cache-alist)
+           (sl-let
+            (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                              inferior-rw-cache-alist-new)
             (cond
-             (relieve-hyps-ans
-              (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
-                  rw-cache-alist-new))
+             (cached-failure-reason
+              (mv step-limit nil
+                  (and (f-get-global 'gstackp state) ; cons optimization
+                       (list                         ; failure-reason-lst
+                        (cons new-unify-subst
+                              (cons 'cached cached-failure-reason))))
+                  unify-subst ttree allp nil))
              (t
-              (let ((rw-cache-alist-new ; add normal-failure reason
-                     (rw-cache-add-failure-reason rcnst
-                                                  new-unify-subst
-                                                  failure-reason
-                                                  rw-cache-alist-new)))
-                (cond
-                 ((not allp) ; hence original allp is nil
-                  (mv step-limit nil
-                      (and (f-get-global 'gstackp state) ; cons optimization
-                           (list                         ; failure-reason-lst
-                            (cons new-unify-subst
-                                  failure-reason)))
-                      unify-subst0
-                      (accumulate-rw-cache t ttree1 ttree0)
-                      nil rw-cache-alist-new))
-                 (t
-                  (rewrite-entry-extending-failure
-                   new-unify-subst
-                   failure-reason
-                   (relieve-hyps1-free-2
-                    hyp rest-lemmas forcer-fn forcep ens force-flg rune
-                    target hyps backchain-limit-lst unify-subst bkptr
-                    unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
-                   :obj nil :geneqv nil :pequiv-info nil ; all ignored
-                   :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
-       (t (mv step-limit nil
-              nil ; failure-reason-lst
-              unify-subst0
-
-; We believe that new-ttree is unlikely to have rw-cache entries that are not
-; already in ttree0, as they would generally (always?) come from type-set
-; computations.  But we expect the following call to be cheap, so we make it.
-
-              (accumulate-rw-cache t new-ttree ttree0)
-              allp rw-cache-alist-new))))))))
+              (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                            (cdr backchain-limit-lst)
+                                            new-unify-subst
+                                            (1+ bkptr)
+                                            unify-subst0 ttree0 allp
+                                            (cdr cached-failure-reason-free)
+                                            nil)
+                             :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                             :ttree new-ttree)))
+            (let ((rw-cache-alist-new
+                   (extend-rw-cache-alist-free rcnst
+                                               new-unify-subst
+                                               inferior-rw-cache-alist-new
+                                               rw-cache-alist-new)))
+              (cond
+               (relieve-hyps-ans
+                (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
+                    rw-cache-alist-new))
+               (t
+                (let ((rw-cache-alist-new ; add normal-failure reason
+                       (rw-cache-add-failure-reason rcnst
+                                                    new-unify-subst
+                                                    failure-reason
+                                                    rw-cache-alist-new)))
+                  (cond
+                   ((not allp) ; hence original allp is nil
+                    (mv step-limit nil
+                        (and (f-get-global 'gstackp state) ; cons optimization
+                             (list                         ; failure-reason-lst
+                              (cons new-unify-subst
+                                    failure-reason)))
+                        unify-subst0
+                        (accumulate-rw-cache t ttree1 ttree0)
+                        nil rw-cache-alist-new))
+                   (t
+                    (rewrite-entry-extending-failure
+                     new-unify-subst
+                     failure-reason
+                     (relieve-hyps1-free-2
+                      hyp rest-lemmas forcer-fn forcep ens force-flg rune
+                      target hyps backchain-limit-lst unify-subst bkptr
+                      unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
+                     :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                     :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
+        (t (rewrite-entry
+            (relieve-hyps1-free-2
+             hyp nil forcer-fn forcep ens force-flg rune
+             target hyps backchain-limit-lst unify-subst bkptr
+             unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
+            :obj nil :geneqv nil :pequiv-info nil ; all ignored
+            ))))))))
 
 (defun relieve-hyps (rune target hyps backchain-limit-lst
                           unify-subst allp ; &extra formals
@@ -13309,10 +13468,10 @@
                     (mv step-limit nil term ttree))
                    (t
 
-; Skip termp checks if either we're told to via skip-meta-termp-checks or they
-; are unnecessary because of the meta fn (and its hyp-fn) have well-formedness
-; guarantees.  If we skip the checks because of guarantees, we must check the
-; arity assumptions.
+; Skip logic-termp checks if either we're told to via skip-meta-termp-checks
+; or they are unnecessary because of the meta fn (and its hyp-fn) have
+; well-formedness guarantees.  If we skip the checks because of guarantees, we
+; must check the arity assumptions.
 
                     (let* ((user-says-skip-termp-checkp
                             (skip-meta-termp-checks meta-fn wrld))
@@ -13321,41 +13480,30 @@
                            (not-skipped
                             (and (not user-says-skip-termp-checkp)
                                  (not well-formedness-guarantee)))
-                           (bad-arities
+                           (bad-arity-info
                             (if (and well-formedness-guarantee
                                      (not user-says-skip-termp-checkp))
-                                (collect-bad-fn-arity-pairs
+                                (collect-bad-fn-arity-info
                                  (cdr well-formedness-guarantee)
-                                 wrld)
+                                 wrld nil nil)
                               nil)))
                       (cond
-                       (bad-arities
+                       (bad-arity-info
                         (let ((name (nth 0 (car well-formedness-guarantee)))
                               (fn (nth 1 (car well-formedness-guarantee)))
-                              (hyp-fn (nth 3 (car well-formedness-guarantee))))
+                              (thm-name1
+                               (nth 2 (car well-formedness-guarantee)))
+                              (hyp-fn (nth 3 (car well-formedness-guarantee)))
+                              (thm-name2
+                               (nth 4 (car well-formedness-guarantee))))
                           (mv step-limit
                               (er hard 'rewrite-with-lemma
-                                  "The metatheorem ~x0 has a now-invalid ~
-                                   well-formedness guarantee.  Its ~
-                                   metafunction, ~x1, ~#2~[was proved to ~
-                                   return a TERMP~/and its corresponding ~
-                                   hypothesis metafunction, ~x3, were proved ~
-                                   to return TERMPs~] under the assumption ~
-                                   that certain function symbols had certain ~
-                                   arities.  But that assumption is now ~
-                                   invalid.  The following alist pairs ~
-                                   function symbols with their assumed ~
-                                   arities: ~X45.  These arities were valid ~
-                                   when ~x0 was proved but have since changed ~
-                                   (presumably by redefinition).   We cannot ~
-                                   trust the well-formedness guarantee."
-                                  name
-                                  fn
-                                  (if hyp-fn 1 0)
-                                  hyp-fn
-                                  bad-arities
-                                  nil)
+                                  "~@0"
+                                  (bad-arities-msg name :META fn hyp-fn
+                                                   thm-name1 thm-name2
+                                                   bad-arity-info))
                               term ttree)))
+; Check logic-termp by checking both termp and (not (program-termp)).
                        ((and not-skipped
                              (not (termp val wrld)))
                         (mv step-limit
@@ -13371,6 +13519,26 @@
                                  this runtime test altogether.  See :DOC ~
                                  well-formedness-guarantee."
                                 meta-fn val term)
+                            term ttree))
+                       ((and not-skipped
+                             (not (logic-termp val wrld)))
+                        (mv step-limit
+                            (er hard 'rewrite-with-lemma
+                                "The metafunction ~x0 produced the termp ~x1 ~
+                                 on the input term ~x2.  The proof of the ~
+                                 correctness of ~x0 establishes that the ~
+                                 quotations of these two s-expressions have ~
+                                 the same value, but our implementation ~
+                                 additionally requires that ~x0 produce a ~
+                                 term with no :program mode function symbols. ~
+                                 ~ The term produced has :program mode ~
+                                 function symbol~#3~[~/s~] ~&3.  You might ~
+                                 consider proving a well-formedness guarantee ~
+                                 to avoid this runtime test altogether.  See ~
+                                 :DOC well-formedness-guarantee."
+                                meta-fn val term
+                                (collect-programs (all-ffn-symbs val nil)
+                                                  wrld))
                             term ttree))
                        ((and not-skipped
                              (forbidden-fns-in-term
@@ -13398,9 +13566,7 @@
                        (t
                         (mv-let
                          (extra-evaled-hyp val)
-                         (cond ((and (nvariablep val)
-;                                (not (fquotep val))
-                                     (eq (ffn-symb val) 'if)
+                         (cond ((and (ffn-symb-p val 'if)
                                      (equal (fargn val 3) term))
                                 (mv (fargn val 1) (fargn val 2)))
                                (t (mv *t* val)))
@@ -13431,46 +13597,37 @@
 ; (above) checked and caused an error if it is non-nil.  But that reasoning is
 ; faulty.  Suppose the user told us to skip the termp check on metafn's output
 ; but to do the check on hyp-fn's output.  Then the earlier binding of
-; bad-arities is nil but this binding may find something.
+; bad-arity-info is nil but this binding may find something.
 
-                                     (bad-arities
+                                     (bad-arity-info
                                       (if (and
                                            well-formedness-guarantee
                                            (not user-says-skip-termp-checkp))
-                                          (collect-bad-fn-arity-pairs
+                                          (collect-bad-fn-arity-info
                                            (cdr well-formedness-guarantee)
-                                           wrld)
+                                           wrld nil nil)
                                         nil)))
                                 (cond
-                                 (bad-arities
+                                 (bad-arity-info
                                   (let ((name
                                          (nth 0
                                               (car well-formedness-guarantee)))
                                         (hyp-fn
                                          (nth 3
+                                              (car well-formedness-guarantee)))
+                                        (thm-name2
+                                         (nth 4
                                               (car well-formedness-guarantee))))
                                     (mv step-limit
                                         (er hard 'rewrite-with-lemma
-                                            "The metatheorem ~x0 has a ~
-                                             now-invalid well-formedness ~
-                                             guarantee.  Its hypothesis ~
-                                             metafunction, ~x1, was proved to ~
-                                             return a TERMP under the ~
-                                             assumption that certain function ~
-                                             symbols had certain arities.  ~
-                                             But that assumption is now ~
-                                             invalid.  The following alist ~
-                                             pairs function symbols with ~
-                                             their assumed arities: ~X23.  ~
-                                             These arities were valid when ~
-                                             ~x0 was proved but have since ~
-                                             changed (presumably by ~
-                                             redefinition).   We cannot trust ~
-                                             the well-formedness guarantee."
-                                            name
-                                            hyp-fn
-                                            bad-arities
-                                            nil)
+                                            "~@0"
+                                            (bad-arities-msg name
+                                                             :META
+                                                             nil ; fn
+                                                             hyp-fn
+                                                             thm-name2
+                                                             nil
+                                                             bad-arity-info))
                                         term ttree)))
                                  ((and not-skipped
                                        (not (termp evaled-hyp wrld)))
@@ -13490,9 +13647,35 @@
                                           hyp-fn evaled-hyp term)
                                       term ttree))
                                  ((and not-skipped
+                                       (not (logic-termp evaled-hyp wrld)))
+                                  (mv step-limit
+                                      (er hard 'rewrite-with-lemma
+                                          "The hypothesis metafunction ~x0 ~
+                                           produced the termp ~x1 on the ~
+                                           input term ~x2.  The proof of the ~
+                                           correctness of ~x0 establishes ~
+                                           that the quotations of these two ~
+                                           s-expressions have the same value, ~
+                                           but our implementation ~
+                                           additionally requires that ~x0 ~
+                                           produce a term with no :program ~
+                                           mode function symbols.  The term ~
+                                           produced has :program mode ~
+                                           function symbol~#3~[~/~s] ~&3.  ~
+                                           You might consider proving a ~
+                                           well-formedness guarantee to avoid ~
+                                           this runtime test altogether.  See ~
+                                           :DOC well-formedness-guarantee."
+                                          hyp-fn evaled-hyp term
+                                          (collect-programs
+                                           (all-ffn-symbs evaled-hyp nil)
+                                           wrld))
+                                      term ttree))
+                                 ((and not-skipped
                                        (forbidden-fns-in-term
                                         evaled-hyp
-                                        (access rewrite-constant rcnst :forbidden-fns)))
+                                        (access rewrite-constant rcnst
+                                                :forbidden-fns)))
                                   (mv step-limit
                                       (er hard 'rewrite-with-lemma
                                           "The hypothesis metafunction ~x0 ~
@@ -13510,20 +13693,21 @@
                                           hyp-fn evaled-hyp term
                                           (forbidden-fns-in-term
                                            evaled-hyp
-                                           (access rewrite-constant rcnst :forbidden-fns)))
+                                           (access rewrite-constant rcnst
+                                                   :forbidden-fns)))
                                       term ttree))
                                  (t
                                   (let* ((vars (all-vars term))
                                          (hyps0 (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
+; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
 
                                                  (sublis-var nil evaled-hyp)))
                                          (extra-hyps (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
+; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
 
                                                       (sublis-var nil
                                                                   extra-evaled-hyp)))
@@ -13556,11 +13740,13 @@
                                                meta-implicit-hypothesis), ~
                                                whose use of synp is illegal ~
                                                because ~@2"
-                                              meta-fn term bad-synp-hyp-msg-extra)
+                                              meta-fn term
+                                              bad-synp-hyp-msg-extra)
                                           term ttree))
                                      (t
                                       (sl-let
-                                       (relieve-hyps-ans failure-reason unify-subst
+                                       (relieve-hyps-ans failure-reason
+                                                         unify-subst
                                                          ttree)
                                        (rewrite-entry
                                         (relieve-hyps
@@ -13619,8 +13805,9 @@
                                            t
                                            (rewrite-entry (rewrite
 
-; Note: The sublis-var below normalizes the explicit constant
-; constructors in val, e.g., (cons '1 '2) becomes '(1 . 2).
+; Note: The sublis-var below normalizes the explicit constant constructors in
+; val, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
+; extend-unify-subst.
 
                                                            (sublis-var nil val)
 
@@ -13666,7 +13853,7 @@
                      (not (equal (access rewrite-rule lemma :rhs) *nil*)))
                  (or (flambdap (ffn-symb term)) ; hence not on fnstack
                      (not (being-openedp (ffn-symb term) fnstack
-                                         (recursivep (ffn-symb term) wrld)))
+                                         (recursivep (ffn-symb term) t wrld)))
                      (not (ffnnamep (ffn-symb term)
                                     (access rewrite-rule lemma :rhs)))))
             (let ((lhs (access rewrite-rule lemma :lhs))
@@ -13684,7 +13871,7 @@
                              (null (brkpt1 lemma term unify-subst
                                            type-alist ancestors
                                            ttree
-                                           gstack state)))
+                                           gstack rcnst state)))
                         (cond
                          ((null (loop-stopperp
                                  (access rewrite-rule lemma :heuristic-info)
@@ -13929,7 +14116,7 @@
                (cond
                 ((and unify-ans
                       (null (brkpt1 rule term unify-subst type-alist ancestors
-                                    ttree gstack state)))
+                                    ttree gstack rcnst state)))
                  (with-accumulated-persistence
                   (access rewrite-rule rule :rune)
                   ((the (signed-byte 30) step-limit) term-out ttree)
@@ -14236,8 +14423,7 @@
            (rewrittenp rewritten-term ttree)
            (rewrite-entry
             (rewrite-with-lemmas1 term
-                                  (getprop (ffn-symb term) 'lemmas nil
-                                           'current-acl2-world wrld)))
+                                  (getpropc (ffn-symb term) 'lemmas nil wrld)))
            (cond
             (rewrittenp (mv step-limit rewritten-term ttree))
             (t (mv-let
@@ -14393,7 +14579,7 @@
     (not-flg atm)
     (strip-not term)
     (cond ((and (nvariablep atm)
-                (not (fquotep atm))
+;               (not (fquotep atm))
                 (or (eq (ffn-symb atm) '<)
                     (eq (ffn-symb atm) 'equal)))
            (let ((rcnst1 (if (access rewrite-constant rcnst :nonlinearp)
@@ -14538,7 +14724,7 @@
              (null (brkpt1 lemma term unify-subst
                            type-alist ancestors
                            nil ; ttree
-                           gstack state)))
+                           gstack rcnst state)))
         (let ((rune (access linear-lemma lemma :rune)))
           (with-accumulated-persistence
            rune
@@ -16300,9 +16486,8 @@
                   (not (access rewrite-constant rcnst :cheap-linearp)))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
-                                 (getprop (ffn-symb (car new-vars))
-                                          'linear-lemmas nil
-                                          'current-acl2-world wrld))
+                                 (getpropc (ffn-symb (car new-vars))
+                                          'linear-lemmas nil wrld))
               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
               :simplify-clause-pot-lst new-pot-lst)
            (mv step-limit nil new-pot-lst))
@@ -16500,11 +16685,9 @@
          (t
           (rewrite-entry
            (add-linear-lemmas (car new-vars)
-                              (getprop
+                              (getpropc
                                (ffn-symb (car new-vars))
-                               'linear-lemmas nil
-                               'current-acl2-world
-                               wrld))
+                               'linear-lemmas nil wrld))
            :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
            )))
         (cond
@@ -17032,6 +17215,26 @@
 ;                    (QUOTE CONTRADICTION)))
 ;           (SETQ ANS FALSE)
 ;           (GO WIN)))
+
+; On a somewhat related note, we have briefly considered the possibility of
+; supporting some weak kind of forward chaining when we enter the true and
+; false branches of an IF, generalizing what we support with compound
+; recognizer rules.
+
+; (implies (unsigned-byte-p 4 x)
+;          (< x 16))
+
+; We have come up with at least the following reasons not to provide such
+; support.
+
+; - To take full advantage of such a rule we'd need assume-true-false to extend
+;   the linear pot, which would likely be expensive, as discussed above.
+
+; - IF calls generally work their way up to top-level case splits anyhow, with
+;   two exceptions: backchaining and the tentative opening of recursive
+;   functions.  Such a rule would only provide marginal help for these cases.
+;   Note that recursive function calls can be forced open anyhow, using :expand
+;   hints.
 
   (declare (ignore geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)

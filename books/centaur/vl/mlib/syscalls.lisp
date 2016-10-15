@@ -273,22 +273,22 @@ complete.</p>"
            nil))))
 
 
-(define vl-sysfun-should-size-args-p
-  :short "Should we size the arguments to this system call?"
-  ((name stringp "E.g., @('$bits')."))
-  :returns bool
-  :long "<p>This is used among functions like @(see vl-expr-expandsizes) and
-our notion of @(see welltyped) expressions to decide whether calls of system
-functions should have their arguments sized normally.</p>
+;; (define vl-sysfun-should-size-args-p
+;;   :short "Should we size the arguments to this system call?"
+;;   ((name stringp "E.g., @('$bits')."))
+;;   :returns bool
+;;   :long "<p>This is used among functions like @(see vl-expr-expandsizes) and
+;; our notion of @(see welltyped) expressions to decide whether calls of system
+;; functions should have their arguments sized normally.</p>
 
-<p>Motivation: consider the system function @('$bits'), which can take either a
-type or an expression as its argument.  We don't want to size @('$bits')
-normally because we don't normally have types in expressions.</p>
+;; <p>Motivation: consider the system function @('$bits'), which can take either a
+;; type or an expression as its argument.  We don't want to size @('$bits')
+;; normally because we don't normally have types in expressions.</p>
 
-<p>However, for functions like @('$clog2') or @('$random'), we should go ahead
-and size the arguments.</p>"
+;; <p>However, for functions like @('$clog2') or @('$random'), we should go ahead
+;; and size the arguments.</p>"
 
-  (let ((name (string-fix name)))
-    ;; BOZO are there others?
-    (not (equal name "$bits"))))
+;;   (let ((name (string-fix name)))
+;;     ;; BOZO are there others?
+;;     (not (equal name "$bits"))))
 

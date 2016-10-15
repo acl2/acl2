@@ -1,3 +1,6 @@
+; Copyright (C) 2015 Harsh Raju Chamarthi and Northeastern University
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ;; The following proof shows that the cantor pairing function, hl-nat-combine,
 ;; is bijective. The crux of the proof is an explicit definition of the inverse
 ;; of the cantor pairing function.

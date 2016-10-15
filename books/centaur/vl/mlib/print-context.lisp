@@ -228,7 +228,23 @@
                                  (vl-print-loc (vl-cassertion->loc x)))
                     ps)))
 
-      ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
+      (:vl-dpiimport
+       (vl-ps-seq (vl-print "DPI import of ")
+                  (vl-print-str (vl-dpiimport->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-dpiimport->loc x)))
+                    ps)))
+
+      (:vl-dpiexport
+       (vl-ps-seq (vl-print "DPI export of ")
+                  (vl-print-str (vl-dpiexport->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-dpiexport->loc x)))
+                    ps)))
+
+      ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)
        (vl-ps-seq (vl-print "Generate block at ")
                   (vl-print-loc (vl-genelement->loc x))))
 
@@ -282,9 +298,11 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-import        (vl-pp-import x))
       (:vl-property      (vl-pp-property x))
       (:vl-sequence      (vl-pp-sequence x))
+      (:vl-dpiimport     (vl-pp-dpiimport x))
+      (:vl-dpiexport     (vl-pp-dpiexport x))
       (:vl-assertion     (vl-pp-assertion x :include-name t))
       (:vl-cassertion    (vl-pp-cassertion x :include-name t))
-      ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
+      ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)
        (vl-pp-genelement x))
       (otherwise (prog2$ (impossible) ps)))))
 

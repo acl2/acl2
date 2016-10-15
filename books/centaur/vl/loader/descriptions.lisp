@@ -53,6 +53,8 @@
    vl-import
    vl-fwdtypedef
    vl-typedef
+   vl-dpiimport
+   vl-dpiexport
 
    ;; bozo lots of package items are missing
    )
@@ -90,6 +92,8 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
        (implies (vl-importlist-p x) (vl-descriptionlist-p x))
        (implies (vl-fwdtypedeflist-p x) (vl-descriptionlist-p x))
        (implies (vl-typedeflist-p x) (vl-descriptionlist-p x))
+       (implies (vl-dpiimportlist-p x) (vl-descriptionlist-p x))
+       (implies (vl-dpiexportlist-p x) (vl-descriptionlist-p x))
        )
   :hints(("Goal" :induct (len x))))
 
@@ -119,6 +123,12 @@ doesn't introduce a name (e.g., an @('import') statement."
        ;; typedef or anything like that.
        nil)
       (:vl-typedef   (vl-typedef->name x))
+      (:vl-dpiimport (vl-dpiimport->name x))
+      (:vl-dpiexport
+       ;; Subtle: DPI exports shouldn't really look like they have names for
+       ;; basically the same reason as forward typedefs.  We want to find the
+       ;; actual definition, not the fact that it's exported.
+       nil)
       (otherwise     (impossible)))))
 
 
@@ -145,7 +155,9 @@ the number of descriptions in the list.</p>"
                             (vl-descriptionlist->names (cdr x)))
                     (vl-descriptionlist->names (cdr x)))
                 nil)
-       :exec (with-local-nrev (vl-descriptionlist->names-nrev x nrev)))
+       :exec (if (atom x)
+                 nil
+               (with-local-nrev (vl-descriptionlist->names-nrev x nrev))))
   ///
   (defthm vl-descriptionlist->names-nrev-removal
     (equal (vl-descriptionlist->names-nrev x nrev)
@@ -297,7 +309,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                               (paramdecls  vl-paramdecllist-p)
                               (imports     vl-importlist-p)
                               (fwdtypedefs vl-fwdtypedeflist-p)
-                              (typedefs    vl-typedeflist-p))
+                              (typedefs    vl-typedeflist-p)
+                              (dpiimports  vl-dpiimportlist-p)
+                              (dpiexports  vl-dpiexportlist-p))
   :returns (mv (modules     vl-modulelist-p)
                (udps        vl-udplist-p)
                (interfaces  vl-interfacelist-p)
@@ -310,7 +324,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                (paramdecls  vl-paramdecllist-p)
                (imports     vl-importlist-p)
                (fwdtypedefs vl-fwdtypedeflist-p)
-               (typedefs    vl-typedeflist-p))
+               (typedefs    vl-typedeflist-p)
+               (dpiimports  vl-dpiimportlist-p)
+               (dpiexports  vl-dpiexportlist-p))
   (b* (((when (atom x))
         (mv (vl-modulelist-fix modules)
             (vl-udplist-fix udps)
@@ -324,7 +340,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             (vl-paramdecllist-fix paramdecls)
             (vl-importlist-fix imports)
             (vl-fwdtypedeflist-fix fwdtypedefs)
-            (vl-typedeflist-fix typedefs)))
+            (vl-typedeflist-fix typedefs)
+            (vl-dpiimportlist-fix dpiimports)
+            (vl-dpiexportlist-fix dpiexports)))
        (x1  (vl-description-fix (car x)))
        (tag (tag x1)))
     (vl-sort-descriptions
@@ -341,7 +359,10 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
      :paramdecls  (if (eq tag :vl-paramdecl)  (cons x1 paramdecls)  paramdecls)
      :imports     (if (eq tag :vl-import)     (cons x1 imports)     imports)
      :fwdtypedefs (if (eq tag :vl-fwdtypedef) (cons x1 fwdtypedefs) fwdtypedefs)
-     :typedefs    (if (eq tag :vl-typedef)    (cons x1 typedefs)    typedefs))))
+     :typedefs    (if (eq tag :vl-typedef)    (cons x1 typedefs)    typedefs)
+     :dpiimports  (if (eq tag :vl-dpiimport)  (cons x1 dpiimports)  dpiimports)
+     :dpiexports  (if (eq tag :vl-dpiexport)  (cons x1 dpiexports)  dpiexports)
+     )))
 
 (define vl-design-from-descriptions ((x vl-descriptionlist-p))
   :returns (design vl-design-p)
@@ -357,7 +378,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             paramdecls
             imports
             fwdtypedefs
-            typedefs)
+            typedefs
+            dpiimports
+            dpiexports)
         (vl-sort-descriptions x)))
     (make-vl-design :mods        modules
                     :udps        udps
@@ -371,11 +394,15 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                     :paramdecls  paramdecls
                     :imports     imports
                     :fwdtypes    fwdtypedefs
-                    :typedefs    typedefs)))
+                    :typedefs    typedefs
+                    :dpiimports  dpiimports
+                    :dpiexports  dpiexports)))
 
 (local (in-theory (disable acl2::true-listp-append
                            acl2::consp-append
                            acl2::consp-of-append
+                           acl2::subsetp-append1
+                           VL-DESCRIPTIONLIST-P-WHEN-SUBLIST
                            )))
 
 (define vl-design-descriptions ((x vl-design-p))
@@ -393,7 +420,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                           x.paramdecls
                           x.imports
                           x.fwdtypes
-                          x.typedefs)))
+                          x.typedefs
+                          x.dpiimports
+                          x.dpiexports)))
 
 ;; BOZO could probably prove something like this, some day...
 ;; (defthm vl-design-descriptions-identity

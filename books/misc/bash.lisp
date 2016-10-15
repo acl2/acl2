@@ -2,40 +2,177 @@
 ; Written by Matt Kaufmann (original date October, 2006)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; NOTE: This book includes community book xdoc/top, and was created on top of
-; separate book bash-bsd.lisp because xdoc/top had a GPL license.  That is no
-; longer the case, but for simplicity we keep both books as is.  (Perhaps
-; someone will want to eliminate bash-bsd.lisp.)
-
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
 
-(include-book "bash-bsd")
+(program)
+
+(set-state-ok t)
+
+(defun simplify-with-prover (form hints ctx state)
+
+; This is patterned after (define-pc-primitive prove ...).
+
+  (let ((wrld (w state))
+        (ens (ens state))
+        (name-tree 'bash))
+    (er-let*
+     ((thints (translate-hints
+               name-tree
+
+; Keep the following in sync with the definition of the proof-builder :bash
+; command.
+
+               (append
+                *bash-skip-forcing-round-hints*
+                (add-string-val-pair-to-string-val-alist
+                 "Goal"
+                 :do-not
+                 (list 'quote '(generalize eliminate-destructors fertilize
+                                           eliminate-irrelevance))
+                 (add-string-val-pair-to-string-val-alist
+                  "Goal"
+                  :do-not-induct
+                  name-tree
+                  hints))
+                (default-hints wrld))
+               ctx wrld state))
+      (tterm (translate form t t t ctx wrld state)))
+     (mv-let (erp ttree state)
+             (state-global-let*
+              ((guard-checking-on nil)
+               (in-prove-flg t))
+              (pc-prove tterm form thints t ens wrld ctx state))
+             (cond (erp (mv t nil state))
+                   (t (let ((clauses (unproved-pc-prove-clauses ttree)))
+                        (cond ((and (eql (length clauses) 1)
+                                    (eql (length (car clauses)) 1)
+                                    (eql (caar clauses) tterm))
+                               (mv 'no-change nil state))
+                              (t (value clauses))))))))))
+
+(defun bash-fn (form hints verbose ctx state)
+
+; Keep this in sync with bash-term-to-dnf.
+
+  (mv-let
+   (erp clauses state)
+   (cond (verbose
+          (simplify-with-prover form hints ctx state))
+         (t
+          (state-global-let*
+           ((inhibit-output-lst *valid-output-names*))
+           (simplify-with-prover form hints ctx state))))
+   (cond
+    (erp
+     (pprogn
+      (warning$ ctx "bash"
+                "Unable to simplify the input term~@0"
+                (cond ((eq erp 'no-change)
+                       ".")
+                      (t (msg " because an error occurred.~@0"
+                              (cond
+                               (verbose "")
+                               (t "  Try setting the verbose flag to t in ~
+                                    order to see what is going on."))))))
+      (value (list form))))
+    (t
+     (value (prettyify-clause-lst clauses (let*-abstractionp state) (w state)))))))
+
+(defmacro bash (term &key verbose hints)
+  `(bash-fn ',term ',hints ',verbose 'bash state))
+
+; Dave Greve has contributed the following (only slightly modified here), to
+; create a variant bash-term-to-dnf of bash-fn.  This example may suggest other
+; variants; feel free to contribute yours to Matt Kaufmann,
+; kaufmann@cs.utexas.edu.
+
+(defun goals-to-cnf (goals)
+  (cond ((endp goals) nil)
+        (t (cons (append (access goal (car goals) :hyps)
+                         (list (dumb-negate-lit (access goal (car goals)
+                                                        :conc))))
+                 (goals-to-cnf (cdr goals))))))
+
+(defun untranslate-lst-lst (list iff-flg wrld)
+  (cond
+   ((endp list)
+    nil)
+   (t (cons (untranslate-lst (car list) iff-flg wrld)
+            (untranslate-lst-lst (cdr list) iff-flg wrld)))))
+
+(defun bash-term-to-dnf (form hints verbose untranslate-flg state)
+
+; Keep this in sync with bash-fn.
+
+  (let ((ctx 'bash-term-to-dnf))
+    (mv-let
+     (erp clauses state)
+     (cond (verbose
+            (simplify-with-prover form hints ctx state))
+           (t
+            (state-global-let*
+             ((gag-mode nil set-gag-mode-fn)
+              (inhibit-output-lst *valid-output-names*)
+              (print-clause-ids nil))
+             (simplify-with-prover form hints ctx state))))
+     (cond
+      (erp
+       (cond ((eq verbose :all)
+              (pprogn
+               (warning$ ctx "bash"
+                         "Unable to simplify the input term~@0"
+                         (cond ((eq erp 'no-change)
+                                ".")
+                               (t (msg " because an error occurred.~@0"
+                                       (cond
+                                        (verbose "")
+                                        (t "  Try setting the verbose flag to ~
+                                            t in order to see what is going ~
+                                            on."))))))
+               (value (list (list form)))))
+             (t
+              (value (list (list form))))))
+      (untranslate-flg
+       (value (untranslate-lst-lst clauses t (w state))))
+      (t
+       (value clauses))))))
+
+;; When we call bash with hints we may modify the enabled structure.
+;; If we do this inside of a computed hint it may result in slow array
+;; access warnings.  By wrapping the outermost state modifying call
+;; with preserve-pspv you can protect the state.
+
+(defmacro preserve-pspv (call &key (pspv 'pspv))
+  `(let ((pspv ,pspv))
+     (let* ((old-ens (access rewrite-constant
+                             (access prove-spec-var pspv :rewrite-constant)
+                             :current-enabled-structure))
+            (old-name (access enabled-structure old-ens :array-name)))
+       (mv-let (err val state) ,call
+               (let ((ens (compress1 old-name (access enabled-structure old-ens :theory-array))))
+                 (declare (ignore ens))
+                 (mv err val state))))))
 
 (defxdoc bash
   :parents
   (proof-automation)
-  :short "
-
-<tt>Bash</tt> is a tool that simplifies a term, producing a list of
+  :short "<tt>Bash</tt> is a tool that simplifies a term, producing a list of
 simplified terms such that if all output terms are theorems, then so is the
 input term."
 
-  :long "
-
-<p>This utility is defined in community book <tt>\"misc/bash.lisp\"</tt>.  If
-you submit <tt>(bash term)</tt> then roughly speaking, the result is a list of
-goals produced by ACL2's simplification process.  That is, ACL2 might
-reasonably be expected to produce these goals when simplifying <tt>term</tt>
-during a proof attempt.  In particular, if the result is <tt>nil</tt>, then
-<tt>term</tt> is a theorem.  More accurately: <tt>(bash term)</tt> returns an
-<see topic=\"@(url ERROR-TRIPLES)\">error triple</see>, <tt>(mv nil val
-state)</tt>, where <tt>val</tt> is a list of terms, in
-untranslated (user-level) form, whose provability implies the provability of
-the input term.  If ACL2 cannot simplify the input term (e.g., if there is a
-translation error), then it prints a warning and returns <tt>(mv nil input-term
-state)</tt>.</p>
+  :long "<p>This utility is defined in community book
+<tt>\"misc/bash.lisp\"</tt>.  If you submit <tt>(bash term)</tt> then roughly
+speaking, the result is a list of goals produced by ACL2's simplification
+process.  That is, ACL2 might reasonably be expected to produce these goals
+when simplifying <tt>term</tt> during a proof attempt.  In particular, if the
+result is <tt>nil</tt>, then <tt>term</tt> is a theorem.  More accurately:
+<tt>(bash term)</tt> returns an @(see error-triple), @('(mv nil val state)')
+where <tt>val</tt> is a list of terms, in untranslated (user-level) form, whose
+provability implies the provability of the input term.  If ACL2 cannot simplify
+the input term (e.g., if there is a translation error), then it prints a
+warning and returns <tt>(mv nil input-term state)</tt>.</p>
 
 <p>For related utilities, see @(see bash-term-to-dnf) and @(see simp).</p>
 
@@ -118,7 +255,7 @@ Then:
 
 <h3>More details</h3>
 
-<p>This utility is similar to the @(see proof-checker)'s <tt>bash</tt> command,
+<p>This utility is similar to the @(see proof-builder)'s <tt>bash</tt> command,
 but for use in the top-level loop.  The input term can have user-level syntax;
 it need not be translated.  The output is an error triple <tt>(mv nil termlist
 state)</tt> such that either <tt>termlist</tt> is a one-element list containing
@@ -199,17 +336,14 @@ solution.
 (defxdoc bash-term-to-dnf
   :parents
   (proof-automation)
-  :short "
+  :short "<tt>Bash-term-to-dnf</tt> is a tool that simplifies a term, producing
+a list of clauses such that if all output clauses are theorems, then so is the
+input term."
 
-<tt>Bash-term-to-dnf</tt> is a tool that simplifies a term, producing a list of
-clauses such that if all output clauses are theorems, then so is the input
-term."
-
-  :long "
-
-<p>This utility is defined in community book <tt>\"misc/bash.lisp\"</tt>.  We
-assume here familiarity with the @('bash') tool defined in that book, focusing
-below on how the present tool differs from that one.</p>
+  :long "<p>This utility is defined in community book
+<tt>\"misc/bash.lisp\"</tt>.  We assume here familiarity with the @('bash')
+tool defined in that book, focusing below on how the present tool differs from
+that one.</p>
 
 <p>If you submit <tt>(bash-term-to-dnf term)</tt> then the result is a list of
 goals produced by ACL2's simplification process, much as for the result of

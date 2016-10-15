@@ -254,6 +254,12 @@
 ; maybe actually report correct times
 (assign get-internal-time-as-realtime t)
 
+#!ACL2
+(defmacro hostname ()
+  `(getenv$ "HOSTNAME" state))
+
+
+(include-book "tools/prettygoals/top" :dir :system)
 
 ;; #!ACL2
 ;; (defmacro s (&rest args)
@@ -273,5 +279,5 @@
 ;; (defmacro skip-until-subtoal (prefix)
 ;;   `(skip-until-subgoal-fn ,prefix id clause))
 
-;; (set-inhibit-output-lst '(acl2::prove acl2::proof-checker acl2::proof-tree))
+;; (set-inhibit-output-lst '(acl2::prove acl2::proof-builder acl2::proof-tree))
 

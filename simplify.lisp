@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -132,9 +132,7 @@
                                        cl))
          *true-clause*)
         ((and (eq (ffn-symb lit) 'not)
-              (nvariablep (fargn lit 1))
-              (not (fquotep (fargn lit 1)))
-              (eq (ffn-symb (fargn lit 1)) 'integerp)
+              (ffn-symb-p (fargn lit 1) 'integerp)
               (member-equal (fcons-term 'rationalp (fargs (fargn lit 1))) cl))
          *true-clause*)
         ((member-term lit cl) cl)
@@ -231,9 +229,7 @@
              ((null cl1) count)
              ((extra-info-lit-p (car cl1))
               (subsumes-rec count (cdr cl1) cl2 alist))
-             ((and (nvariablep (car cl1))
-                   (not (fquotep (car cl1)))
-                   (eq (ffn-symb (car cl1)) 'EQUAL))
+             ((ffn-symb-p (car cl1) 'EQUAL)
               (cond ((quotep (fargn (car cl1) 1))
                      (subsumes1-equality-with-const count
                                                     (car cl1)
@@ -250,53 +246,51 @@
              (t (subsumes1 count (car cl1) (cdr cl1) cl2 cl2 alist)))))
 
 (defun subsumes1-equality-with-const (count lit x const1 tl1 tl2 cl2 alist)
-  (cond ((eql count 0) 0)
-        ((null tl2) (-f count))
-        ((extra-info-lit-p (car tl2))
-         (subsumes1-equality-with-const count lit x const1 tl1 (cdr tl2) cl2 alist))
-        ((and (nvariablep (car tl2))
-              (not (fquotep (car tl2)))
-              (eq (ffn-symb (car tl2)) 'NOT)
-              (nvariablep (fargn (car tl2) 1))
-              (not (fquotep (fargn (car tl2) 1)))
-              (eq (ffn-symb (fargn (car tl2) 1)) 'EQUAL))
-         (let ((arg1 (fargn (fargn (car tl2) 1) 1))
-               (arg2 (fargn (fargn (car tl2) 1) 2)))
-           (cond ((and (quotep arg1)
-                       (not (equal arg1 const1)))
-                  (mv-let
-                   (wonp alist1)
-                   (one-way-unify1 x arg2 alist)
-                   (cond ((not wonp)
-                          (subsumes1-equality-with-const (1-f count) lit x const1 tl1 (cdr tl2) cl2 alist))
-                         (t (let ((new-count (subsumes-rec (1-f count) tl1 cl2 alist1)))
-                              (cond ((<= 0 new-count) new-count)
-                                    (t (subsumes1-equality-with-const (-f new-count)
-                                                                      lit x const1 tl1 (cdr tl2)
-                                                                      cl2 alist))))))))
-                 ((and (quotep arg2)
-                       (not (equal arg2 const1)))
-                  (mv-let
-                   (wonp alist1)
-                   (one-way-unify1 x arg1 alist)
-                   (cond ((not wonp)
-                          (subsumes1-equality-with-const (1-f count)
-                                                         lit x const1 tl1 (cdr tl2) cl2 alist))
-                         (t (let ((new-count (subsumes-rec (1-f count) tl1 cl2 alist1)))
-                              (cond ((<= 0 new-count) new-count)
-                                    (t (subsumes1-equality-with-const (-f new-count)
-                                                                      lit x const1 tl1 (cdr tl2)
-                                                                      cl2 alist))))))))
-                 (t (subsumes1-equality-with-const count lit x const1 tl1 (cdr tl2) cl2 alist)))))
-        (t (mv-let
-            (wonp alist1)
-            (one-way-unify1 lit (car tl2) alist)
-            (cond ((not wonp)
-                   (subsumes1-equality-with-const (1-f count) lit x const1 tl1 (cdr tl2) cl2 alist))
-                  (t (let ((new-count (subsumes-rec  (1-f count) tl1 cl2 alist1)))
-                       (cond
-                        ((<= 0 new-count) new-count)
-                        (t (subsumes1-equality-with-const (-f new-count) lit x const1 tl1 (cdr tl2) cl2 alist))))))))))
+  (the
+   (signed-byte 30)
+   (cond ((eql count 0) 0)
+         ((null tl2) (-f count))
+         ((extra-info-lit-p (car tl2))
+          (subsumes1-equality-with-const count lit x const1 tl1 (cdr tl2) cl2 alist))
+         ((and (ffn-symb-p (car tl2) 'NOT)
+               (ffn-symb-p (fargn (car tl2) 1) 'EQUAL))
+          (let ((arg1 (fargn (fargn (car tl2) 1) 1))
+                (arg2 (fargn (fargn (car tl2) 1) 2)))
+            (cond ((and (quotep arg1)
+                        (not (equal arg1 const1)))
+                   (mv-let
+                     (wonp alist1)
+                     (one-way-unify1 x arg2 alist)
+                     (cond ((not wonp)
+                            (subsumes1-equality-with-const (1-f count) lit x const1 tl1 (cdr tl2) cl2 alist))
+                           (t (let ((new-count (subsumes-rec (1-f count) tl1 cl2 alist1)))
+                                (cond ((<= 0 new-count) new-count)
+                                      (t (subsumes1-equality-with-const (-f new-count)
+                                                                        lit x const1 tl1 (cdr tl2)
+                                                                        cl2 alist))))))))
+                  ((and (quotep arg2)
+                        (not (equal arg2 const1)))
+                   (mv-let
+                     (wonp alist1)
+                     (one-way-unify1 x arg1 alist)
+                     (cond ((not wonp)
+                            (subsumes1-equality-with-const (1-f count)
+                                                           lit x const1 tl1 (cdr tl2) cl2 alist))
+                           (t (let ((new-count (subsumes-rec (1-f count) tl1 cl2 alist1)))
+                                (cond ((<= 0 new-count) new-count)
+                                      (t (subsumes1-equality-with-const (-f new-count)
+                                                                        lit x const1 tl1 (cdr tl2)
+                                                                        cl2 alist))))))))
+                  (t (subsumes1-equality-with-const count lit x const1 tl1 (cdr tl2) cl2 alist)))))
+         (t (mv-let
+              (wonp alist1)
+              (one-way-unify1 lit (car tl2) alist)
+              (cond ((not wonp)
+                     (subsumes1-equality-with-const (1-f count) lit x const1 tl1 (cdr tl2) cl2 alist))
+                    (t (let ((new-count (subsumes-rec  (1-f count) tl1 cl2 alist1)))
+                         (cond
+                          ((<= 0 new-count) new-count)
+                          (t (subsumes1-equality-with-const (-f new-count) lit x const1 tl1 (cdr tl2) cl2 alist)))))))))))
 
 (defun subsumes1 (count lit tl1 tl2 cl2 alist)
 
@@ -344,9 +338,7 @@
   (cond ((null cl1) t)
         ((extra-info-lit-p (car cl1))
          (subsumes!-rec (cdr cl1) cl2 alist))
-        ((and (nvariablep (car cl1))
-              (not (fquotep (car cl1)))
-              (eq (ffn-symb (car cl1)) 'EQUAL))
+        ((ffn-symb-p (car cl1) 'EQUAL)
          (cond ((quotep (fargn (car cl1) 1))
                 (subsumes!1-equality-with-const (car cl1)
                                                 (fargn (car cl1) 2)
@@ -364,12 +356,8 @@
   (cond ((null tl2) nil)
         ((extra-info-lit-p (car tl2))
          (subsumes!1-equality-with-const lit x const1 tl1 (cdr tl2) cl2 alist))
-        ((and (nvariablep (car tl2))
-              (not (fquotep (car tl2)))
-              (eq (ffn-symb (car tl2)) 'NOT)
-              (nvariablep (fargn (car tl2) 1))
-              (not (fquotep (fargn (car tl2) 1)))
-              (eq (ffn-symb (fargn (car tl2) 1)) 'EQUAL))
+        ((and (ffn-symb-p (car tl2) 'NOT)
+              (ffn-symb-p (fargn (car tl2) 1) 'EQUAL))
          (let ((arg1 (fargn (fargn (car tl2) 1) 1))
                (arg2 (fargn (fargn (car tl2) 1) 2)))
            (cond ((and (quotep arg1)
@@ -1102,11 +1090,10 @@
 
          (collect-terms-and-activations-lst (fargs term) ttree wrld ens
                                             trigger-terms activations))
-        (t (let ((rules (getprop (ffn-symb term)
-                                 'forward-chaining-rules
-                                 nil
-                                 'current-acl2-world
-                                 wrld)))
+        (t (let ((rules (getpropc (ffn-symb term)
+                                  'forward-chaining-rules
+                                  nil
+                                  wrld)))
 
 ; If the term has rules, we collect it and add any activations it
 ; triggers (though there may be none).  But first we see whether we've
@@ -2871,7 +2858,7 @@
                             fcd-lst)))
    (t
     (let* ((forcep1 (and (nvariablep (car hyps))
-                         (not (fquotep (car hyps)))
+;                        (not (fquotep (car hyps)))
                          (or (eq (ffn-symb (car hyps)) 'force)
                              (eq (ffn-symb (car hyps)) 'case-split))))
            (forcer-fn (and forcep1 (ffn-symb (car hyps))))
@@ -3530,8 +3517,7 @@
 ; its level number.
 
   (cond ((flambdap fn) (max-level-no (lambda-body fn) wrld))
-        ((getprop fn 'level-no nil
-                  'current-acl2-world wrld))
+        ((getpropc fn 'level-no nil wrld))
         (t 0)))
 
 )
@@ -3546,8 +3532,7 @@
                  (sort-approved1-rating1 (lambda-body term) wrld fc vc)
                  (sort-approved1-rating1-lst (fargs term) wrld (1+ fc) vc)))
         ((or (eq (ffn-symb term) 'not)
-             (= (getprop (ffn-symb term) 'absolute-event-number 0
-                         'current-acl2-world wrld)
+             (= (getpropc (ffn-symb term) 'absolute-event-number 0 wrld)
                 0))
          (sort-approved1-rating1-lst (fargs term) wrld fc vc))
         (t (sort-approved1-rating1-lst (fargs term) wrld
@@ -4515,12 +4500,8 @@
 ; We return t if terms (and a b) cannot be true.  We just recognize
 ; the case where each is (EQUAL x 'constant) for different constants.
 
-  (and (not (variablep a))
-       (not (fquotep a))
-       (eq (ffn-symb a) 'equal)
-       (not (variablep b))
-       (not (fquotep b))
-       (eq (ffn-symb b) 'equal)
+  (and (ffn-symb-p a 'equal)
+       (ffn-symb-p b 'equal)
        (or (and (quotep (fargn a 1))
                 (quotep (fargn b 1))
                 (not (equal (cadr (fargn a 1)) (cadr (fargn b 1))))
@@ -4552,9 +4533,7 @@
 
   (cond
    ((equal b c) t)
-   ((and (nvariablep c)
-         (not (fquotep c))
-         (eq (ffn-symb c) 'IF)
+   ((and (ffn-symb-p c 'IF)
          (mutually-exclusive-tests a (fargn c 1)))
     (mutually-exclusive-subsumptionp a b (fargn c 3)))
    (t nil)))
@@ -4658,6 +4637,7 @@
 
 ; We determine whether some lambda-expression is used as a function in term.
 
+  (declare (xargs :guard (pseudo-termp term)))
   (if (or (variablep term)
           (fquotep term))
       nil
@@ -4665,7 +4645,8 @@
         (lambda-subtermp-lst (fargs term)))))
 
 (defun lambda-subtermp-lst (termlist)
-  (if termlist
+  (declare (xargs :guard (pseudo-term-listp termlist)))
+  (if (consp termlist)
       (or (lambda-subtermp (car termlist))
           (lambda-subtermp-lst (cdr termlist)))
     nil))
@@ -5848,9 +5829,15 @@
          :all-fnnames '(acl2-count cdr o< true-listp not equal))))
 
 (defun built-in-clausep2 (bic-lst cl fns ens)
+
+; Ens is either nil or an enabled structure.  If ens is nil, then we consider
+; only the rules specified by *initial-built-in-clauses* to be enabled.
+
   (cond ((null bic-lst) nil)
-        ((and (enabled-numep (access built-in-clause (car bic-lst) :nume)
-                             ens)
+        ((and (let ((nume (access built-in-clause (car bic-lst) :nume)))
+                (if (null ens)
+                    (null nume)
+                  (enabled-numep nume ens)))
               (subsetp-eq (access built-in-clause (car bic-lst) :all-fnnames)
                           fns)
               (eq (subsumes *init-subsumes-count*
@@ -5861,6 +5848,9 @@
         (t (built-in-clausep2 (cdr bic-lst) cl fns ens))))
 
 (defun built-in-clausep1 (bic-alist cl fns ens)
+
+; Ens is either nil or an enabled structure.  If ens is nil, then we consider
+; only the rules specified by *initial-built-in-clauses* to be enabled.
 
 ; Bic-alist is the alist of built-in clauses, organized via top fnname.  Cl is
 ; a clause and fns is the all-fnnames-lst of cl.  This function is akin to
@@ -5884,6 +5874,10 @@
         (t (built-in-clausep1 (cdr bic-alist) cl fns ens))))
 
 (defun possible-trivial-clause-p (cl)
+
+; Warning: Keep this list below of function names in sync with those in
+; tautologyp; see comment below.
+
   (if (null cl)
       nil
     (mv-let (not-flg atm)
@@ -5902,8 +5896,9 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-                             zerop plusp minusp listp mv-list return-last
-                             wormhole-eval force case-split double-rewrite)
+                             zerop plusp minusp listp mv-list cons-with-hint
+                             return-last wormhole-eval force case-split
+                             double-rewrite)
                            atm)
                 (possible-trivial-clause-p (cdr cl))))))
 
@@ -5913,6 +5908,9 @@
            (tautologyp (disjoin cl) wrld))))
 
 (defun built-in-clausep (caller cl ens match-free-override wrld state)
+
+; Ens is either nil or an enabled structure.  If ens is nil, then we consider
+; only the rules specified by *initial-built-in-clauses* to be enabled.
 
 ; We return two results.  The first indicates whether cl is a ``built
 ; in clause,'' i.e., a known truth.  The second is the supporting
@@ -5949,6 +5947,9 @@
                                  ens)))
     (cond
      (rune (mv t (push-lemma rune nil)))
+     ((null ens) ; then skip forward-chaining
+      (cond ((trivial-clause-p cl wrld) (mv t nil))
+            (t (mv nil nil))))
      (t (mv-let (contradictionp type-alist ttree)
                 (forward-chain-top caller
                                    cl
@@ -7454,10 +7455,16 @@
 ; for the active checkpoint, then we add the clause-id and pool-lst for that
 ; goal.
 
-  (clause-id ; could be nil
-   clause    ; nil iff clause-id is nil
-   .         ; list of pairs (clause-id . pool-lst); see above
-   pushed
+; At one time we thought that clause-id can be nil, but as of August 2016 we do
+; not see evidence of that.  We also thought that clause is nil if and only if
+; clause-id is nil, but that is false: clause can be nil for a valid clause-id
+; because we have generated the empty clause, nil, which implies that the proof
+; has failed.
+
+  (clause-id
+   clause
+   .
+   pushed ; list of pairs (clause-id . pool-lst); see above
    )
   t)
 
@@ -7588,7 +7595,7 @@
                            (cons :constants
                                  (controller-unify-subst name term def-body))
                            :rune (access def-body def-body :rune)
-                           :equiv 'equal
+                           :equiv (access def-body def-body :equiv)
                            :hyp (access def-body def-body :hyp)
                            :lhs (cons-term name formals)
                            :rhs (access def-body def-body :concl))
@@ -8183,6 +8190,9 @@
   (list "" "~@*" "~@* and " "~@*, "
         (tilde-*-conjunction-of-possibly-forced-names-phrase1 lst)))
 
+(defconst *fake-rune-for-cert-data*
+  '(:FAKE-RUNE-FOR-CERT-DATA nil))
+
 (defconst *fake-rune-alist*
 
 ; We use this constant for dealing with fake runes in tag-trees.  We ignore
@@ -8192,7 +8202,9 @@
   (list (cons (car *fake-rune-for-linear*)
               "linear arithmetic")
         (cons (car *fake-rune-for-type-set*)
-              "primitive type reasoning")))
+              "primitive type reasoning")
+        (cons (car *fake-rune-for-cert-data*)
+              "previously-computed data")))
 
 (defun rune-< (x y)
   (cond
@@ -8426,9 +8438,8 @@
 
 (defun tilde-*-raw-simp-phrase (ttree punct phrase)
 
-; See tilde-*-simp-phrase.  But here, we print as specified by value :raw for
-; state global 'raw-proof-format.  We supply the concluding punctuation msg,
-; punct.
+; See tilde-*-simp-phrase.  But here, we print for the case that state global
+; 'raw-proof-format is true.  We supply the concluding punctuation msg, punct.
 
   (let ((forced-runes (recover-forced-runes ttree)))
     (let ((runes (all-runes-in-ttree ttree nil)))
@@ -8442,7 +8453,7 @@
                nil)
               (list* (concatenate 'string "trivial ob~-ser~-va~-tions"
                                   (case punct
-                                    (#\, ",")
+                                    (#\, ", ") ; Space not always needed?
                                     (#\. ".")
                                     (otherwise "")))
                      "~@*"

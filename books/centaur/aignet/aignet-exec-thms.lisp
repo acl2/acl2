@@ -33,13 +33,13 @@
 (include-book "litp")
 (include-book "snodes")
 (include-book "std/util/defmvtypes" :dir :system)
-(include-book "data-structures/list-defthms" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "tools/stobj-frame" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
@@ -66,10 +66,10 @@
     (num-ins     :type (integer 0 *) :initially 0)
     (num-outs    :type (integer 0 *) :initially 0)
     (num-regs    :type (integer 0 *) :initially 0)
-    (num-gates   :type (integer 0 *) :initially 0)
-    (num-nxsts  :type (integer 0 *) :initially 0)
+    (num-nxsts   :type (integer 0 *) :initially 0)
     ;; num-nodes = the sum of the above + 1 (const)
-    (num-nodes    :type (integer 0 *) :initially 1)
+    (num-nodes   :type (integer 0 *) :initially 1)
+    (max-fanin   :type (integer 0 *) :initially 0)
 
 ; For space efficiency we tell the Lisp to use unsigned-byte 32's here, which
 ; in CCL at least will result in a very compact representation of these arrays.
@@ -172,15 +172,17 @@
     (and (natp (num-ins aignet))
          (natp (num-regs aignet))
          (natp (num-outs aignet))
-         (natp (num-gates aignet))
          (natp (num-nxsts aignet))
          (natp (num-nodes aignet))
+         (natp (max-fanin aignet))
          (<= (lnfix (num-ins aignet))
              (ins-length aignet))
          (<= (lnfix (num-outs aignet))
              (outs-length aignet))
          (<= (lnfix (num-regs aignet))
              (regs-length aignet))
+         (< (max-fanin aignet)
+            (num-nodes aignet))
          (<= (* 2 (lnfix (num-nodes aignet)))
              (nodes-length aignet))))
 
@@ -212,6 +214,12 @@
                  (len (nth *nodesi* aignet))))
     :rule-classes (:rewrite :linear))
 
+  (defthm aignet-sizes-ok-max-fanin
+    (implies (aignet-sizes-ok aignet)
+             (< (nth *max-fanin* aignet)
+                (nth *num-nodes* aignet)))
+    :rule-classes (:rewrite :linear))
+
   (defthm aignet-sizes-ok-natp-num-nodes
     (implies (aignet-sizes-ok aignet)
              (natp (nth *num-nodes* aignet)))
@@ -232,11 +240,6 @@
              (natp (nth *num-regs* aignet)))
     :rule-classes :type-prescription)
 
-  (defthm aignet-sizes-ok-natp-num-gates
-    (implies (aignet-sizes-ok aignet)
-             (natp (nth *num-gates* aignet)))
-    :rule-classes :type-prescription)
-
   (defthm aignet-sizes-ok-natp-num-nxsts
     (implies (aignet-sizes-ok aignet)
              (natp (nth *num-nxsts* aignet)))
@@ -245,6 +248,11 @@
   (defthm aignet-sizes-ok-natp-num-outs
     (implies (aignet-sizes-ok aignet)
              (natp (nth *num-outs* aignet)))
+    :rule-classes :type-prescription)
+
+  (defthm aignet-sizes-ok-natp-max-fanin
+    (implies (aignet-sizes-ok aignet)
+             (natp (nth *max-fanin* aignet)))
     :rule-classes :type-prescription)
 
   ;; (defthm aignet-sizes-ok-of-add-in
@@ -377,14 +385,14 @@
              (natp (nth *num-nxsts* aignet)))
     :rule-classes :type-prescription)
 
-  (defthm aignetp-implies-num-gates
-    (implies (aignetp aignet)
-             (natp (nth *num-gates* aignet)))
-    :rule-classes :type-prescription)
-
   (defthm aignetp-implies-num-nodes
     (implies (aignetp aignet)
              (natp (nth *num-nodes* aignet)))
+    :rule-classes :type-prescription)
+
+  (defthm aignetp-implies-max-fanin
+    (implies (aignetp aignet)
+             (natp (nth *max-fanin* aignet)))
     :rule-classes :type-prescription))
 
 
@@ -403,7 +411,12 @@
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (lnfix (nodesi (+ (acl2::lbfix slot) (* 2 (lnfix id))) aignet)))
+    (b* ((id (lnfix id))
+         (slot (acl2::lbfix slot)))
+      ;; NOTE: In CCL, binding (lnfix id) to id above instead of doing it inside, as
+      ;; (lnfix (nodesi (+ slot (* 2 (lnfix id))) aignet)),
+      ;; solves a problem where the inner call otherwise isn't inlined.
+      (lnfix (nodesi (+ slot (* 2 id)) aignet))))
 
   (local (in-theory (enable id->slot)))
 
@@ -506,6 +519,11 @@
                                 (< id (num-nodes aignet)))))
     (snode->regid (id->slot id 1 aignet)))
 
+
+  (define update-nodesi-ec-call (idx val aignet)
+    :enabled t
+    (ec-call (update-nodesi idx val aignet)))
+
   (definlined update-node-slot (id slot val aignet)
     (declare (type (integer 0 *) id)
              (type (integer 0 *) val)
@@ -515,10 +533,10 @@
                                 (< id (num-nodes aignet)))))
     (mbe :logic (update-nodesi (+ (bfix slot) (* 2 (lnfix id)))
                               (nfix val) aignet)
-         :exec (if (< val (expt 2 32))
-                   (update-nodesi (+ slot (* 2 (lnfix id))) val aignet)
-                 (ec-call (update-nodesi (+ slot (* 2 (lnfix id))) val
-                                         aignet)))))
+         :exec (b* ((idx (+ slot (* 2 (lnfix id)))))
+                 (if (< val (expt 2 32))
+                     (update-nodesi idx val aignet)
+                   (update-nodesi-ec-call idx val aignet)))))
 
   (local (in-theory (enable update-node-slot)))
 
@@ -801,6 +819,18 @@
 ;;                     ((id-val (nth m (nth *regsi* aignet))))))))
 
 (defsection io-accessors/updaters
+  (define update-insi-ec-call (n id aignet)
+    :enabled t
+    (ec-call (update-insi n id aignet)))
+
+  (define update-regsi-ec-call (n id aignet)
+    :enabled t
+    (ec-call (update-regsi n id aignet)))
+
+  (define update-outsi-ec-call (n id aignet)
+    :enabled t
+    (ec-call (update-outsi n id aignet)))
+
   (definline set-innum->id (n id aignet)
     (declare (type (integer 0 *) n)
              (type (integer 0 *) id)
@@ -813,7 +843,7 @@
                              aignet))
          :exec (if (< id (expt 2 32))
                    (update-insi n id aignet)
-                 (ec-call (update-insi n id aignet)))))
+                 (update-insi-ec-call n id aignet))))
 
 
   (definline innum->id (n aignet)
@@ -835,7 +865,7 @@
                              aignet))
          :exec (if (< id (expt 2 32))
                    (update-regsi n id aignet)
-                 (ec-call (update-regsi n id aignet)))))
+                 (update-regsi-ec-call n id aignet))))
 
 
   (definline set-outnum->id (n id aignet)
@@ -850,7 +880,7 @@
                              aignet))
          :exec (if (< id (expt 2 32))
                    (update-outsi n id aignet)
-                 (ec-call (update-outsi n id aignet)))))
+                 (update-outsi-ec-call n id aignet))))
 
   (definline outnum->id (n aignet)
     (declare (type (integer 0 *) n)
@@ -996,6 +1026,7 @@
          (nodes  (lnfix (num-nodes aignet)))
          (aignet (add-node aignet))
          (aignet (add-in aignet))
+         (aignet (update-max-fanin nodes aignet))
          (aignet (set-innum->id pi-num nodes aignet))
          ((mv slot0 slot1)
           (mk-snode (in-type) 0 0 0 pi-num))
@@ -1027,6 +1058,10 @@
   (defthm num-nodes-of-add-in
     (equal (nth *num-nodes* (aignet-add-in aignet))
            (+ 1 (nfix (nth *num-nodes* aignet)))))
+
+  (defthm max-fanin-of-add-in
+    (equal (nth *max-fanin* (aignet-add-in aignet))
+           (nfix (nth *num-nodes* aignet))))
 
   (defthm new-in-of-add-in
     (implies (nat-equiv n (nth *num-ins* aignet))
@@ -1072,10 +1107,11 @@
   (defund aignet-add-reg (aignet)
     (declare (xargs :stobjs aignet
                     :guard (aignet-sizes-ok aignet)))
-    (b* ((ro-num (num-regs aignet))
-         (nodes  (num-nodes aignet))
+    (b* ((ro-num (lnfix (num-regs aignet)))
+         (nodes  (lnfix (num-nodes aignet)))
          (aignet (add-reg aignet))
          (aignet (add-node aignet))
+         (aignet (update-max-fanin nodes aignet))
          (aignet (set-regnum->id ro-num nodes aignet))
          ((mv slot0 slot1)
           (mk-snode (in-type) 1 0 nodes ro-num))
@@ -1124,6 +1160,10 @@
            (+ 1 (nfix (nth *num-regs* aignet))))
     :hints(("Goal" :in-theory (enable add-node add-reg))))
 
+  (defthm max-fanin-of-add-reg
+    (equal (nth *max-fanin* (aignet-add-reg aignet))
+           (nfix (nth *num-nodes* aignet))))
+
   (defthm nth-node-of-add-reg
     (implies (case-split (not (nat-equiv id (num-nodes aignet))))
              (equal (id->slot id slot (aignet-add-reg aignet))
@@ -1168,9 +1208,9 @@
                                            (out-type))))
                     :guard-hints (("goal" :in-theory (e/d (add-node)
                                                           (len-update-nth-linear))))))
-    (b* ((nodes  (num-nodes aignet))
+    (b* ((nodes  (lnfix (num-nodes aignet)))
          (aignet (add-node aignet))
-         (aignet (update-num-gates (+ 1 (lnfix (num-gates aignet))) aignet))
+         (aignet (update-max-fanin nodes aignet))
          (phase (b-and (lit->phase f0 aignet)
                        (lit->phase f1 aignet)))
          ((mv slot0 slot1)
@@ -1201,9 +1241,9 @@
   ;;   ;;                                    acl2::len-update-nth1)))
   ;;   )
 
-  (defthm num-gates-of-add-gate
-    (equal (nth *num-gates* (aignet-add-gate f0 f1 aignet))
-           (+ 1 (nfix (nth *num-gates* aignet)))))
+  (defthm max-fanin-of-add-gate
+    (equal (nth *max-fanin* (aignet-add-gate f0 f1 aignet))
+           (nfix (nth *num-nodes* aignet))))
 
   (defthm num-nodes-of-add-gate
     (equal (nth *num-nodes* (aignet-add-gate f0 f1 aignet))
@@ -1471,7 +1511,7 @@
                     :guard-debug t))
     (b* ((aignet (update-num-ins 0 aignet))
          (aignet (update-num-regs 0 aignet))
-         (aignet (update-num-gates 0 aignet))
+         (aignet (update-max-fanin 0 aignet))
          (aignet (update-num-nxsts 0 aignet))
          (aignet (update-num-outs 0 aignet))
          (aignet (update-num-nodes 1 aignet))

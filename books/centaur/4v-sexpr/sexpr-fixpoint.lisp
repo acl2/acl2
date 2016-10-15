@@ -39,7 +39,7 @@
 (include-book "centaur/misc/nat-list-duplicates" :dir :system)
 (include-book "centaur/misc/tuplep" :dir :system)
 (include-book "centaur/misc/dfs-measure" :dir :system)
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -491,11 +491,12 @@
 (defthm suffixp-sexpr-dfs-cons
   (suffixp seen-al (mv-nth 0 (sexpr-dfs queue deptable (cons x seen-al) parent
                                         back-edges)))
-  :hints(("Goal" :use (:instance suffixp-trans1
-                       (a seen-al) (b (cons x seen-al))
+  :hints(("Goal" :use (:instance suffixp-transitive
+                       (a seen-al)
+                       (b (cons x seen-al))
                        (c (mv-nth 0 (sexpr-dfs queue deptable (cons x seen-al) parent
                                                back-edges))))
-          :in-theory (disable suffixp-trans1))))
+          :in-theory (disable suffixp-transitive))))
 
 (verify-guards sexpr-dfs)
 

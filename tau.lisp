@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -287,7 +287,8 @@
 ; WARNING: The resulting term is in quote normal form.  We take advantage of
 ; this fact in our implementation of :by hints, in function
 ; apply-top-hints-clause1, to increase the chances that the "easy-winp" case
-; holds.
+; holds.  We also take advantage of this fact in
+; interpret-term-as-rewrite-rule, as commented there.
 
 ; WARNING.  Remove-guard-holders is used in constraint-info,
 ; induction-machine-for-fn1, and termination-machine, so (remove-guard-holders1
@@ -296,8 +297,8 @@
 ; case that for any axiomatic event e, (remove-guard-holders e) can be
 ; substituted for e without changing the logical power of the set of axioms.
 ; Actually, we want to view the logical axiom added by e as though
-; remove-guard-holders had been applied to it, and hence RETURN-LAST and
-; MV-LIST appear in *non-instantiable-primitives*.
+; remove-guard-holders had been applied to it, and hence RETURN-LAST,
+; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
   (cond
    ((variablep term) (mv changedp0 term))
@@ -313,6 +314,16 @@
 ; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
     (remove-guard-holders1 t (car (last (fargs term)))))
+   ((eq (ffn-symb term) 'CONS-WITH-HINT)
+    (mv-let
+      (changedp1 arg1)
+      (remove-guard-holders1 nil (fargn term 1))
+      (declare (ignore changedp1))
+      (mv-let
+        (changedp2 arg2)
+        (remove-guard-holders1 nil (fargn term 2))
+        (declare (ignore changedp2))
+        (mv t (mcons-term* 'cons arg1 arg2)))))
    ((flambdap (ffn-symb term))
     (case-match
       term
@@ -357,8 +368,7 @@
                               (mv changedp0 term))
                              (t (mv t new-term)))))
                     (t (mv changedp0 term))))
-             (t (mv t (mcons-term (ffn-symb term)
-                                  args))))))))
+             (t (mv t (mcons-term (ffn-symb term) args))))))))
 
 (defun remove-guard-holders1-lst (lst)
   (cond ((null lst) (mv nil nil))
@@ -462,50 +472,50 @@
 ;; negative irrational, positive irrational, and complex.
 
 (defconst *initial-type-set-inverter-rules*
-  (list (make type-set-inverter-rule                 ;;; 11 (14) bits
+  (list (make type-set-inverter-rule                 ;;; 12 (15) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-complement *ts-cons*)
               :terms '((atom x)))
-        (make type-set-inverter-rule                 ;;; 6 (9) bits
+        (make type-set-inverter-rule                 ;;; 7 (10) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-acl2-number*
               :terms '((acl2-numberp x)))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (7) bits
+        (make type-set-inverter-rule                 ;;; _ (8) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-real*
               :terms '((realp x)))
-        (make type-set-inverter-rule                 ;;; 5 bits
+        (make type-set-inverter-rule                 ;;; 6 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-rational*
               :terms '((rationalp x)))
-        (make type-set-inverter-rule                 ;;; 5 (8) bits
+        (make type-set-inverter-rule                 ;;; 6 (9) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-acl2-number* (ts-complement *ts-zero*))
               :terms '((acl2-numberp x) (not (equal x '0))))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (6) bits
+        (make type-set-inverter-rule                 ;;; _ (7) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-real* (ts-complement *ts-zero*))
               :terms '((realp x) (not (equal x '0))))
-        (make type-set-inverter-rule                 ;;; 4 bits
+        (make type-set-inverter-rule                 ;;; 5 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-rational* (ts-complement *ts-zero*))
               :terms '((rationalp x) (not (equal x '0))))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (4) bits
+        (make type-set-inverter-rule                 ;;; _ (5) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-real* *ts-zero*)
               :terms '((realp x) (not (< x '0))))
-        (make type-set-inverter-rule                 ;;; 3 bits
+        (make type-set-inverter-rule                 ;;; 4 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-rational* *ts-zero*)
@@ -521,23 +531,23 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-negative-rational* *ts-zero*)
               :terms '((rationalp x) (not (< '0 x))))
-        (make type-set-inverter-rule                 ;;; 3 bits
+        (make type-set-inverter-rule                 ;;; 4 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-integer*
               :terms'((integerp x)))
-        (make type-set-inverter-rule                 ;;; 2 bits
+        (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-integer* (ts-complement *ts-zero*))
               :terms '((integerp x) (not (equal x '0))))
         #+:non-standard-analysis
-        (make type-set-inverter-rule                 ;;; _ (3) bits
+        (make type-set-inverter-rule                 ;;; _ (4) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-real*
               :terms'((realp x) (< '0 x)))
-        (make type-set-inverter-rule                 ;;; 2 bits
+        (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-rational*
@@ -553,7 +563,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-negative-rational*
               :terms'((rationalp x) (< x '0)))
-        (make type-set-inverter-rule                 ;;; 2 bits
+        (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-integer* *ts-zero*)
@@ -601,7 +611,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-ratio*
               :terms'((rationalp x) (not (integerp x)) (< '0 x)))
-        (make type-set-inverter-rule                 ;;; 1 bit
+        (make type-set-inverter-rule                 ;;; 2 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-integer*
@@ -612,6 +622,11 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-complex*
               :terms'((complexp x)))
+        (make type-set-inverter-rule                 ;;; 1 bit
+              :nume nil
+              :rune *fake-rune-for-anonymous-enabled-rule*
+              :ts *ts-integer>1*
+              :terms'((integerp x) (< '1 x)))
         (make type-set-inverter-rule                 ;;; 1 bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -628,6 +643,11 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-zero*
               :terms'((equal x '0)))
+        (make type-set-inverter-rule                 ;;; 1 bit
+              :nume nil
+              :rune *fake-rune-for-anonymous-enabled-rule*
+              :ts *ts-one*
+              :terms'((equal x '1)))
         (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -847,26 +867,6 @@
 
 ; The function all-runes-in-ttree, defined below, is typically used by each
 ; event function to recover the supporting runes from a ttree.
-
-(defun all-runes-in-lmi (lmi wrld ans)
-
-; When we collect all the runes "in" lmi we actually expand symbolic lmis,
-; e.g., ASSOC-OF-APP, to the list of all runes based on that symbol.
-
-  (cond ((symbolp lmi)
-         (union-equal (strip-cdrs (getprop lmi 'runic-mapping-pairs nil
-                                           'current-acl2-world wrld))
-                      ans))
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
-         (all-runes-in-lmi (cadr lmi) wrld ans))
-        ((eq (car lmi) :theorem) ans)
-        (t (add-to-set-equal lmi ans))))
-
-(defun all-runes-in-lmi-lst (lmi-lst wrld ans)
-  (cond ((null lmi-lst) ans)
-        (t (all-runes-in-lmi-lst (cdr lmi-lst) wrld
-                                 (all-runes-in-lmi (car lmi-lst) wrld ans)))))
 
 (defun all-runes-in-var-to-runes-alist (alist ans)
   (cond ((null alist) ans)
@@ -2241,8 +2241,7 @@
 ; formals.  That rule will be stored under fn on the property 'big-switch.
 
 (defun tau-simple-implicants (sign pred wrld)
-  (getprop pred (if sign 'pos-implicants 'neg-implicants)
-           nil 'current-acl2-world wrld))
+  (getpropc pred (if sign 'pos-implicants 'neg-implicants) nil wrld))
 
 ; Obviously Contradictory Recognizer Sets
 
@@ -2394,8 +2393,7 @@
 
   (cond
    ((enabled-xfnp fn ens wrld)
-    (let* ((ubk (getprop fn 'unevalable-but-known nil
-                         'current-acl2-world wrld))
+    (let* ((ubk (getpropc fn 'unevalable-but-known nil wrld))
            (temp (if ubk
                      (assoc-equal (car evg-lst) ubk)
                      nil)))
@@ -6717,10 +6715,10 @@
                             (putprop p
                                      'unevalable-but-known
                                      (cons (cons b nil) ; records that (p 'b) = nil
-                                           (getprop p
-                                                    'unevalable-but-known
-                                                    nil
-                                                    'current-acl2-world wrld))
+                                           (getpropc p
+                                                     'unevalable-but-known
+                                                     nil
+                                                     wrld))
                                      wrld)))
                        ((eq val nil)
                         (mv nil nil wrld))
@@ -6734,10 +6732,10 @@
                             (putprop p
                                      'unevalable-but-known
                                      (cons (cons b t) ; records that (p 'b) = t
-                                           (getprop p
-                                                    'unevalable-but-known
-                                                    nil
-                                                    'current-acl2-world wrld))
+                                           (getpropc p
+                                                     'unevalable-but-known
+                                                     nil
+                                                     wrld))
                                      wrld)))
                        ((eq val nil)
                         (mv t nil wrld))
@@ -7059,15 +7057,14 @@
 ; measures (:? v1 ... vk), since classicalp is called by
 ; get-non-classical-fns-from-list in support of get-non-classical-fns-aux.
 
-  (getprop fn 'classicalp
+  (getpropc fn 'classicalp
 
 ; We guarantee a 'classicalp property of nil for all non-classical
 ; functions.  We make no claims about the existence of a 'classicalp
 ; property for classical functions; in fact, as of Version_2.5 our
 ; intention is to put no 'classicalp property for classical functions.
 
-           t
-           'current-acl2-world wrld))
+           t wrld))
 
 ;; RAG - This function tests whether a list of names is made up purely
 ;; of classical function names (i.e., not descended from the
@@ -7123,12 +7120,11 @@
 ; putprop-unless.
 
 ;   (thm (equal (putprop-if-different sym prop val wrld)
-;               (let ((exception (getprop sym prop *acl2-property-unbound*
-;                                         'current-acl2-world wrld)))
+;               (let ((exception (getpropc sym prop *acl2-property-unbound*
+;                                          wrld)))
 ;                 (putprop-unless sym prop val exception wrld))))
 
-  (if (equal (getprop sym prop *acl2-property-unbound*
-                      'current-acl2-world wrld)
+  (if (equal (getpropc sym prop *acl2-property-unbound* wrld)
              val)
       wrld
       (putprop sym prop val wrld)))
@@ -7182,7 +7178,7 @@
 ; This is an attempt to minimize the differences between regenerations of tau
 ; databases under different enabled structures.
 
-  (let ((old-pair (getprop fn 'tau-pair-saved nil 'current-acl2-world wrld)))
+  (let ((old-pair (getpropc fn 'tau-pair-saved nil wrld)))
     (if old-pair
         (putprop fn 'tau-pair old-pair wrld)
         (let* ((nexti (global-val 'tau-next-index wrld))
@@ -7207,7 +7203,7 @@
 ; :domain in the :pos-implicants is ignored.
 
   (let* ((wrld1 (putprop-tau-pair fn wrld))
-         (tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld1))
+         (tau-pair (getpropc fn 'tau-pair nil wrld1))
          (wrld2 (putprop fn 'pos-implicants
                          (make tau
                                :pos-evg nil
@@ -7254,7 +7250,7 @@
                (and (not (variablep atm))
                     (not (fquotep atm))
                     (symbolp (ffn-symb atm))
-                    (getprop (ffn-symb atm) 'tau-pair nil 'current-acl2-world wrld)
+                    (getpropc (ffn-symb atm) 'tau-pair nil wrld)
                     (quotep (fargn atm 1))))))
 
 (defun set-tau-runes (flg val wrld)
@@ -7292,7 +7288,7 @@
   (declare (ignore hyps))
   (let ((fn (ffn-symb (fargn concl 1))))
     (cond
-     ((getprop fn 'tau-pair nil 'current-acl2-world wrld)
+     ((getpropc fn 'tau-pair nil wrld)
 
 ; We still add rune to the global-value of tau-runes even though the rune
 ; doesn't otherwise change our world.  The reason is simply that we think the
@@ -7310,7 +7306,7 @@
                 (evg (cadr (fargn atm 1))))
             (putprop fn 'unevalable-but-known
                      (cons (cons evg (if sign nil t))
-                           (getprop fn 'unevalable-but-known nil 'current-acl2-world wrld))
+                           (getpropc fn 'unevalable-but-known nil wrld))
                      (set-tau-runes nil rune wrld)))))
 
 ; On Tau-Like Terms
@@ -7362,19 +7358,23 @@
 ; If term is tau-like we return (mv sign recog e criterion'), else we return all
 ; nils.  If recog is non-nil, then it is the internal representation of a tau recognizer:
 
-; tau recognizer   concrete          notes
-; form             representation
+; tau recognizer       concrete          notes
+; form                 representation
 
-; (fn x)           (index . fn)      fn is a symbol with given tau pair
+; (fn x)               (index . fn)      fn is a symbol with given tau pair
 
-; (equiv x 'evg)   (evg   . nil)     equiv is EQUAL, EQ, EQL, or =
+; (equiv x 'evg)       (evg   . nil)     equiv is EQUAL, EQ, EQL, or =
 ; (equiv 'evg x)
 
-; (< x 'k)         (k . :lessp-x-k)  k is a rational
+; (< x 'k)             (k . :lessp-x-k)  k is a rational
 ; (> 'k x)
 
-; (< 'k x)         (k . :lessp-k-x)  k is a rational
+; (< 'k x)             (k . :lessp-k-x)  k is a rational
 ; (> x 'k)
+
+; (IF (equiv x '0)     (index . BITP)    opened form of BITP recog
+;     T                                  (We also handle the case where the
+;     (equiv x '1))                      equiv-terms are swapped.)
 
 ; To be ``tau-like'' term must be a possibly negated term of one of the forms
 ; above The returned sign is T if term is positive; sign is nil for negated
@@ -7395,16 +7395,14 @@
         (inequality-fns '(< >)))
     (mv-let
      (sign atm)
-     (if (and (nvariablep term)
-              (not (fquotep term))
-              (eq (ffn-symb term) 'NOT))
+     (if (ffn-symb-p term 'NOT)
          (mv nil (fargn term 1))
          (mv t term))
      (case-match atm
        ((fn e)
         (cond
          ((symbolp fn)
-          (let ((tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld)))
+          (let ((tau-pair (getpropc fn 'tau-pair nil wrld)))
             (cond
              (tau-pair
               (let ((next-criterion (tau-like-subject-criterion criterion e)))
@@ -7451,6 +7449,20 @@
                                 (cons k :lessp-k-x)
                                 (cons k :lessp-x-k))
                             e next-criterion))
+                       (t (mv nil nil nil nil)))))
+              (t (mv nil nil nil nil))))
+       (('IF (g e ''0) ''t (g e ''1))
+        (cond ((member-eq g equiv-fns)
+               (let ((next-criterion (tau-like-subject-criterion criterion e)))
+                 (cond (next-criterion
+                        (mv sign *tau-bitp-pair* e next-criterion))
+                       (t (mv nil nil nil nil)))))
+              (t (mv nil nil nil nil))))
+       (('IF (g e ''1) ''t (g e ''0))
+        (cond ((member-eq g equiv-fns)
+               (let ((next-criterion (tau-like-subject-criterion criterion e)))
+                 (cond (next-criterion
+                        (mv sign *tau-bitp-pair* e next-criterion))
                        (t (mv nil nil nil nil)))))
               (t (mv nil nil nil nil))))
        (& (mv nil nil nil nil))))))
@@ -7902,8 +7914,8 @@
 
                      (cond
                       ((eql form 1)
-                       (let ((sigs (getprop fn 'signature-rules-form-1 nil
-                                            'current-acl2-world wrld)))
+                       (let ((sigs (getpropc fn 'signature-rules-form-1 nil
+                                             wrld)))
                          (if (member-equal rule sigs)
                              wrld
                              (set-tau-runes nil rune
@@ -7911,8 +7923,8 @@
                                                      'signature-rules-form-1
                                                      (cons rule sigs)
                                                      wrld)))))
-                      (t (let ((sigs (getprop fn 'signature-rules-form-2 nil
-                                              'current-acl2-world wrld)))
+                      (t (let ((sigs (getpropc fn 'signature-rules-form-2 nil
+                                               wrld)))
                            (if (member-equal rule (nth i sigs))
                                wrld
                                (set-tau-runes
@@ -7994,8 +8006,8 @@
 
         (symbolp fn)
         (not (equal fn 'quote))
-        (not (getprop fn 'tau-pair nil 'current-acl2-world wrld))
-        (not (getprop fn 'big-switch nil 'current-acl2-world wrld))
+        (not (getpropc fn 'tau-pair nil wrld))
+        (not (getpropc fn 'big-switch nil wrld))
         (symbol-listp vars)
         (no-duplicatesp vars)
         test-vars
@@ -8154,9 +8166,10 @@
   (cond
    ((endp pairs) nil)
    ((and (null (car (car pairs)))
-         (nvariablep (cdr (car pairs)))
-         (eq (ffn-symb (cdr (car pairs))) 'in-tau-intervalp)
-         (member-equal (cons nil (cons 'tau-intervalp (cddr (cdr (car pairs))))) pairs0))
+         (ffn-symb-p (cdr (car pairs)) 'in-tau-intervalp)
+         (member-equal (cons nil (cons 'tau-intervalp
+                                       (cddr (cdr (car pairs)))))
+                       pairs0))
     (cdr (car pairs)))
    (t (find-subject-bounder-link-term (cdr pairs) pairs0))))
 
@@ -8331,9 +8344,7 @@
 ; (mv-nth 'j (fn x1 ... xk y1 ...)).
 
   (cond
-   ((and (nvariablep term)
-         (not (fquotep term))
-         (eq (ffn-symb term) 'implies))
+   ((ffn-symb-p term 'implies)
     (let* ((hyp-pairs (unprettyify (fargn term 1)))
            (concl-pairs (unprettyify (fargn term 2)))
            (link-term (find-subject-bounder-link-term concl-pairs concl-pairs)))
@@ -8563,8 +8574,7 @@
   (let ((subject-fn (access bounder-correctness bc :subject-fn)))
     (cond
      ((equal form 1)
-      (let* ((bounders0 (getprop subject-fn 'tau-bounders-form-1 nil
-                                 'current-acl2-world wrld))
+      (let* ((bounders0 (getpropc subject-fn 'tau-bounders-form-1 nil wrld))
              (bounders1 (add-bounder-to-bounders bc bounders0)))
         (if (equal bounders0 bounders1)
             wrld
@@ -8574,8 +8584,7 @@
                                     bounders1
                                     wrld)))))
      (t
-      (let* ((slots (getprop subject-fn 'tau-bounders-form-2 nil
-                             'current-acl2-world wrld))
+      (let* ((slots (getpropc subject-fn 'tau-bounders-form-2 nil wrld))
              (bounders0 (nth j slots))
              (bounders1 (add-bounder-to-bounders bc bounders0)))
         (if (equal bounders0 bounders1)
@@ -9133,7 +9142,7 @@
 ; Return the def-body originally added for fn in wrld, identified as the body
 ; whose rune has base symbol fn.
 
-  (original-def-body1 fn (getprop fn 'def-bodies nil 'current-acl2-world wrld)))
+  (original-def-body1 fn (getpropc fn 'def-bodies nil wrld)))
 
 (defun tau-like-propositionp (var term wrld)
 
@@ -9333,13 +9342,9 @@
 ; WARNING:  (EQUAL A B) and (NOT (EQUAL B A)) are *not* complementaryp, by
 ; this definition!
 
-  (or (and (nvariablep lit1)
-           (not (fquotep lit1))
-           (eq (ffn-symb lit1) 'not)
+  (or (and (ffn-symb-p lit1 'not)
            (equal (fargn lit1 1) lit2))
-      (and (nvariablep lit2)
-           (not (fquotep lit2))
-           (eq (ffn-symb lit2) 'not)
+      (and (ffn-symb-p lit2 'not)
            (equal (fargn lit2 1) lit1))))
 
 ; Note on Terminology: Below we use the expression ``ancestor literal'' which
@@ -9636,8 +9641,6 @@
                  (remove-ancestor-literals-from-pairs1
                   (car pairs) (cdr pairs) nil)))))
 
-
-
 (defun convert-term-to-pairs (term ens wrld)
 
 ; Term is assumed to be the result of expanding a tau-like-propositionp.  Thus,
@@ -9645,7 +9648,8 @@
 ; composed of such terms.  We wish to convert term to a list of (hyps . concl) pairs.
 
   (mv-let (nterm ttree)
-          (normalize term t nil ens wrld nil)
+          (normalize term t nil ens wrld nil
+                     (backchain-limit wrld :ts))
           (mv (remove-ancestor-literals-from-pairs
                (convert-normalized-term-to-pairs nil nterm nil))
               (all-runes-in-ttree ttree nil))))
@@ -9761,7 +9765,10 @@
            (def-eqn
              (cond
               ((null db) nil)
-              ((access def-body db :hyp) nil)
+              ((or (access def-body db :hyp)
+                   (not (eq (access def-body db :equiv)
+                            'equal)))
+               nil)
               (t
                (fcons-term* 'equal
                             (fcons-term fn formals)
@@ -9786,8 +9793,7 @@
               (t (tau-subrs def-rune fn formals rhs ens wrld)))))
         (mv-let (msgp wrld)
                 (tau-rules-from-type-prescriptions
-                 (getprop fn 'type-prescriptions nil
-                          'current-acl2-world wrld)
+                 (getpropc fn 'type-prescriptions nil wrld)
                  fn ens wrld wrld0)
                 (cond
                  (msgp (mv msgp wrld0))
@@ -9941,15 +9947,15 @@
 ; We follow the Tau Msgp Protocol and return (mv msgp wrld').  No Change Loser
 ; on wrld0.
 
-  (let* ((classes (getprop name 'classes nil 'current-acl2-world wrld0))
+  (let* ((classes (getpropc name 'classes nil wrld0))
          (terms-and-runes
           (corollaries-and-runes-of-enabled-rules
            (or (not auto-modep)
                (assoc-eq :tau-system classes))
            classes
-           (getprop name 'runic-mapping-pairs nil 'current-acl2-world wrld0)
+           (getpropc name 'runic-mapping-pairs nil wrld0)
            ens
-           (getprop name 'theorem nil 'current-acl2-world wrld0))))
+           (getpropc name 'theorem nil wrld0))))
     (tau-visit-defthm1 first-visitp terms-and-runes ens wrld0 wrld0)))
 
 (defun tau-visit-event (first-visitp ev-type namex auto-modep ens
@@ -10132,10 +10138,10 @@
            (cond
             (temp (mv (cdr temp) calist))
             (t (let ((val (apply-conjunctive-tau-rules1
-                           (getprop 'tau-conjunctive-rules
-                                    'global-value
-                                    nil
-                                    'current-acl2-world wrld)
+                           (getpropc 'tau-conjunctive-rules
+                                     'global-value
+                                     nil
+                                     wrld)
                            tau
                            ens
                            wrld
@@ -10753,9 +10759,7 @@
 ; instantiation of any part of body except that leaf.
 
   (cond
-   ((or (variablep body)
-        (fquotep body)
-        (not (eq (ffn-symb body) 'IF)))
+   ((not (ffn-symb-p body 'IF))
 
 ; If we are at a leaf of the big switch, we instantiate the body and we
 ; report hitp = t.  Otherwise, we report hitp = nil.  We are at a leaf
@@ -10863,13 +10867,9 @@
         ((equal lit (car clause)) '+)
         ((let ((lit1 lit)
                (lit2 (car clause)))
-           (or (and (nvariablep lit1)
-                    (not (fquotep lit1))
-                    (eq (ffn-symb lit1) 'not)
+           (or (and (ffn-symb-p lit1 'not)
                     (equal (fargn lit1 1) lit2))
-               (and (nvariablep lit2)
-                    (not (fquotep lit2))
-                    (eq (ffn-symb lit2) 'not)
+               (and (ffn-symb-p lit2 'not)
                     (equal (fargn lit2 1) lit1))))
            '-)
         (t (smart-member-equal-+- lit (cdr clause)))))
@@ -10894,14 +10894,19 @@
 ;                                   (if (nth 2 values) 'must-be-false! nil)
 ;                                   (decode-tau-alist (nth 3 values) nil))))
 
-(defmacro recursivep (fn wrld)
+(defmacro recursivep (fn def-body-p wrld)
 
-; Experiments show a slight speedup in Allegro CL (perhaps a half percent on a
-; very small run) if we make this a macro.
+; Fn should be a :logic-mode function symbol of wrld.
 
-  `(access def-body
-          (def-body ,fn ,wrld)
-          :recursivep))
+; Experiments showed (when def-body-p was implicitly always t) a slight speedup
+; in Allegro CL (perhaps a half percent on a very small run) by making this a
+; macro.
+
+  (declare (xargs :guard (booleanp def-body-p)))
+  (cond (def-body-p `(access def-body
+                             (def-body ,fn ,wrld)
+                             :recursivep))
+        (t `(getpropc ,fn 'recursivep nil ,wrld))))
 
 (defun find-first-acceptable-domain (actual-dom acceptable-domains)
 
@@ -11538,7 +11543,7 @@
                  (33  (mv t   nil nil tau-alist  tau-alist))  ; contradiction!
                  (34  (mv nil nil t   tau-alist  tau-alist )) ; mbf!
                  (36  (mv t   nil nil tau-alist  tau-alist))  ; contradiction!
-                 (otherwise 
+                 (otherwise
                   (mv (er hard 'tau-term
                           "Unexpected combination of Booleans resulting from ~
                            assuming the term ~x0 both true and false.  Those ~
@@ -11607,13 +11612,11 @@
                       (not (fquotep (fargn term 2)))
                       (not (flambdap (ffn-symb (fargn term 2))))
                       (or (nth (cadr (fargn term 1))
-                               (getprop (ffn-symb (fargn term 2))
-                                        'signature-rules-form-2 nil
-                                        'current-acl2-world wrld))
+                               (getpropc (ffn-symb (fargn term 2))
+                                         'signature-rules-form-2 nil wrld))
                           (nth (cadr (fargn term 1))
-                               (getprop (ffn-symb (fargn term 2))
-                                        'tau-bounders-form-2 nil
-                                        'current-acl2-world wrld))))
+                               (getpropc (ffn-symb (fargn term 2))
+                                         'tau-bounders-form-2 nil wrld))))
 
 ; We are dealing with (MV-NTH 'i (fn a1 ... ak)), or a synonym of MV-NTH, where
 ; the ith slot of fn has some signature rules.  We confine our attention to
@@ -11623,17 +11626,15 @@
 
                  (let* ((fn (ffn-symb (fargn term 2)))
                         (sigrules (nth (cadr (fargn term 1))
-                                       (getprop fn
-                                                'signature-rules-form-2
-                                                nil
-                                                'current-acl2-world
-                                                wrld)))
+                                       (getpropc fn
+                                                 'signature-rules-form-2
+                                                 nil
+                                                 wrld)))
                         (bounders (nth (cadr (fargn term 1))
-                                       (getprop fn
-                                                'tau-bounders-form-2
-                                                nil
-                                                'current-acl2-world
-                                                wrld))))
+                                       (getpropc fn
+                                                 'tau-bounders-form-2
+                                                 nil
+                                                 wrld))))
                    (mv-let
                     (actual-tau-lst calist)
                     (tau-term-lst nil
@@ -11698,15 +11699,12 @@
                     (mv *tau-t* calist))
                    ((eq temp nil)
                     (mv *tau-nil* calist))
-                   (t (mv (getprop 'booleanp 'pos-implicants nil
-                                   'current-acl2-world wrld)
+                   (t (mv (getpropc 'booleanp 'pos-implicants nil wrld)
                           calist))))))))
             (t (let* ((fn (ffn-symb term))
-                      (sigrules (getprop fn 'signature-rules-form-1 nil
-                                         'current-acl2-world wrld))
+                      (sigrules (getpropc fn 'signature-rules-form-1 nil wrld))
 
-                      (bounders (getprop fn 'tau-bounders-form-1 nil
-                                         'current-acl2-world wrld)))
+                      (bounders (getpropc fn 'tau-bounders-form-1 nil wrld)))
                  (cond
                   ((and (null sigrules)
                         (null bounders)
@@ -11843,8 +11841,7 @@
    ((and (nvariablep term)
          (not (fquotep term))
          (not (flambdap (ffn-symb term))))
-    (let* ((bs (getprop (ffn-symb term)
-                        'big-switch nil 'current-acl2-world wrld)))
+    (let* ((bs (getpropc (ffn-symb term) 'big-switch nil wrld)))
       (cond
        (bs
         (let ((switch-val (nth (access big-switch-rule bs :switch-var-pos)
@@ -12503,10 +12500,10 @@
 
   (cond
    ((endp preds) (list (merge-sort-lexorder ans) max-block))
-   (t (let ((pos-size (tau-size (getprop (car preds) 'pos-implicants nil
-                                         'current-acl2-world wrld)))
-            (neg-size (tau-size (getprop (car preds) 'neg-implicants nil
-                                         'current-acl2-world wrld))))
+   (t (let ((pos-size (tau-size (getpropc (car preds) 'pos-implicants nil
+                                          wrld)))
+            (neg-size (tau-size (getpropc (car preds) 'neg-implicants nil
+                                          wrld))))
         (tau-get-stats-on-implicant-sizes
          (cdr preds)
          wrld
@@ -12765,10 +12762,8 @@
                                         multi-sig-cnt-1 multi-sig-cnt-2
                                         multi-sig-cnt-alist
                                         rules-with-dependent-hyps)
-  (let ((sigs1 (getprop fn 'signature-rules-form-1 nil
-                        'current-acl2-world wrld))
-        (sigs2 (getprop fn 'signature-rules-form-2 nil
-                        'current-acl2-world wrld)))
+  (let ((sigs1 (getpropc fn 'signature-rules-form-1 nil wrld))
+        (sigs2 (getpropc fn 'signature-rules-form-2 nil wrld)))
     (mv-let
      (fn-cnt-1 fn-cnt-2 fn-cnt-1-and-2)
      (cond
@@ -12868,8 +12863,8 @@
               ,(nth (floor (length implicants) 2) implicants))
             (nth (floor (length implicants) 2) implicants)))
       (:conjunctive-rules
-       ,(length (getprop 'tau-conjunctive-rules 'global-value
-                         nil 'current-acl2-world wrld)))
+       ,(length (getpropc 'tau-conjunctive-rules 'global-value
+                         nil wrld)))
       ,@(tau-get-stats-on-signatures fns wrld 0 0 0 0 0 nil nil)
       (:big-switches ,(collect-tau-big-switches wrld nil))
       (:mv-nth-synonyms ,(global-val 'tau-mv-nth-synonyms wrld))
@@ -12923,12 +12918,10 @@
     (cond
      ((and (symbolp fn)
            (arity fn wrld))
-      (let ((tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld))
-            (sigs1 (getprop fn 'signature-rules-form-1 nil
-                            'current-acl2-world wrld))
-            (sigs2 (getprop fn 'signature-rules-form-2 nil
-                            'current-acl2-world wrld))
-            (big-switch (getprop fn 'big-switch nil 'current-acl2-world wrld))
+      (let ((tau-pair (getpropc fn 'tau-pair nil wrld))
+            (sigs1 (getpropc fn 'signature-rules-form-1 nil wrld))
+            (sigs2 (getpropc fn 'signature-rules-form-2 nil wrld))
+            (big-switch (getpropc fn 'big-switch nil wrld))
             (mv-nth-synonym (member-eq fn (global-val 'tau-mv-nth-synonyms
                                                       wrld))))
         (cond
@@ -12938,11 +12931,11 @@
              ,(car tau-pair))
             (pos-implicants
              ,(decode-tau
-               (getprop fn 'pos-implicants *tau-empty* 'current-acl2-world wrld)
+               (getpropc fn 'pos-implicants *tau-empty* wrld)
                'v))
             (neg-implicants
              ,(decode-tau
-               (getprop fn 'neg-implicants *tau-empty* 'current-acl2-world wrld)
+               (getpropc fn 'neg-implicants *tau-empty* wrld)
                'v))
             (signatures
              ,(let ((sigs1 (decode-tau-signature-rules nil fn sigs1 wrld))

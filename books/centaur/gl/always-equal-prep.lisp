@@ -374,8 +374,10 @@
 ;;          ((when (hqual xa ya)) (always-equal-uu xd yd)))
 ;;       (mv nil (ctrex-for-always-equal xa ya)))))
 
-(defun always-equal-ss-under-hyp (x y hypbdd)
-  (declare (xargs :guard t :measure (+ (acl2-count x) (acl2-count y))))
+(define always-equal-ss-under-hyp ((x true-listp)
+                                   (y true-listp)
+                                   hypbdd)
+   :measure (+ (acl2-count x) (acl2-count y))
   (b* (((mv xa xd xend) (first/rest/end x))
        ((mv ya yd yend) (first/rest/end y))
        ((when (hqual xa ya))
@@ -479,6 +481,7 @@
                           (not (equal (bfr-list->s x ctrex)
                                       (bfr-list->s y ctrex)))))))
      :hints(("Goal" :in-theory (e/d* (bitops::EQUAL-LOGCONS-STRONG
+                                      always-equal-ss-under-hyp
                                       bfr-list->s bfr-eval scdr s-endp)
                                      (ctrex-for-always-equal-under-hyp
                                       logcons
@@ -490,6 +493,9 @@
                                       (:rules-of-class :type-prescription
                                                        :here))
                                      ((:type-prescription bfr-eval)
+; Matt K. mod 5/2016 (type-set bit for {1}); avoids the need for
+; bitp-of-bool->bit in books/std/basic/arith-equivs.lisp.
+                                      (:type-prescription acl2::bool->bit$inline)
                                       (:type-prescription ash)
                                       (:type-prescription bfr-list->s)
                                       (:type-prescription acl2::eval-bdd)))
@@ -497,7 +503,9 @@
              :expand ((always-equal-ss-under-hyp x y hyp)
                       (always-equal-ss-under-hyp x nil hyp)
                       (always-equal-ss-under-hyp nil y hyp)
-                      (always-equal-ss-under-hyp nil nil hyp)))
+                      (always-equal-ss-under-hyp nil nil hyp)
+                      (:free (env) (bfr-list->s x env))
+                      (:free (env) (bfr-list->s y env))))
             (and stable-under-simplificationp
                  (b* ((call (acl2::find-call-lst 'ctrex-for-always-equal-under-hyp
                                                  clause))

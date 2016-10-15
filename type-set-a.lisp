@@ -1,5 +1,5 @@
-; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2015, Regents of the University of Texas
+; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -25,10 +25,10 @@
 ; the symbols listed below as defconsts whose values are the
 ; successive powers of 2.
 
-; Warning:  The first six entries *ts-zero* through
-; *ts-complex-rational* are tied down to bit positions 0-5.  See, for
+; Warning:  The first seven entries *ts-zero* through
+; *ts-complex-rational* are tied down to bit positions 0-6.  See, for
 ; example, our setting up of the +-alist entry.  Note however that in
-; fact, we are wiring in the first five entries as well, in our
+; fact, we are wiring in the first seven entries as well, in our
 ; handling of *type-set-<-table*.  Since < is a function defined only
 ; on the rationals, the latter decision seems safe even given the
 ; possibility that we'll add additional numeric types in the future.
@@ -43,7 +43,8 @@
 
 (def-basic-type-sets
   *ts-zero*
-  *ts-positive-integer*
+  *ts-one*
+  *ts-integer>1*
   *ts-positive-ratio*
   #+:non-standard-analysis *ts-positive-non-ratio*
   *ts-negative-integer*
@@ -79,11 +80,11 @@
 ; regular type bits, 7 and -8 would be the maximum and minimum type
 ; sets, considered as integers,
 
-; Since, in fact, we name 13 regular type bits above, and 2^13 = 8192,
-; the type-sets range from -8192 to +8191.
+; Since, in fact, we name 14 regular type bits above, and 2^14 = 16384,
+; the type-sets range from -16384 to +16383.
 
-; It is important to note that even though there are only 13 regular
-; type bits, type-sets are not exactly 13 bits wide.  A Common Lisp
+; It is important to note that even though there are only 14 regular
+; type bits, type-sets are not exactly 14 bits wide.  A Common Lisp
 ; integer, when treated as a logical bit vector, can be thought of as
 ; a infinite series of bits which always concludes with an infinite
 ; series of 0's (for positive integers) or an infinite series of 1's
@@ -108,8 +109,8 @@
 ; several bad effects on our thinking, although it did not cause
 ; unsoundness.  The main effect was to lead us to pretend that
 ; type-sets could be thought of as masks of some fixed width, i.e.,
-; 14.  But then consider two bit vectors that agree on their low order
-; 14 bits but differ on the high order bits.  Are they the same type
+; 15.  But then consider two bit vectors that agree on their low order
+; 15 bits but differ on the high order bits.  Are they the same type
 ; set or not?  Since we compare the type-sets with equality, they
 ; clearly are not the same.  What made our code correct was that such
 ; type sets could never arise: the setting of the *ts-other* bit was
@@ -120,6 +121,9 @@
 ; infinite sequence of sign bits a la nqthm is really cleaner because
 ; it gives us no way to turn on the irregular bits except by
 ; complementing known bits.
+
+(defconst *ts-positive-integer* (ts-union0 *ts-one*
+                                           *ts-integer>1*))
 
 (defconst *ts-non-negative-integer* (ts-union0 *ts-zero*
                                                *ts-positive-integer*))
@@ -186,6 +190,8 @@
 (defconst *ts-ratio* (ts-union0 *ts-positive-ratio*
                                 *ts-negative-ratio*))
 
+(defconst *ts-bit* (ts-union0 *ts-zero* *ts-one*))
+
 ;; RAG - I added the types *ts-non-ratio*, *ts-negative-real*,
 ;; *ts-positive-real*, *ts-non-positive-real*, and
 ;; *ts-non-negative-real*, to mimic their *...-rational*
@@ -239,14 +245,15 @@
 
 (defun one-bit-type-setp (ts)
 
-; Tests in AKCL using one million iterations show that this function, as coded,
-; is roughly 75 times faster than one based on logcount.  We do not currently
-; use this function but it was once used in the double whammy heuristics and
-; because we spent some time finding the best way to code it, we've left it for
-; now.
+; Tests in AKCL (long before we added *ts-one* using one million iterations
+; show that this function, as coded, is roughly 75 times faster than one based
+; on logcount.  We do not currently use this function but it was once used in
+; the double whammy heuristics and because we spent some time finding the best
+; way to code it, we've left it for now.
 
   (or (= (the-type-set ts) *ts-zero*)
-      (= (the-type-set ts) *ts-positive-integer*)
+      (= (the-type-set ts) *ts-one*)
+      (= (the-type-set ts) *ts-integer>1*)
       (= (the-type-set ts) *ts-positive-ratio*)
       #+:non-standard-analysis
       (= (the-type-set ts) *ts-positive-non-ratio*)
@@ -324,6 +331,8 @@
         (cons '*ts-positive-rational* *ts-positive-rational*)
         (cons '*ts-non-negative-integer* *ts-non-negative-integer*)
         (cons '*ts-non-positive-integer* *ts-non-positive-integer*)
+        (cons '*ts-positive-integer* *ts-positive-integer*)
+        (cons '*ts-bit* *ts-bit*)
         (cons '*ts-ratio* *ts-ratio*)
 
         #+:non-standard-analysis
@@ -334,8 +343,9 @@
         (cons '*ts-cons* *ts-cons*)
         (cons '*ts-boolean* *ts-boolean*)
         (cons '*ts-true-list* *ts-true-list*)
+        (cons '*ts-integer>1* *ts-integer>1*)
         (cons '*ts-zero* *ts-zero*)
-        (cons '*ts-positive-integer* *ts-positive-integer*)
+        (cons '*ts-one* *ts-one*)
         (cons '*ts-positive-ratio* *ts-positive-ratio*)
 
         #+:non-standard-analysis
@@ -460,10 +470,30 @@
 (defun type-set-binary-+-alist-entry (ts1 ts2)
   (ts-builder ts1
               (*ts-zero* ts2)
-              (*ts-positive-integer*
+              (*ts-one*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-positive-integer*)
+                           (*ts-one* *ts-integer>1*)
+                           (*ts-integer>1* *ts-integer>1*)
+                           (*ts-negative-integer* *ts-non-positive-integer*)
+                           (*ts-positive-ratio* *ts-positive-ratio*)
+                           (*ts-negative-ratio* *ts-ratio*)
+
+                           #+:non-standard-analysis
+                           (*ts-positive-non-ratio* *ts-positive-non-ratio*)
+                           #+:non-standard-analysis
+                           (*ts-negative-non-ratio* *ts-non-ratio*)
+
+                           (*ts-complex-rational* *ts-complex-rational*)
+
+                           #+:non-standard-analysis
+                           (*ts-complex-non-rational* *ts-complex-non-rational*)
+                           ))
+              (*ts-integer>1*
+               (ts-builder ts2
+                           (*ts-zero* ts1)
+                           (*ts-one* *ts-integer>1*)
+                           (*ts-integer>1* *ts-integer>1*)
                            (*ts-negative-integer* *ts-integer*)
                            (*ts-positive-ratio* *ts-positive-ratio*)
                            (*ts-negative-ratio* *ts-ratio*)
@@ -481,7 +511,8 @@
               (*ts-negative-integer*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-integer*)
+                           (*ts-one* *ts-non-positive-integer*)
+                           (*ts-integer>1* *ts-integer*)
                            (*ts-negative-integer* *ts-negative-integer*)
                            (*ts-positive-ratio* *ts-ratio*)
                            (*ts-negative-ratio* *ts-negative-ratio*)
@@ -499,7 +530,8 @@
               (*ts-positive-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-positive-ratio*)
+                           (*ts-one* *ts-positive-ratio*)
+                           (*ts-integer>1* *ts-positive-ratio*)
                            (*ts-negative-integer* *ts-ratio*)
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-rational*)
@@ -517,7 +549,8 @@
               (*ts-negative-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-ratio*)
+                           (*ts-one* *ts-ratio*)
+                           (*ts-integer>1* *ts-ratio*)
                            (*ts-negative-integer* *ts-negative-ratio*)
                            (*ts-positive-ratio* *ts-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
@@ -537,7 +570,8 @@
               (*ts-positive-non-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-positive-non-ratio*)
+                           (*ts-one* *ts-positive-non-ratio*)
+                           (*ts-integer>1* *ts-positive-non-ratio*)
                            (*ts-negative-integer* *ts-non-ratio*)
                            (*ts-positive-ratio* *ts-positive-non-ratio*)
                            (*ts-negative-ratio* *ts-non-ratio*)
@@ -549,7 +583,8 @@
               (*ts-negative-non-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-non-ratio*)
+                           (*ts-one* *ts-non-ratio*)
+                           (*ts-integer>1* *ts-non-ratio*)
                            (*ts-negative-integer* *ts-negative-non-ratio*)
                            (*ts-positive-ratio* *ts-non-ratio*)
                            (*ts-negative-ratio* *ts-negative-non-ratio*)
@@ -561,7 +596,8 @@
               (*ts-complex-rational*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-complex-rational*)
+                           (*ts-one* *ts-complex-rational*)
+                           (*ts-integer>1* *ts-complex-rational*)
                            (*ts-negative-integer* *ts-complex-rational*)
                            (*ts-positive-ratio* *ts-complex-rational*)
                            (*ts-negative-ratio* *ts-complex-rational*)
@@ -580,7 +616,8 @@
               (*ts-complex-non-rational*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-complex-non-rational*)
+                           (*ts-one* *ts-complex-non-rational*)
+                           (*ts-integer>1* *ts-complex-non-rational*)
                            (*ts-negative-integer* *ts-complex-non-rational*)
                            (*ts-positive-ratio* *ts-complex-non-rational*)
                            (*ts-negative-ratio* *ts-complex-non-rational*)
@@ -609,10 +646,12 @@
 (defun type-set-binary-*-alist-entry (ts1 ts2)
   (ts-builder ts1
               (*ts-zero* *ts-zero*)
-              (*ts-positive-integer*
+              (*ts-one* ts2)
+              (*ts-integer>1*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-positive-integer*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-integer>1*)
                            (*ts-negative-integer* *ts-negative-integer*)
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
@@ -630,7 +669,8 @@
               (*ts-negative-integer*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-negative-integer*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-negative-integer*)
                            (*ts-negative-integer* *ts-positive-integer*)
                            (*ts-positive-ratio* *ts-negative-rational*)
                            (*ts-negative-ratio* *ts-positive-rational*)
@@ -648,7 +688,8 @@
               (*ts-positive-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-positive-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-positive-rational*)
                            (*ts-negative-integer* *ts-negative-rational*)
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
@@ -666,7 +707,8 @@
               (*ts-negative-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-negative-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-negative-rational*)
                            (*ts-negative-integer* *ts-positive-rational*)
                            (*ts-positive-ratio* *ts-negative-rational*)
                            (*ts-negative-ratio* *ts-positive-rational*)
@@ -685,7 +727,8 @@
               (*ts-positive-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-positive-non-ratio*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-positive-non-ratio*)
                            (*ts-negative-integer* *ts-negative-non-ratio*)
                            (*ts-positive-ratio* *ts-positive-non-ratio*)
                            (*ts-negative-ratio* *ts-negative-non-ratio*)
@@ -697,7 +740,8 @@
               (*ts-negative-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-negative-non-ratio*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-negative-non-ratio*)
                            (*ts-negative-integer* *ts-positive-non-ratio*)
                            (*ts-positive-ratio* *ts-negative-non-ratio*)
                            (*ts-negative-ratio* *ts-positive-non-ratio*)
@@ -708,7 +752,8 @@
               (*ts-complex-rational*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-complex-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-complex-rational*)
                            (*ts-negative-integer* *ts-complex-rational*)
                            (*ts-positive-ratio* *ts-complex-rational*)
                            (*ts-negative-ratio* *ts-complex-rational*)
@@ -728,7 +773,8 @@
               (*ts-complex-non-rational*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-complex-non-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-complex-non-rational*)
                            (*ts-negative-integer* *ts-complex-non-rational*)
                            (*ts-positive-ratio* *ts-complex-non-rational*)
                            (*ts-negative-ratio* *ts-complex-non-rational*)
@@ -762,7 +808,8 @@
               (*ts-zero*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-nil*)
@@ -771,10 +818,24 @@
                            (*ts-positive-non-ratio* *ts-t*)
                            #+:non-standard-analysis
                            (*ts-negative-non-ratio* *ts-nil*)))
-              (*ts-positive-integer*
+              (*ts-one*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-boolean*)
+                           (*ts-one* *ts-nil*)
+                           (*ts-integer>1* *ts-t*)
+                           (*ts-negative-integer* *ts-nil*)
+                           (*ts-positive-ratio* *ts-boolean*)
+                           (*ts-negative-ratio* *ts-nil*)
+
+                           #+:non-standard-analysis
+                           (*ts-positive-non-ratio* *ts-boolean*)
+                           #+:non-standard-analysis
+                           (*ts-negative-non-ratio* *ts-nil*)))
+              (*ts-integer>1*
+               (ts-builder ts2
+                           (*ts-zero* *ts-nil*)
+                           (*ts-one* *ts-nil*)
+                           (*ts-integer>1* *ts-boolean*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
@@ -786,7 +847,8 @@
               (*ts-negative-integer*
                (ts-builder ts2
                            (*ts-zero* *ts-t*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-boolean*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)
@@ -798,7 +860,8 @@
               (*ts-positive-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-boolean*)
+                           (*ts-one* *ts-boolean*)
+                           (*ts-integer>1* *ts-boolean*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
@@ -810,7 +873,8 @@
               (*ts-negative-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-t*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-boolean*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)
@@ -824,7 +888,8 @@
               (*ts-positive-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-boolean*)
+                           (*ts-one* *ts-boolean*)
+                           (*ts-integer>1* *ts-boolean*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
@@ -834,7 +899,8 @@
               (*ts-negative-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-t*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-boolean*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)

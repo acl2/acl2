@@ -84,7 +84,7 @@ representation.  In practice, this is the main way to get the SV modules to
 analyze.</li>
 
 <li><b>Proof development and debugging</b>.  SV provides tools like @(see
-sv-svtv)s for running modules, which allow you to supply inputs and extract
+svex-stvs)s for running modules, which allow you to supply inputs and extract
 outputs at particular times.  These user-interfacing tools can be used in ACL2
 theorems and provide debugging conveniences such as generating VCD files for
 use with waveform viewers.</li>
@@ -155,7 +155,7 @@ represent (and to @(see hons)).</li>
 <li>We needed separate expressions for each bit of the circuit.  For instance,
 an assignment like @('assign foo[7:0] = bar[7:0] & baz[7:0]') would require
 eight separate, distinct @('and') expressions, i.e., @('(and bar[7] baz[7])'),
-@('(and bar[6] baz[6])'), ...; each of these were @(see acl2::4v-sexpr)s, which
+@('(and bar[6] baz[6])'), ...; each of these were @(see acl2::4v-sexprs), which
 were typically @(see hons)es, so there is a significant memory cost.</li>
 
 <li>Traversing so many individual bit expressions adds significant time
@@ -182,10 +182,9 @@ need to track associations between vectors and their individual bits for
 waveforms/etc., which further reduces memory overhead and computation time.</p>
 
 <p>A vector-level expression language also may lend itself to more specialized
-reasoning strategies than just bit-blasting.  Bit-blasting is still an
-important tool and is still well-supported by SV; see in particular @(see
-svex-symbolic-evaluation).  However, delaying bit-blasting seems to open up
-opportunities for certain kinds of vector-level analysis such as @(see
+reasoning strategies than just bit-blasting.  @(see Bit-blasting) is still an
+important tool and is still well-supported by SV, but delaying bit-blasting
+opens up opportunities for certain kinds of vector-level analysis such as @(see
 rewriting).</p>
 
 
@@ -395,3 +394,9 @@ acl2::symbolic-test-vectors) for description of the original esim-based
 library, and @(see svex-stvs) for a description of the differences in the new
 svex version.</p>")
 
+
+(defxdoc vl-to-svex
+  :parents (sv)
+  :short "Translation of @(see vl::vl) designs into an SVEX design.")
+
+(local (xdoc::set-default-parents sv::vl-to-svex))
