@@ -1170,7 +1170,7 @@
       (cdr (assoc-eq sym (table-alist 'return-last-table wrld)))))))
 
 (defun make-let-or-let* (bindings body)
-  (declare (xargs :guard (doubleton-list-p bindings)))
+  (declare (xargs :guard (doublet-listp bindings)))
   (cond ((and bindings (null (cdr bindings)))
          (case-match body
            (('let ((& &)) x)
@@ -4018,7 +4018,7 @@
 ; The user who uses that variable in his forms is likely to be
 ; disappointed by the fact that we rebind it.
 
-  (declare (xargs :guard (and (doubleton-list-p alist)
+  (declare (xargs :guard (and (doublet-listp alist)
                               (symbol-alistp alist))))
   (cond ((null alist)
          (list 'check-vars-not-free
@@ -6992,7 +6992,7 @@
 
   (cond
    ((not (and (>= (length x) 3)
-              (doubleton-list-p (cadr x))))
+              (doublet-listp (cadr x))))
     (trans-er ctx
               "The proper form of a let is (let bindings dcl ... dcl body), ~
                where bindings has the form ((v1 term) ... (vn term)) and the ~
