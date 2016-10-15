@@ -2,7 +2,9 @@
 
 (include-book "coi/nary/nary-mod" :dir :system)
 
-;;(include-book "arithmetic-5/top" :dir :system)
+;; (nary::monitor-on)
+
+;; (include-book "arithmetic-5/top" :dir :system)
 
 (encapsulate
     (
@@ -62,4 +64,59 @@
                      (P)))))
   :hints (("Goal" :in-theory (enable nary::mod-rules))))
 
-          
+(defthm mod-zero
+  (equal (mod 0 n) 0)
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthm substitution-test
+  (implies
+   (and
+    (integerp x)
+    (integerp y)
+    (integerp z)
+    (integerp n)
+    ;; The congruence rules will cause these values to be substituted
+    ;; into our conclusion.
+    (equal (mod y n) (- z))
+    (equal (mod x n) 0))
+   (equal (mod (+ x y z) n)
+          0))
+  :hints (("Goal" :in-theory (enable nary::mod-rules))))
+
+;; Getting rid of "P"
+
+(defthm really?
+  (equal (* 0 x) 0))
+
+(defthm rid-p
+  (implies
+   (integerp x)
+   (equal (mod (+ (* (p) x) (+ -8 (p))) (p))
+          (mod -8 (p))))
+  :hints (("Goal" :in-theory (enable nary::mod-rules))))
+
+;; Applying a rewrite rule
+
+(def::und foo (x)
+  (declare (xargs :signature ((integerp) integerp)))
+  x)
+
+(def::und goo (x)
+  (declare (xargs :signature ((integerp) integerp)))
+  x)
+
+(defthm foo-to-goo
+  (equal (mod (foo x) p)
+         (mod (goo x) p))
+  :hints (("Goal" :in-theory (enable foo goo))))
+
+(defthm foo-to-goo-test
+  (implies
+   (and
+    (integerp p)
+    (integerp x)
+    (integerp y)
+    (integerp z))
+   (equal (mod (+ x (foo y) z) p)
+          (mod (+ x (goo y) z) p)))
+  :hints (("Goal" :in-theory (enable nary::mod-rules))))
