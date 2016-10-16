@@ -27,6 +27,7 @@
   :parents (acl2::software-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
   at UT Austin"
+  :long "<p><img src='res/x86-images/x86isa.png' /></p>"
   )
 
 (xdoc::order-subtopics
@@ -38,6 +39,7 @@
   program-execution
   model-validation
   proof-utilities
+  x86-programs-proof-debugging
   Contributors
   Publications
   TO-DO
@@ -374,7 +376,10 @@
  <p>Thanks to J Moore for too many things to count.</p>
 
  <p>Thanks to Nathan Wetzler for helpful discussions, especially on
-   proving properties of paging data structures.</p>" )
+   proving properties of paging data structures.</p>
+
+ <p>Thanks to Arjen van Lith for designing the @('x86isa') logo.</p>"
+ )
 
 (defxdoc TO-DO
   :parents (x86isa)
