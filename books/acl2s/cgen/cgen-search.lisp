@@ -174,15 +174,13 @@ Why is ACL2 not good at this?
 ;;; The Main counterexample/witness generation function           
 (def cgen-search-local (name H C
                           type-alist tau-interval-alist
-                          programp top-vt-alist
-                          defaults ;(params)
-                          test-outcomes% gcs%
+                          programp
+                          test-outcomes% gcs% cgen-state
                           ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term symbol-list
                       symbol-alist symbol-alist
-                      boolean variable-alist
-                      cgen-params-p
-                      test-outcomes%-p gcs%-p
+                      boolean 
+                      test-outcomes%-p gcs%-p cgen-state-p
                       symbol state)
               -> (mv erp (list boolean test-outcomes% gcs%) state))
         :mode :program
@@ -216,51 +214,52 @@ Why is ACL2 not good at this?
 ")
 
   
-  (b* ((N (get1 :num-trials defaults 0)) ;shudnt it be 100?
-;Note: I dont need to provide the default arg 0 above, since we are
-;sure the defaults alist we get is complete i.e it would definitely
-;contain the key ':num-trials'. But I am envisioning a scenario, where
-;I might call this function on its own and not via test?, then this
-;functionality is useful for debugging.
-       (vl (get1 :verbosity-level defaults 1))
-       (sm (get1 :sampling-method defaults :uniform-random))
-       (ss (get1 :search-strategy defaults :simple))
-       (blimit (get1 :backtrack-limit defaults 2))
-       (num-cts (get1 :num-counterexamples defaults 3))
-       (num-wts (get1 :num-witnesses defaults 3))
-       (timeout-secs (get1 :cgen-local-timeout defaults 10))
+  (b* (
+       ;; (defaults (cget params))
+;;        (N (get1 :num-trials defaults 0)) ;shudnt it be 100?
+;; ;Note: I dont need to provide the default arg 0 above, since we are
+;; ;sure the defaults alist we get is complete i.e it would definitely
+;; ;contain the key ':num-trials'. But I am envisioning a scenario, where
+;; ;I might call this function on its own and not via test?, then this
+;; ;functionality is useful for debugging.
+;;        (sm (get1 :sampling-method defaults :uniform-random))
+;;        (ss (get1 :search-strategy defaults :simple))
+;;        (blimit (get1 :backtrack-limit defaults 2))
+;;        (num-cts (get1 :num-counterexamples defaults 3))
+;;        (num-wts (get1 :num-witnesses defaults 3))
+;;        (timeout-secs (get1 :cgen-local-timeout defaults 10))
+       (vl (cget verbosity-level))
+       
 ; mv-sig-alist : for each mv fn in H,C, stores its output arity
        (mv-sig-alist (mv-sig-alist (cons C H) (w state)))
        (vars (vars-in-dependency-order H C vl (w state))))
          
   
 ;   in
-    (case ss ;search strategy
+    (case (cget search-strategy)
       (:simple      (simple-search name 
                                    H C vars '() '()
                                    type-alist tau-interval-alist mv-sig-alist
-                                   test-outcomes% gcs% 
-                                   N vl sm num-cts num-wts timeout-secs
-                                   top-vt-alist
+                                   test-outcomes% gcs%
+                                   vl cgen-state
                                    programp nil
                                    ctx state))
       
 
-      (:incremental (if (or (endp vars)
-                            (endp (cdr vars)))
-;bugfix 21 May '12 - if only one or zero var, call simple search
+      (:incremental (if (endp vars)
+;bugfix 21 May '12 - if only zero var, delegate to simple search
                         (simple-search name
                                        H C vars '() '()
                                        type-alist tau-interval-alist mv-sig-alist
-                                       test-outcomes% gcs% 
-                                       N vl sm num-cts num-wts timeout-secs
-                                       top-vt-alist
+                                       test-outcomes% gcs%
+                                       vl cgen-state
                                        programp nil
                                        ctx state)
                       
                       (b* ((- (cw? (verbose-stats-flag vl) 
                                    "~%~%CEgen/Note: Starting incremental (dpll) search~%"))
-                           (x0 (select (cons (dumb-negate-lit C) H) (debug-flag vl)))
+                           (x0 (select (cons (cgen-dumb-negate-lit C) H) (debug-flag vl)))
+                           (- (assert$ (proper-symbolp x0) x0))
                            (a% (acl2::make a% ;initial snapshot
                                            :vars vars :hyps H :concl C 
                                            :partial-A '() :elim-bindings '()
@@ -269,11 +268,10 @@ Why is ACL2 not good at this?
                                            :inconsistent? nil :cs nil
                                            :var x0 :val ''? :kind :na :i 0)))
 ;                         in
-                        (incremental-search a% '() ;vars has at least 2
+                        (incremental-search a% '() ;vars has at least 1
                                             name mv-sig-alist
                                             test-outcomes% gcs%
-                                            N vl sm blimit num-cts num-wts timeout-secs
-                                            top-vt-alist
+                                            vl cgen-state
                                             programp
                                             ctx state))))
       
@@ -342,13 +340,10 @@ Why is ACL2 not good at this?
          (s-hist-entry% (initial-s-hist-entry% name H C vars elide-map start))
          (test-outcomes% (access s-hist-entry% test-outcomes))
          (gcs% (cget gcs))
-         (params (cget params))
-         (top-vt-alist (cget top-vt-alist))
          ((mv erp res state) (cgen-search-local name H C
                                                 type-alist tau-interval-alist
-                                                programp top-vt-alist
-                                                params
-                                                test-outcomes% gcs%
+                                                programp 
+                                                test-outcomes% gcs% cgen-state
                                                 ctx state))
          ((when erp) (mv T cgen-state state)) ;I have already printed the Error message
          ((unless (and (= 3 (len res))
