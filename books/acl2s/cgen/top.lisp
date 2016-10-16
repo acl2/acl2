@@ -475,3 +475,4 @@ information in a human-readable form. </p>
 
 ; [2016-04-03 Sun] Add fixers support to Cgen
 (include-book "fixers2" :ttags :all)
+(include-book "cgen-rules")

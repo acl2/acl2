@@ -246,9 +246,8 @@ Why is ACL2 not good at this?
                                    ctx state))
       
 
-      (:incremental (if (or (endp vars)
-                            (endp (cdr vars)))
-;bugfix 21 May '12 - if only one or zero var, call simple search
+      (:incremental (if (endp vars)
+;bugfix 21 May '12 - if only zero var, delegate to simple search
                         (simple-search name
                                        H C vars '() '()
                                        type-alist tau-interval-alist mv-sig-alist
@@ -259,7 +258,8 @@ Why is ACL2 not good at this?
                       
                       (b* ((- (cw? (verbose-stats-flag vl) 
                                    "~%~%CEgen/Note: Starting incremental (dpll) search~%"))
-                           (x0 (select (cons (dumb-negate-lit C) H) (debug-flag vl)))
+                           (x0 (select (cons (cgen-dumb-negate-lit C) H) (debug-flag vl)))
+                           (- (assert$ (proper-symbolp x0) x0))
                            (a% (acl2::make a% ;initial snapshot
                                            :vars vars :hyps H :concl C 
                                            :partial-A '() :elim-bindings '()
@@ -268,7 +268,7 @@ Why is ACL2 not good at this?
                                            :inconsistent? nil :cs nil
                                            :var x0 :val ''? :kind :na :i 0)))
 ;                         in
-                        (incremental-search a% '() ;vars has at least 2
+                        (incremental-search a% '() ;vars has at least 1
                                             name mv-sig-alist
                                             test-outcomes% gcs%
                                             vl cgen-state

@@ -6,15 +6,15 @@
 #|
 cgen-rules for ACL2 base
 author: harshrc
-file name: base-defdata::cgen-rules.lisp
+file name: base-cgen-rules.lisp
 date created: [2016-04-14 Thu]
 |#
 
 (in-package "ACL2")
 
-(include-book "../defdata/cgen-rules")
+(include-book "cgen-rules")
 (include-book "top" :ttags :all)
-
+(local (acl2s-defaults :set :use-fixers nil))
 
 ; [2016-04-25 Mon] NOTE -- Most of these list functions are missing the
 ; true-listp hypothesis and this rules out many of the fixer rules. So I am
@@ -26,14 +26,14 @@ date created: [2016-04-14 Thu]
 ;; uniformly below like other fixer rules.
 
 
-;; (defdata::cgen-rule equal-meta1
+;; (cgen::define-rule equal-meta1
 ;;   :meta-precondition (variablep x)
 ;;   :hyp t
 ;;   :rule (let ((x (identity term)))
 ;;           (equal x term))
 ;;   :rule-classes :fixer)
 
-;; (defdata::cgen-rule equal-meta2
+;; (cgen::define-rule equal-meta2
 ;;   :meta-precondition (variablep x)
 ;;   :hyp t
 ;;   :rule (let ((x (identity term)))
@@ -71,11 +71,11 @@ date created: [2016-04-14 Thu]
         x
       (b* ((n (len L))
            (elem (car L))
-           (i (nfix (acl2-count elem)))
+           (i (nfix (acl2-count elem))) ; alternatively use x
            (i (mod i n)))
         (nth i L)))))
 
-(defdata::cgen-rule member-equal-fixer1
+(cgen::define-rule member-equal-fixer1
   :hyp (consp L)
   :rule (let ((x (member-fixer1 x L)))
           (member-equal x L))
@@ -97,7 +97,7 @@ date created: [2016-04-14 Thu]
         L
       (cons a L))))
       
-(defdata::cgen-rule member-equal-fixer2-type-fixed
+(cgen::define-rule member-equal-fixer2-type-fixed
   :rule (let ((L (member-fixer2 a L)))
           (member-equal a L))
   :rule-classes :fixer)
@@ -115,13 +115,13 @@ date created: [2016-04-14 Thu]
           (append L (len-fixer/repeat (- n (len L)) L))))))
 
        
-(defdata::cgen-rule len-fixer1-with-repetitions
+(cgen::define-rule len-fixer1-with-repetitions
            :hyp (natp n)
            :rule (let ((L (len-fixer/repeat n L)))
                    (equal n (len L)))
            :rule-classes :fixer)
 
-(defdata::cgen-rule len-fixer1-with-repetitions-symm
+(cgen::define-rule len-fixer1-with-repetitions-symm
            :hyp (natp n)
            :rule (let ((L (len-fixer/repeat n L)))
                    (equal (len L) n))
@@ -136,7 +136,7 @@ date created: [2016-04-14 Thu]
        (X2 (nthcdr n Z)))
     (mv X1 X2)))
     
-(defdata::cgen-rule append-fixer1
+(cgen::define-rule append-fixer1
   :hyp (true-listp X3) ;dont worry about this, it will backchain!
   :rule (mv-let (X1 X2) (append-fixer1 X3 X1)
                 (equal X3 (binary-append X1 X2)))
@@ -149,7 +149,7 @@ date created: [2016-04-14 Thu]
        (X2 (nthcdr n Z)))
     (mv X1 X2)))
 
-(defdata::cgen-rule append-fixer2
+(cgen::define-rule append-fixer2
   :hyp (true-listp X3)
   :rule (mv-let (X1 X2) (append-fixer2 X3 X2)
                 (equal X3 (binary-append X1 X2)))
@@ -166,17 +166,59 @@ date created: [2016-04-14 Thu]
     (b* ((a (member-fixer1 1 X2)))
       (add-to-set-equal a (tlp-fxr X1)))))
          
-(defdata::cgen-rule intersectp-fixer1
+(cgen::define-rule intersectp-fixer1
   :hyp (consp X2)
   :rule (let ((X1 (intersectp-fix1 X1 X2)))
           (intersectp-equal X1 X2))
   :rule-classes :fixer)
 
-(defdata::cgen-rule intersectp-fixer2
+(cgen::define-rule intersectp-fixer2
   :hyp (consp X1)
   :rule (let ((X2 (intersectp-fix1 X2 X1)))
           (intersectp-equal X1 X2))
   :rule-classes :fixer)
+
+
+(defun _max-lst1 (xs ans)
+  (declare (xargs :guard (real/rationalp ans)))
+  (if (atom xs)
+      ans
+    (_max-lst1 (cdr xs) (max (rfix (car xs)) ans))))
+
+(defun _max-lst (xs)
+  (_max-lst1 xs 0))
+
+; nat * nat -> (listof nat)
+(defun _make-numlist (curr size)
+;make a list of size natural numbers starting from curr
+  (declare (xargs :guard (and (real/rationalp curr) (natp size))))
+  (if (zp size)
+      '()
+    (cons curr (_make-numlist (1+ curr) (1- size)))))
+
+
+(defun not-intersectp-fix2 (X1 X2)
+  "fixer for (not (intersectp X1 X2)). preserves the length of X1"
+  (if (not (intersectp-equal (tlp-fxr X1) (tlp-fxr X2)))
+      (tlp-fxr X1)
+    (b* ((common-elements (intersection-equal X1 X2))
+         (n (len common-elements))
+         (m (_max-lst X2))
+         (new (_make-numlist (1+ m) n)))
+      (append new (set-difference-equal X1 common-elements)))))
+
+(cgen::define-rule not-intersectp-fixer1
+  :rule (let ((X1 (not-intersectp-fix2 X1 X2)))
+          (not (intersectp-equal X1 X2)))
+  :rule-classes :fixer)
+
+(cgen::define-rule not-intersectp-fixer2
+  :rule (let ((X2 (not-intersectp-fix2 X2 X1)))
+          (not (intersectp-equal X1 X2)))
+  :rule-classes :fixer)
+
+
+
 
 ;; NO-DUPLICATESP, REMOVE-DUPLICATES-EQUAL
 
@@ -184,13 +226,13 @@ date created: [2016-04-14 Thu]
   (declare (xargs :guard t))
   (remove-duplicates-equal (tlp-fxr x)))
 
-(defdata::cgen-rule no-dups-fixer-type-fixed
+(cgen::define-rule no-dups-fixer-type-fixed
            :rule (let ((X1 (no-dups-fix X1)))
                    (no-duplicatesp-equal X1))
            :rule-classes :fixer)
 
 ;; NTH, UPDATE-NTH
-(defdata::cgen-rule nth-fixer2
+(cgen::define-rule nth-fixer2
   :hyp (and (natp n)
             (< n (len L)))
            :rule (let ((L (update-nth n v (tlp-fxr L))))
@@ -212,7 +254,7 @@ date created: [2016-04-14 Thu]
           (cons a (cons x1 rest))
         (cons x1 rest))))))
 
-(defdata::cgen-rule remove-equal-fixer2
+(cgen::define-rule remove-equal-fixer2
   :hyp (and (not (member-equal a L1))
             (true-listp L1)
             )
@@ -224,7 +266,7 @@ date created: [2016-04-14 Thu]
 (defun remove1-equal-fixer2 (a L1)
   (cons a L1)) ;check later TODO
   
-(defdata::cgen-rule remove1-equal-fixer2
+(cgen::define-rule remove1-equal-fixer2
   :hyp (true-listp L1)
   :rule (let ((L (remove1-equal-fixer2 a (tlp-fxr L1))))
           (equal L1 (remove1-equal a L)))
@@ -243,12 +285,12 @@ date created: [2016-04-14 Thu]
         (cons (car X1) (subsetp-fixer1 (cdr X1) X2))
       (subsetp-fixer1 (cdr X1) X2))))
 
-(defdata::cgen-rule subsetp-equal-fixer1-type-fixed
+(cgen::define-rule subsetp-equal-fixer1-type-fixed
   :rule (let ((X1 (subsetp-fixer1 X1 X2)))
           (subsetp-equal X1 X2))
   :rule-classes :fixer)
 
-(defdata::cgen-rule subsetp-equal-fixer2-type-fixed
+(cgen::define-rule subsetp-equal-fixer2-type-fixed
   :rule (let ((X2 (union-equal (tlp-fxr X1) (tlp-fxr X2))))
           (subsetp-equal X1 X2))
   :rule-classes :fixer)
@@ -291,7 +333,7 @@ date created: [2016-04-14 Thu]
 (in-theory (disable alist-fixer))
 
 
-(defdata::cgen-rule assoc-equal-fixer2
+(cgen::define-rule assoc-equal-fixer2
            :hyp (allp v) ;technical reason for putting this! TODO make polymorphic
            :rule (let ((A (put-assoc-equal x v (alist-fixer A))))
                    (assoc-equal x A))
@@ -306,18 +348,18 @@ date created: [2016-04-14 Thu]
         (put-assoc-equal x (cdr (car A)) A) ;reuse first entry's value
         ))))
 
-(defdata::cgen-rule assoc-equal-fixer3
+(cgen::define-rule assoc-equal-fixer3
   :rule (let ((A (acl2::assoc-fxr3 x A)))
           (assoc-equal x A))
   :rule-classes :fixer)
 
-(defdata::cgen-rule assoc-equal-fixer1
+(cgen::define-rule assoc-equal-fixer1
   :hyp (and (consp A) (alistp A))
   :rule (let ((x (member-fixer1 x (strip-cars A))))
           (assoc-equal x A))
   :rule-classes :fixer)
 
-(defdata::cgen-rule assoc-eq-equation-fixer
+(cgen::define-rule assoc-eq-equation-fixer
   :rule (let ((A (put-assoc-equal x v (alist-fixer A))))
           (equal v (cdr (assoc-equal x A))))
   :rule-classes :fixer)

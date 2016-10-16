@@ -230,7 +230,7 @@
        (hyps (if (eq hyp 't) '() (acl2::expand-assumptions-1 hyp)))
        (vars (vars-in-dependency-order hyps concl vl (w state)))
        (d-typ-al (dumb-type-alist-infer
-                   (cons (dumb-negate-lit concl) hyps) vars 
+                   (cons (cgen-dumb-negate-lit concl) hyps) vars 
                    vl (w state)))
        (cgen-state (cput top-vt-alist d-typ-al))
        (- (cw? (system-debug-flag vl)
