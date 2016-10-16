@@ -59,7 +59,8 @@ data last modified: [2014-08-06]
        
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
-       
+
+       (pred-name (get1 :predicate kwd-alist))
        (enum (get1 :enumerator kwd-alist))
        (enum/acc (get1 :enum/acc kwd-alist))
        (enum-formals (acl2::formals enum wrld))
@@ -92,7 +93,7 @@ data last modified: [2014-08-06]
           '())) ;redundant event
 
        (default-val (funcall-w enum (list 0) ctx wrld))
-       (- (cw "** default value of ~x0 is ~x1" enum default-val))
+       ;(- (cw "** default value of ~x0 is ~x1" enum default-val))
 
        )
     
@@ -102,13 +103,18 @@ data last modified: [2014-08-06]
       (WITH-OUTPUT
        :SUMMARY (ACL2::FORM) :ON (ERROR)
        (PROGN
+        ,@(AND (table-alist 'ACL2::ACL2S-DEFAULTS-TABLE wrld)
+               '((LOCAL (ACL2::ACL2S-DEFAULTS :SET :TESTING-ENABLED :NAIVE))))
         ;;(defstub ,enum-name (*) => *)
         (encapsulate 
          (((,enum-name *) => * :formals ,enum-formals :guard ,enum-guard))
          (local (defun ,enum-name ,enum-formals
                   (declare (xargs :guard ,enum-guard))
                   (declare (ignorable . ,enum-formals))
-                  ',default-val)))
+                  ',default-val))
+         (defthm ,(s+ enum-name "-IS-OF-TYPE-" pred-name)
+           (,pred-name (,enum-name . ,enum-formals)))
+         )
         
         ;;(defstub ,enum/acc-name (* *) => (mv * *))
         ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum-name))
