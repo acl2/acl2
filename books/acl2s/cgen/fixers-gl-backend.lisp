@@ -373,10 +373,22 @@ downloaded from the webpage.
 
 ; [2016-02-17 Wed] example *ms-eg2-fixer-table* gives a wasteful solution!!
 ; The following constraint precludes it by forcing F**C to be valid for atmost one fixer.
-; \A F1,c :: F1**c => \A F2 :F2 sfixes c: ~F2.valid
+; \A F1,c :: F1**c => \A F2 :F2 sfixes c, F2!=F1: ~F2.valid
+;; WRONG pointed by PETE [2016-08-27 Sat] USE the foll instead:
+;; \A F1,c :: F1**c => \A F2: F2 sfixes c, F2!=F1 : ~F2**c
+
+;; [2016-09-07 Wed] But this is not enough, so use the following optimization
+;; for avoiding redundant fixer terms
+; \A F1 :: F1.valid => \E c: sfixes(F1,c): F1**c
+
+(defloop C/valid-fixes-at-least-one-lit (fixers lits)
+  (for ((F1 in fixers))
+       (collect `(IMPLIES ,(valid-var F1)
+                          (OR ,@(pvars/chosen-fixer lits (list F1)))))))
+
 (defloop C/TheCF-uniquely-valid2 (F1 other-lit-fixers lit)
   (for ((F2 in other-lit-fixers)) (collect `(IMPLIES ,(chosen-fixer-var F1 lit)
-                                                     (NOT ,(valid-var F2))))))
+                                                     (NOT ,(chosen-fixer-var F2 lit))))))
 
 (defloop+ C/TheCF-uniquely-valid1 (literals fixers all-fixers)
   (for ((lit in literals))
@@ -591,7 +603,7 @@ downloaded from the webpage.
 ; \AF,c:sfixes(F,c): \A G : {FxG} /\ x \in Out(G): F**c /\ F--x-->G => spreserves(G,c)
 ; updated : do also the same for inputs [2016-03-30 Wed] But note that this is just an approx of the ground instantiation method
 ; C-inv-x(c,x,F1): \A G : {F1xG} & {x \in Out(G)}:  F1--x-->G => spreserves(G,c)
-; \AF,c:sfixes(F,c): \Ax:x\in c: {x \in Out(F)}F**c => C-inv-x(c,x,F,F) /\ {x \in In(F)}F**c => \E F1:{F1xF}: F1-x->F /\ C-inv-x(c,x,F,F1)
+; \AF,c:sfixes(F,c): \Ax:x\in c: {x \in Out(F)}F**c => C-inv-x(c,x,F) /\ {x \in In(F)}F**c => \E F1:{F1xF}: F1-x->F /\ C-inv-x(c,x,F1)
 
 (defun spreserves-lit (fixer l)
   (or (and (member-equal l (g1 :preserves fixer)) t)
@@ -613,7 +625,7 @@ downloaded from the webpage.
             (when (and (has-output G x)
                        (can-flow x F G)
                        (not (equal F G)))
-              (collect `(IMPLIES (AND ,(trans-conn-with-flow-var (list F x G)))
+              (collect `(IMPLIES ,(trans-conn-with-flow-var (list F x G))
                                  ,(spreserves-lit G lit))))))
 
 (defloop C/TheFixer-is-preserved3/inputs (F1-lst lit x lit-fixer all-fixers)
@@ -1155,7 +1167,6 @@ of the entries is same as the keys"
        (concl-hypothesis `(AND . ,(append 
                                    (C/atleast-one-final-value vars fixers)
                                    ;;(C/atmost-one-final-value vars fixers)
-                                   (C/TheChosenFixer lits fixers)
                                    (C/final-value-implies-valid vars fixers)
                                    (C/connection-implies-valid fixers vars)
                                    (C/atmost-one-input-conn fixers vars)
@@ -1164,6 +1175,9 @@ of the entries is same as the keys"
                                    (C/no-cycles fixers)
                                    (C/final-value-def vars fixers)
                                    (C/TheFixer-is-preserved lits fixers)
+                                   (C/TheChosenFixer lits fixers)
+                                   ;; [2016-09-07 Wed] added for optimization purposes
+                                   (C/valid-fixes-at-least-one-lit fixers lits)
                                    (C/sat-lits lits fixers)
                                    (C/sat-terms term->lits-lst)))
                                    ))
@@ -1221,7 +1235,7 @@ bindings:
         )
       (mv nil sat-A state)))
       
-(defun fixers-maxsat-glcp-query-loop (n top-hyps bindings trhyp concl-hyp vl state)
+(defun fixers-maxsat-glcp-query-loop (n top-hyps bindings trhyp concl-hyp mode vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (zp n)
     (mv :unsat nil 0 state) ;nothing satisfied
@@ -1229,13 +1243,17 @@ bindings:
          ((unless erp) ;got sat assignment
           (prog2$ 
            (cw? (verbose-stats-flag vl) "~|Got a sat assignment for #literals = ~x0~%" n)
-           (mv nil A n state))))
-      (fixers-maxsat-glcp-query-loop (1- n) top-hyps bindings trhyp concl-hyp vl state))))
+           (mv nil A n state)))
+         ((when (eq mode :sat)) ;dont continue maxsat loop if in this mode
+          (mv erp A n state))
+
+         )
+      (fixers-maxsat-glcp-query-loop (1- n) top-hyps bindings trhyp concl-hyp mode vl state))))
 
 
 
 ; fxri{} is the fixer instance metadata table 
-(defun fixers-maxsat-glcp-query (vars lits term->lits-lst relevant-hyps fxri{} vl state)
+(defun fixers-maxsat-glcp-query (vars lits term->lits-lst relevant-hyps fxri{} mode vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((when (or (null vars)
                   (null lits)
@@ -1270,6 +1288,7 @@ bindings:
         (fixers-maxsat-glcp-query-loop (len relevant-hyps)
                                        relevant-hyps ;[2016-05-04 Wed] only count these
                                        bindings trhyp concl-hyp
+                                       mode
                                        vl state))
         ((when erp) ;unsat or error, abort
          (mv erp nil state))
