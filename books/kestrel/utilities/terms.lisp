@@ -183,7 +183,6 @@
    is regarded as having no stobjs,
    if all its other functions have no stobjs.
    </p>"
-  :flag nil
 
   (define term-no-stobjs-p ((term pseudo-termp) (wrld plist-worldp))
     :returns (yes/no "A @(tsee booleanp).")
