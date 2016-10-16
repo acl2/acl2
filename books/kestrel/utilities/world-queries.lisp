@@ -131,7 +131,7 @@
           without the &ldquo;non-executable wrapper&rdquo;."
   :long
   "<p>
-   @(tsee Defun-nx) wraps the body of the function @('fn') being defined
+   @(tsee defun-nx) wraps the body of the function @('fn') being defined
    in a wrapper that has
    the following <see topic='@(url term)'>translated</see> form:
    </p>
@@ -147,7 +147,7 @@
    the submitted body (once translated) must be wrapped like that.
    </p>
    <p>
-   @(tsee Unwrapped-nonexec-body) returns
+   @(tsee unwrapped-nonexec-body) returns
    the unwrapped body of the non-executable function @('fn').
    </p>
    <p>

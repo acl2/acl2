@@ -140,7 +140,7 @@
    (verbose booleanp)
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@(tsee Booleanp) flag of the
+  :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url error-triple)'>error triple</see>.")
                (nothing "Always @('nil').")
                state)

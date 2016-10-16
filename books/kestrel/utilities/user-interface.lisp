@@ -82,7 +82,7 @@
               ,form))))
 
 (define control-screen-output-and-maybe-replay
-  ((verbose "@('T') (or @(''t')) or @('nil') (or @(''nil')), else indicates
+  ((verbose "@('t') (or @(''t')) or @('nil') (or @(''nil')), else indicates
              replay on failure.")
    (event-p "Make an event when true.")
    (form (pseudo-event-formp form)))
