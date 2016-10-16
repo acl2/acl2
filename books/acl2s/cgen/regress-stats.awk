@@ -23,20 +23,80 @@ BEGIN {
 vs == 1 && /^CTX/ {totalEvents++; print ""; print $2}
 vs == 1 && /^__SUBGOAL_BEGIN__/ {totalSubgoals++}
 vs == 1 && /^SUBGOAL_NAME/ {if ($4 <= 0) vacSubgoals++; print "",$2,"%sat:",$4}
-vs == 1 && /^Constraint/ {totalHyps++; print " ", $2}
+vs == 1 && /^Constraint/ {totalHyps++; constraint=$2 ; print " ", $2}
 vs == 1 && /^Kind/ {print "    ", $2,$4,$6;incrementKinds($2,$4); incrementKinds_pos_shallow($2,$4)}
 /^__Vacuous_test_statistics_END__/ {vs=0}
 
+
 function incrementKinds(K,pc) {
     kinds = substr(K,2,length(K)-2) #remove parens
-    n = split(kinds,temp, " ")
+    n = split(kinds,kinds_array, " ")
+        
     for (i = 1; i <= n; i++) {
-        Count[temp[i]]++
-        if (pc <= lo) Low[temp[i]]++
-        if (pc > hi) High[temp[i]]++
+        ACount[kinds_array[i]]++
+        if (pc <= lo) ALow[kinds_array[i]]++
+        if (pc > hi) AHigh[kinds_array[i]]++
     }
+
+    if (pc <= lo && (kinds_array[3] == ":MONADIC/PREDICATE" || kinds_array[3] == ":BINARY/PREDICATE")) {
+        print "Constraint is " constraint 
+        fn111 = get_top_fn_symbol(constraint)
+        if (kinds_array[1] == ":POS") {
+            posfnCount[fn111]++
+        } else {
+            negfnCount[fn111]++
+        }
+        
+    }
+    
+    
     return n
 }
+
+function find_closing_paren_pos (x) {
+    for (i = length(x); i >= 1; i--) {
+        if (substr(x,i,1) == ")")
+            return i
+    }
+    return 0
+}
+
+function substr1 (s, starti, endi) {
+    return substr(s, starti, endi - starti)
+}
+
+function get_top_fn_symbol (c1) {
+    cs = substr1(c1,2,find_closing_paren_pos(c1))
+    print "cs is " cs
+    n = split(cs,temp1, " ")
+    print "cs is " cs
+    print "temp1[1] is:" temp1[1] " temp1[2] is:" temp1[2] " temp1[3] is:" temp1[3]
+    ans = temp1[1]
+    if (temp1[1] == "NOT") {
+        not_arg = substr(cs,5)
+        print "not_arg is " not_arg
+        ans =  get_top_fn_symbol(not_arg)
+        print "NOT case: ans is " ans
+    }
+    if (temp1[1] == "EQUAL" || temp1[1] == "EQL" || temp1[1] == "EQ" || temp1[1] == "=") {
+        print "if cond:" index(temp1[2],"(") " else if:" index(temp1[3],"(")
+        if (index(temp1[2],"(") > 0) {
+            ans = substr(temp1[2], 2)
+            print "returning first args fn: " ans
+        }
+        else if (index(temp1[3],"(") > 0) {
+            ans = substr(temp1[3], 2)
+            print "returning second args fn: " ans
+        }
+        else {
+            print "returning equal"
+            ans = "EQUAL";
+        }
+    }
+    return ans
+    
+}
+    
 
 function incrementKinds_pos_shallow(K,pc) {
     kinds = substr(K,2,length(K)-2) #remove parens
@@ -86,9 +146,9 @@ END {
     print "Total Subgoals:", totalSubgoals, "Vacuous:", vacSubgoals
     print "Total Hyps (Constraints):", totalHyps
     printf("%-25s %-10s %7s %7s\n", "Constraint Kind/Type", "Count", "LOW (< "lo"%)", "HIGH (> "hi"%)")
-    for (i in Count) {
+    for (i in ACount) {
         if (i == ":NEG" || i == ":POS" || i == ":SHALLOW" || i == ":NON-SHALLOW") 
-            printf("%-25s %-10d %7d %7d\n", i, Count[i], Low[i], High[i])
+            printf("%-25s %-10d %7d %7d\n", i, ACount[i], ALow[i], AHigh[i])
     }
 
     print ""
@@ -119,12 +179,23 @@ END {
     print ""
     print "------------------ CUMULATIVE ---------------------------"
     print "ALL constraints"
-    for (i in Count) {
+    for (i in ALow) {
         if (i == ":NEG" || i == ":POS" || i == ":SHALLOW" || i == ":NON-SHALLOW") continue;
-        printf("%-25s %-10d %7d %7d\n", i, Count[i], Low[i], High[i])
+        printf("%-25s %-10d %7d %7d\n", i, ACount[i], ALow[i], AHigh[i])
     }
 
+    print "----------------POS/per-constraint counts----------"
     
+    PROCINFO["sorted_in"] = "@val_num_asc"
+    for (i in posfnCount) {
+        if (posfnCount[i] > 50)
+            printf("%-50s %10d\n", i, posfnCount[i])
+    }
+    print "----------------NEG/per-constraint counts----------"
+    for (i in negfnCount) {
+        if (negfnCount[i] > 5)
+            printf("%-50s %10d\n", i, negfnCount[i])
+    }
     
 }
 
