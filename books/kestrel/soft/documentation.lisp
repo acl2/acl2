@@ -65,7 +65,7 @@
    <p>
    The
    <a href=\"http://eptcs.web.cse.unsw.edu.au/paper.cgi?ACL22015.3\"
-   >ACL2 Workshop 2015 paper on SOFT</a>
+   >ACL2-2015 Workshop paper on SOFT</a>
    provides
    an overview of the macros and some simple examples of their use,
    a description of the use of SOFT in program refinement,
@@ -78,9 +78,12 @@
    @('[books]/kestrel/soft/workshop-paper-examples.lisp');
    the examples from the talk that are not in the paper are in
    @('[books]/kestrel/soft/workshop-talk-examples.lisp').
-   Some of the contents of the paper and presentation
-   may become outdated as SOFT is extended and improved over time;
-   this manual provides up-to-date information about SOFT.
+   As SOFT is being extended and improved over time,
+   some of the contents of the paper and presentation are becoming outdated.
+   This manual provides up-to-date information about SOFT.
+   The differences between
+   the current version of SOFT and the Workshop version of SOFT
+   are described <see topic='@(url updates-since-workshop)'>here</see>.
    </p>")
 
 (xdoc::order-subtopics soft nil t)
@@ -1677,3 +1680,33 @@
      (defthm-inst injective[quad[wrap]]-when-injective[wrap]
        (injective[quad[?f]]-when-injective[?f] (?f . wrap)))
    })")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc updates-since-workshop
+
+  :parents (soft)
+
+  :short "Updates to SOFT since the ACL2-2015 Workshop."
+
+  :long
+
+  "<h4>Nullary Function Variables</h4>
+
+   <p>
+   Nullary function variables (i.e. function variables with arity 0)
+   are now allowed.
+   </p>
+
+   <h4>Naming Conventions</h4>
+
+   <p>
+   For second-order functions and theorems
+   that depend on two or more function variables,
+   the Workshop paper suggests to use underscores
+   to separate the function variables inside the square brackets,
+   e.g. &lsquo;@('sofun[?f_?g_?h]')&rsquo;.
+   This manual instead suggests
+   to enclose each function variable in square brackets,
+   e.g. &lsquo;@('sofun[?f][?g][?h]')&rsquo;.
+   </p>")
