@@ -535,7 +535,25 @@ into eq-constraint field and put interval into range constraint field")
     
       
 
-   
+(defun record-p (type wrld)
+  (b* ((type-entry (get1 type (defdata::type-metadata-table wrld)))
+       (pdef (cgen::get1 :PRETTYIFIED-DEF type-entry)))
+    (and (consp pdef)
+         (equal (car pdef) 'ACL2S::RECORD))))
+
+(defun expand-record (x type wrld)
+  (b* ((type-entry (get1 type (defdata::type-metadata-table wrld)))
+      (ndef (cgen::get1 :normalized-def type-entry))
+      (conx (car ndef))
+      (fields  (strip-cars (cdr ndef)))
+      (ftypes  (strip-cdrs (cdr ndef)))
+      (new-names (defdata::modify-symbol-lst (string-append (symbol-name x) ".")
+                   fields
+                   ""
+                   (symbol-package-name x)))
+      (fpreds (defdata::predicate-names ftypes (defdata::type-metadata-table wrld)))
+      (pred-calls (acl2::listlis fpreds new-names)))
+  (mv (cons conx new-names) pred-calls)))
                                 
 
 (defloop match-constraint/loop (constraint-rules C x vl wrld)
@@ -613,7 +631,11 @@ else pick c from constraints
   (if (endp var-type-dlist)
       (value (list rtermB new-hyps))
     (b* (((list x type) (car var-type-dlist)) ;check shape
-         ((er (list rtermB1 new-hyps1)) (refine-enum-shape1 x type constraints vl state '() '()))
+         ((er (list rtermB1 new-hyps1))
+          (if (record-p type (w state)) ;eagerly expand records
+              (b* (((mv rec-expansion rec-field-hyps) (expand-record x type (w state))))
+                (value (list (acons x rec-expansion '()) rec-field-hyps)))
+          (refine-enum-shape1 x type constraints vl state '() '())))
          (rtermB (union-equal rtermB1 rtermB))
          (new-hyps (union-equal new-hyps1 new-hyps)))
       (refine-enum-shapes1 (cdr var-type-dlist) constraints vl state rtermB new-hyps))))
