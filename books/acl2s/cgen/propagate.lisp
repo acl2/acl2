@@ -176,13 +176,14 @@
 ;  least I subst the assignment in hyp.
          (- (cw? (and (debug-flag vl) 
                       (not simplified?))
-             "~|ACHTUNG: simplify-hyps result not less than hyp in term-order~|"))
+                 "~|ACHTUNG: simplify-hyps result not less than hyp in term-order~|"))
+         (shyp-list (acl2::expand-assumptions-1 shyp))
          )
      
       (simplify-hyps1 
        (cdr rem-hyps) init-hyps hints
        (if (equal shyp ''t) ans.
-         (append ans. (list shyp))) ;dont mess with order
+         (append ans. shyp-list)) ;dont mess with order
        vl state))))
 
 (def simplify-hyps-under-assignment (hyps x a vl state)
@@ -191,7 +192,9 @@
         :mode :program
         :doc "simplify hyps assuming x=a. return shyps in an error
         triple. erp=T if contradiction found in shyps")
-  (b* (((er shyps1) (simplify-hyps1 (acl2::subst-var-lst a x hyps) hyps '() '() vl state)))
+  (b* ((hyps (remove-duplicates-equal hyps))
+       (hyps1 (acl2::subst-var-lst a x hyps))
+       ((er shyps1) (simplify-hyps1  hyps1 hyps1 '() '() vl state)))
 ;I do the above and then again simplify to get order-insensitive list of
 ;simplified hypotheses i.e the order of the hyps in the argument should not
 ;change the result of this function.
