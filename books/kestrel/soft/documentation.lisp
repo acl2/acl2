@@ -412,7 +412,7 @@
      <blockquote>
 
      <p>
-     A list of one or more @('*')s,
+     A list of zero or more &lsquo;@('*')&rsquo; signs,
      which defines the arity of @('fvar').
      </p>
 
@@ -454,7 +454,7 @@
    <h3>Naming Conventions</h3>
 
    <p>
-   Starting function variable names with @('?')
+   Starting function variable names with &lsquo;@('?')&rsquo;
    (as in the examples above)
    provides a visual cue for their function variable status.
    However, SOFT does not enforce this naming convention.
