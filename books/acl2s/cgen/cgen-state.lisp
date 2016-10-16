@@ -203,7 +203,7 @@ cgen-state"
           (unsigned-29bits-p |#vacs|)
           (unsigned-29bits-p |#dups|)
           (symbol-alistp disp-enum-alist)
-          (symbol-doublet-listp elim-bindings)
+          (alistp elim-bindings) ;elim-bindings is now a b* binding [2016-09-05 Mon]
           ))))
           
 
@@ -324,12 +324,12 @@ cgen-state"
 
 
 ; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
-; fixer/elim-binding as a let*-binding that can be used in simple-search
-(defstub fixer-arrangement (* * * * * * state) => (mv * * state))
-(defun fixer-arrangement/dummy (hyps concl vars type-alist vl ctx state)
-  (declare (ignore hyps concl vars type-alist vl ctx))
+; fixer/elim-binding as a b*-binding that can be used in simple-search
+(defstub fixer-arrangement (* * * * state) => (mv * * state))
+(defun fixer-arrangement/dummy (hyps concl vl ctx state)
+  (declare (ignore hyps concl vl ctx))
   (declare (xargs :stobjs (state)))
-  (mv nil '() state))
+  (mv nil (list nil nil) state))
 (defattach (fixer-arrangement fixer-arrangement/dummy))
 
 

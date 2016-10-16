@@ -30,6 +30,7 @@
                                :cgen-local-timeout
                                :print-cgen-summary
                                :use-fixers
+                               :recursively-fix
                                ))
 
 ;All user-defined parameters are stored here
@@ -228,6 +229,16 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
     (acl2s-defaults :get use-fixers)
     :doc use-fixers
    </code>
+   "
+ :guard (booleanp value))
+
+(add-acl2s-parameter 
+ recursively-fix t
+ :short "Specify whether unsatisfied but fixable constraints are to be recursively fixed."
+ :long "Specify whether unsatisfied but fixable constraints are to be
+  recursively fixed. The resulting solution substitutions are stacked in the
+  reverse order. 
+  By default this parameter is set to <tt>t</tt>.
    "
  :guard (booleanp value))
 

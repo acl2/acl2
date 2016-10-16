@@ -184,27 +184,30 @@
           (make-let-binding-for-sigma (cdr vs) sigma-symbol))))
 
 
-
+; [2016-09-05 Mon] add mv-list to mv function-calls, except for those who already have it
 (defs 
   (mv-list-ify (term mv-sig-alist)
     (decl :sig ((pseudo-term symbol-list) -> pseudo-term)
           :doc "wrap all mv fn calls with mv-list")
     (if (variablep term)
-      term
-      (if (fquotep term)
         term
-      (b* ((fn (ffn-symb term))
-           (args (fargs term))
-           (A mv-sig-alist)
-           (entry (assoc-eq fn A))
-           ((unless entry)
-            (acl2::cons-term fn
-                       (mv-list-ify-lst args A)))
-           ((cons fn m) entry)) 
+      (if (fquotep term)
+          term
+        (b* ((fn (ffn-symb term))
+             ;; already mv-list-ed so ignore
+             ((when (eq fn 'MV-LIST)) term)
+
+             (args (fargs term))
+             (A mv-sig-alist)
+             (entry (assoc-eq fn A))
+             ((unless entry)
+              (acl2::cons-term fn
+                               (mv-list-ify-lst args A)))
+             ((cons fn m) entry)) 
 ;m is output arity and should be greater than 1.
-        (acl2::cons-term 'acl2::mv-list
-                   (list (kwote m)
-                         (acl2::cons-term fn (mv-list-ify-lst args A))))))))
+          (acl2::cons-term 'acl2::mv-list
+                           (list (kwote m)
+                                 (acl2::cons-term fn (mv-list-ify-lst args A))))))))
 
   (mv-list-ify-lst (terms mv-sig-alist)
    (decl :sig ((pseudo-term-list symbol-list) -> pseudo-term-list))
@@ -419,11 +422,13 @@ eg:n/a")
                              (m    (access test-outcomes% |#cts|))
                              (test-outcomes% ;TODO:per subgoal num-cts stored??
                               (if (< m num-cts) ;dont store extra unless
-                                  (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts)))
-                                       (test-outcomes% (change test-outcomes% cts-hyp-vals-list
-                                                               (cons hyp-vals (access test-outcomes% cts-hyp-vals-list)))))
+                                  (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts))))
                                     test-outcomes%)
                                 test-outcomes%))
+                             (test-outcomes% (if (verbose-stats-flag vl)
+                                                 (change test-outcomes% cts-hyp-vals-list
+                                                         (cons hyp-vals (access test-outcomes% cts-hyp-vals-list)))
+                                               test-outcomes%))
                              (test-outcomes%   (test-outcomes-1+ cts)))
 ;                              in
                          (mv test-outcomes% gcs%)))
@@ -437,11 +442,13 @@ eg:n/a")
                              (m    (access test-outcomes% |#wts|))
                              (test-outcomes%   
                               (if (< m num-wts)
-                                  (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts)))
-                                       (test-outcomes% (change test-outcomes% wts-hyp-vals-list
-                                                               (cons hyp-vals (access test-outcomes% wts-hyp-vals-list)))))
+                                  (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts))))
                                     test-outcomes%)
                                 test-outcomes%))
+                             (test-outcomes% (if (verbose-stats-flag vl)
+                                                 (change test-outcomes% wts-hyp-vals-list
+                                                         (cons hyp-vals (access test-outcomes% wts-hyp-vals-list)))
+                                               test-outcomes%))
                              (test-outcomes%   (test-outcomes-1+ wts))) ;BUGGY -- we dont know if its a duplicate. FIXME
 ;                         in       
                           (mv test-outcomes% gcs%)))
@@ -558,6 +565,16 @@ where
           (kwote-symbol-doublet-list (cdr A)))))
 
 
+
+;[2016-09-05 Mon] elim bindings are now b* bindings, so instead of strip-cars,
+;use a custom function to get all bound variables
+
+(defloop strip-bound-vars (b*-bindings)
+  ; x is either a (var value) or ((mv . vars) value)
+  (for ((x in b*-bindings)) (append (if (and (consp (car x)) (eq 'MV (car (car x))))
+                                        (remove-eq 'ACL2::& (cdr (car x)))
+                                      (list (car x))))))
+
 (def make-next-sigma-defuns (hyps concl ord-vs 
                                   partial-A elim-bindings
                                   type-alist tau-interval-alist
@@ -593,7 +610,7 @@ where
                                                 (remove-duplicates-eq
                                                  (union-eq (strip-cars var-enumcalls-alist)
                                                            (strip-cars partial-A)
-                                                           (strip-cars elim-bindings))) '())
+                                                           (strip-bound-vars elim-bindings))) '())
                                               seed. BE.))))
            (defun next-sigma-current-gv (sampling-method seed. BE.)
              (declare (xargs :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
@@ -610,7 +627,7 @@ where
 ; an ugly hack in place to reorder in the middle of put-var-eq-constraint.
        
     (b* ((wrld (w state))
-         (v-cs%-alst (collect-constraints% (cons (dumb-negate-lit concl) hyps)
+         (v-cs%-alst (collect-constraints% (cons (cgen-dumb-negate-lit concl) hyps)
                                           ord-vs type-alist tau-interval-alist vl wrld))
         ((mv erp var-enumcalls-alist) (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
         ((when erp) (mv erp '() '()))
@@ -620,14 +637,6 @@ where
 
 
 
-;; COPIED FROM acl2-sources/basis.lisp line 12607
-;; because it is program mode there, and verify-termination needed more effort
-;; than I could spare.
-(defun dumb-negate-lit-lst (lst)
-  (cond ((endp lst) nil)
-        (t (cons (dumb-negate-lit (car lst))
-                 (dumb-negate-lit-lst (cdr lst))))))
-
 (def clause-mv-hyps-concl (cl)
   (decl :sig ((clause) 
               -> (mv pseudo-term-list pseudo-term))
@@ -635,9 +644,9 @@ where
   clause cl. Adapted from prettyify-clause2 in other-processes.lisp")
   (cond ((null cl) (mv '() ''NIL))
         ((null (cdr cl)) (mv '() (car cl)))
-        ((null (cddr cl)) (mv (list (dumb-negate-lit (car cl)))
+        ((null (cddr cl)) (mv (list (cgen-dumb-negate-lit (car cl)))
                               (cadr cl)))
-        (t (mv (dumb-negate-lit-lst (butlast cl 1))
+        (t (mv (cgen-dumb-negate-lit-lst (butlast cl 1))
                (car (last cl))))))
 
 (def clausify-hyps-concl (hyps concl)
@@ -647,8 +656,8 @@ where
   clause cl. inverse of clause-mv-hyps-concl")
   (cond ((and (endp hyps) (equal concl ''NIL)) 'NIL)
         ((endp hyps) (list concl))
-        ((endp (cdr hyps)) (list (dumb-negate-lit (car hyps)) concl))
-        (t (append (dumb-negate-lit-lst hyps)
+        ((endp (cdr hyps)) (list (cgen-dumb-negate-lit (car hyps)) concl))
+        (t (append (cgen-dumb-negate-lit-lst hyps)
                    (list concl)))))
 
 
@@ -790,22 +799,27 @@ Use :simple search strategy to find counterexamples and witnesses.
          (mv t (list NIL test-outcomes% gcs%) state)))
 
        ;;[2016-04-03 Sun] Added support for fixers
-       ((mv erp fixer-bindings state)
+       ((mv erp fxr-res state)
         (if (cget use-fixers)
-            (fixer-arrangement hyps concl vars type-alist vl ctx state)
-          (value nil)))
-
+            (fixer-arrangement hyps concl vl ctx state)
+          (value (list nil nil))))
+       ((list fixer-bindings additional-fxr-hyps) fxr-res)
+       
        ((when erp)
         (prog2$ 
            (cw? (and (normal-output-flag vl) (cget use-fixers))
-                "~|CEgen/Error: Couldn't determine fixer bindings. Skip searching ~x0.~|" name)
+                "~|CEgen/Error: Couldn't compute fixer bindings. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
        
        (elim-bindings (append elim-bindings fixer-bindings))
+       (new-fxr-vars (set-difference-equal (acl2::all-vars1-lst additional-fxr-hyps '()) vars))
+       (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
+               "~|CEgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
        
        ((mv erp next-sigma-defuns disp-enum-alist)
-        (make-next-sigma-defuns hyps concl ;developed in build-enumcalls.lisp
-                                vars partial-A elim-bindings
+        (make-next-sigma-defuns (union-equal additional-fxr-hyps hyps) concl
+                                (append new-fxr-vars vars)
+                                partial-A elim-bindings
                                 type-alist tau-interval-alist
                                 t ; programp ;;Aug 2014 -- New defdata has program-mode enumerators
                                 vl state))
@@ -825,6 +839,7 @@ Use :simple search strategy to find counterexamples and witnesses.
                "~|CEgen/Note: Enumerating ~x0 with ~x1~|" name disp-enum-alist))
        (- (cw? (and (verbose-flag vl) elim-bindings)
                "~|CEgen/Note: Fixer/Elim bindings: ~x0~|" elim-bindings))
+
        
 ; print form if origin was :incremental
        (cl (clausify-hyps-concl hyps concl))

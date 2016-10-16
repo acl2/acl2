@@ -18,8 +18,8 @@
 (include-book "utilities")
 (include-book "misc/bash" :dir :system)
 (include-book "data-structures/utilities" :dir :system)
-(include-book "../defdata/cgen-rules")
-(include-book "fixers-gl-backend")
+;(include-book "../defdata/cgen-rules")
+(include-book "fixers-gl-backend" :ttags :all)
 (include-book "cgen-state")
 
 (program)
@@ -51,15 +51,17 @@ of the entries is same as of the alist"
   (declare (xargs :mode :program))
   (intern-in-package-of-symbol (to-string term) 'cgen::x))
 
-(defun flatten-fterm (term)
+(defun flatten-output-fterm (x term output-vars)
   (cond ((proper-symbolp term) nil)
         ((quotep term) nil)
         ((atom term) nil) ;unreachable?
-        (t (list (cons (term-name term) term)))))
+        (t (and (member-eq x output-vars) ;only flatten if corresponding x is an output
+                (list (cons (term-name term) term))))))
 
-(u::defloop flatten-fterms (terms)
-;"abstract away function-applications with new internal variable names. return the a-list"
-  (for ((term in terms)) (append (flatten-fterm term))))
+(u::defloop flatten-output-fterms (sigma output-vars)
+;"abstract away function-applications, corresponding to outputs, with new
+;internal variable names. return the a-list"
+  (for ((pair in sigma)) (append (flatten-output-fterm (car pair) (cdr pair) output-vars))))
   
 (defloop invert-alist (alist)
   (declare (xargs :guard (alistp alist)))
@@ -77,7 +79,7 @@ of the entries is same as of the alist"
        (in-vars (acl2::all-vars equal-to-term))
        (fixer-term equal-to-term)
        (constraint-term (list 'EQUAL x equal-to-term))
-       (nm (s+ (term-name fixer-term) "/" (to-string x)))
+       (nm (s+ "EQ-" (term-name fixer-term) "/" (to-string x)))
        (rule (list (cons :hyps '())
                    (cons :In in-vars)
                    (cons :Out out-vars)
@@ -246,7 +248,7 @@ a renaming r-alist (modulo xi=constant).
 
 
        
-       (W1{} (flatten-fterms (strip-cdrs s-alist)))
+       (W1{} (flatten-output-fterms s-alist (get1 :Out frule)))
        ;; ((when (intersectp-eq (strip-cars W1{}) (acl2::all-vars1-lst all-terms '())))
        ;;  (er soft ctx "~| New internal variables name collision!"))
 
@@ -264,12 +266,16 @@ a renaming r-alist (modulo xi=constant).
        (unlikely-p (dumb-unsolvable-equations-p E (get1 :Out fruleI)))
        ((when unlikely-p)
         (prog2$
-         (cw? (verbose-flag vl) "~| ~x0 with fixed ~x1 is unlikely to be simultaneously satisfied!~%" E (get1 :Out fruleI))
+         (cw? (verbose-flag vl) "~| Cgen/Note: ~x0 with fixed ~x1 is unlikely to be simultaneously satisfied!~%" E (get1 :Out fruleI))
          (value (list nil '() W{} fxri{}))))
 
-       (rule-hyps (filter-terms-with-vars (get1 :hyps fruleI) allvars))
+       (rule-hyps (filter-terms-with-vars (get1 :hyps fruleI)
+                                          ;;major bugfix [2016-09-09 Fri]
+                                          (union-eq (strip-cars W1{}) allvars)))
+       ;TODO: rename to avoid variable capture
        (backchain-lits (set-difference-equal (get1 :hyps fruleI) rule-hyps))
-       (relieve-hyps-query `(IMPLIES (AND ,@all-terms) (AND . ,rule-hyps)))
+       ;;major bugfix [2016-09-09 Fri] add E to the assumption context
+       (relieve-hyps-query `(IMPLIES (AND ,@all-terms ,@E) (AND . ,rule-hyps)))
        ;; (cgen-state (cgen::make-cgen-state-fn test-form
        ;;                                       '(:testing-enabled :naive)
        ;;                                       (w state)))
@@ -281,7 +287,7 @@ a renaming r-alist (modulo xi=constant).
        ((mv erp res state) (cgen::bash-fn relieve-hyps-query hints (debug-flag vl) ctx state))
        ((unless (and (not erp) (eq res nil)))
         (prog2$
-         (cw? (verbose-flag vl) "~| Unable to relieve hyps ~x0! Skip rule ..~%" relieve-hyps-query)
+         (cw? (verbose-flag vl) "~| Cgen/Note: Unable to relieve query ~x0! Skipping fixer rule ..~%" relieve-hyps-query)
          (value (list nil '() W{} fxri{}))))
        (f-lits (cons (get1 :constraint-term fruleI) (union-equal backchain-lits E)))
        (W{} (union-equal W{} W1{}))
@@ -336,7 +342,7 @@ SAT(term) == \/ SAT(f-lits_i)
         (instantiate-fixer-rules/term frules cterm all-terms allvars vl state '() W{} fxri{}))
        ((when (or erp (null f-lits-lst)))
         (prog2$
-         (cw? (verbose-stats-flag vl) "~| No corresponding fixer-rule found for ~x0.~%" cterm)
+         (cw? (verbose-stats-flag vl) "~| Cgen/Note: No applicable fixer-rule found for ~x0.~%" cterm)
          (instantiate-fixer-rules/terms (cdr cterms) frules all-terms allvars vl state
                                         (put-assoc-equal cterm nil term->f-lits-lst)
                                         new-lits W{} fxri{})))
@@ -373,7 +379,7 @@ SAT(term) == \/ SAT(f-lits_i)
        (vars (list x))
        (fixer-term (list E))
        (constraint-term (cons P vars))
-       (nm (s+ (term-name fixer-term) "/" (to-string x)))
+       (nm (s+  (term-name fixer-term) "/" (to-string x)))
        (rule (list (cons :hyps '())
                    (cons :In '())
                    (cons :Out vars)
@@ -442,7 +448,7 @@ SAT(term) == \/ SAT(f-lits_i)
 
 
 
-(defun instantiate-fixer-rules/terms-iter (hyps all-hyps frules vl state term->f-lits-lst W{} fxri{})
+(defun instantiate-fixer-rules/terms-iter (hyps frules vl state term->f-lits-lst W{} all-hyps fxri{})
 ;fixed-point iteration of above function
   (b* ((wrld (w state))
        ;; (v-cs%-alst (collect-constraints% hyps (acl2::all-vars1-lst hyps '())
@@ -460,7 +466,7 @@ SAT(term) == \/ SAT(f-lits_i)
        
        (other-hyps (set-difference-equal hyps type-hyps))
        ((when (null other-hyps))
-        (value (list term->f-lits-lst W{} fxri{})))
+        (value (list term->f-lits-lst W{} all-hyps fxri{})))
 
        (- (cw? (debug-flag vl) "~| type-hyps: ~x0 and hyps: ~x1~%" type-hyps hyps))
 
@@ -472,15 +478,16 @@ SAT(term) == \/ SAT(f-lits_i)
        (term->f-lits-lst (append term->f-lits-lst1 term->f-lits-lst))
        (W{} (union-equal W1{} W{}))
        (fxri{} (union-equal fxri1{} fxri{}))
+
+       ;;(E (equalitize-lst W1{}))
+       (all-hyps (union-equal new-lits all-hyps))
        
        ((when (null new-lits)) ;no new internal equations or new hyps (backchaining)
-        (value (list term->f-lits-lst W{} fxri{})))
+        (value (list term->f-lits-lst W{} all-hyps fxri{})))
 
-       ;(E (equalitize-lst W1{}))
-       (all-hyps (union-equal new-lits all-hyps))
        )
        
-    (instantiate-fixer-rules/terms-iter new-lits all-hyps frules vl state term->f-lits-lst W{} fxri{})))
+    (instantiate-fixer-rules/terms-iter new-lits frules vl state term->f-lits-lst W{} all-hyps fxri{})))
 
 
 
@@ -590,12 +597,13 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        (thereis (find-fxri-rule1 fxr-term entry))))
 
 
-(defun update-dynamic-fixer-instance-alist/prule/fxr-term (fxr-term pruleI fxri{})
+(defun update-dynamic-fixer-instance-alist/prule/fxr-term (fxr-term pruleI vl fxri{})
   (b* ((ctx 'update-dynamic-fixer-instance-alist/prule/fxr-term)
        ((cons nm fxri-data) (find-fxri-rule fxr-term fxri{}))
        ((unless fxri-data)
         (prog2$
-         (cw? t "~| Error in ~x1: ~x0 does not have an entry in the dynamic fixer instance table!~%" fxr-term ctx)
+         (cw? (verbose-flag vl)
+              "~| Cgen/Verbose: ~x0 not in fxri{}, skip prule update.~%" fxr-term ctx)
          fxri{}))
        ;;preserves is a list of constraint-terms
        (preserves (union-equal (get1 :preserves fxri-data) (get1 :preserves pruleI)))
@@ -607,16 +615,16 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
                                    (put-assoc-equal :prule-alist prule-alist fxri-data))))
     (put-assoc-equal nm fxri-data fxri{})))
 
-(defun update-dynamic-fixer-instance-alist/prule/fxr-terms (fxr-terms pruleI fxri{})
+(defun update-dynamic-fixer-instance-alist/prule/fxr-terms (fxr-terms pruleI vl fxri{})
   (if (endp fxr-terms)
       fxri{}
     (b* ((fxr-term (car fxr-terms))
-         (fxri{} (update-dynamic-fixer-instance-alist/prule/fxr-term fxr-term pruleI fxri{})))
-      (update-dynamic-fixer-instance-alist/prule/fxr-terms (cdr fxr-terms) pruleI fxri{}))))
+         (fxri{} (update-dynamic-fixer-instance-alist/prule/fxr-term fxr-term pruleI vl fxri{})))
+      (update-dynamic-fixer-instance-alist/prule/fxr-terms (cdr fxr-terms) pruleI vl fxri{}))))
     
 
-(defun update-dynamic-fixer-instance-alist/prule (pruleI fxri{}) ; --> fxri{}
-  (update-dynamic-fixer-instance-alist/prule/fxr-terms (get1 :fixer-terms pruleI) pruleI fxri{}))
+(defun update-dynamic-fixer-instance-alist/prule (pruleI vl fxri{}) ; --> fxri{}
+  (update-dynamic-fixer-instance-alist/prule/fxr-terms (get1 :fixer-terms pruleI) pruleI vl fxri{}))
   
 
 (defun instantiate-prule/multiple-subst (sigmas-lst partial-S prule all-terms vl ctx state fxri{})
@@ -627,7 +635,7 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        ((when erp)
         ;;sigmas could not be merged, ignore this prule instance
         (prog2$
-         (cw? (verbose-flag vl) "~| ~x0 cannot be merged into one substitution. ~ Skip this preservation rule instance ..~%" sigmas)
+         (cw? (verbose-flag vl) "~| Cgen/Error: ~x0 cannot be merged into one substitution. ~ Skipping this preservation rule instance ..~%" sigmas)
          (value fxri{})))
        (S (append partial-S S1)) ;partial-S and S1 are "disjoint", so append is fine!!
        ((unless (valid-output-symbols (acl2::sublis-expr-lst S (get1 :Out prule))))
@@ -635,12 +643,12 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        (pruleI (preservation-rule-instance prule S))
        (query `(IMPLIES (AND ,@all-terms) (AND . ,(get1 :hyps pruleI))))
        (hints '())
-       ((mv erp res state) (bash-fn query hints (debug-flag vl) ctx state))
+       ((mv erp res state) (cgen::bash-fn query hints (debug-flag vl) ctx state))
        ((unless (and (not erp) (eq res nil)))
         (prog2$
-         (cw? (verbose-flag vl) "~| Unable to prove (by bash) ~x0! Skip rule ..~%" query)
+         (cw? (verbose-flag vl) "~| Cgen/Note: Unable to relieve query ~x0! Skipping preservation rule ..~%" query)
          (value fxri{})))
-       (fxri{} (update-dynamic-fixer-instance-alist/prule pruleI fxri{})))
+       (fxri{} (update-dynamic-fixer-instance-alist/prule pruleI vl fxri{})))
     (instantiate-prule/multiple-subst (cdr sigmas-lst) partial-S prule all-terms vl ctx state fxri{})))
 
 (defloop singletonize (xs)
@@ -673,26 +681,6 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        (append (and (assoc-equal key alist)
                     (list (cdr (assoc-equal key alist)))))))
 
-;; (defun strip-mv-nth (term)
-;;   (case-match term
-;;     (('MV-NTH & exp) exp)
-;;     (& term)))
-
-;; (defloop strip-mv-nth-lst (terms)
-;;   (for ((term in terms)) (collect (strip-mv-nth term))))
-
-
-; TODO -- strip the mv-nth and mv-list function applications OR perhaps its not
-; necessary? For the main purpose is to get substitutions and then merge
-; them. But certainly there might be fewer fixer terms to match and hence fewer
-; substitutions to merge!
-(defun get-all-fixer-terms1 (fxri{} ans)
-  (if (endp fxri{})
-      ans
-    (b* ((rulei{} (cdr (car fxri{})))
-         (fixer-letb (get1 :fixer-let-binding rulei{}))
-         (fixer-terms1 (strip-cadrs fixer-letb)))
-      (get-all-fixer-terms1 (cdr fxri{}) (union-equal ans fixer-terms1)))))
 
 (defun instantiate-pres-rule/lit (prule f-lit all-terms all-fxr-term-instances vl state fxri{})
   (declare (xargs :guard (and ;(preservation-rule-p prule)
@@ -705,10 +693,13 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
        ((unless yesp) (value fxri{})) ;no hit
        ;;get partially instantiated fixer-terms for this prule
        (fxr-terms-pI (acl2::sublis-var-lst partial-S (get1 :fixer-terms prule)))
-
+;       (- (cw "prule : ~x0~%" prule))
+;       (- (cw "partial-S : ~x0  fxr-terms-pI : ~x1~%" partial-S fxr-terms-pI))
        ;;Now lets get all possible matching substitution lists
        (sigma-list-lst (match-pats/terms-alst fxr-terms-pI all-fxr-term-instances '()))
+       
        (sigmas-lst (generate-all-tuples sigma-list-lst))
+;       (- (cw "S-lst-lst : ~x0 and S-lst : ~x1~%" sigma-list-lst sigmas-lst))
        )
     (instantiate-prule/multiple-subst sigmas-lst partial-S prule all-terms vl ctx state fxri{})))
        
@@ -727,6 +718,35 @@ instantiate-pres-rule prule f-lit fxri{} state -> fxri{}
          ((er fxri{}) (instantiate-pres-rule/lit prule f-lit all-terms all-fxr-term-instances vl state fxri{}))
          )
       (instantiate-pres-rule/lits prule (cdr f-lits) all-terms all-fxr-term-instances vl state fxri{}))))
+
+
+;; (defun strip-mv-nth (term)
+;;   (case-match term
+;;     (('MV-NTH & exp) exp)
+;;     (& term)))
+
+;; (defloop strip-mv-nth-lst (terms)
+;;   (for ((term in terms)) (collect (strip-mv-nth term))))
+
+;; [2016-09-10 Sat] Bugfix Take fixers as they were introduced in fixer
+;; rules. Do not treat multi-output fixers as multiple single-output fixers
+
+;; (defun get-all-fixer-terms1 (fxri{} ans)
+;;   (if (endp fxri{})
+;;       ans
+;;     (b* ((rulei{} (cdr (car fxri{})))
+;;          (fixer-letb (get1 :fixer-let-binding rulei{}))
+;;          (fixer-terms1 (strip-cadrs fixer-letb)))
+;;       (get-all-fixer-terms1 (cdr fxri{}) (union-equal ans fixer-terms1)))))
+
+(defun get-all-fixer-terms1 (fxri{} ans)
+  (if (endp fxri{})
+      ans
+    (b* ((rulei{} (cdr (car fxri{})))
+         (fxr (get1 :fixer-term rulei{})))
+      (get-all-fixer-terms1 (cdr fxri{}) (add-to-set-equal fxr ans)))))
+
+
 
 
 (defun instantiate-pres-rules (prules f-lits all-terms vl state fxri{}); -> fxri{}
@@ -771,6 +791,19 @@ remaining clique call the SAT backend?
 should we completely be general?
 |#
 
+(defun remove-internal-vars/equations (D W{}) ;D is a doubleton-listp
+  (declare (xargs :guard (alistp D)))
+  (if (endp D)
+      '()
+    (if (member-equal (cons (caar D) (cadr (car D))) W{})
+        (remove-internal-vars/equations (cdr D) W{})
+      (b* (((list var e) (car D))
+           (e~ (acl2::sublis-var W{} e)))
+        (if (equal var e~)
+            (remove-internal-vars/equations (cdr D) W{})
+          (cons (list var e~)
+                (remove-internal-vars/equations (cdr D) W{})))))))
+
 (defun remove-intersecting-members-lst (lists-lst remove-list)
   (if (endp lists-lst)
       '()
@@ -787,45 +820,53 @@ should we completely be general?
       (cons (cons term f-lits-lst1)
             (remove-unfixable-lits (cdr term->f-lits-lst) u-lits)))))
 
+
 (defun remove-unfixable-constraints (term->f-lits-lst vl)
   (declare (xargs :mode :program))
   (b* ((unfixble-terms (get-all-keys nil term->f-lits-lst))
        ((when (null unfixble-terms)) term->f-lits-lst)
-       (- (cw? (verbose-stats-flag vl) "~| Unfixable constraints: ~x0~%" unfixble-terms))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Note: Unfixable constraints: ~x0~%" unfixble-terms))
        (all-terms (strip-cars term->f-lits-lst))
        (fixble-terms (set-difference-equal all-terms unfixble-terms))
        (term->f-lits-lst (assoc-equal-lst fixble-terms term->f-lits-lst))
        (term->f-lits-lst (remove-unfixable-lits term->f-lits-lst unfixble-terms)))
     (remove-unfixable-constraints term->f-lits-lst vl)))
 
+(defun fixer-rules-table (wrld)
+  (table-alist 'FIXER-RULES-TABLE wrld))
 
-(defun fixer-arrangement1 (terms vl ctx state)
+(defun preservation-rules-table (wrld)
+  (table-alist 'PRESERVATION-RULES-TABLE wrld))
+
+(defun fixer-arrangement1 (terms all-terms vl ctx state)
 ; returns (mv erp (cons let*-soln-binding unsat-terms) state)
 ; unsat-terms are a subset of terms. they exclude type-hyps and
 ; those terms that have no applicable fixer rules.
 ; these terms were unsat, because the preservation rules did not work out
          
   (b* ((wrld (w state))
-       (frules (strip-cdrs (defdata::fixer-rules-table wrld)))
-       (prules (strip-cdrs (defdata::preservation-rules-table wrld)))
-       ((mv ?erp1 (list term->flits-lst ?W{} fxri{}) state)
-        (instantiate-fixer-rules/terms-iter terms terms frules vl state '() '() '()))
+       (frules (strip-cdrs (fixer-rules-table wrld)))
+       (prules (strip-cdrs (preservation-rules-table wrld)))
+       ((mv ?erp1 (list term->flits-lst ?W{} all-terms~ fxri{}) state)
+        (instantiate-fixer-rules/terms-iter terms frules vl state
+                                            '() '() all-terms '()))
 
        (term->flits-lst (remove-unfixable-constraints term->flits-lst vl))
 
        (flits (two-level-flatten (strip-cdrs term->flits-lst)))
-       (fixable-terms (strip-cars term->flits-lst))
+
        ((mv ?erp2 fxri{} state)
-        (instantiate-pres-rules prules flits fixable-terms vl state fxri{}))
+        (instantiate-pres-rules prules flits all-terms~ vl state fxri{}))
        ((when (or erp1 erp2))
-        (er soft ctx "~|Cgen/Error: Something has gone wrong in instantiation of fixer or preservation rules!~%"))
+        (er soft ctx "~| Cgen/Error in instantiation of fixer or preservation rules!~%"))
        ;; (?litWt{} (pairlis$ flits
        ;;                    (make-list (length flits) :initial-element 1)))
 
        (type-hyps  (filter-type-hyps terms wrld))
        (non-type-hyps (set-difference-equal terms type-hyps))
 ; [2016-05-04 Wed] Only count the SAT of non-type-hyps
-; But discard those hyps that have no entry in the term->flits-lst       
+; But discard those hyps that have no entry in the term->flits-lst
+       (fixable-terms (strip-cars term->flits-lst))
        (relevant-terms (intersection-equal non-type-hyps fixable-terms))
        (flits-vars (acl2::all-vars1-lst flits '()))
        ((mv erp sat-A state)
@@ -834,64 +875,189 @@ should we completely be general?
                                   term->flits-lst
                                   relevant-terms
                                   fxri{}
+                                  :maxsat ;maxsat loop
                                   vl state))
        
        ((when (equal :null erp))
-        (value (cons nil relevant-terms)))
+        (value (list nil nil relevant-terms)))
        
        ((when (equal :unsat erp))
-        (prog2$
-         (cw? (verbose-flag vl) "~| UNSAT -- no fixer arrangement possible! Returning NIL.~%")
-         (value (cons nil relevant-terms))))
+        (progn$
+         (cw? (verbose-flag vl)
+              "~| Cgen/Note: GL query is UNSAT. No fixer arrangement found for~%")
+         (cw? (verbose-flag vl) "~| ~x0~%" relevant-terms)
+         (value (list nil nil relevant-terms))))
 
-       (ssigma (soln-sigma-top sat-A flits-vars fxri{}))
        (rterms-pvars/sat (pvars/sat-term relevant-terms))
        (rterms-pvars/true (filter-true-vars sat-A rterms-pvars/sat))
        (rterms/true (strip-cdrs (cgen::assoc-lst rterms-pvars/true
                                                 (pairlis$ rterms-pvars/sat relevant-terms))))
        (rterms/false (set-difference-equal relevant-terms rterms/true))
         
-       
-       (let*-soln (convert-to-let*-binding ssigma))
+       (ssigma (soln-sigma-top sat-A flits-vars fxri{}))
+       (let*-soln0 (convert-to-let*-binding ssigma))
+       (let*-soln (remove-internal-vars/equations let*-soln0 W{}))
+       ;(b*-soln (to-b*-mv-binding let*-soln))
        ;(let*-soln (assoc-equal-lst vars let*-soln))
-       (- (cw? (verbose-flag vl) "~| fixer-bindings are: ~x0~%" let*-soln))
-       (- (cw? (verbose-stats-flag vl) "~| Fixed terms: ~x0~%" rterms/true))
-       (- (cw? (verbose-stats-flag vl) "~| Unsat fixable terms: ~x0~%" rterms/false))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixer-bindings: ~x0~%" let*-soln))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixed terms: ~x0~%" rterms/true))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Unsat fixable terms: ~x0~%" rterms/false))
        ;; TODO check that this let* binding is sound/correct, i.e., it
        ;; satisfies all the hyps under fixer and pres rules.
+
+; [2016-09-05 Mon]
+; Add code to extract backchaining hypotheses
+       (new-hyps0 (set-difference-equal all-terms~ (equalitize-lst W{})))
+       (new-hyps1 (remove-duplicates-equal (acl2::sublis-var-lst W{} new-hyps0)))
+       (new-hyps  (set-difference-equal new-hyps1 all-terms))
        )
-    (value (cons let*-soln rterms/false))))
+    (value (list let*-soln new-hyps rterms/false))))
+
+
 
 ; Added [2016-08-12]
-(defun fixer-arrangement1-lst (terms-lst vl ctx state)
+(defun fixer-arrangement1-lst (terms-lst all-terms vl ctx state)
   ; iterative version of fixer-arrangement1. Ignores error
   (if (endp terms-lst)
-      (value (cons nil nil))
-    (b* (((mv erp res1 state) (fixer-arrangement1 (car terms-lst) vl ctx state))
-         ((when erp) (fixer-arrangement1-lst (cdr terms-lst) vl ctx state)) ;ignore error
-         ((cons B1 unsat-hyps1) res1)
-         ((mv ?erp (cons B2 unsat-hyps2) state)
-          (fixer-arrangement1-lst (cdr terms-lst) vl ctx state)))
-      (value (cons (append B1 B2) (append unsat-hyps1 unsat-hyps2))))))
+      (value (list nil nil nil))
+    (b* (((mv erp res1 state) (fixer-arrangement1 (car terms-lst) all-terms vl ctx state))
+         ((when erp) (fixer-arrangement1-lst (cdr terms-lst) all-terms vl ctx state)) ;ignore error
+         ((list B1 new-hyps1 unsat-hyps1) res1)
+         ((mv ?erp (list B2 new-hyps2 unsat-hyps2) state)
+          (fixer-arrangement1-lst (cdr terms-lst) all-terms vl ctx state)))
+      (value (list (append B1 B2)
+                   (union-equal new-hyps1 new-hyps2)
+                   (union-equal unsat-hyps1 unsat-hyps2))))))
+
+(logic)
+
+(defun rassoc-dlist (v dlist)
+  (if (endp dlist)
+      nil
+    (if (equal (cadr (car dlist)) v)
+        (car dlist)
+      (rassoc-dlist v (cdr dlist)))))
+
+(defun put-rassoc-dlist (v key dlist)
+;update key -> v entry in doubleton list by value; if v not found, put at end
+  (if (endp dlist)
+      (list (list key v))
+    (if (equal (cadr (car dlist)) v)
+        (cons (list key v) (cdr dlist))
+      (cons (car dlist) (put-rassoc-dlist v key (cdr dlist))))))
+            
+(defun update-mv-binding (x i arity mv-term B)
+  (b* ((entry (rassoc-dlist mv-term B))
+       ((unless (consp entry))
+        (cons (list (cons 'MV (update-nth i x (make-list arity :initial-element '&))) mv-term) B))
+       ((list mv-vars &) entry)
+       (mv-vars~ (update-nth (1+ i) x mv-vars))
+       (B (put-rassoc-dlist mv-term mv-vars~ B))
+       (x-val `(MV-NTH (QUOTE ,i) (MV-LIST (QUOTE ,arity) ,mv-term)))
+       (B (list-up-lists (strip-cars B)
+                         (acl2::sublis-var-lst (list (cons x-val x)) (strip-cadrs B)))))
+    B))
+    
+  
+(defun to-b*-mv-binding1 (letB ans)
+  (if (endp letB)
+      (reverse ans) ;keep original order
+    (b* (((list var e) (car letB))
+         ((unless (and (consp e) (equal (car e) 'MV-NTH)))
+          (to-b*-mv-binding1 (cdr letB) (cons (car letB) ans)))
+         (`(MV-NTH (QUOTE ,index) (MV-LIST (QUOTE ,arity) ,mv-term)) e))
+      (to-b*-mv-binding1 (cdr letB) (update-mv-binding var index arity mv-term ans)))))
+         
+(defun to-b*-mv-binding (letB)
+  (to-b*-mv-binding1 letB '()))
+
+(defun inverse-subst/b*-mv-entry (vars i arity exp)
+  (if (endp vars)
+      '()
+    (if (not (equal (car vars) '&))
+        (cons (cons `(MV-NTH (QUOTE ,i) (MV-LIST (QUOTE ,arity) ,exp)) (car vars))
+              (inverse-subst/b*-mv-entry (cdr vars) (1+ i) arity exp))
+      (inverse-subst/b*-mv-entry (cdr vars) (1+ i) arity exp))))
+
+(defun inverse-subst/b*-entry (key exp)
+  (if (atom key)
+      (list (cons exp key))
+    (if (eq (car key) 'MV)
+        (inverse-subst/b*-mv-entry (cdr key) 0 (len (cdr key)) exp)
+      ;; only MV supported
+      nil)))
+(defun alist-suffix-starting-with (key B)
+  (declare (xargs :guard (alistp B)))
+  (if (endp B)
+      '()
+    (if (equal (caar B) key)
+        B
+      (alist-suffix-starting-with key (cdr B)))))
+
+(program)                               
+(defun subst-b*-entry (key exp B)
+  (b* ((dup-key-start-block (alist-suffix-starting-with key B))
+       (prior-block (take (- (len B) (len dup-key-start-block)) B))
+       (prior-block (list-up-lists (strip-cars prior-block)
+                                   (acl2::sublis-expr-lst (inverse-subst/b*-entry key exp)
+                                                          (strip-cadrs prior-block)))))
+    (append prior-block dup-key-start-block)))
+         
+                       
+
+(defun collapse-b*-binding (B1 B2)
+; subst values with their keys from earlier entries, but be careful
+; only to touch values before the next duplicate var binding
+  (if (endp B1)
+      B2
+    (cons (car B1)
+          (subst-b*-entry (caar B1) (cadr (car B1))
+                          (collapse-b*-binding (cdr B1) B2)))))
+
 
 
 ; Putting together the middle and back ends! [2016-04-01 Fri]
 
 ; [2016-08-12 Fri] Modification to incorporate Pete's hint that unsat but
 ; fixable hyps should nonetheless be fixed and this should be prefixed to the
-; actual let*-soln.
-(defun fixer-arrangement/top (hyps concl vars type-alist vl ctx state)
-  (declare (ignorable vars type-alist))
-  (b* (((mv erp res state)
-        (fixer-arrangement1 (append hyps (list (dumb-negate-lit concl)))
-                            vl ctx state))
-       ((when erp) (value nil))
-       ((cons B fixable-hyps/unsat) res)
-       ((er (cons prefixB rest-unsat))
-        (fixer-arrangement1-lst (singletonize fixable-hyps/unsat) vl ctx state))
-       (- (cw? (and (consp rest-unsat) (verbose-stats-flag vl))
-               "~| Cgen/Verbose: ~x0 still not fixed! ~%" rest-unsat)))
-    (value (append prefixB B))))
+; actual b*-soln.
+(defun fixer-arrangement1/repeat (C i all-terms vl ctx state B new-hyps)
+  (if (endp C)
+      (value (list B new-hyps '()))
+    (b* ((- (cw? (verbose-stats-flag vl)
+                 "~| Cgen/Note: Recursively fix (loop iteration: ~x0) ~x1~%" i C))
+         ((mv erp res state) (fixer-arrangement1 C all-terms vl ctx state))
+         ((when erp) (value (list B new-hyps C))) ;return current
+         ((list B1 new-hyps1 C_unsat) res)
+         ((unless (< (len C_unsat) (len C))) (value (list B new-hyps C))) ;return current
+         (B (append B1 B))
+         (new-hyps (union-equal new-hyps1 new-hyps)))
+      (fixer-arrangement1/repeat C_unsat (1+ i) all-terms vl ctx state B new-hyps))))
+         
+(defun fixer-arrangement/top (hyps concl vl ctx state)
+  (b* ((terms (append hyps  (if (not (acl2::logic-termp concl (w state)))
+                                '()
+                              (list (cgen-dumb-negate-lit concl)))))
+       ((mv erp res state)
+        (fixer-arrangement1 terms terms vl ctx state))
+       ((when erp) (value (list nil nil)))
+       ((list B new-hyps C_unsat) res)
+
+       (rec-fixp (acl2s-defaults :get :recursively-fix))
+       ((mv ?erp (list B new-hyps C_unsat) state) ;does not return an error
+        ;;(fixer-arrangement1-lst (singletonize fixable-hyps/unsat) terms vl ctx state))
+        (if (and rec-fixp 
+                 (< (len C_unsat) (len terms)))
+            (fixer-arrangement1/repeat C_unsat 1 terms vl ctx state B new-hyps)
+          (value (list B new-hyps C_unsat)))) ;o.w return current values
+
+       (- (cw? (and (verbose-stats-flag vl) rec-fixp (consp C_unsat))
+               "~| Cgen/Verbose: ~x0 still not fixed! ~%" C_unsat))
+        
+       (b*-binding (to-b*-mv-binding B))
+       (b*-binding (collapse-b*-binding b*-binding nil))
+       )
+    (value (list b*-binding new-hyps))))
 
          
 
