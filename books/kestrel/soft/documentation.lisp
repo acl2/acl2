@@ -83,6 +83,8 @@
   this manual provides up-to-date information about SOFT.
   </p>")
 
+(xdoc::order-subtopics soft nil t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc soft-notions
@@ -97,6 +99,8 @@
   The macros provided by SOFT are based on the notions
   defined in the sub-topics below.
   </p>")
+
+(xdoc::order-subtopics soft-notions nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,6 +134,8 @@
   concisely generate and automatically prove theorems,
   by specifying replacements of function variables.
   </p>")
+
+(xdoc::order-subtopics soft-macros nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,6 +187,8 @@
   <see topic='@(url second-order-function-instances)'>instance</see>
   of the second-order function.
   </p>")
+
+(xdoc::order-subtopics second-order-functions nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
