@@ -11,8 +11,11 @@
 ; This file provides SOFT ('Second-Order Functions and Theorems'),
 ; a tool to mimic second-order functions and theorems
 ; in the first-order logic of ACL2.
+
 ; SOFT is documented in documentation.lisp
 ; and implemented in implementation.lisp.
+; Examples of use of SOFT are in
+; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

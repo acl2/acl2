@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems) - Workshop Talk Examples
+; SOFT ('Second-Order Functions and Theorems) -- Workshop Talk Examples
 ;
 ; Copyright (C) 2015-1026 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,6 +11,10 @@
 ; This file contains the SOFT ('Second-Order Functions and Theorems') examples
 ; in the ACL2-2015 Workshop talk "Second-Order Functions and Theorems in ACL2"
 ; that are not already in the ACL2-2015 Workshop paper with the same title.
+
+; SOFT is documented in documentation.lisp
+; and implemented in implementation.lisp.
+; Other examples of use of SOFT are in workshop-paper-examples.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
