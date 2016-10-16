@@ -45,6 +45,7 @@
 (include-book "prove-interface")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
+(include-book "symbol-true-list-alists")
 (include-book "terms")
 (include-book "testing")
 (include-book "true-list-listp-theorems")
