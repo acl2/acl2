@@ -245,9 +245,9 @@ A-lst top-vars elide-map))
       (concatenate 'acl2::string prefix integer-part "." fractional-part))))
 
 
-; [2015-04-07 Tue]
-
-(defun print-vacuous-stats-hyps (hyps kinds total hyp->sat)
+;; [2015-04-07 Tue]
+;; [2016-08-30 Tue] Removed restriction to vacuous test cases.
+(defun print-sat-stats-hyps (hyps kinds total hyp->sat)
 ;  Hypothesis | Type of Constraint | Negated | Sat/Total
   (if (endp hyps)
       nil
@@ -258,7 +258,7 @@ A-lst top-vars elide-map))
          )
       (prog2$ ;in Awk use ; as the field separator
        (cw! "~|Constraint;~f0 ~|Kind;~f1;Percentage;~s4;Sat/Total;~x2/~x3~%" hyp kind num-sat total p)
-       (print-vacuous-stats-hyps (cdr hyps) (cdr kinds) total hyp->sat)))))
+       (print-sat-stats-hyps (cdr hyps) (cdr kinds) total hyp->sat)))))
 
 (defun update-hyps->num-sat (hyp-vals hyps hyp->num-sat)
   "for each T value of hyp, increment its num-sat"
@@ -276,12 +276,12 @@ A-lst top-vars elide-map))
       
 
   
-(defun print-vacuous-stats/subgoal (hyp-vals-list hyps kinds total hyp->num-sat)
+(defun print-sat-stats/subgoal (hyp-vals-list hyps kinds total hyp->num-sat)
   (if (endp hyp-vals-list)
-      (print-vacuous-stats-hyps hyps kinds total hyp->num-sat)
+      (print-sat-stats-hyps hyps kinds total hyp->num-sat)
     (b* ((hyp-vals (car hyp-vals-list))
          (hyp->num-sat (update-hyps->num-sat hyp-vals hyps hyp->num-sat)))
-      (print-vacuous-stats/subgoal (cdr hyp-vals-list) hyps kinds total hyp->num-sat))))
+      (print-sat-stats/subgoal (cdr hyp-vals-list) hyps kinds total hyp->num-sat))))
 
 
 
@@ -395,20 +395,28 @@ A-lst top-vars elide-map))
     (cons (classify-hyp (car hyps) nil wrld)
           (classify-hyps (cdr hyps) wrld))))
   
-(defun print-vacuous-stats/subgoals (s-hist vl wrld)
+(defun print-sat-stats/subgoals (s-hist vl wrld)
   (if (endp s-hist)
       nil
     (b* (((cons name s-hist-entry%) (car s-hist))
          (test-outcomes% (access s-hist-entry% test-outcomes))
          (hyps      (access s-hist-entry% hyps))
          (concl      (access s-hist-entry% concl))
-         (vac-hyp-vals-list (access test-outcomes% vacs-hyp-vals-list))
+         (vacs-hyp-vals-list (access test-outcomes% vacs-hyp-vals-list))
+         (cts-hyp-vals-list (access test-outcomes% cts-hyp-vals-list))
+         (wts-hyp-vals-list (access test-outcomes% wts-hyp-vals-list))
+         (all-hyp-vals-list (append cts-hyp-vals-list
+                                    wts-hyp-vals-list
+                                    vacs-hyp-vals-list))
          (|#vacs| (access test-outcomes% |#vacs|))
          (total-runs/subgoal (+ |#vacs|
                                 (access test-outcomes% |#dups|)
                                 (access test-outcomes% |#cts|)
                                 (access test-outcomes% |#wts|)))
-         (sat% (rational-to-decimal-string (* 100 (/ (- total-runs/subgoal |#vacs|) total-runs/subgoal))))
+         (sat% (if (<= total-runs/subgoal 0)
+                   "100"
+                 (rational-to-decimal-string
+                  (* 100 (/ (- total-runs/subgoal |#vacs|) total-runs/subgoal)))))
          (cl (clausify-hyps-concl hyps concl))
          (pform (acl2::prettyify-clause cl nil wrld))
 
@@ -425,9 +433,9 @@ A-lst top-vars elide-map))
        (cw? (verbose-stats-flag vl) "Enum: ~x0~%"  disp-enum-alist)
        (cw? (and (verbose-stats-flag vl) elim-bindings)
             "elim/fixer: ~x0~%"  elim-bindings)
-       (print-vacuous-stats/subgoal vac-hyp-vals-list hyps kinds |#vacs| hyp->num-sat)
+       (print-sat-stats/subgoal all-hyp-vals-list hyps kinds total-runs/subgoal hyp->num-sat)
        (cw? (verbose-stats-flag vl) "~|__SUBGOAL_END__~%" )
-       (print-vacuous-stats/subgoals (cdr s-hist) vl wrld)))))
+       (print-sat-stats/subgoals (cdr s-hist) vl wrld)))))
 
 (logic)
 
@@ -459,7 +467,7 @@ history s-hist.")
                (progn$
                 (cw "~%__Vacuous_test_statistics_BEGIN__~%")
                 (cw "~|CTX;~f0~%" (if (and (consp top-ctx)) (cdr top-ctx) top-ctx)) 
-                (print-vacuous-stats/subgoals s-hist vl (w state))
+                (print-sat-stats/subgoals s-hist vl (w state))
                 (cw "~|__Vacuous_test_statistics_END__~%")))))
     (value nil)))
 
@@ -689,7 +697,7 @@ history s-hist.")
           (er soft ctx "~|CEgen/Error: CGEN::CGEN-STATE is ill-formed~|"))
          
          (vars (all-vars term))
-         (d-typ-al (dumb-type-alist-infer (cons (dumb-negate-lit concl) hyps)
+         (d-typ-al (dumb-type-alist-infer (cons (cgen-dumb-negate-lit concl) hyps)
                                           vars vl (w state)))
          (- (cw? (verbose-stats-flag vl) 
                  "~|CEgen/Verbose: (at top-level) dumb type-alist is ~x0~|" d-typ-al))
@@ -735,7 +743,7 @@ history s-hist.")
              (acl2::state-global-let*
               ((acl2::inhibit-output-lst 
                 (cond ((debug-flag vl) '(summary))
-                      (t #!acl2(set-difference-eq *valid-output-names* '(error))))))
+                      (t #!acl2(set-difference-eq *valid-output-names* '(error prove))))))
 ; Q: Why is here a wrapper call to trans-eval?
 ; A: To catch some hard errors! (see the email to Matt dated 3/20/2013)
               (trans-eval
