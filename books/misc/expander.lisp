@@ -1003,7 +1003,9 @@ directly with ACL2.</p>
                 (x (value x))
                 (t (er soft ctx
                        "No theorems were suggested for term~%  ~p0~%and ~
-                        hypotheses~%  ~p1.")))))))))
+                        hypotheses~%  ~p1."
+                       (untranslate term nil (w state))
+                       (untranslate-lst hyps t (w state)))))))))))
 
 (defxdoc defthm?
   :parents (expander)
