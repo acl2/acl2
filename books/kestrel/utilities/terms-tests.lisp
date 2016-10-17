@@ -46,19 +46,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (lambda-closedp '(lambda (x) (* '2 x))))
-
-(assert! (lambda-closedp '(lambda (x y) (- y x))))
-
-(assert! (not (lambda-closedp '(lambda (x) (cons x a)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (pseudo-fn/lambda-p 'f))
 
 (assert! (pseudo-fn/lambda-p '(lambda (x) x)))
 
 (assert! (not (pseudo-fn/lambda-p 33)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (lambdap '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
+
+(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (not (fn/lambda-p "cons" (w state))))
+
+(assert! (not (fn/lambda-p 'fffffffff (w state))))
+
+(assert! (fn/lambda-p 'cons (w state)))
+
+(assert! (fn/lambda-p 'len (w state)))
+
+(assert! (not (fn/lambda-p 'car-cdr-elim (w state))))
+
+(must-succeed*
+ (defun h (x) x)
+ (assert! (fn/lambda-p 'h (w state))))
+
+(assert!
+ (fn/lambda-p '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
+
+(assert! (not (fn/lambda-p '(lambda (x) (fffff x)) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (lambda-closedp '(lambda (x) (* '2 x))))
+
+(assert! (lambda-closedp '(lambda (x y) (- y x))))
+
+(assert! (not (lambda-closedp '(lambda (x) (cons x a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,6 +163,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (assert!
+  (not (lambda-guard-verified-fnsp '(lambda (x) (zp (f '4))) (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-equal (all-non-gv-exec-ffn-symbs 'x nil (w state)) nil)
 
 (assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) nil (w state)) nil)
@@ -157,42 +193,6 @@
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
  (assert-equal (all-non-gv-exec-ffn-symbs (body 'f nil (w state)) nil (w state))
                nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (lambdap '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
-
-(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (not (fn/lambda-p "cons" (w state))))
-
-(assert! (not (fn/lambda-p 'fffffffff (w state))))
-
-(assert! (fn/lambda-p 'cons (w state)))
-
-(assert! (fn/lambda-p 'len (w state)))
-
-(assert! (not (fn/lambda-p 'car-cdr-elim (w state))))
-
-(must-succeed*
- (defun h (x) x)
- (assert! (fn/lambda-p 'h (w state))))
-
-(assert!
- (fn/lambda-p '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
-
-(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert!
-  (not (lambda-guard-verified-fnsp '(lambda (x) (zp (f '4))) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

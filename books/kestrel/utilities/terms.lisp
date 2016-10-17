@@ -49,15 +49,6 @@
        (symbol-listp (second x))
        (pseudo-termp (third x))))
 
-(define lambda-closedp ((lambd pseudo-lambdap))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Check if a lambda expression is closed,
-          i.e. it has no free variables."
-  (subsetp-eq (all-vars (lambda-body lambd))
-              (lambda-formals lambd))
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
-
 (define pseudo-fn/lambda-p (x)
   :returns (yes/no booleanp)
   :parents (term-utilities)
@@ -74,6 +65,44 @@
    </p>"
   (or (symbolp x)
       (pseudo-lambdap x)))
+
+(define lambdap (x (wrld plist-worldp-with-formals))
+  :returns (yes/no booleanp)
+  :parents (term-utilities)
+  :short "Recognize valid
+          <see topic='@(url term)'>translated</see> lambda expression."
+  :long
+  "<p>
+   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
+   whose first element is the symbol @('lambda'),
+   whose second element is a list of legal variable symbols without duplicates,
+   and whose third element is a valid translated term
+   whose free variables are all among the ones in the second element.
+   </p>"
+  (and (true-listp x)
+       (= (len x) 3)
+       (eq (first x) 'lambda)
+       (arglistp (second x))
+       (termp (third x) wrld)
+       (subsetp-eq (all-vars (third x))
+                   (second x))))
+
+(define fn/lambda-p (x (wrld plist-worldp-with-formals))
+  :returns (yes/no booleanp)
+  :parents (term-utilities)
+  :short "Recognize valid function symbols and
+          <see topic='@(url term)'>translated</see> lambda expression."
+  (or (function-namep x wrld)
+      (lambdap x wrld)))
+
+(define lambda-closedp ((lambd pseudo-lambdap))
+  :returns (yes/no booleanp)
+  :parents (term-utilities)
+  :short "Check if a lambda expression is closed,
+          i.e. it has no free variables."
+  (subsetp-eq (all-vars (lambda-body lambd))
+              (lambda-formals lambd))
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (define apply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
@@ -242,6 +271,15 @@
         (and (guard-verified-fnsp (car terms) wrld)
              (guard-verified-fns-listp (cdr terms) wrld)))))
 
+(define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
+                                    (wrld plist-worldp-with-formals))
+  :returns (yes/no booleanp)
+  :parents (term-utilities)
+  :short "Check if all the functions in a lambda expression
+          are guard-verified."
+  (guard-verified-fnsp (lambda-body lambd) wrld)
+  :guard-hints (("Goal" :in-theory (enable lambdap))))
+
 (defines all-non-gv-exec-ffn-symbs
   :parents (term-utilities)
   :short "Non-guard-verified functions called by a term for execution."
@@ -288,44 +326,6 @@
     (b* (((when (endp terms)) ans)
          (ans (all-non-gv-exec-ffn-symbs (car terms) ans wrld)))
       (all-non-gv-exec-ffn-symbs-lst (cdr terms) ans wrld))))
-
-(define lambdap (x (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize valid
-          <see topic='@(url term)'>translated</see> lambda expression."
-  :long
-  "<p>
-   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of legal variable symbols without duplicates,
-   and whose third element is a valid translated term
-   whose free variables are all among the ones in the second element.
-   </p>"
-  (and (true-listp x)
-       (= (len x) 3)
-       (eq (first x) 'lambda)
-       (arglistp (second x))
-       (termp (third x) wrld)
-       (subsetp-eq (all-vars (third x))
-                   (second x))))
-
-(define fn/lambda-p (x (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize valid function symbols and
-          <see topic='@(url term)'>translated</see> lambda expression."
-  (or (function-namep x wrld)
-      (lambdap x wrld)))
-
-(define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
-                                    (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Check if all the functions in a lambda expression
-          are guard-verified."
-  (guard-verified-fnsp (lambda-body lambd) wrld)
-  :guard-hints (("Goal" :in-theory (enable lambdap))))
 
 (define check-user-term (x (wrld plist-worldp))
   :returns (mv (term/message "A @(tsee pseudo-termp) or @('msgp')
