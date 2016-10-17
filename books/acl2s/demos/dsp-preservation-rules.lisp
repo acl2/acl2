@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "/home/harshrc/sources/acl2s-svn/acl2s-modes/cgen/top" :ttags :all)
+(include-book "acl2s/cgen/top" :dir :system :ttags :all)
 (acl2s-defaults :set testing-enabled :naive)
 (acl2s-defaults :set :use-fixers t)
 (acl2s-defaults :set :recursively-fix nil)
