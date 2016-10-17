@@ -51,7 +51,6 @@ function incrementKinds(K,pc) {
         print "constraint with empty fn symbol was " constraint
     CCount[fn111]++
     if (pc < lo) {
-        print "Constraint is " constraint 
         CLo[fn111]++
     }
     if (pc > hi) CHi[fn111]++
@@ -73,30 +72,27 @@ function substr1 (s, starti, endi) {
 
 function get_top_fn_symbol (c1) {
     cs = substr1(c1,2,find_closing_paren_pos(c1))
-    print "cs is " cs
     n = split(cs,temp1, " ")
-    print "cs is " cs
-    print "temp1[1] is:" temp1[1] " temp1[2] is:" temp1[2] " temp1[3] is:" temp1[3]
     ans = temp1[1]
     if (temp1[1] == "NOT") {
         not_arg = substr(cs,5)
-        print "not_arg is " not_arg
+    
         ans =  get_top_fn_symbol(not_arg)
         if (ans == "") ans = "NOT"
-        print "NOT case: ans is " ans
+        
     }
     if (temp1[1] == "EQUAL" || temp1[1] == "EQL" || temp1[1] == "EQ" || temp1[1] == "=") {
-        print "if cond:" index(temp1[2],"(") " else if:" index(temp1[3],"(")
+        
         if (index(temp1[2],"(") > 0) {
             ans = substr(temp1[2], 2)
-            print "returning first args fn: " ans
+            
         }
         else if (index(temp1[3],"(") > 0) {
             ans = substr(temp1[3], 2)
-            print "returning second args fn: " ans
+            
         }
         else {
-            print "returning equal"
+            
             ans = "EQUAL";
         }
     }
@@ -113,7 +109,7 @@ END {
     print "Total Events:", totalEvents
     print "Total Subgoals:", totalSubgoals, "Vacuous:", vacSubgoals
     print "Total Hyps (Constraints):", totalHyps
-    printf("%-25s %-10s %-10s %-9s\n", "Constraint Name", "Count", "# sat% < "lo, "# sat% > "hi)
+    printf("%-25s %-14s %-14s %-7s\n", "Constraint Name", "Count", "# sat% < "lo, "# sat% > "hi)
     for (i in CCount) 
         printf("%-25s %-10d %7d (%2d) %7d (%2d)\n", i, CCount[i], CLo[i], CLo[i]*100/CCount[i], CHi[i], CHi[i]*100/CCount[i])
 
