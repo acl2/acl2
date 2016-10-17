@@ -1,7 +1,7 @@
 (in-package "ACL2")
 (set-case-split-limitations 'nil)
 
-(include-book "refinement-sfm06-all")
+(include-book "refinement-sfm06-with-hazards")
 
 ;:trans1
 (generate-full-system isa-step isa-p ma-step ma-p 

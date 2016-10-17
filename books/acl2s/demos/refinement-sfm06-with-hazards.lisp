@@ -1,7 +1,6 @@
 (in-package "ACL2")
 
 #|
-
 This is the weak defun-sk macro.  I only thought about existential
 quantification.  Do a macro-expansion to see what it produces, but
 essentially it produces a function with only one constraint: this
