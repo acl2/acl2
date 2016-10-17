@@ -2,7 +2,7 @@
 ;; Author - Harsh Raju Chamarthi (harshrc)
 (include-book ;; Newline to fool ACL2/cert.pl dependency scanner
  "../portcullis")
-(begin-book t :ttags :all);$ACL2s-Preamble$|#
+(begin-book t);$ACL2s-Preamble$|#
 
 
 (in-package "CGEN")
@@ -183,14 +183,14 @@ cgen-state"
 ; #dups is the number of duplicates encountered (but only in wts and cts [2015-04-07 Tue]) 
 ; [2015-04-07 Tue] vacs-hyp-vals-list is (listof (listof boolean))
 (defrec test-outcomes% 
-  ((|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) . |#dups|)
+  ((|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) |#dups| disp-enum-alist elim-bindings) ;[2016-04-25 Mon] record these too
   NIL)
 
 
 (defun test-outcomes%-p (v)
   (declare (xargs :guard T))
   (case-match v ;internal layout hidden everywhere else
-    (('test-outcomes% (|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) . |#dups|)
+    (('test-outcomes% (|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) |#dups| disp-enum-alist elim-bindings)
 ; symbol-doublet-list-listp is a list of assignments/value-bindings              
      (and (symbol-doublet-list-listp cts)
           (symbol-doublet-list-listp wts)
@@ -201,7 +201,10 @@ cgen-state"
           (unsigned-29bits-p |#wts|)
           (unsigned-29bits-p |#cts|)
           (unsigned-29bits-p |#vacs|)
-          (unsigned-29bits-p |#dups|)))))
+          (unsigned-29bits-p |#dups|)
+          (symbol-alistp disp-enum-alist)
+          (alistp elim-bindings) ;elim-bindings is now a b* binding [2016-09-05 Mon]
+          ))))
           
 
 (defmacro test-outcomes-1+ (fld)
@@ -263,7 +266,7 @@ cgen-state"
          ;;end-time ;leave to end
          user-supplied-term
          displayed-goal
-         top-ctx ; either ctx is user-defined or comes from event form
+         top-ctx ; either ctx is user-defined or comes from event form, but updated to callback ctx
          params ;it is an alist form of acl2s-defaults table
 ;derived          
          top-vt-alist ;dumb var-type alist inferred
@@ -281,7 +284,7 @@ cgen-state"
          (pseudo-termp user-supplied-term)
          (not (eq :undefined displayed-goal))
          (or (member-eq top-ctx '(:user-defined test?))
-             (allowed-cgen-event-ctx-p top-ctx))
+             (not (null top-ctx))); (allowed-cgen-event-ctx-p top-ctx))
          (cgen-params-p params)
 
          (var-alistp top-vt-alist)
@@ -319,3 +322,152 @@ cgen-state"
 (defun membership-relationp (R) ;TODO make this more general
   (member-equal R '(acl2::member-eq acl2::member acl2::member-eql acl2::member-equal acl2s::in |ACL2S B|::in)))
 
+
+; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
+; fixer/elim-binding as a b*-binding that can be used in simple-search
+(defstub fixer-arrangement (* * * * state) => (mv * * state))
+(defun fixer-arrangement/dummy (hyps concl vl ctx state)
+  (declare (ignore hyps concl vl ctx))
+  (declare (xargs :stobjs (state)))
+  (mv nil (list nil nil) state))
+(defattach (fixer-arrangement fixer-arrangement/dummy))
+
+
+; other basic functionality
+
+;The following 2 function only look at the outermost implies form
+;get hypothesis from acl2 term being proved.
+(defun get-hyp (form)
+  (declare (xargs :guard t))
+  (if (atom form)
+    t;no hyps is equivalent to true
+    (if (and (consp (cdr form))
+             (eq 'implies (first form)))
+      (second form)
+      t)));;no hyps is equivalent to true
+
+; use expand-assumptions-1 instead when you have a term
+(defun get-hyps (pform)
+  (declare (xargs :guard t))
+  (b* ((hyp (get-hyp pform))
+       ((when (eq hyp 't)) nil)
+       ((unless (and (consp hyp)
+                     (consp (cdr hyp))
+                     (eq (car hyp) 'and)))
+        (list hyp))
+       (rst (cdr hyp)))
+    rst))
+
+
+;get conclusion from acl2 term being proved
+(defun get-concl (form)
+  (declare (xargs :guard t))
+  (if (atom form)
+    form
+    (if (and (consp (cdr form))
+             (consp (cddr form))
+             (eq 'implies (first form)))
+      (third form)
+      form)))
+
+(program)
+
+(mutual-recursion
+ (defun strip-return-last (term)
+   (declare (xargs :verify-guards nil :guard (pseudo-termp term)))
+   (cond ((acl2::variablep term) term)
+         ((acl2::fquotep term) term)
+         ((eq (acl2::ffn-symb term) 'acl2::hide) term)
+         (t
+          (let* ((stripped-args (strip-return-last-lst (fargs term)))
+                 (fn (acl2::ffn-symb term)))
+               
+            (cond ((eq fn 'ACL2::RETURN-LAST) ;get rid return-last
+                   (car (last stripped-args)))
+                  (t (acl2::cons-term fn stripped-args)))))))
+
+(defun strip-return-last-lst (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) '())
+        (t (cons (strip-return-last (car term-lst))
+                 (strip-return-last-lst (cdr term-lst))))))
+
+ )
+
+
+(mutual-recursion
+ (defun strip-force (term)
+   (declare (xargs :verify-guards nil :guard (pseudo-termp term)))
+   (cond ((acl2::variablep term) term)
+         ((acl2::fquotep term) term)
+         ((eq (acl2::ffn-symb term) 'acl2::hide) term)
+         (t
+          (let* ((stripped-args (strip-force-lst (fargs term)))
+                 (fn (acl2::ffn-symb term)))
+               
+            (cond ((eq fn 'ACL2::FORCE) ;get rid force
+                   (first stripped-args))
+                  (t (acl2::cons-term fn stripped-args)))))))
+
+(defun strip-force-lst (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) '())
+        (t (cons (strip-force (car term-lst))
+                 (strip-force-lst (cdr term-lst))))))
+
+ )
+
+(defun orient-equality (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (and (consp term) 
+           (member-eq (car term) '(EQUAL EQ EQL =))
+           (consp (cdr term)) (consp (cddr term))
+           (variablep (third term)))
+      (list (first term) (third term) (second term))
+    term))
+
+(include-book "../defdata/defdata-util")
+
+(u::defloop orient-equalities (terms)
+  (for ((term in terms)) (collect (orient-equality term))))
+      
+(defun partition-hyps-concl (term str state)
+  (declare (xargs :stobjs (state)))
+  ;; (decl :mode :program
+  ;;       :sig ((pseudo-termp stringp state) -> (mv pseudo-term-listp pseudo-termp state))
+  ;;       :doc "expand lambdas,strip return-last, extracts hyps and concl from term")
+;expensive operation
+  ;; get rid of lambdas i.e let/let*
+  (b* ((term  (defdata::expand-lambda term))
+       (wrld (w state))
+       (pform (acl2::prettyify-clause (list term) nil wrld))
+       ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
+       
+       ((er hyps) (acl2::translate-term-lst phyps 
+                                            t nil t str wrld state))
+       ((er concl) (acl2::translate pconcl t nil t str wrld state)))
+    (mv hyps concl state)))
+
+(defun partition-into-hyps-concl-and-preprocess (term str state)
+  (declare (xargs :stobjs (state)))
+  ;; (decl :mode :program
+  ;;       :sig ((pseudo-termp stringp state) -> (mv pseudo-term-listp pseudo-termp state))
+  ;;       :doc "expand lambdas,strip return-last, extracts hyps and concl from term")
+;expensive operation
+  ;; get rid of lambdas i.e let/let*
+  (b* ((term  (defdata::expand-lambda term))
+       (wrld (w state))
+       (pform (acl2::prettyify-clause (list term) nil wrld))
+       ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
+       
+       ((er hyps) (acl2::translate-term-lst phyps 
+                                            t nil t str wrld state))
+       ((er concl) (acl2::translate pconcl t nil t str wrld state))
+       (hyps (strip-return-last-lst hyps))
+       (hyps (strip-force-lst hyps))
+       (concl (strip-return-last concl))
+       (concl (strip-force concl))
+       (hyps (orient-equalities hyps))
+       (concl (orient-equality concl))
+       )
+    (mv hyps concl state)))

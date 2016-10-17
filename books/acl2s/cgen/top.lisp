@@ -160,7 +160,6 @@
       (test?-fn ',form ',hints ',kwd-val-lst state)))))
 
 
-(include-book "xdoc/top" :dir :system)
 
 (defxdoc acl2::cgen
   :parents (acl2::debugging acl2::acl2-sedan)
@@ -465,4 +464,15 @@ information in a human-readable form. </p>
 "
 )
 
-(acl2s-defaults :set testing-enabled t)
+
+
+; Set some defaults:
+(acl2s-defaults :set testing-enabled t) ;test other books
+(acl2s-defaults :set verbosity-level 3)
+(acl2s-defaults :set num-witnesses 0)
+(acl2s-defaults :set sampling-method :random)
+
+
+; [2016-04-03 Sun] Add fixers support to Cgen
+(include-book "fixers2" :ttags :all)
+(include-book "cgen-rules")

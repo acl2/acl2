@@ -13,7 +13,7 @@ data last modified: [2014-08-06]
 
 (in-package "DEFDATA")
 
-(include-book "std/util/da-base" :dir :system)
+;(include-book "std/util/da-base" :dir :system)
 (include-book "coi/symbol-fns/symbol-fns" :dir :system)
 (include-book "defdata-util")
 (include-book "data-structures/utilities" :dir :system)

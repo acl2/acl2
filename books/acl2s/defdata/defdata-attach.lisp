@@ -142,6 +142,15 @@ data last modified: [2015-06-09 Tue]
   (declare (ignorable name kwd-alist verbosep wrld))
   (er hard 'defdata-attach/fixer "unimplemented"))
 
+(defun refine-rule-p (rule)
+  (case-match rule
+    (('IMPLIES & ('EQUAL x exp)) (not (member x (all-vars exp))))
+    (& nil)))
+
+(defun elim-constraint-variable (rule)
+  (case-match rule
+    (('IMPLIES & ('EQUAL x &)) x)
+    (& nil)))
 
 ;TODO: union-equal is too naive to combine rules; perhaps use a better
 ;data-structure to store constraint-rules.
@@ -151,10 +160,14 @@ data last modified: [2015-06-09 Tue]
        ((unless (pseudo-termp constraint))
         (er hard? ctx "~|~x0 should be a term~%" constraint))
        (rule (get1 :rule kwd-alist))
-       ((unless rule) nil)
+       ((unless (refine-rule-p rule))
+        (er hard? ctx "~|~x0 should be a refine rule of form ~
+ (IMPLIES hyps (EQUAL x exp)), where x does not occur in exp~%" rule))
        (meta-precondition (or (get1 :meta-precondition kwd-alist) 't))
        (match-type (or (get1 :match-type kwd-alist) :match))
-       (constraint-variable (or (get1 :constraint-variable kwd-alist) 'x))
+       (constraint-variable (or (get1 :constraint-variable kwd-alist)
+                                (elim-constraint-variable rule)
+                                'x))
        (meta-replace (or (get1 :meta-replace kwd-alist) '()))
        (crule (list (cons :constraint constraint)
                     (cons :constraint-variable constraint-variable)

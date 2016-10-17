@@ -188,7 +188,7 @@ data last modified: [2014-08-06]
               `(IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (set-difference-equal terms fes2)))) ,(car fes2)) ;sig rule
             "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule"))
          (t 
-"Multiple sig terms i.e. (P1 (f x1 ...)) \/ (P2 (f x1 ...)) 
+"Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...)) 
  not allowed in conclusion of signature rule")))
     "Impossible: Empty clause"))
 
@@ -219,7 +219,7 @@ data last modified: [2014-08-06]
   
 
 (defun tau-rule-Px-recog=>prod (and-terms P x C wrld)
-  (declare (ignorable wrld))
+  (declare (ignorable P wrld))
   (b* ((recog-exp (governing-recognizer-call-with-var and-terms x C))
 ;hack REVISIT later
        (recog-exp (and recog-exp (proper-symbolp (car recog-exp))
@@ -237,7 +237,9 @@ data last modified: [2014-08-06]
      (if (find-x-terms->=-depth dterms x 3)
         (list "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule.")
 ;TODO should I break it into multiple rules?
-      `((IMPLIES (AND (,P ,x) ,recog-exp) (AND . ,dterms))))))
+       `((IMPLIES (AND (,P ,x) ,recog-exp) (AND . ,dterms)))
+       ;;`((IMPLIES ,recog-exp (AND . ,dterms)))
+       )))
 
 (defloop tau-rules-Px=>SoP (sop P x C wrld)
   "Given sum-of-products pred expr sop, return a list of characterizing tau rules"
@@ -266,8 +268,13 @@ data last modified: [2014-08-06]
 
 
 (defun recognizer-call (call C wrld)
+  (declare (ignorable wrld))
   (case-match call
-    ((P x) (and (proper-symbolp x) (or (get-conx-name P C) (tau-predicate-p P wrld)) call))
+    ((P x) (and (proper-symbolp x)
+                (or (get-conx-name P C)
+                    ;;(tau-predicate-p P wrld)
+                    )
+                call))
     (& nil)))
 
 (defloop governing-recognizer-call (terms C wrld) ;cheat: just give the first
@@ -283,13 +290,21 @@ data last modified: [2014-08-06]
 ;       (- (cw "~| evg1-term = ~x0 evg2-term = ~x1 P1x = ~x2 P2x = ~x3" evg1-term evg2-term P1x P2x))
        )
     (cond ((and evg1-term evg2-term) (not (equal evg1 evg2)))
-          ((and evg2-term P1x (equal (second P1x) (second evg2-term))) 
-           (b* (((mv erp res) (acl2::ev-fncall-w (car P1x) (list evg2) wrld nil nil t t nil)))
-             (and (not erp) (not res))))
-          ((and evg1-term P2x (equal (second P2x) (second evg1-term))) 
-           (b* (((mv erp res) (acl2::ev-fncall-w (car P2x) (list evg1) wrld nil nil t t nil)))
-             (and (not erp) (not res)))) 
-          ((and P1x P2x) (disjoint-p (car P1x) (car P2x) wrld))
+          ((and evg2-term P1x (equal (second P1x) (second evg2-term)))
+           (if (function-symbolp (car P1x) wrld)
+               (b* (((mv erp res) (acl2::ev-fncall-w (car P1x) (list evg2) wrld nil nil t t nil)))
+                 (and (not erp) (not res)))
+             t)) ;new symbol introduced will be disjoint -- heuristic
+          ((and evg1-term P2x (equal (second P2x) (second evg1-term)))
+           (if (function-symbolp (car P2x) wrld)
+               (b* (((mv erp res) (acl2::ev-fncall-w (car P2x) (list evg1) wrld nil nil t t nil)))
+                 (and (not erp) (not res)))
+             t)) ;new symbol introduced will be disjoint -- heuristic
+          ((and P1x P2x)
+           (if (and (function-symbolp (car P1x) wrld) 
+                    (function-symbolp (car P2x) wrld))
+               (disjoint-p (car P1x) (car P2x) wrld)
+             t)) ;new symbols disjoint -- heuristic
           (t nil))))
 
 
@@ -303,19 +318,54 @@ data last modified: [2014-08-06]
     (and (clause-disjoint-with-clauses-p (car clauses) (cdr clauses) C wrld)
          (mutually-disjoint-clauses-p (cdr clauses) C wrld))))
 
+
+(defloop filter-prods (xs C wrld)
+  (for ((x in xs)) (append (and (governing-recognizer-call x C wrld)
+                                (list x)))))
+
+(defloop governing-recognizer-calls (xs C wrld)
+  (for ((x in xs)) (collect (governing-recognizer-call x C wrld))))
+
+
+(defloop negate-terms (terms)
+  (for ((term in terms)) (collect (list 'NOT term))))
+
+(defun tau-rules-Px=>def/conjunctive (clauses P x C wrld)
+  (b* ((prod-clauses (filter-prods clauses C wrld))
+       (base-clauses (set-difference-equal clauses prod-clauses))
+       (base-terms (strip-cars base-clauses)) ;hack. they should be singletons
+       (prod-recogs (governing-recognizer-calls prod-clauses C wrld))
+       (neg-prod-recogs (negate-terms prod-recogs)))
+    (if (= (len base-terms) 1)
+        `((IMPLIES (AND (,P ,x) ,@neg-prod-recogs)
+                   ,(car base-terms)))
+      `((IMPLIES (AND (,P ,x) ,@neg-prod-recogs)
+                 (OR . ,base-terms))))))
+
+       
+
 (defun shallow-prod-p (texp C)
   (and (consp texp)
        (assoc-equal (car texp) C)))
 
-(defloop atleast-one-shallow-prod-p (xs C)
-  (for ((x in xs)) (thereis (shallow-prod-p x C))))
+(defloop filter-shallow-prods (xs C)
+  (for ((x in xs)) (append (and (shallow-prod-p x C)
+                                (list x)))))
 
-(defun shallow-union-of-prods-p (texp wrld)
+(defloop var-or-quoted-listp (xs)
+  (for ((x in xs)) (always (or (proper-symbolp x)
+                               (quotep x)))))
+
+(defun shallow-union-of-prods-p (texp C)
   (and (consp texp)
        (eq (car texp) 'OR) ;union
        (b* ((targs (cdr texp))
-            (C (table-alist 'data-constructor-table wrld)))
-         (atleast-one-shallow-prod-p targs C))))
+            (prods (filter-shallow-prods targs C))
+            (rest (set-difference-equal targs prods)))
+         (and (consp prods)
+              (var-or-quoted-listp rest)))))
+         
+       
 
 
 (defun tau-rules-Px=>form (form Px s  new-fns-and-args ctx C wrld)
@@ -328,12 +378,13 @@ data last modified: [2014-08-06]
 ;       (vars (all-vars1-lst te '())) 
 ;       (- (assert$ (= 1 (len vars)) nil))) ;monadic
        )
-    (if (shallow-union-of-prods-p s wrld)
+    (if (shallow-union-of-prods-p s C)
         (b* ((conj-clauses (acl2::cnf-dnf t te nil))) ;get dnf form
           (if (mutually-disjoint-clauses-p conj-clauses C wrld)
               (append (tau-rules-Px=>EQ-constants conj-clauses (car Px) (cadr Px) wrld)
                       ;;TODO The conj clauses eaten/consumed by above should be
                       ;;excluded from below call!!
+                      (tau-rules-Px=>def/conjunctive conj-clauses (car Px) (cadr Px) C wrld)
                       (tau-rules-Px=>SoP conj-clauses (car Px) (cadr Px) C wrld))
             (list "Unable to characterize (using tau rules) a non-disjoint union type")))
 
