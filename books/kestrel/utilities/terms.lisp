@@ -242,6 +242,53 @@
         (and (guard-verified-fnsp (car terms) wrld)
              (guard-verified-fns-listp (cdr terms) wrld)))))
 
+(defines all-non-gv-exec-ffn-symbs
+  :parents (term-utilities)
+  :short "Non-guard-verified functions called by a term for execution."
+  :long
+  "<p>
+   These are all the non-guard-verified functions that occur in the term,
+   except for those that occur in the @(':logic') subterms of @(tsee mbe)s.
+   This is because, in order for a function to be guard-verified,
+   the functions that occurs in such subterms do not have to be guard-verified.
+   The purpose of this function is to check whether a term
+   could be potentially guard-verified.
+   </p>
+   <p>
+   In translated form,
+   a term @('(mbe :logic a :exec b)')
+   appears as @('(return-last 'mbe1-raw b a)').
+   So the code of this function treats this pattern specially.
+   </p>
+   @(def all-non-gv-exec-ffn-symbs)
+   @(def all-non-gv-exec-ffn-symbs-lst)"
+  :verify-guards nil
+
+  (define all-non-gv-exec-ffn-symbs ((term pseudo-termp)
+                                     (ans symbol-listp)
+                                     (wrld plist-worldp))
+    :returns (final-ans symbol-listp :hyp :guard)
+    (b* (((when (variablep term)) ans)
+         ((when (fquotep term)) ans)
+         (fn/lambda (ffn-symb term))
+         ((when (and (eq fn/lambda 'return-last)
+                     (equal (fargn term 1) '(quote mbe1-raw))))
+          (all-non-gv-exec-ffn-symbs (fargn term 2) ans wrld))
+         (ans (if (flambdap fn/lambda)
+                  (all-non-gv-exec-ffn-symbs (lambda-body fn/lambda) ans wrld)
+                (if (guard-verified-p fn/lambda wrld)
+                    ans
+                  (add-to-set-eq fn/lambda ans)))))
+      (all-non-gv-exec-ffn-symbs-lst (fargs term) ans wrld)))
+
+  (define all-non-gv-exec-ffn-symbs-lst ((terms pseudo-term-listp)
+                                         (ans symbol-listp)
+                                         (wrld plist-worldp))
+    :returns (final-ans symbol-listp :hyp :guard)
+    (b* (((when (endp terms)) ans)
+         (ans (all-non-gv-exec-ffn-symbs (car terms) ans wrld)))
+      (all-non-gv-exec-ffn-symbs-lst (cdr terms) ans wrld))))
+
 (define lambdap (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
   :parents (term-utilities)
