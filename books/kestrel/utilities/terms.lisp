@@ -298,6 +298,40 @@
   (guard-verified-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable lambdap))))
 
+(defines all-non-gv-ffn-symbs
+  :parents (term-utilities)
+  :short "Non-guard-verified functions called by a term."
+  :long
+  "<p>
+   The name of this function is consistent with
+   the name of @('all-ffn-symbs') in the ACL2 source code.
+   </p>
+   @(def all-non-gv-ffn-symbs)
+   @(def all-non-gv-ffn-symbs-lst)"
+  :verify-guards nil
+
+  (define all-non-gv-ffn-symbs ((term pseudo-termp)
+                                (ans symbol-listp)
+                                (wrld plist-worldp))
+    :returns (final-ans symbol-listp :hyp :guard)
+    (b* (((when (variablep term)) ans)
+         ((when (fquotep term)) ans)
+         (fn/lambda (ffn-symb term))
+         (ans (if (flambdap fn/lambda)
+                  (all-non-gv-ffn-symbs (lambda-body fn/lambda) ans wrld)
+                (if (guard-verified-p fn/lambda wrld)
+                    ans
+                  (add-to-set-eq fn/lambda ans)))))
+      (all-non-gv-ffn-symbs-lst (fargs term) ans wrld)))
+
+  (define all-non-gv-ffn-symbs-lst ((terms pseudo-term-listp)
+                                    (ans symbol-listp)
+                                    (wrld plist-worldp))
+    :returns (final-ans symbol-listp :hyp :guard)
+    (b* (((when (endp terms)) ans)
+         (ans (all-non-gv-ffn-symbs (car terms) ans wrld)))
+      (all-non-gv-ffn-symbs-lst (cdr terms) ans wrld))))
+
 (defines guard-verified-exec-fnsp
   :parents (term-utilities)
   :short "Check if a term calls only guard-verified functions for execution."

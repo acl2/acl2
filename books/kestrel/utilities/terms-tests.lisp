@@ -172,6 +172,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (all-non-gv-ffn-symbs 'x nil (w state)) nil)
+
+(assert-equal (all-non-gv-ffn-symbs '(quote 4) nil (w state)) nil)
+
+(assert-equal (all-non-gv-ffn-symbs '(cons (len a) '3) nil (w state)) nil)
+
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (assert-equal (all-non-gv-ffn-symbs '(zp (f '4)) nil (w state)) '(f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (guard-verified-exec-fnsp 'x (w state)))
 
 (assert! (guard-verified-exec-fnsp '(quote 4) (w state)))
