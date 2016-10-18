@@ -14,6 +14,8 @@
 (include-book "x86isa/doc")
 (include-book "farray/farray")
 (include-book "sat/proof-checker-itp13/top")
+(include-book "sat/proof-checker-array/top")
+(include-book "sat/dimacs-reader/reader")
 
 (defxdoc projects
   :parents (top)

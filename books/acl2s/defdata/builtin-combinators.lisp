@@ -102,7 +102,10 @@ data last modified: [2014-08-06]
                              (t ;lo is neg inf, and hi is <= 0
                               `(- ,hi ,r))))) ;ans shud be less than or equal to hi
       
-      (otherwise  (cond ((and lo hi) ;ASSUME inclusive even when you have exclusive bounds
+      (otherwise  (let* ((gap (/ (- hi lo) 1000))
+                        (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
+                        (hi (and hi (if hi-rel (- hi gap) hi))))
+                    (cond ((and lo hi) 
                          `(acl2s::nth-rational-between ,r ,lo ,hi))
                         
                         (lo ;hi is positive infinity
@@ -115,7 +118,7 @@ data last modified: [2014-08-06]
                               rat-ans)));ans shud be less than or equal to hi
                         
                         (t;lo is neg infinity and hi is is <= 0
-                         `(- ,hi (acl2s::nth-positive-rational ,r))))))))
+                         `(- ,hi (acl2s::nth-positive-rational ,r)))))))))
 
 (defun range-enum-I (i s) (make-enum-body-for-range i (cadr s) (get-tau-int (cadr s) (third s))))
 (defun range-enum/acc-I (i s) 

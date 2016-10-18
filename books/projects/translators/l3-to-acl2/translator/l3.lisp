@@ -265,8 +265,8 @@
   `(assert$ (mbt ,condition)
             ,value))
 
-(verify-termination doubleton-list-p)
-(verify-guards doubleton-list-p)
+(verify-termination doublet-listp)
+(verify-guards doublet-listp)
 
 #||
    [raise'exception_def]  Definition

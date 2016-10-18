@@ -11,7 +11,10 @@
 (include-book "num-list-fns")
 
 (local (include-book "num-list-thms"))
+
+(local (in-theory (disable rem floor)))
 (local (include-book "rem-and-floor"))
+
 (include-book "mv-proof")
 
 (defun weighted-switch-nat-find (rem-weights weights-idx rem-wchoice quotient-x)

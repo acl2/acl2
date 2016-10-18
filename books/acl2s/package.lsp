@@ -11,7 +11,7 @@
      |1+F| |1-F| +f -f
      defxdoc current-acl2-world e/d unsigned-byte-p
      fquotep ffn-symb flambdap fargs
-     dumb-negate-lit template-subst
+     template-subst
 
      ;more acl2 exports
      aconsp
@@ -63,7 +63,6 @@
      unsigned-byte-p
      defrec 
      variablep fquotep ffn-symb flambdap fargs
-     dumb-negate-lit 
 
      test? ;for acl2s-hooks query categorization
      
@@ -95,6 +94,7 @@
      ;API export
      test? prove/cgen
      stopping-condition
+     define-rule
      ))
 
 (defconst *ccg-exports*

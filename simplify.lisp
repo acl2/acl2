@@ -7435,8 +7435,7 @@
   ((rewrite-constant induction-hyp-terms . induction-concl-terms)
    (tag-tree hint-settings . tau-completion-alist)
    (pool . gag-state)
-   (user-supplied-term . displayed-goal)
-   (orig-hints never-irrelevant-fns-alist . otf-flg))
+   user-supplied-term displayed-goal orig-hints . otf-flg)
   t)
 
 ; The orig-hints setting is the list of clause-ids and hint-settings supplied
@@ -7494,7 +7493,6 @@
         :hint-settings nil
         :tau-completion-alist nil
         :orig-hints nil
-        :never-irrelevant-fns-alist nil
         :pool nil
         :gag-state *initial-gag-state*
         :user-supplied-term *t*

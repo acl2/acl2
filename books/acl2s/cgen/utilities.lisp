@@ -1073,3 +1073,21 @@ Mainly to be used for evaluating enum lists "
 
 (defmacro get1 (key  kwd-alist &optional default)
   `(get1-fn ,key ,kwd-alist ,default))
+
+(defun cgen-dumb-negate-lit (term) ;hack
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (and (consp term)
+           (eq (car term) 'IF)
+           (equal (third term) ''NIL)) ;got a not
+      (second term)
+    (acl2::dumb-negate-lit term)))
+           
+
+;; COPIED FROM acl2-sources/basis.lisp line 12607
+;; because it is program mode there, and verify-termination needed more effort
+;; than I could spare.
+(defun cgen-dumb-negate-lit-lst (lst)
+  (declare (xargs :guard (pseudo-term-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (cgen-dumb-negate-lit (car lst))
+                 (cgen-dumb-negate-lit-lst (cdr lst))))))

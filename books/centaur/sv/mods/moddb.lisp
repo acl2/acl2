@@ -117,7 +117,7 @@ of three times each.)</p>"
   :decls
   ((declare (xargs :guard (and (symbol-listp args)
                                (consp forms)
-                               (doubleton-list-p (car forms))
+                               (doublet-listp (car forms))
                                (consp (cdr forms))))))
   :body
   `(b* ((,(cond ((atom args) '-)
@@ -7525,7 +7525,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
           (mv nil (list name) nil nil))
          (local-aliases (module->aliaspairs mod))
          (local-assigns (module->assigns mod)))
-            
+
       (time$
        (b* (;; (local-delays  (and mod (module->delays mod)))
             ((mv varfails1 abs-aliases) (lhspairs->absindexed local-aliases scope moddb))

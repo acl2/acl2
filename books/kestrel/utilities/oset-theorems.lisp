@@ -23,8 +23,7 @@
 
   :parents (acl2::theorems-about-non-kestrel-books)
 
-  :short "Some theorems about
-          <see topic='@(url std/osets)'>finite sets</see>."
+  :short "Theorems about <see topic='@(url std/osets)'>finite sets</see>."
 
   (std::defrule cardinality-of-tail
     (equal (cardinality (tail x))

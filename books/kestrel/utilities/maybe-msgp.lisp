@@ -23,12 +23,11 @@
 (define maybe-msgp (x)
   :returns (yes/no booleanp)
   :parents (kestrel-utilities)
-  :short "Optional structured messages."
+  :short "Recognize @('nil') and structured messages."
   :long
   "<p>
    Structured messages are
    constructed by @(tsee msg) and recognized by @('msgp').
-   This function recognizes structured messages and @('nil').
    </p>"
   (or (msgp x)
       (null x))

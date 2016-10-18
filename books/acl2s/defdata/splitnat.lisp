@@ -14,6 +14,7 @@
 
 (local (include-book "num-list-thms"))
 
+(local (in-theory (disable rem floor)))
 (local (include-book "rem-and-floor"))
 
 (defun weighted-split-nat-step (weights x old-results)

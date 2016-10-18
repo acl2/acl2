@@ -45,10 +45,12 @@
 (include-book "prove-interface")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
+(include-book "symbol-true-list-alists")
 (include-book "terms")
 (include-book "testing")
 (include-book "true-list-listp-theorems")
 (include-book "typed-list-theorems")
+(include-book "typed-tuples")
 (include-book "ubi")
 (include-book "user-interface")
 (include-book "verify-guards-program")
@@ -65,4 +67,4 @@
 
 (defxdoc theorems-about-non-kestrel-books
   :parents (kestrel-utilities)
-  :short "Some theorems about functions defined outside the Kestrel Books.")
+  :short "Theorems about functions defined outside the Kestrel Books.")

@@ -1926,131 +1926,6 @@
         (t (append (preprocess-hyp (car hyps))
                    (preprocess-hyps (cdr hyps))))))
 
-(defun extend-never-irrelevant-fns-alist-2 (fn parity
-                                               never-irrelevant-fns-alist)
-
-; This function always returns a non-nil never-irrelevant-fns-alist.  It
-; returns the result of extending never-irrelevant-fns-alist by mapping fn to a
-; suitable value unless it already has that value.  It also returns a
-; "changedp" flag, indicating whether or not the input
-; never-irrelevant-fns-alist was actually extended.
-
-  (let ((pair (assoc-eq fn never-irrelevant-fns-alist)))
-    (cond ((null pair)
-           (mv t (acons fn parity never-irrelevant-fns-alist)))
-          ((or (eq (cdr pair) parity)
-               (eq parity :both))
-           (mv nil never-irrelevant-fns-alist))
-          (t (mv t (acons fn :both never-irrelevant-fns-alist))))))
-
-(defun extend-never-irrelevant-fns-alist-1 (hyps target-fn target-parity tvars
-                                                 changedp target-p
-                                                 never-irrelevant-fns-alist?
-                                                 wrld)
-
-; See extend-never-irrelevant-fns-alist.  Note that never-irrelevant-fns-alist?
-; is initially nil, and it stays that way through the recursion until we are
-; ready to try to extend the world's never-irrelevant-fns-alist.
-
-; Changedp is initially nil, and is non-nil if and only if
-; never-irrelevant-fns-alist? properly extends the 'never-irrelevant-fns-alist
-; of world.  The non-nil values of changedp are :hyps when only hyps (not
-; target) has contributed an extension, and t when target has contributed an
-; extension (regardless of whether hyps has done so or not).
-
-  (cond
-   ((endp hyps)
-    (mv changedp never-irrelevant-fns-alist?))
-   ((intersectp-eq (all-vars (car hyps)) tvars)
-    (extend-never-irrelevant-fns-alist-1 (cdr hyps) target-fn target-parity
-                                         tvars changedp target-p
-                                         never-irrelevant-fns-alist? wrld))
-   (t
-    (mv-let (flg1 never-irrelevant-fns-alist?0) ; maybe extend with target-fn
-      (cond ((or (eq changedp t) ; target already used to extend alist
-                 (not target-p))
-             (mv nil never-irrelevant-fns-alist?))
-            (t (extend-never-irrelevant-fns-alist-2
-                target-fn target-parity
-                (or never-irrelevant-fns-alist?
-                    (global-val 'never-irrelevant-fns-alist wrld)))))
-      (mv-let (flg2 never-irrelevant-fns-alist?1) ; maybe extend for (car hyps)
-        (mv-let (not-flg hyp+)
-          (strip-not (car hyps))
-          (cond ((and (nvariablep hyp+)
-                      (not (fquotep hyp+))
-                      (not (flambdap (ffn-symb hyp+)))
-                      (not (member-eq (ffn-symb hyp+)
-                                      *irrelevant-clausep-fns*))
-                      (all-variablep (fargs hyp+))
-                      (no-duplicatesp-eq (fargs hyp+)))
-                 (extend-never-irrelevant-fns-alist-2
-                  (ffn-symb hyp+)
-
- ; Note that we are interested in the case that (car hyps) occurs
- ; negatively in a clause.
-
-                  (not not-flg)
-                  (or never-irrelevant-fns-alist?0
-                      (global-val 'never-irrelevant-fns-alist wrld))))
-                (t (mv nil never-irrelevant-fns-alist?0))))
-        (extend-never-irrelevant-fns-alist-1
-         (cdr hyps) target-fn target-parity tvars
-         (or flg1     ; t indicates that alist was extended for target
-             changedp ; if non-nil, keep its value (:hyps or t)
-             (and flg2 :hyps))
-         target-p
-         never-irrelevant-fns-alist?1
-         wrld))))))
-
-(defun extend-never-irrelevant-fns-alist (hyps target target-parity wrld)
-
-; For the given hypotheses of some rule and a target term (such as the
-; left-hand side of a rewrite rule) that we imagine occurring in a clause with
-; the given target-parity (t if negated, else nil), extend the world global
-; 'never-irrelevant-fns-alist whenever a hypothesis and target have disjoint
-; variables and one or both of them consist of the application of a function
-; symbol to distinct variables.  See irrelevant-clausep for relevant
-; discussion.
-
-  (mv-let (not-flg atm)
-    (strip-not target)
-    (let ((target-p (and (nvariablep atm)
-                         (not (fquotep atm))
-                         (not (flambdap (ffn-symb atm)))
-                         (not (member-eq (ffn-symb atm)
-
-; If the function symbol is such that the target will already qualify as
-; irrelevant according to the test involving *irrelevant-clausep-fns* in
-; function irrelevant-clausep, there is no reason to extend the value of world
-; global 'never-irrelevant-fns-alist.
-
-                                         *irrelevant-clausep-fns*))
-                         (all-variablep (fargs atm))
-                         (no-duplicatesp-eq (fargs atm)))))
-      (mv-let (changedp never-irrelevant-fns-alist)
-        (extend-never-irrelevant-fns-alist-1 hyps
-                                             (ffn-symb atm)
-                                             (if (eq target-parity :both)
-                                                 :both
-; Flip the parity iff not-flg is true.
-                                               (iff (not not-flg)
-                                                    target-parity))
-                                             (all-vars atm)
-                                             nil target-p nil wrld)
-        (cond (changedp (assert$ never-irrelevant-fns-alist
-                                 (global-set 'never-irrelevant-fns-alist
-                                             never-irrelevant-fns-alist
-                                             wrld)))
-              (t wrld))))))
-
-(defun extend-never-irrelevant-fns-alist-lst (hyps targets wrld)
-  (cond ((endp targets) wrld)
-        (t (extend-never-irrelevant-fns-alist-lst
-            hyps
-            (cdr targets)
-            (extend-never-irrelevant-fns-alist hyps (car targets) nil wrld)))))
-
 (defun add-definition-rule-with-ttree (rune nume clique controller-alist
                                             install-body term ens wrld ttree)
 
@@ -2089,15 +1964,13 @@
                                       (getpropc fn 'stobjs-out '(nil) wrld)))
                                 vars-bag
                                 body)))
-           (phyps (preprocess-hyps hyps))
-           (fn-args (mcons-term fn args))
            (rule
             (make rewrite-rule
                   :rune rune
                   :nume nume
-                  :hyps phyps
+                  :hyps (preprocess-hyps hyps)
                   :equiv equiv
-                  :lhs fn-args
+                  :lhs (mcons-term fn args)
                   :var-info (cond (abbreviationp (not (null vars-bag)))
                                   (t (var-counts args body)))
                   :rhs body
@@ -2110,12 +1983,11 @@
 ; Backchain-limit-lst does not make much sense for definitions.
 
                   :backchain-limit-lst nil)))
-      (let* ((wrld0 (extend-never-irrelevant-fns-alist phyps fn-args nil wrld))
-             (wrld1 (if (eq fn 'hide)
-                        wrld0
-                      (putprop fn 'lemmas
-                               (cons rule (getpropc fn 'lemmas nil wrld))
-                               wrld0))))
+      (let ((wrld0 (if (eq fn 'hide)
+                       wrld
+                     (putprop fn 'lemmas
+                              (cons rule (getpropc fn 'lemmas nil wrld))
+                              wrld))))
         (cond (install-body
                (mv (putprop fn
                             'def-bodies
@@ -2129,9 +2001,9 @@
                                         :recursivep clique
                                         :controller-alist controller-alist)
                                   (getpropc fn 'def-bodies nil wrld))
-                            wrld1)
+                            wrld0)
                    ttree))
-              (t (mv wrld1 ttree)))))))
+              (t (mv wrld0 ttree)))))))
 
 (defun add-definition-rule (rune nume clique controller-alist install-body term
                                  ens wrld)

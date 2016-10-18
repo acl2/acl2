@@ -25,7 +25,7 @@
 
   :parents (theorems-about-non-kestrel-books true-list-listp std/typed-lists)
 
-  :short "Some theorems about
+  :short "Theorems about
           @('nil')-terminated lists of @('nil')-terminated lists."
 
   :long

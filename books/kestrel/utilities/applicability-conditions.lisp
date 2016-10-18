@@ -46,7 +46,7 @@
 
 (std::deflist applicability-condition-listp (x)
   (applicability-condition-p x)
-  :short "@('Nil')-terminated lists of applicability conditions."
+  :short "Recognize @('nil')-terminated lists of applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
 
@@ -89,12 +89,10 @@
     (cond (erp (b* (((run-when verbose)
                      (cw "Prover error.)~%~%")))
                  (mv nil
-                     `("Prover error ~x0 ~
-                        when attempting to prove ~
-                        the applicability condition ~x1:~%~x2~|"
-                       (#\0 . ,erp)
-                       (#\1 . ,name)
-                       (#\2 . ,formula))
+                     (msg "Prover error ~x0 ~
+                           when attempting to prove ~
+                           the applicability condition ~x1:~%~x2~|"
+                          erp name formula)
                      state)))
           (yes/no (b* (((run-when verbose)
                         (cw "Done.)~%~%")))
@@ -102,9 +100,8 @@
           (t (b* (((run-when verbose)
                    (cw "Failed.)~%~%")))
                (mv nil
-                   `("The applicability condition ~x0 fails:~%~x1~|"
-                     (#\0 . ,name)
-                     (#\1 . ,formula))
+                   (msg "The applicability condition ~x0 fails:~%~x1~|"
+                        name formula)
                    state))))))
 
 (define prove-applicability-conditions
@@ -135,9 +132,29 @@
                 ((mv success msg state)
                  (prove-applicability-condition app-cond verbose state)))
              (if success
-                 (prove-applicability-conditions
-                  (cdr app-conds) verbose state)
+                 (prove-applicability-conditions (cdr app-conds) verbose state)
                (mv nil msg state))))))
+
+(define ensure-applicability-conditions
+  ((app-conds applicability-condition-listp)
+   (verbose booleanp)
+   (ctx "Context for errors.")
+   state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url error-triple)'>error triple</see>.")
+               (nothing "Always @('nil').")
+               state)
+  :mode :program
+  :short "Cause a soft error if the proof of any applicability condition fails."
+  :long
+  "<p>
+   Use the message from the applicability condition proof failure
+   as error message.
+   </p>"
+  (b* (((mv success msg state) (prove-applicability-conditions
+                                app-conds verbose state))
+       ((unless success) (er soft ctx "~@0" msg)))
+    (value nil)))
 
 (define applicability-condition-event
   ((app-cond applicability-condition-p)
@@ -148,35 +165,35 @@
    (wrld plist-worldp))
   :guard (or rule-classes enabled)
   :returns (mv (thm-name "A @(tsee symbolp).")
-               (thm-event-form "A @(tsee pseudo-event-formp)."))
+               (thm-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate theorem event form for applicability condition."
   :long
   "<p>
-  The name of the theorem is made fresh in the world,
-  and not among the names to avoid,
-  by adding @('$') signs to the applicabiilty condition's name, if needed.
-  Besides the theorem event form,
-  return the name of the theorem
-  (which may be the same as the name of the applicability condition).
-  </p>
-  <p>
-  The generated theorem must be enabled if it has no rule classes,
-  as required by the guard of this function.
-  </p>"
+   The name of the theorem is made fresh in the world,
+   and not among the names to avoid,
+   by adding @('$') signs to the applicabiilty condition's name, if needed.
+   Besides the theorem event form,
+   return the name of the theorem
+   (which may be the same as the name of the applicability condition).
+   </p>
+   <p>
+   The generated theorem must be enabled if it has no rule classes,
+   as required by the guard of this function.
+   </p>"
   (b* ((defthm/defthmd (if enabled 'defthm 'defthmd))
        (name (applicability-condition->name app-cond))
        (formula (applicability-condition->formula app-cond))
        (hints (applicability-condition->hints app-cond))
        (thm-name (fresh-name-in-world-with-$s name names-to-avoid wrld))
-       (thm-event-form `(,defthm/defthmd ,thm-name
-                          ,formula
-                          :hints ,hints
-                          :rule-classes ,rule-classes))
-       (thm-event-form (if local
-                           `(local ,thm-event-form)
-                         thm-event-form)))
-    (mv thm-name thm-event-form)))
+       (thm-event `(,defthm/defthmd ,thm-name
+                     ,formula
+                     :hints ,hints
+                     :rule-classes ,rule-classes))
+       (thm-event (if local
+                      `(local ,thm-event)
+                    thm-event)))
+    (mv thm-name thm-event)))
 
 (define applicability-condition-events
   ((app-conds applicability-condition-listp)
@@ -190,8 +207,8 @@
               (= (len rule-classess) (len app-conds)))
   :returns (mv (names-to-thm-names "A @(tsee symbol-symbol-alistp)
                                     of length @('(len app-conds)').")
-               (thm-event-forms "A @(tsee pseudo-event-form-listp)
-                                 of length @('(len app-conds)')."))
+               (thm-events "A @(tsee pseudo-event-form-listp)
+                            of length @('(len app-conds)')."))
   :mode :program
   :short "Generate theorem event forms for applicability conditions."
   :long
@@ -210,7 +227,7 @@
    their names are added to the names to avoid,
    because the theorem events are not in the ACL2 world yet.
    </p>"
-  (b* (((mv names-to-thm-names rev-thm-event-forms)
+  (b* (((mv names-to-thm-names rev-thm-events)
         (applicability-condition-events-aux app-conds
                                             locals
                                             enableds
@@ -219,7 +236,7 @@
                                             wrld
                                             nil
                                             nil)))
-    (mv names-to-thm-names (reverse rev-thm-event-forms)))
+    (mv names-to-thm-names rev-thm-events))
 
   :prepwork
   ((define applicability-condition-events-aux
@@ -230,13 +247,14 @@
       (names-to-avoid)
       (wrld plist-worldp)
       (names-to-thm-names symbol-symbol-alistp)
-      (rev-thm-event-forms pseudo-event-form-listp))
+      (rev-thm-events pseudo-event-form-listp))
      :guard (and (= (len locals) (len app-conds))
                  (= (len enableds) (len app-conds))
                  (= (len rule-classess) (len app-conds)))
-     :returns (mv final-names-to-thm-names final-rev-thm-event-forms)
+     :returns (mv final-names-to-thm-names final-thm-events)
+     :parents nil
      :mode :program
-     (cond ((endp app-conds) (mv names-to-thm-names rev-thm-event-forms))
+     (cond ((endp app-conds) (mv names-to-thm-names (reverse rev-thm-events)))
            (t (b* (((mv thm-name thm-event-form)
                     (applicability-condition-event (car app-conds)
                                                    (car locals)
@@ -249,8 +267,8 @@
                     (acons (applicability-condition->name (car app-conds))
                            thm-name
                            names-to-thm-names))
-                   (new-rev-thm-event-forms
-                    (cons thm-event-form rev-thm-event-forms)))
+                   (new-rev-thm-events
+                    (cons thm-event-form rev-thm-events)))
                 (applicability-condition-events-aux (cdr app-conds)
                                                     (cdr locals)
                                                     (cdr enableds)
@@ -258,4 +276,4 @@
                                                     new-names-to-avoid
                                                     wrld
                                                     new-names-to-thm-names
-                                                    new-rev-thm-event-forms)))))))
+                                                    new-rev-thm-events)))))))

@@ -8,8 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains tests for the applicability condition utilities
-; in applicability-conditions.lisp.
+; This file contains tests for the utilities in applicability-conditions.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,6 +168,38 @@
          nil ; verbose
          state)))
     (value success))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail-local
+ (ensure-applicability-conditions
+  (list (make-applicability-condition
+         :name 'true
+         :formula '(equal x x)
+         :hints nil)
+        (make-applicability-condition
+         :name 'false
+         :formula '(equal x y)
+         :hints nil))
+  nil ; verbose
+  'top ; ctx
+  state))
+
+(must-succeed*
+ (defund f (x) x)
+ (must-succeed
+  (ensure-applicability-conditions
+   (list (make-applicability-condition
+          :name 'true
+          :formula '(equal x x)
+          :hints nil)
+         (make-applicability-condition
+          :name 'need-hints
+          :formula '(equal (f x) x)
+          :hints '(("Goal" :in-theory (enable f)))))
+   nil ; verbose
+   'top ; ctx
+   state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
