@@ -907,10 +907,10 @@ we've seen before with a mask that overlaps with that one.</p>"
        ((acl2::with-fast updates))
        ((mv final-masks rest)
         (cwtime (svexlist-compose-to-fix-rec2 masks upd-subset nil) :mintime 1))
-       (- (sneaky-save 'assigns x)
-          (sneaky-save 'updates updates)
-          (sneaky-save 'final-masks final-masks)
-          (sneaky-save 'loop-vars vars))
+       ;; (- (sneaky-save 'assigns x)
+       ;;    (sneaky-save 'updates updates)
+       ;;    (sneaky-save 'final-masks final-masks)
+       ;;    (sneaky-save 'loop-vars vars))
        (- (with-fast-alist x
             (with-fast-alist final-masks
               (svex-masks-summarize-loops vars final-masks x))))
