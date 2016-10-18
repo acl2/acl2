@@ -756,10 +756,27 @@ comments following this last example.</p>
                  `(:expand (,(second (car (last clause)))
                             ,(third (car (last clause)))))))))
 
+;; (trace$ #!sv (sv::svex-compose-loopdebug
+;;          :entry (list 'svex-compose-loopdebug
+;;                       x mask (cdr (hons-get x stack)))
+;;          :evisc-tuple '(nil 5 10 nil)
+;;          :hide nil))
 
 
-
-
+(define svex-loopdebug-stack-search ((x svex-p)
+                                     (mask 4vmask-p)
+                                     (stack svex-mask-alist-p))
+  :returns (loop-stack svex-mask-alist-p)
+  :measure (len (svex-mask-alist-fix stack))
+  (b* ((stack (svex-mask-alist-fix stack))
+       ((when (atom stack)) nil)
+       ((when (and (equal (svex-fix x) (caar stack))
+                   ;; previously seen mask is a (non-strict) subset of the current mask
+                   (equal 0 (logand (cdar stack) (lognot (4vmask-fix mask))))))
+        (list (car stack)))
+       (rest (svex-loopdebug-stack-search x mask (cdr stack))))
+    (and rest (cons (car stack) rest))))
+    
 
 (defines svex-compose-loopdebug
   :parents (sv)
@@ -798,17 +815,20 @@ we've seen before with a mask that overlaps with that one.</p>"
         :call (b* ((argmasks (svex-argmasks mask x.fn x.args)))
                 (svexlist-compose-loopdebug x.args argmasks assigns stack depthlimit))
         :var (b* ((stack-look (hons-get x stack))
-                  (stack-mask (if stack-look (4vmask-fix (cdr stack-look)) 0))
-                  ((when (not (eql 0 (logand mask stack-mask))))
-                   (cw "Combinational loop for ~x0: ~x1~%" x.name stack)
-                   (mv x.name stack))
+                  ;; reduce overhead of stack search to only variables that
+                  ;; exist in the stack
+                  (loopstack (and stack-look
+                                  (svex-loopdebug-stack-search x mask stack)))
+                  ((when loopstack)
+                   (b* ((loopstack (cons (cons x mask) loopstack)))
+                     (cw "Combinational loop for ~x0: ~x1~%" x.name loopstack)
+                     (mv x.name loopstack)))
                   (assign (svex-fastlookup x.name assigns))
                   ((unless assign) (mv nil nil))
                   ((when (zp depthlimit)) (mv nil nil))
-                  (full-mask (logior stack-mask mask))
-                  (stack (hons-acons x full-mask stack))
+                  (stack (hons-acons x mask stack))
                   ((mv loopvar loopstack)
-                   (svex-compose-loopdebug assign full-mask assigns stack (1- depthlimit)))
+                   (svex-compose-loopdebug assign mask assigns stack (1- depthlimit)))
                   (- (acl2::fast-alist-pop* stack-look stack)))
                (mv loopvar loopstack)))))
 
@@ -831,6 +851,7 @@ we've seen before with a mask that overlaps with that one.</p>"
 
   (fty::deffixequiv-mutual svex-compose-loopdebug
     :hints (("goal" :expand ((svexlist-fix x))))))
+
 
 
 
@@ -886,10 +907,10 @@ we've seen before with a mask that overlaps with that one.</p>"
        ((acl2::with-fast updates))
        ((mv final-masks rest)
         (cwtime (svexlist-compose-to-fix-rec2 masks upd-subset nil) :mintime 1))
-       ;; (- (sneaky-save 'assigns x)
-       ;;    (sneaky-save 'updates updates)
-       ;;    (sneaky-save 'final-masks final-masks)
-       ;;    (sneaky-save 'loop-vars vars))
+       (- (sneaky-save 'assigns x)
+          (sneaky-save 'updates updates)
+          (sneaky-save 'final-masks final-masks)
+          (sneaky-save 'loop-vars vars))
        (- (with-fast-alist x
             (with-fast-alist final-masks
               (svex-masks-summarize-loops vars final-masks x))))
@@ -903,7 +924,18 @@ we've seen before with a mask that overlaps with that one.</p>"
 
 
 
+#||
 
+(defconsts (*assigns* *updates* *final-masks* *loop-vars* state)
+  #!sv
+  (b* (((mv assigns state) (sneaky-load 'assigns state))
+       ((mv updates state) (sneaky-load 'updates state))
+       ((mv final-masks state) (sneaky-load 'final-masks state))
+       ((mv loop-vars state) (sneaky-load 'loop-vars state)))
+    (mv assigns updates final-masks loop-vars state)))
+
+
+||#
 
 
 
