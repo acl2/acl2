@@ -1734,7 +1734,10 @@ implementations.")
 ; "Heap exhausted during allocation: 43372544 bytes available, 67108872
 ; requested."
 
-  #+x86-64 16000
+; On October 18, 2016, we found that even 16,000 is insufficient for building
+; the manual.  So we are increasin this value by 50%, to 24,000.
+
+  #+x86-64 24000
   #-x86-64 2000)
 
 #+sbcl

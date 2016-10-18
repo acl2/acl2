@@ -27,6 +27,7 @@ echo "-----"
 
 $basecmd \
   --author='Matt Kaufmann <kaufmann@wireless-10-147-200-122.public.utexas.edu>' \
+  --author='Matt Kaufmann <kaufmann@horatio-123.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@horatio-217.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@horatio-168.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@cs.utexas.edu>' \
