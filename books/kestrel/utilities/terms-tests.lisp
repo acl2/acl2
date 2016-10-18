@@ -159,7 +159,7 @@
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert! (not (guard-verified-fns-listp '(zp (f '4)) (w state)))))
+ (assert! (not (guard-verified-fnsp '(zp (f '4)) (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

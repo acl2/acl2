@@ -163,7 +163,11 @@
   :parents (term-utilities)
   :short "Program-mode functions called by a term."
   :long
-  "@(def all-program-ffn-symbs)
+  "<p>
+   The name of this function is consistent with
+   the name of @('all-ffn-symbs') in the ACL2 source code.
+   </p>
+   @(def all-program-ffn-symbs)
    @(def all-program-ffn-symbs-lst)"
   :verify-guards nil
 
@@ -198,6 +202,11 @@
   :parents (term-utilities)
   :short "Check if a lambda expression is in logic mode,
           i.e. its body is in logic mode."
+  :long
+  "<p>
+   The name of this function is consistent with
+   the name of @('logic-fnsp') in the ACL2 source code.
+   </p>"
   (logic-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
@@ -250,26 +259,30 @@
    is not guard-verified,
    even when @('term') could otherwise be fully guard-verified.
    </p>
+   <p>
+   The name of this function is consistent with
+   the name of @('logic-fnsp') in the ACL2 source code.
+   </p>
    @(def guard-verified-fnsp)
-   @(def guard-verified-fns-listp)"
+   @(def guard-verified-fnsp-lst)"
 
   (define guard-verified-fnsp ((term (termp term wrld))
                                (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
     (or (variablep term)
         (fquotep term)
-        (and (guard-verified-fns-listp (fargs term) wrld)
+        (and (guard-verified-fnsp-lst (fargs term) wrld)
              (let ((fn (ffn-symb term)))
                (if (symbolp fn)
                    (guard-verified-p fn wrld)
                  (guard-verified-fnsp (lambda-body fn) wrld))))))
 
-  (define guard-verified-fns-listp ((terms (term-listp terms wrld))
-                                    (wrld plist-worldp-with-formals))
+  (define guard-verified-fnsp-lst ((terms (term-listp terms wrld))
+                                   (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
     (or (endp terms)
         (and (guard-verified-fnsp (car terms) wrld)
-             (guard-verified-fns-listp (cdr terms) wrld)))))
+             (guard-verified-fnsp-lst (cdr terms) wrld)))))
 
 (define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
                                     (wrld plist-worldp-with-formals))
@@ -277,6 +290,11 @@
   :parents (term-utilities)
   :short "Check if all the functions in a lambda expression
           are guard-verified."
+  :long
+  "<p>
+   The name of this function is consistent with
+   the name of @(tsee guard-verified-fnsp).
+   </p>"
   (guard-verified-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable lambdap))))
 
@@ -297,8 +315,12 @@
    appears as @('(return-last 'mbe1-raw b a)').
    So the code of this function treats this pattern specially.
    </p>
+   <p>
+   The name of this function is consistent with
+   the name of @(tsee guard-verified-fnsp).
+   </p>
    @(def guard-verified-exec-fnsp)
-   @(def guard-verified-exec-fns-listp)"
+   @(def guard-verified-exec-fnsp-lst)"
   :verify-guards nil
 
   (define guard-verified-exec-fnsp ((term (termp term wrld))
@@ -312,16 +334,16 @@
           (guard-verified-exec-fnsp (fargn term 2) wrld)))
       (if (symbolp fn/lambda)
           (and (guard-verified-p fn/lambda wrld)
-               (guard-verified-exec-fns-listp (fargs term) wrld))
+               (guard-verified-exec-fnsp-lst (fargs term) wrld))
         (and (guard-verified-exec-fnsp (lambda-body fn/lambda) wrld)
-             (guard-verified-exec-fns-listp (fargs term) wrld)))))
+             (guard-verified-exec-fnsp-lst (fargs term) wrld)))))
 
-  (define guard-verified-exec-fns-listp ((terms (term-listp terms wrld))
-                                         (wrld plist-worldp-with-formals))
+  (define guard-verified-exec-fnsp-lst ((terms (term-listp terms wrld))
+                                        (wrld plist-worldp-with-formals))
     :returns (yes/no booleanp)
     (or (endp terms)
         (and (guard-verified-exec-fnsp (car terms) wrld)
-             (guard-verified-exec-fns-listp (cdr terms) wrld)))))
+             (guard-verified-exec-fnsp-lst (cdr terms) wrld)))))
 
 (define lambda-guard-verified-exec-fnsp ((lambd (lambdap lambd wrld))
                                          (wrld plist-worldp-with-formals))
@@ -330,6 +352,11 @@
   :parents (term-utilities)
   :short "Check if a lambda expression calls only guard-verified functions
           for execution."
+  :long
+  "<p>
+   The name of this function is consistent with
+   the name of @(tsee guard-verified-exec-fnsp).
+   </p>"
   (guard-verified-exec-fnsp (lambda-body lambd) wrld))
 
 (defines all-non-gv-exec-ffn-symbs
@@ -349,6 +376,10 @@
    a term @('(mbe :logic a :exec b)')
    appears as @('(return-last 'mbe1-raw b a)').
    So the code of this function treats this pattern specially.
+   </p>
+   <p>
+   The name of this function is consistent with
+   the name of @('all-ffn-symbs') in the ACL2 source code.
    </p>
    @(def all-non-gv-exec-ffn-symbs)
    @(def all-non-gv-exec-ffn-symbs-lst)"
