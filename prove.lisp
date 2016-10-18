@@ -6349,8 +6349,6 @@
               (access prove-spec-var y :displayed-goal))
        (equal (access prove-spec-var x :orig-hints)
               (access prove-spec-var y :orig-hints))
-       (equal (access prove-spec-var x :never-irrelevant-fns-alist)
-              (access prove-spec-var y :never-irrelevant-fns-alist))
        (equal (access prove-spec-var x :otf-flg)
               (access prove-spec-var y :otf-flg))
 
@@ -9242,16 +9240,12 @@
 ; :rewrite-constant.  If you supply a :rewrite-constant in args, then ens and
 ; wrld are actually irrelevant.
 
-  `(let ((ens ,ens)
-         (wrld ,wrld))
-     (change prove-spec-var
-             (change prove-spec-var *empty-prove-spec-var*
-                     :never-irrelevant-fns-alist
-                     (global-val 'never-irrelevant-fns-alist wrld)
-                     :rewrite-constant (make-rcnst ens wrld ,state
-                                                   :splitter-output
-                                                   (splitter-output)))
-             ,@args)))
+  `(change prove-spec-var
+           (change prove-spec-var *empty-prove-spec-var*
+                   :rewrite-constant (make-rcnst ,ens ,wrld ,state
+                                                 :splitter-output
+                                                 (splitter-output)))
+           ,@args))
 
 (defun chk-assumption-free-ttree (ttree ctx state)
 
