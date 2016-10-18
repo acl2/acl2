@@ -1,0 +1,10 @@
+(include-book "data-structures/portcullis" :dir :system)
+(include-book "coi/symbol-fns/portcullis" :dir :system)
+(include-book "centaur/gl/portcullis" :dir :system)
+(include-book "centaur/satlink/portcullis" :dir :system)
+(ld "acl2s/package.lsp" :dir :system)
+
+
+(set-waterfall-parallelism nil)
+
+; cert-flags: ? t :ttags :all
