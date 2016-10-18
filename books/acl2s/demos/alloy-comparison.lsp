@@ -1,7 +1,7 @@
 (in-package "ACL2")
 (include-book "alloy-support")
 (include-book "acl2s/cgen/top" :dir :system)
-(acl2::in-package "ACL2S")
+;;(acl2::in-package "ACL2S")
 
 (acl2s-defaults :set :use-fixers nil)
 (acl2s-defaults :set :search-strategy :incremental)
