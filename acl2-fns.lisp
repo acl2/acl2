@@ -1356,6 +1356,7 @@ notation causes an error and (b) the use of ,. is not permitted."
            (unread-char sign stream)))
     (loop (setq tmp (read-char stream nil :eof t))
           (cond ((eq tmp :eof) (return))
+                ((eql tmp #\_)) ; discard underscore
                 ((aref base-array (char-code tmp))
                  (push tmp lst))
                 (t (return))))
