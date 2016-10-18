@@ -1556,8 +1556,7 @@
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
                     (attachment-records nil)
-                    (proof-supporters-alist nil)
-                    (never-irrelevant-fns-alist nil))))
+                    (proof-supporters-alist nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
                       ,(make command-number-baseline-info
