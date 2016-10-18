@@ -280,17 +280,69 @@
   (guard-verified-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable lambdap))))
 
+(defines guard-verified-exec-fnsp
+  :parents (term-utilities)
+  :short "Check if a term calls only guard-verified functions for execution."
+  :long
+  "<p>
+   Check if all the functions that occur in the term,
+   except possibly the ones in the @(':logic') subterms of @(tsee mbe)s,
+   are guard-verified.
+   The purpose of this function is to check whether a term
+   could be potentially guard-verified.
+   </p>
+   <p>
+   In translated form,
+   a term @('(mbe :logic a :exec b)')
+   appears as @('(return-last 'mbe1-raw b a)').
+   So the code of this function treats this pattern specially.
+   </p>
+   @(def guard-verified-exec-fnsp)
+   @(def guard-verified-exec-fns-listp)"
+  :verify-guards nil
+
+  (define guard-verified-exec-fnsp ((term (termp term wrld))
+                                    (wrld plist-worldp-with-formals))
+    :returns (yes/no booleanp)
+    (b* (((when (variablep term)) t)
+         ((when (fquotep term)) t)
+         (fn/lambda (ffn-symb term))
+         ((when (and (eq fn/lambda 'return-last)
+                     (equal (fargn term 1) '(quote mbe1-raw))))
+          (guard-verified-exec-fnsp (fargn term 2) wrld)))
+      (if (symbolp fn/lambda)
+          (and (guard-verified-p fn/lambda wrld)
+               (guard-verified-exec-fns-listp (fargs term) wrld))
+        (and (guard-verified-exec-fnsp (lambda-body fn/lambda) wrld)
+             (guard-verified-exec-fns-listp (fargs term) wrld)))))
+
+  (define guard-verified-exec-fns-listp ((terms (term-listp terms wrld))
+                                         (wrld plist-worldp-with-formals))
+    :returns (yes/no booleanp)
+    (or (endp terms)
+        (and (guard-verified-exec-fnsp (car terms) wrld)
+             (guard-verified-exec-fns-listp (cdr terms) wrld)))))
+
+(define lambda-guard-verified-exec-fnsp ((lambd (lambdap lambd wrld))
+                                         (wrld plist-worldp-with-formals))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  :parents (term-utilities)
+  :short "Check if a lambda expression calls only guard-verified functions
+          for execution."
+  (guard-verified-exec-fnsp (lambda-body lambd) wrld))
+
 (defines all-non-gv-exec-ffn-symbs
   :parents (term-utilities)
   :short "Non-guard-verified functions called by a term for execution."
   :long
   "<p>
    These are all the non-guard-verified functions that occur in the term,
-   except for those that occur in the @(':logic') subterms of @(tsee mbe)s.
+   except those that occur in the @(':logic') subterms of @(tsee mbe)s.
    This is because, in order for a function to be guard-verified,
    the functions that occurs in such subterms do not have to be guard-verified.
-   The purpose of this function is to check whether a term
-   could be potentially guard-verified.
+   If this function returns @('nil'),
+   the term could be potentially guard-verified.
    </p>
    <p>
    In translated form,
