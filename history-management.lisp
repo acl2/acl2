@@ -5114,9 +5114,8 @@
                        (cond
                         ((null ans)
                          (er soft ctx
-                             "No command or event in the region from ~
-                              ~x0 to ~x1 contains ~&2.  See :MORE-DOC ~
-                              command-descriptor."
+                             "No command or event in the region from ~x0 to ~
+                              ~x1 contains ~&2.  See :DOC command-descriptor."
                              (cond ((null (cddr cd)) :x)
                                    (t (caddr cd)))
                              (cond ((null (cddr cd)) 0)
@@ -6334,7 +6333,7 @@
      (cond ((and (consp term)
                  (eq (car term) :failed))
             (er soft 'top
-                "There is no termination theorem for ~ ~x0.  ~@1"
+                "There is no termination theorem for ~x0.  ~@1."
                 fn (cdr term)))
            (t (value (untranslate term t (w state)))))))
 
@@ -9093,7 +9092,7 @@
       "Each element of a substitution must be a pair of the form (var term), ~
        where var is a variable symbol and term is a term.  Your alleged ~
        substitution contains the element ~x0, which is not of this form.  See ~
-       the discussion of :instance in :MORE-DOC lemma-instance."
+       the discussion of :instance in :DOC lemma-instance."
       (car substn)))
    (t (let ((var (caar substn))
             (term (cadar substn)))
@@ -9117,8 +9116,7 @@
              (cond ((assoc-eq var y)
                     (er@par soft ctx
                       "It is illegal to bind ~x0 twice in a substitution.  ~
-                       See the discussion of :instance in :MORE-DOC ~
-                       lemma-instance."
+                       See the discussion of :instance in :DOC lemma-instance."
                       var))
                    (t (value@par (cons (cons var term) y)))))))))))
 
@@ -9298,7 +9296,7 @@
              "The :do-not-induct hint should be followed by a symbol: either ~
               T, :QUIT, or the root name to be used in the naming of any ~
               clauses given byes.  ~x0 is an illegal root name.  See the ~
-              :do-not-induct discussion in :MORE-DOC hints."
+              :do-not-induct discussion in :DOC hints."
              arg))))
 
 (defun@par translate-hands-off-hint1 (arg ctx wrld state)
@@ -9308,8 +9306,7 @@
      ((null arg) (value@par nil))
      (t (er@par soft ctx
           "The value of the :hands-off hint must be a true list, but your ~
-           list ends in ~x0.  See the :hands-off discussion in :MORE-DOC ~
-           hints."
+           list ends in ~x0.  See the :hands-off discussion in :DOC hints."
           arg))))
    ((and (consp (car arg))
          (eq (car (car arg)) 'lambda)
@@ -9338,7 +9335,7 @@
      (value@par (cons (car arg) rst))))
    (t (er@par soft ctx
         "The object ~x0 is not a legal element of a :hands-off hint.  See the ~
-         :hands-off discussion in :MORE-DOC hints."
+         :hands-off discussion in :DOC hints."
         (car arg)))))
 
 (defun@par translate-hands-off-hint (arg ctx wrld state)
@@ -9700,7 +9697,7 @@
       "It is illegal to replace ~x0 by ~x1 because the former ~#2~[takes no ~
        arguments~/takes one argument~/takes ~n3 arguments~] while the latter ~
        ~#4~[takes none~/takes one~/takes ~n5~].  See the :functional-instance ~
-       discussion in :MORE-DOC :lemma-instance."
+       discussion in :DOC :lemma-instance."
       fn1
       fn2
       (cond ((int= n1 0) 0)
@@ -9777,21 +9774,21 @@
               (= (length (car substn)) 2)))
     (er@par soft ctx
       "The object ~x0 is not of the form (fi gi) as described in the ~
-       :functional-instance discussion of :MORE-DOC lemma-instance."
+       :functional-instance discussion of :DOC lemma-instance."
       (car substn)))
    (t (let ((fn1 (caar substn))
             (fn2 (cadar substn))
-            (str "The object ~x0 is not of the form (fi gi) as ~
-                  described in the :functional-instance discussion of ~
-                  :MORE-DOC lemma-instance.  ~x1 is neither a ~
-                  function symbol nor a pseudo-lambda expression."))
+            (str "The object ~x0 is not of the form (fi gi) as described in ~
+                  the :functional-instance discussion of :DOC lemma-instance. ~
+                  ~ ~x1 is neither a function symbol nor a pseudo-lambda ~
+                  expression."))
         (cond
          ((not (and (symbolp fn1)
                     (function-symbolp fn1 wrld)))
           (er@par soft ctx
             "Each domain element in a functional substitution must be a ~
              function symbol, but ~x0 is not.  See the :functional-instance ~
-             discussion of :MORE-DOC lemma-instance."
+             discussion of :DOC lemma-instance."
             fn1))
          ((not (eq (instantiablep fn1 wrld) t))
           (er@par soft ctx
@@ -9844,7 +9841,7 @@
                   (er@par soft ctx
                     "It is illegal to bind ~x0 twice in a functional ~
                      substitution.  See the :functional-instance discussion ~
-                     of :MORE-DOC lemma-instance."
+                     of :DOC lemma-instance."
                     fn1))
                  (t (value@par (extend-sorted-symbol-alist x y)))))))))))
 
@@ -12355,8 +12352,7 @@
          (cond ((null arg) (value@par '(nil nil nil nil)))
                (t (er@par soft ctx
                     "The value of the :use hint must be a true list but your ~
-                     list ends in ~x0.  See the :use discussion in :MORE-DOC ~
-                     hints."
+                     list ends in ~x0.  See the :use discussion in :DOC hints."
                     arg))))
         (t (er-let*@par
             ((lst1 (translate-lmi@par (car arg) t ctx wrld state))

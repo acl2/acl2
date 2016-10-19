@@ -103,9 +103,9 @@
      "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
       term ~x1 to itself!  This can happen even when you submit a rule whose ~
       left and right sides appear to be different, in the case that those two ~
-      sides represent the same term (in particular, after macroexpansion).  ~
-      For general information about rewrite rules in ACL2, see :DOC rewrite. ~
-      ~ You may wish to consider submitting a DEFTHM event ending with ~
+      sides represent the same term (for example, after macroexpansion).  For ~
+      general information about rewrite rules in ACL2, see :DOC rewrite.  You ~
+      may wish to consider submitting a DEFTHM event ending with ~
       :RULE-CLASSES NIL."
      name
      lhs))
