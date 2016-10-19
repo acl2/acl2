@@ -1390,7 +1390,7 @@ implementations.")
 (defun acl2-default-restart ()
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
-  (let ((produced-by-save-exec-p *lp-ever-entered-p*))
+  (let (#+hons (produced-by-save-exec-p *lp-ever-entered-p*))
     (proclaim-optimize) ; see comment in proclaim-optimize
     (setq *lp-ever-entered-p* nil)
     (#+cltl2

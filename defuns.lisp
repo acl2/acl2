@@ -288,7 +288,11 @@
 
 ; WARNING: We rely on the fact that this function puts the same names into the
 ; 'recursivep property of each member of the clique, in our handling of
-; being-openedp.
+; being-openedp.  Moreover, we rely in function termination-theorem-fn-subst
+; (and its supporting functions) that the properties are placed in the order in
+; which the names are defined: (mutual-recursion (defun name1 ...) (defun name2
+; ... ...)) pushes a property for name1 onto a world with property for name2,
+; etc.
 
   (cond ((int= (length names) 1)
          (cond ((ffnnamep-mod-mbe (car names) (car bodies))
@@ -7607,6 +7611,11 @@
               (store-stobjs-ins
                names stobjs-in-lst
                (putprop-x-lst2
+
+; Warning: We rely on these 'formals properties, placed in reverse order from
+; names, in the function termination-theorem-fn-subst (and its supporting
+; functions).
+
                 names 'formals arglists
                 (putprop-x-lst1
                  names 'symbol-class symbol-class
