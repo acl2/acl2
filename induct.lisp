@@ -3199,32 +3199,7 @@
 ; If p(x) is probably not valid then we consider it reasonable to ignore p(x) in
 ; the hope that q(y) may be valid, and indeed provable by ACL2.
 
-; Soon I will write a comment here explaining decisions etc.
-; Here is a test case.
-
-;   (encapsulate
-;     ((p () t)
-;      (my-app (x y) t))
-;     (local (defun p () t))
-;     (local (defun my-app (x y) (append x y)))
-;     (defthm my-app-def
-;       (implies (p)
-;                (equal (my-app x y)
-;                       (if (consp x)
-;                           (cons (car x) (my-app (cdr x) y))
-;                         y)))
-;       :rule-classes ((:definition
-;                       :controller-alist ((my-app t nil))))))
-;   
-;   (defun rev (x)
-;     (if (consp x)
-;         (my-app (rev (cdr x))
-;                 (cons (car x) nil))
-;       nil))
-;   
-;   (thm (implies (and (p)
-;                      (true-listp x))
-;                 (equal (rev (rev x)) x)))
+; See also the Essay on Alternate Heuristcs for Eliminate-Irrelevance.
 
   (or (ffnnames-subsetp-listp cl '(not consp integerp rationalp
                                        #+:non-standard-analysis realp
@@ -3236,11 +3211,15 @@
                                        binary-+ unary-- < apply))
       (case-match cl
         ((('not (& . args)))
-         (and args ; do not drop zero-ary call
+
+; To understand why we require args to be non-nil, see the Essay on Alternate
+; Heuristcs for Eliminate-Irrelevance.
+
+         (and args ; do not drop zero-ary call (see above)
               (all-variablep args)
               (no-duplicatesp-eq args)))
         (((& . args))
-         (and args  ; do not drop zero-ary call
+         (and args  ; do not drop zero-ary call (see above)
               (all-variablep args)
               (no-duplicatesp-eq args)))
         (& nil))))
@@ -3268,6 +3247,153 @@
 ; history-entry for this elimination, and the fourth is an
 ; unmodified pspv.  (We return the fourth thing to adhere to the
 ; convention used by all clause processors in the waterfall (q.v.).)
+
+; Essay on Alternate Heuristcs for Eliminate-Irrelevance
+
+; The algorithm for dropping "irrelevant" literals is based on first
+; partiioning the literals of a clause into components with respect to the
+; symmetric binary relation defined by: two literals are related if and only if
+; they share at least one free variable.  We consider two ways for a component
+; to be irrelevant: either (A) its function symbols are all from among a small
+; fixed set of primitives, or else (B) the component has a single literal whose
+; atom is the application of a function symbol to distinct variables.
+; Criterion B, however, is somewhat problematic, and below we discuss
+; variations of it that we have considered.  (See function probably-not-validp
+; for relevant code.)
+
+; Through Version_7.2, Criterion B was exactly as stated above.  However, we
+; encountered an unfortunate aspect of that heuristic, which is illustrated by
+; the following example (which is simpler than the one actually encountered,
+; but is similar in spirit).  The THM below failed to prove in Version_7.2.
+
+;   (encapsulate
+;     ((p () t)
+;      (my-app (x y) t))
+;     (local (defun p () t))
+;     (local (defun my-app (x y) (append x y)))
+;     (defthm my-app-def
+;       (implies (p)
+;                (equal (my-app x y)
+;                       (if (consp x)
+;                           (cons (car x) (my-app (cdr x) y))
+;                         y)))
+;       :rule-classes ((:definition
+;                       :controller-alist ((my-app t nil))))))
+;   
+;   (defun rev (x)
+;     (if (consp x)
+;         (my-app (rev (cdr x))
+;                 (cons (car x) nil))
+;       nil))
+;   
+;   (thm (implies (and (p)
+;                      (true-listp x))
+;                 (equal (rev (rev x)) x)))
+
+; The problem was that before entering a sub-induction, the hypothesis (P) --
+; that is, the literal (NOT (P)) -- was dropped.  Here is the relevant portion
+; of a log using Version_7.2.
+
+;   Subgoal *1/2'5'
+;   (IMPLIES (AND (P) (TRUE-LISTP X2))
+;            (EQUAL (REV (MY-APP RV (LIST X1)))
+;                   (CONS X1 (REV RV)))).
+;   
+;   We suspect that the terms (TRUE-LISTP X2) and (P) are irrelevant to
+;   the truth of this conjecture and throw them out.  We will thus try
+;   to prove
+;   
+;   Subgoal *1/2'6'
+;   (EQUAL (REV (MY-APP RV (LIST X1)))
+;          (CONS X1 (REV RV))).
+;   
+;   Name the formula above *1.1.
+
+; Since the exported defthm above requires (P) in order to expand MY-APP, the
+; goal displayed immediately above isn't a theorem.  So we desired a
+; modification of the Criterion B above, on components, that would no longer
+; drop (P).
+
+; Our initial solution was a bit elaborate.  In essence, it maintained a world
+; global whose value is an alist that identifies "never irrelevant" function
+; symbols.  For a rewrite rule, if a hypothesis and the left-hand side had
+; disjoint sets of free variables, and the hypothesis was the application of
+; some function symbol F to distinct variables, then F was identified as "never
+; irrelevant".  We actually went a bit further, by associating a "parity" with
+; each such function symbol, both because the hypothesis might actually be (NOT
+; (F ...)) and because we allowed the left-hand side to contribute.  The
+; "parity" could be t or nil, or even :both (to represent both parities).  We
+; extended this world global not only for rewrite rules but also for rules of
+; class :definition, :forward-chaining, :linear, and :type-prescription.
+
+; That seemed to work well: it solved our original problem without noticeably
+; slowing down the regression suite or even the time for the expensive form
+; (include-book "doc/top" :dir :system).
+
+; We then presented this change in the UT Austin ACL2 seminar, and a sequence
+; of events caused us to change our heuristics again.
+
+;   (1) During that talk, we stressed the importance of dropping irrelevant
+;       literals so that an unsuitable induction isn't selected.  Marijn Heule
+;       thus made the intriguing suggestion of keeping the literals and simply
+;       ignoring them in our induction heuristics.
+;   
+;   (2) We tried such a change.  Our implementation actually caused
+;       eliminate-irrelevance-clause to hide the irrelevant literals rather
+;       then to delete then; then, induction would unhide them immediately
+;       after choosing an induction scheme.
+;   
+;   (3) The regression exhibited failures, however, because subsumption was no
+;       longer succeeding in cases where it had previously -- a goal was no
+;       longer subsumed by a previous sibling, but was subsumed by the original
+;       goal, causing the proof to abort immediately.  (See below for details.)
+;   
+;   (4) So we decided to drop literals once again, rather than merely to hide
+;       them.
+;   
+;   (5) But on further reflection, it seemed a bit far-fetched that a
+;       hypothesis (P1 X) could be relevant to simplifying (P2 Y Z) in the way
+;       shown above that (P) can be relevant to simplifying (P2 Y Z).  We can
+;       construct an example; but we think such examples are likely to be rare.
+;       The failures due to lack of subsumption led us to be nervous about
+;       keeping literals that Criterion B would otherwise delete.  So we
+;       decided on a very simple modification of Criterion B: only drop
+;       applications of functions to one or more variables.  This very limited
+;       case of keeping a literal seems unlikely to interfere with subsumption,
+;       since that literal could typically be reasonably expected to occur in
+;       all goals that are stable under simplification.
+
+; Returning to (3) above, here is how subsumption failed for lemma perm-del in
+; community book books/models/jvm/m5/perm.lisp, when we merely applied HIDE to
+; literals rather than deleting them.  In the failed proof, we see the
+; following.
+
+;   Subgoal *1.1/4'''
+;   (IMPLIES (AND (NOT (HIDE (CONSP X2)))
+;                 (NOT (EQUAL A X1))
+;                 (MEM X1 Y)
+;                 (NOT (HIDE (CONSP DL))))
+;            (MEM X1 (DEL A Y))).
+;   
+;   Name the formula above *1.1.1.
+
+; Then later we see:
+
+;   So we now return to *1.1.2, which is
+;   
+;   (IMPLIES (AND (NOT (PERM (DEL X3 X4) (DEL X3 DL0)))
+;                 (NOT (EQUAL X3 X1))
+;                 (MEM X1 Y)
+;                 (MEM X3 DL)
+;                 (PERM X4 DL0))
+;            (MEM X1 (DEL X3 Y))).
+
+; In Version_7.2 and also currently, the terms with HIDE in the first goal are
+; simply gone; so the first goal subsumes the second goal under the
+; substitution mapping A to X3.  However, with the first goal as shown above
+; (from our experiment in hiding irrelevant literals), subsumption fails
+; because the hypothesis (NOT (HIDE (CONSP X2))) -- that is, the literal (HIDE
+; (CONSP X2)) -- is not present in the second goal.
 
   (declare (ignore hist wrld state))
   (cond
