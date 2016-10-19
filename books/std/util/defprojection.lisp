@@ -57,8 +57,7 @@
   (declare (xargs :guard t))
   (if (atom x)
       nil
-    (if (and (symbolp (car x))
-             (not (keywordp (car x))))
+    (if (legal-variablep (car x))
         (cons (car x) (collect-vars (cdr x)))
       (collect-vars (cdr x)))))
 

@@ -500,17 +500,18 @@ gtkwave:</p>
 
 (local
  (make-event
-  (b* (((mv er & state)
-        (def-saved-event alu-count-ctrex
-          (gl::def-gl-thm alu16-counts
-            :hyp (and (alu-test-vector-autohyps)
-                      (equal op *op-count*))
-            :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
-                                                     (alu-test-vector-autoins))))
-                          (logcount a))
-            :g-bindings (alu-test-vector-autobinds)))))
+  (b* ((event-form '(gl::def-gl-thm alu16-counts
+                      :hyp (and (alu-test-vector-autohyps)
+                                (equal op *op-count*))
+                      :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
+                                                               (alu-test-vector-autoins))))
+                                    (logcount a))
+                      :g-bindings (alu-test-vector-autobinds)))
+       ((mv er & state)
+        (make-event event-form)))
     (value (and er
-                '(value-triple :ok))))))
+                `(progn (table saved-forms-table 'alu-count-ctrex ',event-form)
+                        (value-triple :ok)))))))
 
 (local
  (def-saved-nonevent alu-debug-ctrex
