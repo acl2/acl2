@@ -15,7 +15,9 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "system/kestrel" :dir :system)
 (include-book "characters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -67,3 +69,27 @@
          :rule-classes :type-prescription)
    (nats nat-listp
          :name nat-listp-of-string=>nats)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define msg-downcase-first ((msg msgp))
+  :returns (new-msg msgp :hyp :guard)
+  :parents (string-utilities)
+  :short "Convert the first character
+          of a <see topic='@(url msg)'>structured message</see>
+          to lower case."
+  (if (stringp msg)
+      (str::downcase-first msg)
+    (cons (str::downcase-first (car msg))
+          (cdr msg))))
+
+(define msg-upcase-first ((msg msgp))
+  :returns (new-msg msgp :hyp :guard)
+  :parents (string-utilities)
+  :short "Convert the first character
+          of a <see topic='@(url msg)'>structured message</see>
+          to upper case."
+  (if (stringp msg)
+      (str::upcase-first msg)
+    (cons (str::upcase-first (car msg))
+          (cdr msg))))
