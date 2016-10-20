@@ -44,6 +44,21 @@
       (write-line line stream)
       (force-output stream))))
 
+(defun satlink-echo-time (line rlines stream)
+
+; Plugin for tshell printing that only prints timing summary lines like:
+; "c Sat solving took 138.7 seconds."
+; Arbitrarily looks for "c " prefix, " seconds." suffix, and " took " substring.
+
+  (declare (ignore rlines))
+  (if (and (str::strprefixp "c " line)
+           (str::strsuffixp " seconds." line)
+           (str::substrp " took " line))
+      (progn
+        (write-line line stream)
+        (force-output stream))
+    nil))
+
 (defun satlink-run (config formula env$)
   (b* ((state acl2::*the-live-state*)
        (prev-okp            (f-get-global 'acl2::writes-okp state))
