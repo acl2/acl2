@@ -26,37 +26,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define string-list-fix ((x string-listp))
-  :returns (fixed-x string-listp)
-  :parents (string-utilities)
-  :short "Fix to @('nil')-terminated list of @(see strings)."
-  (mbe :logic (cond ((endp x) nil)
-                    (t (cons (str-fix (car x))
-                             (string-list-fix (cdr x)))))
-       :exec x)
-  ///
-
-  (defrule string-list-fix-when-string-listp
-    (implies (string-listp x)
-             (equal (string-list-fix x) x))))
-
-(defsection string-list
-  :parents (string-utilities)
-  :short "<see topic='@(url fty)'>Fixtype</see> of
-          @('nil')-terminated lists of @(see strings)."
-  :long
-  "@(def string-listp)
-   @(def string-list-fix)
-   @(def string-list-equiv)"
-  (fty::deffixtype string-list
-    :pred string-listp
-    :fix string-list-fix
-    :equiv string-list-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define nonempty-stringp (x)
   :returns (yes/no booleanp)
   :parents (string-utilities)
