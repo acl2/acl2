@@ -103,9 +103,9 @@
      "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
       term ~x1 to itself!  This can happen even when you submit a rule whose ~
       left and right sides appear to be different, in the case that those two ~
-      sides represent the same term (in particular, after macroexpansion).  ~
-      For general information about rewrite rules in ACL2, see :DOC rewrite. ~
-      ~ You may wish to consider submitting a DEFTHM event ending with ~
+      sides represent the same term (for example, after macroexpansion).  For ~
+      general information about rewrite rules in ACL2, see :DOC rewrite.  You ~
+      may wish to consider submitting a DEFTHM event ending with ~
       :RULE-CLASSES NIL."
      name
      lhs))
@@ -1543,22 +1543,12 @@
                                                backchain-limit-lst
                                                match-free-value
                                                wrld))
-            (parity
-
-; See irrelevant-clausep.  In a nutshell, we expect the lhs to match an
-; irrelevant literal (parity = nil) when the rhs is t, but to match the negated
-; literal (parity = t) when the rhs is nil.
-
-             (cond ((equal rhs *t*) nil)
-                   ((equal rhs *nil*) t)
-                   (t :both)))
-            (wrld1 (extend-never-irrelevant-fns-alist hyps lhs parity wrld))
-            (wrld2 (putprop (ffn-symb lhs)
+            (wrld1 (putprop (ffn-symb lhs)
                             'lemmas
                             (cons rewrite-rule
                                   (getpropc (ffn-symb lhs) 'lemmas nil wrld))
-                            wrld1)))
-       (put-match-free-value match-free-value rune wrld2))))))
+                            wrld)))
+       (put-match-free-value match-free-value rune wrld1))))))
 
 (defun add-rewrite-rule1 (rune nume lst loop-stopper-lst
                                backchain-limit-lst match-free ens wrld)
@@ -2091,10 +2081,7 @@
                                               (access linear-lemma linear-rule
                                                       :max-term))
                                              'linear-lemmas nil wrld))
-                             (extend-never-irrelevant-fns-alist hyps
-                                                                (car max-terms)
-                                                                nil
-                                                                wrld))))
+                             wrld)))
         (add-linear-rule3 rune nume hyps concl (cdr max-terms)
                           backchain-limit-lst
                           match-free
@@ -3084,8 +3071,7 @@
                                  :match-free match-free)
                            (getpropc (ffn-symb (car triggers))
                                      'forward-chaining-rules nil wrld))
-                     (extend-never-irrelevant-fns-alist-lst hyps concls
-                                                            wrld))))))
+                     wrld)))))
 
 (defun add-forward-chaining-rule (rune nume trigger-terms term match-free wrld)
   (mv-let
@@ -5333,7 +5319,7 @@
                           :corollary term)
                     (getpropc (ffn-symb typed-term) 'type-prescriptions nil
                               wrld))
-              (extend-never-irrelevant-fns-alist hyps typed-term nil wrld))))))
+              wrld)))))
 
 (defun strong-compound-recognizer-p (fn recognizer-alist ens)
   (cond ((endp recognizer-alist) nil)

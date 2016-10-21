@@ -12,7 +12,7 @@ fi
 export PAGER=cat
 
 # Matt might update this when confident of purity since the indicated date.
-export SINCE=2016-09-03
+export SINCE=2016-10-16
 
 export basecmd="\
 git log \
@@ -26,7 +26,9 @@ git fetch --all
 echo "-----"
 
 $basecmd \
+  --author='Matt Kaufmann <matthew.j.kaufmann@gmail.com>' \
   --author='Matt Kaufmann <kaufmann@wireless-10-147-200-122.public.utexas.edu>' \
+  --author='Matt Kaufmann <kaufmann@horatio-123.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@horatio-217.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@horatio-168.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@cs.utexas.edu>' \

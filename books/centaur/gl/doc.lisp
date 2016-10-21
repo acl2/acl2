@@ -1248,7 +1248,7 @@ between the variables in the theorem that we want to case-split and the values
 given in @(':param-bindings').  In this example, we essentially encode a truth
 table into @(':param-bindings') using the least significant bit (@('lsb')),
 middle significant bit
-(@'(mid-sb')), and most significant bit (@('high-sb')).  We then indicate that
+(@('mid-sb')), and most significant bit (@('high-sb')).  We then indicate that
 these three significant-bit variables appended together represent the variable
 @('n') in our theorem.</p>
 
@@ -1585,5 +1585,3 @@ false counterexamples, however.</p>
    (mem (update-mem addr val mem))
    :test (quotep addr))
 })")
-
-

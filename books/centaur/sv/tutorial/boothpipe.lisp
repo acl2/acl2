@@ -690,9 +690,9 @@ takes the partial products as inputs and gets the outputs -- Part 2.</p>
 <p><see topic='@(url boothpipe-direct)'>Direct</see>:</p>
 @(`(:code ($ boothpipe-direct-stv))`)
 <p><see topic='@(url boothpipe-step1)'>Part 1</see>:</p>
-@(`(:code ($ boothpipe-part1-stv))`)
+@(`(:code ($ boothpipe-step1-stv))`)
 <p><see topic='@(url boothpipe-step2)'>Part 2</see>:</p>
-@(`(:code ($ boothpipe-part2-stv))`)
+@(`(:code ($ boothpipe-step2-stv))`)
 
 <h4>Composing the Proof</h4>
 

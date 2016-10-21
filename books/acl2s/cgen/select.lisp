@@ -79,6 +79,23 @@
            (and (proper-symbolp (third hyp))
                 (possible-constant-value-expressionp (second hyp))))))
 
+;identify (mget keyword x) and return x
+(defun mget-term-var (term recordp)
+  (and (= (len term) 3)
+       (member-eq (car term) '(acl2::mget acl2::g g))
+       (quotep (cadr term))
+       (implies recordp (keywordp (acl2::unquote (cadr term))))
+       (proper-symbolp (third term))
+       (third term)))
+
+
+(defun mget-hyp-var (hyp recordp)
+  (or (mget-term-var hyp recordp)
+      (and (= 3 (len hyp))
+           (member-eq (car hyp) '(equal = eq eql))
+           (or (mget-term-var (second hyp) recordp)
+               (mget-term-var (third hyp) recordp)))))
+           
 ;chyp=(equal x <const>) or (equal <const> x)
 ;gives (mv x <const>)
 (defun destruct-simple-hyp (chyp)
@@ -194,6 +211,7 @@
 ;e.g  (x . ((= . 1) (R . 2) (< . 1)) YET to be IMPLEMENTED
 
 ;PreCondition: hyp-lst is a term-list (IMPORTANT)
+; [2016-09-15 Thu] updated to newer rules (but without fixer support)
 (defun build-vdependency-graph (hyp-lst alst alst-C incoming)
   (declare (ignorable incoming))
   (declare (xargs :verify-guards nil
@@ -213,6 +231,13 @@ processed, the annotation of edges is also returned"
                                    (remove-entry var alst)
 ;annotate the fact that var is assigned to a constant
                                    (put-assoc-equal var nil alst-C)
+                                   incoming)))
+
+       ((mget-hyp-var hyp t) ;(mget :const x) hack: give record types preference
+        (b* ((var (mget-hyp-var hyp t)))
+          (build-vdependency-graph (cdr hyp-lst)
+                                   (remove-entry var alst)
+                                   (put-assoc-equal var (cdr (assoc-equal var alst)) alst-C)
                                    incoming)))
        
        ((or (atom hyp) ;variable symbols or atomic constants
@@ -248,22 +273,10 @@ processed, the annotation of edges is also returned"
            (union-entry-in-adj-list var fvars alst) 
            alst-C
            incoming)))
-       
-       (t
-;(R term1 term2 ...termN) ==> add edges between x and y where x \in termI
-;and y \in termJ and I=!J and R is a N-ary relation
-        (let* 
-            ((vars (get-free-vars1 hyp nil));only non-buggy for terms
-             (num-vars (len vars)))
-          (if (<= num-vars 1);unchanged
-              (build-vdependency-graph (cdr hyp-lst) alst alst-C incoming)
-            (b* ((alst1 (put-interdependency-edges-in-alst 
-                         (cdr hyp) ;recurse (term1 ... termn)
-                         (cdr hyp) ;all-terms
-                         alst))) 
-              (build-vdependency-graph (cdr hyp-lst) 
-                                       alst1 alst-C incoming)))))))))
-
+       ;() recursion
+       ;() nesting
+       (t (build-vdependency-graph (cdr hyp-lst) alst alst-C incoming))))))
+         
 
 (defun build-variable-dependency-graph (hyps vars)
   (build-vdependency-graph hyps (make-empty-adj-list vars) nil nil))
@@ -280,7 +293,7 @@ processed, the annotation of edges is also returned"
   details, but I have not completely implemented the improvements in the
   paper. This is where I can use better heuristics. But with no hard examples
   to work on, I am doing a naive job for now.")
-  (b* ((cterms (cons (dumb-negate-lit concl) hyps))
+  (b* ((cterms (cons (cgen-dumb-negate-lit concl) hyps))
 ; cterms names constraint terms
        (vars (all-vars-lst cterms))
        ((mv Hc Hs Ho) (separate-const/simple-hyps. cterms wrld '() '() '()))
@@ -302,7 +315,101 @@ processed, the annotation of edges is also returned"
        )
 
    ord-vs))
-       
+
+(program)
+(mutual-recursion
+(defun can-reach1 (v G seen ans)
+   (if (member-equal v seen)
+       ans
+     (b* ((xs (cdr (assoc-equal v G)))
+          (seen (cons v seen)))
+       (can-reach1-lst xs G seen (union-equal xs ans)))))
+(defun can-reach1-lst (vs G seen ans)
+  (if (endp vs)
+      ans
+    (b* ((ans1 (can-reach1 (car vs) G seen ans)))
+      (can-reach1-lst (cdr vs) G seen (union-equal ans1 ans))))))
+                     
+(defun can-reach (v G)
+  ; find all vertices that can reach v in G, given an incoming edge adj list G
+  (can-reach1 v G '() '()))
+
+(defun pick-sink-with-max-fanin (sinks G ans)
+  ;;choose one to which maximum edges can reach
+  (if (endp sinks)
+      ans
+    (if (> (len (can-reach (car sinks) G))
+           (len (can-reach ans G)))
+        (pick-sink-with-max-fanin (cdr sinks) G (car sinks))
+      (pick-sink-with-max-fanin (cdr sinks) G ans))))
+
+(defun add-edge (u v G)
+  (put-assoc-equal u (add-to-set-equal v (cdr (assoc-equal u G))) G))
+
+(defun add-edges1 (us v G)
+  (if (endp us)
+      G
+    (add-edges1 (cdr us) v (add-edge (car us) v G))))
+
+(defun transform-to-incoming-edge-alst1 (G G-in)
+  (if (endp G)
+      G-in
+    (b* (((cons u v-lst) (car G)) ;edge from u to each of v-lst
+         (G-in (add-edges1 v-lst u G-in)))
+      (transform-to-incoming-edge-alst1 (cdr G) G-in))))
+  
+(defun transform-to-incoming-edge-alst (G)
+  (transform-to-incoming-edge-alst1 G (pairlis$ (strip-cars G) nil)))
+
+(defun dumb-get-all-sinks (G)
+;given outgoing adj list get all vertices with no outgoing edges
+  (if (endp G)
+      '()
+    (if (null (cdr (car G))) ;no neighbours
+        (cons (caar G) (dumb-get-all-sinks (cdr G)))
+      (dumb-get-all-sinks (cdr G)))))
+
+(mutual-recursion
+(defun var-depth-in-term (x t2)
+;find max depth of x in term t2
+  (if (equal x t2)
+      0
+    (if (or (atom t2) ;symbol
+            (quotep t2)) ;quoted constant
+        -1 ;not found
+      (let ((d (max-var-depth-in-terms x (cdr t2) -1)))
+        (if (natp d)
+            (1+ d)
+          d)))))
+
+(defun max-var-depth-in-terms (x terms ans)
+  (if (endp terms)
+      ans
+    (b* ((d1 (var-depth-in-term x (car terms))))
+      (max-var-depth-in-terms x (cdr terms) (max d1 ans)))))
+)
+      
+(defun pick-sink-with-max-depth (sinks terms ans)
+  ;;choose one to which maximum term depth
+  (if (endp sinks)
+      ans
+    (if (> (max-var-depth-in-terms (car sinks) terms -1)
+           (max-var-depth-in-terms ans terms -1))
+        (pick-sink-with-max-depth (cdr sinks) terms (car sinks))
+      (pick-sink-with-max-depth (cdr sinks) terms ans))))
+  
+    
+(defun pick-constant-hyp-var (terms)
+  (if (endp terms)
+      nil
+    (if (constant-hyp? (car terms)) ;(equal x (cons 1 2))
+        (b* (((mv var &) (destruct-simple-hyp (car terms))))
+          var)
+      (pick-constant-hyp-var (cdr terms)))))
+
+(u::defloop filter-terms-with-arity-> (terms n)
+  (for ((term in terms)) (append (and (> (len term) (1+ n)) ;arity = 1+ n
+                                      (list term)))))
 
 ; incremental algorithm from FMCAD 2011 paper.
 ; the implementation below deviates by reusing
@@ -310,6 +417,7 @@ processed, the annotation of edges is also returned"
 (def select (terms debug)
   (decl :sig ((pseudo-term-list boolean) 
               -> symbol)
+        :mode :program
         :doc "choose the variable with least dependency. Build a dependency
   graph, topologically sort it and return the first sink we find.")
 ;PRECONDITION: (len vars) > 1
@@ -319,9 +427,14 @@ processed, the annotation of edges is also returned"
 ;depends on has been selected and assigned
 
   (b* ((vars (all-vars-lst terms))
+       (cvar (pick-constant-hyp-var terms))
+       ((when (proper-symbolp cvar)) cvar) ;return var (= const) immediately
        (G (build-variable-dependency-graph terms vars))
 ;TODO: among the variables of a component, we should vary
 ;the order of selection of variables!!
-       (var (car (last (approximate-topological-sort G debug))))
-       (- (cw? debug "~|DPLL: Select var: ~x0~%" var)))
+       (var1 (car (last (approximate-topological-sort G debug))))
+       (sinks (dumb-get-all-sinks G))
+       (terms/binary-or-more (filter-terms-with-arity-> terms 1)) ;ignore monadic terms
+       (var (pick-sink-with-max-depth sinks terms/binary-or-more var1))
+       (- (cw? (or t debug) "~|DPLL: Select var: ~x0~%" var)))
    var))

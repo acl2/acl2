@@ -5114,9 +5114,8 @@
                        (cond
                         ((null ans)
                          (er soft ctx
-                             "No command or event in the region from ~
-                              ~x0 to ~x1 contains ~&2.  See :MORE-DOC ~
-                              command-descriptor."
+                             "No command or event in the region from ~x0 to ~
+                              ~x1 contains ~&2.  See :DOC command-descriptor."
                              (cond ((null (cddr cd)) :x)
                                    (t (caddr cd)))
                              (cond ((null (cddr cd)) 0)
@@ -6334,7 +6333,7 @@
      (cond ((and (consp term)
                  (eq (car term) :failed))
             (er soft 'top
-                "There is no termination theorem for ~ ~x0.  ~@1"
+                "There is no termination theorem for ~x0.  ~@1."
                 fn (cdr term)))
            (t (value (untranslate term t (w state)))))))
 
@@ -8681,8 +8680,9 @@
 
 (defun putprop-x-lst2 (symbols key vals wrld)
 
-; For corresponding symi,vali pairs in symbols x vals,
-; (putprop symi key vali).
+; For corresponding symi,vali pairs in symbols x vals, (putprop symi key vali).
+; The result has properties in reverse order from symbols, and we rely on that;
+; see the comment in chk-acceptable-defuns1.
 
   (cond ((null symbols) wrld)
         (t (putprop-x-lst2 (cdr symbols)
@@ -9092,7 +9092,7 @@
       "Each element of a substitution must be a pair of the form (var term), ~
        where var is a variable symbol and term is a term.  Your alleged ~
        substitution contains the element ~x0, which is not of this form.  See ~
-       the discussion of :instance in :MORE-DOC lemma-instance."
+       the discussion of :instance in :DOC lemma-instance."
       (car substn)))
    (t (let ((var (caar substn))
             (term (cadar substn)))
@@ -9116,8 +9116,7 @@
              (cond ((assoc-eq var y)
                     (er@par soft ctx
                       "It is illegal to bind ~x0 twice in a substitution.  ~
-                       See the discussion of :instance in :MORE-DOC ~
-                       lemma-instance."
+                       See the discussion of :instance in :DOC lemma-instance."
                       var))
                    (t (value@par (cons (cons var term) y)))))))))))
 
@@ -9297,7 +9296,7 @@
              "The :do-not-induct hint should be followed by a symbol: either ~
               T, :QUIT, or the root name to be used in the naming of any ~
               clauses given byes.  ~x0 is an illegal root name.  See the ~
-              :do-not-induct discussion in :MORE-DOC hints."
+              :do-not-induct discussion in :DOC hints."
              arg))))
 
 (defun@par translate-hands-off-hint1 (arg ctx wrld state)
@@ -9307,8 +9306,7 @@
      ((null arg) (value@par nil))
      (t (er@par soft ctx
           "The value of the :hands-off hint must be a true list, but your ~
-           list ends in ~x0.  See the :hands-off discussion in :MORE-DOC ~
-           hints."
+           list ends in ~x0.  See the :hands-off discussion in :DOC hints."
           arg))))
    ((and (consp (car arg))
          (eq (car (car arg)) 'lambda)
@@ -9337,7 +9335,7 @@
      (value@par (cons (car arg) rst))))
    (t (er@par soft ctx
         "The object ~x0 is not a legal element of a :hands-off hint.  See the ~
-         :hands-off discussion in :MORE-DOC hints."
+         :hands-off discussion in :DOC hints."
         (car arg)))))
 
 (defun@par translate-hands-off-hint (arg ctx wrld state)
@@ -9699,7 +9697,7 @@
       "It is illegal to replace ~x0 by ~x1 because the former ~#2~[takes no ~
        arguments~/takes one argument~/takes ~n3 arguments~] while the latter ~
        ~#4~[takes none~/takes one~/takes ~n5~].  See the :functional-instance ~
-       discussion in :MORE-DOC :lemma-instance."
+       discussion in :DOC :lemma-instance."
       fn1
       fn2
       (cond ((int= n1 0) 0)
@@ -9776,21 +9774,21 @@
               (= (length (car substn)) 2)))
     (er@par soft ctx
       "The object ~x0 is not of the form (fi gi) as described in the ~
-       :functional-instance discussion of :MORE-DOC lemma-instance."
+       :functional-instance discussion of :DOC lemma-instance."
       (car substn)))
    (t (let ((fn1 (caar substn))
             (fn2 (cadar substn))
-            (str "The object ~x0 is not of the form (fi gi) as ~
-                  described in the :functional-instance discussion of ~
-                  :MORE-DOC lemma-instance.  ~x1 is neither a ~
-                  function symbol nor a pseudo-lambda expression."))
+            (str "The object ~x0 is not of the form (fi gi) as described in ~
+                  the :functional-instance discussion of :DOC lemma-instance. ~
+                  ~ ~x1 is neither a function symbol nor a pseudo-lambda ~
+                  expression."))
         (cond
          ((not (and (symbolp fn1)
                     (function-symbolp fn1 wrld)))
           (er@par soft ctx
             "Each domain element in a functional substitution must be a ~
              function symbol, but ~x0 is not.  See the :functional-instance ~
-             discussion of :MORE-DOC lemma-instance."
+             discussion of :DOC lemma-instance."
             fn1))
          ((not (eq (instantiablep fn1 wrld) t))
           (er@par soft ctx
@@ -9843,7 +9841,7 @@
                   (er@par soft ctx
                     "It is illegal to bind ~x0 twice in a functional ~
                      substitution.  See the :functional-instance discussion ~
-                     of :MORE-DOC lemma-instance."
+                     of :DOC lemma-instance."
                     fn1))
                  (t (value@par (extend-sorted-symbol-alist x y)))))))))))
 
@@ -12101,6 +12099,52 @@
 (set-guard-msg termination-theorem
                (guard-or-termination-theorem-msg :tthm args coda))
 
+(defun termination-theorem-fn-subst2 (old-nest wrld acc)
+
+; See termination-theorem-fn-subst.  At the top level, wrld starts with
+; 'formals properties; if these match up with old-nest (as described in
+; termination-theorem-fn-subst.), then we return the resulting functional
+; substitution mapping old function symbols to new.
+
+  (cond ((endp old-nest)
+         (and (not (eq (cadr (car wrld)) 'formals))
+              acc))
+        ((eq (cadr (car wrld)) 'formals)
+         (and (eql (length (cddr (car wrld)))
+                   (length (getpropc (car old-nest) 'formals nil wrld)))
+              (termination-theorem-fn-subst2 (cdr old-nest)
+                                             (cdr wrld)
+                                             (acons (car old-nest)
+                                                    (car (car wrld))
+                                                    acc))))
+        (t nil)))
+
+(defun termination-theorem-fn-subst1 (old-nest wrld)
+
+; See termination-theorem-fn-subst.  Here we cdr down wrld until we find the
+; first 'formals property (if any).
+
+  (cond ((eq (cadr (car wrld)) 'formals)
+         (termination-theorem-fn-subst2 (reverse old-nest) wrld nil))
+        ((eq (car (car wrld)) 'event-landmark)
+         nil)
+        (t (termination-theorem-fn-subst1 old-nest (cdr wrld)))))
+
+(defun termination-theorem-fn-subst (fn wrld)
+
+; Fn is in the process of being defined recursively (or if not recursive, then
+; we return nil).  Consecutive 'formals properties have been pushed on wrld for
+; the function symbols currently being defined; in the case of a
+; mutual-recursion, those properties are in reverse order from which the
+; function symbols are introduced.  We are free to return nil; but we prefer,
+; when possible, to return a functional substitution mapping the old functions
+; to the new ones, respecting the order of definition within the respective (if
+; any) mutual-recursions, but only when the input arities match up.
+
+  (let ((old-nest (getpropc fn 'recursivep nil wrld)))
+    (and old-nest
+         (termination-theorem-fn-subst1 old-nest wrld))))
+
 (defun@par translate-lmi (lmi normalizep ctx wrld state)
 
 ; Lmi is an object that specifies some instance of a theorem.  It may specify a
@@ -12167,12 +12211,16 @@
      ((and (member-eq (car lmi) atomic-lmi-cars)
            (not (and (true-listp lmi)
                      (or (= (length lmi) 2)
-                         (and (eq (car lmi) :guard-theorem)
+                         (and (member-eq (car lmi) '(:guard-theorem
+                                                     :termination-theorem
+                                                     :termination-theorem!))
                               (= (length lmi) 3))))))
       (er@par soft ctx str lmi
         (msg "this ~x0 lemma instance is not a true list of length 2~@1"
              (car lmi)
-             (if (eq (car lmi) :guard-theorem)
+             (if (member-eq (car lmi) '(:guard-theorem
+                                        :termination-theorem
+                                        :termination-theorem!))
                  " or 3"
                ""))))
      ((eq (car lmi) :theorem)
@@ -12243,16 +12291,44 @@
                       fn)))
               (t
                (let ((term (termination-theorem fn wrld)))
-                 (cond ((and (consp term)
-                             (eq (car term) :failed))
-                        (cond ((eq (car lmi) :termination-theorem)
-                               (er@par soft ctx str lmi
-                                 (msg "there is no termination theorem for ~
-                                       ~x0.  ~@1"
-                                      fn
-                                      (cdr term))))
-                              (t (value@par (list *t* nil nil nil)))))
-                       (t (value@par (list term nil nil nil)))))))))
+                 (cond
+                  ((and (consp term)
+                        (eq (car term) :failed))
+                   (cond ((eq (car lmi) :termination-theorem)
+                          (er@par soft ctx str lmi
+                            (msg "there is no termination theorem for ~x0.  ~
+                                  ~@1"
+                                 fn
+                                 (cdr term))))
+                         (t (value@par (list *t* nil nil nil)))))
+                  ((and (cddr lmi)
+                        (not (symbol-doublet-listp (caddr lmi))))
+                   (er@par soft ctx str lmi
+                     "the alleged functional substitution is not a list of ~
+                      pairs of the form (symbol x)"))
+                  ((cddr lmi)
+                   (er-let*@par
+                    ((alist (translate-functional-substitution@par
+                             (caddr lmi) ctx wrld state)))
+                    (cond
+                     ((subsetp-eq (strip-cars alist)
+                                  (getpropc fn 'recursivep nil wrld))
+                      (value@par (list (sublis-fn-simple alist term)
+                                       nil nil nil)))
+                     (t (er@par soft ctx str lmi
+                          "its functional substitution is illegal: the ~
+                           function symbol~#1~[ ~&1 is~/s ~&1 are~] not ~
+                           introduced with the function symbol ~x2"
+                          lmi
+                          (set-difference-eq (strip-cars alist)
+                                             (getpropc fn 'recursivep nil
+                                                       wrld))
+                          fn)))))
+                  (t (let* ((alist (termination-theorem-fn-subst fn wrld))
+                            (term (cond
+                                   (alist (sublis-fn-simple alist term))
+                                   (t term))))
+                       (value@par (list term nil nil nil))))))))))
      ((runep lmi wrld)
       (let ((term (and (not (eq (car lmi) :INDUCTION))
                        (corollary lmi wrld))))
@@ -12276,8 +12352,7 @@
          (cond ((null arg) (value@par '(nil nil nil nil)))
                (t (er@par soft ctx
                     "The value of the :use hint must be a true list but your ~
-                     list ends in ~x0.  See the :use discussion in :MORE-DOC ~
-                     hints."
+                     list ends in ~x0.  See the :use discussion in :DOC hints."
                     arg))))
         (t (er-let*@par
             ((lst1 (translate-lmi@par (car arg) t ctx wrld state))

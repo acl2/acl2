@@ -1556,8 +1556,7 @@
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
                     (attachment-records nil)
-                    (proof-supporters-alist nil)
-                    (never-irrelevant-fns-alist nil))))
+                    (proof-supporters-alist nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
                       ,(make command-number-baseline-info
@@ -4086,6 +4085,40 @@
               (term-evisc-tuple t state)))
         (t "")))
 
+(defconst *acl2-defaults-table-macros*
+
+; By defining this constant, we make it easy for tool builders to use this list
+; in code without cutting and pasting.  (Thanks to Eric Smith for the
+; suggestion.)
+
+  '(add-custom-keyword-hint ; might get removed from the list
+    add-include-book-dir
+    add-match-free-override
+    defttag
+    delete-include-book-dir
+    logic
+    program
+    set-backchain-limit
+    set-bogus-defun-hints-ok
+    set-bogus-mutual-recursion-ok
+    set-case-split-limitations
+    set-compile-fns
+    set-default-backchain-limit
+    set-enforce-redundancy
+    set-ignore-ok
+    set-irrelevant-formals-ok
+    set-let*-abstractionp
+    set-match-free-default
+    set-measure-function
+    set-non-linearp
+    set-prover-step-limit
+    set-rewrite-stack-limit
+    set-ruler-extenders
+    set-state-ok
+    set-tau-auto-mode
+    set-verify-guards-eagerness
+    set-well-founded-relation))
+
 (defun chk-embedded-event-form (form orig-form wrld ctx state names portcullisp
                                      in-local-flg in-encapsulatep
                                      make-event-chk)
@@ -4245,33 +4278,7 @@
           ((and (eq in-local-flg t)
                 (consp form)
                 (member-eq (car form)
-                           '(add-custom-keyword-hint
-                             add-include-book-dir
-                             add-match-free-override
-                             defttag
-                             delete-include-book-dir
-                             logic
-                             program
-                             set-backchain-limit
-                             set-bogus-defun-hints-ok
-                             set-bogus-mutual-recursion-ok
-                             set-case-split-limitations
-                             set-compile-fns
-                             set-default-backchain-limit
-                             set-enforce-redundancy
-                             set-ignore-ok
-                             set-irrelevant-formals-ok
-                             set-let*-abstractionp
-                             set-match-free-default
-                             set-measure-function
-                             set-non-linearp
-                             set-prover-step-limit
-                             set-rewrite-stack-limit
-                             set-ruler-extenders
-                             set-state-ok
-                             set-tau-auto-mode
-                             set-verify-guards-eagerness
-                             set-well-founded-relation)))
+                           *acl2-defaults-table-macros*))
            (er soft ctx local-str
                form
                " because it implicitly sets the acl2-defaults-table in a ~

@@ -24,16 +24,15 @@
 
 ; This function only gives a preciser symbolic value/shape for x; no
 ; decisions.
-(def implied-symbolic-value (x cs% vl state)
-  (decl :sig ((symbol cs% fixnum state) -> (mv erp pseudo-term state))
+(def implied-symbolic-value (x type H vl state)
+  (decl :sig ((symbol defdata-type pseudo-term-listp fixnum state) -> (mv erp pseudo-term state))
         :mode :program
-        :doc "Assign to x: From cs% get the (recursive) type for
-x. then look into additional constraints, to infer any lower-bounds or
+        :doc "Assign to x: From type get the (recursive) type for
+x. then look into additional constraints from H, to infer any lower-bounds or
 narrower shape. return (mv exp new-hyps), where new-hyps are
 new constraints on the introduced variables")
-  (b* ((type (access cs% defdata-type))
-       (additional-constraints (access cs% additional-constraints)))
-    (refine-enum-shape x type (contains-var x additional-constraints) vl state)))
+  (b* ((additional-constraints (contains-var x H)))
+    (refine-enum-shape x type additional-constraints vl state)))
        
 
 
@@ -101,14 +100,11 @@ additional hyps")
         (value (list val-term :decision '()))))))
 
 
-(defun record-p (type wrld)
-  (b* ((type-entry (get1 type (defdata::type-metadata-table wrld)))
-       (pdef (cgen::get1 :PRETTYIFIED-DEF type-entry)))
-    (and (consp pdef)
-         (equal (car pdef) 'ACL2S::RECORD))))
 
-(def assign-value (x cs% partial-A sm vl ctx state)
-  (decl :sig ((fixnum cs% symbol-doublet-listp symbol-doublet-listp
+
+
+(def assign-value (x cs% H partial-A sm vl ctx state)
+  (decl :sig ((fixnum cs% pseudo-term-listp symbol-doublet-listp symbol-doublet-listp
                       sampling-method fixnum symbol plist-world state )
               -> (mv erp (list pseudo-term keyword pseudo-term-listp) state))
         :mode :program
@@ -118,22 +114,12 @@ additional hyps")
        (wrld (w state)))
     (if (not (defdata::recursive-type-p type wrld)) ;use concrete
         (if (record-p type wrld)
-            (b* ((type-entry (get1 type (defdata::type-metadata-table wrld)))
-                 (ndef (cgen::get1 :normalized-def type-entry))
-                 (conx (car ndef))
-                 (fields  (strip-cars (cdr ndef)))
-                 (ftypes  (strip-cdrs (cdr ndef)))
-                 (new-names (defdata::modify-symbol-lst (string-append (symbol-name x) ".")
-                                                        fields
-                                                        ""
-                                                        (symbol-package-name x)))
-                 (fpreds (defdata::predicate-names ftypes (defdata::type-metadata-table wrld)))
-                 (pred-calls (acl2::listlis fpreds new-names)))
-              (value (list (cons conx new-names) :expand pred-calls)))
+            (b* (((mv rec-expansion field-type-hyps) (expand-record x type wrld)))
+              (value (list rec-expansion :expand field-type-hyps)))
               
-            (get-concrete-value cs% partial-A sm vl ctx wrld state))
+          (get-concrete-value cs% partial-A sm vl ctx wrld state))
       
-      (b* (((er ans) (implied-symbolic-value x cs% vl state))
+      (b* (((er ans) (implied-symbolic-value x (access cs% defdata-type) H vl state))
            ((list refined-term additional-hyps) ans))
         (if (or (null additional-hyps)
                 (equal refined-term x))
@@ -212,10 +198,11 @@ additional hyps")
         (cs% (or (access a% cs) ;already computed
                  (assert$ (member-eq x vars)
                           (cdr (assoc-eq x (collect-constraints% 
-                                             (cons (dumb-negate-lit C) H) vars type-alist tau-interval-alist
+                                             (cons (cgen-dumb-negate-lit C) H) vars type-alist tau-interval-alist
                                              vl wrld))))))
        
-       ((mv erp ans state) (assign-value x cs% partial-A sm vl ctx state)) ;TODO
+        ((mv erp ans state) (assign-value x cs% (cons (cgen-dumb-negate-lit C) H)
+                                          partial-A sm vl ctx state)) ;TODO
        ((when erp)
         (progn$
          (cw? (normal-output-flag vl)
@@ -229,7 +216,7 @@ additional hyps")
 
        (a% (acl2::change a% a% :cs cs% :val a :kind kind :i i))
        
-       ((mv erp res state) (propagate x a (append introduced-hyps H) C vl state))
+       ((mv erp res state) (propagate x a (union-equal introduced-hyps H) C vl state))
        (str (if erp "inconsistent" "consistent"))
        (- (cw? (verbose-stats-flag vl)
                "~%CEgen/Stats/incremental: Propagate ~x0 := ~x1 (i:~x3) was ~s2.~|" x a str i)))
@@ -262,8 +249,7 @@ additional hyps")
   (incremental-search (a% A. 
                           name  mv-sig-alist ;subgoal params
                           test-outcomes% gcs%
-                          N vl sm blimit num-cts num-wts timeout-secs
-                          top-vt-alist
+                          vl cgen-state
                           programp
                           ctx state)
 
@@ -285,8 +271,7 @@ additional hyps")
     (decl :sig ((a% a%-listp 
                  string  symbol-alist
                  test-outcomes%-p gcs%-p
-                 fixnum fixnum (enum *sampling-method-values*) fixnum fixnum fixnum rational
-                 variable-alist
+                 fixnum cgen-state
                  booleanp
                  symbolp state) -> 
                 (mv erp (list boolean test-outcomes% gcs%) state))
@@ -306,28 +291,25 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                                              H C vars partial-A elim-bindings type-alist tau-interval-alist
                                              mv-sig-alist
                                              test-outcomes% gcs%
-                                             N vl sm num-cts num-wts timeout-secs
-                                             top-vt-alist
+                                             vl cgen-state
                                              programp t
                                              ctx state))
          (backtrack... () (backtrack a% A.
                                      name mv-sig-alist
                                      test-outcomes% gcs%
-                                     N vl sm blimit num-cts num-wts timeout-secs
-                                     top-vt-alist
+                                     vl cgen-state
                                      programp
                                      ctx state))
          
          (recurse... () (incremental-search a% A.
                                             name mv-sig-alist
                                             test-outcomes% gcs%
-                                            N vl sm blimit num-cts num-wts timeout-secs
-                                            top-vt-alist
+                                            vl cgen-state
                                             programp
                                             ctx state)))
 
       (b* (((mv erp ap-res state) ;snapshot a% moves to second stage/form
-            (trans-eval `(assign-propagate ',a% ',name ',sm ',vl ',ctx state)
+            (trans-eval `(assign-propagate ',a% ',name ',(cget sampling-method) ',vl ',ctx state)
                         ctx state t))
            ((when erp) ;error in assign value
             (prog2$
@@ -355,7 +337,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                  
                 (A. (cons a% A.))
 ; ok lets set up a% for the next iteration
-                (x1 (select (cons (dumb-negate-lit C) H) (debug-flag vl)))
+                (x1 (select (cons C H) (debug-flag vl))) ;no need to negate C
                 (a% (acl2::make a% 
                                 :vars vars :hyps H :concl C 
                                 :partial-A partial-A
@@ -377,16 +359,14 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
   (backtrack (a% A. 
                  name mv-sig-alist
                  test-outcomes% gcs%
-                 N vl sm blimit num-cts num-wts timeout-secs
-                 top-vt-alist
+                 vl cgen-state
                  programp
                  ctx state)
 ; when called from incremental, either contradiction in hyps[x=a] or simple-search failed on P of zero/one variable
     (decl :sig (( a%-p a%-listp 
                  string variable-alist
                  test-outcomes%-p gcs%-p
-                 fixnum fixnum (enum *sampling-method-values*) fixnum fixnum fixnum rational
-                 variable-alist
+                 fixnump cgen-state-p
                  boolean
                  symbol state) 
                 -> (mv erp (list boolean test-outcomes% gcs%) state))
@@ -394,7 +374,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
          :doc "backtrack in dpll like search")
    
     (if (or (not (eq (access a% kind) :decision)) ;implied or expand
-            (> (access a% i) blimit))
+            (> (access a% i) (cget backtrack-limit)))
         (if (null A.)
 ;       THEN - error out if x0 exceeds blimit
             (prog2$
@@ -409,8 +389,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
            (backtrack a% (cdr A.) ;pop stack
                       name mv-sig-alist
                       test-outcomes% gcs%
-                      N vl sm blimit num-cts num-wts timeout-secs
-                      top-vt-alist
+                      vl cgen-state
                       programp
                       ctx state)))
 
@@ -418,8 +397,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
       (incremental-search a% A. 
                           name mv-sig-alist
                           test-outcomes% gcs%
-                          N vl sm blimit num-cts num-wts timeout-secs
-                          top-vt-alist
+                          vl cgen-state
                           programp
                           ctx state))))
 

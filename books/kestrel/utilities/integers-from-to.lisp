@@ -22,10 +22,10 @@
 (define integers-from-to ((min integerp) (max integerp))
   :returns (ints integer-listp)
   :parents (kestrel-utilities)
-  :short "Ordered list of
-          all the integers between @('min') and @('max'), inclusive."
+  :short "Ordered list of all the integers in a range."
   :long
   "<p>
+   The range goes from @('min') to @('max'), inclusive.
    If @('min') exceeds @('max'), the result is @('nil').
    </p>"
   (integers-from-to-aux min max nil)

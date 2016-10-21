@@ -27,8 +27,6 @@
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
-(local (set-default-parents world-queries))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc world-queries
@@ -42,37 +40,43 @@
 
 (define theorem-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff the symbol @('sym') names a theorem,
+  :parents (world-queries)
+  :short "Check if a symbol names a theorem,
           i.e. it has a @('theorem') property."
   (not (eq t (getpropc sym 'theorem t wrld))))
 
 (define macro-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff the symbol @('sym') names a macro."
+  :parents (world-queries)
+  :short "Check if a symbol names a macro."
   (not (eq t (getpropc sym 'macro-args t wrld))))
 
 (define function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff @('x') is a symbol that names a function."
+  :parents (world-queries)
+  :short "Recognize symbols that name functions."
   (and (symbolp x)
        (function-symbolp x wrld))
   :enabled t)
 
 (define theorem-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff @('x') is a symbol that names a theorem."
+  :parents (world-queries)
+  :short "Recognize symbols that name theorems."
   (and (symbolp x)
        (theorem-symbolp x wrld)))
 
 (define macro-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff @('x') is a symbol that names a macro."
+  :parents (world-queries)
+  :short "Recognize symbols that name macros."
   (and (symbolp x)
        (macro-symbolp x wrld)))
 
 (define logical-name-listp (names (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
+  :parents (world-queries)
   :short "Recognize @('nil')-terminated lists of logical names."
   :long
   "<p>
@@ -84,46 +88,50 @@
 
 (define logic-function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "True iff @('x') is a symbol that names a logic-mode function."
+  :parents (world-queries)
+  :short "Recognize symbols that name logic-mode functions."
   (and (function-namep x wrld)
        (logicp x wrld))
   :enabled t)
 
 (define definedp ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :guard-hints (("Goal" :in-theory (enable function-namep)))
-  :short "True iff the logic-mode function @('fn') is defined,
+  :parents (world-queries)
+  :short "Check if a logic-mode function is defined,
           i.e. it has an @('unnormalized-body') property."
-  (not (eq t (getpropc fn 'unnormalized-body t wrld))))
+  (not (eq t (getpropc fn 'unnormalized-body t wrld)))
+  :guard-hints (("Goal" :in-theory (enable function-namep))))
 
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
                                       (theorem-namep fn/thm wrld)))
                           (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :guard-hints (("Goal" :in-theory (enable function-namep theorem-namep)))
-  :short "True iff the function or theorem @('fn/thm')
-          is @(tsee guard)-verified."
-  (eq (symbol-class fn/thm wrld) :common-lisp-compliant))
+  :parents (world-queries)
+  :short "Check if a function or theorem is @(tsee guard)-verified."
+  (eq (symbol-class fn/thm wrld) :common-lisp-compliant)
+  :guard-hints (("Goal" :in-theory (enable function-namep theorem-namep))))
 
 (define non-executablep ((fn (and (logic-function-namep fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
-  :guard-hints (("Goal" :in-theory (enable function-namep)))
+  :parents (world-queries)
   :short "The @(tsee non-executable) status
-          of the logic-mode, defined function @('fn')."
-  (getpropc fn 'non-executablep nil wrld))
+          of a logic-mode, defined function."
+  (getpropc fn 'non-executablep nil wrld)
+  :guard-hints (("Goal" :in-theory (enable function-namep))))
 
 (define unwrapped-nonexec-body ((fn (and (function-namep fn wrld)
                                          (non-executablep fn wrld)))
                                 (wrld plist-worldp))
   :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
+  :parents (world-queries)
   :short "Body of a non-executable function,
           without the &ldquo;non-executable wrapper&rdquo;."
   :long
   "<p>
-   @(tsee Defun-nx) wraps the body of the function @('fn') being defined
+   @(tsee defun-nx) wraps the body of the function @('fn') being defined
    in a wrapper that has
    the following <see topic='@(url term)'>translated</see> form:
    </p>
@@ -139,7 +147,7 @@
    the submitted body (once translated) must be wrapped like that.
    </p>
    <p>
-   @(tsee Unwrapped-nonexec-body) returns
+   @(tsee unwrapped-nonexec-body) returns
    the unwrapped body of the non-executable function @('fn').
    </p>
    <p>
@@ -156,6 +164,7 @@
                            (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (n "A @(tsee posp).")
+  :parents (world-queries)
   :short "Number of values returned by a function."
   :long
   "<p>
@@ -176,7 +185,8 @@
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (yes/no booleanp)
   :verify-guards nil
-  :short "True iff the function @('fn') has no input or output @(see stobj)s."
+  :parents (world-queries)
+  :short "Check if a function has no input or output @(see stobj)s."
   :long
   "<p>
    The guard condition that @('fn') is not in @('*stobjs-out-invalid*')
@@ -190,6 +200,7 @@
                  (wrld plist-worldp))
   :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
+  :parents (world-queries)
   :short "Measure expression of a logic-mode recursive function."
   :long
   "<p>
@@ -202,7 +213,8 @@
                          (wrld plist-worldp))
   :returns (measured-subset "A @(tsee symbol-listp).")
   :verify-guards nil
-  :short "Subset of the formal arguments of the recursive function @('fn')
+  :parents (world-queries)
+  :short "Subset of the formal arguments of a logic-mode recursive function
           that occur in its @(see measure) expression."
   (access justification (getpropc fn 'justification nil wrld) :subset))
 
@@ -211,6 +223,7 @@
                                (wrld plist-worldp))
   :returns (well-founded-relation "A @(tsee symbolp).")
   :verify-guards nil
+  :parents (world-queries)
   :short "Well-founded relation of a logic-mode recursive function."
   :long
   "<p>See @(see well-founded-relation-rule)
@@ -223,6 +236,7 @@
                          (wrld plist-worldp))
   :returns (ruler-extenders "A @(tsee symbol-listp) or @(':all').")
   :verify-guards nil
+  :parents (world-queries)
   :short "Ruler-extenders of a logic-mode recursive function
           (see @(see rulers) for background)."
   (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
@@ -230,7 +244,8 @@
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
   :returns (required-args symbol-listp)
   :verify-guards nil
-  :short "Required arguments of the macro @('mac'), in order."
+  :parents (world-queries)
+  :short "Required arguments of a macro, in order."
   :long
   "<p>
    The arguments of a macro form a list that
@@ -250,15 +265,15 @@
     (if (null all-args)
         nil
       (if (eq (car all-args) '&whole)
-          (reverse (macro-required-args-aux (cddr all-args) nil))
-        (reverse (macro-required-args-aux all-args nil)))))
+          (macro-required-args-aux (cddr all-args) nil)
+        (macro-required-args-aux all-args nil))))
 
   :prepwork
   ((define macro-required-args-aux ((args symbol-listp)
                                     (rev-result symbol-listp))
-     :returns (final-rev-result symbol-listp :hyp (symbol-listp rev-result))
+     :returns (final-result symbol-listp :hyp (symbol-listp rev-result))
      (if (endp args)
-         rev-result
+         (reverse rev-result)
        (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
                        :exec (car args))))
          (if (lambda-keywordp arg)
@@ -269,30 +284,35 @@
 (define fundef-disabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
-  :short "True iff the definition of the function @('fn') is disabled."
+  :parents (world-queries)
+  :short "Check if the definition of a function is disabled."
   (member-equal `(:definition ,fn) (disabledp fn)))
 
 (define fundef-enabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
-  :short "True iff the definition of the function @('fn') is enabled."
+  :parents (world-queries)
+  :short "Check if the definition of a function is enabled."
   (not (fundef-disabledp fn state)))
 
 (define rune-disabledp ((rune (runep rune (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
-  :short "True iff the @(see rune) @('rune') is disabled."
+  :parents (world-queries)
+  :short "Check if a @(see rune) is disabled."
   (member-equal rune (disabledp (cadr rune))))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
-  :short "True iff the @(see rune) @('rune') is enabled."
+  :parents (world-queries)
+  :short "Check if a @(see rune) is enabled."
   (not (rune-disabledp rune state)))
 
 (define included-books ((wrld plist-worldp))
   :returns (result "A @(tsee string-listp).")
   :verify-guards nil
+  :parents (world-queries)
   :short "List of full pathnames of all books currently included
           (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist wrld)))
@@ -302,7 +322,8 @@
                            (wrld plist-worldp))
   :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
   :verify-guards nil
-  :short "Induction machine of a (singly) recursive function."
+  :parents (world-queries)
+  :short "Induction machine of a (singly) recursive logic-mode function."
   :long
   "<p>
    This is a list of @('tests-and-calls') records
@@ -318,6 +339,7 @@
 
 (define pseudo-tests-and-callp (x)
   :returns (yes/no booleanp)
+  :parents (world-queries)
   :short "Recognize well-formed @('tests-and-call') records."
   :long
   "<p>
@@ -354,6 +376,7 @@
 
 (std::deflist pseudo-tests-and-call-listp (x)
   (pseudo-tests-and-callp x)
+  :parents (world-queries)
   :short "Recognize @('nil')-terminated lists of
           well-formed @('tests-and-call') records."
   :true-listp t
@@ -364,7 +387,8 @@
                          (wrld plist-worldp))
   :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
   :mode :program
-  :short "Recursive calls of a (singly) recursive function,
+  :parents (world-queries)
+  :short "Recursive calls of a (singly) recursive logic-mode function,
           along with the controlling tests."
   :long
   "<p>
@@ -377,6 +401,7 @@
 
 (std::deflist pseudo-event-landmark-listp (x)
   (pseudo-event-landmarkp x)
+  :parents (world-queries)
   :short "Recognize @('nil')-terminated lists of event landmarks."
   :long
   "<p>
@@ -388,6 +413,7 @@
 
 (std::deflist pseudo-command-landmark-listp (x)
   (pseudo-command-landmarkp x)
+  :parents (world-queries)
   :short "Recognize @('nil')-terminated lists of command landmarks."
   :long
   "<p>
@@ -400,6 +426,7 @@
 (define event-landmark-names ((event pseudo-event-landmarkp))
   :returns (names "A @('string-or-symbol-listp').")
   :verify-guards nil
+  :parents (world-queries)
   :short "Names introduced by an event landmark."
   :long
   "<p>

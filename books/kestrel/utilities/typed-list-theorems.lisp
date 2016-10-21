@@ -24,7 +24,7 @@
 
   :parents (theorems-about-non-kestrel-books)
 
-  :short "Some theorems about @(tsee nat-list-fix)."
+  :short "Theorems about @(tsee nat-list-fix)."
 
   (defrule cdr-of-nat-list-fix
     (equal (cdr (nat-list-fix x))

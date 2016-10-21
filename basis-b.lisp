@@ -863,11 +863,11 @@
 (defmacro make-let (bindings body)
   `(list 'let ,bindings ,body))
 
-(defun doubleton-list-p (x)
+(defun doublet-listp (x)
   (cond ((atom x) (equal x nil))
         (t (and (true-listp (car x))
                 (eql (length (car x)) 2)
-                (doubleton-list-p (cdr x))))))
+                (doublet-listp (cdr x))))))
 
 (defmacro er-let* (alist body)
 
@@ -877,7 +877,7 @@
 
 ; Keep in sync with er-let*@par.
 
-  (declare (xargs :guard (and (doubleton-list-p alist)
+  (declare (xargs :guard (and (doublet-listp alist)
                               (symbol-alistp alist))))
   (cond ((null alist)
          (list 'check-vars-not-free
@@ -905,7 +905,7 @@
 ; The user who uses that variable in his forms is likely to be
 ; disappointed by the fact that we rebind it.
 
-  (declare (xargs :guard (and (doubleton-list-p alist)
+  (declare (xargs :guard (and (doublet-listp alist)
                               (symbol-alistp alist))))
   (cond ((null alist)
          (list 'check-vars-not-free

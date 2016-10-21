@@ -1390,7 +1390,7 @@ implementations.")
 (defun acl2-default-restart ()
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
-  (let ((produced-by-save-exec-p *lp-ever-entered-p*))
+  (let (#+hons (produced-by-save-exec-p *lp-ever-entered-p*))
     (proclaim-optimize) ; see comment in proclaim-optimize
     (setq *lp-ever-entered-p* nil)
     (#+cltl2
@@ -1734,7 +1734,10 @@ implementations.")
 ; "Heap exhausted during allocation: 43372544 bytes available, 67108872
 ; requested."
 
-  #+x86-64 16000
+; On October 18, 2016, we found that even 16,000 is insufficient for building
+; the manual.  So we are increasin this value by 50%, to 24,000.
+
+  #+x86-64 24000
   #-x86-64 2000)
 
 #+sbcl

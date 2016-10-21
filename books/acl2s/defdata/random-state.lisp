@@ -16,6 +16,7 @@
 ; Tweaked:  11 November 2008
 ; Tweaked:  24 November 2008 by harshrc
 ; Modified: 10 March 2012 by harshrc -- type declarations
+; Modified: [2016-04-03 Sun] harshrc -- reduce bias to small random numbers
 ;=====================================================================;
 
 (defun random-boolean (state)
@@ -58,7 +59,7 @@
       
        (mv v seed.)))))
 
-(defun random-natural-seed (seed.)
+(defun random-natural-seed/0.5 (seed.)
   (declare (type (unsigned-byte 31) seed.))
   (declare (xargs :guard (unsigned-byte-p 31 seed.)))
   (mbe :logic (if (unsigned-byte-p 31 seed.)
@@ -67,7 +68,81 @@
        :exec  (random-natural-basemax1 10 6 seed.)))
       
 
+(defun random-natural-basemax2 (base maxdigits seed.)
+; less biased than random-natural-basemax1. rather than 0.5, use 0.25
+  (declare (type (integer 1 16) base)
+           (type (integer 0 10) maxdigits)
+           (type (unsigned-byte 31) seed.)
+           (xargs :guard (and (unsigned-byte-p 31 seed.)
+                              (posp base)
+                              (<= base 16) (> base 0) 
+                              (natp maxdigits)
+                              (< maxdigits 11) (>= maxdigits 0))))
+  (if (zp maxdigits)
+      (b* (((mv (the (integer 0 16) v) 
+                (the (unsigned-byte 31) seed.))
+            (genrandom-seed base seed.)))
+        (mv v seed.))
+    (b* (((mv (the (integer 0 64) v) 
+              (the (unsigned-byte 31) seed.))
+          (genrandom-seed (acl2::*f 4 base) seed.)))
+     (if (>= v base)
+         (b* (((mv v2 seed.); can do better type information here TODO
+                 (random-natural-basemax2 base (1- maxdigits) seed.)))
+             (mv (+ (- v base) (* base (nfix v2))) 
+                 seed.))
       
+       (mv v seed.)))))
+
+(defun random-natural-seed/0.25 (seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
+  (mbe :logic (if (unsigned-byte-p 31 seed.)
+                    (random-natural-basemax2 10 6 seed.)
+                  (random-natural-basemax2 10 6 1382728371)) ;random seed in random-state-basis1
+       :exec  (random-natural-basemax2 10 6 seed.)))
+      
+;(defstub (random-natural-seed *) => (mv * *) :formals (seed.) :guard (unsigned-byte-p 31 seed.))
+(encapsulate
+ (((random-natural-seed *) => (mv * *) :formals (seed.) :guard (unsigned-byte-p 31 seed.)))
+ (local (defun random-natural-seed (seed.)
+          (declare (xargs :guard (unsigned-byte-p 31 seed.)))
+          (mbe :logic (if (unsigned-byte-p 31 seed.)
+                          (mv 0 seed.)
+                        (mv 0 1382728371))
+               :exec (mv 0 seed.))))
+
+(defthm random-natural-seed-type-consp
+  (consp (random-natural-seed r))
+  :rule-classes (:type-prescription))
+
+ (defthm random-natural-seed-type-car
+  (implies (unsigned-byte-p 31 r)
+           (natp (car (random-natural-seed r))))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type-car-type
+  (implies (natp r)
+           (and (integerp (car (random-natural-seed r)))
+                (>= (car (random-natural-seed r)) 0)))
+  :rule-classes :type-prescription)
+
+(defthm random-natural-seed-type-cadr
+  (implies (unsigned-byte-p 31 r)
+           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed r))))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type-cadr-linear
+  (and (<= 0 (mv-nth 1 (random-natural-seed r)))
+       (< (mv-nth 1 (random-natural-seed r)) 2147483648))
+  :rule-classes (:linear :tau-system))
+
+(defthm random-natural-seed-type-cadr-type
+  (and (integerp (mv-nth 1 (random-natural-seed r)))
+       (>= (mv-nth 1 (random-natural-seed r)) 0))
+  :rule-classes (:type-prescription))
+
+ )
 
 
 (defun random-small-natural-seed (seed.)
@@ -106,40 +181,110 @@
                 (>= (mv-nth 1 (random-natural-basemax1 b d r)) 0)))
   :rule-classes (:type-prescription))
 
-(defthm random-natural-seed-type-car
-  (implies (unsigned-byte-p 31 r)
-           (natp (car (random-natural-seed r))))
+
+
+(defthm random-natural-basemax2-type-car
+  (implies (and (posp b) (natp d) (natp r))
+           (and (integerp (car (random-natural-basemax2 b d r)))
+                (>= (car (random-natural-basemax2 b d r)) 0)))
   :rule-classes (:type-prescription))
 
-(defthm random-natural-seed-type-car-type
+
+(defthm random-natural-basemax2-type-cadr
+  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
+           (unsigned-byte-p 31 (mv-nth 1 (random-natural-basemax2 b d r))))
+  :rule-classes  :type-prescription)
+
+(defthm random-natural-basemax2-type-cadr-0
+  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
+           (and (<= 0 (mv-nth 1 (random-natural-basemax2 b d r)))
+                (< (mv-nth 1 (random-natural-basemax2 b d r)) 2147483648)))
+  :rule-classes (:linear :type-prescription))
+
+(defthm random-natural-basemax2-type-cadr-type
+  (implies (and (posp b) (natp d) (natp r))
+           (and (integerp (mv-nth 1 (random-natural-basemax2 b d r)))
+                (>= (mv-nth 1 (random-natural-basemax2 b d r)) 0)))
+  :rule-classes (:type-prescription))
+
+
+
+
+
+
+
+(defthm random-natural-seed-type/0.5-car
+  (implies (unsigned-byte-p 31 r)
+           (natp (car (random-natural-seed/0.5 r))))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type/0.5-car-type
   (implies (natp r)
-           (and (integerp (car (random-natural-seed r)))
-                (>= (car (random-natural-seed r)) 0)))
+           (and (integerp (car (random-natural-seed/0.5 r)))
+                (>= (car (random-natural-seed/0.5 r)) 0)))
   :rule-classes :type-prescription)
 
-(defthm random-natural-seed-type-cadr
+(defthm random-natural-seed-type/0.5-cadr
   (implies (unsigned-byte-p 31 r)
-           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed r))))
+           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed/0.5 r))))
   :rule-classes (:type-prescription))
 
-(defthm random-natural-seed-type-cadr-linear
+(defthm random-natural-seed-type/0.5-cadr-linear
 ;  (implies (unsigned-byte-p 31 r)
-  (and (<= 0 (mv-nth 1 (random-natural-seed r)))
-       (< (mv-nth 1 (random-natural-seed r)) 2147483648))
+  (and (<= 0 (mv-nth 1 (random-natural-seed/0.5 r)))
+       (< (mv-nth 1 (random-natural-seed/0.5 r)) 2147483648))
 ;)
   :rule-classes (:linear :tau-system))
 
-(defthm random-natural-seed-type-cadr-type
+(defthm random-natural-seed-type/0.5-cadr-type
 ;  (implies (natp r)
-           (and (integerp (mv-nth 1 (random-natural-seed r)))
-                (>= (mv-nth 1 (random-natural-seed r)) 0))
+           (and (integerp (mv-nth 1 (random-natural-seed/0.5 r)))
+                (>= (mv-nth 1 (random-natural-seed/0.5 r)) 0))
 ;)
   :rule-classes (:type-prescription))
 
 
 
+
+
+
+
+(defthm random-natural-seed-type/0.25-car
+  (implies (unsigned-byte-p 31 r)
+           (natp (car (random-natural-seed/0.25 r))))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type/0.25-car-type
+  (implies (natp r)
+           (and (integerp (car (random-natural-seed/0.25 r)))
+                (>= (car (random-natural-seed/0.25 r)) 0)))
+  :rule-classes :type-prescription)
+
+(defthm random-natural-seed-type/0.25-cadr
+  (implies (unsigned-byte-p 31 r)
+           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed/0.25 r))))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type/0.25-cadr-linear
+;  (implies (unsigned-byte-p 31 r)
+  (and (<= 0 (mv-nth 1 (random-natural-seed/0.25 r)))
+       (< (mv-nth 1 (random-natural-seed/0.25 r)) 2147483648))
+;)
+  :rule-classes (:linear :tau-system))
+
+(defthm random-natural-seed-type/0.25-cadr-type
+;  (implies (natp r)
+           (and (integerp (mv-nth 1 (random-natural-seed/0.25 r)))
+                (>= (mv-nth 1 (random-natural-seed/0.25 r)) 0))
+;)
+  :rule-classes (:type-prescription))
+
+
+(defattach random-natural-seed random-natural-seed/0.25)
 (in-theory (disable random-natural-basemax1
-                    random-natural-seed))
+                    random-natural-seed/0.25
+                    random-natural-seed/0.5
+                    ))
 
 
 (defun random-index-list-seed (k max seed.)

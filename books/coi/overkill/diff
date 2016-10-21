@@ -1,6 +1,0 @@
-#!/bin/sh
-# This script is just a shortcut for `make -f Makelibs diff`.  You can just
-# invoke it using ./diff
-
-make -f Makelibs diff
-

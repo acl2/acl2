@@ -22,7 +22,7 @@
   :key (symbolp x)
   :val (symbolp x)
   :parents (kestrel-utilities alists)
-  :short "@('Nil')-terminated alists from symbols to symbols."
+  :short "Recognize @('nil')-terminated alists from symbols to symbols."
   :keyp-of-nil t
   :valp-of-nil t
   :true-listp t)

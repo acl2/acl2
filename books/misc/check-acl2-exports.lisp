@@ -89,6 +89,7 @@
     COUNT ; defined in books/coi/bags/basic.lisp
     DEFUN-MODE
     DIVE-INTO-MACROS-TABLE
+    ER-LET* ; should add to *acl2-exports*
     ERROR1
     FIND-RULES-OF-RUNE
     LOOP-STOPPER

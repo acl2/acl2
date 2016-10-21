@@ -8,59 +8,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides some utilities for strings.
+; This file provides utilities for strings.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "system/kestrel" :dir :system)
 (include-book "characters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc string-utilities
   :parents (kestrel-utilities)
-  :short "Some utilities for @(see strings).")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define string-list-fix ((x string-listp))
-  :returns (fixed-x string-listp)
-  :parents (string-utilities)
-  :short "Fix to @('nil')-terminated list of @(see strings)."
-  (mbe :logic (cond ((endp x) nil)
-                    (t (cons (str-fix (car x))
-                             (string-list-fix (cdr x)))))
-       :exec x)
-  ///
-
-  (defrule string-list-fix-when-string-listp
-    (implies (string-listp x)
-             (equal (string-list-fix x) x))))
-
-(defsection string-list
-  :parents (string-utilities)
-  :short "<see topic='@(url fty)'>Fixtype</see> of
-          @('nil')-terminated lists of @(see strings)."
-  :long
-  "@(def string-listp)
-   @(def string-list-fix)
-   @(def string-list-equiv)"
-  (fty::deffixtype string-list
-    :pred string-listp
-    :fix string-list-fix
-    :equiv string-list-equiv
-    :define t
-    :forward t))
+  :short "Utilities for @(see strings).")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nonempty-stringp (x)
   :returns (yes/no booleanp)
   :parents (string-utilities)
-  :short "Non-empty strings."
+  :short "Recognize non-empty strings."
   (not (equal (str-fix x) ""))
   ///
 
@@ -71,7 +42,7 @@
 (std::deflist nonempty-string-listp (x)
   (nonempty-stringp x)
   :parents (string-utilities)
-  :short "@('Nil')-terminated lists of nonempty strings."
+  :short "Recognize @('nil')-terminated lists of nonempty strings."
   :true-listp t
   :elementp-of-nil nil)
 
@@ -98,3 +69,27 @@
          :rule-classes :type-prescription)
    (nats nat-listp
          :name nat-listp-of-string=>nats)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define msg-downcase-first ((msg msgp))
+  :returns (new-msg msgp :hyp :guard)
+  :parents (string-utilities)
+  :short "Convert the first character
+          of a <see topic='@(url msg)'>structured message</see>
+          to lower case."
+  (if (stringp msg)
+      (str::downcase-first msg)
+    (cons (str::downcase-first (car msg))
+          (cdr msg))))
+
+(define msg-upcase-first ((msg msgp))
+  :returns (new-msg msgp :hyp :guard)
+  :parents (string-utilities)
+  :short "Convert the first character
+          of a <see topic='@(url msg)'>structured message</see>
+          to upper case."
+  (if (stringp msg)
+      (str::upcase-first msg)
+    (cons (str::upcase-first (car msg))
+          (cdr msg))))

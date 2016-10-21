@@ -26,7 +26,7 @@
 (define pseudo-event-formp (x)
   :returns (yes/no booleanp)
   :parents (event-forms)
-  :short "True iff @('x') has the basic structure of an event form."
+  :short "Recognize the basic structure of an event form."
   :long
   "<p>
    Check whether @('x') is a
@@ -51,8 +51,7 @@
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
   :parents (event-forms)
-  :short "True iff @('x') is a @('nil')-terminated list
-          each of whose elements has the
+  :short "Recognize @('nil')-terminated lists whose elements all have the
           <see topic='@(url pseudo-event-formp)'>basic structure
           of an event form</see>."
   :true-listp t

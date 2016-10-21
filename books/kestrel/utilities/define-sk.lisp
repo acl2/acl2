@@ -22,7 +22,7 @@
 
 (defxdoc define-sk
   :parents (std/util defun-sk acl2::kestrel-utilities)
-  :short "A very fine alternative to @(see defun-sk)."
+  :short "A very fine alternative to @(tsee defun-sk)."
   :long "<h3>Introduction</h3>
 
 <p>@('define-sk') is an extension of @(see defun-sk) with many @(see

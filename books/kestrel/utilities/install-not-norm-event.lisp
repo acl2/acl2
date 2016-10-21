@@ -9,7 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file provides a utility to create an event
-; that installs a non-normalized definition of a function.
+; that installs the non-normalized definition of a function,
+; ensuring that the name of the theorem will not cause a conflict.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,27 +18,35 @@
 
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "event-forms")
+(include-book "fresh-names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define install-not-norm-event
   ((fn symbolp "Function to install the non-normalized definition of.")
-   (local booleanp "Make the event form local or not."))
-  :returns (mv (fn$not-normalized symbolp)
-               (event-form pseudo-event-formp))
+   (local booleanp "Make the event form local or not.")
+   (names-to-avoid symbol-listp "Avoid these as theorem name.")
+   (wrld plist-worldp))
+  :returns (mv (name "A @(tsee symbolp): the name of the theorem.")
+               (event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :parents (kestrel-utilities system-utilities install-not-normalized)
-  :short "Generate event form for
+  :short "Event form to
           <see topic='@(url install-not-normalized)'
-          >installing a non-normalized definition</see>
-          of @('fn')."
+          >install the non-normalized definition</see>
+          of a function."
   :long
   "<p>
-   Besides the event form,
-   also return the name @('fn$not-normalized')
-   of the theorem that installs the non-normalized definition.
+   Ensure that the name of the theorem is not already in use
+   and is not among a list of names to avoid.
+   Start with the default name
+   (i.e. the concatenation of
+   the name of @('fn') with &lsquo;@('$not-normalized')&rsquo;)
+   and ensure its uniqueness via @(tsee fresh-name-in-world-with-$s).
    </p>"
-  (b* ((fn$not-normalized (install-not-normalized-name fn))
-       (event-form (if local
-                       `(local (install-not-normalized ,fn))
-                     `(install-not-normalized ,fn))))
-    (mv fn$not-normalized event-form)))
+  (b* ((name (install-not-normalized-name fn))
+       (name (fresh-name-in-world-with-$s name names-to-avoid wrld))
+       (event (if local
+                  `(local (install-not-normalized ,fn :defthm-name ',name))
+                `(install-not-normalized ,fn :defthm-name ',name))))
+    (mv name event)))

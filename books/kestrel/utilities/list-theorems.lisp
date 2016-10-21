@@ -22,7 +22,7 @@
 
   :parents (theorems-about-non-kestrel-books)
 
-  :short "Some theorems about lists."
+  :short "Theorems about lists."
 
   :long
   "<p>

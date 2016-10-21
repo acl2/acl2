@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides some utilities for osets.
+; This file provides utilities for osets.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,7 +22,7 @@
 
 (defxdoc oset-utilities
   :parents (acl2::kestrel-utilities)
-  :short "Some utilities for
+  :short "Utilities for
           <see topic='@(url std/osets)'>finite sets</see>.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -58,7 +58,7 @@
 (std::define set-all-natp ((set setp))
   :returns (yes/no booleanp)
   :parents (osets-of-natural-numbers)
-  :short "True iff al the elements of the set are natural numbers."
+  :short "Check if all the elements of a set are natural numbers."
   (or (empty set)
       (and (natp (head set))
            (set-all-natp (tail set))))
@@ -108,7 +108,7 @@
 (std::define set-all-integerp ((set setp))
   :returns (yes/no booleanp)
   :parents (osets-of-integer-numbers)
-  :short "True iff al the elements of the set are integer numbers."
+  :short "Check if all the elements of a set are integer numbers."
   (or (empty set)
       (and (integerp (head set))
            (set-all-integerp (tail set))))

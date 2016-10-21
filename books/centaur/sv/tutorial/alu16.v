@@ -54,39 +54,39 @@ module alu16 (
   wire [15:0] abus1;
   wire [15:0] bbus1;
 
-   flop #(16) aflop (.q(abus1), .d(abus), .clk(clk));
-   flop #(16) bflop (.q(bbus1), .d(bbus), .clk(clk));
+  flop #(16) aflop (.q(abus1), .d(abus), .clk(clk));
+  flop #(16) bflop (.q(bbus1), .d(bbus), .clk(clk));
 
-wire [15:0] ans_plus   = abus1 + bbus1;
-wire [15:0] ans_minus  = abus1 - bbus1;
-wire [15:0] ans_bitand = abus1 & bbus1;
-wire [15:0] ans_bitor  = abus1 | bbus1;
-wire [15:0] ans_bitxor = abus1 ^ bbus1;
-wire [15:0] ans_min    = (abus1 < bbus1) ? abus1 : bbus1;
-wire [15:0] ans_mult   = abus1 * bbus1;
+  wire [15:0] ans_plus   = abus1 + bbus1;
+  wire [15:0] ans_minus  = abus1 - bbus1;
+  wire [15:0] ans_bitand = abus1 & bbus1;
+  wire [15:0] ans_bitor  = abus1 | bbus1;
+  wire [15:0] ans_bitxor = abus1 ^ bbus1;
+  wire [15:0] ans_min    = (abus1 < bbus1) ? abus1 : bbus1;
+  wire [15:0] ans_mult   = abus1 * bbus1;
 
-// This has a "copy/paste" bug -- I "forgot" to change abus1[3] to abus1[7]
+  // This has a "copy/paste" bug -- I "forgot" to change abus1[3] to abus1[7]
 
-wire [15:0] ans_count =
-   abus1[0]  + abus1[1]  + abus1[2]  + abus1[3]
- + abus1[4]  + abus1[5]  + abus1[6]  + abus1[3]
- + abus1[8]  + abus1[9]  + abus1[10] + abus1[11]
- + abus1[12] + abus1[13] + abus1[14] + abus1[15];
+  wire [15:0] ans_count =
+     abus1[0]  + abus1[1]  + abus1[2]  + abus1[3]
+   + abus1[4]  + abus1[5]  + abus1[6]  + abus1[3]
+   + abus1[8]  + abus1[9]  + abus1[10] + abus1[11]
+   + abus1[12] + abus1[13] + abus1[14] + abus1[15];
 
   wire [15:0] ans;
 
-assign ans =
-    (opcode == `OP_PLUS)   ? ans_plus
-  : (opcode == `OP_MINUS)  ? ans_minus
-  : (opcode == `OP_BITAND) ? ans_bitand
-  : (opcode == `OP_BITOR)  ? ans_bitor
-  : (opcode == `OP_BITXOR) ? ans_bitxor
-  : (opcode == `OP_MIN)    ? ans_min
-  : (opcode == `OP_COUNT)  ? ans_count
-  : (opcode == `OP_MULT)   ? ans_mult
-  : 16'bx;
+  assign ans =
+      (opcode == `OP_PLUS)   ? ans_plus
+    : (opcode == `OP_MINUS)  ? ans_minus
+    : (opcode == `OP_BITAND) ? ans_bitand
+    : (opcode == `OP_BITOR)  ? ans_bitor
+    : (opcode == `OP_BITXOR) ? ans_bitxor
+    : (opcode == `OP_MIN)    ? ans_min
+    : (opcode == `OP_COUNT)  ? ans_count
+    : (opcode == `OP_MULT)   ? ans_mult
+    : 16'bx;
 
-   flop #(16) outflop (.q(out), .d(ans), .clk(clk));
+  flop #(16) outflop (.q(out), .d(ans), .clk(clk));
 
 endmodule
 

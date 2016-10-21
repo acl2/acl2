@@ -29,6 +29,8 @@
                                :cgen-timeout
                                :cgen-local-timeout
                                :print-cgen-summary
+                               :use-fixers
+                               :recursively-fix
                                ))
 
 ;All user-defined parameters are stored here
@@ -108,24 +110,25 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
                   cgen-timeout
                   cgen-local-timeout
                   print-cgen-summary
+                  use-fixers
 
 })
 </p>
 ")
 
 (add-acl2s-parameter 
- num-trials 1000
+ num-trials 4000
  :short "Max number of tries to find counterexamples"
  :long
 " Maximum number of tries (attempts) to construct 
   counterexamples and witnesses.
-  By default this parameter is set to 1000. Can be set to
-  any natural number <tt>n</tt>. If set to 0, it has the same
-  effect as setting testing-enabled parameter to @('nil').
+  By default this parameter is set to 4000. Can be set to
+  any natural number <tt>n</tt>. If set to 0, it is similar
+  to setting testing-enabled parameter to @('nil').
 
   <code>
    Usage:
-   (acl2s-defaults :set num-trials 1000)
+   (acl2s-defaults :set num-trials 4000)
    (acl2s-defaults :get num-trials)
    :doc num-trials
    </code>"
@@ -214,6 +217,31 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    </code>
    "
  :guard (member-eq value *search-strategy-values*))
+
+(add-acl2s-parameter 
+ use-fixers t
+ :short "Specify whether fixers are to be used."
+ :long "
+  By default this parameter is set to <tt>t</tt>.
+   <code>
+    Usage:
+    (acl2s-defaults :set use-fixers t)
+    (acl2s-defaults :get use-fixers)
+    :doc use-fixers
+   </code>
+   "
+ :guard (booleanp value))
+
+(add-acl2s-parameter 
+ recursively-fix t
+ :short "Specify whether unsatisfied but fixable constraints are to be recursively fixed."
+ :long "Specify whether unsatisfied but fixable constraints are to be
+  recursively fixed. The resulting solution substitutions are stacked in the
+  reverse order. 
+  By default this parameter is set to <tt>t</tt>.
+   "
+ :guard (booleanp value))
+
 ;; Use natural seeds or random tree of natural numbers 
 
 (defconst *sampling-method-values* '(:random :uniform-random :be :mixed))
