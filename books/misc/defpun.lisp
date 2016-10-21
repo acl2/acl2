@@ -85,15 +85,104 @@
   :parents (events)
   :short "Define a tail-recursive function symbol"
   :long "<p>@('Defpun') is a macro developed by Pete Manolios and J Moore that
- allows tail-recursive definitions.  It is defined in community book
- @('books/misc/defpun.lisp'), so to use it, execute the following event.</p>
+ allows tail-recursive definitions, as well as some other ``partial''
+ definitions.</p>
 
  @({
-  (include-book \"misc/defpun\" :dir :system)
+ General Form:
+
+ (defpun g (v1 ... vk)
+   dcl ; optional
+   body
+   :kwd1 val1 :kwd2 val2 ... :kwdn valn)
  })
 
- <p>Details of defpun are provided by Manolios and Moore in the ``Partial
- Functions in ACL2'' published with the <a
+ <p>where @('dcl') is an optional @(tsee declare) form and the pairs @(':kwdi
+ vali') are optional (that is @('n') can be 0).  If the optional arguments are
+ omitted, then ACL2 will introduce a constrained function @('g') with this
+ exported event:</p>
+
+ @({
+ (DEFTHM g-DEF
+   (EQUAL (g v1 ... vk)
+          body)
+   :RULE-CLASSES :DEFINITION)
+ })
+
+ <p>First suppose that @('dcl') is not present.  Then the proposed definition
+ must be have a simple tail-recursive structure (see the discussion of
+ @('defp') below for a workaround if this is not the case).</p>
+
+ <p>If @('dcl') is present, then the definition need not be tail-recursive, and
+ @('dcl') must have one of the following three forms.</p>
+
+ @({
+ (DECLARE (XARGS :witness defpun-fn))
+ (DECLARE (XARGS :domain dom-expr :measure m . rest))
+ (DECLARE (XARGS :gdomain dom-expr :measure m . rest)).
+ })
+
+ <p>You are encouraged to experiment by using @(':')@(tsee trans1) to see the
+ expansions of @('defpun') forms that use these @(tsee declare) forms; but here
+ is a summary of what is generated.</p>
+
+ <p>The first form specifies a function, @('defpun-fn'), and instructs ACL2 to
+ use that function as a witness for the function @('g') to be introduced, as
+ follows.</p>
+
+ @({
+ (ENCAPSULATE
+   ((g (v1 ... vk) t))
+   (LOCAL (DEFUN-NONEXEC g (v1 ... vk) (defpun-fn v1 ... vk)))
+   (DEFTHM g-DEF
+     (EQUAL (g v1 ... vk))
+            body)
+     :RULE-CLASSES :DEFINITION)
+ })
+
+ <p>The remaining two @('declare') forms introduce a function, defined
+ recursively, with the given measure and with a modified body:</p>
+
+ @({
+ (THE-g v1 ... vk)
+ =
+ (IF dom-expr body 'UNDEF)
+ })
+
+ <p>The following  theorem is exported.</p>
+
+ @({
+ (defthm g-DEF
+   (IMPLIES domain-expr
+            (EQUAL (g v1 ... vk)
+                   body))
+   :RULE-CLASSES :DEFINITION)
+ })
+
+ <p>If @(':gdomain') is used (as opposed to @(':domain')), then the following
+ events are also introduced, where @('body\\{g:=THE-g}') denotes the result of
+ replacing each call of @('g') in @('body') with the corresponding call of
+ @('THE-g').</p>
+
+ @({
+ (DEFUN THE-g (v1 ... vk)
+   (DECLARE (XARGS :MEASURE (IF dom-expr m 0)
+                   :GUARD domain-expr
+                   :VERIFY-GUARDS NIL))
+   (IF dom-expr body 'UNDEF))
+
+ (DEFTHM g-IS-UNIQUE
+   (IMPLIES domain-expr
+            (EQUAL (g v1 ... vk) (THE-g v1 ... vk))))
+ })
+
+ <p>The optional keyword alist @(':kwd1 val1 :kwd2 val2 ... :kwdn valn') is
+ attached to the end of the generated @(tsee defthm) event.  If the
+ @(':')@(tsee rule-classes) keyword is not specified by the keyword alist,
+ @(':')@(tsee definition) is used.</p>
+
+ <p>Details of defpun are provided by Manolios and Moore in the chapter
+ ``Partial Functions in ACL2'' published with the <a
  href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2000/'>ACL2 2000
  workshop</a>.  Also see <a
  href='http://www.cs.utexas.edu/users/moore/publications/defpun/index.html'>Partial
@@ -335,12 +424,12 @@
               (('declare ('xargs ':domain dom-expr
                                  ':measure measure-expr
                                  . rest))
-               (mv nil dom-expr measure-expr rest))
+               (mv nil nil dom-expr measure-expr rest))
               (('declare ('xargs ':gdomain dom-expr
                                  ':measure measure-expr
                                  . rest))
-               (mv t dom-expr measure-expr rest))
-              (& (mv nil nil 0 nil))))
+               (mv nil t dom-expr measure-expr rest))
+              (& (mv t nil nil nil nil))))
 
 (mutual-recursion
  (defun subst-defpun-fn-into-pseudo-term (new-defpun-fn old-defpun-fn pterm)
@@ -446,7 +535,7 @@
         admission of the witness function.  The keyword alist is ~
         attached to the equality axiom constraining the new function ~
         symbol.  If the :rule-classes keyword is not specified by the ~
-        keyword alist, :definition is used."))
+        keyword alist, :definition is used.  See :DOC defpun."))
 
 (defun defpun-syntax-er nil
 
@@ -475,24 +564,25 @@
             (probably-tail-recursivep g vars body))
        (arbitrary-tail-recursive-encap g vars body keypairs))
       ((and dcl
-            (match dcl
-                   ('declare ('xargs ':witness &))))
-       `(encapsulate
-         ((,g ,vars t))
-         (local (defun-nonexec ,g ,vars (,(caddr (cadr dcl))
-                                 ,@vars)))
-         (defthm ,(packn-pos (list g "-DEF") g)
-           (equal (,g ,@vars)
-                  ,body)
-           ,@keypairs)))
+            (case-match dcl
+              (('declare ('xargs ':witness witness))
+               `(encapsulate
+                  ((,g ,vars t))
+                  (local (defun-nonexec ,g ,vars (,witness ,@vars)))
+                  (defthm ,(packn-pos (list g "-DEF") g)
+                    (equal (,g ,@vars)
+                           ,body)
+                    ,@keypairs)))
+              (& nil))))
       ((not (and (consp dcl)
                  (eq (car dcl) 'declare)))
        (defpun-syntax-er))
       (t
        (mv-let
-        (closed-domp dom-expr measure-expr rest-of-xargs)
+        (erp closed-domp dom-expr measure-expr rest-of-xargs)
         (remove-xargs-domain-and-measure dcl)
         (cond
+         (erp (defpun-syntax-er))
          (closed-domp
           (let ((gwit (packn-pos (list "THE-" g) g)))
             `(encapsulate
