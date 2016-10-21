@@ -1,0 +1,27 @@
+The directory contains case-studies used for experimental evaluation
+of Cgen.  All books, i.e., lisp files can be certified using
+build/cert.pl.  Other scripts, i.e., .lsp files are meant to be
+interactively replayed in an ACL2 session. You can either use Emacs or
+ACL2 Sedan as the user interface.
+
+* Testing Dijstra's shortest path algorithm using Fixers
+- The relevant books are prefixed dsp-*.lisp
+- dsp-defuns and dsp-defthms was refactored from
+  misc/dijsktra-shortest-path.lisp book.
+- The test? forms in the dsp.lsp script were translated from the above
+  book. These forms can be evaluated from command line using cert.pl.
+- The tables in harshrc's dissertation were populated using the awk
+  script included in this directory. The following commands can be
+  used to replay the experiment:
+  : cp dsp.lsp dsp.lisp
+  : build/cert.pl dsp.lisp
+  : awk -v lo=5 -v hi=95 -f regress-stats.awk dsp.cert.out | less
+
+
+* Finding hazards in 3-staged Pipeline Machine
+- The relevant scripts are refinement-sfm06-with-hazards.lisp and
+  refinement-sfm06-with-hazards-test.lsp.
+- The data and control hazards are indicated as comments in the former
+  book.
+- Evaluate the forms in refinement-sfm06-with-hazards-test.lsp script
+  in an ACL2 session

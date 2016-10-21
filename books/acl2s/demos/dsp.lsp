@@ -102,6 +102,18 @@
            (pathp-from-to (append (path u pt) (list v))
                          a v g)))
 
+(include-book "misc/eval" :dir :system)
+;faulty flawed conjecture shown in dissertation chapter 5 motivation
+;that is a modification of the above lemma.
+(must-fail
+(test? ; paths-table-reassign-lemma4 ; [Custom]
+  (implies (and (graphp g) (source-vertexp a) (vertex-path-alistp pt) (vertexp u) ;types
+                (pt-propertyp a pt g) ;18.80
+                (path u pt) ;1.90
+                (memp v (neighbors u g))) ;0
+           (pathp-from-to (append (path u pt) (list u v))
+                         a v g)))
+)
 
 
 (test? ;path-len-implies-not-nil
