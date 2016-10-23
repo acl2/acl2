@@ -319,7 +319,10 @@ then @(see truncate)d to an integer.</p>"
 
 (defsection truncated-integer-sin/cos-table-fn
   :parents (sin-cos)
-  :short "Helper for @(see SIN/COS-TABLE-FN)."
+; Matt K. mod: The following was a broken link, but I don't know the right fix,
+; so I've simply removed the link.
+; :short "Helper for @(see SIN/COS-TABLE-FN)."
+  :short "Helper for @('SIN/COS-TABLE-FN')."
   :long #{"""<p>Note that this function has special code for @($0$),
 @($\pi/2$), @($\pi$), and @($\frac{3}{2}\pi$).  The convergence of the series
 at these points is problematic in the context of
