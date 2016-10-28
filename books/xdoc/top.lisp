@@ -300,9 +300,9 @@
         original
       acc)))
 
-(defun defsection-autodoc-fn (name parents short long extension marker state)
+(defun defsection-autodoc-fn (name parents short long pkg extension marker state)
   (declare (xargs :mode :program :stobjs state))
-  (let ((err (check-defxdoc-args name parents short long)))
+  (let ((err (check-defxdoc-args name parents short long pkg)))
     (if err
         (er hard? 'defsection
             "In section ~x0: Bad defsection arguments: ~s1~%" name err)
@@ -321,7 +321,8 @@
           `(defxdoc ,name
              :parents ,parents
              :short ,short
-             :long ,long))))))
+             :long ,long
+             :pkg ,pkg))))))
 
 (defun make-xdoc-fragments (args) ;; args to a defsection
   (cond ((atom args)
@@ -340,6 +341,7 @@
          (short       (cdr (extract-keyword-from-args :short args)))
          (long        (cdr (extract-keyword-from-args :long args)))
          (extension   (cdr (extract-keyword-from-args :extension args)))
+         (pkg         (cdr (extract-keyword-from-args :pkg args)))
          (extension
           (cond ((symbolp extension) extension)
                 ((and (consp extension)
@@ -439,7 +441,7 @@
                   (with-output ,@stack-pop-if-nonempty
                     (,@wrapper . ,new-args))
                   (make-event
-                   (defsection-autodoc-fn ',name ',parents ,short ,long ',extension ',marker state))
+                   (defsection-autodoc-fn ',name ',parents ,short ,long ,pkg ',extension ',marker state))
                   (value-triple ',name))))))))
 
 (defmacro defsection (name &rest args)
