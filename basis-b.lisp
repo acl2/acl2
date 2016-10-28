@@ -864,6 +864,7 @@
   `(list 'let ,bindings ,body))
 
 (defun doublet-listp (x)
+  (declare (xargs :guard t))
   (cond ((atom x) (equal x nil))
         (t (and (true-listp (car x))
                 (eql (length (car x)) 2)
@@ -2264,6 +2265,7 @@
 ; Implementation Note:  We do not store the defun-mode of a symbol on the
 ; property list of the symbol.  We compute the defun-mode from the symbol-class.
 
+  (declare (xargs :guard (plist-worldp wrld)))
   (cond ((and (symbolp name)
               (function-symbolp name wrld))
          (fdefun-mode name wrld))

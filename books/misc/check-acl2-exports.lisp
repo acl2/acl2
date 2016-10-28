@@ -105,6 +105,7 @@
     REDEFINED-NAMES
     REMOVE-DIVE-INTO-MACRO
     REWRITE
+    SAFE-MODE
     TYPE-SET
     WATERFALL
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
