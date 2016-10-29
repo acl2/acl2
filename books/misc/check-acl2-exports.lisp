@@ -108,7 +108,7 @@
     SAFE-MODE
     TYPE-SET
     WATERFALL
-    WITH-GUARD-CHECKING-EVENT
+    WITH-GUARD-CHECKING-EVENT ; should add to *acl2-exports*
 
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
 ; come from defpointers to system-utilities.
