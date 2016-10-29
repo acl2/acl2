@@ -4140,6 +4140,7 @@
 
 ; (local &)
 ; (skip-proofs &)
+; (with-guard-checking-event g &) ; g in *guard-checking-values*; (quote g) ok
 ; (with-output ... &)
 ; (with-prover-step-limit ... &)
 ; (with-prover-time-limit ... &)
@@ -4361,7 +4362,7 @@
                                  portcullisp in-local-flg in-encapsulatep
                                  make-event-chk)))
                      (value (and new-form (list (car form) new-form))))))
-          ((and (member-eq (car form) '(with-guard-checking-error-triple
+          ((and (member-eq (car form) '(with-guard-checking-event
                                         with-output
                                         with-prover-step-limit
                                         with-prover-time-limit))
@@ -4370,7 +4371,7 @@
 ; The macro being called will check the details of the form structure.
 
            (cond
-            ((and (eq (car form) 'with-guard-checking-error-triple)
+            ((and (eq (car form) 'with-guard-checking-event)
                   (or (atom (cdr form))
                       (let ((val (cadr form)))
                         (not (case-match val
@@ -4381,11 +4382,10 @@
                  form
                  ""
                  (chk-embedded-event-form-orig-form-msg orig-form state)
-                 (msg "~|Note that calls of the macro ~x0 generate an event ~
-                       only when the second argument is a constant from the ~
-                       list ~x1, or of the form (QUOTE X) for such a ~
-                       constant, X."
-                      'with-guard-checking-error-triple
+                 (msg "~|The macro ~x0 requires the second argument to be a ~
+                       constant from the list ~x1, or of the form (QUOTE X) ~
+                       for such a constant, X."
+                      'with-guard-checking-event
                       *guard-checking-values*
                       form)))
             (t (er-let* ((new-form (chk-embedded-event-form
@@ -4515,7 +4515,9 @@
 ; WARNING: Keep this in sync with chk-embedded-event-form and elide-locals-rec.
 
   (declare (xargs :guard (true-listp form)))
-  (cond ((member-eq (car form) '(local skip-proofs with-output
+  (cond ((member-eq (car form) '(local skip-proofs
+                                       with-guard-checking-event
+                                       with-output
                                        with-prover-step-limit
                                        with-prover-time-limit))
          (mv-let (wrappers base-form)
@@ -4831,6 +4833,7 @@
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
         ((member-eq (car form) '(skip-proofs
+                                 with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
                                  with-prover-step-limit
@@ -7494,6 +7497,7 @@
             (cond ((not (symbolp sym))
                    nil)
                   ((member-eq sym '(skip-proofs
+                                    with-guard-checking-event
                                     with-output
                                     with-prover-step-limit
                                     with-prover-time-limit))
@@ -7546,6 +7550,7 @@
         ((eq (car form) 'local)
          *local-value-triple-elided*)
         ((member-eq (car form) '(skip-proofs
+                                 with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
                                  with-prover-step-limit
@@ -9635,9 +9640,10 @@
     (mv nil form))
    ((eq (car form) 'make-event) ; already fixed
     (mv nil form))
-   ((and (member-eq (car form) '(with-output
-                                  with-prover-step-limit
-                                  with-prover-time-limit))
+   ((and (member-eq (car form) '(with-guard-checking-event
+                                 with-output
+                                 with-prover-step-limit
+                                 with-prover-time-limit))
          (consp (cdr form)))
     (mv-let (changedp x)
       (make-include-books-absolute-1

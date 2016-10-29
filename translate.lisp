@@ -8058,12 +8058,17 @@
                                flet-alist ctx wrld state-vars)))))
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
-         (member-eq (car x) '(defun defmacro in-package progn defpkg)))
+         (member-eq (car x) '(defun defmacro in-package progn defpkg
+                               with-guard-checking-event)))
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp meaning differs from ~
-                its ACL2 meaning."
-               (car x)))
+                its ACL2 meaning.~@1"
+               (car x)
+               (if (eq (car x) 'with-guard-checking-event)
+                   (msg "  Consider using ~x0 instead."
+                        'with-guard-checking-error-triple)
+                 "")))
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
          (member-eq (car x)

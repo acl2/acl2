@@ -12873,6 +12873,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     stobj-let
     add-ld-keyword-alias! set-ld-keyword-aliases!
+    with-guard-checking-event
     ))
 
 (defmacro with-live-state (form)
@@ -23386,9 +23387,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   `(lambda (term)
      (or (not (member-eq 'state (all-vars term)))
-         (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, ~
-                 but ~x0 occurs in the [translation of] the form ~x2.  ~
-                 Consider using ~x3 instead."
+         (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, but ~
+               ~x0 occurs in the [translation of] the form ~x2.  Consider ~
+               using ~x3 instead."
               'state
               'with-guard-checking
               ',form
@@ -23428,6 +23429,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(prog2$ (chk-with-guard-checking-arg ,val)
            (state-global-let* ((guard-checking-on ,val))
                               ,form)))
+
+#+acl2-loop-only
+(defmacro with-guard-checking-event (val form)
+  `(with-guard-checking-error-triple ,val ,form))
+
+#-acl2-loop-only
+(defmacro with-guard-checking-event (val form)
+  (declare (ignore val))
+  form)
 
 (defun abort! ()
   (declare (xargs :guard t))
