@@ -15762,6 +15762,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 the :check-invariant-risk key to nil in the ~
                                 acl2-defaults-table."
                                nil)))))
+        ((eq key :user)
+
+; The :user key is reserved for users; the ACL2 system will not consult or
+; modify it (except as part of general maintenance of the acl2-defaults-table).
+; In order to support more than one use of this key, we insist that it's an
+; alist; thus, one user could "own" one key of that alist, and a different user
+; could own another, so that for example :user is bound to ((:k1 . val1) (:k2
+; . val2)).
+
+         (alistp val))
         (t nil)))
 
 ; (set-state-ok t)

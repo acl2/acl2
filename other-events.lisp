@@ -4091,8 +4091,7 @@
 ; in code without cutting and pasting.  (Thanks to Eric Smith for the
 ; suggestion.)
 
-  '(add-custom-keyword-hint ; might get removed from the list
-    add-include-book-dir
+  '(add-include-book-dir
     add-match-free-override
     defttag
     delete-include-book-dir
@@ -4362,21 +4361,41 @@
                                  portcullisp in-local-flg in-encapsulatep
                                  make-event-chk)))
                      (value (and new-form (list (car form) new-form))))))
-          ((and (member-eq (car form) '(with-output
+          ((and (member-eq (car form) '(with-guard-checking-error-triple
+                                        with-output
                                         with-prover-step-limit
                                         with-prover-time-limit))
                 (true-listp form))
 
 ; The macro being called will check the details of the form structure.
 
-           (er-let* ((new-form (chk-embedded-event-form
-                                (car (last form))
-                                orig-form wrld ctx state
-                                names portcullisp in-local-flg
-                                in-encapsulatep make-event-chk)))
-                    (value (and new-form
-                                (append (butlast form 1)
-                                        (list new-form))))))
+           (cond
+            ((and (eq (car form) 'with-guard-checking-error-triple)
+                  (or (atom (cdr form))
+                      (let ((val (cadr form)))
+                        (not (case-match val
+                               (('quote x)
+                                (member-eq x *guard-checking-values*))
+                               (& (member-eq val *guard-checking-values*)))))))
+             (er soft ctx er-str
+                 form
+                 ""
+                 (chk-embedded-event-form-orig-form-msg orig-form state)
+                 (msg "~|Note that calls of the macro ~x0 generate an event ~
+                       only when the second argument is a constant from the ~
+                       list ~x1, or of the form (QUOTE X) for such a ~
+                       constant, X."
+                      'with-guard-checking-error-triple
+                      *guard-checking-values*
+                      form)))
+            (t (er-let* ((new-form (chk-embedded-event-form
+                                    (car (last form))
+                                    orig-form wrld ctx state
+                                    names portcullisp in-local-flg
+                                    in-encapsulatep make-event-chk)))
+                 (value (and new-form
+                             (append (butlast form 1)
+                                     (list new-form))))))))
           ((eq (car form) 'make-event)
            (cond ((and make-event-chk
 
