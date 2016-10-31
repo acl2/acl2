@@ -4091,8 +4091,7 @@
 ; in code without cutting and pasting.  (Thanks to Eric Smith for the
 ; suggestion.)
 
-  '(add-custom-keyword-hint ; might get removed from the list
-    add-include-book-dir
+  '(add-include-book-dir
     add-match-free-override
     defttag
     delete-include-book-dir
@@ -4141,6 +4140,7 @@
 
 ; (local &)
 ; (skip-proofs &)
+; (with-guard-checking-event g &) ; g in *guard-checking-values*; (quote g) ok
 ; (with-output ... &)
 ; (with-prover-step-limit ... &)
 ; (with-prover-time-limit ... &)
@@ -4362,21 +4362,40 @@
                                  portcullisp in-local-flg in-encapsulatep
                                  make-event-chk)))
                      (value (and new-form (list (car form) new-form))))))
-          ((and (member-eq (car form) '(with-output
+          ((and (member-eq (car form) '(with-guard-checking-event
+                                        with-output
                                         with-prover-step-limit
                                         with-prover-time-limit))
                 (true-listp form))
 
 ; The macro being called will check the details of the form structure.
 
-           (er-let* ((new-form (chk-embedded-event-form
-                                (car (last form))
-                                orig-form wrld ctx state
-                                names portcullisp in-local-flg
-                                in-encapsulatep make-event-chk)))
-                    (value (and new-form
-                                (append (butlast form 1)
-                                        (list new-form))))))
+           (cond
+            ((and (eq (car form) 'with-guard-checking-event)
+                  (or (atom (cdr form))
+                      (let ((val (cadr form)))
+                        (not (case-match val
+                               (('quote x)
+                                (member-eq x *guard-checking-values*))
+                               (& (member-eq val *guard-checking-values*)))))))
+             (er soft ctx er-str
+                 form
+                 ""
+                 (chk-embedded-event-form-orig-form-msg orig-form state)
+                 (msg "~|The macro ~x0 requires the second argument to be a ~
+                       constant from the list ~x1, or of the form (QUOTE X) ~
+                       for such a constant, X."
+                      'with-guard-checking-event
+                      *guard-checking-values*
+                      form)))
+            (t (er-let* ((new-form (chk-embedded-event-form
+                                    (car (last form))
+                                    orig-form wrld ctx state
+                                    names portcullisp in-local-flg
+                                    in-encapsulatep make-event-chk)))
+                 (value (and new-form
+                             (append (butlast form 1)
+                                     (list new-form))))))))
           ((eq (car form) 'make-event)
            (cond ((and make-event-chk
 
@@ -4496,7 +4515,9 @@
 ; WARNING: Keep this in sync with chk-embedded-event-form and elide-locals-rec.
 
   (declare (xargs :guard (true-listp form)))
-  (cond ((member-eq (car form) '(local skip-proofs with-output
+  (cond ((member-eq (car form) '(local skip-proofs
+                                       with-guard-checking-event
+                                       with-output
                                        with-prover-step-limit
                                        with-prover-time-limit))
          (mv-let (wrappers base-form)
@@ -4812,6 +4833,7 @@
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
         ((member-eq (car form) '(skip-proofs
+                                 with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
                                  with-prover-step-limit
@@ -7475,6 +7497,7 @@
             (cond ((not (symbolp sym))
                    nil)
                   ((member-eq sym '(skip-proofs
+                                    with-guard-checking-event
                                     with-output
                                     with-prover-step-limit
                                     with-prover-time-limit))
@@ -7527,6 +7550,7 @@
         ((eq (car form) 'local)
          *local-value-triple-elided*)
         ((member-eq (car form) '(skip-proofs
+                                 with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
                                  with-prover-step-limit
@@ -9616,9 +9640,10 @@
     (mv nil form))
    ((eq (car form) 'make-event) ; already fixed
     (mv nil form))
-   ((and (member-eq (car form) '(with-output
-                                  with-prover-step-limit
-                                  with-prover-time-limit))
+   ((and (member-eq (car form) '(with-guard-checking-event
+                                 with-output
+                                 with-prover-step-limit
+                                 with-prover-time-limit))
          (consp (cdr form)))
     (mv-let (changedp x)
       (make-include-books-absolute-1

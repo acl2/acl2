@@ -12873,6 +12873,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     stobj-let
     add-ld-keyword-alias! set-ld-keyword-aliases!
+    with-guard-checking-event
     ))
 
 (defmacro with-live-state (form)
@@ -15762,6 +15763,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 the :check-invariant-risk key to nil in the ~
                                 acl2-defaults-table."
                                nil)))))
+        ((eq key :user)
+
+; The :user key is reserved for users; the ACL2 system will not consult or
+; modify it (except as part of general maintenance of the acl2-defaults-table).
+; In order to support more than one use of this key, we insist that it's an
+; alist; thus, one user could "own" one key of that alist, and a different user
+; could own another, so that for example :user is bound to ((:k1 . val1) (:k2
+; . val2)).
+
+         (alistp val))
         (t nil)))
 
 ; (set-state-ok t)
@@ -23376,9 +23387,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   `(lambda (term)
      (or (not (member-eq 'state (all-vars term)))
-         (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, ~
-                 but ~x0 occurs in the [translation of] the form ~x2.  ~
-                 Consider using ~x3 instead."
+         (msg "It is forbidden to use ~x0 in the scope of a call of ~x1, but ~
+               ~x0 occurs in the [translation of] the form ~x2.  Consider ~
+               using ~x3 instead."
               'state
               'with-guard-checking
               ',form
@@ -23418,6 +23429,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(prog2$ (chk-with-guard-checking-arg ,val)
            (state-global-let* ((guard-checking-on ,val))
                               ,form)))
+
+#+acl2-loop-only
+(defmacro with-guard-checking-event (val form)
+  `(with-guard-checking-error-triple ,val ,form))
+
+#-acl2-loop-only
+(defmacro with-guard-checking-event (val form)
+  (declare (ignore val))
+  form)
 
 (defun abort! ()
   (declare (xargs :guard t))
