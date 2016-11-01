@@ -992,6 +992,7 @@
     "other-events"
     "ld"
     "proof-builder-b"
+    "apply-raw"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last
