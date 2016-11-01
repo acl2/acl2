@@ -6627,7 +6627,8 @@
    (t (let* ((entry (car known-package-alist))
              (pkg-entry-name (package-entry-name entry)))
         (cond
-         ((equal pkg-name pkg-entry-name)
+         ((or (equal pkg-name pkg-entry-name)
+              (package-entry-hidden-p entry))
           (defined-symbols sym-name pkg-name (cdr known-package-alist) wrld
             acc))
          (t (let ((sym (intern$ sym-name pkg-entry-name)))
