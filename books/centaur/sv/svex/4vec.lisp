@@ -1051,6 +1051,46 @@ fixed width vectors, you will typically want to take the parity of, e.g., the
   (deffixequiv 4vec-parity
     :args ((x 2vecx :hints(("Goal" :in-theory (enable 2vecx-fix)))))))
 
+(define 4vec-countones ((x 4vec-p))
+  :returns (count 3vec-p! :hints(("Goal" :in-theory (enable 3vec-p))))
+  :short "Count of 1 bits in a @(see 4vec) (X-monotonic)."
+  (if (and (2vec-p x)
+           (<= 0 (2vec->val x)))
+      (b* ((x (2vec->val x)))
+        (2vec (logcount x)))
+    ;; Negative ("infinite ones") or X/Z bits
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-countones
+    :args ((x 2vecx :hints(("Goal" :in-theory (enable 2vecx-fix)))))))
+
+
+(define 4vec-onehot ((x 4vec-p))
+  :returns (count 3vec-p! :hints(("Goal" :in-theory (enable 3vec-p))))
+  :short "Count of 1 bits in a @(see 4vec) (X-monotonic)."
+  (if (and (2vec-p x)
+           (<= 0 (2vec->val x)))
+      (b* ((x (2vec->val x)))
+        (2vec (bool->bit (eql (logcount x) 1))))
+    ;; X/Z bits
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-onehot
+    :args ((x 2vecx :hints(("Goal" :in-theory (enable 2vecx-fix)))))))
+
+(define 4vec-onehot0 ((x 4vec-p))
+  :returns (count 3vec-p! :hints(("Goal" :in-theory (enable 3vec-p))))
+  :short "Count of 1 bits in a @(see 4vec) (X-monotonic)."
+  (if (and (2vec-p x)
+           (<= 0 (2vec->val x)))
+      (b* ((x (2vec->val x)))
+        (2vec (bool->bit (<= (logcount x) 1))))
+    ;; X/Z bits
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-onehot
+    :args ((x 2vecx :hints(("Goal" :in-theory (enable 2vecx-fix)))))))
+
 
 (define 4vec-plus ((x 4vec-p) (y 4vec-p))
   :short "Integer addition of two @(see 4vec)s."

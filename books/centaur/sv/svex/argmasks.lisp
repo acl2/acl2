@@ -593,6 +593,39 @@ at all.</p>"
          (and stable-under-simplificationp
               '(:in-theory (enable 4vmask-all-or-none)))))
 
+(def-svmask countones (x)
+  :long "<p>We can't do anything smart here.</p>"
+  :inline t
+  :nobindings t
+  :body (list (4vmask-all-or-none mask))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-first-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (enable 4vmask-all-or-none)))))
+
+(def-svmask onehot (x)
+  :long "<p>We can't do anything smart here that I can think of.</p>"
+  :inline t
+  :nobindings t
+  :body (list (4vmask-all-or-none mask))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-first-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (enable 4vmask-all-or-none)))))
+
+(def-svmask onehot0 (x)
+  :long "<p>We can't do anything smart here that I can think of.</p>"
+  :inline t
+  :nobindings t
+  :body (list (4vmask-all-or-none mask))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-first-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (enable 4vmask-all-or-none)))))
+
 (def-svmask === (x y)
   :long "<p>We can't do anything smart here because @('(=== x y)') cares about
 every bit of X and Y, with no short circuiting or any kind.</p>"

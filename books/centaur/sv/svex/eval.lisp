@@ -192,6 +192,9 @@ expect or preserve @(see fast-alists)."
     (/         4vec-quotient       (x y)               "division")
     (%         4vec-remainder      (x y)               "modulus")
     (xdet      4vec-xdet           (x)                 "identity on binary vectors, else X")
+    (countones 4vec-countones      (x)                 "count of 1-bits")
+    (onehot    4vec-onehot         (x)                 "one-hot check")
+    (onehot0   4vec-onehot0        (x)                 "one-hot check (0-hot allowed)")
     (<         4vec-<              (x y)               "less than")
     (==        4vec-==             (x y)               "equality")
     (===       4vec-===            (x y)               "case equality (scary verilog semantics)")
@@ -321,7 +324,7 @@ result in the logic, and causes a run-time error during execution.</li>
 
 </ul>"
 
-  (let* ((fn (mbe :logic (fnsym-fix fn) :exec fn))
+  (let* ((fn (mbe  :exec fn :logic (fnsym-fix fn)))
          (args (mbe :logic (4veclist-fix args) :exec args)))
     (svex-apply-cases fn args))
   ///
