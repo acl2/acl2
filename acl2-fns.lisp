@@ -1421,12 +1421,6 @@ notation causes an error and (b) the use of ,. is not permitted."
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
 
-(defun define-sharp-f ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\f
-   #'sharp-f-read))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
