@@ -87,8 +87,11 @@
     (sb-ext:with-timeout ,duration ,body)
     (sb-ext::timeout (c)
                      (declare (ignore c))
-                     (throw1 ',id ',id))))
+                     (throw1 ',id ',id)))
 
+  #-(or Clozure sb-thread)
+  '(error "Unsupported host Lisp for CGEN (only CCL and multi-threaded SBCL ~
+           are supported)."))
 
 ; For debugging
 #||
