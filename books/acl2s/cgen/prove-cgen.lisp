@@ -82,7 +82,11 @@
 ;; (thm (implies (true-listp x)
 ;;               (equal (rev (rev x)) x))) 
 
-       ((mv top-hyps top-concl state) (partition-hyps-concl top-term "print-assignment" state))
+       ((mv top-hyps top-concl state) (partition-into-hyps-concl-and-preprocess top-term "print-assignment" state))
+
+       (mv-sig-alist (mv-sig-alist (cons top-concl top-hyps) (w state)))
+       (hyp/m   (mv-list-ify (single-hypothesis top-hyps) mv-sig-alist))
+       (concl/m (mv-list-ify top-concl mv-sig-alist))
        
        ((mv ?er res state) 
         (acl2::state-global-let*
@@ -90,7 +94,7 @@
          (trans-eval
           `(let* ,A
              (declare (ignorable ,@(strip-cars A)))
-             (list (and . ,top-hyps) ,top-concl
+             (list ,hyp/m ,concl/m
 ; make list/let A (list `(var ,var) ...) 
                    ,(make-var-value-list-bindings top-vars nil)))
           'get-top-level-assignment state T))) ;defattach ok
@@ -185,7 +189,7 @@
 
 
 ; 30th Aug '12 keep global track of num of wts/cts to print
-(def print-cts/wts (s-hist cts-p nc nw top-vars top-term vl state)
+(def print-cts/wts-subgoals (s-hist cts-p nc nw top-vars top-term vl state)
   (decl :mode :program
         :sig ((s-hist-p booleanp symbol-listp all natp state) 
               -> (mv erp all state))
@@ -208,13 +212,13 @@
                     (access test-outcomes% cts)
                   (access test-outcomes% wts)))
          (elide-map (access s-hist-entry% elide-map))
-         (- (cw? (debug-flag vl) 
-"~|DEBUG/print-cts/wts: A-lst:~x0 top-vars:~x1 elide-map:~x2~|" 
+         (- (cw? (system-debug-flag vl) 
+"~|Cgen/SYSDEBUG/print-cts/wts-subgoals: A-lst:~x0 top-vars:~x1 elide-map:~x2~|" 
 A-lst top-vars elide-map))
          ((when (endp A-lst)) 
 ; none found, so move on to the next subgoal
-          (print-cts/wts (cdr s-hist) cts-p 
-                         nc nw top-vars top-term vl state))
+          (print-cts/wts-subgoals (cdr s-hist) cts-p 
+                                  nc nw top-vars top-term vl state))
          (nc (- nc (if cts-p (len A-lst) 0)))
          (nw (- nw (if cts-p 0 (len A-lst))))
          (- (cw? (normal-output-flag vl) "~| [found in : ~x0]~%" name))
@@ -226,7 +230,7 @@ A-lst top-vars elide-map))
          )
      (er-progn
       (print-assignments A-lst top-vars top-term elide-map vl cts-p state)
-      (print-cts/wts (cdr s-hist) cts-p nc nw top-vars top-term vl state)))))
+      (print-cts/wts-subgoals (cdr s-hist) cts-p nc nw top-vars top-term vl state)))))
 
 (program)
 ; adapted from acl2/axioms.lisp
@@ -241,21 +245,20 @@ A-lst top-vars elide-map))
       (concatenate 'acl2::string prefix integer-part "." fractional-part))))
 
 
-; [2015-04-07 Tue]
-
-(defun print-vacuous-stats-summary (hyps kinds total hyp->sat)
+;; [2015-04-07 Tue]
+;; [2016-08-30 Tue] Removed restriction to vacuous test cases.
+(defun print-sat-stats-hyps (hyps kinds total hyp->sat)
 ;  Hypothesis | Type of Constraint | Negated | Sat/Total
   (if (endp hyps)
       nil
     (b* ((hyp (car hyps))
-         ((cons negp kind) (car kinds))
-         (neg (if negp " (NEGATED)" "")) 
+         (kind (car kinds))
          (num-sat (cdr (assoc-equal hyp hyp->sat)))
-         (p (rational-to-decimal-string (* 100 (/ num-sat total))))
+         (p (if (= total 0) "100" (rational-to-decimal-string (* 100 (/ num-sat total)))))
          )
-      (prog2$
-       (cw "~|Constraint: ~x0 ~|Kind: ~x1~s2 : Sat/Total: ~x3/~x4 (~s5%) ~%" hyp kind neg num-sat total p)
-       (print-vacuous-stats-summary (cdr hyps) (cdr kinds) total hyp->sat)))))
+      (prog2$ ;in Awk use ; as the field separator
+       (cw! "~|Constraint;~f0 ~|Kind;~f1;Percentage;~s4;Sat/Total;~x2/~x3~%" hyp kind num-sat total p)
+       (print-sat-stats-hyps (cdr hyps) (cdr kinds) total hyp->sat)))))
 
 (defun update-hyps->num-sat (hyp-vals hyps hyp->num-sat)
   "for each T value of hyp, increment its num-sat"
@@ -273,12 +276,12 @@ A-lst top-vars elide-map))
       
 
   
-(defun print-vacuous-stats1 (hyp-vals-list hyps kinds total hyp->num-sat)
+(defun print-sat-stats/subgoal (hyp-vals-list hyps kinds total hyp->num-sat)
   (if (endp hyp-vals-list)
-      (print-vacuous-stats-summary hyps kinds total hyp->num-sat)
+      (print-sat-stats-hyps hyps kinds total hyp->num-sat)
     (b* ((hyp-vals (car hyp-vals-list))
          (hyp->num-sat (update-hyps->num-sat hyp-vals hyps hyp->num-sat)))
-      (print-vacuous-stats1 (cdr hyp-vals-list) hyps kinds total hyp->num-sat))))
+      (print-sat-stats/subgoal (cdr hyp-vals-list) hyps kinds total hyp->num-sat))))
 
 
 
@@ -310,43 +313,81 @@ A-lst top-vars elide-map))
     (let ((tp-lst (getprop fn 'type-prescriptions nil 'current-acl2-world wrld)))
       (boolean-fn-symb-1 tp-lst)))))
 
+(defun assoc-fn-p (f)
+  (member-eq f '(ACL2::ASSOC-EQUAL ACL2::ASSOC-EQ)))
+
+(defun subsetp-fn-p (f)
+  (member-eq f '(ACL2::SUBSETP-EQUAL ACL2::SUBSETP-EQ)))
+
+(defun intersectp-fn-p (f)
+  (member-eq f '(ACL2::INTERSECTP-EQUAL ACL2::INTERSECTP-EQ)))
+
+(defun equal-fn-p (f)
+  (member-eq f '(ACL2::EQUAL ACL2::= ACL2::EQ ACL2::EQL)))
+
+(defun subclassify-binary-relation (f args)
+  (b* (((when (equal-fn-p f))
+        (if (or (proper-symbolp (first args)) (proper-symbolp (second args)))
+            (list :EQUAL/VAR)
+          (list  :EQUAL)))
+       ((when (assoc-fn-p f))
+        (if (proper-symbolp (first args))
+            (list :ASSOC/VAR)
+          (list  :ASSOC)))
+       ((when (membership-relationp f))
+        (if (proper-symbolp (first args))
+            (list :MEMBER/VAR)
+          (list :MEMBER)))
+       ((when (member-eq f '(ACL2::<)))
+        (if (or (proper-symbolp (first args)) (proper-symbolp (second args)))
+            (list :LESS/VAR)
+          (list :LESS)))
+       ((when (intersectp-fn-p f))
+        (list  :INTERSECTP))
+       ((when (subsetp-fn-p f))
+        (list  :SUBSETP))
+       )
+    '()))
+
+(defun classify-hyp/kinds (f args wrld)
+  "report all kinds that satisfy (f @args)"
+  (b* ((arity (len args))
+       ((unless (symbolp f))
+        (list :LAMBDA-APPLICATION)) ;can it be something else
+
+       ((when (defdata::is-type-predicate f wrld))
+        (list :MONADIC/DEFDATA-TYPE))
+       ((when (and (equal arity 1)))
+        (if (acl2::boolean-fn-symb f wrld)
+            (list :MONADIC/PREDICATE)
+          (list :MONADIC)))
+       ((when (and (equal arity 2)))
+        (if (acl2::boolean-fn-symb f wrld)
+            (list*  :BINARY/PREDICATE (subclassify-binary-relation f args))
+          (list* :BINARY (subclassify-binary-relation f args))))
+       ((when (and (equal arity 3)))
+        (if (eq f 'ACL2::IF)
+            (list :TERNARY/IF)
+          (if (acl2::boolean-fn-symb f wrld)
+              (list :TERNARY/PREDICATE)
+            (list :TERNARY))))
+       ((when (and (> arity 3) (acl2::boolean-fn-symb f wrld)))
+        (list :>3-ARY-RELATION)))
+    (list :UNKNOWN)))
+
 
 (defun classify-hyp (hyp negp wrld)
   "classify hyp as one of Equality, Arithmetic Inequality, defdata type, monadic predicate, n-ary Relation, unknown"
   (declare (xargs :guard (and (pseudo-termp hyp)
                               (booleanp negp)
                               (plist-worldp wrld))))
-  (if (equal (acl2::ffn-symb hyp) 'ACL2::NOT)
-      (classify-hyp (cadr hyp) (not negp) wrld)
-    (b* ((f (ffn-symb hyp))
-         ((unless (symbolp f)) (cons negp :LAMBDA)) ;can it be something else
-
-         ((when (member-eq f '(acl2::equal acl2::= acl2::eq acl2::eql)))
-          (if (or (proper-symbolp (second hyp)) (proper-symbolp (third hyp)))
-              (cons negp :EQUAL/VAR)
-            (cons negp :EQUAL)))
-
-         ((when (member-eq f '(acl2::member acl2::member-eq acl2::member-eql acl2::member-equal)))
-          (if (or (proper-symbolp (second hyp)) (proper-symbolp (third hyp)))
-              (cons negp :MEMBER/VAR)
-            (cons negp :MEMBER)))
-
-         ((when (member-eq f '(ACL2::<)))
-          (if (or (proper-symbolp (second hyp)) (proper-symbolp (third hyp)))
-              (cons negp :LESS/VAR)
-            (cons negp :LESS)))
-
-         ((when (defdata::is-type-predicate f wrld))
-          (cons negp :DEFDATA-TYPE))
-         ((when (and (equal (acl2::arity f wrld) 1) (acl2::boolean-fn-symb f wrld)))
-          (cons negp :MONADIC-PRED))
-         ((when (and (equal (acl2::arity f wrld) 2) (acl2::boolean-fn-symb f wrld)))
-          (cons negp :BINARY-RELATION))
-         ((when (and (equal (acl2::arity f wrld) 3) (acl2::boolean-fn-symb f wrld)))
-          (cons negp :TERNARY-RELATION))
-         ((when (and (> (acl2::arity f wrld) 3) (acl2::boolean-fn-symb f wrld)))
-          (cons negp :>3-ARY-RELATION)))
-      (cons negp :UNKNOWN))))
+  (cond ((atom hyp) (append (if negp '(:NEG) '(:POS)) '(:SHALLOW :ATOMIC-VARIABLE)))
+        ((equal (acl2::ffn-symb hyp) 'ACL2::NOT) (classify-hyp (cadr hyp) (not negp) wrld))
+        (t (b* ((f (ffn-symb hyp))
+                (args (fargs hyp))
+                (shallow-p (proper-symbol-listp args))
+                (neg+shallow (append (if negp '(:NEG) '(:POS)) (if shallow-p '(:SHALLOW) '(:NON-SHALLOW)))))
+             (append neg+shallow (classify-hyp/kinds f args wrld))))))
 
 (defun classify-hyps (hyps wrld)
   (if (endp hyps)
@@ -354,27 +395,53 @@ A-lst top-vars elide-map))
     (cons (classify-hyp (car hyps) nil wrld)
           (classify-hyps (cdr hyps) wrld))))
   
-(defun print-vacuous-stats (s-hist vl wrld)
+(defun print-sat-stats/subgoals (s-hist vl wrld)
   (if (endp s-hist)
       nil
     (b* (((cons name s-hist-entry%) (car s-hist))
          (test-outcomes% (access s-hist-entry% test-outcomes))
          (hyps      (access s-hist-entry% hyps))
-         (hyp-vals-list (access test-outcomes% vacs-hyp-vals-list))
-         (total (len hyp-vals-list))
-         ((when (= total 0)) nil) ;skip if no vacuous tests
-         (- (cw? (verbose-stats-flag vl) "~| [IN:~x0]~%" name))
+         (concl      (access s-hist-entry% concl))
+         (vacs-hyp-vals-list (access test-outcomes% vacs-hyp-vals-list))
+         (cts-hyp-vals-list (access test-outcomes% cts-hyp-vals-list))
+         (wts-hyp-vals-list (access test-outcomes% wts-hyp-vals-list))
+         (all-hyp-vals-list (append cts-hyp-vals-list
+                                    wts-hyp-vals-list
+                                    vacs-hyp-vals-list))
+         (|#vacs| (access test-outcomes% |#vacs|))
+         (total-runs/subgoal (+ |#vacs|
+                                (access test-outcomes% |#dups|)
+                                (access test-outcomes% |#cts|)
+                                (access test-outcomes% |#wts|)))
+         (sat% (if (<= total-runs/subgoal 0)
+                   "100"
+                 (rational-to-decimal-string
+                  (* 100 (/ (- total-runs/subgoal |#vacs|) total-runs/subgoal)))))
+         (cl (clausify-hyps-concl hyps concl))
+         (pform (acl2::prettyify-clause cl nil wrld))
+
+         (disp-enum-alist (access test-outcomes% disp-enum-alist))
+         (elim-bindings   (access test-outcomes% elim-bindings))
+         
          (hyp->num-sat (pairlis$ hyps (make-list (len hyps) :initial-element 0)))
          (kinds (classify-hyps hyps wrld))
          )
-     (prog2$
-      (print-vacuous-stats1 hyp-vals-list hyps kinds total hyp->num-sat)
-      (print-vacuous-stats (cdr s-hist) vl wrld)))))
+      (progn$
+       (cw? (verbose-stats-flag vl) "~|__SUBGOAL_BEGIN__~%")
+       (cw? (verbose-stats-flag vl) "SUBGOAL_NAME;~f0;SAT%;~s1~%" name sat%)
+       (cw? (verbose-stats-flag vl) "~x0~%" pform)
+       (cw? (verbose-stats-flag vl) "Enum: ~x0~%"  disp-enum-alist)
+       (cw? (and (verbose-stats-flag vl) elim-bindings)
+            "elim/fixer: ~x0~%"  elim-bindings)
+       (print-sat-stats/subgoal all-hyp-vals-list hyps kinds total-runs/subgoal hyp->num-sat)
+       (cw? (verbose-stats-flag vl) "~|__SUBGOAL_END__~%" )
+       (print-sat-stats/subgoals (cdr s-hist) vl wrld)))))
 
 (logic)
 
+
 (def print-s-hist (s-hist printc? printw? nc nw 
-                          top-term top-vars vl state)
+                          top-term top-vars top-ctx vl state)
 ;nc and nw are the number of cts/wts requested by user (acl2s defaults)
   (decl :mode :program
         :sig ((s-hist-p bool bool natp natp 
@@ -386,20 +453,22 @@ history s-hist.")
                    (prog2$
                     (cw? (normal-output-flag vl)
 "~|~%We falsified the conjecture. Here are counterexamples:~|")
-                    (print-cts/wts s-hist T nc nw top-vars top-term vl state))
+                    (print-cts/wts-subgoals s-hist T nc nw top-vars top-term vl state))
                  (value nil)))
 
        ((er &) (if printw?
                    (prog2$
                     (cw? (normal-output-flag vl)
 "~|~%Cases in which the conjecture is true include:~|")
-                    (print-cts/wts s-hist NIL nc nw top-vars top-term vl state))
+                    (print-cts/wts-subgoals s-hist NIL nc nw top-vars top-term vl state))
                  (value nil)))
+;       (event-name (get-event-name-from-ctx top-ctx))
        (- (and (verbose-stats-flag vl)
-               (prog2$
-                (cw
-                 "~|~%Vacuous test statistics: ~%")
-                (print-vacuous-stats s-hist vl (w state))))))
+               (progn$
+                (cw "~%__Vacuous_test_statistics_BEGIN__~%")
+                (cw "~|CTX;~f0~%" (if (and (consp top-ctx)) (cdr top-ctx) top-ctx)) 
+                (print-sat-stats/subgoals s-hist vl (w state))
+                (cw "~|__Vacuous_test_statistics_END__~%")))))
     (value nil)))
 
 (logic)
@@ -432,8 +501,8 @@ history s-hist.")
        (- (cw? (debug-flag vl) "~|testing summary - s-hist = ~x0~%" s-hist))
        ((unless (and (consp s-hist) (consp (car s-hist))
                      (> (access gcs% runs) 0)))
-        (value (cw? (verbose-stats-flag vl) 
-"~|CEgen/Note (~x0): No testing summary to print~|" ctx)))
+        (value (cw? (debug-flag vl) 
+"~|CEgen/Debug (~x0): No testing summary to print~|" ctx)))
                   
        (num-subgoals (len s-hist))
        (start (cget start-time))
@@ -489,11 +558,12 @@ history s-hist.")
                            (value :invisible))
                      (value nil)))
            ((mv cts-to-reach wts-to-reach) (mv (cget num-counterexamples) (cget num-witnesses)))
+           (top-ctx (cget top-ctx))
            ((er &)  (print-s-hist s-hist 
                                   (and (> cts-to-reach 0) (> num-cts 0));print cts if true
                                   (and (> wts-to-reach 0) (> num-wts 0));print wts if true
                                   cts-to-reach wts-to-reach 
-                                  top-term top-vars
+                                  top-term top-vars top-ctx
                                   vl state)))
        (value nil)))
      (& (value (cw? (normal-output-flag vl) "~|CEgen/Error: BAD gcs% in cgen-state.~|"))))))
@@ -602,9 +672,12 @@ history s-hist.")
        ((mv all-execp unsupportedp) 
           (cgen-exceptional-functions (list term) vl (w state)))
 ; 21st March 2013 - catch stobj taking and constrained functions, skip testing.
-         ((unless all-execp)  (mv :? cgen-state state)) ;possible with test? ?
-         ((when unsupportedp) (mv :? cgen-state state))
-
+       ((unless all-execp)  (mv :? cgen-state state)) ;possible with test? ?
+       ((when unsupportedp) (mv :? cgen-state state))
+       ((when (acl2::global-val 'acl2::include-book-path (w state)))
+        (prog2$ (cw? (verbose-flag vl) 
+                      "~|CEgen/Note: Inside include-book; skip testing altogether.~|")
+                 (mv :? cgen-state state)))
          
 ; No syntax error in input form, check for program-mode fns
 ; Note: translate gives nil as the term if form has
@@ -617,14 +690,14 @@ history s-hist.")
          (- (cw? (debug-flag vl)
                  "~%~%CEgen/Debug: (pm? ~x0) ~x1~|" programp (cons 'test? form))) 
 
-         ((mv hyps concl state) (partition-hyps-concl term "test?" state))
+         ((mv hyps concl state) (partition-into-hyps-concl-and-preprocess term "test?" state))
          ((mv start-top state) (acl2::read-run-time state))
          
          ((unless (cgen-state-p cgen-state))
           (er soft ctx "~|CEgen/Error: CGEN::CGEN-STATE is ill-formed~|"))
          
          (vars (all-vars term))
-         (d-typ-al (dumb-type-alist-infer (cons (dumb-negate-lit concl) hyps)
+         (d-typ-al (dumb-type-alist-infer (cons (cgen-dumb-negate-lit concl) hyps)
                                           vars vl (w state)))
          (- (cw? (verbose-stats-flag vl) 
                  "~|CEgen/Verbose: (at top-level) dumb type-alist is ~x0~|" d-typ-al))
@@ -670,7 +743,7 @@ history s-hist.")
              (acl2::state-global-let*
               ((acl2::inhibit-output-lst 
                 (cond ((debug-flag vl) '(summary))
-                      (t #!acl2(set-difference-eq *valid-output-names* '(error))))))
+                      (t #!acl2(set-difference-eq *valid-output-names* '(error prove))))))
 ; Q: Why is here a wrapper call to trans-eval?
 ; A: To catch some hard errors! (see the email to Matt dated 3/20/2013)
               (trans-eval

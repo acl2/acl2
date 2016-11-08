@@ -32,6 +32,8 @@
 
 // assumes minusb = - b.
 // computes pp = b * (signed(abits[2:1]) + abits[0]).
+// 000 =>   0;  001 =>   b;  010 =>   b;  011 =>  2b;
+// 100 => -2b;  101 =>  -b;  110 =>  -b;  111 =>   0;
 module boothenc (pp, abits, b, minusb);
   output [17:0] pp;
   input [2:0] abits;
@@ -47,7 +49,7 @@ module boothenc (pp, abits, b, minusb);
   wire zro = shft & (abits[2] ~^ abits[1]);
 
    // result without the shift
-  wire [16:0] res1 = zro ? 16'b0 : bsign;
+  wire [16:0] res1 = zro ? 17'b0 : bsign;
 
    // final shift
   wire [17:0] pp = shft ? { res1, 1'b0 } : { res1[16], res1 };

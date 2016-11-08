@@ -84,16 +84,15 @@
 ; Note that assertion should evaluate to a single non-stobj value.  See also
 ; assert!-stobj-body.
 
+  (declare (xargs :guard t))
   `(let ((assertion ,assertion))
      (value (if assertion
-                ',(or form '(value-triple :success))
-              '(with-output
-                 :stack :pop
-                 (value-triple nil
-                               :check (msg
-                                       "~x0"
-                                       ',assertion)
-                               :ctx 'assert!))))))
+                ',(if form
+                      `(with-output :stack :pop ,form)
+                    '(value-triple :success))
+              '(value-triple nil
+                             :check (msg "~x0" ',assertion)
+                             :ctx 'assert!)))))
 
 (defmacro assert! (&whole whole-form
                           assertion &optional form)
@@ -103,26 +102,29 @@
 
   `(with-output
      :stack :push
-     :off error
+     :off summary
      (make-event ,(assert!-body assertion form)
                  :on-behalf-of ,whole-form)))
 
-(assert! (equal 3 3)
-         (defun assert-test1 (x) x))
+(local
+ (progn
+   (assert! (equal 3 3)
+            (defun assert-test1 (x) x))
 
 ; Check that above defun was evaluated.
-(value-triple (or (equal (assert-test1 3) 3)
-                  (er hard 'top-level
-                      "Failed to evaluate (assert-test1 3) to 3.")))
+   (value-triple (or (equal (assert-test1 3) 3)
+                     (er hard 'top-level
+                         "Failed to evaluate (assert-test1 3) to 3.")))))
 
 (local
- (must-fail
-  (assert! (equal 3 4)
-           (defun assert-test2 (x) x))))
+ (progn
+   (must-fail
+    (assert! (equal 3 4)
+             (defun assert-test2 (x) x)))
 
 ; Check that above defun was not evaluated.
-(defun assert-test2 (x)
-  (cons x x))
+   (defun assert-test2 (x)
+     (cons x x))))
 
 ; Simple test with no second argument:
 (assert! (equal (append '(a b c) '(d e f))
@@ -165,16 +167,17 @@
 ; Assertion should evaluate to (mv val st), where val is an ordinary value and
 ; st is a stobj.  See also assert!-body.
 
+  (declare (xargs :guard t))
   (let ((extra (if (eq st 'state) nil (list st))))
     `(mv-let (result ,st)
        ,assertion
        (mv nil
            (if result
-               ',(or form '(value-triple :success))
+               ',(if form
+                     `(with-output :stack :pop ,form)
+                   '(value-triple :success))
              '(value-triple nil
-                            :check (msg
-                                    "~x0"
-                                    ',assertion)
+                            :check (msg "~x0" ',assertion)
                             :ctx 'assert!-stobj))
            state
            ,@extra))))
@@ -187,7 +190,7 @@
 
   `(with-output
      :stack :push
-     :off (error summary)
+     :off summary
      (make-event ,(assert!-stobj-body assertion st form)
                  :on-behalf-of ,whole-form)))
 

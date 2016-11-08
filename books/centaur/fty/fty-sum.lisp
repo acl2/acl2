@@ -1082,21 +1082,27 @@
   (b* (((flexprod prod) prod))
     (cons prod.ctor-name (flexprod-fields->names prod.fields))))
 
+(defun flexprod-fields-ignorable-typefix-bindings (fields)
+  (b* (((when (atom fields)) nil)
+       ((flexprod-field x) (car fields))
+       ((unless x.fix)
+        (flexprod-fields-mbe-typefix-bindings (cdr fields))))
+    (cons `(,(intern-in-package-of-symbol (concatenate 'string "?" (symbol-name x.name)) x.name)
+            (,x.fix ,x.name))
+          (flexprod-fields-ignorable-typefix-bindings (cdr fields)))))
 
 ;;     (defthm pterm-varname-of-pterm-var
 ;;       (equal (pterm-varname (pterm-var varname))
 ;;              (var-fix varname)))
-(defun flexprod-acc-of-ctor-thms1 (fields ctor-call)
+(defun flexprod-acc-of-ctor-thms1 (fields all-fields ctor-call)
   (b* (((when (atom fields)) nil)
        ((flexprod-field x) (car fields))
        (fixterm (if (eq x.reqfix x.name)
                     (if x.fix
                       `(,x.fix ,x.name)
                     x.name)
-                  (if x.fix
-                        `(let ((,x.name (,x.fix ,x.name)))
-                           ,x.reqfix)
-                      x.reqfix)))
+                  `(b* ,(flexprod-fields-ignorable-typefix-bindings all-fields)
+                     ,x.reqfix)))
        (foo->bar-of-foo (intern-in-package-of-symbol
                          (cat (symbol-name x.acc-name) "-OF-" (symbol-name (car ctor-call)))
                          x.acc-name)))
@@ -1107,10 +1113,11 @@
                                             (,(car ctor-call))))
                     (and stable-under-simplificationp
                          '(:in-theory (enable ,(car ctor-call))))))
-          (flexprod-acc-of-ctor-thms1 (cdr fields) ctor-call))))
+          (flexprod-acc-of-ctor-thms1 (cdr fields) all-fields ctor-call))))
 
 (defun flexprod-acc-of-ctor-thms (prod)
   (flexprod-acc-of-ctor-thms1 (flexprod->fields prod)
+                              (flexprod->fields prod)
                               (flexprod-ctor-call prod)))
 
 (defun flexprod-fields-acc-calls (fields xvar)
@@ -1119,7 +1126,7 @@
     (cons `(,(flexprod-field->acc-name (car fields)) ,xvar)
           (flexprod-fields-acc-calls (cdr fields) xvar))))
 
-(defun flexprod-equal-of-field-accessors (fields xvar)
+(defun flexprod-equal-of-field-accessors (fields all-fields xvar)
   (if (atom fields)
       nil
     (cons (b* (((flexprod-field x) (car fields)))
@@ -1128,11 +1135,9 @@
                          (if x.fix
                              `(,x.fix ,x.name)
                            x.name)
-                       (if x.fix
-                           `(let ((,x.name (,x.fix ,x.name)))
-                              ,x.reqfix)
-                         x.reqfix))))
-          (flexprod-equal-of-field-accessors (cdr fields) xvar))))
+                       `(b* ,(flexprod-fields-ignorable-typefix-bindings all-fields)
+                          ,x.reqfix))))
+          (flexprod-equal-of-field-accessors (cdr fields) all-fields xvar))))
 
 (defun flexprod-fields-macro-args (x)
   (b* (((when (atom x)) nil)
@@ -1279,7 +1284,7 @@
           (equal (equal ,(flexprod-ctor-call prod) ,sum.xvar)
                  (and (,sum.pred ,sum.xvar)
                       ,@(and (not (eq prod.guard t)) (list prod.guard))
-                      . ,(flexprod-equal-of-field-accessors prod.fields sum.xvar)))
+                      . ,(flexprod-equal-of-field-accessors prod.fields prod.fields sum.xvar)))
           :hints (("goal" :in-theory (acl2::disable*
                                       ,prod.ctor-name
                                       ,@(flexprod-fields->acc-names prod.fields)

@@ -3099,7 +3099,6 @@ ourstruct, above.)</p>"
   (append-without-guard (vl-datatype->udims x)
                         (vl-datatype->pdims x)))
 
-
 (defines vl-datatype->mods
   :verify-guards nil
   :prepwork (;; (local (defthm vl-datatype-count-of-vl-datatype-update-dims
@@ -3220,6 +3219,23 @@ ourstruct, above.)</p>"
                                         acl2::car-when-all-equalp
                                         acl2::mv-nth-cons-meta))))
 
+#||
+  (trace$ #!vl
+          (vl-datatype->mods
+           :cond (vl-datatype-case x :vl-usertype (equal x.name "scDispSrcs_t") :otherwise nil)
+           :entry (list 'vl-datatype->mods
+  (with-local-ps (vl-pp-vardecl (make-vl-vardecl :type x :name "___" :loc *vl-fakeloc*)))
+  :already-exists (and (sv::modalist-lookup (vl-datatype->svex-modname x) modalist) t)
+  :already-exists-res (and (sv::modalist-lookup (vl-datatype->svex-modname (vl-maybe-usertype-resolve x)) modalist) t))
+           :exit (b* (((list err wire1 modname modalist1) values))
+                   (list 'vl-datatype->mods
+                         (and err (with-local-ps (vl-fmt (vl-msg->msg err)
+                                                         (vl-fmt-pair-args (vl-msg->args err)))))
+                         wire1 modname (take (- (len modalist1) (len modalist)) modalist1)))))
+
+||#
+
+
   (define vl-datatype->mods ((x vl-datatype-p)
                              ;; (conf vl-svexconf-p)
                              (modalist sv::modalist-p))
@@ -3309,12 +3325,10 @@ returns a @(see sv::modalist) of the newly generated modules, but also
 returns the name of the module corresponding to the given datatype (if any) and
 a wire whose range is appropriate for a variable declared to be of the given
 type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
-    (b* ((type-modname (vl-datatype->svex-modname x))
-         (modalist (sv::modalist-fix modalist))
-         (look (sv::modalist-lookup type-modname modalist))
+    (b* ((modalist (sv::modalist-fix modalist))
          (x (vl-maybe-usertype-resolve x))
-         (look (or look
-                   (sv::modalist-lookup (vl-datatype->svex-modname x) modalist)))
+         (type-modname (vl-datatype->svex-modname x))
+         (look (sv::modalist-lookup type-modname modalist))
          ((when look)
           (b* (((sv::module look))
                (modalist (sv::modalist-fix modalist))

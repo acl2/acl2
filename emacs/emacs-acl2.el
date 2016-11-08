@@ -240,16 +240,25 @@
   (load "shell"))
 
 ; Do meta-x new-shell to start a new shell.
-(defvar number-of-other-shells 0)
+(defvar latest-shell-number 0)
 (load "shell")
 (defun new-shell ()
-  "Start up another shell."
+  "Start up a shell in a new buffer *shell-n*, where n is the
+least positive integer for which buffer *shell-n* does not
+currently exist and has never been created by this function."
   (interactive)
+  (setq latest-shell-number (+ 1 latest-shell-number))
+  (while (get-buffer
+	  ;; Since make-comint below surrounds its name with *..* to
+	  ;; make a new buffer name, here we add those * characters
+	  ;; before asking if the buffer exists.
+	  (concat "*shell-"
+		  (number-to-string latest-shell-number)
+		  "*"))
+    (setq latest-shell-number (+ 1 latest-shell-number)))
   (switch-to-buffer
    (make-comint (concat "shell-"
-			(number-to-string
-			 (setq number-of-other-shells
-			       (+ 1 number-of-other-shells))))
+			(number-to-string latest-shell-number))
 		(or (getenv "SHELL")
 		    "csh")))
   (shell-mode))

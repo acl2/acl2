@@ -3455,6 +3455,30 @@ functions can assume all bits of it are good.</p>"
                     (mv warnings
                         (sv::svcall sv::clog2 arg-svex))))
 
+                 ((when (vl-unary-syscall-p "$isunknown" x))
+                  (b* (((wmv warnings arg-svex ?size)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings
+                        (sv::svcall sv::uxor (sv::svcall sv::bitxor arg-svex arg-svex)))))
+
+                 ((when (vl-unary-syscall-p "$countones" x))
+                  (b* (((wmv warnings arg-svex ?size)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings
+                        (sv::svcall sv::countones arg-svex))))
+
+                 ((when (vl-unary-syscall-p "$onehot" x))
+                  (b* (((wmv warnings arg-svex ?size)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings
+                        (sv::svcall sv::onehot arg-svex))))
+
+                 ((when (vl-unary-syscall-p "$onehot0" x))
+                  (b* (((wmv warnings arg-svex ?size)
+                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                    (mv warnings
+                        (sv::svcall sv::onehot0 arg-svex))))
+
                  ;; It happens that almost all the system functions we support
                  ;; basically act on datatypes, and if an expression is given
                  ;; instead, they run on the type of the expression.

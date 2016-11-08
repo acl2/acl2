@@ -315,7 +315,24 @@
                           (last
                            (getprop sym 'def-bodies nil
                                     'current-acl2-world
-                                    (w state))))))
+                                    (w state)))))
+                       (formals-trip
+                        (list* sym
+                               'PACO::FORMALS
+                               val))
+
+                       (fn-numes-trip
+                       
+
+; If you change the layout of the FN-NUMES value below, change
+; fn-nume!
+
+                        (list* sym
+                               'PACO::FN-NUMES
+                               (list
+                                (fnume (list :DEFINITION sym) (w state))
+                                (fnume (list :EXECUTABLE-COUNTERPART sym) (w state))
+                                (fnume (list :INDUCTION sym) (w state))))))
                    (cond ((and def0
                                (null (access def-body def0 :hyp))
 
@@ -326,23 +343,11 @@
                                (eq (access def-body def0 :equiv)
                                    'equal))
                           (list*
-                           (list* sym
-                                  'PACO::FORMALS
-                                  val)
-
+                           formals-trip
                            (list* sym
                                   'PACO::BODY
                                   (access def-body def0 :concl))
-
-; If you change the layout of the FN-NUMES value below, change
-; fn-nume!
-
-                           (list* sym
-                                  'PACO::FN-NUMES
-                                  (list
-                                   (fnume (list :DEFINITION sym) (w state))
-                                   (fnume (list :EXECUTABLE-COUNTERPART sym) (w state))
-                                   (fnume (list :INDUCTION sym) (w state))))
+                           fn-numes-trip
 
 ; We just use the controller-alist for the first def-body of the
 ; function.
@@ -352,7 +357,9 @@
                                   (list (access def-body def0
                                                 :controller-alist)))
                            a))
-                         (t a))))
+                         (t (list* formals-trip
+                                   fn-numes-trip
+                                   a)))))
                 ((BODY UNNORMALIZED-BODY RECURSIVEP CONTROLLER-ALISTS
                        PRIMITIVE-RECURSIVE-DEFUNP LEVEL-NO)
 

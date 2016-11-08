@@ -433,6 +433,9 @@
             b-
             u-
             xdet
+            countones
+            onehot
+            onehot0
             *
             <
             clog2
@@ -583,6 +586,18 @@
     (3vec-p (4vec-xdet x))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-xdet))))
 
+  (defthm 3vec-p-of-4vec-countones
+    (3vec-p (4vec-countones x))
+    :hints(("Goal" :in-theory (enable 3vec-p 4vec-countones))))
+
+  (defthm 3vec-p-of-4vec-onehot
+    (3vec-p (4vec-onehot x))
+    :hints(("Goal" :in-theory (enable 3vec-p 4vec-onehot))))
+
+  (defthm 3vec-p-of-4vec-onehot0
+    (3vec-p (4vec-onehot0 x))
+    :hints(("Goal" :in-theory (enable 3vec-p 4vec-onehot0))))
+
   (defthm 3vec-p-of-4vec-minus
     (3vec-p (4vec-minus x y))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-minus))))
@@ -714,6 +729,9 @@
             b-
             u-
             xdet
+            countones
+            onehot
+            onehot0
             *
             <
             clog2
@@ -773,6 +791,18 @@
   (defthm 2vecx-p-of-4vec-xdet
     (2vecx-p (4vec-xdet x))
     :hints(("Goal" :in-theory (enable 2vecx-p 4vec-xdet))))
+
+  (defthm 2vecx-p-of-4vec-countones
+    (2vecx-p (4vec-countones x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-countones))))
+
+  (defthm 2vecx-p-of-4vec-onehot
+    (2vecx-p (4vec-onehot x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-onehot))))
+
+  (defthm 2vecx-p-of-4vec-onehot0
+    (2vecx-p (4vec-onehot0 x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-onehot0))))
 
   (defthm 2vecx-p-of-4vec-minus
     (2vecx-p (4vec-minus x y))

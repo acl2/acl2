@@ -26,13 +26,18 @@
 
   (cond
    ((endp runes) ans)
-   (t (let ((fn (cadr (car runes))))
+   (t (let ((fn (base-symbol (car runes))))
         (cond
          ((and (acl2-system-namep fn wrld)
                (not (member-eq fn avoid-fns))
-               (all-nils (getprop fn 'stobjs-in nil 'current-acl2-world wrld))
-               (not (member 'STATE-STATE (formals fn wrld)))
-               (all-nils (getprop fn 'stobjs-out nil 'current-acl2-world wrld)))
+               (all-nils (getpropc fn 'stobjs-in nil wrld))
+
+; Note that even functions taking state like state-p and global-table-cars,
+; i.e., that take a STATE-STATE input, will have STATE in their stobjs-in and
+; hence will fail the test just above.  So we don't need to give special
+; treatment to such functions.
+
+               (all-nils (getpropc fn 'stobjs-out nil wrld)))
 
 ; Note that stobj creators take no stobjs in but return stobjs.  We don't want
 ; any such functions in our answer!  Also, we don't want to think about
@@ -43,8 +48,7 @@
            (cdr runes)
            avoid-fns wrld
            (cons (cons (cons fn (formals fn wrld))
-                       (length (getprop fn 'stobjs-out nil
-                                        'current-acl2-world wrld)))
+                       (length (getpropc fn 'stobjs-out nil wrld)))
                  ans)))
          (t (first-order-like-terms-and-out-arities1
              (cdr runes)
@@ -136,7 +140,7 @@
                   (output-arity (cdr (car terms-and-out-arities))))
              (hons-acons fn
                          (make apply$-badge
-                               :authorization-flg (equal output-arity 1)
+                               :authorization-flg (eql output-arity 1)
                                :arity (length formals)
                                :ilks t)
                          (compute-badge-of-primitives

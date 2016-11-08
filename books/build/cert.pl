@@ -88,6 +88,8 @@ my @include_afters = ();
 my $svn_mode = 0;
 my $quiet = 0;
 my @run_sources = ();
+my @run_out_of_date = ();
+my @run_up_to_date = ();
 my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
@@ -246,13 +248,6 @@ COMMAND LINE OPTIONS
    -j <n>
            Use n processes to build certificates in parallel.
 
-   --all-deps
-   -d
-           Toggles writing out dependency information for all targets
-           encountered, including ones which don\'t need updating.  This is
-           done by default, so using -d or --all-deps actually means that
-           only targets that need updating are written to the makefile.
-
    --acl2 <cmd>
    -a <cmd>
            Use <cmd> as the ACL2 executable, overriding the ACL2
@@ -367,6 +362,16 @@ COMMAND LINE OPTIONS
                cert.pl top.lisp -n --source-cmd "echo {}; wc {}"
            Any number of --source-cmd directives may be given; the
            commands will then be run in the order in which they are given.
+
+   --out-of-date-cmd <command-str>
+           Like --source-cmd, but runs the command on all of the bottommost
+           out of date certificates in the dependency tree.  {} is replaced
+           by the base name of the book, that is, without the ".cert".
+
+   --up-to-date-cmd <command-str>
+           Like --source-cmd, but runs the command on all of the top-most
+           up to date certificates in the dependency tree.  {} is replaced
+           by the base name of the book, that is, without the ".cert".
 
    --tags-file <tagfile>
            Create an Emacs tags file containing the tags for all
@@ -534,6 +539,20 @@ GetOptions ("help|h"               => sub { print $summary_str;
 							my $line = $cmd;
 							$line =~ s/{}/$target/g;
 							print `$line`;})},
+            "up-to-date-cmd=s"     => sub { shift;
+					    my $cmd = shift;
+					    push (@run_up_to_date,
+					          sub { my $target = shift;
+					                my $line = $cmd;
+					                $line =~ s/{}/$target/g;
+					                print `$line`;})},
+            "out-of-date-cmd=s"    => sub { shift;
+					    my $cmd = shift;
+					    push (@run_out_of_date,
+					          sub { my $target = shift;
+					                my $line = $cmd;
+					                $line =~ s/{}/$target/g;
+					                print `$line`;})},
 	    "quiet|q"              => \$quiet,
 	    "make-args=s"          => \@make_args,
             "keep-going|k"         => \$keep_going,
@@ -691,6 +710,30 @@ foreach my $run (@run_sources) {
     }
 }
 
+if (@run_out_of_date || @run_up_to_date) {
+    my $up_to_date = check_up_to_date(\@targets, $depdb);
+    if (@run_out_of_date) {
+	my $out_of_date = collect_bottom_out_of_date(\@targets, $depdb, $up_to_date);
+	foreach my $run (@run_out_of_date) {
+	    foreach my $cert (@$out_of_date) {
+		(my $book = $cert) =~ s/\.cert$//;
+		&$run($book);
+	    }
+	}
+    }
+    if (@run_up_to_date) {
+	my $up_to_date = collect_top_up_to_date(\@targets, $depdb, $up_to_date);
+	foreach my $run (@run_up_to_date) {
+	    foreach my $cert (@$up_to_date) {
+		(my $book = $cert) =~ s/\.cert$//;
+		&$run($book);
+	    }
+	}
+    }
+}
+
+
+
 my @certs = sort(keys %{$depdb->certdeps});
 
 # Warn about books that include relocation stubs
@@ -829,11 +872,12 @@ unless ($no_makefile) {
 	my @topcerts = @{$labels{$label}};
 	my @labelcerts = ();
 	my @labelsources = ();
+	my @others = ();
 	%visited = ();
 	# print "Processing label: $label\n";
 	foreach my $topcert (@topcerts) {
 	    # print "Visiting $topcert\n";
-	    deps_dfs($topcert, $depdb, \%visited, \@labelsources, \@labelcerts);
+	    deps_dfs($topcert, $depdb, \%visited, \@labelsources, \@labelcerts, \@others);
 	}
 	@labelcerts = sort(@labelcerts);
 	@labelsources = sort(@labelsources);

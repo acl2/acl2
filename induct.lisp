@@ -3168,48 +3168,20 @@
 ;; RAG - I added realp and complexp to the list of function names
 ;; simplification can decide.
 
-(defun irrelevant-fnp (fn parity never-irrelevant-fns-alist)
-  (not ; not relevant, and here's the condition for relevancy:
-   (let ((pair (assoc-eq fn never-irrelevant-fns-alist)))
-     (and pair
-          (or (eq (cdr pair) :both)
-              (eq (cdr pair) parity))))))
-
-(defconst *irrelevant-clausep-fns*
-
-; See irrelevant-clausep.  It's pretty bold to include a recursive function,
-; namely true-listp, in the list below.  However, as long as it's the only one,
-; we feel safe.
-
-  '(not consp integerp rationalp
-        #+:non-standard-analysis realp
-        acl2-numberp
-        true-listp complex-rationalp
-        #+:non-standard-analysis complexp
-        stringp characterp
-        symbolp cons car cdr equal
-        binary-+ unary-- < apply))
-
-(defun irrelevant-clausep (cl never-irrelevant-fns-alist)
-
-; This function was formerly named probably-not-validp.
+(defun probably-not-validp (cl)
 
 ; Cl is a clause that is a subset of some clause, cl2, that has survived
-; simplification.  We are considering whether cl seems useless in proving cl2,
-; so that we can reasonably drop cl; if so, we return t.  In particular, we
-; return t if we think there is an instantiation of cl that makes each literal
-; false.
+; simplification.  We are considering whether cl seems useless in proving cl2;
+; if so, we return t.  In particular, we return t if we think there is an
+; instantiation of cl that makes each literal false.
 
 ; We have two trivial heuristics.  One is to detect whether the only function
 ; symbols in cl are ones that we think make up a fragment of the theory that
 ; simplification can decide.  The other heuristic is to bet that any cl
 ; consisting of a single literal which is of the form (fn v1 ... vn) or (not
-; (fn v1 ... vn)), where the vi are distinct variables, is probably not valid,
-; though we also insist on avoiding a "never-irrelevant" case in order to
-; decide that the literal is to be considered irrelevant.  We elaborate on
-; "never-irrelevant" and more, below.
+; (fn v1 ... vn)), where the vi are distinct variables, is probably not valid.
 
-; For eliminating irrelevance, we view a clause as
+; We elaborate a bit.  For eliminating irrelevance, we view a clause as
 
 ; (forall x y)(p(x) \/ q(y))
 
@@ -3222,47 +3194,77 @@
 
 ; (forall x)p(x) \/ (forall y)q(y)
 
-; We'd like to drop one of those disjuncts to clean up the clause (actually q
-; could be a disjunction on which we recur); but which one?  If p(x) is
-; probably not valid then we consider it reasonable to drop p(x) in the hope
-; that q(y) may be valid, and indeed provable by ACL2.  But we consider another
-; possibility.  Maybe p(x) is not valid, but we want to keep it because it is
-; important for proving the clause.  How could that be?  For example, there
-; could be a rewrite rule
+; We'd like to ignore one of those disjuncts when choosing an induction
+; (actually q could itself be a disjunction on which we recur); but which one?
+; If p(x) is probably not valid then we consider it reasonable to ignore p(x) in
+; the hope that q(y) may be valid, and indeed provable by ACL2.
 
-;   (implies (and (not (p u)) (r u v))
-;            (q v)).
+; See also the Essay on Alternate Heuristcs for Eliminate-Irrelevance.
 
-; Of course, we might expect this rewrite rule to have helped us before we have
-; reached the point of dropping irrelevant literals, which is just before we
-; consider slipping into a sub-induction.  But imagine for example that we do a
-; cdr-induction on v in which we know (r x (cdr v)).
+  (or (ffnnames-subsetp-listp cl '(not consp integerp rationalp
+                                       #+:non-standard-analysis realp
+                                       acl2-numberp
+                                       true-listp complex-rationalp
+                                       #+:non-standard-analysis complexp
+                                       stringp characterp
+                                       symbolp cons car cdr equal
+                                       binary-+ unary-- < apply))
+      (case-match cl
+        ((('not (& . args)))
 
-; Note that the rule above could (in part depending on (q v)) be of class
-; :rewrite, :definition, :forward-chaining, :linear, or :type-prescription.  So
-; far we really have been considering the left-hand side of a :rewrite rule;
-; more generally, we consider the "target" of a rule, which for example is a
-; max-tem in the :linear case.  Also note the following variant that could be
-; equally useful in the proof, when the "q part" helps the "p part", instead of
-; vice-versa as described above.
+; To understand why we require args to be non-nil, see the Essay on Alternate
+; Heuristcs for Eliminate-Irrelevance.
 
-;   (implies (and (not (q v)) (r u v))
-;            (p u)).
+         (and args ; do not drop zero-ary call (see above)
+              (all-variablep args)
+              (no-duplicatesp-eq args)))
+        (((& . args))
+         (and args  ; do not drop zero-ary call (see above)
+              (all-variablep args)
+              (no-duplicatesp-eq args)))
+        (& nil))))
 
-; So we are looking in a rule for a hypothesis and target with disjoint
-; variables, in any rule of one of the four classes above, and when we find it
-; we mark the function symbol, p, with the "parity" of the expected call of p
-; in the clause: nil for (p ...), and t for (not (p ...)).  For example, we'll
-; mark p with parity nil for the cases above, since the case of interest is
-; when (p u) is a positive literal, but of course, this all works equally well
-; if (p u) is really (not (f u)), in which case we will mark f with parity t.
-; We need only consider such hypotheses or target when the arguments (of p or
-; f) are distinct variables, since we already refuse to consider the literal
-; irrelevant otherwise.  We are simply doing something extra here to prevent a
-; literal from being marked as irrelevant.
+(defun irrelevant-lits (alist)
 
-; Here is an example for which the THM failed until we added the check for
-; irrelevant-fnp below.
+; Alist is an alist that associates a set of literals with each key.  The keys
+; are irrelevant.  We consider each set of literals and decide if it is
+; probably not valid.  If so we consider it irrelevant.  We return the
+; concatenation of all the irrelevant literal sets.
+
+  (cond ((null alist) nil)
+        ((probably-not-validp (cdar alist))
+         (append (cdar alist) (irrelevant-lits (cdr alist))))
+        (t (irrelevant-lits (cdr alist)))))
+
+(defun eliminate-irrelevance-clause (cl hist pspv wrld state)
+
+; A standard clause processor of the waterfall.
+
+; We return 4 values.  The first is a signal that is either 'hit, or
+; 'miss.  When the signal is 'miss, the other 3 values are irrelevant.
+; When the signal is 'hit, the second result is the list of new
+; clauses, the third is a ttree that will become that component of the
+; history-entry for this elimination, and the fourth is an
+; unmodified pspv.  (We return the fourth thing to adhere to the
+; convention used by all clause processors in the waterfall (q.v.).)
+
+; Essay on Alternate Heuristcs for Eliminate-Irrelevance
+
+; The algorithm for dropping "irrelevant" literals is based on first
+; partiioning the literals of a clause into components with respect to the
+; symmetric binary relation defined by: two literals are related if and only if
+; they share at least one free variable.  We consider two ways for a component
+; to be irrelevant: either (A) its function symbols are all from among a small
+; fixed set of primitives, or else (B) the component has a single literal whose
+; atom is the application of a function symbol to distinct variables.
+; Criterion B, however, is somewhat problematic, and below we discuss
+; variations of it that we have considered.  (See function probably-not-validp
+; for relevant code.)
+
+; Through Version_7.2, Criterion B was exactly as stated above.  However, we
+; encountered an unfortunate aspect of that heuristic, which is illustrated by
+; the following example (which is simpler than the one actually encountered,
+; but is similar in spirit).  The THM below failed to prove in Version_7.2.
 
 ;   (encapsulate
 ;     ((p () t)
@@ -3288,52 +3290,110 @@
 ;                      (true-listp x))
 ;                 (equal (rev (rev x)) x)))
 
-  (or (ffnnames-subsetp-listp cl *irrelevant-clausep-fns*)
-      (case-match cl
-        ((('not (fn . args)))
-         (and (all-variablep args)
-              (no-duplicatesp-eq args)
-              (symbolp fn)
-              (irrelevant-fnp fn t never-irrelevant-fns-alist)))
-        (((fn . args))
-         (and (all-variablep args)
-              (no-duplicatesp-eq args)
-              (symbolp fn)
-              (irrelevant-fnp fn nil never-irrelevant-fns-alist)))
-        (& nil))))
+; The problem was that before entering a sub-induction, the hypothesis (P) --
+; that is, the literal (NOT (P)) -- was dropped.  Here is the relevant portion
+; of a log using Version_7.2.
 
-(defun irrelevant-lits (alist never-irrelevant-fns-alist)
+;   Subgoal *1/2'5'
+;   (IMPLIES (AND (P) (TRUE-LISTP X2))
+;            (EQUAL (REV (MY-APP RV (LIST X1)))
+;                   (CONS X1 (REV RV)))).
+;   
+;   We suspect that the terms (TRUE-LISTP X2) and (P) are irrelevant to
+;   the truth of this conjecture and throw them out.  We will thus try
+;   to prove
+;   
+;   Subgoal *1/2'6'
+;   (EQUAL (REV (MY-APP RV (LIST X1)))
+;          (CONS X1 (REV RV))).
+;   
+;   Name the formula above *1.1.
 
-; Alist is an alist that associates a set of literals with each key.  The keys
-; are irrelevant.  We consider each set of literals and decide if it is
-; probably not valid and if it contains no literal L that we see could be
-; relevant to some term in variables disjoint from L.  If so we consider it
-; irrelevant.  We return the concatenation of all the irrelevant literal sets.
+; Since the exported defthm above requires (P) in order to expand MY-APP, the
+; goal displayed immediately above isn't a theorem.  So we desired a
+; modification of the Criterion B above, on components, that would no longer
+; drop (P).
 
-; For more about irrelevant literals, see irrelevant-clausep.
+; Our initial solution was a bit elaborate.  In essence, it maintained a world
+; global whose value is an alist that identifies "never irrelevant" function
+; symbols.  For a rewrite rule, if a hypothesis and the left-hand side had
+; disjoint sets of free variables, and the hypothesis was the application of
+; some function symbol F to distinct variables, then F was identified as "never
+; irrelevant".  We actually went a bit further, by associating a "parity" with
+; each such function symbol, both because the hypothesis might actually be (NOT
+; (F ...)) and because we allowed the left-hand side to contribute.  The
+; "parity" could be t or nil, or even :both (to represent both parities).  We
+; extended this world global not only for rewrite rules but also for rules of
+; class :definition, :forward-chaining, :linear, and :type-prescription.
 
-  (cond ((null alist) nil)
-        ((irrelevant-clausep (cdar alist)
-                             never-irrelevant-fns-alist)
-         (append (cdar alist)
-                 (irrelevant-lits (cdr alist)
-                                  never-irrelevant-fns-alist)))
-        (t (irrelevant-lits (cdr alist)
-                            never-irrelevant-fns-alist))))
+; That seemed to work well: it solved our original problem without noticeably
+; slowing down the regression suite or even the time for the expensive form
+; (include-book "doc/top" :dir :system).
 
-(defun eliminate-irrelevance-clause (cl hist pspv wrld state)
+; We then presented this change in the UT Austin ACL2 seminar, and a sequence
+; of events caused us to change our heuristics again.
 
-; A standard clause processor of the waterfall.
+;   (1) During that talk, we stressed the importance of dropping irrelevant
+;       literals so that an unsuitable induction isn't selected.  Marijn Heule
+;       thus made the intriguing suggestion of keeping the literals and simply
+;       ignoring them in our induction heuristics.
+;   
+;   (2) We tried such a change.  Our implementation actually caused
+;       eliminate-irrelevance-clause to hide the irrelevant literals rather
+;       then to delete then; then, induction would unhide them immediately
+;       after choosing an induction scheme.
+;   
+;   (3) The regression exhibited failures, however, because subsumption was no
+;       longer succeeding in cases where it had previously -- a goal was no
+;       longer subsumed by a previous sibling, but was subsumed by the original
+;       goal, causing the proof to abort immediately.  (See below for details.)
+;   
+;   (4) So we decided to drop literals once again, rather than merely to hide
+;       them.
+;   
+;   (5) But on further reflection, it seemed a bit far-fetched that a
+;       hypothesis (P1 X) could be relevant to simplifying (P2 Y Z) in the way
+;       shown above that (P) can be relevant to simplifying (P2 Y Z).  We can
+;       construct an example; but we think such examples are likely to be rare.
+;       The failures due to lack of subsumption led us to be nervous about
+;       keeping literals that Criterion B would otherwise delete.  So we
+;       decided on a very simple modification of Criterion B: only drop
+;       applications of functions to one or more variables.  This very limited
+;       case of keeping a literal seems unlikely to interfere with subsumption,
+;       since that literal could typically be reasonably expected to occur in
+;       all goals that are stable under simplification.
 
-; We return 4 values.  The first is a signal that is either 'hit, or
-; 'miss.  When the signal is 'miss, the other 3 values are irrelevant.
-; When the signal is 'hit, the second result is the list of new
-; clauses, the third is a ttree that will become that component of the
-; history-entry for this elimination, and the fourth is an
-; unmodified pspv.  (We return the fourth thing to adhere to the
-; convention used by all clause processors in the waterfall (q.v.).)
+; Returning to (3) above, here is how subsumption failed for lemma perm-del in
+; community book books/models/jvm/m5/perm.lisp, when we merely applied HIDE to
+; literals rather than deleting them.  In the failed proof, we see the
+; following.
 
-; For more about irrelevant literals, see irrelevant-clausep.
+;   Subgoal *1.1/4'''
+;   (IMPLIES (AND (NOT (HIDE (CONSP X2)))
+;                 (NOT (EQUAL A X1))
+;                 (MEM X1 Y)
+;                 (NOT (HIDE (CONSP DL))))
+;            (MEM X1 (DEL A Y))).
+;   
+;   Name the formula above *1.1.1.
+
+; Then later we see:
+
+;   So we now return to *1.1.2, which is
+;   
+;   (IMPLIES (AND (NOT (PERM (DEL X3 X4) (DEL X3 DL0)))
+;                 (NOT (EQUAL X3 X1))
+;                 (MEM X1 Y)
+;                 (MEM X3 DL)
+;                 (PERM X4 DL0))
+;            (MEM X1 (DEL X3 Y))).
+
+; In Version_7.2 and also currently, the terms with HIDE in the first goal are
+; simply gone; so the first goal subsumes the second goal under the
+; substitution mapping A to X3.  However, with the first goal as shown above
+; (from our experiment in hiding irrelevant literals), subsumption fails
+; because the hypothesis (NOT (HIDE (CONSP X2))) -- that is, the literal (HIDE
+; (CONSP X2)) -- is not present in the second goal.
 
   (declare (ignore hist wrld state))
   (cond
@@ -3342,10 +3402,7 @@
     (mv 'miss nil nil nil))
    (t (let* ((partitioning (m&m (pair-vars-with-lits cl)
                                 'intersectp-eq/union-equal))
-             (irrelevant-lits
-              (irrelevant-lits partitioning
-                               (access prove-spec-var pspv
-                                       :never-irrelevant-fns-alist))))
+             (irrelevant-lits (irrelevant-lits partitioning)))
         (cond ((null irrelevant-lits)
                (mv 'miss nil nil nil))
               (t (mv 'hit

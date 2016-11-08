@@ -554,6 +554,40 @@
                                             iff-flg wrld))))
      (t (list (list t
                     (untranslate sterm iff-flg wrld))))))
+   ((and (endp (cddr cond-clauses))
+         (eq (car (cadr cond-clauses)) t))
+
+; Consider the following call.
+
+;   (directed-untranslate-into-cond-clauses
+;    '(((<= len j) yyy)
+;      (t xxx))
+;    '(if (not (< j len)) yyy xxx)
+;    '(if (< j len) xxx yyy)
+;    nil
+;    (w state))
+
+; If we don't give special consideration to this (endp (cddr cond-clauses))
+; case, then the result will be as follows, which doesn't respect the structure
+; of the given COND clauses.
+
+;   (((< J LEN) XXX)
+;    (T YYY))
+
+; So instead, we transform the given COND clause into an IF call, and let our
+; usual IF processing do the work for us.
+
+    (let* ((cl1 (car cond-clauses))
+           (tst (car cl1))
+           (tbr (cadr cl1))
+           (cl2 (cadr cond-clauses))
+           (fbr (cadr cl2))
+           (ans (directed-untranslate-rec `(if ,tst ,tbr ,fbr)
+                                          tterm sterm iff-flg wrld)))
+      (case-match ans
+        (('if x y z)
+         `((,x ,y) (t ,z)))
+        (t `(,t ,ans)))))
    (t
     (cons (list (directed-untranslate-rec (caar cond-clauses)
                                           (fargn tterm 1)

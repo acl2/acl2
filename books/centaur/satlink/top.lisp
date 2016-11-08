@@ -692,7 +692,8 @@ satlink-run).</p>"
                                   ;; Print only if :verbose t is on, and use a
                                   ;; custom printing function that skips variable
                                   ;; assignment lines
-                                  :print (and config.verbose 'satlink-echo)
+                                  :print (or (and config.verbose 'satlink-echo)
+                                             (and config.timing 'satlink-echo-time))
                                   :save t)
                :msg "; SATLINK: `~s0`: ~st sec, ~sa bytes~%"
                :args (list cmd)

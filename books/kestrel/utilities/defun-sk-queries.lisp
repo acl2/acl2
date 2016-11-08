@@ -33,7 +33,7 @@
   :long
 
   "<p>
-   @(tsee Defun-sk) mimics functions with (top-level) quantifiers
+   @(tsee defun-sk) mimics functions with (top-level) quantifiers
    in the quantifier-free logic of ACL2,
    by <see topic='@(url defchoose)'>conservatively axiomatizing</see>
    an associated witness function
@@ -66,7 +66,7 @@
    </p>
 
    <p>
-   @(tsee Defun-sk) leaves no clearly recognizable trace of its use
+   @(tsee defun-sk) leaves no clearly recognizable trace of its use
    in the ACL2 @(see world).
    The user might directly enter the expansion of @(tsee defun-sk);
    there is no @(see table) of @(tsee defun-sk) functions.
@@ -459,7 +459,7 @@
    @('(return-last 'progn (throw-nonexec-error ...) core)')
    if @(':non-executable') is @('t'),
    otherwise just @('core').
-   @('Core') should have one of the following forms,
+   @('core') should have one of the following forms,
    where @('arg1'), ..., @('argN') are the formal arguments
    of the witness and @(tsee defun-sk) functions,
    and @('matrix') is the <see topic='@(url term)'>translated</see> matrix:

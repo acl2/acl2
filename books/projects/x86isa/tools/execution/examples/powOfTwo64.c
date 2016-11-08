@@ -5,7 +5,7 @@
 #include "stdio.h"
 #include "stdbool.h"
 
-bool powerOfTwo (long int v) {
+bool powerOfTwo (long unsigned int v) {
   bool f;
   f = v && !(v & (v - 1));
   return f;
@@ -13,8 +13,8 @@ bool powerOfTwo (long int v) {
 
 int main () {
 
-  long int v; // we want to see if v is a power of 2
-  bool f;         // the result goes here
+  long unsigned int v; // we want to see if v is a power of 2
+  bool f;              // the result goes here
 
   printf("\nEnter a value: ");
   scanf("%lu", &v);

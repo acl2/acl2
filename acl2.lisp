@@ -992,6 +992,7 @@
     "other-events"
     "ld"
     "proof-builder-b"
+    "apply-raw"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last
@@ -1645,6 +1646,12 @@ which is saved just in case it's needed later.")
    #\u
    #'sharp-u-read))
 
+(defun define-sharp-f ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\f
+   #'sharp-f-read))
+
 (defvar *old-character-reader*
   (get-dispatch-macro-character #\# #\\))
 
@@ -1700,7 +1707,8 @@ which is saved just in case it's needed later.")
       (define-sharp-dot)
 ;     (define-sharp-atsign) ; see interface-raw.lisp
       (define-sharp-bang)
-      (define-sharp-u))
+      (define-sharp-u)
+      (define-sharp-f))
 
 ;  Keep control of character reader.  However, we do not need to keep such
 ;  control when reading in a .fas file for CLISP, and in fact, the set-theory
@@ -1730,6 +1738,7 @@ which is saved just in case it's needed later.")
 ;         (define-sharp-atsign) ; see interface-raw.lisp
           (define-sharp-bang)
           (define-sharp-u)
+          (define-sharp-f)
           (set-dispatch-macro-character
            #\#
            #\\

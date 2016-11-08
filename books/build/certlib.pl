@@ -1495,6 +1495,129 @@ sub propagate_reqparam {
     }
 }
 
+sub newer_than_or_equal {
+    my ($f1, $f2) = @_;
+    return (stat($f1))[9] >= (stat($f2))[9];
+}
+
+# Returns a hash mapping each certificate to 1 if up to date, 0 if not.
+sub check_up_to_date {
+    my ($targets, $depmap) = @_;
+
+    my %up_to_date = ();
+    my $dfs;
+    $dfs = sub {
+	my $target = shift;
+	# print "check_up_to_date dfs($target)\n";
+	if (exists $up_to_date{$target}) {
+	    return;
+	}
+	
+	my $certdeps = cert_deps($target, $depmap);
+	foreach my $cert (@$certdeps) {
+	    $dfs->($cert);
+	}
+
+	if (! -e $target) {
+	    $up_to_date{$target} = 0;
+	    return;
+	}
+	foreach my $cert (@$certdeps) {
+	    # note if cert is up to date then we "know" it exists
+	    # (unless it was deleted since then).
+	    if (! $up_to_date{$cert} || ! newer_than_or_equal($target, $cert)) {
+		$up_to_date{$target} = 0;
+		return;
+	    }
+	}
+	my $srcdeps = cert_srcdeps($target, $depmap);
+	my $otherdeps = cert_otherdeps($target, $depmap);
+	
+	foreach my $dep (@$srcdeps, @$otherdeps) {
+	    if ( ! (-e $dep) || ! newer_than_or_equal($target, $dep)) {
+		$up_to_date{$target} = 0;
+		return;
+		}
+	}
+	$up_to_date{$target} = 1;
+    };
+
+    foreach my $target (@$targets) {
+	# print "check_up_to_date loop($target)\n";
+	$dfs->($target);
+    }
+
+    return \%up_to_date;
+}
+
+
+sub collect_top_up_to_date {
+    # up_to_date is the hash returned by check_up_to_date
+    my ($targets, $depmap, $up_to_date) = @_;
+
+    my %under_up_to_date = ();
+    my $dfs;
+    $dfs = sub {
+	my ($target, $under) = @_;
+	if (exists $under_up_to_date{$target}) {
+	    return;
+	}
+	$under_up_to_date{$target} = $under;
+	$under = $under || $up_to_date->{$target};
+
+	my $certdeps = cert_deps($target, $depmap);
+	foreach my $cert (@$certdeps) {
+	    $dfs->($cert, $under);
+	}
+    };
+
+    foreach my $target (@$targets) {
+	$dfs->($target);
+    }
+    my @top_up_to_date = ();
+    while ((my $cert, my $updated) = each %$up_to_date) {
+	if ($updated && ! $under_up_to_date{$cert}) {
+	    push (@top_up_to_date, $cert);
+	}
+    }
+    return \@top_up_to_date;
+}
+
+sub collect_bottom_out_of_date {
+    # up_to_date is the hash returned by check_up_to_date
+    my ($targets, $depmap, $up_to_date) = @_;
+
+    my @bottom_out_of_date = ();
+    my %visited = ();
+    my $dfs;
+    $dfs = sub {
+	my $target = shift;
+
+	if ($visited{$target} || $up_to_date->{$target}) {
+	    return $up_to_date->{$target};
+	}
+	$visited{$target} = 1;
+	my $bottom = 1;
+	foreach my $dep (@{cert_deps($target, $depmap)}) {
+	    if (! $dfs->($dep)) {
+		# out of date, but not bottommost
+		$bottom = 0;
+	    }
+	}
+
+	if ($bottom) {
+	    push(@bottom_out_of_date, $target);
+	}
+	return 0;
+    };
+
+    foreach my $target (@$targets) {
+	$dfs->($target);
+    }
+
+    return \@bottom_out_of_date;
+
+}
 
 
 # During a dependency search, this is run with $target set to each

@@ -5076,10 +5076,10 @@ Allow redefinition (even of system functions) without undoing.")
 (defun load-theory-or-init (dir)
   (let* ((initfile   (make-pathname :name (concatenate 'string *infix-mode* "-init")
 				    :type "lisp"
-				    :directory (pathname-directory dir)))
+				    :directory (and dir (pathname-directory dir))))
          (theoryfile (make-pathname :name (concatenate 'string *infix-mode* "-theory")
 				    :type "lisp"
-				    :directory (pathname-directory dir))))
+				    :directory (and dir (pathname-directory dir)))))
     ;; We assume that, if present, the -theory file loads the -init file.
     (cond ((probe-file theoryfile) (load-obj-or-lisp theoryfile) t)
           ((probe-file initfile)   (load-obj-or-lisp initfile) t)

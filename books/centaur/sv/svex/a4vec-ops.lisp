@@ -532,6 +532,89 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-xdet (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-xdet lognot)))))
 
+
+(define aig-countones-aux ((x true-listp))
+  :returns (res true-listp)
+  (if (atom x)
+      nil
+    (b* ((rest (aig-countones-aux (cdr x))))
+      (aig-+-ss (car x) nil rest)))
+  ///
+  (defret aig-countones-aux-correct
+    (equal (aig-list->s (aig-countones-aux x) env)
+           (logcount (aig-list->u x env)))
+    :hints(("Goal" :in-theory (enable logcount**)))))
+
+
+(define aig-onehot-aux ((x true-listp))
+  :returns (mv (zero) (one))
+  (b* (((when (atom x)) (mv t nil))
+       ((mv zero one) (aig-onehot-aux (cdr x))))
+    (mv (aig-and zero (aig-not (car x)))
+        (aig-ite (car x) zero one)))
+  ///
+  (defret aig-onehot-aux-zero-correct
+    (equal (aig-eval zero env)
+           (equal (logcount (aig-list->u x env)) 0))
+    :hints(("Goal" :in-theory (enable logcount**))))
+
+  (defret aig-onehot-aux-one-correct
+    (equal (aig-eval one env)
+           (equal (logcount (aig-list->u x env)) 1))
+    :hints(("Goal" :in-theory (enable logcount**)))))
+       
+
+
+
+(define a4vec-countones ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-countones)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x)
+                      (aig-not (aig-sign-s (a4vec->upper x))))
+             (b* ((val (aig-countones-aux (a4vec->upper x))))
+               (a4vec val val))
+             ;; X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-countones-correct
+    (equal (a4vec-eval (a4vec-countones x) env)
+           (4vec-countones (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-countones)))))
+
+
+(define a4vec-onehot ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-onehot)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x)
+                      (aig-not (aig-sign-s (a4vec->upper x))))
+             (b* (((mv ?zero one) (aig-onehot-aux (a4vec->upper x)))
+                  (val (aig-scons one nil)))
+               (a4vec val val))
+             ;; X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-onehot-correct
+    (equal (a4vec-eval (a4vec-onehot x) env)
+           (4vec-onehot (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-onehot)))))
+
+(define a4vec-onehot0 ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-onehot0)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x)
+                      (aig-not (aig-sign-s (a4vec->upper x))))
+             (b* (((mv zero one) (aig-onehot-aux (a4vec->upper x)))
+                  (ok (aig-or zero one))
+                  (val (aig-scons ok nil)))
+               (a4vec val val))
+             ;; X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-onehot0-correct
+    (equal (a4vec-eval (a4vec-onehot0 x) env)
+           (4vec-onehot0 (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-onehot0)))))
+
 (define a4vec-mask-check ((mask 4vmask-p)
                           (idx natp)
                           (vec true-listp "aig list")

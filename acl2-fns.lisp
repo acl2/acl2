@@ -1344,6 +1344,83 @@ notation causes an error and (b) the use of ,. is not permitted."
                                       Result ~s is not a numeral."
                                      n)))))))))))
 
+(defun read-digits (stream base-16-p)
+  (declare (special *hex-array* *base-10-array*))
+  (let ((base-array (if base-16-p *hex-array* *base-10-array*))
+        (sign (read-char stream nil :eof t))
+        tmp lst)
+    (cond ((eq sign :eof)
+           (return-from read-digits
+                        (values 0 nil :eof)))
+          ((not (member sign '(#\+ #\-)))
+           (unread-char sign stream)))
+    (loop (setq tmp (read-char stream nil :eof t))
+          (cond ((eq tmp :eof) (return))
+                ((eql tmp #\_)) ; discard underscore
+                ((aref base-array (char-code tmp))
+                 (push tmp lst))
+                (t (return))))
+    (let ((len (length lst))) ; computed before destructive nreverse call
+      (values len
+              (eql sign #\-)
+              (cond ((null lst) 0)
+                    (t (let ((*read-base* (if base-16-p 16 10)))
+                         (read-from-string
+                          (coerce (nreverse lst) 'string)))))
+              tmp))))
+
+(defun sharp-f-read (stream char n)
+  (declare (ignore char n))
+  (flet ((read-exp (stream)
+                   (multiple-value-bind
+                    (len negp exp next-char)
+                    (read-digits stream nil)
+                    (when (eql len 0)
+                      (cond (*read-suppress* (return-from sharp-f-read nil))
+                            (t (clear-input stream)
+                               (error "Empty exponent in #f expression."))))
+                    (unread-char next-char stream)
+                    (if negp (- exp) exp))))
+    (let* ((tmp (read-char stream nil :eof t))
+           (base-16-p (cond
+                       ((member tmp '(#\x #\X)) t)
+                       ((eq tmp :eof)
+                        (cond (*read-suppress* (return-from sharp-f-read nil))
+                              (t (error "End of file encountered after #f."))))
+                       (t (unread-char tmp stream)
+                          nil)))
+           (exp-chars (if base-16-p '(#\p #\P) '(#\e #\E))))
+      (multiple-value-bind
+       (len negp before-dot next-char)
+       (read-digits stream base-16-p)
+       (declare (ignore len))
+       (cond ((eq next-char :eof)
+              (if negp (- before-dot) before-dot))
+             ((member next-char exp-chars)
+              (let* ((exp (read-exp stream)))
+                (* (if negp (- before-dot) before-dot)
+                   (expt (if base-16-p 2 10) exp))))
+             ((eql next-char #\.)
+              (multiple-value-bind
+               (len negp-after-dot after-dot next-char)
+               (read-digits stream base-16-p)
+               (when negp-after-dot
+                 (cond
+                  (*read-suppress* (return-from sharp-f-read nil))
+                  (t (clear-input stream)
+                     (error "Illegal sign after point in #f expression."))))
+               (let ((significand
+                      (+ before-dot (/ after-dot
+                                       (expt (if base-16-p 16 10) len)))))
+                 (cond ((member next-char exp-chars)
+                        (let* ((exp (read-exp stream)))
+                          (* (if negp (- significand) significand)
+                             (expt (if base-16-p 2 10) exp))))
+                       (t (unread-char next-char stream)
+                          (if negp (- significand) significand))))))
+             (t (unread-char next-char stream)
+                (if negp (- before-dot) before-dot)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

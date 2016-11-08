@@ -78,6 +78,8 @@
 (local (include-book "std/system/non-parallel-book" :dir :system))
 (local (acl2::non-parallel-book))
 
+
+
 ;; NOTE: ALL should not be used in subtype/disjoint relations
 ;; because of a caveat in tau
 
@@ -240,7 +242,7 @@
   :hints (("goal" :in-theory (enable standard-char-listp))))
 
 )
-(in-theory (disable mod))
+(local (in-theory (disable mod)))
 ;;booleans
 
 (defconst *boolean-values* '(t nil))
@@ -449,21 +451,16 @@
 
 (defun nth-positive-ratio-builtin (n)
   (declare (xargs :guard (natp n)))
-  (mbe :logic (if (natp n)
-                 (let* ((two-n-list (defdata::split-nat 2 n))
-                        (alpha  (car two-n-list))
-                        (beta (cadr two-n-list))
-                        (den (+ 2 alpha))
-                        (num (+ (floor beta den) beta)))
-                   (/ num den))
-                 (/ 1 2))
-       :exec (let* ((two-n-list (defdata::split-nat 2 n))
-                    (alpha  (car two-n-list))
-                    (beta (cadr two-n-list))
-                    (den (+ 2 alpha))
-                    (num (+ (floor beta den) beta)))
-               (/ num den))))
-
+  (if (or (zp n)
+          (<= n 2))
+      (/ 1 2)
+    (let* ((two-n-list (defdata::split-nat 2 n))
+                       (alpha  (car two-n-list))
+                       (beta (cadr two-n-list))
+                       (den (+ 2 alpha))
+                       (num (+ (floor beta den) beta)))
+                  (/ num den))))
+    
 
 
 (defun negative-ratiop (x)
@@ -476,12 +473,15 @@
 
 (defun nth-negative-ratio-builtin (n)
   (declare (xargs :guard (natp n)))
-  (let* ((two-n-list (defdata::split-nat 2 n))
-         (alpha  (car two-n-list))
-         (beta (cadr two-n-list))
-         (den (+ 2 alpha))
-         (num (+ (floor beta den) beta)))
-    (- 0 (/ num den))))
+  (if (or (zp n)
+          (<= n 2))
+      (- 0 (/ 1 2))
+      (let* ((two-n-list (defdata::split-nat 2 n))
+             (alpha  (car two-n-list))
+             (beta (cadr two-n-list))
+             (den (+ 2 alpha))
+             (num (+ (floor beta den) beta)))
+        (- 0 (/ num den)))))
 
 
 ;(defdata rat (oneof 0 positive-ratio negative-ratio))
@@ -564,8 +564,8 @@
 (defun nth-complex-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (rpart (nth-rational-builtin (defdata::nfixg (car two-n-list))))
-         (ipart (nth-rational-builtin (defdata::nfixg (cadr two-n-list)))))
+         (rpart (nth-positive-rational-builtin (defdata::nfixg (car two-n-list))))
+         (ipart (nth-positive-rational-builtin (defdata::nfixg (cadr two-n-list)))))
     (complex rpart ipart)))
 
 (defun nth-complex-rational-between (n lo hi)
@@ -757,7 +757,7 @@
                 (booleanp x);t or nil
                 (acl2::legal-constantp x)))))
 
-(in-theory (disable acl2::legal-constantp))
+(local (in-theory (disable acl2::legal-constantp)))
 
 (defconst *nice-symbol-names*
   '(x y z a b c i j k p q r s u v w l d e f g h m n))
@@ -1309,7 +1309,9 @@
 
 (defdata list (oneof cons nil))
 
-(DEFUNS (NTH-TRUE-LIST-builtin
+
+
+(DEFUNS (NTH-TL-builtin
                (X)
                (declare (xargs :mode :program))
                (DECLARE (XARGS :guard (natp x) :verify-guards nil
@@ -1320,7 +1322,7 @@
                         (LET ((INFXLST (DEFDATA::SPLIT-NAT 2 X)))
                              (CONS (LET ((X (NTH 0 INFXLST))) (NTH-ALL X))
                                    (LET ((X (NTH 1 INFXLST)))
-                                        (NTH-TRUE-LIST-builtin X))))))))
+                                        (NTH-TL-builtin X))))))))
 
 (defun nth-tl/acc-builtin (i1 seed.)
   (declare (type (unsigned-byte 31) seed.))
@@ -1336,11 +1338,80 @@
            (mv (cons _v1 _v2) seed.)))
       (otherwise (mv nil seed.)))))
 
+
+(defun nth-true-list-builtin (n)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (natp n)))
+ 
+           
+                  ;;:verify-guards nil))
+  (b* (((mv choice seed)
+        (defdata::weighted-switch-nat 
+          '(10 ;integer
+            2 ;rational
+            20 ;nat-list
+            1  ;nil
+            10 ;symbol-list
+            1  ;string-list
+            1  ;char-list
+            5  ;acl2-num-list
+            10 ;atom
+            5  ;listof all
+            ) n)))
+      
+    (case choice
+          (0 (nth-integer-list seed))
+          (1 (nth-rational-list seed))
+          (2 (nth-nat-list seed))
+          (3 'nil)
+          (4 (nth-symbol-list seed))
+          (5 (nth-string-list seed))
+          (6 (nth-character-list seed))
+          (7 (nth-acl2-number-list seed))
+          (8 (nth-atom-list seed))
+          (9 (NTH-TL-builtin seed))
+          (t 'nil)))) ;this case should not come up
+
+(defun nth-true-list-uniform-builtin (m seed)
+  (declare (xargs :mode :program))
+  (declare (type (unsigned-byte 31) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+
+  (b* (((mv n seed) (defdata::random-natural-seed seed))
+       ((mv choice ?rest)
+        (defdata::weighted-switch-nat 
+          '(10 ;integer
+            2 ;rational
+            20 ;nat-list
+            1  ;nil
+            10 ;symbol-list
+            1  ;string-list
+            1  ;char-list
+            5  ;acl2-num-list
+            10 ;atom
+            5  ;listof all
+            ) n)))
+      
+    (case choice
+          (0 (nth-integer-list/acc m seed))
+          (1 (nth-rational-list/acc m seed))
+          (2 (nth-nat-list/acc m seed))
+          (3 (mv 'nil seed))
+          (4 (nth-symbol-list/acc m seed))
+          (5 (nth-string-list/acc m seed))
+          (6 (nth-character-list/acc m seed))
+          (7 (nth-acl2-number-list/acc m seed))
+          (8 (nth-atom-list/acc m seed))
+          (9 (nth-tl/acc-builtin m seed))
+          (t (mv 'nil seed)))))
+
+
+
 (defdata::register-type true-list 
                :size t 
                :predicate true-listp
                :enumerator nth-true-list-builtin
-               :enum/acc nth-tl/acc-builtin
+               :enum/acc nth-true-list-uniform-builtin
                :prettyified-def (listof all))
 
 ;some alists
@@ -1380,7 +1451,6 @@
 (defun nth-all-but-zero-nil-t-builtin (n)
   (declare (xargs :mode :program))
   (declare (xargs :guard (natp n)))
-
   (b* (((mv choice seed)
           (defdata::weighted-switch-nat 
             '(1 ;integer
@@ -1399,27 +1469,30 @@
               10  ;cons-cons-atom
               1  ;stringlist
               10  ;atom-list
-              ) n)))
+              ) n))
     
-    (case choice
-          (0 (nth-integer seed))
-          (1 (nth-character-list seed))
-          (2 (nth-symbol seed))
-          (3 (nth-string seed))
-          (4 (nth-character seed))
-          (5 (nth-pos seed))
-          (6 (nth-positive-ratio seed))
-          (7 (nth-negative-ratio seed))
-          (8 (nth-complex-rational seed))
-          (9 (nth-rational-list seed))
-          (10 (nth-symbol-list seed))
-          (11 (nth-cons-atom seed))
-          (12 (nth-nat-list seed))
-          (13 (b* (((list i1 i2) (defdata::split-nat 2 seed))) 
-                (cons (nth-cons-atom i1) (nth-cons-atom i2)))) ;(cons-ca-ca seed))
-          (14 (nth-string-list seed))
-          (15 (nth-atom-list seed))
-          (t 1))))
+       (val (case choice
+              (0 (nth-integer seed))
+              (1 (nth-character-list seed))
+              (2 (nth-symbol seed))
+              (3 (nth-string seed))
+              (4 (nth-character seed))
+              (5 (nth-pos seed))
+              (6 (nth-positive-ratio seed))
+              (7 (nth-negative-ratio seed))
+              (8 (nth-complex-rational seed))
+              (9 (nth-rational-list seed))
+              (10 (nth-symbol-list seed))
+              (11 (nth-cons-atom seed))
+              (12 (nth-nat-list seed))
+              (13 (b* (((list i1 i2) (defdata::split-nat 2 seed))) 
+                    (cons (nth-cons-atom i1) (nth-cons-atom i2)))) ;(cons-ca-ca seed)
+              (14 (nth-string-list seed))
+              (15 (nth-atom-list seed))
+              (t 1))))
+    (if (all-but-zero-nil-tp val)
+        val
+      1)))
 
 (defun nth-all-but-zero-nil-t-uniform-builtin (m seed.)
   (declare (xargs :mode :program))

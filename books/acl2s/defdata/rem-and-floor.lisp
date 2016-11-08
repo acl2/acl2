@@ -94,5 +94,5 @@
              (<= 0 (floor x y)))
     :rule-classes (:linear :rewrite)))
 
-(in-theory (disable rem floor))#|ACL2s-ToDo-Line|#
+
 

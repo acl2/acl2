@@ -61,7 +61,7 @@
   (declare (xargs :mode :program))
   (cdr (assoc-eq 'default-parents (table-alist 'xdoc world))))
 
-(defun check-defxdoc-args (name parents short long)
+(defun check-defxdoc-args (name parents short long pkg)
   (declare (xargs :guard t))
   (or (and (not (symbolp name))
            "name is not a symbol!")
@@ -70,11 +70,13 @@
       (and short (not (stringp short))
            ":short is not a string (or nil)")
       (and long (not (stringp long))
-           ":long is not a string (or nil)")))
+           ":long is not a string (or nil)")
+      (and pkg (or (not (stringp pkg)) (equal pkg "") (not (pkg-witness pkg)))
+           ":pkg is not a string that is a known package (or nil)")))
 
-(defun guard-for-defxdoc (name parents short long)
+(defun guard-for-defxdoc (name parents short long pkg)
   (declare (xargs :guard t))
-  (let* ((err (check-defxdoc-args name parents short long)))
+  (let* ((err (check-defxdoc-args name parents short long pkg)))
     (or (not err)
         (cw "~s0~%" err))))
 
@@ -92,14 +94,14 @@
                      (subseq bookname lds nil))
       bookname)))
 
-(defun defxdoc-fn (name parents short long state)
+(defun defxdoc-fn (name parents short long pkg state)
   (declare (xargs :mode :program :stobjs state))
-  (let* ((err (check-defxdoc-args name parents short long)))
+  (let* ((err (check-defxdoc-args name parents short long pkg)))
     (if err
         (er hard? 'defxdoc
             "Bad defxdoc arguments: ~s0" err)
       (let* ((world (w state))
-             (pkg   (acl2::f-get-global 'acl2::current-package state))
+             (pkg   (or pkg (acl2::f-get-global 'acl2::current-package state)))
              (info  (acl2::f-get-global 'acl2::certify-book-info state))
              (bookname (if info
                            (acl2::access acl2::certify-book-info info :full-book-name)
@@ -122,27 +124,27 @@
            ,@(and post-event (list post-event))
            (value-triple '(defxdoc ,name)))))))
 
-(defmacro defxdoc (name &key parents short long)
+(defmacro defxdoc (name &key parents short long pkg)
   `(with-output :off (event summary)
      (make-event
-      (defxdoc-fn ',name ',parents ,short ,long state))))
+      (defxdoc-fn ',name ',parents ,short ,long ,pkg state))))
 
-(defun defxdoc-raw-fn (name parents short long)
+(defun defxdoc-raw-fn (name parents short long pkg)
   (declare (xargs :guard t)
-           (ignore name parents short long))
+           (ignore name parents short long pkg))
   (er hard? 'defxdoc-raw-fn
       "Under-the-hood definition of defxdoc-raw-fn not installed.  You ~
        probably need to load the defxdoc-raw book."))
 
-(defun defxdoc-raw-after-check (name parents short long)
-  (let* ((err (check-defxdoc-args name parents short long)))
+(defun defxdoc-raw-after-check (name parents short long pkg)
+  (let* ((err (check-defxdoc-args name parents short long pkg)))
     (if err
         (er hard? 'defxdoc-raw
             "Bad defxdoc-raw arguments: ~s0~%" err)
-      (defxdoc-raw-fn name parents short long))))
+      (defxdoc-raw-fn name parents short long pkg))))
 
-(defmacro defxdoc-raw (name &key parents short long)
-  `(defxdoc-raw-after-check ',name ',parents ,short ,long))
+(defmacro defxdoc-raw (name &key parents short long pkg)
+  `(defxdoc-raw-after-check ',name ',parents ,short ,long ,pkg))
 
 (defun find-topic (name x)
   (declare (xargs :mode :program))
