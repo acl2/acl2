@@ -44,15 +44,12 @@
 (include-book "misc/records" :dir :system)
 ;; (include-book "clause-processors/generalize" :dir :system)
 ;; (include-book "clause-processors/find-subterms" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/arith-equivs" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/lists/resize-list" :dir :system)
-(include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 
 (include-book "arithmetic/top-with-meta" :dir :system)
-
-(include-book "std/lists/resize-list" :dir :system)
-(include-book "centaur/misc/absstobjs" :dir :system)
 
 
 (include-book "def-typed-record")

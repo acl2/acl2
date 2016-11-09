@@ -32,7 +32,7 @@
 (include-book "../mlib/scopestack")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system) nfix)))
 
