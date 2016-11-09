@@ -2435,7 +2435,7 @@ created when we process their packages, etc.</p>"
   ;; (defthm all-less-than-of-ints-from
   ;;   (all-less-than (ints-from a b) b))
 
-  (local (include-book "centaur/misc/arith-equivs" :dir :system))
+  (local (include-book "std/basic/arith-equivs" :dir :system))
 
   (deffixequiv ints-from)
 

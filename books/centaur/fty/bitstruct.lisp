@@ -35,7 +35,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "basetypes")
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 ;; (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "bitstruct-theory")
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
