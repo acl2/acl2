@@ -248,20 +248,13 @@ least positive integer for which buffer *shell-n* does not
 currently exist and has never been created by this function."
   (interactive)
   (setq latest-shell-number (+ 1 latest-shell-number))
-  (while (get-buffer
-	  ;; Since make-comint below surrounds its name with *..* to
-	  ;; make a new buffer name, here we add those * characters
-	  ;; before asking if the buffer exists.
-	  (concat "*shell-"
-		  (number-to-string latest-shell-number)
-		  "*"))
+  (while (get-buffer (concat "*shell-"
+			     (number-to-string latest-shell-number)
+			     "*"))
     (setq latest-shell-number (+ 1 latest-shell-number)))
-  (switch-to-buffer
-   (make-comint (concat "shell-"
-			(number-to-string latest-shell-number))
-		(or (getenv "SHELL")
-		    "csh")))
-  (shell-mode))
+  (shell (concat "*shell-"
+                 (number-to-string latest-shell-number)
+                 "*")))
 
 ; Avoid killing shell buffers by accident:
 (defun kill-buffer-without-process (name)
@@ -301,7 +294,10 @@ currently exist and has never been created by this function."
 (define-key ctl-t-keymap "b" 'switch-to-shell)
 (defun switch-to-shell ()
   (interactive)
-  (switch-to-buffer *acl2-shell*))
+  (let ((buf (get-buffer *acl2-shell*)))
+    (unless buf
+      (error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
+    (switch-to-buffer buf)))
 
 ; Send the current form to the ACL2 shell.  Here, the "current form" is the one
 ; starting with the immediately preceding left parenthesis in column 0.  (It is
@@ -327,26 +323,26 @@ currently exist and has never been created by this function."
 ; See the documentation for enter-theorem.  We return nil unless we go
 ; to a preceding package marker, #!pkg, in which case we return t.
   (let ((saved-point (point))
-	(ans nil))
+        (ans nil))
     (end-of-line)
     (beginning-of-defun)
     (let ((temp-point (point)))
       (cond ((not (equal temp-point (point-min)))
-	     (forward-line -1)
-	     (cond ((looking-at "#!")
-		    (setq ans t))
-		   (t (goto-char temp-point))))))
+             (forward-line -1)
+             (cond ((looking-at "#!")
+                    (setq ans t))
+                   (t (goto-char temp-point))))))
     (cond ((acl2-scope-start-p)
-	   (goto-char saved-point)
-	   (if (not (looking-at "("))
-	       (backward-up-list))
-	   (let ((scope-p (acl2-scope-start-p)))
-	     (or scope-p
-		 (progn (while (not scope-p)
-			  (setq saved-point (point))
-			  (backward-up-list)
-			  (setq scope-p (acl2-scope-start-p)))
-			(goto-char saved-point))))))
+           (goto-char saved-point)
+           (if (not (looking-at "("))
+               (backward-up-list))
+           (let ((scope-p (acl2-scope-start-p)))
+             (or scope-p
+                 (progn (while (not scope-p)
+                          (setq saved-point (point))
+                          (backward-up-list)
+                          (setq scope-p (acl2-scope-start-p)))
+                        (goto-char saved-point))))))
     ans))
 
 (defun acl2-current-form-string (&optional ignore-pkg-marker)
@@ -354,10 +350,10 @@ currently exist and has never been created by this function."
     (end-of-line)
     (let ((temp (acl2-beginning-of-def)))
       (let ((beg (point)))
-	(if (and temp (not ignore-pkg-marker))
-	    (forward-line 1))
-	(forward-sexp)
-	(buffer-substring beg (point))))))
+        (if (and temp (not ignore-pkg-marker))
+            (forward-line 1))
+        (forward-sexp)
+        (buffer-substring beg (point))))))
 
 (defvar *acl2-insert-pats*
 
@@ -367,42 +363,53 @@ currently exist and has never been created by this function."
 ;;; ruling out shell prompts as done just above, here we allow only
 ;;; lines with known Lisp or ACL2 prompts.
 
-; '(".*>[ ]*$"		   ; ACL2, GCL, CLISP, LispWorks, CCL debugger
-;   ".*[?] $"		   ; CCL
-;   ".*): $"		   ; Allegro CL
-;   ".*] $"		   ; SBCL debugger
-;   ".*[*] $"		   ; CMUCL, SBCL
+; '(".*>[ ]*$"             ; ACL2, GCL, CLISP, LispWorks, CCL debugger
+;   ".*[?] $"              ; CCL
+;   ".*): $"               ; Allegro CL
+;   ".*] $"                ; SBCL debugger
+;   ".*[*] $"              ; CMUCL, SBCL
 ;  )
 
-  "A list of regular expressions for acl2-check-insert to allow on the current line
-or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[ ]*$\" \"^$\") --
-patterns to disallow.")
+  "A list of regular expressions for enter-theorem-fn to allow on the
+current line or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[
+]*$\" \"^$\") -- patterns to disallow.")
 
-(defun acl2-check-insert ()
-  (save-excursion
-    (forward-line 0)
-    (let ((buf (get-buffer *acl2-shell*)))
+(defun enter-theorem-fn (use-other-window)
+  (let ((str (acl2-current-form-string))
+        (buf (get-buffer *acl2-shell*))
+        (patterns *acl2-insert-pats*))
+    (unless buf
+      (error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
+    ;; Go to the *acl2-shell* buffer
+    (push-mark)
+    (when use-other-window
+      (other-window 1))
+    (switch-to-buffer buf)
+    (goto-char (point-max))
+    ;; Check that there is a process in the buffer
+    (unless (get-buffer-process buf)
+      (error "Error: This buffer has no process!"))
+    ;; Check that we have a valid prompt at which to place the form.
+    (save-excursion
+      (forward-line 0)
       (cond
-       ((null buf)
-	(error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
-       ((null (get-buffer-process buf))
-	(error "The buffer named %s (the value of *acl2-shell*) has no process!"
-	       *acl2-shell*))
-       (t (let ((patterns *acl2-insert-pats*))
-	    (cond ((null patterns))
-		  ((eq (car patterns) :not)
-		   (while (setq patterns (cdr patterns))
-		     (when (looking-at (car patterns))
-		       (error "Error: Illegal regexp match for line, \"%s\"; see *acl2-insert-pats*"
-			      (car patterns)))))
-		  (t (let ((flg nil))
-		       (while patterns
-			 (cond ((looking-at (car patterns))
-				(setq flg t)
-				(setq patterns nil))
-			       (t (setq patterns (cdr patterns)))))
-		       (or flg
-			   (error "Error: No regexp match for line; see *acl2-insert-pats*")))))))))))
+       ((null patterns))         ; nothing to check
+       ((eq (car patterns) :not) ; prompt must not match any of the regexps
+        (while (setq patterns (cdr patterns))
+          (when (looking-at (car patterns))
+            (error "Error: Detected non-ACL2 prompt, matching \"%s\"; see *acl2-insert-pats*"
+                   (car patterns)))))
+       (t                      ; prompt must match one of the regexeps
+        (let ((flg nil))
+          (while patterns
+            (cond ((looking-at (car patterns))
+                   (setq flg t)
+                   (setq patterns nil))
+                  (t (setq patterns (cdr patterns)))))
+          (or flg
+              (error "Error: Couldn't detect ACL2 prompt; see *acl2-insert-pats*"))))))
+    ;; Insert the form
+    (insert str)))
 
 (defun enter-theorem ()
 
@@ -420,35 +427,22 @@ sense) or else a form immediately under an ACL2 scope.  You can open a
 scope with control-t o."
 
   (interactive)
-  (push-mark) ; I think I sometimes like to go back to the form.
-  (let ((str (acl2-current-form-string)))
-    (switch-to-buffer *acl2-shell*)
-    (goto-char (point-max))
-    (acl2-check-insert)
-    (insert str))
-  (goto-char (point-max)) ; harmless; seemed necessary at one point
-  )
+  (enter-theorem-fn nil))
 
 (defun enter-theorem-other-window ()
   (interactive)
-  (push-mark) ; I think I sometimes like to go back to the form.
-  (let ((str (acl2-current-form-string)))
-    (other-window 1)
-    (switch-to-buffer *acl2-shell*)
-    (goto-char (point-max))
-    (acl2-check-insert)
-    (insert str)))
+  (enter-theorem-fn t))
 
 (defun event-name ()
   (save-excursion
     (let ((beg (point)))
       (forward-sexp)
       (let ((pair (read-from-string (buffer-substring beg (point)))))
-	(let ((expr (car pair)))
-	  (if (and (consp expr)
-		   (consp (cdr expr)))
-	      (cadr expr)
-	    (error "Not in an event!")))))))
+        (let ((expr (car pair)))
+          (if (and (consp expr)
+                   (consp (cdr expr)))
+              (cadr expr)
+            (error "Not in an event!")))))))
 
 (defun acl2-open-scope ()
 
@@ -465,13 +459,13 @@ current top-level form.  See the documentation for enter-theorem."
       (insert "(encapsulate\n")
       (lisp-indent-line)
       (insert (format
-	       "() ;; start lemmas for %s"
-	       (or name "anonymous event")))
+               "() ;; start lemmas for %s"
+               (or name "anonymous event")))
       (forward-sexp)
       (let ((end (point)))
-	(backward-sexp)
-	(insert " ")
-	(indent-rigidly (point) end 1))
+        (backward-sexp)
+        (insert " ")
+        (indent-rigidly (point) end 1))
       (forward-sexp)
       (end-of-line)
       (open-line 1)
@@ -517,7 +511,7 @@ current top-level form.  See the documentation for enter-theorem."
 
 (defun set-shell-temp-file-directory ()
   (setq *shell-temp-file-directory*
-	"./"))
+        "./"))
 
 (defun shell-temp-file-name ()
   (expand-file-name *shell-temp-file-name* (set-shell-temp-file-directory)))
@@ -535,8 +529,10 @@ current top-level form.  See the documentation for enter-theorem."
 (defun send-region-to-shell (message)
   "Writes the current region to the shell temp file and then puts one at the
    end of the ACL2 shell buffer, ready to submit that file."
+  (unless (get-buffer *acl2-shell*)
+    (error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
   (let ((beg (min (point) (mark)))
-	(end (max (point) (mark))))
+        (end (max (point) (mark))))
     (write-region-for-shell beg end)
     (switch-to-buffer *acl2-shell*)
     (goto-char (point-max))
@@ -548,9 +544,9 @@ current top-level form.  See the documentation for enter-theorem."
   (interactive)
   (send-region-to-shell
    (concat (format
-	    ";; Ready to execute ACL2-LOAD -- hit <RETURN> when ready\n")
-	   (format "(acl2::ld \"%s\" :LD-PRE-EVAL-PRINT acl2::t :ld-error-action :return)"
-		   (shell-temp-file-name)))))
+            ";; Ready to execute ACL2-LOAD -- hit <RETURN> when ready\n")
+           (format "(acl2::ld \"%s\" :LD-PRE-EVAL-PRINT acl2::t :ld-error-action :return)"
+                   (shell-temp-file-name)))))
 
 (defun acl2-load-inhibited ()
   "Writes the current region to the shell temp file and then puts the cursor
@@ -559,9 +555,9 @@ current top-level form.  See the documentation for enter-theorem."
   (interactive)
   (send-region-to-shell
    (concat (format
-	    ";; Ready to execute ACL2-LOAD -- hit <RETURN> when ready\n")
-	   (format "(acl2::with-output :off :all (acl2::ld \"%s\" :ld-error-action :return :ld-skip-proofsp t))"
-		   (shell-temp-file-name)))))
+            ";; Ready to execute ACL2-LOAD -- hit <RETURN> when ready\n")
+           (format "(acl2::with-output :off :all (acl2::ld \"%s\" :ld-error-action :return :ld-skip-proofsp t))"
+                   (shell-temp-file-name)))))
 
 (define-key ctl-t-keymap "l" 'acl2-load)
 (define-key ctl-t-keymap "\C-l" 'acl2-load-inhibited)
@@ -569,40 +565,42 @@ current top-level form.  See the documentation for enter-theorem."
 (defun acl2-event-name (form allow-local)
   (and (consp form)
        (let ((hd (car form))
-	     name)
-	 (cond ((eq hd 'encapsulate)
-		(let ((form-list (cdr (cdr form))))
-		  (while form-list
-		    (setq name (acl2-event-name (car form-list) nil))
-		    (if name
-			(setq form-list nil) ; exit loop
-		      (setq form-list (cdr form-list))))))
-	       ((eq hd 'progn)
-		(let ((form-list (cdr form)))
-		  (while form-list
-		    (setq name (acl2-event-name (car form-list) allow-local))
-		    (if name
-			(setq form-list nil) ; exit loop
-		      (setq form-list (cdr form-list))))))
-	       ((eq hd 'local)
-		(and allow-local
-		     (setq name (acl2-event-name (car (cdr form)) t))))
-	       (t (setq name (and (consp (cdr form))
-				  (car (cdr form))))))
-	 (and (symbolp name)
-	      name))))
+             name)
+         (cond ((eq hd 'encapsulate)
+                (let ((form-list (cdr (cdr form))))
+                  (while form-list
+                    (setq name (acl2-event-name (car form-list) nil))
+                    (if name
+                        (setq form-list nil) ; exit loop
+                      (setq form-list (cdr form-list))))))
+               ((eq hd 'progn)
+                (let ((form-list (cdr form)))
+                  (while form-list
+                    (setq name (acl2-event-name (car form-list) allow-local))
+                    (if name
+                        (setq form-list nil) ; exit loop
+                      (setq form-list (cdr form-list))))))
+               ((eq hd 'local)
+                (and allow-local
+                     (setq name (acl2-event-name (car (cdr form)) t))))
+               (t (setq name (and (consp (cdr form))
+                                  (car (cdr form))))))
+         (and (symbolp name)
+              name))))
 
 (defun acl2-undo ()
   "Undoes back through the current event.  Current weaknesses: Doesn't
 work for encapsulate or progn, and is ignorant of packages."
   (interactive)
+  (unless (get-buffer *acl2-shell*)
+    (error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
   (let ((name (acl2-event-name
-	       (car (read-from-string (acl2-current-form-string t)))
-	       t)))
+               (car (read-from-string (acl2-current-form-string t)))
+               t)))
     (cond (name (switch-to-buffer *acl2-shell*)
-		(goto-char (point-max))
-		(insert (format ":ubt! %s" name)))
-	  (t (error "ERROR: Unable to find event name for undoing.")))))
+                (goto-char (point-max))
+                (insert (format ":ubt! %s" name)))
+          (t (error "ERROR: Unable to find event name for undoing.")))))
 
 (define-key ctl-t-keymap "u" 'acl2-undo)
 
@@ -624,8 +622,8 @@ one such error; if you suspect more errors, run it again."
       (setq old-point (point))
       (forward-sexp)
       (while (not (equal (point) old-point))
-	(setq old-point (point))
-	(forward-sexp)))
+        (setq old-point (point))
+        (forward-sexp)))
     (goto-char saved-point)
     (message "All parentheses appear balanced.")))
 
@@ -679,7 +677,7 @@ then also ignore case if that argument is positive, else do not ignore case."
   (interactive "P")
   (if ignore-case
       (let ((compare-ignore-case (> ignore-case 0)))
-	(compare-windows "0"))
+        (compare-windows "0"))
     (compare-windows "0")))
 
 ; Set compare-windows-whitespace to something other than "[ \t\n]+"
@@ -703,22 +701,22 @@ then also ignore case if that argument is positive, else do not ignore case."
 
 (defun acl2-sources-dir ()
   (let ((dir
-	 (if (boundp '*acl2-sources-dir*)
-	     *acl2-sources-dir*
-	   (setq *acl2-sources-dir*
-		 (expand-file-name
-		  (read-file-name
-		  "*acl2-sources-dir* (e.g. /u/acl2/v2-9/acl2-sources/): "
-		  nil nil t))))))
+         (if (boundp '*acl2-sources-dir*)
+             *acl2-sources-dir*
+           (setq *acl2-sources-dir*
+                 (expand-file-name
+                  (read-file-name
+                  "*acl2-sources-dir* (e.g. /u/acl2/v2-9/acl2-sources/): "
+                  nil nil t))))))
     (if (or (equal dir "")
-	    (let ((lastch (aref "abc/" (1- (length "abc/")))))
-	      (and (not (equal lastch ?/))
-		   (not (equal lastch ?\\)))))
-	(concat dir
-		(if (and (string-match "[\\]" dir)
-			 (not (string-match "/" dir)))
-		    "\\"
-		  "/"))
+            (let ((lastch (aref "abc/" (1- (length "abc/")))))
+              (and (not (equal lastch ?/))
+                   (not (equal lastch ?\\)))))
+        (concat dir
+                (if (and (string-match "[\\]" dir)
+                         (not (string-match "/" dir)))
+                    "\\"
+                  "/"))
       dir)))
 
 (defun visit-acl2-tags-table ()
@@ -728,8 +726,8 @@ then also ignore case if that argument is positive, else do not ignore case."
 
 ; Set the right margin (used when auto-fill-mode is on).
 (add-hook 'lisp-mode-hook
-	  '(lambda ()
-	     (setq fill-column 79)))
+          '(lambda ()
+             (setq fill-column 79)))
 ; Formerly: (set-default 'fill-column 79)
 
 ; The function fill-format-string below probably originated from Bob
@@ -754,58 +752,58 @@ beginning of the string that was processed."
 ; First move the point to the beginning of the string, if possible.
 
   (or (and (equal (char-after (point)) ?\")
-	   (not (equal (char-before (point)) ?\\)))
+           (not (equal (char-before (point)) ?\\)))
       (let ((pos (point))
-	    (not-done t))
-	(while not-done
-	  (if (> pos 0)
-	      (if (equal (char-after pos) ?\")
-		  (if (equal (char-before pos) ?\\)
-		      (setq pos (1- pos))
-		    (goto-char pos)
-		    (setq not-done nil))
-		(setq pos (1- pos)))
-	    (error "Cannot find beginning of a format string to fill.")))))
+            (not-done t))
+        (while not-done
+          (if (> pos 0)
+              (if (equal (char-after pos) ?\")
+                  (if (equal (char-before pos) ?\\)
+                      (setq pos (1- pos))
+                    (goto-char pos)
+                    (setq not-done nil))
+                (setq pos (1- pos)))
+            (error "Cannot find beginning of a format string to fill.")))))
   (save-excursion
     (let ((start-point (point))
-	  (fill (make-string (+ 1 (current-column)) ? )))
+          (fill (make-string (+ 1 (current-column)) ? )))
       (forward-sexp 1)
       (let ((end-point (point))
-	    (new-end nil))
-	(save-restriction
-	  (narrow-to-region (+ 1 start-point)
-			    (- end-point 1))
-	  (goto-char (point-min))
-	  (while (re-search-forward "~\n" nil t)
-	    (delete-char -2)
-	    (while (or (looking-at " ")
-		       (looking-at "\t")
-		       (looking-at "\n"))
-	      (delete-char 1)))
-	  (goto-char (point-max))
-	  (setq new-end (point)))
-	(save-restriction
-	  (beginning-of-line)
-	  (narrow-to-region (point)
-			    new-end)
-	  (goto-char (+ 1 start-point))
-	  (while (re-search-forward "[ \t]" nil t)
-	    (cond ((next-break-too-far)
-		   (insert "~\n")
-		   (insert fill)))))))))
+            (new-end nil))
+        (save-restriction
+          (narrow-to-region (+ 1 start-point)
+                            (- end-point 1))
+          (goto-char (point-min))
+          (while (re-search-forward "~\n" nil t)
+            (delete-char -2)
+            (while (or (looking-at " ")
+                       (looking-at "\t")
+                       (looking-at "\n"))
+              (delete-char 1)))
+          (goto-char (point-max))
+          (setq new-end (point)))
+        (save-restriction
+          (beginning-of-line)
+          (narrow-to-region (point)
+                            new-end)
+          (goto-char (+ 1 start-point))
+          (while (re-search-forward "[ \t]" nil t)
+            (cond ((next-break-too-far)
+                   (insert "~\n")
+                   (insert fill)))))))))
 
 (defun next-break-too-far ()
   (let ((p (point)))
     (cond ((equal (point) (point-max))
-	   nil)
-	  (t (cond ((re-search-forward "[ \t\n]" nil t)
-		    (prog1
-			(>= (current-column) fill-column)
-		      (goto-char p)))
-		   (t (goto-char (point-max))
-		      (prog1
-			  (>= (current-column) fill-column)
-			(goto-char p))))))))
+           nil)
+          (t (cond ((re-search-forward "[ \t\n]" nil t)
+                    (prog1
+                        (>= (current-column) fill-column)
+                      (goto-char p)))
+                   (t (goto-char (point-max))
+                      (prog1
+                          (>= (current-column) fill-column)
+                        (goto-char p))))))))
 
 ; Bury the current buffer, putting it on the bottom of the buffer stack, out of
 ; the way, without killing the buffer).
@@ -875,7 +873,7 @@ beginning of the string that was processed."
       *acl2-interface-dir*
     (setq *acl2-interface-dir*
 ; common location (i.e., for those who install ACL2 community books in books/):
-	  (concat (acl2-sources-dir) "books/interface/emacs/"))))
+          (concat (acl2-sources-dir) "books/interface/emacs/"))))
 
 (autoload 'start-proof-tree
   (concat (acl2-interface-dir) "top-start-shell-acl2")
@@ -930,15 +928,15 @@ beginning of the string that was processed."
 
 (defun maybe-set-acl2-pc-dive-syntax-table ()
   (cond ((null *acl2-pc-dive-syntax-table*)
-	 (setq *acl2-pc-dive-syntax-table*
-	       (copy-syntax-table (syntax-table)))
-	 (modify-syntax-entry ?- "w" *acl2-pc-dive-syntax-table*)
-	 (modify-syntax-entry ?: "w" *acl2-pc-dive-syntax-table*)
-	 (modify-syntax-entry ?_ "w" *acl2-pc-dive-syntax-table*)
-	 (modify-syntax-entry ?+ "w" *acl2-pc-dive-syntax-table*)
-	 (modify-syntax-entry ?* "w" *acl2-pc-dive-syntax-table*)
-	 (modify-syntax-entry ?. "w" *acl2-pc-dive-syntax-table*)
-	 *acl2-pc-dive-syntax-table*)))
+         (setq *acl2-pc-dive-syntax-table*
+               (copy-syntax-table (syntax-table)))
+         (modify-syntax-entry ?- "w" *acl2-pc-dive-syntax-table*)
+         (modify-syntax-entry ?: "w" *acl2-pc-dive-syntax-table*)
+         (modify-syntax-entry ?_ "w" *acl2-pc-dive-syntax-table*)
+         (modify-syntax-entry ?+ "w" *acl2-pc-dive-syntax-table*)
+         (modify-syntax-entry ?* "w" *acl2-pc-dive-syntax-table*)
+         (modify-syntax-entry ?. "w" *acl2-pc-dive-syntax-table*)
+         *acl2-pc-dive-syntax-table*)))
 
 (defun dive-manual ()
   "Returns the 0-based address of the current s-expression inside
@@ -951,7 +949,7 @@ at the top."
   (let ((addr (find-address)))
     (goto-char (point-max))
     (if (null addr)
-	(error "Null address.")
+        (error "Null address.")
       (insert (prin1-to-string (cons 'dive addr))))))
 
 (defun dv-manual ()
@@ -964,7 +962,7 @@ command for the proof-builder. Causes an error if one is already at the top."
   (let ((addr (find-address)))
     (goto-char (point-max))
     (if (null addr)
-	(error "Null address.")
+        (error "Null address.")
       (insert (prin1-to-string (cons 'dv addr))))))
 
 (defun beginning-of-current-defun ()
@@ -975,7 +973,7 @@ the sense of c-m-a"
     (end-of-defun)
     (beginning-of-defun)
     (or (not (equal (point) old-point))
-	(error "Already at the beginning of the expression."))))
+        (error "Already at the beginning of the expression."))))
 
 (defun find-address ()
   "Returns the 0-based address of the current s-expression inside
@@ -989,7 +987,7 @@ the expression beginning at the margin.  Leaves one at the original point."
       (setq quit-point (point))
       (goto-char old-point)
       (while (not (equal (point) quit-point))
-	(setq result (cons (move-up-one-level) result)))
+        (setq result (cons (move-up-one-level) result)))
       (goto-char old-point)
       result)))
 

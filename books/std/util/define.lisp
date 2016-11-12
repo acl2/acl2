@@ -35,6 +35,7 @@
 (include-book "returnspecs")
 (include-book "xdoc/fmt-to-str-orig" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
+(include-book "kestrel/utilities/make-termination-theorem" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -441,33 +442,6 @@ form is usually an adequate work-around.</p>")
                                                        (xargs :measure-debug t))))
 ||#
 
-(defun append-hints-from-xargs-alist (xargs-alist)
-  ;; This is an unusual function that is to support using either top-level
-  ;; :hints or (declare (xargs :hints ...)) forms when using the t-proof
-  ;; option.
-  ;;
-  ;; To understand what we are doing, note that ACL2 permits you to write
-  ;; crazy looking things like this:
-  ;;
-  ;; (defun f1 (x)
-  ;;   (declare (xargs :measure (consp x))
-  ;;            (xargs :hints(("Goal" :in-theory (cw "HINT 1~%"))))
-  ;;            (xargs :hints(("Goal" :in-theory (cw "HINT 2~%")))))
-  ;;   (if (zp x)
-  ;;       0
-  ;;     (+ 1 (f (cdr x)))))
-  ;;
-  ;; Which seem to have the same effect as just appending all the different
-  ;; hints together.  The idea here is to try to support this madness as
-  ;; transparently as possible by collecting the xargs and then appending them
-  ;; together.
-  (b* (((when (atom xargs-alist))
-        nil)
-       ((cons key value) (car xargs-alist))
-       ((when (eq key :hints))
-        (append value (append-hints-from-xargs-alist (cdr xargs-alist)))))
-    (append-hints-from-xargs-alist (cdr xargs-alist))))
-
 
 ; -------------- Main Stuff Parsing -------------------------------------------
 
@@ -823,7 +797,7 @@ form is usually an adequate work-around.</p>")
    kwd-alist   ;; keyword options passed to define
    returnspecs ;; returns specifiers, already parsed
 
-   t-proof     ;; the full event to prove the required termination for this function
+   t-proof     ;; the full event representing termination for this function
    main-def    ;; the full defun[d] event for the function
    macro       ;; macro wrapper (if necessary), nil or a defmacro event
    raw-formals ;; not parsed, includes any &optional, &key parts
@@ -1137,17 +1111,6 @@ examples.</p>")
 
        (embedded-xargs-alist (extract-xargs-from-traditional-decls/docs (list 'define name)
                                                                         traditional-decls/docs))
-       (t-hints (and t-proof
-                     ;; This order of this append is meant to match the order
-                     ;; of the hints given to define in the case of no t-proof,
-                     ;; but where both :hints and (xargs :hints ...) are given
-                     ;; simultaneously.  The top-level :hints get processed
-                     ;; LAST in that case, as described below.
-                     (append
-                      ;; All :hints found anywhere in (declare (xargs ...)) forms
-                      (append-hints-from-xargs-alist embedded-xargs-alist)
-                      ;; Any top-level :hints
-                      (getarg :hints nil kwd-alist))))
 
        (need-macrop (or (not (eq inline :default))
                         (has-macro-args raw-formals)))
@@ -1254,12 +1217,6 @@ examples.</p>")
 ; from formals, and therefore the guards wouldn't verify.  We now try to use an
 ; order that seems like it is most probably the one you want.
 
-; 0. If using t-proof, put its :by hint here to try to make sure it happens
-; first.
-
-           ,@(and t-proof
-                  `((declare (xargs :hints ('(:by ,t-proof-name))))))
-
 ; 1. Stobj names, since they give us stobj-p guards, which may be useful and
 ; probably can't depend on anything else
            ,@(and stobj-names
@@ -1320,7 +1277,7 @@ examples.</p>")
                   :raw-formals raw-formals
                   :formals     formals
                   :rest-events (xdoc::make-xdoc-fragments rest-events)
-                  :t-proof     (if t-proof (cons t-proof-name t-hints) nil)
+                  :t-proof     (if t-proof (cons t-proof-name nil) nil)
                   :pe-entry    pe-entry
                   )))
 
@@ -1380,8 +1337,6 @@ examples.</p>")
          ,@(and prepwork
                 `((with-output :stack :pop
                     (progn . ,prepwork))))
-
-         ,@(and guts.t-proof (make-termination-proof (car guts.t-proof) (cdr guts.t-proof) guts.main-def))
 
          ;; Define the macro first, so that it can be used in recursive calls,
          ;; e.g., to take advantage of nicer optional/keyword args.
@@ -1465,6 +1420,15 @@ examples.</p>")
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
        ,(add-signature-from-guts guts)
+
+       ,@(and guts.t-proof
+              `((make-event
+                 (if (and (logic-mode-p ',guts.name-fn (w state))
+                          (acl2::recursivep ',guts.name-fn nil (w state)))
+                     '(acl2::make-termination-theorem ,guts.name
+                                                      :thm-name
+                                                      ,(car guts.t-proof))
+                   '(defthm ,(car guts.t-proof) t :rule-classes nil)))))
 
        (make-event (list 'value-triple
                          (if (eql ,start-max-absolute-event-number
