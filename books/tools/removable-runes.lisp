@@ -38,15 +38,15 @@
  steps.  (See @(see set-prover-step-limit) for a discussion of prover steps.)
  For example, if the list of runes returned for an event form is
  @('((:definition f1) (:rewrite thm1))'), then the proof of that event form was
- performed successively &mdash; and with fewer steps &mdash; when first
+ performed successfully &mdash; and with fewer steps &mdash; when first
  evaluating the event @('(in-theory (disable (:definition f1) (:rewrite
  thm1)))').</p>
 
  <p>We now describe the two keyword arguments in turn, and in doing so, we
  explain how the tool works.</p>
 
- <p>The @(':verbose-p') argument controls the level of output.  We begin By
- describing the default benavior.  The output for the default value
+ <p>The @(':verbose-p') argument controls the level of output.  We begin by
+ describing the default behavior.  The output for the default value
  @(':verbose-p = :normal') is broken into sections for successive ``rounds''.
  Each section appears as follows, other than the initial section, which only
  lists the steps for the original proof attempt.</p>
@@ -64,9 +64,9 @@
  <p>The ``@('Steps')'' field has the number of prover steps taken by that
  round's proof attempt, where the initial ``@('Steps')'' is the number of
  prover steps reported for the original form.  The corresponding ``@('Steps
- saved')'', ``@('Time'), ``@('Removed'), and ``@('Removable')'' fields state
- the following, respectively: the difference between the @('Steps') for the
- previous and current round (and in parentheses, the difference between the
+ saved')'', ``@('Time')'', ``@('Removed')'', and ``@('Removable')'' fields
+ state the following, respectively: the difference between the @('Steps') for
+ the previous and current round (and in parentheses, the difference between the
  @('Steps') for the initial event and the current round); the time taken for
  the new event (by default, the run time; see @(see get-internal-time)); the
  rune that was newly disabled for the current round; and the list of runes
