@@ -4079,14 +4079,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-non-standard-analysis
   '(27 . MINUSP))
 (defconst *tau-booleanp-pair*
-  #+(and (not non-standard-analysis) acl2-par)
-  '(32 . BOOLEANP)
-  #+(and (not non-standard-analysis) (not acl2-par))
+  #-non-standard-analysis
   '(31 . BOOLEANP)
-  #+(and non-standard-analysis (not acl2-par))
+  #+non-standard-analysis
   '(34 . BOOLEANP)
-  #+(and non-standard-analysis acl2-par)
-  '(35 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -12782,6 +12778,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     cons-with-hint
     file-length$
     delete-file$
+    set-bad-lisp-consp-memoize
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -17634,7 +17631,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; seems trivial.)
 
                   (cons nil nil))
-                 (*package* (find-package
+                 (*package* (find-package-fast
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)
                  #+cltl2 (*read-eval* t)
@@ -17670,16 +17667,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (t
                     (read stream nil read-object-eof nil)))))
 
-; The following dynamic-extent declaration looks fine.  But there have been
-; spurious ill-formed certificate and checksum problems with Allegro CL for a
-; few months (as of Aug. 2009) and I am suspicious that this could be the cause
-; (in which case we have hit an Allegro CL compiler bug, if I'm correct about
-; this declaration being fine).  The efficiency improvement given by this
-; declaration seems rather trivial, so I'll comment it out and see what
-; happens.
+; The following dynamic-extent declaration looks fine.  There were spurious
+; ill-formed certificate and checksum problems with Allegro CL for a few months
+; (as of Aug. 2009) and I was suspicious that this could be the cause (in which
+; case we have hit an Allegro CL compiler bug, if I'm correct about this
+; declaration being fine).  The time improvement given by this declaration
+; seems rather trivial, but the space improvement can be substantial; so I'll
+; include it.
 
-;           #+cltl2
-;           (declare (dynamic-extent read-object-eof))
+            #+cltl2
+            (declare (dynamic-extent read-object-eof))
 
             (cond ((eq obj read-object-eof)
                    (mv t nil state-state))
@@ -20258,32 +20255,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 #-acl2-loop-only
-(save-def
-(defun-one-output bad-lisp-objectp (x)
-
-; This routine does a root and branch exploration of x and guarantees that x is
-; composed entirely of complex rationals, rationals, 8-bit characters that are
-; "canonical" in the sense that they are the result of applying code-char to
-; their character code, strings of such characters, symbols made from such
-; strings (and "interned" in a package known to ACL2) and conses of the
-; foregoing.
-
-; We return nil or non-nil.  If nil, then x is a legal ACL2 object.  If we
-; return non-nil, then x is a bad object and the answer is a message, msg, such
-; that (fmt "~@0" (list (cons #\0 msg)) ...)  will explain why.
-
-; All of our ACL2 code other than this routine assumes that we are manipulating
-; non-bad objects, except for symbols in the invisible package, e.g. state and
-; the invisible array mark.  We make these restrictions for portability's sake.
-; If a Lisp expression is a theorem on a Symbolics machine we want it to be a
-; theorem on a Sun.  Thus, we can't permit such constants as #\Circle-Plus.  We
-; also assume (and check in chk-suitability-of-this-common-lisp) that all of
-; the characters mentioned above are distinct.
-
-  (cond ((consp x)
-         (or (bad-lisp-objectp (car x))
-             (bad-lisp-objectp (cdr x))))
-        ((integerp x)
+(defun-one-output bad-lisp-atomp (x)
+  (declare (type atom x))
+  (cond ((typep x 'integer)
 
 ; CLTL2 says, p. 39, ``X3J13 voted in January 1989 <76> to specify that the
 ; types of fixnum and bignum do in fact form an exhaustive partition of the
@@ -20337,10 +20311,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; because all Common Lisp integers are "real" integers, hence standard.
 
          nil)
-        ((symbolp x)
+        ((typep x 'symbol)
          (cond
           ((eq x nil) nil) ; seems like useful special case for true lists
-          ((bad-lisp-objectp (symbol-name x)))
+          ((bad-lisp-stringp (symbol-name x)))
           (t (let ((pkg (symbol-package x)))
                (cond
                 ((null pkg)
@@ -20418,9 +20392,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (f-get-global 'system-books-dir
                                                    *the-live-state*))))))))))))
                 (t nil))))))
-        ((stringp x)
+        ((typep x 'string)
          (bad-lisp-stringp x))
-        ((characterp x)
+        ((typep x 'character)
          (cond ((legal-acl2-character-p x) nil)
                (t
 
@@ -20434,11 +20408,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             (cons #\1 (char-code x))
                             (cons #\2 (coerce (list x) 'string)))))))
         ((typep x 'ratio)
-         (or (bad-lisp-objectp (numerator x))
-             (bad-lisp-objectp (denominator x))))
+         (or (bad-lisp-atomp (numerator x))
+             (bad-lisp-atomp (denominator x))))
         ((typep x '(complex rational))
-         (or (bad-lisp-objectp (realpart x))
-             (bad-lisp-objectp (imagpart x))))
+         (or (bad-lisp-atomp (realpart x))
+             (bad-lisp-atomp (imagpart x))))
         (t (cons
             "ACL2 permits only objects constructed from rationals, complex ~
              rationals, legal ACL2 characters, simple strings of these ~
@@ -20446,6 +20420,40 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              the ACL2 packages, and cons trees of such objects.  The object ~
              CLTL displays as ~s0 is thus illegal in ACL2."
             (list (cons #\0 (format nil "~s" x)))))))
+
+#-acl2-loop-only
+(declaim (inline bad-lisp-objectp))
+#-acl2-loop-only
+(defun-one-output bad-lisp-objectp (x)
+
+; This routine does a root and branch exploration of x and guarantees that x is
+; composed entirely of complex rationals, rationals, 8-bit characters that are
+; "canonical" in the sense that they are the result of applying code-char to
+; their character code, strings of such characters, symbols made from such
+; strings (and "interned" in a package known to ACL2) and conses of the
+; foregoing.
+
+; We return nil or non-nil.  If nil, then x is a legal ACL2 object.  If we
+; return non-nil, then x is a bad object and the answer is a message, msg, such
+; that (fmt "~@0" (list (cons #\0 msg)) ...)  will explain why.
+
+; All of our ACL2 code other than this routine assumes that we are manipulating
+; non-bad objects, except for symbols in the invisible package, e.g. state and
+; the invisible array mark.  We make these restrictions for portability's sake.
+; If a Lisp expression is a theorem on a Symbolics machine we want it to be a
+; theorem on a Sun.  Thus, we can't permit such constants as #\Circle-Plus.  We
+; also assume (and check in chk-suitability-of-this-common-lisp) that all of
+; the characters mentioned above are distinct.
+
+  (cond ((typep x 'cons) (bad-lisp-consp x))
+        (t (bad-lisp-atomp x))))
+
+#-acl2-loop-only
+(save-def
+(defun-one-output bad-lisp-consp (x)
+  (declare (type cons x))
+  (or (bad-lisp-objectp (car x))
+      (bad-lisp-objectp (cdr x))))
 )
 
 #-acl2-loop-only

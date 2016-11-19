@@ -407,10 +407,22 @@
             '(value-triple :invisible))
     :check-expansion t))
 
+(defconst *bad-lisp-consp-memoization*
+  '(bad-lisp-consp :forget t))
+
 (defconst *thread-unsafe-builtin-memoizations*
 
 ; This alist associates built-in raw Lisp functions with corresponding
 ; keyword arguments for memoize-fn.  These functions may be unsafe to memoize
 ; when using ACL2(hp).
 
-  '((bad-lisp-objectp :forget t)))
+  (list *bad-lisp-consp-memoization*))
+
+#+acl2-loop-only
+(defun set-bad-lisp-consp-memoize (arg)
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
+  (declare (xargs :guard t)
+           (ignore arg))
+  nil)
