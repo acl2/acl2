@@ -324,7 +324,7 @@ be:</p>
 <p>since it covers exactly the desired range using the simplest possible
 Boolean expressions.</p>
 
-<p>Suppose we choose @('Xbest') to stand for @('x') We can now symbolically
+<p>Suppose we choose @('Xbest') to stand for @('x'). We can now symbolically
 execute the goal formula on that object.</p>
 
 <p>What does this involve?  First, @('(unsigned-byte-p 32 x)') produces the
@@ -490,7 +490,7 @@ convenient function is</p>
 @({(g-int start by n)})
 
 <p>which generates a @(':g-number') form with @('n') bits, using
-indices that start at @('start') and increment by @('n').  This is
+indices that start at @('start') and increment by @('by').  This is
 particularly useful for interleaving the bits of numbers, as we did for the
 @('a-bus') and @('b-bus') bindings above:</p>
 
