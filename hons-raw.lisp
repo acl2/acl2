@@ -2274,17 +2274,19 @@
 ; below is adequate.
 
 (defun hl-slow-alist-warning (name)
-  ;; Name is the name of the function wherein we noticed a problem.
+
+; Formerly, name is the name of the function wherein we noticed a problem.
+; However, for the user's sake we typically print a user-friendly version of
+; the name, such as HONS-GET rather than HL-HSPACE-HONS-GET.
+
   (let ((action (get-slow-alist-action *the-live-state*)))
     (when action
       (format *error-output* "
 *****************************************************************
 Fast alist discipline violated in ~a.
-See :DOC slow-alist-warning.  You can suppress this warning with
-~a.
-****************************************************************~%"
-              name
-              '(set-slow-alist-action nil))
+See :DOC slow-alist-warning to suppress or break on this warning.
+*****************************************************************~%"
+              name)
       (when (eq action :break)
         (format *error-output* "
 To avoid the following break and get only the above warning:~%  ~a~%"
@@ -2470,7 +2472,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
         ;; Bad discipline, val is just nil and hence is unusable, look
         ;; up the key slowly in the alist.
         (progn
-          (hl-slow-alist-warning 'hl-hspace-hons-get)
+          (hl-slow-alist-warning 'hons-get)
           (hons-assoc-equal key alist))))))
 
 (defun hl-hspace-hons-acons (key value alist hs)
@@ -2525,7 +2527,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
         (if (not val)
             ;; Discipline failure, no valid backing alist.
-            (hl-slow-alist-warning 'hl-hspace-hons-acons)
+            (hl-slow-alist-warning 'hons-acons)
           (progn ; see warning above
             ;; We temporarily set the KEY to nil to break the old association
             ;; from ALIST to VAL.  Then, install the new entry into the VAL,
@@ -2602,7 +2604,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; Safety for Fast Alists.
 
         (if (not val)
-            (hl-slow-alist-warning 'hl-hspace-hons-acons)
+            (hl-slow-alist-warning 'hons-acons)
           (progn ; see warning above
             (setf (hl-falslot-key slot) nil)
             (setf (gethash key (the hash-table val)) entry)
@@ -2861,7 +2863,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
       (unless ans-table
         ;; Bad discipline.  ANS is not an atom or fast alist.
-        (hl-slow-alist-warning 'hl-hspace-fast-alist-fork)
+        (hl-slow-alist-warning 'fast-alist-fork)
         (return-from hl-hspace-fast-alist-fork
           (hl-fast-alist-fork-aux-really-slow alist ans honsp hs)))
 
@@ -2970,7 +2972,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
       (if val
           (hash-table-count val)
         (progn
-          (hl-slow-alist-warning 'hl-hspace-fast-alist-len)
+          (hl-slow-alist-warning 'fast-alist-len)
           (let* ((fast-alist (hl-hspace-fast-alist-fork alist nil nil hs))
                  (result     (hl-hspace-fast-alist-len fast-alist hs)))
             (hl-hspace-fast-alist-free fast-alist hs)

@@ -1138,23 +1138,34 @@
                   (remove-byes-from-tag-tree ttree))
                  state))))))))))
 
-(defun add-string-val-pair-to-string-val-alist (key key1 val alist)
+(defun add-string-val-pair-to-string-val-alist-1 (key key1 val alist replace-p)
 
 ; Key is a string (typically a goal name) and key1 is a keyword (presumably a
 ; hint keyword).  Alist associates keys (strings) with keyword alists.
 ; Associate key1 with val in the keyword alist associated with key, unless key1
-; is already bound in that keyword alist in which case just return alist.
+; is already bound in that keyword alist.  In that case, just return alist if
+; replace-p is nil, else make the replacement.
 
   (cond ((null alist) (list (list key key1 val)))
         ((and (stringp (caar alist))
               (string-equal key (caar alist)))
          (if (assoc-keyword key1 (cdar alist))
-             alist
+             (if replace-p
+                 (cons (list* (caar alist) key1 val
+                              (remove-keyword key1 (cdar alist)))
+                       (cdr alist))
+               alist)
            (cons (list* (caar alist) key1 val (cdar alist))
                  (cdr alist))))
         (t (cons (car alist)
-                 (add-string-val-pair-to-string-val-alist
-                  key key1 val (cdr alist))))))
+                 (add-string-val-pair-to-string-val-alist-1
+                  key key1 val (cdr alist) replace-p)))))
+
+(defun add-string-val-pair-to-string-val-alist (key key1 val alist)
+  (add-string-val-pair-to-string-val-alist-1 key key1 val alist nil))
+
+(defun add-string-val-pair-to-string-val-alist! (key key1 val alist)
+  (add-string-val-pair-to-string-val-alist-1 key key1 val alist t))
 
 (defconst *bash-skip-forcing-round-hints*
   '(("[1]Goal" :by nil)
@@ -1184,8 +1195,9 @@
                      ;; only preprocess and simplify are allowed
                      :do-not
                      (list 'quote '(generalize eliminate-destructors
-                                               fertilize eliminate-irrelevance))
-                     (add-string-val-pair-to-string-val-alist
+                                               fertilize
+                                               eliminate-irrelevance))
+                     (add-string-val-pair-to-string-val-alist!
                       "Goal"
                       :do-not-induct
                       'proof-builder
@@ -4192,7 +4204,7 @@
 (define-pc-atomic-macro reduce (&rest hints)
   (if (alistp hints)
       (value (list :prove :hints
-                   (add-string-val-pair-to-string-val-alist
+                   (add-string-val-pair-to-string-val-alist!
                     "Goal"
                     :do-not-induct
                     'proof-builder
