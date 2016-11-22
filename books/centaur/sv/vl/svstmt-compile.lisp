@@ -74,6 +74,11 @@
 
 (fty::deflist svstack :elt-type svex-alist-p)
 
+(defthm svex-fix-nonnil
+  (svex-fix x)
+  :hints(("Goal" :use (RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)
+          :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))
+  :rule-classes :type-prescription)
 
 (define svstack-to-svex-alist ((x svstack-p))
   :returns (x-alist svex-alist-p)
@@ -214,6 +219,12 @@ substitution are left in place."
     (implies (not (member v (svex-alist-vars (svstack-to-svex-alist x))))
              (not (member v (svex-alist-vars (svstack-to-svex-alist (svstack-clean x))))))
     :hints(("Goal" :in-theory (enable svstack-to-svex-alist))))
+
+  (local (defthm consp-of-svex-alist-fix-by-lookup
+           (implies (and (hons-assoc-equal v x)
+                         (svar-p v))
+                    (consp (svex-alist-fix x)))
+           :hints(("Goal" :in-theory (enable svex-alist-fix)))))
 
   (defthm svex-lookup-of-svstack-clean
     (iff (svex-lookup v (svstack-to-svex-alist (svstack-clean x)))
@@ -1293,13 +1304,14 @@ exists there.</p>"
                                    (else-st svex-alist-p)
                                    (st-acc  svex-alist-p))
   ;; No longer makes a fast alist.
-  :measure (len (Svex-alist-fix key-alist))
   :returns (merged-st svex-alist-p)
   :verbosep t
   ;; :prepwork ((local (in-theory (enable svex-alist-fix))))
-  (b* ((key-alist (svex-alist-fix key-alist))
-       ((when (atom key-alist))
+  (b* (((when (atom key-alist))
         (svex-alist-fix st-acc))
+       ((unless (mbt (and (consp (car key-alist))
+                          (svar-p (caar key-alist)))))
+        (svex-alist-merge-branches (cdr key-alist) cond then-st else-st st-acc))
        (key (caar key-alist))
        ((when (svex-fastlookup key st-acc))
         (svex-alist-merge-branches (cdr key-alist) cond then-st else-st st-acc))
@@ -1354,6 +1366,7 @@ exists there.</p>"
                                              4vec-reduction-or
                                              3vec-reduction-or)))))
 
+  (local (in-theory (disable hons-assoc-equal-of-svex-alist-fix)))
 
   (defthm svex-alist-merge-branches-lookup-under-iff
     (iff (svex-lookup k (svex-alist-merge-branches key-alist cond then-st else-st st-acc))
@@ -1367,7 +1380,9 @@ exists there.</p>"
                                                else-st
                                                st-acc)
             :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
-                     (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist)))
+                     (svex-alist-fix key-alist)
+                     ;; (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist))
+                     )
             :do-not-induct t)))
 
   (defthm svex-alist-merge-branches-when-cond-true-lookup
@@ -1393,7 +1408,7 @@ exists there.</p>"
                                                else-st
                                                st-acc)
             :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
-                     (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist))))
+                     (svex-alist-fix key-alist)))
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-apply)))))
 
@@ -1420,7 +1435,7 @@ exists there.</p>"
                                                else-st
                                                st-acc)
             :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
-                     (hons-assoc-equal (svar-fix k) (svex-alist-fix key-alist)))
+                     (svex-alist-fix key-alist))
             :do-not-induct t)
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-apply)))))
@@ -1480,7 +1495,21 @@ exists there.</p>"
                                       svex-alist-keys)
             :induct (svex-alist-merge-branches
                      key-alist cond then-st else-st st-acc)
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  (Deffixequiv svex-alist-merge-branches :args (key-alist)
+    :hints (("goal" :in-theory (e/d (svex-lookup)
+                                   ((:d svex-alist-merge-branches)))
+            :induct (svex-alist-merge-branches key-alist
+                                               cond
+                                               then-st
+                                               else-st
+                                               st-acc)
+            :expand ((svex-alist-merge-branches key-alist cond then-st else-st st-acc)
+                     (svex-alist-merge-branches nil cond then-st else-st st-acc)
+                     (:free (a b) (svex-alist-merge-branches (cons a b) cond then-st else-st st-acc))
+                     (svex-alist-fix key-alist)))))
+  ) ;; for fixequiv hook
 
 
 (define svstack-merge-branches ((cond svex-p)

@@ -3679,6 +3679,15 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     :hints(("Goal" :in-theory (enable moddb-norm)))
     :rule-classes :linear))
 
+(define moddb-modidx-get-name ((idx natp) moddb)
+  :guard (and (moddb-basics-ok moddb)
+              (< idx (moddb->nmods moddb)))
+  :guard-hints (("goal" :in-theory (enable moddb-basics-ok)))
+  (b* (((stobj-get name)
+        ((elab-mod (moddb->modsi idx moddb)))
+        (elab-mod->name elab-mod)))
+    name))
+
 (defsection moddb-add-module
   (define moddb-add-module1 (elab-mod moddb)
     :returns (mv elab-mod1 moddb1)

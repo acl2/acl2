@@ -430,7 +430,8 @@ address with empty index and scope qualifier 0.</p>"
                                     (Equal (len keys) (len vals)))
                                (svex-alist-p (pairlis$ keys vals)))))
              (local (defthm svex-alist-vars-of-pairlis$
-                      (implies (equal (len keys) (len vals))
+                      (implies (and (equal (len keys) (len vals))
+                                    (svarlist-p keys))
                                (set-equiv (svex-alist-vars (pairlis$ keys vals))
                                           (svexlist-vars vals)))
                       :hints(("Goal" :in-theory (enable svex-alist-vars
@@ -443,7 +444,7 @@ address with empty index and scope qualifier 0.</p>"
                                                         svex-alist-vals)))))
              (local (defthm svex-lookup-of-pairlis$
                       (iff (svex-lookup v (pairlis$ x y))
-                           (member (svar-fix v) (svarlist-fix x)))
+                           (member (svar-fix v) x))
                       :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix
                                                         pairlis$))))))
   :returns (new-x svex-alist-p)

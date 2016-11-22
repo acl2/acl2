@@ -78,7 +78,7 @@ values) to its variables.")
     (implies (<= (len x) (nfix n))
              (equal (4veclist-nth-safe n x) (4vec-x)))))
 
-(defalist svex-env
+(fty::defmap svex-env
   :key-type svar
   :val-type 4vec
   :true-listp t
@@ -607,9 +607,8 @@ svex-eval).</p>"
   :returns (xx svex-env-p :hints(("Goal" :in-theory (enable svex-env-p))))
   (if (atom x)
       nil
-    (if (mbt (consp (car x)))
-        (cons (cons (mbe :logic (svar-fix (caar x))
-                         :exec (caar x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (cons (cons (caar x)
                     (svex-eval (cdar x) env))
               (svex-alist-eval-aux (cdr x) env))
       (svex-alist-eval-aux (cdr x) env))))
@@ -630,9 +629,8 @@ svex-eval).</p>"
   (mbe :logic
        (if (atom x)
            nil
-         (if (mbt (consp (car x)))
-             (cons (cons (mbe :logic (svar-fix (caar x))
-                              :exec (caar x))
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (cons (cons (caar x)
                          (svex-eval (cdar x) env))
                    (svex-alist-eval (cdr x) env))
            (svex-alist-eval (cdr x) env)))
@@ -691,11 +689,18 @@ svex-eval).</p>"
   :returns (res (equal res (svex-alist-eval x env))
                 :hints(("Goal" :in-theory (enable svex-alist-eval pairlis$ svex-alist-keys
                                                   svex-alist-vals svexlist-eval))))
-  (pairlis$ (svex-alist-keys x)
-            (svexlist-eval-for-symbolic
-             (hons-copy (svex-alist-vals x))
-             env
-             symbolic-params)))
+  :verify-guards nil
+  (mbe :logic
+       (pairlis$ (svex-alist-keys x)
+                 (svexlist-eval-for-symbolic
+                  (hons-copy (svex-alist-vals x))
+                  env
+                  symbolic-params))
+       :exec (svex-alist-eval x env))
+  ///
+  (verify-guards svex-alist-eval-for-symbolic
+    :hints(("Goal" :in-theory (enable svex-alist-eval pairlis$ svex-alist-keys
+                                      svex-alist-vals svexlist-eval)))))
 
 
 

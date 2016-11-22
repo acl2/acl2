@@ -1642,12 +1642,13 @@ the way.</li>
 
   (local (defthm svex-alist-vars-of-single
            #!sv (equal (svex-alist-vars (list (cons a b)))
-                       (svex-vars b))
+                       (and (svar-p a)
+                            (svex-vars b)))
            :hints(("Goal" :in-theory (enable sv::svex-alist-vars)))))
 
   (local (defthm svex-alist-keys-of-single
            #!sv (equal (svex-alist-keys (list (cons a b)))
-                       (list (svar-fix a)))
+                       (and (svar-p a) (list a)))
            :hints(("Goal" :in-theory (enable sv::svex-alist-keys)))))
 
   (local (defthm member-single

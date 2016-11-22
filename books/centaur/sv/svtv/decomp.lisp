@@ -178,7 +178,7 @@ trigger on any of the following:</p>
 
 
 
-(defalist svdecomp-symenv :key-type svar :val-type pseudo-term
+(fty::defmap svdecomp-symenv :key-type svar :val-type pseudo-term
   :true-listp t)
 
 (defun svdecomp-equal (a b)
@@ -236,17 +236,17 @@ trigger on any of the following:</p>
        (if (atom x)
            nil
          (if (and (consp (car x))
-                  (equal (svar-fix k)
-                         (svar-fix (caar x))))
-             (cons (svar-fix (caar x)) (cdar x))
+                  (svar-p (caar x))
+                  (equal (svar-fix k) (caar x)))
+             (car x)
            (svar-lookup k (cdr x))))
        :exec (hons-get k x))
   ///
   (defthm svar-lookup-of-cons
     (equal (svar-lookup k (cons a b))
-           (if (and (consp a)
+           (if (and (consp a) (svar-p (car a))
                     (svar-equiv (car a) k))
-               (cons (svar-fix k) (cdr a))
+               a
              (svar-lookup k b))))
 
   (defthm svar-lookup-of-atom
@@ -275,8 +275,8 @@ trigger on any of the following:</p>
   :returns (res svar-alist-p)
   (if (atom x)
       nil
-    (if (mbt (consp (car x)))
-        (cons (cons (svar-fix (caar x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (cons (cons (caar x)
                     (svdecomp-ev (cdar x) env))
               (svdecomp-ev-symenv (cdr x) env))
       (svdecomp-ev-symenv (cdr x) env)))
@@ -294,8 +294,8 @@ trigger on any of the following:</p>
   :returns (res svdecomp-symenv-p)
   (if (atom x)
       nil
-    (if (consp (car x))
-        (cons (cons (svar-fix (caar x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (cons (cons (caar x)
                     (list 'quote (4vec-fix (cdar x))))
               (map-alist-const-keys-to-val-terms (cdr x)))
       (map-alist-const-keys-to-val-terms (cdr x))))
@@ -337,14 +337,14 @@ trigger on any of the following:</p>
   :returns (al (and (svar-alist-p al)
                     (implies (pseudo-termp env) (svdecomp-symenv-p al))))
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x))))
+       ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
         (svex-alist-evaluation-to-symenv (cdr x) env))
        ((cons var svex) (car x)))
     ;; Performance note: this does some perhaps unnecessary consing. To reduce
     ;; this we could have an svdecomp-symenv instead map variables to a sum
     ;; type that is either just any old term or specifically an svex
     ;; evaluation, but my guess is that's not worth the refactoring effort.
-    (cons (cons (svar-fix var)
+    (cons (cons var
                 `(svex-eval (quote ,(svex-fix svex)) ,env))
           (svex-alist-evaluation-to-symenv (cdr x) env)))
   ///
@@ -545,9 +545,9 @@ trigger on any of the following:</p>
   :prepwork ((local (in-theory (enable svex-alist-fix))))
   :hooks ((:fix :args (x)))
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x))))
+       ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
         (envmap-entry-to-term-alist (cdr x) env)))
-    (cons (cons (svar-fix (caar x)) `(svex-eval (quote ,(svex-fix (cdar x))) ,env))
+    (cons (cons (caar x) `(svex-eval (quote ,(svex-fix (cdar x))) ,env))
           (envmap-entry-to-term-alist (cdr x) env)))
   ///
   (defthm eval-of-envmap-entry-to-term-alist
@@ -600,8 +600,8 @@ trigger on any of the following:</p>
   :returns (vars svarlist-p)
   (if (atom x)
       nil
-    (if (consp (car x))
-        (cons (svar-fix (caar x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (cons (caar x)
               (svar-alist-keys (cdr x)))
       (svar-alist-keys (cdr x))))
   ///
@@ -1050,12 +1050,12 @@ trigger on any of the following:</p>
                                     (svdecomp-symenv-p x))))
     (b* (((when (atom x)) (mv nil (svar-alist-fix base-env)
                               (svex-alist-alist-fix envmap)))
-         ((unless (mbt (consp (car x))))
+         ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
           (alist-collect-compositions-aux (cdr x) base-env envmap))
          ((acl2::when-match (cdar x) (svex-eval (quote (:? svex)) (:? env)))
           (b* (((unless (svex-p svex))
                 (mv (msg "Bad svex: ~x0~%" svex) nil nil))
-               (new-al (cons (cons (svar-fix (caar x)) svex)
+               (new-al (cons (cons (caar x) svex)
                              (svex-alist-fix (cdr (hons-get env envmap))))))
             (alist-collect-compositions-aux
              (cdr x) base-env (hons-acons env new-al envmap))))
@@ -1066,12 +1066,12 @@ trigger on any of the following:</p>
                ;; under the empty environment.
                (svex (svex-quote val))
                (env ''nil)
-               (new-al (cons (cons (svar-fix (caar x)) svex)
+               (new-al (cons (cons (caar x) svex)
                              (svex-alist-fix (cdr (hons-get env envmap))))))
             (alist-collect-compositions-aux
              (cdr x) base-env (hons-acons env new-al envmap)))))
       (alist-collect-compositions-aux
-       (cdr x) (cons (mbe :logic (cons (svar-fix (caar x)) (cdar x))
+       (cdr x) (cons (mbe :logic (cons (caar x) (cdar x))
                           :exec (car x))
                      base-env) envmap))
          ;; ((unless (svar-p (caar x)))
@@ -1503,9 +1503,8 @@ trigger on any of the following:</p>
                                   (svex-env-compat-union (svex-env-fix x) y)
                                   (svex-env-compat-union x (svex-env-fix y)))))))
   (b* (((when (atom x)) (mv nil (svex-env-fix y)))
-       ((unless (mbt (consp (car x)))) (svex-env-compat-union (cdr x) y))
+       ((unless (mbt (and (consp (car x)) (svar-p (caar x))))) (svex-env-compat-union (cdr x) y))
        ((cons var val) (car x))
-       (var (svar-fix var))
        (val (4vec-fix val))
        (look (svar-lookup var (svex-env-fix y)))
        ((unless (or (not look)
@@ -1651,10 +1650,9 @@ trigger on any of the following:</p>
   :prepwork ((local (in-theory (enable svar-alist-fix))))
   :returns (mv err (union svdecomp-symenv-p :hyp :guard))
   (b* (((when (atom x)) (mv nil (svar-alist-fix y)))
-       ((unless (mbt (consp (car x)))) (svdecomp-symenv-compat-union (cdr x) y))
+       ((unless (mbt (and (consp (car x)) (svar-p (caar x))))) (svdecomp-symenv-compat-union (cdr x) y))
        ((cons var val) (car x))
-       (var (svar-fix var))
-       (look (svar-lookup var y))
+       (look (svar-lookup var (svar-alist-fix y)))
        ((unless (or (not look)
                     (equal (cdr look) val)))
         (mv (msg "Mismatch: key ~x0, val ~x1 versus ~x2~%"  var val (cdr look)) nil)))
@@ -1722,6 +1720,10 @@ trigger on any of the following:</p>
                     (case-split (not (svar-lookup k x))))
                (equal (svar-lookup k symunion)
                       (svar-lookup k y)))))
+
+  (local (defthm list-car-when-cdr-is-nil
+           (implies (and (consp x) (not (Cdr x)))
+                    (equal (list (car x)) x))))
 
 
   ;; (defthm eval-lookup-in-symenv-compat-union
@@ -1986,7 +1988,7 @@ trigger on any of the following:</p>
   :returns (xx pseudo-termp :hyp :guard)
   (if (atom x)
       ''nil
-    (if (mbt (consp (car x)))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
         `(cons (cons ',(svar-fix (caar x)) ,(cdar x))
                ,(svdecomp-symenv->term (cdr x)))
       (svdecomp-symenv->term (cdr x))))
@@ -2137,9 +2139,10 @@ trigger on any of the following:</p>
     :rule-classes ((:meta :trigger-fns (svex-eval)))))
 
 (local (defthm svex-alist-eval-of-pairlis$
-         (implies (equal (len keys) (len vals))
+         (implies (and (equal (len keys) (len vals))
+                       (svarlist-p keys))
                   (equal (svex-alist-eval (pairlis$ keys vals) env)
-                         (pairlis$ (svarlist-fix keys) (svexlist-eval vals env))))
+                         (pairlis$ keys (svexlist-eval vals env))))
          :hints(("Goal" :in-theory (enable svex-alist-eval pairlis$
                                            svexlist-eval
                                            svarlist-fix)))))
@@ -2679,7 +2682,7 @@ trigger on any of the following:</p>
       (if stable-under-simplificationp
           (acl2::gl-hint :hyp ',hyp
                          :concl (acl2::disjoin clause)
-                         :bindings ,g-bindings)
+                         :g-bindings ,g-bindings)
         (value nil)))
      :in-theory (acl2::e/d**
                  (svtv-run

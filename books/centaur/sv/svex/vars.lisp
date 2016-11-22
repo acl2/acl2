@@ -202,7 +202,7 @@ the expressions that the keys are bound to.</p>"
   :verify-guards nil
   (if (atom x)
       nil
-    (union (and (consp (car x))
+    (union (and (mbt (and (consp (car x)) (svar-p (caar x))))
                 (svex-vars (cdar x)))
            (svex-alist-vars (cdr x))))
   ///

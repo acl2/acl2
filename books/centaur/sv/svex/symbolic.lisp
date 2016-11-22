@@ -138,7 +138,12 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
         nil
       (cons (cons (svar-fix (caar x))
                   (a4vec-eval (cdar x) env))
-            (svex-a4vec-env-eval (cdr x) env)))))
+            (svex-a4vec-env-eval (cdr x) env))))
+  ///
+  (defret alist-keys-of-svex-a4vec-env-eval
+    (equal (alist-keys xx)
+           (alist-keys (svex-a4vec-env-fix x)))
+    :hints(("Goal" :in-theory (enable svex-a4vec-env-fix alist-keys)))))
 
 
 
@@ -2630,6 +2635,38 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                     acc)))
   ///
 
+  (local (defun-nx svex-varmasks->a4env-rec-accumulator-elim-ind
+           (vars masks boolmasks nextvar acc)
+           (b* ((acc (svex-a4vec-env-fix acc))
+                ((when (atom vars))
+                 (list nil acc (lnfix nextvar)))
+                (mask (svex-mask-lookup (svex-var (car vars)) masks))
+                ((when (< mask 0))
+                 (list (msg "Negative mask: ~x0~%" (svar-fix (car vars))) acc (lnfix nextvar)))
+                (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
+                (a4vec (4vmask-to-a4vec mask boolmask nextvar))
+                (nextvar (+ (lnfix nextvar)
+                            (4vmask-to-a4vec-varcount mask boolmask))))
+             (list 
+              (svex-varmasks->a4env-rec-accumulator-elim-ind
+               (cdr vars) masks boolmasks nextvar (cons (cons (svar-fix (car vars)) a4vec)
+                                                        acc))
+              (svex-varmasks->a4env-rec-accumulator-elim-ind
+               (cdr vars) masks boolmasks nextvar (cons (cons (svar-fix (car vars)) a4vec) nil))))))
+
+  (defthmd svex-varmasks->a4env-rec-accumulator-elim
+    (implies (syntaxp (not (equal acc ''nil)))
+             (b* (((mv err1 a4env1 nextvar1)
+                   (svex-varmasks->a4env-rec vars masks boolmasks nextvar acc))
+                  ((mv err2 a4env2 nextvar2)
+                   (svex-varmasks->a4env-rec vars masks boolmasks nextvar nil)))
+               (and (equal err1 err2)
+                    (equal a4env1 (append a4env2 (svex-a4vec-env-fix acc)))
+                    (equal nextvar1 nextvar2))))
+    :hints (("goal" :induct (svex-varmasks->a4env-rec-accumulator-elim-ind
+                             vars masks boolmasks nextvar acc)
+             :expand ((:free (acc) (svex-varmasks->a4env-rec vars masks boolmasks nextvar acc))))))
+
   (defthm member-vars-of-svex-varmasks->a4env-rec
     (iff (member v (nat-bool-a4env-vars
                     (mv-nth 1 (svex-varmasks->a4env-rec vars masks boolmasks nextvar acc))))
@@ -2652,7 +2689,20 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                       (nfix bound)))
              (nat-bool-a4env-upper-boundp bound (mv-nth 1 (svex-varmasks->a4env-rec vars masks boolmasks nextvar acc))))
     :hints(("Goal" :in-theory (enable nat-bool-a4env-upper-boundp
-                                      svex-maskbits-for-vars)))))
+                                      svex-maskbits-for-vars))))
+
+  (defret key-exists-in-svex-varmasks->a4env-rec
+    (implies (not err)
+             (iff (hons-assoc-equal v a4env)
+                  (or (member v (svarlist-fix vars))
+                      (hons-assoc-equal v (svex-a4vec-env-fix acc))))))
+
+  (defret alist-keys-of-svex-varmasks->a4env-rec
+    (implies (not err)
+             (equal (alist-keys a4env)
+                    (append (rev (svarlist-fix vars))
+                            (alist-keys (svex-a4vec-env-fix acc)))))
+    :hints(("Goal" :in-theory (enable svex-maskbits-ok)))))
 
 (defsection svex-envs-masks-partly-equiv
 
@@ -2671,6 +2721,110 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (4vec-mask mask2 val2))
     :templates (v)
     :instance-rulename svex-envs-masks-partly-equiv-instancing))
+
+
+(defsection svex-envs-mask-equiv-on-vars
+
+  (defquant svex-envs-mask-equiv-on-vars (vars masks env1 env2)
+    (forall v
+            (implies (member (svar-fix v) (svarlist-fix vars))
+                     (equal (4vec-mask (svex-mask-lookup (svex-var v) masks)
+                                       (svex-env-lookup v env1))
+                            (4vec-mask (svex-mask-lookup (svex-var v) masks)
+                                       (svex-env-lookup v env2)))))
+    :rewrite :direct)
+
+  (defexample svex-envs-mask-equiv-on-vars-example
+    :pattern (equal (4vec-mask (svex-mask-lookup (svex-var v) masks)
+                               val1)
+                    (4vec-mask mask2 val2))
+    :templates (v)
+    :instance-rulename svex-envs-mask-equiv-on-vars-instancing)
+  
+  (local (defexample svex-envs-mask-equiv-on-vars-mask-look-example
+           :pattern (svex-mask-lookup (svex-var var) masks)
+           :templates (var)
+           :instance-rulename svex-envs-mask-equiv-on-vars-instancing))
+
+  (local (defexample svex-envs-mask-equiv-on-vars-env-look-example
+           :pattern (svex-env-lookup var env)
+           :templates (var)
+           :instance-rulename svex-envs-mask-equiv-on-vars-instancing))
+
+  (local (defexample svex-argmasks-okp-example
+           :pattern (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env1)))
+                           (4vec-mask mask (svex-apply fn (svexlist-eval args env2))))
+           :templates (env1 (svexlist-eval args env2))
+           :instance-rulename svex-argmasks-okp-instancing))
+
+  (local (acl2::def-witness-ruleset svex-mask-alist-reasoning
+           '(svex-mask-alist-complete-witnessing
+             svex-mask-alist-complete-instancing
+             svex-mask-alist-complete-example
+             svex-mask-alist-partly-complete-witnessing
+             svex-mask-alist-partly-complete-instancing
+             svex-mask-alist-partly-complete-example)))
+
+  (local (acl2::def-witness-ruleset svex-env-reasoning
+           '(svex-envs-mask-equiv-on-vars-instancing
+             svex-envs-mask-equiv-on-vars-witnessing
+             svex-envs-mask-equiv-on-vars-mask-look-example
+             svex-envs-mask-equiv-on-vars-env-look-example
+             svex-mask-alist-reasoning
+             SVEX-ARGMASKS-OKP-WITNESSING
+             SVEX-ARGMASKS-OKP-INSTANCING
+             SVEX-ARGMASKS-OKP-EXAMPLE
+             )))
+
+
+  (defthm-svex-eval-flag
+    (defthm svex-eval-of-mask-equiv-on-vars-envs
+      (implies (and (svex-mask-alist-complete masks)
+                    (svex-envs-mask-equiv-on-vars vars masks env1 env2)
+                    (subsetp-equal (intersection-equal (svex-vars x)
+                                                       (union-equal (alist-keys (svex-env-fix env1))
+                                                                    (alist-keys (svex-env-fix env2))))
+                                   (svarlist-fix vars)))
+               (equal (equal (4vec-mask (svex-mask-lookup x masks)
+                                        (svex-eval x env1))
+                             (4vec-mask (svex-mask-lookup x masks)
+                                        (svex-eval x env2)))
+                      t))
+      :hints ('(:expand ((:free (env) (svex-eval x env))
+                         (svex-vars x))
+                :do-not-induct t)
+              (witness :ruleset svex-env-reasoning)
+              (witness :ruleset svex-env-reasoning)
+              (set-reasoning)
+              (and stable-under-simplificationp
+                   '(:in-theory (enable svex-env-lookup)))
+              ;; (and stable-under-simplificationp
+              ;;      '(:use ((:instance svex-argmasks-okp-necc
+              ;;               (mask (svex-mask-lookup x masks))
+              ;;               (argmasks (svex-argmasks-lookup
+              ;;                          (svex-call->args x) masks))
+              ;;               (env env1)
+              ;;               (vals (svexlist-eval (svex-call->args x) env2))))))
+              )
+      :flag expr)
+    (defthm svexlist-eval-of-mask-equiv-on-vars-envs
+      (implies (and (svex-mask-alist-complete masks)
+                    (svex-envs-mask-equiv-on-vars vars masks env1 env2)
+                    (subsetp-equal (intersection-equal (svexlist-vars x)
+                                                       (union-equal (alist-keys (svex-env-fix env1))
+                                                                    (alist-keys (svex-env-fix env2))))
+                                   (svarlist-fix vars)))
+               (equal (equal (4veclist-mask (svex-argmasks-lookup x masks)
+                                            (svexlist-eval x env1))
+                             (4veclist-mask (svex-argmasks-lookup x masks)
+                                            (svexlist-eval x env2)))
+                      t))
+      :hints ('(:expand ((:free (env) (svexlist-eval x env))
+                         (svexlist-vars x)
+                         (svex-argmasks-lookup x masks))))
+      :flag list))
+
+  )
 
 (local (defthm hons-assoc-equal-of-append
          (equal (hons-assoc-equal k (append a b))
@@ -2758,100 +2912,25 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
              (equal (svex-env-lookup-nofix x env)
                     (svex-env-lookup x env)))
     :hints(("Goal" :in-theory (enable svex-env-lookup
-                                      svex-env-p)))))
+                                      svex-env-p))))
+
+  ;; (local (defthm lookup-in-svex-env-fix-when-svar-p
+  ;;          (implies (and (svar-p x)
+  ;;                        (not (cdr (hons-assoc-equal x env))))
+  ;;                   (4vec-equiv (cdr (hons-assoc-equal x (svex-env-fix env)))
+  ;;                               (4vec-x)))
+  ;;          :hints(("Goal" :in-theory (enable svex-env-fix)))))
+
+  (defthm svex-env-lookup-nofix-when-right-types-weak
+    (implies (svar-p x)
+             (4vec-equiv (svex-env-lookup-nofix x env)
+                         (svex-env-lookup x env)))
+    :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix)))))
 
 
 
 
-(defsection svex-envs-mask-equiv
-  ;; this is only used in symbolic.lisp so could be moved there
-  (defquant svex-envs-mask-equiv (masks env1 env2)
-    (forall var
-            (equal (equal (4vec-mask (svex-mask-lookup (svex-var var) masks)
-                                     (svex-env-lookup var env1))
-                          (4vec-mask (svex-mask-lookup (svex-var var) masks)
-                                     (svex-env-lookup var env2)))
-                   t)))
 
-  (defexample svex-envs-mask-equiv-mask-look-example
-    :pattern (svex-mask-lookup (svex-var var) masks)
-    :templates (var)
-    :instance-rulename svex-envs-mask-equiv-instancing)
-
-  (defexample svex-envs-mask-equiv-env-look-example
-    :pattern (svex-env-lookup var env)
-    :templates (var)
-    :instance-rulename svex-envs-mask-equiv-instancing)
-
-  (local (acl2::def-witness-ruleset svex-envs-mask-equiv-reasoning
-           '(svex-envs-mask-equiv-instancing
-             svex-envs-mask-equiv-witnessing
-             svex-envs-mask-equiv-instancing
-             svex-envs-mask-equiv-env-look-example
-             svex-envs-mask-equiv-mask-look-example)))
-
-  (deffixequiv svex-envs-mask-equiv
-    :args ((masks svex-mask-alist-p)
-           (env1 svex-env-p)
-           (env2 svex-env-p))
-    :hints (("goal" :cases ((svex-envs-mask-equiv masks env1 env2)))
-            (witness :ruleset svex-envs-mask-equiv-reasoning)))
-
-  (local (defexample svex-argmasks-okp-example
-           :pattern (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env1)))
-                           (4vec-mask mask (svex-apply fn (svexlist-eval args env2))))
-           :templates (env1 (svexlist-eval args env2))
-           :instance-rulename svex-argmasks-okp-instancing))
-
-  (local (acl2::def-witness-ruleset svex-mask-alist-reasoning
-           '(svex-mask-alist-complete-witnessing
-             svex-mask-alist-complete-instancing
-             svex-mask-alist-complete-example
-             svex-mask-alist-partly-complete-witnessing
-             svex-mask-alist-partly-complete-instancing
-             svex-mask-alist-partly-complete-example)))
-
-  (local (acl2::def-witness-ruleset svex-env-reasoning
-           '(svex-envs-mask-equiv-reasoning
-             svex-mask-alist-reasoning
-             SVEX-ARGMASKS-OKP-WITNESSING
-             SVEX-ARGMASKS-OKP-INSTANCING
-             SVEX-ARGMASKS-OKP-EXAMPLE
-             )))
-
-  (defthm-svex-eval-flag
-    (defthm svex-eval-of-mask-equiv-envs
-      (implies (and (svex-mask-alist-complete masks)
-                    (svex-envs-mask-equiv masks env1 env2))
-               (equal (equal (4vec-mask (svex-mask-lookup x masks)
-                                        (svex-eval x env1))
-                             (4vec-mask (svex-mask-lookup x masks)
-                                        (svex-eval x env2)))
-                      t))
-      :hints ('(:expand ((:free (env) (svex-eval x env)))
-                :do-not-induct t)
-              (witness :ruleset svex-env-reasoning)
-              (witness :ruleset svex-env-reasoning)
-              ;; (and stable-under-simplificationp
-              ;;      '(:use ((:instance svex-argmasks-okp-necc
-              ;;               (mask (svex-mask-lookup x masks))
-              ;;               (argmasks (svex-argmasks-lookup
-              ;;                          (svex-call->args x) masks))
-              ;;               (env env1)
-              ;;               (vals (svexlist-eval (svex-call->args x) env2))))))
-              )
-      :flag expr)
-    (defthm svexlist-eval-of-mask-equiv-envs
-      (implies (and (svex-mask-alist-complete masks)
-                    (svex-envs-mask-equiv masks env1 env2))
-               (equal (equal (4veclist-mask (svex-argmasks-lookup x masks)
-                                            (svexlist-eval x env1))
-                             (4veclist-mask (svex-argmasks-lookup x masks)
-                                            (svexlist-eval x env2)))
-                      t))
-      :hints ('(:expand ((:free (env) (svexlist-eval x env))
-                         (svex-argmasks-lookup x masks))))
-      :flag list)))
 
 
 (define svex-mask-alist-extract-vars ((x svex-mask-alist-p))
@@ -2888,7 +2967,13 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
          (svex-maskbits-ok vars x))
     :hints(("Goal" :in-theory (enable svex-maskbits-ok)
             :induct (svex-maskbits-ok vars x)
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  (defret svex-maskbits-for-vars-of-svex-mask-alist-extract-vars
+    (equal (svex-maskbits-for-vars vars new-x boolmasks)
+           (svex-maskbits-for-vars vars x boolmasks))
+    :hints(("Goal" :in-theory (e/d (svex-maskbits-for-vars)
+                                   (svex-mask-alist-extract-vars))))))
 
 
 
@@ -2919,7 +3004,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
         (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
             acc (lnfix nextvar)))
        (boolmask (svar-boolmasks-lookup-nofix (car vars) boolmasks))
-       (4vec (svex-env-lookup-nofix (svar-fix (car vars)) env))
+       (4vec (4vec-fix (svex-env-lookup-nofix (svar-fix (car vars)) env)))
        (env-part
         (4vmask-to-a4vec-env mask boolmask 4vec nextvar))
        (nextvar (+ (lnfix nextvar)
@@ -2938,6 +3023,41 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                            (<= (nfix nextvar) v)
                            (< v (+ (nfix nextvar) (svex-maskbits-for-vars vars masks boolmasks)))))))
     :hints(("Goal" :in-theory (enable svex-maskbits-for-vars))))
+
+  (local (defun svex-varmasks/env->aig-env-accumulator-elim-ind
+           (vars masks boolmasks env nextvar acc)
+           (b* (((when (atom vars))
+                 (list nil acc (lnfix nextvar)))
+                (mask (svex-mask-lookup-nofix (svex-var (car vars)) masks))
+                ((when (< mask 0))
+                 (list (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
+                       acc (lnfix nextvar)))
+                (boolmask (svar-boolmasks-lookup-nofix (car vars) boolmasks))
+                (4vec (svex-env-lookup-nofix (svar-fix (car vars)) env))
+                (env-part
+                 (4vmask-to-a4vec-env mask boolmask 4vec nextvar))
+                (nextvar (+ (lnfix nextvar)
+                            (4vmask-to-a4vec-varcount mask boolmask))))
+             (list (svex-varmasks/env->aig-env-accumulator-elim-ind
+                    (cdr vars) masks boolmasks env nextvar (append env-part acc))
+                   (svex-varmasks/env->aig-env-accumulator-elim-ind
+                    (cdr vars) masks boolmasks env nextvar env-part)))))
+           
+  (local (defthm hide-not
+           (equal (hide (not x)) (not (hide x)))
+           :hints (("goal" :expand ((:free (x) (hide x)))))))
+
+  (defthm svex-varmasks/env->aig-env-accumulator-elim
+    (implies (syntaxp (not (equal acc ''nil)))
+             (equal (mv-nth 1 (svex-varmasks/env->aig-env-rec
+                               vars masks boolmasks env nextvar acc))
+                    (append (mv-nth 1 (svex-varmasks/env->aig-env-rec
+                                       vars masks boolmasks env nextvar nil))
+                            acc)))
+    :hints (("goal" :induct (svex-varmasks/env->aig-env-accumulator-elim-ind
+                             vars masks boolmasks env nextvar acc)
+             :expand ((:free (acc) (svex-varmasks/env->aig-env-rec
+                                       vars masks boolmasks env nextvar acc))))))
 
   (local
    (defun svex-varmasks->a4env-rec-induct (vars masks boolmasks nextvar a4acc goalenv envacc)
@@ -2982,6 +3102,56 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                               (alist-keys (4vmask-to-a4vec-env mask boolmask val nextvar)))))
     :hints ((acl2::set-reasoning)))
 
+  (local (defthm 4vmask-to-a4vec-vars-not-intersect-svex-varmsks/env->aig-env-rec-keys
+           (implies (and (svex-mask-alist-p masks)
+                         (svar-boolmasks-p boolmasks))
+                    (NOT
+                     (INTERSECTP-EQUAL
+                      (NAT-BOOL-A4VEC-VARS
+                       (4VMASK-TO-A4VEC mask
+                                        boolmask
+                                        NEXTVAR))
+                      (ALIST-KEYS
+                       (MV-NTH
+                        1
+                        (SVEX-VARMASKS/ENV->AIG-ENV-REC
+                         vars masks BOOLMASKS GOALENV
+                         (+ (NFIX NEXTVAR)
+                            (4VMASK-TO-A4VEC-VARCOUNT mask boolmask))
+                         NIL))))))
+           :hints ((set-reasoning))))
+
+  (local (defthm not-member-a4vec-vars-lookup-when-not-member-a4env-vars
+           (implies (not (member v (nat-bool-a4env-vars a4env)))
+                    (not (member v (nat-bool-a4vec-vars (cdr (hons-assoc-equal v0 a4env))))))
+           :hints(("Goal" :in-theory (enable nat-bool-a4env-vars)))))
+
+  (local (defthm 4vmask-to-a4vec-vars-subset-svex-varmsks/env->aig-env-rec-keys-2
+           (implies (and (svex-mask-alist-p masks)
+                         (svar-boolmasks-p boolmasks))
+                    (SUBSETP-EQUAL
+                     (NAT-BOOL-A4VEC-VARS
+                      (CDR
+                       (HONS-ASSOC-EQUAL
+                        v0
+                        (MV-NTH
+                         1
+                         (SVEX-VARMASKS->A4ENV-REC
+                          vars
+                          MASKS BOOLMASKS
+                          nextvar
+                          NIL)))))
+                     (ALIST-KEYS
+                      (MV-NTH
+                       1
+                       (SVEX-VARMASKS/ENV->AIG-ENV-REC
+                        vars
+                        (SVEX-MASK-ALIST-EXTRACT-VARS MASKS)
+                        BOOLMASKS GOALENV
+                        nextvar
+                        NIL)))))
+           :hints ((set-reasoning))))
+
   (acl2::defquant svex-env-boolmasks-ok (env boolmasks)
     (forall v
             (4vec-boolmaskp (svex-env-lookup v env)
@@ -2990,18 +3160,23 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
   (local (defthm svex-env-lookup-of-cons
            (equal (svex-env-lookup k (cons (cons k0 v0) rest))
-                  (if (equal (svar-fix k) (svar-fix k0))
+                  (if (and (svar-p k0) (equal (svar-fix k) k0))
                       (4vec-fix v0)
                     (svex-env-lookup k rest)))
            :hints(("Goal" :in-theory (enable svex-env-lookup
                                              svex-env-fix)))))
 
-  (local (in-theory (enable svex-env-boolmasks-ok-necc)))
+  (local (in-theory (enable svex-env-boolmasks-ok-necc
+                            svex-varmasks->a4env-rec-accumulator-elim)))
 
   (defthm eval-svex-varmasks->a4env-rec-with-env
     (b* (((mv err a4env ?nextvar1)
+          ;; Assigns AIG variable numbers to each SVEX var. Ignores goalenv (does
+          ;; not need to know anything about the values of the svex vars to do
+          ;; this, just their caremasks/boolmasks).
           (svex-varmasks->a4env-rec vars masks boolmasks nextvar a4acc))
          ((mv ?err1 env ?nextvar1)
+          ;; Binds AIG variable numbers to (symbolic) bits extracted from the goalenv.
           (svex-varmasks/env->aig-env-rec
            vars (svex-mask-alist-extract-vars masks) boolmasks goalenv nextvar envacc)))
       (implies (and (not err)
@@ -3010,17 +3185,19 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (svex-mask-alist-p masks)
                     (svar-boolmasks-p boolmasks)
                     (svex-env-boolmasks-ok goalenv boolmasks)
-                    (svex-env-p goalenv)
-                    (svex-envs-masks-partly-equiv
-                     vars masks
-                     (svex-a4vec-env-eval a4acc envacc)
-                     goalenv)
-                    (subsetp (alist-keys (svex-env-fix goalenv))
-                             (append (svarlist-fix vars)
-                                     (alist-keys (svex-a4vec-env-fix a4acc)))))
-               (svex-envs-mask-equiv masks
-                                     (svex-a4vec-env-eval a4env env)
-                                     goalenv)))
+                    ;; (svex-env-p goalenv)
+                    ;; (svex-envs-masks-partly-equiv
+                    ;;  vars masks
+                    ;;  (svex-a4vec-env-eval a4acc envacc)
+                    ;;  goalenv)
+                    ;; (subsetp (alist-keys (svex-env-fix goalenv))
+                    ;;          (append (svarlist-fix vars)
+                    ;;                  (alist-keys (svex-a4vec-env-fix a4acc))))
+                    )
+               (svex-envs-mask-equiv-on-vars
+                vars masks
+                (svex-a4vec-env-eval a4env env)
+                goalenv)))
     :hints(("Goal" :in-theory (enable svex-varmasks->a4env-rec
                                       svarlist-fix
                                       svex-maskbits-ok
@@ -3037,16 +3214,21 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (and stable-under-simplificationp
                 (cond ((assoc 'subsetp-equal clause) ;; has a (not (subsetp-equal... lit
                        (acl2::set-reasoning))
-                      ((assoc 'svex-envs-masks-partly-equiv clause)
-                       '(:computed-hint-replacement
-                         ((acl2::witness :ruleset (svex-envs-masks-partly-equiv-witnessing))
-                          (acl2::witness :ruleset (svex-envs-masks-partly-equiv-example)))
-                         :in-theory (enable ;; svex-env-lookup
-                                            svex-env-fix)))
+                      ;; ((assoc 'svex-envs-masks-partly-equiv clause)
+                      ;;  '(:computed-hint-replacement
+                      ;;    ((acl2::witness :ruleset (svex-envs-masks-partly-equiv-witnessing))
+                      ;;     (acl2::witness :ruleset (svex-envs-masks-partly-equiv-example)))
+                      ;;    :in-theory (enable ;; svex-env-lookup
+                      ;;                       svex-env-fix)))
+                      ;; (t '(:computed-hint-replacement
+                      ;;      ((acl2::witness :ruleset (svex-envs-mask-equiv-witnessing))
+                      ;;       (acl2::witness :ruleset (svex-envs-masks-partly-equiv-example)))
+                      ;;      :no-op t))
                       (t '(:computed-hint-replacement
-                           ((acl2::witness :ruleset (svex-envs-mask-equiv-witnessing))
-                            (acl2::witness :ruleset (svex-envs-masks-partly-equiv-example)))
-                           :no-op t)))))))
+                           ((acl2::witness :ruleset (svex-envs-mask-equiv-on-vars-witnessing))
+                            (acl2::witness :ruleset (svex-envs-mask-equiv-on-vars-example)))
+                           :no-op t))
+                      )))))
 
 
 (define svex-varmasks->a4env ((vars svarlist-p)
@@ -3057,7 +3239,12 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                (a4env nat-bool-a4env-p!))
   (b* (((mv err res &)
         (svex-varmasks->a4env-rec vars masks boolmasks 0 nil)))
-    (mv err res)))
+    (mv err res))
+  ///
+  (defret alist-keys-of-svex-varmasks->a4env
+    (implies (not err)
+             (equal (alist-keys a4env)
+                    (rev (svarlist-fix vars))))))
 
 
 (define svex-varmasks/env->aig-env ((vars svarlist-p)
@@ -3083,13 +3270,11 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
       (implies (and (not err)
                     (svex-mask-alist-p masks)
                     (svar-boolmasks-p boolmasks)
-                    (svex-env-p goalenv)
-                    (svex-env-boolmasks-ok goalenv boolmasks)
-                    (subsetp (alist-keys (svex-env-fix goalenv))
-                             (svarlist-fix vars)))
-               (svex-envs-mask-equiv masks
-                                     (svex-a4vec-env-eval a4env env)
-                                     goalenv)))
+                    ;; (svex-env-p goalenv)
+                    (svex-env-boolmasks-ok goalenv boolmasks))
+               (svex-envs-mask-equiv-on-vars vars masks
+                                             (svex-a4vec-env-eval a4env env)
+                                             goalenv)))
     :hints (("goal" :use ((:instance eval-svex-varmasks->a4env-rec-with-env
                            (nextvar 0)
                            (a4acc nil)
@@ -3098,7 +3283,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                               svex-env-lookup
                               svex-lookup)
                              (eval-svex-varmasks->a4env-rec-with-env)))
-            (acl2::witness :ruleset (svex-envs-masks-partly-equiv-witnessing))
+            ;; (acl2::witness :ruleset (svex-envs-mask-equiv-on-vars))
             (acl2::set-reasoning))))
 
 (define svex-env-check-boolmasks ((boolmasks svar-boolmasks-p)
@@ -3123,7 +3308,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
   (defthm svex-env-check-boolmasks-correct
     (implies (and (svex-env-check-boolmasks boolmasks env)
-                  (svex-env-p env)
+                  ;; (svex-env-p env)
                   (svar-boolmasks-p boolmasks))
              (svex-env-boolmasks-ok env boolmasks))
     :hints (("goal" :induct (svex-env-check-boolmasks boolmasks env))
@@ -3138,6 +3323,12 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (svexlist-mask-alist x)
   ///
   (memoize 'svexlist-mask-alist-memo))
+
+(define svexlist-vars-memo ((x svexlist-p))
+  :enabled t
+  (svexlist-collect-vars x)
+  ///
+  (memoize 'svexlist-vars-memo))
 
 
 (define svexlist->a4vecs-for-varlist ((x svexlist-p)
@@ -3201,20 +3392,33 @@ to the svexes.</p>"
   ;;                (svexlist-variable-mask-alist x) y z))
   ;;          :hints ((witness))))
 
+
   (defthm svexlist->a4vec-for-varlist-correct
     (b* (((mv err a4vecs) (svexlist->a4vecs-for-varlist x vars boolmasks))
          ((mv ?err1 aig-env) (svexlist->a4vec-aig-env-for-varlist x vars boolmasks env)))
       (implies (and (not err)
-                    (svex-env-p env)
+                    ;; (svex-env-p env)
                     (svar-boolmasks-p boolmasks)
                     (svex-env-boolmasks-ok env boolmasks)
-                    (subsetp (alist-keys env)
+                    (subsetp (intersection-equal (svexlist-vars x)
+                                                 (alist-keys (svex-env-fix env)))
                              (svarlist-fix vars)))
                (equal (a4veclist-eval a4vecs aig-env)
                       (svexlist-eval x env))))
     :hints(("Goal" :in-theory (e/d (svexlist->a4vecs-for-varlist)
-                                   (svexlist-eval-of-mask-equiv-envs))
-            :use ((:instance svexlist-eval-of-mask-equiv-envs
+                                   (svexlist-eval-of-mask-equiv-on-vars-envs
+                                    ;; svexlist-eval-of-mask-equiv-envs
+                                    ))
+            ;; :use ((:instance svexlist-eval-of-mask-equiv-envs
+            ;;        (masks (svexlist-mask-alist x))
+            ;;        (env1 (SVEX-A4VEC-ENV-EVAL
+            ;;               (MV-NTH 1
+            ;;                       (SVEX-VARMASKS->A4ENV VARS (SVEXLIST-MASK-ALIST X) boolmasks))
+            ;;               (MV-NTH 1
+            ;;                       (SVEX-VARMASKS/ENV->AIG-ENV VARS (SVEXLIST-variable-MASK-ALIST X)
+            ;;                                                   boolmasks ENV))))
+            ;;        (env2 env)))
+            :use ((:instance svexlist-eval-of-mask-equiv-on-vars-envs
                    (masks (svexlist-mask-alist x))
                    (env1 (SVEX-A4VEC-ENV-EVAL
                           (MV-NTH 1
@@ -3222,9 +3426,11 @@ to the svexes.</p>"
                           (MV-NTH 1
                                   (SVEX-VARMASKS/ENV->AIG-ENV VARS (SVEXLIST-variable-MASK-ALIST X)
                                                               boolmasks ENV))))
-                   (env2 env)))))))
+                   (env2 env)))
 
-
+            )
+           (set-reasoning))
+    :otf-flg t))
 
 
 (local (defthm subset-of-mergesorts-is-subsetp
@@ -3240,11 +3446,67 @@ to the svexes.</p>"
   ///
   (memoize 'svexlist-rewrite-fixpoint-memo))
 
+(define maybe-svexlist-rewrite-fixpoint ((x svexlist-p) (do-it))
+  :returns (new-x svexlist-p)
+  (if do-it
+      (svexlist-rewrite-fixpoint-memo x)
+    (hons-copy (svexlist-fix x)))
+  ///
+  (defret maybe-svexlist-rewrite-fixpoint-correct
+    (equal (svexlist-eval new-x env)
+           (svexlist-eval x env)))
+  (defret maybe-svexlist-rewrite-fixpoint-len
+    (equal (len new-x)
+           (len x)))
+
+  (defret vars-of-maybe-svexlist-rewrite-fixpoint
+    (implies (not (member v (svexlist-vars x)))
+             (not (member v (svexlist-vars new-x))))))
+
 
 (local (defthm svarlist-p-of-alist-keys-when-svex-env-p
          (implies (svex-env-p env)
                   (svarlist-p (alist-keys env)))
          :hints(("Goal" :in-theory (enable svex-env-p svarlist-p alist-keys)))))
+
+
+(define svexlist-vars-for-symbolic-eval ((x svexlist-p)
+                                         (env svex-env-p)
+                                         (symbolic-params alistp))
+  :returns (vars svarlist-p :hyp :guard)
+  :guard-hints (("goal" :in-theory (e/d (SET::UNION-WITH-SUBSET-LEFT
+                                         double-containment
+                                         set::subset-to-subsetp)
+                                        (SUBSET-OF-MERGESORTS-IS-SUBSETP))))
+  (b* ((allvars (assoc :allvars symbolic-params))
+       (vars (if allvars
+                 (svexlist-vars-memo x)
+               (ec-call (svarlist-fix (cdr (assoc :vars symbolic-params))))))
+       (svars (mbe :logic (set::mergesort vars)
+                   :exec (if (set::setp vars) vars (set::mergesort vars))))
+       ((when allvars) (hons-copy svars))
+       (keys (svarlist-filter (alist-keys env)))
+       (keys (mbe :logic (set::mergesort keys)
+                  :exec (if (set::setp keys) keys (set::mergesort keys)))))
+    (hons-copy
+     (mbe :logic (union keys svars)
+          :exec (if (set::subset keys svars)
+                    svars
+                  (if (eq svars nil)
+                      keys
+                    (union keys svars))))))
+  ///
+  (local (defthm alist-keys-of-svex-env-fix
+           (equal (alist-keys (svex-env-fix env))
+                  (svarlist-filter (alist-keys env)))
+           :hints(("Goal" :in-theory (enable svex-env-fix svarlist-filter)))))
+
+  (defret svexlist-vars-for-symbolic-eval-sufficient
+    (subsetp (intersection-equal (svexlist-vars x)
+                                 (alist-keys (svex-env-fix env)))
+             (svarlist-fix vars))
+    :hints ((set-reasoning))))
+
 
 (define svexlist-eval-gl
   ((x svexlist-p     "Svex expressions to evaluate.")
@@ -3283,8 +3545,9 @@ upper/lower parts should result from the same computation.)</li>
 
 <li>If @(':VARS') is bound in symbolic-params, it should be bound to a list of
 input variables of the SVTV.  Unions this list with the variables bound in
-@('env') to obtain the full list of variables to bind as inputs to the
-SVTV.</li>
+@('env') to obtain the full list of variables to bind as inputs to the SVTV.
+Or if @(':ALLVARS') is bound in symbolic params, all the variables in the svex
+expressions are used instead.</li>
 
 <li>Compiles the svex list @('x') into @(see a4vec) objects, a symbolic
 analogue of @(see 4vec) but with each bit an AIG -- see @(see
@@ -3332,25 +3595,9 @@ fail if the @('env') is not constructed in such a way that the values are
 obviously 2-vectors.</p>"
   :guard-hints (("goal" :in-theory (e/d (SET::UNION-WITH-SUBSET-LEFT)
                                         (SUBSET-OF-MERGESORTS-IS-SUBSETP))))
-  (b* ((env (svex-env-fix env))
-       (vars (hons-copy (ec-call (svarlist-fix (cdr (assoc :vars symbolic-params))))))
-       (x (if (cdr (assoc :simplify symbolic-params))
-              (svexlist-rewrite-fixpoint-memo x)
-            (hons-copy x)))
-       ;; Syntax checking...
-       (keys (alist-keys env))
-       (keys (mbe :logic (set::mergesort keys)
-                  :exec (if (set::setp keys) keys (set::mergesort keys))))
-       (svars (mbe :logic (set::mergesort vars)
-                   :exec (if (set::setp vars) vars (set::mergesort vars))))
-       (env (make-fast-alist env))
-       (svars (hons-copy
-               (mbe :logic (union keys svars)
-                    :exec (if (set::subset keys svars)
-                              svars
-                            (if (eq svars nil)
-                                keys
-                              (union keys svars))))))
+  (b* ((env (make-fast-alist (svex-env-fix env)))
+       (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params)))) 
+       (svars (svexlist-vars-for-symbolic-eval x env symbolic-params))
        (boolmasks (make-fast-alist
                    (hons-copy
                     (ec-call
@@ -3382,13 +3629,13 @@ obviously 2-vectors.</p>"
     :hints (("goal" :use ((:instance svexlist->a4vec-for-varlist-correct
                            (boolmasks
                             (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params))))
-                           (vars (union (set::mergesort (alist-keys (svex-env-fix env)))
-                                        (set::mergesort (svarlist-fix (cdr (assoc :vars symbolic-params))))))
-                           (x (if (cdr (assoc :simplify symbolic-params))
-                                  (svexlist-rewrite-fixpoint-memo x)
-                                x))
+                           (vars (svexlist-vars-for-symbolic-eval
+                                  (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params)))
+                                  env symbolic-params))
+                           (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params))))
                            (env (svex-env-fix env))))
-             :in-theory (disable svexlist->a4vec-for-varlist-correct))))
+             :in-theory (disable svexlist->a4vec-for-varlist-correct
+                                 SVEXLIST->A4VECS-FOR-VARLIST-SVAR-BOOLMASKS-EQUIV-CONGRUENCE-ON-BOOLMASKS))))
 
   (gl::def-gl-rewrite svexlist-eval-for-symbolic-redef
     (equal (svexlist-eval-for-symbolic x env symbolic-params)
@@ -3403,6 +3650,17 @@ obviously 2-vectors.</p>"
   (b* (((a4vec x) x))
     (append x.upper x.lower)))
 
+
+
+(define v2i-alt ((v true-listp))
+  :returns (v2i (equal v2i (gl::v2i v))
+                :hints(("Goal" :in-theory (enable gl::scdr gl::s-endp))))
+  :hooks nil
+  (if (atom (cdr v))
+      (gl::bool->sign (car v))
+    (logcons (acl2::bool->bit (car v))
+             (v2i-alt (cdr v)))))
+  
 
 (local (defthm v2i-of-aig-eval-list
          (equal (gl::v2i (aig-eval-list x env))
@@ -3425,8 +3683,8 @@ obviously 2-vectors.</p>"
        (rest (nthcdr upper-len bits))
        (lower-bits (take lower-len rest))
        (rest (nthcdr lower-len rest)))
-    (mv (4vec (gl::v2i upper-bits)
-              (gl::v2i lower-bits))
+    (mv (4vec (v2i-alt upper-bits)
+              (v2i-alt lower-bits))
         rest))
   ///
   (defthm 4vec-from-bitlist-correct

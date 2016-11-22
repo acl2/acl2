@@ -746,77 +746,188 @@ See :DOC GL::COVERAGE-PROOFS.
                              'latest-greatest-gl-clause-proc
                              (w state)))))
 
-(defun gl-hint-fn (clause-proc bindings param-bindings acl2::hyp param-hyp
-                               concl hyp-clk concl-clk
-                               cov-hints cov-hints-position cov-theory-add
-                               do-not-expand hyp-hints result-hints
-                               n-counterexamples abort-indeterminate
-                               abort-ctrex exec-ctrex abort-vacuous
-                               run-before-cases run-after-cases
-                               case-split-override case-split-hints test-side-goals)
-  (declare (xargs :mode :program))
-  `(b* (((mv clause-proc bindings param-bindings acl2::hyp param-hyp concl
-             hyp-clk concl-clk cov-hints cov-hints-position
-             cov-theory-add do-not-expand hyp-hints result-hints
-             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
-             run-before-cases run-after-cases case-split-override
-             case-split-hints test-side-goals)
-         (mv ',clause-proc ,bindings ,param-bindings ,acl2::hyp ,param-hyp
-             ,concl ,hyp-clk ,concl-clk ',cov-hints
-             ',cov-hints-position ',cov-theory-add ',do-not-expand
-             ',hyp-hints ',result-hints ,n-counterexamples
-             ,abort-indeterminate ,abort-ctrex ,exec-ctrex ,abort-vacuous ',run-before-cases ',run-after-cases
-             ,case-split-override ',case-split-hints ,test-side-goals))
 
-        ;; ((er overrides)
-        ;;  (preferred-defs-to-overrides
-        ;;   (table-alist 'preferred-defs (w state)) state))
-        (clause-proc (or clause-proc
-                         (latest-gl-clause-proc)))
-        (config (make-glcp-config
-                 :abort-unknown abort-indeterminate
-                 :abort-ctrex abort-ctrex
-                 :exec-ctrex exec-ctrex
-                 :abort-vacuous abort-vacuous
-                 :nexamples n-counterexamples
-                 :hyp-clk hyp-clk
-                 :concl-clk concl-clk
-                 :clause-proc-name clause-proc
-                 ;; :overrides overrides
-                 :overrides nil ;; they get generated inside the clause proc
-                 :run-before (and (not test-side-goals) run-before-cases)
-                 :run-after (and (not test-side-goals) run-after-cases)
-                 :case-split-override case-split-override))
+;; BOZO move to da-base.lisp
 
-        (cov-hints (glcp-coverage-hints
-                    do-not-expand cov-theory-add cov-hints cov-hints-position))
-        ((er trhyp)
-         (acl2::translate acl2::hyp t t nil 'gl-hint-fn (w state) state))
-        ((er trparam)
-         (acl2::translate param-hyp t t nil 'gl-hint-fn (w state)
-                          state))
-        ((er trconcl)
-         (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
-        (vars (collect-vars trconcl))
-        (missing-vars (set-difference-eq vars (strip-cars bindings)))
-        (- (and missing-vars
-                (let ((msg (acl2::msg "~
+(local (defun aggregate-alist-args-from-default-map (map)
+         (if (atom map)
+             nil
+           (cons `(b* ((look (assoc ',(intern$ (symbol-name (caar map)) "KEYWORD") alist)))
+                    (if look (cdr look) ,(cdar map)))
+                 (aggregate-alist-args-from-default-map (cdr map))))))
+
+(make-event
+ (b* (((std::agginfo agg) (std::get-aggregate 'glcp-config (w state)))
+      (default-map (pairlis$ (std::formallist->names agg.efields)
+                             (std::formallist->defaults agg.efields))))
+   `(defun make-glcp-config-from-alist (alist)
+      (declare (xargs :guard (alistp alist)))
+      (ec-call
+       (glcp-config . ,(aggregate-alist-args-from-default-map default-map))))))
+
+(defun keywordify (x)
+  (declare (xargs :guard (symbolp x)))
+  (intern$ (symbol-name x) "KEYWORD"))
+
+(defun keywordify-lst (x)
+  (declare (xargs :guard (Symbol-listp x)))
+  (if (atom x)
+      nil
+    (cons (keywordify (car x))
+          (keywordify-lst (cdr x)))))
+
+
+(defun gl-hint-config-vars-getargs (config-vars)
+  (if (atom config-vars)
+      nil
+    (cons `(std::getarg ,(keywordify (caar config-vars)) ,(cdar config-vars) kwd-alist)
+          (gl-hint-config-vars-getargs (cdr config-vars)))))
+
+
+;; arg names . default values
+(defconst *gl-hint-common-args*
+  '((clause-proc)
+    (do-not-expand)
+    (cov-theory-add)
+    (cov-hints)
+    (cov-hints-position)
+    (acl2::hyp . ''t)
+    (concl)
+    (test-side-goals)
+    (hyp-hints)
+    (result-hints)
+    (case-split-hints)))
+
+(defconst *gl-hint-common-form-args*
+  '((rule-classes . :rewrite)
+    (no-defthm)))
+
+(defconst *gl-hint-param-args*
+  '((cov-bindings)
+    (param-bindings)
+    (param-hyp)))
+
+(defconst *gl-hint-nonparam-args*
+  '((g-bindings . cov-bindings)))
+
+(defconst *gl-hint-nonconfig-args*
+  (append *gl-hint-common-args*
+          *gl-hint-param-args*
+          ;; BOZO this must come after param args because of the default for g-bindings
+          *gl-hint-nonparam-args*))
+
+(make-event
+ `(defconst *gl-hint-permissible-keywords*
+    (keywordify-lst (union-eq (strip-cars *gl-hint-nonconfig-args*)
+                              (strip-cars *gl-hint-common-form-args*)
+                              ',(std::formallist->names
+                                 (std::agginfo->efields (std::get-aggregate 'glcp-config (w state))))))))
+
+(defconst *gl-hint-param-permissible-keywords*
+  (set-difference-eq *gl-hint-permissible-keywords*
+                     (keywordify-lst (strip-cars *gl-hint-nonparam-args*))))
+
+(defconst *gl-hint-nonparam-permissible-keywords*
+  (set-difference-eq *gl-hint-permissible-keywords*
+                     (keywordify-lst (strip-cars *gl-hint-param-args*))))
+
+(defconst *gl-hint-evaluated-args*
+  '(:g-bindings
+    :cov-bindings
+    :param-bindings
+    :hyp
+    :param-hyp
+    :concl
+    :hyp-clk
+    :concl-clk
+    :n-counterexamples
+    :abort-indeterminate
+    :abort-ctrex
+    :exec-ctrex
+    :abort-vacuous
+    :case-split-override
+    :test-side-goals))
+
+(defconst *gl-thm-quoted-args*
+  '(:hyp :concl :param-hyp))
+
+(defun gl-hint-make-config-var-inner-bindings (vars)
+  (if (atom vars)
+      nil
+    (cons (if (member (keywordify (car vars)) *gl-hint-evaluated-args*)
+              ;; argh horrible
+              ``(,',(car vars) ,,(car vars))
+            ``(,',(car vars) ',,(car vars)))
+          (gl-hint-make-config-var-inner-bindings (cdr vars)))))
+
+
+(defun gl-thm-quote-kwd-alist-args (quote-args kwd-alist)
+  (if (atom quote-args)
+      kwd-alist
+    (let ((look (assoc (car quote-args) kwd-alist)))
+      (if look
+          (gl-thm-quote-kwd-alist-args
+           (cdr quote-args)
+           (cons (cons (car look) (list 'quote (cdr look))) kwd-alist))
+        (gl-thm-quote-kwd-alist-args (cdr quote-args) kwd-alist)))))
+
+
+(make-event
+  (b* ((config-vars *gl-hint-nonconfig-args*)
+       (config-vars-bindings-outer (pairlis$ (strip-cars config-vars)
+                                       (pairlis$ (gl-hint-config-vars-getargs config-vars) nil)))
+       (config-vars-bindings-inner (cons 'list (gl-hint-make-config-var-inner-bindings (remove 'cov-bindings (strip-cars config-vars))))))
+
+    `(defun gl-hint-fn (kwd-alist)
+       (declare (xargs :mode :program))
+       (b* ,config-vars-bindings-outer
+         `(b* ((kwd-alist ',kwd-alist)
+               
+               ;; (g-bindings ,g-bindings)
+               ;; (param-hyp ',param-hyp)
+               ;; ((er overrides)
+               ;;  (preferred-defs-to-overrides
+               ;;   (table-alist 'preferred-defs (w state)) state))
+
+               ;;,@config-vars-bindings
+               
+               ,@,config-vars-bindings-inner
+
+               (clause-proc (or clause-proc  (latest-gl-clause-proc)))
+               (kwd-alist (cons (cons :clause-proc clause-proc) kwd-alist))
+
+               (config (make-glcp-config-from-alist kwd-alist))
+
+               (cov-hints (glcp-coverage-hints
+                           do-not-expand cov-theory-add cov-hints cov-hints-position))
+               ((er trhyp)
+                (acl2::translate acl2::hyp t t nil 'gl-hint-fn (w state) state))
+               ((er trparam)
+                (acl2::translate param-hyp t t nil 'gl-hint-fn (w state)
+                                 state))
+               ((er trconcl)
+                (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
+               (vars (collect-vars trconcl))
+               (missing-vars (set-difference-eq vars (strip-cars g-bindings)))
+               (- (and missing-vars
+                       (let ((msg (acl2::msg "~
 The following variables are present in the theorem but have no symbolic object ~
 bindings:
 ~x0~%" missing-vars)))
-                  ;; (if missing-vars-ok
-                      (cw "****  WARNING ****~%~@0~%" msg)
-                  ;;  (er hard? 'gl-hint "~@0" msg)
-                      )))
-        (bindings
-         (add-var-bindings missing-vars
-                           bindings))
-        (param-bindings (add-param-var-bindings vars param-bindings))
-        (call `(,(if test-side-goals 'glcp-side-goals-clause-proc clause-proc)
-                clause (list ',bindings ',param-bindings ',trhyp
-                             ',trparam ',trconcl ',concl ',config)
-                state)))
-     (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints))))
+                         ;; (if missing-vars-ok
+                         (cw "****  WARNING ****~%~@0~%" msg)
+                         ;;  (er hard? 'gl-hint "~@0" msg)
+                         )))
+               (bindings
+                (add-var-bindings missing-vars
+                                  g-bindings))
+               (param-bindings (add-param-var-bindings vars param-bindings))
+               (call `(,(if test-side-goals 'glcp-side-goals-clause-proc clause-proc)
+                       clause (list ',bindings ',param-bindings ',trhyp
+                                    ',trparam ',trconcl ',concl ',config)
+                       state)))
+            (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints)))))))
+
 
 
 
@@ -891,31 +1002,14 @@ descriptions of each keyword argument:</p>
 <p>The keyword arguments to @('gl-hint') are similar to ones for the macros
 @(see def-gl-thm) and @(see def-gl-param-thm), and are documented there.</p>"
 
-  (defmacro gl-hint (&key clause-proc
-                          bindings param-bindings
-                          (hyp-clk '1000000)
-                          (concl-clk '1000000)
-                          cov-hints cov-hints-position
-                          cov-theory-add do-not-expand
-                          hyp-hints
-                          result-hints
-                          (acl2::hyp ''t) param-hyp concl
-                          (n-counterexamples '3)
-                          (abort-indeterminate 't)
-                          (abort-ctrex 't)
-                          (exec-ctrex 't)
-                          (abort-vacuous 't)
-                          (case-split-override 'nil)
-                          case-split-hints
-                          run-before-cases run-after-cases
-                          test-side-goals)
+  (defmacro gl-hint (&rest keys)
+    (b* (((mv kwd-alist rest)
+          (std::extract-keywords 'gl-hint *gl-hint-permissible-keywords* keys nil))
+         ((when rest) (er hard? 'gl-hint "Non-keyword args to gl-hint: ~x0~%" rest)))
+      (gl-hint-fn kwd-alist))))
 
-    (gl-hint-fn clause-proc bindings param-bindings acl2::hyp param-hyp concl
-                hyp-clk concl-clk cov-hints cov-hints-position
-                cov-theory-add do-not-expand hyp-hints result-hints
-                n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
-                run-before-cases run-after-cases
-                case-split-override case-split-hints test-side-goals)))
+(defmacro gl-hint-alist (kwd-alist)
+  (gl-hint-fn kwd-alist))
 
 
 
@@ -928,38 +1022,18 @@ descriptions of each keyword argument:</p>
            ,form))
        (value-triple :invisible))))
 
-
-(defun def-gl-thm-fn
-  (name args)
-  (declare (xargs :mode :program))
-  (b* (((list clause-proc acl2::hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
-              cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-              rule-classes no-defthm) args)
-       ((unless (and hyp-p concl-p g-bindings-p))
-        (er hard 'def-gl-thm
-            "The keyword arguments HYP, CONCL, and G-BINDINGS must be provided ~
-in DEF-GL-THM.~%"))
+(defun def-gl-thm-form (name kwd-alist)
+  (Declare (Xargs :mode :program))
+  (b* ((test-side-goals (std::getarg :test-side-goals nil kwd-alist))
+       (acl2::hyp (std::getarg :hyp t kwd-alist))
+       (concl (std::getarg :concl nil kwd-alist))
+       (no-defthm (std::getarg :no-defthm nil kwd-alist))
+       (rule-classes (std::getarg :rule-classes :rewrite kwd-alist))
+       (kwd-alist (gl-thm-quote-kwd-alist-args *gl-thm-quoted-args* kwd-alist))
        (form `(without-waterfall-parallelism
                 (defthm ,name
                   ,(if test-side-goals t `(implies ,acl2::hyp ,concl))
-                  :hints ((gl-hint
-                           :clause-proc ,clause-proc
-                           :bindings ,g-bindings
-                           :hyp-clk ,hyp-clk
-                           :concl-clk ,concl-clk
-                           :cov-hints ,cov-hints
-                           :cov-hints-position ,cov-hints-position
-                           :cov-theory-add ,cov-theory-add
-                           :do-not-expand ,do-not-expand
-                           :hyp ',acl2::hyp
-                           :concl ',concl
-                           :n-counterexamples ,n-counterexamples
-                           :abort-indeterminate ,abort-indeterminate
-                           :abort-ctrex ,abort-ctrex
-                           :exec-ctrex ,exec-ctrex
-                           :abort-vacuous ,abort-vacuous
-                           :test-side-goals ,test-side-goals))
+                  :hints ((gl-hint-alist ,kwd-alist))
                   . ,(if (or test-side-goals no-defthm)
                          '(:rule-classes nil)
                        `(:rule-classes ,rule-classes))))))
@@ -969,6 +1043,22 @@ in DEF-GL-THM.~%"))
            (make-event (er-progn (with-output :stack :pop ,form)
                                  (value '(value-triple 'ok)))))
       form)))
+
+
+(defun def-gl-thm-fn
+  (name args)
+  (declare (xargs :mode :program))
+  (b* (((mv kwd-alist rest)
+        (std::extract-keywords 'def-gl-thm *gl-hint-nonparam-permissible-keywords* args nil))
+       ((when rest) (er hard? 'def-gl-thm "Non-keyword args to def-gl-thm: ~x0~%" rest))
+       ((unless (and (assoc :hyp kwd-alist)
+                     (assoc :concl kwd-alist)
+                     (assoc :g-bindings kwd-alist)))
+        (er hard 'def-gl-thm
+            "The keyword arguments HYP, CONCL, and G-BINDINGS must be provided ~
+in DEF-GL-THM.~%")))
+    (def-gl-thm-form name kwd-alist)))
+       
 
 
 
@@ -1126,28 +1216,8 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
   ;; Define a macro that provides a drop-in replacement for DEF-G-THM and
   ;; uses the new clause processor.
   (defmacro def-gl-thm
-    (name &key clause-proc
-          skip-g-proofs
-          (acl2::hyp 'nil hyp-p)
-          (concl 'nil concl-p)
-          (g-bindings 'nil g-bindings-p)
-          cov-hints cov-hints-position
-          cov-theory-add
-          do-not-expand
-          (hyp-clk '1000000)
-          (concl-clk '1000000)
-          (n-counterexamples '3)
-          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
-          local
-          test-side-goals
-          (rule-classes ':rewrite))
-
-    (declare (ignore skip-g-proofs local))
-    (def-gl-thm-fn name
-      (list clause-proc acl2::hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
-            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
-            abort-vacuous test-side-goals rule-classes nil))))
+    (name &rest args)
+    (def-gl-thm-fn name args)))
 
 
 (defsection gl-thm
@@ -1158,81 +1228,25 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
 @(see thm).  The :rule-classes argument is accepted, but ignored.</p>"
 
   (defmacro gl-thm
-    (name &key clause-proc
-          skip-g-proofs
-          (acl2::hyp 'nil hyp-p)
-          (concl 'nil concl-p)
-          (g-bindings 'nil g-bindings-p)
-          cov-hints cov-hints-position
-          cov-theory-add
-          do-not-expand
-          (hyp-clk '1000000)
-          (concl-clk '1000000)
-          (n-counterexamples '3)
-          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
-          local
-          test-side-goals
-          (rule-classes ':rewrite))
-
-    (declare (ignore skip-g-proofs local))
-    (def-gl-thm-fn name
-      (list clause-proc acl2::hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
-            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
-            abort-vacuous test-side-goals rule-classes t))))
+    (name &rest args)
+    (def-gl-thm-fn name (list* :no-defthm t args))))
 
 
 
 
 (defun def-gl-param-thm-fn (name args)
   (declare (xargs :mode :program))
-  (b* (((list clause-proc acl2::hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
-              cov-bindings-p param-bindings param-bindings-p
-              cov-hints cov-hints-position cov-theory-add do-not-expand
-              hyp-clk concl-clk n-counterexamples
-              abort-indeterminate abort-ctrex exec-ctrex abort-vacuous run-before-cases run-after-cases
-              case-split-override case-split-hints test-side-goals rule-classes no-defthm)
-        args)
-       ((unless (and hyp-p param-hyp-p concl-p cov-bindings-p
-                     param-bindings-p))
+  (b* (((mv kwd-alist rest)
+        (std::extract-keywords 'def-gl-param-thm *gl-hint-param-permissible-keywords* args nil))
+       ((when rest) (er hard? 'def-gl-param-thm "Non-keyword args to def-gl-param-thm: ~x0~%" rest))
+       ((unless (and (assoc :hyp kwd-alist)
+                     (assoc :param-hyp kwd-alist)
+                     (assoc :cov-bindings kwd-alist)
+                     (assoc :param-bindings kwd-alist)))
         (er hard 'def-gl-param-thm
             "The keyword arguments HYP, PARAM-HYP, CONCL, COV-BINDINGS, and ~
-PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
-       (form `(without-waterfall-parallelism
-                (defthm ,name
-                  ,(if test-side-goals t `(implies ,acl2::hyp ,concl))
-                  :hints ((gl-hint
-                           :clause-proc ,clause-proc
-                           :bindings ,cov-bindings
-                           :param-bindings ,param-bindings
-                           :hyp-clk ,hyp-clk
-                           :concl-clk ,concl-clk
-                           :cov-hints ,cov-hints
-                           :cov-hints-position ,cov-hints-position
-                           :cov-theory-add ,cov-theory-add
-                           :do-not-expand ,do-not-expand
-                           :hyp ',acl2::hyp
-                           :param-hyp ',param-hyp
-                           :concl ',concl
-                           :n-counterexamples ,n-counterexamples
-                           :abort-indeterminate ,abort-indeterminate
-                           :abort-ctrex ,abort-ctrex
-                           :exec-ctrex ,exec-ctrex
-                           :abort-vacuous ,abort-vacuous
-                           :run-before-cases ,run-before-cases
-                           :run-after-cases ,run-after-cases
-                           :test-side-goals ,test-side-goals
-                           :case-split-override ,case-split-override
-                           :case-split-hints ,case-split-hints))
-                  . ,(if (or test-side-goals no-defthm)
-                         '(:rule-classes nil)
-                       `(:rule-classes ,rule-classes))))))
-    (if (or test-side-goals no-defthm)
-        `(with-output
-          :off :all :stack :push
-          (make-event (er-progn (with-output :stack :pop ,form)
-                                (value '(value-triple 'ok)))))
-      form)))
+PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%")))
+    (def-gl-thm-form name kwd-alist)))
 
 
 (defsection def-gl-param-thm
@@ -1371,32 +1385,8 @@ will fail after the clause processor returns because it will produce a goal of
 Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
 
   (defmacro def-gl-param-thm
-    (name &key clause-proc
-          skip-g-proofs
-          (acl2::hyp 'nil hyp-p)
-          (param-hyp 'nil param-hyp-p)
-          (concl 'nil concl-p)
-          (cov-bindings 'nil cov-bindings-p)
-          (param-bindings 'nil param-bindings-p)
-          cov-hints cov-hints-position
-          cov-theory-add
-          do-not-expand
-          (hyp-clk '1000000)
-          (concl-clk '1000000)
-          (n-counterexamples '3)
-          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 'nil)
-          run-before-cases run-after-cases
-          case-split-override
-          case-split-hints local test-side-goals
-          (rule-classes ':rewrite))
-    (declare (ignore skip-g-proofs local))
-    (def-gl-param-thm-fn name
-      (list clause-proc acl2::hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
-            cov-bindings-p param-bindings param-bindings-p cov-hints
-            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
-            abort-vacuous run-before-cases run-after-cases case-split-override
-            case-split-hints test-side-goals rule-classes nil))))
+    (name &rest args)
+    (def-gl-param-thm-fn name args)))
 
 (defsection gl-param-thm
   :parents (reference optimization)
@@ -1409,32 +1399,8 @@ defthm) is to @(see thm).  The :rule-classes argument is accepted, but
 ignored.</p>"
 
   (defmacro gl-param-thm
-    (name &key clause-proc
-          skip-g-proofs
-          (acl2::hyp 'nil hyp-p)
-          (param-hyp 'nil param-hyp-p)
-          (concl 'nil concl-p)
-          (cov-bindings 'nil cov-bindings-p)
-          (param-bindings 'nil param-bindings-p)
-          cov-hints cov-hints-position
-          cov-theory-add
-          do-not-expand
-          (hyp-clk '1000000)
-          (concl-clk '1000000)
-          (n-counterexamples '3)
-          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 'nil)
-          run-before-cases run-after-cases
-          case-split-override
-          case-split-hints local test-side-goals
-          (rule-classes ':rewrite))
-    (declare (ignore skip-g-proofs local))
-    (def-gl-param-thm-fn name
-      (list clause-proc acl2::hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
-            cov-bindings-p param-bindings param-bindings-p cov-hints
-            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
-            abort-vacuous run-before-cases run-after-cases case-split-override
-            case-split-hints test-side-goals rule-classes t))))
+    (name &rest args)
+    (def-gl-param-thm-fn name (list* :no-defthm t args))))
 
 
 

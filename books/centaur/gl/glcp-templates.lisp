@@ -1233,11 +1233,11 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                 (hyp (caar param-alist))
                 (id (cadar param-alist))
                 (g-bindings (cddar param-alist))
-                (- (glcp-cases-wormhole (glcp-config->run-before config) id))
+                (- (glcp-cases-wormhole (glcp-config->run-before-cases config) id))
                 ((er (list val-clause cov-clause obligs))
                  (run-parametrized
                   hyp concl vars g-bindings id obligs config state))
-                (- (glcp-cases-wormhole (glcp-config->run-after config) id)))
+                (- (glcp-cases-wormhole (glcp-config->run-after-cases config) id)))
              (value (cons (list* val-clause cov-clause rest) obligs)))))
 
 

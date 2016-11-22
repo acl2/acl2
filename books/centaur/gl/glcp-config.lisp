@@ -32,22 +32,23 @@
 (include-book "shape-spec-defs")
 
 (std::defaggregate glcp-config
-  ((abort-unknown booleanp :default t)
+  ((abort-indeterminate booleanp :default t)
    (abort-ctrex booleanp :default t)
    (exec-ctrex booleanp :default t)
+   (ctrex-transform :default '(lambda (x) x))
    (abort-vacuous booleanp :default t)
    (check-vacuous booleanp :default t)
-   (nexamples natp :rule-classes :type-prescription :default 3)
+   (n-counterexamples natp :rule-classes :type-prescription :default 3)
    (hyp-clk natp :rule-classes :type-prescription :default 1000000)
    (concl-clk natp :rule-classes :type-prescription :default 1000000)
-   (clause-proc-name symbolp :rule-classes :type-prescription)
+   (clause-proc symbolp :rule-classes :type-prescription)
    (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check
      ;;  the guards in clause processors
    (param-bfr :default t)
    top-level-term
    (shape-spec-alist shape-spec-bindingsp)
-   run-before
-   run-after
+   run-before-cases
+   run-after-cases
    case-split-override
    (split-conses booleanp :default nil)
    (split-fncalls booleanp :default nil)

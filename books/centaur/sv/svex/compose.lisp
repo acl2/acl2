@@ -543,7 +543,7 @@ substitution are left in place."
   :returns (xx svex-alist-p)
   (if (atom x)
       nil
-    (if (consp (car x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
         (svex-acons (caar x) (svex-compose* (cdar x) a)
                     (svex-alist-compose* (cdr x) a))
       (svex-alist-compose* (cdr x) a)))

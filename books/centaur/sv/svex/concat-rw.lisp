@@ -346,7 +346,7 @@
   (defthm svex-lookup-in-pairlis$
     (implies (equal (len x) (len y))
              (iff (svex-lookup v (pairlis$ x y))
-                  (member (svar-fix v) (svarlist-fix x))))
+                  (member (svar-fix v) x)))
     :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix pairlis$))))
 
   (defthm vars-of-svex-alist-normalize-concats

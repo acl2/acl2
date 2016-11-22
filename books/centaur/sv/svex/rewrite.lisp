@@ -1531,16 +1531,16 @@ functions) and that it is being given the right number of arguments.</p>
   ///
   (fty::deffixequiv svex-alist-rewrite-top)
 
-  (defthm svex-alist-keys-of-pairlis$
-    (equal (svex-alist-keys (pairlis$ x y))
-           (svarlist-fix x))
-    :hints(("Goal" :in-theory (enable svarlist-fix pairlis$ svex-alist-keys))))
+  ;; (defthm svex-alist-keys-of-pairlis$
+  ;;   (equal (svex-alist-keys (pairlis$ x y))
+  ;;          (svarlist-fix x))
+  ;;   :hints(("Goal" :in-theory (enable svarlist-fix pairlis$ svex-alist-keys))))
 
-  (defthm svex-alist-vals-of-pairlis$
-    (implies (equal (len x) (len y))
-             (equal (svex-alist-vals (pairlis$ x y))
-                    (svexlist-fix y)))
-    :hints(("Goal" :in-theory (enable svexlist-fix pairlis$ svex-alist-vals))))
+  ;; (defthm svex-alist-vals-of-pairlis$
+  ;;   (implies (equal (len x) (len y))
+  ;;            (equal (svex-alist-vals (pairlis$ x y))
+  ;;                   (svexlist-fix y)))
+  ;;   :hints(("Goal" :in-theory (enable svexlist-fix pairlis$ svex-alist-vals))))
 
   (local (defthm svex-alist-eval-redef
            (equal (svex-alist-eval x env)
@@ -1580,11 +1580,11 @@ functions) and that it is being given the right number of arguments.</p>
            :hints(("Goal" :in-theory (enable svex-alist-vars
                                              svexlist-vars
                                              svex-alist-vals)))))
-  (defthm svex-lookup-in-pairlis$
-    (implies (equal (len x) (len y))
-             (iff (svex-lookup v (pairlis$ x y))
-                  (member (svar-fix v) (svarlist-fix x))))
-    :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix pairlis$))))
+  ;; (defthm svex-lookup-in-pairlis$
+  ;;   (implies (equal (len x) (len y))
+  ;;            (iff (svex-lookup v (pairlis$ x y))
+  ;;                 (member (svar-fix v) (svarlist-fix x))))
+  ;;   :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix pairlis$))))
 
   (defthm vars-of-svex-alist-rewrite-top
     (implies (not (member v (svex-alist-vars x)))

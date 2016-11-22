@@ -247,18 +247,21 @@
                       (outs svtv-lines-p)
                       (prev-state svex-alist-p)
                       (updates svex-alist-p) (state-updates svex-alist-p)
-                      (in-vars svarlist-p))
+                      (in-vars svarlist-p)
+                      (state-machine))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
-  :returns (outalist svex-alist-p)
+  :returns (mv (outalist svex-alist-p)
+               (final-state svex-alist-p))
   (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
                    :exec (eql nphases phase)))
-        nil)
+        (mv nil (and state-machine (sv::svex-alist-fix prev-state))))
        ((mv phase-outs next-state)
-        (svtv-compile-phase phase ins overrides outs prev-state updates state-updates in-vars)))
-    (append phase-outs
-            (svtv-compile (+ 1 (lnfix phase)) nphases ins overrides outs next-state
-                          updates state-updates in-vars))))
+        (svtv-compile-phase phase ins overrides outs prev-state updates state-updates in-vars))
+       ((mv rest-outs final-state)
+        (svtv-compile (+ 1 (lnfix phase)) nphases ins overrides outs next-state
+                          updates state-updates in-vars state-machine)))
+    (mv (append phase-outs rest-outs) final-state)))
 
 
 
@@ -411,6 +414,24 @@
 
 (local (in-theory (disable fast-alist-clean)))
 
+(define svtv-simplify-outs/states ((outs svex-alist-p)
+                                   (nextstates svex-alist-p)
+                                   (simplify))
+  :returns (mv (simp-outs svex-alist-p)
+               (simp-states svex-alist-p))
+  (b* ((outs (sv::svex-alist-fix outs))
+       (nextstates (sv::svex-alist-fix nextstates))
+       ((unless simplify) (mv outs nextstates))
+       (alist (append outs nextstates))
+       (simp-alist (svex-alist-normalize-concats
+                    (svex-alist-rewrite-fixpoint
+                     alist :verbosep t)
+                    :verbosep t))
+       (outs-len  (len outs))
+       (simp-outs (take outs-len simp-alist))
+       (simp-states (nthcdr outs-len simp-alist)))
+    (mv simp-outs simp-states)))
+
 
 (define defsvtv-main ((name symbolp)
                       (ins true-list-listp)
@@ -419,7 +440,8 @@
                       (internals true-list-listp)
                       (design design-p)
                       (simplify)
-                      (pre-simplify))
+                      (pre-simplify)
+                      (state-machine))
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -488,9 +510,12 @@
        ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays
                                                               :rewrite pre-simplify))
 
-       ;; Compute an initial state of all Xes
+       ;; Compute an initial state of all Xes, or nil (meaning don't substitute
+       ;; the states) if free-initst
        (states (svex-alist-keys next-states))
-       (initst (pairlis$ states (replicate (len states) (svex-quote (4vec-x)))))
+       (initst (if state-machine
+                   nil
+                 (pairlis$ states (replicate (len states) (svex-quote (4vec-x))))))
 
        ;; collect the set of all input variables.  We generate a unique
        ;; variable per phase for each variable (unless it is bound to an STV
@@ -513,22 +538,19 @@
        (- (fast-alist-free updates)
           (clear-memoize-table 'svex-compose))
        ;; Unroll the FSM and collect the formulas for the output signals.
-       (outexprs (cwtime
-                  (svtv-compile
-                   0 nphases ins ovlines outs initst updates-for-outs next-states in-vars)
-                  :mintime 1))
+       ((mv outexprs final-state)
+        (cwtime
+         (svtv-compile
+          0 nphases ins ovlines outs initst updates-for-outs next-states in-vars state-machine)
+         :mintime 1))
 
        (has-duplicate-outputs (acl2::hons-dups-p (svex-alist-keys outexprs)))
        ((when has-duplicate-outputs)
         (raise "Duplicated output variable: ~x0" (car has-duplicate-outputs))
         (mv nil moddb aliases))
 
-       (outexprs (if simplify
-                     (svex-alist-normalize-concats
-                      (svex-alist-rewrite-fixpoint
-                       outexprs :verbosep t)
-                      :verbosep t)
-                   outexprs))
+       ((mv outexprs final-state)
+        (svtv-simplify-outs/states outexprs final-state simplify))
 
        ;; Compute the masks for the input/output varaiables.
        (inmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks ins))))
@@ -537,6 +559,7 @@
     (fast-alist-free updates-for-outs)
     (mv (make-svtv :name           name
                    :outexprs       outexprs
+                   :nextstate     final-state     
                    :inmasks        (append inmasks override-inmasks)
                    :outmasks       outmasks
                    :orig-ins       orig-ins
@@ -748,6 +771,7 @@
                     labels
                     simplify
                     pre-simplify
+                    state-machine
                     define-macros
                     parents short long)
   :guard (modalist-addr-p (design->modalist design))
@@ -768,7 +792,7 @@
                           (t              (progn$ (raise ":long must be a string.")
                                                   ""))))
 
-       (svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify))
+       (svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify state-machine))
        ((unless svtv)
         (raise "failed to generate svtv"))
 
@@ -979,6 +1003,7 @@ defined with @(see sv::defsvtv).</p>"
                         parents
                         short
                         long
+                        state-machine
                         (simplify 't)
                         (pre-simplify 't) ;; should this be t by default?
                         (define-macros 't))
@@ -986,7 +1011,7 @@ defined with @(see sv::defsvtv).</p>"
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
                    ,(or design mod) ',(or design mod) ,labels ,simplify
-                   ,pre-simplify ,define-macros
+                   ,pre-simplify ,state-machine ,define-macros
                    ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format

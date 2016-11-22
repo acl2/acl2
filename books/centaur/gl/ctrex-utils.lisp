@@ -1047,6 +1047,18 @@ class:~%~%" (len ctrexes))))))
     (glcp-pretty-print-assignments 1 ctrexes concl execp param-bfr bvar-db state)))
 
 
+(defun glcp-apply-ctrex-transform-to-each (ctrexes transform state)
+  (declare (xargs :stobjs (state)
+                  :guard (glcp-obj-ctrexlist-p ctrexes)))
+  (b* (((when (atom ctrexes)) nil)
+       (term (list transform (kwote (car ctrexes))))
+       
+       ((mv err val) (ec-call (acl2::magic-ev term nil state t t)))
+       (- (and err (cw "Failed to execute the counterexample transformation ~x0~%Error: ~@1~%Term: ~x2"
+                       transform (if (eq err t) "(t)" err) term)))
+       (val (if err (car ctrexes) val)))
+    (cons val (glcp-apply-ctrex-transform-to-each (cdr ctrexes) transform state))))
+
 
 (defun glcp-gen/print-ctrexamples (ctrex-info ;; bdd or alist
                                    warn/err type config bvar-db state)
@@ -1058,8 +1070,9 @@ class:~%~%" (len ctrexes))))))
        ((er ctrexes) (glcp-gen-ctrexes ctrex-info
                                        config.shape-spec-alist
                                        config.param-bfr
-                                       config.nexamples
+                                       config.n-counterexamples
                                        bvar-db state))
+       (ctrexes (glcp-apply-ctrex-transform-to-each ctrexes config.ctrex-transform state))
        (state (acl2::f-put-global 'glcp-counterex-assignments ctrexes state)))
     (value (glcp-print-ctrexamples
             ctrexes warn/err type

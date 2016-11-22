@@ -43,6 +43,7 @@
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "constraint-db-deps")
 (include-book "defsort/duplicated-members" :dir :system)
+(include-book "gl-util")
 (local (include-book "gl-generic-interp"))
 (local (include-book "general-object-thms"))
 (local (include-book "hyp-fix"))
@@ -124,26 +125,6 @@
       nil
     (cons (cadr (car x))
           (strip-cadrs (cdr x)))))
-
-
-(mutual-recursion
- (defun collect-vars (x)
-   (cond ((null x) nil)
-         ((atom x) (list x))
-         ((eq (car x) 'quote) nil)
-         (t (collect-vars-list (cdr x)))))
- (defun collect-vars-list (x)
-   (if (atom x)
-       nil
-     (union-equal (collect-vars (car x))
-                  (collect-vars-list (cdr x))))))
-
-
-
-
-
-
-
 
 
 
@@ -461,7 +442,7 @@
              ((when config.abort-ctrex)
               (mv (msg
                    "~x0: Counterexamples found in ~@1; aborting~%"
-                   config.clause-proc-name id)
+                   config.clause-proc id)
                   nil state)))
           (value (list ''nil))))
        ((when false-succ)
@@ -469,10 +450,10 @@
         ;; (modulo side-goals).
         (value (list ''t))))
     ;; The SAT check failed:
-    (if config.abort-unknown
+    (if config.abort-indeterminate
         (mv
          (msg "~x0: SAT check failed in ~@1; aborting~%"
-              config.clause-proc-name id)
+              config.clause-proc id)
          nil state)
       (value (list ''nil)))))
 

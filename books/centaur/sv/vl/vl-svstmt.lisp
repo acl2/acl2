@@ -446,12 +446,12 @@ because... (BOZO)</p>
 
   (local (defthm svex-alist-vars-of-single
            #!sv (equal (svex-alist-vars (list (cons a b)))
-                       (svex-vars b))
+                       (and (svar-p a) (svex-vars b)))
            :hints(("Goal" :in-theory (enable sv::svex-alist-vars)))))
 
   (local (defthm svex-alist-keys-of-single
            #!sv (equal (svex-alist-keys (list (cons a b)))
-                       (list (svar-fix a)))
+                       (and (svar-p a) (list a)))
            :hints(("Goal" :in-theory (enable sv::svex-alist-keys)))))
 
   (local (defthm member-single
@@ -1816,10 +1816,11 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 (define vl-always-apply-trigger-to-updates ((trigger sv::svex-p)
                                             (x sv::svex-alist-p))
   :returns (new-x sv::svex-alist-p)
-  :measure (len (sv::svex-alist-fix x))
-  (b* ((x (sv::svex-alist-fix x))
-       ((when (atom x)) nil)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (and (consp (car x)) (sv::svar-p (caar x)))))
+        (vl-always-apply-trigger-to-updates trigger (cdr x)))
        ((cons var upd) (car x))
+       (upd (sv::svex-fix upd))
        (prev-var (sv::make-svex-var :name (sv::svar-add-delay var 1)))
        (trigger-upd (sv::make-svex-call
                      :fn 'sv::?
@@ -1837,40 +1838,44 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
            (implies (consp (sv::svex-alist-fix x))
                     (cdar (sv::svex-alist-fix x)))
            :hints(("Goal" :in-theory (enable sv::svex-alist-fix)))))
-  (more-returns
-   (new-x :name keys-of-vl-always-apply-trigger-to-updates
-          (iff (sv::svex-lookup v new-x)
-               (sv::svex-lookup v x))
+  (defret keys-of-vl-always-apply-trigger-to-updates
+    (iff (sv::svex-lookup v new-x)
+         (sv::svex-lookup v x))
           :hints(("Goal" :in-theory (enable sv::svex-lookup
-                                            hons-assoc-equal)))))
+                                            hons-assoc-equal))))
   (local (in-theory (disable sv::member-of-svarlist-add-delay)))
 
   (local
-   (more-returns
-    (new-x :name vars-of-vl-always-apply-trigger-to-updates-lemma
-           (implies (and (not (member v (sv::svex-alist-vars x)))
-                         (not (member v (sv::svex-vars trigger)))
-                         (not (member v (sv::svarlist-add-delay
-                                         (sv::svex-alist-keys x) 1)))
-                         (sv::svex-alist-p x))
-                    (not (member v (sv::svex-alist-vars new-x))))
-           :hints(("Goal" :induct (vl-always-apply-trigger-to-updates trigger x)
-                   :in-theory (enable sv::svex-alist-vars
-                                      sv::svex-alist-keys))))))
-  (more-returns
-    (new-x :name vars-of-vl-always-apply-trigger-to-updates
-           (implies (and (not (member v (sv::svex-alist-vars x)))
-                         (not (member v (sv::svex-vars trigger)))
-                         (not (member v (sv::svarlist-add-delay
-                                         (sv::svex-alist-keys x) 1))))
-                    (not (member v (sv::svex-alist-vars new-x))))
-           :hints(("Goal" :induct (sv::svex-alist-fix x)
-                   :expand ((vl-always-apply-trigger-to-updates trigger x)
-                            (sv::svex-alist-vars x)
-                            (sv::svex-alist-fix x)
-                            (:free (a b) (sv::svex-alist-vars (cons a b)))
-                            (sv::svex-alist-keys x))
-                   :in-theory (enable sv::svex-alist-fix))))))
+   (defret vars-of-vl-always-apply-trigger-to-updates-lemma
+     (implies (and (not (member v (sv::svex-alist-vars x)))
+                   (not (member v (sv::svex-vars trigger)))
+                   (not (member v (sv::svarlist-add-delay
+                                   (sv::svex-alist-keys x) 1)))
+                   (sv::svex-alist-p x))
+              (not (member v (sv::svex-alist-vars new-x))))
+     :hints(("Goal" :induct (vl-always-apply-trigger-to-updates trigger x)
+             :in-theory (enable sv::svex-alist-vars
+                                sv::svex-alist-keys)))))
+  (defret vars-of-vl-always-apply-trigger-to-updates
+    (implies (and (not (member v (sv::svex-alist-vars x)))
+                  (not (member v (sv::svex-vars trigger)))
+                  (not (member v (sv::svarlist-add-delay
+                                  (sv::svex-alist-keys x) 1))))
+             (not (member v (sv::svex-alist-vars new-x))))
+    :hints(("Goal" :induct (sv::svex-alist-fix x)
+            :expand ((vl-always-apply-trigger-to-updates trigger x)
+                     (sv::svex-alist-vars x)
+                     (sv::svex-alist-fix x)
+                     (:free (a b) (sv::svex-alist-vars (cons a b)))
+                     (sv::svex-alist-keys x))
+            :in-theory (enable sv::svex-alist-fix))))
+
+  (fty::deffixequiv vl-always-apply-trigger-to-updates :args (x)
+    :hints (("goal" :induct (vl-always-apply-trigger-to-updates trigger x)
+             :expand ((vl-always-apply-trigger-to-updates trigger x)
+                      (vl-always-apply-trigger-to-updates trigger nil)
+                      (:free (a b) (vl-always-apply-trigger-to-updates trigger (cons a b)))
+                      (sv::svex-alist-fix x))))))
 
 
 #||

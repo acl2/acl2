@@ -132,11 +132,11 @@ indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>"))
     :hints ((acl2::witness :ruleset acl2::set-equiv-witnessing))))
 
 
-(defalist svar-alist
+(fty::defmap svar-alist
   :key-type svar
   :parents (svar))
 
-(defalist svar-map
+(fty::defmap svar-map
   :key-type svar
   :val-type svar
   :parents (svar))
@@ -246,6 +246,12 @@ typically be @(see memoize)d in some way or another.</p>"
     :elt-type svex
     :true-listp t))
 
+(defthm svex-fix-nonnil
+  (svex-fix x)
+  :hints(("Goal" :use (RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)
+          :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))
+  :rule-classes :type-prescription)
+
 (fty::defoption maybe-svex svex)
 
 (memoize 'svex-p :condition '(consp x))
@@ -326,7 +332,7 @@ typically be @(see memoize)d in some way or another.</p>"
                        (replicate (- n (len x)) (svex-quote (4vec-x)))
                        (list v)))))
 
-(defalist svex-alist
+(fty::defmap svex-alist
   :key-type svar
   :val-type svex
   :true-listp t
@@ -400,6 +406,23 @@ typically be @(see memoize)d in some way or another.</p>"
   (mbe :logic (svex-lookup var a)
        :exec (cdr (hons-get var a))))
 
+(define svarlist-filter ((x svarlist-p))
+  :returns (new-x svarlist-p)
+  :verify-guards nil
+  (mbe :logic
+       (if (atom x)
+           nil
+         (if (svar-p (car x))
+             (cons (car x) (svarlist-filter (cdr x)))
+           (svarlist-filter (cdr x))))
+       :exec x)
+  ///
+  (defret svarlist-filter-of-svarlist
+    (implies (svarlist-p x)
+             (equal (svarlist-filter x) x)))
+
+  (verify-guards svarlist-filter))
+
 
 (define svex-alist-keys ((x svex-alist-p))
   :parents (svex-alist)
@@ -408,8 +431,8 @@ typically be @(see memoize)d in some way or another.</p>"
   :returns (keys svarlist-p)
   (if (atom x)
       nil
-    (if (consp (car x))
-        (cons (mbe :logic (svar-fix (caar x)) :exec (caar x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (cons (caar x)
               (svex-alist-keys (cdr x)))
       (svex-alist-keys (cdr x))))
   ///
@@ -429,8 +452,8 @@ typically be @(see memoize)d in some way or another.</p>"
 
     (defthm svex-alist-keys-of-pairlis$
     (equal (svex-alist-keys (pairlis$ x y))
-           (svarlist-fix x))
-    :hints(("Goal" :in-theory (enable svarlist-fix pairlis$ svex-alist-keys)))))
+           (svarlist-filter x))
+    :hints(("Goal" :in-theory (enable svarlist-filter pairlis$ svex-alist-keys)))))
 
 
 (define svex-alist-vals ((x svex-alist-p))
@@ -440,7 +463,7 @@ typically be @(see memoize)d in some way or another.</p>"
   :returns (vals svexlist-p)
   (if (atom x)
       nil
-    (if (consp (car x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
         (cons (mbe :logic (svex-fix (cdar x)) :exec (cdar x))
               (svex-alist-vals (cdr x)))
       (svex-alist-vals (cdr x))))
@@ -465,7 +488,8 @@ typically be @(see memoize)d in some way or another.</p>"
     :hints(("Goal" :in-theory (enable svex-alist-keys))))
 
   (defthm svex-alist-vals-of-pairlis$
-    (implies (equal (len x) (len y))
+    (implies (and (equal (len x) (len y))
+                  (svarlist-p x))
              (equal (svex-alist-vals (pairlis$ x y))
                     (svexlist-fix y)))
     :hints(("Goal" :in-theory (enable svexlist-fix pairlis$ svex-alist-vals)))))

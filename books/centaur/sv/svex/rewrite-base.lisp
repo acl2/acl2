@@ -583,8 +583,8 @@ substitution are left in place."
   (define svex-replace-var ((x svex-p) (var svar-p) (repl svex-p))
     :verify-guards nil
     :measure (svex-count x)
-    :returns (xa (equal xa (svex-compose x (list (cons var repl))))
-                 :hints ('(:expand ((svex-compose x (list (cons var repl))))
+    :returns (xa (equal xa (svex-compose x (list (cons (svar-fix var) repl))))
+                 :hints ('(:expand ((:free (a) (svex-compose x a)))
                            :in-theory (enable svex-lookup))))
     (svex-case x
       :var (if (svar-equiv x.name var)
@@ -595,8 +595,8 @@ substitution are left in place."
                        (svexlist-replace-var x.args var repl))))
   (define svexlist-replace-var ((x svexlist-p) (var svar-p) (repl svex-p))
     :measure (svexlist-count x)
-    :returns (xa (equal xa (svexlist-compose x (list (cons var repl))))
-                 :hints ('(:expand ((svexlist-compose x (list (cons var repl)))))))
+    :returns (xa (equal xa (svexlist-compose x (list (cons (svar-fix var) repl))))
+                 :hints ('(:expand ((:free (a) (svexlist-compose x a))))))
     (if (atom x)
         nil
       (cons (svex-replace-var (car x) var repl)
@@ -611,7 +611,7 @@ substitution are left in place."
   :returns (xx svex-alist-p)
   (if (atom x)
       nil
-    (if (consp (car x))
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
         (svex-acons (caar x) (svex-compose (cdar x) a)
                     (svex-alist-compose (cdr x) a))
       (svex-alist-compose (cdr x) a)))
