@@ -1964,4 +1964,16 @@ relationship with @(see svex-xeval)."
   (b* (((4vec x) x))
     (eql -1 (logior (lognot x.upper) x.lower))))
 
+(defxdoc 4vec-uor
+  :parents 4vec-operations
+  :short "Unary bit-or"
+  :long "Unary bit-or, which takes a vector of bits and collapses them into a
+  single bit by @('or')ing them together Not currently defined as a function
+  but used by the SVex interpreter as @('UOR').")
 
+(defxdoc 4vec-uand
+  :parents 4vec-operations
+  :short "Unary bit-and"
+  :long "Unary bit-and, which takes a vector of bits and collapses them into a
+  single bit by @('and')ing them together.  Not currently defined as a function
+  but used by the SVex interpreter as @('UAND').")
