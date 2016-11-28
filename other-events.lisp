@@ -22116,11 +22116,11 @@
                     (list (cons #\0 ,throw-raw-ev-fncall-string)
                           (cons #\1 (ev-fncall-msg
                                      (car arglist)
-                                     (w *the-live-state*)
-                                     (user-stobj-alist *the-live-state*))))
-                    0 *standard-co* *the-live-state*
+                                     (w state)
+                                     (user-stobj-alist state))))
+                    0 *standard-co* state
                     "~|~%")
-                   (maybe-print-call-history *the-live-state*)
+                   (maybe-print-call-history state)
                    (break$)))))
     `(let ((on ,on))
        (er-progn
@@ -22133,7 +22133,7 @@
                          (,@throw-raw-ev-fncall-trace-form
                           :cond
                           (not (f-get-global 'in-prove-flg
-                                             *the-live-state*)))))
+                                             state)))))
            ((nil) (with-output :off warning (untrace$ error1
                                                       er-cmp-fn
                                                       throw-raw-ev-fncall)))

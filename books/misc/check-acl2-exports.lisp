@@ -106,6 +106,7 @@
     REMOVE-DIVE-INTO-MACRO
     REWRITE
     SAFE-MODE
+    SET-BAD-LISP-CONSP-MEMOIZE ; should add to *acl2-exports*
     TYPE-SET
     WATERFALL
     WITH-GUARD-CHECKING-EVENT ; should add to *acl2-exports*

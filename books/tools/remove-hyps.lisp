@@ -16,51 +16,94 @@
 
 (include-book "xdoc/top" :dir :system)
 
-;; ===================================================================
-
-(defxdoc remove-hyps
-  :parents (proof-automation debugging)
-  :short "Macro for defining a theorem with a minimal set of hypotheses"
-  :long "<p>Suppose E is an admissible event of the form @('(defthm
-  name (implies hyps ...))').  Then submitting instead the form @('(remove-hyps
-  E)') results in storing a modified version of E, in which @('hyps') has been
-  reduced to a minimal set of hypotheses.</p>
-
- <p>By default, @('remove-hyps') evaluates silently.  To see output from proof
- attempts, add a non-nil optional argument.  For example, for event @('E'), use
- @('(remove-hyps E t)').</p>
-
- <p>This tool is available in @('tools/remove-hyps.lisp').</p>")
-
 ; Possible enhancements include:
 
-; - Printing the final event if hypotheses were eliminated
-
-; - Hiding the output (optionally)
-
-; - Supporting a mode where the new event isn't actually submitted
+; - Supporting a mode where the new event isn't actually submitted (as is
+;   already done in the case of THM)
 
 ; - Taking advantage of the :OR feature of make-event to avoid repeated
 ;   evaluation in some cases
 
-; - Using the :DO-PROOFS feature of make-event to ensure proper operation event
-;   when skipping proofs (e.g., calling rebuild)
+; - Using the :DO-PROOFS feature of make-event to ensure proper operation when
+;   skipping proofs (e.g., calling rebuild)
 
 ; - Using the :EXPANSION? feature of make-event to avoid storing the make-event
 ;   expansion in the certificate, in the common case where no hypotheses are
 ;   eliminated
 
-; - Further develop documentation, e.g., moving example into it.
+; - Further develop documentation, e.g., moving examples into it
 
 ; - Moving event destructuring out of remove-hyps to a separate function
 ;   (in analogy to event construction using make-defthm)
 
-; - Support for other forms besides defthm, such as defrule
+; - Support for other forms, such as defrule
 
 ; - Consider somehow reporting the correct prover-steps for the final defthm,
 ;   but still reporting the total prover-steps for the entire remove-hyps
 ;   invocation (as might be done now -- maybe figure that out and document
 ;   it).
+
+; - Avoid generating ignorable declarations (search below for "ignorable") by
+;   using source function translate-cmp, say, to see which variables are used.
+
+;; ===================================================================
+
+(defxdoc remove-hyps
+  :parents (proof-automation debugging)
+  :short "Macro for defining a theorem with a minimal set of hypotheses"
+  :long "<p>For a call of @(tsee defthm), @(tsee defthmd), or @(tsee thm), the
+ application of @('remove-hyps') results in a a minimal set of hypotheses.
+ For example:</p>
+
+ @({
+ (remove-hyps
+  (defthm nth-append
+    (implies (and (true-listp x)
+                  (natp n)
+                  (true-listp y))
+             (equal (nth n (append x y))
+                    (if (< n (len x))
+                        (nth n x)
+                      (nth (- n (len x)) y))))
+    :rule-classes nil))
+ })
+
+ <p>generates:</p>
+
+ @({
+ (DEFTHM NTH-APPEND
+   (IMPLIES (NATP N)
+            (EQUAL (NTH N (APPEND X Y))
+                   (IF (< N (LEN X))
+                       (NTH N X)
+                     (NTH (- N (LEN X)) Y))))
+   :RULE-CLASSES NIL)
+ })
+
+ <p>Acceptable forms are as follows, where @('HYP') can be a conjunction of
+ hypotheses, @('(and HYP1 ... HYPn)'), and ``@('defthm NAME')'' may be
+ replaced by ``@('defthmd NAME')'' or ``@('THM')''.</p>
+
+ @({
+ (defthm NAME (implies HYP CONCL) ...)
+ (defthm NAME CONCL ...)
+ (defthm NAME (let ... (implies HYP CONCL)) ...)
+ (defthm NAME (let ... CONCL) ...)
+ (defthm NAME (let* ... (implies HYP CONCL)) ...)
+ (defthm NAME (let* ... CONCL) ...)
+ })
+
+ <p>Normally, before using @('remove-hyps'), one succesfully submits the given
+ call of @('defthm'), @('defthmd'), or @('thm').  Thus by default,
+ @('remove-hyps') evaluates silently.  To see output from proof attempts, add a
+ non-nil optional argument.  For example, for event @('E'), use @('(remove-hyps
+ E t)').</p>
+
+ <p>Finally, note that when @('remove-hyps') is applied to a call of
+ @('defthm') or @('defthmd'), then @('remove-hyps') will conclude by submitting
+ the generated event to ACL2.  But since @('thm') does not modify the logical
+ @(tsee world), @('remove-hyps') does not perform an extra such call at the end
+ for calls of @('thm').</p>")
 
 
 ;; ===================================================================
@@ -100,10 +143,17 @@
 
 ;; This function creates a defthm event using the dumb-implicate function to
 ;; create the form.
-(defun make-defthm (name hyps concl kwd-alist)
-  `(defthm ,name
-     ,(dumb-implicate hyps concl)
-     ,@kwd-alist))
+(defun make-defthm (deft name hyps concl kwd-alist let/let* bindings)
+  (let* ((form0 (dumb-implicate hyps concl))
+         (form (if bindings
+                   `(,let/let* ,bindings
+                               (declare (ignorable ,@(strip-cars bindings)))
+                               ,form0)
+                 form0)))
+    (if (null name)
+        (assert$ (eq deft 'thm)
+                 `(thm ,form ,@kwd-alist))
+      `(,deft ,name ,form ,@kwd-alist))))
 
 
 ;; ======================== DEFTHM EXECUTION =========================
@@ -163,7 +213,7 @@
 ;; "additional" hypotheses that are necessary, ultimately returning the reverse
 ;; of the accumulated list.
 (defun remove-hyps-formula-1 (name rev-init-hyps rest-hyps concl kwd-alist
-                                   steps verbose-p state)
+                                   let/let* bindings steps verbose-p state)
 
   (cond
    ; If there are no more hypotheses to test, then return the reverse of the
@@ -177,7 +227,7 @@
      name
      (cons (car rest-hyps) rev-init-hyps)
      (cdr rest-hyps)
-     concl kwd-alist steps verbose-p state))
+     concl kwd-alist let/let* bindings steps verbose-p state))
    ; Create a new form by appending the necessary hypotheses to the cdr of the
    ; additional hypotheses.  Evaluate the form, limiting the number of steps
    ; based on the heuristic above.  Then recur using the cdr of the additional
@@ -187,9 +237,10 @@
    ; necessary hypotheses; otherwise, accumulate it.
    (t (let ((form `(with-prover-step-limit
                     ,steps
-                    ,(make-defthm name
+                    ,(make-defthm 'defthm
+                                  name
                                   (revappend rev-init-hyps (cdr rest-hyps))
-                                  concl kwd-alist))))
+                                  concl kwd-alist let/let* bindings))))
         ; Try the new event.
         (er-let* ((event-steps (event-steps form verbose-p nil state)))
           ; Recur with the cdr of the unknown hypotheses, but...
@@ -201,30 +252,39 @@
                   (cons (car rest-hyps) rev-init-hyps))
                  (t rev-init-hyps))
            (cdr rest-hyps)
-           concl kwd-alist steps verbose-p state))))))
+           concl kwd-alist let/let* bindings steps verbose-p state))))))
 
 ;; This function returns an error triple whose value, in the non-error case, is
 ;; a defthm form for the given hyps, concl, and kwd-alist -- except, hypotheses
 ;; may be removed from hyps to provide a form whose proof nevertheless succeeds.
-(defun remove-hyps-formula (form name hyps concl kwd-alist verbose-p ctx state)
-  ; Try the original event and obtain the number of steps.
-  (er-let* ((steps (event-steps form verbose-p nil state)))
-    (cond
-     ; If the original event failed, then we simply fail.
-     ((null steps)
-      ; So signal an error.
-      (er soft ctx
-          "Original theorem failed!"))
-     ; Else, call a recursive procedure to remove hypotheses.
-     (t (er-let*
-         ((final-hyps
-           ; Note that the second and third argument represent necessary and
-           ; additional hypotheses.  We start with an empty list of necessary
-           ; hypotheses and a full list of additional hypotheses.
-           (remove-hyps-formula-1 name nil hyps concl kwd-alist
-                                  (remove-hyps-formula-steps steps)
-                                  verbose-p state)))
-         (value (make-defthm name final-hyps concl kwd-alist)))))))
+(defun remove-hyps-formula (form name hyps concl kwd-alist let/let* bindings
+                                 verbose-p ctx state)
+  (let ((name2 (or name (gen-new-name 'remove-hyps-name (w state)))))
+    ;; Try the original event and obtain the number of steps.
+    (er-let* ((steps (event-steps (if name
+                                      form
+                                    (assert$ (eq (car form) 'thm)
+                                             `(defthm ,name2 ,@(cdr form))))
+                                  verbose-p nil state)))
+      (cond
+       ((null steps) ; The original event failed; so we simply fail.
+        (er soft ctx
+            "Original theorem failed!"))
+       (t ; Else, call a recursive procedure to remove hypotheses.
+        (er-let*
+            ((final-hyps
+              ;; Note that the second and third argument represent necessary and
+              ;; additional hypotheses.  We start with an empty list of necessary
+              ;; hypotheses and a full list of additional hypotheses.
+              (remove-hyps-formula-1 name2
+                                     nil hyps concl kwd-alist let/let*
+                                     bindings
+                                     (remove-hyps-formula-steps steps)
+                                     verbose-p state)))
+          (value (if (equal (length hyps) (length final-hyps))
+                     nil ; no change
+                   (make-defthm (car form) name final-hyps concl kwd-alist
+                                let/let* bindings)))))))))
 
 ;; This function takes the original form and then calls remove-hyps-function to
 ;; create a new form with, potentially, fewer hypotheses.  A test is then
@@ -232,48 +292,76 @@
 ;; printed to the terminal.  Finally, after the form is printed, the new form
 ;; is submitted silently.  Note that form is essentially (defthm name (implies
 ;; hyps concl) . kwd-alist).
-(defun remove-hyps-fn (form name hyps concl kwd-alist verbose-p)
+(defun remove-hyps-fn (form name hyps concl kwd-alist let/let* bindings
+                            verbose-p)
   `(make-event
-    ; Obtain a new form with a minimal subset of the hypotheses.
+    ;; Obtain a new form with a minimal subset of the hypotheses.
     (er-let* ((new-form
                (remove-hyps-formula ',form ',name ',hyps ',concl ',kwd-alist
-                                    ',verbose-p 'remove-hyps state)))
-      ; Test the new form versus the old form.
-      (pprogn (cond ((equal new-form ',form)
-                     ; If no hypotheses were removed, print this to the terminal.
-                     (fms "Note: REMOVE-HYPS left its input unchanged.  Now ~
-                           silently submitting the original form.~|"
-                          nil (standard-co state) state nil))
-                    ; If some hypotheses were removed, print the new form.
-                    (t (fms "New form from REMOVE-HYPS:~|~%~x0~|~%Now silently ~
-                             submitting the above form.~|"
-                            (list (cons #\0 new-form))
+                                    ',let/let* ',bindings ',verbose-p
+                                    'remove-hyps state))
+              (thmp (value (eq (car new-form) 'thm))))
+; Test the new form versus the old form.
+      (pprogn (cond ((null new-form) ; no change
+; If no hypotheses were removed, print this to the terminal.
+                     (fms "Note: REMOVE-HYPS left its input unchanged.~|~@0"
+                          (list (cons #\0
+                                      (if thmp
+                                          ""
+                                        "Now silently submitting the original ~
+                                         form.~|")))
+                          (standard-co state) state nil))
+; If some hypotheses were removed, print the new form.
+                    (t (fms "New form from REMOVE-HYPS:~|~%~x0~|~%~@1"
+                            (list (cons #\0 new-form)
+                                  (cons #\1
+                                        (if thmp
+                                            ""
+                                          "Now silently submitting the new ~
+                                           form (above).~|")))
                             (standard-co state) state nil)))
-              ; Now submit the new form with all output disabled.
-              (value (list 'with-output
-                           :off :all
-                           :gag-mode t
-                           new-form))))))
+; Now submit the new form with all output disabled.
+              (value (if thmp
+                         '(value-triple :invisible)
+                       (list 'with-output
+                             :off :all
+                             :gag-mode t
+                             (or new-form ',form))))))))
 
-;; The remove-hyps macro takes a defthm form and attempts to match the case
-;; based on the number of hypotheses.  Note that an error occurs if the formula
-;; of the defthm is not an implication.
-(defmacro remove-hyps (defthm-form &optional verbose-p)
-  (case-match defthm-form
-    ; Form with multiple hypotheses bound by "and"
-    (('defthm name
-       ('implies ('and . hyps) concl)
-       . kwd-alist)
-     (remove-hyps-fn defthm-form name hyps concl kwd-alist verbose-p))
-    ; Form with one hypothesis.  Create a list with this hypothesis.
-    (('defthm name
-       ('implies hyp concl)
-       . kwd-alist)
-     (remove-hyps-fn defthm-form name (list hyp) concl kwd-alist verbose-p))
-    ; Unknown form.  Signal error.
-    (& `(er soft 'remove-hyps
-            "Illegal argument to remove-hyps:~|~%~y0"
-            ',defthm-form))))
+;; The remove-hyps macro takes a defthm (or defthmd or thm) form and attempts
+;; to match the case based on the number of hypotheses.  Note that an error
+;; occurs if the formula of the defthm is not an implication, perhaps within a
+;; let or let*.
+(defmacro remove-hyps (form &optional verbose-p)
+  (or (and (consp form)
+           (member-eq (car form) '(defthm defthmd thm))
+           (mv-let
+             (name form-without-name)
+             (if (eq (car form) 'thm)
+                 (mv nil (cdr form))
+               (mv (cadr form) (cddr form)))
+             (case-match form-without-name
+               ((('implies hyp concl)
+                 . kwd-alist)
+                (let ((hyps (if (and (consp hyp)
+                                     (eq (car hyp) 'and))
+                                (cdr hyp)
+                              (list hyp))))
+                  (remove-hyps-fn form name hyps concl kwd-alist
+                                  nil nil verbose-p)))
+               (((let/let* bindings ('implies hyp concl))
+                 . kwd-alist)
+                (and (member-eq let/let* '(let let* b*))
+                     (let ((hyps (if (and (consp hyp)
+                                          (eq (car hyp) 'and))
+                                     (cdr hyp)
+                                   (list hyp))))
+                       (remove-hyps-fn form name hyps concl kwd-alist
+                                       let/let* bindings verbose-p))))
+               (& nil))))
+      `(er soft 'remove-hyps
+           "Illegal argument to remove-hyps:~|~%~y0"
+           ',form)))
 
 ;; Return to logic mode.
 (logic)
@@ -341,3 +429,31 @@
                 (nth n x)
               (nth (- n (len x)) y))))
    :rule-classes nil))
+
+(set-enforce-redundancy nil)
+
+(local
+ (remove-hyps
+  (defthm nth-append-alt-2
+    (let ((xx x))
+      (implies (and (true-listp xx)
+                    (natp n)
+                    (true-listp y))
+               (equal (nth n (append xx y))
+                      (if (< n (len x))
+                          (nth n x)
+                        (nth (- n (len xx)) y)))))
+    :hints (("Goal'" :induct t)))))
+
+(set-enforce-redundancy t)
+
+(local
+ (defthm nth-append-alt-2
+   (let ((xx x))
+     (declare (ignorable xx))
+     (implies (natp n)
+              (equal (nth n (append xx y))
+                     (if (< n (len x))
+                         (nth n x)
+                       (nth (- n (len xx)) y)))))
+   :hints (("Goal'" :induct t))))

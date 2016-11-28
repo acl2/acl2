@@ -206,22 +206,22 @@ vl); see @(see sv::sv-versus-esim) for a comparison.</p>
  <h4>Other new books</h4>
 
  <p>A toy cache coherency protocol called VI and its proof of
-  correctness has been contributed by Ben Selfridge and David Rager in
-  @('projects/cache-coherence/'). This effort takes an approach that
-  starts with a goal invariant and develops many helper invariants
-  while trying to prove this goal invariant.</p>
+  correctness have been contributed by Ben Selfridge and David Rager
+  in @('projects/cache-coherence/'). This effort takes an approach
+  that starts with a goal invariant and develops many helper
+  invariants while trying to prove this goal invariant.</p>
 
  <p>David Russinoff has contributed a proof of the group axioms for
- the addition operation on the elliptic curver known as
+ the addition operation on the elliptic curve known as
  @('Curve25519'); these books can be found in
  @('projects/curve25519/'). Another library in @('projects/shnf')
- contains a formalization of the theory of sparse Horner normal form
+ contains a formalization of the theory of sparse Horner normal forms
  for integer polynomials.</p>
 
  <p>Ben Selfridge has contributed his library @('projects/sb-machine')
- that contains a formalization of the formalize the x86-TSO memory
- model. This model contains a machine with multiple processors, a
- shared memory, and store buffers.</p>
+ that contains a formalization of the x86-TSO memory model. This model
+ contains a machine with multiple processors, a shared memory, and
+ store buffers.</p>
 
  <p>The book @('demos/meta-wf-guarantee-example.lisp') has an example
  that demonstrates the use of @(':well-formedness-guarantee') for
