@@ -666,15 +666,7 @@ directly with ACL2.</p>
 ; decided to avoid extending current-clause using that body.
 
                                      :current-clause current-clause
-                                     :force-info
-
-; It probably makes sense simply to set the following to t.  Up through October
-; 2016 it has been 'weak, so we leave it that way for backward compatibility --
-; for now.
-
-                                     (if (ffnnamep-lst 'if current-clause)
-                                         'weak
-                                       t)))
+                                     :force-info t))
                             (pts
                              ;; (current-clause-pts (enumerate-elements current-clause 0))
                              nil))
@@ -1561,3 +1553,100 @@ x=0. Maybe we should think about how to do this and do it.
 
 
 |#
+
+; Finally, we add defsimp.  Documentation will hopefully come later.  For now,
+; here are a couple of examples:
+
+; (defsimp (car (cons x y)) nil test1 :print :only)
+; (defsimp (car (cons x y)) nil test2) ; same as :print :all
+; (defsimp (+ x 0) ((integerp x)) test3 :print t :rule-classes nil)
+
+(defun defsimp-fn
+  (term hyps equiv state in-theory expand translate-flg must-rewrite-flg
+        defthm-name rule-classes print)
+
+; See tool2-fn.  Here we create a corresponding defthm event.
+
+; Equiv is the equivalence relation, which is implicitly 'equal if equiv is t
+; or nil.
+
+  (let ((ctx 'defsimp)
+        (wrld (w state))
+        (ens (ens state))
+        (hints `(,@(and in-theory
+                        `((:in-theory ,in-theory)))
+                 ,@(and expand
+                        `((:expand ,expand))))))
+    (er-let* ((runes/new-term/assumptions
+               (tool2-fn0 term hyps equiv ctx ens wrld state hints
+                          t ; prove-assumptions
+                          t ; inhibit-output
+                          translate-flg
+                          nil ; print-flg
+                          must-rewrite-flg)))
+      (let ((runes (car runes/new-term/assumptions))
+            (new-term (cadr runes/new-term/assumptions))
+            (assumptions (cddr runes/new-term/assumptions)))
+        (cond
+         (assumptions
+          (er soft ctx
+              "Implementation error: assumptions were unexpectedly forced.  ~
+               Please contact the maintainers of books/misc/expander.lisp"))
+         ((not (true-listp hyps))
+          (er soft ctx
+              "The given hypotheses must be a true list, but ~x0 is not."
+              hyps))
+         (t
+          (let* ((formula
+                  (if hyps
+                      (list 'implies
+                            (if (cdr hyps)
+                                (cons 'and hyps)
+                              (car hyps))
+                            (list (or equiv 'equal) term new-term))
+                    (list (or equiv 'equal) term new-term)))
+                 (event-form
+                  `(defthm ,defthm-name
+                     ,formula
+                     :instructions
+                     ((:in-theory (union-theories (theory 'minimal-theory)
+                                                  ',runes))
+                      ,@(and hyps '(:promote))
+                      (:dive 1)
+                      (:s :backchain-limit 500)
+                      :up
+                      :s-prop)
+                     ,@(and (not (eq rule-classes :rewrite))
+                            `(:rule-classes ,rule-classes)))))
+            (pprogn
+             (cond
+              ((eq print t)
+               (fms "New term:~|~x0~|~%"
+                    (list (cons #\0 new-term))
+                    (standard-co state) state nil))
+              ((eq print :all)
+               (fms "~x0~|~%"
+                    (list (cons #\0 event-form))
+                    (standard-co state) state nil))
+              (t state))
+             (value event-form)))))))))
+
+(defmacro defsimp (term hyps defthm-name
+                        &key
+                        (rule-classes ':rewrite)
+                        in-theory expand
+                        equiv
+                        (translate-flg 't)
+                        (must-rewrite-flg 't)
+                        (print ':all))
+  (let ((form `(defsimp-fn ',term ',hyps ',equiv state ',in-theory ',expand
+                 ',translate-flg
+                 ,must-rewrite-flg ; evaluated, as for tool2 macro
+                 ',defthm-name ',rule-classes ',print)))
+
+    `(with-output :off :all :on error
+       ,(if (eq print :only)
+            `(make-event (er-let* ((form ,form))
+                           (value (list 'value-triple
+                                        (list 'quote form)))))
+          `(make-event ,form)))))
