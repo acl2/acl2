@@ -1561,6 +1561,14 @@ x=0. Maybe we should think about how to do this and do it.
 ; (defsimp (car (cons x y)) nil test2) ; same as :print :all
 ; (defsimp (+ x 0) ((integerp x)) test3 :print t :rule-classes nil)
 
+; Here is an example with forcing.
+
+; (defun my-true (x) (if (consp x) (my-true (cdr x)) t))
+; (in-theory (disable (:t my-true)))
+; (defstub p1 (x) t)
+; (defaxiom p1-ax (implies (force (my-true x)) (equal (p1 x) t)))
+; (defsimp (p1 a) nil foo)
+
 (defun defsimp-fn
   (term hyps equiv state in-theory expand translate-flg must-rewrite-flg
         defthm-name rule-classes print)
@@ -1573,7 +1581,7 @@ x=0. Maybe we should think about how to do this and do it.
   (let ((ctx 'defsimp)
         (wrld (w state))
         (ens (ens state))
-        (hints `(,@(and in-theory
+        (hints `(,@(and (not (eq in-theory :none))
                         `((:in-theory ,in-theory)))
                  ,@(and expand
                         `((:expand ,expand))))))
@@ -1605,15 +1613,23 @@ x=0. Maybe we should think about how to do this and do it.
                               (car hyps))
                             (list (or equiv 'equal) term new-term))
                     (list (or equiv 'equal) term new-term)))
+                 (runes+ `(union-theories (theory 'minimal-theory)
+                                          ',runes))
                  (event-form
                   `(defthm ,defthm-name
                      ,formula
                      :instructions
-                     ((:in-theory (union-theories (theory 'minimal-theory)
-                                                  ',runes))
+                     ((:in-theory ,runes+)
                       ,@(and hyps '(:promote))
                       (:dive 1)
-                      (:s :backchain-limit 500)
+                      (:then (:s :backchain-limit 500)
+
+; Deal with forced assumptions, if any.
+
+                             (:prove
+                              ,@(and expand
+                                     `(:hints
+                                       (("Goal" :expand ,expand))))))
                       :up
                       :s-prop)
                      ,@(and (not (eq rule-classes :rewrite))
@@ -1634,7 +1650,8 @@ x=0. Maybe we should think about how to do this and do it.
 (defmacro defsimp (term hyps defthm-name
                         &key
                         (rule-classes ':rewrite)
-                        in-theory expand
+                        (in-theory ':none)
+                        expand
                         equiv
                         (translate-flg 't)
                         (must-rewrite-flg 't)
