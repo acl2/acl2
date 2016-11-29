@@ -676,7 +676,9 @@ directly with ACL2.</p>
                                          pts
                                          (access rewrite-constant
                                                  rcnst :force-info)
-                                         nil wrld ens
+                                         nil wrld
+                                         (access rewrite-constant rcnst
+                                                 :current-enabled-structure)
                                          (access rewrite-constant rcnst
                                                  :oncep-override)
                                          state)
@@ -803,7 +805,9 @@ directly with ACL2.</p>
                                                (er-let* ((new-ttree
                                                           (prove-loop1
                                                            1 nil pairs pspv
-                                                           thints ens wrld
+                                                           thints
+                                                           ens
+                                                           wrld
                                                            ctx state)))
                                                  (let* ((runes
                                                          (all-runes-in-ttree
