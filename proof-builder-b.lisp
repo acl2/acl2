@@ -3435,6 +3435,33 @@
 
 (defconst *default-s-repeat-limit* 10)
 
+(defun hyps-type-alist-and-pot-lst (assumptions rcnst ens wrld state)
+
+; Rcnst is a rewrite constant if we are to use linear arithmetic, else nil.
+
+  (mv-let
+    (flg type-alist ttree-or-fc-pair-lst)
+    (hyps-type-alist assumptions ens wrld state)
+    (cond
+     ((or (not rcnst) ; see comment above
+          flg)
+      (mv flg type-alist nil ttree-or-fc-pair-lst))
+     (t
+      (mv-let
+        (step-limit contradictionp pot-lst)
+        (setup-simplify-clause-pot-lst
+         (dumb-negate-lit-lst assumptions)
+         nil ttree-or-fc-pair-lst type-alist rcnst wrld state
+         *default-step-limit*)
+        (declare (ignore step-limit))
+        (cond
+         (contradictionp
+          (mv t nil nil
+              (push-lemma
+               *fake-rune-for-linear*
+               (access poly contradictionp :ttree))))
+         (t (mv nil type-alist pot-lst ttree-or-fc-pair-lst))))))))
+
 (define-pc-primitive s (&rest args)
   (cond
    ((not (keyword-value-listp args))
@@ -3448,175 +3475,185 @@
     (let ((comm (make-official-pc-command 's))
           (w (w state))
           (current-term (fetch-term conc current-addr))
-          (assumptions (union-equal hyps (governors conc current-addr))))
+          (assumptions (union-equal hyps
+                                    (flatten-ands-in-lit-lst
+                                     (governors conc current-addr)))))
       (let ((pc-ens (make-pc-ens pc-ens state)))
         (mv-let
-         (bcl-alist rst)
-         (pair-keywords '(:backchain-limit :normalize :rewrite :repeat) args)
-         (let ((local-backchain-limit
-                (or (cdr (assoc-eq :backchain-limit bcl-alist)) 0))
+          (bcl-alist rst)
+          (pair-keywords '(:backchain-limit :normalize :rewrite :repeat) args)
+          (let* ((local-backchain-limit
+                  (or (cdr (assoc-eq :backchain-limit bcl-alist)) 0))
 
 ; IF-normalization and rewriting will happen by default
 
-               (normalize
-                (let ((pair (assoc-eq :normalize bcl-alist)))
-                  (if pair (cdr pair) t)))
-               (rewrite
-                (let ((pair (assoc-eq :rewrite bcl-alist)))
-                  (if pair (cdr pair) t)))
-               (repeat
-                (let ((pair (assoc-eq :repeat bcl-alist)))
-                  (if pair
-                      (if (equal (cdr pair) t)
-                          *default-s-repeat-limit*
-                        (cdr pair))
-                    0))))
-           (cond
-            ((not (natp repeat))
-             (print-no-change2
-              "The :REPEAT argument provided to S (or a command that invoked ~
-               S), which was ~x0, is illegal. ~ It must be T or a natural ~
-               number."
-              (list (cons #\0 repeat))))
-            ((not (natp local-backchain-limit))
-             (print-no-change2
-              "The :BACKCHAIN-LIMIT argument provided to S (or a command that ~
-               invoked S), which was ~x0, is illegal.  It must be NIL or a ~
-               natural number."
-              (list (cons #\0 local-backchain-limit))))
-            ((not (or normalize rewrite))
-             (print-no-change2 "You may not specify in the S command that ~
-                                neither IF normalization nor rewriting is to ~
-                                take place."))
-            ((and (null rewrite)
-                  (or (assoc-eq :backchain-limit bcl-alist)
-                      (assoc-eq :repeat bcl-alist)
-                      rst))
-             (print-no-change2 "When the :REWRITE NIL option is specified, it ~
-                                is not allowed to provide arguments other than ~
-                                :NORMALIZE T.  The argument list ~x0 violates ~
-                                this requirement."
-                               (list (cons #\0 args))))
-            (t
-             (mv-let
-              (key-alist new-rst)
-              (pair-keywords '(:in-theory :hands-off :expand) rst)
-              (declare (ignore key-alist))
-              (cond
-               (new-rst
-                (print-no-change2
-                 "The arguments to the S command must all be &KEY arguments, ~
-                  which should be among ~&0.  Your argument list ~x1 violates ~
-                  this requirement."
-                 (list (cons #\0 '(:rewrite :normalize :backchain-limit
-                                            :repeat :in-theory :hands-off
-                                            :expand))
-                       (cons #\1 args))))
-               (t
-                (mv-let
-                 (erp hint-settings state)
-                 (translate-hint-settings
-                  comm "Goal" rst
-                  (if args (cons comm (car args)) comm)
-                  w state)
-                 (cond
-                  (erp (print-no-change2 "S failed."))
-                  (t
-                   (mv-let
-                    (flg hyps-type-alist ttree)
-                    (hyps-type-alist assumptions pc-ens w state)
+                 (normalize
+                  (let ((pair (assoc-eq :normalize bcl-alist)))
+                    (if pair (cdr pair) t)))
+                 (rewrite
+                  (let ((pair (assoc-eq :rewrite bcl-alist)))
+                    (if pair (cdr pair) t)))
+                 (linear
+                  (let ((pair (assoc-eq :linear bcl-alist)))
+                    (if pair (cdr pair) rewrite)))
+                 (repeat
+                  (let ((pair (assoc-eq :repeat bcl-alist)))
+                    (if pair
+                        (if (equal (cdr pair) t)
+                            *default-s-repeat-limit*
+                          (cdr pair))
+                      0))))
+            (cond
+             ((not (natp repeat))
+              (print-no-change2
+               "The :REPEAT argument provided to S (or a command that invoked ~
+                S), which was ~x0, is illegal. ~ It must be T or a natural ~
+                number."
+               (list (cons #\0 repeat))))
+             ((not (natp local-backchain-limit))
+              (print-no-change2
+               "The :BACKCHAIN-LIMIT argument provided to S (or a command ~
+                that invoked S), which was ~x0, is illegal.  It must be NIL ~
+                or a natural number."
+               (list (cons #\0 local-backchain-limit))))
+             ((not (or normalize rewrite))
+              (print-no-change2 "You may not specify in the S command that ~
+                                 neither IF normalization nor rewriting is to ~
+                                 take place."))
+             ((and (null rewrite)
+                   (or (assoc-eq :backchain-limit bcl-alist)
+                       (assoc-eq :repeat bcl-alist)
+                       rst))
+              (print-no-change2 "When the :REWRITE NIL option is specified, ~
+                                 it is not allowed to provide arguments other ~
+                                 than :NORMALIZE T.  The argument list ~x0 ~
+                                 violates this requirement."
+                                (list (cons #\0 args))))
+             (t
+              (mv-let
+                (key-alist new-rst)
+                (pair-keywords '(:in-theory :hands-off :expand) rst)
+                (declare (ignore key-alist))
+                (cond
+                 (new-rst
+                  (print-no-change2
+                   "The arguments to the S command must all be &KEY ~
+                    arguments, which should be among ~&0.  Your argument list ~
+                    ~x1 violates this requirement."
+                   (list (cons #\0 '(:rewrite :normalize :backchain-limit
+                                              :repeat :in-theory :hands-off
+                                              :expand))
+                         (cons #\1 args))))
+                 (t
+                  (mv-let
+                    (erp hint-settings state)
+                    (translate-hint-settings
+                     comm "Goal" rst
+                     (if args (cons comm (car args)) comm)
+                     w state)
                     (cond
-                     (flg
-                      (cond
-                       ((or (null current-addr) ; optimization
-                            (equal assumptions hyps)
-                            (mv-let (flg hyps-type-alist ttree)
+                     (erp (print-no-change2 "S failed."))
+                     (t
+                      (let ((base-rcnst
+                             (and rewrite
+                                  (change
+                                   rewrite-constant
+                                   *empty-rewrite-constant*
+                                   :current-enabled-structure pc-ens
+                                   :force-info t))))
+                        (mv-let
+                          (flg hyps-type-alist pot-lst ttree)
+                          (hyps-type-alist-and-pot-lst assumptions
+                                                       (and linear base-rcnst)
+                                                       pc-ens w state)
+                          (cond
+                           (flg
+                            (cond
+                             ((or (null current-addr) ; optimization
+                                  (equal assumptions hyps)
+                                  (mv-let (flg hyps-type-alist ttree)
                                     (hyps-type-alist hyps pc-ens w state)
                                     (declare (ignore hyps-type-alist
                                                      ttree))
                                     flg))
-                        (pprogn
-                         (io? proof-builder nil state
-                              nil
-                              (fms0 "~|Goal proved:  Contradiction in the ~
-                                     hypotheses!~|"))
-                         (mv (change-pc-state
-                              pc-state
-                              :goals
-                              (cond ((tagged-objects 'assumption ttree)
+                              (pprogn
+                               (io? proof-builder nil state
+                                    nil
+                                    (fms0 "~|Goal proved:  Contradiction in ~
+                                           the hypotheses!~|"))
+                               (mv (change-pc-state
+                                    pc-state
+                                    :goals
+                                    (cond ((tagged-objects 'assumption ttree)
 
 ; See the comment in define-pc-primitive about leaving the top goal on the top
 ; of the :goals stack.
 
-                                     (cons (change goal (car goals)
-                                                   :conc *t*)
-                                           (cdr goals)))
-                                    (t (cdr goals)))
-                              :local-tag-tree ttree)
-                             state)))
-                       (t
-                        (print-no-change2
-                         "A contradiction was found in the current context ~
-                          using both the top-level hypotheses and the IF ~
-                          tests governing the current term, but not using the ~
-                          top-level hypotheses alone.  You may want to issue ~
-                          the TOP command and then issue s-prop to prune some ~
-                          branches of the conclusion."))))
-                     (t
-                      (let* ((base-rcnst
-                              (and rewrite
-                                   (change
-                                    rewrite-constant
-                                    *empty-rewrite-constant*
-                                    :current-enabled-structure pc-ens
-                                    :force-info t))))
-                        (mv-let
-                         (erp local-rcnst state)
-                         (if rewrite
-                             (load-hint-settings-into-rcnst
-                              hint-settings
-                              base-rcnst
-                              nil w 'acl2-pc::s state)
-                           (value nil))
-                         (pprogn
-                          (if erp
-                              (io? proof-builder nil state
-                                   nil
-                                   (fms0 "~|Note: Ignoring the above theory ~
-                                          invariant error.  Proceeding...~|"))
-                            state)
-                          (if rewrite
-                              (maybe-warn-about-theory-from-rcnsts
-                               base-rcnst local-rcnst :s pc-ens w state)
-                            state)
-                          (sl-let
-                           (new-term new-ttree state)
-                           (pc-rewrite*
-                            current-term
-                            hyps-type-alist
-                            (geneqv-at-subterm-top conc current-addr
-                                                   pc-ens w)
-                            (term-id-iff conc current-addr t)
-                            w local-rcnst nil nil normalize rewrite
-                            pc-ens state repeat local-backchain-limit
-                            (initial-step-limit w state))
-                           (pprogn
-                            (f-put-global 'last-step-limit step-limit state)
-                            (if (equal new-term current-term)
-                                (print-no-change2
-                                 "No simplification took place.")
+                                           (cons (change goal (car goals)
+                                                         :conc *t*)
+                                                 (cdr goals)))
+                                          (t (cdr goals)))
+                                    :local-tag-tree ttree)
+                                   state)))
+                             (t
+                              (print-no-change2
+                               "A contradiction was found in the current ~
+                                context using both the top-level hypotheses ~
+                                and the IF tests governing the current term, ~
+                                but not using the top-level hypotheses alone. ~
+                                ~ You may want to issue the TOP command and ~
+                                then issue s-prop to prune some branches of ~
+                                the conclusion."))))
+                           (t
+                            (mv-let
+                              (erp local-rcnst state)
+                              (if rewrite
+                                  (load-hint-settings-into-rcnst
+                                   hint-settings
+                                   base-rcnst
+                                   nil w 'acl2-pc::s state)
+                                (value nil))
                               (pprogn
-                               (mv-let
-                                (new-goal state)
-                                (deposit-term-in-goal
-                                 (car goals)
-                                 conc current-addr new-term state)
-                                (mv (change-pc-state
-                                     pc-state
-                                     :goals
-                                     (cons new-goal (cdr goals))
-                                     :local-tag-tree new-ttree)
-                                    state)))))))))))))))))))))))))))
+                               (if erp
+                                   (io? proof-builder nil state
+                                        nil
+                                        (fms0 "~|Note: Ignoring the above ~
+                                               theory invariant error.  ~
+                                               Proceeding...~|"))
+                                 state)
+                               (if rewrite
+                                   (maybe-warn-about-theory-from-rcnsts
+                                    base-rcnst local-rcnst :s pc-ens w state)
+                                 state)
+                               (sl-let
+                                (new-term new-ttree state)
+                                (pc-rewrite*
+                                 current-term
+                                 hyps-type-alist
+                                 (geneqv-at-subterm-top conc current-addr
+                                                        pc-ens w)
+                                 (term-id-iff conc current-addr t)
+                                 w local-rcnst nil
+                                 pot-lst normalize rewrite
+                                 pc-ens state repeat local-backchain-limit
+                                 (initial-step-limit w state))
+                                (pprogn
+                                 (f-put-global 'last-step-limit step-limit state)
+                                 (if (equal new-term current-term)
+                                     (print-no-change2
+                                      "No simplification took place.")
+                                   (pprogn
+                                    (mv-let
+                                      (new-goal state)
+                                      (deposit-term-in-goal
+                                       (car goals)
+                                       conc current-addr new-term state)
+                                      (mv (change-pc-state
+                                           pc-state
+                                           :goals
+                                           (cons new-goal (cdr goals))
+                                           :local-tag-tree new-ttree)
+                                          state)))))))))))))))))))))))))))
 
 ;; The proof-builder's enabled state will be either the global enabled
 ;; state or else a local one.  The proof-builder command :IN-THEORY

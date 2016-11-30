@@ -172,6 +172,7 @@
         ;; indicates error -- but allow for now since iverilog is a new/optional feature
         ;; (er hard? 'output-lines-iv "~@0" lines)
         (mv nil state))
+       (lines (drop-comment-lines lines))
        ((unless (eql (len lines) (len *input-lines*)))
         (er hard? 'output-lines-iv "Wrong number of lines read: ~x0, expecting ~x1"
             (len lines) (len *input-lines*))
