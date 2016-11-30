@@ -1144,7 +1144,7 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
      (scopes vl-elabscopes-p))
     :returns
     (mv (warnings vl-warninglist-p)
-        (sizes     vl-maybe-nat-listp))
+        (sizes     maybe-nat-list-p))
     :measure (vl-exprlist-count x)
     :flag :list
     (b* ((warnings nil)

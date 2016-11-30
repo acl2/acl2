@@ -657,7 +657,8 @@ expression with @(see vl-expr-to-svex).</p>")
 
         :vl-explicitvalueparam
         (if (and decl.type.default
-                 (vl-expr-case decl.type.default :vl-literal))
+                 ;; (vl-expr-case decl.type.default :vl-literal)
+                 )
             (mv ok warnings elabindex)
           (mv nil
               (fatal :type :vl-resolve-constants-fail

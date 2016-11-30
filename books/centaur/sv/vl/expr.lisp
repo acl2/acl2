@@ -33,6 +33,7 @@
 (include-book "../mods/svmods")
 (include-book "../svex/lattice")
 (include-book "../svex/rewrite-base")
+(include-book "literal")
 (include-book "centaur/vl/mlib/hid-tools" :dir :system)
 (include-book "centaur/vl/mlib/selfsize" :dir :system)
 (include-book "centaur/vl/mlib/typedecide" :dir :system)
@@ -165,43 +166,6 @@ would therefore incur some overhead.</p>")
 ;;             (fast-alist-free x.params))))
 
 
-(define vl-integer-arithclass-p ((x vl-arithclass-p))
-  :inline t
-  (or (vl-arithclass-equiv x :vl-signed-int-class)
-      (vl-arithclass-equiv x :vl-unsigned-int-class))
-  ///
-  (defthm vl-integer-arithclass-p-of-vl-exprsign->arithclass
-    (vl-integer-arithclass-p (vl-exprsign->arithclass x))
-    :hints(("Goal" :in-theory (enable vl-exprsign->arithclass)))))
-
-
-(define vl-integer-arithclass->exprsign ((x vl-arithclass-p))
-  :guard (vl-integer-arithclass-p x)
-  :returns (sign vl-exprsign-p)
-  :inline t
-  (if (vl-arithclass-equiv x :vl-signed-int-class)
-      :vl-signed
-    :vl-unsigned))
-
-
-(local (defthm symbolp-of-vl-datatype-arithclass
-         (let ((ret (mv-nth 1 (vl-datatype-arithclass x))))
-           (and (symbolp ret)
-                (not (equal ret t))
-                (not (equal ret nil))))
-         :rule-classes :type-prescription
-         :hints(("Goal"
-                 :in-theory (disable type-when-vl-arithclass-p)
-                 :use ((:instance type-when-vl-arithclass-p
-                        (x (mv-nth 1 (vl-datatype-arithclass x)))))))))
-
-(local (defthm vl-integer-arithclass-p-of-vl-arithclass-max
-         (implies (and (vl-integer-arithclass-p x)
-                       (vl-integer-arithclass-p y))
-                  (vl-integer-arithclass-p (vl-arithclass-max x y)))
-         :hints(("Goal" :in-theory (enable vl-arithclass-max
-                                           vl-arithclass-rank
-                                           vl-integer-arithclass-p)))))
 
 
 
@@ -3727,10 +3691,10 @@ functions can assume all bits of it are good.</p>"
 
 #||
 
- (trace$ #!vl (vl-expr-to-svex-datatyped-fn
+(trace$ #!vl (vl-expr-to-svex-datatyped-fn
   :entry (list 'vl-expr-to-svex-datatyped
                 (with-local-ps (vl-pp-expr x))
-                (with-local-ps (vl-pp-datatype type))
+                (with-local-ps (vl-pp-vardecl (make-vl-vardecl :name "____" :type type :loc *vl-fakeloc*)))
                 (vl-scopestack->hashkey ss)
                 (strip-cars scopes))
   ::exit (list 'vl-expr-to-svex-datatyped
@@ -4293,7 +4257,7 @@ functions can assume all bits of it are good.</p>"
                        (true-listp svexes)
                        (sv::svarlist-addr-p (sv::svexlist-vars svexes))))
                  (sizes
-                  (and (vl-maybe-nat-listp sizes)
+                  (and (maybe-nat-list-p sizes)
                        (equal (len sizes) (len x))
                        (true-listp sizes))))
     (b* ((warnings nil)
@@ -4503,57 +4467,7 @@ functions can assume all bits of it are good.</p>"
         (mv warnings svex res-type res-size nil)))))
 
 
-(define vl-upperlower-to-bitlist ((upper integerp)
-                                  (lower integerp)
-                                  (width natp))
-  :returns (res vl-bitlist-p "MSB-first")
-  (b* (((when (zp width)) nil)
-       (width (1- width))
-       (bit (if (logbitp width upper)
-                (if (logbitp width lower)
-                    :vl-1val
-                  :vl-xval)
-              (if (logbitp width lower)
-                  :vl-zval
-                :vl-0val))))
-    (cons bit (vl-upperlower-to-bitlist upper lower width)))
-  ///
-  (defret consp-of-vl-upperlower-to-bitlist
-    (equal (consp res)
-           (posp width))))
 
-(define vl-4vec-to-value ((x sv::4vec-p)
-                          (width posp)
-                          &key
-                          ((signedness vl-exprsign-p) ':vl-signed))
-  :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-             (local (in-theory (disable unsigned-byte-p acl2::loghead)))
-             (local (defthm 4vec->lower-of-4vec-zero-ext
-                      (implies (natp n)
-                               (unsigned-byte-p n (sv::4vec->lower (sv::4vec-zero-ext (sv::2vec n) x))))
-                      :hints(("Goal" :in-theory (e/d (sv::2vec-p sv::2vec sv::2vec->val sv::4vec-zero-ext))))))
-             (local (defthm 4vec->lower-of-4vec-zero-ext-bounds
-                      (implies (natp n)
-                               (and (<= 0 (sv::4vec->lower (sv::4vec-zero-ext (sv::2vec n) x)))
-                                    (< (sv::4vec->lower (sv::4vec-zero-ext (sv::2vec n) x)) (expt 2 n))))
-                      :hints(("Goal" :use 4vec->lower-of-4vec-zero-ext
-                              :in-theory (e/d (unsigned-byte-p)
-                                              (4vec->lower-of-4vec-zero-ext)))))))
-  :returns (val vl-value-p)
-  (b* ((width (lposfix width))
-       (trunc (sv::4vec-zero-ext (sv::2vec width) x))
-       ((when (sv::2vec-p trunc))
-        (b* ((val (sv::2vec->val trunc)))
-          (make-vl-constint :origwidth width
-                            :origsign signedness
-                            :wasunsized t
-                            :value val)))
-       (val (vl-upperlower-to-bitlist (sv::4vec->upper trunc)
-                                      (sv::4vec->lower trunc)
-                                      width)))
-    (make-vl-weirdint :bits val
-                      :origsign signedness
-                      :wasunsized t)))
 
 
 

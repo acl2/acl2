@@ -30,7 +30,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-(include-book "elabindex")
+(include-book "scopestack")
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
 (local (include-book "std/basic/arith-equivs" :dir :system))

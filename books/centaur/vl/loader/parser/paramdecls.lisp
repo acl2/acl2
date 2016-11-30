@@ -154,8 +154,19 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
           (return-raw
            (vl-parse-error (cat "Parameter names that shadow types are not supported: " (vl-idtoken->name id)))))
 
-        ;; For SystemVerilog-2012, there's an optional {unpacked_dimension} part here.  But we don't
-        ;; support it because we don't know what it's supposed to mean.
+        (udims := (vl-parse-0+-unpacked-dimensions))
+
+        (utype := (if udims
+                     (vl-paramtype-case type
+                       :vl-explicitvalueparam
+                       (mv nil
+                           (change-vl-explicitvalueparam type :type (vl-datatype-update-udims udims type.type))
+                           tokstream)
+                       :vl-implicitvalueparam
+                       (vl-parse-error "Implicit-type parameter declarations with unpacked dimensions are not yet supported.")
+                       :otherwise
+                       (vl-parse-error "impossible"))
+                   (mv nil type tokstream)))
 
         ;; For SystemVerilog-2012, the right hand side is optional but only for non-local parameters.
         (when (and (not (vl-is-token? :vl-equalsign))
@@ -167,7 +178,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                                      :name (vl-idtoken->name id)
                                      :atts atts
                                      :localp localp
-                                     :type type)))
+                                     :type utype)))
 
         ;; Otherwise, a default value has been given or is required.
         (:= (vl-match-token :vl-equalsign))
@@ -185,9 +196,9 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                  :atts atts
                  :localp localp
                  :type
-                 (if (eq (vl-paramtype-kind type) :vl-implicitvalueparam)
-                     (change-vl-implicitvalueparam type :default default)
-                   (change-vl-explicitvalueparam type :default default))))))
+                 (if (eq (vl-paramtype-kind utype) :vl-implicitvalueparam)
+                     (change-vl-implicitvalueparam utype :default default)
+                   (change-vl-explicitvalueparam utype :default default))))))
 
 (defparser vl-parse-list-of-param-assignments (atts localp type)
   ;; list_of_param_assignments ::= param_assignment { ',' param_assignment }
