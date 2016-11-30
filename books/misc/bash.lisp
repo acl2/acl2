@@ -31,7 +31,7 @@
                  :do-not
                  (list 'quote '(generalize eliminate-destructors fertilize
                                            eliminate-irrelevance))
-                 (add-string-val-pair-to-string-val-alist
+                 (add-string-val-pair-to-string-val-alist!
                   "Goal"
                   :do-not-induct
                   name-tree

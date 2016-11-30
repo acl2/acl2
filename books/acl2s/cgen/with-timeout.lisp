@@ -7,6 +7,14 @@
 
 (in-package "ACL2")
 
+; We exclude Lisps not handled by macro with-timeout-raw in file
+; with-timeout-raw.lsp (and perhaps there are other such), as follows.
+
+; cert_param: (non-cmucl)
+; cert_param: (non-lispworks)
+; cert_param: (non-allegro)
+; cert_param: (non-gcl)
+
 (include-book "xdoc/top" :dir :system)
 (defxdoc with-timeout
   :parents (acl2::cgen acl2::miscellaneous) ; the latter helps ACL2-only :doc

@@ -4962,8 +4962,26 @@
   (loop for entry in
         *thread-unsafe-builtin-memoizations*
         when (not (memoizedp-raw (car entry)))
+
+; If you change the following code, consider similarly changing
+; set-bad-lisp-consp-memoize.
+
         do (with-lower-overhead
             (apply 'memoize-fn entry))))
+
+(defun set-bad-lisp-consp-memoize (arg)
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
+  (cond (arg (when (not (memoizedp-raw 'bad-lisp-consp))
+
+; If you change the following code, consider similarly changing
+; acl2h-init-memoizations.
+
+               (with-lower-overhead
+                (apply 'memoize-fn *bad-lisp-consp-memoization*))))
+        (t (when (memoizedp-raw 'bad-lisp-consp)
+             (unmemoize-fn 'bad-lisp-consp)))))
 
 (defun-one-output acl2h-init ()
 

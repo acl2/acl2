@@ -202,7 +202,7 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
 </li>
 
 <li><p> Use the macro @('defthm-sb') to prove that some function
-returns an @('signed-byte-p'), where the @('rewrite') corollary says
+returns a @('signed-byte-p'), where the @('rewrite') corollary says
 <tt>(signed-byte-p bound function-call)</tt>, the
 @('type-prescription') corollary says that the function returns an
 @('integerp'), and the @('linear') corollary says that the function

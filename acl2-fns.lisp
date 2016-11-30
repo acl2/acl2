@@ -51,12 +51,15 @@
 ; is used in function find-package-fast, which is used by princ$ in place of
 ; find-package in order to save perhaps 15% of the print time.
 (defparameter *package-alist* nil)
-
+(defparameter *find-package-cache* nil)
 (defun-one-output find-package-fast (string)
-  (or (cdr (assoc string *package-alist* :test 'equal))
-      (let ((pkg (find-package string)))
-        (push (cons string pkg) *package-alist*)
-        pkg)))
+    (if (equal string (car *find-package-cache*))
+	(cdr *find-package-cache*)
+      (let ((pair (assoc string *package-alist* :test 'equal)))
+	(cond (pair (setq *find-package-cache* pair) (cdr pair))
+	      (t (let ((pkg (find-package string)))
+		   (push (cons string pkg) *package-alist*)
+		   pkg))))))
 
 (defvar *global-symbol-key* (make-symbol "*GLOBAL-SYMBOL-KEY*"))
 
@@ -1420,12 +1423,6 @@ notation causes an error and (b) the use of ,. is not permitted."
                           (if negp (- significand) significand))))))
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
-
-(defun define-sharp-f ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\f
-   #'sharp-f-read))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@

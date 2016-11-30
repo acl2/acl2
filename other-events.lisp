@@ -8197,6 +8197,62 @@
                 t
                 nil)))
 
+(defun functional-substitution-p (alist wrld)
+
+; We assume that alist is a valid translated functional substitution for some
+; world.  The only question here is whether every function symbol is a
+; :logic-mode function symbol in wrld.
+
+  (cond ((endp alist) t)
+        (t (let ((fn1 (caar alist))
+                 (fn2 (cdar alist)))
+             (and (function-symbolp fn1 wrld)
+                  (if (symbolp fn2)
+                      (and (function-symbolp fn2 wrld)
+                           (logicp fn2 wrld))
+                    (case-match fn2
+                      (('lambda & x)
+                       (logic-termp x wrld))
+                      (& (er hard 'functional-substitution-p
+                             "Unexpected entry in alleged functional ~
+                              substitution:~x0"
+                             (car alist)))))
+                  (functional-substitution-p (cdr alist) wrld))))))
+
+(defun new-proved-functional-instances-alist (old new wrld acc)
+
+; Wrld is a world.  New is an extension of old, where both are lists of
+; proved-functional-instances-alist-entry records.  We return the extension of
+; old obtained by restricting new to those records whose names all exist in
+; wrld, where we assume that all records in old meet that criterion.
+
+  (cond ((equal old new) (revappend acc old))
+        (t
+         (new-proved-functional-instances-alist
+          old
+          (cdr new) wrld
+          (let* ((rec (car new))
+                 (name
+                  (access proved-functional-instances-alist-entry rec
+                          :constraint-event-name))
+                 (restricted-alist
+                  (access proved-functional-instances-alist-entry rec
+                          :restricted-alist))
+                 (behalf-of-event-name
+                  (access proved-functional-instances-alist-entry rec
+                          :behalf-of-event-name)))
+            (cond
+             ((and (logicp name wrld)
+                   (functional-substitution-p restricted-alist wrld))
+              (cond ((and (symbolp behalf-of-event-name)
+                          (formula behalf-of-event-name nil wrld))
+                     (cons rec acc))
+                    (t (cons (change proved-functional-instances-alist-entry
+                                     rec
+                                     :behalf-of-event-name 0)
+                             acc))))
+             (t acc)))))))
+
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
 ; Important Note:  Don't change the formals of this function without reading
@@ -8333,6 +8389,8 @@
     (with-ctx-summarized
      (if (output-in-infixp state) event-form ctx)
      (let* ((wrld1 (w state))
+            (saved-proved-functional-instances-alist
+             (global-val 'proved-functional-instances-alist wrld1))
             (saved-acl2-defaults-table
              (table-alist 'acl2-defaults-table wrld1))
             (event-form (or event-form
@@ -8415,6 +8473,8 @@
                            (global-val 'proof-supporters-alist wrld2))
                           (post-pass-1-cert-replay
                            (global-val 'cert-replay wrld2))
+                          (post-pass-1-proved-functional-instances-alist
+                           (global-val 'proved-functional-instances-alist wrld2))
                           (cert-data ; only for trivial encapsulates
                            (and (null insigs)
                                 (cert-data-pass1 wrld1 wrld2))))
@@ -8453,12 +8513,26 @@
                                ((eq (car temp) :empty-encapsulate)
                                 (empty-encapsulate ctx state))
                                (t
-                                (let ((wrld3 (w state))
-                                      (constrained-fns (nth 0 temp))
-                                      (constraints-introduced (nth 1 temp))
-                                      (exports (nth 2 temp))
-                                      (subversive-fns (nth 3 temp))
-                                      (infectious-fns (nth 4 temp)))
+                                (let* ((wrld3 (w state))
+                                       (constrained-fns (nth 0 temp))
+                                       (constraints-introduced (nth 1 temp))
+                                       (exports (nth 2 temp))
+                                       (subversive-fns (nth 3 temp))
+                                       (infectious-fns (nth 4 temp))
+                                       (final-proved-fnl-inst-alist
+                                        (and
+
+; The following test that constrained-fns is nil is an optimization, since
+; otherwise we won't use final-proved-fnl-inst-alist.  See the comment below
+; where final-proved-fnl-inst-alist is used; if we change that, then this
+; optimization might no longer be suitable.
+
+                                         (null constrained-fns)
+                                         (new-proved-functional-instances-alist
+                                          saved-proved-functional-instances-alist
+                                          post-pass-1-proved-functional-instances-alist
+                                          wrld3
+                                          nil))))
                                   (pprogn
                                    (print-encapsulate-msg3
                                     ctx insigs new-ev-lst exports
@@ -8544,8 +8618,25 @@
 
                                                   (global-set 'cert-replay t
                                                               wrld9)
-                                                wrld9)))
-                                        wrld10)
+                                                wrld9))
+                                             (wrld11
+                                              (if (null constrained-fns)
+
+; If there are constrained functions, we probably can still store proved
+; functional instances that don't depend on the newly-constrained functions, by
+; conservativity.  But it seems reasonably unlikely that this case needs to be
+; added, and it would take some thought (could perhaps easily be done in an
+; unsound way).  So we'll keep it simple here, and perhaps add that additional
+; support only when requested.  If so, the consider the binding of
+; final-proved-fnl-inst-alist, where there is an optimization that will likely
+; need to be changed.
+
+                                                  (global-set
+                                                   'proved-functional-instances-alist
+                                                   final-proved-fnl-inst-alist
+                                                   wrld10)
+                                                wrld10)))
+                                        wrld11)
                                       state)))))))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
@@ -22025,11 +22116,11 @@
                     (list (cons #\0 ,throw-raw-ev-fncall-string)
                           (cons #\1 (ev-fncall-msg
                                      (car arglist)
-                                     (w *the-live-state*)
-                                     (user-stobj-alist *the-live-state*))))
-                    0 *standard-co* *the-live-state*
+                                     (w state)
+                                     (user-stobj-alist state))))
+                    0 *standard-co* state
                     "~|~%")
-                   (maybe-print-call-history *the-live-state*)
+                   (maybe-print-call-history state)
                    (break$)))))
     `(let ((on ,on))
        (er-progn
@@ -22042,7 +22133,7 @@
                          (,@throw-raw-ev-fncall-trace-form
                           :cond
                           (not (f-get-global 'in-prove-flg
-                                             *the-live-state*)))))
+                                             state)))))
            ((nil) (with-output :off warning (untrace$ error1
                                                       er-cmp-fn
                                                       throw-raw-ev-fncall)))

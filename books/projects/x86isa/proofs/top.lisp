@@ -33,6 +33,13 @@
    ()
    (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
 
+;; A pretty simple proof of correctness of an application program that
+;; determines whether a given input is a power of 2 or not.
+(local
+ (encapsulate
+   ()
+   (local (include-book "powOfTwo/powOfTwo" :ttags :all))))
+
 ;; The proof of correctness of a population count program was done
 ;; using the GL bit-blasting framework.
 (local

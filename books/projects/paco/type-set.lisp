@@ -83,7 +83,8 @@
 
 (def-basic-type-sets
   *ts-zero*
-  *ts-positive-integer*
+  *ts-one*
+  *ts-integer>1*
   *ts-positive-ratio*
   *ts-negative-integer*
   *ts-negative-ratio*
@@ -95,6 +96,9 @@
   *ts-improper-cons*
   *ts-string*
   *ts-character*)
+
+(defconst *ts-positive-integer* (ts-union *ts-one*
+                                          *ts-integer>1*))
 
 (defconst *ts-non-negative-integer* (ts-union *ts-zero*
                                               *ts-positive-integer*))

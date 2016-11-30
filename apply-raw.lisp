@@ -20,8 +20,8 @@
 
 (in-package "ACL2")
 
-; Support for experiments with apply$: raw Lisp code.  See apply-raw.lisp for
-; logic code support.
+; Support for experiments with apply$: raw Lisp code.  See other-events.lisp
+; for logic code support (search for "Support for experiments with apply$").
 
 ; In this file we include essays and code in support of an experiment in how we
 ; might allow the evaluation of forms ancestrally dependent on apply$ (as

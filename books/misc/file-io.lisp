@@ -25,19 +25,19 @@
  Example Forms:
 
  (write-list '(a b c) \"foo\" 'top-level state)
- (write-list '(a b c) '(\"foo\") 'top-level state) ; as above, but quietly
+ (write-list '(a b c) \"foo\" 'top-level state :quiet t)
 
  General Form:
 
- (write-list list x ctx state)
+ (write-list list x ctx state &key :quiet val)
  })
 
- <p>where all arguments are evaluated (since @('write-list') is a function, not
- a macro).  @('List') is a true-list; @('x') is a filename or a list of length
- 1 containing a filename; and @('ctx') is a context (see @(see ctx)).  If
- @('x') is a filename then a message of the form @('\"Writing file [x]\"') is
- printed to @(see standard-co); but in the case that @('x') is a list
- containing a filename, no such message is printed.</p>")
+ <p>where all arguments are evaluated and @('state') must literally be the ACL2
+ @(see state), @('STATE').  @('List') is a true-list; @('x') is a filename or a
+ list of length 1 containing a filename; and @('ctx') is a context (see @(see
+ ctx)).  By default or if :quiet is nil, a message of the form @('\"Writing
+ file [x]\"') is printed to @(see standard-co); otherwise, no such message is
+ printed.</p>")
 
 (program)
 
@@ -84,37 +84,45 @@
               (write-objects (cdr list) channel state))
     state))
 
-(defun write-list-body-fn (bangp)
-  `(mv-let (fname quietp)
-     (cond ((consp fname)
-            (mv (car fname) t))
-           (t (mv fname nil)))
-     (mv-let (channel state)
-       ,(if bangp
-            '(open-output-channel! fname :character state)
-          '(open-output-channel fname :character state))
-       (if channel
-           (mv-let
-             (col state)
-             (cond (quietp (mv 0 state))
-                   (t (fmt1 "Writing file ~x0~%"
-                            (list (cons #\0 fname))
-                            0 (standard-co state) state nil)))
-             (declare (ignore col))
-             (let ((state (write-objects list channel state)))
-               (pprogn (close-output-channel channel state)
-                       (value :invisible))))
+(defun write-list-body-fn (bangp quietp)
+  `(let ((quietp ,quietp))
+     (if (not (stringp fname))
          (er soft ctx
-             "Unable to open file ~s0 for :character output."
-             fname)))))
+             "The filename argument of write-list must evaluate to a string, ~
+              but it has evaluated to ~x0.  See :DOC write-list."
+             fname)
+       (mv-let (channel state)
+         ,(if bangp
+              '(open-output-channel! fname :character state)
+            '(open-output-channel fname :character state))
+         (if channel
+             (mv-let
+               (col state)
+               (cond (quietp (mv 0 state))
+                     (t (fmt1 "Writing file ~x0~%"
+                              (list (cons #\0 fname))
+                              0 (standard-co state) state nil)))
+               (declare (ignore col))
+               (let ((state (write-objects list channel state)))
+                 (pprogn (close-output-channel channel state)
+                         (value :invisible))))
+           (er soft ctx
+               "Unable to open file ~s0 for :character output."
+               fname))))))
 
-(defmacro write-list-body (bangp)
-  (write-list-body-fn bangp))
+(defmacro write-list-body (bangp quietp)
+  (write-list-body-fn bangp quietp))
+
+(defun write-list-fn (list fname ctx state quiet)
+  (if quiet
+      (write-list-body nil t)
+    (write-list-body nil nil)))
 
 ; Pretty-print the given list of forms to file fname, except that strings are
 ; printed without any formatting.
-(defun write-list (list fname ctx state)
-  (write-list-body nil))
+(defmacro write-list (list fname ctx state &key quiet)
+  (declare (xargs :guard (eq state 'state)))
+  `(write-list-fn ,list ,fname ,ctx ,state ,quiet))
 
 ; (Downcase form) causes the execution of form but where printing is in
 ; :downcase mode.  Form must return an error triple.
@@ -124,5 +132,6 @@
     ,form))
 
 ; Same as write-list above, but where printing is down in downcase mode:
-(defun write-list-downcase (list fname ctx state)
-  (downcase (write-list list fname ctx state)))
+(defmacro write-list-downcase (list fname ctx state &key quiet)
+  (declare (xargs :guard (eq state 'state)))
+  `(downcase (write-list ,list ,fname ,ctx ,state :quiet ,quiet)))

@@ -1646,6 +1646,12 @@ which is saved just in case it's needed later.")
    #\u
    #'sharp-u-read))
 
+(defun define-sharp-f ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\f
+   #'sharp-f-read))
+
 (defvar *old-character-reader*
   (get-dispatch-macro-character #\# #\\))
 
