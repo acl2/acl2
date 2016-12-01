@@ -373,7 +373,7 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
          ,@other-kws
          :verify-guards nil
          :returns ,(defsymbolic-define-returns returns)
-         :progn t
+         ; :progn t
          ,body
          ///
          (verify-guards ,exec-name

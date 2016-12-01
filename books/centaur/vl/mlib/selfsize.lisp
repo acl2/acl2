@@ -233,6 +233,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
 ;; BOZO this should look at the elabscopes too
 (define vl-unsized-index-p
   :short "Identify occurrences of basic, unsized parameters."
+  :parents (vl-tweak-fussy-warning-type)
   ((x  vl-expr-p)
    (ss vl-scopestack-p))
   :long "<p>We often run into cases like</p>

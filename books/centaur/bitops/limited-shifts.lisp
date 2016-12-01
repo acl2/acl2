@@ -47,6 +47,8 @@
   :short "Functions for performing shifts that are artificially limited so as to
           make them more amenable to symbolic execution with AIGs.")
 
+(local (xdoc::set-default-parents limited-shifts))
+
 
 (define logcollapse ((position natp)
                      (x natp))

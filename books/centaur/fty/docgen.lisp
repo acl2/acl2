@@ -55,7 +55,8 @@
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
-            :long ,long))
+            :long ,long
+            :no-override t))
         state)))
 
 (defun flexalist->defxdoc (x parents kwd-alist state)
@@ -76,7 +77,8 @@
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
-            :long ,long))
+            :long ,long
+            :no-override t))
         state)))
 
 (defun defprod-field-doc (x acc base-pkg state)
@@ -157,7 +159,8 @@
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
-            :long ,long))
+            :long ,long
+            :no-override t))
         state)))
 
 
@@ -265,7 +268,8 @@
                 fty::defprod).</p>"
 
                 def-make-foo
-                def-make-foo-fn))
+                def-make-foo-fn)
+        :no-override t)
 
       (defxdoc ,change-foo
         :parents (,foo)
@@ -286,7 +290,8 @@
                 <p>This is an ordinary @('change-') macro introduced by @(see
                 fty::defprod).</p>"
 
-                def-change-foo)))))
+                def-change-foo)
+        :no-override t))))
 
 (defun defprod->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
@@ -331,7 +336,8 @@
        (top-doc `((defxdoc ,prod.type-name
                     :parents ,parents
                     :short ,prod.short
-                    :long ,long)))
+                    :long ,long
+                    :no-override t)))
        (make/change (defprod-ctor-autodoc prod))
 
        (make-foo         prod.ctor-macro)
@@ -463,7 +469,8 @@ on the kind of structure you are looking at.  A typical example would be:</p>
 you, as appropriate for each case.  That is, in the @(':" kind1-str "') case,
 you can use @(see fty::defprod)-style @('foo.bar') style accessors for @('x')
 without having to explicitly add a @('" kind1-str "') @(see b*)
-binder.</p>")))))
+binder.</p>")
+        :no-override t))))
 
 (defun deftagsum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
@@ -484,7 +491,8 @@ binder.</p>")))))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
-                     :long ,long)))
+                     :long ,long
+                     :no-override t)))
        (type-names (flexprodlist->type-names x.prods))
        (case-doc (flexsum-case-macro-defxdoc x))
        ((mv prods-doc state)
@@ -517,7 +525,8 @@ binder.</p>")))))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
-                     :long ,long)))
+                     :long ,long
+                     :no-override t)))
        (type-names (flexprodlist->type-names x.prods))
        (sum-name-shared-with-prod-name (member x.name type-names))
        (parents (if sum-name-shared-with-prod-name parents (list x.name)))
@@ -561,7 +570,8 @@ binder.</p>")))))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
-                     :long ,long))))
+                     :long ,long
+                     :no-override t))))
     (mv (append main-doc
                 prods-doc
                 case-doc
@@ -600,7 +610,8 @@ binder.</p>")))))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
-                     :long ,long))))
+                     :long ,long
+                     :no-override t))))
     (mv (append main-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.equiv))))
@@ -688,7 +699,8 @@ binder.</p>")))))
         `(defxdoc ,x.name
            :parents ,parents
            :short ,short
-           :long ,long))
+           :long ,long
+           :no-override t))
 
        ((when (and short sub-short))
         (er hard? 'deftypes "Can't give a top-level :short when you are also ~

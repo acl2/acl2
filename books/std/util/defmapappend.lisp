@@ -399,8 +399,7 @@ add theorems into the same section.</p>")
         (and already-definedp
              (not short)
              (not long)
-             (not parents)
-             (xdoc::find-topic name (xdoc::get-xdoc-table (w state)))))
+             (not parents)))
 
        (parents (and (not squelch-docs-p)
                      (if parents-p
@@ -452,6 +451,7 @@ add theorems into the same section.</p>")
            ,@(and (or parents-p squelch-docs-p parents) `(:parents ,parents))
            ,@(and short   `(:short ,short))
            ,@(and long    `(:long ,long))
+           ,@(and squelch-docs-p `(:no-xdoc-override t))
            (program)
            ,@def
            . ,rest))
@@ -473,6 +473,7 @@ add theorems into the same section.</p>")
        ,@(and (or parents-p squelch-docs-p parents) `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
+       ,@(and squelch-docs-p `(:no-xdoc-override t))
        . ,(if (not rest)
               events
             `(;; keep all our deflist theory stuff bottled up

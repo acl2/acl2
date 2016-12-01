@@ -94,7 +94,7 @@
                      (subseq bookname lds nil))
       bookname)))
 
-(defun defxdoc-fn (name parents short long pkg state)
+(defun defxdoc-fn (name parents short long pkg no-override state)
   (declare (xargs :mode :program :stobjs state))
   (let* ((err (check-defxdoc-args name parents short long pkg)))
     (if err
@@ -116,7 +116,12 @@
                           (cons :from bookname)))
              (table-event
               `(table xdoc 'doc
-                      (cons ',entry (get-xdoc-table world))))
+                      ,(if no-override
+                           `(let ((topics (get-xdoc-table world)))
+                              (if (find-topic ',name topics)
+                                  topics
+                                (cons ',entry topics)))
+                         `(cons ',entry (get-xdoc-table world)))))
              (post-event
               (cdr (assoc-eq 'post-defxdoc-event (table-alist 'xdoc world)))))
         `(progn
@@ -124,10 +129,10 @@
            ,@(and post-event (list post-event))
            (value-triple '(defxdoc ,name)))))))
 
-(defmacro defxdoc (name &key parents short long pkg)
+(defmacro defxdoc (name &key parents short long pkg no-override)
   `(with-output :off (event summary)
      (make-event
-      (defxdoc-fn ',name ',parents ,short ,long ,pkg state))))
+      (defxdoc-fn ',name ',parents ,short ,long ,pkg ,no-override state))))
 
 (defun defxdoc-raw-fn (name parents short long pkg)
   (declare (xargs :guard t)

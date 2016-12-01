@@ -58,6 +58,8 @@ non-arithmetic type, for instance: unpacked structures, void, chandles, etc.</p>
 <p>We use ``error'' class to describe the case where we really did have some
 kind of error determining the type.</p>")
 
+(local (xdoc::set-default-parents vl-arithclass-p))
+
 (define vl-coretype-arithclass ((typinfo vl-coredatatype-info-p)
                                 (signedp booleanp))
   :returns (class vl-arithclass-p)

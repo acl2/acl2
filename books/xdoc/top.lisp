@@ -342,6 +342,7 @@
          (long        (cdr (extract-keyword-from-args :long args)))
          (extension   (cdr (extract-keyword-from-args :extension args)))
          (pkg         (cdr (extract-keyword-from-args :pkg args)))
+         (no-xdoc-override (cdr (extract-keyword-from-args :no-xdoc-override args)))
          (extension
           (cond ((symbolp extension) extension)
                 ((and (consp extension)
@@ -415,7 +416,8 @@
                        `((defxdoc ,name
                            :parents ,parents
                            :short ,short
-                           :long ,long)))
+                           :long ,long
+                           :no-override ,no-xdoc-override)))
                 (with-output ,@stack-pop-if-nonempty
                   (,@wrapper . ,new-args))
                 ,@(and extension

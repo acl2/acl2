@@ -38,17 +38,16 @@
 (local (std::add-default-post-define-hook :fix))
 
 
-(defxdoc svex-select)
-
-(local (xdoc::set-default-parents svex-select))
-
 (fty::deftagsum svex-select
+  :parents (svex) ;; bozo what should this be?
   :layout :tree
   (:var ((name svar-p)
          (width natp)))
   (:part ((lsb svex-p)
           (width natp)
           (subexp svex-select-p))))
+
+(local (xdoc::set-default-parents svex-select))
 
 (define svex-select->width ((x svex-select-p))
   :returns (width natp :rule-classes :type-prescription)

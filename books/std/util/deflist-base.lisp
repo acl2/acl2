@@ -620,9 +620,15 @@ of which recognizers require true-listp and which don't.</p>")
                 ;; won't get an automatic signature.  But it's better than
                 ;; nothing.
                 (and
-                 ;; If the user has already documented this function, there
-                 ;; is no reason to override their docs with something new.
-                 (not (xdoc::find-topic name (xdoc::get-xdoc-table (w state))))
+                 ;; If the user has already documented this function, there is
+                 ;; no reason to override their docs with something new.  But
+                 ;; using find-topic here doesn't fully work.  It works if the
+                 ;; previously defined topic is in the certification world when
+                 ;; the deflist is generated during certification, but not if
+                 ;; it is in the world before the book is included!  So we use
+                 ;; the :no-override flag to defxdoc instead.
+                 ;; (not (xdoc::find-topic name (xdoc::get-xdoc-table (w state))))
+
                  ;; If we don't have any actual documentation to add, then
                  ;; leave it alone and don't do anything.
                  (or (and parents-p parents) short long)
@@ -630,7 +636,8 @@ of which recognizers require true-listp and which don't.</p>")
                  `((defxdoc ,name
                      ,@(and (or parents-p parents) `(:parents ,parents))
                      ,@(and short   `(:short ,short))
-                     ,@(and long    `(:long ,long)))))
+                     ,@(and long    `(:long ,long))
+                     :no-override t)))
 
               `((define ,name (,@formals)
                   ,@(and (or parents-p parents) `(:parents ,parents))
