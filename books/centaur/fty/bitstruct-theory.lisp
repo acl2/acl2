@@ -474,7 +474,10 @@
   (bitp (part-select x :low n :width 1))
   :rule-classes :type-prescription)
   
-
+(defthm logapp-natp
+  (implies (not (negp b))
+           (natp (logapp w a b)))
+  :rule-classes :type-prescription)
 
 
 

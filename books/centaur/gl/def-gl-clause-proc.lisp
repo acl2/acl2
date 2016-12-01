@@ -1239,6 +1239,12 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
   (b* (((mv kwd-alist rest)
         (std::extract-keywords 'def-gl-param-thm *gl-hint-param-permissible-keywords* args nil))
        ((when rest) (er hard? 'def-gl-param-thm "Non-keyword args to def-gl-param-thm: ~x0~%" rest))
+       ;; Override default value for abort-vacuous -- the default is t which is
+       ;; what we want for def-gl-thm, but we want nil for def-gl-param-thm.
+       (kwd-alist (let ((look (assoc :abort-vacuous kwd-alist)))
+                    (if look
+                        kwd-alist
+                      (cons (cons :abort-vacuous nil) kwd-alist))))
        ((unless (and (assoc :hyp kwd-alist)
                      (assoc :param-hyp kwd-alist)
                      (assoc :cov-bindings kwd-alist)

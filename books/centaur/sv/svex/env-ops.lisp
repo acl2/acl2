@@ -32,6 +32,7 @@
 (include-book "eval")
 (include-book "vars")
 (local (include-book "centaur/misc/equal-sets" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 
 (define svex-env-extract-aux ((keys svarlist-p) (env svex-env-p))
   :parents (svex-env-extract)
