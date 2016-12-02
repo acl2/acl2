@@ -571,13 +571,13 @@
                     (+ (bubble-down x match) y))))
 
 (theory-invariant
- (if (active-runep '(:definition boil-that-dustspeck))
+ (if (active-runep '(:definition arith-5-active-flag))
      (or (not (active-runep '(:rewrite normalize-addends)))
-	 (and (active-runep '(:rewrite bubble-down-+-bubble-down))
-	      (active-runep '(:rewrite bubble-down-+-match-1))
-	      (active-runep '(:rewrite bubble-down-+-match-2))
-	      (not (active-runep '(:rewrite bubble-down)))
-	      (not (active-runep '(:executable-counterpart bubble-down)))))
+         (and (active-runep '(:rewrite bubble-down-+-bubble-down))
+              (active-runep '(:rewrite bubble-down-+-match-1))
+              (active-runep '(:rewrite bubble-down-+-match-2))
+              (not (active-runep '(:rewrite bubble-down)))
+              (not (active-runep '(:executable-counterpart bubble-down)))))
    t)
  :error nil)
 
@@ -622,7 +622,7 @@
                     (* (bubble-down x match) y))))
 
 (theory-invariant
- (if (active-runep '(:definition boil-that-dustspeck))
+ (if (active-runep '(:definition arith-5-active-flag))
      (or (not (active-runep '(:rewrite normalize-factors-gather-exponents)))
          (and (active-runep '(:rewrite bubble-down-*-bubble-down))
               (active-runep '(:rewrite bubble-down-*-match-1))
@@ -673,13 +673,13 @@
                     (* (bubble-down x match) y))))
 
 (theory-invariant
- (if (active-runep '(:definition boil-that-dustspeck))
+ (if (active-runep '(:definition arith-5-active-flag))
      (or (not (active-runep '(:rewrite normalize-scatter-exponents)))
-	 (and (active-runep '(:rewrite bubble-down-*-bubble-down))
-	      (active-runep '(:rewrite bubble-down-*-match-1))
-	      (active-runep '(:rewrite bubble-down-*-match-2))
-	      (not (active-runep '(:rewrite bubble-down)))
-	      (not (active-runep '(:executable-counterpart bubble-down)))))
+         (and (active-runep '(:rewrite bubble-down-*-bubble-down))
+              (active-runep '(:rewrite bubble-down-*-match-1))
+              (active-runep '(:rewrite bubble-down-*-match-2))
+              (not (active-runep '(:rewrite bubble-down)))
+              (not (active-runep '(:executable-counterpart bubble-down)))))
    t)
  :error nil)
 
@@ -689,8 +689,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (theory-invariant
- (if (active-runep '(:definition boil-that-dustspeck))
+ (if (active-runep '(:definition arith-5-active-flag))
      (not (and (active-runep '(:rewrite normalize-factors-gather-exponents))
-	       (active-runep '(:rewrite normalize-factors-scatter-exponents))))
+               (active-runep '(:rewrite normalize-factors-scatter-exponents))))
    t)
  :error nil)

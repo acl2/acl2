@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-(defun boil-that-dustspeck (horton speck)
-  (if (< 17 horton)
-      speck
-    (not speck)))
+(defun arith-5-active-flag (foo bar)
+  (if (< 17 foo)
+      bar
+    (not bar)))
