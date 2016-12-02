@@ -623,14 +623,12 @@
 
 (theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
-     (if (active-runep '(:definition boil-that-dustspeck))
-	 (or (not (active-runep '(:rewrite normalize-factors-gather-exponents)))
-	     (and (active-runep '(:rewrite bubble-down-*-bubble-down))
-		  (active-runep '(:rewrite bubble-down-*-match-1))
-		  (active-runep '(:rewrite bubble-down-*-match-2))
-		  (not (active-runep '(:rewrite bubble-down)))
-		  (not (active-runep '(:executable-counterpart bubble-down)))))
-       t)
+     (or (not (active-runep '(:rewrite normalize-factors-gather-exponents)))
+         (and (active-runep '(:rewrite bubble-down-*-bubble-down))
+              (active-runep '(:rewrite bubble-down-*-match-1))
+              (active-runep '(:rewrite bubble-down-*-match-2))
+              (not (active-runep '(:rewrite bubble-down)))
+              (not (active-runep '(:executable-counterpart bubble-down)))))
    t)
  :error nil)
 
