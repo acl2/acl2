@@ -1271,8 +1271,116 @@
 ; structure.
 
 (defrec theory-invariant-record
-  (tterm error . untrans-term)
+  ((tterm . error) . (untrans-term . book))
   t)
+
+(defun enabled-disabled-runeps (exprs enableds disableds)
+  (cond ((endp exprs)
+         (mv nil (reverse enableds) (reverse disableds)))
+        (t (let ((e (car exprs)))
+             (case-match e
+               (('active-runep ('quote rune))
+                (enabled-disabled-runeps (cdr exprs)
+                                         (cons rune enableds)
+                                         disableds))
+               (('not ('active-runep ('quote rune)))
+                (enabled-disabled-runeps (cdr exprs)
+                                         enableds
+                                         (cons rune disableds)))
+               (& (mv t nil nil)))))))
+
+(defun theory-invariant-msg-implication (runeps1 runeps2)
+  (mv-let (flg enableds1 disableds1)
+    (enabled-disabled-runeps (if (eq (car runeps1) 'and)
+                                 (cdr runeps1)
+                               (list runeps1))
+                             nil nil)
+    (and (null flg) ; no error
+         (mv-let (flg enableds2 disableds2)
+           (enabled-disabled-runeps (if (eq (car runeps2) 'and)
+                                        (cdr runeps2)
+                                      (list runeps2))
+                                    nil nil)
+           (and (null flg)                ; no error
+                (or enableds1 disableds1) ; should always be true
+                (or enableds2 disableds2) ; should always be true
+                (let* ((en  "the rune~#0~[ ~&0 is~/s ~&0 are~] enabled")
+                       (dis "the rune~#0~[ ~&0 is~/s ~&0 are~] not enabled")
+                       (msg0 (and enableds1  (msg en  enableds1)))
+                       (msg1 (and enableds1 disableds1 " and "))
+                       (msg2 (and disableds1 (msg dis disableds1)))
+                       (msg3 (and enableds2  (msg en  enableds2)))
+                       (msg4 (and enableds2 disableds2 " and "))
+                       (msg5 (and disableds2 (msg dis disableds2))))
+                  (msg "~|which asserts that if ~@0~@1~@2, then ~@3~@4~@5"
+                       (or msg0 "") (or msg1 "") (or msg2 "")
+                       (or msg3 "") (or msg4 "") (or msg5 ""))))))))
+
+(defun combine-ands (x y)
+  (case-match x
+    (('and . a)
+     (case-match y
+       (('and . b)
+        `(and ,@a ,@b))
+       (& `(and ,@a y))))
+    (&
+     (case-match y
+       (('and . a)
+        `(and ,x ,@a))
+       (& `(and ,x ,y))))))
+
+(defun theory-invariant-msg-active-runep-lst (lst acc)
+  (cond ((atom lst)
+         (and (cdr acc)
+              (msg "~|which asserts that the runes ~&0 are not ~
+                    ~#1~[both~/all~] enabled at the same time"
+                   (reverse acc)
+                   (cdr acc))))
+        (t (let ((form (car lst)))
+             (case-match form
+               (('active-runep ('quote rune))
+                (theory-invariant-msg-active-runep-lst (cdr lst)
+                                                       (cons rune acc)))
+               (t ""))))))
+
+(defun theory-invariant-msg (form)
+  (case-match form
+    (('not ('and . active-runep-lst))
+     (and (consp active-runep-lst)
+          (consp (cdr active-runep-lst))
+          (theory-invariant-msg-active-runep-lst active-runep-lst nil)))
+    (('not ('active-runep ('quote rune)))
+     (msg "~|which asserts that the rune ~x0 is not enabled"
+          rune))
+    (('incompatible rune1 rune2 . &)
+     (msg "~|which asserts that the runes ~x0 and ~x1 are not both enabled at ~
+           the same time"
+          rune1 rune2))
+    (('incompatible! rune1 rune2 . &)
+     (msg "~|which asserts that the runes ~x0 and ~x1 are not both enabled at ~
+           the same time"
+          rune1 rune2))
+    (('or ('not active-runeps1) active-runeps2)
+     (theory-invariant-msg `(if ,active-runeps1
+                                ,active-runeps2
+                              t)))
+    (('if active-runeps1
+         ('if active-runeps2 concl 't)
+       't)
+     (theory-invariant-msg `(if ,(combine-ands active-runeps1
+                                               active-runeps2)
+                                ,concl
+                              t)))
+    (('if active-runeps1
+         ('or ('not active-runeps2) concl)
+       't)
+     (theory-invariant-msg `(if ,(combine-ands active-runeps1
+                                               active-runeps2)
+                                ,concl
+                              t)))
+    (('if active-runeps1 active-runeps2 't)
+     (theory-invariant-msg-implication active-runeps1 active-runeps2))
+    (& nil)))
 
 (defun@par chk-theory-invariant1 (theory-expr ens invariant-alist errp-acc ctx
                                               state)
@@ -1311,8 +1419,9 @@
                                 :untrans-term))
                        (msg (msg
                              "Theory invariant ~x0 could not be evaluated on ~
-                             the theory produced by ~@1.  Theory invariant, ~
-                             ~P32, produced the error message:~%~@4~@5"
+                              the theory produced by ~@1.  Theory invariant ~
+                              ~P32 produced the error message:~%~@4~@5  See ~
+                              :DOC theory-invariant."
                              inv-name
                              produced-by-msg
                              (term-evisc-tuple nil state)
@@ -1320,7 +1429,7 @@
                              okp ; error message
                              (if (access theory-invariant-record inv-rec :error)
                                  "~|This theory invariant violation causes an ~
-                                 error."
+                                  error."
                                ""))))
                   (mv-let@par
                    (errp-acc state)
@@ -1353,13 +1462,28 @@
                      (theory-invariant-term
                       (access theory-invariant-record inv-rec
                               :untrans-term))
+                     (theory-invariant-book
+                      (access theory-invariant-record inv-rec
+                              :book))
+                     (thy-inv-msg
+                      (theory-invariant-msg theory-invariant-term))
                      (msg (msg
-                           "Theory invariant ~x0 failed on the theory ~
-                            produced by ~@1.  Theory invariant ~x0 is ~P32.~@4"
+                           "Theory invariant ~x0, defined ~@1, failed on the ~
+                            theory produced by ~@2.  Theory invariant ~x0 is ~
+                            ~@3~@4  See :DOC theory-invariant."
                            inv-name
+                           (if (null theory-invariant-book)
+                               "at the top-level"
+                             (msg "in book ~x0" theory-invariant-book))
                            produced-by-msg
-                           (term-evisc-tuple nil state)
-                           theory-invariant-term
+                           (if thy-inv-msg
+                               (msg "~P10~@2."
+                                    (term-evisc-tuple nil state)
+                                    theory-invariant-term
+                                    thy-inv-msg)
+                             (msg "~P10."
+                                    (term-evisc-tuple nil state)
+                                    theory-invariant-term))
                            (if (access theory-invariant-record inv-rec :error)
                                "~|This theory invariant violation causes an ~
                                error."

@@ -1072,6 +1072,28 @@ examples.</p>")
            (cdar kwd-alist)
            (convert-kwd-alist-back-into-plist (cdr kwd-alist)))))
 
+(defun pe-entry-args (args returnspecs)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) nil)
+        ((and (eq (car args) :long)
+              (cdr args))
+         (list* :long "Documentation is available via :doc."
+                (pe-entry-args (cddr args) returnspecs)))
+        ((and (eq (car args) :prepwork)
+              (cdr args))
+         (list* :prepwork "<event list elided>"
+                (pe-entry-args (cddr args) returnspecs)))
+        ((and (eq (car args) :returns)
+              (cdr args)
+              (consp returnspecs))
+         (list* :returns
+                (prettify-returnspecs-for-pe returnspecs)
+                (pe-entry-args (cddr args) returnspecs)))
+        ((eq (car args) '///)
+         (list '/// "<events elided>"))
+        (t (cons (car args)
+                 (pe-entry-args (cdr args) returnspecs)))))
+
 (defun parse-define
   (name            ; User-level name, e.g., FOO
    args            ; Everything that comes after the name
@@ -1163,29 +1185,7 @@ examples.</p>")
 
        (returnspecs   (parse-returnspecs name returns world))
 
-       (pe-entry
-        `(define ,name ,raw-formals
-           ;; Documentation string, if simple enough...
-           ,@(b* ((short (cdr (assoc :short kwd-alist)))
-                  ((when (stringp short))
-                   `(:short ,short))
-                  ((when (or short (cdr (assoc :long kwd-alist))))
-                   ;; There's documentation but it's too complex to print nicely
-                   ;; right now, let's just tell the user there's docs available.
-                   `("Documentation is available via :doc.")))
-               ;; No documentation, skip this part.
-               nil)
-           ;; Returnspecs, cleaned up to remove hint stuff
-           ,@(and (consp returnspecs)
-                  (list :returns (prettify-returnspecs-for-pe returnspecs)))
-           ;; We also don't want to see other ugly proof-related things like
-           ;; :hints and :guard-debug and stuff like that, so keep only the
-           ;; things that seem most valuable/short.
-           ,@(convert-kwd-alist-back-into-plist
-              (keep-assocs '(:inline :non-executable :well-founded-relation :measure)
-                           kwd-alist))
-           ,@traditional-decls/docs
-           ,body))
+       (pe-entry (list* 'define name (pe-entry-args args returnspecs)))
 
        (guard-verification-will-happen-anyway-p
         ;; Design decision: define will ignore set-verify-guards-eagerness 1

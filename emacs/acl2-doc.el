@@ -94,6 +94,42 @@
 ; otherwise offers a choice.
 (defv *acl2-doc-top-default* nil)
 
+(defun acl2-doc-fix-symbol (sym)
+
+;;; Since Emacs Lisp doesn't seem to use |..| for escaping, we simply
+;;; remove those vertical bars that seem to have been placed by Common
+;;; Lisp.
+
+  (let* ((name (symbol-name sym))
+	 (pos (cl-position ?| name)))
+    (cond ((null pos)			; common case
+	   sym)
+	  (t (let ((max (1- (length name))))
+	       (cond ((eql max -1)	; impossible?
+		      sym)
+		     ((not (eql (aref name max) ?|))
+		      sym)
+		     ((eql pos 0)
+		      (intern (substring name 1 max)))
+		     ((and (> pos 1)
+			   (eql (aref name (- pos 1)) ?:)
+			   (eql (aref name (- pos 2)) ?:))
+		      (intern (concat (substring name 0 pos)
+				      (substring name (1+ pos) max))))
+		     (t sym)))))))
+
+(defun acl2-doc-fix-entry (entry)
+  (cons (acl2-doc-fix-symbol (car entry))
+	(cons (let ((lst (cadr entry)))
+		(if (eq lst 'NIL)
+		    ()
+		  (let (ans)
+		    (while lst
+		      (push (acl2-doc-fix-symbol (pop lst))
+			    ans))
+		    ans)))
+	      (cddr entry))))
+
 (defun acl2-doc-fix-alist (alist)
 
 ;;; We delete topics whose names start with a vertical bar.  Most of
@@ -104,11 +140,8 @@
 
   (let ((ans nil))
     (while alist
-      (let* ((entry (pop alist))
-             (sym (car entry)))
-        (if (and (symbolp sym)          ; always true?
-                 (not (equal (aref (symbol-name sym) 0) ?|)))
-            (push entry ans))))
+      (let ((entry (pop alist)))
+        (push (acl2-doc-fix-entry entry) ans)))
     (reverse ans)))
 
 (defun acl2-doc-alist-create (rendered-pathname)
@@ -351,19 +384,20 @@ then restart the ACL2-Doc browser to view that manual."
   (set-buffer-modified-p nil)
   (force-mode-line-update))
 
-(defun acl2-doc-display-message (entry)
+(defun acl2-doc-display-message (entry &optional extra)
   (let ((name (car (cdr entry)))
 	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
 			 "ACL2 User's Manual"
 		       "ACL2+Books Manual"))
 	(help-msg (if *acl2-doc-show-help-message*
 		      "; type h for help"
-		    "")))
+		    ""))
+	(extra (or extra "")))
     (setq *acl2-doc-show-help-message* nil)
     (if (eq (acl2-doc-state-top-name) name)
-	(message "At the top node of the %s%s"
-		 manual-name help-msg)
-      (message "Topic: %s (%s)%s" name manual-name help-msg))))
+	(message "At the top node of the %s%s%s"
+		 manual-name help-msg extra)
+      (message "Topic: %s (%s)%s%s" name manual-name help-msg extra))))
 
 (defun acl2-doc-where ()
   (interactive)
@@ -371,7 +405,7 @@ then restart the ACL2-Doc browser to view that manual."
 	 (acl2-doc-display-message (car *acl2-doc-history*)))
 	(t (error "Empty history: No `where' to display!"))))
 
-(defun acl2-doc-display-basic (entry)
+(defun acl2-doc-display-basic (entry &optional extra)
 
 ;;; Entry is a history entry, hence of the form (point name parents
 ;;; string).
@@ -386,9 +420,9 @@ then restart the ACL2-Doc browser to view that manual."
   (setq buffer-read-only t)
   (goto-char (nth 0 entry))
   (push (car (cdr entry)) *acl2-doc-all-topics-rev*)
-  (acl2-doc-display-message entry))
+  (acl2-doc-display-message entry extra))
 
-(defun acl2-doc-display (name)
+(defun acl2-doc-display (name &optional extra)
 
 ;;; Name should be a symbol.  We display the topic and adjust the
 ;;; history and return history.  Do not use this for the "l" or "r"
@@ -404,7 +438,7 @@ then restart the ACL2-Doc browser to view that manual."
                                *acl2-doc-history*)))
                    (push new-entry *acl2-doc-history*)
 		   (setq *acl2-doc-return* nil)
-                   (acl2-doc-display-basic new-entry)))
+                   (acl2-doc-display-basic new-entry extra)))
           (t (error "Not found: %s" name)))))
 
 (defun acl2-doc-topic-at-point ()
@@ -462,6 +496,8 @@ then restart the ACL2-Doc browser to view that manual."
 			   (intern (upcase (symbol-name sym))))))
 	     (cond ((assoc tmp (acl2-doc-state-alist))
 		    tmp)
+		   ((numberp sym) ; e.g. from [1]
+		    nil)
 		   (t 'BROKEN-LINK))))
 	  ((not (and sym (symbolp sym)))
 	   nil)
@@ -766,33 +802,48 @@ acl2-doc."
       (goto-char (point-min)))
      (t
       (let ((found-p (and (acl2-doc-under-limit-topic-p name)
-			  (assoc name (acl2-doc-state-alist)))))
+			  (assoc name (acl2-doc-state-alist))))
+	    topic
+	    point
+	    (count 0)
+	    (sname (symbol-name name)))
 	(setq *acl2-doc-index-name-found-p* found-p) ; a cons
-	(setq *acl2-doc-index-name* (symbol-name name))
+	(setq *acl2-doc-index-name* sname)
 	(cond
-	 (found-p (with-current-buffer
-		      buf
-		    (goto-char (point-min)))
-		  (acl2-doc-display name))
-	 (t (let (topic)
-	      (with-current-buffer
-		  buf
-		(goto-char (point-min))
-		(while (null topic)
-		  (cond ((search-forward (symbol-name name) nil t)
-			 (let ((sym (intern (acl2-doc-read-line))))
-			   (when (acl2-doc-under-limit-topic-p sym)
-			     (setq topic sym))))
-			(t ;; set to failure indicator, 0
-			 (setq topic 0)))))
-	      (cond ((and topic (not (equal topic 0)))
-		     (acl2-doc-display topic))
-		    (t (setq *acl2-doc-index-name* nil)
-		       (error "No matching topic found%s"
-			      (if *acl2-doc-limit-topic*
-				  (format " under %s"
-					  *acl2-doc-limit-topic*)
-				""))))))))))))
+	 (found-p
+	  (with-current-buffer
+	      buf
+	    (goto-char (point-min))
+	    (while (search-forward sname nil t)
+	      (let ((sym (intern (acl2-doc-read-line))))
+		(when (acl2-doc-under-limit-topic-p sym)
+		  (setq count (1+ count)))))
+	    (goto-char (point-min)))
+	  (acl2-doc-display name
+			    (format " (number of matches: %s)"
+				    count)))
+	 (t (with-current-buffer
+		buf
+	      (goto-char (point-min))
+	      (while (search-forward sname nil t)
+		(let ((sym (intern (acl2-doc-read-line))))
+		  (when (acl2-doc-under-limit-topic-p sym)
+		    (when (null topic)
+		      (setq topic sym)
+		      (setq point (point)))
+		    (setq count (1+ count)))))
+	      (when point
+		(goto-char point)))
+	    (cond (topic
+		   (acl2-doc-display topic
+				     (format " (number of matches: %s)"
+					     count)))
+		  (t (setq *acl2-doc-index-name* nil)
+		     (error "No matching topic found%s"
+			    (if *acl2-doc-limit-topic*
+				(format " under %s"
+					*acl2-doc-limit-topic*)
+			      "")))))))))))
 
 (defun acl2-doc-index (&optional arg)
 

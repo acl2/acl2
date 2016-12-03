@@ -3327,11 +3327,15 @@
 (table theory-invariant-table nil nil
        :guard (and (consp val)
                    (consp (cdr val))
+                   (booleanp (access theory-invariant-record val
+                                     :error))
+                   (let ((book (access theory-invariant-record val
+                                       :book)))
+                     (or (stringp book)
+                         (null book)))
                    (let ((tterm (access theory-invariant-record val
                                         :tterm)))
                      (and (termp tterm world)
-                          (booleanp (access theory-invariant-record val
-                                            :error))
                           (subsetp-eq (all-vars tterm) '(ens state))))))
 
 #+acl2-loop-only
@@ -3377,7 +3381,8 @@
                                (make theory-invariant-record
                                      :tterm tterm
                                      :error ',error
-                                     :untrans-term ',term)
+                                     :untrans-term ',term
+                                     :book (active-book-name (w state) state))
                                :put
                                nil
                                'theory-invariant

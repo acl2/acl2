@@ -89,7 +89,6 @@
     COUNT ; defined in books/coi/bags/basic.lisp
     DEFUN-MODE
     DIVE-INTO-MACROS-TABLE
-    ER-LET* ; should add to *acl2-exports*
     ERROR1
     FIND-RULES-OF-RUNE
     LOOP-STOPPER
@@ -106,10 +105,8 @@
     REMOVE-DIVE-INTO-MACRO
     REWRITE
     SAFE-MODE
-    SET-BAD-LISP-CONSP-MEMOIZE ; should add to *acl2-exports*
     TYPE-SET
     WATERFALL
-    WITH-GUARD-CHECKING-EVENT ; should add to *acl2-exports*
 
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
 ; come from defpointers to system-utilities.
