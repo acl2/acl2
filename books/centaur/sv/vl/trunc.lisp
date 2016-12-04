@@ -40,6 +40,9 @@
 (local (in-theory (disable (:e tau-system))))
 (local (in-theory (enable tag-reasoning)))
 
+; Matt K.: Avoid ACL2(p) error (the job died after vl-maybe-type-error-p).
+(set-waterfall-parallelism nil)
+
 (defxdoc truncation-warnings
   :parents (vl-lint)
   :short "Warnings about implicit truncation and extensions in assignments,
@@ -439,11 +442,11 @@ minor warning for assignments where the rhs is a constant.</p>"
       warnings))
   ///
   (fty::deffixequiv-mutual vl-type-error-basic-warn))
-      
 
 
 
-  
+
+
 
 (define vl-typecast-type-error-warn ((type-error vl-maybe-type-error-p)
                                      (x vl-expr-p)
@@ -471,8 +474,8 @@ minor warning for assignments where the rhs is a constant.</p>"
     (vl-type-error-basic-warn
      (change-vl-pattern x :pattype nil)
      nil type-err nil x.pattype ss)))
-       
-       
+
+
 
 
 ;; Datatype compatibility:
@@ -685,7 +688,7 @@ minor warning for assignments where the rhs is a constant.</p>"
     (and msg
          (make-vl-type-error-incompat :actual-type actual-type
                                       :detail msg))))
-       
+
 
 
 
