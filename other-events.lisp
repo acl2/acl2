@@ -16667,12 +16667,12 @@
 ; file-write-date of the .cert file, since we have found that to be almost 3
 ; orders of magnitude faster than touch? in CCL.
 
-                                                              (loop for pair
-                                                                    in temp-alist
-                                                                    with
+                                                              (loop with
                                                                     compile-date =
                                                                     (file-write-date
                                                                      os-compiled-file)
+                                                                    for pair
+                                                                    in temp-alist
                                                                     thereis
                                                                     (< compile-date
                                                                        (file-write-date$
