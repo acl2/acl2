@@ -36,6 +36,9 @@
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable acl2::consp-under-iff-when-true-listp)))
 
+; Matt K.: Avoid ACL2(p) error (the job died after vl-maybe-scopeitem-p).
+(set-waterfall-parallelism nil)
+
 (defxdoc scopestack
   :parents (mlib)
   :short "Scopestacks deal with namespaces in SystemVerilog by tracking the
@@ -1055,7 +1058,7 @@ be very cheap in the single-threaded case.</p>"
         (implies package loc))))
 
 
-  
+
 
 ;; (local
 ;;  (defthm equal-of-vl-importlist-find-explicit-item

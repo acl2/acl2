@@ -7473,7 +7473,7 @@
    (active-cl-id            ; for active key checkpoint if any, else nil
     . active-printed-p)     ; true when active key checkpoint has been printed
    forcep                   ; true after next forcing round has been announced
-   . abort-stack)           ; top-stack when reverting; 'empty-clause on abort
+   . abort-stack)           ; top-stack when reverting; non-nil symbol on abort
   t)
 
 (defconst *initial-gag-state*

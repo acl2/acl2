@@ -233,6 +233,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
 ;; BOZO this should look at the elabscopes too
 (define vl-unsized-index-p
   :short "Identify occurrences of basic, unsized parameters."
+  :parents (vl-tweak-fussy-warning-type)
   ((x  vl-expr-p)
    (ss vl-scopestack-p))
   :long "<p>We often run into cases like</p>
@@ -1144,7 +1145,7 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
      (scopes vl-elabscopes-p))
     :returns
     (mv (warnings vl-warninglist-p)
-        (sizes     vl-maybe-nat-listp))
+        (sizes     maybe-nat-list-p))
     :measure (vl-exprlist-count x)
     :flag :list
     (b* ((warnings nil)

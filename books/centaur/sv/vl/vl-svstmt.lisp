@@ -1136,6 +1136,9 @@ because... (BOZO)</p>
          (sv::svarlist-addr-p (sv::svex-vars svex)))))
 
 
+         
+
+
 #||
 
 (trace$ #!vl (vl-elaborated-expr-consteval-fn
@@ -1153,6 +1156,7 @@ because... (BOZO)</p>
                             svex))))
 
 ||#
+
 (define vl-elaborated-expr-consteval ((x vl-expr-p)
                                       (ss vl-scopestack-p)
                                       (scopes vl-elabscopes-p)
@@ -1166,6 +1170,7 @@ because... (BOZO)</p>
                (warnings1 vl-warninglist-p)
                (new-x vl-expr-p)
                (svex sv::svex-p))
+  :prepwork ((local (in-theory (enable vl-datatype-sizable))))
   (b* ((x (vl-expr-fix x))
        (type (vl-maybe-datatype-fix type))
        ((when (and type (not (vl-datatype-resolved-p type))))
@@ -1195,21 +1200,28 @@ because... (BOZO)</p>
             (b* (((mv warnings svex ?type size)
                   (vl-expr-to-svex-untyped x ss scopes)))
               (mv warnings svex size)))))
-       ((wmv warnings class)
-        (if type
-            (b* (((mv ?caveat class) (vl-datatype-arithclass type)))
-              (mv nil class))
-          (vl-expr-typedecide x ss scopes)))
-       ((unless (and (posp size)
-                     (vl-integer-arithclass-p class)))
+       ((unless (posp size))
         ;; presumably already warned about this?
         (mv nil nil warnings x (svex-x)))
        (svex (sv::svex-reduce-consts svex))
        (val (sv::svex-case svex :quote svex.val :otherwise nil))
        ((unless val)
         (mv t nil warnings x svex))
+       ((when type)
+        (b* (((wmv warnings new-expr &)
+              (vl-literal-expr-from-4vec type val))
+             (new-expr (vl-expr-update-atts new-expr (cons (cons "VL_ORIG_EXPR" x) (vl-expr->atts x)))))
+          (mv t t warnings new-expr svex)))
+       ((wmv warnings class)
+        (if type
+            (b* (((mv ?caveat class) (vl-datatype-arithclass type)))
+              (mv nil class))
+          (vl-expr-typedecide x ss scopes)))
+       (signedness (if (vl-integer-arithclass-p class)
+                       (vl-integer-arithclass->exprsign class)
+                     :vl-unsigned))
        (new-x (make-vl-literal
-               :val (vl-4vec-to-value val size :signedness (vl-integer-arithclass->exprsign class))
+               :val (vl-4vec-to-value val size :signedness signedness)
                :atts (cons (cons "VL_ORIG_EXPR" x) (vl-expr->atts x)))))
     (mv t t warnings new-x svex)))
 

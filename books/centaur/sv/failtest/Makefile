@@ -53,7 +53,10 @@ FAILING_TEST_TARGETS := \
   elab6.vok elab6.svok \
   stmt1.svok  \
   gen8b.vok gen8b.svok \
-  iface26.svok
+  iface26.svok \
+  names4.svok names4.vok \
+  names5.svok names5.vok \
+  names6.svok names6.vok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

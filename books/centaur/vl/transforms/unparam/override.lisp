@@ -165,6 +165,23 @@
 ;;     (vl-unparam-debug "parameter ~a1 becomes ~a2.~%" nil decl datatype)
 ;;     (mv t (ok) new-decl)))
 
+#||
+(trace$ #!vl
+        (vl-convert-parameter-value-to-explicit-type
+         :entry (list 'vl-convert-parameter-value-to-explicit-type
+                      (with-local-ps (vl-pp-vardecl (make-vl-vardecl :name paramname :type type
+                                                                     :loc *vl-fakeloc*)))
+                      (with-local-ps (vl-pp-expr expr))
+                      paramname)
+         :exit (b* (((list okp warnings-out new-expr) values))
+                 (list 'vl-convert-parameter-value-to-explicit-type
+                       okp
+                       (with-local-ps
+                         (vl-print-warnings (take (- (len warnings-out) (len warnings)) warnings-out)))
+                       (with-local-ps (vl-pp-expr new-expr))))))
+
+||#
+
 (define vl-convert-parameter-value-to-explicit-type
   :short "Alter the expression given to an explicitly typed parameter so that
           it has the correct type."
@@ -193,35 +210,35 @@ types.</p>"
        (warnings (ok))
        (paramname (string-fix paramname))
 
-       ((unless (vl-datatype-packedp type))
-        (mv nil
-            (fatal :type :vl-bad-parameter-override
-                   :msg "For now we can only assign to parameters of ~
-                         packed type, unlike ~a1."
-                   :args (list nil type))
-            expr))
+       ;; ((unless (vl-datatype-packedp type))
+       ;;  (mv nil
+       ;;      (fatal :type :vl-bad-parameter-override
+       ;;             :msg "For now we can only assign to parameters of ~
+       ;;                   packed type, unlike ~a1."
+       ;;             :args (list nil type))
+       ;;      expr))
 
        ;; Assuming we can resolve VAL to a constant expression, we want to
        ;; evaluate it as something that fits in the width of this datatype.
        ;; That means getting the type and size from a datatype.
-       ((mv err desired-width) (vl-datatype-size type))
-       ((mv ?caveat desired-arithclass)  (vl-datatype-arithclass type))
-       ((unless (and (not err)
-                     desired-width
-                     (vl-integer-arithclass-p desired-arithclass)))
-        (vl-unparam-debug "can't override ~a1: width or type unknown: ~
-                           width ~a2, type ~a3; ~s4."
-                          nil paramname desired-width desired-arithclass err)
-        (mv nil
-            (fatal :type :vl-bad-parameter-override
-                   :msg "can't override parameter ~s1: don't know the ~
-                         correct width/signedness for type ~a2; ~@3."
-                   :args (list nil paramname type err))
-            expr))
+       ;; ((mv err desired-width) (vl-datatype-size type))
+       ;; ((mv ?caveat desired-arithclass)  (vl-datatype-arithclass type))
+       ;; ((unless (and (not err)
+       ;;               desired-width
+       ;;               (vl-integer-arithclass-p desired-arithclass)))
+       ;;  (vl-unparam-debug "can't override ~a1: width or type unknown: ~
+       ;;                     width ~a2, type ~a3; ~s4."
+       ;;                    nil paramname desired-width desired-arithclass err)
+       ;;  (mv nil
+       ;;      (fatal :type :vl-bad-parameter-override
+       ;;             :msg "can't override parameter ~s1: don't know the ~
+       ;;                   correct width/signedness for type ~a2; ~@3."
+       ;;             :args (list nil paramname type err))
+       ;;      expr))
 
        ((wmv ok ?constp warnings reduced-expr ?svex)
-        (vl-elaborated-expr-consteval expr ss scopes :ctxsize desired-width))
-       ((unless (and ok (vl-expr-case reduced-expr :vl-literal)))
+        (vl-elaborated-expr-consteval expr ss scopes :type type))
+       ((unless ok)
         (vl-unparam-debug "only reduced ~a1 to ~a2 (not a constant).~%"
                           nil expr reduced-expr)
         (mv nil

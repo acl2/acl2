@@ -120,16 +120,6 @@ won't interfere with any lookups.  Module and gate instances might, though.
 BOZO Our solution for now is just to assume that we've chosen obscure enough
 generated instance names that there won't be any conflicts.</p>")
 
-(defxdoc addnames
-  :parents (transforms)
-  :short "Name any unnamed gate or module instances, block statements,
-generates, etc."
-
-  :long "<p>The names are safely generated using a @(see vl-namedb) and will
-have names such as @('unnamed_modinst_11') and @('unnamed_gateinst_46').  We
-also insert generate blocks around any single base generate elements that are
-inside if, case, or loop generate forms.</p>")
-
 (defprod addnames-indices
   ((genblk-idx posp :default 1)
    (gateinst-idx posp :default 1)

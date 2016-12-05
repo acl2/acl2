@@ -532,7 +532,7 @@ memory.</li>
 
     (local
      (in-theory (disable acl2::normalize-factors-gather-exponents
-                         acl2::boil-that-dustspeck
+                         acl2::arith-5-active-flag
                          acl2::|(* c (expt d n))|)))
 
     (defthm size-of-combine-bytes

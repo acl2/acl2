@@ -1771,7 +1771,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
          (deffixequiv aig-loghead-ns)))
 
 (define aig-logcollapse-ns ((n natp) (x true-listp))
-  :parents (logcollapse)
+  :parents (bitops::logcollapse)
   (b* ((n (lnfix n)))
     (aig-logior-ss (aig-loghead-ns n x)
                    (aig-logapp-nss n nil

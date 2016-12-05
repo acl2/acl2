@@ -138,13 +138,13 @@
 
  @(def get-prefixes-opener-lemma-no-prefix-byte)
 
- @(def get-prefixes-alt-opener-lemma-group-1-prefix)
+ @(def get-prefixes-opener-lemma-group-1-prefix)
 
- @(def get-prefixes-alt-opener-lemma-group-2-prefix)
+ @(def get-prefixes-opener-lemma-group-2-prefix)
 
- @(def get-prefixes-alt-opener-lemma-group-3-prefix)
+ @(def get-prefixes-opener-lemma-group-3-prefix)
 
- @(def get-prefixes-alt-opener-lemma-group-4-prefix)
+ @(def get-prefixes-opener-lemma-group-4-prefix)
 
  <h3>Rules related to instruction fetches and program location</h3>
 

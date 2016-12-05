@@ -47,80 +47,7 @@
 (local (xdoc::set-default-parents vl-expr-typedecide))
 
 
-(define vl-arithclass-rank ((x vl-arithclass-p))
-  :parents (vl-arithclass-max)
-  :short "Rankings of @(see vl-arithclass-p)s used in @(see vl-arithclass-max)."
-  :returns (rank natp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-arithclass-p)))
-  :inline t
-  (case (vl-arithclass-fix x)
-    (:vl-signed-int-class   1)
-    (:vl-unsigned-int-class 2)
-    (:vl-shortreal-class    3)
-    (:vl-real-class         4)
-    (:vl-other-class        5)
-    (:vl-error-class        6)
-    (otherwise (nfix (impossible)))))
 
-(defsection vl-arithclass-max
-  :short "@(call vl-arithclass-max) computes the arithmetic class for a non
-self-determined operand, given the classes of the arguments."
-
-  :long "<p>See SystemVerilog-2012 Section 11.8.1, Expression Evaluation Rules.
-This function loosely corresponds to the case for non self-determined operands,
-where ``the following rules apply:</p>
-<ul>
- <li>If any operand is real, the result is real.</li>
- <li>If any operand is unsigned, the result is unsigned, regardless of the operator.</li>
- <li>If all operands are signed, the result will be signed, regardless of operator,
-     except when specified otherwise.''</li>
-</ul>
-
-<p>These rules seem pretty incomplete because not all expressions fit nicely
-into these types: for instance what is the result from a @('mintypmax')
-expression or a tagged union type or an unpacked type or that sort of thing.
-But at any rate we imagine a hierarchy, where:</p>
-
-@({
-     signed < unsigned < shortreal < real < other
-})
-
-<p>And the maximum class of an argument becomes the class for the operator.
-For example, if we're computing the type of @('a + b') and @('a') is a unsigned
-but @('b') is a shortreal, then the sum should be a shortreal.</p>
-
-<p>We assign the ``other'' class to anything that is valid but doesn't seem
-like a sensible arithmetic type.  For instance, an unpacked structure or weird
-operator like a mintypmax.</p>
-
-<p>We use the ``error'' class only for cases where we truly cannot determine
-the type of something because of an error (e.g., undeclared identifier,
-etc.)</p>"
-
-  (defund vl-arithclass-max-fn (x y)
-    (declare (xargs :guard (and (vl-arithclass-p x)
-                                (vl-arithclass-p y))))
-    (b* ((x (vl-arithclass-fix x))
-         (y (vl-arithclass-fix y)))
-      (if (< (vl-arithclass-rank x) (vl-arithclass-rank y))
-          y
-        x)))
-
-  (defmacro vl-arithclass-max (x y &rest rst)
-    (xxxjoin 'vl-arithclass-max-fn (cons x (cons y rst))))
-
-  (add-binop vl-arithclass-max vl-arithclass-max-fn)
-
-  (local (in-theory (enable vl-arithclass-max-fn)))
-
-  (defthm vl-arithclass-p-of-vl-arithclass-max
-    (vl-arithclass-p (vl-arithclass-max x y)))
-
-  (defthm vl-arithclass-max-of-vl-arithclass-max
-    (equal (vl-arithclass-max (vl-arithclass-max x y) z)
-           (vl-arithclass-max x (vl-arithclass-max y z))))
-
-  (deffixequiv vl-arithclass-max-fn :args ((x vl-arithclass-p) (y vl-arithclass-p))))
 
 
 #|
@@ -199,12 +126,6 @@ etc.)</p>"
     (mv warnings arithclass)))
 
 
-(define vl-exprsign->arithclass ((x vl-exprsign-p))
-  :returns (class vl-arithclass-p)
-  :inline t
-  (if (vl-exprsign-equiv x :vl-signed)
-      :vl-signed-int-class
-    :vl-unsigned-int-class))
 
 (define vl-value-typedecide ((x vl-value-p))
   :returns (class vl-arithclass-p)

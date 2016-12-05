@@ -2222,14 +2222,6 @@
                    (print-gag-stack-rev (cdr lst) (and limit (1- limit))
                                         orig-limit msg chan state)))))
 
-(defun maybe-print-nil-goal-generated (gag-state chan state)
-  (cond ((eq (access gag-state gag-state :abort-stack)
-             'empty-clause)
-         (fms "~%[NOTE: A goal of ~x0 was generated.  See :DOC nil-goal.]~|"
-              (list (cons #\0 nil))
-              chan state nil))
-        (t (newline chan state))))
-
 (defun reverse-gag-stack (stack acc)
 
 ; Stack is a list of gag-info records.  This function is just revappend, except
@@ -2243,6 +2235,18 @@
                (revappend (cdr stack) acc)))
         (t (reverse-gag-stack (cdr stack)
                               (cons (car stack) acc)))))
+
+(defun print-gag-state-abort-stack-msg (abort-stack)
+
+; See print-gag-state.
+
+  (case abort-stack
+    (empty-clause
+     (msg "~|    before generating a goal of ~x0 (see :DOC nil-goal)"
+          'nil))
+    (do-not-induct
+     "~|    before a :DO-NOT-INDUCT hint stopped the proof attempt")
+    (otherwise "")))
 
 (defun print-gag-state1 (gag-state state)
   (cond
@@ -2293,13 +2297,15 @@
                                    state))))
                   (pprogn
                    (fms "*** Key checkpoint~#0~[~/s~] ~#1~[before reverting ~
-                         to proof by induction~/at the top level~]: ***"
+                         to proof by induction~/at the top level~@2~]: ***"
                         (list (cons #\0 top-stack)
-                              (cons #\1 (if (consp abort-stack) 0 1)))
+                              (cons #\1 (if (consp abort-stack) 0 1))
+                              (cons #\2 (if sub-stack
+                                            ""
+                                          (print-gag-state-abort-stack-msg
+                                           abort-stack))))
                         chan state nil)
-                   (cond
-                    (sub-stack (newline chan state))
-                    (t (maybe-print-nil-goal-generated gag-state chan state)))
+                   (newline chan state)
                    (print-gag-stack-rev
                     (reverse-gag-stack top-stack nil)
                     limit limit "before induction" chan
@@ -2311,10 +2317,12 @@
                                    state))))
                   (pprogn
                    (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
-                         induction ***"
-                        (list (cons #\0 sub-stack))
+                         induction~@1: ***"
+                        (list (cons #\0 sub-stack)
+                              (cons #\1 (print-gag-state-abort-stack-msg
+                                         abort-stack)))
                         chan state nil)
-                   (maybe-print-nil-goal-generated gag-state chan state)
+                   (newline chan state)
                    (print-gag-stack-rev
                     (reverse-gag-stack sub-stack nil)
                     limit

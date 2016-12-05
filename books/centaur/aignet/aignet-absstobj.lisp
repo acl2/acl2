@@ -831,7 +831,7 @@
   <p>In the execution this is mostly just a stobj array lookup in the node
   array.</p>
 
-  @(def aignet$a::nxst-id-reg)")
+  @(def aignet$a::nxst-id->reg)")
 
 
 ;; Fanin Lookup

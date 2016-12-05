@@ -93,6 +93,7 @@ to describe all of the places that @('name') is used.</p>")
   (define vl-expr-descvarnames ((x vl-expr-p))
     :returns (names string-listp)
     :measure (vl-expr-count x)
+    :parents (vl-describe)
     :flag :expr
     (mbe :logic (append (vl-expr-case x
                           :vl-index (b* ((name (vl-scopeexpr-varname x.scope)))
@@ -528,6 +529,7 @@ to describe all of the places that @('name') is used.</p>")
   :guard-debug t
   :short "Prints out the definition of @('name') (wherever it can be found in the
           scopestack) and uses of it in the current module."
+  :parents (verilog-printing)
   (b* (((vl-genblob x) x)
 
        (some-uses-will-not-be-displayed-p

@@ -993,7 +993,7 @@ when you print them it is still pretty easy to tell what the fields are.</dd>
 <dd>Example: a tagless product with 5 fields could be laid out as follows:
 
 @({
-    `((,a . ,b) . (,c . (,d . e)))                   ;; :tree
+    `((,a . ,b) . (,c . (,d . ,e)))                  ;; :tree
     `(,a ,b ,c ,d ,e)                                ;; :list
     `((a . ,a) (b . ,b) (c . ,c) (d . ,d) (e . ,e))  ;; :alist
 })</dd>

@@ -432,8 +432,7 @@ to override it.</p>")
        (squelch-docs-p (and already-definedp
                             (not short)
                             (not long)
-                            (not (cdr parents-p))
-                            (xdoc::find-topic name (xdoc::get-xdoc-table (w state)))))
+                            (not (cdr parents-p))))
 
        (parents (and (not squelch-docs-p)
                      (if parents-p
@@ -489,6 +488,7 @@ to override it.</p>")
            ,@(and (or squelch-docs-p parents-p parents) `(:parents ,parents))
            ,@(and short   `(:short ,short))
            ,@(and long    `(:long ,long))
+           ,@(and squelch-docs-p '(:no-xdoc-override t))
            (program)
            ,@def
            ,@rest))
@@ -603,7 +603,7 @@ to override it.</p>")
        ,@(and (or squelch-docs-p parents-p parents) `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
-
+       ,@(and squelch-docs-p '(:no-xdoc-override t))
        (encapsulate ()
          . ,events)
 

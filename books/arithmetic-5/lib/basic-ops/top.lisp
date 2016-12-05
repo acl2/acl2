@@ -209,9 +209,9 @@
 (prefer-positive-addends)
 
 (theory-invariant
- (if (active-runep '(:definition boil-that-dustspeck))
+ (if (active-runep '(:definition arith-5-active-flag))
      (not (and (active-runep '(:rewrite |(expt x (+ m n))|))
-	       (active-runep '(:rewrite normalize-factors-gather-exponents))))
+               (active-runep '(:rewrite normalize-factors-gather-exponents))))
    t)
  :error nil)
 

@@ -274,7 +274,12 @@
 
 ;; ======================================================================
 
-(defsection get-prefixes-alt
+(define get-prefixes-alt
+  ((start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (prefixes  :type (unsigned-byte 44))
+   (cnt       :type (integer 0 15))
+   x86)
+
   :parents (system-level-marking-mode-proof-utilities)
 
   :short "Rewriting @('get-prefixes') to @('get-prefixes-alt')"
@@ -324,146 +329,142 @@
  @('get-prefixes') now have to be re-proved in terms of
  @('get-prefixes-alt').</p>"
 
+  :non-executable t
+  :guard (canonical-address-p (+ cnt start-rip))
+  (if (and (page-structure-marking-mode x86)
+           (not (programmer-level-mode x86))
+           (canonical-address-p start-rip)
+           ;; In the following two conditions below, if we're being
+           ;; really precise, cnt should really be
+           ;; (1+ (prefixes-slice :num-prefixes prefixes)).
+           (disjoint-p
+            (mv-nth 1 (las-to-pas
+                       (create-canonical-address-list cnt start-rip)
+                       :x (cpl x86) x86))
+            (open-qword-paddr-list
+             (gather-all-paging-structure-qword-addresses x86)))
+           (not (mv-nth 0 (las-to-pas
+                           (create-canonical-address-list cnt start-rip)
+                           :x (cpl x86) x86))))
 
-  (define get-prefixes-alt
-    ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-     (prefixes  :type (unsigned-byte 44))
-     (cnt       :type (integer 0 15))
-     x86)
-    :non-executable t
-    :guard (canonical-address-p (+ cnt start-rip))
-    (if (and (page-structure-marking-mode x86)
-             (not (programmer-level-mode x86))
-             (canonical-address-p start-rip)
-             ;; In the following two conditions below, if we're being
-             ;; really precise, cnt should really be
-             ;; (1+ (prefixes-slice :num-prefixes prefixes)).
-             (disjoint-p
-              (mv-nth 1 (las-to-pas
-                         (create-canonical-address-list cnt start-rip)
-                         :x (cpl x86) x86))
-              (open-qword-paddr-list
-               (gather-all-paging-structure-qword-addresses x86)))
-             (not (mv-nth 0 (las-to-pas
-                             (create-canonical-address-list cnt start-rip)
-                             :x (cpl x86) x86))))
+      (get-prefixes start-rip prefixes cnt x86)
 
-        (get-prefixes start-rip prefixes cnt x86)
+    (mv nil prefixes x86))
 
-      (mv nil prefixes x86))
+  ///
 
-    ///
+  (defthm natp-get-prefixes-alt
+    (implies (forced-and (natp prefixes)
+                         (canonical-address-p start-rip)
+                         (x86p x86))
+             (natp (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))))
+    :hints (("Goal"
+             :cases ((and (page-structure-marking-mode x86)
+                          (not (programmer-level-mode x86))
+                          (not (mv-nth 0 (las-to-pas nil r-w-x (cpl x86) x86)))))
+             :in-theory (e/d (las-to-pas)
+                             ())))
+    :rule-classes :type-prescription)
 
-    (defthm natp-get-prefixes-alt
-      (implies (forced-and (natp prefixes)
-                           (canonical-address-p start-rip)
-                           (x86p x86))
-               (natp (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))))
-      :hints (("Goal"
-               :cases ((and (page-structure-marking-mode x86)
-                            (not (programmer-level-mode x86))
-                            (not (mv-nth 0 (las-to-pas nil r-w-x (cpl x86) x86)))))
-               :in-theory (e/d (las-to-pas)
-                               ())))
-      :rule-classes :type-prescription)
+  (defthm-usb n44p-get-prefixes-alt
+    :hyp (and (n44p prefixes)
+              (canonical-address-p start-rip)
+              (x86p x86))
+    :bound 44
+    :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
+    :hints (("Goal"
+             :use ((:instance n44p-get-prefixes))
+             :in-theory (e/d () (n44p-get-prefixes))))
+    :gen-linear t)
 
-    (defthm-usb n44p-get-prefixes-alt
-      :hyp (and (n44p prefixes)
-                (canonical-address-p start-rip)
-                (x86p x86))
-      :bound 44
-      :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
-      :hints (("Goal"
-               :use ((:instance n44p-get-prefixes))
-               :in-theory (e/d () (n44p-get-prefixes))))
-      :gen-linear t)
+  (defthm x86p-get-prefixes-alt
+    (implies (force (x86p x86))
+             (x86p (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
 
-    (defthm x86p-get-prefixes-alt
-      (implies (force (x86p x86))
-               (x86p (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'get-prefixes-alt
+    (acl2::formals 'get-prefixes-alt (w state))
+    :output-index 2))
 
-    (make-event
-     (generate-xr-over-write-thms
-      (remove-elements-from-list
-       '(:mem :fault)
-       *x86-field-names-as-keywords*)
-      'get-prefixes-alt
-      (acl2::formals 'get-prefixes-alt (w state))
-      :output-index 2))
+  (defthm xr-fault-and-get-prefixes-alt
+    (equal (xr :fault index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
+           (xr :fault index x86))
+    :hints (("Goal" :in-theory (e/d* (get-prefixes-alt)
+                                     (not force (force))))))
 
-    (defthm xr-fault-and-get-prefixes-alt
-      (equal (xr :fault index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
-             (xr :fault index x86))
-      :hints (("Goal" :in-theory (e/d* (get-prefixes-alt)
-                                       (not force (force))))))
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'get-prefixes-alt
+    (acl2::formals 'get-prefixes-alt (w state))
+    :output-index 0
+    ;; :hyps '(not (programmer-level-mode x86))
+    :double-rewrite? t))
 
-    (make-event
-     (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'get-prefixes-alt
-      (acl2::formals 'get-prefixes-alt (w state))
-      :output-index 0
-      ;; :hyps '(not (programmer-level-mode x86))
-      :double-rewrite? t))
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'get-prefixes-alt
+    (acl2::formals 'get-prefixes-alt (w state))
+    :output-index 1
+    ;; :hyps '(not (programmer-level-mode x86))
+    :double-rewrite? t))
 
-    (make-event
-     (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'get-prefixes-alt
-      (acl2::formals 'get-prefixes-alt (w state))
-      :output-index 1
-      ;; :hyps '(not (programmer-level-mode x86))
-      :double-rewrite? t))
+  (make-event
+   (generate-write-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'get-prefixes-alt
+    (acl2::formals 'get-prefixes-alt (w state))
+    :output-index 2
+    ;; :hyps '(not (programmer-level-mode x86))
+    ))
 
-    (make-event
-     (generate-write-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'get-prefixes-alt
-      (acl2::formals 'get-prefixes-alt (w state))
-      :output-index 2
-      ;; :hyps '(not (programmer-level-mode x86))
-      ))
+  (defthm get-prefixes-alt-values-and-!flgi-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt
+                                                     (!flgi index value x86)))
+                         (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (double-rewrite x86))))
+                  (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt
+                                                     (!flgi index value x86)))
+                         (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (double-rewrite x86))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* ()
+                              (force (force))))))
 
-    (defthm get-prefixes-alt-values-and-!flgi-in-system-level-mode
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt
-                                                       (!flgi index value x86)))
-                           (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt (double-rewrite x86))))
-                    (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt
-                                                       (!flgi index value x86)))
-                           (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt (double-rewrite x86))))))
-      :hints (("Goal"
-               :do-not-induct t
-               :in-theory (e/d* ()
-                                (force (force))))))
+  (defthm get-prefixes-alt-and-!flgi-state-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (x86p x86))
+             (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* ()
+                              (force (force))))))
 
-    (defthm get-prefixes-alt-and-!flgi-state-in-system-level-mode
-      (implies (and (not (equal index *ac*))
-                    (not (programmer-level-mode x86))
-                    (x86p x86))
-               (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt (!flgi index value x86)))
-                      (!flgi index value (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))))
-      :hints (("Goal"
-               :do-not-induct t
-               :in-theory (e/d* ()
-                                (force (force))))))
+  (defthm flgi-and-mv-nth-2-get-prefixes-alt
+    (equal (flgi index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
+           (flgi index x86))
+    :hints (("Goal" :in-theory (e/d* (flgi) ()))))
 
-    (defthm flgi-and-mv-nth-2-get-prefixes-alt
-      (equal (flgi index (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
-             (flgi index x86))
-      :hints (("Goal" :in-theory (e/d* (flgi) ()))))
+  (defthm alignment-checking-enabled-p-and-mv-nth-2-get-prefixes-alt
+    (equal (alignment-checking-enabled-p (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
+           (alignment-checking-enabled-p x86))
+    :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p flgi) ()))))
 
-    (defthm alignment-checking-enabled-p-and-mv-nth-2-get-prefixes-alt
-      (equal (alignment-checking-enabled-p (mv-nth 2 (get-prefixes-alt start-rip prefixes cnt x86)))
-             (alignment-checking-enabled-p x86))
-      :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p flgi) ())))))
+  (local (in-theory (e/d* () (get-prefixes-alt))))
 
   (defthm rewrite-get-prefixes-to-get-prefixes-alt
     (implies (forced-and
@@ -1549,28 +1550,33 @@
 
 ;; ======================================================================
 
-(defsection program-at-alt
+(define program-at-alt ((l-addrs canonical-address-listp)
+                        (bytes byte-listp)
+                        (x86))
+
   :parents (system-level-marking-mode-proof-utilities)
+  :non-executable t
+  :prepwork
+  (
+   ;; Note that unlike rb-alt and get-prefixes-alt, we need to use
+   ;; disjoint-p$ for program-at-alt instead of disjoint-p.
+   (local (in-theory (e/d (disjoint-p$) ()))))
 
-  ;; Note that unlike rb-alt and get-prefixes-alt, we need to use
-  ;; disjoint-p$ for program-at-alt instead of disjoint-p.
-  (local (in-theory (e/d (disjoint-p$) ())))
+  (if (and (page-structure-marking-mode x86)
+           (not (programmer-level-mode x86))
+           (canonical-address-listp l-addrs)
+           (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
+           (disjoint-p$ (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
+                        (open-qword-paddr-list
+                         (gather-all-paging-structure-qword-addresses x86))))
 
-  (define program-at-alt ((l-addrs canonical-address-listp)
-                          (bytes byte-listp)
-                          (x86))
-    :non-executable t
-    (if (and (page-structure-marking-mode x86)
-             (not (programmer-level-mode x86))
-             (canonical-address-listp l-addrs)
-             (not (mv-nth 0 (las-to-pas l-addrs :x (cpl x86) x86)))
-             (disjoint-p$ (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
-                          (open-qword-paddr-list
-                           (gather-all-paging-structure-qword-addresses x86))))
+      (program-at l-addrs bytes x86)
 
-        (program-at l-addrs bytes x86)
+    nil)
 
-      nil))
+  ///
+
+  (local (in-theory (e/d* () (program-at-alt))))
 
   (defthm rewrite-program-at-to-program-at-alt
     (implies (forced-and
@@ -1668,165 +1674,167 @@
 
 ;; ======================================================================
 
-(defsection rb-alt
+(define rb-alt ((l-addrs canonical-address-listp)
+                (r-w-x :type (member :r :w :x))
+                (x86))
+
   :parents (system-level-marking-mode-proof-utilities)
 
   :long "<p>rb-alt is defined basically to read the program bytes from
  the memory. I don't intend to use it to read paging data
  structures.</p>"
 
-  (define rb-alt ((l-addrs canonical-address-listp)
-                  (r-w-x :type (member :r :w :x))
-                  (x86))
-    :non-executable t
-    (if (and (page-structure-marking-mode x86)
-             (not (programmer-level-mode x86))
-             (canonical-address-listp l-addrs)
-             (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-             ;; (disjoint-p (all-xlation-governing-entries-paddrs l-addrs x86)
-             ;;             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-             (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
-                         (open-qword-paddr-list
-                          (gather-all-paging-structure-qword-addresses x86))))
+  :non-executable t
+  (if (and (page-structure-marking-mode x86)
+           (not (programmer-level-mode x86))
+           (canonical-address-listp l-addrs)
+           (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+           ;; (disjoint-p (all-xlation-governing-entries-paddrs l-addrs x86)
+           ;;             (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
+           (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
+                       (open-qword-paddr-list
+                        (gather-all-paging-structure-qword-addresses x86))))
 
-        (rb l-addrs r-w-x x86)
+      (rb l-addrs r-w-x x86)
 
-      (mv nil nil x86))
+    (mv nil nil x86))
 
-    ///
+  ///
 
-    (defthm rb-alt-returns-byte-listp
-      (implies (x86p x86)
-               (byte-listp (mv-nth 1 (rb-alt addresses r-w-x x86))))
-      :rule-classes (:rewrite :type-prescription))
+  (defthm rb-alt-returns-byte-listp
+    (implies (x86p x86)
+             (byte-listp (mv-nth 1 (rb-alt addresses r-w-x x86))))
+    :rule-classes (:rewrite :type-prescription))
 
-    (defthm rb-alt-returns-x86p
-      (implies (force (x86p x86))
-               (x86p (mv-nth 2 (rb-alt l-addrs r-w-x x86)))))
+  (defthm rb-alt-returns-x86p
+    (implies (force (x86p x86))
+             (x86p (mv-nth 2 (rb-alt l-addrs r-w-x x86)))))
 
-    (defthm rb-alt-nil-lemma
-      (equal (mv-nth 1 (rb-alt nil r-w-x x86))
-             nil)
-      :hints (("Goal"
-               :cases ((and (page-structure-marking-mode x86)
-                            (not (programmer-level-mode x86))
-                            (not (mv-nth 0 (las-to-pas nil r-w-x (cpl x86) x86)))))
-               :in-theory (e/d* () (force (force))))))
+  (defthm rb-alt-nil-lemma
+    (equal (mv-nth 1 (rb-alt nil r-w-x x86))
+           nil)
+    :hints (("Goal"
+             :cases ((and (page-structure-marking-mode x86)
+                          (not (programmer-level-mode x86))
+                          (not (mv-nth 0 (las-to-pas nil r-w-x (cpl x86) x86)))))
+             :in-theory (e/d* () (force (force))))))
 
 
-    (make-event
-     (generate-xr-over-write-thms
-      (remove-elements-from-list
-       '(:mem :fault)
-       *x86-field-names-as-keywords*)
-      'rb-alt
-      (acl2::formals 'rb-alt (w state))
-      :output-index 2
-      :prepwork '((local (in-theory (e/d () (force (force))))))))
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'rb-alt
+    (acl2::formals 'rb-alt (w state))
+    :output-index 2
+    :prepwork '((local (in-theory (e/d () (force (force))))))))
 
-    (defthm xr-fault-rb-alt-state-in-system-level-mode
-      (equal (xr :fault index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
-             (xr :fault index x86))
-      :hints (("Goal" :in-theory (e/d* (rb-alt
-                                        las-to-pas)
-                                       (force (force))))))
+  (defthm xr-fault-rb-alt-state-in-system-level-mode
+    (equal (xr :fault index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
+           (xr :fault index x86))
+    :hints (("Goal" :in-theory (e/d* (rb-alt
+                                      las-to-pas)
+                                     (force (force))))))
 
-    (defthm mv-nth-0-rb-alt-is-nil
-      (equal (mv-nth 0 (rb-alt l-addrs r-w-x x86)) nil)
-      :hints (("Goal"
-               :use ((:instance mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode))
-               :in-theory (e/d* ()
-                                (mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
-                                 force (force))))))
+  (defthm mv-nth-0-rb-alt-is-nil
+    (equal (mv-nth 0 (rb-alt l-addrs r-w-x x86)) nil)
+    :hints (("Goal"
+             :use ((:instance mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode))
+             :in-theory (e/d* ()
+                              (mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
+                               force (force))))))
 
-    (make-event
-     (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'rb-alt
-      (acl2::formals 'rb-alt (w state))
-      :output-index 0
-      :double-rewrite? t))
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb-alt
+    (acl2::formals 'rb-alt (w state))
+    :output-index 0
+    :double-rewrite? t))
 
-    (make-event
-     (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'rb-alt
-      (acl2::formals 'rb-alt (w state))
-      :output-index 1
-      :double-rewrite? t))
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb-alt
+    (acl2::formals 'rb-alt (w state))
+    :output-index 1
+    :double-rewrite? t))
 
-    (defthm rb-alt-xw-rflags-not-ac-values-in-system-level-mode
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (and (equal (mv-nth 0 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
-                           (mv-nth 0 (rb-alt addr r-w-x x86)))
-                    (equal (mv-nth 1 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
-                           (mv-nth 1 (rb-alt addr r-w-x x86)))))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+  (defthm rb-alt-xw-rflags-not-ac-values-in-system-level-mode
+    (implies (equal (rflags-slice :ac value)
+                    (rflags-slice :ac (rflags x86)))
+             (and (equal (mv-nth 0 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rb-alt addr r-w-x x86)))
+                  (equal (mv-nth 1 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rb-alt addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (make-event
-     (generate-write-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'rb-alt
-      (acl2::formals 'rb-alt (w state))
-      :output-index 2
-      :prepwork '((local (in-theory (e/d* () (force (force))))))))
+  (make-event
+   (generate-write-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb-alt
+    (acl2::formals 'rb-alt (w state))
+    :output-index 2
+    :prepwork '((local (in-theory (e/d* () (force (force))))))))
 
-    (defthm rb-alt-xw-rflags-not-ac-state-in-system-level-mode
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (equal (mv-nth 2 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
-                      (xw :rflags 0 value (mv-nth 2 (rb-alt addr r-w-x x86)))))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+  (defthm rb-alt-xw-rflags-not-ac-state-in-system-level-mode
+    (implies (equal (rflags-slice :ac value)
+                    (rflags-slice :ac (rflags x86)))
+             (equal (mv-nth 2 (rb-alt addr r-w-x (xw :rflags 0 value x86)))
+                    (xw :rflags 0 value (mv-nth 2 (rb-alt addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthm rb-alt-values-and-!flgi-in-system-level-mode
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (rb-alt l-addrs r-w-x (!flgi index value x86)))
-                           (mv-nth 0 (rb-alt l-addrs r-w-x (double-rewrite x86))))
-                    (equal (mv-nth 1 (rb-alt l-addrs r-w-x (!flgi index value x86)))
-                           (mv-nth 1 (rb-alt l-addrs r-w-x (double-rewrite x86))))))
-      :hints (("Goal" :do-not-induct t
-               :in-theory (e/d* () (force (force))))))
+  (defthm rb-alt-values-and-!flgi-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (and (equal (mv-nth 0 (rb-alt l-addrs r-w-x (!flgi index value x86)))
+                         (mv-nth 0 (rb-alt l-addrs r-w-x (double-rewrite x86))))
+                  (equal (mv-nth 1 (rb-alt l-addrs r-w-x (!flgi index value x86)))
+                         (mv-nth 1 (rb-alt l-addrs r-w-x (double-rewrite x86))))))
+    :hints (("Goal" :do-not-induct t
+             :in-theory (e/d* () (force (force))))))
 
-    (defthm rb-alt-and-!flgi-state-in-system-level-mode
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (equal (mv-nth 2 (rb-alt lin-addr r-w-x (!flgi index value x86)))
-                      (!flgi index value (mv-nth 2 (rb-alt lin-addr r-w-x x86)))))
-      :hints (("Goal"
-               :do-not-induct t
-               :in-theory (e/d* ()
-                                (force (force))))))
+  (defthm rb-alt-and-!flgi-state-in-system-level-mode
+    (implies (and (not (equal index *ac*))
+                  (x86p x86))
+             (equal (mv-nth 2 (rb-alt lin-addr r-w-x (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (rb-alt lin-addr r-w-x x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* ()
+                              (force (force))))))
 
-    (defthm flgi-and-mv-nth-2-rb-alt
-      (equal (flgi index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
-             (flgi index x86))
-      :hints (("Goal" :in-theory (e/d* (flgi) ()))))
+  (defthm flgi-and-mv-nth-2-rb-alt
+    (equal (flgi index (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
+           (flgi index x86))
+    :hints (("Goal" :in-theory (e/d* (flgi) ()))))
 
-    (defthm alignment-checking-enabled-p-and-mv-nth-2-rb-alt
-      (equal (alignment-checking-enabled-p (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
-             (alignment-checking-enabled-p x86))
-      :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p flgi) ()))))
+  (defthm alignment-checking-enabled-p-and-mv-nth-2-rb-alt
+    (equal (alignment-checking-enabled-p (mv-nth 2 (rb-alt l-addrs r-w-x x86)))
+           (alignment-checking-enabled-p x86))
+    :hints (("Goal" :in-theory (e/d* (alignment-checking-enabled-p flgi) ()))))
 
-    (defthm mv-nth-2-rb-alt-in-system-level-marking-mode
-      (implies
-       (and (not (programmer-level-mode x86))
-            (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
-            (canonical-address-listp l-addrs)
-            (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
-                        (open-qword-paddr-list
-                         (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
-       (equal (mv-nth 2 (rb-alt l-addrs r-w-x x86))
-              (mv-nth 2 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))))
-      :hints (("Goal" :do-not-induct t
-               :in-theory (e/d* () (force (force)))))))
+  (defthm mv-nth-2-rb-alt-in-system-level-marking-mode
+    (implies
+     (and (not (programmer-level-mode x86))
+          (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86))))
+          (canonical-address-listp l-addrs)
+          (disjoint-p (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))
+                      (open-qword-paddr-list
+                       (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
+     (equal (mv-nth 2 (rb-alt l-addrs r-w-x x86))
+            (mv-nth 2 (las-to-pas l-addrs r-w-x (cpl x86) (double-rewrite x86)))))
+    :hints (("Goal" :do-not-induct t
+             :in-theory (e/d* () (force (force))))))
+
+  (local (in-theory (e/d* () (rb-alt))))
 
   ;; Note that in the lemmas below, we use program-at-alt instead of
   ;; program-at.
