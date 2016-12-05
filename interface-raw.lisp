@@ -7204,8 +7204,8 @@
          (define-global
            (our-update-ht (define-global-name (cadr form)) form ht)
            (our-update-ht (cadr form) form ht))
-         ((define-pc-atomic-macro define-pc-bind define-pc-help define-pc-macro
-            define-pc-meta define-pc-primitive)
+         ((define-pc-atomic-macro define-pc-bind* define-pc-help
+            define-pc-macro define-pc-meta define-pc-primitive)
           (let ((name (make-official-pc-command
                        (if (eq (car form) 'define-pc-meta-or-macro-fn)
                            (nth 2 form)

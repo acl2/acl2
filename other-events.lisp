@@ -28439,7 +28439,7 @@
                               (symbol-listp (cadr def)))))
 
   `(with-output
-     :stack :push :off (summary event)
+     :stack :push :off :all
      (progn (with-output :stack :pop (defun ,@def))
             ,@(and (not (program-declared-p def))
                    `((in-theory (disable ,(car def)))))

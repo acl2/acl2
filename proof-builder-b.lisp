@@ -2633,29 +2633,32 @@
 (define-pc-macro repeat-rec (instr)
   (value `(do-strict ,instr (repeat-rec ,instr))))
 
-(defmacro define-pc-bind (name args &optional doc-string declare-form)
-  (mv-let (doc-string declare-form)
-          (if (and (null declare-form)
-                   (not (stringp doc-string)))
-              (mv nil doc-string)
-            (mv doc-string declare-form))
-          `(define-pc-meta ,name (&rest instr-list)
-             ,@ (and doc-string (list doc-string))
-             ,@(and declare-form (list declare-form))
-             (state-global-let*
-              (,args)
-              (pc-main-loop instr-list nil t
-                            (pc-print-prompt-and-instr-flg)
-                            state)))))
+(defmacro define-pc-bind* (name &rest args)
+  `(define-pc-meta ,name (&rest instr-list)
+     (state-global-let*
+      (,@args)
+      (pc-main-loop instr-list nil t
+                    (pc-print-prompt-and-instr-flg)
+                    state))))
 
-;; ****** Fix the documentation and code below once I can turn off
-;; prover IO.
-(define-pc-bind quiet
+(define-pc-bind* quiet
   (inhibit-output-lst
    (union-eq '(prove proof-builder proof-tree warning observation)
              (f-get-global 'inhibit-output-lst state))))
 
-(define-pc-bind noise
+(define-pc-bind* quiet!
+  (print-clause-ids nil)
+  (gag-mode nil)
+  (inhibit-output-lst
+   (union-eq '(prove proof-builder proof-tree warning observation)
+             (f-get-global 'inhibit-output-lst state))))
+
+(define-pc-bind* noise
+  (gag-mode nil)
+  (inhibit-output-lst '(proof-tree)))
+
+(define-pc-bind* noise!
+  (gag-mode nil)
   (inhibit-output-lst nil))
 
 (defun find-equivalence-hyp-term-no-target (index term hyps equiv w)

@@ -3520,6 +3520,10 @@
                     ((equal (tagged-objects 'abort-cause ttree)
                             '(empty-clause))
                      (change gag-state gagst :abort-stack 'empty-clause))
+                    ((member-equal (tagged-objects 'abort-cause ttree)
+                                   '((do-not-induct)
+                                     (do-not-induct-otf-flg-override)))
+                     (change gag-state gagst :abort-stack 'do-not-induct))
                     (t gagst))
               (and msg-p
                    (msg "~@0~@1"

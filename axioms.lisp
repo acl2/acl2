@@ -8587,7 +8587,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           &rest rst)
   (declare (xargs :guard t) (ignore term rst))
   (list 'with-output
-        :stack :push :off '(summary event)
+        :stack :push :off :all
         (list 'progn
               (list 'with-output
                     :stack :pop
