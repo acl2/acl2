@@ -796,6 +796,14 @@ OK_CERTS := $(ACL2_CUSTOM_TARGETS) $(OK_CERTS)
 ### Section: Support for ACL2_COMP
 ##############################
 
+# NOTE: Books that were certified with pcert are, in many (and
+# probably all) cases, recertified when using ACL2_COMP to build only
+# compiled files.  This is unfortunate but probably not very
+# important.  However, the book projects/stateman/stateman22.lisp
+# takes a long time to certify and depends on
+# tau/bounders/elementary-bounders.cert, which used pcert.  So we
+# exclude that book below.
+
 ifdef ACL2_COMP
 
 # Multi-lisp compilation stuff for developers.
@@ -880,14 +888,23 @@ OK_CERTS := $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(OK_CERTS))
 # Start a sequence of assignments to BOOKS_SKIP_COMP:
 BOOKS_SKIP_COMP :=
 
+# See comment above about this book; in short, it would be recertified
+# (often taking a long time) because of its dependence on a book that,
+# in turn, is recertified because it was originally certified with
+# pcert.
+BOOKS_SKIP_COMP += projects/stateman/stateman22.$(ACL2_COMP_EXT)
+
 # Contain Lisp-specific readtime conditionals:
 BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
 
-# These depend on centaur/misc/memory-mgmt-logic, which will be
-# uncertified in other lisps and hence we won't get the target
-# compiled file (but see comment at the end of this list before
-# making further additions):
+# The following depend on centaur/misc/memory-mgmt-logic, which will
+# be uncertified in other lisps and hence we won't get the target
+# compiled file.
+# NOTE: The list below is incomplete.  In particular, failures can be
+# expected for centaur/ubdds/lite and centaur/esim/defmodules.  If we
+# add those, then we get more failures; six attempts didn't reach
+# closure.
 BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
@@ -896,12 +913,8 @@ BOOKS_SKIP_COMP += centaur/ubdds/subset.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/param.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/witness.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/vl2014/loader/top.$(ACL2_COMP_EXT)
-# Note: The list above (of books that depend on
-# centaur/misc/memory-mgmt-logic) is incomplete.  In particular,
-# failures can be expected for centaur/ubdds/lite and
-# centaur/esim/defmodules.  If we add those, then we get more
-# failures; six attempts didn't reach closure.  Future releases might
-# attempt to do a better job with this.
+# WARNING!  See note above about "is incomplete" before attempting to
+# extend the list above.
 
 # Some attempts fail presumably due to dollar signs in filenames:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard build/test/*.cert))
