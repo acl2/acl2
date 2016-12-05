@@ -11,7 +11,7 @@
 (local (in-theory (e/d* () (unsigned-byte-p signed-byte-p))))
 
 (defsection reasoning-about-page-tables
-  :parents (marking-mode-top)
+  :parents (system-level-marking-mode-proof-utilities)
 
   :long "<p>WORK IN PROGRESS...</p>
 
