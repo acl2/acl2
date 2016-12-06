@@ -294,7 +294,7 @@
          (fms "Starting ~x0.~|"
               (list (cons #\0 `(verify-lrat-proof ,cnf
                                                   ,lrat
-                                                  ,@(cdddr d))))
+                                                  ,@(cddr d))))
               chan state nil)
          (er-let* ((val (verify-lrat-proof cnf lrat incomplete-okp)))
            (pprogn
