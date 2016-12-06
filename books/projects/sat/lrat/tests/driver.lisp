@@ -28,6 +28,7 @@
                             ("uuf-100-3.cnf" "uuf-100-3.lrat")
                             ("uuf-100-4.cnf" "uuf-100-4.lrat")
                             ("uuf-100-5.cnf" "uuf-100-5.lrat")
+                            ("uuf-100-5.cnf" "uuf-100-5-partial.lrat" t)
                             ("uuf-30-1.cnf" "uuf-30-1.lrat")))))
    (if okp
        (value '(value-triple :success))

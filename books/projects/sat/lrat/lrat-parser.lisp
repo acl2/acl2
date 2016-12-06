@@ -211,16 +211,21 @@
             lrat-file)))
     (parse-lrat-channel channel ctx state nil)))
 
-(defun verify-lrat-proof (cnf-file lrat-file state)
+(defun verify-lrat-proof-fn (cnf-file lrat-file incomplete-okp state)
   (b* (((er formula) (time$ (parse-cnf-file cnf-file state)))
        ((er proof) (time$ (parse-lrat-file lrat-file state))))
-    (value (time$ (valid-proofp formula proof)))))
+    (value (mv-let (v c)
+             (time$ (valid-proofp formula proof))
+             (and v
+                  (or incomplete-okp
+                      c))))))
 
-#||
+(defmacro verify-lrat-proof (cnf-file lrat-file
+                                      &optional (incomplete-okp 'nil))
+  `(verify-lrat-proof-fn ,cnf-file ,lrat-file ,incomplete-okp state))
 
-(verify-lrat-proof "tests/example-4-vars.cnf" "tests/example-4-vars.lrat" state)
-
-||#
+; Example:
+; (verify-lrat-proof "tests/example-4-vars.cnf" "tests/example-4-vars.lrat")
 
 ; Some debugging tools.
 
@@ -283,12 +288,15 @@
             (value okp)))
    (t (let* ((d (car doublets))
              (cnf (concatenate 'string dir (car d)))
-             (lrat (concatenate 'string dir (cadr d))))
+             (lrat (concatenate 'string dir (cadr d)))
+             (incomplete-okp (caddr d)))
         (pprogn
          (fms "Starting ~x0.~|"
-              (list (cons #\0 `(verify-lrat-proof ,cnf ,lrat state)))
+              (list (cons #\0 `(verify-lrat-proof ,cnf
+                                                  ,lrat
+                                                  ,@(cdddr d))))
               chan state nil)
-         (er-let* ((val (verify-lrat-proof cnf lrat state)))
+         (er-let* ((val (verify-lrat-proof cnf lrat incomplete-okp)))
            (pprogn
             (princ$ "Result: " chan state)
             (princ$ (if val "success" "FAILURE") chan state)

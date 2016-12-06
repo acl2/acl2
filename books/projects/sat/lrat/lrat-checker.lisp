@@ -704,22 +704,25 @@
         (proof-contradiction-p (cdr proof)))))
 
 (defun valid-proofp (formula proof)
+
+; This function returns two Boolean values, (mv valid-p contr-p), where valid-p
+; is true when the given proof is valid for the given formula, and contr-p is
+; true when the proof contains an addition step with the empty clause.
+; Except, if proof is not syntactically valid (i.e., satisfies proofp), then we
+; return (mv nil nil).
+
   (declare (xargs :guard (formula-p formula)))
-  (and (proofp proof)
-
-; We could replace the following conjunct by (equal (car (last proof))
-; *d-clause-contradiction* proof)); we will probably do so if that simplifies
-; our reasoning.
-
-       (proof-contradiction-p proof)
-       (verify-proof formula proof)))
+  (let ((p (proofp proof)))
+    (mv (and p (verify-proof formula proof))
+        (and p (proof-contradiction-p proof)))))
 
 ; The functions defined below are only relevant to the correctness statement.
 
 (defun refutation-p (proof formula)
   (declare (xargs :guard (formula-p formula)))
-  (and (valid-proofp formula proof)
-       (proof-contradiction-p proof)))
+  (mv-let (v c)
+    (valid-proofp formula proof)
+    (and v c)))
 
 (defun-sk formula-truep (formula assignment)
   (forall index
