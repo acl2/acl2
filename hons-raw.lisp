@@ -2179,10 +2179,10 @@
 ; Space.  We produce a new cons, (X . Y), destructively extend HS so that this
 ; new cons is considered normed, and return it.
 
-  (declare (type hl-hspace hs))
   `(let ((x ,x)
          (y ,y)
          (hs ,hs))
+     (declare (type hl-hspace hs))
      (hl-hspace-hons-normed (hl-hspace-norm x hs)
                             (hl-hspace-norm y hs)
                             nil hs)))
