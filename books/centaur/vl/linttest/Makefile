@@ -45,7 +45,7 @@ OK_FILES   := $(patsubst %/spec.sv, %/vl-warnings.ok, $(SPEC_FILES))
 %/vl-warnings.json: %/spec.sv $(VL)
 	@echo "Making $*/vl-warnings.json"
 	@rm -f $*/vl-warnings.json $*/vl-*.txt $*/vl-lint.log
-	@cd $*; $(STARTJOB) -c '$(VL) lint spec.sv &> vl-lint.log'
+	cd $*; LINTARGS=`if [ -e lintargs ]; then cat lintargs; fi`; $(STARTJOB) -c "$(VL) lint spec.sv $$LINTARGS &> vl-lint.log"
 	@ls -l $*/vl-warnings.json
 
 %/vl-warnings.ok: %/vl-warnings.json %/check.rb utils.rb

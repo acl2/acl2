@@ -52,6 +52,10 @@
 ;; Set up our program NOT try to read the any customization files.
 (defun initial-customization-filename () :none)
 
+;; the default defs of these screw up the server's scanner thread
+(defun acl2::bad-lisp-objectp (x) nil)
+(defun acl2::chk-bad-lisp-object (x) nil)
+
 (save-exec "../bin/vl" "VL Verilog Toolkit"
            :inert-args ""
            #+CCL :host-lisp-args #+CCL "-Z 256M"
