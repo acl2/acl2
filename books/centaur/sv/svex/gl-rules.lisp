@@ -35,6 +35,7 @@
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (include-book "centaur/gl/ctrex-utils" :dir :system)
 (include-book "symbolic")
+(include-book "../svtv/fsm")
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :System))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -371,6 +372,33 @@
              env
            (hons-acons var val env)))))
 
+(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+
+(gl::def-gl-rewrite svex-env-fix-of-svtv-fsm-symbolic-env
+  (equal (svex-env-fix (svtv-fsm-symbolic-env ins vars prev-st))
+         (svtv-fsm-symbolic-env ins vars prev-st)))
+
+(gl::def-glcp-ctrex-rewrite
+  ((svex-env-lookup-nofix var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
+  (ins (b* ((alist (nth (svex-cycle-var->cycle var) ins))
+            (svar (svex-cycle-var->svar var))
+            (lookup (hons-get svar alist))
+            ((when (hons-equal (cdr lookup) val))
+             ins))
+         (update-nth (svex-cycle-var->cycle var)
+                     (hons-acons svar val alist)
+                     ins)))
+  :test (and (quotep var)
+             (svex-cycle-var-p (unquote var))))
+
+(gl::def-glcp-ctrex-rewrite
+  ((svex-env-lookup-nofix var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
+  (prev-st (b* ((lookup (hons-get var prev-st))
+                ((when (hons-equal (cdr lookup) val)) prev-st))
+             (hons-acons var val prev-st)))
+  :test (and (quotep var)
+             (not (svex-cycle-var-p (unquote var)))))
+
 (gl::def-glcp-ctrex-rewrite
   ((equal a b) t)
   (a b)
@@ -389,17 +417,143 @@
               (equal (4vec->lower x) (4vec->lower y))))
   :hints(("Goal" :in-theory (enable equal-of-4vec-fix))))
 
-(define ctrex-clean-env ((x gl::glcp-obj-ctrex-p))
-  ;; use with :ctrex-transform ctrex-clean-env
-  ;; note: assumes env is the only variable bound in the counterex and the only g-var variable
+
+(defun fast-alist-clean-list (x)
+  (if (atom x)
+      nil
+    (b* ((car (car x))
+         (clean (fast-alist-clean (car x))))
+      (fast-alist-free car)
+      (cons clean (fast-alist-clean-list (cdr x))))))
+
+(define ctrex-clean-envs-rec (var-specs alist)
   :verify-guards nil
-  (b* (((gl::glcp-obj-ctrex x))
-       (env-alist (cadr (assoc 'env x.obj-alist)))
-       (new-env-alist (make-fast-alist (fast-alist-clean env-alist)))
-       (- (fast-alist-free env-alist)
-          (fast-alist-free (cdr x.genv))))
-    (gl::change-glcp-obj-ctrex
-     x
-     :obj-alist
-     (list (list 'env new-env-alist))
-     :genv (cons (car x.genv) (make-fast-alist (list (cons 'env new-env-alist)))))))
+  (b* (((when (atom alist)) nil)
+       ((cons var val) (car alist))
+       (look (assoc var var-specs))
+       ((unless look)
+        (hons-acons var val (ctrex-clean-envs-rec var-specs (cdr alist))))
+       ((when (eq (cdr look) :fast-alist))
+        (b* ((cleanval (fast-alist-clean val)))
+          (fast-alist-free val)
+          (hons-acons var cleanval (ctrex-clean-envs-rec var-specs (cdr alist)))))
+       ((when (eq (cdr look) :fast-alist-list))
+        (hons-acons var (fast-alist-clean-list val) (ctrex-clean-envs-rec var-specs (cdr alist)))))
+    (cw "Unrecognized keyword for ctrex-clean-envs: ~x0~%" (cdr look))
+    (hons-acons var val (ctrex-clean-envs-rec var-specs (cdr alist)))))
+
+(define ctrex-clean-envs (var-specs alist)
+  :verify-guards nil
+  ;; use with something like:
+  ;; :ctrex-transform (lambda (x) (ctrex-clean-envs '((ins . :fast-alist-list) (prev-st . :fast-alist))))
+  (b* ((alist1  (fast-alist-clean alist))
+       (ans (ctrex-clean-envs-rec var-specs alist1)))
+    (fast-alist-free alist)
+    (fast-alist-free alist1)
+    ans))
+
+
+(define svarlist-has-svex-cycle-var-memo ((x svarlist-p))
+  :enabled t
+  (svarlist-has-svex-cycle-var x)
+  ///
+  (memoize 'svarlist-has-svex-cycle-var-memo))
+
+
+(local (defthm svex-env-lookup-nofix-of-env
+         (implies (and (svex-env-p env)
+                       (svar-p var))
+                  (equal (svex-env-lookup-nofix var env)
+                         (svex-env-lookup var env)))
+         :hints(("Goal" :in-theory (enable svex-env-lookup-nofix svex-env-lookup)))))
+
+(local (defthm svex-env-lookup-nofix-under-4vec-equiv
+         (implies (svar-p var)
+                  (4vec-equiv (svex-env-lookup-nofix var env)
+                              (svex-env-lookup var env)))
+         :hints(("Goal" :in-theory (enable svex-env-lookup-nofix svex-env-lookup)))))
+
+(local (defthm ENV-LOOKUP-OF-CYCLE-VAR-IN-ENV-ADD-CYCLE-NUM-diff-cycle
+         (b* ((ncycle (svex-cycle-var->cycle var)))
+           (implies (and (not (equal (nfix cycle) (nfix ncycle)))
+                         (svar-p var)
+                         (svex-cycle-var-p var))
+                    (not (member var (alist-keys (svar-alist-add-cycle-num x cycle))))))
+         :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num alist-keys)))))
+
+(local (defthm svex-env-lookup-of-cycle-var-in-non-cycle-env
+         (implies (and (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix x))))
+                       (svex-cycle-var-p var))
+                  (equal (svex-env-lookup var x) (4vec-x)))
+         :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix svarlist-has-svex-cycle-var alist-keys)))))
+
+(local (defthm LOOKUP-IN-SVEX-CYCLE-ENVS-TO-SINGLE-ENV-past-end
+         (b* ((cycle (svex-cycle-var->cycle var)))
+           (implies (and (>= (- (nfix cycle) (nfix curr-cycle)) (len x))
+                         (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix rest))))
+                         (svar-p var)
+                         (svex-cycle-var-p var))
+                    (equal (svex-env-lookup var (svex-cycle-envs-to-single-env x curr-cycle rest))
+                           (4vec-x))))
+         :hints(("Goal" :in-theory (enable svex-cycle-envs-to-single-env)))))
+
+
+(local (defthm nth-past-len
+         (implies (<= (len x) (nfix n))
+                  (equal (nth n x) nil))
+         :hints(("Goal" :in-theory (enable nth)))))
+
+(local (defthm LOOKUP-IN-SVEX-CYCLE-ENVS-TO-SINGLE-ENV-special
+         (b* ((cycle (svex-cycle-var->cycle var))
+              (name (svex-cycle-var->svar var)))
+           (implies (and (<= (nfix curr-cycle) (nfix cycle))
+                         (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix rest))))
+                         (svar-p var)
+                         (svex-cycle-var-p var))
+                    (equal (svex-env-lookup var (svex-cycle-envs-to-single-env x curr-cycle rest))
+                           (svex-env-lookup name (nth (- (nfix cycle) (nfix curr-cycle)) x)))))
+         :hints (("goal" :use ((:instance lookup-in-svex-cycle-envs-to-single-env
+                                (cycle (svex-cycle-var->cycle var))
+                                (name (svex-cycle-var->svar var)))
+                               (:instance EQUAL-OF-SVEX-CYCLE-VAR
+                                (cvar var)
+                                (cycle (svex-cycle-var->cycle var))
+                                (v (svex-cycle-var->svar var))))
+                  :in-theory (disable lookup-in-svex-cycle-envs-to-single-env)
+                  :cases ((< (- (svex-cycle-var->cycle var) (nfix curr-cycle)) (len x)))))))
+
+(define svarlist-member-for-svex-env-lookup-rule ((v svar-p)
+                         (x svarlist-p))
+  :enabled t
+  (member-equal (svar-fix v) (svarlist-fix x))
+  ///
+  (memoize 'svarlist-member-for-svex-env-lookup-rule))
+
+(gl::def-gl-rewrite nth-redef
+  (implies (syntaxp (natp n))
+           (equal (nth n x)
+                  (if (zp n)
+                      (car x)
+                    (nth (1- (nfix n)) (cdr x))))))
+
+(gl::def-gl-rewrite svex-env-lookup-nofix-of-svtv-fsm-symbolic-env
+  (implies (and (syntaxp (and (gl::general-concretep var)
+                              (gl::general-concretep statevars)))
+                (not (svarlist-has-svex-cycle-var-memo statevars))
+                (svar-p var))
+           (equal (svex-env-lookup-nofix var (svtv-fsm-symbolic-env ins statevars prev-st))
+                  (if (svex-cycle-var-p var)
+                      (4vec-fix (svex-env-lookup-nofix (svex-cycle-var->svar var)
+                                                       (nth (svex-cycle-var->cycle var) ins)))
+                    (if (svarlist-member-for-svex-env-lookup-rule var statevars)
+                        (4vec-fix (svex-env-lookup-nofix var prev-st))
+                      (4vec-x))))))
+
+
+(gl::def-glcp-ctrex-rewrite
+  ((car x) val)
+  (x (cons val (cdr x))))
+
+(gl::def-glcp-ctrex-rewrite
+  ((cdr x) val)
+  (x (cons (car x) val)))

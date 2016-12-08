@@ -37,7 +37,7 @@
 (include-book "centaur/sv/svtv/fsm" :dir :system)
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "centaur/sv/svex/gl-rules" :dir :system)
-
+(local (in-theory (disable (tau-system))))
 ; (depends-on "counter.sv")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
@@ -86,12 +86,14 @@
 
 (gl::gl-satlink-mode)
 
+
+(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+
 (gl::def-gl-thm counter-step-does-not-overflow-symbolic
   :hyp t
-  :concl (b* ((steps (svex-alistlist-eval-for-symbolic
-                      (svtv-cycles-compose (counter-step) 1)
-                      env
-                      '((:allvars t))))
+  :concl (b* ((steps (svtv-fsm-run ins prev-st (counter-step)
+                                   '((count reset incr)
+                                     (count))))
               ((list step0 step1) steps)
               (step0 (make-fast-alist step0))
               (step1 (make-fast-alist step1))
@@ -111,18 +113,17 @@
                     (and (2vec-p count1)
                          (< (2vec->val count1) 10))))
   :g-bindings nil
-  :ctrex-transform ctrex-clean-env)
+  :ctrex-transform (lambda (x) (ctrex-clean-envs '((ins . :fast-alist-list) (prev-st . :fast-alist)) x)))
 
 (acl2::must-fail
  (gl::def-gl-thm counter-step-does-not-overflow-symbolic-bug
    :hyp t
-   :concl (b* ((steps (svex-alistlist-eval-for-symbolic
-                       (svtv-cycles-compose (counter-step) 1)
-                       env
-                       '((:allvars t))))
+   :concl (b* ((steps (svtv-fsm-run ins prev-st (counter-step)
+                                   '((count reset incr)
+                                     (count))))
                ((list step0 step1) steps)
-              (step0 (make-fast-alist step0))
-              (step1 (make-fast-alist step1))
+               (step0 (make-fast-alist step0))
+               (step1 (make-fast-alist step1))
                (count0 (svex-env-lookup-nofix 'count step0))
                (reset (svex-env-lookup-nofix 'reset step0))
                (incr (svex-env-lookup-nofix 'incr step0))
@@ -140,12 +141,12 @@
                           (< (2vec->val count1) 9))))
    :g-bindings nil
    :rule-classes nil
-   :ctrex-transform ctrex-clean-env))
+   :ctrex-transform (lambda (x) (ctrex-clean-envs '((ins . :fast-alist-list) (prev-st . :fast-alist)) x))))
 
 (defthm counter-step-no-cycle-vars
-  (and (not (svarlist-has-svtv-cycle-var (svex-alist-keys (svtv->nextstate (counter-step)))))
-       (not (svarlist-has-svtv-cycle-var (svex-alist-vars (svtv->nextstate (counter-step)))))
-       (not (svarlist-has-svtv-cycle-var (svex-alist-vars (svtv->outexprs (counter-step))))))
+  (and (not (svarlist-has-svex-cycle-var (svex-alist-keys (svtv->nextstate (counter-step)))))
+       (not (svarlist-has-svex-cycle-var (svex-alist-vars (svtv->nextstate (counter-step)))))
+       (not (svarlist-has-svex-cycle-var (svex-alist-vars (svtv->outexprs (counter-step))))))
   :hints(("Goal" :in-theory (enable (counter-step)))))
 
 (define counter-step-preconds ((step svex-env-p))
@@ -157,36 +158,9 @@
     (and (2vec-p count)
          (< (2vec->val count) 10))))
 
-(local
- (defsection svarlist-has-svtv-cycle-var-of-set-equiv
-   (local (defun svarlist-has-svtv-cycle-var-witness (x)
-            (if (atom x)
-                nil
-              (if (svtv-is-cycle-var (car x))
-                  (car x)
-                (svarlist-has-svtv-cycle-var-witness (cdr x))))))
-
-   (local (in-theory (enable svarlist-has-svtv-cycle-var)))
-
-   (local (defthm svarlist-has-svtv-cycle-var-iff-witness
-            (implies (acl2::rewriting-negative-literal `(svarlist-has-svtv-cycle-var ,x))
-                     (iff (svarlist-has-svtv-cycle-var x)
-                          (b* ((witness (svarlist-has-svtv-cycle-var-witness x)))
-                            (and (svtv-is-cycle-var witness)
-                                 (member witness x)))))))
-
-   (local (defthm no-cycle-var-when-not-has-cycle-var
-            (implies (and (member v x)
-                          (svtv-is-cycle-var v))
-                     (svarlist-has-svtv-cycle-var x))))
-
-   (defcong set-equiv equal (svarlist-has-svtv-cycle-var x) 1
-     :hints (("goal" :do-not-induct t)
-             (set-reasoning)))))
-  
 
 (defthm counter-step-does-not-overflow-invariant
-  (b* ((steps (svtv-fsm-run (list env0 env1) init-st (counter-step)))
+  (b* ((steps (svtv-fsm-eval (list env0 env1) init-st (counter-step)))
        ((list step0 step1) steps))
 
     (implies (and (counter-step-preconds step0)
@@ -194,16 +168,21 @@
                   (set-equiv (alist-keys (svex-env-fix init-st))
                              (svex-alist-keys (svtv->nextstate (counter-step)))))
              (counter-step-invariant step1)))
-  :hints (("goal" :in-theory (e/d (svtv-fsm-run-alt
+  :hints (("goal" :in-theory (e/d (svtv-fsm-run
+                                   svex-envlist-extract
                                    counter-step-preconds
                                    counter-step-invariant)
                                   ((counter-step)
                                    2vec-p
-                                   counter-step-does-not-overflow-symbolic))
+                                   counter-step-does-not-overflow-symbolic
+                                   ;; ap hacking
+                                   svex-env-extract-when-alist-keys-equal
+                                   append
+                                   acl2::append-when-not-consp
+                                   (tau-system)))
            :use ((:instance counter-step-does-not-overflow-symbolic
-                  (env (svtv-cycle-envs-to-single-env (list env0 env1) 0 init-st)))))
-          (and stable-under-simplificationp
-               '(:cases ((svarlist-has-svtv-cycle-var (alist-keys (Svex-env-fix init-st))))))))
+                  (ins (list env0 env1))
+                  (prev-st init-st))))))
 
 (define counter-step-invariant-holds ((steps svex-envlist-p))
   :guard (consp steps)
@@ -220,21 +199,25 @@
   (implies (and (consp envs)
                 (set-equiv (alist-keys (svex-env-fix init-st))
                            (svex-alist-keys (svtv->nextstate (counter-step)))))
-           (b* ((steps (svtv-fsm-run envs init-st (counter-step))))
+           (b* ((steps (svtv-fsm-eval envs init-st (counter-step))))
              (implies (counter-step-invariant (car steps))
                       (counter-step-invariant-holds steps))))
-  :hints (("goal" :induct (svtv-fsm-run envs init-st (counter-step))
+  :hints (("goal" :induct (svtv-fsm-eval envs init-st (counter-step))
            :in-theory (e/d (counter-step-invariant-holds
                             counter-step-invariant
                             counter-step-preconds
-                            (:i svtv-fsm-run))
+                            (:i svtv-fsm-eval))
                            (2vec-p
                             2vec->val
                             append
                             acl2::append-when-not-consp
-                            svtv-fsm-run-is-run-alt
-                            counter-step-does-not-overflow-invariant))
-           :expand ((svtv-fsm-run envs init-st (counter-step))))
+                            counter-step-does-not-overflow-invariant
+                            ;; ap hacking
+                            svex-env-extract-when-alist-keys-equal
+                            svex-env-p-when-not-consp
+                            acl2::alist-keys-when-atom
+                            (tau-system)))
+           :expand ((svtv-fsm-eval envs init-st (counter-step))))
           (and stable-under-simplificationp
                '(:use ((:instance counter-step-does-not-overflow-invariant
                         (env0 (car envs))

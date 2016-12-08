@@ -103,6 +103,36 @@
     :hints(("Goal" :in-theory (enable svarlist-fix alist-keys
                                       svex-env-extract))))
 
+
+  (local (defthm svex-env-extract-when-car-not-member
+           (implies (not (member (caar x) (svarlist-fix keys)))
+                    (equal (svex-env-extract keys (cdr x))
+                           (svex-env-extract keys x)))
+           :hints(("Goal" :in-theory (enable svex-env-extract svex-env-lookup)))))
+
+  (local (defthm svex-env-extract-when-car-not-consp
+           (implies (not (and (consp (car x)) (svar-p (caar x))))
+                    (equal (svex-env-extract keys (cdr x))
+                           (svex-env-extract keys x)))
+           :hints(("Goal" :in-theory (enable svex-env-extract svex-env-lookup)))))
+
+  (local (defthm svarlist-p-of-alist-keys-of-env
+           (implies (svex-env-p x)
+                    (svarlist-p (alist-keys x)))
+           :hints(("Goal" :in-theory (enable svex-env-p alist-keys)))))
+
+  (defthm svex-env-extract-when-alist-keys-equal
+    (implies (and (equal (alist-keys (svex-env-fix x)) keys)
+                  (no-duplicatesp keys))
+             (equal (svex-env-extract keys x)
+                    (svex-env-fix x)))
+    :hints(("Goal" :in-theory (enable svex-env-extract svex-env-fix alist-keys no-duplicatesp))
+           (and stable-under-simplificationp
+                (not (access acl2::clause-id id :pool-lst))
+                '(:induct t))
+           (and stable-under-simplificationp
+                '(:in-theory (enable svex-env-lookup)))))
+
   ;; for :fix hook
   (local (in-theory (enable svex-env-extract))))
 

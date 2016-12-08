@@ -536,16 +536,14 @@
 
 (local
  (defthm w-state-of-glcp-gen-assignments
-   (equal (w (mv-nth 2 (glcp-gen-assignments ctrex-info alist hyp-bfr n
-                                             state)))
+   (equal (w (mv-nth 2 (glcp-gen-assignments ctrex-info config state)))
           (w state))))
 
 (local (in-theory (disable glcp-gen-assignments)))
 (local (in-theory (disable glcp-bit-to-obj-ctrexamples)))
 (local
  (defthm w-state-of-glcp-gen-ctrexes
-   (equal (w (mv-nth 2 (glcp-gen-ctrexes ctrex-info alist hyp-bfr n
-                                             bvar-db state)))
+   (equal (w (mv-nth 2 (glcp-gen-ctrexes ctrex-info bvar-db config state)))
           (w state))
    :hints(("Goal" :in-theory (enable glcp-gen-ctrexes)))))
 (local (in-theory (disable glcp-gen-ctrexes)))
@@ -1227,7 +1225,8 @@ The definition body, ~x1, is not a pseudo-term."
 (local
  (defthm gobj-alist-vars-bounded-of-shape-specs-to-interp-al
    (implies (<= (shape-spec-max-bvar-list (strip-cadrs bindings)) (nfix n))
-            (gobj-alist-vars-bounded n t (shape-specs-to-interp-al bindings)))))
+            (gobj-alist-vars-bounded n t (shape-specs-to-interp-al bindings)))
+   :hints(("Goal" :in-theory (enable shape-spec-max-bvar-list)))))
 
 
 
