@@ -4823,7 +4823,7 @@
   (mv-let
    (acl2-cfile state)
    (certificate-file file state)
-   (let* ((cfile (pathname-unix-to-os acl2-cfile state))
+   (let* ((cfile (and acl2-cfile (pathname-unix-to-os acl2-cfile state)))
           (os-file (pathname-unix-to-os file state))
           (cfile-date (and cfile (file-write-date cfile)))
           (ofile (convert-book-name-to-compiled-name os-file state))

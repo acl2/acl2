@@ -46,6 +46,7 @@
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
 (include-book "../lint/logicassign")
+(include-book "../lint/check-globalparams")
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
 (include-book "../transforms/annotate/top")
@@ -277,6 +278,15 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                  check.  Otherwise, limit the scope of the check to at most N
                  sub-expressions."
                 :default 0)
+
+   (global-packages string-listp
+                    :longname "global-package"
+                    :argname "PACKAGE"
+                    "Consider the given package to be global for purposes of the
+                     globalparams check; i.e., parameters defined in this package
+                     should not be defined anywhere else."
+                    :merge cons
+                    :parser getopt::parse-string)
 
    (edition     vl-edition-p
                 :argname "EDITION"
@@ -558,6 +568,8 @@ shown.</p>"
        ;; mods0, so do that now:
        (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
+
+       (design (xf-cwtime (vl-design-check-globalparams design config.global-packages)))
        (design (xf-cwtime (vl-design-duplicate-detect design)))
 
        ;; Note: don't want to addnames before duplicate-detect, because it

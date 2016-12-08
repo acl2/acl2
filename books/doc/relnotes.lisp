@@ -50,17 +50,8 @@
 ;  - Book release notes are typically very disorganized.  This shouldn't be
 ;    considered a bug until we are very close to a release.
 
-(defxdoc note-7-3-books
-  :parents (note-7-3)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.3 (xxx 201x)"
-  :long "<p>The following is a brief summary of changes made to the @(see
- community-books) between the releases of ACL2 7.2 and 7.3.</p>
-
- <p>See also @(see note-7-2) for the changes made to ACL2 itself.  For
- additional details, you may also see the raw <a
- href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
-
- ")
+; Starting with Version 7.3, we no longer maintain release notes
+; note-x-x-books.  This could change if someone wants to volunteer.
 
 (defxdoc note-7-2-books
 

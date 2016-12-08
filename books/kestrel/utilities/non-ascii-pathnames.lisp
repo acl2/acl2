@@ -65,9 +65,10 @@ touch $'\xe2\x82\xac'
 
 ; (depends-on "non-ascii-pathnames-raw.lsp")
 (make-event
- (er-progn (if (eq (@ host-lisp) :ccl)
+ (er-progn (if (and (eq (@ host-lisp) :ccl)
+                    (not (eq (os (w state)) :mswindows)))
                (include-raw "non-ascii-pathnames-raw.lsp")
              (value (cw "Skipping include-raw for non-ascii-pathnames-raw.lsp ~
-                         (supported in CCL only).")))
+                         (supported in non-Windows CCL only).")))
            (value '(value-triple nil)))
  :check-expansion t)

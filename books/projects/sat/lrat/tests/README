@@ -7,7 +7,7 @@ cd ..
 <ACL2_DIR>/books/build/cert.pl --acl2 <ACL2> -j 8 *.lisp
 cd -
 
-Then:
+Then run the following or, equivalently, certify driver.lisp.
 
 <ACL2>
 (include-book "../lrat-parser")
@@ -17,6 +17,7 @@ Then:
             ("uuf-100-3.cnf" "uuf-100-3.lrat")
             ("uuf-100-4.cnf" "uuf-100-4.lrat")
             ("uuf-100-5.cnf" "uuf-100-5.lrat")
+            ("uuf-100-5.cnf" "uuf-100-5-partial.lrat" t) ; partial proof
             ("uuf-30-1.cnf" "uuf-30-1.lrat")))
 
 Larger tests have been run, and might be made available in the future.

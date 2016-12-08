@@ -4,11 +4,13 @@
 
 (in-package "ACL2")
 
-(or (eq (f-get-global 'host-lisp *the-live-state*) :ccl)
+(or (and (eq (f-get-global 'host-lisp *the-live-state*) :ccl)
+         (not (eq (os (w *the-live-state*)) :mswindows)))
 
-; For now we implement this utility only for CCL.  For SBCL
-; it seems possible that acl2-string-to-filename, in place of the
-; call of ccl::decode-string-from-octets, we could use:
+; For now we implement this utility only for CCL, and not on Windows (where we
+; have seen an error).  For SBCL it seems possible that
+; acl2-string-to-filename, in place of the call of
+; ccl::decode-string-from-octets, we could use:
 
 ;            (sb-ext::octets-to-string
 ;             (coerce x '(vector (unsigned-byte 8)))
