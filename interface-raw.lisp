@@ -1308,8 +1308,7 @@
 ; function call in the logic.
 
                (let ((form (car (last x))))
-                 `(let* ((args (list ,arg2
-                                     ,(oneify (cadddr form) fns w program-p)))
+                 `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
                          (**1*-as-raw* nil))
                     (apply ',(if (function-symbolp (car form) w)
                                  (*1*-symbol (car form))
@@ -1318,7 +1317,7 @@
 ; abbreviation for f$inline.
 
                                (assert$
-                                (getpropc (car x) 'macro-body nil w)
+                                (getpropc (car form) 'macro-body nil w)
                                 (*1*-symbol (add-suffix (car form)
                                                         *inline-suffix*))))
                            args))))))
