@@ -1064,16 +1064,20 @@
         (t (and (pseudo-evg-singletonp (car lst))
                 (pseudo-evg-singletonsp1 (cdr lst))))))
 
-(defun lexordered-ascendingp (lst)
+(defun lexorder-strict-ascendingp-without-list-nil (lst)
   (cond ((atom lst) t)
         ((atom (cdr lst)) t)
-        ((lexorder (car lst) (cadr lst))
-         (lexordered-ascendingp (cdr lst)))
-        (t nil)))
+        ((lexorder (cadr lst) (car lst))
+         nil)
+        (t
+         (lexorder-strict-ascendingp-without-list-nil (cdr lst)))))
 
 (defun pseudo-evg-singletonsp (lst)
   (and (pseudo-evg-singletonsp1 lst)
-       (lexordered-ascendingp lst)))
+       (lexorder-strict-ascendingp-without-list-nil
+        (if (equal (car lst) '(nil))
+            (cdr lst)
+          lst))))
 
 ; (defrec tau-interval (domain (lo-rel . lo) . (hi-rel . hi)) t)
 
@@ -1114,7 +1118,7 @@
 ;   t)
 ; where
 ; pos-evg:   nil or a singleton list containing an evg
-; neg-evgs:  list of singleton lists of evgs, duplicate-free ordered ascending
+; neg-evgs:  list of singleton lists of evgs, duplicate-free, suitably ordered
 ; interval:  pseudo-tau-intervalp
 ; pos-pairs: list of tau-pairs, duplicate-free, ordered descending
 ; neg-pairs: list of tau-pairs, duplicate-free ordered descending
