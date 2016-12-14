@@ -1882,16 +1882,17 @@
 ; where the shape of each component is as follows:
 
 ; pos-evg:   nil or a singleton list containing an evg
-; neg-evgs:  list of singleton lists of evgs, duplicate-free ordered ascending
+; neg-evgs:  list of singleton lists of evgs, duplicate-free, suitably ordered
 ; interval:  nil or a tau-interval
 ; pos-pairs: list of tau-pairs, duplicate-free, ordered descending
 ; neg-pairs: list of tau-pairs, duplicate-free ordered descending
 
-; Note: The ordering on neg-evgs is ascending ``almost'' lexorder (with NIL the
-; smallest element).  The ordering on the pairs is descending by tau index of
-; the pairs.  There is no reason for the opposite orders except for the
-; pre-existence of certain sort functions.  There are additional restrictions
-; on these fields so that a tau is kept in a normal form.  See below.
+; Note: The ordering on neg-evgs is ascending ``almost'' lexorder, except that
+; NIL is the smallest element.  The ordering on the pairs is descending by tau
+; index of the pairs.  There is no reason for the opposite orders except for
+; the pre-existence of certain sort functions.  There are additional
+; restrictions on these fields so that a tau is kept in a normal form.  See
+; below.
 
 ; Note: It might be wise to add another slot to tau: :neg-nil.  This would be
 ; equivalent to having (nil) in :neg-evgs except we'd never delete it as
