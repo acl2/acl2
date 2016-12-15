@@ -1,0 +1,42 @@
+See ../README for information about this project for checking lrat
+proofs.
+
+See the top of satisfiable-add-proof-clause.lisp for an outline of the
+proof.
+
+The structure of files in this directory is as follows.
+
+top.lisp
+  soundness.lisp
+    satisfiable-add-proof-clause.lisp
+      satisfiable-add-proof-clause-base.lisp
+        truth-monotone.lisp
+        unit-propagation-implies-unsat.lisp
+          truth-monotone.lisp
+        unit-propagation-monotone.lisp
+        unit-propagation-correct.lisp
+          truth-monotone.lisp
+          unit-propagation-monotone.lisp
+          unit-propagation-implies-unsat.lisp
+      satisfiable-add-proof-clause-rup.lisp
+      satisfiable-add-proof-clause-drat.lisp
+	satisfiable-add-proof-clause-base.lisp
+	  [... see above]
+        sat-drat-claim-1.lisp
+          satisfiable-add-proof-clause-base.lisp
+   	    [... see above]
+          satisfiable-add-proof-clause-rup.lisp
+   	    [... see above]
+        sat-drat-claim-2.lisp
+          satisfiable-add-proof-clause-base.lisp
+   	    [... see above]
+        sat-drat-claim-2-3.lisp
+          satisfiable-add-proof-clause-base.lisp
+   	    [... see above]
+          sat-drat-claim-1.lisp
+   	    [... see above]
+    satisfiable-maybe-shrink-formula.lisp
+      satisfiable-add-proof-clause-base.lisp
+        [... see above]
+  lrat-parser.lisp [no actual include-book]
+    tools/bstar.lisp [:dir :system]

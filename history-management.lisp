@@ -11303,6 +11303,9 @@
 
 (defun termination-theorem (fn wrld)
 
+; Warning: If you change the formals of this function, consider making a
+; corresponding change to guard-or-termination-theorem-msg.
+
 ; This function either returns the termination theorem for fn or else returns a
 ; result (:FAILED . msg) where msg is a message providing a sentence that
 ; explains why there is no such a theorem.
@@ -12044,6 +12047,10 @@
         ens (match-free-override wrld) wrld state ttree)))))
 
 (defun guard-theorem (fn simp-p guard-debug wrld state)
+
+; Warning: If you change the formals of this function, consider making a
+; corresponding change to guard-or-termination-theorem-msg.
+
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
@@ -12078,28 +12085,30 @@
 (defun guard-or-termination-theorem-msg (kwd args coda)
   (declare (xargs :guard (and (member-eq kwd '(:gthm :tthm))
                               (true-listp args))))
-  (let ((fn (car args))
-        (wrld (cadr args))
-        (called-fn (case kwd
-                     (:gthm 'guard-theorem)
-                     (:tthm 'termination-theorem)
-                     (otherwise (er hard! 'guard-or-termination-theorem-msg
-                                    "Implementation error!")))))
-    (if (plist-worldp wrld)
-        (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
+  (let ((fn (car args)))
+    (mv-let (wrld called-fn)
+      (case kwd
+        (:gthm (mv (nth 3 args) 'guard-theorem))
+        (:tthm (mv (nth 1 args) 'termination-theorem))
+        (otherwise
+         (mv (er hard! 'guard-or-termination-theorem-msg
+                 "Implementation error!")
+             nil)))
+      (if (plist-worldp wrld)
+          (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
               function symbol, but ~x2 is ~@3.~@4"
-             kwd
-             called-fn
-             fn
-             (cond ((not (symbolp fn))
-                    "not a symbol")
-                   ((not (function-symbolp fn wrld))
-                    "not a function symbol in the current world")
-                   (t ; (programp fn wrld)
-                    "a :program mode function symbol"))
-             coda)
-      (msg "The second argument of the call ~x0 is not a valid logical world."
-           (cons called-fn args)))))
+               kwd
+               called-fn
+               fn
+               (cond ((not (symbolp fn))
+                      "not a symbol")
+                     ((not (function-symbolp fn wrld))
+                      "not a function symbol in the current world")
+                     (t ; (programp fn wrld)
+                      "a :program mode function symbol"))
+               coda)
+        (msg "The second argument of the call ~x0 is not a valid logical world."
+             (cons called-fn args))))))
 
 (set-guard-msg guard-theorem
                (guard-or-termination-theorem-msg :gthm args coda))

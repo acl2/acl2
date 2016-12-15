@@ -1,23 +1,6 @@
-A few small tests are provided here, and are run when the book
-driver.lisp is certified.  Below are instructions for testing
-manually.
-
-First certify all necessary books, e.g.:
-cd ..
-<ACL2_DIR>/books/build/cert.pl --acl2 <ACL2> -j 8 *.lisp
-cd -
-
-Then run the following or, equivalently, certify driver.lisp.
-
-<ACL2>
-(include-book "../lrat-parser")
-(lrat-test (("example-4-vars.cnf" "example-4-vars.lrat")
-            ("uuf-100-1.cnf" "uuf-100-1.lrat")
-            ("uuf-100-2.cnf" "uuf-100-2.lrat")
-            ("uuf-100-3.cnf" "uuf-100-3.lrat")
-            ("uuf-100-4.cnf" "uuf-100-4.lrat")
-            ("uuf-100-5.cnf" "uuf-100-5.lrat")
-            ("uuf-100-5.cnf" "uuf-100-5-partial.lrat" t) ; partial proof
-            ("uuf-30-1.cnf" "uuf-30-1.lrat")))
+See ../stobj-based/README for information about running tests.  A few
+small tests are provided here, and are run when the books
+../stobj-based/test-driver.lisp and ../list-based/test-driver.lisp are
+certified.
 
 Larger tests have been run, and might be made available in the future.
