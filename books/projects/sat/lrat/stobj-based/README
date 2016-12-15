@@ -1,0 +1,55 @@
+See ../README for information about this project for checking lrat
+proofs.
+
+The book lrat-checker.lisp introduces a guard-verified checker for
+lrat proofs that represents assignments as stobjs.  The very short
+book soundness.lisp derives soundness of that checker as a corollary
+of the soundness of an lrat checker, introduced in directory
+../list-based/, by applying a key lemma, which states that if the
+stobj-based checker validates a proof of a formula, then so does the
+list-based checker.  The proof of that key lemma is in the book
+equiv.lisp.
+
+Some small tests (from ../tests/) are run when certifying
+test-driver.lisp, You can also run your own tests manually from this
+directory, as follows.
+
+  (include-book "lrat-parser")
+
+  ; Examples:
+
+  ; Succeeds (returns (value t)):
+  (verify-lrat-proof "../tests/uuf-100-5.cnf" "../tests/uuf-100-5.lrat")
+
+  ; Fails (returns (value nil)) because proof doesn't include the empty clause:
+  (verify-lrat-proof "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat")
+
+  ; As above, but succeeds (returns (value t)) because optional argument
+  ; of t indicates that the proof need not contain the empty clause.
+  (verify-lrat-proof "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat" t)
+
+A script is also provided, to support running tests from a saved
+executable.  To build such an executable, start ACL2 in this directory
+and issue the following three commands.
+
+(include-book "run")
+:q
+(save-exec "lrat-check" "Executable defining (lrat-check cnf-file lrat-file &optional incomplete-okp)")
+
+Here are examples showing how to run tests from this directory, using
+that script and saved executable.
+
+# See usage
+./run.sh
+# Run a proof, with output to file replacing .lrat by .out:
+./run.sh "../tests/uuf-100-5.cnf" "../tests/uuf-100-5.lrat"
+# As above, but partial proof -- not new, third argument of t:
+./run.sh "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat" t
+# As above, but this proof FAILS (final t is missing):
+./run.sh "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat"
+# Run a successful partial proof, with output to foo.out:
+./run.sh "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat" t foo.out
+# As above, but with ACL2 output going to standard output:
+./run.sh "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat" t t
+# As above, but with FAILURE of partial proof expected to be total:
+./run.sh "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.lrat" nil

@@ -1,3 +1,6 @@
+Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
+Initial version (including soundness proof) completed November, 2016
+
 This work is based on Nathan Wetzler's RAT checker work in ACL2
 community books directory books/projects/sat/proof-checker-itp13/.
 Here we accommodate a more recent input proof format, which provides
@@ -7,45 +10,24 @@ deletion, the hints, and other features (in particular, using a
 fast-alist to represent formulas, which is occasionally compressed),
 our checker can run much faster than Nathan's checker.
 
-Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
-Initial version (including soundness proof) completed November, 2016
+We have verified two lrat checkers.  Directory list-based/ contains an
+lrat checker with a proof that it is sound.  That checker represents
+assignments as lists of literals (positive and negative integers).
+Directory stobj-based/ contains a variant of that checker that uses a
+stobj to encode assignments.  It soundness proof is derived as a
+corollary of soundness of the list-based checker, by proving that if
+the stobj-based checker validates a proof of a formula, then so does
+the list-based checker.  See list-based/README and stobj-based/README
+for more information.
 
-See the top of satisfiable-add-proof-clause.lisp for an outline of the
-proof.
+To certify all books while standing in this directory, you can execute
+the following command, where ACL2_DIR is your ACL2 directory and ACL2
+is your ACL2.  This may take about a minute if supporting books
+outside this directory are already certified, but not much longer even
+if not.
 
-The structure of files is as follows.
+ACL2_DIR/books/build/cert.pl --acl2 ACL2 -j 8 list-based/*.lisp stobj-based/*.lisp
 
-top.lisp
-  soundness.lisp
-    satisfiable-add-proof-clause.lisp
-      satisfiable-add-proof-clause-base.lisp
-        truth-monotone.lisp
-        unit-propagation-implies-unsat.lisp
-          truth-monotone.lisp
-        unit-propagation-monotone.lisp
-        unit-propagation-correct.lisp
-          truth-monotone.lisp
-          unit-propagation-monotone.lisp
-          unit-propagation-implies-unsat.lisp
-      satisfiable-add-proof-clause-rup.lisp
-      satisfiable-add-proof-clause-drat.lisp
-	satisfiable-add-proof-clause-base.lisp
-	  [... see above]
-        sat-drat-claim-1.lisp
-          satisfiable-add-proof-clause-base.lisp
-   	    [... see above]
-          satisfiable-add-proof-clause-rup.lisp
-   	    [... see above]
-        sat-drat-claim-2.lisp
-          satisfiable-add-proof-clause-base.lisp
-   	    [... see above]
-        sat-drat-claim-2-3.lisp
-          satisfiable-add-proof-clause-base.lisp
-   	    [... see above]
-          sat-drat-claim-1.lisp
-   	    [... see above]
-    satisfiable-maybe-shrink-formula.lisp
-      satisfiable-add-proof-clause-base.lisp
-        [... see above]
-  lrat-parser.lisp [no actual include-book]
-    tools/bstar.lisp [:dir :system]
+For example, Matt uses the following command.
+
+time /projects/acl2/acl2/books/build/cert.pl --acl2 acl2c -j 8 list-based/*.lisp stobj-based/*.lisp
