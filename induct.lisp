@@ -1,4 +1,4 @@
-; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3279,13 +3279,13 @@
 ;                         y)))
 ;       :rule-classes ((:definition
 ;                       :controller-alist ((my-app t nil))))))
-;   
+;
 ;   (defun rev (x)
 ;     (if (consp x)
 ;         (my-app (rev (cdr x))
 ;                 (cons (car x) nil))
 ;       nil))
-;   
+;
 ;   (thm (implies (and (p)
 ;                      (true-listp x))
 ;                 (equal (rev (rev x)) x)))
@@ -3298,15 +3298,15 @@
 ;   (IMPLIES (AND (P) (TRUE-LISTP X2))
 ;            (EQUAL (REV (MY-APP RV (LIST X1)))
 ;                   (CONS X1 (REV RV)))).
-;   
+;
 ;   We suspect that the terms (TRUE-LISTP X2) and (P) are irrelevant to
 ;   the truth of this conjecture and throw them out.  We will thus try
 ;   to prove
-;   
+;
 ;   Subgoal *1/2'6'
 ;   (EQUAL (REV (MY-APP RV (LIST X1)))
 ;          (CONS X1 (REV RV))).
-;   
+;
 ;   Name the formula above *1.1.
 
 ; Since the exported defthm above requires (P) in order to expand MY-APP, the
@@ -3337,20 +3337,20 @@
 ;       literals so that an unsuitable induction isn't selected.  Marijn Heule
 ;       thus made the intriguing suggestion of keeping the literals and simply
 ;       ignoring them in our induction heuristics.
-;   
+;
 ;   (2) We tried such a change.  Our implementation actually caused
 ;       eliminate-irrelevance-clause to hide the irrelevant literals rather
 ;       then to delete then; then, induction would unhide them immediately
 ;       after choosing an induction scheme.
-;   
+;
 ;   (3) The regression exhibited failures, however, because subsumption was no
 ;       longer succeeding in cases where it had previously -- a goal was no
 ;       longer subsumed by a previous sibling, but was subsumed by the original
 ;       goal, causing the proof to abort immediately.  (See below for details.)
-;   
+;
 ;   (4) So we decided to drop literals once again, rather than merely to hide
 ;       them.
-;   
+;
 ;   (5) But on further reflection, it seemed a bit far-fetched that a
 ;       hypothesis (P1 X) could be relevant to simplifying (P2 Y Z) in the way
 ;       shown above that (P) can be relevant to simplifying (P2 Y Z).  We can
@@ -3374,13 +3374,13 @@
 ;                 (MEM X1 Y)
 ;                 (NOT (HIDE (CONSP DL))))
 ;            (MEM X1 (DEL A Y))).
-;   
+;
 ;   Name the formula above *1.1.1.
 
 ; Then later we see:
 
 ;   So we now return to *1.1.2, which is
-;   
+;
 ;   (IMPLIES (AND (NOT (PERM (DEL X3 X4) (DEL X3 DL0)))
 ;                 (NOT (EQUAL X3 X1))
 ;                 (MEM X1 Y)

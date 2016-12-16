@@ -1,4 +1,4 @@
-; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -895,22 +895,22 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-; ""
+""
 
 ; Normally:
 
-  (format
-   nil
-   "
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
- + (git commit hash: ~a).        +
- + The authors of ACL2 consider such distributions to be experimental; +
- + they may be incomplete, fragile, and unable to pass our own         +
- + regression tests.                                                   +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"
-   (git-commit-hash))
+;  (format
+;   nil
+;   "
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
+; + (git commit hash: ~a).        +
+; + The authors of ACL2 consider such distributions to be experimental; +
+; + they may be incomplete, fragile, and unable to pass our own         +
+; + regression tests.                                                   +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;"
+;   (git-commit-hash))
   )
 
 (defvar *saved-string*

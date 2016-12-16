@@ -1,4 +1,4 @@
-; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright

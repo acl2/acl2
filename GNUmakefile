@@ -1,6 +1,6 @@
-#  -*- Fundamental -*- 
+#  -*- Fundamental -*-
 
-# ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2016, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -176,7 +176,7 @@ ifdef ACL2_REAL
 endif
 
 # The user may define PREFIX; otherwise it is implicitly the empty string.
-PREFIX = 
+PREFIX =
 
 PREFIXsaved_acl2 = ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 = ${PREFIX}osaved_acl2${ACL2_SUFFIX}
@@ -360,7 +360,7 @@ check_init_ok:
 # The following target should only be used when the compiled files are
 # ready to use and, if needed, so is acl2-proclaims.lisp.
 .PHONY: compile-ok
-compile-ok:  
+compile-ok:
 	date
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
