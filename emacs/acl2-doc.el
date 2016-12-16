@@ -316,7 +316,7 @@ then restart the ACL2-Doc browser to view that manual."
 
 ; Based on http://ergoemacs.org/emacs/elisp_syntax_coloring.html:
 (defvar acl2-doc-keywords
-  '(("\\[\\([^ \t]*\\)\\]"
+  '(("\\[\\([^ \t]*[^0-9 \t][^ \t]*\\)\\]"
      . 1)))
 
 ; Can be modified by user; set to the desired link color, or nil if none.

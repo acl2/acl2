@@ -4481,8 +4481,8 @@
                 (prog2$ (print-type-alist hyps-type-alist w)
                         state))))))))))
 
-(define-pc-help print-main ()
-  (print-pc-goal (car (access pc-state (car (last state-stack)) :goals))))
+(define-pc-macro print-main ()
+  (value '(print (caddr (event-name-and-types-and-raw-term (state-stack))))))
 
 (define-pc-macro pso ()
   (value '(lisp (pso))))
