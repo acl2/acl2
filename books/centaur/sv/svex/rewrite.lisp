@@ -486,7 +486,7 @@ functions) and that it is being given the right number of arguments.</p>
 
 
 
-(fty::defalist svex-mask-alist :key-type svex :val-type 4vmask :true-listp t)
+(fty::defmap svex-mask-alist :key-type svex :val-type 4vmask :true-listp t)
 
 (define svex-mask-acons ((x svex-p) (m 4vmask-p) (al svex-mask-alist-p))
   :prepwork ((local (in-theory (enable svex-mask-alist-p
@@ -502,9 +502,10 @@ functions) and that it is being given the right number of arguments.</p>
   :prepwork ((local (in-theory (enable svex-mask-alist-p
                                        svex-mask-alist-fix))))
   :returns (mask 4vmask-p :rule-classes :type-prescription)
-  (or (mbe :logic (cdr (assoc (svex-fix x) (svex-mask-alist-fix al)))
-           :exec (cdr (hons-get x al)))
-      0)
+  (b* ((look (hons-get (svex-fix x) al)))
+    (if look
+        (4vmask-fix (cdr look))
+      0))
   ///
   (fty::deffixequiv svex-mask-lookup)
   (defthm svex-mask-lookup-of-svex-mask-acons
@@ -524,8 +525,8 @@ functions) and that it is being given the right number of arguments.</p>
   :returns (keys svexlist-p)
   (if (atom x)
       nil
-    (if (consp (car x))
-        (cons (mbe :logic (svex-fix (caar x)) :exec (caar x))
+    (if (mbt (and (consp (car x)) (svex-p (caar x))))
+        (cons (caar x)
               (svex-mask-alist-keys (cdr x)))
       (svex-mask-alist-keys (cdr x))))
   ///

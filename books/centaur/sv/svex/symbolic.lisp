@@ -2570,14 +2570,6 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
 
 
-(define svar-boolmasks-lookup-nofix ((v svar-p) (boolmasks svar-boolmasks-p))
-  :returns (boolmask (implies (svar-boolmasks-p boolmasks)
-                              (equal boolmask
-                                     (svar-boolmasks-lookup v boolmasks)))
-                     :hints(("Goal" :in-theory (enable svar-boolmasks-lookup))))
-  :hooks ((:fix :omit (boolmasks)))
-  (ifix (cdr (hons-get (mbe :logic (svar-fix v) :exec v)
-                       boolmasks))))
 
 (local (in-theory (disable PICK-A-POINT-SUBSET-STRATEGY)))
 
@@ -2888,44 +2880,30 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (nat-bool-a4vec-p (cdr (hons-assoc-equal k x))))
   :hints(("Goal" :in-theory (enable nat-bool-a4env-p))))
 
-(define svex-mask-lookup-nofix (x masks)
-  :prepwork ((local (Defthm assoc-when-svex-mask-alist-p
-                      (implies (svex-mask-alist-p x)
-                               (equal (assoc k x)
-                                      (hons-assoc-equal k x)))
-                      :hints(("Goal" :in-theory (enable svex-mask-alist-p))))))
-  (or (cdr (hons-get x masks)) 0)
-  ///
-  (defthm svex-mask-lookup-nofix-when-right-types
-    (implies (and (svex-p x)
-                  (svex-mask-alist-p masks))
-             (equal (svex-mask-lookup-nofix x masks)
-                    (svex-mask-lookup x masks)))
-    :hints(("Goal" :in-theory (enable svex-mask-lookup)))))
 
-(define svex-env-lookup-nofix (x env)
-  (or (cdr (hons-get x env)) (4vec-x))
-  ///
-  (defthm svex-env-lookup-nofix-when-right-types
-    (implies (and (svar-p x)
-                  (svex-env-p env))
-             (equal (svex-env-lookup-nofix x env)
-                    (svex-env-lookup x env)))
-    :hints(("Goal" :in-theory (enable svex-env-lookup
-                                      svex-env-p))))
+;; (define svex-env-lookup-nofix (x env)
+;;   (or (cdr (hons-get x env)) (4vec-x))
+;;   ///
+;;   (defthm svex-env-lookup-nofix-when-right-types
+;;     (implies (and (svar-p x)
+;;                   (svex-env-p env))
+;;              (equal (svex-env-lookup-nofix x env)
+;;                     (svex-env-lookup x env)))
+;;     :hints(("Goal" :in-theory (enable svex-env-lookup
+;;                                       svex-env-p))))
 
-  ;; (local (defthm lookup-in-svex-env-fix-when-svar-p
-  ;;          (implies (and (svar-p x)
-  ;;                        (not (cdr (hons-assoc-equal x env))))
-  ;;                   (4vec-equiv (cdr (hons-assoc-equal x (svex-env-fix env)))
-  ;;                               (4vec-x)))
-  ;;          :hints(("Goal" :in-theory (enable svex-env-fix)))))
+;;   ;; (local (defthm lookup-in-svex-env-fix-when-svar-p
+;;   ;;          (implies (and (svar-p x)
+;;   ;;                        (not (cdr (hons-assoc-equal x env))))
+;;   ;;                   (4vec-equiv (cdr (hons-assoc-equal x (svex-env-fix env)))
+;;   ;;                               (4vec-x)))
+;;   ;;          :hints(("Goal" :in-theory (enable svex-env-fix)))))
 
-  (defthm svex-env-lookup-nofix-when-right-types-weak
-    (implies (svar-p x)
-             (4vec-equiv (svex-env-lookup-nofix x env)
-                         (svex-env-lookup x env)))
-    :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix)))))
+;;   (defthm svex-env-lookup-nofix-when-right-types-weak
+;;     (implies (svar-p x)
+;;              (4vec-equiv (svex-env-lookup-nofix x env)
+;;                          (svex-env-lookup x env)))
+;;     :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix)))))
 
 
 
@@ -2935,18 +2913,19 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
 (define svex-mask-alist-extract-vars ((x svex-mask-alist-p))
   :returns (new-x svex-mask-alist-p)
-  :measure (len (svex-mask-alist-fix x))
-  (b* ((x (svex-mask-alist-fix x)))
-    (if (atom x)
-        nil
-      (if (eq (svex-kind (caar x)) :var)
-          (hons-acons (caar x) (cdar x)
-                      (svex-mask-alist-extract-vars (cdr x)))
-        (svex-mask-alist-extract-vars (cdr x)))))
+  :hooks nil
+  (if (atom x)
+      nil
+    (if (and (mbt (svex-p (caar x)))
+             (eq (svex-kind (caar x)) :var))
+        (hons-acons (caar x) (4vmask-fix (cdar x))
+                    (svex-mask-alist-extract-vars (cdr x)))
+      (svex-mask-alist-extract-vars (cdr x))))
   ///
   (defret lookup-in-svex-mask-alist-extract-vars
     (equal (hons-assoc-equal s new-x)
-           (and (equal (svex-kind s) :var)
+           (and (svex-p s)
+                (equal (svex-kind s) :var)
                 (hons-assoc-equal s (svex-mask-alist-fix x)))))
 
   (local (defthm assoc-in-svex-mask-alist-p
@@ -2973,7 +2952,9 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (equal (svex-maskbits-for-vars vars new-x boolmasks)
            (svex-maskbits-for-vars vars x boolmasks))
     :hints(("Goal" :in-theory (e/d (svex-maskbits-for-vars)
-                                   (svex-mask-alist-extract-vars))))))
+                                   (svex-mask-alist-extract-vars)))))
+
+  (deffixequiv svex-mask-alist-extract-vars :hints(("Goal" :in-theory (enable svex-mask-alist-fix)))))
 
 
 
@@ -2996,15 +2977,15 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                 (+ (nfix nextvar)
                                    (svex-maskbits-for-vars vars masks boolmasks))))
                 :hints(("Goal" :in-theory (enable svex-maskbits-for-vars)))))
-  :hooks ((:fix :args (vars nextvar)))
+  ;; :hooks ((:fix :args (vars nextvar)))
   (b* (((when (atom vars))
         (mv nil acc (lnfix nextvar)))
-       (mask (svex-mask-lookup-nofix (svex-var (car vars)) masks))
+       (mask (svex-mask-lookup (svex-var (car vars)) masks))
        ((when (< mask 0))
         (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
             acc (lnfix nextvar)))
-       (boolmask (svar-boolmasks-lookup-nofix (car vars) boolmasks))
-       (4vec (4vec-fix (svex-env-lookup-nofix (svar-fix (car vars)) env)))
+       (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
+       (4vec (4vec-fix (svex-env-lookup (svar-fix (car vars)) env)))
        (env-part
         (4vmask-to-a4vec-env mask boolmask 4vec nextvar))
        (nextvar (+ (lnfix nextvar)
@@ -3028,12 +3009,12 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (vars masks boolmasks env nextvar acc)
            (b* (((when (atom vars))
                  (list nil acc (lnfix nextvar)))
-                (mask (svex-mask-lookup-nofix (svex-var (car vars)) masks))
+                (mask (svex-mask-lookup (svex-var (car vars)) masks))
                 ((when (< mask 0))
                  (list (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
                        acc (lnfix nextvar)))
-                (boolmask (svar-boolmasks-lookup-nofix (car vars) boolmasks))
-                (4vec (svex-env-lookup-nofix (svar-fix (car vars)) env))
+                (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
+                (4vec (svex-env-lookup (svar-fix (car vars)) env))
                 (env-part
                  (4vmask-to-a4vec-env mask boolmask 4vec nextvar))
                 (nextvar (+ (lnfix nextvar)
@@ -3289,12 +3270,12 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 (define svex-env-check-boolmasks ((boolmasks svar-boolmasks-p)
                                   (env svex-env-p))
   :prepwork ((local (in-theory (enable svar-boolmasks-p svar-boolmasks-fix))))
-  :hooks nil
+  ;; :hooks nil
   (b* (((when (atom boolmasks)) t)
-       ((unless (mbt (consp (car boolmasks))))
+       ((unless (mbt (svar-p (caar boolmasks))))
         (svex-env-check-boolmasks (cdr boolmasks) env))
        ((cons var mask) (car boolmasks))
-       (val (svex-env-lookup-nofix var env))
+       (val (svex-env-lookup var env))
        (ok (4vec-boolmaskp val mask))
        (?ign (and (not ok)
                   (cw "not 4vec-boolmaskp: ~x0~%" var))))

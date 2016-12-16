@@ -866,6 +866,14 @@
                  (:free (env) (svexlist-eval x env)))))
       :flag svexlist-eval-unroll-multienv))
 
+  (local (include-book "std/lists/sets" :dir :system))
+
+  (defthm svex-env-extract-states-from-unroll-state
+    (equal (svex-env-extract (svex-alist-keys nextstate)
+                             (svex-unroll-state nextstate ins prev-st))
+           (svex-unroll-state nextstate ins prev-st))
+    :hints(("Goal" :in-theory (enable svex-unroll-state))))
+
   (in-theory (disable svex-eval-unroll-multienv-in-terms-of-svex-unroll-state
                       svexlist-eval-unroll-multienv-in-terms-of-svex-unroll-state)))
 
@@ -917,7 +925,8 @@
                (equal (svex-eval-unroll-multienv x cycle nextstates in-envs orig-state)
                       (svex-eval-unroll x cycle nextstates (svex-cycle-envs-to-single-env in-envs 0 orig-state))))
       :hints ('(:expand ((:free (cycle) (svex-eval-unroll-multienv x cycle nextstates in-envs orig-state))
-                         (:free (env cycle) (svex-eval-unroll x cycle nextstates env)))))
+                         (:free (env cycle) (svex-eval-unroll x cycle nextstates env)))
+                :in-theory (disable svex-eval-unroll-multienv-at-cycle-0)))
       :flag svex-eval-unroll)
     (defthm svexlist-eval-unroll-multienv-is-unroll
       (implies (and (<= (nfix cycle) (len in-envs))
@@ -943,7 +952,8 @@
                                                  (svex-env-extract (svex-alist-keys nextstates) env))))
       :hints ('(:expand ((:free (cycle in-envs orig-state)
                           (svex-eval-unroll-multienv x cycle nextstates in-envs orig-state))
-                         (:free (env cycle) (svex-eval-unroll x cycle nextstates env)))))
+                         (:free (env cycle) (svex-eval-unroll x cycle nextstates env)))
+                :in-theory (disable svex-eval-unroll-multienv-at-cycle-0)))
       :flag svex-eval-unroll)
     (defthm svexlist-eval-unroll-is-unroll-multienv
       (implies (and (bind-free '((ncycles . (binary-+ '1 (nfix cycle)))) (ncycles))

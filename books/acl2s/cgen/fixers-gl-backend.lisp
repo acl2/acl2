@@ -1210,7 +1210,7 @@ bindings:
        (config (gl::make-glcp-config
                 :abort-ctrex t
                 :abort-vacuous t
-                :nexamples 1))
+                :n-counterexamples 1))
        ((mv erp ?val state) 
         (gl::glcp nil (list bindings param-bindings
                             trhyp trparam trconcl

@@ -310,11 +310,29 @@ b = (a << 1) | (b << 1)
                                     svexlist-p
                                     alist-keys))))
 
+(define svexlist-filter ((x svexlist-p))
+  :returns (new-x svexlist-p)
+  :verify-guards nil
+  :hooks nil
+  (mbe :logic
+       (if (atom x)
+           nil
+         (if (svex-p (car x))
+             (cons (car x) (svexlist-filter (cdr x)))
+           (svexlist-filter (cdr x))))
+       :exec x)
+  ///
+  (defret svexlist-filter-of-svexlist
+    (implies (svexlist-p x)
+             (equal (svexlist-filter x) x)))
+
+  (verify-guards svexlist-filter))
+
 (defthm alist-keys-of-svex-mask-alist-fix
   (equal (alist-keys (svex-mask-alist-fix x))
-         (svexlist-fix (alist-keys x)))
+         (svexlist-filter (alist-keys x)))
   :hints(("Goal" :in-theory (enable svex-mask-alist-fix
-                                    svexlist-fix
+                                    svexlist-filter
                                     alist-keys))))
 
 (define svex-mask-alist-expand ((x svex-mask-alist-p))

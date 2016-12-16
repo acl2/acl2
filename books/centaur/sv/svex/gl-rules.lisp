@@ -348,25 +348,25 @@
                           (SVEX-ENV-FIX (CDR X))))))
   :hints(("Goal" :in-theory (enable svex-env-fix))))
 
-(gl::gl-set-uninterpreted svex-env-lookup-nofix)
+(gl::gl-set-uninterpreted svex-env-lookup)
 
-(gl::def-gl-rewrite svex-env-lookup-nofix-when-non-term
+(gl::def-gl-rewrite svex-env-lookup-when-non-term
   (implies (syntaxp (not (and (consp env)
                               (or (eq (car env) :g-var)
                                   (eq (car env) :g-apply)))))
-           (equal (svex-env-lookup-nofix x env)
-                  (or (cdr (hons-get x env)) (4vec-x))))
-  :hints(("Goal" :in-theory (enable svex-env-lookup-nofix))))
+           (equal (svex-env-lookup x env)
+                  (4vec-fix (cdr (hons-get (svar-fix x) env)))))
+  :hints(("Goal" :in-theory (enable svex-env-lookup))))
 
 (gl::def-glcp-ctrex-rewrite
-  ((svex-env-lookup-nofix var env) val)
+  ((svex-env-lookup var env) val)
   (env (b* ((env (make-fast-alist env)))
          (if (equal (cdr (hons-get var env)) val)
              env
            (hons-acons var val env)))))
 
 (gl::def-glcp-ctrex-rewrite
-  ((svex-env-lookup-nofix var (svex-env-fix env)) val)
+  ((svex-env-lookup var (svex-env-fix env)) val)
   (env (b* ((env (make-fast-alist env)))
          (if (equal (cdr (hons-get var env)) val)
              env
@@ -379,7 +379,7 @@
          (svtv-fsm-symbolic-env ins vars prev-st)))
 
 (gl::def-glcp-ctrex-rewrite
-  ((svex-env-lookup-nofix var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
+  ((svex-env-lookup var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
   (ins (b* ((alist (nth (svex-cycle-var->cycle var) ins))
             (svar (svex-cycle-var->svar var))
             (lookup (hons-get svar alist))
@@ -392,7 +392,7 @@
              (svex-cycle-var-p (unquote var))))
 
 (gl::def-glcp-ctrex-rewrite
-  ((svex-env-lookup-nofix var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
+  ((svex-env-lookup var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
   (prev-st (b* ((lookup (hons-get var prev-st))
                 ((when (hons-equal (cdr lookup) val)) prev-st))
              (hons-acons var val prev-st)))
@@ -460,18 +460,7 @@
   (memoize 'svarlist-has-svex-cycle-var-memo))
 
 
-(local (defthm svex-env-lookup-nofix-of-env
-         (implies (and (svex-env-p env)
-                       (svar-p var))
-                  (equal (svex-env-lookup-nofix var env)
-                         (svex-env-lookup var env)))
-         :hints(("Goal" :in-theory (enable svex-env-lookup-nofix svex-env-lookup)))))
 
-(local (defthm svex-env-lookup-nofix-under-4vec-equiv
-         (implies (svar-p var)
-                  (4vec-equiv (svex-env-lookup-nofix var env)
-                              (svex-env-lookup var env)))
-         :hints(("Goal" :in-theory (enable svex-env-lookup-nofix svex-env-lookup)))))
 
 (local (defthm ENV-LOOKUP-OF-CYCLE-VAR-IN-ENV-ADD-CYCLE-NUM-diff-cycle
          (b* ((ncycle (svex-cycle-var->cycle var)))
@@ -536,17 +525,17 @@
                       (car x)
                     (nth (1- (nfix n)) (cdr x))))))
 
-(gl::def-gl-rewrite svex-env-lookup-nofix-of-svtv-fsm-symbolic-env
+(gl::def-gl-rewrite svex-env-lookup-of-svtv-fsm-symbolic-env
   (implies (and (syntaxp (and (gl::general-concretep var)
                               (gl::general-concretep statevars)))
                 (not (svarlist-has-svex-cycle-var-memo statevars))
                 (svar-p var))
-           (equal (svex-env-lookup-nofix var (svtv-fsm-symbolic-env ins statevars prev-st))
+           (equal (svex-env-lookup var (svtv-fsm-symbolic-env ins statevars prev-st))
                   (if (svex-cycle-var-p var)
-                      (4vec-fix (svex-env-lookup-nofix (svex-cycle-var->svar var)
-                                                       (nth (svex-cycle-var->cycle var) ins)))
+                      (svex-env-lookup (svex-cycle-var->svar var)
+                                       (nth (svex-cycle-var->cycle var) ins))
                     (if (svarlist-member-for-svex-env-lookup-rule var statevars)
-                        (4vec-fix (svex-env-lookup-nofix var prev-st))
+                        (svex-env-lookup var prev-st)
                       (4vec-x))))))
 
 

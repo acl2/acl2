@@ -115,7 +115,7 @@ expect or preserve @(see fast-alists)."
                                       (hons-assoc-equal var env)))
                       :hints(("Goal" :in-theory (enable svex-env-p))))))
   (mbe :logic
-       (4vec-fix (cdr (hons-assoc-equal (svar-fix var) (svex-env-fix env))))
+       (4vec-fix (cdr (hons-get (svar-fix var) env)))
        :exec
        (let ((look (assoc-equal var env)))
          (if look
@@ -143,8 +143,10 @@ expect or preserve @(see fast-alists)."
                                (equal (assoc var env)
                                       (hons-assoc-equal var env)))
                       :hints(("Goal" :in-theory (enable svex-env-p))))))
-  (mbe :logic (consp (hons-assoc-equal (svar-fix var) (svex-env-fix env)))
-       :exec (consp (assoc-equal var env))))
+  (mbe :logic (consp (hons-assoc-equal (svar-fix var) env))
+       :exec (consp (assoc-equal var env)))
+  ///
+  (deffixequiv svex-env-boundp))
 
 (define svex-env-fastlookup ((var svar-p)
                              (env svex-env-p "Must be a @(see fast-alist)."))
@@ -661,16 +663,16 @@ svex-eval).</p>"
 
 
 
-(defalist svar-boolmasks
+(fty::defmap svar-boolmasks
   :key-type svar
   :val-type integerp)
 
 (define svar-boolmasks-lookup ((v svar-p) (boolmasks svar-boolmasks-p))
   :returns (boolmask integerp :rule-classes :type-prescription)
   (ifix (cdr (hons-get (mbe :logic (svar-fix v) :exec v)
-                       (svar-boolmasks-fix boolmasks))))
+                        boolmasks)))
   ///
-  (deffixequiv svar-boolmasks-lookup))
+  (deffixequiv svar-boolmasks-lookup :hints(("Goal" :in-theory (disable ifix)))))
 
 
 ;; Placeholder: this is used by svtvs, b/c it is advantageous in symbolic

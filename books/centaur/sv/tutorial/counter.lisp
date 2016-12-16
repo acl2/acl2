@@ -97,10 +97,10 @@
               ((list step0 step1) steps)
               (step0 (make-fast-alist step0))
               (step1 (make-fast-alist step1))
-              (count0 (svex-env-lookup-nofix 'count step0))
-              (reset (svex-env-lookup-nofix 'reset step0))
-              (incr (svex-env-lookup-nofix 'incr step0))
-              (count1 (svex-env-lookup-nofix 'count step1)))
+              (count0 (svex-env-lookup 'count step0))
+              (reset (svex-env-lookup 'reset step0))
+              (incr (svex-env-lookup 'incr step0))
+              (count1 (svex-env-lookup 'count step1)))
            (cw "Step0:~%")
            (sv::svtv-print-alist-readable step0)
            (cw "Step1:~%")
@@ -124,10 +124,10 @@
                ((list step0 step1) steps)
                (step0 (make-fast-alist step0))
                (step1 (make-fast-alist step1))
-               (count0 (svex-env-lookup-nofix 'count step0))
-               (reset (svex-env-lookup-nofix 'reset step0))
-               (incr (svex-env-lookup-nofix 'incr step0))
-               (count1 (svex-env-lookup-nofix 'count step1)))
+               (count0 (svex-env-lookup 'count step0))
+               (reset (svex-env-lookup 'reset step0))
+               (incr (svex-env-lookup 'incr step0))
+               (count1 (svex-env-lookup 'count step1)))
             (cw "Step0:~%")
             (sv::svtv-print-alist-readable step0)
             (cw "Step1:~%")
@@ -206,10 +206,15 @@
            :in-theory (e/d (counter-step-invariant-holds
                             counter-step-invariant
                             counter-step-preconds
-                            (:i svtv-fsm-eval))
+                            (:i svtv-fsm-eval)
+                            svtv-fsm-step-outs
+                            svtv-fsm-step)
                            (2vec-p
                             2vec->val
                             append
+                            ;; sv::car-of-svtv-fsm-eval
+                            ;; sv::cdr-of-svtv-fsm-eval
+                            ;; sv::svtv-fsm-eval-of-cons
                             acl2::append-when-not-consp
                             counter-step-does-not-overflow-invariant
                             ;; ap hacking

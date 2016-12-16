@@ -133,6 +133,12 @@
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-env-lookup)))))
 
+  (defthm svex-env-extract-of-superset
+    (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
+             (Equal (svex-env-extract keys (svex-env-extract keys2 x))
+                    (svex-env-extract keys x)))
+    :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix))))
+
   ;; for :fix hook
   (local (in-theory (enable svex-env-extract))))
 
