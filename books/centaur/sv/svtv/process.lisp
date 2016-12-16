@@ -1246,7 +1246,7 @@ entries extract outputs.</p>
     (\"data_busa\"  _   _   _   a   _)
     (\"data_busb\"  _   _   _   b   _)
     (\"opcode\"     _  op   _   _   _)
-    (\"clkgates\"   _ :ones _ :ones _))
+    (\"clkgates\"   _  -1   _  -1   _))
  })
 <p>And an example output/internal table:</p>
 @({
@@ -1287,7 +1287,7 @@ tables:</p>
 
 <ul>
 
-<li>@('_') or @('-') (actually, any symbol whose name is \"_\" or \"-\"), makes
+<li>@('_') or @('-') (actually, any symbol whose name is \"_\" or \"-\") makes
 the signal undriven at that phase.  Actually, this means slightly different
 things for inputs versus overrides: for an input, the wire simply doesn't get
 assigned a value, whereas for an override, it isn't overridden at that
@@ -1296,18 +1296,18 @@ phase.</li>
 <li>An integer or @(see 4vec): the signal is assigned that value at that
 time.  (An integer <i>is</i> a 4vec, just to be clear.)</li>
 
-<li>(Deprecated): the symbol @('acl2::x'), means the same thing as the constant
+<li>(Deprecated): the symbol @('acl2::x') means the same thing as the constant
 value @('(4vec-x)') or @('(-1 . 0)'), namely, assign all bits of the signal the
 value X at the given phase.</li>
 
-<li>(Deprecated): the symbol @(':ones'), means the same thing as -1, namely,
+<li>(Deprecated): the symbol @(':ones') means the same thing as -1, namely,
 assign all bits of the signal the value 1 at the given phase.</li>
 
-<li>The symbol @('~') (actually, any symbol whose name is \"~\") means toggle),
-which must be preceded by a constant (4vec) or another @('~'), means the signal
-is assigned the bitwise negation of its value from the previous phase.  Thus
-the \"clk\" signal in the above example is assigned 1, then 0, then 1, etc.,
-because the final @('~') is replicated out to the end of the simulation.</li>
+<li>The symbol @('~') (actually, any symbol whose name is \"~\"), which must be
+preceded by a constant (4vec) or another @('~'), means the signal is assigned
+the bitwise negation of its value from the previous phase.  Thus the \"clk\"
+signal in the above example is assigned 1, then 0, then 1, etc., because the
+final @('~') is replicated out to the end of the simulation.</li>
 
 <li>Any other symbol becomes an input variable assigned to that signal at that
 phase.</li>
