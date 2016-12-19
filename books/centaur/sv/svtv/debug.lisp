@@ -32,6 +32,7 @@
 (in-package "SV")
 
 (include-book "process")
+(include-book "fsm")
 (include-book "vcd")
 (include-book "oslib/date" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
@@ -142,8 +143,16 @@
 (fty::deffixcong svex-env-equiv svex-env-equiv (append a b) b
   :hints(("Goal" :in-theory (enable svex-env-fix append))))
 
+#||
+(trace$ #!sv
+        (svtv-debug-writephases
+         :entry (list 'svtv-debug-writephases phase nphases inalist ins)
+         :exit (list 'svtv-debug-writephases)))
+||#
+
 (define svtv-debug-writephases ((phase natp)
                         (nphases natp)
+                        (offset natp)
                         (inalist svex-env-p)
                         (ins svtv-lines-p)
                         (ovlines svtv-overridelines-p)
@@ -159,13 +168,12 @@
               (<= (vcdwires-length vcd-wiremap) (4vecs-length vcd-vals))
               (<= (aliass-length aliases) (4vecs-length vcd-vals)))
   :returns (mv vcd-vals1
-               (p1 vl-printedlist-p))
+               (p1 vl-printedlist-p)
+               (final-state svex-env-p))
   :measure (nfix (- (nfix nphases) (nfix phase)))
   (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
                    :exec (eql nphases phase)))
-        ;; Just print the new time.
-        (mv vcd-vals
-            (vcd-dump-delta (* 10 (lnfix phase)) nil vcd-vals vcd-wiremap p)))
+        (mv vcd-vals (vl::vl-printedlist-fix p) (svex-env-fix prev-state)))
        (in-vals (svex-alist-eval (svtv-phase-inputs phase ins ovlines invars)
                                  inalist))
        (eval-alist (append in-vals prev-state))
@@ -174,25 +182,69 @@
           (mv (svex-alist-eval updates eval-alist)
               (svex-alist-eval next-states eval-alist))))
        (all-wirevals (append in-vals wirevals))
+       (full-phase (+ (lnfix phase) (lnfix offset)))
        ((mv changes vcd-vals)
         (with-fast-alist all-wirevals
           ;; evaluate aliases and stick values in vcd-vals,
           ;; tracking changes if phase > 0
-          (if (zp phase)
+          (if (zp full-phase)
               (let* ((vcd-vals (svtv-debug-eval-aliases 0 aliases all-wirevals vcd-vals)))
                 (mv nil vcd-vals))
           (svtv-debug-eval-aliases-track 0 aliases all-wirevals vcd-vals))))
        ;; print out changed vals (or all if phase = 0)
-       (p (if (zp phase)
+       (p (if (zp full-phase)
               (vcd-dump-first-snapshot vcd-vals vcd-wiremap p)
-            (vcd-dump-delta (* 10 phase) changes vcd-vals vcd-wiremap p))))
+            (vcd-dump-delta (* 10 full-phase) changes vcd-vals vcd-wiremap p))))
     (svtv-debug-writephases (1+ (lnfix phase))
-                    nphases inalist
+                    nphases offset inalist
                     ins ovlines
                     next-state
                     updates next-states invars
                     aliases vcd-wiremap
-                    vcd-vals p)))
+                    vcd-vals p))
+  ///
+  (defret len-of-svtv-debug-writephases-vcd-vals
+    (<= (len vcd-vals)
+        (len vcd-vals1))
+    :rule-classes :linear))
+
+
+
+
+(define svtv-debug-fsm-writephases ((cycle natp)
+                                    (nphases-per-cycle natp)
+                                    (inalists svex-envlist-p)
+                                    (ins svtv-lines-p)
+                                    (ovlines svtv-overridelines-p)
+                                    (prev-st svex-env-p)
+                                    (updates svex-alist-p)
+                                    (next-states svex-alist-p)
+                                    (invars svarlist-p)
+                                    aliases vcd-wiremap vcd-vals
+                                    (p vl-printedlist-p))
+    :guard-hints (("goal" :do-not-induct t))
+    :guard (and (<= (aliass-length aliases) (vcdwires-length vcd-wiremap))
+                (<= (vcdwires-length vcd-wiremap) (4vecs-length vcd-vals))
+                (<= (aliass-length aliases) (4vecs-length vcd-vals)))
+    :measure (len inalists)
+  :returns (mv vcd-vals1
+               (p1 vl-printedlist-p))
+    (b* ((cycle (lnfix cycle))
+         (nphases-per-cycle (lnfix nphases-per-cycle))
+         (phase (* cycle nphases-per-cycle))
+         ((when (atom inalists))
+          ;; just print the new time.
+          (mv vcd-vals (vcd-dump-delta (* 10 (lnfix phase)) nil vcd-vals vcd-wiremap p)))
+         (inalist (car inalists))
+         ((with-fast inalist))
+         ((mv vcd-vals p next-st)
+          (svtv-debug-writephases
+           0 nphases-per-cycle phase inalist ins ovlines prev-st updates next-states invars aliases vcd-wiremap vcd-vals p)))
+      (svtv-debug-fsm-writephases
+       (1+ cycle) nphases-per-cycle (cdr inalists) ins ovlines next-st updates next-states invars aliases vcd-wiremap vcd-vals p)))
+
+
+
 
 (defthm true-list-listp-of-append
   (implies (and (true-list-listp a)
@@ -496,10 +548,11 @@ nextstate and update functions given a timing diagram.</p>
        ;; Run the sequence of steps, recording value changes at each step and
        ;; printing them into p.
        ((mv vcd-vals p)
-        (svtv-debug-writephases 0 debugdata.nphases inalist
-                        ins ovlines initst
-                        debugdata.updates debugdata.nextstates in-vars
-                        aliases vcd-wiremap vcd-vals p))
+        (svtv-debug-fsm-writephases
+         0 debugdata.nphases (list inalist)
+         ins ovlines initst
+         debugdata.updates debugdata.nextstates in-vars
+         aliases vcd-wiremap vcd-vals p))
 
        ;; Write the contents of p to an actual file.
        ((mv channel state)
@@ -530,6 +583,74 @@ nextstate and update functions given a timing diagram.</p>
    :debugdata debugdata
    :vcd-wiremap vcd-wiremap
    :vcd-vals vcd-vals))
+
+
+(define svtv-debug-run-fsm ((inalists svex-envlist-p)
+                            (initst svex-env-p)
+                            &key
+                            ((filename stringp) '"svtv-debug.vcd")
+                            (moddb 'moddb)
+                            (aliases 'aliases)
+                            (debugdata 'debugdata)
+                            (vcd-wiremap 'vcd-wiremap)
+                            (vcd-vals 'vcd-vals)
+                            (state 'state))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable debugdatap))))
+  :guard (and (moddb-ok moddb)
+              (< (debugdata->modidx debugdata) (moddb->nmods moddb))
+              (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
+                  (aliass-length aliases)))
+
+  :returns (mv vcd-wiremap vcd-vals state)
+  (b* (((debugdata debugdata))
+
+       (states (svex-alist-keys debugdata.nextstates))
+
+       ;; Start VCD creation.  Make the wiremap and the scope structure (from
+       ;; which we write out the module hierarchy portion of the VCD file.)
+       (vcd-wiremap (resize-vcdwires (aliass-length aliases) vcd-wiremap))
+       ((mv scope & vcd-wiremap) (vcd-moddb->scopes "top" debugdata.modidx 0 0 moddb vcd-wiremap))
+
+       ;; Start accumulating the contents of the VCD file into reverse
+       ;; string/char accumulator p.  Print the header into p.
+       ((mv date state) (oslib::date))
+       (p (vcd-print-header date scope nil))
+
+       ;; Set up the VCD values structure, an array of 4vecs -- these are
+       ;; conveniently initialized to Xes
+       (vcd-vals (resize-4vecs (vcdwires-length vcd-wiremap) vcd-vals))
+
+       ;; collect the set of all input variables.  We generate a unique
+       ;; variable per phase for each variable (unless it is bound to an STV
+       ;; input variable).  This wouldn't be strictly necessary since we're
+       ;; going to set these to Xes anyway, but this is how we do it for now.
+       (in-vars (acl2::hons-set-diff (svexlist-collect-vars
+                                      (append (svex-alist-vals debugdata.updates)
+                                              (svex-alist-vals debugdata.nextstates)))
+                                     (append (svex-alist-keys debugdata.updates)
+                                             states)))
+
+       (ins (svtv-expand-lines debugdata.ins debugdata.nphases))
+       ((mv ovlines ?ovs) (svtv-lines->overrides debugdata.overrides 0))
+       ;; Run the sequence of steps, recording value changes at each step and
+       ;; printing them into p.
+       ((mv vcd-vals p)
+        (svtv-debug-fsm-writephases 0 debugdata.nphases inalists
+                                    ins ovlines initst
+                                    debugdata.updates debugdata.nextstates in-vars
+                                    aliases vcd-wiremap vcd-vals p))
+
+       ;; Write the contents of p to an actual file.
+       ((mv channel state)
+        (open-output-channel (mbe :logic (acl2::str-fix filename) :exec filename)
+                             :character state))
+       ((unless channel)
+        (raise "Couldn't write vcd file ~s0~%" filename)
+        (mv vcd-wiremap vcd-vals state))
+       (state (princ$ (vl::vl-printedlist->string p) channel state))
+       (state (close-output-channel channel state)))
+    (mv vcd-wiremap vcd-vals state)))
 
 
 (define svtv-debug-core ((x svtv-p)
@@ -568,6 +689,43 @@ nextstate and update functions given a timing diagram.</p>
         (svtv-debug-run-logic inalist :filename filename)))
     (mv moddb aliases debugdata vcd-wiremap vcd-vals state)))
 
+(define svtv-debug-fsm-core ((x svtv-p)
+                             (inalists svex-envlist-p)
+                             (initst svex-env-p)
+                             &key
+                             ((filename  stringp) '"svtv-debug.vcd")
+                             (moddb 'moddb)
+                             (aliases 'aliases)
+                             (debugdata 'debugdata)
+                             (vcd-wiremap 'vcd-wiremap)
+                             (vcd-vals 'vcd-vals)
+                             (rewrite 't)
+                             (state 'state))
+
+  :returns (mv moddb aliases debugdata vcd-wiremap vcd-vals state)
+  :hooks ((:fix :omit (moddb aliases)))
+  (b* (((svtv x))
+       (mod-fn (intern-in-package-of-symbol
+                (str::cat (symbol-name x.name) "-MOD")
+                x.name))
+       ((mv err design)
+        (acl2::magic-ev-fncall mod-fn nil state t t))
+       ((when err)
+        (raise "Error: couldn't run ~x0: ~@1~%" mod-fn err)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state))
+       ((unless (and (design-p design)
+                     (modalist-addr-p (design->modalist design))))
+        (raise "Error: ~x0 returned a malformed design~%" mod-fn)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state))
+
+       ((mv err moddb aliases debugdata) (svtv-debug-init design))
+       ((when err)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state))
+       (debugdata (svtv-debug-set-svtv x :rewrite rewrite))
+       ((mv vcd-wiremap vcd-vals state)
+        (svtv-debug-run-fsm inalists initst :filename filename)))
+    (mv moddb aliases debugdata vcd-wiremap vcd-vals state)))
+
 (define svtv-debug ((x svtv-p)
                     (inalist svex-env-p)
                     &key
@@ -583,3 +741,20 @@ nextstate and update functions given a timing diagram.</p>
       
   ///
   (defmacro stv-debug (&rest args) (cons 'svtv-debug args)))
+
+(define svtv-debug-fsm ((x svtv-p)
+                        (inalists svex-envlist-p)
+                        (initst svex-env-p)
+                        &key
+                        ((filename  stringp) '"svtv-debug.vcd")
+                        (state 'state))
+  :parents (svex-stvs)
+  :short "Dump a VCD waveform showing the internal signals of an svex STV."
+  :prepwork ((local (in-theory (disable max))))
+  :verbosep t
+  (b* (((acl2::local-stobjs moddb aliases debugdata vcd-wiremap vcd-vals)
+        (mv moddb aliases debugdata vcd-wiremap vcd-vals state)))
+    (svtv-debug-fsm-core x inalists initst :filename filename))
+      
+  ///
+  (defmacro stv-debug-fsm (&rest args) (cons 'svtv-debug-fsm args)))

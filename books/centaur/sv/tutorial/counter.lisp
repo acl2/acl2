@@ -89,6 +89,26 @@
 
 (gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
 
+;; ************************************************************************
+;;  NOTE: This book is CURRENTLY MARKED BROKEN in books/GNUMakefile, because
+;;  the following theorem is failing on the build server at leeroy.defthm.com.
+;;  Specifically, it comes back with an error:
+;;
+;;     Vacuity check did not finish
+;;
+;;  which suggests that the SAT solver is producing unexpected output or
+;;  failing to solve the problem submitted by the vacuity check on the
+;;  hypothesis.  To debug this, you can examine the output on that server
+;;  from:
+;; 
+;;     (include-book "centaur/satlink/top" :dir :system)
+;;     (satlink::sat '((3) (3)) satlink::env$)
+;;
+;;  If anyone fixes this, please remove this book from BROKEN_BOOKS in
+;;  GNUMakefile.
+;;  ************************************************************************
+
+
 (gl::def-gl-thm counter-step-does-not-overflow-symbolic
   :hyp t
   :concl (b* ((steps (svtv-fsm-run ins prev-st (counter-step)

@@ -37,7 +37,7 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "tools/templates" :dir :system)
 (local (include-book "std/alists/hons-assoc-equal" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 
