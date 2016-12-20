@@ -1,4 +1,4 @@
-; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v7-2/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v7-3/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-7-2                            ;;; g   ; current release notes
+    note-7-3                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -212,7 +212,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 7.1</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 7.2</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -339,12 +339,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.2)</li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.3)</li>
 
 <li><A HREF=\"~s3\">ACL2+Books Manual</A> (for
 \"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions)</li>
 
-<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.2)</li>
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.3)</li>
 
 </ul>
 

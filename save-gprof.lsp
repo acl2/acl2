@@ -1,4 +1,4 @@
-; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -198,16 +198,16 @@
       (setq clean nil))
   (let ((si::*collect-binary-modules*
 
-; Collect a list of names of each object file loaded 
+; Collect a list of names of each object file loaded
 
          t)
         si::*binary-modules*
-        (compiler::*default-system-p* 
+        (compiler::*default-system-p*
 
 ; The .o files are to be linked in via ld; must be compiled with :system-p t.
 
          t))
-  
+
     (let ((com
 
 ; This is a command to build acl2 which will be run twice -- once in stock gcl,
@@ -257,7 +257,7 @@
                       (sym-initial-cbd (find-symbol "*INITIAL-CBD*" "ACL2"))
                       (sym-pathname-os-to-unix (find-symbol
                                                 "PATHNAME-OS-TO-UNIX"
-                                                "ACL2")) 
+                                                "ACL2"))
                       (sym-state (find-symbol "*THE-LIVE-STATE*" "ACL2"))
                       (sym-f-put-global (find-symbol "F-PUT-GLOBAL" "ACL2"))
                       (sym-ld (find-symbol "LD" "ACL2"))
@@ -333,5 +333,5 @@
 ; Run the build sequence again in this image with load redirected to initialize.
 
        (format nil "~S" com)
-       ""        
+       ""
        nil))))

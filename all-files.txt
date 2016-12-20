@@ -11,6 +11,7 @@ akcl-acl2-trace.lisp
 allegro-acl2-trace.lisp
 all-files.txt
 # aux -- developer directory
+apply-raw.lisp
 axioms.lisp
 basis-a.lisp
 basis-b.lisp
@@ -76,6 +77,7 @@ workshops.html
 
 acl2-customization-files:
 bookdata.lisp
+no-serialize.lisp
 parallel-full.lisp
 parallel-resource-based.lisp
 parallel-top-level.lisp
@@ -89,7 +91,6 @@ set-compile-fns.lisp
 doc:
 # The following is distributed but is not under source control:
 acl2-code-size.txt
-acl2-wc.txt
 create-acl2-code-size
 create-doc
 # The following is distributed but is not under source control

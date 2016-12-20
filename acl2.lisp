@@ -1,4 +1,4 @@
-; ACL2 Version 7.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2016, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1051,7 +1051,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 7.2"
+                      "ACL2 Version 7.3"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -1402,6 +1402,17 @@ ACL2 from scratch.")
   #+clisp `(ext:without-package-lock
             ("COMMON-LISP")
             (with-warnings-suppressed ,@forms)))
+
+; The following prevents an error when SBCL compiles ec-calls in the definition
+; of concrete-apply$-lambda.  We may do something more principled in the near
+; future.  The names could be obtained with (add-suffix name *inline-suffix*),
+; except that add-suffix and inline-suffix* are not yet defined here.  We could
+; wait until they are, but then we'd need to teach note-fns-in-form about
+; with-suppression.
+#-acl2-loop-only
+(with-suppression
+ (intern "CAR$INLINE" "COMMON-LISP")
+ (intern "CDR$INLINE" "COMMON-LISP"))
 
 (defconstant acl2::*acl2-status-file*
   (make-pathname :name "acl2-status"
