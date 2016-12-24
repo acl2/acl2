@@ -9,6 +9,10 @@
 ; clause-processors/meta-extract-user.lisp, but is simpler -- in particular, it
 ; does not include that book.
 
+; For a more interesting tutorial example on meta-extract hypotheses, see
+; community book
+; /projects/acl2/acl2/books/demos/nth-update-nth-meta-extract.lisp.
+
 (in-package "ACL2")
 
 ; The following is only needed for developer builds (using ACL2_DEVEL), which
