@@ -130,11 +130,20 @@
 ; But we would like to be able to execute it in contexts allowing attachments.
 ; We would like be able to type (APPLY$ 'SQ '(3)) at the top-level of the ACL2
 ; loop and and get 9.  We would like to be able to type (COLLECT '(1 2 3) 'SQ)
-; and get (1 4 9).  These answers are justified by the theorem:
+; and get (1 4 9).  These answers are justified by the theorem at the end of
+; the following sequence of events.
 
+; (include-book "projects/apply/apply" :dir :system)
+; (defun$ sq (x) (* x x))
+; (defun$ collect (lst fn)
+;   (if (endp lst)
+;       nil
+;     (cons (apply$ fn (list (car lst)))
+;           (collect (cdr lst) fn))))
 ; (thm (implies (apply$-warrant-SQ)
 ;               (and (equal (apply$ 'SQ '(3)) 9)
-;                    (equal (collect '(1 2 3) 'SQ) '(1 4 9)))))
+;                    (equal (collect '(1 2 3) 'SQ) '(1 4 9))))
+;      :hints (("Goal" :in-theory (disable (collect)))))
 
 ; But true evaluation is impossible in any current version of ACL2 because
 ; BADGE-USERFN and APPLY$-USERFN are undefined.
