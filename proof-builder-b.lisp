@@ -3777,8 +3777,8 @@
       (let* ((fn (ffn-symb term))
              (def-body (and (not (flambdap fn))
                             (def-body fn w)))
-             (formals (access def-body def-body :formals))
-             (equiv (access def-body def-body :equiv))
+             (formals (and def-body (access def-body def-body :formals)))
+             (equiv (and def-body (access def-body def-body :equiv)))
              (body (if (flambdap fn)
                        (lambda-body fn)
                      (and def-body
@@ -3788,6 +3788,12 @@
                                        (access def-body def-body
                                                :concl))))))
         (cond
+         ((null body)
+          (assert$ (not (flambdap fn)) ; else surprising null body for lambda
+                   (print-no-change2
+                    "Expansion failed.  Apparently function ~x0 is ~
+                     constrained, not defined."
+                    (list (cons #\0 fn)))))
          ((and (not (eq equiv 'equal)) ; optimization
                (not (flambdap fn))
                (not (geneqv-refinementp
@@ -3803,12 +3809,6 @@
             current context."
            (list (cons #\0 (base-symbol (access def-body def-body :rune)))
                  (cons #\1 equiv))))
-         ((null body)
-          (assert$ (not (flambdap fn)) ; else surprising null body for lambda
-                   (print-no-change2
-                    "Expansion failed.  Apparently function ~x0 is ~
-                     constrained, not defined."
-                    (list (cons #\0 fn)))))
          (t
           (let ((new-term
                  (cond
