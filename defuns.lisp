@@ -4688,6 +4688,15 @@
                              cl-set-ttree
                              ttree))))))))))))))))))
 
+(defun maybe-remove-invariant-risk (names wrld new-wrld)
+  (cond ((endp names) new-wrld)
+        (t (let ((new-wrld
+                  (if (and (getpropc (car names) 'invariant-risk nil wrld)
+                           (equal (guard (car names) t wrld) *t*))
+                      (putprop (car names) 'invariant-risk nil new-wrld)
+                    new-wrld)))
+             (maybe-remove-invariant-risk (cdr names) wrld new-wrld)))))
+
 (defun verify-guards-fn1 (names hints otf-flg guard-debug ctx state)
 
 ; This function is called on a clique of mutually recursively defined
@@ -4918,11 +4927,12 @@
 
      (let* ((col (car pair))
             (ttree1 (cdr pair))
-            (wrld1 (putprop-x-lst1 names 'symbol-class
-                                   :common-lisp-compliant wrld)))
+            (wrld1 (maybe-remove-invariant-risk names wrld wrld))
+            (wrld2 (putprop-x-lst1 names 'symbol-class
+                                   :common-lisp-compliant wrld1)))
        (pprogn
         (print-verify-guards-msg names col state)
-        (value (cons wrld1 ttree1)))))))
+        (value (cons wrld2 ttree1)))))))
 
 (defun verify-guards-fn (name state hints otf-flg guard-debug event-form)
 
@@ -5111,7 +5121,46 @@
         (cond (risk-fn (putprop-x-lst1 new-fns 'invariant-risk risk-fn wrld))
               (t (put-invariant-risk1 new-fns (cdr body-fns) wrld)))))))
 
-(defun put-invariant-risk (names bodies non-executablep wrld)
+(defun stobjs-guard-only-lst (lst wrld)
+
+; See stobjs-guard-only.  Here we do an unnecessary check that the arglist
+; consists of a single variable, simply as an optimization that can avoid the
+; world lookup done by stobj-recognizer-p.
+
+  (cond ((endp lst) t)
+        (t (and (let ((term (car lst)))
+                  (and (nvariablep term)
+                       (symbolp (ffn-symb term))
+                       (fargs term) ; not nil
+                       (null (cdr (fargs term)))
+                       (variablep (fargn term 1))
+                       (stobj-recognizer-p (ffn-symb term) wrld)))
+                (stobjs-guard-only-lst (cdr lst) wrld)))))
+
+(defun stobjs-guard-only (guard wrld)
+
+; This function recognizes when guard is a conjunction of stobj recognizer
+; calls.  There are an implicit function and its stobjs-out that we could pass
+; in explicitly, but we only call this for executable functions, so there is no
+; need to consider the stobjs-out; we already check elsewhere that the guard is
+; well-formed, which guarantees that if a term is a call of a stobj recognizer,
+; then it must be called on a declared stobj name.
+
+  (stobjs-guard-only-lst (flatten-ands-in-lit guard) wrld))
+
+(defun remove-guard-t (names guards wrld acc)
+  (cond ((endp names) acc)
+        (t (remove-guard-t (cdr names)
+                           (cdr guards)
+                           wrld
+                           (if (or (equal (car guards) *t*)
+                                   (stobjs-guard-only (car guards)
+                                                      wrld))
+                               acc
+                             (cons (car names) acc))))))
+
+(defun put-invariant-risk (names bodies non-executablep symbol-class guards
+                                 wrld)
 
 ; We want to avoid the following situation: the raw Lisp version of some
 ; function occurring in bodies leads to an ill-guarded function call that
@@ -5140,9 +5189,15 @@
 ; bodies.
 
   (cond (non-executablep wrld)
-        (t (put-invariant-risk1 names
-                                (all-fnnames1-exec t bodies nil)
-                                wrld))))
+        (t (let ((new-fns (if (eq symbol-class :common-lisp-compliant)
+                              (remove-guard-t names guards wrld nil)
+                            names)))
+             (cond
+              ((null new-fns) ; optimization
+               wrld)
+              (t (put-invariant-risk1 new-fns
+                                      (all-fnnames1-exec t bodies nil)
+                                      wrld)))))))
 
 (defun defuns-fn-short-cut (names docs pairs guards measures split-types-terms
                                   bodies non-executablep ctx wrld state)
@@ -5186,6 +5241,8 @@
                   names
                   bodies
                   non-executablep
+                  :program ; symbol-class
+                  guards
                   (putprop-x-lst2-unless
                    names 'guard guards *t*
                    (putprop-x-lst2-unless
@@ -8272,6 +8329,8 @@
                               names
                               bodies
                               non-executablep
+                              symbol-class
+                              guards
                               wrld9)))
            (wrld11 (update-w big-mutrec
                              (putprop-x-lst1
