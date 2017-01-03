@@ -573,7 +573,8 @@ need to be escaped.</p>")
   :short "Saves the XDOC database into files for web browsers, etc."
 
   :long "<p>Once you have documented your books with @(see defxdoc), you may
-wish to create a manual that can be viewed from a web browser.</p>
+wish to create a manual that can be viewed from a web browser or from the
+acl2-doc Emacs-based browser @(see acl2::acl2-doc).</p>
 
 <h4>Basic Example</h4>
 
