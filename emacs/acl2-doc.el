@@ -188,7 +188,9 @@
 ; we ignore buf0 other than to decide whether to delete the buffer just before
 ; returning from this function.
 
-	 (buf (progn (message "Reading %s..."
+	 (buf (progn (when buf0 ; avoid undo warning
+		       (kill-buffer buf0))
+		     (message "Reading %s..."
 			      rendered-pathname)
 		     (find-file-noselect rendered-pathname))))
     (with-current-buffer
@@ -222,7 +224,7 @@
   *acl2-doc-manual-name*)
 
 (defun acl2-doc-pathname (&optional must-exist)
-  (let ((pathname (car (acl2-doc-manual-entry))))
+  (let ((pathname (nth 0 (acl2-doc-manual-entry))))
     (cond
      ((null pathname)
       (error "No pathname was specified in %s for manual name %s."
@@ -236,15 +238,15 @@
      (t pathname))))
 
 (defun acl2-doc-top-name ()
-  (cadr (acl2-doc-manual-entry)))
+  (nth 1 (acl2-doc-manual-entry)))
 
 (defun acl2-doc-manual-printname ()
-  (or (caddr (acl2-doc-manual-entry))
+  (or (nth 2 (acl2-doc-manual-entry))
       (format "manual named `%s'"
 	      (acl2-doc-manual-name))))
 
 (defun acl2-doc-url (&optional strict)
-  (or (cadddr (acl2-doc-manual-entry))
+  (or (nth 3 (acl2-doc-manual-entry))
       (and strict
 	   (error "No URL was specified for manual name %s."
 		  *acl2-doc-manual-name*))))
