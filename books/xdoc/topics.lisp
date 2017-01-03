@@ -574,7 +574,7 @@ need to be escaped.</p>")
 
   :long "<p>Once you have documented your books with @(see defxdoc), you may
 wish to create a manual that can be viewed from a web browser or from the
-acl2-doc Emacs-based browser @(see acl2::acl2-doc).</p>
+acl2-doc Emacs-based browser (see @(see acl2::acl2-doc)).</p>
 
 <h4>Basic Example</h4>
 
