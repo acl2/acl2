@@ -71,6 +71,7 @@ use FindBin qw($RealBin);
 use POSIX qw(strftime);
 use Cwd;
 use utf8;
+use Time::HiRes qw(time);
 
 binmode(STDOUT,':utf8');
 
@@ -818,7 +819,7 @@ if ($success) {
 	$hostname = " " . extract_hostname_from_outfile($outfile);
     }
 
-    printf("%sBuilt %s (%ds%s)%s\n", $color, $printgoal, $ELAPSED, $hostname, $black);
+    printf("%sBuilt %s (%.3fs%s)%s\n", $color, $printgoal, $ELAPSED, $hostname, $black);
 
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :

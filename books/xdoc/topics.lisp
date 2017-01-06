@@ -76,9 +76,10 @@ It also installs a new @(':doc') command, via @(see ld-keyword-aliases), so
 that you can see new documentation from the terminal.</p>
 
 <p>Once you have documented your books, you may wish to create a manual that
-can be viewed from a web browser.  You can do this quite easily with XDOC's
-@(see save) command.  This command can be embedded in an ordinary ACL2 book, so
-that your manual is automatically regenerated when you build your project.</p>
+can be viewed from a web browser or from the acl2-doc Emacs-based browser (see
+acl2::acl2-doc).  You can do this quite easily with XDOC's @(see save) command.
+This command can be embedded in an ordinary ACL2 book, so that your manual is
+automatically regenerated when you build your project.</p>
 
 
 <h3>New Features</h3>
@@ -572,7 +573,8 @@ need to be escaped.</p>")
   :short "Saves the XDOC database into files for web browsers, etc."
 
   :long "<p>Once you have documented your books with @(see defxdoc), you may
-wish to create a manual that can be viewed from a web browser.</p>
+wish to create a manual that can be viewed from a web browser or from the
+acl2-doc Emacs-based browser (see @(see acl2::acl2-doc)).</p>
 
 <h4>Basic Example</h4>
 

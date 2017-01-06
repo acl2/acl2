@@ -41,6 +41,49 @@
             (setq *acl2-sources-dir*
                   (substring dir 0 (1+ posn)))))))
 
+(defvar *acl2-doc-manual-alist* nil)
+(defvar *acl2-doc-manual-name* ; key into *acl2-doc-manual-alist*
+  'combined)
+(defvar *acl2-doc-manual-name-previous* nil)
+
+(defun acl2-doc-manual-alist-entry (pathname top printname url)
+  (list pathname top printname url))
+
+(defun extend-acl2-doc-manual-alist (key replace-p pathname top
+					 &optional printname url)
+  (when (and url
+	     (not (and (stringp url)
+		       (let ((len (length url)))
+			 (and (> len 3)
+			      (equal (substring url (- len 3) len)
+				     ".gz"))))))
+    (error "The URL specified for manual name %s does not end in \".gz\"."
+	   key))
+  (let ((tuple (assoc key *acl2-doc-manual-alist*)))
+    (cond
+     (tuple
+      (when replace-p
+	(setf (cdr tuple)
+	      (acl2-doc-manual-alist-entry pathname top printname url)))
+      *acl2-doc-manual-alist*)
+     (t (push (cons key (acl2-doc-manual-alist-entry pathname top printname url))
+	      *acl2-doc-manual-alist*)))))
+
+(extend-acl2-doc-manual-alist
+ 'combined
+ nil
+ (concat *acl2-sources-dir*
+	 "books/system/doc/rendered-doc-combined.lsp")
+ 'TOP
+ "ACL2+Books Manual"
+ "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz")
+
+(extend-acl2-doc-manual-alist 'acl2-only
+			      nil
+			      (concat *acl2-sources-dir* "doc.lisp")
+			      'ACL2
+			      "ACL2 User's Manual")
+
 (defmacro defv (var form)
   `(progn (defvar ,var)
 	  (setq ,var ,form)))
@@ -74,25 +117,6 @@
 ; We define the following variable outside acl2-doc-init-vars, so that it is
 ; not smashed by invoking that macro after running acl2-doc-alist-create.
 (defv *acl2-doc-directory* nil)
-
-; The following variables can be set before loading this file, for
-; example in a user's .emacs file.
-(defv *acl2-doc-rendered-combined-pathname*
-  (concat *acl2-sources-dir*
-	  "books/system/doc/rendered-doc-combined.lsp"))
-(defv *acl2-doc-rendered-combined-pathname-gzipped*
-  (concat *acl2-doc-rendered-combined-pathname* ".gz"))
-(defv *acl2-doc-rendered-pathname*
-  (concat *acl2-sources-dir*
-	  "doc.lisp"))
-(defv *acl2-doc-rendered-combined-url*
-; "Bleeding-edge" combined manual.
-  "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz")
-; Set the following to 'ACL2 to get to the ACL2 User's Manual at
-; startup, but to 'TOP to get to the ACL2+Books Manual.  Here we set
-; it to nil, which goes to the ACL2+Books Manual if it exists, and
-; otherwise offers a choice.
-(defv *acl2-doc-top-default* nil)
 
 (defun acl2-doc-fix-symbol (sym)
 
@@ -149,13 +173,14 @@
     (error "File %s is missing!" rendered-pathname))
   (let* ((large-file-warning-threshold
 
-; As of April 2015, file books/system/doc/rendered-doc-combined.lsp is nearly
-; 55M.  (It was just under 15M in November 2013.)  We take a guess here that
-; modern platforms can handle somewhat more than the current size, so we rather
-; arbitrarily bump up the threshold for a warning, to provide a modest cushion
-; for avoiding the warning.
+; As of December 2016, file books/system/doc/rendered-doc-combined.lsp
+; is nearly 64M, but just over 70,000,000 bytes according to emacs.
+; We take a guess here that modern platforms can handle somewhat more
+; than the current size, so we rather arbitrarily bump up the
+; threshold for a warning, to provide a modest cushion for avoiding
+; the warning.
 
-	  (max large-file-warning-threshold 70000000))
+	  (max large-file-warning-threshold 80000000))
 	 (buf0 (find-buffer-visiting rendered-pathname))
 
 ; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed
@@ -163,7 +188,11 @@
 ; we ignore buf0 other than to decide whether to delete the buffer just before
 ; returning from this function.
 
-	 (buf (find-file-noselect rendered-pathname)))
+	 (buf (progn (when buf0 ; avoid undo warning
+		       (kill-buffer buf0))
+		     (message "Reading %s..."
+			      rendered-pathname)
+		     (find-file-noselect rendered-pathname))))
     (with-current-buffer
         buf
 
@@ -182,123 +211,141 @@
 	    (kill-buffer buf))
           (message "Refreshed from %s" rendered-pathname))))))
 
+(defun acl2-doc-manual-entry (&optional manual-name)
+  (let* ((manual-name (or manual-name *acl2-doc-manual-name*))
+	 (tuple (assoc manual-name *acl2-doc-manual-alist*)))
+    (when (null tuple)
+      (error "No manual exists in %s with name %s."
+	     '*acl2-doc-manual-alist*
+	     manual-name))
+    (cdr tuple)))
+
+(defun acl2-doc-manual-name ()
+  *acl2-doc-manual-name*)
+
+(defun acl2-doc-pathname (&optional must-exist)
+  (let ((pathname (nth 0 (acl2-doc-manual-entry))))
+    (cond
+     ((null pathname)
+      (error "No pathname was specified in %s for manual name %s."
+	     '*acl2-doc-manual-alist*
+	     *acl2-doc-manual-name*))
+     ((and must-exist
+	   (not (file-exists-p pathname)))
+      (error "The file %s (for manual name %s) does not exist."
+	     pathname
+	     (acl2-doc-manual-name)))
+     (t pathname))))
+
+(defun acl2-doc-top-name ()
+  (nth 1 (acl2-doc-manual-entry)))
+
+(defun acl2-doc-manual-printname ()
+  (or (nth 2 (acl2-doc-manual-entry))
+      (format "manual named `%s'"
+	      (acl2-doc-manual-name))))
+
+(defun acl2-doc-url (&optional strict)
+  (or (nth 3 (acl2-doc-manual-entry))
+      (and strict
+	   (error "No URL was specified for manual name %s."
+		  *acl2-doc-manual-name*))))
+
+(defun acl2-doc-set-manual (manual-name)
+; returns manual-name, except, error if manual-name names no manual
+  (acl2-doc-manual-entry manual-name)
+  (setq *acl2-doc-manual-name* manual-name))
+
 (defun acl2-doc-state-initialized-p ()
   (not (null *acl2-doc-state*)))
 
-(defun acl2-doc-rendered-combined-download ()
+(defun acl2-doc-gzipped-file (filename)
+  (concat filename ".gz"))
+
+(defun acl2-doc-download ()
   "Download the ``bleeding edge'' ACL2+Books Manual from the web;
 then restart the ACL2-Doc browser to view that manual."
   (interactive)
-  (cond ((file-exists-p *acl2-doc-rendered-combined-pathname*)
-	 (message "Renaming %s to %s.backup"
-		  *acl2-doc-rendered-combined-pathname*
-		  *acl2-doc-rendered-combined-pathname*)
-	 (rename-file *acl2-doc-rendered-combined-pathname*
-		      (concat *acl2-doc-rendered-combined-pathname* ".backup")
-		      0)))
-  (message "Preparing to download %s"
-	   *acl2-doc-rendered-combined-url*)
-  (url-copy-file
-   *acl2-doc-rendered-combined-url*
-   *acl2-doc-rendered-combined-pathname-gzipped*)
-  (cond ((file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
-	 (cond
-	  ((eql 0 (nth 7
-		       (file-attributes ; size
-			*acl2-doc-rendered-combined-pathname-gzipped*)))
-	   (error
-	    "Download/install failed (zero-length file, %s, will be deleted)."
-	    *acl2-doc-rendered-combined-pathname-gzipped*)
-	   (delete-file *acl2-doc-rendered-combined-pathname-gzipped*))
-	  (t
-	   (shell-command-to-string
-	    (format "gunzip %s"
-		    *acl2-doc-rendered-combined-pathname-gzipped*))
-	   (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
-	       (error "Gunzip failed."))
+  (let* ((acl2-doc-url (acl2-doc-url t))
+	 (acl2-doc-pathname (acl2-doc-pathname))
+	 (acl2-doc-backup (concat acl2-doc-pathname ".backup"))
+	 (acl2-doc-gzipped (acl2-doc-gzipped-file acl2-doc-pathname)))
+    (cond ((file-exists-p acl2-doc-pathname)
+	   (message "Renaming %s to %s."
+		    acl2-doc-pathname
+		    acl2-doc-backup)
+	   (rename-file acl2-doc-pathname acl2-doc-backup 0)))
+    (message "Preparing to download %s"
+	     acl2-doc-url)
+    (url-copy-file acl2-doc-url acl2-doc-gzipped)
+    (cond ((file-exists-p acl2-doc-gzipped)
+	   (cond
+	    ((eql 0 (nth 7
+			 (file-attributes ; size
+			  acl2-doc-gzipped)))
+	     (error
+	      "Download/install failed (zero-length file, %s, will be deleted)."
+	      acl2-doc-gzipped)
+	     (delete-file acl2-doc-gzipped))
+	    (t
+	     (shell-command-to-string
+	      (format "gunzip %s"
+		      acl2-doc-gzipped))
+	     (or (file-exists-p acl2-doc-pathname)
+		 (error "Gunzip failed."))
 
 ;;; The following call of acl2-doc-reset may appear to have the
-;;; potential to cause a loop: acl2-doc-reset calls
-;;; acl2-doc-state-create, which calls
-;;; acl2-doc-rendered-combined-fetch, which calls the present
-;;; function.  However, acl2-doc-rendered-combined-fetch is
+;;; potential to cause a loop: acl2-doc-reset calls acl2-doc-fetch,
+;;; which calls the present function.  However, acl2-doc-fetch is
 ;;; essentially a no-op in this case because of the file-exists-p
 ;;; check just above.
 
-	   (acl2-doc-reset 'TOP)
-	   (acl2-doc-top))))
-	(t (error "Download/install failed.")
-	   nil)))
+	     (acl2-doc-reset (acl2-doc-manual-name))
+	     (acl2-doc-top))))
+	  (t (error "Download/install failed.")
+	     nil))))
 
-(defun acl2-doc-rendered-combined-fetch ()
-  (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
-      (cond
-       ((and (file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
-	     (y-or-n-p
-	      (format "Run gunzip on %s? "
-		      *acl2-doc-rendered-combined-pathname-gzipped*)))
-	(shell-command-to-string
-	 (format "gunzip %s"
-		 *acl2-doc-rendered-combined-pathname-gzipped*))
-	(or (file-exists-p *acl2-doc-rendered-combined-pathname*)
-	    (error "Execution of gunzip seems to have failed!")))
-       ((y-or-n-p
-	 (format "Download %s and install as %s? "
-		 *acl2-doc-rendered-combined-url*
-		 *acl2-doc-rendered-combined-pathname*))
-	(acl2-doc-rendered-combined-download)))))
+(defun acl2-doc-fetch ()
+  (let ((pathname (acl2-doc-pathname)))
+    (or (file-exists-p pathname)
+	(let ((pathname-gz (acl2-doc-gzipped-file pathname)))
+	  (cond
+	   ((and (file-exists-p pathname-gz)
+		 (y-or-n-p
+		  (format "Run gunzip on %s? "
+			  pathname-gz)))
+	    (shell-command-to-string
+	     (format "gunzip %s"
+		     pathname-gz))
+	    (or (file-exists-p pathname)
+		(error "Execution of gunzip seems to have failed!")))
+	   ((let ((url (acl2-doc-url)))
+	      (and url
+		   (y-or-n-p
+		    (format "Download %s and install as %s? "
+			    url
+			    pathname))))
+	    (acl2-doc-download))
+	   (t (error "File %s not found."
+		     pathname)))))))
 
-(defun acl2-doc-state-create (top-name)
-
-;;; The given top-name is 'ACL2, 'TOP, or nil.  If nil, then we use
-;;; the current top-name if one exists; otherwise we use
-;;; *acl2-doc-top-default* if specified; otherwise we query.
-
-  (cond
-   ((eq top-name 'ACL2)
-    (list top-name
-	  (acl2-doc-alist-create *acl2-doc-rendered-pathname*)))
-   ((and (eq top-name 'TOP)
-	 (acl2-doc-rendered-combined-fetch))
-    (list top-name
-	  (acl2-doc-alist-create *acl2-doc-rendered-combined-pathname*)))
-   ((eq top-name 'TOP)
-    (error "ACL2+Books Manual not loaded for browsing"))
-   ((acl2-doc-rendered-combined-fetch)	; top-name is nil
-    (list 'TOP
-	  (acl2-doc-alist-create *acl2-doc-rendered-combined-pathname*)))
-   ((y-or-n-p
-     " Do you want to browse the ACL2 User's Manual even though it
- does not include documentation for the ACL2 community books?
- Note: If your answer is \"y\", then avoid this query by placing the form
- (setq *acl2-doc-top-default* 'ACL2) in your .emacs file. ")
-    (list 'ACL2
-	  (acl2-doc-alist-create *acl2-doc-rendered-pathname*)))
-   (t
-    (error "No manual loaded for browsing"))))
-
-(defun acl2-doc-reset (top-name)
-
-;;; The given top-name is 'ACL2, 'TOP, or nil.  See acl2-doc-state-create.
-
-  (let* ((top-name (or top-name
-		      (cond
-		       ((acl2-doc-state-initialized-p)
-
-;;; The following expression is (acl2-doc-state-top-name), except that we
-;;; haven't yet defined that function because we haven't yet defined the
-;;; function acl2-doc-maybe-reset.
-
-			(nth 0 *acl2-doc-state*))
-		       (*acl2-doc-top-default*))))
-	 (new-state (acl2-doc-state-create top-name)))
-    (when (get-buffer *acl2-doc-index-buffer-name*)
-      (kill-buffer *acl2-doc-index-buffer-name*))
-    (when (get-buffer *acl2-doc-search-buffer-name*)
-      (kill-buffer *acl2-doc-search-buffer-name*))
-    (acl2-doc-init-vars)
-    (setq *acl2-doc-state* new-state)
-    t))
+(defun acl2-doc-reset (manual-name)
+  (let ((old-name (acl2-doc-manual-name)))
+    (cond ((null manual-name)
+	   (setq manual-name old-name))
+	  ((not (eq old-name manual-name))
+	   (setq *acl2-doc-manual-name-previous* old-name)
+	   (acl2-doc-set-manual manual-name)))
+    (acl2-doc-fetch)
+    (let ((new-state (list (acl2-doc-top-name)
+			   (acl2-doc-alist-create (acl2-doc-pathname t)))))
+      (when (get-buffer *acl2-doc-index-buffer-name*)
+	(kill-buffer *acl2-doc-index-buffer-name*))
+      (when (get-buffer *acl2-doc-search-buffer-name*)
+	(kill-buffer *acl2-doc-search-buffer-name*))
+      (acl2-doc-init-vars)
+      (setq *acl2-doc-state* new-state)
+      t)))
 
 (defun acl2-doc-maybe-reset ()
   (cond ((not (acl2-doc-state-initialized-p))
@@ -386,9 +433,7 @@ then restart the ACL2-Doc browser to view that manual."
 
 (defun acl2-doc-display-message (entry &optional extra)
   (let ((name (car (cdr entry)))
-	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
-			 "ACL2 User's Manual"
-		       "ACL2+Books Manual"))
+	(manual-name (acl2-doc-manual-printname))
 	(help-msg (if *acl2-doc-show-help-message*
 		      "; type h for help"
 		    ""))
@@ -632,19 +677,13 @@ visited topics."
            (goto-char (point-min))
            (and (search-forward "Parent list: (" nil t)
 		(acl2-doc-topic-at-point)))))
-    (cond ((and (eq first-parent 'TOP)
-		(eq (nth 0 *acl2-doc-state*) 'ACL2)
-		(save-excursion
-		  (goto-char (point-min))
-		  (and (search-forward "Parent list: (TOP " nil t)
-		       (setq first-parent (acl2-doc-topic-at-point)))))
-	   (acl2-doc-display first-parent))
-	  ((null first-parent)
+    (cond ((null first-parent)
 	   (cond ((save-excursion
 		    (goto-char (point-min))
 		    (forward-line 1)
 		    (member (acl2-doc-read-line)
-			    '("Parent list: NIL"
+			    '("Parent list: nil"
+			      "Parent list: NIL"
 			      "Parent list: ()")))
 		  (error "Already at the root node of the manual"))
 		 (t (error "Internal ACL2-Doc error in acl2-doc-up.
@@ -669,20 +708,31 @@ Please report this error to the ACL2 implementors."))))
   (while (equal major-mode 'acl2-doc-mode) ; quit acl2-doc-history etc. too
     (quit-window)))
 
-(defun acl2-doc-initialize (&optional toggle)
+(defun acl2-doc-initialize (&optional select)
 
-  "Restart the ACL2-Doc browser, clearing its state.  With
-prefix argument, toggle between the ACL2 User's Manual (the
-default) and the ACL2+Books Manual.  For the latter,
-it will be necessary first to create file
-books/system/doc/rendered-doc-combined.lsp; see :DOC
-acl2-doc."
+  "Restart the ACL2-Doc browser, clearing its state.  With a
+prefix argument, a query asks you to select the name of an
+available manual, using completion.  See the section \"Selecting
+a Manual\" in :doc acl2-doc for more information."
 
   (interactive "P")
   (acl2-doc-reset
-   (and toggle
-	(acl2-doc-state-initialized-p)
-	(if (eq (acl2-doc-state-top-name) 'ACL2) 'TOP 'ACL2)))
+   (and select
+	(let* ((default
+		 (cond (*acl2-doc-manual-name-previous*)
+		       ((and (eq (acl2-doc-manual-name)
+				 (caar *acl2-doc-manual-alist*))
+			     (consp (cdr *acl2-doc-manual-alist*)))
+			(car (cadr *acl2-doc-manual-alist*)))
+		       ((or (caar *acl2-doc-manual-alist*) ; should be non-nil
+			    (acl2-doc-manual-name)))))
+	       (s (completing-read
+		   (format "Select manual (default %s): " default)
+		   *acl2-doc-manual-alist*
+		   nil nil nil nil
+		   default)))
+	  (cond ((eq s default) default)
+		(t (intern s))))))
   (acl2-doc-top))
 
 ; Start code for setting the limit topic.
@@ -1238,7 +1288,7 @@ ACL2-Doc browser."
 (define-key acl2-doc-mode-map "u" 'acl2-doc-up)
 (define-key acl2-doc-mode-map "q" 'acl2-doc-quit)
 (define-key acl2-doc-mode-map " " 'scroll-up)
-(define-key acl2-doc-mode-map "D" 'acl2-doc-rendered-combined-download)
+(define-key acl2-doc-mode-map "D" 'acl2-doc-download)
 (define-key acl2-doc-mode-map "\t" 'acl2-doc-tab)
 (define-key acl2-doc-mode-map (kbd "C-<tab>") 'acl2-doc-tab-back)
 (define-key acl2-doc-mode-map "H" 'acl2-doc-history)

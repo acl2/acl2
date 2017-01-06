@@ -10974,11 +10974,8 @@
 ; certification.
 
          (check-sum-obj
-          (if (not cert-data) ; for backward compatibility
-              (cons (cons cmds pre-alist-sysfile)
-                    (cons post-alist-sysfile expansion-alist))
-            (cons (cons cmds pre-alist-sysfile)
-                  (list* post-alist-sysfile expansion-alist cert-data)))))
+          (cons (cons cmds pre-alist-sysfile)
+                (list* post-alist-sysfile expansion-alist cert-data))))
         (t *trivial-book-hash*)))
 
 (defun include-book-alist-entry-p (entry sysfile-okp)
@@ -12809,15 +12806,10 @@
 ; only function is to assist in proofs for the Convert procedure of provisional
 ; certification.
 
-         (value (check-sum-obj
-                 (if (null cert-data) ; for backward compatibility
-                     (list* portcullis-cmds
-                            expansion-alist
-                            book-ev-lst)
-                   (list* portcullis-cmds
-                          expansion-alist
-                          book-ev-lst
-                          cert-data)))))
+         (value (check-sum-obj (list* portcullis-cmds
+                                      expansion-alist
+                                      book-ev-lst
+                                      cert-data))))
         (t (book-hash-alist full-book-name state))))
 
 ; For a discussion of early loading of compiled files for include-book, which

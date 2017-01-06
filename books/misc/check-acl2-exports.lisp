@@ -165,6 +165,11 @@
     TRANSLATE1-CMP
     TRANSLATE11
     VARIABLEP
+
+; Symbols below should probably be added to *acl2-exports*.
+
+    DEFAULT-STATE-VARS
+
     ))
 
 (defun missing-from-acl2-exports (wrld)
