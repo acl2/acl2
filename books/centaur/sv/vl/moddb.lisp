@@ -1550,20 +1550,23 @@ constructed separately.)</p>"
            (conn (if lhsp (sv::svex->lhs x.conn-svex) (sv::make-driver :value x.conn-svex))))
         (if range
             (b* ((size (vl-range-size range))
-                 (msb (vl-resolved->val (vl-range->msb range)))
-                 (incr (if (vl-range-revp range) 1 -1)))
+                 ;; LSB first since this is used to generate an svex-lhs in the
+                 ;; nonreplicated case and the order doesn't matter in the
+                 ;; replicated case.
+                 (lsb (vl-resolved->val (vl-range->lsb range)))
+                 (incr (if (vl-range-revp range) -1 1)))
               (if x.replicatedp
                   ;; connection aliased/assigned to each of the port array LHSes
                   (if lhsp
                       (mv (ok) nil (vl-instarray-replicated-port-aliases
-                                    x.port-lhs instname conn msb size incr))
+                                    x.port-lhs instname conn lsb size incr))
                     (mv (ok)
                         (vl-instarray-replicated-port-assigns
-                         x.port-lhs instname conn msb size incr)
+                         x.port-lhs instname conn lsb size incr)
                         nil))
                 ;; connection aliased or assigned to concatenation of port array LHSes
                 (b* ((port-lhs (vl-instarray-nonreplicated-port-lhs
-                                x.port-lhs instname msb size incr)))
+                                x.port-lhs instname lsb size incr)))
                   (if lhsp
                       (mv (ok) nil (list (cons conn port-lhs)))
                     (mv (ok) (list (cons port-lhs conn)) nil)))))
