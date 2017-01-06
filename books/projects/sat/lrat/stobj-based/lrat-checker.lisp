@@ -778,21 +778,21 @@
                 (not (equal (is-unit-clause$ clause a$) t)))
            (literalp$ (is-unit-clause$ clause a$) a$)))
 
-(defun formula-p$ (fal a$)
+(defun formula-p$ (formula a$)
 
 ; We recognize null-terminated fast-alists (applicative hash tables), such that
 ; that every index is bound to a clause or *deleted-clause*.
 
   (declare (xargs :stobjs a$ :guard (a$p a$)))
-  (if (atom fal)
-      (null fal)
-    (let ((pair (car fal)))
+  (if (atom formula)
+      (null formula)
+    (let ((pair (car formula)))
       (and (consp pair)
            (posp (car pair))
            (let ((val (cdr pair)))
              (or (deleted-clause-p val)
                  (clausep$ val a$)))
-           (formula-p$ (cdr fal) a$)))))
+           (formula-p$ (cdr formula) a$)))))
 
 (defthm clausep$-hons-assoc-equal
   (implies (and (formula-p$ formula a$)
@@ -2073,9 +2073,10 @@
   (declare (xargs :stobjs a$ ; not necessarily satisfying a$p
                   :guard (formula-p formula)
                   :verify-guards nil))
-  (let ((max-var (and (proofp proof)
-                      (proof-max-var proof
-                                     (formula-max-var formula 0)))))
+  (let* ((formula (make-fast-alist formula))
+         (max-var (and (proofp proof)
+                       (proof-max-var proof
+                                      (formula-max-var formula 0)))))
     (cond ((varp max-var)
            (let ((a$ (initialize-a$ max-var a$)))
              (mv-let (v a$)
@@ -2172,12 +2173,12 @@
            (equal (clause-max-var clause acc)
                   (max acc (clause-max-var-1 clause)))))
 
-(defun formula-max-var-1 (fal)
-  (cond ((atom fal) 0)
-        ((deleted-clause-p (cdar fal))
-         (formula-max-var-1 (cdr fal)))
-        (t (max (clause-max-var-1 (cdar fal))
-                (formula-max-var-1 (cdr fal))))))
+(defun formula-max-var-1 (formula)
+  (cond ((atom formula) 0)
+        ((deleted-clause-p (cdar formula))
+         (formula-max-var-1 (cdr formula)))
+        (t (max (clause-max-var-1 (cdar formula))
+                (formula-max-var-1 (cdr formula))))))
 
 (defthm formula-max-var-is-formula-max-var-1
   (implies (and (natp acc)

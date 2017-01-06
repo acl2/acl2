@@ -27,194 +27,942 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/bstar" :dir :system)
+(include-book "tools/bstar"      :dir :system)
+(include-book "limits")
 (include-book "lrat-checker")
-(program) ; because of (er soft ...), which calls the fmt functions
+; (include-book "misc/disassemble" :dir :system)
+
+; (ld "lrat-parser-char-by-char.lisp" :ld-pre-eval-print t)
+
+
+; Some miscellaneous definitions.
+
+(defmacro ! (x y)
+  (declare (xargs :guard (symbolp x)))
+  `(assign ,x ,y))
+
+(defmacro !! (variable new-value)
+  ;; Assign without printing the result.
+  (declare (xargs :guard t))
+  `(mv-let
+    (erp result state)
+    (assign ,variable ,new-value)
+    (declare (ignore result))
+    (value (if erp 'Error! ',variable))))
+
 (set-state-ok t)
 
-(defun read-to-0 (channel lst ctx state)
 
-; Extends lst by pushing values read until 0 is encountered.  However, if we
-; get end-of-file when lst is nil, then return :eof.  Closes channel if there
-; is an error.
+; Some helper events...
 
-  (b* (((mv eof val state)
-        (read-object channel state))
-       ((when eof)
-        (if (null lst)
-            (value :eof)
-          (pprogn
-           (close-input-channel channel state)
-           (er soft ctx
-               "Reached end-of-file before finding a terminating 0."))))
-       ((when (eql val 0))
-        (value lst)))
-    (read-to-0 channel (cons val lst) ctx state)))
+(defun firstn (n x)
+  (declare (xargs :guard (natp n)))
+  (if (atom x)
+      nil
+    (if (mbe :logic (zp n) :exec (<= n 0))
+        nil
+      (cons (car x)
+            (firstn (1- n) (cdr x))))))
 
-(defun parse-cnf-channel-first-line (channel ctx state)
+(defthm integer-listp-firstn
+  (implies (integer-listp l)
+           (integer-listp (firstn n l))))
 
-; E.g., the first line could be: p cnf 4 8.
+(defthm integer-listp-nth-cdr
+  (implies (integer-listp l)
+           (integer-listp (nthcdr s l))))
 
-  (flet ((eof-error (channel ctx state)
-                    (pprogn
-                     (close-input-channel channel state)
-                     (er soft ctx
-                         "End of file encountered.")))
-         (expected-error (channel index expected-string val ctx state)
-                         (pprogn
-                          (close-input-channel channel state)
-                          (er soft ctx
-                              "Expected ~n0 object to be ~s1, but ~
-                              it was: ~x2."
-                              (list index) expected-string val))))
-    (b* (((mv eof val state)
-          (read-object channel state))
-         ((when eof)
-          (eof-error channel ctx state))
-         ((unless (eq val 'p))
-          (expected-error channel 1 "`p'" val ctx state))
-         ((mv eof val state)
-          (read-object channel state))
-         ((when eof)
-          (eof-error channel ctx state))
-         ((unless (eq val 'cnf))
-          (expected-error channel 2 "`cnf'" val ctx state))
-         ((mv eof val state)
-          (read-object channel state))
-         ((when eof)
-          (eof-error channel ctx state))
-         ((unless (posp val))
-          (expected-error channel 3 "a positive integer" val ctx state))
-         ((mv eof val state)
-          (read-object channel state))
-         ((when eof)
-          (eof-error channel ctx state))
-         ((unless (posp val))
-          (expected-error channel 4 "a positive integer" val ctx state)))
-      (value nil))))
 
-(defun parse-cnf-channel-formula (channel index fal ctx state)
+(defun my-rev1 (x a)
+  (declare (xargs :guard (true-listp a)))
+  (if (atom x)
+      a
+    (my-rev1 (cdr x) (cons (car x) a))))
 
-; Warning: This function is responsible for closing the given input channel.
+(defthm true-listp-my-rev1
+  (implies (true-listp a)
+           (true-listp (my-rev1 x a))))
 
-  (b* (((er val)
-        (read-to-0 channel nil ctx state))
-       ((when (eq val :eof))
-        (pprogn
-         (close-input-channel channel state)
-         (value fal)))
-       (index (1+ index)))
-    (parse-cnf-channel-formula channel index
-                               (hons-acons index (reverse val) fal)
-                               ctx state)))
+(defthm nat-listp-my-rev1
+  (implies (and (nat-listp x)
+                (nat-listp a))
+           (nat-listp (my-rev1 x a))))
 
-(defun parse-cnf-channel (channel ctx state)
+(defthm integer-listp-my-rev1
+  (implies (and (integer-listp x)
+                (integer-listp a))
+           (integer-listp (my-rev1 x a))))
 
-; Warning: This function is responsible for closing the given input channel.
+(defun my-rev (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (my-rev1 x nil)))
 
-  (er-progn (parse-cnf-channel-first-line channel ctx state)
-            (parse-cnf-channel-formula channel 0 nil ctx state)))
+(defthm true-listp-my-rev
+  (true-listp (my-rev x)))
 
-(defun parse-cnf-file (cnf-file state)
-  (b* ((ctx (cons 'parse-cnf-file cnf-file))
-       ((mv channel state)
-        (open-input-channel cnf-file :object state))
-       ((when (null channel))
-        (er soft ctx
-            "Unable to open file ~x0 for input."
-            cnf-file)))
-    (parse-cnf-channel channel ctx state)))
+(defthm nat-listp-my-rev
+  (implies (nat-listp x)
+           (nat-listp (my-rev x))))
 
-(defun split-to-negp (lst acc)
-  (cond ((endp lst) (mv nil acc nil))
-        ((< (car lst) 0)
-         (mv (car lst) acc (cdr lst)))
-        (t (split-to-negp (cdr lst) (cons (car lst) acc)))))
+(defthm integer-listp-my-rev
+  (implies (integer-listp x)
+           (integer-listp (my-rev x))))
 
-(defun make-add-step-1 (lst drat-hints)
-  (cond ((endp lst) (mv nil (reverse drat-hints)))
-        (t (mv-let (minus-e indices rest)
-             (split-to-negp lst nil)
-             (cond ((null minus-e)
-                    (assert$ (null rest)
-                             (mv indices (reverse drat-hints))))
-                   (t (make-add-step-1 rest
-                                       (cons (cons (- minus-e) indices)
-                                             drat-hints))))))))
+(in-theory (disable my-rev))
 
-(defun make-add-step (j clause val2)
 
-; We want to make an add step for the given clause index, j, after having
-; parsed this line:
+(defun-inline char-to-nat (ch)
+  (declare (xargs :guard (characterp ch)))
 
-;  j l1 l2 ... lk 0 d1 d2 ... dm -e1 f11 ... f1{m_1} -e2 f21 ... f2{m_2} ... 0
+; Returns the integer from 0 to 9 if one corresponds to ch, else nil.
 
-; Val is the list (l1 ... lk), and val2 is the reverse of the items between the
-; two zeros.  Recall that drat-hints needs to be in order of decreasing clause
-; index.
+  (let ((code (u59 (char-code ch))))
+    (and (>= code 48)
+         (<= code 57)
+         (- code 48))))
 
-  (mv-let (rup-indices drat-hints)
-    (make-add-step-1 val2 nil)
-    (make add-step
-          :index j
-          :clause clause
-          :rup-indices rup-indices
-          :drat-hints drat-hints)))
+(defthm natp-or-null-char-to-nat
+  (or (natp (char-to-nat ch))
+      (null (char-to-nat ch)))
+  :rule-classes :type-prescription)
 
-(defun parse-lrat-line (channel ctx state)
+(defthm natp-char-to-nat
+  (implies (char-to-nat ch)
+           (natp (char-to-nat ch))))
 
-; Returns a proof-entry-p.
+(defthm char-to-nat-is-less-than-10
+  (implies (char-to-nat ch)
+           (< (char-to-nat ch) 10))
+  :rule-classes :linear)
 
-  (b* (((er val0)
-        (read-to-0 channel nil ctx state))
-       ((when (eq val0 :eof))
-        (value :eof))
-       ((when (null val0))
-        (pprogn
-         (close-input-channel channel state)
-         (er soft ctx
-             "Found empty first part of addition step.")))
-       (val (reverse val0))
-       ((when (eq (cadr val) 'd))
-        (value (cons t ; flag the deletion
-                     (cddr val))))
-       ((cons j clause) val)
-       ((er val2)
-        (read-to-0 channel nil ctx state))
-       ((when (eq val2 :eof))
-        (pprogn
-         (close-input-channel channel state)
-         (er soft ctx
-             "Missing the second part of addition step for index #~x0."
-             j))))
-    (value (make-add-step j clause val2))))
+(in-theory (disable char-to-nat))
 
-(defun parse-lrat-channel (channel ctx state step-lst)
+(defun lrat-guard (str len pos)
+  (declare (xargs :guard t))
+  (and (stringp str)
+       (natp pos)
+       (natp len)
+       (equal len (length str))
+       (< pos len)
+       ;;     *2^56*
+       (< len 72057594037927936)))
 
-; Warning: This function is responsible for closing the given input channel.
+(defun lrat-flg-nat1 (str len pos n) ; Returns (mv pos-or-nil nat)
+  (declare (xargs :guard (and (lrat-guard str len pos)
+                              (natp n)
+                              (< n *2^56*))
+                  :measure (nfix (- len pos))))
+  (let* ((len (u56 len))
+         (pos (u56 pos))
+         (n   (u56 n))
+         (ch  (char str pos))
+         (digit (char-to-nat ch)))
+    (if (null digit)
+        (mv pos n)
+      (let ((pos+1 (u59 (1+ pos))))
+        (if (mbe :logic (zp (- len pos+1))
+                 :exec  (>= pos+1 len))
+            (mv nil 0)
+          (if (not (< n 4503599627370496)) ; *2^52*
+              (mv nil 0)
+            (let* ((10n+digit (u56 (+ (u04 digit) (u56 (* n 10))))))
+              (lrat-flg-nat1 str len pos+1 10n+digit))))))))
 
-  (b* (((er step)
-        (parse-lrat-line channel ctx state))
-       ((when (eq step :eof))
-        (pprogn
-         (close-input-channel channel state)
-         (value (reverse step-lst)))))
-    (parse-lrat-channel channel ctx state (cons step step-lst))))
+(defthm integerp-lrat-flg-nat1
+  (implies (and (natp pos)
+                (car (lrat-flg-nat1 str len pos n)))
+           (integerp (car (lrat-flg-nat1 str len pos n))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)
+    :induct (lrat-flg-nat1 str len pos n))))
 
-(defun parse-lrat-file (lrat-file state)
-  (b* ((ctx (cons 'parse-lrat-file lrat-file))
-       ((mv channel state)
-        (open-input-channel lrat-file :object state))
-       ((when (null channel))
-        (er soft ctx
-            "Unable to open input file ~x0 for input."
-            lrat-file)))
-    (parse-lrat-channel channel ctx state nil)))
+(defthm natp-lrat-flg-nat1
+  (implies (and (natp pos)
+                (car (lrat-flg-nat1 str len pos n)))
+           (<= 0 (car (lrat-flg-nat1 str len pos n))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)
+    :induct (lrat-flg-nat1 str len pos n)))
+  :rule-classes :linear)
+
+(defthm pos-has-increased-lrat-flg-nat1
+  (implies (and (char-to-nat (char str pos))
+                (car (lrat-flg-nat1 str len pos n)))
+           (< pos (car (lrat-flg-nat1 str len pos n)))))
+
+(defthm pos-has-increased-lrat-flg-nat1-1
+  (implies (and (char-to-nat (char str pos1))
+                (natp pos)
+                (<= pos pos1)
+                (car (lrat-flg-nat1 str len pos1 n)))
+           (< pos (car (lrat-flg-nat1 str len pos1 n)))))
+
+(defthm car-lrat-flag-nat1-less-than-len
+  (implies (and (lrat-guard str len pos)
+                 (car (lrat-flg-nat1 str len pos n)))
+           (< (car (lrat-flg-nat1 str len pos n)) len))
+  :hints
+  (("Goal"
+    :in-theory (disable length)
+    :induct (lrat-flg-nat1 str len pos n))))
+
+(encapsulate
+  ()
+  (local
+   (defthm mv-nth-1-natp-lrat-flg-nat1
+     (implies (and (natp n)
+                   (car (lrat-flg-nat1 str len pos n)))
+              (natp (mv-nth 1 (lrat-flg-nat1 str len pos n))))))
+
+  (defthm integerp-mv-nth-1-natp-lrat-flg-nat1
+    (implies (and (natp n)
+                  (car (lrat-flg-nat1 str len pos n)))
+             (integerp (mv-nth 1 (lrat-flg-nat1 str len pos n)))))
+
+  (defthm ge-0-mv-nth-1-natp-lrat-flg-nat1
+    (implies (and (natp n)
+                  (car (lrat-flg-nat1 str len pos n)))
+             (<= 0 (mv-nth 1 (lrat-flg-nat1 str len pos n))))))
+
+(defthm mv-nth1-lrat-flg-nat1-less-than-*2^56*
+  (implies (and (natp n)
+                (< n *2^56*)
+                (car (lrat-flg-nat1 str len pos n)))
+           (< (mv-nth 1 (lrat-flg-nat1 str len pos n)) *2^56*))
+  :hints
+  (("Goal"
+    :in-theory (disable length)
+    :induct (lrat-flg-nat1 str len pos n))))
+
+(in-theory (disable lrat-flg-nat1))
+
+
+(defun lrat-flg-nat (str len pos) ; Returns (mv pos-or-nil nat)
+  (declare (xargs :guard (lrat-guard str len pos)))
+
+; Requires that at least one decimal digit is found; reads until non nat digit.
+; Returns (mv POS N), POS points just after NAT, N is the natural number read.
+
+  (b* ((ch (char str pos))
+       ((unless (char-to-nat ch)) (mv nil 0)))
+    (lrat-flg-nat1 str len pos 0)))
+
+(defthm integerp-lrat-flg-nat
+  (implies (and (natp pos)
+                (car (lrat-flg-nat str len pos)))
+           (integerp (car (lrat-flg-nat str len pos))))
+  :hints
+  (("Goal"
+    :in-theory (disable length))))
+
+(defthm natp-lrat-flg-nat
+  (implies (and (natp pos)
+                (car (lrat-flg-nat str len pos)))
+           (<= 0 (car (lrat-flg-nat str len pos))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)))
+  :rule-classes :linear)
+
+(defthm pos-has-increased-lrat-flg-nat
+  (implies (car (lrat-flg-nat str len pos))
+           (< pos (car (lrat-flg-nat str len pos)))))
+
+(defthm pos-has-increased-lrat-flg-nat-1
+  (implies (and (natp pos)
+                (<= pos pos1)
+                (car (lrat-flg-nat str len pos1)))
+           (< pos (car (lrat-flg-nat str len pos1)))))
+
+(defthm car-lrat-flag-nat-less-than-len
+  (implies (and (lrat-guard str len pos)
+                (car (lrat-flg-nat str len pos)))
+           (< (car (lrat-flg-nat str len pos)) len)))
+
+(encapsulate
+  ()
+  (local
+   (defthm mv-nth-1-natp-lrat-flg-nat
+     (implies (car (lrat-flg-nat str len pos))
+              (natp (mv-nth 1 (lrat-flg-nat str len pos))))))
+
+  (defthm integerp-mv-nth-1-lrat-flg-nat
+    (implies (car (lrat-flg-nat str len pos))
+             (integerp (mv-nth 1 (lrat-flg-nat str len pos))))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (disable mv-nth lrat-flg-nat)
+             :use ((:instance mv-nth-1-natp-lrat-flg-nat
+                              (str str) (len len) (pos pos))))))
+
+  (defthm ge-0-mv-nth-1-lrat-flg-nat
+    (implies (car (lrat-flg-nat str len pos))
+             (<= 0 (mv-nth 1 (lrat-flg-nat str len pos))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (disable mv-nth lrat-flg-nat)
+             :use ((:instance mv-nth-1-natp-lrat-flg-nat
+                              (str str) (len len) (pos pos)))))))
+
+(defthm mv-nth1-lrat-flg-nat-less-than-*2^56*
+  (implies (car (lrat-flg-nat str len pos))
+           (< (mv-nth 1 (lrat-flg-nat str len pos))
+              *2^56*)))
+
+(in-theory (disable lrat-flg-nat))
+
+
+(defun lrat-flg-int (str len pos) ; Returns (mv pos-or-nil int)
+  (declare (xargs :guard (lrat-guard str len pos)))
+  (b* ((ch (char str pos)))
+    (if (eql ch #\-)
+        (b* ((pos   (u56     pos))
+             (len   (u56     len))
+             (pos+1 (u59 (1+ pos)))
+             ((unless (< pos+1 len)) (mv nil 0))
+             ((mv pos-after-nat num) (lrat-flg-nat str len pos+1))
+             ((unless pos-after-nat) (mv nil 0))
+             ;; ((unless (< pos pos-after-nat)) (mv nil 0))
+             (num (u56 num))
+             )
+          (mv pos-after-nat (- num)))
+      (lrat-flg-nat str len pos))))
+
+(defthm integerp-lrat-flg-int
+  (implies (and (natp pos)
+                (car (lrat-flg-nat str len pos)))
+           (integerp (car (lrat-flg-nat str len pos))))
+  :hints
+  (("Goal"
+    :in-theory (disable length))))
+
+(defthm natp-lrat-flg-int
+  (implies (and (natp pos)
+                (car (lrat-flg-int str len pos)))
+           (<= 0 (car (lrat-flg-int str len pos))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)))
+  :rule-classes :linear)
+
+(defthm pos-has-increased-lrat-flg-int-1
+  (implies (and (natp pos)
+                (<= pos pos1)
+                (car (lrat-flg-int str len pos1)))
+           (< pos (car (lrat-flg-int str len pos1)))))
+
+(defthm car-lrat-flag-int-less-than-len
+  (implies (and (lrat-guard str len pos)
+                (or (car (lrat-flg-int str len pos))
+                    (integerp (lrat-flg-int str len pos))))
+           (< (car (lrat-flg-int str len pos)) len)))
+
+(defthm mv-nth-1-natp-lrat-flg-int
+  (implies (car (lrat-flg-int str len pos))
+           (integerp (mv-nth 1 (lrat-flg-int str len pos))))
+  :rule-classes (:rewrite :type-prescription))
+
+(encapsulate
+  ()
+  (local
+   (defthm ONE-TIME-MATH-FACT
+     ;; Note, this is also true without the INTEGERP hypotheses
+     (implies (and (integerp i)
+                   (integerp n))
+              (iff (< (- i) (- n))
+                   (< n i)))
+     ;; By using IFF (instead of EQUAL), linear arithmetic is given
+     ;; the chance to work -- which it does; otherwise, it fails.
+     :rule-classes ((:rewrite :corollary
+                              (implies (and (integerp i)
+                                            (integerp n))
+                                       (equal (< (- i) (- n))
+                                              (< n i)))))))
+
+  (defthm mv-nth1-lrat-flg-int-abs-less-than-*2^56*
+    (implies (car (lrat-flg-int str len pos))
+             (and (< (- *2^56*) (mv-nth 1 (lrat-flg-int str len pos)))
+                  (< (mv-nth 1 (lrat-flg-int str len pos)) *2^56*)))
+    :hints
+    (("Goal" :do-not-induct t))))
+
+(in-theory (disable lrat-flg-int))
+
+
+(defun lrat-flg-pos-skip-spaces (str len pos) ; Returns pos
+  (declare (xargs :guard (lrat-guard str len pos)
+                  :measure (nfix (- len pos))))
+
+; Skip space characters, leave POS at first non-space character
+
+  (b* ((ch (char str pos))
+       ((when (not (eql ch #\Space))) pos)
+       (len (u56 len))
+       (pos (u56 pos))
+       (pos+1 (u56 (1+ pos))))
+    (if (mbe :logic (zp (- len pos+1))
+             :exec  (>= pos+1 len))
+        pos
+      (lrat-flg-pos-skip-spaces str len pos+1))))
+
+(encapsulate
+  ()
+  (local
+   (defthm natp-lrat-flg-pos-skip-spaces
+     (implies (natp pos)
+              (natp (lrat-flg-pos-skip-spaces str len pos)))))
+
+  (defthm integerp-lrat-flg-pos-skip-spaces
+    (implies (integerp pos) ; (natp pos)
+             (integerp (lrat-flg-pos-skip-spaces str len pos)))
+    :rule-classes :type-prescription)
+
+  (defthm ge-0-lrat-flg-pos-skip-spaces
+    (implies (natp pos)
+             (<= 0 (lrat-flg-pos-skip-spaces str len pos)))
+    :rule-classes (:rewrite :linear)))
+
+(defthm pos-fact-lrat-flg-pos-skip-spaces
+  (<= pos (lrat-flg-pos-skip-spaces str len pos))
+  :rule-classes (:rewrite :linear))
+
+(defthm lrat-flg-pos-skip-spaces-<-length-str
+  (implies (lrat-guard str len pos)
+           (< (lrat-flg-pos-skip-spaces str len pos)
+              len))
+  :hints
+  (("Goal"
+    :in-theory (enable nth)
+    :induct (lrat-flg-pos-skip-spaces len pos n))))
+
+(defthm lrat-flg-pos-skip-spaces-<-*2^56*
+  (implies (and (equal limit *2^56*)
+                (lrat-guard str len pos))
+           (< (lrat-flg-pos-skip-spaces str len pos) limit))
+  :hints
+  (("Goal"
+    :in-theory (enable nth)
+    :induct (lrat-flg-pos-skip-spaces len pos n))))
+
+(in-theory (disable lrat-flg-pos-skip-spaces))
+
+
+; NAT reader
+
+(defun lrat-flg-nat-list-until-0 (str len pos lst cnt) ; Returns (mv pos-or-nil nat-list)
+  (declare (xargs :guard (and (lrat-guard str len pos)
+                              (true-listp lst)
+                              (natp cnt)
+                              (<= cnt len))
+                  :guard-hints
+                  (("Goal"
+                    :in-theory (disable length car-lrat-flag-nat-less-than-len)
+                    :use
+                    ((:instance car-lrat-flag-nat-less-than-len
+                                (str str)
+                                (len (length str))
+                                (pos (lrat-flg-pos-skip-spaces str (length str) pos)))
+                                     )))
+                  :measure (acl2-count cnt)))
+
+; Read list of nats until "0" found; return list
+
+  (b* ((pos (u59 pos))
+       (pos-after-spaces (lrat-flg-pos-skip-spaces str len pos))
+       ((unless (integerp pos-after-spaces)) (mv nil nil))
+       (pos-after-spaces (u56 pos-after-spaces))
+
+       ((mv pos-after-nat nat-read) (lrat-flg-nat str len pos-after-spaces))
+       ((unless (integerp pos-after-nat)) (mv nil nil))
+
+       (pos-after-nat (u59 pos-after-nat))
+       (nat-read (u56 nat-read))
+
+       ((if (= nat-read 0)) (mv pos-after-nat (my-rev lst)))
+
+       ((unless (< pos pos-after-nat)) (mv nil nil))
+       (len (u59 len))
+       (cnt (u59 cnt))
+       (cnt-1 (1- cnt)))
+
+    (if (mbe :logic (zp cnt) :exec (<= cnt 0))
+        (mv nil nil) ; Use information about POS-AFTER-NAT to remove CNT.
+      (lrat-flg-nat-list-until-0
+       str len pos-after-nat (cons nat-read lst) cnt-1))))
+
+
+(defthm integerp-lrat-flg-nat-list-until-0
+  (implies (and (natp pos)
+                (car (lrat-flg-nat-list-until-0 str len pos lst cnt)))
+           (integerp (car (lrat-flg-nat-list-until-0 str len pos lst cnt))))
+  :hints
+  (("Goal"
+    :in-theory (disable length))))
+
+(defthm natp-lrat-flg-nat-list-until-0
+  (implies (and (natp pos)
+                (car (lrat-flg-nat-list-until-0 str len pos lst cnt)))
+           (<= 0 (car (lrat-flg-nat-list-until-0 str len pos lst cnt))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)))
+  :rule-classes :linear)
+
+(defthm pos-has-increased-lrat-flg-nat-list-until-0
+  (implies (and (natp pos)
+                (<= pos pos1)
+                (car (lrat-flg-nat-list-until-0 str len pos1 lst cnt)))
+           (< pos (car (lrat-flg-nat-list-until-0 str len pos1 lst cnt)))))
+
+#||
+(defthm car-lrat-flag-nat-list-until-0-less-than-len
+  ;; May need to augment the definition
+  (implies (and (lrat-guard str len pos)
+                (car (lrat-flg-nat-list-until-0 str len pos lst cnt)))
+           (< (car (lrat-flg-nat-list-until-0 str len pos lst cnt)) len)))
+||#
+
+(defthm nat-listp-lrat-flg-nat-list-until-0
+  (implies (nat-listp lst)
+           (nat-listp (mv-nth 1 (lrat-flg-nat-list-until-0 str len pos lst cnt)))))
+
+(in-theory (disable lrat-flg-nat-list-until-0))
+
+
+; INTEGER reader
+
+(defun lrat-flg-int-list-until-0 (str len pos lst cnt) ; Returns (mv pos-or-nil int-list)
+  (declare (xargs :guard (and (lrat-guard str len pos)
+                              (true-listp lst)
+                              (natp cnt)
+                              (<= cnt len))
+                  :guard-hints
+                  (("Goal"
+                    :in-theory (disable length car-lrat-flag-int-less-than-len)
+                    :use
+                    ((:instance car-lrat-flag-int-less-than-len
+                                (str str)
+                                (len (length str))
+                                (pos (lrat-flg-pos-skip-spaces str (length str) pos)))
+                     (:instance mv-nth1-lrat-flg-int-abs-less-than-*2^56*
+                                (str str)
+                                (len (length str))
+                                (pos (lrat-flg-pos-skip-spaces str (length str) pos))))))
+                  :measure (acl2-count cnt)))
+
+; Read list of ints until "0" found; return list
+
+  (b* ((pos (u59 pos))
+       (pos-after-spaces (lrat-flg-pos-skip-spaces str len pos))
+       ((unless (integerp pos-after-spaces)) (mv nil nil))
+       (pos-after-spaces (u56 pos-after-spaces))
+
+       ((mv pos-after-int int-read) (lrat-flg-int str len pos-after-spaces))
+       ((unless (integerp pos-after-int)) (mv nil nil))
+
+       (pos-after-int (u59 pos-after-int))
+       (int-read (s57 int-read))
+
+       ((if (= int-read 0)) (mv pos-after-int (my-rev lst)))
+
+       (len (u59 len))
+       (cnt (u59 cnt))
+       (cnt-1 (1- cnt)))
+
+    (if (mbe :logic (zp cnt) :exec (<= cnt 0))
+        (mv nil nil) ; Use information about POS-AFTER-INT to remove CNT.
+      (lrat-flg-int-list-until-0
+       str len pos-after-int (cons int-read lst) cnt-1))))
+
+(defthm integerp-lrat-flg-int-list-until-0
+  (implies (and (natp pos)
+                (car (lrat-flg-int-list-until-0 str len pos lst cnt)))
+           (integerp (car (lrat-flg-int-list-until-0 str len pos lst cnt))))
+  :hints
+  (("Goal"
+    :in-theory (disable length))))
+
+(defthm natp-lrat-flg-int-list-until-0
+  (implies (and (natp pos)
+                (car (lrat-flg-int-list-until-0 str len pos lst cnt)))
+           (<= 0 (car (lrat-flg-int-list-until-0 str len pos lst cnt))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)))
+  :rule-classes :linear)
+
+#||
+(defthm pos-has-increased-lrat-flg-int-list-until-0
+  (implies (and (natp pos)
+                (<= pos pos1)
+                (car (lrat-flg-int-list-until-0 str len pos1 lst cnt)))
+           (< pos (car (lrat-flg-int-list-until-0 str len pos1 lst cnt)))))
+
+(defaxiom car-lrat-flag-int-list-until-0-less-than-len
+  ;; May need to augment the definition
+  (implies (and (lrat-guard str len pos)
+                (car (lrat-flg-int-list-until-0 str len pos lst cnt)))
+           (< (car (lrat-flg-int-list-until-0 str len pos lst cnt)) len)))
+||#
+
+(defthm int-listp-lrat-flg-int-list-until-0
+  (implies (integer-listp lst)
+           (integer-listp (mv-nth 1 (lrat-flg-int-list-until-0 str len pos lst cnt)))))
+
+
+; INTEGER list reader until 0 or "-" reader
+
+(defun lrat-flg-int-list-until-0-or-- (str len pos lst cnt) ; Returns (mv pos-or-nil int-list)
+  (declare (xargs :guard (and (lrat-guard str len pos)
+                              (true-listp lst)
+                              (natp cnt)
+                              (<= cnt len))
+                  :guard-hints
+                  (("Goal"
+                    :in-theory (disable length car-lrat-flag-int-less-than-len)
+                    :use
+                    ((:instance car-lrat-flag-int-less-than-len
+                                (str str)
+                                (len (length str))
+                                (pos (lrat-flg-pos-skip-spaces str (length str) pos)))
+                     (:instance mv-nth1-lrat-flg-int-abs-less-than-*2^56*
+                                (str str)
+                                (len (length str))
+                                (pos (lrat-flg-pos-skip-spaces str (length str) pos))))))
+                  :measure (acl2-count cnt)))
+
+; Read list of ints until "-" or "0" found; return list
+
+  (b* ((pos (u59 pos))
+       (pos-after-spaces (lrat-flg-pos-skip-spaces str len pos))
+       ((unless (integerp pos-after-spaces)) (mv nil nil))
+       (pos-after-spaces (u56 pos-after-spaces))
+
+       ;; Exit if "-" character discovered, leave POS just after "-" character
+       (ch (char str pos-after-spaces))
+
+       ((if (eql #\- ch))
+        (b* ((pos-after-spaces+1 (1+ (u56 pos-after-spaces))))
+             (if (not (and (< pos pos-after-spaces+1)
+                           (< pos-after-spaces+1 len)))
+                 (mv pos nil)
+               (mv pos-after-spaces+1 (my-rev lst)))))
+
+       ((mv pos-after-int int-read) (lrat-flg-int str len pos-after-spaces))
+       ((unless (integerp pos-after-int)) (mv nil nil))
+
+       (len (u59 len))
+       ((unless (< pos-after-int len)) (mv nil nil))
+
+       (pos-after-int (u59 pos-after-int))
+       (int-read (s57 int-read))
+
+       ;; Exit when 0 read
+       ((if (= int-read 0)) (mv pos-after-int (my-rev lst)))
+
+       (cnt (u59 cnt))
+       (cnt-1 (1- cnt)))
+
+    (if (mbe :logic (zp cnt) :exec (<= cnt 0))
+        (mv nil nil) ; Use information about POS-AFTER-INT to remove CNT.
+      (lrat-flg-int-list-until-0-or--
+       str len pos-after-int (cons int-read lst) cnt-1))))
+
+
+(defthm integerp-lrat-flg-int-list-until-0-or--
+  (implies (and (natp pos)
+                (car (lrat-flg-int-list-until-0-or-- str len pos lst cnt)))
+           (integerp (car (lrat-flg-int-list-until-0-or-- str len pos lst cnt))))
+  :hints
+  (("Goal"
+    :in-theory (disable length))))
+
+(defthm natp-lrat-flg-int-list-until-0-or--
+  (implies (and (natp pos)
+                (car (lrat-flg-int-list-until-0-or-- str len pos lst cnt)))
+           (<= 0 (car (lrat-flg-int-list-until-0-or-- str len pos lst cnt))))
+  :hints
+  (("Goal"
+    :in-theory (disable length)))
+  :rule-classes :linear)
+
+#||
+(defthm pos-has-increased-lrat-flg-int-list-until-0-or--
+  (implies (and (natp pos)
+                (<= pos pos1)
+                (car (lrat-flg-int-list-until-0-or-- str len pos1 lst cnt)))
+           (< pos (car (lrat-flg-int-list-until-0-or-- str len pos1 lst cnt)))))
+
+||#
+
+(defthm car-lrat-flag-int-list-until-0-or---less-than-len
+  (implies (and (lrat-guard str len pos)
+                (car (lrat-flg-int-list-until-0-or-- str len pos lst cnt)))
+           (< (car (lrat-flg-int-list-until-0-or-- str len pos lst cnt)) len))
+  :hints
+  (("Goal"
+    :in-theory (disable length))
+   ("Subgoal *1/3"
+    :in-theory (disable car-lrat-flag-int-less-than-len)
+    :use
+    ((:instance
+      car-lrat-flag-int-less-than-len
+      (str str)
+      (len (length str))
+      (pos (lrat-flg-pos-skip-spaces str (length str) pos)))))))
+
+(defthm int-listp-lrat-flg-int-list-until-0-or--
+  (implies (integer-listp lst)
+           (integer-listp (mv-nth 1 (lrat-flg-int-list-until-0-or-- str len pos lst cnt)))))
+
+(in-theory (disable lrat-flg-int-list-until-0-or--))
+
+
+(defun lrat-flg-int-rev-list-of-lists-until-0-or-- (str len pos lst cnt)
+
+; Returns (mv pos-or-nil list-of-int-list)
+
+  (declare (xargs :guard (and (lrat-guard str len pos)
+                              (true-listp lst)
+                              (natp cnt)
+                              (<= cnt len))
+                  :measure (acl2-count cnt)))
+  (b* ((ch (char str pos))
+       ((if (eql #\Newline ch)) (mv pos lst))
+       ((mv pos-after-int-list int-list)
+        (lrat-flg-int-list-until-0-or-- str len pos nil len))
+
+       ((unless (and (integerp pos-after-int-list)
+                     (< pos-after-int-list 72057594037927936)))
+        (mv nil nil))
+
+       (pos (u59 pos))
+       (pos-after-int-list (u59 pos-after-int-list))
+       ((unless (< pos pos-after-int-list)) (mv nil nil))
+
+       (cnt (u59 cnt))
+       (cnt-1 (s60 (1- cnt))))
+
+    (if (mbe :logic (zp cnt) :exec (<= cnt 0))
+        (mv nil nil) ; Use information about POS-AFTER-INT to remove CNT.
+      (lrat-flg-int-rev-list-of-lists-until-0-or--
+       str len pos-after-int-list (cons int-list lst) cnt-1))))
+
+
+(defun lrat-line-mv (str len pos)
+  (declare (xargs :guard (lrat-guard str len pos)
+                  :guard-hints
+                  (("Goal"
+                    :in-theory (disable length)))))
+
+; Expects POS at beginning of line
+; Leaves  POS at \#Newline or :eof
+; Reads next line or returns NIL.
+
+  (b* ((pos (u59 pos))
+       ((mv pos-after-line-number proof-step)
+        (lrat-flg-nat str len pos))
+       ;; Good line number?
+       (in-bounds (and (integerp pos-after-line-number)
+                       (< pos-after-line-number 72057594037927936)))
+       ((unless in-bounds) (mv nil nil))
+       (pos-after-line-number (u59 pos-after-line-number))
+
+       (ch (char str pos-after-line-number))
+       ((unless (eql ch #\Space)) (mv nil nil))
+
+       ;; Step over space
+       (pos-after-line-number+1 (u59 (1+ pos-after-line-number)))
+       (len (u59 len))
+       ((unless (< pos-after-line-number+1 len)) (mv nil nil))
+
+       (ch (char str pos-after-line-number+1)))
+
+    (if (eql ch #\d)
+
+        ;; proof-step d <nat>* 0
+        ;; Deletion:  (cons T <nat>*)
+        (b* ((pos-after-line-number+2 (1+ pos-after-line-number+1))
+             ((unless (< pos-after-line-number+2 len)) (mv nil nil))
+             (ch (char str pos-after-line-number+2))
+             ((unless (eql ch #\Space)) (mv nil nil))
+
+             ;; Step over space
+             (pos-after-line-number+3 (1+ pos-after-line-number+2))
+             ((unless (< pos-after-line-number+3 len)) (mv nil nil))
+
+             ((mv pos-after-nat-list nat-list)
+              (lrat-flg-nat-list-until-0 str len pos-after-line-number+3 nil len))
+             ((unless pos-after-nat-list) (mv nil nil))
+             )
+          (mv pos-after-nat-list (cons t nat-list)))
+
+      ;; proof-step int* 0 <nats-until-0-or-first-neg-number> <negative-int nat*|0>*
+      ;; Addition:  (list proof-step <list-of-ints> (rev <list-of-ints>))
+
+      (b* (((mv pos-after-int-list-1 int-list-1)
+            (lrat-flg-int-list-until-0 str len pos-after-line-number+1 nil len))
+           ((unless (and (integerp pos-after-int-list-1)
+                         (< pos-after-int-list-1 len)))
+            (mv nil nil))
+
+           ((mv pos-after-int-list-2 int-list-2)
+            (lrat-flg-int-list-until-0-or--
+             str len pos-after-int-list-1 nil len))
+           ((unless pos-after-int-list-2)
+            (mv nil nil))
+
+           ((mv pos-after-int-list-3 int-list-3)
+            (lrat-flg-int-rev-list-of-lists-until-0-or--
+             str len pos-after-int-list-2 nil len))
+           ((unless pos-after-int-list-3)
+            (mv nil nil))
+
+           ;; Put the answer together
+           (ans (cons (cons proof-step int-list-1)
+                      (cons int-list-2 int-list-3))))
+
+        (mv pos-after-int-list-3 ans)))))
+
+(in-theory (disable lrat-line-mv))
+
+
+(defun lrat-str (str len pos cnt rev-lines)
+  (declare (xargs :guard (and (stringp str)
+                              (natp pos)
+                              (natp len)
+                              (equal len (length str))
+                              (<= pos len)
+                              (< len 72057594037927936)
+                              (natp cnt))
+                  :measure (acl2-count cnt)))
+
+  (if (>= pos len)
+      nil
+    (b* (((mv pos-after-line line) (lrat-line-mv str len pos))
+         ((unless (natp pos-after-line)) nil)
+         ;; ((unless (< pos pos-after-line)) nil) ; when measure with pos
+         ((unless (< pos-after-line len)) nil)
+         ;; pos-after-line points to #\Newline or :EOF
+         (ch (char str pos-after-line))
+         ((unless (eql ch #\Newline)) nil)
+         (pos-after-line+1 (1+ pos-after-line))
+
+         ;; End of file
+         ((unless (< pos-after-line+1 len)) (cons line rev-lines))
+         ((if (mbe :logic (zp cnt) :exec (<= cnt 0)))
+          nil))
+      (lrat-str str len pos-after-line+1 (1- cnt) (cons line rev-lines)))))
+
+(in-theory (disable lrat-str))
+
+(defun lrat-read-file (file-name state)
+  (declare (xargs :guard (stringp file-name)
+                  :guard-hints
+                  (("Goal" :in-theory (disable read-file-into-string)))
+                  :verify-guards nil
+                  :stobjs state))
+  (b* (; ((unless (state-p1 state)) nil)
+       (str (read-file-into-string file-name state))
+       (len (length str))
+       ((unless (lrat-guard str len 0)) NIL)
+       (ans (my-rev (lrat-str str len 0 len nil))))
+    ans))
+
+
+(defun pos-to-eol+1 (str len pos)
+  (declare (xargs :guard (lrat-guard str len pos)
+                  :measure (nfix (- len pos))))
+  (b* ((ch (char str pos))
+       ((unless (< pos 72057594037927936)) len)
+
+       (pos+1 (1+ (u56 pos)))
+       ((if (eql ch #\Newline)) pos+1)
+
+       (len (u56 len))
+       ((if (mbe :logic (zp (- len pos+1))
+                 :exec  (>= pos+1 len)))
+        len))
+    (pos-to-eol+1 str len pos+1)))
+
+(defthm natp-pos-to-eol+1
+  (implies (and (natp pos)
+                (natp len))
+           (<= 0 (pos-to-eol+1 str len pos))))
+
+(defthm pos-to-eol+1-is-limited
+  (implies (lrat-guard str len pos)
+           (< (pos-to-eol+1 str len pos) 72057594037927936))
+  :hints
+  (("Goal"
+    :induct (pos-to-eol+1 str len pos))))
+
+(defun cnf-str (str len pos cnt line-num rev-lines)
+  (declare (xargs :guard (and (stringp str)
+                              (natp pos)
+                              (natp len)
+                              (equal len (length str))
+                              (< pos len)
+                              (< len 72057594037927936)
+                              (natp cnt)
+                              (< cnt len)
+                              (natp line-num))
+                  :guard-hints
+                  (("Goal"
+                    :in-theory (disable length)))
+                  :measure (acl2-count cnt)
+                  )
+           (ignorable rev-lines))
+  (b* (((mv pos-after-line int-list)
+        (lrat-flg-int-list-until-0 str len pos nil cnt))
+       ((unless (integerp pos-after-line)) nil)
+       ((unless (< pos-after-line len)) nil)
+
+       (int-list (cons line-num int-list))  ; Include line number
+
+       (pos-at-eol+1 (pos-to-eol+1 str len pos-after-line))
+
+       ((unless (integerp pos-at-eol+1)) nil)
+       ;; check for last entry
+       ((if (= pos-at-eol+1 len)) (cons int-list rev-lines))
+       ((unless (< pos-at-eol+1 len)) nil)
+
+       ((if (mbe :logic (zp cnt) :exec (<= cnt 0)))
+        nil))
+    (cnf-str str len pos-at-eol+1 (1- (u59 cnt)) (1+ line-num)
+             (cons int-list rev-lines))))
+
+(in-theory (disable cnf-str))
+
+(defun cnf-read-file (file-name state)
+  (declare (xargs :guard (stringp file-name)
+                  :guard-hints
+                  (("Goal" :in-theory (disable read-file-into-string)))
+                  :verify-guards nil
+                  :stobjs state))
+  (b* (; ((unless (state-p1 state)) nil)
+       (str (read-file-into-string file-name state))
+       (len (length str))
+       ((unless (lrat-guard str len 0)) NIL)
+       (pos (pos-to-eol+1 str len 0))
+       (ans (cnf-str str len pos (1- len) 1 nil)))
+    ans))
+
+(defun parse-lrat-file (filename state)
+  (value (lrat-read-file filename state)))
+
+(defun parse-cnf-file (filename state)
+  (value (cnf-read-file filename state)))
+
+
+; Keep rest of this file from the original...
 
 (defun verify-lrat-proof-fn (cnf-file lrat-file incomplete-okp state)
   (b* (((er formula) (time$ (parse-cnf-file cnf-file state)))
        ((er proof) (time$ (parse-lrat-file lrat-file state))))
-    (value (time$ (valid-proofp$-top formula proof incomplete-okp)))))
+    (value (time$ (ec-call (valid-proofp$-top formula proof incomplete-okp))))))
 
 (defmacro verify-lrat-proof (cnf-file lrat-file
                                       &optional (incomplete-okp 'nil))
@@ -265,6 +1013,8 @@
              (show-lrat-proof-raw (car entry-raw)
                                   (cdr proof)
                                   (cons entry-raw acc))))))
+
+(program)
 
 (defun show-lrat-parse-raw (lrat-file state)
   (er-let* ((proof (parse-lrat-file lrat-file state)))
