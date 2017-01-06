@@ -228,8 +228,6 @@
 ; the first 3 components are relevant.  The last is always 0; I didn't
 ; have lex3.
 
-(acl2::set-well-founded-relation e0-ord-<)
-
 (mutual-recursion
 
 (defun waterfall (ledge id cl hist pspv wrld nnn)

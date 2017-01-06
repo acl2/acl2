@@ -4,7 +4,7 @@
 
 (defpkg "PACO"
   '(
-    
+
 ; ACL2 primitives:
 
     ACL2-NUMBERP BAD-ATOM BAD-ATOM<=
@@ -34,7 +34,7 @@
 
     floor ceiling truncate round mod rem evenp oddp zerop
     plusp minusp min max abs signum lognot expt binary-append
-                     
+
     nfix e0-ordinalp e0-ord-<
 
     CHAR< CHAR> CHAR<= CHAR>= STRING< STRING> STRING<=
@@ -169,6 +169,6 @@
     msg
 
     ))
-    
+
 (set-verify-guards-eagerness 0)
 (certify-book "utilities" ? t)

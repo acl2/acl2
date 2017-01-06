@@ -390,8 +390,8 @@
 
 (defun subsumes (cl1 cl2 alist)
 
-  (declare (xargs :measure (cons (cons (+ 1 (acl2-count cl1)) 1)
-                                 (acl2-count cl2))))
+  (declare (xargs :measure (acl2::nat-list-measure
+                            (list (acl2-count cl1) 1 (acl2-count cl2)))))
 
 ; We return t iff some instance of clause cl1 is a subset of
 ; clause cl2 (where the instance is an extension of alist).
@@ -401,8 +401,8 @@
 
 (defun subsumes1 (lit tl1 tl2 cl2 alist)
 
-  (declare (xargs :measure (cons (cons (+ 1 (acl2-count tl1)) 2)
-                                 (acl2-count tl2))))
+  (declare (xargs :measure (acl2::nat-list-measure
+                            (list (acl2-count tl1) 2 (acl2-count tl2)))))
 
 ; If we can extend alist to an alist1 so that lit/alist1 is a member
 ; of tl2 and tl1/alist1 is a subset of cl2, we return t.  Else we
@@ -560,15 +560,6 @@
                         (crunch-clause-segments2 cl nil)
                         (mv seg1 seg2)))))))
 
-(defthm rewrite-clause-speedup-1
-  (implies (not (zp nnn))
-           (E0-ORD-<
-            (CONS
-             (CONS (+ 1 (nfix (+ -1 nnn))) 2) x)
-            (CONS (CONS (+ 1 (nfix nnn)) 1) y)))
-  :rule-classes nil)
-
-(acl2::set-well-founded-relation e0-ord-<)
 
 (mutual-recursion
 
@@ -578,15 +569,15 @@
 ; tail), where tail is the first argument supplied to rewrite-clause.
 ; See the note below about the admission of this function.
 
-  (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 1) 0)
+  (declare (xargs :measure (acl2::nat-list-measure (list nnn 1 0))
                   :hints (("Goal" :in-theory
                            (disable remove-trivial-equivalences
                                     crunch-clause-segments
                                     DISJOIN-CLAUSE-SEGMENT-TO-CLAUSE-SET
-                                    NORMALIZE))
-                          ("Subgoal 1" :do-not '(preprocess)
-                           :by rewrite-clause-speedup-1)
-                          )))
+                                    NORMALIZE
+                                    type-alist-clause
+                                    strip-branches
+                                    acl2-count)))))
 
 ; We are to rewrite the literals of the clause cl formed by appending
 ; tail to new-clause.  We assume rcnst has the correct top-clause and
@@ -657,7 +648,7 @@
 
 
 (defun rewrite-clause-lst (segs cdr-tail new-clause wrld rcnst flg ans nnn)
-  (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 2) (len segs))))
+  (declare (xargs :measure (acl2::nat-list-measure (list nnn 2 (len segs)))))
   (cond
    ((endp segs) (mv flg ans))
    (t

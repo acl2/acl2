@@ -322,7 +322,7 @@
                                val))
 
                        (fn-numes-trip
-                       
+
 
 ; If you change the layout of the FN-NUMES value below, change
 ; fn-nume!
