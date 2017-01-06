@@ -71,7 +71,27 @@ use FindBin qw($RealBin);
 use POSIX qw(strftime);
 use Cwd;
 use utf8;
-use Time::HiRes qw(time);
+
+# Use ms-precision timing if we can load the Time::HiRes module,
+# otherwise gracefully default to second precision.
+# Note (Sol): I tried
+#   Time::Hires->import('time')
+# and just using time() instead of defining mytime() specially, but it
+# didn't work for me (always seemed to use 1-second precision); maybe
+# there's a problem with compile- versus run-time resolution of the
+# function name.
+my $msectiming = eval {
+    require Time::HiRes;
+    Time::HiRes->import();
+    1;
+};
+sub mytime {
+    if ($msectiming) {
+	return Time::HiRes::time();
+    } else {
+	return time();
+    }
+}
 
 binmode(STDOUT,':utf8');
 
@@ -728,13 +748,13 @@ write_whole_file($lisptmp, $instrs);
 
 # Run it!  ------------------------------------------------
 
-my $START_TIME = time();
+my $START_TIME = mytime();
 
     # Single quotes to try to protect against file names with dollar signs and similar.
     system("$STARTJOB '$shtmp'");
     $status = $? >> 8;
 
-my $END_TIME = time();
+my $END_TIME = mytime();
 
     unlink($lisptmp) if !$DEBUG;
     unlink($shtmp) if !$DEBUG;
