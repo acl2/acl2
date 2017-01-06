@@ -1245,7 +1245,7 @@
    ((and (all-quoteps args)
          (or (flambdap fn)
              (enabled-numep
-              (fn-nume fn :EXECUTABLE-COUNTERPART wrld) ens)))
+              (fn-nume :EXECUTABLE-COUNTERPART fn wrld) ens)))
     (mv-let (erp val)
             (apply fn (strip-cadrs args) wrld)
             (cond (erp (mv nil (cons-term fn args)))
