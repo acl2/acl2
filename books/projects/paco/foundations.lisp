@@ -1148,7 +1148,7 @@
 ; and pseudo-fn counts.
 
 (defun fn-count (term)
-  (mv-let (fn var pfn)
+  (mv-let (var fn pfn)
           (var-fn-count term)
           (declare (ignore var))
           (mv fn pfn)))
