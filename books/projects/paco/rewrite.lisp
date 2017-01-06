@@ -913,7 +913,7 @@
                            (disable assume-true-false
                                     type-set))
                           ("Subgoal 27" :do-not '(preprocess)
-                           :by rewrite-clique-speedup-5) 
+                           :by rewrite-clique-speedup-5)
                           ("Subgoal 26" :do-not '(preprocess)
                            :by rewrite-clique-speedup-4)
 ;                         ("Subgoal 17" :do-not '(preprocess)
