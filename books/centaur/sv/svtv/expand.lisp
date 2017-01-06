@@ -371,7 +371,7 @@
   :prepwork ((local (defthm svtv-entry-p-when-4vec-p
                       (implies (4vec-p x)
                                (svtv-entry-p x))
-                      :hints(("Goal" :in-theory (enable svtv-entry-p))))))
+                      :hints(("Goal" :in-theory (enable svtv-entry-p svtv-baseentry-p))))))
   :hooks ((:fix :hints (("goal" :in-theory (enable svtv-entrylist-fix)))))
   :returns (xx svtv-entrylist-p)
   (b* (((when (zp len)) nil)

@@ -62,37 +62,47 @@
   :hints(("Goal" :in-theory (enable nth svtv-entrylist-p))))
 
 
-(define svtv-inputs->assigns ((x svtv-lines-p) (phase natp))
-  :verbosep t
-  :prepwork ((local (defthm svar-when-svtv-entry
-                      (implies (and (svtv-entry-p x)
+(define svtv-baseentry-svex ((ent svtv-baseentry-p))
+  :returns (expr svex-p)
+  :prepwork ((local (defthm svar-when-svtv-baseentry
+                      (implies (and (svtv-baseentry-p x)
                                     (not (4vec-p x)))
                                (svar-p x))
-                      :hints(("Goal" :in-theory (enable svtv-entry-p svar-p)))))
-             (local (in-theory (enable svtv-lines-fix))))
+                      :hints(("Goal" :in-theory (enable svtv-baseentry-p svar-p))))))
+  (b* ((ent (svtv-baseentry-fix ent)))
+    (cond ((4vec-p ent)      (svex-quote ent))
+          ((eq ent 'acl2::x) (svex-quote (4vec-x)))
+          ((eq ent :ones)    (svex-quote -1))
+          (t (svex-var ent)))))
+  
+
+(define svtv-inputs->assigns ((x svtv-lines-p) (phase natp))
+  :verbosep t
+  :prepwork ((local (in-theory (enable svtv-lines-fix))))
   :returns (assigns assigns-p)
   (B* (((when (atom x)) nil)
        ((svtv-line xf) (car x))
        (ent (or (nth phase xf.entries) 'acl2::_))
        ((when (svtv-dontcare-p ent))
         (svtv-inputs->assigns (cdr x) phase))
-       (val (cond ((4vec-p ent)      (svex-quote ent))
-                  ((eq ent 'acl2::x) (svex-quote (4vec-x)))
-                  ((eq ent :ones)    (svex-quote -1))
-                  (t (svex-var ent)))))
+       ((unless (svtv-baseentry-p ent))
+        (er hard? 'svtv-inputs->assigns "SVTV entries such as ~x0 are only allowed in overrides." ent)
+        (svtv-inputs->assigns (cdr x) phase))
+       (val (svtv-baseentry-svex ent)))
     (cons (cons xf.lhs (make-driver :value val :strength 10))
           (svtv-inputs->assigns (cdr x) phase))))
 
 
+
 (define svtv-overrides->assigns ((x svtv-overridelines-p) (phase natp))
   :verbosep t
-  :prepwork ((local (defthm svar-when-svtv-entry
-                      (implies (and (svtv-entry-p x)
-                                    (not (4vec-p x)))
-                               (svar-p x))
-                      :hints(("Goal" :in-theory (enable svtv-entry-p svar-p)))))
-             (local (in-theory (enable svtv-overridelines-fix))))
   :returns (assigns svex-alist-p)
+  :prepwork ((local (defthm svtv-baseentry-when-not-dontcare-or-condoverride
+                      (implies (and (svtv-entry-p x)
+                                    (not (svtv-condoverride-p x))
+                                    (not (svtv-dontcare-p x)))
+                               (svtv-baseentry-p x))
+                      :hints(("Goal" :in-theory (enable svtv-entry-p))))))
   (B* (((when (atom x)) nil)
        ((svtv-overrideline xf) (car x))
        (ent (or (nth phase xf.entries) 'acl2::_))
@@ -100,10 +110,12 @@
         (cons (cons xf.test (svex-quote 0))
               (svtv-overrides->assigns (cdr x) phase)))
        ((mv val test)
-        (cond ((4vec-p ent)      (mv (svex-quote ent)      (svex-quote -1)))
-              ((eq ent 'acl2::x) (mv (svex-quote (4vec-x)) (svex-quote -1)))
-              ((eq ent :ones)    (mv (svex-quote -1)       (svex-quote -1)))
-              (t                 (mv (svex-var ent)        (svex-quote -1))))))
+        (if (svtv-condoverride-p ent)
+            (b* (((svtv-condoverride ent)))
+              (mv (svtv-baseentry-svex ent.value)
+                  (svtv-baseentry-svex ent.test)))
+          (mv (svtv-baseentry-svex ent)
+              (svex-quote -1)))))
     (cons (cons xf.val val)
           (cons (cons xf.test test)
                 (svtv-overrides->assigns (cdr x) phase)))))
@@ -146,12 +158,12 @@
 
 
 (define svtv-outputs->outalist ((x svtv-lines-p) (phase natp))
-  :prepwork ((local (defthm svar-when-svtv-entry
-                      (implies (and (svtv-entry-p x)
-                                    (not (4vec-p x)))
-                               (svar-p x))
-                      :hints(("Goal" :in-theory (enable svtv-entry-p svar-p)))))
-             (local (in-theory (enable svtv-lines-fix))))
+  ;; :prepwork ((local (defthm svar-when-svtv-entry
+  ;;                     (implies (and (svtv-entry-p x)
+  ;;                                   (not (4vec-p x)))
+  ;;                              (svar-p x))
+  ;;                     :hints(("Goal" :in-theory (enable svtv-entry-p svar-p)))))
+  ;;            (local (in-theory (enable svtv-lines-fix))))
   :returns (outalist svex-alist-p)
   (b* (((when (atom x)) nil)
        ((svtv-line xf) (car x))
@@ -1381,17 +1393,17 @@ decomposition proof.</li>
      (and (mbt (consp (car al)))
           (progn$
            (if firstp
-               (cw " ((")
-             (cw "  ("))
+               (cw! " ((")
+             (cw! "  ("))
            (if (2vec-p (cdar al))
-               (fmt-to-comment-window
+               (acl2::fmt-to-comment-window!
                 "~x0 ~t1. ~s2)"
                 (pairlis2 '(#\0 #\1 #\2 #\3 #\4
                             #\5 #\6 #\7 #\8 #\9)
                           (list (caar al) 23 (str::hexify (2vec->val (cdar al)))))
                 3 nil)
              (progn$
-              (fmt-to-comment-window
+              (acl2::fmt-to-comment-window!
                "~x0   ~t1~s2         ;; non-Boolean mask: ~s3~%"
                (pairlis2 '(#\0 #\1 #\2 #\3 #\4
                            #\5 #\6 #\7 #\8 #\9)
@@ -1399,10 +1411,10 @@ decomposition proof.</li>
                                (str::hexify (logxor (4vec->upper (cdar al))
                                                     (4vec->lower (cdar al))))))
                3 nil)
-              (cw "       ~t0. ~s1)" 23 (str::hexify (4vec->lower (cdar al))))))
+              (cw! "       ~t0. ~s1)" 23 (str::hexify (4vec->lower (cdar al))))))
            (if (consp (cdr al))
-               (cw "~%")
-             (cw ")~%"))))
+               (cw! "~%")
+             (cw! ")~%"))))
      (svtv-print-alist-readable-aux (cdr al) nil))))
 
 (define svtv-print-alist-readable ((al svex-env-p))

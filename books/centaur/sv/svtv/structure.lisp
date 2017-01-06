@@ -56,13 +56,47 @@
     :equiv true-list-list-equiv :define t :forward t))
 
 
+(define svtv-dontcare-p (x)
+  (and (symbolp x)
+       (consp (member-symbol-name (symbol-name x) '(_ - &)))))
 
-(define svtv-entry-p (x)
+(define svtv-baseentry-p (x)
   (or (4vec-p x)
       (eq x :ones)
       (and (symbolp x)
            (not (booleanp x))
-           (not (keywordp x))))
+           (not (keywordp x))
+           (not (svtv-dontcare-p x))))
+  ///
+
+  (define svtv-baseentry-fix ((x svtv-baseentry-p))
+    :returns (xx svtv-baseentry-p)
+    :hooks nil
+    (mbe :logic (if (svtv-baseentry-p x) x (4vec-x))
+         :exec x)
+    ///
+    (defthm svtv-baseentry-fix-of-svtv-baseentry-p
+      (implies (svtv-baseentry-p x)
+               (equal (svtv-baseentry-fix x) x)))
+
+    (deffixtype svtv-baseentry :pred svtv-baseentry-p :fix svtv-baseentry-fix
+      :equiv svtv-baseentry-equiv :define t :forward t)))
+
+(defprod svtv-condoverride
+  ((value svtv-baseentry-p)
+   (test  svtv-baseentry-p))
+  :layout :list
+  ///
+  (defthm svtv-condoverride-implies-not-baseentry
+    (implies (svtv-condoverride-p x)
+             (not (svtv-baseentry-p x)))
+    :hints(("Goal" :in-theory (enable svtv-baseentry-p 4vec-p svtv-condoverride-p)))))
+
+
+(define svtv-entry-p (x)
+  (or (svtv-dontcare-p x)
+      (svtv-baseentry-p x)
+      (svtv-condoverride-p x))
   ///
 
   (define svtv-entry-fix ((x svtv-entry-p))
@@ -78,10 +112,7 @@
     (deffixtype svtv-entry :pred svtv-entry-p :fix svtv-entry-fix
       :equiv svtv-entry-equiv :define t :forward t)))
 
-(define svtv-dontcare-p ((x svtv-entry-p))
-  (let ((x (svtv-entry-fix x)))
-    (and (symbolp x)
-         (member-symbol-name (symbol-name x) '(_ - &)))))
+
 
 (deflist svtv-entrylist :elt-type svtv-entry :true-listp t)
 

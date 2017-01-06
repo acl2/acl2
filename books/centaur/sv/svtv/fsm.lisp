@@ -42,6 +42,7 @@
 (local (include-book "std/alists/hons-assoc-equal" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -266,7 +267,7 @@
            (svtv-fsm-eval ins prev-st x))
     :hints(("Goal" :in-theory (enable svtv-fsm-eval))))
   
-  (defthm svtv-fsm-eval-is-svex-eval-unroll-multienv
+  (defthmd svtv-fsm-eval-is-svex-eval-unroll-multienv
     (implies (< (nfix n) (len ins))
              (equal (nth n (svtv-fsm-eval ins prev-st x))
                     (pairlis$ (svex-alist-keys (svtv->outexprs x))
@@ -302,65 +303,9 @@
                       (:free (nextstate) (svex-unroll-state nextstate nil initst))))
             (and stable-under-simplificationp
                  '(:expand ((svtv-fsm-eval ins initst svtv))
-                   :in-theory (enable svtv-fsm-step))))))
+                   :in-theory (enable svtv-fsm-step)))))
 
-(fty::deflist svarlist-list :elt-type svarlist :true-listp t)
-
-(define svex-envlist-extract ((keys svarlist-list-p)
-                              (envs svex-envlist-p))
-  :returns (new-envs svex-envlist-p)
-  (if (atom keys)
-      nil
-    (cons (svex-env-extract (car keys) (car envs))
-          (svex-envlist-extract (cdr keys) (cdr envs))))
-  ///
-  (defthm svex-envlist-extract-lookup
-    (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
-             (equal (svex-env-lookup var (nth n (svex-envlist-extract signals x)))
-                    (svex-env-lookup var (nth n x))))
-    :hints(("Goal" :in-theory (enable nth svex-envlist-extract
-                                      default-car nthcdr)
-            :induct (list (nthcdr n signals) (nthcdr n x))))))
-
-
-;; thms about take
-(local (fty::deflist svex-envlist :elt-type svex-env :true-listp t :elementp-of-nil t))
-
-(local (defthm take-of-svex-envlist-fix
-         (svex-envlist-equiv (take n (svex-envlist-fix x))
-                             (take n x))
-         :hints(("Goal" :in-theory (e/d (svex-envlist-fix)
-                                        (acl2::take-of-zero
-                                         acl2::take-of-too-many
-                                         acl2::take-when-atom))))))
-
-
-(define svtv-fsm-run ((ins svex-envlist-p)
-                      (prev-st svex-env-p)
-                      (x svtv-p)
-                      (signals svarlist-list-p))
-  :guard (and (consp signals)
-              (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
-              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
-  :guard-debug t
-  :returns (outs svex-envlist-p)
-  (svex-envlist-extract signals (svtv-fsm-eval (take (len signals) ins) prev-st x))
-
-  ///
   
-  ;; (defthm svtv-fsm-eval-of-take
-  ;;   (implies (posp n)
-  ;;            (equal (sv::svtv-fsm-eval (take n ins) initst svtv)
-  ;;                   (take n (sv::svtv-fsm-eval ins initst svtv))))
-  ;;   :hints(("Goal" :induct (svtv-fsm-eval-+-n-ind n ins initst svtv)
-  ;;           :expand ((svtv-fsm-eval ins initst svtv)
-  ;;                    (:free (a b) (svtv-fsm-eval (cons a b) initst svtv))))))
-
-  (defthm svtv-fsm-run-lookup-is-eval-lookup
-    (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
-             (equal (svex-env-lookup var (nth n (svtv-fsm-run ins initst svtv signals)))
-                    (svex-env-lookup var (nth n (svtv-fsm-eval (take (len signals) ins) initst svtv)))))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run))))
 
   (local (defun svtv-fsm-eval-+-n-m-ind (n m ins prev-st x)
            (b* (((svtv x))
@@ -389,6 +334,266 @@
                       (svtv-fsm-step (car ins) initst svtv))))))
 
 
+;; thms about take and nth
+(local (fty::deflist svex-envlist :elt-type svex-env :true-listp t :elementp-of-nil t))
+
+
+(define svtv-fsm-eval-states ((ins svex-envlist-p)
+                         (prev-st svex-env-p)
+                         (x svtv-p))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :returns (outs svex-envlist-p)
+  (b* (((when (atom ins)) nil)
+       ((svtv x))
+       (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                                                                 prev-st)
+                                                        :exec prev-st)
+                                                   (svex-env-fix (car ins)))))
+       (next-st (svex-alist-eval x.nextstate current-cycle-env)))
+    (clear-memoize-table 'svex-eval)
+    (fast-alist-free current-cycle-env)
+    (cons next-st (svtv-fsm-eval-states (cdr ins) next-st x)))
+  ///
+  (defthm car-of-svtv-fsm-eval-states
+    (equal (car (svtv-fsm-eval-states ins prev-st x))
+           (and (consp ins)
+                (svtv-fsm-step (car ins) prev-st x)))
+    :hints(("Goal" :in-theory (enable svtv-fsm-step))))
+
+  (defthm cdr-of-svtv-fsm-eval-states
+    (equal (cdr (svtv-fsm-eval-states ins prev-st x))
+           (and (consp ins)
+                (svtv-fsm-eval-states (cdr ins) (svtv-fsm-step (car ins) prev-st x) x)))
+    :hints(("Goal" :in-theory (enable svtv-fsm-step))))
+
+  (defthm svtv-fsm-eval-states-of-cons
+    (Equal (svtv-fsm-eval-states (cons a b) prev-st x)
+           (b* ((nextst (svtv-fsm-step a prev-st x)))
+             (cons nextst
+                   (svtv-fsm-eval-states b nextst x))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-eval-states
+                                      svtv-fsm-step
+                                      svtv-fsm-step-outs))))
+
+  
+  (defthm consp-of-svtv-fsm-eval-states
+    (equal (consp (svtv-fsm-eval-states ins prev-st x))
+           (consp ins)))
+
+
+
+  
+
+
+  (defun svtv-fsm-eval-states-is-svex-eval-unroll-multienv-ind (n ins prev-st x)
+    (if (zp n)
+        (list ins prev-st x)
+      (b* (((svtv x))
+           (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                                                                     prev-st)
+                                                            :exec prev-st)
+                                                       (svex-env-fix (car ins)))))
+           (next-st (svex-alist-eval x.nextstate current-cycle-env)))
+        (svtv-fsm-eval-states-is-svex-eval-unroll-multienv-ind (1- n) (cdr ins) next-st x))))
+
+  (local (defthm svex-alist-eval-is-pairlis$
+           (equal (pairlis$ (svex-alist-keys x)
+                            (svexlist-eval (svex-alist-vals x) env))
+                  (svex-alist-eval x env))
+           :hints(("Goal" :in-theory (enable svex-alist-keys
+                                             svex-alist-vals
+                                             svex-alist-eval)))))
+
+  (defthm len-of-svtv-fsm-eval-states
+    (equal (len (svtv-fsm-eval-states ins prev-st x))
+           (len ins)))
+
+  (defthm svtv-fsm-eval-states-of-extract-states-from-prev-st
+    (equal (svtv-fsm-eval-states ins (svex-env-extract (svex-alist-keys (svtv->nextstate x)) prev-st) x)
+           (svtv-fsm-eval-states ins prev-st x))
+    :hints(("Goal" :in-theory (enable svtv-fsm-eval-states))))
+  
+  (defthmd svtv-fsm-eval-states-is-svex-eval-unroll-multienv
+    (implies (< (nfix n) (len ins))
+             (equal (nth n (svtv-fsm-eval-states ins prev-st x))
+                    (pairlis$ (svex-alist-keys (svtv->nextstate x))
+                              (svexlist-eval-unroll-multienv (svex-alist-vals (svtv->nextstate x))
+                                                             n (svtv->nextstate x) ins prev-st))))
+    :hints (("goal" :induct (svtv-fsm-eval-states-is-svex-eval-unroll-multienv-ind n ins prev-st x)
+             :expand ((svtv-fsm-eval-states ins prev-st x))
+             :in-theory (enable svexlist-eval-unroll-multienv-expand-cycle
+                                svexlist-eval-unroll-multienv-at-cycle-0))))
+
+  (local (defun nthcdr-of-svtv-fsm-eval-states-ind (n ins prev-st svtv)
+           (if (zp n)
+               (list ins prev-st)
+             (b* (((svtv x) svtv)
+                  (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                                                                            prev-st)
+                                                                   :exec prev-st)
+                                                              (svex-env-fix (car ins)))))
+                  (next-st (svex-alist-eval x.nextstate current-cycle-env)))
+               (nthcdr-of-svtv-fsm-eval-states-ind (1- n) (cdr ins) next-st svtv)))))
+
+  (defthm nthcdr-of-svtv-fsm-eval-states-is-svtv-fsm-eval-states
+    (equal (nthcdr n (svtv-fsm-eval-states ins initst svtv))
+           (svtv-fsm-eval-states (nthcdr n ins)
+                          (svex-unroll-state (svtv->nextstate svtv)
+                                             (take n ins)
+                                             initst)
+                          svtv))
+    :hints (("goal" :induct (nthcdr-of-svtv-fsm-eval-states-ind n ins initst svtv)
+             :expand ((:free (x) (nthcdr n x))
+                      (:free (x) (take n x))
+                      (:free (nextstate a b) (svex-unroll-state nextstate (cons a b) initst))
+                      (:free (nextstate) (svex-unroll-state nextstate nil initst))))
+            (and stable-under-simplificationp
+                 '(:expand ((svtv-fsm-eval-states ins initst svtv))
+                   :in-theory (enable svtv-fsm-step)))))
+
+  (defthm nth-of-svtv-fsm-eval-states-is-svex-unroll-state
+    (implies (and (< (nfix n) (len ins))
+                  (no-duplicatesp (svex-alist-keys (svtv->nextstate svtv))))
+             (equal (nth n (svtv-fsm-eval-states ins initst svtv))
+                    (svex-unroll-state (svtv->nextstate svtv)
+                                       (take (+ 1 (nfix n)) ins) initst)))
+    :hints (("goal" :induct (nthcdr-of-svtv-fsm-eval-states-ind n ins initst svtv)
+             :in-theory (enable svtv-fsm-step)
+             :expand ((:free (x) (nthcdr n x))
+                      (:free (x) (take n x))
+                      (svtv-fsm-eval-states ins initst svtv)
+                      (:free (nextstate a b initst) (svex-unroll-state nextstate (cons a b) initst))
+                      (:free (nextstate initst) (svex-unroll-state nextstate nil initst))))))
+
+  
+
+  (local (defun svtv-fsm-eval-states-+-n-m-ind (n m ins prev-st x)
+           (b* (((svtv x))
+                (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                                                                          prev-st)
+                                                                 :exec prev-st)
+                                                            (svex-env-fix (car ins)))))
+                ((when (zp n))
+                 (list n m ins prev-st x))
+                (next-st (svex-alist-eval x.nextstate current-cycle-env)))
+             (clear-memoize-table 'svex-eval)
+             (fast-alist-free current-cycle-env)
+             (svtv-fsm-eval-states-+-n-m-ind (1- n) (1- (nfix m)) (cdr ins) next-st x))))
+           
+  (defthm lookup-in-fsm-eval-states-of-take
+    (implies (and (< (nfix n) (len ins))
+                  (< (nfix n) (nfix m)))
+             (equal (nth n (svtv-fsm-eval-states (take m ins) initst svtv))
+                    (nth n (svtv-fsm-eval-states ins initst svtv))))
+    :hints (("Goal" :induct (svtv-fsm-eval-states-+-n-m-ind n m ins initst svtv)
+             :expand ((svtv-fsm-eval-states ins initst svtv)
+                      (:free (a b) (svtv-fsm-eval-states (cons a b) initst svtv))
+                      (take m ins)
+                      (svtv-fsm-eval-states nil initst svtv)
+                      (svtv-fsm-step-outs (car ins) initst svtv)
+                      (svtv-fsm-step (car ins) initst svtv))))))
+
+
+
+
+
+
+(fty::deflist svarlist-list :elt-type svarlist :true-listp t)
+
+(define svex-envlist-extract ((keys svarlist-list-p)
+                              (envs svex-envlist-p))
+  :returns (new-envs svex-envlist-p)
+  (if (atom keys)
+      nil
+    (cons (svex-env-extract (car keys) (car envs))
+          (svex-envlist-extract (cdr keys) (cdr envs))))
+  ///
+  (defthm svex-envlist-extract-lookup
+    (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
+             (equal (svex-env-lookup var (nth n (svex-envlist-extract signals x)))
+                    (svex-env-lookup var (nth n x))))
+    :hints(("Goal" :in-theory (enable nth svex-envlist-extract
+                                      default-car nthcdr)
+            :induct (list (nthcdr n signals) (nthcdr n x))))))
+
+
+
+(local (defthm take-of-svex-envlist-fix
+         (svex-envlist-equiv (take n (svex-envlist-fix x))
+                             (take n x))
+         :hints(("Goal" :in-theory (e/d (svex-envlist-fix)
+                                        (acl2::take-of-zero
+                                         acl2::take-of-too-many
+                                         acl2::take-when-atom))))))
+
+
+(define svtv-fsm-run ((ins svex-envlist-p)
+                      (prev-st svex-env-p)
+                      (x svtv-p)
+                      (signals svarlist-list-p))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :guard-debug t
+  :returns (outs svex-envlist-p)
+  (svex-envlist-extract signals (svtv-fsm-eval (take (len signals) ins) prev-st x))
+
+  ///
+  
+  ;; (defthm svtv-fsm-eval-of-take
+  ;;   (implies (posp n)
+  ;;            (equal (sv::svtv-fsm-eval (take n ins) initst svtv)
+  ;;                   (take n (sv::svtv-fsm-eval ins initst svtv))))
+  ;;   :hints(("Goal" :induct (svtv-fsm-eval-+-n-ind n ins initst svtv)
+  ;;           :expand ((svtv-fsm-eval ins initst svtv)
+  ;;                    (:free (a b) (svtv-fsm-eval (cons a b) initst svtv))))))
+
+  (defthm svtv-fsm-run-lookup-is-eval-lookup
+    (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
+             (equal (svex-env-lookup var (nth n (svtv-fsm-run ins initst svtv signals)))
+                    (svex-env-lookup var (nth n (svtv-fsm-eval (take (len signals) ins) initst svtv)))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run)))))
+
+
+(define svtv-fsm-run-states ((ins svex-envlist-p)
+                             (prev-st svex-env-p)
+                             (x svtv-p)
+                             (signals svarlist-list-p))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :guard-debug t
+  :returns (outs svex-envlist-p)
+  (svex-envlist-extract signals (svtv-fsm-eval-states (take (len signals) ins) prev-st x))
+
+  ///
+  
+  ;; (defthm svtv-fsm-eval-of-take
+  ;;   (implies (posp n)
+  ;;            (equal (sv::svtv-fsm-eval (take n ins) initst svtv)
+  ;;                   (take n (sv::svtv-fsm-eval ins initst svtv))))
+  ;;   :hints(("Goal" :induct (svtv-fsm-eval-+-n-ind n ins initst svtv)
+  ;;           :expand ((svtv-fsm-eval ins initst svtv)
+  ;;                    (:free (a b) (svtv-fsm-eval (cons a b) initst svtv))))))
+
+  (defthm svtv-fsm-run-states-lookup-is-eval-lookup
+    (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
+             (equal (svex-env-lookup var (nth n (svtv-fsm-run-states ins initst x signals)))
+                    (svex-env-lookup var (nth n (svtv-fsm-eval-states (take (len signals) ins) initst x)))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run)))))
+
+(define svtv-fsm-run-outs-and-states ((ins svex-envlist-p)
+                                      (prev-st svex-env-p)
+                                      (svtv svtv-p)
+                                      &key
+                                      (out-signals svarlist-list-p)
+                                      (state-signals svarlist-list-p))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate svtv)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate svtv)))))
+  (mv (svtv-fsm-run ins prev-st svtv out-signals)
+      (svtv-fsm-run-states ins prev-st svtv state-signals)))
+  
+
+
 
 
 
@@ -409,18 +614,19 @@
 (local
  (define svtv-fsm-run-spec ((signals svarlist-list-p)
                             (cycle natp)
-                            (x svtv-p)
+                            (outs svex-alist-p)
+                            (nextstate svex-alist-p)
                             (env svex-env-p))
    (if (atom signals)
        nil
      (cons (pairlis$ (svarlist-fix (car signals))
                      (svexlist-eval-unroll-multienv
-                      (svex-alist-vals (svex-alist-extract (car signals) (svtv->outexprs x)))
+                      (svex-alist-vals (svex-alist-extract (car signals) outs))
                       cycle
-                      (svtv->nextstate x)
+                      nextstate
                       (svex-env-to-cycle-envs env (+ (lnfix cycle) (len signals)))
-                      (svex-env-extract (svex-alist-keys (svtv->nextstate x)) env)))
-           (svtv-fsm-run-spec (cdr signals) (1+ (lnfix cycle)) x env)))
+                      (svex-env-extract (svex-alist-keys nextstate) env)))
+           (svtv-fsm-run-spec (cdr signals) (1+ (lnfix cycle)) outs nextstate env)))
    ///
 
    
@@ -447,8 +653,6 @@
                             (max 0 (+ -1 (len x)))))))
 
    (local (include-book "std/lists/nthcdr" :dir :system))
-   (local (include-book "std/lists/take" :dir :system))
-   (local (include-book "std/lists/nth" :dir :system))
 
    ;; (local (defthm car-of-svtv-fsm-eval
    ;;          (implies (consp ins)
@@ -532,6 +736,21 @@
                               (cons outs (svtv-fsm-eval (cdr ins) next-st x)))))
             :hints(("Goal" :in-theory (enable svtv-fsm-eval)))))
 
+   (local (defthmd svtv-fsm-eval-states-expand
+            (implies (consp (cdr ins))
+                     (equal (svtv-fsm-eval-states ins prev-st x)
+                            (b* (((when (atom ins)) nil)
+                                 ((svtv x))
+                                 (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                                                                                           prev-st)
+                                                                                  :exec prev-st)
+                                                                             (svex-env-fix (car ins)))))
+                                 (next-st (svex-alist-eval x.nextstate current-cycle-env)))
+                              (clear-memoize-table 'svex-eval)
+                              (fast-alist-free current-cycle-env)
+                              (cons next-st (svtv-fsm-eval-states (cdr ins) next-st x)))))
+            :hints(("Goal" :in-theory (enable svtv-fsm-eval-states)))))
+
    (local (in-theory (disable ACL2::TAKE-REDEFINITION nthcdr)))
 
    (local (defthm dumb
@@ -554,17 +773,35 @@
             :hints(("Goal" :in-theory (enable nthcdr)))))
 
    (defthm svtv-fsm-run-spec-is-svtv-fsm-run
-     (implies (consp signals)
-              (equal (svtv-fsm-run-spec signals cycle x env)
+     ;; (implies (consp signals)
+              (equal (svtv-fsm-run-spec signals cycle (svtv->outexprs x) (svtv->nextstate x) env)
                      (b* ((in-envs (svex-env-to-cycle-envs env (+ (len signals) (nfix cycle)))))
                        (svtv-fsm-run (nthcdr cycle in-envs)
                                      (svex-unroll-state (svtv->nextstate x)
                                                         (take cycle in-envs)
                                                         (svex-env-extract (svex-alist-keys (svtv->nextstate x)) env))
-                                     x signals))))
-     :hints (("goal" :induct (svtv-fsm-run-spec signals cycle x env)
+                                     x signals)))
+     :hints (("goal" :induct (svtv-fsm-run-spec signals cycle (svtv->outexprs x) (svtv->nextstate x) env)
               :in-theory (enable svtv-fsm-run svtv-fsm-step-outs svtv-fsm-step)
               :expand ((:free (envs) (svex-envlist-extract signals envs))))
+             (and stable-under-simplificationp
+                  '(:in-theory (enable svtv-fsm-eval-expand
+                                       svex-unroll-state-unroll-backward)
+                    :cases ((consp (cdr signals)))))))
+
+   (defthm svtv-fsm-run-spec-is-svtv-fsm-run-states
+     (equal (svtv-fsm-run-spec signals cycle (svtv->nextstate x) (svtv->nextstate x) env)
+            (b* ((in-envs (svex-env-to-cycle-envs env (+ (len signals) (nfix cycle)))))
+              (svtv-fsm-run-states (nthcdr cycle in-envs)
+                                   (svex-unroll-state (svtv->nextstate x)
+                                                      (take cycle in-envs)
+                                                      (svex-env-extract (svex-alist-keys (svtv->nextstate x)) env))
+                                   x signals)))
+     :hints (("goal" :induct (svtv-fsm-run-spec signals cycle (svtv->nextstate x) (svtv->nextstate x) env)
+              :in-theory (enable svtv-fsm-run-states svtv-fsm-step-outs svtv-fsm-step)
+              :expand ((:free (envs) (svex-envlist-extract signals envs)))
+              :do-not-induct t
+              :do-not '(generalize fertilize))
              (and stable-under-simplificationp
                   '(:in-theory (enable svtv-fsm-eval-expand
                                        svex-unroll-state-unroll-backward)
@@ -584,7 +821,6 @@
 
 
 (define svtv-fsm-run-symbolic-svexlist->alists ((signals svarlist-list-p)
-                                                (x svtv-p)
                                                 (vals 4veclist-p))
   :hooks nil
 
@@ -607,7 +843,7 @@
        (len (len (car signals))))
     (cons (pairlis$ (svarlist-fix (car signals))
                     (take len vals))
-          (svtv-fsm-run-symbolic-svexlist->alists (cdr signals) x (nthcdr len vals))))
+          (svtv-fsm-run-symbolic-svexlist->alists (cdr signals) (nthcdr len vals))))
   ///
 
   (local (defthm len-of-svexlist-eval-unroll-multienv
@@ -690,17 +926,17 @@
 
   (local (defthm svtv-fsm-run-symbolic-composition-is-svtv-fsm-run-spec
            (equal (svtv-fsm-run-symbolic-svexlist->alists
-                   signals x
-                   (svexlist-eval (svtv-fsm-run-symbolic-svexlist signals cycle (svtv->outexprs x) (svtv->nextstate x))
+                   signals
+                   (svexlist-eval (svtv-fsm-run-symbolic-svexlist signals cycle outs nextstate)
                                   env))
-                  (svtv-fsm-run-spec signals cycle x env))
+                  (svtv-fsm-run-spec signals cycle outs nextstate env))
            :hints(("Goal" ;; :in-theory (enable svtv-fsm-run-symbolic-svexlist)
                    :in-theory (enable svtv-fsm-run-spec (:i svtv-fsm-run-symbolic-svexlist)
                                       svexlist-eval-unroll-is-unroll-multienv-here)
-                   :induct (svtv-fsm-run-symbolic-svexlist signals cycle (svtv->outexprs x) (svtv->nextstate x))
-                   :expand ((svtv-fsm-run-symbolic-svexlist signals cycle (svtv->outexprs x) (svtv->nextstate x))
+                   :induct (svtv-fsm-run-symbolic-svexlist signals cycle outs nextstate)
+                   :expand ((svtv-fsm-run-symbolic-svexlist signals cycle outs nextstate)
                             ;; (svtv-fsm-eval ins prev-st x)
-                            (:free (vals) (svtv-fsm-run-symbolic-svexlist->alists signals x vals)))))))
+                            (:free (vals) (svtv-fsm-run-symbolic-svexlist->alists signals vals)))))))
 
   (local (defthm svex-env-extract-of-superset
            (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
@@ -716,17 +952,30 @@
            :hints(("Goal" :in-theory (enable svtv-fsm-eval)))))
 
   (defthm svtv-fsm-run-symbolic-composition-is-svtv-fsm-run
-    (implies (consp signals)
-             (equal (svtv-fsm-run-symbolic-svexlist->alists
-                     signals x
-                     (svexlist-eval (svtv-fsm-run-symbolic-svexlist signals 0 (svtv->outexprs x) (svtv->nextstate x))
-                                    env))
-                    (b* ((in-envs (svex-env-to-cycle-envs env (len signals))))
-                      (svtv-fsm-run in-envs
-                                    env
-                                    x signals))))
+    (equal (svtv-fsm-run-symbolic-svexlist->alists
+            signals
+            (svexlist-eval (svtv-fsm-run-symbolic-svexlist signals 0 (svtv->outexprs x) (svtv->nextstate x))
+                           env))
+           (b* ((in-envs (svex-env-to-cycle-envs env (len signals))))
+             (svtv-fsm-run in-envs
+                           env
+                           x signals)))
     :hints(("Goal" :in-theory (enable svtv-fsm-run-spec-is-svtv-fsm-run
                                       svtv-fsm-run)
+            :expand ((:free (env) (svex-unroll-state (svtv->nextstate x) nil env)))
+            :do-not-induct t)))
+
+  (defthm svtv-fsm-run-symbolic-composition-is-svtv-fsm-run-states
+    (equal (svtv-fsm-run-symbolic-svexlist->alists
+            signals
+            (svexlist-eval (svtv-fsm-run-symbolic-svexlist signals 0 (svtv->nextstate x) (svtv->nextstate x))
+                           env))
+           (b* ((in-envs (svex-env-to-cycle-envs env (len signals))))
+             (svtv-fsm-run-states in-envs
+                                  env
+                                  x signals)))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-spec-is-svtv-fsm-run-states
+                                      svtv-fsm-run-states)
             :expand ((:free (env) (svex-unroll-state (svtv->nextstate x) nil env)))
             :do-not-induct t)))
 
@@ -742,16 +991,23 @@
                      (svtv-fsm-eval ins rest x)))
      :hints(("Goal" :expand ((:free (prev-st) (svtv-fsm-eval ins prev-st x))))))
 
-   (defthm svex-env-extract-of-superset
-     (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
-              (Equal (svex-env-extract keys (svex-env-extract keys2 x))
-                     (svex-env-extract keys x)))
-     :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix))))
+   (defthm svtv-fsm-eval-states-of-prev-st-cycle-envs-to-single-env
+     (implies (not (svarlist-has-svex-cycle-var (svex-alist-keys (svtv->nextstate x))))
+              (equal (svtv-fsm-eval-states ins (svex-cycle-envs-to-single-env ins2 cyc rest) x)
+                     (svtv-fsm-eval-states ins rest x)))
+     :hints(("Goal" :expand ((:free (prev-st) (svtv-fsm-eval-states ins prev-st x))))))
 
-   (defthm svtv-fsm-eval-of-extract-states-from-prev-st
-     (equal (svtv-fsm-eval ins (svex-env-extract (svex-alist-keys (svtv->nextstate x)) prev-st) x)
-            (svtv-fsm-eval ins prev-st x))
-     :hints(("Goal" :in-theory (enable svtv-fsm-eval))))))
+   ;; (defthm svex-env-extract-of-superset
+   ;;   (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
+   ;;            (Equal (svex-env-extract keys (svex-env-extract keys2 x))
+   ;;                   (svex-env-extract keys x)))
+   ;;   :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix))))
+
+   ;; (defthm svtv-fsm-eval-of-extract-states-from-prev-st
+   ;;   (equal (svtv-fsm-eval ins (svex-env-extract (svex-alist-keys (svtv->nextstate x)) prev-st) x)
+   ;;          (svtv-fsm-eval ins prev-st x))
+   ;;   :hints(("Goal" :in-theory (enable svtv-fsm-eval))))
+   ))
 
 
 (define svtv-fsm-symbolic-env ((ins svex-envlist-p)
@@ -770,26 +1026,47 @@
   (memoize 'svtv-fsm-run-symbolic-svexlist-memo))
 
 
-(define svtv-fsm-run-symbolic ((ins svex-envlist-p)
-                               (prev-st svex-env-p)
-                               (x svtv-p)
-                               (signals svarlist-list-p))
-  :guard (and (consp signals)
-              (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+
+
+(define svtv-fsm-run-outs-and-states-symbolic ((ins svex-envlist-p)
+                                               (prev-st svex-env-p)
+                                               (x svtv-p)
+                                               &key
+                                               (out-signals svarlist-list-p)
+                                               (state-signals svarlist-list-p))
+  :prepwork ((local (defthm nthcdr-of-len-append
+                      (equal (nthcdr (len x) (append x y)) y)))
+             (local (defthm nthcdr-append-of-same-len
+                      (implies (equal (nfix n) (len x))
+                               (equal (nthcdr n (append x y))
+                                      y))
+                      :hints(("Goal" :do-not-induct t
+                              :use nthcdr-of-len-append
+                              :in-theory (e/d* (acl2::arith-equiv-forwarding)
+                                               (nthcdr-of-len-append)))))))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))  
   (b* (((svtv x))
-       ((when (atom signals))
-        nil)
+       ((when (and (atom out-signals) (atom state-signals)))
+        (mv nil nil))
        (statevars (svex-alist-keys x.nextstate))
        ((when (svarlist-has-svex-cycle-var statevars))
         ;; bad!
-        (gl::gl-hide (svtv-fsm-run ins prev-st x signals)))
+        (mv (gl::gl-hide (svtv-fsm-run ins prev-st x out-signals))
+            (gl::gl-hide (svtv-fsm-run-states ins prev-st x state-signals))))
        (x.outexprs (make-fast-alist x.outexprs))
        (x.nextstate (make-fast-alist x.nextstate))
        (env (svtv-fsm-symbolic-env ins statevars prev-st))
-       (svexes (svtv-fsm-run-symbolic-svexlist-memo signals x.outexprs x.nextstate))
-       (values (svexlist-eval-for-symbolic svexes env '((:allvars . t)))))
-    (svtv-fsm-run-symbolic-svexlist->alists signals x values))
+       (out-svexes (svtv-fsm-run-symbolic-svexlist-memo out-signals x.outexprs x.nextstate))
+       (state-svexes (svtv-fsm-run-symbolic-svexlist-memo state-signals x.nextstate x.nextstate))
+       (- (clear-memoize-table 'svex-compose*-unroll))
+       (all-svexes (append out-svexes state-svexes))
+       (values (svexlist-eval-for-symbolic all-svexes env '((:allvars . t))))
+       (out-len (len out-svexes))
+       (out-values (take out-len values))
+       (state-values (nthcdr out-len values)))
+    (mv (svtv-fsm-run-symbolic-svexlist->alists out-signals out-values)
+        (svtv-fsm-run-symbolic-svexlist->alists state-signals state-values)))
   ///
   (local (defthm svex-envlist-extract-of-atom
            (implies (not (consp keys))
@@ -797,16 +1074,29 @@
                            nil))
            :hints(("Goal" :in-theory (enable svex-envlist-extract)))))
 
-  (defthm svtv-fsm-run-symbolic-is-svtv-fsm-run
-    (equal (svtv-fsm-run-symbolic ins prev-st x signals)
-           (svtv-fsm-run ins prev-st x signals))
+  (defthm svtv-fsm-run-outs-and-states-symbolic-is-svtv-fsm-run
+    (equal (svtv-fsm-run-outs-and-states-symbolic ins prev-st x
+                                                  :out-signals out-signals
+                                                  :state-signals state-signals)
+           (svtv-fsm-run-outs-and-states ins prev-st x :out-signals out-signals
+                                         :state-signals state-signals))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable svtv-fsm-run svtv-fsm-eval)
+                 '(:in-theory (enable svtv-fsm-run svtv-fsm-eval
+                                      svtv-fsm-run-states svtv-fsm-eval-states
+                                      svtv-fsm-run-outs-and-states)
                    :do-not-induct t))))
 
   (gl::def-gl-rewrite svtv-fsm-run-is-symbolic
     (equal (svtv-fsm-run ins prev-st x signals)
-           (svtv-fsm-run-symbolic ins prev-st x signals))))
+           (b* (((mv outs ?states) (svtv-fsm-run-outs-and-states-symbolic ins prev-st x :out-signals signals)))
+             outs))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-outs-and-states))))
+
+  (gl::def-gl-rewrite svtv-fsm-run-states-is-symbolic
+    (equal (svtv-fsm-run-states ins prev-st x signals)
+           (b* (((mv ?outs states) (svtv-fsm-run-outs-and-states-symbolic ins prev-st x :state-signals signals)))
+             states))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-outs-and-states)))))
 
 
 
@@ -1307,83 +1597,7 @@
                  (hint-for-svex-alist-eval-equality clause)))))
 
 
-(define svtv-fsm-states ((ins svex-envlist-p)
-                         (prev-st svex-env-p)
-                         (nextstate svex-alist-p))
-  :guard (and (equal (alist-keys prev-st) (svex-alist-keys nextstate))
-              (not (acl2::hons-dups-p (svex-alist-keys nextstate))))
-  :returns (states svex-envlist-p)
-  (b* ((curr-st (mbe :logic (svex-env-extract (svex-alist-keys nextstate)
-                                              prev-st)
-                     :exec prev-st))
-       ((when (atom ins)) (list curr-st))
-       (current-cycle-env (make-fast-alist (append curr-st
-                                                   (svex-env-fix (car ins)))))
-       (next-st (svex-alist-eval nextstate current-cycle-env)))
-    (clear-memoize-table 'svex-eval)
-    (fast-alist-free current-cycle-env)
-    (cons curr-st (svtv-fsm-states (cdr ins) next-st nextstate)))
-  ///
-  (defthm svtv-fsm-eval-in-terms-of-fsm-states
-    (implies (< (nfix n) (len ins))
-             (equal (nth n (svtv-fsm-eval ins prev-st x))
-                    (svex-alist-eval (svtv->outexprs x)
-                                     (append (nth n (svtv-fsm-states ins prev-st (svtv->nextstate x)))
-                                             (nth n ins)))))
-    :hints(("Goal" :in-theory (enable svtv-fsm-eval svtv-fsm-states))))
 
-  (local (defun svtv-fsm-states-n-ind (ins prev-st nextstate n)
-           (if (zp n)
-               (list ins prev-st nextstate)
-             (b* ((curr-st (mbe :logic (svex-env-extract (svex-alist-keys nextstate)
-                                                         prev-st)
-                                :exec prev-st))
-                  (current-cycle-env (make-fast-alist (append curr-st
-                                                              (svex-env-fix (car ins)))))
-                  (next-st (svex-alist-eval nextstate current-cycle-env)))
-               (cons curr-st (svtv-fsm-states-n-ind (cdr ins) next-st nextstate (1- n)))))))
-
-  (defret alist-keys-of-nth-svtv-fsm-states
-    (equal (alist-keys (nth n states))
-           (and (<= (nfix n) (len ins))
-                (svex-alist-keys nextstate)))
-    :hints (("goal" :induct (svtv-fsm-states-n-ind ins prev-st nextstate n))))
-
-  (defret env-lookup-of-nth-svtv-fsm-states
-    (implies (and (member (svar-fix v) (svex-alist-keys nextstate))
-                  (<= (nfix n) (len ins)))
-             (equal (svex-env-lookup v (nth n states))
-                    (if (zp n)
-                        (svex-env-lookup v prev-st)
-                      (svex-eval (svex-lookup v nextstate)
-                                 (append (nth (+ -1 n) states)
-                                         (nth (+ -1 n) ins))))))
-    :hints (("goal" :induct (svtv-fsm-states-n-ind ins prev-st nextstate n))))
-
-  
-
-
-  (defthm-svex-eval-unroll-multienv-flag
-    (defthm svex-eval-unroll-multienv-in-terms-of-svtv-fsm-states
-      (implies (< (nfix cycle) (len in-envs))
-               (equal (svex-eval-unroll-multienv x cycle nextstates in-envs orig-state)
-                      (svex-eval x (append (nth cycle (svtv-fsm-states in-envs orig-state nextstates))
-                                           (nth cycle in-envs)))))
-      :hints ('(:expand ((svex-eval-unroll-multienv x cycle nextstates in-envs orig-state)
-                         (:free (env) (svex-eval x env)))
-                :do-not-induct t)
-              ;; (and stable-under-simplificationp
-              ;;      '(:expand ((svtv-fsm-states in-envs orig-state nextstates))))
-              )
-      :flag svex-eval-unroll-multienv)
-    (defthm svexlist-eval-unroll-multienv-in-terms-of-svtv-fsm-states
-      (implies (< (nfix cycle) (len in-envs))
-               (equal (svexlist-eval-unroll-multienv x cycle nextstates in-envs orig-state)
-                      (svexlist-eval x (append (nth cycle (svtv-fsm-states in-envs orig-state nextstates))
-                                               (nth cycle in-envs)))))
-      :hints ('(:expand ((svexlist-eval-unroll-multienv x cycle nextstates in-envs orig-state)
-                         (:free (env) (svexlist-eval x env)))))
-      :flag svexlist-eval-unroll-multienv)))
 
 
 
