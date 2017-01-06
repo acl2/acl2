@@ -848,58 +848,18 @@
                             (plist-to-alist (cdr args)))))
 
 
-; Theorems used to speed up the admission of the rewrite clique.
-
-(defthm rewrite-clique-speedup-26
-  (implies
-   (not (zp nnn))
-   (e0-ord-<
-    (cons (cons (cons (+ 1 (nfix (+ -1 nnn))) 6)
-                (acl2-count (mv-nth 1
-                                    (let nil
-                                      (cond ((atom term) (list nil term))
-                                            ((equal 'quote (car term))
-                                             (list nil term))
-                                            ((equal (car term) 'not)
-                                             (list 'not (cadr term)))
-                                            ((and (equal (car term) 'if)
-                                                  (equal (caddr term) ''nil)
-                                                  (equal (cadddr term) ''t))
-                                             (list 'if (cadr term)))
-                                            (t (list nil term)))))))
-          0)
-    (cons (cons (cons (+ 1 (nfix nnn)) 0) 0)
-          0))))
-
-(defthm rewrite-clique-speedup-5
-  (implies
-   (not (zp nnn))
-   (e0-ord-<
-    (cons
-     (cons
-      (cons (+ 1 (nfix nnn)) 1)
-      any)
-     0)
-    (cons (cons (cons (+ 1 (nfix nnn)) 4) 0)
-          0)))
-  :rule-classes nil)
-
-(defthm rewrite-clique-speedup-4
-  (implies
-   (not (zp nnn))
-   (e0-ord-<
-    (cons
-     (cons
-      (cons (+ 1 (nfix (+ -1 nnn))) 6)
-      any)
-     0)
-    (cons (cons (cons (+ 1 (nfix nnn)) 4) 0)
-          0)))
-  :rule-classes nil)
-
 ; The rewrite clique:
 
-(ACL2::SET-WELL-FOUNDED-RELATION e0-ord-<)
+(local (defthm rewrite-admission-lemma1
+         (implies (consp x)
+                  (acl2::posp (acl2-count x)))))
+
+(local (defthm rewrite-admission-lemma2
+         (implies (not (equal (caddr x) (cadddr x)))
+                  (< (+ 1 (acl2-count (cadr x))
+                        (acl2-count (caddr x))
+                        (acl2-count (cadddr x)))
+                     (acl2-count x)))))
 
 (mutual-recursion
 
@@ -911,20 +871,18 @@
                   :hints (("Goal"
                            :in-theory
                            (disable assume-true-false
-                                    type-set))
-                          ("Subgoal 27" :do-not '(preprocess)
-                           :by rewrite-clique-speedup-5)
-                          ("Subgoal 26" :do-not '(preprocess)
-                           :by rewrite-clique-speedup-4)
-;                         ("Subgoal 17" :do-not '(preprocess)
-;                          :by rewrite-clique-speedup-5)
-;                         ("Subgoal 16" :do-not '(preprocess)
-;                          :by rewrite-clique-speedup-4)
-;                         ("Subgoal 5" :do-not '(preprocess)
-;                          :by rewrite-clique-speedup-5)
-;                         ("Subgoal 4" :do-not '(preprocess)
-;                          :by rewrite-clique-speedup-4)
-                          )))
+                                    type-set
+                                    ancestors-check
+                                    sublis-var
+                                    enabled-numep
+                                    one-way-unify acl2-count
+                                    member-eq acl2::member-equal
+                                    refinementp
+                                    legal-variablep
+                                    apply
+                                    search-type-alist
+                                    var-fn-count
+                                    logand)))))
 
   (cond ((zp nnn) (sublis-var alist term))
         ((variablep term)

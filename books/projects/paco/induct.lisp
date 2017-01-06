@@ -363,12 +363,10 @@
 ; ACL2 does not detect such loops.  Paco limits them: it doesn't allow
 ; more than nnn rules to be invoked on any path.
 
-(acl2::set-well-founded-relation e0-ord-<)
-
 (mutual-recursion
 
 (defun apply-induction-rule (rule term type-alist xterm ens wrld nnn)
-  (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 3) 0)
+  (declare (xargs :measure (acl2::nat-list-measure (list nnn 3 0))
                   :hints (("Goal" :in-theory (disable type-set
                                                       one-way-unify1)))))
 
@@ -412,8 +410,8 @@
 (defun suggested-induction-cands1 (induction-rules term type-alist
                                                    xterm ens wrld nnn)
 
-  (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 1)
-                                 (acl2-count induction-rules))))
+  (declare (xargs :measure (acl2::nat-list-measure
+                            (list nnn 1 (acl2-count induction-rules)))))
 
 ; We map down induction-rules and apply each enabled rule to term,
 ; which is known to be an application of the function symbol fn to
@@ -446,7 +444,7 @@
                                           ens wrld nnn)))))
 
 (defun suggested-induction-cands (term type-alist xterm ens wrld nnn)
-  (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 2) 0)))
+  (declare (xargs :measure (acl2::nat-list-measure (list nnn 2 0))))
 
 ; Term is some fn applied to args.  Xterm is some term occurring in the
 ; conjecture we are exploring and is the term upon which this induction
@@ -1434,8 +1432,7 @@
 ; Abstractly, this function closes B under fn, where B is the bag
 ; union of the unprocessed bag and ans.
 
-  (declare (xargs :measure (cons (+ 1 (len pairs))
-                                 (count-undel pairs del))
+  (declare (xargs :measure (acl2::two-nats-measure (len pairs) (count-undel pairs del))
                   :hints (("Goal" :in-theory (disable m&m-search)))))
   (cond
    ((endp pairs) ans)
