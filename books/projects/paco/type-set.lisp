@@ -157,10 +157,21 @@
 (defun type-set-binary-+-alist-entry (ts1 ts2)
   (ts-builder ts1
               (*ts-zero* ts2)
-              (*ts-positive-integer*
+              (*ts-one*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-positive-integer*)
+                           (*ts-one* *ts-integer>1*)
+                           (*ts-integer>1* *ts-integer>1*)
+                           (*ts-negative-integer* *ts-non-positive-integer*)
+                           (*ts-positive-ratio* *ts-positive-ratio*)
+                           (*ts-negative-ratio* *ts-ratio*)
+                           (*ts-complex-rational* *ts-complex-rational*)
+                           ))
+              (*ts-integer>1*
+               (ts-builder ts2
+                           (*ts-zero* ts1)
+                           (*ts-one* *ts-integer>1*)
+                           (*ts-integer>1* *ts-integer>1*)
                            (*ts-negative-integer* *ts-integer*)
                            (*ts-positive-ratio* *ts-positive-ratio*)
                            (*ts-negative-ratio* *ts-ratio*)
@@ -169,7 +180,8 @@
               (*ts-negative-integer*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-integer*)
+                           (*ts-one* *ts-non-positive-integer*)
+                           (*ts-integer>1* *ts-integer*)
                            (*ts-negative-integer* *ts-negative-integer*)
                            (*ts-positive-ratio* *ts-ratio*)
                            (*ts-negative-ratio* *ts-negative-ratio*)
@@ -178,7 +190,8 @@
               (*ts-positive-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-positive-ratio*)
+                           (*ts-one* *ts-positive-ratio*)
+                           (*ts-integer>1* *ts-positive-ratio*)
                            (*ts-negative-integer* *ts-ratio*)
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-rational*)
@@ -187,7 +200,8 @@
               (*ts-negative-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-ratio*)
+                           (*ts-one* *ts-ratio*)
+                           (*ts-integer>1* *ts-ratio*)
                            (*ts-negative-integer* *ts-negative-ratio*)
                            (*ts-positive-ratio* *ts-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
@@ -196,7 +210,8 @@
               (*ts-complex-rational*
                (ts-builder ts2
                            (*ts-zero* ts1)
-                           (*ts-positive-integer* *ts-complex-rational*)
+                           (*ts-one* *ts-complex-rational*)
+                           (*ts-integer>1* *ts-complex-rational*)
                            (*ts-negative-integer* *ts-complex-rational*)
                            (*ts-positive-ratio* *ts-complex-rational*)
                            (*ts-negative-ratio* *ts-complex-rational*)
@@ -207,10 +222,12 @@
 (defun type-set-binary-*-alist-entry (ts1 ts2)
   (ts-builder ts1
               (*ts-zero* *ts-zero*)
-              (*ts-positive-integer*
+              (*ts-one* ts2)
+              (*ts-integer>1*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-positive-integer*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-integer>1*)
                            (*ts-negative-integer* *ts-negative-integer*)
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
@@ -219,7 +236,8 @@
               (*ts-negative-integer*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-negative-integer*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-negative-integer*)
                            (*ts-negative-integer* *ts-positive-integer*)
                            (*ts-positive-ratio* *ts-negative-rational*)
                            (*ts-negative-ratio* *ts-positive-rational*)
@@ -228,7 +246,8 @@
               (*ts-positive-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-positive-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-positive-rational*)
                            (*ts-negative-integer* *ts-negative-rational*)
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
@@ -237,7 +256,8 @@
               (*ts-negative-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-negative-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-negative-rational*)
                            (*ts-negative-integer* *ts-positive-rational*)
                            (*ts-positive-ratio* *ts-negative-rational*)
                            (*ts-negative-ratio* *ts-positive-rational*)
@@ -246,7 +266,8 @@
               (*ts-complex-rational*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
-                           (*ts-positive-integer* *ts-complex-rational*)
+                           (*ts-one* ts1)
+                           (*ts-integer>1* *ts-complex-rational*)
                            (*ts-negative-integer* *ts-complex-rational*)
                            (*ts-positive-ratio* *ts-complex-rational*)
                            (*ts-negative-ratio* *ts-complex-rational*)
@@ -261,15 +282,26 @@
               (*ts-zero*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-nil*)
                            ))
-              (*ts-positive-integer*
+              (*ts-one*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-boolean*)
+                           (*ts-one* *ts-nil*)
+                           (*ts-integer>1* *ts-t*)
+                           (*ts-negative-integer* *ts-nil*)
+                           (*ts-positive-ratio* *ts-boolean*)
+                           (*ts-negative-ratio* *ts-nil*)
+                           ))
+              (*ts-integer>1*
+               (ts-builder ts2
+                           (*ts-zero* *ts-nil*)
+                           (*ts-one* *ts-nil*)
+                           (*ts-integer>1* *ts-boolean*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
@@ -277,7 +309,8 @@
               (*ts-negative-integer*
                (ts-builder ts2
                            (*ts-zero* *ts-t*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-boolean*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)
@@ -285,7 +318,8 @@
               (*ts-positive-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
-                           (*ts-positive-integer* *ts-boolean*)
+                           (*ts-one* *ts-boolean*)
+                           (*ts-integer>1* *ts-boolean*)
                            (*ts-negative-integer* *ts-nil*)
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
@@ -293,7 +327,8 @@
               (*ts-negative-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-t*)
-                           (*ts-positive-integer* *ts-t*)
+                           (*ts-one* *ts-t*)
+                           (*ts-integer>1* *ts-t*)
                            (*ts-negative-integer* *ts-boolean*)
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)
@@ -355,12 +390,6 @@
           ((and (equal arg1 ''-1)
                 (ts-subsetp ts2 *ts-positive-integer*))
            *ts-non-negative-integer*)
-          ((and (equal arg2 ''+1)
-                (ts-subsetp ts1 *ts-negative-integer*))
-           *ts-non-positive-integer*)
-          ((and (equal arg1 ''+1)
-                (ts-subsetp ts2 *ts-negative-integer*))
-           *ts-non-positive-integer*)
           (t (type-set-binary-+-alist-entry
               (numeric-type-set ts1)
               (numeric-type-set ts2))))))
@@ -400,17 +429,12 @@
 
   (let* ((nts1 (numeric-type-set ts1))
          (nts2 (numeric-type-set ts2)))
-    (cond ((and (equal arg2 *1*)
+    (cond ((and (equal arg1 *-1*)
 
 ; Actually we don't have to add 0 back in, as done by numeric-type-set, before
 ; making the following test.  But let's keep things simple.
 
                 (ts-subsetp nts1 *ts-integer*))
-           (type-set-not
-            (type-set-< *0* arg1 *ts-zero* ts1)))
-          ((and (quotep arg1)
-                (eql (cadr arg1) -1)
-                (ts-subsetp nts2 *ts-integer*))
            (type-set-not
             (type-set-< arg2 *0* ts2 *ts-zero*)))
           ((or (ts-intersectp ts1 *ts-complex-rational*)
@@ -426,15 +450,20 @@
      (t
       (ts-builder ts1
                   (*ts-zero* *ts-zero*)
-                  (*ts-positive-integer* *ts-negative-integer*)
+                  (*ts-one* *ts-negative-integer*)
+                  (*ts-integer>1* *ts-negative-integer*)
                   (*ts-positive-ratio* *ts-negative-ratio*)
-                  (*ts-negative-integer* *ts-positive-integer*))))))
+                  (*ts-negative-integer* *ts-positive-integer*)
+                  (*ts-negative-ratio* *ts-positive-ratio*)
+                  (*ts-complex-rational* *ts-complex-rational*))))))
 
 (defun type-set-unary-/ (ts)
   (let* ((ts1 (numeric-type-set ts)))
     (ts-builder ts1
                 (*ts-zero* *ts-zero*)
-                (*ts-positive-rational* *ts-positive-rational*)
+                (*ts-one* *ts-one*)
+                (*ts-integer>1* *ts-positive-ratio*)
+                (*ts-positive-ratio* *ts-positive-rational*)
                 (*ts-negative-rational* *ts-negative-rational*)
                 (*ts-complex-rational* *ts-complex-rational*))))
 
@@ -442,8 +471,16 @@
   (let* ((ts1 (rational-type-set ts)))
     (ts-builder ts1
                 (*ts-zero* *ts-zero*)
-                (*ts-positive-rational* *ts-positive-integer*)
+                (*ts-one* *ts-one*)
+                (*ts-integer>1* *ts-integer>1*)
+                (*ts-positive-ratio* *ts-positive-integer*)
                 (*ts-negative-rational* *ts-negative-integer*))))
+
+(defun type-set-denominator (ts)
+  (let* ((ts1 (rational-type-set ts)))
+    (ts-builder ts1
+                (*ts-integer* *ts-one*)
+                (*ts-ratio* *ts-integer>1*))))
 
 (defun type-set-realpart (ts)
   (cond ((ts-intersectp ts *ts-complex-rational*)
@@ -658,7 +695,8 @@
          (cond ((rationalp evg)
                 (cond ((integerp evg)
                        (cond ((int= evg 0) *ts-zero*)
-                             ((> evg 0) *ts-positive-integer*)
+                             ((int= evg 1) *ts-one*)
+                             ((> evg 0) *ts-integer>1*)
                              (t *ts-negative-integer*)))
                       ((> evg 0) *ts-positive-ratio*)
                       (t *ts-negative-ratio*)))
@@ -1273,6 +1311,8 @@
 ; could get on with the development of Paco.
 
 (defthm type-set-clique-speedup-53
+  (implies (and (< any 12)
+                (atom any))
   (e0-ord-<
    (cons
     (cons
@@ -1290,12 +1330,12 @@
                                                (equal (cadddr term) ''t))
                                           (list 'if (cadr term)))
                                          (t (list nil term))))))))
-     10)
+     any)
     0)
    (cons (cons (cons (+ 1 (nfix nnn)) (acl2-count x))
                12)
          0))
-  :rule-classes nil)
+));  :rule-classes nil)
 
 #|
 ; Once upon a time this was useful but it is not now.
@@ -1380,12 +1420,12 @@
   (declare (xargs :measure (lex4 (nfix nnn) (acl2-count x) 5 0)
                   :hints
                   (("Goal" :in-theory (disable getprop))
-                   ("Subgoal 53" :do-not '(preprocess)
-                    :by type-set-clique-speedup-53)
+;                   ("Subgoal 53" :do-not '(preprocess)
+;                    :by type-set-clique-speedup-53)
 ;                  ("Subgoal 50" :do-not '(preprocess)
 ;                   :by type-set-clique-speedup-50)
-                   ("Subgoal 16" :do-not '(preprocess)
-                    :by type-set-clique-speedup-16)
+;                   ("Subgoal 16" :do-not '(preprocess)
+;                    :by type-set-clique-speedup-16)
                    ("Subgoal 13" :do-not '(preprocess)
                     :by type-set-clique-speedup-11) ; was 13
                    ("Subgoal 11" :do-not '(preprocess)
@@ -1726,7 +1766,8 @@
                 ancestors ens
                 w nnn)))
     (denominator
-     *ts-positive-integer*)
+     (type-set-denominator
+      (type-set (fargn term 1) type-alist ancestors ens w nnn)))
     (numerator
      (type-set-numerator
       (type-set (fargn term 1) type-alist ancestors ens w nnn)))
