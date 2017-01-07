@@ -1410,11 +1410,12 @@ decomposition proof.</li>
                      (lower (str::hexify (4vec->lower (cdar al))))
                      (mask  (str::hexify (logxor (4vec->upper (cdar al))
                                                  (4vec->lower (cdar al)))))
-                     ;; padding for right-aligning the three values;
-                     ;; mask doesn't need padding
-                     (ul (length upper)) (ll (length lower)) (ml (max ul ll))
-                     (pad-u (- ml ul))
-                     (pad-l (- ml ll)))
+                     ;; padding for right-aligning the three values
+                     (ul (length upper)) (ll (length lower)) (ml (length mask))
+                     (maxl (max ml (max ul ll)))
+                     (pad-u (- maxl ul))
+                     (pad-l (- maxl ll))
+                     (pad-m (- maxl ml)))
                 (progn$
                  (cw! front)
                  (acl2::fmt-to-comment-window!
@@ -1425,7 +1426,7 @@ decomposition proof.</li>
                   3 nil)
                  (cw! "~t0. ~_1~s2" 23 pad-l lower)
                  (cw! back)
-                 (cw! ";;;    non-Boolean mask: ~s0~%" mask)))))))
+                 (cw! ";;;    non-Boolean mask: ~_0~s1~%" pad-m mask)))))))
      (svtv-print-alist-readable-aux (cdr al) nil))))
 
 (define svtv-print-alist-readable ((al svex-env-p))
