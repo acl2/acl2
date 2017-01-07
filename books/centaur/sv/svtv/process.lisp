@@ -1391,30 +1391,35 @@ decomposition proof.</li>
       nil
     (progn$
      (and (mbt (consp (car al)))
-          (progn$
-           (if firstp
-               (cw! " ((")
-             (cw! "  ("))
-           (if (2vec-p (cdar al))
+          (let ((front (if firstp " ((" "  ("))
+                (back (if (consp (cdr al)) ")~%" "))~%")))
+            (cond
+             ((2vec-p (cdar al))
+              (progn$
+               (cw! front)
                (acl2::fmt-to-comment-window!
-                "~x0 ~t1. ~s2)"
+                "~x0 ~t1. ~s2"
                 (pairlis2 '(#\0 #\1 #\2 #\3 #\4
                             #\5 #\6 #\7 #\8 #\9)
-                          (list (caar al) 23 (str::hexify (2vec->val (cdar al)))))
+                          (list (caar al) 23
+                                (str::hexify (2vec->val (cdar al)))))
                 3 nil)
-             (progn$
-              (acl2::fmt-to-comment-window!
-               "~x0   ~t1~s2         ;; non-Boolean mask: ~s3~%"
-               (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                           #\5 #\6 #\7 #\8 #\9)
-                         (list (caar al) 25 (str::hexify (4vec->upper (cdar al)))
-                               (str::hexify (logxor (4vec->upper (cdar al))
-                                                    (4vec->lower (cdar al))))))
-               3 nil)
-              (cw! "       ~t0. ~s1)" 23 (str::hexify (4vec->lower (cdar al))))))
-           (if (consp (cdr al))
-               (cw! "~%")
-             (cw! ")~%"))))
+               (cw! back)))
+             (t
+              (progn$
+               (cw! front)
+               (acl2::fmt-to-comment-window!
+                "~x0 ~t1  ~s2~%"
+                (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                            #\5 #\6 #\7 #\8 #\9)
+                          (list (caar al) 23
+                                (str::hexify (4vec->upper (cdar al)))))
+                3 nil)
+               (cw! "~t0. ~s1" 23 (str::hexify (4vec->lower (cdar al))))
+               (cw! back)
+               (cw! ";;;    non-Boolean mask: ~s0~%"
+                    (str::hexify (logxor (4vec->upper (cdar al))
+                                         (4vec->lower (cdar al))))))))))
      (svtv-print-alist-readable-aux (cdr al) nil))))
 
 (define svtv-print-alist-readable ((al svex-env-p))
@@ -1927,5 +1932,3 @@ either package.</p>
 instead just use STV symbols in the SVEX package.  We don't have much of an
 excuse other than sometimes we're working in the ACL2 package and want to just
 type an extra V rather than an extra @('SV::').</p>")
-
-
