@@ -1406,20 +1406,26 @@ decomposition proof.</li>
                 3 nil)
                (cw! back)))
              (t
-              (progn$
-               (cw! front)
-               (acl2::fmt-to-comment-window!
-                "~x0 ~t1  ~s2~%"
-                (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                            #\5 #\6 #\7 #\8 #\9)
-                          (list (caar al) 23
-                                (str::hexify (4vec->upper (cdar al)))))
-                3 nil)
-               (cw! "~t0. ~s1" 23 (str::hexify (4vec->lower (cdar al))))
-               (cw! back)
-               (cw! ";;;    non-Boolean mask: ~s0~%"
-                    (str::hexify (logxor (4vec->upper (cdar al))
-                                         (4vec->lower (cdar al))))))))))
+              (let* ((upper (str::hexify (4vec->upper (cdar al))))
+                     (lower (str::hexify (4vec->lower (cdar al))))
+                     (mask  (str::hexify (logxor (4vec->upper (cdar al))
+                                                 (4vec->lower (cdar al)))))
+                     ;; padding for right-aligning the three values;
+                     ;; mask doesn't need padding
+                     (ul (length upper)) (ll (length lower)) (ml (max ul ll))
+                     (pad-u (- ml ul))
+                     (pad-l (- ml ll)))
+                (progn$
+                 (cw! front)
+                 (acl2::fmt-to-comment-window!
+                  "~x0 ~t1  ~_2~s3~%"
+                  (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                              #\5 #\6 #\7 #\8 #\9)
+                            (list (caar al) 23 pad-u upper))
+                  3 nil)
+                 (cw! "~t0. ~_1~s2" 23 pad-l lower)
+                 (cw! back)
+                 (cw! ";;;    non-Boolean mask: ~s0~%" mask)))))))
      (svtv-print-alist-readable-aux (cdr al) nil))))
 
 (define svtv-print-alist-readable ((al svex-env-p))
