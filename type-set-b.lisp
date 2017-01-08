@@ -5905,36 +5905,41 @@
           (declare (ignore rest-type-alist))
           (mv ans unify-subst ttree)))
 
-(defun term-and-typ-to-lookup (hyp wrld)
+(defun term-and-typ-to-lookup (hyp wrld ens)
   (mv-let
-   (not-flg term)
-   (strip-not hyp)
-   (let* ((recog-tuple (and (nvariablep term)
+    (not-flg term)
+    (strip-not hyp)
+    (let ((recog-tuple (and (nvariablep term)
                             (not (fquotep term))
                             (not (flambda-applicationp term))
-                            (assoc-eq (ffn-symb term)
-                                      (global-val 'recognizer-alist wrld))))
-          (typ (if (and recog-tuple
-                        (access recognizer-tuple recog-tuple :strongp))
-                   (if not-flg
-                       (access recognizer-tuple recog-tuple :false-ts)
-                       (access recognizer-tuple recog-tuple :true-ts))
-                   (if not-flg *ts-nil* *ts-non-nil*)))
-          (term (if (and recog-tuple
-                         (access recognizer-tuple recog-tuple :strongp))
-                    (fargn term 1)
-                    term)))
-     (mv term typ))))
+                            (most-recent-enabled-recog-tuple
+                             (ffn-symb term)
+                             (global-val 'recognizer-alist wrld)
+                             ens))))
+      (cond ((and recog-tuple
+                  (access recognizer-tuple recog-tuple :strongp))
+             (mv (fargn term 1)
+                 (if not-flg
+                     (access recognizer-tuple recog-tuple :false-ts)
+                   (access recognizer-tuple recog-tuple :true-ts))
+                 (access recognizer-tuple recog-tuple :rune)))
+            (t (mv term
+                   (if not-flg *ts-nil* *ts-non-nil*)
+                   nil))))))
 
-(defun lookup-hyp (hyp type-alist wrld unify-subst ttree)
+(defun lookup-hyp (hyp type-alist wrld unify-subst ttree ens)
 
 ; See if hyp is true by type-alist or simp-clause considerations --
 ; possibly extending the unify-subst.  If successful we return t, a
 ; new unify-subst and a new ttree.  No-Change Loser.
 
-  (mv-let (term typ)
-          (term-and-typ-to-lookup hyp wrld)
-          (search-type-alist term typ type-alist unify-subst ttree wrld)))
+  (mv-let (term typ rune)
+    (term-and-typ-to-lookup hyp wrld ens)
+    (mv-let (ans unify-subst ttree)
+      (search-type-alist term typ type-alist unify-subst ttree wrld)
+      (mv ans unify-subst (if (and ans rune)
+                              (push-lemma rune ttree)
+                            ttree)))))
 
 (defun bind-free-vars-to-unbound-free-vars (vars alist)
 
@@ -7448,6 +7453,11 @@
         (t (mv nil arg))))
       (otherwise (mv nil arg)))))
 
+(defun push-lemma? (rune ttree)
+  (if rune
+      (push-lemma rune ttree)
+    ttree))
+
 (mutual-recursion
 
 (defun type-set-rec (x force-flg dwp type-alist ancestors ens w ttree
@@ -8243,46 +8253,47 @@
             pot-lst pt backchain-limit (1+ bkptr)))
           (t
            (mv-let
-            (term typ)
-            (term-and-typ-to-lookup hyp wrld)
+            (term typ compound-rec-rune?)
+            (term-and-typ-to-lookup hyp wrld ens)
             (mv-let
              (lookup-hyp-ans alist+ ttree rest-type-alist)
              (search-type-alist-with-rest term typ type-alist alist ttree wrld)
              (cond
               (lookup-hyp-ans
-               (cond
-                ((and rest-type-alist
-                      (not (eq (caar alist) (caar alist+))) ; free vars
-                      (not (oncep-tp rune wrld)))
-                 (let ((bkptr+1 (1+ bkptr)))
-                   (mv-let
-                    (relieve-hyps-ans type-alist ttree)
-                    (type-set-relieve-hyps rune
-                                           target
-                                           (cdr hyps)
-                                           (cdr backchain-limit-lst)
-                                           force-flg dwp alist+
-                                           type-alist ancestors ens wrld
-                                           ttree ttree0
-                                           pot-lst pt backchain-limit
-                                           bkptr+1)
-                    (cond
-                     (relieve-hyps-ans (mv relieve-hyps-ans type-alist ttree))
-                     (t (type-set-relieve-hyps-free
-                         term typ rest-type-alist
-                         rune target hyps backchain-limit-lst
-                         force-flg dwp alist type-alist
-                         ancestors ens wrld ttree ttree0 pot-lst pt
-                         backchain-limit bkptr+1))))))
-                (t (type-set-relieve-hyps rune
-                                          target
-                                          (cdr hyps)
-                                          (cdr backchain-limit-lst)
-                                          force-flg dwp alist+
-                                          type-alist ancestors ens wrld
-                                          ttree ttree0
-                                          pot-lst pt backchain-limit
-                                          (1+ bkptr)))))
+               (let ((ttree (push-lemma? compound-rec-rune? ttree)))
+                 (cond
+                  ((and rest-type-alist
+                        (not (eq (caar alist) (caar alist+))) ; free vars
+                        (not (oncep-tp rune wrld)))
+                   (let ((bkptr+1 (1+ bkptr)))
+                     (mv-let
+                       (relieve-hyps-ans type-alist ttree)
+                       (type-set-relieve-hyps rune
+                                              target
+                                              (cdr hyps)
+                                              (cdr backchain-limit-lst)
+                                              force-flg dwp alist+
+                                              type-alist ancestors ens wrld
+                                              ttree ttree0
+                                              pot-lst pt backchain-limit
+                                              bkptr+1)
+                       (cond
+                        (relieve-hyps-ans (mv relieve-hyps-ans type-alist ttree))
+                        (t (type-set-relieve-hyps-free
+                            term typ rest-type-alist
+                            rune target hyps backchain-limit-lst
+                            force-flg dwp alist type-alist
+                            ancestors ens wrld ttree ttree0 pot-lst pt
+                            backchain-limit bkptr+1))))))
+                  (t (type-set-relieve-hyps rune
+                                            target
+                                            (cdr hyps)
+                                            (cdr backchain-limit-lst)
+                                            force-flg dwp alist+
+                                            type-alist ancestors ens wrld
+                                            ttree ttree0
+                                            pot-lst pt backchain-limit
+                                            (1+ bkptr))))))
               ((free-varsp hyp alist)
                (let ((fully-bound-alist
                       (if (and forcep force-flg)

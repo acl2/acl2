@@ -9608,11 +9608,6 @@
                             rune val info)
                         nil unify-subst ttree)))))))))
 
-(defun push-lemma? (rune ttree)
-  (if rune
-      (push-lemma rune ttree)
-    ttree))
-
 (defmacro push-lemma+ (rune ttree rcnst ancestors rhs rewritten-rhs)
 
 ; Warning: Keep this in sync with push-splitter?; see the comment there for how
@@ -12506,9 +12501,14 @@
 
 ; See comment above about "SPECIAL CASE".
 
-                 (mv-let (term typ)
-                         (term-and-typ-to-lookup hyp wrld)
-                         (mv step-limit term typ unify-subst ttree memo)))
+                 (mv-let (term typ compound-rec-rune?)
+                   (term-and-typ-to-lookup
+                    hyp wrld (access rewrite-constant
+                                     rcnst
+                                     :current-enabled-structure))
+                   (mv step-limit term typ unify-subst
+                       (push-lemma? compound-rec-rune? ttree)
+                       memo)))
                 (t
                  (let* ((memo-active (memo-activep memo))
                         (memo-entry (and (consp memo)
@@ -12542,7 +12542,10 @@
                                      ttree)))
                         (mv-let
                          (lookup-hyp-ans unify-subst ttree)
-                         (lookup-hyp hyp type-alist wrld unify-subst ttree)
+                         (lookup-hyp hyp type-alist wrld unify-subst ttree
+                                     (access rewrite-constant
+                                             rcnst
+                                             :current-enabled-structure))
 
 ; We know that unify-subst is not extended, since (free-varsp hyp unify-subst)
 ; is false, but it still seems appropriate to use the existing code in
