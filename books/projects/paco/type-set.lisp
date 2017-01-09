@@ -1002,35 +1002,35 @@
                               (cdr type-alist)
                               unify-subst))))
 
-(defun term-and-typ-to-lookup (hyp wrld)
+(defun term-and-typ-to-lookup (hyp wrld ens)
   (mv-let
-   (not-flg term)
-   (strip-not hyp)
-   (let* ((recog-tuple (and (nvariablep term)
+    (not-flg term)
+    (strip-not hyp)
+    (let ((recog-tuple (and (nvariablep term)
                             (not (fquotep term))
                             (not (flambda-applicationp term))
-                            (assoc-eq (ffn-symb term)
-                                      (global-val 'recognizer-alist wrld))))
-          (typ (if (and recog-tuple
-                        (access recognizer-tuple recog-tuple :strongp))
-                   (if not-flg
-                       (access recognizer-tuple recog-tuple :false-ts)
-                       (access recognizer-tuple recog-tuple :true-ts))
-                   (if not-flg *ts-nil* *ts-non-nil*)))
-          (term (if (and recog-tuple
-                         (access recognizer-tuple recog-tuple :strongp))
-                    (fargn term 1)
-                    term)))
-     (mv term typ))))
+			    (<reduce-id>
+			     (most-recent-enabled-recog-tuple
+			      (ffn-symb term)
+			      (global-val 'recognizer-alist wrld)
+			      ens)))))
+      (cond ((and recog-tuple
+                  (access recognizer-tuple recog-tuple :strongp))
+             (mv (fargn term 1)
+                 (if not-flg
+                     (access recognizer-tuple recog-tuple :false-ts)
+                   (access recognizer-tuple recog-tuple :true-ts))))
+            (t (mv term
+                   (if not-flg *ts-nil* *ts-non-nil*)))))))
 
-(defun lookup-hyp (hyp type-alist wrld unify-subst)
+(defun lookup-hyp (hyp type-alist wrld unify-subst ens)
 
 ; See if hyp is true by type-alist considerations -- possibly
 ; extending the unify-subst.  If successful we return t and a new
 ; unify-subst.  No-Change Loser.
 
   (mv-let (term typ)
-          (term-and-typ-to-lookup hyp wrld)
+          (term-and-typ-to-lookup hyp wrld ens)
           (search-type-alist term typ type-alist unify-subst)))
 
 (mutual-recursion
@@ -1424,7 +1424,7 @@
     (let* ((hyp (car hyps)))
       (mv-let
        (lookup-hyp-ans alist)
-       (lookup-hyp hyp type-alist w alist)
+       (lookup-hyp hyp type-alist w alist ens)
        (cond
         (lookup-hyp-ans
          (type-set-relieve-hyps (cdr hyps) alist type-alist ancestors
