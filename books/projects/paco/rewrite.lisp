@@ -1232,7 +1232,8 @@
         (t
          (mv-let
           (flg unify-subst)
-          (lookup-hyp term type-alist wrld unify-subst)
+          (lookup-hyp term type-alist wrld unify-subst
+		      (access rewrite-constant rcnst :ens))
           (cond
            (flg (mv t unify-subst))
            ((free-varsp term unify-subst) (mv nil unify-subst))
