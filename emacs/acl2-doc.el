@@ -118,6 +118,23 @@
 ; not smashed by invoking that macro after running acl2-doc-alist-create.
 (defv *acl2-doc-directory* nil)
 
+(defun my-cl-position (ch str)
+
+;;; We include this simple variant of cl-position because it is not
+;;; available in some versions of emacs (we have had a report of this
+;;; problem for GNU Emacs 24.3.1 on redhat).
+
+  (let ((continue t)
+	(pos 0)
+	(len (length str))
+	(ans))
+    (while (and continue (< pos len))
+      (when (eql (aref str pos) ch)
+	(setq ans pos)
+	(setq continue nil))
+      (setq pos (1+ pos)))
+    ans))
+
 (defun acl2-doc-fix-symbol (sym)
 
 ;;; Since Emacs Lisp doesn't seem to use |..| for escaping, we simply
@@ -125,7 +142,7 @@
 ;;; Lisp.
 
   (let* ((name (symbol-name sym))
-	 (pos (cl-position ?| name)))
+	 (pos (my-cl-position ?| name)))
     (cond ((null pos)			; common case
 	   sym)
 	  (t (let ((max (1- (length name))))

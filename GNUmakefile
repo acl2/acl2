@@ -105,6 +105,11 @@
 #  option below.  If you want to get rid of the metering in the
 #  compiled code, do make full.
 
+# Avoid loading the ACL2 customization file.  This is already done by
+# the books build system; however we need this for "make DOC" and
+# perhaps other targets.
+export ACL2_CUSTOMIZATION ?= NONE
+
 # Avoid escape characters in regression log:
 export CERT_PL_NO_COLOR ?= t
 
