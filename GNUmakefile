@@ -23,7 +23,7 @@
 #  Example invocations for users:
 
 #   make             ; Build ${PREFIXsaved_acl2} from scratch.  Same as make large.
-#   make large       ; Build large-${PREFIXsaved_acl2} from scratch.
+#   make large       ; Build ${PREFIXsaved_acl2} from scratch.  Same as make.
 #   make LISP=cl PREFIX=allegro-
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
@@ -59,17 +59,10 @@
 
 ###############################################################################
 
-#  NOTE:  Users need not read below this line.  Neither should installers of
-#  ACL2 at sites other than CLI.  We have no reason to believe that the make
-#  commands illustrated below will work at sites other than CLI.  Indeed, we
-#  have reasons to believe they will not!  A typical problem is that we refer
-#  to a file or directory that exists at CLI but that is not created when our
-#  installation instructions are followed at other sites.
+#  NOTE:  Perhaps only implementors should read below.
+#  Example invocations for implementors:
 
-#  Example invocations for CLI implementors:
-
-#   NOTE:  Make large completely recompiles, initializes and
-#   saves.
+#   NOTE:  Make completely recompiles, initializes and saves.
 
 #   make full      ; A complete recompilation whether needed or not.
 #   make full init ; Completely recompile, initialize and save.
@@ -78,19 +71,15 @@
 #   make check-sum ; Call only after ACL2 is completely compiled.
 #   make full LISP=lucid PREFIX=lucid-  ; makes acl2 in Lucid
 #   make full LISP=cl PREFIX=allegro- ; makes acl2 in allegro
-#                  ; Note:  Allegro is not always named cl at CLI.  See
-#                  ; ~moore/allegro/runcl for some clues.
+#                  ; Note:  Allegro is not always named cl.
 #   make full LISP=lispworks PREFIX=lispworks- ; makes acl2 in lispworks
 #   make copy-distribution DIR=/stage/ftp/pub/moore/acl2/v2-9/acl2-sources
 #                  ; copies all of acl2 plus books, doc, etc., to the named
 #                  ; directory, as for compiling on another architecture or
 #                  ; moving to the ftp site.
-#                  ; Preconditions:
-#                  ; (1) The named directory must not already exist; if it
+#                  ; Precondition:
+#                  ;     The named directory must not already exist; if it
 #                  ;     does, a harmless error is caused.
-#                  ; (2) acl2-book must be gzipped, i.e., if necessary first do
-#                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.ps
-#                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.dvi
 #   make DOC       ; Build xdoc manual and rebuild source file doc.lisp
 #   make clean-doc ; Remove files created by make DOC
 #   make proofs    ; Assuming sources are compiled, initialize without skipping
@@ -645,16 +634,6 @@ large-acl2p:
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"
 # command line.
 
-# Note that move-large may not have the desired effect for Allegro/CMUCL/SBCL
-# images, because "large-" will not have been written to the core file name in
-# ${PREFIXsaved_acl2}.
-.PHONY: move-large
-move-large:
-	mv ${PREFIXsaved_acl2} large-${PREFIXsaved_acl2}
-	if [ -f worklispext ]; then \
-	mv ${PREFIXsaved_acl2}.`cat worklispext ` large-${PREFIXsaved_acl2}.`cat worklispext` ;\
-	fi
-
 # Certify books that are not up-to-date, but only those that might reasonably
 # be useful to include in proof developments.
 # NOTE:  None of the book certification targets use PREFIX.  They use
@@ -772,6 +751,7 @@ clean-books:
 tar:
 	rm -f acl2.tar.Z acl2.tar.gz acl2.tar
 	rm -f SUM
+# Historical comment (maybe be updated some day...):
 # We want the extracted tar files to have permission for everyone to write,
 # so that when they use -p with tar they get that permission.
 # But we don't want the tar file itself to have that permission.  We may as
