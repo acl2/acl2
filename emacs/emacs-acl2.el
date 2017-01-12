@@ -37,8 +37,11 @@
   ; "control-t b" switches to the shell buffer.
   ; "control-t c" sets the shell buffer (initially, *shell*) to the current
   ;      buffer
-  ; "control-t control-e" sends the current form to the shell buffer, but
-  ;      in the other window.
+  ; "control-t control-e" sends the current form to the shell buffer,
+  ;      but in a different window.  If the shell buffer is already
+  ;      visible in some window, use that window.  Otherwise, use the
+  ;      "other window" as defined by Emacs (see the Emacs
+  ;      documentation for `other-window').
   ; "control-d" is redefined in shell/telnet buffers to avoid ending process.
   ; "meta-p" and "meta-n" cycle backward/forward doing command completion in
   ;      shell/telnet buffers.
@@ -303,7 +306,7 @@ currently exist and has never been created by this function."
 ; starting with the immediately preceding left parenthesis in column 0.  (It is
 ; OK to stand on that parenthesis as well.)
 (define-key ctl-t-keymap "e" 'enter-theorem)
-(define-key ctl-t-keymap "\C-e" 'enter-theorem-other-window)
+(define-key ctl-t-keymap "\C-e" 'enter-theorem-elsewhere)
 
 ; Old version (before v2-8) hardwires in the use of *shell*.
 ;(defalias 'enter-theorem
@@ -374,15 +377,19 @@ currently exist and has never been created by this function."
 current line or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[
 ]*$\" \"^$\") -- patterns to disallow.")
 
-(defun enter-theorem-fn (use-other-window)
-  (let ((str (acl2-current-form-string))
-        (buf (get-buffer *acl2-shell*))
-        (patterns *acl2-insert-pats*))
+(defun enter-theorem-fn (elsewhere)
+  (let* ((str (acl2-current-form-string))
+         (buf (get-buffer *acl2-shell*))
+         (win (if elsewhere
+                  (get-buffer-window buf)
+                (selected-window)))
+         (patterns *acl2-insert-pats*))
     (unless buf
       (error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
     ;; Go to the *acl2-shell* buffer
     (push-mark)
-    (when use-other-window
+    (if win
+        (select-window win)
       (other-window 1))
     (switch-to-buffer buf)
     (goto-char (point-max))
@@ -429,7 +436,7 @@ scope with control-t o."
   (interactive)
   (enter-theorem-fn nil))
 
-(defun enter-theorem-other-window ()
+(defun enter-theorem-elsewhere ()
   (interactive)
   (enter-theorem-fn t))
 
