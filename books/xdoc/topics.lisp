@@ -713,6 +713,59 @@ then, you may want to do something like this:</p>
  (xdoc::save \"./mylib-manual\")
 })")
 
+(defxdoc save-rendered
+  :parents (XDOC)
+  :short "Saves the XDOC database into a file for the acl2-doc browser"
+  :long "
+ @({
+ General Form:
+
+ (save-rendered outfile
+                header
+                topic-list-name
+                force-missing-parents-p
+                maybe-add-top-topic-p
+                state)
+ })
+
+ <p>where @('outfile') is the pathname for the output file, @('header') is to
+ be written to the top of @('outfile') (typically as a comment), and the value
+ of @('topic-list-name') is a symbol that can be the first argument of @(tsee
+ defconst), hence of the form @('*c*').  As of this writing, @('save-rendered')
+ is always called with @('force-missing-parents-p') and
+ @('maybe-add-top-topic-p') equal to @('t').  Upon success this call returns
+ the error-triple @('(mv nil (value-triple :ok) state)'); probably the value is
+ unimportant except that it allows an @('xdoc::save-rendered') call to be
+ placed inside @('make-event'), as displayed below.</p>
+
+ <p>For example, the following form may be found in community book
+ @('books/doc/top.lisp').  Its evaluation creates the output file
+ @('books/system/doc/rendered-doc-combined.lsp\"').  That file starts with a
+ comment from the string, @('*rendered-doc-combined-header*'), then contains
+ @('(in-package \"ACL2\")'), and concludes with a form @('(defconst
+ *ACL2+BOOKS-DOCUMENTATION* '<big-alist>)'), where @('<big-alist>') is an alist
+ representing the XDOC database.</p>
+
+ @({
+ (make-event
+  (time$
+   (xdoc::save-rendered
+    (extend-pathname (cbd)
+                     \"../system/doc/rendered-doc-combined.lsp\"
+                     state)
+    *rendered-doc-combined-header*
+    '*acl2+books-documentation*
+    t ; force-missing-parents-p
+    t ; maybe-add-top-topic-p
+    state)))
+ })
+
+ <p>The output file is typically used by the acl2-doc Emacs-based browser for
+ XDOC.  See @(see acl2::acl2-doc), specifically the discussion of custom
+ manuals, which explains that the @('filename') argument of Emacs function
+ @('extend-acl2-doc-manual-alist') is exactly the output file created by
+ @('xdoc::save-rendered').</p>")
+
 
 (defxdoc deploying-manuals
   :parents (save)
