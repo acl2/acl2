@@ -1519,20 +1519,20 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                                 (equal simplify ''nil)
                                 (equal readable ''t))))
              (equal (svtv-run svtv inalist
-                              :skip skip
-                              :boolvars boolvars
-                              :simplify simplify
-                              :quiet quiet
-                              :readable readable)
-                    (svtv-run svtv inalist :skip skip)))
+                              :skip skip :include include :boolvars boolvars
+                              :simplify simplify :quiet quiet :readable readable)
+                    (svtv-run svtv inalist :skip skip :include include)))
     :hints(("Goal" :in-theory (enable svex-alist-eval-for-symbolic))))
 
   (local (defthm alistp-of-svex-alist-eval
-           (alistp (Svex-alist-eval x env))
+           (alistp (svex-alist-eval x env))
            :hints(("Goal" :in-theory (enable svex-alist-eval)))))
 
   (defthm alistp-of-svtv-run
-    (alistp (svtv-run svtv inalist :skip skip :boolvars boolvars :quiet quiet)))
+    (alistp (svtv-run
+             svtv inalist
+             :skip skip :include include :boolvars boolvars
+             :simplify simplify :quiet quiet :readable readable)))
 
   (local (defthm svex-lookup-iff-hons-assoc-equal
            (implies (and (svex-alist-p x)
@@ -1550,7 +1550,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
 
   (local (defthm assoc-when-alistp
            (implies (alistp a)
-                    (Equal (assoc k a)
+                    (equal (assoc k a)
                            (hons-assoc-equal k a)))))
 
   (local (defthm alistp-when-svex-alist-p-rw
@@ -1559,30 +1559,58 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
            :hints(("Goal" :in-theory (enable svex-alist-p)))))
 
   (defthm lookup-in-svtv-run-under-iff
-    (iff (assoc key (svtv-run svtv inalist :skip skip :boolvars boolvars :quiet quiet))
+    (iff (assoc key (svtv-run
+                     svtv inalist
+                     :include include :skip skip :boolvars boolvars
+                     :simplify simplify :quiet quiet :readable readable))
          (and (member key (svtv->outs svtv))
-              (not (member key skip))))
+              (if include
+                  (member key include)
+                (not (member key skip)))))
     :hints(("Goal" :in-theory (enable svtv->outs))))
 
   (defthm lookup-in-svtv-run-consp
-    (equal (consp (assoc key (svtv-run svtv inalist :skip skip :boolvars boolvars :quiet quiet)))
+    (iff (consp
+          (assoc key (svtv-run
+                      svtv inalist
+                      :include include :skip skip :boolvars boolvars
+                      :simplify simplify :quiet quiet :readable readable)))
          (and (member key (svtv->outs svtv))
-              (not (member key skip))))
+              (if include
+                  (member key include)
+                (not (member key skip)))))
     :hints(("Goal" :in-theory (enable svtv->outs))))
 
   (defthm 4vec-p-lookup-in-svtv-run
-    (equal (4vec-p (cdr (assoc key (svtv-run svtv inalist :skip skip :boolvars boolvars :quiet quiet))))
-           (and (member key (svtv->outs svtv))
-                (not (member key skip))))
+    (iff (4vec-p (cdr (assoc key (svtv-run
+                                  svtv inalist
+                                  :include include :skip skip :boolvars boolvars
+                                  :simplify simplify :quiet quiet :readable readable))))
+         (and (member key (svtv->outs svtv))
+              (if include
+                  (member key include)
+                (not (member key skip)))))
     :hints(("Goal" :in-theory (enable svtv->outs))))
 
-  (defthm lookup-in-svtv-run-with-skips
-    (implies (and (syntaxp (and (quotep skips)
-                                (not (equal skips ''nil))))
-                  (not (member signal skips)))
-             (equal (assoc signal (svtv-run svtv inalist :skip skips :boolvars boolvars :quiet quiet))
-                    (assoc signal (svtv-run svtv inalist))))
- :hints(("Goal" :in-theory (enable svtv-run)))))
+  (defthm lookup-in-svtv-run-with-include
+    (implies (and (syntaxp (and (quotep include)
+                                (not (equal include ''nil))))
+                  (member signal include))
+             (equal (assoc signal (svtv-run
+                                   svtv inalist
+                                   :include include :skip skip :boolvars boolvars
+                                   :simplify simplify :quiet quiet :readable readable))
+                    (assoc signal (svtv-run svtv inalist)))))
+
+  (defthm lookup-in-svtv-run-with-skip
+    (implies (and (syntaxp (and (quotep skip)
+                                (not (equal skip ''nil))))
+                  (not (member signal skip)))
+             (equal (assoc signal (svtv-run
+                                   svtv inalist
+                                   :include nil :skip skip :boolvars boolvars
+                                   :simplify simplify :quiet quiet :readable readable))
+                    (assoc signal (svtv-run svtv inalist))))))
 
 (defthm svex-env-p-of-pairlis
   (implies (and (svarlist-p a)
