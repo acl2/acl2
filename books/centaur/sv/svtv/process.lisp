@@ -1570,28 +1570,26 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     :hints(("Goal" :in-theory (enable svtv->outs))))
 
   (defthm lookup-in-svtv-run-consp
-    (equal (consp
-            (assoc key (svtv-run
-                        svtv inalist
-                        :include include :skip skip :boolvars boolvars
-                        :simplify simplify :quiet quiet :readable readable)))
-           (and (member key (svtv->outs svtv))
-                (if include
-                    (member key include)
-                  (not (member key skip)))
-                t))
+    (iff (consp
+          (assoc key (svtv-run
+                      svtv inalist
+                      :include include :skip skip :boolvars boolvars
+                      :simplify simplify :quiet quiet :readable readable)))
+         (and (member key (svtv->outs svtv))
+              (if include
+                  (member key include)
+                (not (member key skip)))))
     :hints(("Goal" :in-theory (enable svtv->outs))))
 
   (defthm 4vec-p-lookup-in-svtv-run
-    (equal (4vec-p (cdr (assoc key (svtv-run
-                                    svtv inalist
-                                    :include include :skip skip :boolvars boolvars
-                                    :simplify simplify :quiet quiet :readable readable))))
-           (and (member key (svtv->outs svtv))
-                (if include
-                    (member key include)
-                  (not (member key skip)))
-                t))
+    (iff (4vec-p (cdr (assoc key (svtv-run
+                                  svtv inalist
+                                  :include include :skip skip :boolvars boolvars
+                                  :simplify simplify :quiet quiet :readable readable))))
+         (and (member key (svtv->outs svtv))
+              (if include
+                  (member key include)
+                (not (member key skip)))))
     :hints(("Goal" :in-theory (enable svtv->outs))))
 
   (defthm lookup-in-svtv-run-with-include
