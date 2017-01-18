@@ -9174,12 +9174,13 @@
       (let ((ctx ''preprocess))
         `(prog2$ (er hard ,ctx
                      "The call depth limit of ~x0 has been exceeded in the ~
-                      ACL2 preprocessor (a sort of rewriter).  There is ~
-                      probably a loop caused by some set of enabled simple ~
-                      rules.  To see why the limit was exceeded, ~@1retry the ~
-                      proof with :hints~%  :do-not '(preprocess)~%and then ~
-                      follow the directions in the resulting error message.  ~
-                      See :DOC rewrite-stack-limit."
+                      ACL2 preprocessor (a sort of rewriter).  There might be ~
+                      a loop caused by some set of enabled simple rules.  To ~
+                      see why the limit was exceeded, ~@1retry the proof with ~
+                      :hints~%  :do-not '(preprocess)~%and then follow the ~
+                      directions in the resulting error message.  See :DOC ~
+                      rewrite-stack-limit for a possible solution when there ~
+                      is not a loop."
                      (rewrite-stack-limit wrld)
                      (if (f-get-global 'gstackp state)
                          ""
@@ -9190,10 +9191,11 @@
                    "The call depth limit of ~x0 has been exceeded in the ACL2 ~
                     rewriter.  To see why the limit was exceeded, ~@1execute ~
                     the form (cw-gstack) or, for less verbose output, instead ~
-                    try (cw-gstack :frames 30).  You will then probably ~
-                    notice a loop caused by some set of enabled rules, some ~
-                    of which you can then disable; see :DOC disable.  Also ~
-                    see :DOC rewrite-stack-limit."
+                    try (cw-gstack :frames 30).  You may then notice a loop ~
+                    caused by some set of enabled rules, some of which you ~
+                    can then disable; see :DOC disable.  For a possible ~
+                    solution when there is not a loop, see :DOC ~
+                    rewrite-stack-limit."
                    (rewrite-stack-limit wrld)
                    (if (f-get-global 'gstackp state)
                        ""
