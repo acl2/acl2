@@ -1464,10 +1464,9 @@
          (ev$! (caddr x) a)
          (ev$! (cadddr x) a)))
     ((eq (car x) 'APPLY$)
-     (apply$! 'APPLY$
-              (list (cadr (cadr x)) (EV$! (caddr x) a))))
+     (ec-call (APPLY$! (cadr (cadr x)) (EV$! (caddr x) a))))
     ((eq (car x) 'EV$)
-     (apply$! 'EV$ (list (cadr (cadr x)) (EV$! (caddr x) a))))
+     (ev$! (cadr (cadr x)) (ev$! (caddr x) a)))
 
 ; Here in the defun of ev$ we have (t (apply$ (car x) (ev$-list (cdr x) a))).
 ; But that truly complicates the measure because the only reason the measure
