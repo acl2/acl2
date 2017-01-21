@@ -446,7 +446,8 @@
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
                        :redef-okp t
-                       :logo-image "./acl2-big.png")
+                       :logo-image "./acl2-big.png"
+                       :error t)
            (value `(value-triple :manual))))
 
 (value-triple
@@ -490,8 +491,7 @@
                     state)
    *rendered-doc-combined-header*
    '*acl2+books-documentation*
-   t ; force-missing-parents-p
-   t ; maybe-add-top-topic-p
+   t ; error if there is any xdoc-error
    state)))
 
 
@@ -527,7 +527,8 @@
      (xdoc::save "./manual"
                  :redef-okp t
                  :zip-p nil
-                 :logo-image "./acl2-big.png")
+                 :logo-image "./acl2-big.png"
+                 :error t)
      (value `(value-triple :manual)))))
 
 

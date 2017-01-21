@@ -591,7 +591,7 @@ acl2-doc Emacs-based browser (see @(see acl2::acl2-doc)).</p>
    :short \"My Manual\"
    :long \"<p>This manual explains how to use my books...</p>\")
 
- (xdoc::save \"./mylib-manual\")  ;; write the manual
+ (xdoc::save \"./mylib-manual\" :error t)  ;; write the manual
 })
 
 <p>Notes about this example:</p>
@@ -631,6 +631,7 @@ manual with others, you should read about @(see deploying-manuals).</li>
           [:redef-okp  bool]      ;; default is nil
           [:zip-p      bool]      ;; default is t
           [:logo-image path]      ;; default is nil
+          [:error      bool]      ;; default is nil
           )
 })
 
@@ -674,6 +675,12 @@ build them, you can set @(':zip-p nil').</dd>
 The path you provide should be relative to whatever book contains the @('save')
 command.</dd>
 
+<dt>@(':error')</dt>
+
+<dd>The value is @('t') or @('nil'), to indicate whether or not (respectively)
+to cause an error upon encountering a syntax error in xdoc source (\"xdoc
+error\" or \"Markup error\").</dd>
+
 </dl>
 
 
@@ -710,7 +717,7 @@ then, you may want to do something like this:</p>
    :short \"My Manual\"
    :long \"<p>This manual explains how to use my books...</p>\")
 
- (xdoc::save \"./mylib-manual\")
+ (xdoc::save \"./mylib-manual\" :error t)
 })")
 
 (defxdoc save-rendered
@@ -723,20 +730,20 @@ then, you may want to do something like this:</p>
  (save-rendered outfile
                 header
                 topic-list-name
-                force-missing-parents-p
-                maybe-add-top-topic-p
+                error
                 state)
  })
 
  <p>where @('outfile') is the pathname for the output file, @('header') is to
  be written to the top of @('outfile') (typically as a comment), and the value
  of @('topic-list-name') is a symbol that can be the first argument of @(tsee
- defconst), hence of the form @('*c*').  As of this writing, @('save-rendered')
- is always called with @('force-missing-parents-p') and
- @('maybe-add-top-topic-p') equal to @('t').  Upon success this call returns
- the error-triple @('(mv nil (value-triple :ok) state)'); probably the value is
- unimportant except that it allows an @('xdoc::save-rendered') call to be
- placed inside @('make-event'), as displayed below.</p>
+ defconst), hence of the form @('*c*').  The value of @('error') should be
+ @('t') or @('nil') to indicate whether or not (respectively) to cause an error
+ upon encountering a syntax error in xdoc source (\"xdoc error\" or \"Markup
+ error\").  Upon success this call returns the error-triple @('(mv
+ nil (value-triple :ok) state)'); probably the value is unimportant except that
+ it allows an @('xdoc::save-rendered') call to be placed inside
+ @('make-event'), as displayed below.</p>
 
  <p>For example, the following form may be found in community book
  @('books/doc/top.lisp').  Its evaluation creates the output file
@@ -755,8 +762,7 @@ then, you may want to do something like this:</p>
                      state)
     *rendered-doc-combined-header*
     '*acl2+books-documentation*
-    t ; force-missing-parents-p
-    t ; maybe-add-top-topic-p
+    t ; cause error upon encountering \"xdoc error\" or \"Markup error\"
     state)))
  })
 

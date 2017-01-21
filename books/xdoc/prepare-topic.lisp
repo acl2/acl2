@@ -33,6 +33,7 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "preprocess")
 (include-book "parse-xml")
+(include-book "xdoc-error")
 (program)
 (set-state-ok t)
 
@@ -274,6 +275,7 @@
 
        (acc (b* (((unless err)
                   (append short-acc acc))
+                 (- (note-xdoc-error))
                  (acc (str::revappend-chars "<b>Markup error in :short: </b><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
                  (acc (str::revappend-chars "</code>" acc)))
@@ -302,6 +304,7 @@
 
        (acc (b* (((unless err)
                   (append long-acc acc))
+                 (- (note-xdoc-error))
                  (acc (str::revappend-chars "<h3>Markup error in :long</h3><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
                  (acc (str::revappend-chars "</code>" acc)))

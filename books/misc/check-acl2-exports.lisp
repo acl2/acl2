@@ -169,7 +169,7 @@
 ; Symbols below should probably be added to *acl2-exports*.
 
     DEFAULT-STATE-VARS
-
+    MSGP
     ))
 
 (defun missing-from-acl2-exports (wrld)

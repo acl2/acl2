@@ -38,6 +38,7 @@
 (include-book "save")
 (include-book "system/doc/render-doc-base" :dir :system)
 (include-book "alter")
+(include-book "xdoc-error")
 
 (set-state-ok t)
 (program)
@@ -47,8 +48,7 @@
 (defun save-rendered (outfile
                       header
                       topic-list-name
-                      force-missing-parents-p
-                      maybe-add-top-topic-p
+                      error ; when true, cause an error on xdoc or Markup error
                       state)
 
 ; See books/doc/top.lisp for an example call of xdoc::save-rendered.  In
@@ -56,46 +56,51 @@
 ; is an example of header, which goes at the top of the generated file; and
 ; topic-list-name is a symbol, such as acl2::*acl2+books-documentation*.
 
-; This code was originally invoked with force-missing-parents-p and
-; maybe-add-top-topic-p both true.  Perhaps that's always best.
+; Below we bind force-missing-parents-p and maybe-add-top-topic-p both true.
+; These could be formal parameters if need be.
 
 ; Example of outfile:
 ;   (acl2::extend-pathname (cbd)
 ;                           "../system/doc/rendered-doc-combined.lsp"
 ;                           state))
 
-  (state-global-let*
-   ((current-package "ACL2" set-current-package-state))
-   (b* (((mv ? all-topics0 state)
-         (all-xdoc-topics state))
-        (all-topics
-         (time$
-          (let* ((all-topics1 (normalize-parents-list ; Should we clean-topics?
-                               all-topics0))
-                 (all-topics2 (if maybe-add-top-topic-p
-                                  (maybe-add-top-topic all-topics1)
-                                all-topics1))
-                 (all-topics3 (if force-missing-parents-p
-                                  (force-missing-parents all-topics2)
-                                all-topics2)))
-            all-topics3)))
-        ((mv rendered state)
-         (time$ (render-topics all-topics all-topics state)))
-        (rendered (time$ (split-acl2-topics rendered nil nil nil)))
-        (- (cw "Writing ~s0~%" outfile))
-        ((mv channel state) (open-output-channel! outfile :character state))
-        ((unless channel)
-         (cw "can't open ~s0 for output." outfile)
-         (acl2::silent-error state))
-        (state (princ$ header channel state))
-        (state (fms! "(in-package \"ACL2\")~|~%(defconst ~x0 '~|"
-                     (list (cons #\0 topic-list-name))
-                     channel state nil))
-        (state (time$ (fms! "~x0"
-                            (list (cons #\0 rendered))
-                            channel state nil)))
-        (state (fms! ")" nil channel state nil))
-        (state (newline channel state))
-        (state (close-output-channel channel state)))
-     (value '(value-triple :ok)))))
+
+  (let ((force-missing-parents-p t)
+        (maybe-add-top-topic-p t))
+    (state-global-let*
+     ((current-package "ACL2" set-current-package-state))
+     (b* ((- (initialize-xdoc-errors error))
+          ((mv ? all-topics0 state)
+           (all-xdoc-topics state))
+          (all-topics
+           (time$
+            (let* ((all-topics1 (normalize-parents-list ; Should we clean-topics?
+                                 all-topics0))
+                   (all-topics2 (if maybe-add-top-topic-p
+                                    (maybe-add-top-topic all-topics1)
+                                  all-topics1))
+                   (all-topics3 (if force-missing-parents-p
+                                    (force-missing-parents all-topics2)
+                                  all-topics2)))
+              all-topics3)))
+          ((mv rendered state)
+           (time$ (render-topics all-topics all-topics state)))
+          (rendered (time$ (split-acl2-topics rendered nil nil nil)))
+          (- (cw "Writing ~s0~%" outfile))
+          ((mv channel state) (open-output-channel! outfile :character state))
+          ((unless channel)
+           (cw "can't open ~s0 for output." outfile)
+           (acl2::silent-error state))
+          (state (princ$ header channel state))
+          (state (fms! "(in-package \"ACL2\")~|~%(defconst ~x0 '~|"
+                       (list (cons #\0 topic-list-name))
+                       channel state nil))
+          (state (time$ (fms! "~x0"
+                              (list (cons #\0 rendered))
+                              channel state nil)))
+          (state (fms! ")" nil channel state nil))
+          (state (newline channel state))
+          (state (close-output-channel channel state))
+          (- (report-xdoc-errors 'save-rendered)))
+       (value '(value-triple :ok))))))
 
