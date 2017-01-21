@@ -7905,15 +7905,42 @@
 ; nil and we can ignore it.
 
            (cond (must-be-true
-                  (type-set-rec (fargn x 2)
-                                force-flg
-                                nil ; dwp
-                                true-type-alist
-                                ancestors
-                                ens
-                                w
-                                (cons-tag-trees ttree1 ttree)
-                                pot-lst pt backchain-limit))
+                  (cond (must-be-false
+
+; We have a contradictory context.  See the discussion about "contradictory
+; context" in assume-true-false to see where it returns t for both must-be-true
+; and must-be-false.  This case allows improved type-prescription inference as
+; shown below; before we both modified this function and modified
+; assume-true-false to be able to return must-be-true = must-be-false = t, it
+; failed.  Note that without the force, there are two separate hypotheses on
+; natp-logior rather than (if (natp x) (natp y) 'nil).
+
+;   (skip-proofs ; to avoid bothering to prove this with arithmetic-5
+;    (defthm natp-logior
+;      (implies (force (and (natp x) (natp y)))
+;               (natp (logior x y)))
+;      :rule-classes :type-prescription))
+;   
+;   (defun foo (x)
+;     (cond
+;      ((consp x)
+;       (logior (foo (car x))
+;               (foo (cdr x))))
+;      (t 0)))
+;   
+;   ; This is *ts-non-negative-integer*, but formerly it was *ts-integer*.
+;   (caar (getpropc 'foo 'type-prescriptions))
+
+                         (mv *ts-empty* (cons-tag-trees ttree1 ttree)))
+                        (t (type-set-rec (fargn x 2)
+                                         force-flg
+                                         nil ; dwp
+                                         true-type-alist
+                                         ancestors
+                                         ens
+                                         w
+                                         (cons-tag-trees ttree1 ttree)
+                                         pot-lst pt backchain-limit))))
                  (must-be-false
                   (type-set-rec (fargn x 3)
                                 force-flg
@@ -9747,9 +9774,43 @@
                          (rune (access recognizer-tuple recog-tuple :rune)))
                      (cond
                       ((ts= t-int *ts-empty*)
-                       (mv-atf xnot-flg nil t nil type-alist
-                               (push-lemma rune (if ts0 (puffert ttree) ttree))
-                               xttree))
+                       (cond
+                        ((ts= f-int *ts-empty*)
+
+; We are in a contradictory context, which can happen "in the wild".  For
+; example, if we put the following trace on type-set-rec and then run the first
+; event from :mini-proveall, as shown, we will see call of type-set-rec similar
+; to the one below, that gives result *ts-empty*.
+
+;   (trace$ (type-set-rec
+;            :cond
+;            (and (equal x '(cdr x))
+;                 (subsetp-equal '((x 1024) ((cdr x) -1153)) type-alist))))
+
+;   (thm (implies (and (true-listp x) (true-listp y))
+;                      (equal (revappend (append x y) z)
+;                             (revappend y (revappend x z)))))
+
+;   (type-set-rec '(cdr x) nil t
+;                 '((x 1024)
+;                   ((cdr x) -1153))
+;                 nil (ens state) (w state) nil nil nil nil)
+
+; Empty type-sets also arise when ACL2 is inferring type-prescriptions for
+; functions empty type-sets.  In this case, when both t-int and f-int are
+; *ts-empty*, we set both must-be-true and must-be-false to t.  It probably
+; doesn't matter logically what we return for the type-alists, but we return
+; type-alist in case it's useful to the caller (see for example the handling of
+; assume-true-false calls in rewrite-if).
+
+                         (mv-atf xnot-flg t t type-alist type-alist
+                                 (push-lemma rune
+                                             (if ts0 (puffert ttree) ttree))
+                                 xttree))
+                        (t (mv-atf xnot-flg nil t nil type-alist
+                                   (push-lemma rune
+                                               (if ts0 (puffert ttree) ttree))
+                                   xttree))))
                       ((ts= f-int *ts-empty*)
                        (mv-atf xnot-flg t nil type-alist nil
                                (push-lemma rune ttree)

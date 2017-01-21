@@ -80,12 +80,26 @@
                                      0)))
                        (cond
                         ((> count 0)
+
+; We formerly reported the number of errors, as follows (notice #+skip):
+
+                         #+skip
                          (er acl2::hard? ctx
                              "~n0 error~#1~[ was~/s were~] encountered by ~
-                              XDOC (typically noted with \"xdoc error\" or ~
-                              \"Markup error\")."
+                              XDOC (noted with \"xdoc error\")."
                              count
-                             (if (= count 1) 0 1)))
+                             (if (= count 1) 0 1))
+
+; However, for reasons I don't yet understand, the manual build seems to go
+; through the topics twice, without an intervening error message from this
+; function, but apparently with re-initialization because the reported count is
+; only half of the number of "xdoc error" occurrences; that is, each such error
+; is reported twice.
+
+                         (er acl2::hard? ctx
+                             "at least one syntax error was encountered by ~
+                              XDOC; search above for \"xdoc error\" (but the ~
+                              same error may be reported more than once)."))
                         (t whs))))
                   count)))
 

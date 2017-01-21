@@ -409,7 +409,10 @@
        (state
         (if err
             (pprogn
-             (fms "~|~%WARNING: problem with :long in topic ~x0:~%"
+             (prog2$ (note-xdoc-error) state)
+; See comment regarding the use of "; xdoc error" instead of "WARNING"
+; in preprocess-topic (file prepare-topic.lisp).
+             (fms "~|~%; xdoc error: problem with :long in topic ~x0:~%"
                   (list (cons #\0 name))
                     *standard-co* state nil)
              (princ$ err *standard-co* state)
@@ -426,11 +429,14 @@
        (state
         (if err
             (pprogn
-               (fms "~|~%WARNING: problem with :short in topic ~x0:~%"
-                    (list (cons #\0 name))
-                    *standard-co* state nil)
-               (princ$ err *standard-co* state)
-               (fms "~%~%" nil *standard-co* state nil))
+             (prog2$ (note-xdoc-error) state)
+; See comment regarding the use of "; xdoc error" instead of "WARNING"
+; in preprocess-topic (file prepare-topic.lisp).
+             (fms "~|~%; xdoc error: problem with :short in topic ~x0:~%"
+                  (list (cons #\0 name))
+                  *standard-co* state nil)
+             (princ$ err *standard-co* state)
+             (fms "~%~%" nil *standard-co* state nil))
           state))
        ((when err)
         (mv nil state))

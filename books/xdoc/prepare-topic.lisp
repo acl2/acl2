@@ -266,16 +266,23 @@
        (state
         (if (and err (xdoc-verbose-p))
             (pprogn
-               (fms "~|~%WARNING: problem with :short in topic ~x0:~%"
-                    (list (cons #\0 name))
-                    *standard-co* state nil)
-               (princ$ err *standard-co* state)
-               (fms "~%~%" nil *standard-co* state nil))
+
+; The following message formerly started with "WARNING" instead of "; xdoc
+; error".  But we want to be consistent with the macro xdoc-error, to make it
+; easy for users to search for a single string in the error log, namely, "xdoc
+; error".  For the user, the difference between parsing errors and preprocessor
+; errors seems small, not worth requiring searching for two different things.
+
+             (prog2$ (note-xdoc-error) state)
+             (fms "~|~%; xdoc error: problem with :short in topic ~x0:~%"
+                  (list (cons #\0 name))
+                  *standard-co* state nil) 
+             (princ$ err *standard-co* state)
+             (fms "~%~%" nil *standard-co* state nil))
           state))
 
        (acc (b* (((unless err)
                   (append short-acc acc))
-                 (- (note-xdoc-error))
                  (acc (str::revappend-chars "<b>Markup error in :short: </b><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
                  (acc (str::revappend-chars "</code>" acc)))
@@ -295,16 +302,18 @@
        (state
         (if (and err (xdoc-verbose-p))
             (pprogn
-               (fms "~|~%WARNING: problem with :long in topic ~x0:~%"
-                    (list (cons #\0 name))
-                    *standard-co* state nil)
-               (princ$ err *standard-co* state)
-               (fms "~%~%" nil *standard-co* state nil))
+             (prog2$ (note-xdoc-error) state)
+; See comment above regarding the use of "; xdoc error" instead of "WARNING"
+; just below.
+             (fms "~|~%; xdoc error: problem with :long in topic ~x0:~%"
+                  (list (cons #\0 name))
+                  *standard-co* state nil)
+             (princ$ err *standard-co* state)
+             (fms "~%~%" nil *standard-co* state nil))
           state))
 
        (acc (b* (((unless err)
                   (append long-acc acc))
-                 (- (note-xdoc-error))
                  (acc (str::revappend-chars "<h3>Markup error in :long</h3><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
                  (acc (str::revappend-chars "</code>" acc)))

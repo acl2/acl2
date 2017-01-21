@@ -85,32 +85,34 @@ This comment motivates the macro install-not-normalized, defined below.
                                                  controller-alist)))))
       (in-theory (disable ,name)))))
 
-(defun install-not-normalized-fn-lst (fns wrld all-fns defthm-name-alist)
+(defun install-not-normalized-fn-lst (fns wrld all-fns defthm-name-doublets)
   (declare (xargs :guard (and (symbol-listp fns)
-                              (symbol-alistp defthm-name-alist)
-                              (symbol-listp (strip-cdrs defthm-name-alist))
+                              (symbol-alistp defthm-name-doublets)
+                              (doublet-listp defthm-name-doublets)
+                              (symbol-listp (strip-cadrs defthm-name-doublets))
                               (plist-worldp wrld))))
-  (cond
-   ((endp fns)
-    nil)
-   (t (append (install-not-normalized-fn-1 (car fns) wrld all-fns
-                                           (cdr (assoc-eq (car fns)
-                                                          defthm-name-alist)))
-              (install-not-normalized-fn-lst (cdr fns) wrld all-fns
-                                             defthm-name-alist)))))
+  (cond ((endp fns)
+         nil)
+        (t (append (install-not-normalized-fn-1
+                    (car fns) wrld all-fns
+                    (cadr (assoc-eq (car fns) defthm-name-doublets)))
+                   (install-not-normalized-fn-lst
+                    (cdr fns) wrld all-fns
+                    defthm-name-doublets)))))
 
 (defun install-not-normalized-fn (name wrld allp defthm-name)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
   (let* ((ctx 'install-not-normalized)
          (fns (getprop name 'recursivep nil 'current-acl2-world wrld))
-         (defthm-name-alist
+         (defthm-name-doublets
            (and defthm-name
                 (cond ((symbolp defthm-name)
-                       (list (cons name defthm-name)))
+                       (list (list name defthm-name)))
                       ((not (and (symbol-alistp defthm-name)
+                                 (doublet-listp defthm-name)
                                  (symbol-listp
-                                  (strip-cdrs defthm-name))))
+                                  (strip-cadrs defthm-name))))
                        (er hard? ctx
                            "Illegal :defthm-name argument: ~x0"
                            defthm-name))
@@ -131,7 +133,7 @@ This comment motivates the macro install-not-normalized, defined below.
      ((symbol-listp fns) ; for guard verification
       (install-not-normalized-fn-lst (or (and allp fns)
                                          (list name))
-                                     wrld fns defthm-name-alist))
+                                     wrld fns defthm-name-doublets))
      (t (er hard? ctx
             "Implementation error!  Not a non-empty symbol-listp: ~x0"
             fns)))))
@@ -540,8 +542,8 @@ This comment motivates the macro install-not-normalized, defined below.
      (my-nil)))
  )
 
-(install-not-normalized f1-norm :defthm-name '((f1-norm . f1-norm-new-def)
-                                               (f2-norm . f2-norm-new-def)))
+(install-not-normalized f1-norm :defthm-name '((f1-norm f1-norm-new-def)
+                                               (f2-norm f2-norm-new-def)))
 
 (must-succeed
  (fn-is-body f1-norm
@@ -766,7 +768,7 @@ This comment motivates the macro install-not-normalized, defined below.
 
  ; Give the name F1-DEF to the new theorem for F1 and
  ; give the name F2-DEF to the new theorem for F2:
- (install-not-normalized NAME :defthm-name '((f1 . f1-def) (f2 . f1-def)))
+ (install-not-normalized NAME :defthm-name '((f1 f1-def) (f2 f1-def)))
 
  General Form:
 
@@ -792,9 +794,10 @@ This comment motivates the macro install-not-normalized, defined below.
  @('NAME$NOT-NORMALIZED') by default &mdash; that is, the result of modifying
  the @(tsee symbol-name) of @('F') by adding the suffix
  @('\"$NOT-NORMALIZED\"').  Otherwise, of special interest when @('NAME') was
- introduced with @('mutual-recursion'): @('DNAME-SPEC') is an association list
- that maps symbols to symbols.  An entry @('(F . G)') indicates that @('G') is
- the name of the @('defthm') event generated for @('f').</li>
+ introduced with @('mutual-recursion'): @('DNAME-SPEC') is a list of doublets
+ of the form @('(F G)'), where @('F') is a symbol as described for @('NAME')
+ above, and the symbol @('G') is the name of the @('defthm') event generated
+ for the symbol @('F').</li>
 
  </ul>
 

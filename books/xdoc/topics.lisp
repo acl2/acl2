@@ -678,8 +678,8 @@ command.</dd>
 <dt>@(':error')</dt>
 
 <dd>The value is @('t') or @('nil'), to indicate whether or not (respectively)
-to cause an error upon encountering a syntax error in xdoc source (\"xdoc
-error\" or \"Markup error\").</dd>
+to cause an error upon encountering a syntax error in xdoc source (marked with
+\"xdoc error\").</dd>
 
 </dl>
 
@@ -739,11 +739,11 @@ then, you may want to do something like this:</p>
  of @('topic-list-name') is a symbol that can be the first argument of @(tsee
  defconst), hence of the form @('*c*').  The value of @('error') should be
  @('t') or @('nil') to indicate whether or not (respectively) to cause an error
- upon encountering a syntax error in xdoc source (\"xdoc error\" or \"Markup
- error\").  Upon success this call returns the error-triple @('(mv
- nil (value-triple :ok) state)'); probably the value is unimportant except that
- it allows an @('xdoc::save-rendered') call to be placed inside
- @('make-event'), as displayed below.</p>
+ upon encountering a syntax error in xdoc source (marked by \"xdoc error\").
+ Upon success this call returns the error-triple @('(mv nil (value-triple :ok)
+ state)'); probably the value is unimportant except that it allows an
+ @('xdoc::save-rendered') call to be placed inside @('make-event'), as
+ displayed below.</p>
 
  <p>For example, the following form may be found in community book
  @('books/doc/top.lisp').  Its evaluation creates the output file
@@ -762,7 +762,7 @@ then, you may want to do something like this:</p>
                      state)
     *rendered-doc-combined-header*
     '*acl2+books-documentation*
-    t ; cause error upon encountering \"xdoc error\" or \"Markup error\"
+    t ; cause error upon encountering xdoc error
     state)))
  })
 

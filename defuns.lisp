@@ -2932,6 +2932,13 @@
 
      (cond
       (must-be-true
+
+; Probably it would be sound to return
+; (mv *ts-empty* *ts-empty* nil (cons-tag-trees ts-ttree ttree)).
+; Since the context is contradictory.  But this hasn't been an issue as far as
+; we know, so we'll avoid making an airtight soundnss argument until the need
+; arises.
+
        (type-set-and-returned-formals (fargn term 2)
                                       true-type-alist ens wrld
                                       (cons-tag-trees ts-ttree ttree)))
