@@ -170,6 +170,7 @@
 
     DEFAULT-STATE-VARS
     MSGP
+    SUBLIS-FN SUBLIS-FN-LST-SIMPLE SUBLIS-FN-SIMPLE
     ))
 
 (defun missing-from-acl2-exports (wrld)

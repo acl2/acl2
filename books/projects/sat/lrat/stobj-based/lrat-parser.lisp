@@ -23,7 +23,7 @@
 ; - ei is a RAT clause Ci, and fi1 ... fi{m_i} are indices of unit clauses for
 ;   RUP from the union of the negation of C with the negation of Ci \ {-l1}.
 
-; Note that each index i must exceed all existing clause indices.
+; Note that each index j must exceed all preceding clause indices.
 
 (in-package "ACL2")
 
