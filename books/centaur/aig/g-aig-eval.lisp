@@ -360,7 +360,7 @@
                           X
                           :TRUE T
                           :FALSE NIL
-                          :VAR (AIG-ENV-LOOKUP X FAL)
+                          :VAR (AIG-ALIST-LOOKUP X FAL)
                           :INV (gl::bfr-not (AIG-Q-COMPOSE (CAR X) FAL))
                           :AND (LET ((A (AIG-Q-COMPOSE (CAR X) FAL)))
                                     (AND A
@@ -376,10 +376,10 @@
   :hints(("Goal" :in-theory (enable hons-assoc-equal
                                     gl::pbfr-list-depends-on))))
 
-(defthm deps-of-aig-env-lookup
+(defthm deps-of-aig-alist-lookup
   (implies (not (gl::pbfr-list-depends-on k p (alist-vals al)))
-           (not (gl::pbfr-depends-on k p (aig-env-lookup x al))))
-  :hints(("Goal" :in-theory (enable aig-env-lookup))))
+           (not (gl::pbfr-depends-on k p (aig-alist-lookup x al))))
+  :hints(("Goal" :in-theory (enable aig-alist-lookup))))
 
 (defthm deps-of-aig-q-compose
   (implies (and (not (gl::pbfr-list-depends-on k p (alist-vals al)))
@@ -394,7 +394,7 @@
                           X
                           :TRUE T
                           :FALSE NIL
-                          :VAR (AIG-ENV-LOOKUP X FAL)
+                          :VAR (AIG-ALIST-LOOKUP X FAL)
                           :INV (gl::bfr-not (AIG-COMPOSE (CAR X) FAL))
                           :AND (LET ((A (AIG-COMPOSE (CAR X) FAL)))
                                     (AND A

@@ -155,37 +155,37 @@
   (local (in-theory (enable s61v-copy-lit-iter)))
 
   (defthm memo-tablep-s61v-copy-lit-iter
-    (implies (< (node-count aignet) (len (cdr s61v)))
-             (< (node-count aignet) (len (cdr (s61v-copy-lit-iter n in-lit out-id s61v)))))
+    (implies (< (node-count aignet) (len (stobjs::2darr->rows s61v)))
+             (< (node-count aignet) (len (stobjs::2darr->rows (s61v-copy-lit-iter n in-lit out-id s61v)))))
     :rule-classes :linear)
 
   (defthm max-fanin-memo-tablep-s61v-copy-lit-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (s61v-copy-lit-iter n in-lit out-id s61v)))))
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s61v-copy-lit-iter n in-lit out-id s61v)))))
     :rule-classes :linear)
 
-  (defthm car-s61v-copy-lit-iter
-    (equal (car (s61v-copy-lit-iter n in-lit out-id s61v))
-           (car s61v)))
+  (defthm ncols-s61v-copy-lit-iter
+    (equal (stobjs::2darr->ncols (s61v-copy-lit-iter n in-lit out-id s61v))
+           (stobjs::2darr->ncols s61v)))
 
   (defthm len-cdr-s61v-copy-lit-iter
-    (implies (< (nfix out-id) (len (cdr s61v)))
-             (equal (len (cdr (s61v-copy-lit-iter n in-lit out-id s61v)))
-                    (len (cdr s61v)))))
+    (implies (< (nfix out-id) (len (stobjs::2darr->rows s61v)))
+             (equal (len (stobjs::2darr->rows (s61v-copy-lit-iter n in-lit out-id s61v)))
+                    (len (stobjs::2darr->rows s61v)))))
 
   (defthm lookup-prev-in-s61v-copy-lit-iter
     (implies (<= (nfix m) (nfix slot))
-             (equal (nth slot (nth n (cdr (s61v-copy-lit-iter m in-lit id
+             (equal (nth slot (nth n (stobjs::2darr->rows (s61v-copy-lit-iter m in-lit id
                                                               s61v))))
-                    (nth slot (nth n (cdr s61v))))))
+                    (nth slot (nth n (stobjs::2darr->rows s61v))))))
 
   (defthm lookup-in-s61v-copy-lit-iter
-    (equal (nth slot (nth n (cdr (s61v-copy-lit-iter m in-lit id s61v))))
+    (equal (nth slot (nth n (stobjs::2darr->rows (s61v-copy-lit-iter m in-lit id s61v))))
            (if (and (equal (nfix n) (nfix id))
                     (< (nfix slot) (nfix m)))
                (logxor (bit-extend (lit-neg in-lit))
-                       (nth slot (nth (lit-id in-lit) (cdr s61v))))
-             (nth slot (nth n (cdr s61v)))))
+                       (nth slot (nth (lit-id in-lit) (stobjs::2darr->rows s61v))))
+             (nth slot (nth n (stobjs::2darr->rows s61v)))))
     :hints ((acl2::just-induct-and-expand
              (s61v-copy-lit-iter m in-lit id s61v))))
 
@@ -202,7 +202,7 @@
                                                              (nth
                                                               (lit-id
                                                                in-lit)
-                                                              (cdr s61v)))))
+                                                              (stobjs::2darr->rows s61v)))))
                              vals)
                vals)))
     :hints (("goal" :induct (vecsim-to-eval-iter n slot bit s61v
@@ -235,40 +235,40 @@
   (local (in-theory (enable s61v-and-lits-iter)))
 
   (defthm memo-tablep-s61v-and-lits-iter
-    (implies (< (node-count aignet) (len (cdr s61v)))
-             (< (node-count aignet) (len (cdr (s61v-and-lits-iter n lit1 lit2 out-id s61v)))))
+    (implies (< (node-count aignet) (len (stobjs::2darr->rows s61v)))
+             (< (node-count aignet) (len (stobjs::2darr->rows (s61v-and-lits-iter n lit1 lit2 out-id s61v)))))
     :rule-classes :linear)
 
   (defthm max-fanin-memo-tablep-s61v-and-lits-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (s61v-and-lits-iter n lit1 lit2 out-id s61v)))))
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s61v-and-lits-iter n lit1 lit2 out-id s61v)))))
     :rule-classes :linear)
 
-  (defthm car-s61v-and-lits-iter
-    (equal (car (s61v-and-lits-iter n lit1 lit2 out-id s61v))
-           (car s61v)))
+  (defthm ncols-s61v-and-lits-iter
+    (equal (stobjs::2darr->ncols (s61v-and-lits-iter n lit1 lit2 out-id s61v))
+           (stobjs::2darr->ncols s61v)))
 
   (defthm len-cdr-s61v-and-lits-iter
-    (implies (< (nfix out-id) (len (cdr s61v)))
-             (equal (len (cdr (s61v-and-lits-iter n lit1 lit2 out-id s61v)))
-                    (len (cdr s61v)))))
+    (implies (< (nfix out-id) (len (stobjs::2darr->rows s61v)))
+             (equal (len (stobjs::2darr->rows (s61v-and-lits-iter n lit1 lit2 out-id s61v)))
+                    (len (stobjs::2darr->rows s61v)))))
 
   (defthm lookup-prev-in-s61v-and-lits-iter
     (implies (<= (nfix m) (nfix slot))
-             (equal (nth slot (nth n (cdr (s61v-and-lits-iter m lit1 lit2 id
+             (equal (nth slot (nth n (stobjs::2darr->rows (s61v-and-lits-iter m lit1 lit2 id
                                                               s61v))))
-                    (nth slot (nth n (cdr s61v))))))
+                    (nth slot (nth n (stobjs::2darr->rows s61v))))))
 
   (defthm lookup-in-s61v-and-lits-iter
-    (equal (nth slot (nth n (cdr (s61v-and-lits-iter m lit1 lit2 id s61v))))
+    (equal (nth slot (nth n (stobjs::2darr->rows (s61v-and-lits-iter m lit1 lit2 id s61v))))
            (if (and (equal (nfix n) (nfix id))
                     (< (nfix slot) (nfix m)))
                (logand (logxor (bit-extend (lit-neg lit1))
-                               (nth slot (nth (lit-id lit1) (cdr
+                               (nth slot (nth (lit-id lit1) (stobjs::2darr->rows
                                                                       s61v))))
                        (logxor (bit-extend (lit-neg lit2))
-                               (nth slot (nth (lit-id lit2) (cdr s61v)))))
-             (nth slot (nth n (cdr s61v)))))
+                               (nth slot (nth (lit-id lit2) (stobjs::2darr->rows s61v)))))
+             (nth slot (nth n (stobjs::2darr->rows s61v)))))
     :hints ((acl2::just-induct-and-expand
              (s61v-and-lits-iter m lit1 lit2 id s61v))))
 
@@ -284,12 +284,12 @@
                                      (acl2::logbit
                                       bit
                                       (nth slot (nth (lit-id lit1)
-                                                     (cdr s61v)))))
+                                                     (stobjs::2darr->rows s61v)))))
                               (b-xor (lit-neg lit2)
                                      (acl2::logbit
                                       bit
                                       (nth slot (nth (lit-id lit2)
-                                                     (cdr s61v))))))
+                                                     (stobjs::2darr->rows s61v))))))
                              vals)
                vals)))
     :hints (("goal" :induct (vecsim-to-eval-iter n slot bit s61v vals aignet)
@@ -311,35 +311,35 @@
   (local (in-theory (enable s61v-zero-iter)))
 
   (defthm memo-tablep-s61v-zero-iter
-    (implies (< (node-count aignet) (len (cdr s61v)))
-             (< (node-count aignet) (len (cdr (s61v-zero-iter n out-id s61v)))))
+    (implies (< (node-count aignet) (len (stobjs::2darr->rows s61v)))
+             (< (node-count aignet) (len (stobjs::2darr->rows (s61v-zero-iter n out-id s61v)))))
     :rule-classes :linear)
 
   (defthm max-fanin-memo-tablep-s61v-zero-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (s61v-zero-iter n out-id s61v)))))
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s61v-zero-iter n out-id s61v)))))
     :rule-classes :linear)
 
-  (defthm car-s61v-zero-iter
-    (equal (car (s61v-zero-iter n out-id s61v))
-           (car s61v)))
+  (defthm ncols-s61v-zero-iter
+    (equal (stobjs::2darr->ncols (s61v-zero-iter n out-id s61v))
+           (stobjs::2darr->ncols s61v)))
 
   (defthm len-cdr-s61v-zero-iter
-    (implies (< (nfix out-id) (len (cdr s61v)))
-             (equal (len (cdr (s61v-zero-iter n out-id s61v)))
-                    (len (cdr s61v)))))
+    (implies (< (nfix out-id) (len (stobjs::2darr->rows s61v)))
+             (equal (len (stobjs::2darr->rows (s61v-zero-iter n out-id s61v)))
+                    (len (stobjs::2darr->rows s61v)))))
 
   (defthm lookup-prev-in-s61v-zero-iter
     (implies (<= (nfix m) (nfix slot))
-             (equal (nth slot (nth n (cdr (s61v-zero-iter m id s61v))))
-                    (nth slot (nth n (cdr s61v))))))
+             (equal (nth slot (nth n (stobjs::2darr->rows (s61v-zero-iter m id s61v))))
+                    (nth slot (nth n (stobjs::2darr->rows s61v))))))
 
   (defthm lookup-in-s61v-zero-iter
-    (equal (nth slot (nth n (cdr (s61v-zero-iter m id s61v))))
+    (equal (nth slot (nth n (stobjs::2darr->rows (s61v-zero-iter m id s61v))))
            (if (and (equal (nfix n) (nfix id))
                     (< (nfix slot) (nfix m)))
                0
-             (nth slot (nth n (cdr s61v)))))
+             (nth slot (nth n (stobjs::2darr->rows s61v)))))
     :hints ((acl2::just-induct-and-expand
              (s61v-zero-iter m id s61v))))
 
@@ -387,23 +387,23 @@
   (local (in-theory (enable s61v-randomize-iter)))
 
   (defthm memo-tablep-s61v-randomize-iter
-    (implies (< (node-count aignet) (len (cdr s61v)))
-             (< (node-count aignet) (len (cdr (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))))
+    (implies (< (node-count aignet) (len (stobjs::2darr->rows s61v)))
+             (< (node-count aignet) (len (stobjs::2darr->rows (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))))
     :rule-classes :linear)
 
-  (defthm car-s61v-randomize-iter
-    (equal (car (mv-nth 0 (s61v-randomize-iter n out-id s61v state)))
-           (car s61v)))
+  (defthm ncols-s61v-randomize-iter
+    (equal (stobjs::2darr->ncols (mv-nth 0 (s61v-randomize-iter n out-id s61v state)))
+           (stobjs::2darr->ncols s61v)))
 
   (defthm len-cdr-s61v-randomize-iter
-    (implies (< (nfix out-id) (len (cdr s61v)))
-             (equal (len (cdr (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))
-                    (len (cdr s61v)))))
+    (implies (< (nfix out-id) (len (stobjs::2darr->rows s61v)))
+             (equal (len (stobjs::2darr->rows (mv-nth 0 (s61v-randomize-iter n out-id s61v state))))
+                    (len (stobjs::2darr->rows s61v)))))
 
   (defthm lookup-prev-in-s61v-randomize-iter
     (implies (<= (nfix m) (nfix slot))
-             (equal (nth slot (nth n (cdr (mv-nth 0 (s61v-randomize-iter m id s61v state)))))
-                    (nth slot (nth n (cdr s61v)))))))
+             (equal (nth slot (nth n (stobjs::2darr->rows (mv-nth 0 (s61v-randomize-iter m id s61v state)))))
+                    (nth slot (nth n (stobjs::2darr->rows s61v)))))))
 
 
 (defsection aignet-vecsim
@@ -464,8 +464,8 @@
   (local (in-theory (enable aignet-vecsim-iter aignet-vecsim-frame-iter)))
 
   (defthm memo-tablep-aignet-vecsim-iter
-    (implies (< (node-count aignet) (len (cdr s61v)))
-             (< (node-count aignet) (len (cdr (aignet-vecsim-iter n s61v aignet)))))
+    (implies (< (node-count aignet) (len (stobjs::2darr->rows s61v)))
+             (< (node-count aignet) (len (stobjs::2darr->rows (aignet-vecsim-iter n s61v aignet)))))
     :rule-classes :linear)
 
 
@@ -483,22 +483,22 @@
 
   (defthm aignet-vecsim-iter-lookup-prev
     (implies (<= (nfix n) (nfix m))
-             (equal (nth slot (nth m (cdr (aignet-vecsim-iter n s61v aignet))))
-                    (nth slot (nth m (cdr s61v)))))
+             (equal (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim-iter n s61v aignet))))
+                    (nth slot (nth m (stobjs::2darr->rows s61v)))))
     :hints ((acl2::just-induct-and-expand (aignet-vecsim-iter n s61v aignet))))
 
-  (defthm car-of-aignet-vecsim-iter
-    (equal (car (aignet-vecsim-iter n s61v aignet))
-           (car s61v))
+  (defthm ncols-of-aignet-vecsim-iter
+    (equal (stobjs::2darr->ncols (aignet-vecsim-iter n s61v aignet))
+           (stobjs::2darr->ncols s61v))
     :hints ((acl2::just-induct-and-expand (aignet-vecsim-iter n s61v aignet))))
 
   (defthmd nth-in-aignet-vecsim-iter-preserved
     (implies (and (< (nfix m) (nfix n))
                   (equal nm (1+ (nfix m)))
                   (syntaxp (not (equal n nm))))
-             (equal (nth slot (nth m (cdr (aignet-vecsim-iter n vals
+             (equal (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim-iter n vals
                                                               aignet))))
-                    (nth slot (nth m (cdr (aignet-vecsim-iter nm vals
+                    (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim-iter nm vals
                                                               aignet))))))
     :hints (("goal" :induct (aignet-vecsim-iter n vals aignet)
              :in-theory (disable acl2::b-xor acl2::b-and
@@ -518,7 +518,7 @@
                          (< (nfix slot) (s61v-ncols s61v)))
                     (acl2::bit-equiv
                      (acl2::logbit bit (nth slot
-                                            (nth id (cdr (aignet-vecsim-iter
+                                            (nth id (stobjs::2darr->rows (aignet-vecsim-iter
                                                           n s61v
                                                           aignet)))))
                      (let* ((vals
@@ -541,7 +541,7 @@
     (implies (and (aignet-idp m aignet)
                   (< (nfix m) (nfix n))
                   (< (nfix slot) (s61v-ncols s61v)))
-             (equal (acl2::logbit bit (nth slot (nth m (cdr (aignet-vecsim-iter n s61v aignet)))))
+             (equal (acl2::logbit bit (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim-iter n s61v aignet)))))
                     (let* ((vals
                              (vecsim-to-eval slot bit s61v vals
                                              aignet))
@@ -561,7 +561,7 @@
     (implies (and (aignet-idp m aignet)
                   (< (nfix m) (num-nodes aignet))
                   (< (nfix slot) (s61v-ncols s61v)))
-             (equal (acl2::logbit bit (nth slot (nth m (cdr (aignet-vecsim s61v aignet)))))
+             (equal (acl2::logbit bit (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim s61v aignet)))))
                     (let* ((vals
                              (vecsim-to-eval slot bit s61v vals
                                              aignet))
@@ -639,8 +639,8 @@
   (local (in-theory (enable aignet-vecsim*-iter)))
 
   (defthm max-fanin-memo-tablep-aignet-vecsim*-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr s61v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (cdr (aignet-vecsim*-iter n s61v aignet)))))
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s61v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (aignet-vecsim*-iter n s61v aignet)))))
     :rule-classes :linear)
 
 
@@ -658,22 +658,22 @@
 
   (defthm aignet-vecsim*-iter-lookup-prev
     (implies (<= (nfix n) (nfix m))
-             (equal (nth slot (nth m (cdr (aignet-vecsim*-iter n s61v aignet))))
-                    (nth slot (nth m (cdr s61v)))))
+             (equal (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter n s61v aignet))))
+                    (nth slot (nth m (stobjs::2darr->rows s61v)))))
     :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n s61v aignet))))
 
-  (defthm car-of-aignet-vecsim*-iter
-    (equal (car (aignet-vecsim*-iter n s61v aignet))
-           (car s61v))
+  (defthm ncols-of-aignet-vecsim*-iter
+    (equal (stobjs::2darr->ncols (aignet-vecsim*-iter n s61v aignet))
+           (stobjs::2darr->ncols s61v))
     :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n s61v aignet))))
 
   (defthmd nth-in-aignet-vecsim*-iter-preserved
     (implies (and (< (nfix m) (nfix n))
                   (equal nm (1+ (nfix m)))
                   (syntaxp (not (equal n nm))))
-             (equal (nth slot (nth m (cdr (aignet-vecsim*-iter n vals
+             (equal (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter n vals
                                                               aignet))))
-                    (nth slot (nth m (cdr (aignet-vecsim*-iter nm vals
+                    (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter nm vals
                                                               aignet))))))
     :hints (("goal" :induct (aignet-vecsim*-iter n vals aignet)
              :in-theory (disable acl2::b-xor acl2::b-and
@@ -695,7 +695,7 @@
                          (< (nfix slot) (s61v-ncols s61v)))
                     (acl2::bit-equiv
                      (acl2::logbit bit (nth slot
-                                            (nth id (cdr (aignet-vecsim*-iter
+                                            (nth id (stobjs::2darr->rows (aignet-vecsim*-iter
                                                           n s61v
                                                           aignet)))))
                      (let* ((vals
@@ -720,7 +720,7 @@
                                      :output))
                   (< (nfix m) (nfix n))
                   (< (nfix slot) (s61v-ncols s61v)))
-             (equal (acl2::logbit bit (nth slot (nth m (cdr (aignet-vecsim*-iter n s61v aignet)))))
+             (equal (acl2::logbit bit (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter n s61v aignet)))))
                     (let* ((vals
                              (vecsim-to-eval slot bit s61v vals
                                              aignet))
@@ -750,7 +750,7 @@
                                      :output))
                   ;; (<= (nfix m) (max-fanin aignet))
                   (< (nfix slot) (s61v-ncols s61v)))
-             (equal (acl2::logbit bit (nth slot (nth m (cdr (aignet-vecsim* s61v aignet)))))
+             (equal (acl2::logbit bit (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim* s61v aignet)))))
                     (let* ((vals
                              (vecsim-to-eval slot bit s61v vals
                                              aignet))

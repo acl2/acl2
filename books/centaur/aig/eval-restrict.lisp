@@ -40,6 +40,7 @@
 (include-book "faig-equivs")       ;; bozo?
 
 (in-theory (disable aig-env-lookup))
+(in-theory (disable aig-alist-lookup))
 (in-theory (disable aig-restrict))
 (in-theory (disable aig-partial-eval))
 (in-theory (disable aig-compose))
@@ -290,7 +291,7 @@
            (aig-eval x (aig-eval-alist al1 al2)))
     :hints(("Goal"
             :induct t
-            :in-theory (enable aig-env-lookup))))
+            :in-theory (enable aig-alist-lookup aig-env-lookup))))
 
   (defcong aig-equiv aig-equiv (aig-compose x al) 1
     :hints((witness :ruleset aig-equiv-witnessing)))
@@ -301,7 +302,7 @@
   (defcong alist-equiv equal (aig-compose x env) 2
     :hints(("Goal"
              :induct t
-             :in-theory (enable aig-env-lookup)))))
+             :in-theory (enable aig-alist-lookup)))))
 
 
 

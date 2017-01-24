@@ -121,6 +121,7 @@
                   (acl2::aig-eval x aig-env)))
   :hints (("goal" :induct (acl2::aig-eval x aig-env)
            :in-theory (e/d (subsetp-equal
+                            acl2::aig-alist-lookup
                             acl2::aig-env-lookup) (nfix)))
           (and stable-under-simplificationp
                '(:in-theory (enable nfix)))))

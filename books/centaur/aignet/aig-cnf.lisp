@@ -149,7 +149,8 @@
        (aiglist (list aig))
        (vars (acl2::aig-vars-unordered-list aiglist))
        (aignet (aignet-clear aignet))
-       ((mv varmap aignet) (make-varmap vars nil nil aignet))
+       (aignet (aignet-add-ins (len vars) aignet))
+       (varmap (consecutive-vars-to-varmap 1 vars nil))
        (strash (strashtab-init 100 nil nil strash))
        ((mv lits strash aignet)
         (aiglist-to-aignet-top aiglist varmap (mk-gatesimp 4 t)
@@ -187,12 +188,7 @@
     :hints(("Goal" :in-theory (enable aig->cnf)))))
 
 
-(defun env-to-in-vals (vars env)
-  (declare (xargs :guard t))
-  (if (atom vars)
-      nil
-    (cons (if (acl2::aig-env-lookup (car vars) env) 1 0)
-          (env-to-in-vals (cdr vars) env))))
+
 
 (defun satisfying-assign-for-env (env vars sat-lits aignet cnf-vals)
   (declare (xargs :stobjs (sat-lits aignet cnf-vals)
@@ -208,40 +204,40 @@
     cnf-vals))
 
 
-(defthm lookup-in-make-varmap-iff
-  (iff (hons-assoc-equal v (mv-nth 0 (make-varmap vars nil varmap0 aignet0)))
-       (or (member v vars)
-           (hons-assoc-equal v varmap0)))
-  :hints(("Goal" :in-theory (enable make-varmap))))
+;; (defthm lookup-in-make-varmap-iff
+;;   (iff (hons-assoc-equal v (mv-nth 0 (make-varmap vars nil varmap0 aignet0)))
+;;        (or (member v vars)
+;;            (hons-assoc-equal v varmap0)))
+;;   :hints(("Goal" :in-theory (enable make-varmap))))
 
 
 
-(defun lst-position (x lst)
-  (cond ((endp lst) nil)
-        ((equal x (car lst)) 0)
-        (t (let ((rst (lst-position x (cdr lst))))
-             (and rst (+ 1 rst))))))
+;; (defun lst-position (x lst)
+;;   (cond ((endp lst) nil)
+;;         ((equal x (car lst)) 0)
+;;         (t (let ((rst (lst-position x (cdr lst))))
+;;              (and rst (+ 1 rst))))))
 
-(defthm lst-position-iff-member
-  (iff (lst-position x lst)
-       (member x lst)))
+;; (defthm lst-position-iff-member
+;;   (iff (lst-position x lst)
+;;        (member x lst)))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defthm lookup-in-make-varmap
-  (implies (and (no-duplicatesp vars)
-                (not (intersectp-equal vars (alist-keys varmap0))))
-           (equal (cdr (hons-assoc-equal v (mv-nth 0 (make-varmap vars nil varmap0
-                                                                  aignet0))))
-                  (if (member v vars)
-                      (mk-lit (+ (lst-position v vars)
-                                 (num-nodes aignet0))
-                              0)
-                    (cdr (hons-assoc-equal v varmap0)))))
-  :hints(("Goal" :in-theory (enable make-varmap
-                                    intersectp-equal
-                                    alist-keys)
-          :induct (make-varmap vars nil varmap0 aignet0))))
+;; (defthm lookup-in-make-varmap
+;;   (implies (and (no-duplicatesp vars)
+;;                 (not (intersectp-equal vars (alist-keys varmap0))))
+;;            (equal (cdr (hons-assoc-equal v (mv-nth 0 (make-varmap vars nil varmap0
+;;                                                                   aignet0))))
+;;                   (if (member v vars)
+;;                       (mk-lit (+ (lst-position v vars)
+;;                                  (num-nodes aignet0))
+;;                               0)
+;;                     (cdr (hons-assoc-equal v varmap0)))))
+;;   :hints(("Goal" :in-theory (enable make-varmap
+;;                                     intersectp-equal
+;;                                     alist-keys)
+;;           :induct (make-varmap vars nil varmap0 aignet0))))
 
 
 
@@ -250,16 +246,16 @@
 
 
 (encapsulate nil
-  (local
-   (defthm aignet-idp-in-make-varmap
-     (implies (and (natp id)
-                   (force (< (nfix id) (+ (num-nodes aignet0)
-                                            (len vars)))))
-              (aignet-idp id (mv-nth 1 (make-varmap vars regp varmap0 aignet0))))
-     :hints(("Goal" :in-theory (enable make-varmap)
-             :induct (make-varmap vars regp varmap0 aignet0))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable aignet-idp))))))
+  ;; (local
+  ;;  (defthm aignet-idp-in-make-varmap
+  ;;    (implies (and (natp id)
+  ;;                  (force (< (nfix id) (+ (num-nodes aignet0)
+  ;;                                           (len vars)))))
+  ;;             (aignet-idp id (mv-nth 1 (make-varmap vars regp varmap0 aignet0))))
+  ;;    :hints(("Goal" :in-theory (enable make-varmap)
+  ;;            :induct (make-varmap vars regp varmap0 aignet0))
+  ;;           (and stable-under-simplificationp
+  ;;                '(:in-theory (enable aignet-idp))))))
 
   ;; (local
   ;;  (defthm aignet-idp-of-aignet-add-reg
@@ -282,56 +278,57 @@
                     (aignet-idp id aignet))
            :hints(("Goal" :in-theory (enable aignet-idp)))))
 
-  (local
-   (defthm node-type-in-make-varmap
-     (implies (and (natp id)
-                   (<= (num-nodes aignet0) (nfix id))
-                   (force (< (nfix id) (+ (num-nodes aignet0)
-                                            (len vars)))))
-              (let ((node (car (lookup-id
-                                id
-                                (mv-nth 1 (make-varmap vars regp varmap0
-                                                       aignet0))))))
-                (equal (stype node)
-                       (if regp (reg-stype) (pi-stype)))))
-     :hints(("Goal" :in-theory (enable make-varmap)
-             :induct (make-varmap vars regp varmap0 aignet0)))))
+  ;; (local
+  ;;  (defthm node-type-in-make-varmap
+  ;;    (implies (and (natp id)
+  ;;                  (<= (num-nodes aignet0) (nfix id))
+  ;;                  (force (< (nfix id) (+ (num-nodes aignet0)
+  ;;                                           (len vars)))))
+  ;;             (let ((node (car (lookup-id
+  ;;                               id
+  ;;                               (mv-nth 1 (make-varmap vars regp varmap0
+  ;;                                                      aignet0))))))
+  ;;               (equal (stype node)
+  ;;                      (if regp (reg-stype) (pi-stype)))))
+  ;;    :hints(("Goal" :in-theory (enable make-varmap)
+  ;;            :induct (make-varmap vars regp varmap0 aignet0)))))
 
-  (defthm id-eval-of-make-varmap-input
-    (implies (and (natp id)
-                  (<= (num-nodes aignet0) (nfix id))
-                  (< (nfix id) (+ (num-nodes aignet0)
-                                    (len vars))))
-             (equal (id-eval id in-vals reg-vals
-                             (mv-nth 1 (make-varmap vars nil varmap0 aignet0)))
-                    (bfix (nth (+ (nfix id)
-                                  (- (num-nodes aignet0))
-                                  (num-ins aignet0))
-                               in-vals))))
-    :hints(("Goal" :in-theory (enable make-varmap)
-            :induct (make-varmap vars nil varmap0 aignet0))
-           (and stable-under-simplificationp
-                '(:expand ((:free (aignet)
-                            (id-eval id in-vals reg-vals aignet)))))))
+  ;; (defthm id-eval-of-make-varmap-input
+  ;;   (implies (and (natp id)
+  ;;                 (<= (num-nodes aignet0) (nfix id))
+  ;;                 (< (nfix id) (+ (num-nodes aignet0)
+  ;;                                   (len vars))))
+  ;;            (equal (id-eval id in-vals reg-vals
+  ;;                            (mv-nth 1 (make-varmap vars nil varmap0 aignet0)))
+  ;;                   (bfix (nth (+ (nfix id)
+  ;;                                 (- (num-nodes aignet0))
+  ;;                                 (num-ins aignet0))
+  ;;                              in-vals))))
+  ;;   :hints(("Goal" :in-theory (enable make-varmap)
+  ;;           :induct (make-varmap vars nil varmap0 aignet0))
+  ;;          (and stable-under-simplificationp
+  ;;               '(:expand ((:free (aignet)
+  ;;                           (id-eval id in-vals reg-vals aignet)))))))
 
-  (defthm lit-eval-of-make-varmap-input
-    (implies (and (<= (num-nodes aignet0)
-                      (lit-id lit))
-                  (< (lit-id lit)
-                     (+ (num-nodes aignet0)
-                        (len vars))))
-             (equal (lit-eval lit in-vals reg-vals
-                              (mv-nth 1 (make-varmap vars nil varmap0
-                                                     aignet0)))
-                    (b-xor (lit-neg lit)
-                           (nth (+ (lit-id lit)
-                                   (- (num-nodes aignet0))
-                                   (num-ins aignet0))
-                                in-vals))))
-    :hints(("Goal"
-            :expand ((:free (aignet)
-                      (lit-eval lit in-vals reg-vals aignet)))
-            :do-not-induct t))))
+  ;; (defthm lit-eval-of-make-varmap-input
+  ;;   (implies (and (<= (num-nodes aignet0)
+  ;;                     (lit-id lit))
+  ;;                 (< (lit-id lit)
+  ;;                    (+ (num-nodes aignet0)
+  ;;                       (len vars))))
+  ;;            (equal (lit-eval lit in-vals reg-vals
+  ;;                             (mv-nth 1 (make-varmap vars nil varmap0
+  ;;                                                    aignet0)))
+  ;;                   (b-xor (lit-neg lit)
+  ;;                          (nth (+ (lit-id lit)
+  ;;                                  (- (num-nodes aignet0))
+  ;;                                  (num-ins aignet0))
+  ;;                               in-vals))))
+  ;;   :hints(("Goal"
+  ;;           :expand ((:free (aignet)
+  ;;                     (lit-eval lit in-vals reg-vals aignet)))
+  ;;           :do-not-induct t)))
+  )
 
 
 
@@ -384,63 +381,85 @@
 
 
 
-(defthm aig-env-lookup-of-aignet-eval-to-env-of-make-varmap
-  (implies (and (member v vars)
-                (equal (len (alist-keys varmap0))
-                       (num-ins aignet0))
-                (no-duplicatesp-equal vars)
-                (not (intersectp-equal vars (alist-keys varmap0))))
-           (mv-let (varmap aignet)
-             (make-varmap vars nil varmap0 aignet0)
-             (equal (acl2::aig-env-lookup
-                     v (aignet-eval-to-env
-                        varmap
-                        in-vals reg-vals aignet))
-                    (equal (nth (+ (num-ins aignet0)
-                                   (lst-position v vars))
-                                in-vals)
-                           1))))
-  :hints (("goal" :induct (make-varmap vars nil varmap0 aignet0)
-           :in-theory (e/d (make-varmap
-                            aignet-eval-to-env
-                            alist-keys)
-                           (acl2::aig-env-lookup)))
-          (and stable-under-simplificationp
-               '(:in-theory (e/d (make-varmap
-                                  aignet-eval-to-env
-                                  alist-keys))))))
+(local (in-theory (disable acl2::aig-env-lookup)))
+
+(local (defthm member-implies-index-of-natp-type
+         (implies (member v vars)
+                  (natp (acl2::index-of v vars)))
+         :rule-classes :type-prescription))
+
+
+;; (defthm aig-env-lookup-of-aignet-eval-to-env-of-consecutive-vars-to-varmap
+;;   (implies (and (member v vars)
+;;                 (equal (len (alist-keys varmap0))
+;;                        (num-ins aignet0))
+;;                 (no-duplicatesp-equal vars)
+;;                 (not (intersectp-equal vars (alist-keys varmap0))))
+;;            (let ((varmap (consecutive-vars-to-varmap (+ 1 (node-count aignet0)) vars varmap0))
+;;                  (aignet (aignet-add-ins (len vars) aignet0)))
+;;              (equal (acl2::aig-env-lookup
+;;                      v (aignet-eval-to-env
+;;                         varmap
+;;                         in-vals reg-vals aignet))
+;;                     (equal (nth (+ (stype-count :pi aignet0)
+;;                                    (acl2::index-of v vars))
+;;                                 in-vals)
+;;                            1))))
+;;   :hints (("Goal" :do-not-induct t
+;;            ;; :in-theory (enable aignet-idp)
+;;            ;; :expand ((:free (id aignet) (lit-eval (mk-lit id 0) in-vals reg-vals aignet))
+;;            ;;          (:free (id aignet) (id-eval id in-vals reg-vals aignet)))
+;;            ))
+;;   :otf-flg t)
+
+;; (defthm aig-env-lookup-of-aignet-eval-to-env-of-consecutive-vars-to-varmap-init
+;;   (implies (and (member v vars)
+;;                 (no-duplicatesp-equal vars)
+;;                 (equal (node-count aignet0) 0))
+;;            (let ((varmap (consecutive-vars-to-varmap 1 vars nil))
+;;                  (aignet (aignet-add-ins (len vars) aignet0)))
+;;              (equal (acl2::aig-env-lookup
+;;                      v (aignet-eval-to-env
+;;                         varmap
+;;                         in-vals reg-vals aignet))
+;;                     (equal (nth (acl2::index-of v vars)
+;;                                 in-vals)
+;;                            1))))
+;;   :hints (("Goal" :do-not-induct t
+;;            :in-theory (enable aignet-idp)
+;;            :expand ((:free (id aignet) (lit-eval (mk-lit id 0) in-vals reg-vals aignet))
+;;                     (:free (id aignet) (id-eval id in-vals reg-vals aignet)))))
+;;   :otf-flg t)
+
+;; (local (in-theory (disable aig-env-lookup-of-aignet-eval-to-env)))
 
 
 
-(defthm nth-in-env-to-in-vals
-  (implies (< (nfix n) (len vars))
-           (equal (nth n (env-to-in-vals vars env))
-                  (if (acl2::aig-env-lookup (nth n vars) env) 1 0)))
-  :hints(("Goal" :in-theory (enable nth env-to-in-vals))))
-
-(defthm lst-position-less-when-member
-  (implies (member v vars)
-           (< (lst-position v vars) (len vars))))
-
-(defthm nth-lst-position
-  (implies (member v vars)
-           (equal (nth (lst-position v vars) vars) v))
-  :hints(("Goal" :in-theory (enable nth))))
-
-(defthm lst-position-type-when-member
-  (implies (member v vars)
-           (natp (lst-position v vars)))
-  :rule-classes :type-prescription)
 
 
-(defthm aig-eval-of-aignet-eval-to-env-of-make-varmap
+;; (defthm lst-position-less-when-member
+;;   (implies (member v vars)
+;;            (< (lst-position v vars) (len vars))))
+
+;; (defthm nth-lst-position
+;;   (implies (member v vars)
+;;            (equal (nth (lst-position v vars) vars) v))
+;;   :hints(("Goal" :in-theory (enable nth))))
+
+;; (defthm lst-position-type-when-member
+;;   (implies (member v vars)
+;;            (natp (lst-position v vars)))
+;;   :rule-classes :type-prescription)
+
+
+(defthm aig-eval-of-aignet-eval-to-env-of-consecutive-vars-to-varmap
   (implies (and (subsetp-equal (aig-vars aig) vars)
                 (equal (len (alist-keys varmap0))
                        (num-ins aignet0))
                 (no-duplicatesp-equal vars)
                 (not (intersectp-equal vars (alist-keys varmap0))))
-           (mv-let (varmap aignet)
-             (make-varmap vars nil varmap0 aignet0)
+           (let ((varmap (consecutive-vars-to-varmap (+ 1 (node-count aignet0)) vars varmap0))
+                 (aignet (aignet-add-ins (len vars) aignet0)))
              (equal (aig-eval aig
                               (aignet-eval-to-env
                                varmap
@@ -456,13 +475,14 @@
                                   acl2::revappend-removal))
           :induct (aig-eval aig env))))
 
-(defthm aig-eval-of-aignet-eval-to-env-of-make-varmap-init
+(defthm aig-eval-of-aignet-eval-to-env-of-consecutive-vars-to-varmap-init
   (implies (and (double-rewrite
                  (subsetp-equal (aig-vars aig) vars))
                 (no-duplicatesp-equal vars)
-                (equal (num-ins aignet0) 0))
-           (mv-let (varmap aignet)
-             (make-varmap vars nil nil aignet0)
+                (equal (num-ins aignet0) 0)
+                (equal (node-count aignet0) 0))
+           (let ((varmap (consecutive-vars-to-varmap 1 vars nil))
+                 (aignet (aignet-add-ins (len vars) aignet0)))
              (equal (aig-eval aig
                               (aignet-eval-to-env
                                varmap
@@ -474,8 +494,8 @@
                                  (lookup-in-aignet-eval-to-env
                                   acl2::aig-env-lookup
                                   acl2::revappend-removal
-                                  aig-eval-of-aignet-eval-to-env-of-make-varmap))
-          :use ((:instance aig-eval-of-aignet-eval-to-env-of-make-varmap
+                                  aig-eval-of-aignet-eval-to-env-of-consecutive-vars-to-varmap))
+          :use ((:instance aig-eval-of-aignet-eval-to-env-of-consecutive-vars-to-varmap
                  (varmap0 nil))))))
 
 
@@ -555,10 +575,10 @@
                                                        aignet))
          (or (not (member v vars))
              (equal 1 (get-bit (innum->id (+ (nfix innum)
-                                                 (lst-position v vars))
+                                             (acl2::index-of v vars))
                                               aignet)
                                    vals))))
-  :hints(("Goal" :in-theory (enable acl2::aig-env-lookup))))
+  :hints(("Goal" :in-theory (enable acl2::aig-env-lookup acl2::index-of))))
 
 (defthm aignet-vals-make-env-of-extension
   (implies (and (aignet-extension-binding)
@@ -597,24 +617,24 @@
 (encapsulate nil
   (local (in-theory (disable aignet-vals-make-env
                              no-duplicatesp-equal
-                             subsetp-equal
-                             make-varmap acl2::aig-env-lookup
+                             subsetp-equal acl2::aig-env-lookup
                              aignet-eval-to-env)))
   (defthm aig-eval-of-aignet-vals-make-env
     (implies (and (equal (num-ins aignet) 0)
+                  (equal (node-count aignet) 0)
                   (no-duplicatesp-equal vars)
                   (double-rewrite (subsetp-equal (aig-vars aig) vars)))
-             (mv-let (varmap new)
-               (make-varmap vars nil nil aignet)
-               (equal (aig-eval aig
-                                (aignet-vals-make-env
-                                 vars 0 vals new))
-                      (aig-eval aig
-                                (aignet-eval-to-env
-                                 varmap
-                                 (aignet-vals->invals nil vals new)
-                                 (aignet-vals->regvals nil vals new)
-                                 new)))))
+           (let ((varmap (consecutive-vars-to-varmap 1 vars nil))
+                 (new (aignet-add-ins (len vars) aignet)))
+             (equal (aig-eval aig
+                              (aignet-vals-make-env
+                               vars 0 vals new))
+                    (aig-eval aig
+                              (aignet-eval-to-env
+                               varmap
+                               (aignet-vals->invals nil vals new)
+                               (aignet-vals->regvals nil vals new)
+                               new)))))
     :hints(("Goal" :in-theory (e/d (aig-eval
                                     equal-1-rewrite-under-congruence))
             :induct t))))

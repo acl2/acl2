@@ -77,10 +77,15 @@ the same keys to equivalent AIGs, in the sense of @(see aig-equiv).")
   :short "We say the environments @('X') and @('Y') are equivalent when they
 give equivalent values to variables looked up with @(see aig-env-lookup).")
 
+
 (verify-guards aig-env-equiv)
 
 (defsection aig-env-equiv-thms
   :extension aig-env-equiv
+
+  (defcong aig-env-equiv equal (aig-env-lookup key x) 2
+    :hints (("goal" :cases ((aig-env-lookup key x))
+             :use ((:instance aig-env-equiv-necc (y x-equiv))))))
 
   (defrefinement alist-equiv aig-env-equiv
     :hints ((witness))))

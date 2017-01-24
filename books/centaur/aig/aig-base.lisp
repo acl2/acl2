@@ -150,12 +150,30 @@ valid @('action')s are:</p>
 
   :long "<p>Unbound variables are given the default value @('t') instead of
 @('nil') because this makes theorems about @(see faig) evaluation work out more
-nicely (it makes unbound FAIG variables evaluate to @('X')).</p>
+nicely (it makes unbound FAIG variables evaluate to @('X')).</p>"
 
-<p>Jared was once tempted to change this to produce an always Boolean
-result, since it would seem nicer to do that here than in @(see aig-eval).  But
-this function is also used in @(see aig-compose), and it is not valid to
-Boolean-fix it there.</p>"
+  :enabled t
+
+  (let ((look (hons-get x env)))
+    (if look
+        (and (cdr look) t)
+      (mbe :logic t
+           :exec
+           (if *aig-env-lookup-warn-missing-binding*
+               (prog2$ (aig-env-lookup-missing-output x)
+                       t)
+             t)))))
+
+(define aig-alist-lookup
+  :parents (aig-eval)
+  :short "Look up the value of an AIG variable in an environment."
+
+  ((x   "Variable to look up.")
+   (env "Fast alist mapping variables to values."))
+
+  :long "<p>Unbound variables are given the default value @('t') instead of
+@('nil') because this makes theorems about @(see faig) evaluation work out more
+nicely (it makes unbound FAIG variables evaluate to @('X')).</p>"
 
   :enabled t
 
@@ -190,7 +208,7 @@ evaluate several related AIGs.)</p>"
   (aig-cases x
     :true t
     :false nil
-    :var (and (aig-env-lookup x env) t)
+    :var (aig-env-lookup x env)
     :inv (not (aig-eval (car x) env))
     :and (and (aig-eval (car x) env)
               (aig-eval (cdr x) env)))
@@ -1735,7 +1753,7 @@ several related AIGs.)</p>"
   (aig-cases x
     :true t
     :false nil
-    :var (aig-env-lookup x sigma)
+    :var (aig-alist-lookup x sigma)
     :inv (aig-not (aig-compose (car x) sigma))
     :and (let ((a (aig-compose (car x) sigma)))
            (and a (aig-and a (aig-compose (cdr x) sigma)))))
@@ -1882,3 +1900,23 @@ alist binding keys to AIGs)."
   (defthm alistp-of-aig-partial-eval-alist
     (alistp (aig-partial-eval-alist x env))))
 
+
+
+(define aig-env-extract (vars env)
+  :returns (extract true-listp :rule-classes :type-prescription)
+  (if (atom vars)
+      nil
+    (hons-acons (car vars)
+                (acl2::aig-env-lookup (car vars) env)
+                (aig-env-extract (cdr vars) env)))
+  ///
+  (defthm aig-env-lookup-in-aig-env-extract
+    (iff (acl2::aig-env-lookup v (aig-env-extract vars env))
+         (if (member v vars)
+             (acl2::aig-env-lookup v env)
+           t)))
+
+  (defthm hons-assoc-equal-in-aig-env-extract
+    (equal (hons-assoc-equal v (aig-env-extract vars env))
+           (and (member v vars)
+                (cons v (acl2::aig-env-lookup v env))))))

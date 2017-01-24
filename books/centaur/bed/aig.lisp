@@ -106,11 +106,16 @@ use it.</p>"
            (equal (bed-env-lookup var env)
                   (if (booleanp var)
                       var
-                    (aig-env-lookup var env)))
+                    (acl2::aig-alist-lookup var env)))
            :hints(("Goal" :in-theory (enable bed-env-lookup
-                                             aig-env-lookup)))))
+                                             acl2::aig-alist-lookup)))))
 
-  (local (in-theory (disable aig-env-lookup)))
+  (local (defthm aig-alist-lookup-in-terms-of-env-lookup
+           (iff (acl2::aig-alist-lookup var env)
+                (aig-env-lookup var env))))
+
+  (local (in-theory (disable acl2::aig-alist-lookup
+                             aig-env-lookup)))
 
   (local (defthm crock
            (implies (and (bed-op-p op)
@@ -815,8 +820,8 @@ to pattern match it against @('(IF VAR A B)')?"
 
   (local (defthm bed-env-lookup-is-aig-env-lookup
            (implies (not (booleanp var))
-                    (equal (bed-env-lookup var env)
-                           (aig-env-lookup var env)))
+                    (iff (bed-env-lookup var env)
+                         (aig-env-lookup var env)))
            :hints(("Goal" :in-theory (enable bed-env-lookup)))))
   (local (in-theory (disable aig-env-lookup)))
 

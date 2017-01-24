@@ -1,3 +1,4 @@
+
 ; AIGNET - And-Inverter Graph Networks
 ; Copyright (C) 2013 Centaur Technology
 ;
@@ -706,6 +707,27 @@
 
   (local (in-theory (enable aignet-lit-fix-id-val-linear)))
 
+
+  (acl2::def-universal-equiv frames-equiv
+  :qvars (i j)
+  :equiv-terms ((bit-equiv (nth i (nth j (stobjs::2darr->rows x))))))
+
+
+  (defthm frames-equiv-bit-equiv-congruence
+    (implies (frames-equiv x y)
+             (bit-equiv (nth i (nth j (stobjs::2darr->rows x)))
+                        (nth i (nth j (stobjs::2darr->rows y)))))
+    :hints (("goal" :use ((:instance frames-equiv-necc (y y)))))
+    :rule-classes :congruence)
+
+  (defthm frames-equiv-bfix-congruence
+    (implies (frames-equiv x y)
+             (equal (bfix (nth i (nth j (stobjs::2darr->rows x))))
+                    (bfix (nth i (nth j (stobjs::2darr->rows y))))))
+    :hints (("goal" :use ((:instance frames-equiv-necc (y y)))))
+    :rule-classes :congruence)
+
+
   (mutual-recursion
    (defun lit-eval-seq (k lit frames initsts aignet)
      (declare (xargs :stobjs (aignet frames initsts)
@@ -818,6 +840,11 @@
              :expand ((id-eval-seq k id frames initvals aignet)
                       (id-eval-seq k nat-equiv frames initvals aignet)))))
 
+  (defcong frames-equiv equal (id-eval-seq k id frames initvals aignet) 3
+    :hints (("goal" :induct (id-eval-seq-ind k id aignet)
+             :expand ((id-eval-seq k id frames initvals aignet)
+                      (id-eval-seq k nat-equiv frames initvals aignet)))))
+
   (defcong list-equiv equal (id-eval-seq k id frames initvals aignet) 5
     :hints (("goal" :induct (id-eval-seq-ind k id aignet)
              :in-theory (disable id-eval-seq lit-eval-seq))
@@ -885,7 +912,7 @@
   (defthmd id-eval-seq-in-terms-of-id-eval
     (equal (id-eval-seq k id frames initsts aignet)
            (id-eval id
-                    (nth k (cdr frames))
+                    (nth k (stobjs::2darr->rows frames))
                     (frame-regvals k frames initsts aignet)
                     aignet))
     :hints (("goal" :induct (id-eval-ind id aignet)
@@ -901,7 +928,7 @@
 
   (defthmd lit-eval-seq-in-terms-of-lit-eval
     (equal (lit-eval-seq k lit frames initsts aignet)
-           (lit-eval lit (nth k (cdr frames))
+           (lit-eval lit (nth k (stobjs::2darr->rows frames))
                      (frame-regvals k frames initsts aignet)
                      aignet))
     :hints(("Goal" :expand ((lit-eval-seq k lit frames initsts aignet))

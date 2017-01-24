@@ -140,12 +140,44 @@
                             (x y)))
            :in-theory (disable var-eval-extend-env))))
 
+(define boolean-val-alistp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x)) (booleanp (cdar x))
+         (boolean-val-alistp (cdr x))))
+  ///
+  (defthmd aig-eval-alist-of-boolean-val-alistp
+    (implies (boolean-val-alistp x)
+             (equal (aig-eval-alist x env) x)))
+
+  (defthm lookup-in-boolean-val-alist
+    (implies (boolean-val-alistp x)
+             (booleanp (cdr (hons-assoc-equal k x)))))
+
+  (defthm alistp-when-boolean-val-alistp
+    (implies (boolean-val-alistp x)
+             (alistp x))
+    :rule-classes :forward-chaining)
+
+  (defthm boolean-val-alistp-of-append
+    (implies (and (boolean-val-alistp x)
+                  (boolean-val-alistp y))
+             (boolean-val-alistp (append x y)))))
+
+(local (in-theory (enable aig-eval-alist-of-boolean-val-alistp)))
+
 (defun assign-var-list (vars val)
   (declare (xargs :guard t))
   (if (atom vars)
       nil
     (cons (cons (car vars) val)
           (assign-var-list (cdr vars) val))))
+
+(defthm boolean-val-alistp-of-assign-var-list
+  (implies (booleanp val)
+           (boolean-val-alistp (assign-var-list vars val)))
+  :hints(("Goal" :in-theory (enable boolean-val-alistp))))
+
 
 (local
  (defthm aig-extract-assigns-assign-var-list1
@@ -205,6 +237,8 @@
 
 (in-theory (disable assign-var-list))
 
+
+
 (defun aig-extract-assigns-alist (x)
   (declare (xargs :guard t))
   (mv-let (trues falses)
@@ -212,6 +246,9 @@
     (make-fal (assign-var-list trues t)
               (make-fal (assign-var-list falses nil)
                         nil))))
+
+(defthm boolean-val-alistp-of-aig-extract-assigns-alist
+  (boolean-val-alistp (aig-extract-assigns-alist x)))
 
 (local (defthm true-listp-of-aig-extract-assigns-alist
          (true-listp (aig-extract-assigns-alist x))))
@@ -251,6 +288,8 @@
 
 
 
+
+
 (defun aig-extract-iterated-assigns-alist (x clk)
   (declare (Xargs :measure (nfix clk)
                    :guard (natp clk)))
@@ -263,6 +302,9 @@
        (let* ((more (aig-extract-iterated-assigns-alist newx (1- clk))))
          (make-fal (flush-hons-get-hash-table-link al) more))))))
 
+(defthm boolean-val-alistp-of-aig-extract-iterated-assigns-alist
+  (boolean-val-alistp (aig-extract-iterated-assigns-alist x clk)))
+
 (in-theory (disable aig-extract-assigns-alist))
 
 (local (defthm true-listp-of-aig-extract-iterated-assigns-alist
@@ -274,6 +316,8 @@
 (defthm aig-eval-alist-extract-iterated-assigns
   (equal (aig-eval-alist (aig-extract-iterated-assigns-alist x clk) env)
          (aig-extract-iterated-assigns-alist x clk)))
+
+
 
 (local
  (defun aig-extract-iterated-assigns-restrict-ind (x y clk)
@@ -305,8 +349,6 @@
 
 (defthmd aig-extract-iterated-assigns-alist-lookup-boolean
   (booleanp (cdr (hons-assoc-equal k (aig-extract-iterated-assigns-alist x clk))))
-  :hints(("Goal" :in-theory (enable aig-extract-iterated-assigns-alist
-                                    aig-extract-assigns-alist-lookup-boolean)))
   :rule-classes :type-prescription)
 
 
