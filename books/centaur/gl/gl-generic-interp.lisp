@@ -322,7 +322,7 @@
   ;; flag call returns
   `((test
      (mv ?val . ,*glcp-ind-retvals*)
-     (glcp-generic-interp-test x alist intro-bvars . ,*glcp-ind-inputs*))
+     (glcp-generic-interp-test x alist . ,*glcp-ind-inputs*))
     (term
      (mv ?val . ,*glcp-ind-retvals*)
      (glcp-generic-interp-term x alist contexts . ,*glcp-ind-inputs*))
@@ -355,20 +355,20 @@
         (glcp-generic-merge-branches test-bfr then else x switchedp contexts . ,*glcp-ind-inputs*))
     (merge-sub
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-merge-branch-subterms test-bfr then else x . ,*glcp-ind-inputs*))
+        (glcp-generic-merge-branch-subterms test-bfr then else x contexts . ,*glcp-ind-inputs*))
     (merge-list
         (mv ?val . ,*glcp-ind-retvals*)
         (glcp-generic-merge-branch-subterm-lists test-bfr then else x
                                                  . ,*glcp-ind-inputs*))
     (maybe-test-simp
      (mv ?unreachp ?val . ,*glcp-ind-retvals*)
-     (glcp-generic-maybe-simplify-if-test test-obj intro-bvars branchcond . ,*glcp-ind-inputs*))
+     (glcp-generic-maybe-simplify-if-test test-obj branchcond . ,*glcp-ind-inputs*))
     (test-simp
      (mv ?val . ,*glcp-ind-retvals*)
-     (glcp-generic-simplify-if-test test-obj intro-bvars . ,*glcp-ind-inputs*))
+     (glcp-generic-simplify-if-test test-obj . ,*glcp-ind-inputs*))
     (test-simp-fncall
      (mv ?val . ,*glcp-ind-retvals*)
-     (glcp-generic-simplify-if-test-fncall fn args intro-bvars . ,*glcp-ind-inputs*))
+     (glcp-generic-simplify-if-test-fncall fn args . ,*glcp-ind-inputs*))
     (constraints
      (mv . ,*glcp-ind-retvals*)
      (glcp-generic-add-bvar-constraints lit . ,*glcp-ind-inputs*))
@@ -752,6 +752,19 @@
                 :in-theory (enable gl-cons)))
        :rule-classes :type-prescription
        :flag list)
+     :skip-others t)))
+
+(local ;; true-listp-glcp-generic-merge-branch-subterm-lists
+ (with-output :off (prove)
+   (defthm-glcp-generic-interp-flg
+     (defthm true-listp-glcp-generic-merge-branch-subterm-lists
+       (true-listp (mv-nth 0 (glcp-generic-merge-branch-subterm-lists
+                              test-bfr then else x pathcond clk config interp-st bvar-db st)))
+       :hints('(:expand (glcp-generic-merge-branch-subterm-lists
+                         test-bfr then else x pathcond clk config interp-st bvar-db st)
+                :in-theory (enable gl-cons)))
+       :rule-classes :type-prescription
+       :flag merge-list)
      :skip-others t)))
 
 (local (include-book "system/f-put-global" :dir :system))
@@ -1170,6 +1183,8 @@
   ;;                         (conjoin-clauses
   ;;                          (acl2::interp-defs-alist-clauses in-defs))))))))
 )
+
+
 
 
 (progn ;; glcp-generic-obligs-okp-final-implies-start
@@ -2708,12 +2723,17 @@
 
   (local (defthm if-test-fncall-when-quote
            (mv-nth 1 (glcp-generic-simplify-if-test-fncall
-                      'quote args intro-bvars pathcond clk config interp-st
+                      'quote args pathcond clk config interp-st
                       bvar-db st))
            :hints (("goal" :expand
                     ((glcp-generic-simplify-if-test-fncall
-                      'quote args intro-bvars pathcond clk config interp-st
+                      'quote args pathcond clk config interp-st
                       bvar-db st))))))
+
+  (local (defthm glcp-interp-accs-ok-of-update-add-bvars-allowed
+           (equal (glcp-interp-accs-ok (update-nth *is-add-bvars-allowed* val interp-st) bvar-db config env)
+                  (glcp-interp-accs-ok interp-st bvar-db config env))
+           :hints(("Goal" :in-theory (enable glcp-interp-accs-ok)))))
 
   (local (in-theory (disable
                      GLCP-GENERIC-INTERP-FUNCTION-LOOKUP-THEOREMP-DEFS-HISTORY
@@ -2935,12 +2955,21 @@
                                               glcp-generic-geval-ev-of-quote
                                               kwote-lst)))))
 
-     (merge-sub :body (implies (and (not erp)
+     (merge-sub :add-hyps (and (proper-contextsp contexts)
+                               (contextsp contexts))
+                :body (implies (and (not erp)
                                     (bfr-hyp-eval pathcond (car env)))
-                               (equal (glcp-generic-geval val env)
-                                      (if (bfr-eval test-bfr (car env))
-                                          (glcp-generic-geval then env)
-                                        (glcp-generic-geval else env))))
+                               (glcp-generic-eval-context-equiv*
+                                contexts
+                                (glcp-generic-geval val env)
+                                (if (bfr-eval test-bfr (car env))
+                                    (glcp-generic-geval then env)
+                                  (glcp-generic-geval else env)))
+                               ;; (equal (glcp-generic-geval val env)
+                               ;;        (if (bfr-eval test-bfr (car env))
+                               ;;            (glcp-generic-geval then env)
+                               ;;          (glcp-generic-geval else env)))
+                               )
                 :hints ((and stable-under-simplificationp
                              '(:in-theory (enable glcp-generic-geval-g-apply-p)))))
 

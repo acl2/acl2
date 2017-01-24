@@ -113,11 +113,12 @@
  (b* (((er &) (in-theory nil))
       ((er thm) (get-guard-verification-theorem 'glcp-generic-interp-term state)))
    (value
-    `(progn
-       (defconst *glcp-generic-interp-guard-thm* ',thm)
-       (defthm glcp-generic-interp-guards-ok
-         ,thm
-         :rule-classes nil)))))
+    `(with-output :off (prove event)
+       (progn
+         (defconst *glcp-generic-interp-guard-thm* ',thm)
+         (defthm glcp-generic-interp-guards-ok
+           ,thm
+           :rule-classes nil))))))
 
 
 (defun strip-cadrs (x)
@@ -1092,7 +1093,8 @@ The definition body, ~x1, is not a pseudo-term."
         (interp-st (update-is-constraint-db
                     (gbc-db-make-fast
                      (table-alist 'gl-bool-constraints (w state)))
-                    interp-st)))
+                    interp-st))
+        (interp-st (update-is-add-bvars-allowed t interp-st)))
      (glcp-generic-interp-hyp/concl-env
       env hyp concl al config.concl-clk config interp-st next-bvar state))))
     ;;    ;; (bvar-db nil)
