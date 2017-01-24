@@ -3599,7 +3599,6 @@ functions can assume all bits of it are good.</p>"
          ((wmv warnings svex-indices ?sizes)
           (vl-exprlist-to-svex-selfdet
            (vl-operandinfo->indices opinfo) ss scopes))
-         ((vl-hidstep decl) (car opinfo.hidtrace))
          ((mv err svex)
           (vl-operandinfo-to-svex opinfo svex-indices ss scopes)))
       (mv (vl-err->fatal err

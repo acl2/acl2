@@ -7627,8 +7627,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                                                        svex-modinst->flatten
                                                        svex-modinsts->flatten)
                                    :expand ((svex-modinst->flatten n scope modalist moddb))))))
-    (b* (((modscope scope))
-         (newscope (modscope-push-frame n scope moddb))
+    (b* ((newscope (modscope-push-frame n scope moddb))
          ((unless (mbt (< (modscope->modidx newscope)
                           (modscope->modidx scope))))
           (mv nil nil nil nil)))
