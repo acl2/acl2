@@ -551,7 +551,7 @@
       nil
     (if (consp (car x))
         (if (cdar x)
-            (or (set::in (nfix v) (acl2::aig-vars (caar x)))
+            (or (set::in (non-bool-atom-fix v) (acl2::aig-vars (caar x)))
                 (constr-alist-depends-on
                  v (calist-remassocs (cdr x)
                                      (list (caar x)))))
@@ -561,7 +561,7 @@
       (constr-alist-depends-on v (cdr x))))
   ///
 
-  (defcong acl2::nat-equiv equal (constr-alist-depends-on v x) 1)
+  (defcong non-bool-atom-equiv equal (constr-alist-depends-on v x) 1)
 
   (local (defthm set-equiv-of-cons-redundant
            (implies (member k x)
@@ -592,7 +592,7 @@
 
   (defthm constr-alist-depends-on-correct
     (implies (and (not (constr-alist-depends-on (double-rewrite v) x))
-                  (natp v))
+                  (non-bool-atom-p v))
              (equal (eval-constraint-alist x (cons (cons v val) env))
                     (eval-constraint-alist x env)))
     :hints(("Goal" :in-theory (enable eval-constraint-alist))))
@@ -606,7 +606,7 @@
 
   (defthm dependencies-of-constraint-alist->aig
     (implies (and (not (constr-alist-depends-on (double-rewrite v) x))
-                  (natp v))
+                  (non-bool-atom-p v))
              (not (set::in v
                             (acl2::aig-vars
                              (constraint-alist->aig x)))))
@@ -913,7 +913,7 @@
   (defthm dependencies-of-constraint-alist-assume-aig
     (b* (((mv ?contradictionp ?new-calist ?keys-out)
           (constraint-alist-assume-aig x calist keys-in)))
-      (implies (and (not (set::in (nfix k) (acl2::aig-vars x)))
+      (implies (and (not (set::in (non-bool-atom-fix k) (acl2::aig-vars x)))
                     (not (constr-alist-depends-on k calist)))
                (not (constr-alist-depends-on k new-calist))))
     :hints(("Goal" :in-theory (e/d ()
@@ -1382,7 +1382,8 @@
     :hints(("Goal" :in-theory (enable bfr-hyp-eval))
            (and stable-under-simplificationp
                 '(:in-theory (e/d (bfr-eval bfr-set-var
-                                            bfr-param-env)
+                                            bfr-param-env
+                                            bfr-varname-fix)
                                   (nfix))))))
 
   (defthm bfr-constr-depends-on-of-bfr-constr-assume
@@ -1395,7 +1396,8 @@
            (and stable-under-simplificationp
                 '(:in-theory (enable pbfr-depends-on
                                      bfr-depends-on
-                                     bfr-from-param-space)))))
+                                     bfr-from-param-space
+                                     bfr-varname-fix)))))
 
   (defthm pbfr-depends-on-of-bfr-constr->bfr
     (implies (not (bfr-constr-depends-on k p x))
@@ -1404,7 +1406,8 @@
            (and stable-under-simplificationp
                 '(:in-theory (e/d (pbfr-depends-on
                                    bfr-depends-on
-                                   bfr-from-param-space)
+                                   bfr-from-param-space
+                                   bfr-varname-fix)
                                   (nfix))))))
 
   (defthm bfr-constr-depends-on-of-bfr-constr-init

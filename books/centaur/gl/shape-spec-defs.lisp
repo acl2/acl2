@@ -595,13 +595,12 @@
              (shape-spec-list-indices (cdr x))))))
 
 
-
 (defund numlist-to-vars (lst)
   (declare (xargs :guard (nat-listp lst)
                   :guard-hints (("goal" :in-theory (enable nat-listp)))))
   (if (atom lst)
       nil
-    (cons (bfr-var (car lst))
+    (cons (bfr-var (lnfix (car lst)))
           (numlist-to-vars (cdr lst)))))
 
 (defund num-spec-to-num-gobj (nspec)
@@ -632,7 +631,7 @@
                        (g-number (list (bfr-logapp-nus
                                         (len bits) (numlist-to-vars bits) nil)))
                        (g-apply 'int-set-sign
-                                (list (g-boolean (bfr-var sign))
+                                (list (g-boolean (bfr-var (lnfix sign)))
                                       (g-var var))))))
        ((g-integer? sign bits var intp)
         (g-apply 'maybe-integer
@@ -642,11 +641,11 @@
                                  (g-number (list (bfr-logapp-nus
                                                   (len bits) (numlist-to-vars bits) nil)))
                                  (g-apply 'int-set-sign
-                                          (list (g-boolean (bfr-var sign))
+                                          (list (g-boolean (bfr-var (lnfix sign)))
                                                 (g-var var)))))
                   (g-var var)
-                  (g-boolean (bfr-var intp)))))
-       ((g-boolean n) (g-boolean (bfr-var n)))
+                  (g-boolean (bfr-var (lnfix intp))))))
+       ((g-boolean n) (g-boolean (bfr-var (lnfix n))))
        ((g-var &) x)
        ((g-ite if then else)
         (g-ite (shape-spec-to-gobj if)

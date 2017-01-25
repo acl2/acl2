@@ -1397,9 +1397,10 @@
 
 (defun-sk glcp-generic-bvar-db-env-ok (bvar-db p bound env)
   (forall n
-          (implies (and (<= (base-bvar$a bvar-db) (nfix n))
-                        (< (nfix n) bound)
-                        (< (nfix n) (next-bvar$a bvar-db)))
+          (implies (and (natp n)
+                        (<= (base-bvar$a bvar-db) n)
+                        (< n bound)
+                        (< n (next-bvar$a bvar-db)))
                    (iff (bfr-lookup
                          n (bfr-unparam-env p (car env)))
                         (glcp-generic-geval (get-bvar->term$a n bvar-db) env))))
@@ -1944,8 +1945,9 @@
 
   (defthm glcp-interp-accs-ok-env-ok-necc
     (implies (and (glcp-interp-accs-ok interp-st bvar-db config env)
-                  (<= (base-bvar$a bvar-db) (nfix n))
-                  (< (nfix n) (next-bvar$a bvar-db)))
+                  (natp n)
+                  (<= (base-bvar$a bvar-db) n)
+                  (< n (next-bvar$a bvar-db)))
              (iff (bfr-lookup
                    n (bfr-unparam-env (glcp-config->param-bfr config) (car env)))
                   (glcp-generic-geval (get-bvar->term$a n bvar-db) env))))
@@ -1991,9 +1993,12 @@
 
 (defsection bvar-in-range
   (defund bvar-in-range (k bvar-db)
-    (declare (Xargs :stobjs bvar-db))
-    (and (<= (base-bvar bvar-db) (nfix k))
-         (< (nfix k) (next-bvar bvar-db))))
+    (declare (Xargs :stobjs bvar-db
+                    :guard (bfr-varname-p k)))
+    (b* ((k (bfr-varname-fix k)))
+      (and (natp k)
+           (<= (base-bvar bvar-db) k)
+           (< k (next-bvar bvar-db)))))
 
   (local (in-theory (enable bvar-in-range)))
 
@@ -2015,7 +2020,7 @@
 
   (defthm not-in-range-implies-not-equal-get-term->bvar
     (implies (not (bvar-in-range k bvar-db))
-             (not (equal (nfix k) (get-term->bvar$a term bvar-db))))
+             (not (equal (bfr-varname-fix k) (get-term->bvar$a term bvar-db))))
     :hints (("goal" :cases ((get-term->bvar$a term bvar-db)))))
 
   (defun find-good-add-term-bvar$a-term (bvar-db calls)
@@ -2039,7 +2044,7 @@
                   (not (bvar-in-range k bvar-db1))
                   (equal (base-bvar bvar-db) (base-bvar bvar-db1))
                   (< (next-bvar bvar-db) (next-bvar bvar-db1)))
-             (not (equal (nfix k) (next-bvar$a bvar-db))))
+             (not (equal (bfr-varname-fix k) (next-bvar$a bvar-db))))
     :hints (("goal" :cases ((get-term->bvar$a term bvar-db)))))
 
 
@@ -2268,16 +2273,19 @@
     (implies (acl2::rewriting-positive-literal
               `(bvar-db-vars-bounded ,k ,p ,n ,bvar-db))
              (equal (bvar-db-vars-bounded k p n bvar-db)
-                    (let ((m (bvar-db-vars-bounded-witness k p n bvar-db)))
-                      (or (< (nfix m) (nfix k))
-                          (not (bvar-db-depends-on m p n bvar-db))))))
+                    (let ((m (bfr-varname-fix (bvar-db-vars-bounded-witness k p n bvar-db))))
+                      (implies (or (not (natp m))
+                                   (<= (nfix k) m))
+                               (not (bvar-db-depends-on m p n bvar-db))))))
     :hints(("Goal" :in-theory (enable bvar-db-vars-bounded-witness
                                       bvar-db-depends-on
                                       gobj-vars-bounded-in-terms-of-witness))))
 
   (defthm bvar-db-depends-on-when-vars-bounded
     (implies (and (bvar-db-vars-bounded k p n bvar-db)
-                  (<= (nfix k) (nfix m)))
+                  (b* ((m (bfr-varname-fix m)))
+                    (or (not (natp m))
+                        (<= (nfix k) m))))
              (not (bvar-db-depends-on m p n bvar-db)))
     :hints(("Goal" :in-theory (enable bvar-db-vars-bounded
                                       bvar-db-depends-on))))
@@ -2310,7 +2318,9 @@
 
 (defun-sk bfr-constr-vars-bounded (n p x)
     (forall m
-            (implies (<= (nfix n) (nfix m))
+            (implies (and (bfr-varname-p m)
+                          (or (not (natp m))
+                              (<= (nfix n) m)))
                      (not (bfr-constr-depends-on m p x))))
     :rewrite :direct)
 
@@ -2331,6 +2341,31 @@
                              proper-contextsp
                              (proper-contextsp)
                              kwote-lst)))
+
+  (defthm bvar-not-in-range-when-not-natp
+    (implies (not (natp (bfr-varname-fix v)))
+             (not (bvar-in-range v bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-in-range))))
+
+  (defthm bvar-not-in-range-when-too-big-1
+    (implies (<= (next-bvar bvar-db) (bfr-varname-fix v))
+             (not (bvar-in-range v bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-in-range))))
+
+  (defthm bvar-not-in-range-when-too-big-2
+    (implies (and (<= (next-bvar bvar-db) k)
+                  (<= k (bfr-varname-fix v)))
+             (not (bvar-in-range v bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-in-range))))
+
+  (defthm bvar-vars-bounded-implies-not-depends-on
+    (implies (and (bfr-vars-bounded n x)
+                  (b* ((k (bfr-varname-fix k)))
+                    (or (not (natp k))
+                        (<= (nfix n) k))))
+             (not (bfr-depends-on k x)))
+    :hints (("goal" :use ((:instance bfr-vars-bounded-necc
+                           (m (bfr-varname-fix k)))))))
 
   ;; this isn't an induction, it's just based on the dependencies theorem
   (def-glcp-interp-thm vars-bounded-of-glcp-generic-interp
@@ -2408,8 +2443,7 @@
                                        gobj-vars-bounded-in-terms-of-witness
                                        gobj-list-vars-bounded-in-terms-of-witness
                                        gobj-alist-vars-bounded-in-terms-of-witness
-                                       gbc-db-vars-bounded-in-terms-of-witness
-                                       bvar-in-range))
+                                       gbc-db-vars-bounded-in-terms-of-witness))
             (and stable-under-simplificationp
                  (member (caar (last clause)) '(pbfr-vars-bounded
                                                 bfr-constr-vars-bounded))
@@ -3473,14 +3507,15 @@
   (implies (and (bvar-db-orderedp p bvar-db)
                 (bfr-eval p bfr-env)
                 (bfr-vars-bounded min p)
-                (<= (base-bvar$a bvar-db) (nfix m))
-                (< (nfix m) (nfix n))
+                (natp (bfr-varname-fix m))
+                (<= (base-bvar$a bvar-db) (bfr-varname-fix m))
+                (< (bfr-varname-fix m) (nfix n))
                 (<= (nfix n) (next-bvar$a bvar-db)))
            (let* ((bfr-env1 (bvar-db-fix-env n min bvar-db p
                                              (bfr-param-env p bfr-env)
                                              var-env)))
              (iff (bfr-lookup m (bfr-unparam-env p bfr-env1))
-                  (if (<= (nfix min) (nfix m))
+                  (if (<= (nfix min) (bfr-varname-fix m))
                       (glcp-generic-geval (get-bvar->term m bvar-db)
                                           (cons bfr-env1 var-env))
                     (bfr-lookup m bfr-env)))))
@@ -3489,7 +3524,7 @@
                                            var-env))
           (and stable-under-simplificationp
                '(:use ((:instance bvar-db-orderedp-necc
-                        (n (nfix m)))
+                        (n (bfr-varname-fix m)))
                        (:instance bvar-db-orderedp-necc
                         (n m)))
                  :in-theory (disable bvar-db-orderedp-necc
