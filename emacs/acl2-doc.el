@@ -148,7 +148,8 @@
      (defv *acl2-doc-limit-topic* nil)
      (defv *acl2-doc-topics-ht* nil)
      (defv *acl2-doc-children-ht* nil)
-     (defv *acl2-doc-show-help-message* nil)))
+     (defv *acl2-doc-show-help-message* nil)
+     (defv *acl2-doc-last-tags-file-name* nil)))
 
 (acl2-doc-init-vars)
 
@@ -1337,10 +1338,8 @@ ACL2-Doc browser."
   (let ((topic (acl2-doc-topic-at-point)))
     (acl2-doc-topic-to-tags-name topic)))
 
-(defvar acl2-doc-last-tags-file-name nil)
-
 (defun acl2-doc-find-tag-next ()
-  (let ((new-tags-file-name acl2-doc-last-tags-file-name)
+  (let ((new-tags-file-name *acl2-doc-last-tags-file-name*)
 	(old-tags-file-name tags-file-name))
     (unwind-protect
 	(let ((tags-add-tables t)
@@ -1394,7 +1393,7 @@ See the online (XDOC) documentation for acl2-doc for how to build it."
 ;;; If there is no error, then remember what we have in case we want
 ;;; to find more matches.
 
-	      (setq acl2-doc-last-tags-file-name new-tags-file-name)
+	      (setq *acl2-doc-last-tags-file-name* new-tags-file-name)
 
 ;;; We leave the buffer if and only if find-tag fails to cause an
 ;;; error, which is when we save the point much as we do with
