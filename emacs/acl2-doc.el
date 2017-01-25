@@ -209,7 +209,7 @@
                     (while lst
                       (push (acl2-doc-fix-symbol (pop lst))
                             ans))
-                    ans)))
+                    (nreverse ans))))
               (cddr entry))))
 
 (defun acl2-doc-fix-alist (alist)
@@ -1368,11 +1368,7 @@ ACL2-Doc browser."
    default))
 
 (defun acl2-doc-find-tag (default acl2-only)
-
-;;; Note that topic is a string, not a symbol.
-
-  (let ((topic (acl2-doc-find-tag-topic default))
-	(new-tags-file-name (if acl2-only
+  (let ((new-tags-file-name (if acl2-only
 				(acl2-doc-acl2-tags-file-name)
 			      (acl2-doc-main-tags-file-name)))
 	(old-tags-file-name tags-file-name))
@@ -1393,7 +1389,7 @@ See the online (XDOC) documentation for acl2-doc for how to build it."
 	    (let ((tags-add-tables nil)
 		  (tags-case-fold-search t)) ; the name may be upper-case
 	      (visit-tags-table new-tags-file-name)
-	      (find-tag topic)
+	      (find-tag (acl2-doc-find-tag-topic default))
 
 ;;; If there is no error, then remember what we have in case we want
 ;;; to find more matches.
