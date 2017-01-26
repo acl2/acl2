@@ -986,6 +986,7 @@ using the following script:</p>
      ;; make-extended-acl2.lsp
      (in-package \"ACL2\")
      (include-book \"support\")
+     :q
      (save-exec \"extended-acl2\" \"Supporting libraries pre-loaded.\")
 })
 

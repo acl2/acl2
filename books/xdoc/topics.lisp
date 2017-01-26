@@ -496,7 +496,10 @@ things properly yourself!</p>
 <h3>Emacs Links</h3>
 
 <p>The @('@(srclink name)') directive inserts a source-code link for users who
-have configured their web browser as described in @(see emacs-links).</p>
+have configured their web browser as described in @(see emacs-links).  For
+documentation in the acl2-doc browser @(see acl2::acl2-doc) or at the terminal,
+the name is enclosed in angle brackets (@('<name>')), which essentially
+represent a source-code link when using the acl2-doc `@('/')' command.</p>
 
 <p>It is often unnecessary to use @('srclink') directly, because these links
 are automatically inserted by @('@(def fn)').  One good reason to use

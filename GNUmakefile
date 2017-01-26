@@ -258,6 +258,18 @@ endif
 # Top (default) target:
 all: large
 
+ifneq ($(TAGS_ACL2_DOC),)
+all: TAGS-acl2-doc
+endif
+
+# Build tags table for acl2-doc, with ACL2 topics first.  We make this
+# a phony topic because we want the rebuild to happen whenever this is invoked.
+.PHONY: TAGS-acl2-doc
+TAGS-acl2-doc:
+	rm -f TAGS-acl2-doc
+	etags *.lisp -o TAGS-acl2-doc
+	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append)
+
 .PHONY: acl2r
 acl2r:
 	rm -f acl2r.lisp
