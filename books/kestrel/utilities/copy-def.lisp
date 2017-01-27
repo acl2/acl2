@@ -7,6 +7,8 @@
 ; utilities book.  An example at the end shows how to use copy-def to avoid
 ; induction proofs by using functional instantiation.
 
+; The new definition is not guard-verified.
+
 (in-package "ACL2")
 
 ; This could be included with each use of make-flag, but it seems reasonable to
@@ -129,6 +131,7 @@
                                           :controller-alist))))
     `(encapsulate
        ,(copy-def-signatures alist wrld nil)
+       (set-verify-guards-eagerness 0)
        ,@(copy-def-defuns alist wrld nil)
        ,@(copy-def-defthms alist alist wrld theory clique controller-alist
                            hyps-fn[-alist] equiv[-alist] nil))))
@@ -322,6 +325,7 @@
 
      (ENCAPSULATE
        (((FOO-1-COPY *) => *))
+       (SET-VERIFY-GUARDS-EAGERNESS 0)
        (LOCAL (DEFUN FOO-1-COPY (X)
                 (DECLARE (XARGS :NORMALIZE NIL))
                 (FOO-1 X)))
