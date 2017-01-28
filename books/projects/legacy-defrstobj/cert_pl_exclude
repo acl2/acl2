@@ -1,0 +1,4 @@
+Excluding because of a non-theorem, formerly proved by
+(unintentionally) exploiting a soundness bug in functional
+instantiation introduced in ACL2 3.0.2 and persisting through ACL2
+7.3.  See "theorem" tr-to-array-of-array-to-tr in typed-records.lisp.

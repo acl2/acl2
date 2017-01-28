@@ -157,7 +157,13 @@ from every member of @('x')."
                                   (subsetp-equal a x)
                                   (subsetp-equal b y))))
                  (empty-intersect-lhs (lambda () a))
-                 (empty-intersect-rhs (lambda () b)))))))
+                 (empty-intersect-rhs (lambda () b))))
+
+; Matt K. mod, 1/28/2017, to accommodate fix for soundness bug in functional
+; instantiation:
+
+          :in-theory (enable acl2::intersectp-member)
+          :restrict ((acl2::intersectp-member ((acl2::a a-renamed0)))))))
 
 
 
@@ -299,6 +305,3 @@ from every member of @('x')."
                                (find-intersect2 (intersect-2flatten-lhs)
                                                 (intersect-2flatten-rhs))
                                (intersect-2flatten-rhs))))))))
-
-
-
