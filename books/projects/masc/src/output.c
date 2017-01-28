@@ -869,9 +869,9 @@ bool Expression::isBigInt() {return isInteger() & !isLimited();}
 bool Expression::isFP() {return isNumber() && !isInteger();}
 
 // The following expressions have associated types: variable, array, and struct references; 
-// function calls; applications of "~" to typed expressions; and applications of "&", "|", 
-// and "^" to typed expressions of the same type.  For all other expressions, exprType is
-// undefined:
+// function calls; cast expressions; applications of "~" to typed expressions; and applications 
+// of "&", "|", and "^" to typed expressions of the same type.  For all other expressions, 
+// exprType is undefined:
 
 Type* Expression::exprType() { // virtual (overridden by SymRef, Funcall, ArrayRef, StructRef, PrefixExpr, and BinaryExpr)
   // Dereferenced type of expression.
@@ -1835,6 +1835,8 @@ bool PrefixExpr::isEqualPrefix(const char *o, Expression *e) {
 
 CastExpr::CastExpr(Expression *e, Type *t) : Expression() {expr = e; type = t;}
 
+Type* CastExpr::exprType() {return type;}
+
 bool CastExpr::isConst() {return expr->isConst();}
 
 int CastExpr::evalConst() {return expr->evalConst();}
@@ -1925,7 +1927,7 @@ Expression *BinaryExpr::CtoSExpr() {
 Type *BinaryExpr::exprType() {
   Type *t1 =  expr1->exprType();
   Type *t2 =  expr2->exprType();
-  if ((!strcmp(op, "&") || !strcmp(op, "|") || !strcmp(op, "^")) && (t1 == t1)) {
+  if ((!strcmp(op, "&") || !strcmp(op, "|") || !strcmp(op, "^")) && (t1 == t2)) {
     return t1;
   }
   else {

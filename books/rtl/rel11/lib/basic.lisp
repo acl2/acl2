@@ -513,4 +513,28 @@
                 (integerp m)
                 (< (abs (chop x m)) (expt 2 (- m))))
            (equal (chop x m) 0)))
+
+(defthm chop-int-bounds
+  (implies (and (natp k)
+                (natp n)
+                (rationalp x))
+           (and (<= (chop (fl (/ x (expt 2 n))) (- k))
+                    (/ (chop x (- k)) (expt 2 n)))
+                (<= (/ (+ (chop x (- k)) (expt 2 k))
+                       (expt 2 n))
+                    (+ (chop (fl (/ x (expt 2 n))) (- k))
+                       (expt 2 k)))))
+  :rule-classes ())
+
+(defthmd chop-int-neg
+  (implies (and (natp k)
+                (natp n)
+                (rationalp x)
+                (rationalp y)
+                (= (fl (/ x (expt 2 k)))
+                   (fl (/ y (expt 2 k))))
+                (not (integerp (/ x (expt 2 k)))))
+           (equal (chop (1- (- (fl (/ y (expt 2 n))))) (- k))
+                  (chop (- (/ x (expt 2 n))) (- k)))))
+
 )

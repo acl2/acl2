@@ -737,13 +737,15 @@
 (defnd encodingp (x f)
   (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
+(defnd hp () '(nil  11 5))
+
 (defnd sp () '(nil 24 8))
 
 (defnd dp () '(nil 53 11))
 
 (defnd ep () '(t 64 15))
 
-(in-theory (disable (sp) (dp) (ep)))
+(in-theory (disable (hp) (sp) (dp) (ep)))
 
 (defund sgnf (x f)
   (declare (xargs :guard (encodingp x f)

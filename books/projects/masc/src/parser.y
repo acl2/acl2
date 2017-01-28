@@ -40,10 +40,10 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %token TYPEDEF CONST STRUCT ENUM TEMPLATE
 %token MASC 
 %token INT UINT INT64 UINT64 BOOL
-%token TO_UINT TO_UINT64 RANGE
+%token TO_UINT TO_UINT64 RANGE SLC SET_SLC
 %token WAIT FOR IF ELSE WHILE DO SWITCH CASE DEFAULT BREAK CONTINUE RETURN ASSERT
 %token ARRAY TUPLE TIE
-%token SC_INT SC_BIGINT SC_FIXED SC_UINT SC_BIGUINT SC_UFIXED
+%token SC_INT SC_BIGINT SC_FIXED SC_UINT SC_BIGUINT SC_UFIXED AC_INT
 %token <s> RSHFT_ASSIGN LSHFT_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN MOD_ASSIGN
 %token <s> AND_ASSIGN XOR_ASSIGN OR_ASSIGN
 %token <s> INC_OP DEC_OP 
@@ -80,7 +80,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %type <cl> case_list
 %type <s> assign_op inc_op unary_op
 
-%expect 2
+%expect 3
 
 %%
 
@@ -220,7 +220,7 @@ register_type
     }
   | SC_FIXED '<' arithmetic_expression ',' arithmetic_expression '>'
     {
-      if ($3->isConst() && $3->isInteger() && $3->evalConst() >= 0 & $5->isConst() && $5->isInteger()) {
+      if ($3->isConst() && $3->isInteger() && ($3->evalConst() >= 0) & $5->isConst() && $5->isInteger()) {
        $$ = new FixedType($3, $5);
       }
       else {
@@ -229,13 +229,32 @@ register_type
     }
   | SC_UFIXED '<' arithmetic_expression ',' arithmetic_expression '>'
     {
-      if ($3->isConst() && $3->isInteger() && $3->evalConst() >= 0 & $5->isConst() && $5->isInteger()) {
+      if ($3->isConst() && $3->isInteger() && ($3->evalConst() >= 0) & $5->isConst() && $5->isInteger()) {
        $$ = new UfixedType($3, $5);
       }
       else {
         yyerror("Illegal parameter of sc_ufixed");
       }
     }
+  | AC_INT '<' arithmetic_expression ',' FALSE'>'
+    {
+      if ($3->isConst() && $3->isInteger() && $3->evalConst() >= 0) {
+       $$ = new UintType($3);
+      }
+      else {
+        yyerror("Illegal parameter of ac_int");
+      }
+    }
+  | AC_INT '<' arithmetic_expression ',' TRUE'>'
+    {
+      if ($3->isConst() && $3->isInteger() && $3->evalConst() >= 0) {
+       $$ = new IntType($3);
+      }
+      else {
+        yyerror("Illegal parameter of ac_int");
+      }
+    }
+
   ;
 
 array_param_type
@@ -384,6 +403,16 @@ struct_ref
 
 subrange
   : postfix_expression '.' RANGE '(' expression ',' expression ')'  {$$ = new Subrange($1, $5, $7);}
+  | postfix_expression '.' SLC '<' NAT '>' '(' expression ')'
+    {
+      uint diff = (new Integer($5))->evalConst() - 1;
+      if ($8->isConst()) {
+        $$ = new Subrange($1, new Integer($8->evalConst() + diff), $8);
+      }
+      else {
+        $$ = new Subrange($1, new BinaryExpr($8, new Integer(diff), newstr("+")), $8);
+      }
+    }
 
 to_uint_expression
   : postfix_expression '.' TO_UINT '(' ')'  {$$ = new ToUintExpr($1);}
@@ -397,6 +426,7 @@ prefix_expression
   : postfix_expression
   | unary_op prefix_expression           {$$ = new PrefixExpr($2, $1);}
   | '(' type_spec ')' prefix_expression  {$$ = new CastExpr($4, $2);}
+  | type_spec '(' expression  ')'        {$$ = new CastExpr($3, $1);}
   ;
 
 unary_op
@@ -677,6 +707,29 @@ return_statement
 assignment
   : expression assign_op expression {$$ = new Assignment($1, $2, $3);}
   | expression inc_op               {$$ = new Assignment($1, $2, NULL);}
+  | postfix_expression '.' SET_SLC '(' expression ',' expression ')'
+    {
+      Type *type = $7->exprType();
+      if (!type) {
+        yyerror("Second arg of set_slc must be an expression of defined type");
+      }
+      else {
+        type = type->derefType();
+        if (!(type->isRegType())) {
+          yyerror("Second arg of set_slc must be an expression of register type");
+        }
+        else {
+    	  Expression *top;
+	  if ($5->isConst()) {
+	    top = new Integer($5->evalConst() + ((RegType*)type)->width->evalConst() - 1);
+	  }
+  	  else {
+	    top = new BinaryExpr($5, new Integer(((RegType*)type)->width->evalConst() - 1), newstr("+"));
+  	  }
+	  $$ = new Assignment(new Subrange($1, top, $5), "=", $7);
+	}
+      }
+    }
   ;
 
 assign_op

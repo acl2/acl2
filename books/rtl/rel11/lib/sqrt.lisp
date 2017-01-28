@@ -296,6 +296,7 @@
                 (integerp n) (> n 1)
                 (exactp q (1- n)))
            (and (iff (< (* q q) x) (< q (qsqrt x n)))
-                (iff (> (* q q) x) (> q (qsqrt x n)))))
+                (iff (> (* q q) x) (> q (qsqrt x n)))
+                (iff (= (* q q) x) (= q (qsqrt x n)))))
   :rule-classes ())
 )

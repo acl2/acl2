@@ -54,19 +54,24 @@
 
 ;;Examples:
 
+(defnd hp () '(nil 11 5))
+
 (defnd sp () '(nil 24 8))
 
 (defnd dp () '(nil 53 11))
 
 (defnd ep () '(t 64 15))
 
-(in-theory (disable (sp) (dp) (ep)))
+(in-theory (disable (sp) (dp) (hp) (ep)))
 
 (defthm formatp-sp
   (formatp (sp)))
 
 (defthm formatp-dp
   (formatp (dp)))
+
+(defthm formatp-hp
+  (formatp (hp)))
 
 (defthm formatp-ep
   (formatp (ep)))
