@@ -1825,7 +1825,7 @@ By rnd-rto and rnd-monotone,
                 (< (* x (expt 2 k)) (* y (expt 2 k)))))
   :rule-classes ())
 
-(defthm exactp-cmp-qsqrt
+(local-defthm exactp-cmp-qsqrt-19
   (implies (and (rationalp x) (> x 0)
                 (rationalp q) (> q 0)
                 (integerp n) (> n 1)
@@ -1845,5 +1845,17 @@ By rnd-rto and rnd-monotone,
                                                        (k (* 2 (1+ (fl (/ (expo x) 2))))))
                         (:instance exactp-cmp-qsqrt-18 (y (/ q (expt 2 (1+ (fl (/ (expo x) 2))))))
                                                        (x (/ (qsqrt x n) (expt 2 (1+ (fl (/ (expo x) 2))))))
-                                                       (k (1+ (fl (/ (expo x) 2)))))))))
+                                                       (k (1+ (fl (/ (expo x)
+                                                                     2)))))))))
+
+(defthm exactp-cmp-qsqrt
+  (implies (and (rationalp x) (> x 0)
+                (rationalp q) (> q 0)
+                (integerp n) (> n 1)
+                (exactp q (1- n)))
+           (and (iff (< (* q q) x) (< q (qsqrt x n)))
+                (iff (> (* q q) x) (> q (qsqrt x n)))
+                (iff (= (* q q) x) (= q (qsqrt x n)))))
+  :rule-classes ()
+  :hints (("Goal" :use (exactp-cmp-qsqrt-19))))
 

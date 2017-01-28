@@ -52,26 +52,18 @@
       |Odd Rounding|
       |IEEE Rounding|
       |Denormal Rounding|))
-     (|Floating-Point Exceptions and Specification of x86 Elementary Arithmetic Instructions| ; excps.lisp
-      (|IEEE-Compliant Square Root| ; sqrt.lisp
-       |Truncation {Square Root}|
-       |Odd Rounding {Square Root}|
-       |IEEE Rounding {Square Root}|)
+     (|Floating-Point Exceptions and Specification of x86 Elementary Arithmetic Instructions| ; exps.lisp
       (|SSE Floating-Point Instructions|
-; None of the following seems to be present in this directory.
-       ;; |The SSE Control and Status Register|
-       ;; |Overview of SSE Floating-Point Exceptions|
-       ;; |SSE Pre-Computation Exceptions|
-       ;; |SSE Post-Computation Exceptions|
-       )
+       |The SSE Control and Status Register|
+       |Overview of SSE Floating-Point Exceptions|
+       |SSE Pre-Computation Exceptions|
+       |SSE Post-Computation Exceptions|)
       (|x87 Instructions|
-; None of the following seems to be present in this directory.
-       ;; |x87 Control Word|
-       ;; |x87 Status Word|
-       ;; |Overview of x87 Exceptions|
-       ;; |x87 Pre-Computation Exceptions|
-       ;; |x87 Post-Computation Exceptions|
-       ))
+       |x87 Control Word|
+       |x87 Status Word|
+       |Overview of x87 Exceptions|
+       |x87 Pre-Computation Exceptions|
+       |x87 Post-Computation Exceptions|))
     (|Implementation of Elementary Operations|
      (|Addition| ; add.lisp
       |Bit Vector Addition|
@@ -89,22 +81,22 @@
      (|SRT Division and Square Root| ; srt.lisp
       |SRT Division and Quotient Digit Selection|
       |SRT Square Root Extraction|
-      |Square Root Seed Tables|))
+      |Square Root Seed Tables|)
+     (|IEEE-Compliant Square Root| ; sqrt.lisp
+      |Truncation {Square Root}|
+      |Odd Rounding {Square Root}|
+      |IEEE Rounding {Square Root}|))
     (|Modeling Algorithms in SystemC and ACL2| ; masc.lisp
      (|MASC: The Formal Language|
       |Language Overview|
       |Arithmetic|
-; None of the following seems to be present in this directory.
-      ;; |Control Restrictions|
-      ;; |Mapping SystemC to MASC|
-      ;; |Mapping MASC to ACL2|
-      )
+      |Control Restrictions|
+      |Mapping SystemC to MASC|
+      |Mapping MASC to ACL2|)
      (|Applications|
-; None of the following seems to be present in this directory.
-      ;; |Integer Multiplication|
-      ;; |Vector Compression|
-      ;; |Fused Multiply-Accumulate|
-      ))
+      |Integer Multiplication|
+      |Vector Compression|
+      |Fused Multiply-Accumulate|))
     |Bibliography|))
 
 (defun rtl-node-name-basic (sym)
@@ -190,27 +182,16 @@
           name)))
 
 (defmacro defsection-rtl (name parent &rest events)
-
-; Formerly we linked each specific section in the ACL2 manual to the
-; corresponding section in Russinoff's manual.  However, these have not stayed
-; in perfect sync, so we no longer try to maintain that correspondence.
-; Fortunately, it's not really necessary, since Russinoff's top page has a
-; complete Table of Contents.
-
   (let* ((entry (rtl-node-entry name))
          (section-name (cadr entry))
-         ;;(url (caddr entry))
-         (url "http://russinoff.com/libman/top.html")
-         )
+         (url (caddr entry)))
     `(defsection ,section-name
        :parents (,(if (eq parent 'rtl) 'rtl (cadr (rtl-node-entry parent))))
        :short ,(symbol-name name)
        :long ,(concatenate 'string
-                           "<p>See also "
+                           "<p>See also <a href='" url "'>"
                            "the corresponding section in David Russinoff's "
-                           "<a href='"
-                           url
-                           "'>online rtl manual</a>.</p>"
+                           "online rtl manual</a>.</p>"
                            (defsection-rtl-defs events))
        (deflabel ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "$SECTION")

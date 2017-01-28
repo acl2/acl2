@@ -44,10 +44,15 @@
 
 ;;Examples:
 
+; (defnd hp () ... )
 ; (defnd sp () ... )
 ; (defnd dp () ... )
 ; (defnd ep () ... )
 ; (in-theory (disable (sp) (dp) (ep)))
+
+(defthm formatp-hp
+  (formatp (hp))
+  :hints (("Goal" :in-theory (enable hp formatp))))
 
 (defthm formatp-sp
   (formatp (sp))
