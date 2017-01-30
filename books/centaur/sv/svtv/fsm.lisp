@@ -40,7 +40,7 @@
 (local (include-book "std/osets/element-list" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (include-book "std/alists/hons-assoc-equal" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (std::add-default-post-define-hook :fix))
