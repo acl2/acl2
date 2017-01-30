@@ -22616,7 +22616,7 @@
                (t
                 (mv-let
                  (lookup-hyp-ans unify-subst ttree)
-                 (lookup-hyp hyp type-alist wrld unify-subst ttree)
+                 (lookup-hyp hyp type-alist wrld unify-subst ttree ens)
                  (cond
                   (lookup-hyp-ans
                    (mv t unify-subst ttree))

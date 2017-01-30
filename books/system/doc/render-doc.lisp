@@ -32,6 +32,7 @@
 (in-package "XDOC")
 (set-state-ok t)
 (include-book "render-doc-base")
+(include-book "xdoc/xdoc-error" :dir :system)
 (program)
 
 ;; Load the ACL2 system documentation and throw away any other topics (which
@@ -62,7 +63,8 @@
  (& & state)
  (state-global-let*
   ((current-package "ACL2" set-current-package-state))
-  (b* ((all-topics (remove-acl2-parent (get-xdoc-table (w state)) nil))
+  (b* ((- (initialize-xdoc-errors t))
+       (all-topics (remove-acl2-parent (get-xdoc-table (w state)) nil))
        ((mv rendered state)
         (render-topics all-topics all-topics state))
        (rendered (split-acl2-topics rendered nil nil nil))
@@ -115,5 +117,6 @@
                     channel state nil))
        (state (fms! ")" nil channel state nil))
        (state (newline channel state))
-       (state (close-output-channel channel state)))
+       (state (close-output-channel channel state))
+       (- (report-xdoc-errors 'save-acl2-only-manual)))
       (value nil))))

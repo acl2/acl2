@@ -777,6 +777,7 @@ public:
   Expression *expr;
   Type *type;
   CastExpr(Expression *e, Type *t);
+  Type* exprType();
   bool isConst();
   int evalConst();
   bool isLimited();

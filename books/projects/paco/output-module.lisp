@@ -430,7 +430,7 @@
 
 (defmacro <scons-term-id> (body)
   `(with-nume-tracking (hitp val) ,body
-                       (fn-nume fn :executable-counterpart wrld)
+                       (fn-nume :executable-counterpart fn wrld)
                        t))
 
 (defmacro <type-set-id> (body)

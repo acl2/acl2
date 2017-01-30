@@ -9174,12 +9174,13 @@
       (let ((ctx ''preprocess))
         `(prog2$ (er hard ,ctx
                      "The call depth limit of ~x0 has been exceeded in the ~
-                      ACL2 preprocessor (a sort of rewriter).  There is ~
-                      probably a loop caused by some set of enabled simple ~
-                      rules.  To see why the limit was exceeded, ~@1retry the ~
-                      proof with :hints~%  :do-not '(preprocess)~%and then ~
-                      follow the directions in the resulting error message.  ~
-                      See :DOC rewrite-stack-limit."
+                      ACL2 preprocessor (a sort of rewriter).  There might be ~
+                      a loop caused by some set of enabled simple rules.  To ~
+                      see why the limit was exceeded, ~@1retry the proof with ~
+                      :hints~%  :do-not '(preprocess)~%and then follow the ~
+                      directions in the resulting error message.  See :DOC ~
+                      rewrite-stack-limit for a possible solution when there ~
+                      is not a loop."
                      (rewrite-stack-limit wrld)
                      (if (f-get-global 'gstackp state)
                          ""
@@ -9190,10 +9191,11 @@
                    "The call depth limit of ~x0 has been exceeded in the ACL2 ~
                     rewriter.  To see why the limit was exceeded, ~@1execute ~
                     the form (cw-gstack) or, for less verbose output, instead ~
-                    try (cw-gstack :frames 30).  You will then probably ~
-                    notice a loop caused by some set of enabled rules, some ~
-                    of which you can then disable; see :DOC disable.  Also ~
-                    see :DOC rewrite-stack-limit."
+                    try (cw-gstack :frames 30).  You may then notice a loop ~
+                    caused by some set of enabled rules, some of which you ~
+                    can then disable; see :DOC disable.  For a possible ~
+                    solution when there is not a loop, see :DOC ~
+                    rewrite-stack-limit."
                    (rewrite-stack-limit wrld)
                    (if (f-get-global 'gstackp state)
                        ""
@@ -9607,11 +9609,6 @@
                             (untranslate hyp0 t wrld)
                             rune val info)
                         nil unify-subst ttree)))))))))
-
-(defun push-lemma? (rune ttree)
-  (if rune
-      (push-lemma rune ttree)
-    ttree))
 
 (defmacro push-lemma+ (rune ttree rcnst ancestors rhs rewritten-rhs)
 
@@ -12506,9 +12503,14 @@
 
 ; See comment above about "SPECIAL CASE".
 
-                 (mv-let (term typ)
-                         (term-and-typ-to-lookup hyp wrld)
-                         (mv step-limit term typ unify-subst ttree memo)))
+                 (mv-let (term typ compound-rec-rune?)
+                   (term-and-typ-to-lookup
+                    hyp wrld (access rewrite-constant
+                                     rcnst
+                                     :current-enabled-structure))
+                   (mv step-limit term typ unify-subst
+                       (push-lemma? compound-rec-rune? ttree)
+                       memo)))
                 (t
                  (let* ((memo-active (memo-activep memo))
                         (memo-entry (and (consp memo)
@@ -12542,7 +12544,10 @@
                                      ttree)))
                         (mv-let
                          (lookup-hyp-ans unify-subst ttree)
-                         (lookup-hyp hyp type-alist wrld unify-subst ttree)
+                         (lookup-hyp hyp type-alist wrld unify-subst ttree
+                                     (access rewrite-constant
+                                             rcnst
+                                             :current-enabled-structure))
 
 ; We know that unify-subst is not extended, since (free-varsp hyp unify-subst)
 ; is false, but it still seems appropriate to use the existing code in

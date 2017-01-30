@@ -1275,7 +1275,6 @@ for each usertype is stored in the res field.</p>"
       ;; wrapper around vl-genblob-elaborate that finalizes the params.
       (b* ((ledger (vl-unparam-ledger-fix ledger))
            ((vl-genblob x) (vl-genblob-fix x))
-           ((vl-elabindex elabindex))
            (elabindex (vl-elabindex-push x))
            ((wmv ?ok warnings new-x elabindex)
             (vl-genblob-elaborate x elabindex))
@@ -1413,8 +1412,7 @@ for each usertype is stored in the res field.</p>"
               nil x elabindex ledger)
 
           :vl-genif
-          (b* ((elabindex (vl-elabindex-sync-scopes))
-               ((vl-elabindex elabindex))
+          (b* (((vl-elabindex elabindex) (vl-elabindex-sync-scopes))
                ((wmv warnings testval) (vl-consteval x.test elabindex.ss elabindex.scopes))
                ((unless (vl-expr-resolved-p testval))
                 (mv (fatal :type :vl-generate-resolve-fail
@@ -1438,8 +1436,7 @@ for each usertype is stored in the res field.</p>"
             (vl-genblock-under-cond-resolve x.default x elabindex ledger warnings))
 
           :vl-genloop
-          (b* ((elabindex (vl-elabindex-sync-scopes))
-               ((vl-elabindex elabindex))
+          (b* (((vl-elabindex elabindex) (vl-elabindex-sync-scopes))
                (warnings
                 ;; Warn about loop variable not declared as genvar
                 (b* (((when x.genvarp) (ok))
@@ -1530,8 +1527,7 @@ for each usertype is stored in the res field.</p>"
 
            ((cons exprs1 block1) (car x))
 
-           (elabindex (vl-elabindex-sync-scopes))
-           ((vl-elabindex elabindex))
+           ((vl-elabindex elabindex) (vl-elabindex-sync-scopes))
            ((mv errmsg warnings matchp) (vl-gencase-some-match test exprs1 elabindex.ss elabindex.scopes warnings))
            ((when errmsg)
             (mv errmsg warnings nil (vl-genelement-fix orig-x) elabindex ledger))
@@ -1923,8 +1919,7 @@ for each usertype is stored in the res field.</p>"
                    :msg "Programming error: interface ~s0 for top-level interface port not found"
                    :args (list port.ifname))
             elabindex ledger))
-       ((vl-elabindex elabindex))
-       (elabindex (vl-elabindex-push x))
+       ((vl-elabindex elabindex) (vl-elabindex-push x))
        (paramdecls (vl-interface->paramdecls x))
        ((mv ok warnings elabindex final-paramdecls)
         (vl-scope-finalize-params paramdecls
@@ -1997,8 +1992,7 @@ for each usertype is stored in the res field.</p>"
                    :msg "Programming error: top-level module/interface ~s0 not found"
                    :args (list modname))
             elabindex ledger))
-       ((vl-elabindex elabindex))
-       (elabindex (vl-elabindex-push x))
+       ((vl-elabindex elabindex) (vl-elabindex-push x))
        (paramdecls (if (eq (tag x) :vl-module)
                        (vl-module->paramdecls x)
                      (vl-interface->paramdecls x)))
@@ -2072,9 +2066,8 @@ scopestacks.</p>"
                (new-elabindex)
                (new-x     vl-package-p))
 
-  (b* (((vl-package x) (vl-package-fix x))
+  (b* ((x (vl-package-fix x))
        (warnings (vl-warninglist-fix warnings))
-       ((vl-elabindex elabindex))
        (elabindex (vl-elabindex-push x))
        ;; ((mv ok warnings elabindex new-params)
        ;;  (vl-scope-finalize-params x.paramdecls

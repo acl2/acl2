@@ -37,6 +37,7 @@
 (include-book "std/io/read-string" :dir :system)
 (include-book "unsound-eval")
 (include-book "verbosep")
+(include-book "xdoc-error")
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -51,7 +52,7 @@
        ((unless (eq macro-args :bad))
         macro-args))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-formals failed for ~x1.~%" context fn))
+         (xdoc-error "get-formals failed for ~x1." context fn))
     (str::cat "Error getting formals for "
               (symbol-package-name fn)
               "::"
@@ -62,7 +63,7 @@
        ((when just)
         (access justification just :measure)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-measure failed for ~x1.~%" context fn))
+         (xdoc-error "get-measure failed for ~x1." context fn))
     (str::cat "Error getting measure for "
               (symbol-package-name fn)
               "::"
@@ -73,7 +74,7 @@
        ((unless (eq formals :bad))
         (getprop fn 'guard nil 'current-acl2-world world)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-guard failed for ~x1.~%" context fn))
+         (xdoc-error "get-guard failed for ~x1." context fn))
     (str::cat "Error getting guard for "
               (symbol-package-name fn)
               "::"
@@ -87,7 +88,7 @@
        ((when bodies)
         (access def-body (car (last bodies)) :concl)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-body failed for ~x1.~%" context fn))
+         (xdoc-error "get-body failed for ~x1." context fn))
     (str::cat "Error getting body for "
               (symbol-package-name fn)
               "::"
@@ -235,7 +236,7 @@
        ((when evt)
         evt))
     (and (xdoc-verbose-p)
-         (cw "; xdoc error in ~x0: get-event failed for ~x1.~%" context name))
+         (xdoc-error "get-event failed for ~x1." context name))
     (str::cat "Error getting event for "
               (symbol-package-name name)
               "::"
@@ -675,7 +676,7 @@
      (otherwise
       (progn$
        (and (xdoc-verbose-p)
-            (cw "; xdoc error in ~x0: unknown directive ~x1.~%" context command))
+            (xdoc-error "unknown directive ~x1." context command))
        (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
               (acc (str::revappend-chars (symbol-package-name command) acc))
               (acc (str::revappend-chars "::" acc))
@@ -1155,14 +1156,14 @@ baz
   (b* (((mv errmsg sexpr state) (preprocess-eval-parse str base-pkg state))
        ((when errmsg)
         (or (not (xdoc-verbose-p))
-            (cw "; xdoc error in ~x0: ~@1~%" context errmsg))
+            (xdoc-error "~@1" context errmsg))
         (let ((acc (simple-html-encode-str errmsg 0 (length errmsg) acc)))
           (mv acc state)))
        ((mv errmsg acc state)
         (preprocess-eval-main sexpr topics-fal base-pkg kpa state acc))
        ((when errmsg)
         (or (not (xdoc-verbose-p))
-            (cw "; xdoc error in ~x0: ~@1~%" context errmsg))
+            (xdoc-error "~@1" context errmsg))
         (let ((acc (simple-html-encode-str errmsg 0 (length errmsg) acc)))
           (mv acc state))))
     (mv acc state)))
@@ -1200,7 +1201,7 @@ baz
                                              xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error in ~x0: no closing ') found for @(' ...~%" context))
+                                        (xdoc-error "no closing ') found for @(' ..." context))
                                    (mv acc state)))
                           (sub
                            ;; Change January 2014: we were using fancy-extract-block here, but it
@@ -1225,7 +1226,7 @@ baz
                            (str::strpos-fast "})" x (+ n 3) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error in ~x0: no closing }) found for @({ ...~%" context))
+                                        (xdoc-error "no closing }) found for @({ ..." context))
                                    (mv acc state)))
                           (sub (maybe-fix-spaces-in-sub (fancy-extract-block x (+ n 3) end)))
                           (acc (str::revappend-chars "<code>" acc))
@@ -1251,8 +1252,8 @@ baz
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
                                         (if fragp
-                                            (cw "; xdoc error in ~x0: no closing $) found for @($ ...~%" context)
-                                          (cw "; xdoc error in ~x0: no closing ]) found for @([ ...~%" context)))
+                                            (xdoc-error "no closing $) found for @($ ..." context)
+                                          (xdoc-error "no closing ]) found for @([ ..." context)))
                                    (mv acc state)))
                           (sub (subseq x (+ n 3) end))
                           (acc (str::revappend-chars (if fragp "<mathfrag>" "<math>") acc))
@@ -1270,7 +1271,7 @@ baz
                      (b* ((end (str::strpos-fast "`)" x (+ n 2) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error in ~x0: no closing `) found for @(` ...~%" context))
+                                        (xdoc-error "no closing `) found for @(` ..." context))
                                    (mv acc state)))
                           (str (subseq x (+ n 3) end))
                           ((mv acc state)
@@ -1285,7 +1286,7 @@ baz
                     ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
                      (prog2$ (and (xdoc-verbose-p)
-                                  (cw "; xdoc error in ~x0: ~x1.~%" context error))
+                                  (xdoc-error "~x1." context error))
                              (mv acc state)))
                     ((mv acc state)
                      (process-directive command arg arg-raw context

@@ -36,6 +36,7 @@
 (include-book "import-acl2doc")
 (include-book "defxdoc-raw")
 (include-book "save-fancy")
+(include-book "xdoc-error")
 (include-book "oslib/mkdir" :dir :system)
 (include-book "oslib/copy" :dir :system)
 (include-book "oslib/rmtree" :dir :system)
@@ -80,14 +81,17 @@
 (defmacro save (dir &key
                     (redef-okp  'nil)
                     (zip-p      't)
-                    (logo-image 'nil))
+                    (logo-image 'nil)
+                    (error      'nil))
+  (declare (xargs :guard (booleanp error))) ; probably incomplete
   `(progn
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
      (remove-untouchable acl2::writes-okp nil)
      ;; b* should have been included by the above includes
      (make-event
-      (b* (((mv ? all-xdoc-topics state) (all-xdoc-topics state))
+      (b* ((- (initialize-xdoc-errors ,error))
+           ((mv ? all-xdoc-topics state) (all-xdoc-topics state))
            (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
            (redef-report
             ;; To support special cases (for instance, "locally" including a
@@ -110,5 +114,6 @@
            ;; Now remove all shadowed topics before doing anything more.
            ((mv & & state) (assign acl2::writes-okp t))
            (- (acl2::tshell-ensure))
-           (state (save-fancy all-xdoc-topics ,dir ,zip-p ,logo-image state)))
+           (state (save-fancy all-xdoc-topics ,dir ,zip-p ,logo-image state))
+           (- (report-xdoc-errors 'save)))
         (value '(value-triple :invisible))))))

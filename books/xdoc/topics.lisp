@@ -496,7 +496,10 @@ things properly yourself!</p>
 <h3>Emacs Links</h3>
 
 <p>The @('@(srclink name)') directive inserts a source-code link for users who
-have configured their web browser as described in @(see emacs-links).</p>
+have configured their web browser as described in @(see emacs-links).  For
+documentation in the acl2-doc browser @(see acl2::acl2-doc) or at the terminal,
+the name is enclosed in angle brackets (@('<name>')), which essentially
+represent a source-code link when using the acl2-doc `@('/')' command.</p>
 
 <p>It is often unnecessary to use @('srclink') directly, because these links
 are automatically inserted by @('@(def fn)').  One good reason to use
@@ -591,7 +594,7 @@ acl2-doc Emacs-based browser (see @(see acl2::acl2-doc)).</p>
    :short \"My Manual\"
    :long \"<p>This manual explains how to use my books...</p>\")
 
- (xdoc::save \"./mylib-manual\")  ;; write the manual
+ (xdoc::save \"./mylib-manual\" :error t)  ;; write the manual
 })
 
 <p>Notes about this example:</p>
@@ -631,6 +634,7 @@ manual with others, you should read about @(see deploying-manuals).</li>
           [:redef-okp  bool]      ;; default is nil
           [:zip-p      bool]      ;; default is t
           [:logo-image path]      ;; default is nil
+          [:error      bool]      ;; default is nil
           )
 })
 
@@ -674,6 +678,12 @@ build them, you can set @(':zip-p nil').</dd>
 The path you provide should be relative to whatever book contains the @('save')
 command.</dd>
 
+<dt>@(':error')</dt>
+
+<dd>The value is @('t') or @('nil'), to indicate whether or not (respectively)
+to cause an error upon encountering a syntax error in xdoc source (marked with
+\"xdoc error\").</dd>
+
 </dl>
 
 
@@ -710,8 +720,60 @@ then, you may want to do something like this:</p>
    :short \"My Manual\"
    :long \"<p>This manual explains how to use my books...</p>\")
 
- (xdoc::save \"./mylib-manual\")
+ (xdoc::save \"./mylib-manual\" :error t)
 })")
+
+(defxdoc save-rendered
+  :parents (XDOC)
+  :short "Saves the XDOC database into a file for the acl2-doc browser"
+  :long "
+ @({
+ General Form:
+
+ (save-rendered outfile
+                header
+                topic-list-name
+                error
+                state)
+ })
+
+ <p>where @('outfile') is the pathname for the output file, @('header') is to
+ be written to the top of @('outfile') (typically as a comment), and the value
+ of @('topic-list-name') is a symbol that can be the first argument of @(tsee
+ defconst), hence of the form @('*c*').  The value of @('error') should be
+ @('t') or @('nil') to indicate whether or not (respectively) to cause an error
+ upon encountering a syntax error in xdoc source (marked by \"xdoc error\").
+ Upon success this call returns the error-triple @('(mv nil (value-triple :ok)
+ state)'); probably the value is unimportant except that it allows an
+ @('xdoc::save-rendered') call to be placed inside @('make-event'), as
+ displayed below.</p>
+
+ <p>For example, the following form may be found in community book
+ @('books/doc/top.lisp').  Its evaluation creates the output file
+ @('books/system/doc/rendered-doc-combined.lsp\"').  That file starts with a
+ comment from the string, @('*rendered-doc-combined-header*'), then contains
+ @('(in-package \"ACL2\")'), and concludes with a form @('(defconst
+ *ACL2+BOOKS-DOCUMENTATION* '<big-alist>)'), where @('<big-alist>') is an alist
+ representing the XDOC database.</p>
+
+ @({
+ (make-event
+  (time$
+   (xdoc::save-rendered
+    (extend-pathname (cbd)
+                     \"../system/doc/rendered-doc-combined.lsp\"
+                     state)
+    *rendered-doc-combined-header*
+    '*acl2+books-documentation*
+    t ; cause error upon encountering xdoc error
+    state)))
+ })
+
+ <p>The output file is typically used by the acl2-doc Emacs-based browser for
+ XDOC.  See @(see acl2::acl2-doc), specifically the discussion of custom
+ manuals, which explains that the @('filename') argument of Emacs function
+ @('extend-acl2-doc-manual-alist') is exactly the output file created by
+ @('xdoc::save-rendered').</p>")
 
 
 (defxdoc deploying-manuals

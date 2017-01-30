@@ -60,6 +60,8 @@ char yyfilenm[1024];
 "to_uint"                   {return TO_UINT;}
 "to_uint64"                 {return TO_UINT64;}
 "range"                     {return RANGE;}
+"slc"                       {return SLC;}
+"set_slc"                   {return SET_SLC;}
 
 "tuple"                     {return TUPLE;}
 "array"                     {return ARRAY;}
@@ -71,6 +73,8 @@ char yyfilenm[1024];
 "sc_uint"                   {return SC_UINT;}
 "sc_biguint"                {return SC_BIGUINT;}
 "sc_ufixed"                 {return SC_UFIXED;}
+
+"ac_int"                    {return AC_INT;}
 
 "true"                      {yylval.s = tokstr(); return TRUE;}
 "false"                     {yylval.s = tokstr(); return FALSE;}

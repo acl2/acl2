@@ -1179,7 +1179,8 @@
 )
 
 (defun mult-search-type-alist (rest-hyps concls term typ type-alist
-                                         unify-subst ttree oncep keys-seen)
+                                         unify-subst ttree oncep keys-seen
+                                         compound-rec-rune?)
 
 ; This function is a variant of search-type-alist that searches for
 ; all instances of term (other than those listed in keys-seen) bound to a
@@ -1188,6 +1189,10 @@
 ; tag-trees each extending ttree, and a list of the instances themselves
 ; (actually EQ to the terms from the type-alist upon which
 ; one-way-unify1 was called).
+
+; The argument compound-rec-rune? is either nil or else a rune of a
+; compound-recognizer rule.  If the latter, then we include it in every
+; tag-tree returned.
 
   (cond ((null type-alist)
          (mv nil nil nil))
@@ -1211,7 +1216,9 @@
 
                            (mv (list new-unify-subst)
                                (list (cons-tag-trees (cddr (car type-alist))
-                                                     ttree))
+                                                     (push-lemma?
+                                                      compound-rec-rune?
+                                                      ttree)))
                                (list (car (car type-alist)))))
 
 ; We found a new unify-subst but there may be additional interesting ones out
@@ -1225,12 +1232,17 @@
                                                              unify-subst
                                                              ttree
                                                              oncep
-                                                             keys-seen)
+                                                             keys-seen
+                                                             compound-rec-rune?)
                                      (mv (cons new-unify-subst other-unifies)
                                          (cons (cons-tag-trees
-                                                (cddr (car type-alist)) ttree)
+                                                (cddr (car type-alist))
+                                                (push-lemma?
+                                                 compound-rec-rune?
+                                                 ttree))
                                                other-ttrees)
-                                         (cons (car (car type-alist)) other-instances)))))))
+                                         (cons (car (car type-alist))
+                                               other-instances)))))))
 
 ; We didn't find any new substitutions; try again.
 
@@ -1240,17 +1252,19 @@
                                              new-unify-subst
                                              ttree
                                              oncep
-                                             keys-seen)))))
+                                             keys-seen
+                                             compound-rec-rune?)))))
         (t (mult-search-type-alist rest-hyps concls term
                                    typ
                                    (cdr type-alist)
                                    unify-subst
                                    ttree
                                    oncep
-                                   keys-seen))))
+                                   keys-seen
+                                   compound-rec-rune?))))
 
 (defun mult-lookup-hyp (hyp rest-hyps concls type-alist wrld unify-subst ttree
-                            oncep last-keys-seen)
+                            oncep last-keys-seen ens)
 
 ; This function basically takes a hyp and a type-alist.  It returns (mv
 ; new-unify-substs new-ttrees new-last-keys-seen), in which extensions of
@@ -1261,10 +1275,11 @@
 
 ; This function is basically a variant of lookup-hyp.
 
-  (mv-let (term typ)
-          (term-and-typ-to-lookup hyp wrld)
+  (mv-let (term typ rune)
+          (term-and-typ-to-lookup hyp wrld ens)
           (mult-search-type-alist rest-hyps concls term typ type-alist
-                                  unify-subst ttree oncep last-keys-seen)))
+                                  unify-subst ttree oncep last-keys-seen
+                                  rune)))
 
 (mutual-recursion
 
@@ -2713,7 +2728,8 @@
                                  type-alist
                                  wrld unify-subst ttree
                                  oncep1
-                                 last-keys-seen)
+                                 last-keys-seen
+                                 ens)
                 (cond
                  (new-unify-subst-list
 

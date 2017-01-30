@@ -178,7 +178,7 @@
 
 (dthm idempotent-isort
       (equal (isort (isort x)) (isort x)))
-        
+
 (defun del (x lst)
   (cond ((atom lst) nil)
         ((equal x (car lst)) (cdr lst))

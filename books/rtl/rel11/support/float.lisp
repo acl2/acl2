@@ -2194,3 +2194,4 @@ y < 2^p, and hence x and y are p-exact.
                  (exactp x n))
             (equal (expo (fp- x n)) (expo x)))
   :use (:instance expe-fpr- (p n) (b 2)))
+

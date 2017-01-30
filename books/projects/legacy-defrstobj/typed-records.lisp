@@ -787,6 +787,42 @@
            (equal (nth key (tr-to-array n (array-to-tr n arr1 rec) arr2))
                   (nth key arr1))))
 
+; Matt K. note, 1/28/2017, regarding fix for soundness bug in functional
+; instantiation: The next lemma, tr-to-array-of-array-to-tr, is not a theorem!
+; This directory is being excluded with cert_pl_exclude because of this lemma.
+; Here is a demonstration that it is not a theorem.
+
+#||
+cd books/projects/legacy-defrstobj/
+acl2
+(rebuild "typed-records.lisp" 'nth-of-tr-to-array-of-array-to-tr)
+
+(defun naught () 0)
+(defun naught-p (x) (equal x 0))
+(defattach (elem-p naught-p) (elem-default naught))
+
+; And then:
+
+RSTOBJ !>(with-guard-checking
+          nil
+          (let ((arr2 nil) (arr1 nil) (n 0) (n2 -1) (rec nil))
+            (IMPLIES (AND (EQUAL (LEN ARR1) (LEN ARR2))
+                          (EQUAL N2 (+ -1 (LEN ARR1)))
+                          (ELEM-LIST-P ARR1)
+                          (ELEM-LIST-P ARR2)
+                          (INTEGERP N)
+                          (<= 0 N)
+                          (< N (MAX (+ 1 (NFIX N2)) (LEN ARR2))))
+                     (EQUAL (NTH N
+                                 (TR-TO-ARRAY N2 (ARRAY-TO-TR N2 ARR1 REC)
+                                              ARR2))
+                            (NTH N ARR1)))))
+NIL
+RSTOBJ !>
+||#
+
+;;; NOT A THEOREM (see above)!
+#||
 (defthm tr-to-array-of-array-to-tr
   (implies (and (force (equal (len arr1) (len arr2)))
                 (force (equal n (- (len arr1) 1)))
@@ -807,6 +843,7 @@
                                       (tr-to-array n (array-to-tr n arr1 rec) arr2)))
                  (equal-by-nths-rhs (lambda ()
                                       arr1)))))))
+||#
 
 (defthm tr-to-array-idempotent
   (implies (and (force (posp (len arr1)))

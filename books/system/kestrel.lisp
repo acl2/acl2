@@ -1,6 +1,6 @@
 ; Kestrel's Contributions to the ACL2 System Code
 ;
-; Copyright (C) 2016
+; Copyright (C) 2016-2017
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -87,6 +87,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination termify-clause-set (declare (xargs :verify-guards nil)))
+
 (verify-guards termify-clause-set)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,5 +121,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination doublet-listp) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination implicate) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

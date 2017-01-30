@@ -736,8 +736,22 @@
 			      LIST::REMOVE-LIST-SUPERSET-REDUCTION
 			      LIST::MEMBERP-REMOVE-LIST
 			      ))
+; Matt K. mod, 1/28/2017, to accommodate fix for soundness bug in functional
+; instantiation: these hints trigger further, inappropriate use of the
+; "[Adviser]" computed hint -- they cause arbitrary-element to be a free
+; variable that is both in the range of the functional substitution and in the
+; constraints.  Our solution is to apply the appropriate :cases hints only at
+; the appropriate time.
+
+#||
 	  (and stable-under-simplificationp
 	       '(:cases ((list::memberp arbitrary-element (append (keys x) (keys y))))))
 	  (and stable-under-simplificationp
-	       '(:do-not-induct t :cases ((list::memberp arbitrary-element list)))))
+	       '(:do-not-induct t :cases ((list::memberp arbitrary-element list))))
+||#
+
+          ("Subgoal 5.1" :cases ((list::memberp arbitrary-element (append (keys x) (keys y)))))
+          ("Subgoal 2.1" :cases ((list::memberp arbitrary-element list)))
+          ("Subgoal 1.1" :cases ((list::memberp arbitrary-element list)))
+          )
   :rule-classes nil)

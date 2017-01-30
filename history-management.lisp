@@ -9892,11 +9892,11 @@
 ; for free variables to be captured (since no free variables are allowed).
 
 ; Let us say that an occurrence of fn in term is problematic if fn is bound to
-; lambda-expr in alist and for every variable v that occurs free in
-; lambda-expr, this occurrence of fn is not in the scope of a lambda binding of
-; v.  Key Observation: If there is no problematic occurrence of any function
-; symbol in term, then we can obtain the result of this call of sublis-fn by
-; first replacing v in lambda-app by a fresh variable v', then carrying out the
+; lambda-expr in alist and for some variable v that occurs free in lambda-expr,
+; this occurrence of fn is in the scope of a lambda binding of v in term.  Key
+; Observation: If there is no problematic occurrence of any function symbol in
+; term, then we can obtain the result of this call of sublis-fn by first
+; replacing v in lambda-app by a fresh variable v', then carrying out the
 ; functional substitution, and finally doing an ordinary substitution of v for
 ; v'.  This Key Observation explains why it suffices to check that there is no
 ; such problematic occurrence.  As we recur, we maintain bound-vars to be a
@@ -9913,7 +9913,7 @@
 ; NIL X), we generate (g X y).  Note that this "imports" a free X into a term,
 ; (g (foo) y), where there was no X.
 
-; But there is a problem.  If you hit ((lambda (z) (g (FOO) z)) y) with FOO
+; But there is a problem.  If you hit ((lambda (z) (g (FOO) z)) y) where FOO
 ; gets (LAMBDA NIL X), you would naively produce ((lambda (z) (g X z)) y),
 ; importing the X into the G term as noted above.  But we also just imported
 ; the X into the scope of a lambda!  Even though there is no capture, we now
@@ -10631,6 +10631,82 @@
                           event-names
                           new-entries)))))))
 
+(defun fn-subst-free-vars (alist)
+  (cond ((endp alist) nil)
+        ((symbolp (cdar alist))
+         (fn-subst-free-vars (cdr alist)))
+        (t ; (flambdap (cdar alist))
+         (let* ((fn (cdar alist))
+                (formals (lambda-formals fn))
+                (body (lambda-body fn))
+                (free-vars (set-difference-eq (all-vars body) formals)))
+           (append free-vars
+                   (fn-subst-free-vars (cdr alist)))))))
+
+(defun fn-subst-renaming-alist (vars avoid-vars)
+  (cond ((endp vars) nil)
+        (t (let* ((var (car vars))
+                  (new-var (genvar (car vars)
+                                   (concatenate 'string
+                                                (symbol-name (car vars))
+                                                "-RENAMED")
+                                   0
+                                   avoid-vars)))
+             (acons var new-var
+                    (fn-subst-renaming-alist (cdr vars)
+                                             (cons new-var avoid-vars)))))))
+
+(defun remove-capture-in-constraint-lst (alist new-constraints)
+  (let* ((new-constraints-vars
+
+; Formerly we called sublis-fn-rec-lst below with the bound-vars argument equal
+; to nil.  The following example shows a resulting soundness bug in Version_7.3
+; (and probably many earlier versions, though we only checked 7.3 and 7.0).
+; The problem is a kind of capture, but not by a lambda.  Rather, when the
+; functional substitution is applied to the constraint (equal (f n) 3), the
+; result identifies the distinct variables n and n2 in the lambda, to get
+; (equal (if (equal n 3) n 3).  Imagine that instead the constraint on f had
+; been (equal (f k) 3); then the result of applying the functional substitution
+; would be (equal (f (if (equal n 3) k 3)) 3), which (quite appropriately) is
+; not a theorem.  Logically, what is happening is that we are substituting into
+; the universal closure of the constraint on f.  (Because of that, this capture
+; issue does not cause a problem for world global
+; 'proved-functional-instances-alist.)  So there is indeed capture in the
+; example below: we are substituting the indicated lambda into the formula
+; (forall (n) (equal (f n) 3)), and the free variable n of the lambda is
+; captured by the universal quantifier!  Here, we disallow such behavior by
+; checking, during application of the functional substitution, that no
+; (universally quantified) variable of a constraint occurs free in the range of
+; the functional substitution.
+
+;   (defun f (n) (declare (ignore n)) 3)
+;   (defthm f-thm (equal (f x) 3) :rule-classes nil)
+;   (defthm not-true
+;     (implies (equal n 3)
+;              (equal x 3))
+;     :hints (("Goal" :by (:functional-instance
+;                          f-thm
+;                          (f (lambda (n2) (if (equal n 3) n2 3))))))
+;     :rule-classes nil)
+;   (defthm ouch
+;     nil
+;     :hints (("Goal" :use ((:instance not-true (n 3) (x 4)))))
+;     :rule-classes nil)
+
+          (all-vars1-lst new-constraints nil))
+         (fn-subst-free-vars (fn-subst-free-vars alist))
+         (bad-vars (intersection-eq new-constraints-vars
+                                    fn-subst-free-vars)))
+    (cond
+     (bad-vars
+      (let* ((bad-vars-alist ; rename bad vars to fresh vars
+              (fn-subst-renaming-alist bad-vars
+                                       fn-subst-free-vars))
+             (new-constraints-renamed
+              (sublis-var-lst bad-vars-alist new-constraints)))
+        (mv bad-vars-alist new-constraints-renamed)))
+     (t (mv nil new-constraints)))))
+
 (defun@par translate-lmi/functional-instance (formula constraints event-names
                                                       new-entries substn
                                                       proved-fnl-insts-alist
@@ -10652,33 +10728,43 @@
 
   (er-let*@par
    ((alist (translate-functional-substitution@par substn ctx wrld state)))
-   (mv-let
-    (new-constraints new-event-names new-new-entries)
-    (relevant-constraints formula alist proved-fnl-insts-alist wrld)
-    (cond
-     ((eq new-constraints *unknown-constraints*)
-      (er@par soft ctx
-        "Functional instantiation is disallowed in this context, because the ~
-         function ~x0 has unknown constraints provided by the dependent ~
-         clause-processor ~x1.  See :DOC define-trusted-clause-processor."
-        new-event-names
-        new-new-entries))
-     (t
-      (let ((allow-freevars-p
-             #-:non-standard-analysis
-             t
-             #+:non-standard-analysis
-             (classical-fn-list-p (all-fnnames formula) wrld)))
-        (mv-let
-         (erp0 formula0)
-         (sublis-fn-rec alist formula nil allow-freevars-p)
-         (mv-let
-          (erp new-constraints0)
-          (cond (erp0 (mv erp0 formula0))
-                (t (sublis-fn-rec-lst alist new-constraints nil
-                                      allow-freevars-p)))
-          (cond
-           (erp
+   (mv-let (new-constraints new-event-names new-new-entries)
+     (relevant-constraints formula alist proved-fnl-insts-alist wrld)
+     (cond
+      ((eq new-constraints *unknown-constraints*)
+       (er@par soft ctx
+         "Functional instantiation is disallowed in this context, because the ~
+          function ~x0 has unknown constraints provided by the dependent ~
+          clause-processor ~x1.  See :DOC define-trusted-clause-processor."
+         new-event-names
+         new-new-entries))
+      (t
+       (mv-let (bad-vars-alist new-constraints)
+         (remove-capture-in-constraint-lst alist new-constraints)
+         (pprogn
+          (cond (bad-vars-alist (warning$@par ctx "Capture"
+                                  "In order to avoid variable capture, ~
+                                   functional instantiation is generating a ~
+                                   version of the constraints in which free ~
+                                   variables are renamed by the following ~
+                                   alist:~|~x0"
+                                  bad-vars-alist))
+                (t state))
+          (let ((allow-freevars-p
+                 #-:non-standard-analysis
+                 t
+                 #+:non-standard-analysis
+                 (classical-fn-list-p (all-fnnames formula) wrld)))
+            (mv-let
+              (erp0 formula0)
+              (sublis-fn-rec alist formula nil allow-freevars-p)
+              (mv-let
+                (erp new-constraints0)
+                (cond (erp0 (mv erp0 formula0))
+                      (t (sublis-fn-rec-lst alist new-constraints nil
+                                            allow-freevars-p)))
+                (cond
+                 (erp
 
 ; The following message is surprising in a situation where a variable is
 ; captured by a binding to itself, sinced for example (let ((x x)) ...)
@@ -10687,46 +10773,49 @@
 ; simple and simply expect and hope that such a misleading message is never
 ; actually seen by a user.
 
-            (er@par soft ctx
-              (if allow-freevars-p
-                  "Your functional substitution contains one or more free ~
-                   occurrences of the variable~#0~[~/s~] ~&0 in its range.  ~
-                   Alas, ~#1~[this variable occurrence is~/these variables ~
-                   occurrences are~] bound in a LET or MV-LET expression of ~
-                   ~#2~[the formula you wish to functionally instantiate, ~
-                   ~p3.~|~/the constraints that must be relieved.  ~]You must ~
-                   therefore change your functional substitution so that it ~
-                   avoids such ``capture.''  It will suffice for your ~
-                   functional substitution to stay clear of all the variables ~
-                   bound by a LET or MV-LET expression that are used in the ~
-                   target formula or in the corresponding constraints.  Thus ~
-                   it will suffice for your substitution not to contain free ~
-                   occurrences of ~v4 in its range, by using fresh variables ~
-                   instead.  Once you have fixed this problem, you can :use ~
-                   an :instance of your :functional-instance to bind the ~
-                   fresh variables to ~&4."
+                  (er@par soft ctx
+                    (if allow-freevars-p
+                        "Your functional substitution contains one or more ~
+                         free occurrences of the variable~#0~[~/s~] ~&0 in ~
+                         its range. ~ Alas, ~#1~[this variable occurrence ~
+                         is~/these variables occurrences are~] bound in a LET ~
+                         or MV-LET expression of ~#2~[the formula you wish to ~
+                         functionally instantiate, ~p3.~|~/the constraints ~
+                         that must be relieved.  ~]You must therefore change ~
+                         your functional substitution so that it avoids such ~
+                         ``capture.''  It will suffice for your functional ~
+                         substitution to stay clear of all the variables ~
+                         bound by a LET or MV-LET expression that are used in ~
+                         the target formula or in the corresponding ~
+                         constraints.  Thus it will suffice for your ~
+                         substitution not to contain free occurrences of ~v4 ~
+                         in its range, by using fresh variables instead.  ~
+                         Once you have fixed this problem, you can :use an ~
+                         :instance of your :functional-instance to bind the ~
+                         fresh variables to ~&4."
 
 ; With allow-freevars-p = nil, it is impossible for free variables to be
 ; captured, since no free variables are allowed.
 
-                "Your functional substitution contains one or more free ~
-                 occurrences of the variable~#0~[~/s~] ~&0 in its range.  ~
-                 Alas, the formula you wish to functionally instantiate is ~
-                 not a classical formula, ~p3.  Free variables in lambda ~
-                 expressions are only allowed when the formula to be ~
-                 instantiated is classical, since these variables may admit ~
-                 non-standard values, for which the theorem may be false.")
-              (merge-sort-symbol-< erp)
-              erp
-              (if erp0 0 1)
-              (untranslate formula t wrld)
-              (bound-vars-lst (cons formula new-constraints)
-                              nil)))
-           (t (value@par
-               (list formula0
-                     (append constraints new-constraints0)
-                     (union-equal new-event-names event-names)
-                     (union-equal new-new-entries new-entries)))))))))))))
+                      "Your functional substitution contains one or more free ~
+                       occurrences of the variable~#0~[~/s~] ~&0 in its ~
+                       range. Alas, the formula you wish to functionally ~
+                       instantiate is not a classical formula, ~p3.  Free ~
+                       variables in lambda expressions are only allowed when ~
+                       the formula to be instantiated is classical, since ~
+                       these variables may admit non-standard values, for ~
+                       which the theorem may be false.")
+                    (merge-sort-symbol-< erp)
+                    erp
+                    (if erp0 0 1)
+                    (untranslate formula t wrld)
+                    (bound-vars-lst (cons formula new-constraints)
+                                    nil)))
+                 (t (value@par
+                     (list formula0
+                           (append constraints new-constraints0)
+                           (union-equal new-event-names event-names)
+                           (union-equal new-new-entries new-entries)))))))))))))))
 
 ; We are trying to define termination-theorem-clauses, but for that, we need
 ; termination-machines.  The latter was originally defined in defuns.lisp, but

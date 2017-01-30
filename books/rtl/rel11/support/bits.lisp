@@ -2579,3 +2579,4 @@
   :disable bvecp-as-dvecp
   :cases ((bvecp (sextend m n r) m))
   :hints (("subgoal 2" :in-theory (enable bvecp-as-dvecp sextend-r))))
+

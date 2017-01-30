@@ -435,6 +435,8 @@
 
 ; We return a term equivalent to (IMPLIES t1 t2).
 
+  (declare (xargs :guard (and (pseudo-termp t1)
+                              (pseudo-termp t2))))
   (cond ((equal t1 *t*) t2)
         ((equal t1 *nil*) *t*)
         ((equal t2 *t*) *t*)
