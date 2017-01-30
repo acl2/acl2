@@ -308,8 +308,9 @@ expression with @(see vl-expr-to-svex).</p>")
                      :msg "Reclimit ran out on ~a0: dependency loop?"
                      :args (list fnname))
               elabindex))
-         ((vl-fundecl decl) step.item)
+         (decl step.item)
          ;; BOZO probably should traverse using the decl.elabpath instead but not yet implemented
+         ;; ((vl-fundecl decl) step.item)
          (elabindex (vl-elabindex-traverse step.ss (rev step.elabpath)))
          ((wmv ok warnings ?new-decl elabindex)
           (vl-fundecl-elaborate decl elabindex :reclimit (1- reclimit)))

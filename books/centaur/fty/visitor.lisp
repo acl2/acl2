@@ -339,8 +339,7 @@
 
 (define visitor-transsum-member-body (member x)
   ;; modeled after visitor-prod-subbody
-  (b* (((flextranssum-member member))
-       ((visitorspec x))
+  (b* (((visitorspec x))
        ((mv new-value bindings) (visitor-transsum-updates member x)))
     `(b* (,@bindings)
        ,(visitor-return-values
