@@ -1734,28 +1734,28 @@ sub add_deps {
     $depdb->certdeps->{$target} = $certinfo ;
 
     if ($print_deps) {
-	print "Dependencies for $target:\n";
-	print "book:\n";
-	foreach my $dep (@{$certinfo->bookdeps}) {
-	    print "$dep\n";
-	}
-	print "src:\n";
-	foreach my $dep (@{$certinfo->srcdeps}) {
-	    print "$dep\n";
-	}
-	print "other:\n";
-	foreach my $dep (@{$certinfo->otherdeps}) {
-	    print "$dep\n";
-	}
-	print "image: " . $certinfo->image . "\n" if $certinfo->image;
-	if ($certinfo->certparams) {
-	    print "certparams: ";
-	    while (my ($key, $value) = each %{$certinfo->certparams}) {
-		print "$key = $value";
-	    }
-	    print "\n";
-	}
-	print "\n";
+        print "Dependencies for $target:\n";
+        print "book:\n";
+        foreach my $dep (@{$certinfo->bookdeps}) {
+            print "$dep\n";
+        }
+        print "src:\n";
+        foreach my $dep (@{$certinfo->srcdeps}) {
+            print "$dep\n";
+        }
+        print "other:\n";
+        foreach my $dep (@{$certinfo->otherdeps}) {
+            print "$dep\n";
+        }
+        print "image: " . $certinfo->image . "\n" if $certinfo->image;
+        if ($certinfo->params) {
+            print "params:\n";
+            while (my ($key, $value) = each %{$certinfo->params}) {
+                print "$key = $value\n";
+            }
+            print "\n";
+        }
+        print "\n";
     }
 
     # # Accumulate the set of sources.  We haven't checked yet if they exist.
