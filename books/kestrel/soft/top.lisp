@@ -16,6 +16,7 @@
 ; and implemented in implementation.lisp.
 ; Examples of use of SOFT are in
 ; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
+; Other tests are in tests.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

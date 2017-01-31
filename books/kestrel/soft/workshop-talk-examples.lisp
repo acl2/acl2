@@ -15,6 +15,7 @@
 ; SOFT is documented in documentation.lisp
 ; and implemented in implementation.lisp.
 ; Other examples of use of SOFT are in workshop-paper-examples.lisp.
+; Other tests are in tests.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

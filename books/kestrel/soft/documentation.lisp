@@ -15,6 +15,7 @@
 ; SOFT is implemented in implementation.lisp.
 ; Examples of use of SOFT are in
 ; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
+; Other tests are in tests.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -854,6 +855,8 @@
      it must <see topic='@(url function-variable-dependency)'>depend</see> on
      the same function variables that @('body')
      <see topic='@(url function-variable-dependency)'>depends</see> on.
+     As in @(tsee defun-sk), this option may be present
+     only if the quantifier is universal.
      </p>
 
      </blockquote>
@@ -1090,21 +1093,29 @@
    @(':rewrite')
    </p>
 
-    <blockquote>
+     <blockquote>
 
-    <p>
-    An option to customize the rewrite rule of @('fun').
-    This may be present only if @('sofun') was introduced via @(tsee defun-sk2).
-    If present, it is passed to the @(tsee defun-sk) generated for @('fun').
-    If a term is supplied,
-    it must <see topic='@(url function-variable-dependency)'>depend</see> on
-    the same function variables that the body of @('fun')
-    <see topic='@(url function-variable-dependency)'>depends</see> on;
-    in particular, if @('fun') is first-order,
-    the term supplied as rewrite rule must not depend on any function variables.
-    </p>
+     <p>
+     An option to customize the rewrite rule of @('fun').
+     This may be present only if @('sofun') was introduced via @(tsee defun-sk2)
+     and its quantifier is universal.
+     If present, it is passed to the @(tsee defun-sk) generated for @('fun').
+     If a term is supplied,
+     it must <see topic='@(url function-variable-dependency)'>depend</see> on
+     the same function variables that the body of @('fun')
+     <see topic='@(url function-variable-dependency)'>depends</see> on;
+     in particular, if @('fun') is first-order,
+     the term supplied as rewrite rule
+     must not depend on any function variables.
+     If this option is absent,
+     @('sofun') was introduced via @(tsee defun-sk2),
+     and its quantifier is universal,
+     the rewrite rule of @('fun') has the same form as in @('sofun');
+     in particular, the function variables in the rewrite rule of @('sofun')
+     are instantiated via the instantiation passed to @(tsee defun-inst).
+     </p>
 
-    </blockquote>
+     </blockquote>
 
    <h3>Generated Events</h3>
 

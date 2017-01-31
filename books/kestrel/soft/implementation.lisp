@@ -1,6 +1,6 @@
 ; SOFT ('Second-Order Functions and Theorems') -- Implementation
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 ; SOFT is documented in documentation.lisp.
 ; Examples of use of SOFT are in
 ; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
+; Other tests are in tests.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,6 +447,8 @@
 ; BODY is the body as in DEFUN-SK,
 ; and the keyed options are the same as in DEFUN-SK.
 ; The keyed option :THM-NAME of DEFUN-SK is currently not supported by SOFT.
+; As in DEFUN-SK, the keyed option :REWRITE may be present only if
+; the quantifier is universal.
 ;
 ; DEFUN-SK2 generates a DEFUN-SK event,
 ; updates the table of second-order functions,
@@ -1040,11 +1043,15 @@
 ; In the generated DEFUN-SK,
 ; the :QUANT-OK is set to T, in case it was set to T in the DEFUN-SK of SOFUN.
 ;
-; The :SKOLEM-NAME and :REWRITE options in DEFUN-INST can be used
+; The :SKOLEM-NAME option in DEFUN-INST can be used
 ; only if SOFUN is a quantifier second-order function.
-; Their meaning is the same as in DEFUN-SK,
-; except that if :REWRITE is absent,
-; it is inherited from SOFUN.
+; Its meaning is the same as in DEFUN-SK.
+;
+; The :REWRITE option in DEFUN-INST can be used
+; only if SOFUN is a quantifier second-order function with FORALL.
+; Its meaning is the same as in DEFUN-SK,
+; except that if :REWRITE is absent and the quantifier is FORALL,
+; then :REWRITE is inherited from SOFUN.
 ;
 ; Since DEFUN-SK accepts more options than :SKOLEM-NAME and :REWRITE,
 ; it may be possible to supply, without an immediate error,
@@ -1182,10 +1189,8 @@
   (b* (;; retrieve DEFUN-SK-specific constituents of SOFUN:
        (sofun-info (acl2::defun-sk-check sofun w))
        ;; retrieve bound variables and quantifier of SOFUN:
-       (bound-vars (acl2::defun-sk-info->bound-vars
-                    (acl2::defun-sk-check sofun w)))
-       (quant (acl2::defun-sk-info->quantifier
-               (acl2::defun-sk-check sofun w)))
+       (bound-vars (acl2::defun-sk-info->bound-vars sofun-info))
+       (quant (acl2::defun-sk-info->quantifier sofun-info))
        ;; apply instantiation to the matrix of SOFUN:
        (sofun-matrix (acl2::defun-sk-info->matrix sofun-info))
        (fun-matrix (fun-subst-term inst sofun-matrix w))
@@ -1195,8 +1200,7 @@
        (rewrite-supplied (cadr (assoc-keyword :rewrite options)))
        (rewrite
         (or rewrite-supplied
-            (let ((qrkind (acl2::defun-sk-info->rewrite-kind
-                            (acl2::defun-sk-check sofun w))))
+            (let ((qrkind (acl2::defun-sk-info->rewrite-kind sofun-info)))
               (case qrkind
                 (:default :default)
                 (:direct :direct)
@@ -1207,7 +1211,7 @@
                  ;; because the term presumably references SOFUN):
                  (let* ((fsbs (acons sofun fun inst))
                         (rule-name (acl2::defun-sk-info->rewrite-name
-                                    (acl2::defun-sk-check sofun w)))
+                                    sofun-info))
                         (term (formula rule-name nil w)))
                    (fun-subst-term fsbs term w)))))))
        ;; apply instantiation to the guard of SOFUN:
@@ -1229,7 +1233,8 @@
           (,quant ,bound-vars ,fun-matrix)
           :strengthen ,(acl2::defun-sk-info->strengthen sofun-info)
           :quant-ok t
-          :rewrite ,rewrite
+          ,@(and (eq quant 'forall)
+                 (list :rewrite rewrite))
           :witness-dcls (,wit-dcl)
           ;; Matt K. mod: avoid duplicate keywords:
           ,@(acl2::strip-keyword-list
