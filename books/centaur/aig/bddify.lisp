@@ -88,7 +88,7 @@ from the ITP presentation are also available.</p>")
    x
    :true t
    :false nil
-   :var (aig-env-lookup x fal)
+   :var (aig-alist-lookup x fal)
    :inv (q-not (aig-q-compose (car x) fal))
    :and (let ((a (aig-q-compose (car x) fal)))
           (and a (q-and a (aig-q-compose (cdr x) fal))))))
@@ -323,7 +323,7 @@ from the ITP presentation are also available.</p>")
    x
    :true (mv t t t 1 1 fmemo memo)
    :false (mv nil nil nil 1 1 fmemo memo)
-   :var (b* ((val (aig-env-lookup x al))
+   :var (b* ((val (aig-alist-lookup x al))
              (count (count-branches-to val max-nodes))
              (count (and count (1+ count))))
           (if count
@@ -390,7 +390,7 @@ from the ITP presentation are also available.</p>")
 ;; alist, then this is the exact BDD representation for the AIG.
 
 (defn aig-bddify-var-weakening-var (x al max-count)
-  (b* ((val (aig-env-lookup x al)))
+  (b* ((val (aig-alist-lookup x al)))
     (if (booleanp val)
         (mv val val 1)
       (let* ((c (count-branches-to val max-count))

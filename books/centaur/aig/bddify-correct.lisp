@@ -1033,7 +1033,7 @@
                 (not (equal x t))
                 x)
            (equal (aig-q-compose x al)
-                  (aig-env-lookup x al))))
+                  (aig-alist-lookup x al))))
 
 (defthm aig-q-compose-of-const
   (implies (booleanp x)
@@ -3256,7 +3256,8 @@
                        (acl2::aig-eval x aig-env)))
        :hints (("goal" :induct (acl2::aig-eval x aig-env)
                 :in-theory (e/d (subsetp-equal
-                                 acl2::aig-env-lookup) (nfix)))
+                                 acl2::aig-env-lookup
+                                 acl2::aig-alist-lookup) (nfix)))
                (and stable-under-simplificationp
                     '(:in-theory (enable nfix)))))))
 

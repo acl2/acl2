@@ -34,6 +34,8 @@
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/aig/misc" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "centaur/fty/fixtype" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 
@@ -125,9 +127,69 @@ possible environment.")
   :hints(("Goal" :in-theory (e/d (bfr-equiv-necc)))))
 
 
-(define bfr-lookup ((n natp) env)
+
+(define non-bool-atom-p (x)
+  (and (atom x) (not (booleanp x)))
+  ///
+  (defthm non-bool-atom-p-compound-recognizer
+    (equal (non-bool-atom-p x)
+           (and (atom x) (not (booleanp x))))
+    :rule-classes :compound-recognizer)
+
+  (define non-bool-atom-fix ((x non-bool-atom-p))
+    :returns (new-x non-bool-atom-p :rule-classes :type-prescription)
+    (mbe :logic (if (non-bool-atom-p x) x 0)
+         :exec x)
+    ///
+    (defthm non-bool-atom-fix-when-non-bool-atom-p
+      (implies (non-bool-atom-p x)
+               (equal (non-bool-atom-fix x) x)))
+    (fty::deffixtype non-bool-atom
+      :pred non-bool-atom-p
+      :fix non-bool-atom-fix
+      :equiv non-bool-atom-equiv
+      :define t)))
+
+(define bfr-varname-p (x)
+  (bfr-case :bdd (natp x)
+    :aig (non-bool-atom-p x))
+  ///
+  (define bfr-varname-fix ((x bfr-varname-p))
+    :returns (new-x bfr-varname-p)
+    (bfr-case :bdd (nfix x)
+      :aig (non-bool-atom-fix x))
+    ///
+    (defthm bfr-varname-fix-when-bfr-varname-p
+      (implies (bfr-varname-p x)
+               (equal (bfr-varname-fix x) x)))
+    (fty::deffixtype bfr-varname
+      :pred bfr-varname-p
+      :fix bfr-varname-fix
+      :equiv bfr-varname-equiv
+      :define t)
+
+    (defthm nfix-of-bfr-varname-fix
+      (equal (nfix (bfr-varname-fix x))
+             (nfix x))
+      :hints(("Goal" :in-theory (enable bfr-varname-fix non-bool-atom-fix))))
+
+    (defthm bfr-varname-fix-of-nfix
+      (equal (bfr-varname-fix (nfix x))
+             (nfix x))
+      :hints(("Goal" :in-theory (enable bfr-varname-fix))))
+
+    (defthm bfr-varname-p-when-natp
+      (implies (natp x)
+               (bfr-varname-p x))
+      :hints(("Goal" :in-theory (enable bfr-varname-p))))))
+
+
+
+
+
+(define bfr-lookup ((n bfr-varname-p) env)
   :short "Look up a BFR variable in an appropriate BDD/AIG environment."
-  (let ((n (lnfix n)))
+  (let ((n (bfr-varname-fix n)))
     (bfr-case
       :bdd (and (acl2::with-guard-checking nil (ec-call (nth n env))) t)
       :aig (let ((look (hons-get n env)))
@@ -137,13 +199,13 @@ possible environment.")
   ///
   (in-theory (disable (:e bfr-lookup)))
 
-  (defcong acl2::nat-equiv equal (bfr-lookup n env) 1
+  (defcong bfr-varname-equiv equal (bfr-lookup n env) 1
     :hints(("Goal" :in-theory (enable bfr-lookup)))))
 
 
-(define bfr-set-var ((n natp) val env)
+(define bfr-set-var ((n bfr-varname-p) val env)
   :short "Set the @('n')th BFR variable to some value in an AIG/BDD environment."
-  (let ((n (lnfix n)))
+  (let ((n (bfr-varname-fix n)))
     (bfr-case :bdd (acl2::with-guard-checking
                     nil
                     (ec-call (update-nth n (and val t) env)))
@@ -153,19 +215,19 @@ possible environment.")
 
   (defthm bfr-lookup-bfr-set-var
     (equal (bfr-lookup n (bfr-set-var m val env))
-           (if (equal (nfix n) (nfix m))
+           (if (equal (bfr-varname-fix n) (bfr-varname-fix m))
                (and val t)
              (bfr-lookup n env)))
-    :hints(("Goal" :in-theory (e/d (bfr-lookup bfr-set-var)
+    :hints(("Goal" :in-theory (e/d (bfr-lookup bfr-set-var bfr-varname-fix)
                                    (update-nth nth)))))
 
-  (defcong acl2::nat-equiv equal (bfr-set-var n val env) 1
+  (defcong bfr-varname-equiv equal (bfr-set-var n val env) 1
     :hints(("Goal" :in-theory (enable bfr-set-var)))))
 
 
-(define bfr-var ((n natp))
+(define bfr-var ((n bfr-varname-p))
   :short "Construct the @('n')th BFR variable."
-  (let ((n (lnfix n)))
+  (let ((n (bfr-varname-fix n)))
     (bfr-case :bdd (acl2::qv n)
               :aig n))
   ///
@@ -177,7 +239,7 @@ possible environment.")
     :hints(("Goal" :in-theory (enable bfr-lookup bfr-eval bfr-var
                                       acl2::eval-bdd))))
 
-  (defcong acl2::nat-equiv equal (bfr-var n) 1
+  (defcong bfr-varname-equiv equal (bfr-var n) 1
     :hints(("Goal" :in-theory (enable bfr-var)))))
 
 
@@ -722,7 +784,7 @@ anything if we're working with AIGs."
 (define bfr-depends-on (k x)
   :verify-guards nil
   (bfr-case :bdd (bfr-semantic-depends-on k x)
-            :aig (set::in (nfix k) (acl2::aig-vars x)))
+            :aig (set::in (bfr-varname-fix k) (acl2::aig-vars x)))
   ///
   (local (defthm aig-eval-under-env-with-non-aig-var-member
            (implies (not (set::in k (acl2::aig-vars x)))
@@ -747,18 +809,18 @@ anything if we're working with AIGs."
 
   (defthm bfr-depends-on-of-bfr-var
     (equal (bfr-depends-on m (bfr-var n))
-           (equal (nfix m) (nfix n)))
-    :hints(("goal" :in-theory (e/d (bfr-depends-on) (nfix)))
+           (equal (bfr-varname-fix m) (bfr-varname-fix n)))
+    :hints(("goal" :in-theory (e/d (bfr-depends-on) (bfr-varname-fix)))
            (cond ((member-equal '(bfr-mode) clause)
                   (and stable-under-simplificationp
                        (if (eq (caar clause) 'not)
                            '(:use ((:instance bfr-semantic-depends-on-suff
                                     (k m) (x (bfr-var n))
                                     (v (not (bfr-lookup n env)))))
-                             :in-theory (disable nfix))
+                             :in-theory (disable bfr-varname-fix))
                          '(:expand ((bfr-semantic-depends-on m (bfr-var n)))))))
                  ((member-equal '(not (bfr-mode)) clause)
-                  '(:in-theory (e/d (bfr-depends-on bfr-var) (nfix))))))
+                  '(:in-theory (e/d (bfr-depends-on bfr-var) (bfr-varname-fix))))))
     :otf-flg t)
 
   (defthm no-new-deps-of-bfr-not
@@ -923,10 +985,10 @@ anything if we're working with AIGs."
     (implies (and (not (bfr-depends-on m p))
                   (bfr-eval p env))
              (equal (pbfr-depends-on m p (bfr-to-param-space p (bfr-var n)))
-                    (equal (nfix m) (nfix n))))
+                    (equal (bfr-varname-fix m) (bfr-varname-fix n))))
     :hints(("Goal" :in-theory (e/d (pbfr-depends-on
                                     bfr-depends-on)
-                                   (nfix))
+                                   (bfr-varname-fix))
             :do-not-induct t)
            (cond ((member-equal '(bfr-mode) clause)
                   (and stable-under-simplificationp

@@ -206,7 +206,7 @@
                              ;; stuffing anything into st-foo-bad.
                              (equal (st-foo-bad st)
                                     (integer-tr-delete-indices
-                                     (1- (st-foo-length st))
+                                     (st-foo-length st)
                                      (st-foo-bad st))))))))
 
   (local (in-theory (enable good-stp)))
@@ -227,15 +227,15 @@
 ; Only minor changes here.
 
   (defund-nx st-get-foo-rec (st)
-    (integer-array-to-tr (- (st-foo-length st) 1)
+    (integer-array-to-tr (st-foo-length st)
                          (nth *st-fooi* st)
                          (st-foo-bad st)))
 
   (defund-nx st-set-foo-rec (val st)
     (let* ((arr (nth *st-fooi* st))
            (len (st-foo-length st))
-           (arr (integer-tr-to-array (- len 1) val arr))
-           (rec (integer-tr-delete-indices (- len 1) val))
+           (arr (integer-tr-to-array len val arr))
+           (rec (integer-tr-delete-indices len val))
            (st  (update-nth *st-fooi* arr st))
            (st  (update-st-foo-bad rec st)))
       st))

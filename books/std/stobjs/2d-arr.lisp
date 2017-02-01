@@ -193,8 +193,59 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
     (current-theory :here)))
 
 
+(define 2darr-p (x)
+  (and (consp x)
+       (natp (car x))
+       (true-listp (cdr x))))
 
+(define 2darr->ncols ((x 2darr-p))
+  :returns (ncols natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable 2darr-p))))
+  (lnfix (car x)))
 
+(define 2darr->rows ((x 2darr-p))
+  :returns (rows true-listp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable 2darr-p))))
+  (mbe :logic (acl2::list-fix (cdr x)) :exec (cdr x)))
+
+(define 2darr-fix ((x 2darr-p))
+  :returns (new-x 2darr-p)
+  :prepwork ((local (in-theory (enable 2darr-p 2darr->ncols 2darr->rows))))
+  (mbe :logic (cons (2darr->ncols x)
+                    (2darr->rows x))
+       :exec x)
+  ///
+  (defthm 2darr-fix-when-2darr-p
+    (implies (2darr-p x)
+             (equal (2darr-fix x) x)))
+
+  (defthm 2darr->ncols-of-2darr-fix
+    (equal (2darr->ncols (2darr-fix x))
+           (2darr->ncols x)))
+
+  (defthm 2darr->rows-of-2darr-fix
+    (equal (2darr->rows (2darr-fix x))
+           (2darr->rows x))))
+
+(define 2darr ((ncols natp) (rows true-listp))
+  :returns (2darr 2darr-p)
+  :prepwork ((local (in-theory (enable 2darr->ncols 2darr->rows 2darr-fix 2darr-p))))
+  (cons (lnfix ncols)
+        (mbe :logic (acl2::list-fix rows) :exec rows))
+  ///
+
+  (defthm 2darr-ncols-rows-identity
+    (equal (2darr (2darr->ncols x) (2darr->rows x))
+           (2darr-fix x)))
+
+  (defthm 2darr->ncols-of-2darr
+    (equal (2darr->ncols (2darr ncols rows))
+           (nfix ncols)))
+
+  (defthm 2darr->rows-of-2darr
+    (equal (2darr->rows (2darr ncols rows))
+           (acl2::list-fix rows))))
+    
 
 (defun def2darr-events ()
   '(defsection _stobj-name_
@@ -431,18 +482,17 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
 
      (defun _prefix_l-arr2-wfp (_prefix_l-arr2)
        (declare (Xargs :guard t))
-       (and (consp _prefix_l-arr2)
-            (natp (car _prefix_l-arr2))
-            (_prefix_l-arr2-data-wfp (cdr _prefix_l-arr2) (car _prefix_l-arr2))
-            (<= (* (car _prefix_l-arr2) (len (cdr _prefix_l-arr2))) (1- (expt 2 60)))))
+       (and (2darr-p _prefix_l-arr2)
+            (_prefix_l-arr2-data-wfp (2darr->rows _prefix_l-arr2) (2darr->ncols _prefix_l-arr2))
+            (<= (* (2darr->ncols _prefix_l-arr2) (len (2darr->rows _prefix_l-arr2))) (1- (expt 2 60)))))
 
      (defun _prefix_l-nrows (_prefix_l-arr2)
        (declare (xargs :guard (_prefix_l-arr2-wfp _prefix_l-arr2)))
-       (len (cdr _prefix_l-arr2)))
+       (len (2darr->rows _prefix_l-arr2)))
 
      (defun _prefix_l-ncols (_prefix_l-arr2)
        (declare (xargs :guard (_prefix_l-arr2-wfp _prefix_l-arr2)))
-       (lnfix (car _prefix_l-arr2)))
+       (2darr->ncols _prefix_l-arr2))
 
      (defun _prefix_l-get2 (row col _prefix_l-arr2)
        (declare (type (integer 0 *) row)
@@ -450,7 +500,7 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                 (xargs :guard (and (_prefix_l-arr2-wfp _prefix_l-arr2)
                                    (< row (_prefix_l-nrows _prefix_l-arr2))
                                    (< col (_prefix_l-ncols _prefix_l-arr2)))))
-       (_elt-fix_ (nth col (nth row (cdr _prefix_l-arr2)))))
+       (_elt-fix_ (nth col (nth row (2darr->rows _prefix_l-arr2)))))
 
      (defsection _prefix_l-set2
        (defund _prefix_l-set2 (row col val _prefix_l-arr2)
@@ -460,10 +510,10 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                   (xargs :guard (and (_prefix_l-arr2-wfp _prefix_l-arr2)
                                      (< row (_prefix_l-nrows _prefix_l-arr2))
                                      (< col (_prefix_l-ncols _prefix_l-arr2)))))
-         (cons (car _prefix_l-arr2)
-               (update-nth row
-                           (update-nth col val (nth row (cdr _prefix_l-arr2)))
-                           (cdr _prefix_l-arr2))))
+         (2darr (2darr->ncols _prefix_l-arr2)
+                (update-nth row
+                            (update-nth col val (nth row (2darr->rows _prefix_l-arr2)))
+                            (2darr->rows _prefix_l-arr2))))
 
        (local (in-theory (enable _prefix_l-set2)))
 
@@ -515,11 +565,11 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                                      (<= nrows (1- (expt 2 60)))
                                      (<= (* nrows (_prefix_l-ncols _prefix_l-arr2))
                                          (1- (expt 2 60))))))
-         (cons (car _prefix_l-arr2)
-               (resize-list (cdr _prefix_l-arr2)
-                            (nfix nrows)
-                            (make-list (_prefix_l-ncols _prefix_l-arr2)
-                                       :initial-element _default-elt_))))
+         (2darr (2darr->ncols _prefix_l-arr2)
+                (resize-list (2darr->rows _prefix_l-arr2)
+                             (nfix nrows)
+                             (make-list (_prefix_l-ncols _prefix_l-arr2)
+                                        :initial-element _default-elt_))))
 
        (local (in-theory (enable _prefix_l-resize-rows)))
 
@@ -565,7 +615,7 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                                      (<= (* ncols (_prefix_l-nrows _prefix_l-arr2))
                                          (1- (expt 2 60))))))
          (let ((nrows (_prefix_l-nrows _prefix_l-arr2)))
-           (cons (nfix ncols)
+           (2darr (nfix ncols)
                  (make-list nrows
                             :initial-element
                             (make-list (nfix ncols) :initial-element _default-elt_)))))

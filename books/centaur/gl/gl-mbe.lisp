@@ -222,6 +222,26 @@ different results.  For example:</p>
 (defmacro gl-force-check-strong (x)
   `(gl-force-check-fn ,x t :both))
 
+(defxdoc gl-force-check
+  :parents (reference)
+  :short "When found in an @('if') test, forces GL to check satisfiability of the test."
+  :long "<p>When using GL's AIG-based modes, it is sometimes important to force
+GL to check whether an IF test is constant-true or constant-false.  For
+example, if the \texttt{if} guards a recursive call, then symbolic
+interpretation of the function may diverge if the test isn't checked.</p>
+
+<p>Usage:</p>
+@({
+ (gl-force-check test :strong nil :dir :both)
+ })
+
+<p>Here @(':strong') governs whether the path condition is considered; by
+default it is not, because it is potentially much more expensive to do the
+check when considering the path condition.  @(':dir') may be @('t'), @('nil'),
+or @(':both') (the default).  If @('t'), then we only try to show that
+@('test') is constant-true; if @('nil'), we only try to show it constant-false;
+if @(':both'), then we try both directions.</p> ")
+
 
 (defmacro gl-force-true (x &key strong)
   `(gl-force-check-fn ,x ,strong t))

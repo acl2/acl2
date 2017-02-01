@@ -53,6 +53,7 @@
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (in-theory (disable* set::double-containment w)))
 
 
@@ -113,11 +114,12 @@
  (b* (((er &) (in-theory nil))
       ((er thm) (get-guard-verification-theorem 'glcp-generic-interp-term state)))
    (value
-    `(progn
-       (defconst *glcp-generic-interp-guard-thm* ',thm)
-       (defthm glcp-generic-interp-guards-ok
-         ,thm
-         :rule-classes nil)))))
+    `(with-output :off (prove event)
+       (progn
+         (defconst *glcp-generic-interp-guard-thm* ',thm)
+         (defthm glcp-generic-interp-guards-ok
+           ,thm
+           :rule-classes nil))))))
 
 
 (defun strip-cadrs (x)
@@ -801,7 +803,8 @@ The definition body, ~x1, is not a pseudo-term."
                                             bfr-from-param-space)))))
 
 (defthm pbfr-vars-bounded-of-bfr-var
-  (implies (<= (+ 1 (nfix v)) (nfix k))
+  (implies (and (natp (bfr-varname-fix v))
+                (<= (+ 1 (bfr-varname-fix v)) (nfix k)))
            (pbfr-vars-bounded k t (bfr-var v)))
   :hints ((and stable-under-simplificationp
                `(:expand (,(car (last clause)))))))
@@ -811,7 +814,9 @@ The definition body, ~x1, is not a pseudo-term."
   (implies (<= (nat-list-max x) (nfix n))
            (pbfr-list-vars-bounded n t (numlist-to-vars x)))
   :hints (("goal" :induct (nat-list-max x)
-           :expand ((nat-list-max x)
+           :in-theory (disable nfix natp)
+           :expand ((nat-listp x)
+                    (nat-list-max x)
                     (numlist-to-vars x)))))
 
 ;; (defthm pbfr-list-vars-bounded-of-greater
@@ -832,16 +837,16 @@ The definition body, ~x1, is not a pseudo-term."
   :hints (("goal" :in-theory (enable pbfr-list-vars-bounded-in-terms-of-witness))))
 
 (defthm pbfr-list-vars-bounded-of-break-g-number
-  (implies (and (<= (nat-list-max (car num)) (nfix n))
-                (<= (nat-list-max (cadr num)) (nfix n))
-                (<= (nat-list-max (caddr num)) (nfix n))
-                (<= (nat-list-max (cadddr num)) (nfix n)))
-           (and (pbfr-list-vars-bounded
-                 n t (mv-nth 0 (break-g-number (num-spec-to-num-gobj num))))
+  (and (implies (<= (nat-list-max (car num)) (nfix n))
                 (pbfr-list-vars-bounded
-                 n t (mv-nth 1 (break-g-number (num-spec-to-num-gobj num))))
+                 n t (mv-nth 0 (break-g-number (num-spec-to-num-gobj num)))))
+       (implies (<= (nat-list-max (cadr num)) (nfix n))
                 (pbfr-list-vars-bounded
-                 n t (mv-nth 2 (break-g-number (num-spec-to-num-gobj num))))
+                 n t (mv-nth 1 (break-g-number (num-spec-to-num-gobj num)))))
+       (implies (<= (nat-list-max (caddr num)) (nfix n))
+                (pbfr-list-vars-bounded
+                 n t (mv-nth 2 (break-g-number (num-spec-to-num-gobj num)))))
+       (implies (<= (nat-list-max (cadddr num)) (nfix n))
                 (pbfr-list-vars-bounded
                  n t (mv-nth 3 (break-g-number (num-spec-to-num-gobj num))))))
   :hints(("Goal" :in-theory (enable break-g-number num-spec-to-num-gobj))))
@@ -1092,7 +1097,8 @@ The definition body, ~x1, is not a pseudo-term."
         (interp-st (update-is-constraint-db
                     (gbc-db-make-fast
                      (table-alist 'gl-bool-constraints (w state)))
-                    interp-st)))
+                    interp-st))
+        (interp-st (update-is-add-bvars-allowed t interp-st)))
      (glcp-generic-interp-hyp/concl-env
       env hyp concl al config.concl-clk config interp-st next-bvar state))))
     ;;    ;; (bvar-db nil)

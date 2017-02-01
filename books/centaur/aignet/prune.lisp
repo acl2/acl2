@@ -4273,7 +4273,7 @@
                                  (aignet-prune-seq-aux aignet nil nil gatesimp strash aignet2)))
                              (marked-regs-agree-witness
                               (aignet-copy-comb-reg-vals
-                               (nth k (cdr frames)) (frame-regvals k frames nil aignet2)
+                               (nth k (stobjs::2darr->rows frames)) (frame-regvals k frames nil aignet2)
                                aignet2 copy aignet)
                               (frame-regvals k frames nil aignet)
                               mark aignet))))
@@ -4308,7 +4308,7 @@
             (aignet-prune-seq-aux aignet nil nil gatesimp strash aignet2)))
         (marked-regs-agree
          (aignet-copy-comb-reg-vals
-          (nth k (cdr frames))
+          (nth k (stobjs::2darr->rows frames))
           (frame-regvals k frames nil aignet2)
           aignet2 copy aignet)
          (frame-regvals k frames nil aignet)

@@ -37,18 +37,18 @@
   (b* (((when (endp lemmas)) nil)
        (rule (car lemmas))
        ((when (eql (acl2::access acl2::rewrite-rule rule :nume) nume))
-        rule))
+        (cons rule (scan-lemmas-for-nume (cdr lemmas) nume))))
     (scan-lemmas-for-nume (cdr lemmas) nume)))
 
 (defun scan-props-for-nume-lemma (props nume)
   (declare (xargs :mode :program))
   (and (consp props)
-       (or (and (eq (cadar props) 'acl2::lemmas)
-                (scan-lemmas-for-nume (cddar props) nume))
-           (scan-props-for-nume-lemma (cdr props) nume))))
+       (append (and (eq (cadar props) 'acl2::lemmas)
+                    (scan-lemmas-for-nume (cddar props) nume))
+               (scan-props-for-nume-lemma (cdr props) nume))))
 
 
-(defun find-lemma-for-rune (rune world)
+(defun collect-lemmas-for-rune (rune world)
   (declare (xargs :mode :program))
   (b* ((nume (acl2::runep rune world))
        ((unless nume) nil)
@@ -56,19 +56,26 @@
                  (cdr (acl2::decode-logical-name (cadr rune) world)))))
     (scan-props-for-nume-lemma (acl2::actual-props segment nil nil) nume)))
 
+(defun gl-rewrite-table-entries-for-lemmas (rune lemmas)
+  (if (atom lemmas)
+      nil
+    (cons (b* ((fnsym (car (acl2::access acl2::rewrite-rule (car lemmas) :lhs))))
+            `(table gl-rewrite-rules ',fnsym
+                    (b* ((rules (cdr (assoc ',fnsym
+                                            (table-alist 'gl-rewrite-rules world)))))
+                      (if (member-equal ',rune rules)
+                          rules
+                        (cons ',rune rules)))))
+          (gl-rewrite-table-entries-for-lemmas rune (cdr lemmas)))))
+                    
+
 (defun add-gl-rewrite-fn (rune world)
   (declare (xargs :mode :program))
   (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune))
-       (rule (find-lemma-for-rune rune world))
-       ((unless rule)
-        (cw "Failed to find a lemma for rune ~x0~%" rune))
-       (fnsym (car (acl2::access acl2::rewrite-rule rule :lhs))))
-    `(table gl-rewrite-rules ',fnsym
-            (b* ((rules (cdr (assoc ',fnsym
-                              (table-alist 'gl-rewrite-rules world)))))
-              (if (member-equal ',rune rules)
-                  rules
-                (cons ',rune rules))))))
+       (rules (collect-lemmas-for-rune rune world))
+       ((unless rules)
+        (cw "Failed to find a lemma for rune ~x0~%" rune)))
+    (cons 'progn (gl-rewrite-table-entries-for-lemmas rune rules))))
 
 (defmacro add-gl-rewrite (rune)
   `(make-event

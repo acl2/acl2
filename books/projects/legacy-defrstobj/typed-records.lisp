@@ -714,38 +714,41 @@
   (declare (xargs :guard (and (natp n)
                               (true-listp arr))))
   (if (zp n)
-      (tr-set 0 (nth 0 arr) rec)
-    (array-to-tr (- n 1) arr (tr-set n (nth n arr) rec))))
+      rec
+    (let ((n (- n 1)))
+      (array-to-tr n arr (tr-set n (nth n arr) rec)))))
 
 (defun tr-to-array (n rec arr)
   ;; Load arr[0]...arr[n] from rec[0]...rec[n]
   (declare (xargs :guard (and (natp n)
                               (true-listp arr))))
   (if (zp n)
-      (update-nth 0 (tr-get 0 rec) arr)
-    (tr-to-array (- n 1) rec (update-nth n (tr-get n rec) arr))))
+      arr
+    (let ((n (- n 1)))
+      (tr-to-array n rec (update-nth n (tr-get n rec) arr)))))
 
 (defun tr-delete-indices (n rec)
   ;; Delete rec[0]...rec[n] from rec
   (declare (xargs :guard (natp n)))
   (if (zp n)
-      (tr-set 0 (elem-default) rec)
-    (tr-delete-indices (- n 1) (tr-set n (elem-default) rec))))
+      rec
+    (let ((n (- n 1)))
+      (tr-delete-indices n (tr-set n (elem-default) rec)))))
 
 (defun array-rec-pair-p (arr rec len)
   ;; Recognize array/record pairs where the array has size LEN and the record
   ;; has nothing in keys 0...LEN-1.
-  (declare (xargs :guard (posp len)))
+  (declare (xargs :guard (natp len)))
   (and (elem-list-p arr)
        (= (len arr) len)
-       (equal rec (tr-delete-indices (- len 1) rec))))
+       (equal rec (tr-delete-indices len rec))))
 
 
 
 (defthm tr-get-of-array-to-tr
   (equal (tr-get key (array-to-tr n arr rec))
          (if (and (natp key)
-                  (<= key (nfix n)))
+                  (< key (nfix n)))
              (elem-fix (nth key arr))
            (tr-get key rec))))
 
@@ -760,32 +763,33 @@
 
 (defthm len-of-tr-to-array
   (equal (len (tr-to-array n rec arr))
-         (max (+ 1 (nfix n)) (len arr))))
+         (max (nfix n) (len arr))))
 
 (defthm elem-list-p-of-tr-to-array
   (implies (and (elem-list-p arr)
-                (< (nfix n) (len arr)))
+                (<= (nfix n) (len arr)))
            (elem-list-p (tr-to-array n rec arr))))
 
 
 (defthm nth-of-tr-to-array
   (equal (nth key (tr-to-array n rec arr))
-         (cond ((zp key)
-                (tr-get 0 rec))
-               ((<= key (nfix n))
-                (tr-get key rec))
+         (cond ((< (nfix key) (nfix n))
+                (tr-get (nfix key) rec))
                (t
                 (nth key arr)))))
 
 (defthm nth-of-tr-to-array-of-array-to-tr
   (implies (and (natp key)
                 (natp n)
-                (<= key n)
-                (< n (len arr1))
+                (< key n)
+                (<= n (len arr1))
                 (equal (len arr1) (len arr2))
                 (elem-list-p arr1))
            (equal (nth key (tr-to-array n (array-to-tr n arr1 rec) arr2))
                   (nth key arr1))))
+
+; sswords note, 1/30/2017: The following note pertains to a previous version;
+; see git revisions dated prior to this note.  The (fixed) theorem is below the note.
 
 ; Matt K. note, 1/28/2017, regarding fix for soundness bug in functional
 ; instantiation: The next lemma, tr-to-array-of-array-to-tr, is not a theorem!
@@ -845,17 +849,35 @@ RSTOBJ !>
                                       arr1)))))))
 ||#
 
+(defthm tr-to-array-of-array-to-tr
+  (implies (and (force (equal (len arr1) (len arr2)))
+                (force (equal n (len arr1)))
+                (force (elem-list-p arr1))
+                (force (elem-list-p arr2)))
+           (equal (tr-to-array n (array-to-tr n arr1 rec) arr2)
+                  arr1))
+  :hints(("Goal"
+          :use ((:functional-instance
+                 equal-by-nths
+                 (equal-by-nths-hyp (lambda ()
+                                      (and (equal (len arr1) (len arr2))
+                                           (equal n (len arr1))
+                                           (elem-list-p arr1)
+                                           (elem-list-p arr2))))
+                 (equal-by-nths-lhs (lambda ()
+                                      (tr-to-array n (array-to-tr n arr1 rec) arr2)))
+                 (equal-by-nths-rhs (lambda ()
+                                      arr1)))))))
+
 (defthm tr-to-array-idempotent
-  (implies (and (force (posp (len arr1)))
-                (force (elem-list-p arr1)))
+  (implies (force (elem-list-p arr1))
            (equal (tr-to-array n rec1 (tr-to-array n rec2 arr1))
                   (tr-to-array n rec1 arr1)))
   :hints(("Goal"
           :use ((:functional-instance
                  equal-by-nths
                  (equal-by-nths-hyp (lambda ()
-                                      (and (posp (len arr1))
-                                           (elem-list-p arr1))))
+                                      (elem-list-p arr1)))
                  (equal-by-nths-lhs (lambda ()
                                       (tr-to-array n rec1 (tr-to-array n rec2 arr1))))
                  (equal-by-nths-rhs (lambda ()
@@ -864,7 +886,7 @@ RSTOBJ !>
 (defthm tr-to-array-of-tr-set
   (implies (and (natp n)
                 (natp i)
-                (<= i n)
+                (< i n)
                 (elem-p val)
                 (elem-list-p arr))
            (equal (tr-to-array n (tr-set i val rec) arr)
@@ -875,7 +897,7 @@ RSTOBJ !>
                  (equal-by-nths-hyp (lambda ()
                                       (and (natp n)
                                            (natp i)
-                                           (<= i n)
+                                           (< i n)
                                            (elem-p val)
                                            (elem-list-p arr))))
                  (equal-by-nths-lhs (lambda ()
@@ -899,7 +921,7 @@ RSTOBJ !>
 (defthm tr-get-of-tr-delete-indices
   (equal (tr-get key (tr-delete-indices n rec))
          (if (and (natp key)
-                  (<= key (nfix n)))
+                  (< key (nfix n)))
              (elem-default)
            (tr-get key rec))))
 
@@ -918,7 +940,7 @@ RSTOBJ !>
 (defthm tr-delete-indices-of-tr-set
   (implies (and (natp n)
                 (natp i)
-                (<= i n))
+                (< i n))
            (equal (tr-delete-indices n (tr-set i val rec))
                   (tr-delete-indices n rec)))
   :hints(("Goal"
@@ -927,7 +949,7 @@ RSTOBJ !>
                  (equal-by-tr-get-hyp (lambda ()
                                    (and (natp n)
                                         (natp i)
-                                        (<= i n))))
+                                        (< i n))))
                  (equal-by-tr-get-lhs (lambda ()
                                    (tr-delete-indices n (tr-set i val rec))))
                  (equal-by-tr-get-rhs (lambda ()
@@ -980,14 +1002,13 @@ RSTOBJ !>
 (defthm array-rec-pair-p-of-update-nth
   (implies (and (array-rec-pair-p arr rec len)
                 (force (natp n))
-                (force (posp len))
                 (force (< n len))
                 (force (elem-p val)))
            (array-rec-pair-p (update-nth n val arr) rec len)))
 
 (defthm array-rec-pair-p-of-tr-delete-indices
   (implies (array-rec-pair-p arr rec len)
-           (array-rec-pair-p arr (tr-delete-indices (- len 1) rec) len)))
+           (array-rec-pair-p arr (tr-delete-indices len rec) len)))
 
 
 
@@ -1039,12 +1060,11 @@ RSTOBJ !>
    (local (defthmd main-lemma
             (implies (and (not (equal arr1 arr2))
                           (equal (len arr1) (len arr2))
-                          (posp (len arr1))
                           (elem-list-p arr1)
                           (elem-list-p arr2))
                      (let ((key (nth-badguy arr1 arr2)))
-                       (not (equal (tr-get key (array-to-tr (+ -1 (len arr1)) arr1 rec1))
-                                   (tr-get key (array-to-tr (+ -1 (len arr1)) arr2 rec2))))))
+                       (not (equal (tr-get key (array-to-tr (len arr1) arr1 rec1))
+                                   (tr-get key (array-to-tr (len arr1) arr2 rec2))))))
             :hints(("Goal"
                     :do-not '(generalize fertilize)
                     :do-not-induct t))))
@@ -1052,11 +1072,10 @@ RSTOBJ !>
    (defthm equal-of-array-to-tr-part1
      (implies (and (not (equal arr1 arr2))
                    (equal (len arr1) (len arr2))
-                   (posp (len arr1))
                    (elem-list-p arr1)
                    (elem-list-p arr2))
-              (not (equal (array-to-tr (+ -1 (len arr1)) arr1 rec1)
-                          (array-to-tr (+ -1 (len arr1)) arr2 rec2))))
+              (not (equal (array-to-tr (len arr1) arr1 rec1)
+                          (array-to-tr (len arr1) arr2 rec2))))
      :hints(("Goal"
              :do-not '(generalize fertilize)
              :do-not-induct t
@@ -1097,7 +1116,7 @@ RSTOBJ !>
                       (equal rec2 (tr-delete-indices n rec2))
                       (natp n)
                       (natp key))
-                 (< n key)))
+                 (<= n key)))
       :hints(("Goal"
               :do-not '(generalize fertilize)
               :do-not-induct t
@@ -1161,9 +1180,9 @@ RSTOBJ !>
          ;; to unify with this and apply this rule.  The rule below is better.
          (implies (and (array-rec-pair-p arr1 rec1 len)
                        (array-rec-pair-p arr2 rec2 len)
-                       (posp len))
-                  (equal (equal (array-to-tr (+ -1 len) arr1 rec1)
-                                (array-to-tr (+ -1 len) arr2 rec2))
+                       (natp len))
+                  (equal (equal (array-to-tr len arr1 rec1)
+                                (array-to-tr len arr2 rec2))
                          (and (equal arr1 arr2)
                               (equal rec1 rec2))))
          :hints(("Goal"
@@ -1175,8 +1194,8 @@ RSTOBJ !>
 (defthm equal-of-array-to-tr
   (implies (and (array-rec-pair-p arr1 rec1 len1)
                 (array-rec-pair-p arr2 rec2 len2)
-                (equal len1 (+ 1 len))
-                (equal len2 (+ 1 len))
+                (equal len1 len)
+                (equal len2 len)
                 (natp len))
            (equal (equal (array-to-tr len arr1 rec1)
                          (array-to-tr len arr2 rec2))
@@ -1185,8 +1204,10 @@ RSTOBJ !>
   :hints(("Goal"
           :in-theory (disable tr-delete-indices
                               array-to-tr
-                              array-rec-pair-p)
-          :use ((:instance equal-of-array-to-tr-orig (len (+ 1 len)))))))
+                              array-rec-pair-p
+                              equal-of-array-to-tr-orig
+                              equal-of-array-to-tr-part2)
+          :use ((:instance equal-of-array-to-tr-orig (len len))))))
 
 
 

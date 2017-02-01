@@ -306,7 +306,7 @@
 ;
   `(the fixnum (ash (the fixnum
                          (logand #x1FFFFF
-				 #+gcl (ash (si::address ,x) -4)
+                                 #+gcl (ash (si::address ,x) -4)
                                  #+ccl (ccl::strip-tag-to-fixnum ,x)
                                  #-(or gcl ccl)
                                  (error "~s is not implemented in this Lisp."
@@ -1809,6 +1809,7 @@
     (format note-stream "; Hons-Note: ADDR-LIMIT reached, ~:D used of ~:D slots.~%"
             (hash-table-count (hl-hspace-addr-ht hs))
             (hash-table-size (hl-hspace-addr-ht hs)))
+    (force-output note-stream)
 
     (unless (> (hash-table-size (hl-hspace-addr-ht hs)) *hl-addr-limit-minimum*)
       ;; The table is small so it's not worth doing anything.  So, just bump up
@@ -3412,23 +3413,32 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; (HL-REBUILD-ADDR-HT SBITS ADDR-HT STR-HT OTHER-HT) destructively modifies
 ; ADDR-HT.
 ;
-; This is a subtle function which is really the key to washing.  We assume that
-; SBITS has already been fixed up so that only survivors are marked.  We assume
-; that ADDR-HT is empty to begin with.  We walk over the SBITS and install each
-; survivor into its proper place in the ADDR-HT.
+; This is a subtle function which is really the key to washing.  We expect that
+; SBITS has already been fixed up so that only survivors are marked, but we
+; gracefully handle rare cases when some erstwhile survivors died after SBITS
+; was already fixed up.
+;
+; We assume that ADDR-HT is empty to begin with.  We walk over the SBITS and
+; install each survivor into its proper place in the ADDR-HT.
 ;
 ; The STR-HT and OTHER-HT are only needed for address computations.
 
   (declare (type (simple-array bit (*)) sbits)
            (type hash-table addr-ht))
-  (let ((max-index (length sbits)))
-    (declare (fixnum max-index))
+  (let ((max-index (length sbits))
+        (num-dead-survivors 0))
+    (declare (fixnum max-index)
+             (fixnum num-dead-survivors))
     (loop for i fixnum below max-index do
           (when (= (aref sbits i) 1)
             ;; This object was previously normed.
             (let ((object (hl-static-inverse-cons i)))
               (cond ((not object)
-                     (error "Expected SBITS to already be fixed up."))
+                     ;; SBITS contained an inconsistent entry, meaning that
+                     ;; some static cons was freed after SBITS was fixed up.
+                     ;; We amend SBITS on the fly to account for this.
+                     (setf (aref sbits i) 0)
+                     (incf num-dead-survivors))
                     (t
                      (let* ((a      (car object))
                             (b      (cdr object))
@@ -3441,7 +3451,17 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                             (addr-a (hl-addr-of a str-ht other-ht))
                             (addr-b (hl-addr-of b str-ht other-ht))
                             (key    (hl-addr-combine* addr-a addr-b)))
-                       (setf (gethash key addr-ht) object)))))))))
+                       (setf (gethash key addr-ht) object)))))))
+    (when (< 0 num-dead-survivors)
+      (let ((note-stream (get-output-stream-from-channel *standard-co*)))
+        (format
+         note-stream
+         "; Hons-Note: ~:D conses unexpectedly disappeared before we could~%~
+          ;   restore them, probably because additional garbage collection~%~
+          ;   passes occurred after washing.  This is safe, but means that~%~
+          ;   we may have allocated more space than necessary for ADDR-HT.~%"
+         num-dead-survivors)
+        (force-output note-stream)))))
 
 #+static-hons
 (defparameter *hl-addr-ht-resize-cutoff*
