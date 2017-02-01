@@ -445,16 +445,15 @@
          :hints(("Goal" :use ((:functional-instance tr-to-array-of-tr-set
                                                     . ,fi-pairs)))))
 
-       ;; (defthm ,(mksym tr-to-array '-of- array-to-tr)
-       ;;   (implies (and (force (equal (len arr1) (len arr2)))
-       ;;                 (force (equal n (- (len arr1) 1)))
-       ;;                 (force (posp (len arr1)))
-       ;;                 (force ,(subst 'arr1 'x elem-list-p))
-       ;;                 (force ,(subst 'arr2 'x elem-list-p)))
-       ;;            (equal (,tr-to-array n (,array-to-tr n arr1 rec) arr2)
-       ;;                   arr1))
-       ;;   :hints(("Goal" :use ((:functional-instance tr-to-array-of-array-to-tr
-       ;;                                              . ,fi-pairs)))))
+       (defthm ,(mksym tr-to-array '-of- array-to-tr)
+         (implies (and (force (equal (len arr1) (len arr2)))
+                       (force (equal n (len arr1)))
+                       (force ,(subst 'arr1 'x elem-list-p))
+                       (force ,(subst 'arr2 'x elem-list-p)))
+                  (equal (,tr-to-array n (,array-to-tr n arr1 rec) arr2)
+                         arr1))
+         :hints(("Goal" :use ((:functional-instance tr-to-array-of-array-to-tr
+                                                    . ,fi-pairs)))))
 
 
 
