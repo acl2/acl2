@@ -403,6 +403,12 @@ acl2-status.txt: TAGS $(ACL2_DEPS)
 	$(MAKE) acl2-proclaims.lisp
 	$(MAKE) compile USE_ACL2_PROCLAIMS=t
 
+# Note that compile is a phony target, hence will be done every time.
+# However, the target "full", which is really just acl2-status.txt,
+# avoids unnecessary recompilation; that seems sufficient in general.
+# This approach is a bit unfortunate when calling "make full" (or just
+# "make") only to build an executabe with a different PREFIX.  But we
+# can live with that.
 .PHONY: compile
 compile:
 	rm -f workxxx
@@ -555,7 +561,7 @@ proofs: compile-ok
 DOC: acl2-manual STATS
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
-	$(MAKE) doc.lisp doc/home-page.html
+	$(MAKE) update-doc.lisp doc/home-page.html
 
 check-acl2-exports:
 	cd books ; rm -f misc/check-acl2-exports.cert ; $(MAKE) ACL2=$(ACL2) misc/check-acl2-exports.cert
@@ -588,19 +594,24 @@ acl2-manual:
 # NOTE: We copy books/system/doc/rendered-doc.lsp without -p so that
 # doc.lisp will be newer than books/system/doc/acl2-doc.lisp, and
 # hence doc.lisp won't later be rebuilt needlessly.
-doc.lisp: books/system/doc/acl2-doc.lisp \
+.PHONY: update-doc.lisp
+update-doc.lisp: books/system/doc/acl2-doc.lisp \
 	  books/system/doc/rendered-doc.lsp
-	if [ -f doc.lisp ] ; then \
-	  cp -p doc.lisp doc.lisp.backup ; \
-	fi
-	cp books/system/doc/rendered-doc.lsp doc.lisp
-	@diff doc.lisp doc.lisp.backup 2>&1 > /dev/null ; \
+	@diff doc.lisp books/system/doc/rendered-doc.lsp 2>&1 > /dev/null ; \
 	  if [ $$? != 0 ] ; then \
+	    mv -f doc.lisp doc.lisp.backup ; \
+	    cp books/system/doc/rendered-doc.lsp doc.lisp ; \
 	    echo "NOTE: doc.lisp has changed." ; \
 	    echo "      If you use :DOC at the terminal, then" ; \
 	    echo "      you might wish to rebuild your ACL2 executable." ; \
+	  else \
+	    echo "Note: doc.lisp is up-to-date." ; \
 	  fi
 
+# Note: The following target uses $(PREFIXsaved_acl2) -- but we don't
+# care much about whether it's up-to-date in any sense, so we don't
+# make the next target depend on $(PREFIXsaved_acl2).  This hasn't
+# been super carefully thought out, so could change.
 books/system/doc/rendered-doc.lsp:
 	rm -f books/system/doc/rendered-doc.lsp
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
