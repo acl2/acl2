@@ -10741,7 +10741,7 @@
       (t
        (mv-let (bad-vars-alist new-constraints)
          (remove-capture-in-constraint-lst alist new-constraints)
-         (pprogn
+         (pprogn@par
           (cond (bad-vars-alist (warning$@par ctx "Capture"
                                   "In order to avoid variable capture, ~
                                    functional instantiation is generating a ~
@@ -10749,7 +10749,7 @@
                                    variables are renamed by the following ~
                                    alist:~|~x0"
                                   bad-vars-alist))
-                (t state))
+                (t (state-mac@par)))
           (let ((allow-freevars-p
                  #-:non-standard-analysis
                  t

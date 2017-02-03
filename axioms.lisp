@@ -26268,14 +26268,14 @@ Lisp definition."
 
 (defmacro state-mac ()
 
-; Keep in sync with state-mac@par.
+; Keep in sync with state-mac@par.  The "mac" suffix is for "macro".
 
   'state)
 
 #+acl2-par
 (defmacro state-mac@par ()
 
-; Keep in sync with state-mac.
+; Keep in sync with state-mac.  The "mac" suffix is for "macro".
 
   nil)
 
