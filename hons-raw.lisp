@@ -3095,7 +3095,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; At one time, we thought that ccl::gc only schedules a GC to happen, and we
 ; worked here to ensure that the GC has actually completed.  However, Gary
 ; Byers has explained (4/28/15) that all other threads are suspended until
-; after the thread performing the GC completes the GC.
+; after the thread performing the GC completes the GC.  But based on an email
+; from Bob Boyer sent 2/5/2017, and based on behavior described in
+; a comment in hl-hspace-hons-wash, we no longer believe that garbage
+; collection is complete when gc$ returns.
 
   (gc$))
 
