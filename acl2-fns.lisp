@@ -2165,3 +2165,17 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;    (the mfixnum x))
 
   `(the mfixnum ,x))
+
+(defun our-pwd ()
+
+; This function was moved here from basis-a.lisp, in order to avoid a build
+; error.
+
+; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
+; variable is not necessarily maintained, for example in Solaris/SunOS as one
+; make invokes another make in a different directory.
+
+  (qfuncall pathname-os-to-unix
+            (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
+            (get-os)
+            *the-live-state*))

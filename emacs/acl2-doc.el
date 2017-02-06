@@ -669,12 +669,24 @@ then restart the ACL2-Doc browser to view that manual."
 
 (defun acl2-doc-go! ()
 
-  "Go to the topic occurring at the cursor position."
+  "Go to the topic occurring at the cursor position.  In the case
+of <NAME>, instead go to the source code definition of NAME for
+the current manual (as for `/', but without a minibuffer query)."
 
   (interactive)
   (let ((name (acl2-doc-topic-at-point)))
-    (cond (name (acl2-doc-display name))
-          (t (error "Cursor is not on a name")))))
+    (cond ((not name)
+	   (error "Cursor is not on a name"))
+	  ((assoc name (acl2-doc-state-alist))
+
+;;; This code is a bit inefficient: the assoc above is done again by
+;;; acl2-doc-display.  But I like the simplicity of this code.
+
+	   (acl2-doc-display name))
+	  ((acl2-doc-tagp (symbol-name name))
+	   (acl2-doc-find-tag (acl2-doc-topic-to-tags-name name) nil t))
+	  (t
+	   (error "No topic name: %s" name)))))
 
 (defun acl2-doc-top ()
   "Go to the top topic."
@@ -1319,13 +1331,22 @@ ACL2-Doc browser."
 ; Start implementations of acl2-doc-definition and
 ; acl2-doc-where-definition.
 
+(defun acl2-doc-tagp (name)
+
+;;; This function recognizes strings of the form "<...>".  For
+;;; convenience, instead of returning t in the true case, it returns
+;;; the length of name.
+
+  (let ((len (length name)))
+    (and (equal (aref name 0) ?<)
+	 (equal (aref name (1- len)) ?>)
+	 len)))
+
 (defun acl2-doc-topic-to-tags-name (topic)
   (and topic
        (let* ((name0 (symbol-name topic))
-              (len (length name0))
-              (name (cond ((and (equal (aref name0 0) ?<)
-                                (equal (aref name0 (1- len)) ?>))
-                           (substring name0 1 (1- len)))
+              (len (acl2-doc-tagp name0))
+              (name (cond (len (substring name0 1 (1- len)))
                           (t name0)))
               (colon-pos (my-cl-position ?: name)))
          (cond ((and colon-pos
@@ -1366,7 +1387,7 @@ ACL2-Doc browser."
    nil nil nil nil
    default))
 
-(defun acl2-doc-find-tag (default acl2-only)
+(defun acl2-doc-find-tag (default acl2-only &optional use-default)
   (let ((new-tags-file-name (if acl2-only
 				(acl2-doc-acl2-tags-file-name)
 			      (acl2-doc-main-tags-file-name)))
@@ -1388,7 +1409,9 @@ See the online (XDOC) documentation for acl2-doc for how to build it."
 	    (let ((tags-add-tables nil)
 		  (tags-case-fold-search t)) ; the name may be upper-case
 	      (visit-tags-table new-tags-file-name)
-	      (find-tag (acl2-doc-find-tag-topic default))
+	      (find-tag (if use-default
+			    default
+			  (acl2-doc-find-tag-topic default)))
 
 ;;; If there is no error, then remember what we have in case we want
 ;;; to find more matches.
