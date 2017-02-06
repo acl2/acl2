@@ -1,5 +1,12 @@
 (in-package "ACL2")
 
+; There is a problem with intermediate-value-theorem, which no longer proves
+; after the soundness bug fix for ACL2 7.3.  So we exclude this book from all
+; builds: it already requires ACL2(r), since it depends on nsa.lisp, which
+; specifies the cert_param of uses-acl2r, but now we also specify:
+
+; cert_param: (non-acl2r)
+
 ;; This book establishes some facts about real continuous functions.
 ;; First, it shows that a function that is continuous on a closed
 ;; interval is uniformly continuous.  Second, it proves the
@@ -869,6 +876,9 @@
   :hints (("Goal"
 	   :in-theory (enable interval-definition-theory))))
 
+; Matt K. note, 2/5/2017: This theorem took advantage of the soundness bug in
+; functionsl instantiation fixed after ACL2 7.3.  It now fails.  So I'm
+; excluding this book from the build until it's fixed.
 (defthm intermediate-value-theorem
    (implies (and (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))

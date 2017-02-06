@@ -1743,7 +1743,7 @@
    ((not (stringp name))
     (er soft ctx
         "The first argument to ~s0 must be a string.  You provided ~
-         the object ~x1.  See :DOC ~s."
+         the object ~x1.  See :DOC ~s0."
         (cond
          ((eq ev-type 'defpkg) "defpkg")
          (t "include-book"))
@@ -21412,7 +21412,8 @@
           ((symbol-listp fns)
            (untrace$-rec fns ctx state))
           (t (er soft ctx
-              "Untrace$ may only be applied to a list of symbols, hence not to~s."
+              "Untrace$ may only be applied to a list of symbols, hence not ~
+               to the list ~x0."
               fns)))))
 
 (defun maybe-untrace$-fn (fn state)
