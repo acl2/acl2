@@ -295,6 +295,7 @@ and max, gathering their comments.</p>"
       (:vl-interface (vl-interface->minloc x))
       (:vl-package   (vl-package->minloc x))
       (:vl-program   (vl-program->minloc x))
+      (:vl-class     (vl-class->minloc x))
       (:vl-config    (vl-config->minloc x))
       (:vl-typedef   (vl-typedef->minloc x))
       ;; Other things don't necessarily have minlocs, but we'll just use their
@@ -318,6 +319,7 @@ and max, gathering their comments.</p>"
       (:vl-interface (vl-interface->maxloc x))
       (:vl-package   (vl-package->maxloc x))
       (:vl-program   (vl-program->maxloc x))
+      (:vl-class     (vl-class->maxloc x))
       (:vl-config    (vl-config->maxloc x))
       (:vl-typedef   (vl-typedef->maxloc x))
       ;; Other things don't have separate min/max locs, but we'll just use

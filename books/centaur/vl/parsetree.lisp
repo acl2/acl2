@@ -5044,6 +5044,31 @@ packages.  Eventually there will be new fields here.</p>")
   :returns (names string-listp)
   (vl-program->name x))
 
+(defprod vl-class
+  :short "Representation of a single @('class')."
+  :tag :vl-class
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this class as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p)
+   (virtualp booleanp)
+   (lifetime vl-lifetime-p))
+  :long "BOZO incomplete stub -- we don't really support classes yet.")
+
+(fty::deflist vl-classlist :elt-type vl-class-p
+  :elementp-of-nil nil)
+
+(defprojection vl-classlist->names ((x vl-classlist-p))
+  :parents (vl-classlist-p)
+  :returns (names string-listp)
+  (vl-class->name x))
+
 
 
 (defprod vl-design
@@ -5056,6 +5081,7 @@ resulting from parsing some Verilog source code."
    (udps       vl-udplist-p        "List of user defined primtives.")
    (interfaces vl-interfacelist-p  "List of interfaces.")
    (programs   vl-programlist-p    "List of all programs.")
+   (classes    vl-classlist-p      "List of all classes.")
    (packages   vl-packagelist-p    "List of all packages.")
    (configs    vl-configlist-p     "List of configurations.")
    (vardecls   vl-vardecllist-p    "Top-level variable declarations.")

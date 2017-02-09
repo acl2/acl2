@@ -1480,10 +1480,6 @@ vl: centaur/vl/bin/vl \
 
 vlfull: vl sv_cosims
 
-sv_cosims: centaur/sv/cosims/cosim-core
-	@echo "Running Passing SV Cosims."
-	@cd centaur/sv/cosims; $(MAKE) passing
-
 centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
 	@echo "Making VL Verilog Toolkit, 2014 Edition"
 	@cd centaur/vl2014/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"

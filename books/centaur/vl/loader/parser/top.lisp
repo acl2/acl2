@@ -35,9 +35,12 @@
 (include-book "interfaces")
 (include-book "packages")
 (include-book "programs")
+(include-book "classes")
 (include-book "configs")
 (include-book "imports")
 (local (include-book "../../util/arithmetic"))
+
+(local (in-theory (disable (tau-system))))
 
 (defxdoc parser
   :parents (loader)
@@ -228,6 +231,10 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
         (when (vl-is-token? :vl-kwd-typedef)
           (typedef := (vl-parse-type-declaration atts))
           (return (list typedef)))
+        (when (or (vl-is-token? :vl-kwd-virtual)
+                  (vl-is-token? :vl-kwd-class))
+          (class := (vl-parse-class-declaration atts))
+          (return (list class)))
         (return-raw
          (b* ((backup (vl-tokstream-save))
               ((mv err vardecls tokstream)
