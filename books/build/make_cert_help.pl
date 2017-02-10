@@ -464,7 +464,11 @@ sub parse_certify_flags
 my $TARGET = shift;
 my $STEP = shift;      # certify, acl2x, acl2xskip, pcertify, pcertifyplus, convert, or complete
 my $ACL2X = shift;     # "yes" or otherwise no. use ACL2X file in certify/pcertify/pcertifyplus/convert steps
-my $PREREQS = \@ARGV;
+# Bug fix 2017-02-09: Uses of this variable #PREREQS only exist in code
+# that is commented out. Therefore commenting this assignment out to
+# fix the "argument list too long" issue.
+# Refer to https://github.com/acl2/acl2/issues/694 for more information.
+# my $PREREQS = \@ARGV;
 
 # print "Prereqs for $TARGET $STEP: \n";
 # foreach my $prereq (@$PREREQS) {
