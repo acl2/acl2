@@ -141,7 +141,7 @@
                      (bfr-list->s inum env)
                      (bfr-list->u iden env))
                     n)))
-  :hints (("goal" :in-theory (enable components-to-number-alt-def))))
+  :hints (("goal" :in-theory (enable components-to-number))))
 
 
 
@@ -175,7 +175,7 @@
                        (sval in env)
                        (uval id env))))))
   :hints (("goal" :in-theory (enable generic-geval
-                                     components-to-number-alt-def))))
+                                     components-to-number))))
 
 (in-theory (disable general-number-components
                     general-numberp))

@@ -149,7 +149,8 @@
   (def-g-correct-thm binary-logand eval-g-base
     :hints `(("Goal" :in-theory (e/d* (general-concretep-atom
                                        (:ruleset general-object-possibilities)
-                                       not-general-numberp-not-acl2-numberp)
+                                       not-general-numberp-not-acl2-numberp
+                                       components-to-number)
                                       ((:definition ,gfn)
                                        general-concretep-def
                                        binary-logand
@@ -157,7 +158,6 @@
                                        bfr-list->u
                                        equal-of-booleans-rewrite
                                        set::double-containment
-                                       components-to-number-alt-def
                                        hons-assoc-equal
                                        default-car default-cdr
                                        (:rules-of-class :type-prescription :here)))

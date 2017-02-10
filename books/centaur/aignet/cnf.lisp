@@ -804,7 +804,7 @@ correctness criterion we've described.</p>
   (defmacro sat-lit-extension-binding (&key (new 'sat-lits2)
                                          (orig 'sat-lits1)
                                          (fall-through 't))
-    `(bind-free (prev-stobj-binding ,new ',orig mfc state)
+    `(bind-free (acl2::prev-stobj-binding ,new ',orig mfc state)
                 . ,(if fall-through nil `((,orig)))))
 
   ;; expands sat-lit-extension-p if it appears as a positive literal

@@ -104,7 +104,7 @@
    (local (include-book "arithmetic/top-with-meta" :dir :system))))
 
 (def-g-correct-thm lognot eval-g-base
-   :hints `(("Goal" :in-theory (e/d* (components-to-number-alt-def
+   :hints `(("Goal" :in-theory (e/d* (components-to-number
                                       general-concrete-obj)
                                     ((:definition ,gfn) (force)
                                      general-number-components-ev

@@ -193,7 +193,7 @@
 (defun satisfying-assign-for-env (env vars sat-lits aignet cnf-vals)
   (declare (xargs :stobjs (sat-lits aignet cnf-vals)
                   :guard (sat-lits-wfp sat-lits aignet)))
-  (b* ((in-vals (env-to-in-vals vars env))
+  (b* ((in-vals (env-to-bitarr vars env))
        (cnf-vals (resize-bits 0 cnf-vals))
        (cnf-vals (resize-bits (sat-next-var sat-lits) cnf-vals))
        (cnf-vals (non-exec
@@ -463,7 +463,7 @@
              (equal (aig-eval aig
                               (aignet-eval-to-env
                                varmap
-                               (env-to-in-vals
+                               (env-to-bitarr
                                 (revappend (alist-keys varmap0) vars)
                                 env)
                                nil
@@ -486,7 +486,7 @@
              (equal (aig-eval aig
                               (aignet-eval-to-env
                                varmap
-                               (env-to-in-vals vars env)
+                               (env-to-bitarr vars env)
                                nil
                                aignet))
                     (aig-eval aig env))))
@@ -510,7 +510,7 @@
                          (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet)))
                          (lit (mv-nth 1 (aig->cnf aig sat-lits aignet)))
                          (aignet-invals
-                          (env-to-in-vals
+                          (env-to-bitarr
                            (mv-nth 2 (aig->cnf aig sat-lits aignet))
                            env))
                          (aignet-regvals nil)

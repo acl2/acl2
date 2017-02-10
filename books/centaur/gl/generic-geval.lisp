@@ -48,20 +48,30 @@
 ;; then complex numerator, denominator.
 (defun break-g-number (x)
   (declare (xargs :guard t))
-  (b* (((mv real-numer x) (if (consp x)
-                              (mv (car x) (cdr x))
-                            (mv nil nil)))
-       ((mv real-denom x) (if (consp x)
-                              (mv (car x) (cdr x))
-                            (mv '(t) nil)))
-       ((mv imag-numer x) (if (consp x)
-                              (mv (car x) (cdr x))
-                            (mv nil nil)))
-       (imag-denom (if (consp x) (car x) '(t))))
-    (mv (list-fix real-numer)
-        (list-fix real-denom)
-        (list-fix imag-numer)
-        (list-fix imag-denom))))
+  (let ((x (mbe :logic (list-fix x)
+                :exec (if (true-listp x) x (list-fix x)))))
+    (mv (list-fix (car x))
+        (if (consp (cdr x))
+            (list-fix (cadr x))
+          '(t))
+        (list-fix (caddr x))
+        (if (consp (cdddr x))
+            (list-fix (cadddr x))
+          '(t)))))
+  ;; (b* (((mv real-numer x) (if (consp x)
+  ;;                             (mv (car x) (cdr x))
+  ;;                           (mv nil nil)))
+  ;;      ((mv real-denom x) (if (consp x)
+  ;;                             (mv (car x) (cdr x))
+  ;;                           (mv '(t) nil)))
+  ;;      ((mv imag-numer x) (if (consp x)
+  ;;                             (mv (car x) (cdr x))
+  ;;                           (mv nil nil)))
+  ;;      (imag-denom (if (consp x) (car x) '(t))))
+  ;;   (mv (list-fix real-numer)
+  ;;       (list-fix real-denom)
+  ;;       (list-fix imag-numer)
+  ;;       (list-fix imag-denom))))
 
 (acl2::defmvtypes break-g-number (true-listp true-listp true-listp true-listp))
 
@@ -70,25 +80,16 @@
 
 
 
-(defun components-to-number-fn (rnum rden inum iden)
-  (declare (xargs :guard (and (rationalp rnum)
-                              (rationalp rden)
-                              (rationalp inum)
-                              (rationalp iden))))
-  (complex (* rnum (if (eql rden 0) rden (/ rden)))
-           (* inum (if (eql iden 0) iden (/ iden)))))
+(define components-to-number ((rnum integerp)
+                              &optional
+                              ((rden natp) '1)
+                              ((inum integerp) '0)
+                              ((iden natp) '1))
+  (mbe :logic (complex (* (ifix rnum) (/ (nfix rden)))
+                       (* (ifix inum) (/ (nfix iden))))
+       :exec (complex (* rnum (if (eql rden 0) rden (/ rden)))
+                      (* inum (if (eql iden 0) iden (/ iden))))))
 
-
-(defmacro components-to-number (rnum &optional
-                                     (rden '1)
-                                     (inum '0)
-                                     (iden '1))
-  (list 'components-to-number-fn rnum rden inum iden))
-
-(add-macro-alias components-to-number components-to-number-fn)
-
-
-(in-theory (disable components-to-number))
 
 
 

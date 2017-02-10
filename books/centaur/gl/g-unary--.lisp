@@ -120,7 +120,7 @@
 ;;                                      break-g-number bfr-listp)))))
 
 (def-g-correct-thm unary-- eval-g-base
-  :hints `(("Goal" :in-theory (e/d* (components-to-number-alt-def
+  :hints `(("Goal" :in-theory (e/d* (components-to-number
                                      general-concrete-obj natp)
                                     ((:definition ,gfn)
                                      general-number-components-ev

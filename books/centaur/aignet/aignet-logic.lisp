@@ -44,6 +44,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
+(include-book "centaur/misc/prev-stobj-binding" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -1108,52 +1109,12 @@ suffix.</p>"
 
   ;; Additional possible strategic thing: keep aignet-modifying functions that
   ;; don't produce an extension in a table and don't bind their inputs.
-  (defun find-prev-stobj-binding (new-term state)
-    (declare (xargs :guard (pseudo-termp new-term)
-                    :stobjs state
-                    :mode :program))
-    (b* (((mv valnum function args)
-          (case-match new-term
-            (('mv-nth ('quote valnum) (function . args) . &)
-             (mv (and (symbolp function) valnum) function args))
-            ((function . args)
-             (mv (and (symbolp function) 0) function args))
-            (& (mv nil nil nil))))
-         ((unless valnum) (mv nil nil))
-         ((when (or (eq function 'if)
-                    (eq function 'return-last)))
-          ;; Can't call stobjs-out on either of these
-          (mv nil nil))
-         ((when (and (eq function 'cons)
-                     (int= valnum 0)))
-          ;; special case for update-nth.
-          (mv t (nth 1 args)))
-         (w (w state))
-         (stobjs-out (acl2::stobjs-out function w))
-         (formals (acl2::formals function w))
-         (stobj-out (nth valnum stobjs-out))
-         ((unless stobj-out) (mv nil nil))
-         (pos (position stobj-out formals))
-         ((unless pos) (mv nil nil)))
-      (mv t (nth pos args))))
-
-
-  (defun prev-stobj-binding (new-term prev-var mfc state)
-    (declare (xargs :guard (and (pseudo-termp new-term)
-                                (symbolp prev-var))
-                    :stobjs state
-                    :mode :program)
-             (ignore mfc))
-    (b* (((mv ok prev-term) (find-prev-stobj-binding new-term state)))
-      (if (and ok (not (equal new-term prev-term)))
-          `((,prev-var . ,prev-term))
-        `((do-not-use-this-long-horrible-variable
-           . do-not-use-this-long-horrible-variable)))))
+  
 
 
   (defmacro aignet-extension-binding (&key (new 'new)
                                            (orig 'orig))
-    `(and (bind-free (prev-stobj-binding ,new ',orig mfc state))
+    `(and (bind-free (acl2::prev-stobj-binding ,new ',orig mfc state))
           ;; do we need this syntaxp check?
           ;; (syntaxp (not (subtermp ,new ,orig)))
           (aignet-extension-p ,new ,orig)))

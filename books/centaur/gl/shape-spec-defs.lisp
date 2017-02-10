@@ -31,17 +31,9 @@
 (in-package "GL")
 (include-book "gobject-types")
 (include-book "symbolic-arithmetic")
-
+(local (include-book "std/alists/alistp" :dir :system))
 ; cert_param: (non-acl2r)
 
-; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
-; definition.
-(defund nat-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l)
-         (eq l nil))
-        (t (and (natp (car l))
-                (nat-listp (cdr l))))))
 
 
 ;; An shape spec is an object that is similar to a g object, but a) where there
@@ -50,19 +42,16 @@
 
 (defund number-specp (nspec)
   (declare (xargs :guard t))
-  (and (consp nspec)
+  (and (true-listp nspec)
+       (<= (len nspec) 4)
        (nat-listp (car nspec))
-       (if (atom (cdr nspec))
-           (not (cdr nspec))
-         (and (nat-listp (cadr nspec))
-              (if (atom (cddr nspec))
-                  (not (cddr nspec))
-                (and (nat-listp (caddr nspec))
-                     (if (atom (cdddr nspec))
-                         (not (cdddr nspec))
-                         (and (nat-listp (cadddr nspec))
-                              (not (cddddr nspec))))))))))
-
+       (nat-listp (cadr nspec))
+       (nat-listp (caddr nspec))
+       (nat-listp (cadddr nspec))
+       (or (not (cdr nspec))
+           (consp (cadr nspec)))
+       (or (not (cdddr nspec))
+           (consp (cadddr nspec)))))
 
 (defagg g-integer (sign bits var))
 (defagg g-integer? (sign bits var intp))
@@ -83,43 +72,134 @@
 
 
 
-(mutual-recursion
- (defun shape-specp (x)
-   (declare (xargs :guard t
-                   :measure (acl2-count x)))
-   (if (atom x)
-       (and (not (g-keyword-symbolp x))
-            (not (member x '(:g-integer :g-integer? :g-call))))
-     (case (tag x)
-       (:g-number (number-specp (g-number->num x)))
-       (:g-integer (and (natp (g-integer->sign x))
-                        (nat-listp (g-integer->bits x))))
-       (:g-integer? (and (natp (g-integer?->sign x))
-                         (nat-listp (g-integer?->bits x))
-                         (natp (g-integer?->intp x))))
-       (:g-boolean (natp (g-boolean->bool x)))
-       (:g-concrete t)
-       (:g-var t)
-       (:g-ite
-        (and (shape-specp (g-ite->test x))
-             (shape-specp (g-ite->then x))
-             (shape-specp (g-ite->else x))))
-       (:g-apply nil)
-       (:g-call (and (symbolp (g-call->fn x))
-                     (not (eq (g-call->fn x) 'quote))
-                     (shape-spec-listp (g-call->args x))
-                     (ss-unary-functionp (g-call->inverse x))))
-       (otherwise (and (shape-specp (car x))
-                       (shape-specp (cdr x)))))))
- (defun shape-spec-listp (x)
-   (declare (xargs :guard t
-                   :measure (acl2-count x)))
-   (if (atom x)
-       (eq x nil)
-     (and (shape-specp (car x))
-          (shape-spec-listp (cdr x))))))
+(defines shape-specp
+  (define shape-specp (x)
+    :measure (acl2-count x)
+    (if (atom x)
+        (and (not (g-keyword-symbolp x))
+             (not (member x '(:g-integer :g-integer? :g-call))))
+      (case (tag x)
+        (:g-number (number-specp (g-number->num x)))
+        (:g-integer (and (natp (g-integer->sign x))
+                         (nat-listp (g-integer->bits x))))
+        (:g-integer? (and (natp (g-integer?->sign x))
+                          (nat-listp (g-integer?->bits x))
+                          (natp (g-integer?->intp x))))
+        (:g-boolean (natp (g-boolean->bool x)))
+        (:g-concrete t)
+        (:g-var t)
+        (:g-ite
+         (and (shape-specp (g-ite->test x))
+              (shape-specp (g-ite->then x))
+              (shape-specp (g-ite->else x))))
+        (:g-apply nil)
+        (:g-call (and (symbolp (g-call->fn x))
+                      (not (eq (g-call->fn x) 'quote))
+                      (shape-spec-listp (g-call->args x))
+                      (ss-unary-functionp (g-call->inverse x))))
+        (otherwise (and (shape-specp (car x))
+                        (shape-specp (cdr x))))))
+    ///
+    (defthm shape-specp-when-atom
+      (implies (atom x)
+               (equal (shape-specp x)
+                      (and (not (g-keyword-symbolp x))
+                           (not (member x '(:g-integer :g-integer? :g-call))))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(in-theory (disable shape-specp shape-spec-listp))
+    (defthm shape-specp-when-g-number
+      (implies (equal (tag x) :g-number)
+               (equal (shape-specp x)
+                      (number-specp (g-number->num x))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-integer
+      (implies (equal (tag x) :g-integer)
+               (equal (shape-specp x)
+                       (and (natp (g-integer->sign x))
+                         (nat-listp (g-integer->bits x)))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-integer?
+      (implies (equal (tag x) :g-integer?)
+               (equal (shape-specp x)
+                      (and (natp (g-integer?->sign x))
+                           (nat-listp (g-integer?->bits x))
+                           (natp (g-integer?->intp x)))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-boolean
+      (implies (equal (tag x) :g-boolean)
+               (equal (shape-specp x)
+                      (natp (g-boolean->bool x))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-concrete
+      (implies (equal (tag x) :g-concrete)
+               (equal (shape-specp x) t))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-var
+      (implies (equal (tag x) :g-var)
+               (equal (shape-specp x) t))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-ite
+      (implies (equal (tag x) :g-ite)
+               (equal (shape-specp x)
+                      (and (shape-specp (g-ite->test x))
+                           (shape-specp (g-ite->then x))
+                           (shape-specp (g-ite->else x)))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-call
+      (implies (equal (tag x) :g-call)
+               (equal (shape-specp x)
+                      (and (symbolp (g-call->fn x))
+                           (not (eq (g-call->fn x) 'quote))
+                           (shape-spec-listp (g-call->args x))
+                           (ss-unary-functionp (g-call->inverse x)))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-cons
+      (implies (and (consp x)
+                    (not (equal (tag x) :g-number))
+                    (not (equal (tag x) :g-boolean))
+                    (not (equal (tag x) :g-integer))
+                    (not (equal (tag x) :g-integer?))
+                    (not (equal (tag x) :g-concrete))
+                    (not (equal (tag x) :g-var))
+                    (not (equal (tag x) :g-ite))
+                    (not (equal (tag x) :g-call)))
+               (equal (shape-specp x)
+                      (and (not (equal (tag x) :g-apply))
+                           (shape-specp (car x))
+                           (shape-specp (cdr x)))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+    (defthm shape-specp-when-g-apply
+      (implies (equal (tag x) :g-apply)
+               (not (shape-specp x)))
+      :rule-classes ((:rewrite :backchain-limit-lst 0))))
+                    
+  (define shape-spec-listp (x)
+    :measure (acl2-count x)
+    (if (atom x)
+        (eq x nil)
+      (and (shape-specp (car x))
+           (shape-spec-listp (cdr x))))
+    ///
+    (defthm shape-spec-listp-when-atom
+      (implies (atom x)
+               (equal (shape-spec-listp x)
+                      (equal x nil)))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+    (defthm shape-spec-listp-when-cons
+      (implies (consp x)
+               (equal (shape-spec-listp x)
+                      (and (shape-specp (car x))
+                           (shape-spec-listp (cdr x)))))
+      :rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
 
 
@@ -149,15 +229,16 @@
 
 
 
-(defund shape-spec-obj-in-range-iff (x obj)
-  (declare (xargs :guard (shape-specp x)
-                  :guard-hints(("Goal" :in-theory (enable shape-specp)))))
+(define shape-spec-obj-in-range-iff ((x shape-specp) obj)
+  ;; only works on call-free objects
+  :guard-hints(("Goal" :in-theory (enable shape-specp)))
+  :returns (in-range booleanp :rule-classes :type-prescription)
   (if (atom x)
       (iff x obj)
     (pattern-match x
       ((g-number &)
-       obj)
-      ((g-integer & & &) obj)
+       (bool-fix obj))
+      ((g-integer & & &) (bool-fix obj))
       ((g-integer? & & & &) t)
       ((g-boolean &) t)
       ((g-var &) t)
@@ -168,7 +249,9 @@
                 (shape-spec-obj-in-range-iff else obj))))
       ((g-call & & &) nil)
       ((g-concrete y) (iff y obj))
-      (& obj))))
+      (& (bool-fix obj))))
+  ///
+  (fty::deffixcong iff equal (shape-spec-obj-in-range-iff x obj) obj))
 
 (defund integer-in-range (vlist obj)
   (declare (xargs :guard t))
@@ -190,16 +273,13 @@
   (and (acl2-numberp obj)
        (integer-in-range (car nspec) (numerator (realpart obj)))
        (if (consp (cdr nspec))
-           (and (natural-in-range (cadr nspec) (denominator (realpart obj)))
-                (if (consp (cddr nspec))
-                    (and (integer-in-range
-                          (caddr nspec) (numerator (imagpart obj)))
-                         (if (consp (cdddr nspec))
-                             (natural-in-range
-                              (cadddr nspec) (denominator (imagpart obj)))
-                           (eql (denominator (imagpart obj)) 1)))
-                  (rationalp obj)))
-         (integerp obj))))
+           (natural-in-range (cadr nspec) (denominator (realpart obj)))
+         (integerp obj))
+       (integer-in-range (caddr nspec) (numerator (imagpart obj)))
+       (if (consp (cdddr nspec))
+           (natural-in-range
+            (cadddr nspec) (denominator (imagpart obj)))
+         (integerp (imagpart obj)))))
 
 (defund shape-spec-obj-in-range (x obj)
   (declare (xargs :guard (shape-specp x)
@@ -225,8 +305,7 @@
 
 
 (defun-nx shape-spec-slice-to-env (obj)
-  (mv-let (ok bsl vsl) obj
-    (declare (ignore ok))
+  (mv-let (bsl vsl) obj
     (cons bsl vsl)))
 
 (defun-nx ss-append-envs (x y)
@@ -237,308 +316,257 @@
 
 
 
-(defund integer-env-slice (vlist obj)
-  (declare (xargs :guard (and (nat-listp vlist)
-                              (integerp obj))
-                  :guard-hints(("Goal" :in-theory (enable nat-listp)))))
+(define integer-env-slice ((vlist nat-listp)
+                           (obj integerp))
+  :guard-hints (("goal" :in-theory (enable nat-listp)))
+  :returns (alist alistp)
   (if (atom vlist)
-      (mv (eql obj 0) nil)
-    (if (atom (cdr vlist))
-        (if (eql obj 0)
-            (mv t (list (cons (car vlist) nil)))
-          (mv (eql obj -1) (list (cons (car vlist) t))))
-      (mv-let (rest-ok rest-bslice)
-        (integer-env-slice (cdr vlist) (ash obj -1))
-        (mv rest-ok (cons (cons (car vlist) (logbitp 0 obj)) rest-bslice))))))
+      nil
+    (cons (cons (car vlist) (logbitp 0 obj))
+          (integer-env-slice (cdr vlist) (ash obj -1))))
+  ///
+  (std::defret true-listp-integer-env-slice
+    (true-listp alist)
+    :rule-classes :type-prescription))
 
-(local
- (defthm true-listp-integer-env-slice
-   (true-listp (mv-nth 1 (integer-env-slice vlist obj)))
-   :hints(("Goal" :in-theory (enable integer-env-slice)))))
 
-(defund natural-env-slice (vlist obj)
-  (declare (xargs :guard (and (nat-listp vlist)
-                              (integerp obj))
-                  :guard-hints(("Goal" :in-theory (enable nat-listp)))))
-  (if (atom vlist)
-      (mv (eql obj 0) nil)
-    (mv-let (rest-ok rest-bslice)
-      (natural-env-slice (cdr vlist) (ash obj -1))
-      (mv rest-ok (cons (cons (car vlist) (logbitp 0 obj)) rest-bslice)))))
 
-(local
- (defthm true-listp-natural-env-slice
-   (true-listp (mv-nth 1 (natural-env-slice vlist obj)))
-   :hints(("Goal" :in-theory (enable natural-env-slice)))))
+(define number-spec-env-slice ((nspec number-specp)
+                               obj)
+  :guard-hints (("goal" :in-theory (enable number-specp)))
+  :returns (alist alistp)
+  (b* ((obj (fix obj))
+       (rn-bspec
+        (integer-env-slice (car nspec) (numerator (realpart obj))))
+       (rd-bspec
+        (integer-env-slice (cadr nspec) (denominator (realpart obj))))
+       (in-bspec
+        (integer-env-slice (caddr nspec) (numerator (imagpart obj))))
+       (id-bspec
+        (integer-env-slice (cadddr nspec) (denominator (imagpart obj)))))
+    (append rn-bspec rd-bspec in-bspec id-bspec))
+  ///
+  (std::defret true-listp-number-spec-env-slice
+    (true-listp alist)
+    :rule-classes :type-prescription))
 
-(defund number-spec-env-slice (nspec obj)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints(("Goal" :in-theory (enable number-specp)))))
-  (mv-let (rn-ok rn-bspec)
-    (integer-env-slice (car nspec) (numerator (realpart (fix obj))))
-    (if (consp (cdr nspec))
-        (mv-let (rd-ok rd-bspec)
-          (natural-env-slice (cadr nspec) (denominator (realpart (fix obj))))
-          (if (consp (cddr nspec))
-              (mv-let (in-ok in-bspec)
-                (integer-env-slice
-                 (caddr nspec) (numerator (imagpart (fix obj))))
-                (if (consp (cdddr nspec))
-                    (mv-let (id-ok id-bspec)
-                      (natural-env-slice
-                       (cadddr nspec)
-                       (denominator (imagpart (fix obj))))
-                      (mv (and (acl2-numberp obj)
-                               rn-ok rd-ok in-ok id-ok)
-                          (append rn-bspec rd-bspec
-                                  in-bspec id-bspec)))
-                  (mv (and (acl2-numberp obj)
-                           (eql (denominator (imagpart obj)) 1)
-                           rn-ok rd-ok in-ok)
-                      (append rn-bspec rd-bspec
-                              in-bspec))))
-            (mv (and (acl2-numberp obj)
-                     (eql (imagpart obj) 0)
-                     rn-ok rd-ok)
-                (append rn-bspec rd-bspec))))
-      (mv (and (acl2-numberp obj)
-               (eql (denominator (realpart obj)) 1)
-               (eql (imagpart obj) 0) rn-ok)
-          rn-bspec))))
-
-(local
- (defthm true-listp-number-spec-env-slice-1
-   (true-listp (mv-nth 1 (number-spec-env-slice nspec obj)))
-   :hints(("Goal" :in-theory (enable number-spec-env-slice)))))
-
-(defun g-integer-env-slice (sign bits var obj)
-  (declare (xargs :guard (and (natp sign) (nat-listp bits))))
+(define g-integer-env-slice ((sign natp)
+                             (bits nat-listp)
+                             var obj)
+  :returns (mv (bvar-alist alistp)
+               (gvar-alist alistp))
   (b* ((obj (ifix obj))
-       ((mv & slice) (natural-env-slice bits (loghead (len bits) obj)))
+       (slice (integer-env-slice bits (loghead (len bits) obj)))
        (rest (logtail (len bits) obj))
        (signval (< rest 0)))
     (mv (cons (cons sign signval)
               slice)
-        (list (cons var rest)))))
+        (list (cons var rest))))
+  ///
+  (std::defret true-listp-of-g-integer-env-slice-bvar-alist
+    (true-listp bvar-alist)
+    :rule-classes :type-prescription)
+  (std::defret true-listp-of-g-integer-env-slice-gvar-alist
+    (true-listp gvar-alist)
+    :rule-classes :type-prescription))
 
-(mutual-recursion
- (defun shape-spec-arbitrary-slice (x)
-   (declare (xargs :guard (shape-specp x)
-                   :verify-guards nil))
-   (if (atom x)
-       (mv nil nil)
-     (pattern-match x
-       ((g-number nspec)
-        (mv-let (ok bsl)
-          (number-spec-env-slice nspec 0)
-          (declare (ignore ok))
-          (mv bsl nil)))
-       ((g-integer sign bits var)
-        (g-integer-env-slice sign bits var 0))
-       ((g-integer? sign bits var intp)
-        (mv-let (bsl vsl)
-          (g-integer-env-slice sign bits var 0)
-          (mv (cons (cons intp t) bsl) vsl)))
-       ((g-boolean n) (mv (list (cons n nil)) nil))
-       ((g-var v) (mv nil (list (cons v nil))))
-       ((g-ite if then else)
-        (b* (((mv if-bsl if-vsl)
-              (shape-spec-arbitrary-slice if))
-             ((mv then-bsl then-vsl)
-              (shape-spec-arbitrary-slice then))
-             ((mv else-bsl else-vsl)
-              (shape-spec-arbitrary-slice else)))
-          (mv (append if-bsl then-bsl else-bsl)
-              (append if-vsl then-vsl else-vsl))))
-       ((g-concrete &) (mv nil nil))
-       ((g-call & args &) (shape-spec-list-arbitrary-slice args))
-       (& (b* (((mv car-bsl car-vsl)
-                (shape-spec-arbitrary-slice (car x)))
-               ((mv cdr-bsl cdr-vsl)
-                (shape-spec-arbitrary-slice (cdr x))))
-            (mv (append car-bsl cdr-bsl)
-                (append car-vsl cdr-vsl)))))))
+(defines shape-spec-arbitrary-slice
+  :verify-guards nil
+  (define shape-spec-arbitrary-slice ((x shape-specp))
+    :returns (mv (bvar-alist alistp)
+                 (gvar-alist alistp))
+    (if (atom x)
+        (mv nil nil)
+      (pattern-match x
+        ((g-number nspec)
+         (mv (number-spec-env-slice nspec 0) nil))
+        ((g-integer sign bits var)
+         (g-integer-env-slice sign bits var 0))
+        ((g-integer? sign bits var intp)
+         (mv-let (bsl vsl)
+           (g-integer-env-slice sign bits var 0)
+           (mv (cons (cons intp t) bsl) vsl)))
+        ((g-boolean n) (mv (list (cons n nil)) nil))
+        ((g-var v) (mv nil (list (cons v nil))))
+        ((g-ite if then else)
+         (b* (((mv if-bsl if-vsl)
+               (shape-spec-arbitrary-slice if))
+              ((mv then-bsl then-vsl)
+               (shape-spec-arbitrary-slice then))
+              ((mv else-bsl else-vsl)
+               (shape-spec-arbitrary-slice else)))
+           (mv (append if-bsl then-bsl else-bsl)
+               (append if-vsl then-vsl else-vsl))))
+        ((g-concrete &) (mv nil nil))
+        ((g-call & args &) (shape-spec-list-arbitrary-slice args))
+        (& (b* (((mv car-bsl car-vsl)
+                 (shape-spec-arbitrary-slice (car x)))
+                ((mv cdr-bsl cdr-vsl)
+                 (shape-spec-arbitrary-slice (cdr x))))
+             (mv (append car-bsl cdr-bsl)
+                 (append car-vsl cdr-vsl)))))))
 
- (defun shape-spec-list-arbitrary-slice (x)
-   (declare (xargs :guard (shape-spec-listp x)))
-   (if (atom x)
-       (mv nil nil)
-     (b* (((mv bsl1 vsl1) (shape-spec-arbitrary-slice (car x)))
-          ((mv bsl2 vsl2) (shape-spec-list-arbitrary-slice (cdr x))))
-       (mv (append bsl1 bsl2)
-           (append vsl1 vsl2))))))
+  (define shape-spec-list-arbitrary-slice ((x shape-spec-listp))
+    :returns (mv (bvar-alist alistp)
+                 (gvar-alist alistp))
+    (if (atom x)
+        (mv nil nil)
+      (b* (((mv bsl1 vsl1) (shape-spec-arbitrary-slice (car x)))
+           ((mv bsl2 vsl2) (shape-spec-list-arbitrary-slice (cdr x))))
+        (mv (append bsl1 bsl2)
+            (append vsl1 vsl2)))))
+  ///
 
-(local
- (defthm-shape-spec-flag
-   (defthm true-listp-shape-spec-arbitrary-slice-1
-     (true-listp (mv-nth 1 (shape-spec-arbitrary-slice x)))
-     :hints ('(:expand ((shape-spec-arbitrary-slice x))))
-     :flag ss)
-   (defthm true-listp-shape-spec-list-arbitrary-slice-1
-     (true-listp (mv-nth 1 (shape-spec-list-arbitrary-slice x)))
-     :flag list)))
+  (defthm-shape-spec-flag
+    (defthm true-listp-shape-spec-arbitrary-slice-1
+      (true-listp (mv-nth 1 (shape-spec-arbitrary-slice x)))
+      :hints ('(:expand ((shape-spec-arbitrary-slice x))))
+      :flag ss
+      :rule-classes :type-prescription)
+    (defthm true-listp-shape-spec-list-arbitrary-slice-1
+      (true-listp (mv-nth 1 (shape-spec-list-arbitrary-slice x)))
+      :flag list
+      :rule-classes :type-prescription))
 
-(local
- (defthm-shape-spec-flag
-   (defthm true-listp-shape-spec-arbitrary-slice-0
-     (true-listp (mv-nth 0 (shape-spec-arbitrary-slice x)))
-     :hints ('(:expand ((shape-spec-arbitrary-slice x))))
-     :flag ss)
-   (defthm true-listp-shape-spec-list-arbitrary-slice-0
-     (true-listp (mv-nth 0 (shape-spec-list-arbitrary-slice x)))
-     :flag list)))
+  (defthm-shape-spec-flag
+    (defthm true-listp-shape-spec-arbitrary-slice-0
+      (true-listp (mv-nth 0 (shape-spec-arbitrary-slice x)))
+      :hints ('(:expand ((shape-spec-arbitrary-slice x))))
+      :flag ss
+      :rule-classes :type-prescription)
+    (defthm true-listp-shape-spec-list-arbitrary-slice-0
+      (true-listp (mv-nth 0 (shape-spec-list-arbitrary-slice x)))
+      :flag list
+      :rule-classes :type-prescription))
 
 
-(verify-guards shape-spec-arbitrary-slice
-               :hints(("Goal" :in-theory (enable shape-specp
-                                                 shape-spec-listp))))
+  (verify-guards shape-spec-arbitrary-slice
+    :hints(("Goal" :in-theory (enable shape-specp
+                                      shape-spec-listp)))))
 
-(in-theory (disable shape-spec-arbitrary-slice shape-spec-list-arbitrary-slice))
-
-(defund shape-spec-iff-env-slice (x obj)
-  (declare (xargs :guard (shape-specp x)
-                  :verify-guards nil))
+(define shape-spec-iff-env-slice ((x shape-specp) obj)
+  :returns (mv (bvar-alist alistp)
+               (gvar-alist alistp))
+  :verify-guards nil
   (if (atom x)
-      (mv (iff x obj) nil nil)
+      (mv nil nil)
     (pattern-match x
       ((g-number nspec)
-       (mv-let (ok bsl)
-         (number-spec-env-slice nspec 0)
-         (declare (ignore ok))
-         (mv obj bsl nil)))
+       (mv (number-spec-env-slice nspec 0) nil))
       ((g-integer sign bits var)
-       (mv-let (bsl vsl)
-         (g-integer-env-slice sign bits var 0)
-         (mv obj bsl vsl)))
+       (g-integer-env-slice sign bits var 0))
       ((g-integer? sign bits var intp)
        (mv-let (bsl vsl)
          (g-integer-env-slice sign bits var 0)
          (if obj
-             (mv t (cons (cons intp t) bsl) vsl)
-           (mv t (cons (cons intp nil) bsl)
+             (mv (cons (cons intp t) bsl) vsl)
+           (mv (cons (cons intp nil) bsl)
                (list (cons var nil))))))
-      ((g-boolean n) (mv t (list (cons n obj)) nil))
-      ((g-var v) (mv t nil (list (cons v obj))))
+      ((g-boolean n) (mv (list (cons n (bool-fix obj))) nil))
+      ((g-var v) (mv nil (list (cons v (bool-fix obj)))))
       ((g-ite if then else)
-       (b* (((mv then-ok then-bslice then-vslice)
+       (b* (((mv then-bslice then-vslice)
              (shape-spec-iff-env-slice then obj))
-            ((mv else-ok else-bslice else-vslice)
+            ((mv else-bslice else-vslice)
              (shape-spec-iff-env-slice else obj))
-            ((mv if-t-ok if-t-bslice if-t-vslice)
-             (shape-spec-iff-env-slice if t))
-            ((mv if-nil-ok if-nil-bslice if-nil-vslice)
-             (shape-spec-iff-env-slice if nil)))
-         (if (and then-ok if-t-ok)
-             (mv t (append if-t-bslice then-bslice else-bslice)
-                 (append if-t-vslice then-vslice else-vslice))
-           (mv (and else-ok if-nil-ok)
-               (append if-nil-bslice then-bslice else-bslice)
-               (append if-nil-vslice then-vslice else-vslice)))))
-      ((g-concrete y) (mv (iff y obj) nil nil))
+            (then-ok (shape-spec-obj-in-range-iff then obj))
+            ((mv if-bslice if-vslice)
+             (shape-spec-iff-env-slice if then-ok)))
+         (mv (append if-bslice then-bslice else-bslice)
+             (append if-vslice then-vslice else-vslice))))
+      ((g-concrete &) (mv nil nil))
       ((g-call & args &)
-       (mv-let (bsl vsl)
-         (shape-spec-list-arbitrary-slice args)
-         (mv nil bsl vsl)))
+       (shape-spec-list-arbitrary-slice args))
       (& (b* (((mv car-bsl car-vsl)
                (shape-spec-arbitrary-slice (car x)))
               ((mv cdr-bsl cdr-vsl)
                (shape-spec-arbitrary-slice (cdr x))))
-           (mv obj
-               (append car-bsl cdr-bsl)
-               (append car-vsl cdr-vsl)))))))
+           (mv (append car-bsl cdr-bsl)
+               (append car-vsl cdr-vsl))))))
+  ///
+  (std::defret true-listp-of-shape-spec-iff-env-slice-bvar-alist
+    (true-listp bvar-alist)
+    :rule-classes :type-prescription)
 
-(local
- (defthm true-listp-shape-spec-iff-env-slice-1
-   (true-listp (mv-nth 1 (shape-spec-iff-env-slice x obj)))
-   :hints(("Goal" :in-theory (enable shape-spec-iff-env-slice)))))
+  (std::defret true-listp-of-shape-spec-iff-env-slice-gvar-alist
+    (true-listp gvar-alist)
+    :rule-classes :type-prescription)
 
-(local
- (defthm true-listp-shape-spec-iff-env-slice-2
-   (true-listp (mv-nth 2 (shape-spec-iff-env-slice x obj)))
-   :hints(("Goal" :in-theory (enable shape-spec-iff-env-slice)))))
+  (verify-guards shape-spec-iff-env-slice
+    :hints(("Goal" :in-theory (enable shape-specp))))
 
-(verify-guards shape-spec-iff-env-slice
-               :hints(("Goal" :in-theory (enable shape-specp))))
+  (fty::deffixcong iff equal (shape-spec-iff-env-slice x obj) obj))
 
-(defund shape-spec-env-slice (x obj)
-  (declare (xargs :guard (shape-specp x)
-                  :verify-guards nil))
+(define shape-spec-env-slice ((x shape-specp) obj)
+  :returns (mv (bvar-alist alistp)
+               (gvar-alist alistp))
+  :verify-guards nil
   (if (atom x)
-      (mv (equal x obj) nil nil)
+      (mv nil nil)
     (pattern-match x
       ((g-number nspec)
-       (mv-let (ok bspec)
-         (number-spec-env-slice nspec obj)
-         (mv ok bspec nil)))
+       (mv (number-spec-env-slice nspec obj) nil))
       ((g-integer sign bits var)
-       (mv-let (bsl vsl)
-         (g-integer-env-slice sign bits var obj)
-         (mv (integerp obj) bsl vsl)))
+       (g-integer-env-slice sign bits var obj))
       ((g-integer? sign bits var intp)
        (mv-let (bsl vsl)
          (g-integer-env-slice sign bits var obj)
          (if (integerp obj)
-             (mv t (cons (cons intp t) bsl) vsl)
-           (mv t (cons (cons intp nil) bsl)
+             (mv (cons (cons intp t) bsl) vsl)
+           (mv (cons (cons intp nil) bsl)
                (list (cons var obj))))))
       ((g-boolean n)
-       (mv (booleanp obj)
-           (list (cons n obj))
+       (mv (list (cons n obj))
            nil))
-      ((g-var v) (mv t nil (list (cons v obj))))
+      ((g-var v) (mv nil (list (cons v obj))))
       ((g-ite if then else)
-       (b* (((mv then-ok then-bslice then-vslice)
+       (b* (((mv then-bslice then-vslice)
              (shape-spec-env-slice then obj))
-            ((mv else-ok else-bslice else-vslice)
+            ((mv else-bslice else-vslice)
              (shape-spec-env-slice else obj))
-            ((mv if-t-ok if-t-bslice if-t-vslice)
-             (shape-spec-iff-env-slice if t))
-            ((mv if-nil-ok if-nil-bslice if-nil-vslice)
-             (shape-spec-iff-env-slice if nil)))
-         (if (and then-ok if-t-ok)
-             (mv t (append if-t-bslice then-bslice else-bslice)
-                 (append if-t-vslice then-vslice else-vslice))
-           (mv (and else-ok if-nil-ok)
-               (append if-nil-bslice then-bslice else-bslice)
-               (append if-nil-vslice then-vslice else-vslice)))))
-      ((g-concrete y)
-       (mv (equal obj y) nil nil))
+            (then-ok (shape-spec-obj-in-range then obj))
+            ((mv if-bslice if-vslice)
+             (shape-spec-iff-env-slice if then-ok)))
+         (mv (append if-bslice then-bslice else-bslice)
+             (append if-vslice then-vslice else-vslice))))
+      ((g-concrete &) (mv nil nil))
       ((g-call & args &)
-       (mv-let (bsl vsl)
-         (shape-spec-list-arbitrary-slice args)
-         (mv nil bsl vsl)))
-      (& (b* (((mv car-ok car-bslice car-vslice)
+       (shape-spec-list-arbitrary-slice args))
+      (& (b* (((mv car-bslice car-vslice)
                (shape-spec-env-slice (car x) (ec-call (car obj))))
-              ((mv cdr-ok cdr-bslice cdr-vslice)
+              ((mv cdr-bslice cdr-vslice)
                (shape-spec-env-slice (cdr x) (ec-call (cdr obj)))))
-           (mv (and (consp obj) car-ok cdr-ok)
-               (append car-bslice cdr-bslice)
-               (append car-vslice cdr-vslice)))))))
+           (mv (append car-bslice cdr-bslice)
+               (append car-vslice cdr-vslice))))))
+  ///
+  (std::defret true-listp-shape-spec-env-slice-1
+    (true-listp bvar-alist)
+    :rule-classes :type-prescription)
 
-(local
- (defthm true-listp-shape-spec-env-slice-1
-   (true-listp (mv-nth 1 (shape-spec-env-slice x obj)))
-   :hints(("Goal" :in-theory (enable shape-spec-env-slice)))))
+  (std::defret true-listp-shape-spec-env-slice-2
+    (true-listp gvar-alist)
+    :rule-classes :type-prescription)
 
-(local
- (defthm true-listp-shape-spec-env-slice-2
-   (true-listp (mv-nth 2 (shape-spec-env-slice x obj)))
-   :hints(("Goal" :in-theory (enable shape-spec-env-slice)))))
-
-(verify-guards shape-spec-env-slice
-               :hints(("Goal" :in-theory (enable shape-specp))))
+  (verify-guards shape-spec-env-slice
+    :hints(("Goal" :in-theory (enable shape-specp)))))
 
 
 
+(define variablep (x)
+  (and (symbolp x) (not (booleanp x)))
+  ///
+  (defthm variablep-compound-recognizer
+    (equal (variablep x)
+           (and (symbolp x) (not (booleanp x))))
+    :rule-classes :compound-recognizer))
 
-(defun shape-spec-bindingsp (x)
-  (declare (xargs :guard t))
+
+(define shape-spec-bindingsp (x)
   (if (atom x)
       (equal x nil)
     (and (consp (car x))
-         (symbolp (caar x))
+         (variablep (caar x))
          (not (keywordp (caar x)))
-         (caar x)
          (consp (cdar x))
          (shape-specp (cadar x))
          (shape-spec-bindingsp (cdr x)))))
@@ -556,12 +584,9 @@
   (declare (xargs :guard (number-specp nspec)
                   :guard-hints (("goal" :in-theory (enable number-specp)))))
   (append (car nspec)
-          (and (consp (cdr nspec))
-               (append (cadr nspec)
-                       (and (consp (cddr nspec))
-                            (append (caddr nspec)
-                                    (and (consp (cdddr nspec))
-                                         (cadddr nspec))))))))
+          (cadr nspec)
+          (caddr nspec)
+          (cadddr nspec)))
 
 
 (mutual-recursion

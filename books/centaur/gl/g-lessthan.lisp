@@ -164,7 +164,7 @@
                                      (:rules-of-class :type-prescription :here)
                                      number-to-components
                                      general-concretep-def
-                                     components-to-number-alt-def
+                                     components-to-number
                                      eval-g-base-non-cons
                                      acl2::/r-when-abs-numerator=1
                                      default-unary-/

@@ -243,7 +243,7 @@
                   (generic-geval (g-number n) env)))
   :hints(("Goal" :in-theory (e/d (gnumber-to-param-space
                                   generic-geval)
-                                 (components-to-number-alt-def
+                                 (components-to-number
                                   break-g-number
                                   bfr-param-env)))))
 
@@ -256,7 +256,7 @@
                                  (genv-unparam p env))))
   :hints(("Goal" :in-theory (e/d (gnumber-to-param-space
                                   generic-geval genv-unparam)
-                                 (components-to-number-alt-def
+                                 (components-to-number
                                   break-g-number
                                   bfr-param-env)))))
 
@@ -286,7 +286,7 @@
                    ;; gobjectp-g-number-2
                    default-car default-cdr)
                   ((force) bfr-eval-list
-                   components-to-number-alt-def
+                   components-to-number
                    boolean-listp bfr-eval
                    (:rules-of-class :type-prescription :here)
 ; generic-geval-when-g-var-tag
@@ -328,7 +328,7 @@
                    ;; gobjectp-g-number-2
                    default-car default-cdr)
                   ((force) bfr-eval-list
-                   components-to-number-alt-def
+                   components-to-number
                    boolean-listp bfr-eval
                    (:rules-of-class :type-prescription :here)
 ; generic-geval-when-g-var-tag

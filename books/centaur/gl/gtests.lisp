@@ -229,7 +229,7 @@
    (local
     (in-theory (disable (:definition generic-geval)
                         bfr-eval bfr-eval-list
-                        components-to-number-alt-def
+                        components-to-number
                         bfr-eval-booleanp)))))
 
 (local

@@ -300,7 +300,7 @@
     :guard-encap ((local (bfr-reasoning-mode t))
                   (local (add-bfr-pats (bfr-=-uu . &) (bfr-=-ss . &))))
     :corr-hints ((and stable-under-simplificationp
-                      (append '(:in-theory (enable components-to-number-alt-def))
+                      (append '(:in-theory (enable components-to-number))
                               (flag::expand-calls-computed-hint
                                clause '(eval-g-base)))))))
 
@@ -322,7 +322,7 @@
                                       (:type-prescription break-g-number)))))
     :guard-encap ((local (bfr-reasoning-mode t)))
     :corr-hints ((and stable-under-simplificationp
-                      (append '(:in-theory (enable components-to-number-alt-def))
+                      (append '(:in-theory (enable components-to-number))
                               (flag::expand-calls-computed-hint
                                clause '(eval-g-base)))))))
 

@@ -197,6 +197,8 @@
          (or (eq tag :g-apply)
              (eq tag :g-var)))))
 
+
+
 (defconst *glcp-interp-template*
   `(progn
 
@@ -361,57 +363,58 @@
              ((glcp-er actuals)
               (interp-list (cdr x)
                            alist . ,*glcp-common-inputs*)))
-          (interp-fncall-ifs fn actuals x contexts . ,*glcp-common-inputs*)))
+          (interp-fncall;; -ifs
+           fn actuals x contexts . ,*glcp-common-inputs*)))
 
-      (defun interp-fncall-ifs
-        (fn actuals x contexts . ,*glcp-common-inputs*)
-        (declare (xargs
-                  :measure (list (pos-fix clk) 1919 (g-ite-depth-sum actuals) 20)
-                  :guard (and (posp clk)
-                              (symbolp fn)
-                              (contextsp contexts)
-                              (not (eq fn 'quote))
-                              (true-listp actuals)
-                              . ,*glcp-common-guards*)
-                  :stobjs ,*glcp-stobjs*))
-        (b* (((unless (glcp-lift-ifsp fn (glcp-config->lift-ifsp config)
-                                      (w state)))
-              (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
-             ((mv has-if test then-args else-args)
-              (gl-args-split-ite actuals))
-             ((unless has-if)
-              (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
-             ((glcp-er test-bfr)
-              (simplify-if-test test . ,*glcp-common-inputs*))
-             ((glcp-er then-unreach then-obj)
-              (maybe-interp-fncall-ifs fn then-args x contexts test-bfr
-                                       . ,*glcp-common-inputs*))
-             ((glcp-er else-unreach else-obj)
-              (maybe-interp-fncall-ifs fn else-args x contexts (bfr-not test-bfr)
-                                       . ,*glcp-common-inputs*))
-             ((when then-unreach)
-              (if else-unreach
-                  (glcp-interp-abort :unreachable)
-                (glcp-value else-obj)))
-             ((when else-unreach) (glcp-value then-obj)))
-          (merge-branches test-bfr then-obj else-obj x nil contexts . ,*glcp-common-inputs*)))
+      ;; (defun interp-fncall-ifs
+      ;;   (fn actuals x contexts . ,*glcp-common-inputs*)
+      ;;   (declare (xargs
+      ;;             :measure (list (pos-fix clk) 1919 (g-ite-depth-sum actuals) 20)
+      ;;             :guard (and (posp clk)
+      ;;                         (symbolp fn)
+      ;;                         (contextsp contexts)
+      ;;                         (not (eq fn 'quote))
+      ;;                         (true-listp actuals)
+      ;;                         . ,*glcp-common-guards*)
+      ;;             :stobjs ,*glcp-stobjs*))
+      ;;   (b* (((unless (glcp-lift-ifsp fn (glcp-config->lift-ifsp config)
+      ;;                                 (w state)))
+      ;;         (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
+      ;;        ((mv has-if test then-args else-args)
+      ;;         (gl-args-split-ite actuals))
+      ;;        ((unless has-if)
+      ;;         (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
+      ;;        ((glcp-er test-bfr)
+      ;;         (simplify-if-test test . ,*glcp-common-inputs*))
+      ;;        ((glcp-er then-unreach then-obj)
+      ;;         (maybe-interp-fncall-ifs fn then-args x contexts test-bfr
+      ;;                                  . ,*glcp-common-inputs*))
+      ;;        ((glcp-er else-unreach else-obj)
+      ;;         (maybe-interp-fncall-ifs fn else-args x contexts (bfr-not test-bfr)
+      ;;                                  . ,*glcp-common-inputs*))
+      ;;        ((when then-unreach)
+      ;;         (if else-unreach
+      ;;             (glcp-interp-abort :unreachable)
+      ;;           (glcp-value else-obj)))
+      ;;        ((when else-unreach) (glcp-value then-obj)))
+      ;;     (merge-branches test-bfr then-obj else-obj x nil contexts . ,*glcp-common-inputs*)))
 
 
-      (defun maybe-interp-fncall-ifs (fn actuals x contexts branchcond . ,*glcp-common-inputs*)
-        (declare (xargs
-                  :measure (list (pos-fix clk) 1919 (g-ite-depth-sum actuals) 45)
-                  :verify-guards nil
-                  :guard (and (posp clk)
-                              (symbolp fn)
-                              (contextsp contexts)
-                              (not (eq fn 'quote))
-                              (true-listp actuals)
-                              . ,*glcp-common-guards*)
-                  :stobjs ,*glcp-stobjs*))
-        (glcp-run-branch
-         branchcond
-         (interp-fncall-ifs
-          fn actuals x contexts . ,*glcp-common-inputs*)))
+      ;; (defun maybe-interp-fncall-ifs (fn actuals x contexts branchcond . ,*glcp-common-inputs*)
+      ;;   (declare (xargs
+      ;;             :measure (list (pos-fix clk) 1919 (g-ite-depth-sum actuals) 45)
+      ;;             :verify-guards nil
+      ;;             :guard (and (posp clk)
+      ;;                         (symbolp fn)
+      ;;                         (contextsp contexts)
+      ;;                         (not (eq fn 'quote))
+      ;;                         (true-listp actuals)
+      ;;                         . ,*glcp-common-guards*)
+      ;;             :stobjs ,*glcp-stobjs*))
+      ;;   (glcp-run-branch
+      ;;    branchcond
+      ;;    (interp-fncall-ifs
+      ;;     fn actuals x contexts . ,*glcp-common-inputs*)))
 
       (defun interp-fncall
         (fn actuals x contexts . ,*glcp-common-inputs*)
@@ -999,7 +1002,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
      (defund interp-top-level-term
        (term alist . ,(subst 'pathcond-bfr 'pathcond *glcp-common-inputs*))
        (declare (xargs :guard (and (pseudo-termp term)
-                                   (natp clk)
+                                   (posp clk)
                                    . ,*glcp-common-guards*)
                        :stobjs ,(remove 'pathcond *glcp-stobjs*)
                        :verify-guards nil))
@@ -1017,7 +1020,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
      (defund interp-concl
        (term alist pathcond-bfr clk config interp-st bvar-db1 bvar-db state)
        (declare (xargs :guard (and (pseudo-termp term)
-                                   (natp clk)
+                                   (posp clk)
                                    . ,*glcp-common-guards*)
                        :stobjs (interp-st bvar-db bvar-db1 state)
                        :verify-guards nil))
@@ -1052,7 +1055,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
        (hypo concl alist clk config interp-st next-bvar bvar-db bvar-db1 state)
        (declare (xargs :guard (and (pseudo-termp hypo)
                                    (pseudo-termp concl)
-                                   (natp clk)
+                                   (posp clk)
                                    . ,*glcp-common-guards*)
                        :stobjs (interp-st bvar-db bvar-db1 state)
                        :verify-guards nil))
@@ -1064,24 +1067,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               hypo alist . ,(subst t 'pathcond *glcp-common-inputs*)))
             ((when er)
              (mv hyp-bfr nil bvar-db1 . ,(remove 'pathcond *glcp-common-retvals*)))
-            ((mv vac-check-sat vac-check-succeeded &)
-             (if (glcp-config->check-vacuous config)
-                 (bfr-sat hyp-bfr)
-               (mv nil t nil)))
-            ((when (and (glcp-config->abort-vacuous config)
-                        (not vac-check-succeeded)))
-             (mv hyp-bfr nil bvar-db1
-                 "Vacuity check did not finish"
-                 . ,(cddr *glcp-common-retvals*)))
-            ((when (and (glcp-config->abort-vacuous config)
-                        (not vac-check-sat)))
-             (mv hyp-bfr nil bvar-db1
-                 "Hypothesis is not satisfiable"
-                 . ,(cddr *glcp-common-retvals*)))
-            (- (and (not vac-check-succeeded)
-                    (cw "Note: vacuity check did not finish~%")))
-            (- (and (not vac-check-sat)
-                    (cw "Note: hypothesis is not satisfiable~%")))
+            (er (glcp-vacuity-check hyp-bfr config))
+            ((when er)
+             (mv hyp-bfr nil bvar-db1 . ,(remove 'pathcond *glcp-common-retvals*)))
             ((mv concl-bfr .
                  ,(subst 'bvar-db1 'bvar-db
                          (remove 'pathcond *glcp-common-retvals*)))
@@ -1161,7 +1149,7 @@ In ~@0: The hyp contains the following unbound variables: ~x1~%"
               (acl2::msg "~
 In ~@0: the bindings don't satisfy shape-spec-bindingsp: ~x1"
                          id bindings)))
-            (obj (strip-cadrs bindings))
+            (obj (shape-spec-bindings->sspecs bindings))
             ((unless (acl2::fast-no-duplicatesp (shape-spec-list-indices obj)))
              (glcp-error
               (acl2::msg "~
@@ -1201,7 +1189,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
             (interp-st (update-is-constraint (bfr-constr-init) interp-st))
             (interp-st (update-is-constraint-db constraint-db interp-st))
             (interp-st (update-is-add-bvars-allowed t interp-st))
-            (next-bvar (shape-spec-max-bvar-list (strip-cadrs bindings)))
+            (next-bvar (shape-spec-max-bvar-list (shape-spec-bindings->sspecs bindings)))
             ((mv hyp-bfr concl-bfr bvar-db1 . ,(remove 'pathcond *glcp-common-retvals*))
              (interp-hyp/concl
               hyp concl al config.concl-clk  config interp-st next-bvar bvar-db

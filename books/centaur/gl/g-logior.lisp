@@ -134,7 +134,7 @@
                                     ((:definition ,gfn)
                                      general-concretep-def
                                      binary-logior
-                                     components-to-number-alt-def
+                                     components-to-number
                                      hons-assoc-equal
                                      eval-g-base-non-cons
                                      default-car default-cdr

@@ -162,7 +162,7 @@
                                       general-boolean-value-correct
                                       bool-cond-itep-eval
                                       boolean-listp
-                                      components-to-number-alt-def
+                                      components-to-number
                                       member-equal
                                       general-number-components-ev
                                       general-concretep-def

@@ -128,7 +128,7 @@
 
 
 (def-g-correct-thm integer-length eval-g-base
-  :hints `(("Goal" :in-theory (e/d (components-to-number-alt-def)
+  :hints `(("Goal" :in-theory (e/d (components-to-number)
                                    ((:definition ,gfn)
                                     general-concretep-def
                                     eval-g-base-alt-def

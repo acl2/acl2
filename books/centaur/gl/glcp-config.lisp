@@ -39,8 +39,8 @@
    (abort-vacuous booleanp :default t)
    (check-vacuous booleanp :default t)
    (n-counterexamples natp :rule-classes :type-prescription :default 3)
-   (hyp-clk natp :rule-classes :type-prescription :default 1000000)
-   (concl-clk natp :rule-classes :type-prescription :default 1000000)
+   (hyp-clk posp :rule-classes :type-prescription :default 1000000)
+   (concl-clk posp :rule-classes :type-prescription :default 1000000)
    (clause-proc symbolp :rule-classes :type-prescription)
    (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check
      ;;  the guards in clause processors

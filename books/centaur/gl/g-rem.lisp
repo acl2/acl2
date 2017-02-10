@@ -71,9 +71,10 @@
 ;;          :hints (("goal" :use ((:instance bfr-listp-bfr-rem-ss))
 ;;                   :in-theory (e/d (bfr-listp) (bfr-listp-bfr-rem-ss))))))
 
-(local (defthm rationalp-rem
+(local (defthm integerp-rem
          (implies (and (integerp x) (integerp y))
-                  (rationalp (rem x y)))))
+                  (integerp (rem x y)))
+         :rule-classes :type-prescription))
 
 (local (add-bfr-fn-pat bfr-=-uu))
 (local (add-bfr-fn-pat bfr-=-ss))
@@ -133,7 +134,7 @@
                               general-consp-car-correct-for-eval-g-base
                               general-consp-cdr-correct-for-eval-g-base
                               boolean-listp
-                              components-to-number-alt-def
+                              components-to-number
                               member-equal
                               general-number-components-ev
                               general-concretep-def

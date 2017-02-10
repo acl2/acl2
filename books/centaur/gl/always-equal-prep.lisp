@@ -881,7 +881,7 @@
                       bfr-list->u
                       bfr-eval-booleanp
                       acl2::subsetp-member
-                      components-to-number-alt-def
+                      components-to-number
                       general-concretep-def))))
 
   (defthm g-always-equal-core-correct

@@ -590,7 +590,12 @@
             "Failed to open aiger output file ~x0~%" fname)
         state)
        (state (aignet-write-aiger-chan aignet channel state)))
-    (close-output-channel channel state)))
+    (close-output-channel channel state))
+  ///
+  (defthm state-p1-of-aignet-write-aiger
+    (implies (and (stringp fname)
+                  (state-p1 state))
+             (state-p1 (aignet-write-aiger fname aignet state)))))
 
 (acl2::defmacfun
  aiger-write (fname &optional latch-aigs out-aigs acl2::&auto state)
@@ -1208,7 +1213,12 @@
        ((mv err aignet state)
         (aignet-read-aiger-chan aignet channel state))
        (state (close-input-channel channel state)))
-    (mv err aignet state)))
+    (mv err aignet state))
+  ///
+  (defthm state-p1-of-aignet-read-aiger
+    (implies (and (state-p1 state)
+                  (Stringp fname))
+             (state-p1 (mv-nth 2 (aignet-read-aiger fname aignet state))))))
 
 
 

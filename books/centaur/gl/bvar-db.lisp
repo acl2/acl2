@@ -32,6 +32,7 @@
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "centaur/misc/prev-stobj-binding" :dir :system)
 ;; (include-book "std/lists/index-of" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/final-cdr" :dir :system))
@@ -714,11 +715,11 @@
            :hints(("Goal" :in-theory (enable nth)))))
 
   (defthm get-bvar->term$a-of-add-term-bvar$a-split
-    (implies (<= (base-bvar$a bvar-db$a) (nfix n))
-             (equal (get-bvar->term$a n (add-term-bvar$a x bvar-db$a))
-                    (if (equal (nfix n) (next-bvar$a bvar-db$a))
-                        x
-                      (get-bvar->term$a n bvar-db$a)))))
+    ;; (implies (<= (base-bvar$a bvar-db$a) (nfix n))
+    (equal (get-bvar->term$a n (add-term-bvar$a x bvar-db$a))
+           (if (equal (nfix n) (next-bvar$a bvar-db$a))
+               x
+             (get-bvar->term$a n bvar-db$a))))
 
   ;; (defthm get-bvar->term$a-of-add-term-bvar$a-existing
   ;;   (implies (and (<= (base-bvar$a bvar-db$a) (nfix n))
@@ -892,7 +893,105 @@
               (init-bvar-db :logic init-bvar-db$a :exec init-bvar-db$c :protect t))))
 
 
-(defun add-term-bvar-unique (x bvar-db)
+
+(defun-sk bvar-db-bvar->term-extension-p (new old)
+  (forall v
+          (implies (and (natp v)
+                        (or (< v (next-bvar old))
+                            (<= (next-bvar new) v)))
+                   (equal (get-bvar->term$a v new)
+                          (get-bvar->term$a v old))))
+  :rewrite :direct)
+
+(defun-sk bvar-db-term->bvar-extension-p (new old)
+  (forall x
+          (implies (get-term->bvar$a x old)
+                   (equal (get-term->bvar$a x new)
+                          (get-term->bvar$a x old))))
+  :rewrite :direct)
+
+(in-theory (disable bvar-db-bvar->term-extension-p
+                    bvar-db-term->bvar-extension-p))
+
+
+(defmacro bind-bvar-db-extension (new old-var)
+  `(and (bind-free (acl2::prev-stobj-binding ,new ',old-var mfc state))
+        (bvar-db-extension-p ,new ,old-var)))
+
+
+
+(define bvar-db-extension-p (new old)
+  :non-executable t
+  :verify-guards nil
+  (and (equal (base-bvar$a new) (base-bvar$a old))
+       (>= (next-bvar$a new) (next-bvar$a old))
+       (bvar-db-bvar->term-extension-p new old)
+       (bvar-db-term->bvar-extension-p new old)
+       ;; bozo this wouldn't be the right invariant about term-equivs, but it
+       ;; seems for now we don't need one.
+       ;; (acl2::suffixp (term-equivs$a old) (term-equivs$a new))
+       )
+  ///
+  (defthm bvar-db-extension-preserves-base-bvar
+    (implies (bind-bvar-db-extension new old)
+             (equal (base-bvar$a new) (base-bvar$a old))))
+
+  (defthm bvar-db-extension-increases
+    (implies (bind-bvar-db-extension new old)
+             (>= (next-bvar$a new) (next-bvar$a old)))
+    :rule-classes ((:linear :trigger-terms ((next-bvar$a new)))))
+
+  (defthm bvar-db-extension-preserves-get-bvar->term
+    (implies (and (bind-bvar-db-extension new old)
+                  (or (< (nfix v) (next-bvar$a old))
+                      (<= (next-bvar$a new) (nfix v))))
+             (equal (get-bvar->term$a v new)
+                    (get-bvar->term$a v old)))
+    :hints (("goal" :use ((:instance bvar-db-bvar->term-extension-p-necc
+                           (v (nfix v))))
+             :in-theory (disable bvar-db-bvar->term-extension-p-necc))))
+
+  (defthm bvar-db-extension-preserves-get-term->bvar
+    (implies (and (bind-bvar-db-extension new old)
+                  (get-term->bvar$a x old))
+             (equal (get-term->bvar$a x new)
+                    (get-term->bvar$a x old))))
+
+  (defthm bvar-db-extension-p-self
+    (bvar-db-extension-p x x)
+    :hints(("Goal" :in-theory (enable bvar-db-bvar->term-extension-p
+                                      bvar-db-term->bvar-extension-p))))
+
+  (local (defthm bvar-db-bvar->term-extension-p-transitive
+           (implies (and (bvar-db-bvar->term-extension-p new med)
+                         (bvar-db-bvar->term-extension-p med old)
+                         (<= (next-bvar$a med) (next-bvar$a new))
+                         (<= (next-bvar$a old) (next-bvar$a med)))
+                    (bvar-db-bvar->term-extension-p new old))
+           :hints ((and stable-under-simplificationp
+                        `(:expand (,(car (last clause))))))))
+
+  (local (defthm bvar-db-term->bvar-extension-p-transitive
+           (implies (and (bvar-db-term->bvar-extension-p new med)
+                         (bvar-db-term->bvar-extension-p med old))
+                    (bvar-db-term->bvar-extension-p new old))
+           :hints ((and stable-under-simplificationp
+                        `(:expand (,(car (last clause))))))))
+
+  (defthm bvar-db-extension-p-transitive
+    (implies (and (bind-bvar-db-extension new med)
+                  (bvar-db-extension-p med old))
+             (bvar-db-extension-p new old)))
+
+  (defthm bvar-db-extension-p-of-add-term-bvar
+    (implies (not (get-term->bvar$a x bvar-db))
+             (bvar-db-extension-p (add-term-bvar$a x bvar-db) bvar-db))
+    :hints(("Goal" :in-theory (enable bvar-db-bvar->term-extension-p
+                                      bvar-db-term->bvar-extension-p)))))
+
+
+
+(defund add-term-bvar-unique (x bvar-db)
   (declare (xargs :stobjs bvar-db))
   (let ((look (get-term->bvar x bvar-db)))
     (if look
@@ -900,6 +999,38 @@
       (b* ((next (next-bvar bvar-db))
            (bvar-db (add-term-bvar x bvar-db)))
         (mv next bvar-db)))))
+
+(defthm bvar-db-extension-p-of-add-term-bvar-unique
+  (bvar-db-extension-p (mv-nth 1 (add-term-bvar-unique x bvar-db)) bvar-db)
+  :hints(("Goal" :in-theory (enable add-term-bvar-unique))))
+
+(defthm natp-bvar-of-add-term-bvar-unique
+  (natp (mv-nth 0 (add-term-bvar-unique x bvar-db)))
+  :hints(("Goal" :in-theory (enable add-term-bvar-unique)))
+  :rule-classes :type-prescription)
+
+(defthm add-term-bvar-unique-bvar-upper-bound
+  (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
+    (< bvar (next-bvar$a new-bvar-db)))
+  :hints(("Goal" :in-theory (enable add-term-bvar-unique)))
+  :rule-classes (:rewrite :linear))
+
+(defthm add-term-bvar-unique-bvar-lower-bound
+  (b* (((mv bvar ?new-bvar-db) (add-term-bvar-unique x bvar-db)))
+    (<= (base-bvar$a bvar-db) bvar))
+  :hints(("Goal" :in-theory (enable add-term-bvar-unique)))
+  :rule-classes (:rewrite :linear))
+
+(defthm get-bvar->term-of-add-term-bvar-unique
+  (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
+    (equal (get-bvar->term$a v new-bvar-db)
+           (if (equal (nfix v) (nfix bvar))
+               x
+             (get-bvar->term$a v bvar-db))))
+  :hints(("Goal" :in-theory (e/d (add-term-bvar-unique)
+                                 (get-bvar->term$a-of-get-term->bvar))
+          :use ((:instance get-bvar->term$a-of-get-term->bvar
+                 (bvar-db$a bvar-db))))))
 
 (defsection get-term->equivs
 
@@ -927,9 +1058,16 @@
 
   (local (in-theory (enable add-term-equiv)))
 
-  (defthm base-bvar-of-add-term-equiv
-    (equal (base-bvar$a (add-term-equiv x n bvar-db))
-           (base-bvar$a bvar-db)))
+  (defthm bvar-db-extension-p-of-add-term-equiv
+    (bvar-db-extension-p (add-term-equiv x n bvar-db) bvar-db)
+    :hints(("Goal" :in-theory (enable bvar-db-extension-p
+                                      bvar-db-bvar->term-extension-p
+                                      bvar-db-term->bvar-extension-p))))
+
+  ;; implied by bvar-db-extension-p-of-add-term-equiv
+  ;; (defthm base-bvar-of-add-term-equiv
+  ;;   (equal (base-bvar$a (add-term-equiv x n bvar-db))
+  ;;          (base-bvar$a bvar-db)))
 
   (defthm next-bvar-of-add-term-equiv
     (equal (next-bvar$a (add-term-equiv x n bvar-db))
@@ -942,3 +1080,30 @@
   (defthm get-bvar->term-of-add-term-equiv
     (equal (get-bvar->term$a y (add-term-equiv x n bvar-db))
            (get-bvar->term$a y bvar-db))))
+
+
+
+(defun bvar-db-debug-aux (n bvar-db)
+  (declare (xargs :stobjs bvar-db
+                  :guard (and (integerp n)
+                              (<= (base-bvar bvar-db) n)
+                              (<= n (next-bvar bvar-db)))
+                  :measure (nfix (- (next-bvar bvar-db) (ifix n)))))
+  (if (mbe :logic (zp (- (next-bvar bvar-db) (ifix n)))
+           :exec (eql (next-bvar bvar-db) n))
+      nil
+    (cons (cons n (get-bvar->term n bvar-db))
+          (bvar-db-debug-aux (1+ (lifix n)) bvar-db))))
+
+(defun bvar-db-debug (bvar-db)
+  (declare (xargs :stobjs bvar-db))
+  (bvar-db-debug-aux (base-bvar bvar-db) bvar-db))
+
+
+(acl2::set-prev-stobjs-correspondence add-term-bvar$a
+                                      :stobjs-out (bvar-db)
+                                      :formals (x bvar-db))
+
+(acl2::set-prev-stobjs-correspondence update-term-equivs$a
+                                      :stobjs-out (bvar-db)
+                                      :formals (x bvar-db))

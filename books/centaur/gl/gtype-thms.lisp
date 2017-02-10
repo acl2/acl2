@@ -170,9 +170,11 @@
 ;;            (n2v x))
 ;;   :hints(("Goal" :in-theory (e/d (n2v bfr-ucons) (logcar logcdr)))))
 
+(in-theory (enable components-to-number))
+
 (encapsulate nil
   (local (include-book "arithmetic/top-with-meta" :dir :system))
-  (local (in-theory (enable components-to-number-fn)))
+  
   (defthm components-to-number-norm-zeros1
     (implies (syntaxp (not (equal iden ''1)))
              (equal (components-to-number rnum rden 0 iden)
@@ -192,12 +194,6 @@
              (equal (components-to-number rnum 0    inum iden)
                     (components-to-number 0    1    inum iden))))
 
-  (defthm components-to-number-alt-def
-    (equal (components-to-number rnum rden inum iden)
-           (complex (* rnum (/ rden))
-                    (* inum (/ iden))))
-    :rule-classes :definition)
-
   (defthm components-to-number-correct
     (implies (acl2-numberp x)
              (equal (components-to-number (numerator (realpart x))
@@ -205,7 +201,7 @@
                                           (numerator (imagpart x))
                                           (denominator (imagpart x)))
                     x))
-    :hints (("goal" :in-theory (enable components-to-number-alt-def)))))
+    :hints (("goal" :in-theory (enable components-to-number)))))
 
 
 
@@ -231,13 +227,13 @@
 
 (encapsulate nil
   (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
   (local (in-theory
           (e/d*
            (boolean-list-bfr-eval-list)
            (generic-geval mk-g-number
 ; (components-to-number)
                           components-to-number
-                          components-to-number-alt-def
                           bfr-eval bfr-eval-list natp
                           n2v i2v default-car default-cdr
                           (:rules-of-class :type-prescription :here)
@@ -246,7 +242,10 @@
                           equal-of-booleans-rewrite
                           default-+-2 default-+-1 acl2::natp-rw
                           len)
-           ((:type-prescription g-number$inline)))))
+           ((:type-prescription g-number$inline)
+            (:t bfr-list->s)
+            (:t bfr-list->u)))))
+
   (local (defthm len-open-cons
            (equal (len (cons x y))
                   (+ 1 (len y)))
@@ -268,6 +267,13 @@
                          (boolean-listp x))
                     (equal (bfr-list->u x env)
                            (bfr-list->u x nil)))))
+  
+  (local (defthm consp-n2v
+           (equal (consp (n2v x))
+                  (posp x))
+           :hints(("Goal" :in-theory (e/d (n2v bfr-ucons)
+                                          (logcar logcdr))))))
+
 
   ;; (local (defthm bfr-list->u-of-list-fix
   ;;          (equal (bfr-list->u (acl2::list-fix x) env)
@@ -297,7 +303,7 @@
                               (generic-geval
                                (g-number x) env))))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (components-to-number-alt-def natp))))))
+                 '(:in-theory (e/d (components-to-number natp))))))
 
   (defthm pbfr-depends-on-list-of-boolean-listp
     (implies (and (syntaxp (quotep lst))

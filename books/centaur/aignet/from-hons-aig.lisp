@@ -55,7 +55,9 @@
                            make-list-ac)))
 
 (local (in-theory (disable true-listp-update-nth
-                           acl2::nth-with-large-index)))
+                           acl2::nth-with-large-index
+                           acl2::aig-env-lookup)))
+
 ;; An xmemo is a fast alist mapping hons AIGs to literals.  It's well-formed if
 ;; all literals are in bounds.
 (defsection xmemo-well-formedp
@@ -258,7 +260,7 @@
     (implies (hons-assoc-equal v varmap)
              (equal (acl2::aig-env-lookup v (aignet-eval-to-env varmap in-vals reg-vals aignet))
                     (= 1 (lit-eval (cdr (hons-assoc-equal v varmap)) in-vals reg-vals aignet))))
-    :hints(("Goal" :in-theory (enable aignet-eval-to-env))))
+    :hints(("Goal" :in-theory (enable aignet-eval-to-env acl2::aig-env-lookup))))
 
   (defun-nx xmemo-ok (xmemo varmap in-vals reg-vals aignet)
     (b* (((when (atom xmemo)) t)
@@ -2242,30 +2244,65 @@
       (equal (stype-count :pi new-aignet) (len invars)))))
 
 
-
-(define env-to-in-vals (vars env)
+(define env-to-bitarr (vars env)
   (if (atom vars)
       nil
     (cons (if (acl2::aig-env-lookup (car vars) env) 1 0)
-          (env-to-in-vals (cdr vars) env)))
+          (env-to-bitarr (cdr vars) env)))
   ///
-  (defthm nth-in-env-to-in-vals
+  (defthm nth-in-env-to-bitarr
     (implies (< (nfix n) (len vars))
-             (equal (nth n (env-to-in-vals vars env))
+             (equal (nth n (env-to-bitarr vars env))
                     (if (acl2::aig-env-lookup (nth n vars) env) 1 0)))
-    :hints(("Goal" :in-theory (enable nth env-to-in-vals)))))
+    :hints(("Goal" :in-theory (enable nth env-to-bitarr)))))
 
-
-(define bits-to-bools (x)
-  (if (atom x)
-      nil
-    (cons (if (eql (bfix (car x)) 1) t nil)
-          (bits-to-bools (cdr x))))
+(define env-update-bitarr-aux ((n natp) vars env bitarr)
+  :guard (<= (+ (nfix n) (len vars)) (bits-length bitarr))
+  :returns (new-bitarr)
+  (if (atom vars)
+      bitarr
+    (b* ((bitarr (set-bit n (acl2::bool->bit (acl2::aig-env-lookup (car vars) env)) bitarr)))
+      (env-update-bitarr-aux (1+ (lnfix n)) (cdr vars) env bitarr)))
   ///
-  (defthm nth-of-bits-to-bools
-    (Equal (nth n (bits-to-bools x))
-           (equal (nth n x) 1))
-    :hints(("Goal" :in-theory (enable nth)))))
+  (local (defthm take-n-plus-one
+           (Equal (take (+ 1 (nfix n)) x)
+                  (append (take n x) (list (nth n x))))
+           :hints(("Goal" :in-theory (e/d (nth acl2::repeat)
+                                          (acl2::take-of-too-many
+                                           ;; acl2::take-when-atom
+                                           acl2::take-of-1
+                                           acl2::take-of-zero))))))
+
+  (local (defthm take-of-update-nth
+           (equal (take n (update-nth n val x))
+                  (take n x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (local (defthm nthcdr-of-update-nth
+           (equal (nthcdr n (update-nth m v x))
+                  (if (<= (nfix n) (nfix m))
+                      (update-nth (- (nfix m) (nfix n)) v (nthcdr n x))
+                    (nthcdr n x)))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (std::defret env-update-bitarr-aux-elim
+    (implies (<= (+ (nfix n) (len vars)) (len bitarr))
+             (equal new-bitarr
+                    (append (take n bitarr)
+                            (env-to-bitarr vars env)
+                            (nthcdr (+ (nfix n) (len vars)) bitarr))))
+    :hints(("Goal" :in-theory (e/d (env-to-bitarr) (acl2::take-redefinition nthcdr (force)))))))
+
+(define env-update-bitarr (vars env bitarr)
+  :enabled t
+  (mbe :logic (non-exec (env-to-bitarr vars env))
+       :exec (b* ((bitarr (resize-bits (len vars) bitarr)))
+               (env-update-bitarr-aux 0 vars env bitarr))))
+ 
+  
+
+
+
 
 (local (defthm hons-assoc-equal-in-pairlis
          (equal (hons-assoc-equal v (pairlis$ vars vals))
@@ -2273,39 +2310,132 @@
                      (cons v (nth (acl2::index-of v vars) vals))))
          :hints(("Goal" :in-theory (enable pairlis$ acl2::index-of nth)))))
 
+(define bits-to-bools-aux ((i natp) bitarr)
+  :guard (<= i (bits-length bitarr))
+  :measure (nfix (- (bits-length bitarr) (nfix i)))
+  (b* (((when (mbe :logic (zp (- (bits-length bitarr) (nfix i)))
+                   :exec (eql (bits-length bitarr) i)))
+        nil))
+    (cons (equal (get-bit i bitarr) 1)
+          (bits-to-bools-aux (1+ (lnfix i)) bitarr))))
 
-(define aignet-bitarr-to-aig-env ((vars true-listp) bitar)
-  :non-executable t
+(define bits-to-bools (bitarr)
+  :verify-guards nil
+  (mbe :logic (non-exec (let ((x bitarr))
+                          (if (atom x)
+                              nil
+                            (cons (if (eql (bfix (car x)) 1) t nil)
+                                  (bits-to-bools (cdr x))))))
+       :exec (bits-to-bools-aux 0 bitarr))
+  ///
+  (defthm nth-of-bits-to-bools
+    (Equal (nth n (bits-to-bools x))
+           (equal (nth n x) 1))
+    :hints(("Goal" :in-theory (enable nth))))
+
+  (local 
+   (defthm bits-to-bools-aux-is-bits-to-bools
+     (equal (bits-to-bools-aux i bitarr)
+            (bits-to-bools (nthcdr i bitarr)))
+     :hints(("Goal" :in-theory (enable bits-to-bools-aux nthcdr acl2::cdr-over-nthcdr)
+             :induct t
+             :expand (bits-to-bools (nthcdr i bitarr))))))
+
+  (verify-guards bits-to-bools
+    :hints(("Goal" :in-theory (disable (bits-to-bools))))))
+
+(define aignet-bitarr-to-aig-env ((vars true-listp) bitarr)
   :returns (env)
-  (pairlis$ vars (bits-to-bools bitar))
+  (pairlis$ vars (bits-to-bools bitarr))
   ///
   (std::defret hons-assoc-equal-in-aignet-bitarr-to-aig-env
     (equal (hons-assoc-equal v env)
            (and (member v vars)
-                (cons v (equal 1 (nth (acl2::index-of v vars) bitar))))))
+                (cons v (equal 1 (nth (acl2::index-of v vars) bitarr))))))
 
   (std::defret aig-env-lookup-in-aignet-bitarr-to-aig-env
     (equal (acl2::aig-env-lookup v env)
            (or (not (member v vars))
-               (equal 1 (nth (acl2::index-of v vars) bitar))))))
-  
+               (equal 1 (nth (acl2::index-of v vars) bitarr))))
+    :hints(("Goal" :in-theory (enable acl2::aig-env-lookup)))))
 
-(define aignet-frames-to-aig-envs (frame-arr (invars true-listp))
+
+(define frame-to-bools-aux ((n natp) (i natp) frames)
+  :guard (and (< n (frames-nrows frames))
+              (<= i (frames-ncols frames)))
+  :measure (nfix (- (len (nth n (stobjs::2darr->rows frames))) (nfix i)))
+  (b* (((when (mbe :logic (non-exec (zp (- (len (nth n (stobjs::2darr->rows frames))) (nfix i))))
+                   :exec (eql (frames-ncols frames) i)))
+        nil))
+    (cons (equal (frames-get2 n i frames) 1)
+          (frame-to-bools-aux n (1+ (lnfix i)) frames))))
+
+(define frame-to-bools ((n natp) frames)
+  :verify-guards nil
+  :guard (< n (frames-nrows frames))
+  :enabled t
+  (mbe :logic (non-exec (bits-to-bools (nth n (stobjs::2darr->rows frames))))
+       :exec (frame-to-bools-aux n 0 frames))
+  ///
+
+  (local 
+   (defthm frame-to-bools-aux-is-frame-to-bools
+     (equal (frame-to-bools-aux n i frames)
+            (bits-to-bools (nthcdr i (nth n (stobjs::2darr->rows frames)))))
+     :hints(("Goal" :in-theory (enable frame-to-bools-aux nthcdr acl2::cdr-over-nthcdr)
+             :induct t
+             :expand ((bits-to-bools (nthcdr i (nth n (stobjs::2darr->rows frames)))))))))
+
+  (verify-guards frame-to-bools
+    :hints(("Goal" :in-theory (disable (frame-to-bools))))))
+
+
+
+(define aignet-frames-to-aig-envs-aux ((n natp) frames (invars true-listp))
+  :guard (and (<= n (frames-nrows frames))
+              (equal (len invars) (frames-ncols frames)))
+  :measure (nfix (- (frames-nrows frames) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (frames-nrows frames) (nfix n)))
+                   :exec (eql (frames-nrows frames) n)))
+        nil))
+    (cons (pairlis$ invars (frame-to-bools n frames))
+          (aignet-frames-to-aig-envs-aux (1+ (lnfix n)) frames invars))))
+       
+
+(define aignet-frame-array-to-aig-envs (frame-arr (invars true-listp))
   :non-executable t
+  :verify-guards nil
   :returns (envs)
   (if (atom frame-arr)
       nil
     (cons (aignet-bitarr-to-aig-env invars (car frame-arr))
-          (aignet-frames-to-aig-envs (cdr frame-arr) invars)))
+          (aignet-frame-array-to-aig-envs (cdr frame-arr) invars)))
   ///
-  (defthm lookup-in-aignet-frames-to-aig-envs
+  (defthm lookup-in-aignet-frame-array-to-aig-envs
     (implies (< (nfix n) (len frame-arr))
-             (equal (nth n (aignet-frames-to-aig-envs frame-arr invars))
+             (equal (nth n (aignet-frame-array-to-aig-envs frame-arr invars))
                     (aignet-bitarr-to-aig-env invars (nth n frame-arr))))
     :hints(("Goal" :in-theory (enable nth))))
 
-  (std::defret len-of-aignet-frames-to-aig-envs
-    (equal (len envs) (len frame-arr))))
+  (std::defret len-of-aignet-frame-array-to-aig-envs
+    (equal (len envs) (len frame-arr)))
+
+  (defthm aignet-frames-to-aig-envs-aux-in-terms-of-aignet-frame-array-to-aig-envs
+    (equal (aignet-frames-to-aig-envs-aux n frames invars)
+           (aignet-frame-array-to-aig-envs (nthcdr n (stobjs::2darr->rows frames)) invars))
+    :hints(("Goal" :in-theory (enable aignet-frames-to-aig-envs-aux
+                                      aignet-bitarr-to-aig-env)
+            :induct t
+            :expand ((aignet-frame-array-to-aig-envs (nthcdr n (stobjs::2darr->rows frames)) invars))))))
+
+(define aignet-frames-to-aig-envs (frames (invars true-listp))
+  :returns (envs)
+  :guard (equal (len invars) (frames-ncols frames))
+  :enabled t
+  (mbe :logic (non-exec (aignet-frame-array-to-aig-envs (stobjs::2darr->rows frames) invars))
+       :exec (aignet-frames-to-aig-envs-aux 0 frames invars))
+  ///
+  (verify-guards aignet-frames-to-aig-envs))
 
 
 (define aig-fsm-frame-env ((regs "alist")
@@ -2352,7 +2482,8 @@
     (implies (hons-assoc-equal v regs)
              (equal (acl2::aig-env-lookup v nextst)
                     (aig-eval (cdr (hons-assoc-equal v regs))
-                              (aig-fsm-frame-env regs curr-st in))))))
+                              (aig-fsm-frame-env regs curr-st in))))
+    :hints(("Goal" :in-theory (enable acl2::aig-env-lookup)))))
 
 (define aig-fsm-run ((outputs "aig list")
                      (regs "alist")
@@ -2402,15 +2533,17 @@
 (define aig-fsm-states ((regs "alist")
                         (curr-st "bindings to t/nil")
                         (ins "list of bindings to t/nil"))
-  (b* (((when (atom ins)) (list curr-st))
+  (b* (((when (atom ins)) nil)
        (next-st (aig-fsm-frame-nextst regs curr-st (car ins))))
-    (cons curr-st (aig-fsm-states regs next-st (cdr ins))))
+    (cons next-st (aig-fsm-states regs next-st (cdr ins))))
   ///
   (defthm nth-of-aig-fsm-run
     (implies (< (nfix n) (len ins))
              (equal (nth n (aig-fsm-run outputs regs curr-st ins))
                     (aig-fsm-frame-outs outputs regs
-                                        (nth n (aig-fsm-states regs curr-st ins))
+                                        (if (zp n)
+                                            curr-st
+                                          (nth (1- n) (aig-fsm-states regs curr-st ins)))
                                         (nth n ins))))
     :hints(("Goal" :in-theory (enable aig-fsm-states nth)))))
 
@@ -2421,7 +2554,9 @@
                   (aig-eval (nth n outputs)
                                   (aig-fsm-frame-env
                                    regs
-                                   (nth k (aig-fsm-states regs curr-st ins))
+                                   (if (zp k)
+                                       curr-st
+                                     (nth (1- k) (aig-fsm-states regs curr-st ins)))
                                    (nth k ins))))))
 
 (local (defun aig-fsm-state-ind (k regs curr-st ins)
@@ -2433,15 +2568,16 @@
   (implies (and (hons-assoc-equal v regs)
                 (< (nfix k) (len ins)))
            (equal (acl2::aig-env-lookup v (nth k (aig-fsm-states regs curr-st ins)))
-                  (if (zp k)
-                      (acl2::aig-env-lookup v curr-st)
-                    (aig-eval (cdr (hons-assoc-equal v regs))
-                              (aig-fsm-frame-env
-                               regs
-                               (nth (1- (nfix k)) (aig-fsm-states regs curr-st ins))
-                               (nth (1- (nfix k)) ins))))))
+                  (aig-eval (cdr (hons-assoc-equal v regs))
+                            (aig-fsm-frame-env
+                             regs
+                             (if (zp k)
+                                 curr-st
+                               (nth (1- k) (aig-fsm-states regs curr-st ins)))
+                             (nth k ins)))))
   :hints(("Goal" :in-theory (e/d (aig-fsm-states nth) (acl2::aig-env-lookup))
-          :induct (aig-fsm-state-ind k regs curr-st ins))))
+          :induct (aig-fsm-state-ind k regs curr-st ins)
+          :expand ((aig-fsm-states regs curr-st ins)))))
 
 
 ;; (defthm aig-eval-of-extract-vars-removal
@@ -2594,9 +2730,9 @@
          ((mv aignet ?varmap ?invars ?regvars)
           (aig-fsm-to-aignet regs outs max-gates gatesimp aignet0))
          (regvals (frame-regvals k frames initsts aignet))
-         (frame-st (nth k (aig-fsm-states regs
+         (frame-st (nth (1- k) (aig-fsm-states regs
                                            (aignet-bitarr-to-aig-env (alist-keys regs) initsts)
-                                           (aignet-frames-to-aig-envs (stobjs::2darr->rows frames) invars))))
+                                           (aignet-frames-to-aig-envs frames invars))))
          (reg-name (reg-vals-equivalent-witness regs regvals frame-st))
          (regnum (acl2::index-of reg-name (alist-keys regs)))
          ;; (nxst (node-count (lookup-reg->nxst (regnum->id regnum aignet) aignet)))
@@ -2634,17 +2770,37 @@
                     (aig-vars (append regvals outs)))
            :hints(("Goal" :in-theory (enable aig-vars append)))))
 
+  (local (defthm bits-to-bools-of-take
+           (Equal (bits-to-bools (take n x))
+                  (take n (bits-to-bools x)))
+           :hints(("Goal" :in-theory (e/d (bits-to-bools (:i nthcdr))
+                                          (acl2::take-of-too-many
+                                           acl2::take-when-atom))
+                   :induct (nthcdr n x)))))
+
+  (local (defthm pairlis$-of-take-len
+           (equal (pairlis$ x (take (len x) y))
+                  (pairlis$ x y))
+           :hints(("Goal" :in-theory (enable pairlis$)))))
+
+  (local (defthm aignet-bitarr-to-aig-env-of-take
+           (equal (aignet-bitarr-to-aig-env vars (take (len vars) bitarr))
+                  (aignet-bitarr-to-aig-env vars bitarr))
+           :hints(("Goal" :in-theory (enable aignet-bitarr-to-aig-env)))))
+
   (defthm-reg-eval-of-aig-fsm-to-aignet-ind-flag
     (defthm frame-regvals-of-aig-fsm-to-aignet
       (b* (((mv aignet ?varmap ?invars ?regvars)
             (aig-fsm-to-aignet regs outs max-gates gatesimp aignet0))
-           (aig-ins (aignet-frames-to-aig-envs (stobjs::2darr->rows frames) invars))
+           (aig-ins (aignet-frames-to-aig-envs frames invars))
            (aig-initst (aignet-bitarr-to-aig-env (alist-keys regs) initsts)))
         (implies (and (< (nfix k) (len (stobjs::2darr->rows frames)))
                       (non-bool-atom-listp (alist-keys regs))
                       (no-duplicatesp (alist-keys regs)))
                  (reg-vals-equivalent regs (frame-regvals k frames initsts aignet)
-                                      (nth k (aig-fsm-states regs aig-initst aig-ins)))))
+                                      (if (zp k)
+                                          aig-initst
+                                        (nth (1- k) (aig-fsm-states regs aig-initst aig-ins))))))
       :hints ((and stable-under-simplificationp
                    `(:expand (,(car (last clause))))))
       :flag frame-regvals-of-aig-fsm-to-aignet-ind)
@@ -2652,7 +2808,7 @@
     (defthm reg-eval-of-aig-fsm-to-aignet
       (b* (((mv aignet ?varmap ?invars ?regvars)
             (aig-fsm-to-aignet regs outs max-gates gatesimp aignet0))
-           (aig-ins (aignet-frames-to-aig-envs (stobjs::2darr->rows frames) invars))
+           (aig-ins (aignet-frames-to-aig-envs frames invars))
            (aig-initst (aignet-bitarr-to-aig-env (alist-keys regs) initsts)))
         (implies (and (< (nfix n) (len (alist-keys regs)))
                       (< (nfix k) (len (stobjs::2darr->rows frames)))
@@ -2661,16 +2817,18 @@
                  (equal (id-eval-seq k (node-count (lookup-reg->nxst (node-count (lookup-stype n :reg aignet)) aignet))
                                      frames initsts aignet)
                         (acl2::bool->bit (aig-eval (nth n (alist-vals regs))
-                                                         (aig-fsm-frame-env
-                                                          regs
-                                                          (nth k (aig-fsm-states regs aig-initst aig-ins))
-                                                          (nth k aig-ins)))))))
+                                                   (aig-fsm-frame-env
+                                                    regs
+                                                    (if (zp k)
+                                                        aig-initst
+                                                      (nth (1- k) (aig-fsm-states regs aig-initst aig-ins)))
+                                                    (nth k aig-ins)))))))
       :flag reg-eval-of-aig-fsm-to-aignet-ind))
 
   (defthm out-eval-of-aig-fsm-to-aignet
     (b* (((mv aignet ?varmap ?invars ?regvars)
           (aig-fsm-to-aignet regs outs max-gates gatesimp aignet0))
-         (aig-ins (aignet-frames-to-aig-envs (stobjs::2darr->rows frames) invars))
+         (aig-ins (aignet-frames-to-aig-envs frames invars))
          (aig-initst (aignet-bitarr-to-aig-env (alist-keys regs) initsts)))
       (implies (and (< (nfix n) (len outs))
                     (< (nfix k) (len (stobjs::2darr->rows frames)))
@@ -2681,3 +2839,449 @@
                       (acl2::bool->bit (nth n (nth k (aig-fsm-run outs regs aig-initst aig-ins)))))))
     :hints (("Goal" :use ((:instance frame-regvals-of-aig-fsm-to-aignet))
              :in-theory (disable frame-regvals-of-aig-fsm-to-aignet)))))
+
+
+(define frames-row-fix ((ncols natp)
+                        (row))
+  :verify-guards nil
+  :returns (new-row (and (framese-datap new-row)
+                         (equal (len new-row) (nfix ncols))))
+  (if (zp ncols)
+      nil
+    (cons (bfix (car row))
+          (frames-row-fix (1- ncols) (cdr row))))
+  ///
+  (std::defret frames-row-fix-when-framese-datap
+    (implies (and (framese-datap row)
+                  (equal (len row) (nfix ncols)))
+             (equal new-row row)))
+
+  (local (defun nth-of-frames-row-fix-ind (n ncols row)
+           (if (zp ncols)
+               (list n row)
+             (nth-of-frames-row-fix-ind (1- (nfix n)) (1- ncols) (cdr row)))))
+
+  (std::defret nth-of-frames-row-fix
+    (equal (nth n new-row)
+           (and (< (nfix n) (nfix ncols))
+                (bfix (nth n row))))
+    :hints(("Goal" :in-theory (enable nth)
+            :induct (nth-of-frames-row-fix-ind n ncols row)
+            :expand ((:free (x) (nth n x)))))))
+
+(define frames-fix-row ((row natp) frames)
+  :guard (< row (frames-nrows frames))
+  :returns (new-frames stobjs::2darr-p :hyp (stobjs::2darr-p frames))
+  (mbe :logic (non-exec
+               (b* ((rows (stobjs::2darr->rows frames))
+                    (ncols (stobjs::2darr->ncols frames))
+                    (nth-row (nth row rows))
+                    (new-rows (update-nth row (frames-row-fix ncols nth-row) rows)))
+                 (stobjs::2darr ncols new-rows)))
+       :exec frames)
+  ///
+  (std::defret ncols-of-frames-fix-row
+    (equal (stobjs::2darr->ncols new-frames)
+           (stobjs::2darr->ncols frames)))
+
+  (std::defret nth-of-frames-fix-row
+    (equal (nth n (stobjs::2darr->rows new-frames))
+           (if (equal (nfix n) (nfix row))
+               (frames-row-fix (stobjs::2darr->ncols frames) (nth row (stobjs::2darr->rows frames)))
+             (nth n (stobjs::2darr->rows frames)))))
+
+  (std::defret nrows-of-frames-fix-row
+    (implies (< (nfix row) (len (stobjs::2darr->rows frames)))
+             (equal (len (stobjs::2darr->rows new-frames))
+                    (len (stobjs::2darr->rows frames)))))
+
+  (fty::deffixcong nat-equiv equal (frames-fix-row row frames) row))
+                 
+
+;; (define frames-arr-fix ((ncols natp)
+;;                         (arr))
+;;   :verify-guards nil
+;;   :returns (new-arr (framesl-arr2-data-wfp new-arr ncols))
+;;   (if (atom arr)
+;;       nil
+;;     (cons (frames-row-fix ncols (car arr))
+;;           (frames-arr-fix ncols (cdr arr))))
+;;   ///
+;;   (std::defret frames-arr-fix-whne-framesl-arr2-data-wfp
+;;     (implies (framesl-arr2-data-wfp arr ncols)
+;;              (equal new-arr arr)))
+
+;;   (std::defret len-of-frames-arr-fix
+;;     (equal (len new-arr) (len arr))))
+    
+
+;; (define frames-fix (frames)
+;;   :non-executable t
+;;   :verify-guards nil
+;;   :returns (new-frames framesl-arr2-wfp
+;;                        :hyp (<= (* (stobjs::2darr->ncols frames)
+;;                                    (len (stobjs::2darr->rows frames)))
+;;   (b* ((ncols (stobjs::2darr->ncols frames))
+;;        (arr (stobjs::2darr->rows frames)))
+;;     (stobjs::2darr ncols
+;;                    (frames-arr-fix ncols arr)))
+;;   ///
+;;   (std::defret frames-fix-when-framesl-arr2-wfp
+;;     (implies (framesl-arr2-wfp frames)
+;;              (equal new-frames frames)))
+
+;;   (std::defret ncols-of-frames-fix
+;;     (equal (stobjs::2darr->ncols new-frames)
+;;            (stobjs::2darr->ncols frames))))
+
+(define env-to-frame-aux ((n natp) (i natp) vars env frames)
+  :guard (and (< n (frames-nrows frames))
+              (<= i (frames-ncols frames))
+              (equal (len vars) (- (frames-ncols frames) i)))
+  :returns (new-frames stobjs::2darr-p :hyp (stobjs::2darr-p frames))
+  (if (atom vars)
+      (frames-fix-row n frames)
+    (b* ((val (acl2::bool->bit (acl2::aig-env-lookup (car vars) env)))
+         (frames (frames-set2 n i val frames)))
+      (env-to-frame-aux n (1+ (lnfix i)) (cdr vars) env frames)))
+  ///
+  (local (in-theory (disable acl2::aig-env-lookup)))
+
+  (std::defret env-to-frame-aux-preserves-ncols
+    (equal (stobjs::2darr->ncols new-frames)
+           (stobjs::2darr->ncols frames)))
+
+  ;; (std::defret env-to-frame-aux-preserves-other-row
+  ;;   (implies (not (equal (nfix n) (nfix m)))
+  ;;            (equal (nth m (stobjs::2darr->rows new-frames))
+  ;;                   (nth m (stobjs::2darr->rows frames)))))
+
+  ;; (std::defret env-to-frame-aux-lookup
+  ;;   (equal (nth j (nth n (stobjs::2darr->rows new-frames)))
+  ;;          (if (and (<= (nfix i) (nfix j))
+  ;;                   (< (nfix j) (+ (len vars) (nfix i))))
+  ;;              (acl2::bool->bit (acl2::aig-env-lookup (nth (- (nfix j) (nfix i)) vars) env))
+  ;;            (nth j (nth n (stobjs::2darr->rows frames)))))
+  ;;   :hints(("Goal" :in-theory (e/d (nth) (acl2::aig-env-lookup)))))
+
+  (local (defthm frames-row-fix-of-append-when-first-len
+           (implies (equal (len a) (nfix n))
+                    (equal (Frames-row-fix n (append a b))
+                           (frames-row-fix n a)))
+           :hints(("Goal" :in-theory (enable frames-row-fix)))))
+
+  (local (defthm frames-row-fix-of-take-n
+           (implies (equal (nfix i) (nfix n))
+                    (equal (Frames-row-fix n (take i x))
+                           (frames-row-fix n x)))
+           :hints(("Goal" :in-theory (enable frames-row-fix)))))
+
+  (local (defthm take-n-plus-one
+           (Equal (take (+ 1 (nfix n)) x)
+                  (append (take n x) (list (nth n x))))
+           :hints(("Goal" :in-theory (e/d (nth acl2::repeat)
+                                          (acl2::take-of-too-many
+                                           ;; acl2::take-when-atom
+                                           acl2::take-of-1
+                                           acl2::take-of-zero))))))
+
+  (local (defthm take-of-update-nth
+           (equal (take n (update-nth n val x))
+                  (take n x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (std::defretd env-to-frame-aux-is-update-nth
+    (implies (equal (len vars) (- (frames-ncols frames) (nfix i)))
+             (equal (stobjs::2darr->rows new-frames)
+                    (update-nth n
+                                (frames-row-fix (frames-ncols frames)
+                                                (append (take i (nth n (stobjs::2darr->rows frames)))
+                                                        (env-to-bitarr vars env)))
+                                (stobjs::2darr->rows frames))))
+    :hints(("Goal" :in-theory (enable frames-fix-row env-to-bitarr))))
+
+  (std::defret nth-of-env-to-frame-aux
+    (implies (equal (len vars) (- (frames-ncols frames) (nfix i)))
+             (equal (nth m (stobjs::2darr->rows new-frames))
+                    (if (equal (nfix n) (nfix m))
+                        (frames-row-fix (frames-ncols frames)
+                                        (append (take i (nth n (stobjs::2darr->rows frames)))
+                                                (env-to-bitarr vars env)))
+                      (nth m (stobjs::2darr->rows frames)))))
+    :hints(("Goal" :in-theory (e/d (env-to-frame-aux-is-update-nth)
+                                   (env-to-frame-aux)))))
+
+  (std::defret len-rows-of-env-to-frame-aux
+    (implies (< (nfix n) (len (stobjs::2darr->rows frames)))
+             (equal (len (stobjs::2darr->rows new-frames))
+                    (len (stobjs::2darr->rows frames)))))
+
+  (fty::deffixcong nat-equiv equal (env-to-frame-aux n i vars env frames) n))
+
+
+
+(define env-to-frame ((n natp) vars env frames)
+  :guard (and (< n (frames-nrows frames))
+              (equal (len vars) (frames-ncols frames)))
+  :returns (new-frames stobjs::2darr-p :hyp (stobjs::2darr-p frames))
+  (env-to-frame-aux n 0 vars env frames)
+  ///
+  (std::defret env-to-frame-preserves-ncols
+    (equal (stobjs::2darr->ncols new-frames)
+           (stobjs::2darr->ncols frames)))
+
+  ;; (std::defret env-to-frame-preserves-other-row
+  ;;   (implies (not (equal (nfix n) (nfix m)))
+  ;;            (equal (nth m (stobjs::2darr->rows new-frames))
+  ;;                   (nth m (stobjs::2darr->rows frames)))))
+
+  ;; (std::defret env-to-frame-lookup
+  ;;   (equal (nth j (nth n (stobjs::2darr->rows new-frames)))
+  ;;          (if (< (nfix j) (len vars))
+  ;;              (acl2::bool->bit (acl2::aig-env-lookup (nth j vars) env))
+  ;;            (nth j (nth n (stobjs::2darr->rows frames)))))
+  ;;   :hints(("Goal" :in-theory (disable acl2::aig-env-lookup))))
+
+  (local (defthm frames-row-fix-of-env-to-bitarr
+           (implies (equal n (len vars))
+                    (Equal (frames-row-fix n (env-to-bitarr vars env))
+                           (env-to-bitarr vars env)))
+           :hints (("goal" :induct (nthcdr n vars)
+                    :in-theory (enable env-to-bitarr frames-row-fix)))))
+
+  (std::defret env-to-frame-is-update-nth
+    (implies (equal (len vars) (frames-ncols frames))
+             (equal (stobjs::2darr->rows new-frames)
+                    (update-nth n (env-to-bitarr vars env)
+                                (stobjs::2darr->rows frames))))
+    :hints(("Goal" :in-theory (enable env-to-frame-aux-is-update-nth))))
+
+  (std::defretd nth-of-env-to-frame
+    (implies (equal (len vars) (frames-ncols frames))
+             (equal (nth m (stobjs::2darr->rows new-frames))
+                    (if (equal (nfix n) (nfix m))
+                        (env-to-bitarr vars env)
+                      (nth m (stobjs::2darr->rows frames)))))
+    :hints(("Goal" :in-theory (e/d (env-to-frame-is-update-nth) (env-to-frame)))))
+
+  (std::defret len-rows-of-env-to-frame
+    (implies (< (nfix n) (len (stobjs::2darr->rows frames)))
+             (equal (len (stobjs::2darr->rows new-frames))
+                    (len (stobjs::2darr->rows frames)))))
+
+  (fty::deffixcong nat-equiv equal (env-to-frame n vars env frames) n))
+
+(define envs-to-bitarrs (vars envs)
+  :returns (bitarrs)
+  (if (atom envs)
+      nil
+    (cons (env-to-bitarr vars (car envs))
+          (envs-to-bitarrs vars (cdr envs))))
+  ///
+  (std::defret len-of-envs-to-bitarrs
+    (equal (len bitarrs) (len envs)))
+
+  (std::defret consp-of-envs-to-bitarrs
+    (equal (consp bitarrs) (consp envs))))
+           
+
+(define aig-envs-to-aignet-frames-aux ((n natp) vars envs frames)
+  :guard (and (<= (+ n (len envs)) (frames-nrows frames))
+              (equal (len vars) (frames-ncols frames)))
+  :returns (new-frames stobjs::2darr-p :hyp (stobjs::2darr-p frames))
+  :prepwork ((local (defthm len-equal-0
+                      (equal (equal (len x) 0) (not (consp x))))))
+  :verify-guards nil
+  (if (atom envs)
+      frames
+    (b* ((frames (env-to-frame n vars (car envs) frames)))
+      (aig-envs-to-aignet-frames-aux (1+ (lnfix n)) vars (cdr envs) frames)))
+  ///
+  (std::defret aig-envs-to-aignet-frames-aux-preserves-ncols
+    (equal (stobjs::2darr->ncols new-frames)
+           (stobjs::2darr->ncols frames)))
+
+  (local (defthm take-n-plus-one
+           (Equal (take (+ 1 (nfix n)) x)
+                  (append (take n x) (list (nth n x))))
+           :hints(("Goal" :in-theory (e/d (nth acl2::repeat)
+                                          (acl2::take-of-too-many
+                                           ;; acl2::take-when-atom
+                                           acl2::take-of-1
+                                           acl2::take-of-zero))))))
+
+  (local (defthm take-of-update-nth
+           (equal (take n (update-nth n val x))
+                  (take n x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (local (defthm nthcdr-of-update-nth
+           (equal (nthcdr n (update-nth m v x))
+                  (if (<= (nfix n) (nfix m))
+                      (update-nth (- (nfix m) (nfix n)) v (nthcdr n x))
+                    (nthcdr n x)))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (std::defretd rows-of-aig-envs-to-aignet-frames-aux
+    (implies (and (equal (len vars) (frames-ncols frames))
+                  (<= (+ (nfix n) (len envs)) (frames-nrows frames)))
+             (equal (stobjs::2darr->rows new-frames)
+                    (append (take n (stobjs::2darr->rows frames))
+                            (envs-to-bitarrs vars envs)
+                            (nthcdr (+ (nfix n) (len envs)) (stobjs::2darr->rows frames)))))
+    :hints(("Goal" :in-theory (e/d (envs-to-bitarrs
+                                    env-to-frame-is-update-nth)
+                                   (acl2::take-redefinition nthcdr (force))))))
+
+  (std::defret aig-envs-to-aignet-frames-aux-lookup
+    (implies (equal (len vars) (frames-ncols frames))
+             (equal (nth m (stobjs::2darr->rows new-frames))
+                    (if (and (<= (nfix n) (nfix m))
+                             (< (nfix m) (+ (nfix n) (len envs))))
+                        (env-to-bitarr vars (nth (- (nfix m) (nfix n)) envs))
+                      (nth m (stobjs::2darr->rows frames)))))
+    :hints(("Goal" :in-theory (enable nth))))
+
+  (std::defret len-rows-of-aig-envs-to-aignet-frames-aux
+    (implies (<= (+ (nfix n) (len envs)) (len (stobjs::2darr->rows frames)))
+             (equal (len (stobjs::2darr->rows new-frames))
+                    (len (stobjs::2darr->rows frames)))))
+
+
+  (fty::deffixcong nat-equiv equal (aig-envs-to-aignet-frames-aux n vars env frames) n)
+
+  (verify-guards aig-envs-to-aignet-frames-aux))
+  
+
+(define aig-envs-to-aignet-frames (vars envs frames)
+  :enabled t
+  :prepwork ((local (defthm equal-of-2darr
+                      (equal (equal (stobjs::2darr a b) c)
+                             (and (stobjs::2darr-p c)
+                                  (equal (nfix a) (stobjs::2darr->ncols c))
+                                  (equal (acl2::list-fix b) (stobjs::2darr->rows c))))
+                      :hints(("Goal" :in-theory (enable stobjs::2darr
+                                                        stobjs::2darr-p
+                                                        stobjs::2darr->ncols
+                                                        stobjs::2darr->rows))))))
+  :guard-hints (("goal" :in-theory (enable rows-of-aig-envs-to-aignet-frames-aux)))
+  (mbe :logic (non-exec (stobjs::2darr (len vars)
+                                       (envs-to-bitarrs vars envs)))
+       :exec (b* ((frames (frames-resize-rows 0 frames))
+                  (frames (frames-resize-cols (len vars) frames))
+                  (frames (frames-resize-rows (len envs) frames)))
+               (aig-envs-to-aignet-frames-aux 0 vars envs frames))))
+
+
+
+;; (defthm aignet-frames-to-aig-envs-of-aig-envs-to-aignet-frames
+;;   (implies (and (member v vars)
+;;                 (< (nfix n) (len envs)))
+;;            (equal (acl2::aig-env-lookup v (nth n (aignet::aignet-frames-to-aig-envs
+;;                                                   (aignet::aig-envs-to-aignet-frames vars envs frames)
+;;                                                   vars)))
+;;                   (acl2::aig-env-lookup v (nth n envs)))))
+
+;; (local (defthm aig-fsm-run-redef
+;;          (equal (aig-fsm-run outputs regs curr-st ins)
+;;                 (if (atom ins)
+;;                     nil
+;;                   (cons (aig-fsm-frame-outs outputs regs curr-st (car ins))
+;;                         (aig-fsm-run outputs regs (aig-fsm-frame-nextst regs curr-st (car ins))
+;;                                      (cdr ins)))))
+;;          :hints ((and stable-under-simplificationp
+;;                       (member-equal '(consp ins) clause)
+;;                       '(:expand ((aig-fsm-run outputs regs curr-st ins)))))
+;;          :rule-classes ((:definition :controller-alist ((aig-fsm-run nil nil nil t))))))
+
+
+
+(defthm aig-eval-of-aig-fsm-frame-env-of-bitarr-to-aig-env-of-env-to-bitarr
+  (implies (subsetp (aig-vars x) (append vars (alist-keys regs)))
+           (equal (aig-eval x (aig-fsm-frame-env regs curr-st
+                                                 (aignet-bitarr-to-aig-env vars
+                                                                           (env-to-bitarr vars ins))))
+                  (aig-eval x (aig-fsm-frame-env regs curr-st ins))))
+  :hints(("Goal" :in-theory (enable aig-fsm-frame-env aig-eval acl2::aig-env-lookup))))
+
+(defthm aig-eval-list-of-aig-fsm-frame-env-of-bitarr-to-aig-env-of-env-to-bitarr
+  (implies (subsetp (aig-vars x) (append vars (alist-keys regs)))
+           (equal (acl2::aig-eval-list x (aig-fsm-frame-env regs curr-st
+                                                      (aignet-bitarr-to-aig-env vars
+                                                                                (env-to-bitarr vars ins))))
+                  (acl2::aig-eval-list x (aig-fsm-frame-env regs curr-st ins))))
+  :hints(("Goal" :in-theory (enable acl2::aig-eval-list))))
+
+(defthm aig-eval-alist-of-aig-fsm-frame-env-of-bitarr-to-aig-env-of-env-to-bitarr
+  (implies (subsetp (aig-vars (alist-vals x)) (append vars (alist-keys regs)))
+           (equal (acl2::aig-eval-alist x (aig-fsm-frame-env regs curr-st
+                                                      (aignet-bitarr-to-aig-env vars
+                                                                                (env-to-bitarr vars ins))))
+                  (acl2::aig-eval-alist x (aig-fsm-frame-env regs curr-st ins))))
+  :hints(("Goal" :in-theory (enable acl2::aig-eval-alist))))
+
+(Defthm aig-fsm-frame-outs-of-bitarr-to-aig-env-of-env-to-bitarr
+  (implies (subsetp (aig-vars outputs) (append vars (Alist-keys regs)))
+           (equal (aig-fsm-frame-outs outputs regs curr-st
+                                      (aignet-bitarr-to-aig-env vars
+                                                                (env-to-bitarr vars ins)))
+                  (aig-fsm-frame-outs outputs regs curr-st ins)))
+  :hints(("Goal" :in-theory (enable aig-fsm-frame-outs))))
+
+(Defthm aig-fsm-frame-nextst-of-bitarr-to-aig-env-of-env-to-bitarr
+  (implies (subsetp (aig-vars (alist-vals regs)) (append vars (Alist-keys regs)))
+           (equal (aig-fsm-frame-nextst regs curr-st
+                                      (aignet-bitarr-to-aig-env vars
+                                                                (env-to-bitarr vars ins)))
+                  (aig-fsm-frame-nextst regs curr-st ins)))
+  :hints(("Goal" :in-theory (enable aig-fsm-frame-nextst))))
+
+(local (defthm aig-fsm-run-of-atom
+         (implies (atom ins)
+                  (equal (aig-fsm-run outputs regs curr-st ins) nil))
+         :hints(("Goal" :in-theory (enable aig-fsm-run)))))
+
+(defthm aig-fsm-run-of-frames-to-envs-of-envs-to-frames
+  (implies (and (subsetp (aig-vars outputs)
+                         (append vars (alist-keys regs)))
+                (subsetp (aig-vars (alist-vals regs))
+                         (append vars (alist-keys regs))))
+           (equal (aig-fsm-run outputs regs curr-st
+                               (aignet-frame-array-to-aig-envs
+                                (envs-to-bitarrs vars ins)
+                                vars))
+                  (aig-fsm-run outputs regs curr-st ins)))
+  :hints (("goal" :in-theory (e/d (envs-to-bitarrs
+                                     aignet-frame-array-to-aig-envs
+                                     (:i aig-fsm-states)))
+           :induct (aig-fsm-states regs curr-st ins))))
+
+(defthm aig-fsm-states-of-frames-to-envs-of-envs-to-frames
+  (implies (subsetp (aig-vars (alist-vals regs))
+                    (append vars (alist-keys regs)))
+           (equal (aig-fsm-states regs curr-st
+                               (aignet-frame-array-to-aig-envs
+                                (envs-to-bitarrs vars ins)
+                                vars))
+                  (aig-fsm-states regs curr-st ins)))
+  :hints (("goal" :in-theory (e/d (envs-to-bitarrs
+                                   aignet-frame-array-to-aig-envs
+                                   aig-fsm-states))
+           :induct (aig-fsm-states regs curr-st ins))))
+
+
+
+;; Conversion between AIG envs and AIGNET bitarrs/frames:
+
+;; Env to bitarr: exec: env-update-bitarr
+;;               logic: env-to-bitarr
+
+;; Envs to frames: exec: aig-envs-to-aignet-frames
+;;                logic: envs-to-bitarrs
+
+;; Bitarr to list of Booleans: bits-to-bools
+
+;; Bitarr to env: aignet-bitarr-to-aig-env
+
+;; Frames to envs: exec: aignet-frames-to-aig-envs
+;;                logic: aignet-frame-array-to-aig-envs

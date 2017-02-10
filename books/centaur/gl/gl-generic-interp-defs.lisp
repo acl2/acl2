@@ -1088,6 +1088,23 @@
     :rule-classes :linear))
 
 
+(defund glcp-vacuity-check (hyp-bfr config)
+  (declare (xargs :guard (glcp-config-p config)))
+  (b* (((mv vac-check-sat vac-check-succeeded &)
+        (if (glcp-config->check-vacuous config)
+            (bfr-sat hyp-bfr)
+          (mv nil t nil)))
+       ((when (and (glcp-config->abort-vacuous config)
+                   (or (not vac-check-sat)
+                       (not vac-check-succeeded))))
+        (if vac-check-succeeded
+            "Hypothesis is not satisfiable"
+          "Error in vacuity check")))
+    (if vac-check-succeeded
+        (and (not vac-check-sat)
+             (cw "Note: hypothesis is not satisfiable~%"))
+      (cw "Note: vacuity check did not finish~%"))))
+
 (defconst *glcp-generic-template-subst*
   (let ((names (cons 'run-gified
                      (remove 'clause-proc *glcp-fnnames*))))

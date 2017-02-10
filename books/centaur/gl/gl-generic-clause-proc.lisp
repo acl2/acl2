@@ -122,11 +122,6 @@
            :rule-classes nil))))))
 
 
-(defun strip-cadrs (x)
-  (if (atom x)
-      nil
-    (cons (cadr (car x))
-          (strip-cadrs (cdr x)))))
 
 
 
@@ -135,8 +130,6 @@
 
 (local
  (progn
-   (defthm alistp-shape-specs-to-interp-al
-     (alistp (shape-specs-to-interp-al x)))
 
    (defun norm-alist (vars alist)
      (if (atom vars)
@@ -201,19 +194,6 @@
      :hints ((acl2::set-reasoning)))
 
 
-   (defun gobj-alistp (x)
-     (if (atom x)
-         (equal x nil)
-       (and (consp (car x))
-            (symbolp (caar x))
-            (not (keywordp (caar x)))
-            (caar x)
-            (gobj-alistp (cdr x)))))
-
-   (defthm gobj-alistp-shape-specs-to-interp-al
-     (implies (shape-spec-bindingsp x)
-              (gobj-alistp (shape-specs-to-interp-al x)))
-     :hints(("Goal" :in-theory (enable shape-specs-to-interp-al))))
 
    ;; (defthm gobj-listp-strip-cdrs
    ;;   (implies (gobj-alistp x)
@@ -252,13 +232,7 @@
                                (glcp-generic-geval-list (strip-cdrs x) env))))
      :hints(("Goal" :in-theory (enable strip-cars glcp-generic-geval-alist))))
 
-   (defthm strip-cdrs-shape-specs-to-interp-al
-     (implies (shape-spec-bindingsp x)
-              (equal (strip-cdrs (shape-specs-to-interp-al x))
-                     (shape-spec-to-gobj-list (strip-cadrs x))))
-     :hints(("Goal" :induct (len x)
-             :expand ((:free (a b) (shape-spec-to-gobj-list (cons a b)))))))
-
+   
 
    ;; (defthm gobject-alistp-gobj-alist-to-param-space
    ;;   (implies (gobject-alistp x)
@@ -297,17 +271,14 @@
      :hints(("Goal" :in-theory (enable nonnil-symbol-listp))))
 
 
-   (defthm shape-spec-listp-strip-cadrs
-     (implies (shape-spec-bindingsp x)
-              (shape-spec-listp (strip-cadrs x)))
-     :hints(("Goal" :in-theory (enable shape-spec-listp))))
+   ;; (defthm shape-spec-listp-strip-cadrs
+   ;;   (implies (shape-spec-bindingsp x)
+   ;;            (shape-spec-listp (strip-cadrs x)))
+   ;;   :hints(("Goal" :in-theory (enable shape-spec-listp))))
 
-   (defthm shape-specp-strip-cadrs-bindings
+   (defthm shape-specp-shape-spec-bindings->sspecs
      (implies (shape-spec-bindingsp x)
-              (shape-specp (strip-cadrs x)))
-     :hints(("Goal" :in-theory (enable shape-specp tag)
-             :induct (shape-spec-bindingsp x)
-             :expand ((:free (a b) (shape-specp (cons a b)))))))))
+              (shape-specp (shape-spec-bindings->sspecs x))))))
 
 
 
@@ -648,8 +619,8 @@
 
 (defthm strip-cars-shape-specs-to-interp-al
   (equal (strip-cars (shape-specs-to-interp-al al))
-         (strip-cars al))
-  :hints(("Goal" :in-theory (enable shape-specs-to-interp-al))))
+         (alist-keys al))
+  :hints(("Goal" :in-theory (enable shape-specs-to-interp-al alist-keys))))
 
 (defun preferred-defs-to-overrides (alist state)
   (declare (xargs :stobjs state :guard t))
@@ -719,7 +690,7 @@ The definition body, ~x1, is not a pseudo-term."
 (in-theory (disable preferred-defs-to-overrides))
 
 ;; A version of ACL2's dumb-negate-lit that behaves logically wrt an evaluator.
-(defun dumb-negate-lit (term)
+(define dumb-negate-lit ((term pseudo-termp))
   (cond ((null term) ''t)
         ((atom term) `(not ,term))
         ((eq (car term) 'quote)
@@ -734,19 +705,28 @@ The definition body, ~x1, is not a pseudo-term."
                     (equal (caddr term) ''nil))
                 (cadr term))
                (t `(not ,term))))
-        (t `(not ,term))))
+        (t `(not ,term)))
+  ///
+
+  (defthm glcp-generic-geval-ev-dumb-negate-lit
+    (iff (glcp-generic-geval-ev (dumb-negate-lit lit) a)
+         (not (glcp-generic-geval-ev lit a))))
+
+
+  (defthm glcp-generic-geval-ev-list*-macro
+    (equal (glcp-generic-geval-ev (list*-macro (append x (list ''nil))) al)
+           (glcp-generic-geval-ev-lst x al))
+    :hints(("Goal" :in-theory (enable append))))
+
+  
+
+   (defthmd glcp-generic-geval-ev-disjoin-is-or-list-glcp-generic-geval-ev-lst
+     (iff (glcp-generic-geval-ev (disjoin lst) env)
+          (acl2::or-list (glcp-generic-geval-ev-lst lst env)))
+     :hints (("goal" :induct (len lst)))))
 
 (local
- (progn
-   (defthm glcp-generic-geval-ev-dumb-negate-lit
-     (iff (glcp-generic-geval-ev (dumb-negate-lit lit) a)
-          (not (glcp-generic-geval-ev lit a))))
-
-
-   (defthm glcp-generic-geval-ev-list*-macro
-     (equal (glcp-generic-geval-ev (list*-macro (append x (list ''nil))) al)
-            (glcp-generic-geval-ev-lst x al))
-     :hints(("Goal" :in-theory (enable append))))
+ (defsection norm-alist
 
 
    (defthm pairlis-eval-alist-is-norm-alist
@@ -758,12 +738,6 @@ The definition body, ~x1, is not a pseudo-term."
                                        pairlis$))))
 
 
-
-   (defthmd glcp-generic-geval-ev-disjoin-is-or-list-glcp-generic-geval-ev-lst
-     (iff (glcp-generic-geval-ev (disjoin lst) env)
-          (acl2::or-list (glcp-generic-geval-ev-lst lst env)))
-     :hints (("goal" :induct (len lst))))
-
    (defthm glcp-generic-geval-ev-disjoin-norm-alist
      (implies (and (pseudo-term-listp clause)
                    (subsetp-equal (collect-vars-list clause) vars))
@@ -771,24 +745,6 @@ The definition body, ~x1, is not a pseudo-term."
                    (glcp-generic-geval-ev (disjoin clause) alist)))
      :hints(("Goal" :in-theory (enable
                                 glcp-generic-geval-ev-disjoin-is-or-list-glcp-generic-geval-ev-lst))))))
-
-
-
-
-(defun shape-spec-bindingsp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (equal x nil)
-    (and (consp (car x))
-         (symbolp (caar x))
-         (not (keywordp (caar x)))
-         (caar x)
-         (consp (cdar x))
-         (shape-specp (cadar x))
-         (shape-spec-bindingsp (cdr x)))))
-
-
-
 
 
 
@@ -1049,13 +1005,7 @@ The definition body, ~x1, is not a pseudo-term."
      (implies (alistp al)
               (equal (assoc k (glcp-generic-geval-alist al env))
                      (and (assoc k al)
-                          (cons k (glcp-generic-geval (cdr (assoc k al)) env))))))
-
-   (defthm assoc-in-shape-specs-to-interp-al
-     (implies (alistp al)
-              (equal (assoc k (shape-specs-to-interp-al al))
-                     (and (assoc k al)
-                          (cons k (shape-spec-to-gobj (cadr (assoc k al))))))))))
+                          (cons k (glcp-generic-geval (cdr (assoc k al)) env))))))))
 
 
 
@@ -1081,7 +1031,7 @@ The definition body, ~x1, is not a pseudo-term."
 (local
  (defun-nx glcp-generic-run-parametrized-ctrex (alist hyp concl bindings obligs config state)
    (b* (((glcp-config config) config)
-        (obj (strip-cadrs bindings))
+        (obj (shape-spec-bindings->sspecs bindings))
         (config (change-glcp-config config :shape-spec-alist bindings))
         (al (shape-specs-to-interp-al bindings))
         (env-term (shape-spec-list-env-term
@@ -1090,7 +1040,7 @@ The definition body, ~x1, is not a pseudo-term."
         (env1 (glcp-generic-geval-ev env-term alist))
         (env (cons (slice-to-bdd-env (car env1) nil) (cdr env1)))
         (next-bvar (shape-spec-max-bvar-list
-                    (strip-cadrs bindings)))
+                    (shape-spec-bindings->sspecs bindings)))
         (interp-st (create-interp-st))
         (interp-st (update-is-obligs obligs interp-st))
         (interp-st (update-is-constraint (bfr-constr-init) interp-st))
@@ -1104,7 +1054,7 @@ The definition body, ~x1, is not a pseudo-term."
     ;;    ;; (bvar-db nil)
     ;;    ;; (bvar-db1 nil)
     ;;    (bvar-db (init-bvar-db (shape-spec-max-bvar-list
-    ;;                            (strip-cadrs bindings)) bvar-db))
+    ;;                            (shape-spec-bindings->sspecs bindings)) bvar-db))
     ;;    ;; (config1 (glcp-config-update-param t config))
     ;;    ((mv ?er obligs1 hyp-bfr bvar-db state)
     ;;     (glcp-generic-interp-top-level-term hyp al t config.hyp-clk obligs config1 bvar-db state))
@@ -1223,16 +1173,16 @@ The definition body, ~x1, is not a pseudo-term."
 
 
 ;; ;; (defthm gobj-alist-vars-bounded-of-shape-specs-to-interp-al
-;; ;;   (implies (<= (shape-spec-max-bvar-list (strip-cadrs bindings)) (nfix n))
+;; ;;   (implies (<= (shape-spec-max-bvar-list (shape-spec-bindings->sspecs bindings)) (nfix n))
 ;; ;;            (not (gobj-alist-depends-on n t (shape-specs-to-interp-al
 ;; ;;                                             bindings))))
 ;; ;;   :hints(("Goal" :in-theory (enable shape-specs-to-interp-al))))
 
-(local
- (defthm gobj-alist-vars-bounded-of-shape-specs-to-interp-al
-   (implies (<= (shape-spec-max-bvar-list (strip-cadrs bindings)) (nfix n))
-            (gobj-alist-vars-bounded n t (shape-specs-to-interp-al bindings)))
-   :hints(("Goal" :in-theory (enable shape-spec-max-bvar-list)))))
+(defthm gobj-alist-vars-bounded-of-shape-specs-to-interp-al
+  (implies (<= (shape-spec-max-bvar-list (shape-spec-bindings->sspecs bindings)) (nfix n))
+           (gobj-alist-vars-bounded n t (shape-specs-to-interp-al bindings)))
+  :hints(("Goal" :in-theory (enable shape-spec-max-bvar-list shape-spec-bindings->sspecs
+                                    shape-specs-to-interp-al))))
 
 
 
@@ -1332,7 +1282,7 @@ The definition body, ~x1, is not a pseudo-term."
 ;;   (env hyp concl bindings obligs config state)
 ;;   (b* (((glcp-config config) config)
 ;;        (al (shape-specs-to-interp-al bindings))
-;;        (next-bvar (shape-spec-max-bvar-list (strip-cadrs bindings)))
+;;        (next-bvar (shape-spec-max-bvar-list (shape-spec-bindings->sspecs bindings)))
 ;;        (config (glcp-config-update-param t config)))
 ;;     (glcp-generic-interp-hyp/concl-env
 ;;      env hyp concl al config.concl-clk obligs config next-bvar state)))
@@ -1353,7 +1303,11 @@ The definition body, ~x1, is not a pseudo-term."
        ;; (mv erp val state bvar-db bvar-db1))
 
 
-
+(local (defthm alist-keys-when-shape-spec-bindingsp
+         (implies (shape-spec-bindingsp x)
+                  (equal (alist-keys x)
+                         (strip-cars x)))
+         :hints(("Goal" :in-theory (enable shape-spec-bindingsp alist-keys)))))
 
 (local
  (defthm glcp-generic-run-parametrized-correct-lemma
@@ -1451,7 +1405,7 @@ The definition body, ~x1, is not a pseudo-term."
   ;;               (b* ((binding-env
   ;;                     '(let ((slice (glcp-generic-geval-ev
   ;;                                    (shape-spec-env-term
-  ;;                                     (strip-cadrs bindings)
+  ;;                                     (shape-spec-bindings->sspecs bindings)
   ;;                                     (list*-macro (append (strip-cars
   ;;                                                           bindings) '('nil)))
   ;;                                     nil)
@@ -1500,7 +1454,7 @@ The definition body, ~x1, is not a pseudo-term."
    ;;                 no-duplicatesp-equal
    ;;                 (bfr-to-param-space)
    ;;                 gobj-alist-to-param-space
-   ;;                 list*-macro binary-append strip-cadrs strip-cars member-equal))))
+   ;;                 list*-macro binary-append shape-spec-bindings->sspecs strip-cars member-equal))))
    ;;   (defthm glcp-generic-run-parametrized-correct
    ;;     (b* (((mv erp (cons clauses out-obligs) &)
    ;;           (glcp-generic-run-parametrized
@@ -1544,7 +1498,7 @@ The definition body, ~x1, is not a pseudo-term."
    ;;                   (b* ((binding-env
    ;;                         '(let ((slice (glcp-generic-geval-ev
    ;;                                        (shape-spec-env-term
-   ;;                                         (strip-cadrs bindings)
+   ;;                                         (shape-spec-bindings->sspecs bindings)
    ;;                                         (list*-macro (append (strip-cars
    ;;                                                               bindings) '('nil)))
    ;;                                         nil)
@@ -2072,7 +2026,7 @@ The definition body, ~x1, is not a pseudo-term."
        (interp-fn (cdr (assoc 'interp-term-under-hyp
                               (table-alist 'latest-greatest-gl-clause-proc
                                            (w state)))))
-       (next-bvar (shape-spec-max-bvar-list (strip-cadrs al)))
+       (next-bvar (shape-spec-max-bvar-list (shape-spec-bindings->sspecs al)))
        (form `(,interp-fn ',hyp-trans ',term-trans ',gobj-al ',next-bvar ',config
                           interp-st bvar-db bvar-db1 state))
        ((mv trans-eval-erp (cons ?stobjs-out

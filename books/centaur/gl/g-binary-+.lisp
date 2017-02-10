@@ -173,7 +173,7 @@
                               general-consp-car-correct-for-eval-g-base
                               general-consp-cdr-correct-for-eval-g-base
                               boolean-listp
-                              components-to-number-alt-def
+                              components-to-number
                               member-equal
                               general-number-components-ev
                               general-concretep-def
@@ -343,7 +343,7 @@
                               general-consp-car-correct-for-eval-g-base
                               general-consp-cdr-correct-for-eval-g-base
                               boolean-listp
-                              components-to-number-alt-def
+                              components-to-number
                               member-equal
                               general-number-components-ev
                               general-concretep-def

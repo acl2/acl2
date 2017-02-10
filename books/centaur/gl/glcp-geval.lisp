@@ -44,6 +44,7 @@
 (def-eval-g glcp-generic-geval
   (
    ;; used in shape specs
+   acl2::logtail$inline
    logapp int-set-sign maybe-integer
           cons car cdr consp if not equal nth len iff
           shape-spec-slice-to-env
@@ -67,7 +68,7 @@
       SYMBOL-PACKAGE-NAME
       INTERN-IN-PACKAGE-OF-SYMBOL
       CODE-CHAR
-;   DENOMINATOR
+   DENOMINATOR
       CDR
 ;   COMPLEX
       CAR
@@ -77,7 +78,7 @@
       IMAGPART
       SYMBOLP
       REALPART
-;   NUMERATOR
+   NUMERATOR
       EQUAL
       STRINGP
       RATIONALP

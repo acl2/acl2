@@ -53,7 +53,8 @@
                                 (components-to-number-fn
                                  brn 1 bin 1))
                          (and (equal arn brn)
-                              (equal ain bin))))))
+                              (equal ain bin))))
+         :hints(("Goal" :in-theory (enable components-to-number-fn)))))
 
 
 (local (in-theory (disable acl2-count)))
@@ -61,6 +62,7 @@
 (local
  (encapsulate nil
    (local (include-book "arithmetic/top-with-meta" :dir :system))
+   (local (in-theory (enable components-to-number-fn)))
    (defthm equal-of-components-to-number-fn2
      (implies (and (integerp arn) (natp ard)
                    (integerp brn) (natp brd)

@@ -253,7 +253,7 @@
                                      logapp
                                      member-equal
                                      eval-g-base-alt-def
-                                     components-to-number-alt-def
+                                     components-to-number
                                      hons-assoc-equal
                                      set::double-containment
                                      equal-of-booleans-rewrite
@@ -370,7 +370,7 @@
                                       bool-cond-itep-eval
                                       boolean-listp
                                       eval-g-base-alt-def
-                                      components-to-number-alt-def
+                                      components-to-number
                                       member-equal
                                       general-number-components-ev
                                       general-concretep-def
@@ -504,7 +504,7 @@
                                       bool-cond-itep-eval
                                       boolean-listp
                                       eval-g-base-alt-def
-                                      components-to-number-alt-def
+                                      components-to-number
                                       member-equal
                                       general-number-components-ev
                                       general-concretep-def

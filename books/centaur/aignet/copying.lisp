@@ -1682,6 +1682,11 @@ aignet when its initial value is the specified vector:</p>
                                                                gatesimp strash aignet2)))
              (stype-count :reg aignet)))
 
+    (defthm num-ins-of-aignet-copy-init-aux
+      (equal (stype-count :pi (mv-nth 2 (aignet-copy-init-aux aignet initsts copy
+                                                               gatesimp strash aignet2)))
+             (stype-count :pi aignet)))
+
     (local (defthm id-eval-of-co-node
              (implies (equal (id->type id aignet) (out-type))
                       (equal (id-eval id invals regvals aignet)
@@ -1786,6 +1791,10 @@ aignet when its initial value is the specified vector:</p>
       (equal (stype-count :reg (aignet-copy-init aignet initsts :gatesimp
                                                 gatesimp))
              (stype-count :reg aignet)))
+
+    (defthm num-ins-of-aignet-copy-init
+      (equal (stype-count :pi (aignet-copy-init aignet initsts :gatesimp gatesimp))
+             (stype-count :pi aignet)))
 
     (defthm eval-output-of-aignet-copy-init
       (implies (< (nfix n) (num-outs aignet))
