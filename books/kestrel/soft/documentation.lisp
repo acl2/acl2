@@ -29,7 +29,7 @@
 
   :parents (acl2::kestrel-books acl2::macro-libraries)
 
-  :short "SOFT (&lsquo;Second-Order Functions and Theorems&rsquo;)
+  :short "SOFT (Second-Order Functions and Theorems)
           is a tool to mimic second-order functions and theorems
           in the first-order logic of ACL2."
 
@@ -416,7 +416,7 @@
      <blockquote>
 
      <p>
-     A list of zero or more &lsquo;@('*')&rsquo; signs,
+     A list of zero or more @('*') signs,
      which defines the arity of @('fvar').
      </p>
 
@@ -458,8 +458,7 @@
    <h3>Naming Conventions</h3>
 
    <p>
-   Starting function variable names with &lsquo;@('?')&rsquo;
-   (as in the examples above)
+   Starting function variable names with @('?') (as in the examples above)
    provides a visual cue for their function variable status.
    However, SOFT does not enforce this naming convention.
    </p>")
@@ -1716,8 +1715,8 @@
    that depend on two or more function variables,
    the Workshop paper suggests to use underscores
    to separate the function variables inside the square brackets,
-   e.g. &lsquo;@('sofun[?f_?g_?h]')&rsquo;.
+   e.g. @('sofun[?f_?g_?h]').
    This manual instead suggests
    to enclose each function variable in square brackets,
-   e.g. &lsquo;@('sofun[?f][?g][?h]')&rsquo;.
+   e.g. @('sofun[?f][?g][?h]').
    </p>")

@@ -41,7 +41,7 @@
    and is not among a list of names to avoid.
    Start with the default name
    (i.e. the concatenation of
-   the name of @('fn') with &lsquo;@('$not-normalized')&rsquo;)
+   the name of @('fn') with @('$not-normalized'))
    and ensure its uniqueness via @(tsee fresh-name-in-world-with-$s).
    </p>"
   (b* ((name (install-not-normalized-name fn))

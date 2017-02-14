@@ -34,7 +34,7 @@
    (like a function or macro call).
    </p>
    <p>
-   This is a &ldquo;shallow&rdquo; check.
+   This is a shallow check.
    Its satisfaction does not guarantee that @('x') is a valid event form.
    </p>"
   (and x
