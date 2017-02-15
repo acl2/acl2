@@ -27,13 +27,13 @@
    (local booleanp "Make the event form local or not.")
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
    (wrld plist-worldp))
-  :returns (mv (name "A @(tsee symbolp): the name of the theorem.")
-               (event "A @(tsee pseudo-event-formp)."))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp): the name of the theorem."))
   :mode :program
   :parents (kestrel-utilities system-utilities install-not-normalized)
   :short "Event form to
-          <see topic='@(url install-not-normalized)'
-          >install the non-normalized definition</see>
+          <see topic='@(url install-not-normalized)'>install
+          the non-normalized definition</see>
           of a function."
   :long
   "<p>
@@ -49,4 +49,4 @@
        (event (if local
                   `(local (install-not-normalized ,fn :defthm-name ',name))
                 `(install-not-normalized ,fn :defthm-name ',name))))
-    (mv name event)))
+    (mv event name)))
