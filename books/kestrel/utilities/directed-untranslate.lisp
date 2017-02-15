@@ -83,6 +83,13 @@
          (equal val tterm))))
 
 (defmacro check-du-inv (uterm tterm wrld form)
+
+; By default (i.e., when feature :skip-check-du-inv is not set), we always
+; check that tterm is the translation of uterm.  Note that we do not
+; necessarily expect that the translation of (directed-untranslate uterm tterm
+; sterm iff-flg wrld) is sterm; so we use check-du-inv on inputs of
+; directed-untranslate(-rec), not its output.
+
   #-skip-check-du-inv
   `(assert$ (check-du-inv-fn ,uterm ,tterm ,wrld) ,form)
   #+skip-check-du-inv
@@ -178,7 +185,7 @@
 
 (defconst *car-cdr-macro-alist*
 
-; We associate each car/cdr macro M, such as CADDR, with a operations f (car or
+; We associate each car/cdr macro M, such as CADDR, with operations f (car or
 ; cdr) and g such that M(x) = f(g(x)).
 
 ; (loop for x in *ca<d^n>r-alist*
@@ -230,6 +237,10 @@
      (untranslate sterm iff-flg wrld))
     (t
      (or
+
+; If tterm is (if (not &) & &) and sterm is (if tst tbr fbr) where tst is not a
+; call of NOT, then replace sterm by (if (not tst) fbr tbr.
+
       (and (not (member-eq (car uterm) ; handled elsewhere; avoid looping
                            '(or and)))
            (case-match tterm
@@ -248,6 +259,10 @@
                                                 iff-flg wrld))))
                 (& nil)))
              (& nil)))
+
+; If tterm is (not &) and sterm is an expanded NOT call, (if x nil t), then
+; replace sterm with (not x).
+
       (and (ffn-symb-p tterm 'not)
            (case-match sterm
              (('if x *nil* *t*)
@@ -258,6 +273,9 @@
              (& nil)))
       (cond
        ((eq (car uterm) 'cond)
+
+; Deal here specially with the case that uterm is a COND.
+
         (let ((clauses (directed-untranslate-into-cond-clauses
                         (cdr uterm) tterm sterm iff-flg wrld)))
           (case-match clauses
@@ -265,6 +283,11 @@
              x)
             (& (cons 'cond clauses)))))
        ((eq (car uterm) 'implies)
+
+; If uterm is (implies & &), then use ordinary untranslate unless sterm is
+; recognizable as a form of (implies x y), in which case recur by using
+; directed-untranslate appropriately on x and y.
+
         (mv-let (flg x y)
           (case-match sterm
             (('if x ('if y *t* *nil*) *t*)
@@ -287,6 +310,10 @@
                                                      t
                                                      wrld)))
                 (t (untranslate sterm nil wrld)))))
+
+; The next case applies when uterm is (or & & ...) or (and & & ...) and sterm
+; looks like it could correspond to that OR or AND call.
+
        ((and (member-eq (car uterm) '(or and))
              (consp (cddr uterm)) ; at least two arguments
              (eq (ffn-symb sterm) 'if)
@@ -383,6 +410,9 @@
        ((and (eq (car uterm) '>) ; (> x0 y0)
              (eq (car sterm) '<) ; (< y1 x1)
              (eq (car tterm) '<)) ; (< y2 y1)
+
+; Replace < in sterm by >.
+
         (list '>
               (directed-untranslate-rec
                (cadr uterm)
@@ -391,6 +421,10 @@
                (caddr uterm)
                (fargn tterm 1) (fargn sterm 1) nil wrld)))
        ((eq (car uterm) '<=) ; (<= x0 y0), translates as (not (< y1 x1))
+
+; If uterm, tterm, and sterm all represent a <= call, then call <= in the
+; result.
+
         (or (case-match tterm
               (('not ('< y1 x1)) ; should always match
                (case-match sterm
@@ -405,6 +439,10 @@
               (& nil))
             (untranslate sterm iff-flg wrld)))
        ((eq (car uterm) '>=) ; (>= x0 y0), translates as (not (< x1 y1))
+
+; If uterm, tterm, and sterm all represent a >= call, then call >= in the
+; result.
+
         (or (case-match tterm
               (('not ('< x1 y1))
                (case-match sterm
@@ -420,6 +458,10 @@
             (untranslate sterm iff-flg wrld)))
        (t
         (or
+
+; Attempt to do something nice with cases where uterm is a call of list or
+; list*.
+
          (case-match uterm
            (('list) uterm)
            (('list x) ; tterm is (cons x' nil)
@@ -454,25 +496,36 @@
                    `(cons ,tmp1 ,tmp2))))
               (& nil)))
            (& nil))
+
+; Attempt to preserve macros like cadr.
+
          (and (member-eq (ffn-symb tterm) '(car cdr))
               (directed-untranslate-car-cdr-nest uterm tterm sterm wrld))
+
+; Final cases:
+
          (and (eql (length (fargs sterm))
                    (length (fargs tterm)))
               (let* ((pair (cdr (assoc-eq (ffn-symb sterm)
                                           (untrans-table wrld))))
-                     (op (if pair
-                             (car pair)
-                           (or (cdr (assoc-eq (ffn-symb sterm)
-                                              (table-alist
-                                               'std::define-macro-fns
-                                               wrld)))
-                               (ffn-symb sterm)))))
+                     (op ; the fn-symb of sterm, or a corresponding macro
+                      (if pair
+                          (car pair)
+                        (or (cdr (assoc-eq (ffn-symb sterm)
+                                           (table-alist
+                                            'std::define-macro-fns
+                                            wrld)))
+                            (ffn-symb sterm)))))
                 (cond
                  ((symbolp (ffn-symb sterm))
                   (cond ((and (cdr pair) ; hence pair, and we might right-associate
                               (case-match uterm
                                 ((!op & & & . &) t) ; we want to flatten
                                 (& nil)))           ; (op x (op y ...))
+
+; Uterm is (op & & & . &) where op is a macro with &rest args corresponding to
+; the function symbol of sterm.  Untranslate to a suitably flattened op call.
+
                          (let ((arg1 (directed-untranslate-rec
                                       (cadr uterm)
                                       (fargn tterm 1) (fargn sterm 1) nil
@@ -487,6 +540,10 @@
                         ((or (equal (car uterm) op)
                              (equal (car uterm) (ffn-symb tterm))
                              (equal (macro-abbrev-p op wrld) (ffn-symb tterm)))
+
+; If op is a suitable function (or macro) call for the result, then apply it to
+; the result of recursively untranslating (directedly) the args.
+
                          (cons op (directed-untranslate-lst
                                    (cdr uterm) (fargs tterm) (fargs sterm)
                                    (case (ffn-symb sterm)
@@ -605,10 +662,9 @@
 
 (defun directed-untranslate-car-cdr-nest (uterm tterm sterm wrld)
 
-; Tterm is a call of car or cdr.  Uterm may be a name in *ca<d^n>r-alist*, such
-; as CADDR.  Ad-len is the number of A and D characters in that name, which is
-; 2, 3, or 4.  We return nil or else a suitable result for
-; (directed-untranslate uterm tterm sterm wrld)
+; Tterm is a call of car or cdr.  Uterm may be a call of a name in
+; *ca<d^n>r-alist*, such as CADDR.  We return nil or else a suitable result for
+; (directed-untranslate uterm tterm sterm wrld).
 
   (and (eq (ffn-symb tterm) (ffn-symb sterm))
        (let ((triple (assoc-eq (car uterm) *car-cdr-macro-alist*)))
