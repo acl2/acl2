@@ -31,6 +31,7 @@
 (in-package "GL")
 (include-book "shape-spec-defs")
 (include-book "gtypes")
+(include-book "gl-util")
 (include-book "symbolic-arithmetic")
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
@@ -43,12 +44,14 @@
 
 (defund slice-to-bdd-env (slice env)
   (declare (xargs :guard (and (alistp slice)
-                              (nat-listp (strip-cars slice)))
+                              (nat-listp (alist-keys slice)))
                   :verify-guards nil))
   (if (atom slice)
       env
-    (bfr-set-var (caar slice) (cdar slice)
-                 (slice-to-bdd-env (cdr slice) env))))
+    (if (mbt (Consp (car slice)))
+        (bfr-set-var (caar slice) (cdar slice)
+                     (slice-to-bdd-env (cdr slice) env))
+      (slice-to-bdd-env (cdr slice) env))))
 
 ;; (local
 ;;  (defthm true-listp-slice-to-bdd-env
@@ -192,7 +195,7 @@
 (local
  (defthm hons-assoc-equal-append
    (implies (and (alistp v1)
-                 (member-equal key (strip-cars v1)))
+                 (member-equal key (alist-keys v1)))
             (equal (hons-assoc-equal key (append v1 v2))
                    (hons-assoc-equal key v1)))
    :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
@@ -200,34 +203,34 @@
 (local
  (defthm hons-assoc-equal-append-2
    (implies (and (alistp v1)
-                 (not (member-equal key (strip-cars v1))))
+                 (not (member-equal key (alist-keys v1))))
             (equal (hons-assoc-equal key (append v1 v2))
                    (hons-assoc-equal key v2)))
    :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-(defthm member-strip-cars-nth-slice-1
+(defthm member-alist-keys-nth-slice-1
   (implies (and (integerp n)
                 (<= 0 n)
-                (member-equal n (strip-cars bsl1)))
+                (member-equal n (alist-keys bsl1)))
            (equal (bfr-lookup n (slice-to-bdd-env (append bsl1 bsl2) env))
                   (bfr-lookup n (slice-to-bdd-env bsl1 env))))
   :hints(("Goal" :in-theory (enable slice-to-bdd-env))))
 
-(defthm member-strip-cars-nth-slice-2
+(defthm member-alist-keys-nth-slice-2
   (implies (and (integerp n)
                 (<= 0 n)
-                (nat-listp (strip-cars bsl1))
-                (not (member-equal n (strip-cars bsl1))))
+                (nat-listp (alist-keys bsl1))
+                (not (member-equal n (alist-keys bsl1))))
            (equal (bfr-lookup n (slice-to-bdd-env (append bsl1 bsl2) env))
                   (bfr-lookup n (slice-to-bdd-env bsl2 env))))
-  :hints(("Goal" :in-theory (enable strip-cars slice-to-bdd-env nat-listp))))
+  :hints(("Goal" :in-theory (enable alist-keys slice-to-bdd-env nat-listp alist-keys))))
 
 
 
 ;; (local
 (defthm bfr-list->s-numlist-subset-append
   (implies (and (nat-listp lst)
-                (subsetp-equal lst (strip-cars bsl1)))
+                (subsetp-equal lst (alist-keys bsl1)))
            (equal (bfr-list->s (numlist-to-vars lst)
                                (slice-to-bdd-env (append bsl1 bsl2) env))
                   (bfr-list->s (numlist-to-vars lst)
@@ -240,8 +243,8 @@
 
 (defthm bfr-list->s-numlist-no-intersect-append
   (implies (and (nat-listp lst)
-                (nat-listp (strip-cars bsl1))
-                (not (intersectp-equal lst (strip-cars bsl1))))
+                (nat-listp (alist-keys bsl1))
+                (not (intersectp-equal lst (alist-keys bsl1))))
            (equal (bfr-list->s (numlist-to-vars lst)
                                (slice-to-bdd-env (append bsl1 bsl2) env))
                   (bfr-list->s (numlist-to-vars lst)
@@ -253,7 +256,7 @@
 
 (defthm bfr-list->u-numlist-subset-append
   (implies (and (nat-listp lst)
-                (subsetp-equal lst (strip-cars bsl1)))
+                (subsetp-equal lst (alist-keys bsl1)))
            (equal (bfr-list->u (numlist-to-vars lst)
                                (slice-to-bdd-env (append bsl1 bsl2) env))
                   (bfr-list->u (numlist-to-vars lst)
@@ -266,8 +269,8 @@
 
 (defthm bfr-list->u-numlist-no-intersect-append
   (implies (and (nat-listp lst)
-                (nat-listp (strip-cars bsl1))
-                (not (intersectp-equal lst (strip-cars bsl1))))
+                (nat-listp (alist-keys bsl1))
+                (not (intersectp-equal lst (alist-keys bsl1))))
            (equal (bfr-list->u (numlist-to-vars lst)
                                (slice-to-bdd-env (append bsl1 bsl2) env))
                   (bfr-list->u (numlist-to-vars lst)
@@ -337,7 +340,7 @@
 
 (local (in-theory (disable logapp integer-length
                            loghead logtail sspec-geval
-                           ;;acl2::member-equal-of-strip-cars-when-member-equal-of-hons-duplicated-members-aux
+                           ;;acl2::member-equal-of-alist-keys-when-member-equal-of-hons-duplicated-members-aux
                            acl2::consp-of-car-when-alistp
                            set::double-containment)))
 
@@ -378,7 +381,7 @@
     (implies (and (shape-specp x)
                   (alistp vsl1)
                   (subsetp-equal (shape-spec-indices x)
-                                 (strip-cars bsl1)))
+                                 (alist-keys bsl1)))
              (equal (sspec-geval
                      (shape-spec-to-gobj x)
                      (cons (slice-to-bdd-env
@@ -394,7 +397,7 @@
     (implies (and (shape-spec-listp x)
                   (alistp vsl1)
                   (subsetp-equal (shape-spec-list-indices x)
-                                 (strip-cars bsl1)))
+                                 (alist-keys bsl1)))
              (equal (sspec-geval-list
                      (shape-spec-to-gobj-list x)
                      (cons (slice-to-bdd-env
@@ -442,7 +445,7 @@
     (implies (and (shape-specp x)
                   (alistp vsl1)
                   (subsetp-equal (shape-spec-vars x)
-                                 (strip-cars vsl1)))
+                                 (alist-keys vsl1)))
              (equal (sspec-geval
                      (shape-spec-to-gobj x)
                      (cons (slice-to-bdd-env
@@ -458,7 +461,7 @@
     (implies (and (shape-spec-listp x)
                   (alistp vsl1)
                   (subsetp-equal (shape-spec-list-vars x)
-                                 (strip-cars vsl1)))
+                                 (alist-keys vsl1)))
              (equal (sspec-geval-list
                      (shape-spec-to-gobj-list x)
                      (cons (slice-to-bdd-env
@@ -504,10 +507,10 @@
   (defthm shape-spec-to-gobj-eval-slice-no-intersect-append-1
     (implies (and (shape-specp x)
                   (alistp vsl1)
-                  (nat-listp (strip-cars bsl1))
+                  (nat-listp (alist-keys bsl1))
                   (not (intersectp-equal
                         (shape-spec-indices x)
-                        (strip-cars bsl1))))
+                        (alist-keys bsl1))))
              (equal (sspec-geval
                      (shape-spec-to-gobj x)
                      (cons (slice-to-bdd-env
@@ -522,10 +525,10 @@
   (defthm shape-spec-list-to-gobj-eval-slice-no-intersect-append-1
     (implies (and (shape-spec-listp x)
                   (alistp vsl1)
-                  (nat-listp (strip-cars bsl1))
+                  (nat-listp (alist-keys bsl1))
                   (not (intersectp-equal
                         (shape-spec-list-indices x)
-                        (strip-cars bsl1))))
+                        (alist-keys bsl1))))
              (equal (sspec-geval-list
                      (shape-spec-to-gobj-list x)
                      (cons (slice-to-bdd-env
@@ -573,7 +576,7 @@
     (implies (and (shape-specp x)
                   (alistp vsl1)
                   (not (intersectp-equal (shape-spec-vars x)
-                                         (strip-cars vsl1))))
+                                         (alist-keys vsl1))))
              (equal (sspec-geval
                      (shape-spec-to-gobj x)
                      (cons (slice-to-bdd-env
@@ -589,7 +592,7 @@
     (implies (and (shape-spec-listp x)
                   (alistp vsl1)
                   (not (intersectp-equal (shape-spec-list-vars x)
-                                         (strip-cars vsl1))))
+                                         (alist-keys vsl1))))
              (equal (sspec-geval-list
                      (shape-spec-to-gobj-list x)
                      (cons (slice-to-bdd-env
@@ -632,9 +635,9 @@
                                   ,@(expands-with-hint 'sspec-geval-list calls2))))))))
 
 (local
- (defthm strip-cars-append
-   (equal (strip-cars (append a b))
-          (append (strip-cars a) (strip-cars b)))))
+ (defthm alist-keys-append
+   (equal (alist-keys (append a b))
+          (append (alist-keys a) (alist-keys b)))))
 
 
 (local
@@ -646,14 +649,14 @@
 (local
  (defthm-shape-spec-flag
    (defthm shape-spec-vars-subset-cars-arbitrary-env-slice
-     (equal (strip-cars (mv-nth 1 (shape-spec-arbitrary-slice x)))
+     (equal (alist-keys (mv-nth 1 (shape-spec-arbitrary-slice x)))
             (shape-spec-vars x))
      :hints('(:in-theory (enable g-integer-env-slice)
               :expand ((shape-spec-arbitrary-slice x)
                        (shape-spec-vars x))))
      :flag ss)
    (defthm shape-spec-list-vars-subset-cars-arbitrary-env-slice
-     (equal (strip-cars (mv-nth 1 (shape-spec-list-arbitrary-slice x)))
+     (equal (alist-keys (mv-nth 1 (shape-spec-list-arbitrary-slice x)))
             (shape-spec-list-vars x))
      :flag list)
    :hints(("Goal" :in-theory (enable shape-spec-vars
@@ -664,7 +667,7 @@
 (local
  (defthm shape-spec-vars-subset-cars-iff-env-slice
    (equal
-    (strip-cars (mv-nth 1 (shape-spec-iff-env-slice x obj)))
+    (alist-keys (mv-nth 1 (shape-spec-iff-env-slice x obj)))
     (shape-spec-vars x))
    :hints(("Goal" :in-theory (enable shape-spec-iff-env-slice
                                      shape-spec-vars
@@ -673,7 +676,7 @@
 (local
  (defthm shape-spec-vars-subset-cars-env-slice
    (equal
-    (strip-cars (mv-nth 1 (shape-spec-env-slice x obj)))
+    (alist-keys (mv-nth 1 (shape-spec-env-slice x obj)))
     (shape-spec-vars x))
    :hints(("Goal" :in-theory (enable shape-spec-env-slice
                                      shape-spec-vars
@@ -682,7 +685,7 @@
 (local
  (defthm subsetp-cars-integer-env-slice
    (implies (nat-listp n)
-            (equal (strip-cars (integer-env-slice n m)) n))
+            (equal (alist-keys (integer-env-slice n m)) n))
    :hints(("Goal" :in-theory (enable integer-env-slice nat-listp)))))
 
 
@@ -696,7 +699,7 @@
 (local
  (defthm number-spec-indices-subset-cars-number-spec-env-slice
    (implies (number-specp n)
-            (equal (strip-cars (number-spec-env-slice n m))
+            (equal (alist-keys (number-spec-env-slice n m))
                    (number-spec-indices n)))
    :hints(("Goal" :in-theory (enable number-spec-env-slice
                                      number-spec-indices
@@ -708,12 +711,12 @@
  (defthm-shape-spec-flag
    (defthm shape-spec-indices-subset-cars-arbitrary-env-slice
      (implies (shape-specp x)
-              (equal (strip-cars (mv-nth 0 (shape-spec-arbitrary-slice x)))
+              (equal (alist-keys (mv-nth 0 (shape-spec-arbitrary-slice x)))
                      (shape-spec-indices x)))
      :flag ss)
    (defthm shape-spec-list-indices-subset-cars-arbitrary-env-slice
      (implies (shape-spec-listp x)
-              (equal (strip-cars (mv-nth 0 (shape-spec-list-arbitrary-slice x)))
+              (equal (alist-keys (mv-nth 0 (shape-spec-list-arbitrary-slice x)))
                      (shape-spec-list-indices x)))
      :flag list)
    :hints (("goal" :in-theory (enable shape-spec-list-arbitrary-slice
@@ -728,7 +731,7 @@
 (local
  (defthm shape-spec-indices-subset-cars-iff-env-slice
    (implies (shape-specp x)
-            (equal (strip-cars (mv-nth 0 (shape-spec-iff-env-slice x obj)))
+            (equal (alist-keys (mv-nth 0 (shape-spec-iff-env-slice x obj)))
                    (shape-spec-indices x)))
    :hints (("goal" :in-theory (enable shape-spec-iff-env-slice
                                       g-integer-env-slice
@@ -738,7 +741,7 @@
 (local
  (defthm shape-spec-indices-subset-cars-env-slice
    (implies (shape-specp x)
-            (equal (strip-cars (mv-nth 0 (shape-spec-env-slice x obj)))
+            (equal (alist-keys (mv-nth 0 (shape-spec-env-slice x obj)))
                    (shape-spec-indices x)))
    :hints (("goal" :in-theory (enable shape-spec-env-slice
                                       g-integer-env-slice
@@ -1224,14 +1227,12 @@
       (equal x nil)
     (and (consp (car x))
          (variablep (caar x))
-         (not (keywordp (caar x)))
          (gobj-alistp (cdr x))))
   ///
   (defthm gobj-alistp-of-cons
     (Equal (gobj-alistp (cons a b))
            (and (consp a)
                 (variablep (car a))
-                (not (keywordp (car a)))
                 (gobj-alistp b)))))
 
 (defsection shape-spec-bindingsp
@@ -1241,7 +1242,6 @@
            (and (consp a)
                 (consp (cdr a))
                 (variablep (car a))
-                (not (keywordp (car a)))
                 (shape-specp (cadr a))
                 (shape-spec-bindingsp b)))))
 
@@ -2050,7 +2050,48 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
           `(if ,(shape-spec-oblig-term (car x) (car obj-terms))
                ,(shape-spec-list-oblig-term (cdr x) (cdr obj-terms))
              'nil)
-        ''nil))))
+        ''nil)))
+  ///
+  (local (defthm collect-vars-list-of-append
+           (acl2::set-equiv (collect-vars-list (append a b))
+                            (append (collect-vars-list a) (collect-vars-list b)))
+           :hints(("Goal" :in-theory (enable collect-vars-list append)))))
+
+  (local (defthm collect-vars-list-of-make-nth-terms
+           (implies (not (member v (collect-vars x)))
+                    (not (member v (collect-vars-list (make-nth-terms x start n)))))
+           :hints(("Goal" :in-theory (enable make-nth-terms)))))
+
+  (local (defthm member-vars-of-car-term
+           (implies (not (member v (collect-vars x)))
+                    (not (member v (collect-vars (car-term x)))))
+           :hints(("Goal" :in-theory (enable car-term)))))
+  (local (defthm member-vars-of-cdr-term
+           (implies (not (member v (collect-vars x)))
+                    (not (member v (collect-vars (cdr-term x)))))
+           :hints(("Goal" :in-theory (enable cdr-term)))))
+
+  (local (defthm not-quote-of-ss-unary-function-fix
+           (not (equal (ss-unary-function-fix x) 'quote))))
+
+  (defthm-shape-spec-oblig-term-flag
+    (defthm vars-of-shape-spec-oblig-term-bvars
+      (implies (not (member v (collect-vars obj-term)))
+               (not (member v (collect-vars (shape-spec-oblig-term x obj-term)))))
+      :hints ('(:expand ((shape-spec-oblig-term x obj-term))))
+      :flag shape-spec-oblig-term)
+    (defthm vars-of-shape-spec-oblig-term-iff-bvars
+      (implies (not (member v (collect-vars obj-term)))
+               (not (member v (collect-vars (shape-spec-oblig-term-iff x obj-term)))))
+      :hints ('(:expand ((shape-spec-oblig-term-iff x obj-term))
+                :in-theory (enable car-term cdr-term)))
+      :flag shape-spec-oblig-term-iff)
+    (defthm vars-of-shape-spec-list-oblig-term-bvars
+      (implies (not (member v (collect-vars-list obj-terms)))
+               (not (member v (collect-vars (shape-spec-list-oblig-term x obj-terms)))))
+      :hints ('(:expand ((shape-spec-list-oblig-term x obj-terms)
+                         (shape-spec-list-oblig-term x nil))))
+      :flag shape-spec-list-oblig-term)))
 
 (defines shape-spec-oblig-term-eval-ind
   (define shape-spec-oblig-term-ind (x obj-term a)
@@ -2553,7 +2594,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
   (defthm-shape-spec-env-term-flag
     (defthm indices-of-shape-spec-env-term
       (implies (shape-specp x)
-               (equal (strip-cars
+               (equal (alist-keys
                        (car (sspec-geval-ev (shape-spec-env-term x obj-term) a)))
                       (shape-spec-indices x)))
       :hints ('(:expand ((shape-spec-env-term x obj-term)
@@ -2561,7 +2602,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
       :flag ss)
     (defthm indices-of-shape-spec-env-term-iff
       (implies (shape-specp x)
-               (equal (strip-cars
+               (equal (alist-keys
                        (car (sspec-geval-ev (shape-spec-env-term-iff x obj-term) a)))
                       (shape-spec-indices x)))
       :hints ('(:expand ((shape-spec-env-term-iff x obj-term)
@@ -2569,17 +2610,18 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
       :flag iff)
     (defthm indices-of-shape-spec-list-env-term
       (implies (shape-spec-listp x)
-               (equal (strip-cars
+               (equal (alist-keys
                        (car (sspec-geval-ev (shape-spec-list-env-term x obj-terms) a)))
                       (shape-spec-list-indices x)))
       :hints ('(:expand ((shape-spec-list-env-term x obj-terms)
+                         (shape-spec-list-env-term nil obj-terms)
                          (shape-spec-list-indices x))))
       :flag list))
 
   (defthm-shape-spec-env-term-flag
     (defthm vars-of-shape-spec-env-term
       (implies (shape-specp x)
-               (equal (strip-cars
+               (equal (alist-keys
                        (cdr (sspec-geval-ev (shape-spec-env-term x obj-term) a)))
                       (shape-spec-vars x)))
       :hints ('(:expand ((shape-spec-env-term x obj-term)
@@ -2587,7 +2629,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
       :flag ss)
     (defthm vars-of-shape-spec-env-term-iff
       (implies (shape-specp x)
-               (equal (strip-cars
+               (equal (alist-keys
                        (cdr (sspec-geval-ev (shape-spec-env-term-iff x obj-term) a)))
                       (shape-spec-vars x)))
       :hints ('(:expand ((shape-spec-env-term-iff x obj-term)
@@ -2595,7 +2637,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
       :flag iff)
     (defthm vars-of-shape-spec-list-env-term
       (implies (shape-spec-listp x)
-               (equal (strip-cars
+               (equal (alist-keys
                        (cdr (sspec-geval-ev (shape-spec-list-env-term x obj-terms) a)))
                       (shape-spec-list-vars x)))
       :hints ('(:expand ((shape-spec-list-env-term x obj-terms)
@@ -2835,5 +2877,8 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                          (shape-spec-list-oblig-term x obj-terms)
                          (:free (env) (sspec-geval-list nil env)))
                 :do-not-induct t))
-      :flag list)))
+      :flag list))
+
+
+  )
 

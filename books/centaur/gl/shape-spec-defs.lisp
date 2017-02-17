@@ -70,7 +70,15 @@
                 (pseudo-termp (caddr x))
                 (not (cdddr x))))))
 
-
+(define variablep (x)
+  (and (symbolp x)
+       (not (booleanp x))
+       (not (keywordp x)))
+  ///
+  (defthm variablep-compound-recognizer
+    (implies (variablep x)
+             (and (symbolp x) (not (booleanp x))))
+    :rule-classes :compound-recognizer))
 
 (defines shape-specp
   (define shape-specp (x)
@@ -81,13 +89,15 @@
       (case (tag x)
         (:g-number (number-specp (g-number->num x)))
         (:g-integer (and (natp (g-integer->sign x))
-                         (nat-listp (g-integer->bits x))))
+                         (nat-listp (g-integer->bits x))
+                         (variablep (g-integer->var x))))
         (:g-integer? (and (natp (g-integer?->sign x))
                           (nat-listp (g-integer?->bits x))
-                          (natp (g-integer?->intp x))))
+                          (natp (g-integer?->intp x))
+                          (variablep (g-integer?->var x))))
         (:g-boolean (natp (g-boolean->bool x)))
         (:g-concrete t)
-        (:g-var t)
+        (:g-var (variablep (g-var->name x)))
         (:g-ite
          (and (shape-specp (g-ite->test x))
               (shape-specp (g-ite->then x))
@@ -117,7 +127,8 @@
       (implies (equal (tag x) :g-integer)
                (equal (shape-specp x)
                        (and (natp (g-integer->sign x))
-                         (nat-listp (g-integer->bits x)))))
+                            (nat-listp (g-integer->bits x))
+                            (variablep (g-integer->var x)))))
       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm shape-specp-when-g-integer?
@@ -125,7 +136,8 @@
                (equal (shape-specp x)
                       (and (natp (g-integer?->sign x))
                            (nat-listp (g-integer?->bits x))
-                           (natp (g-integer?->intp x)))))
+                           (natp (g-integer?->intp x))
+                           (variablep (g-integer?->var x)))))
       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm shape-specp-when-g-boolean
@@ -141,7 +153,8 @@
 
     (defthm shape-specp-when-g-var
       (implies (equal (tag x) :g-var)
-               (equal (shape-specp x) t))
+               (equal (shape-specp x)
+                      (variablep (g-var->name x))))
       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm shape-specp-when-g-ite
@@ -552,13 +565,7 @@
 
 
 
-(define variablep (x)
-  (and (symbolp x) (not (booleanp x)))
-  ///
-  (defthm variablep-compound-recognizer
-    (equal (variablep x)
-           (and (symbolp x) (not (booleanp x))))
-    :rule-classes :compound-recognizer))
+
 
 
 (define shape-spec-bindingsp (x)
@@ -566,7 +573,6 @@
       (equal x nil)
     (and (consp (car x))
          (variablep (caar x))
-         (not (keywordp (caar x)))
          (consp (cdar x))
          (shape-specp (cadar x))
          (shape-spec-bindingsp (cdr x)))))

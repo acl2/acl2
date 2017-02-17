@@ -354,3 +354,35 @@
 
 (memoize 'aig-extract-iterated-assigns-alist
          :recursive nil)
+
+(defthmd lookup-in-aig-extract-assigns
+  (b* (((mv trues falses) (aig-extract-assigns x)))
+    (and (implies (and (member v trues)
+                       (aig-eval x env))
+                  (aig-env-lookup v env))
+         (implies (and (member v falses)
+                       (aig-eval x env))
+                  (not (aig-env-lookup v env)))))
+  :hints(("Goal" :in-theory (enable aig-extract-assigns))))
+
+
+(defthmd lookup-in-aig-extract-assigns-alist
+  (implies (and (hons-assoc-equal v (aig-extract-assigns-alist x))
+                (aig-eval x env))
+           (iff (aig-env-lookup v env)
+                (cdr (hons-assoc-equal v (aig-extract-assigns-alist x)))))
+  :hints(("Goal" :in-theory (e/d (aig-extract-assigns-alist)
+                                 (aig-env-lookup
+                                  lookup-in-aig-extract-assigns))
+          :use lookup-in-aig-extract-assigns)))
+
+(defthmd lookup-in-aig-extract-iterated-assigns-alist
+  (implies (and (hons-assoc-equal v (aig-extract-iterated-assigns-alist x n))
+                (aig-eval x env))
+           (iff (aig-env-lookup v env)
+                (cdr (hons-assoc-equal v (aig-extract-iterated-assigns-alist x n)))))
+  :hints(("Goal" :in-theory (e/d (aig-extract-iterated-assigns-alist
+                                  lookup-in-aig-extract-assigns-alist)
+                                 (aig-env-lookup))
+          :induct (aig-extract-iterated-assigns-alist x n))))
+

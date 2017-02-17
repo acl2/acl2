@@ -192,10 +192,7 @@ possible environment.")
   (let ((n (bfr-varname-fix n)))
     (bfr-case
       :bdd (and (acl2::with-guard-checking nil (ec-call (nth n env))) t)
-      :aig (let ((look (hons-get n env)))
-             (if look
-                 (and (cdr look) t)
-               t))))
+      :aig (acl2::aig-env-lookup n env)))
   ///
   (in-theory (disable (:e bfr-lookup)))
 
