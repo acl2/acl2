@@ -866,6 +866,10 @@ beginning of the string that was processed."
 (put 'with-output-to 'lisp-indent-function 'defun)
 (put 'WITH-STDOUT 'lisp-indent-function 'defun)
 (put 'with-stdout 'lisp-indent-function 'defun)
+; Keshav Kini suggested special handling for er-let*; we add the
+; following, long used by Matt K.
+(put 'er-let* 'lisp-indent-function 1)
+(PUT 'ER-LET* 'lisp-indent-function 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ACL2 proof-tree support
