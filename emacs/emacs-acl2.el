@@ -869,7 +869,7 @@ beginning of the string that was processed."
 ; Keshav Kini suggested special handling for er-let*; we add the
 ; following, long used by Matt K.
 (put 'er-let* 'lisp-indent-function 1)
-(PUT 'ER-LET* 'lisp-indent-function 1)
+(put 'ER-LET* 'lisp-indent-function 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ACL2 proof-tree support
