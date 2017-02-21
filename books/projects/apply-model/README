@@ -1,0 +1,17 @@
+WARNING: For books in this directory and its subdirectories, some
+comments are out of date, but will be fixed before long.
+
+-----
+
+This directory contains a version of apply$ built in an isolated package named "MODAPP" (for Model of Apply$).
+
+In addition, it contains two subdirectories, ex1/ and ex2/ that illustrate the modeling technique for a small set of
+mapping functions and a large set, respectively.
+
+In addition it contains report.lisp which contains the example functions and
+theorems cited in the Examples section of the paper (in preparation)
+"Limited Second Order Functionality in a First Order Setting."
+
+See also the end of ACL2 source file apply-raw.lisp for a related
+essay, "Essay on Admitting a Model for Apply$ and the Functions that
+Use It".
