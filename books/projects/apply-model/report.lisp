@@ -1,8 +1,6 @@
 ; This file contains the events mentioned in the Examples section of the paper
-; ``Limited Second Order Functionality in a First Order Setting''
-
-; It currently resides in /u/moore/Desktop/toy7/report.lisp but ultimately
-; belongs in the distributed apply books.
+; under development, ``Limited Second Order Functionality in a First Order
+; Setting''.
 
 (in-package "MODAPP")
 
