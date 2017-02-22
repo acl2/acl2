@@ -2180,9 +2180,9 @@ notation causes an error and (b) the use of ,. is not permitted."
             (get-os)
             *the-live-state*))
 
-; The two forms in the progn below were sent to us by Camm Maguire on
-; 2/18/2017, to fix an issue with GCL 2.6.12.  We use the progn wrapper to
-; avoid breaking the reader in other Lisps.
+; The forms below were sent to us by Camm Maguire in February 2017, to fix an
+; issue with GCL 2.6.12.  We use the progn wrapper to avoid breaking the reader
+; in other Lisps.
 
 #+gcl
 (progn
@@ -2241,3 +2241,7 @@ compiler::
   (setf (symbol-function 'compiler::c2funcall)
         (symbol-function 'compiler::c2funcall-new))))
 
+#+gcl
+(eval-when
+    (compile load eval)
+  (proclaim '(ftype (function (t t *) t) compiler::c2funcall-new)))
