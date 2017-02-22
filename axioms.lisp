@@ -19489,6 +19489,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defthm rationalp-implies-acl2-numberp
   (implies (rationalp x) (acl2-numberp x)))
 
+; Addition suggested by Dmitry Nadezhin (a proof that succeeded in ACL2 using
+; the lemma just above failed without the following):
+
+#+:non-standard-analysis
+(defthm realp-implies-acl2-numberp
+  (implies (realp x) (acl2-numberp x)))
+
 (defun pop-timer (name flg state)
 
 ; If flg is nil we discard the popped value.  If flg is t we
