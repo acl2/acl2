@@ -42,6 +42,7 @@
    vl-interface
    vl-package
    vl-program
+   vl-class
    vl-config
    ;; bozo add bind directives
 
@@ -84,6 +85,7 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
        (implies (vl-interfacelist-p x) (vl-descriptionlist-p x))
        (implies (vl-packagelist-p x) (vl-descriptionlist-p x))
        (implies (vl-programlist-p x) (vl-descriptionlist-p x))
+       (implies (vl-classlist-p x) (vl-descriptionlist-p x))
        (implies (vl-configlist-p x) (vl-descriptionlist-p x))
        (implies (vl-vardecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-taskdecllist-p x) (vl-descriptionlist-p x))
@@ -109,6 +111,7 @@ doesn't introduce a name (e.g., an @('import') statement."
       (:vl-interface  (vl-interface->name x))
       (:vl-package    (vl-package->name x))
       (:vl-program    (vl-program->name x))
+      (:vl-class      (vl-class->name x))
       (:vl-config     (vl-config->name x))
       (:vl-vardecl    (vl-vardecl->name x))
       (:vl-taskdecl   (vl-taskdecl->name x))
@@ -301,6 +304,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                               (udps        vl-udplist-p)
                               (interfaces  vl-interfacelist-p)
                               (programs    vl-programlist-p)
+                              (classes     vl-classlist-p)
                               (packages    vl-packagelist-p)
                               (configs     vl-configlist-p)
                               (vardecls    vl-vardecllist-p)
@@ -316,6 +320,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                (udps        vl-udplist-p)
                (interfaces  vl-interfacelist-p)
                (programs    vl-programlist-p)
+               (classes    vl-classlist-p)
                (packages    vl-packagelist-p)
                (configs     vl-configlist-p)
                (vardecls    vl-vardecllist-p)
@@ -332,6 +337,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             (vl-udplist-fix udps)
             (vl-interfacelist-fix interfaces)
             (vl-programlist-fix programs)
+            (vl-classlist-fix classes)
             (vl-packagelist-fix packages)
             (vl-configlist-fix configs)
             (vl-vardecllist-fix vardecls)
@@ -351,6 +357,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
      :udps        (if (eq tag :vl-udp)        (cons x1 udps)        udps)
      :interfaces  (if (eq tag :vl-interface)  (cons x1 interfaces)  interfaces)
      :programs    (if (eq tag :vl-program)    (cons x1 programs)    programs)
+     :classes    (if (eq tag :vl-class)    (cons x1 classes)    classes)
      :packages    (if (eq tag :vl-package)    (cons x1 packages)    packages)
      :configs     (if (eq tag :vl-config)     (cons x1 configs)     configs)
      :vardecls    (if (eq tag :vl-vardecl)    (cons x1 vardecls)    vardecls)
@@ -370,6 +377,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             udps
             interfaces
             programs
+            classes
             packages
             configs
             vardecls
@@ -386,6 +394,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                     :udps        udps
                     :interfaces  interfaces
                     :programs    programs
+                    :classes    classes
                     :packages    packages
                     :configs     configs
                     :vardecls    vardecls
@@ -412,6 +421,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                           x.udps
                           x.interfaces
                           x.programs
+                          x.classes
                           x.packages
                           x.configs
                           x.vardecls

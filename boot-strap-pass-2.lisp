@@ -1055,6 +1055,9 @@
                (enable (:executable-counterpart tau-system))
                (disable (:executable-counterpart tau-system))))
 
+; Avoid ugly output from, e.g., (thm (equal (print-call-history) 3)).
+(in-theory (disable (:e print-call-history)))
+
 (deftheory ground-zero
 
 ; WARNING: Keep this near the end of *acl2-pass-2-files* in order for

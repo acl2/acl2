@@ -558,6 +558,23 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
      (vl-println "")
      (vl-ps-span "vl_key" (vl-println "endprogram")))))
 
+(define vl-ppc-class ((x vl-class-p) &key (ps 'ps))
+  (b* (((vl-class x)))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (if x.virtualp (vl-ps-span "vl_key" (vl-print "virtual ")) ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "class "))
+     (vl-pp-lifetime x.lifetime)
+     (vl-print-modname x.name)
+     (vl-println "")
+     (vl-print "BOZO implement printing of classes!\n")
+     (vl-println "")
+     (vl-ps-span "vl_key" (vl-println "endclass")))))
+
 (define vl-ppc-config ((x vl-config-p) &key (ps 'ps))
   (b* (((vl-config x)))
     (vl-ps-seq

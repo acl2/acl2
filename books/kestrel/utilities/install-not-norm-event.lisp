@@ -1,6 +1,6 @@
 ; Non-Normalized Definition Installation Event
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,13 +27,13 @@
    (local booleanp "Make the event form local or not.")
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
    (wrld plist-worldp))
-  :returns (mv (name "A @(tsee symbolp): the name of the theorem.")
-               (event "A @(tsee pseudo-event-formp)."))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp): the name of the theorem."))
   :mode :program
   :parents (kestrel-utilities system-utilities install-not-normalized)
   :short "Event form to
-          <see topic='@(url install-not-normalized)'
-          >install the non-normalized definition</see>
+          <see topic='@(url install-not-normalized)'>install
+          the non-normalized definition</see>
           of a function."
   :long
   "<p>
@@ -41,7 +41,7 @@
    and is not among a list of names to avoid.
    Start with the default name
    (i.e. the concatenation of
-   the name of @('fn') with &lsquo;@('$not-normalized')&rsquo;)
+   the name of @('fn') with @('$not-normalized'))
    and ensure its uniqueness via @(tsee fresh-name-in-world-with-$s).
    </p>"
   (b* ((name (install-not-normalized-name fn))
@@ -49,4 +49,4 @@
        (event (if local
                   `(local (install-not-normalized ,fn :defthm-name ',name))
                 `(install-not-normalized ,fn :defthm-name ',name))))
-    (mv name event)))
+    (mv event name)))

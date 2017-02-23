@@ -1,0 +1,12 @@
+Certification of books in this directory depends on the following.
+
+cp -p ../apply.lisp evaluation-apply.lisp
+cp -p user-defs.lisp evaluation-user-defs.lisp
+
+That is done automatically using "make", or by running a regression
+from the top-level ACL2 directory or books/.
+
+Running "make" in this directory, however, will not guarantee that the
+books in the parent directory are certified, which is necessary.
+Either run make in the parent directory or run cert.pl in either
+directory _after_ copying as shown above.

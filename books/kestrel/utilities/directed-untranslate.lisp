@@ -83,6 +83,13 @@
          (equal val tterm))))
 
 (defmacro check-du-inv (uterm tterm wrld form)
+
+; By default (i.e., when feature :skip-check-du-inv is not set), we always
+; check that tterm is the translation of uterm.  Note that we do not
+; necessarily expect that the translation of (directed-untranslate uterm tterm
+; sterm iff-flg wrld) is sterm; so we use check-du-inv on inputs of
+; directed-untranslate(-rec), not its output.
+
   #-skip-check-du-inv
   `(assert$ (check-du-inv-fn ,uterm ,tterm ,wrld) ,form)
   #+skip-check-du-inv
@@ -111,51 +118,45 @@
     (and (not (eq body t))
          (macro-abbrev-p-rec sym body wrld))))
 
-(defun directed-untranslate-drop-conjuncts-rec (conjuncts tterm sterm)
-
-; Tterm is the translation of uterm, where uterm is (and . conjuncts), say,
-; (and x1 x2 ... xn), and sterm is of the form (if a b *nil*).  If sterm is the
-; translation for some k of (and xk . rest), even if subsequent conjuncts
-; differ, then return (xk ... xn) and the corresponding subterm of tterm; else
-; return (mv nil nil).
-
+(defun directed-untranslate-drop-conjuncts-rec (uterm tterm sterm top)
   (case-match tterm
     (('if tterm-1 tterm-2 *nil*)
      (cond ((equal tterm-1 (fargn sterm 1))
-            (mv conjuncts tterm))
-           (t (directed-untranslate-drop-conjuncts-rec
-               (cdr conjuncts) tterm-2 sterm))))
+            (if top
+                (mv nil nil)
+              (mv uterm tterm)))
+           (t (case-match uterm
+                (('and)
+                 (mv t tterm))
+                (('and y)
+                 (mv y tterm))
+                (('and & . y)
+                 (directed-untranslate-drop-conjuncts-rec
+                  (if (cdr y) (cons 'and y) (car y))
+                  tterm-2 sterm nil))
+                (('if & y 'nil)
+                 (directed-untranslate-drop-conjuncts-rec
+                  y tterm-2 sterm nil))
+                (('if & y ''nil)
+                 (directed-untranslate-drop-conjuncts-rec
+                  y tterm-2 sterm nil))
+                (& (mv nil nil))))))
+    (!sterm (if top
+                (mv nil nil)
+              (mv uterm tterm)))
     (& (mv nil nil))))
 
 (defun directed-untranslate-drop-conjuncts (uterm tterm sterm)
-  (mv-let (new-conjuncts new-tterm)
-    (directed-untranslate-drop-conjuncts-rec (cdr uterm) tterm sterm)
-    (if new-tterm
-        (mv new-conjuncts new-tterm)
-      (mv (cdr uterm) tterm))))
 
-(defun directed-untranslate-drop-disjuncts-rec (disjuncts tterm sterm)
+; Tterm is the translation of uterm, where uterm represents a conjunction (and
+; x1 x2 ... xn), perhaps instead represented as (if x1 & nil), or (if x1 &
+; 'nil).  Sterm is of the form (if a b *nil*).  If sterm is the translation for
+; some k of (and xk . rest), even if subsequent conjuncts differ, then return
+; (mv uterm' tterm'), where uterm' and tterm' represent (and xk ... xn).  (xk
+; ... xn) and the corresponding subterm of tterm; else return (mv nil nil).
+; Note: return (mv nil nil if there is an immediate match.
 
-; Tterm is the translation of uterm, where uterm is (or . disjuncts), say, (or
-; x1 x2 ... xn), and sterm is of the form (if a a b) or (if a *t* b).  If sterm
-; is the translation for some k of (or xk . rest), even if subsequent disjuncts
-; differ, then return (xk ... xn) and the corresponding subterm of tterm; else
-; return (mv nil nil).
-
-  (case-match tterm
-    (('if tterm-1 tterm-1 tterm-2)
-     (cond ((equal tterm-1 (fargn sterm 1))
-            (mv disjuncts tterm))
-           (t (directed-untranslate-drop-disjuncts-rec
-               (cdr disjuncts) tterm-2 sterm))))
-    (& (mv nil nil))))
-
-(defun directed-untranslate-drop-disjuncts (uterm tterm sterm)
-  (mv-let (new-disjuncts new-tterm)
-    (directed-untranslate-drop-disjuncts-rec (cdr uterm) tterm sterm)
-    (if new-tterm
-        (mv new-disjuncts new-tterm)
-      (mv (cdr uterm) tterm))))
+  (directed-untranslate-drop-conjuncts-rec uterm tterm sterm t))
 
 (defconst *boolean-primitives*
 
@@ -176,9 +177,55 @@
                      (access type-prescription tp :basic-ts)
                      *ts-boolean*))))))
 
+(defun directed-untranslate-drop-disjuncts-rec (uterm tterm sterm top
+                                                      iff-flg wrld)
+  (case-match tterm
+    (('if tterm-1 tterm-1a tterm-2)
+     (cond
+      ((or (equal tterm-1a tterm-1)
+           (and (equal tterm-1a *t*)
+                (or iff-flg
+                    (and (nvariablep tterm-1)
+                         (not (fquotep tterm-1))
+                         (boolean-fnp (ffn-symb tterm-1) wrld)))))
+       (cond ((equal tterm-1 (fargn sterm 1))
+              (if top
+                  (mv nil nil)
+                (mv uterm tterm)))
+             (t (case-match uterm
+                  (('or)
+                   (mv nil tterm))
+                  (('or y)
+                   (mv y tterm))
+                  (('or & . y)
+                   (directed-untranslate-drop-disjuncts-rec
+                    (if (cdr y) (cons 'or y) (car y))
+                    tterm-2 sterm nil iff-flg wrld))
+                  (('if x x1 y)
+                   (cond ((or (equal x1 x)
+                              (equal x1 t)
+                              (equal x1 *t*))
+                          (directed-untranslate-drop-disjuncts-rec
+                           y tterm-2 sterm nil iff-flg wrld))
+                         (t (mv nil nil))))
+                  (& (mv nil nil))))))
+      (t (mv nil nil))))
+    (!sterm (if top
+                (mv nil nil)
+              (mv uterm tterm)))
+    (& (mv nil nil))))
+
+(defun directed-untranslate-drop-disjuncts (uterm tterm sterm iff-flg wrld)
+
+; This is analogous to directed-untranslate-drop-conjuncts, but for
+; disjunctions.
+
+  (directed-untranslate-drop-disjuncts-rec uterm tterm sterm t iff-flg
+                                           wrld))
+
 (defconst *car-cdr-macro-alist*
 
-; We associate each car/cdr macro M, such as CADDR, with a operations f (car or
+; We associate each car/cdr macro M, such as CADDR, with operations f (car or
 ; cdr) and g such that M(x) = f(g(x)).
 
 ; (loop for x in *ca<d^n>r-alist*
@@ -229,279 +276,335 @@
          (atom uterm))
      (untranslate sterm iff-flg wrld))
     (t
-     (or
-      (and (not (member-eq (car uterm) ; handled elsewhere; avoid looping
-                           '(or and)))
-           (case-match tterm
-             (('if ('not &) & &)
-              (case-match sterm
-                (('if tst tbr fbr)
-                 (case-match tst
-                   (('not &) nil)
-                   (('if & *nil* *t*) nil)
-                   (& (directed-untranslate-rec uterm
+     (mv-let (uterm1 tterm1)
+       (directed-untranslate-drop-conjuncts uterm tterm sterm)
+       (cond
+        (tterm1 (directed-untranslate-rec uterm1 tterm1 sterm iff-flg wrld))
+        (t
+         (mv-let (uterm1 tterm1)
+           (directed-untranslate-drop-disjuncts uterm tterm sterm iff-flg wrld)
+           (cond
+            (tterm1 (directed-untranslate-rec uterm1 tterm1 sterm iff-flg wrld))
+            (t
+             (or
+
+; If tterm is (if (not &) & &) and sterm is (if tst tbr fbr) where tst is not a
+; call of NOT, then replace sterm by (if (not tst) fbr tbr.
+
+              (case-match tterm
+                (('if ('not &) & &)
+                 (case-match sterm
+                   (('if tst tbr fbr)
+                    (case-match tst
+                      (('not &) nil)
+                      (('if & *nil* *t*) nil)
+                      (& (directed-untranslate-rec uterm
+                                                   tterm
+                                                   (fcons-term* 'if
+                                                                (dumb-negate-lit tst)
+                                                                fbr
+                                                                tbr)
+                                                   iff-flg wrld))))
+                   (& nil)))
+                (& nil))
+
+; If tterm is (not &) and sterm is an expanded NOT call, (if x nil t), then
+; replace sterm with (not x).
+
+              (and (ffn-symb-p tterm 'not)
+                   (case-match sterm
+                     (('if x *nil* *t*)
+                      (directed-untranslate-rec uterm
                                                 tterm
-                                                (fcons-term* 'if
-                                                             (dumb-negate-lit tst)
-                                                             fbr
-                                                             tbr)
-                                                iff-flg wrld))))
-                (& nil)))
-             (& nil)))
-      (and (ffn-symb-p tterm 'not)
-           (case-match sterm
-             (('if x *nil* *t*)
-              (directed-untranslate-rec uterm
-                                        tterm
-                                        (dumb-negate-lit x)
-                                        iff-flg wrld))
-             (& nil)))
-      (cond
-       ((eq (car uterm) 'cond)
-        (let ((clauses (directed-untranslate-into-cond-clauses
-                        (cdr uterm) tterm sterm iff-flg wrld)))
-          (case-match clauses
-            ((('t x))
-             x)
-            (& (cons 'cond clauses)))))
-       ((eq (car uterm) 'implies)
-        (mv-let (flg x y)
-          (case-match sterm
-            (('if x ('if y *t* *nil*) *t*)
-             (mv t x y))
-            (('if x y *t*)
-             (mv t x y))
-            (('if x *t* ('if y *t* *nil*))
-             (mv t (list 'not x) y))
-            (&
-             (mv nil nil nil)))
-          (cond (flg (list 'implies
-                           (directed-untranslate-rec (cadr uterm)
-                                                     (fargn tterm 1)
-                                                     x
-                                                     t
-                                                     wrld)
-                           (directed-untranslate-rec (caddr uterm)
-                                                     (fargn tterm 2)
-                                                     y
-                                                     t
-                                                     wrld)))
-                (t (untranslate sterm nil wrld)))))
-       ((and (member-eq (car uterm) '(or and))
-             (consp (cddr uterm)) ; at least two arguments
-             (eq (ffn-symb sterm) 'if)
-             (case-match sterm ; following similar handling in untranslate1
+                                                (dumb-negate-lit x)
+                                                iff-flg wrld))
+                     (& nil)))
+              (cond
+               ((eq (car uterm) 'cond)
+
+; Deal here specially with the case that uterm is a COND.
+
+                (let ((clauses (directed-untranslate-into-cond-clauses
+                                (cdr uterm) tterm sterm iff-flg wrld)))
+                  (case-match clauses
+                    ((('t x))
+                     x)
+                    (& (cons 'cond clauses)))))
+               ((eq (car tterm) 'implies)
+
+; If tterm (equivalently, uterm) is (implies & &), then use ordinary
+; untranslate unless sterm is recognizable as a form of (implies x y), in which
+; case recur by using directed-untranslate appropriately on x and y.
+
+                (mv-let (flg x y)
+                  (case-match sterm
+                    (('if x ('if y *t* *nil*) *t*)
+                     (mv t x y))
+                    (('if x y *t*)
+                     (mv t x y))
+                    (('if x *t* ('if y *t* *nil*))
+                     (mv t (list 'not x) y))
+                    (&
+                     (mv nil nil nil)))
+                  (cond (flg (list 'implies
+                                   (directed-untranslate-rec (cadr uterm)
+                                                             (fargn tterm 1)
+                                                             x
+                                                             t
+                                                             wrld)
+                                   (directed-untranslate-rec (caddr uterm)
+                                                             (fargn tterm 2)
+                                                             y
+                                                             t
+                                                             wrld)))
+                        (t (untranslate sterm nil wrld)))))
+
+; The next case applies when uterm represents a disjunction or conjunction.
+
+               ((and (eq (ffn-symb sterm) 'if) ; optimization
+                     (case-match sterm ; following similar handling in untranslate1
 
 ; We could also require more; for example, in the OR case, (eq (ffn-symb tterm)
 ; 'if) and (equal (fargn tterm 1) (fargn tterm 2)).  But any such requirements
 ; are probably always true, and even if not, we are happy to try to recover an
 ; OR or AND directly from sterm as follows.
 
-               (('if & *nil* *t*) ; generate a NOT, not an AND or OR
-                nil)
-               (('if x1 x2 *nil*)
-                (and (eq (car uterm) 'and) ; tterm has the form (if x1' x2' *nil*)
-                     (mv-let
-                       (conjuncts tterm)
-                       (directed-untranslate-drop-conjuncts uterm tterm sterm)
-                       (untranslate-and
-                        (directed-untranslate-rec (car conjuncts)
-                                                  (fargn tterm 1)
-                                                  x1
-                                                  t
-                                                  wrld)
-                        (directed-untranslate-rec (if (consp (cddr conjuncts))
-                                                      (cons 'and (cdr conjuncts))
-                                                    (cadr conjuncts))
-                                                  (fargn tterm 2)
-                                                  x2
-                                                  iff-flg
-                                                  wrld)
-                        iff-flg))))
-               (('if x1 *nil* x2)
-                (and (eq (car uterm) 'and) ; tterm has the form (if x1' x3' *nil*)
-                     (directed-untranslate-rec uterm
-                                               tterm
-                                               (fcons-term* 'if
-                                                            (dumb-negate-lit x1)
-                                                            x2
-                                                            *nil*)
-                                               iff-flg
-                                               wrld)))
-               (('if x1 x1 x2)
-                (and (eq (car uterm) 'or) ; tterm has the form (if x1' x1' x2')
-                     (mv-let
-                       (disjuncts tterm)
-                       (directed-untranslate-drop-disjuncts uterm tterm sterm)
-                       (untranslate-or
-                        (directed-untranslate-rec (car disjuncts)
-                                                  (fargn tterm 1)
-                                                  x1
-                                                  iff-flg
-                                                  wrld)
-                        (directed-untranslate-rec (if (consp (cddr disjuncts))
-                                                      (cons 'or (cdr disjuncts))
-                                                    (cadr disjuncts))
-                                                  (fargn tterm 3)
-                                                  x2
-                                                  iff-flg
-                                                  wrld)))))
-               (('if x1 x2 *t*)
-                (directed-untranslate-rec uterm
-                                          tterm
-                                          (fcons-term* 'if
-                                                       (dumb-negate-lit x1)
-                                                       *t*
-                                                       x2)
-                                          iff-flg
-                                          wrld))
-               (('if x1 *t* x2)
-                (and (eq (car uterm) 'or) ; tterm has the form (if x1' t x2')
-                     (cond
-                      ((or iff-flg
-                           (and (nvariablep x1)
-                                (not (fquotep x1))
-                                (boolean-fnp (ffn-symb x1) wrld)))
-                       (mv-let
-                         (disjuncts tterm)
-                         (directed-untranslate-drop-disjuncts uterm tterm sterm)
-                         (untranslate-or
-                          (directed-untranslate-rec (car disjuncts)
-                                                    (fargn tterm 1)
-                                                    x1
-                                                    t
-                                                    wrld)
-                          (directed-untranslate-rec (if (consp (cddr disjuncts))
-                                                        (cons 'or (cdr disjuncts))
-                                                      (cadr disjuncts))
-                                                    (fargn tterm 3)
-                                                    x2
-                                                    iff-flg
-                                                    wrld))))
-                      (t nil))))
-               (& nil))))
-       ((and (eq (car uterm) '>) ; (> x0 y0)
-             (eq (car sterm) '<) ; (< y1 x1)
-             (eq (car tterm) '<)) ; (< y2 y1)
-        (list '>
-              (directed-untranslate-rec
-               (cadr uterm)
-               (fargn tterm 2) (fargn sterm 2) nil wrld)
-              (directed-untranslate-rec
-               (caddr uterm)
-               (fargn tterm 1) (fargn sterm 1) nil wrld)))
-       ((eq (car uterm) '<=) ; (<= x0 y0), translates as (not (< y1 x1))
-        (or (case-match tterm
-              (('not ('< y1 x1)) ; should always match
-               (case-match sterm
-                 (('not ('< y2 x2))
-                  (cons '<= (directed-untranslate-lst
-                             (cdr uterm) ; (x0 y0)
-                             (list x1 y1) ; from tterm
-                             (list x2 y2) ; from sterm
-                             nil
-                             wrld)))
-                 (& nil)))
-              (& nil))
-            (untranslate sterm iff-flg wrld)))
-       ((eq (car uterm) '>=) ; (>= x0 y0), translates as (not (< x1 y1))
-        (or (case-match tterm
-              (('not ('< x1 y1))
-               (case-match sterm
-                 (('not ('< x2 y2))
-                  (cons '>= (directed-untranslate-lst
-                             (cdr uterm) ; (x0 y0)
-                             (list x1 y1) ; from tterm
-                             (list x2 y2) ; from sterm
-                             nil
-                             wrld)))
-                 (& nil)))
-              (& nil))
-            (untranslate sterm iff-flg wrld)))
-       (t
-        (or
-         (case-match uterm
-           (('list) uterm)
-           (('list x) ; tterm is (cons x' nil)
-            (case-match sterm
-              (('cons a *nil*)
-               (list 'list
-                     (directed-untranslate-rec x (fargn tterm 1) a nil wrld)))
-              (& nil)))
-           (('list x . y) ; same translation as for (cons x (list . y))
-            (case-match sterm
-              (('cons a b)
-               (let ((tmp1 (directed-untranslate-rec x
-                                                     (fargn tterm 1) a nil wrld))
-                     (tmp2 (directed-untranslate-rec `(list ,@y)
-                                                     (fargn tterm 2) b nil wrld)))
-                 (if (and (consp tmp2) (eq (car tmp2) 'list))
-                     `(list ,tmp1 ,@(cdr tmp2))
-                   `(cons ,tmp1 ,tmp2))))
-              (& nil)))
-           (('list* x) ; same transation as for x
-            (list 'list*
-                  (directed-untranslate-rec x tterm sterm nil wrld)))
-           (('list* x . y) ; same translation as for (cons x (list* . y))
-            (case-match sterm
-              (('cons a b)
-               (let ((tmp1 (directed-untranslate-rec x
-                                                     (fargn tterm 1) a nil wrld))
-                     (tmp2 (directed-untranslate-rec `(list* ,@y)
-                                                     (fargn tterm 2) b nil wrld)))
-                 (if (and (consp tmp2) (eq (car tmp2) 'list*))
-                     `(list* ,tmp1 ,@(cdr tmp2))
-                   `(cons ,tmp1 ,tmp2))))
-              (& nil)))
-           (& nil))
-         (and (member-eq (ffn-symb tterm) '(car cdr))
-              (directed-untranslate-car-cdr-nest uterm tterm sterm wrld))
-         (and (eql (length (fargs sterm))
-                   (length (fargs tterm)))
-              (let* ((pair (cdr (assoc-eq (ffn-symb sterm)
-                                          (untrans-table wrld))))
-                     (op (if pair
-                             (car pair)
-                           (or (cdr (assoc-eq (ffn-symb sterm)
-                                              (table-alist
-                                               'std::define-macro-fns
-                                               wrld)))
-                               (ffn-symb sterm)))))
-                (cond
-                 ((symbolp (ffn-symb sterm))
-                  (cond ((and (cdr pair) ; hence pair, and we might right-associate
-                              (case-match uterm
-                                ((!op & & & . &) t) ; we want to flatten
-                                (& nil)))           ; (op x (op y ...))
-                         (let ((arg1 (directed-untranslate-rec
-                                      (cadr uterm)
-                                      (fargn tterm 1) (fargn sterm 1) nil
-                                      wrld))
-                               (arg2 (directed-untranslate-rec
-                                      (cons op (cddr uterm))
-                                      (fargn tterm 2) (fargn sterm 2) nil wrld)))
-                           (cond ((and (consp arg2)
-                                       (equal (car arg2) op))
-                                  (list* op arg1 (cdr arg2)))
-                                 (t (list op arg1 arg2)))))
-                        ((or (equal (car uterm) op)
-                             (equal (car uterm) (ffn-symb tterm))
-                             (equal (macro-abbrev-p op wrld) (ffn-symb tterm)))
-                         (cons op (directed-untranslate-lst
-                                   (cdr uterm) (fargs tterm) (fargs sterm)
-                                   (case (ffn-symb sterm)
-                                     (if (list t iff-flg iff-flg))
-                                     (not '(t))
-                                     (otherwise nil))
-                                   wrld)))
-                        ((equal sterm tterm)
+                       (('if & *nil* *t*) ; generate a NOT, not an AND or OR
+                        nil)
+                       (('if x1 x2 *nil*)
+                        (and (eq (car uterm) 'and)
+                             (cond
+                              ((cddr uterm) ; tterm is (if x1' x2' nil)
+                               (untranslate-and
+                                (directed-untranslate-rec (cadr uterm)
+                                                          (fargn tterm 1)
+                                                          x1
+                                                          t
+                                                          wrld)
+                                (directed-untranslate-rec (if (cdddr uterm)
+                                                              (cons 'and
+                                                                    (cddr uterm))
+                                                            (caddr uterm))
+                                                          (fargn tterm 2)
+                                                          x2
+                                                          iff-flg
+                                                          wrld)
+                                iff-flg))
+                              ((cdr uterm) ; uterm is (and x)
+                               (directed-untranslate-rec (cadr uterm)
+                                                         tterm
+                                                         sterm
+                                                         t
+                                                         wrld))
+                              (t ; uterm is (and)
+                               (directed-untranslate-rec nil
+                                                         tterm
+                                                         sterm
+                                                         t
+                                                         wrld)))))
+                       (('if x1 *nil* x2)
+                        (and (eq (car uterm) 'and) ; tterm is (if x1' x3' *nil*)
+                             (directed-untranslate-rec uterm
+                                                       tterm
+                                                       (fcons-term* 'if
+                                                                    (dumb-negate-lit x1)
+                                                                    x2
+                                                                    *nil*)
+                                                       iff-flg
+                                                       wrld)))
+                       (('if x1 x1-alt x2)
+                        (and (eq (car uterm) 'or) ; tterm is (if x1' & x2')
+                             (or (equal x1-alt x1)
+                                 (equal x1-alt *t*))
+                             (cond
+                              ((cddr uterm) ; tterm is (if x1' & x2')
+                               (untranslate-or
+                                (directed-untranslate-rec (cadr uterm)
+                                                          (fargn tterm 1)
+                                                          x1
+                                                          t
+                                                          wrld)
+                                (directed-untranslate-rec (cons 'or
+                                                                (cddr uterm))
+                                                          (fargn tterm 3)
+                                                          x2
+                                                          iff-flg
+                                                          wrld)))
+                              ((cdr uterm) ; uterm is (or x)
+                               (directed-untranslate-rec (cadr uterm)
+                                                         tterm
+                                                         sterm
+                                                         t
+                                                         wrld))
+                              (t ; uterm is (or)
+                               (directed-untranslate-rec t
+                                                         tterm
+                                                         sterm
+                                                         t
+                                                         wrld)))))
+                       (('if x1 x2 *t*)
+                        (and (eq (car uterm) 'or)
+                             (directed-untranslate-rec uterm
+                                                       tterm
+                                                       (fcons-term* 'if
+                                                                    (dumb-negate-lit x1)
+                                                                    *t*
+                                                                    x2)
+                                                       iff-flg
+                                                       wrld)))
+                       (& nil))))
+               ((and (eq (car uterm) '>)  ; (> x0 y0)
+                     (eq (car sterm) '<)  ; (< y1 x1)
+                     (eq (car tterm) '<)) ; (< y2 y1)
+
+; Replace < in sterm by >.
+
+                (list '>
+                      (directed-untranslate-rec
+                       (cadr uterm)
+                       (fargn tterm 2) (fargn sterm 2) nil wrld)
+                      (directed-untranslate-rec
+                       (caddr uterm)
+                       (fargn tterm 1) (fargn sterm 1) nil wrld)))
+               ((eq (car uterm) '<=) ; (<= x0 y0), translates as (not (< y1 x1))
+
+; If uterm, tterm, and sterm all represent a <= call, then call <= in the
+; result.
+
+                (or (case-match tterm
+                      (('not ('< y1 x1)) ; should always match
+                       (case-match sterm
+                         (('not ('< y2 x2))
+                          (cons '<= (directed-untranslate-lst
+                                     (cdr uterm)  ; (x0 y0)
+                                     (list x1 y1) ; from tterm
+                                     (list x2 y2) ; from sterm
+                                     nil
+                                     wrld)))
+                         (& nil)))
+                      (& nil))
+                    (untranslate sterm iff-flg wrld)))
+               ((eq (car uterm) '>=) ; (>= x0 y0), translates as (not (< x1 y1))
+
+; If uterm, tterm, and sterm all represent a >= call, then call >= in the
+; result.
+
+                (or (case-match tterm
+                      (('not ('< x1 y1))
+                       (case-match sterm
+                         (('not ('< x2 y2))
+                          (cons '>= (directed-untranslate-lst
+                                     (cdr uterm)  ; (x0 y0)
+                                     (list x1 y1) ; from tterm
+                                     (list x2 y2) ; from sterm
+                                     nil
+                                     wrld)))
+                         (& nil)))
+                      (& nil))
+                    (untranslate sterm iff-flg wrld)))
+               (t
+                (or
+
+; Attempt to do something nice with cases where uterm is a call of list or
+; list*.
+
+                 (case-match uterm
+                   (('list) uterm)
+                   (('list x) ; tterm is (cons x' nil)
+                    (case-match sterm
+                      (('cons a *nil*)
+                       (list 'list
+                             (directed-untranslate-rec x (fargn tterm 1) a nil wrld)))
+                      (& nil)))
+                   (('list x . y) ; same translation as for (cons x (list . y))
+                    (case-match sterm
+                      (('cons a b)
+                       (let ((tmp1 (directed-untranslate-rec x
+                                                             (fargn tterm 1) a nil wrld))
+                             (tmp2 (directed-untranslate-rec `(list ,@y)
+                                                             (fargn tterm 2) b nil wrld)))
+                         (if (and (consp tmp2) (eq (car tmp2) 'list))
+                             `(list ,tmp1 ,@(cdr tmp2))
+                           `(cons ,tmp1 ,tmp2))))
+                      (& nil)))
+                   (('list* x) ; same transation as for x
+                    (list 'list*
+                          (directed-untranslate-rec x tterm sterm nil wrld)))
+                   (('list* x . y) ; same translation as for (cons x (list* . y))
+                    (case-match sterm
+                      (('cons a b)
+                       (let ((tmp1 (directed-untranslate-rec x
+                                                             (fargn tterm 1) a nil wrld))
+                             (tmp2 (directed-untranslate-rec `(list* ,@y)
+                                                             (fargn tterm 2) b nil wrld)))
+                         (if (and (consp tmp2) (eq (car tmp2) 'list*))
+                             `(list* ,tmp1 ,@(cdr tmp2))
+                           `(cons ,tmp1 ,tmp2))))
+                      (& nil)))
+                   (& nil))
+
+; Attempt to preserve macros like cadr.
+
+                 (and (member-eq (ffn-symb tterm) '(car cdr))
+                      (directed-untranslate-car-cdr-nest uterm tterm sterm wrld))
+
+; Final cases:
+
+                 (and (eql (length (fargs sterm))
+                           (length (fargs tterm)))
+                      (let* ((pair (cdr (assoc-eq (ffn-symb sterm)
+                                                  (untrans-table wrld))))
+                             (op ; the fn-symb of sterm, or a corresponding macro
+                              (if pair
+                                  (car pair)
+                                (or (cdr (assoc-eq (ffn-symb sterm)
+                                                   (table-alist
+                                                    'std::define-macro-fns
+                                                    wrld)))
+                                    (ffn-symb sterm)))))
+                        (cond
+                         ((symbolp (ffn-symb sterm))
+                          (cond ((and (cdr pair) ; hence pair, and we might right-associate
+                                      (case-match uterm
+                                        ((!op & & & . &) t) ; we want to flatten
+                                        (& nil)))           ; (op x (op y ...))
+
+; Uterm is (op & & & . &) where op is a macro with &rest args corresponding to
+; the function symbol of sterm.  Untranslate to a suitably flattened op call.
+
+                                 (let ((arg1 (directed-untranslate-rec
+                                              (cadr uterm)
+                                              (fargn tterm 1) (fargn sterm 1) nil
+                                              wrld))
+                                       (arg2 (directed-untranslate-rec
+                                              (cons op (cddr uterm))
+                                              (fargn tterm 2) (fargn sterm 2) nil wrld)))
+                                   (cond ((and (consp arg2)
+                                               (equal (car arg2) op))
+                                          (list* op arg1 (cdr arg2)))
+                                         (t (list op arg1 arg2)))))
+                                ((or (equal (car uterm) op)
+                                     (equal (car uterm) (ffn-symb tterm))
+                                     (equal (macro-abbrev-p op wrld) (ffn-symb tterm)))
+
+; If op is a suitable function (or macro) call for the result, then apply it to
+; the result of recursively untranslating (directedly) the args.
+
+                                 (cons op (directed-untranslate-lst
+                                           (cdr uterm) (fargs tterm) (fargs sterm)
+                                           (case (ffn-symb sterm)
+                                             (if (list t iff-flg iff-flg))
+                                             (not '(t))
+                                             (otherwise nil))
+                                           wrld)))
+                                ((equal sterm tterm)
 
 ; It's probably better to use the macro at hand than to untranslate.
 
-                         uterm)
-                        (t nil)))
-                 (t nil))))
-         (untranslate sterm iff-flg wrld)))))))))
+                                 uterm)
+                                (t nil)))
+                         (t nil))))
+                 (untranslate sterm iff-flg wrld)))))))))))))))
 
 (defun directed-untranslate-lst (uargs targs sargs iff-flg-lst wrld)
   (cond ((endp uargs) nil)
@@ -605,10 +708,9 @@
 
 (defun directed-untranslate-car-cdr-nest (uterm tterm sterm wrld)
 
-; Tterm is a call of car or cdr.  Uterm may be a name in *ca<d^n>r-alist*, such
-; as CADDR.  Ad-len is the number of A and D characters in that name, which is
-; 2, 3, or 4.  We return nil or else a suitable result for
-; (directed-untranslate uterm tterm sterm wrld)
+; Tterm is a call of car or cdr.  Uterm may be a call of a name in
+; *ca<d^n>r-alist*, such as CADDR.  We return nil or else a suitable result for
+; (directed-untranslate uterm tterm sterm wrld).
 
   (and (eq (ffn-symb tterm) (ffn-symb sterm))
        (let ((triple (assoc-eq (car uterm) *car-cdr-macro-alist*)))

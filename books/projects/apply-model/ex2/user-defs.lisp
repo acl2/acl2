@@ -1,0 +1,381 @@
+; Copyright (C) 2017, ForrestHunt, Inc.
+; Written by Matt Kaufmann and J Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; Sample Book of User-Defining Functions for which We Will Establish All of the
+; Warrants
+
+; We define a variety of tame and mapping functions.  The motivation is
+; two-fold: (1) illustrate some useful mapping functions, and (2) stress the
+; doppelganger construction method and more generally the proof that all
+; warrants are satisfiable.
+
+; Every time we've realized a problem with with our doppelganger construction
+; we've introduced a function here to show that we've figured out how to handle
+; the problem.  Most of these mapping functions are pretty useless except as
+; exemplars of the doppelganger construction.
+
+; The complete list of functions defined with defun$ in this file is given
+; below.  The list is in the same order in which the functions are defined
+; below and was collected mechanically with an Emacs keyboard macro.  We
+; assemble this list here in this comment so we can more easily confirm that
+; doppelgangers.lisp deals with each of these functions.
+
+#||
+square
+cube
+my-append1
+my-rev
+nats
+expt-2-and-expt-3
+expt-5
+ok-fnp
+collect
+sumlist
+sumlist-with-params
+filter
+all
+xists
+maxlist
+collect-on
+collect-tips
+apply$2
+apply$2x
+apply$2xx
+russell
+foldr
+foldl
+collect-from-to
+collect*
+collect2
+recur-by-collect
+prow
+prow*
+fn-2-and-fn-3
+fn-5
+map-fn-5
+sumlist-expr
+twofer
+collect-a
+collect-b
+collect-c
+collect-d
+collect-e
+my-apply-2
+my-apply-2-1
+collect-my-rev
+my-append2
+sqnats
+sum-of-products
+||#
+
+(in-package "MODAPP")
+
+; -----------------------------------------------------------------
+; Definitions
+
+; For the sake of later modeling, we exhibit all of our defuns together, even
+; though some are only used to state theorems about others.  We group them
+; into: Group 1 (tame functions independent of apply$), Group 3 (mapping
+; functions), and Group 2 (tame functions not independent of apply$).  The
+; groups are discussed in doppelgangers.lisp.
+
+; ---
+; Group 1 (tame functions independent of apply$)
+
+(defun$ square (x) (* x x))
+
+(defun$ cube (x) (* x (square x)))
+
+(defun$ my-append1 (x y)
+  (if (consp x)
+      (cons (car x) (my-append1 (cdr x) y))
+      y))
+
+(defun$ my-rev (x)
+  (if (consp x)
+      (my-append1 (my-rev (cdr x)) (cons (car x) nil))
+      nil))
+
+(defun$ nats (n)
+  (if (zp n)
+      nil
+      (cons n (nats (- n 1)))))
+
+; This next pair illustrate the idea that a function, e.g., expt-2-and-expt-3,
+; can have a badge in the badge-table without having a warrant, and then be
+; used in a function with a warrant, e.g., expt-5.
+
+(defun$ expt-2-and-expt-3 (x)
+  (let ((x2 (* x x)))
+    (mv x2 (* x x2))))
+
+(defun$ expt-5 (x)
+  (mv-let (x2 x3)
+    (expt-2-and-expt-3 x)
+    (* x2 x3)))
+
+(defun$ ok-fnp (fn)
+  (and (not (equal fn 'QUOTE))
+       (not (equal fn 'IF))
+       (tamep `(,fn X))))
+
+; ---
+; Group 3 (mapping functions)
+
+(defun$ collect (lst fn)
+  (cond ((endp lst) nil)
+        (t (cons (apply$ fn (list (car lst)))
+                 (collect (cdr lst) fn)))))
+
+(defun$ sumlist (lst fn)
+  (cond ((endp lst) 0)
+        (t (+ (apply$ fn (list (car lst)))
+              (sumlist (cdr lst) fn)))))
+
+(defun$ sumlist-with-params (lst fn params)
+  (cond ((endp lst) 0)
+        (t (+ (apply$ fn (cons (car lst) params))
+              (sumlist-with-params (cdr lst) fn params)))))
+
+(defun$ filter (lst fn)
+  (cond ((endp lst) nil)
+        ((apply$ fn (list (car lst)))
+         (cons (car lst) (filter (cdr lst) fn)))
+        (t (filter (cdr lst) fn))))
+
+(defun$ all (lst fn)
+  (cond ((endp lst) t)
+        (t (and (apply$ fn (list (car lst)))
+                (all (cdr lst) fn)))))
+
+(defun$ xists (lst fn)
+; Note this function is Boolean, which is why we didn't define it with OR.
+  (cond ((endp lst) nil)
+        ((apply$ fn (list (car lst))) t)
+        (t (xists (cdr lst) fn))))
+
+(defun$ maxlist (lst fn)
+  (cond ((endp lst) nil)
+        ((endp (cdr lst)) (apply$ fn (list (car lst))))
+        (t (max (apply$ fn (list (car lst)))
+                (maxlist (cdr lst) fn)))))
+
+(defun$ collect-on (lst fn)
+  (cond ((endp lst) nil)
+        (t (cons (apply$ fn (list lst))
+                 (collect-on (cdr lst) fn)))))
+
+(defun$ collect-tips (x fn)
+  (cond ((atom x) (apply$ fn (list x)))
+        (t (cons (collect-tips (car x) fn)
+                 (collect-tips (cdr x) fn)))))
+
+(defun$ apply$2 (fn x y)
+  (apply$ fn (list x y)))
+
+; These two functions illustrate getting further away from apply$.
+
+(defun$ apply$2x (fn x y)
+  (apply$2 fn x y))
+
+(defun$ apply$2xx (fn x y)
+  (apply$2x fn x y))
+
+; A Russell-like function: The classic russell function would be
+
+; ( defun$ russell (fn)
+;   (not (apply$ fn (list fn))))
+
+; But this abuses our classification system because fn is used both in a
+; functional slot and a vanilla slot.  However, the following function raises
+; the same problems as Russell's and is admissible here.
+
+(defun$ russell (fn x)
+  (not (apply$ fn (list x x))))
+
+; Of interest, of course, is (russell 'russell 'russell) because the
+; naive apply$ property would give us:
+; (russell 'russell 'russell)                            {def russell}
+; = (not (apply$ 'russell (list 'russell 'russell)))     {naive apply$}
+; = (not (russell 'russell 'russell))
+
+(defun$ foldr (lst fn init)
+  (if (endp lst)
+      init
+      (apply$ fn
+              (list (car lst)
+                    (foldr (cdr lst) fn init)))))
+
+(defun$ foldl (lst fn ans)
+  (if (endp lst)
+      ans
+      (foldl (cdr lst)
+             fn
+             (apply$ fn (list (car lst) ans)))))
+
+(defun$ collect-from-to (i max fn)
+  (declare (xargs :measure (nfix (- (+ 1 (ifix max)) (ifix i)))))
+  (let ((i (ifix i))
+        (max (ifix max)))
+    (cond
+     ((> i max)
+      nil)
+     (t (cons (apply$ fn (list i))
+              (collect-from-to (+ i 1) max fn))))))
+
+(defun$ collect* (lst fn)
+  (if (endp lst)
+      nil
+      (cons (apply$ fn (car lst))
+            (collect* (cdr lst) fn))))
+
+(defun$ collect2 (lst fn1 fn2)
+  (if (endp lst)
+      nil
+      (cons (cons (apply$ fn1 (list (car lst)))
+                  (apply$ fn2 (list (car lst))))
+            (collect2 (cdr lst) fn1 fn2))))
+
+(defun$ recur-by-collect (lst fn)
+  (declare (xargs :measure (len lst)))
+  (if (endp lst)
+      nil
+      (cons (car lst)
+	    (recur-by-collect (collect (cdr lst) fn) fn))))
+
+(defun$ prow (lst fn)
+  (cond ((or (endp lst) (endp (cdr lst)))
+         nil)
+        (t (cons (apply$ fn (list (car lst) (cadr lst)))
+                 (prow (cdr lst) fn)))))
+
+(defun$ prow* (lst fn)
+  (declare (xargs :measure (len lst)))
+  (cond ((or (endp lst)
+             (endp (cdr lst)))
+         (apply$ fn (list lst lst)))
+        (t (prow* (prow lst fn) fn))))
+
+; These are nonrecursive mapping functions, the first of which
+; is un-warranted because it returns multiple values.
+
+(defun$ fn-2-and-fn-3 (fn x)
+; Return (mv (fn x x) (fn x (fn x x)))
+  (let ((x2 (apply$ fn (list x x))))
+    (mv x2 (apply$ fn (list x x2)))))
+
+(defun$ fn-5 (fn x)
+  (mv-let (x2 x3)
+    (fn-2-and-fn-3 fn x)
+    (apply$ fn (list x2 x3))))
+
+(defun$ map-fn-5 (lst fn)
+  (if (endp lst)
+      nil
+      (cons (fn-5 fn (car lst))
+            (map-fn-5 (cdr lst) fn))))
+
+(defun$ sumlist-expr (lst expr alist)
+  (cond ((endp lst) 0)
+        (t (+ (ev$ expr (cons (cons 'x (car lst)) alist))
+              (sumlist-expr (cdr lst) expr alist)))))
+
+(defun$ twofer (lst fn xpr alist)
+  (if (endp lst)
+      nil
+      (cons (cons (apply$ fn (list (car lst)))
+                  (ev$ xpr (cons (cons 'TAIL lst) alist)))
+            (twofer (cdr lst) fn xpr alist))))
+
+; The following function stresses the method of eliminating tame calls of
+; mapping functions from mapping functions.  The sumlist is tame.  The fact
+; that it occurs in the apply$ is irrelevant, it just yields a number to be
+; used as data for fn.  But the sumlist involves foldr and so eliminating it
+; involves defining some helpers and proving that we did it right BEFORE we
+; prove sumlist! is sumlist and foldr! is foldr.
+
+(defun$ collect-a (lst fn)
+  (cond ((endp lst) nil)
+        (t (cons (apply$ fn (list
+                             (sumlist (nats (car lst))
+                                      '(lambda (i)
+                                         (foldr (nats i)
+                                                '(lambda (j k)
+                                                   (binary-* (square j) k))
+                                                '1)))))
+                 (collect-a (cdr lst) fn)))))
+
+(defun$ collect-b (lst fn)
+  (cond ((endp lst) nil)
+        (t (cons (apply$ fn (list (sumlist (nats (car lst)) fn)))
+                 (collect-b (cdr lst) fn)))))
+
+(defun$ collect-c (lst fn1 fn2)
+  (cond ((endp lst) nil)
+        (t (cons (apply$ fn1 (list (sumlist (nats (car lst)) fn2)))
+                 (collect-c (cdr lst) fn1 fn2)))))
+
+(defun$ collect-d (lst fn1 fn2)
+  (if (endp lst)
+      nil
+      (cons (cons (apply$ fn1 (list (car lst)))
+                  (apply$ fn2 (list (car lst))))
+            (collect-d (cdr lst) fn1 fn2))))
+
+(defun$ collect-e (lst fn)
+  (if (endp lst)
+      nil
+      (cons (collect-d lst fn '(lambda (x) (binary-+ '10 (square x))))
+            (collect-e (cdr lst) fn))))
+
+(defun$ my-apply-2 (fn1 fn2 x)
+  (list (apply$ fn1 x) (apply$ fn2 x)))
+
+(defun$ my-apply-2-1 (fn x)
+  (my-apply-2 fn fn x))
+
+; ---
+; Group 2 continued (functions containing tame subterms involving apply$)
+
+(defun$ collect-my-rev (lst)
+  (collect lst 'MY-REV))
+
+(defun$ my-append2 (x y)
+  (foldr x 'CONS y))
+
+(defun$ sqnats (x)
+  (collect (filter x 'NATP) 'SQUARE))
+
+(defun$ sum-of-products (lst)
+  (sumlist lst
+           '(LAMBDA (X)
+                    (FOLDR X
+                           '(LAMBDA (I A)
+                                    (BINARY-* I A))
+                           '1))))
+
+(defun$ collect-composition (lst fn gn)
+  (if (endp lst)
+      nil
+      (cons (apply$ fn (list (apply$ gn (list (car lst)))))
+            (collect-composition (cdr lst) fn gn))))
+
+(defun$ collect-x1000 (lst fn)
+  (collect-composition lst fn '(lambda (x) (binary-* '1000 x))))
+
+(defun$ collect-x1000-caller (lst fn)
+  (if (endp lst)
+      nil
+      (cons (collect-x1000 (car lst) fn)
+            (collect-x1000-caller (cdr lst) fn))))
+
+; ---
+; Group 2 continued (a guarded function)
+
+(defun$ guarded-collect (lst fn)
+  (declare (xargs :guard (true-listp lst)))
+  (if (endp lst)
+      nil
+      (cons (apply$ fn (list (car lst)))
+            (guarded-collect (cdr lst) fn))))

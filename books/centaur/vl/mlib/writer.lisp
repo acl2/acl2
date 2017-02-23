@@ -1774,6 +1774,13 @@ expression into a string."
     (:vl-automatic "automatic")
     (otherwise (progn$ (impossible) ""))))
 
+(define vl-pp-lifetime ((x vl-lifetime-p) &key (ps 'ps))
+  (case (vl-lifetime-fix x)
+    (:vl-static (vl-ps-span "vl_key" (vl-print-str "static ")))
+    (:vl-automatic (vl-ps-span "vl_key" (vl-print-str "automatic ")))
+    ('nil    ps)
+    (otherwise (progn$ (impossible) ps))))
+
 (define vl-pp-gatedelay ((x vl-gatedelay-p) &key (ps 'ps))
   (b* (((vl-gatedelay x) x))
     (cond
@@ -3568,9 +3575,7 @@ expression into a string."
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "function ")
-                           (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
-                                 ((eq x.lifetime :vl-static)    (vl-print "static "))
-                                 (t                             ps))
+                           (vl-pp-lifetime x.lifetime)
                            (vl-pp-datatype x.rettype)
                            (vl-print " "))
                (vl-print-wirename x.name)
@@ -3604,9 +3609,7 @@ expression into a string."
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "task ")
-                           (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
-                                 ((eq x.lifetime :vl-static)    (vl-print "static "))
-                                 (t                             ps)))
+                           (vl-pp-lifetime x.lifetime))
                (vl-print-wirename x.name)
                (vl-println ";")
                ;; BOZO this order might not be right, maybe need something
@@ -4207,6 +4210,24 @@ module elements and its comments.</p>"
     (vl-ps-seq (vl-pp-program (car x))
                (vl-pp-programlist (cdr x)))))
 
+(define vl-pp-class ((x vl-class-p) &key (ps 'ps))
+  (b* (((vl-class x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (if x.virtualp (vl-ps-span "vl_key" (vl-print "virtual ")) ps)
+               (vl-ps-span "vl_key" (vl-print "class "))
+               (vl-pp-lifetime x.lifetime)
+               (vl-print-modname x.name)
+               (vl-println " ;")
+               (vl-println " // BOZO implement vl-pp-class")
+               (vl-ps-span "vl_key" (vl-println "endclass"))
+               (vl-println ""))))
+
+(define vl-pp-classlist ((x vl-classlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-class (car x))
+               (vl-pp-classlist (cdr x)))))
+
 
 (define vl-pp-design ((x vl-design-p) &key (ps 'ps))
   ;; arbitrary order
@@ -4226,6 +4247,7 @@ module elements and its comments.</p>"
                (vl-pp-modulelist x.mods ss)
                (vl-pp-udplist x.udps)
                (vl-pp-programlist x.programs)
+               (vl-pp-classlist x.classes)
                (vl-pp-configlist x.configs))))
 
 

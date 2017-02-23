@@ -103,10 +103,19 @@ export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/build/make_cert_help.pl
 # then be subject to shell expansion.  Putting it in single quotes should help
 # to defend against this, although it of course won't work for file names with
 # single quotes.
+# @$(MAKE_CERT_PL) '$*' \
+#                        $(if $(findstring 1,$(pcert)),"complete","certify") \
+#                        $(if $(findstring 1,$(pcert)),"no_acl2x",$(if $(findstring 1,$(acl2x)),"yes","no")) \
+#                        $^
+# Bug fix 2017-02-09: In the old version commented out above, the last argument
+# $^ never gets used in @$(MAKE_CERT_PL). It also causes bash to fail when the
+# number of dependencies gets huge and results in an error of "bash: argument
+# list too long". The new version removes $^ from the list of arguments to
+# @$(MAKE_CERT_PL).
+# Refer to https://github.com/acl2/acl2/issues/694 for more information.
 	@$(MAKE_CERT_PL) '$*' \
                          $(if $(findstring 1,$(pcert)),"complete","certify") \
-                         $(if $(findstring 1,$(pcert)),"no_acl2x",$(if $(findstring 1,$(acl2x)),"yes","no")) \
-                         $^
+                         $(if $(findstring 1,$(pcert)),"no_acl2x",$(if $(findstring 1,$(acl2x)),"yes","no"))
 
 %.pcert1 : %.lisp
 	@$(MAKE_CERT_PL) '$*' $(if $(findstring 1,$(pcert)),"convert","pcertifyplus") \

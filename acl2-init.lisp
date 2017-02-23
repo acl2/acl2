@@ -1272,10 +1272,16 @@ implementations.")
   (si::gbc t) ; wfs suggestion [at least if we turn on SGC] -- formerly nil
               ; (don't know why...)
 
-  (cond ((and (not *gcl-large-maxpages*)
-              (fboundp 'si::sgc-on))
-         (print "Executing (si::sgc-on t)") ;debugging GC
-         (funcall 'si::sgc-on t)))
+; We formerly turned on SGC.  However, when we reported to Camm Maguire
+; certification failure for community book
+; books/centaur/fty/tests/deftagsum-scale.lisp in February 2017, he suggested
+; that we turn off SGC, since it may not have benefits now that there are huge
+; rams where swapping is to be avoided.
+
+; (cond ((and (not *gcl-large-maxpages*)
+;             (fboundp 'si::sgc-on))
+;        (print "Executing (si::sgc-on t)") ;debugging GC
+;        (funcall 'si::sgc-on t)))
 
 ; Set the hole to be sufficiently large so that ACL2 can do all the allocations
 ; quickly when it starts up, without any GC, leaving the desired size hole when

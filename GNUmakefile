@@ -51,12 +51,6 @@
 #                    ; debris, ..., created by `make certify-books',
 #                    ; `make regression', etc.
 
-#  Shortcuts include the following (also saved_acl2pr, saved_acl2c, etc.):
-
-#   make saved_acl2  ; Build saved_acl2;  essentially, make LISP=$(LISP)
-#   make saved_acl2r ; Build saved_acl2r; essentially, make LISP=$(LISP) ACL2_REAL=r
-#   make saved_acl2p ; Build saved_acl2p; essentially, make LISP=$(LISP) ACL2_PAR=p
-
 ###############################################################################
 
 #  NOTE:  Perhaps only implementors should read below.
@@ -170,10 +164,10 @@ ifdef ACL2_REAL
 endif
 
 # The user may define PREFIX; otherwise it is implicitly the empty string.
-PREFIX =
+PREFIX :=
 
-PREFIXsaved_acl2 = ${PREFIX}saved_acl2${ACL2_SUFFIX}
-PREFIXosaved_acl2 = ${PREFIX}osaved_acl2${ACL2_SUFFIX}
+PREFIXsaved_acl2 := ${PREFIX}saved_acl2${ACL2_SUFFIX}
+PREFIXosaved_acl2 := ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
 ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
 $(info ACL2 is $(ACL2))
@@ -242,11 +236,6 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            serialize.lisp serialize-raw.lisp\
            defpkgs.lisp
 
-sources_extra := GNUmakefile acl2-characters doc.lisp \
-	         acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp \
-	         akcl-acl2-trace.lisp allegro-acl2-trace.lisp openmcl-acl2-trace.lisp
-ACL2_DEPS := $(sources) $(sources_extra)
-
 ifdef ACL2_HONS
 	sources := $(sources) hons-raw.lisp memoize-raw.lisp
 endif
@@ -255,6 +244,12 @@ ifdef ACL2_PAR
 endif
 # No change to sources for ACL2_DEVEL or ACL2_WAG
 
+sources_extra := GNUmakefile acl2-characters doc.lisp \
+	         acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp \
+	         akcl-acl2-trace.lisp allegro-acl2-trace.lisp openmcl-acl2-trace.lisp
+
+ACL2_DEPS := $(sources) $(sources_extra)
+
 # Top (default) target:
 all: large
 
@@ -262,61 +257,70 @@ ifneq ($(TAGS_ACL2_DOC),)
 all: TAGS-acl2-doc
 endif
 
-# Build tags table for acl2-doc, with ACL2 topics first.  We make this
-# a phony topic because we want the rebuild to happen whenever this is invoked.
-.PHONY: TAGS-acl2-doc
-TAGS-acl2-doc:
+# Build tags table for acl2-doc, with ACL2 topics first.
+TAGS-acl2-doc: $(ACL2_DEPS)
 	rm -f TAGS-acl2-doc
 	etags *.lisp -o TAGS-acl2-doc
 	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append)
 
 .PHONY: acl2r
 acl2r:
-	rm -f acl2r.lisp
-	$(MAKE) acl2r.lisp
+	@rm -f acl2r.lisp.temp
+	@echo "Building acl2r.lisp if necessary."
+	@$(MAKE) acl2r.lisp.temp
+	@if [ ! -f acl2r.lisp ] ; then \
+	    mv acl2r.lisp.temp acl2r.lisp ;\
+	else \
+	diff acl2r.lisp.temp acl2r.lisp 2>&1 > /dev/null ;\
+	if [ $$? != 0 ] ; then \
+	    mv acl2r.lisp.temp acl2r.lisp ;\
+	else \
+	    rm acl2r.lisp.temp ;\
+	fi ;\
+	fi
 
-acl2r.lisp:
+acl2r.lisp.temp:
 # It might be good to remove old compiled files acl2-fns.o etc., but at
 # the moment it seems painful to deal with all possible compiled file
 # extensions.
-	echo "" > acl2r.lisp
-	if [ "$(ACL2_REAL)" != "" ] ; then \
-	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> acl2r.lisp ;\
+	@echo "" > $@
+	@if [ "$(ACL2_REAL)" != "" ] ; then \
+	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> $@ ;\
 	fi
-	if [ "$(ACL2_HONS)" != "" ] ; then \
-	echo '(or (member :hons *features*) (push :hons *features*))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_HONS)" != "" ] ; then \
+	echo '(or (member :hons *features*) (push :hons *features*))' >> $@ ;\
 	fi
-	if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
-	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
+	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> $@ ;\
 	fi
-	if [ "$(ACL2_PAR)" != "" ] ; then \
-	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_PAR)" != "" ] ; then \
+	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> $@ ;\
 	fi
-	if [ "$(ACL2_DEVEL)" != "" ] ; then \
-	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_DEVEL)" != "" ] ; then \
+	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> $@ ;\
 	fi
-	if [ "$(ACL2_WAG)" != "" ] ; then \
+	@if [ "$(ACL2_WAG)" != "" ] ; then \
 	mv -f ~/write-arithmetic-goals.lisp.old ; \
 	mv -f ~/write-arithmetic-goals.lisp ~/write-arithmetic-goals.lisp.old ; \
-	echo '(or (member :write-arithmetic-goals *features*) (push :write-arithmetic-goals *features*))' >> acl2r.lisp ;\
+	echo '(or (member :write-arithmetic-goals *features*) (push :write-arithmetic-goals *features*))' >> $@ ;\
 	fi
-	if [ "$(ACL2_SAFETY)" != "" ] ; then \
-	echo "(defparameter *acl2-safety* $(ACL2_SAFETY))" >> acl2r.lisp ;\
+	@if [ "$(ACL2_SAFETY)" != "" ] ; then \
+	echo "(defparameter *acl2-safety* $(ACL2_SAFETY))" >> $@ ;\
 	fi
-	if [ "$(ACL2_STACK_ACCESS)" != "" ] ; then \
-	echo "(defparameter *acl2-stack-access* $(ACL2_STACK_ACCESS))" >> acl2r.lisp ;\
+	@if [ "$(ACL2_STACK_ACCESS)" != "" ] ; then \
+	echo "(defparameter *acl2-stack-access* $(ACL2_STACK_ACCESS))" >> $@ ;\
 	fi
-	if [ "$(ACL2_SIZE)" != "" ] ; then \
-	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_SIZE)" != "" ] ; then \
+	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> $@ ;\
 	fi
-	if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> acl2r.lisp ;\
+	@if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> $@ ;\
 	fi
-	if [ "$(ACL2_EGC_ON)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_EGC_ON)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> $@ ;\
 	fi
-	if [ "$(ACL2_EXIT_LISP_HOOK)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-EXIT-LISP-HOOK* (QUOTE $(ACL2_EXIT_LISP_HOOK)))' >> acl2r.lisp ;\
+	@if [ "$(ACL2_EXIT_LISP_HOOK)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EXIT-LISP-HOOK* (QUOTE $(ACL2_EXIT_LISP_HOOK)))' >> $@ ;\
 	fi
 
 .PHONY: chmod_image
@@ -386,7 +390,12 @@ check-sum:
 	rm -f workxxx
 
 .PHONY: full
-full:   TAGS!
+full: acl2-status.txt
+
+# WARNING: The following does not assume that acl2r is up-to-date,
+# because TAGS takes care of that.  So if TAGS is removed from the
+# dependencies, be sure to run acl2r.
+acl2-status.txt: TAGS $(ACL2_DEPS)
 	$(MAKE) compile
 	rm -f acl2-proclaims.lisp
 # The following two forms should do nothing, and quickly, if
@@ -394,6 +403,12 @@ full:   TAGS!
 	$(MAKE) acl2-proclaims.lisp
 	$(MAKE) compile USE_ACL2_PROCLAIMS=t
 
+# Note that compile is a phony target, hence will be done every time.
+# However, the target "full", which is really just acl2-status.txt,
+# avoids unnecessary recompilation; that seems sufficient in general.
+# This approach is a bit unfortunate when calling "make full" (or just
+# "make") only to build an executabe with a different PREFIX.  But we
+# can live with that.
 .PHONY: compile
 compile:
 	rm -f workxxx
@@ -428,8 +443,9 @@ copy-distribution: acl2r.lisp
 #TAGS:
 #	@echo 'Skipping building of a tags table.'
 
-# We include acl2r.lisp so that we build ACL2(h) and not ACL2(c).
-TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources} acl2r.lisp
+# We include acl2r.lisp so that we build ACL2(h) and not ACL2(c), for example.
+TAGS:   $(ACL2_DEPS)
+	$(MAKE) acl2r
 	rm -f TAGS
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
@@ -439,6 +455,7 @@ TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources} acl2r.
 	rm -f workxxx
 	if [ -f TAGS ] ; then chmod 644 TAGS ; fi
 
+# THE FOLLOWING TARGET IS DEPRECATED, since TAGS now depends on $(ACL2_DEPS).
 # The following remakes TAGS even if TAGS is up to date.  This target can be
 # useful when building a parallel version after a normal version, or
 # vice-versa.
@@ -474,7 +491,9 @@ acl2-proclaims.lisp: ${sources}
 	[ -f acl2-proclaims.lisp ]
 
 .PHONY: init
-init: acl2-proclaims.lisp
+init: $(PREFIXsaved_acl2)
+
+$(PREFIXsaved_acl2): acl2-proclaims.lisp $(ACL2_DEPS)
 # Note:  If you believe that compilation is up-to-date, do
 # make compile-ok init
 # rather than
@@ -542,7 +561,7 @@ proofs: compile-ok
 DOC: acl2-manual STATS
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
-	$(MAKE) doc.lisp doc/home-page.html
+	$(MAKE) update-doc.lisp doc/home-page.html
 
 check-acl2-exports:
 	cd books ; rm -f misc/check-acl2-exports.cert ; $(MAKE) ACL2=$(ACL2) misc/check-acl2-exports.cert
@@ -572,19 +591,27 @@ acl2-manual:
 # WARNING: even though this target may rebuild doc.lisp, that will not
 # update the documentation for the :DOC command at the terminal, of
 # course; for that, you'll need to rebuild ACL2.
-doc.lisp: books/system/doc/acl2-doc.lisp \
+# NOTE: We copy books/system/doc/rendered-doc.lsp without -p so that
+# doc.lisp will be newer than books/system/doc/acl2-doc.lisp, and
+# hence doc.lisp won't later be rebuilt needlessly.
+.PHONY: update-doc.lisp
+update-doc.lisp: books/system/doc/acl2-doc.lisp \
 	  books/system/doc/rendered-doc.lsp
-	if [ -f doc.lisp ] ; then \
-	  cp -p doc.lisp doc.lisp.backup ; \
-	fi
-	cp -p books/system/doc/rendered-doc.lsp doc.lisp
-	@diff doc.lisp doc.lisp.backup 2>&1 > /dev/null ; \
+	@diff doc.lisp books/system/doc/rendered-doc.lsp 2>&1 > /dev/null ; \
 	  if [ $$? != 0 ] ; then \
+	    mv -f doc.lisp doc.lisp.backup ; \
+	    cp books/system/doc/rendered-doc.lsp doc.lisp ; \
 	    echo "NOTE: doc.lisp has changed." ; \
 	    echo "      If you use :DOC at the terminal, then" ; \
 	    echo "      you might wish to rebuild your ACL2 executable." ; \
+	  else \
+	    echo "Note: doc.lisp is up-to-date." ; \
 	  fi
 
+# Note: The following target uses $(PREFIXsaved_acl2) -- but we don't
+# care much about whether it's up-to-date in any sense, so we don't
+# make the next target depend on $(PREFIXsaved_acl2).  This hasn't
+# been super carefully thought out, so could change.
 books/system/doc/rendered-doc.lsp:
 	rm -f books/system/doc/rendered-doc.lsp
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
@@ -841,27 +868,3 @@ our-develenv.cl:
 chk-include-book-worlds:
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
-
-# Simple targets that ignore variables not mentioned below,
-# including: ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED,
-# ACL2_EGC_ON, ACL2_SIZE, and ACL2_EXIT_LISP_HOOK:
-
-saved_acl2: $(ACL2_DEPS)
-	echo "Making ACL2 on $(LISP)"
-	time $(MAKE) LISP=$(LISP)
-	ls -lah saved_acl2
-
-saved_acl2p: $(ACL2_DEPS)
-	echo "Making ACL2(p) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_PAR=p
-	ls -lah saved_acl2p
-
-saved_acl2r: $(ACL2_DEPS)
-	echo "Making ACL2(r) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_REAL=r
-	ls -lah saved_acl2r
-
-saved_acl2pr: $(ACL2_DEPS)
-	echo "Making ACL2(pr) on $(LISP)"
-	time $(MAKE) LISP=$(LISP) ACL2_PAR=p ACL2_REAL=r
-	ls -lah saved_acl2pr

@@ -2165,3 +2165,83 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;    (the mfixnum x))
 
   `(the mfixnum ,x))
+
+(defun our-pwd ()
+
+; This function was moved here from basis-a.lisp, in order to avoid a build
+; error.
+
+; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
+; variable is not necessarily maintained, for example in Solaris/SunOS as one
+; make invokes another make in a different directory.
+
+  (qfuncall pathname-os-to-unix
+            (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
+            (get-os)
+            *the-live-state*))
+
+; The forms below were sent to us by Camm Maguire in February 2017, to fix an
+; issue with GCL 2.6.12.  We use the progn wrapper to avoid breaking the reader
+; in other Lisps.
+
+#+gcl
+(progn
+compiler::
+(defun c2funcall-new (funob args &optional loc info)
+
+  ;;; Usually, ARGS holds a list of forms, which are arguments to the
+  ;;; function.  If, however, the arguments are already pushed on the stack,
+  ;;; ARGS should be set to the symbol ARGS-PUSHED.
+  (case (car funob)
+    (call-global (c2call-global (caddr funob) args loc t))
+    (call-local (c2call-local (cddr funob) args))
+    (call-lambda (c2call-lambda (caddr funob) args))
+    (ordinary           ;;; An ordinary expression.  In this case, if
+                        ;;; arguments are already pushed on the stack, then
+                        ;;; LOC cannot be NIL.  Callers of C2FUNCALL must be
+                        ;;; responsible for maintaining this condition.
+      (let ((*vs* *vs*) (form (caddr funob)))
+           (declare (object form))
+           (cond ((and (listp args)
+                       (< (length args) 12) ;FIXME fcalln1 limitation
+                       *use-sfuncall*
+                       ;;Determine if only one value at most is required:
+                       (or
+                        (member *value-to-go* '(return-object trash))
+                        (and (consp *value-to-go*)
+                             (member (car *value-to-go*) '(var cvar jump-false jump-true)))
+                        (and info (equal (info-type info) '(values t)))
+                        ))
+                  (c2funcall-sfun form args info)
+                  (return-from c2funcall-new nil)))
+           (unless loc
+             (unless (listp args) (baboon))
+             (cond ((eq (car form) 'LOCATION) (setq loc (caddr form)))
+                   ((and (eq (car form) 'VAR)
+                         (not (args-info-changed-vars (caaddr form) args)))
+                    (setq loc (cons 'VAR (caddr form))))
+                   (t
+                    (setq loc (list 'vs (vs-push)))
+                    (let ((*value-to-go* loc)) (c2expr* (caddr funob))))))
+           (push-args args)
+           (if *compiler-push-events*
+               (wt-nl "super_funcall(" loc ");")
+             (if *super-funcall*
+                 (funcall *super-funcall* loc)
+               (wt-nl "super_funcall_no_event(" loc ");")))
+           (unwind-exit 'fun-val)))
+    (otherwise (baboon))
+    ))
+
+(when (or (< si::*gcl-major-version* 2)
+          (and (= si::*gcl-major-version* 2)
+               (or (< si::*gcl-minor-version* 6)
+                   (and (= si::*gcl-minor-version* 6)
+                        (<= si::*gcl-extra-version* 12)))))
+  (setf (symbol-function 'compiler::c2funcall)
+        (symbol-function 'compiler::c2funcall-new))))
+
+#+gcl
+(eval-when
+    (compile load eval)
+  (proclaim '(ftype (function (t t *) t) compiler::c2funcall-new)))

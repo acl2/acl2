@@ -183,6 +183,7 @@
       (:vl-interface (vl-ppc-interface x ss))
       (:vl-package   (vl-ppc-package   x ss))
       (:vl-program   (vl-ppc-program   x))
+      (:vl-class     (vl-ppc-class   x))
       (:vl-config    (vl-ppc-config    x))
 
       ;; items without comments
@@ -376,6 +377,7 @@ declaration, ...)."
       (:vl-interface  (vl-interface->warnings x))
       (:vl-package    (vl-package->warnings x))
       (:vl-program    (vl-program->warnings x))
+      (:vl-class      (vl-class->warnings x))
       (:vl-config     (vl-config->warnings x))
       (:vl-taskdecl   nil)
       (:vl-fundecl    nil)

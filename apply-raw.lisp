@@ -1706,3 +1706,1529 @@
 ; to invest in some kind of user-settable switch that determines how
 ; apply$-lambda is handled so the user can optimize the sort of computations
 ; being done.
+
+; Essay on Admitting a Model for Apply$ and the Functions that Use It
+; =================================================================
+
+; Throughout the essay below we occasionally refer to books, e.g., apply.lisp.
+; All such books are in community books directory books/projects/apply-model/.
+
+; Goal:
+
+; Our goal is to show that there is an evaluation theory that makes all
+; warrants valid.  That evaluation theory is created by
+
+; (DEFATTACH BADGE-USERFN BADGE-USERFN!)
+; (DEFATTACH APPLY$-USERFN APPLY$-USERFN!)
+
+; We call BADGE-USERFN! and APPLY$-USERFN! the ``doppelgangers'' of
+; BADGE-USERFN and APPLY$-USERFN, respectively.  To carry out the attachments
+; we must show that the two doppelgangers are guard verified, that the guards
+; of BADGE-USERFN and APPLY$-USERFN imply those of their doppelgangers, and
+; that the constraints on BADGE-USERFN and APPLY$-USERFN are satisfied by their
+; doppelgangers.
+
+; To define APPLY$-USERFN! we will define a doppelganger for every function
+; with a badge except for the user-defined functions that are not ancestrally
+; dependent on APPLY$.
+
+; =================================================================
+; Review:
+
+; The signatures, guards, and constraints on badge-userfn and apply$-userfn
+; are as follows:
+
+; Function:        BADGE-USERFN
+; Formals:         (FN)
+; Signature:       (BADGE-USERFN *) => *
+; Guard:           T
+; Guards Verified: T
+; Constraint:      (IMPLIES (BADGE-USERFN FN)
+;                           (APPLY$-BADGEP (BADGE-USERFN FN)))
+; Function:        APPLY$-USERFN
+; Formals:         (FN ARGS)
+; Signature:       (APPLY$-USERFN * *) => *
+; Guard:           (TRUE-LISTP ARGS)
+; Guards Verified: T
+; Constraint:      T (none)
+
+; We distinguish ``ACL2 lambda application'' from a ``LAMBDA application.''  An
+; example of the former is ((lambda (x) (+ 1 (square x))) a) and an example of
+; the latter is (apply$ '(LAMBDA (X) (BINARY-+ '1 (SQUARE X))) (list a)).  The
+; apply$ above might also be an apply$!, as will be made clear in context.
+
+; We generally use lower case names, like f and m, as meta-variables and
+; uppercase when we are exhibiting concrete symbols and terms.  Mixed case
+; ``terms'' are generally schemas.  For example, if f is understood to be TIMES
+; then (F f) is (F TIMES).  Occasionally we exhibit concrete events in
+; lowercase and use uppercase within it to highlight certain symbols, but we
+; always alert the reader to this breach of our normal convention.
+
+; Caveat: It's almost impossible to follow any meta-variable convention
+; perfectly.  We apologize for sometimes unexplained choices of case that we
+; thought had obvious importance and also for the unconscious clear violations
+; of our own conventions.
+
+; A function that returns multiple values can have a badge but will not have a
+; warrant.
+
+; Functions with badges are partitioned into primitives (e.g., CAR and
+; BINARY-APPEND), boot functions (e.g., TAMEP and APPLY$), and user-defined
+; (e.g., SQUARE and COLLECT).
+
+; Non-primitive badged functions are partitioned into:
+; G1 -- ancestrally independent of APPLY$, and
+; G2 -- ancestrally dependent on APPLY$.
+; Thus ``all non-primitive badged functions'' is the same set as ``all G1 and
+; G2 functions.''
+
+; G1 includes boot functions like TAMEP and user-defined functions like SQUARE
+; that don't require APPLY$ in the chronology.
+
+; G2 includes boot functions APPLY$, EV$, and EV$-LIST and user-defined
+; functions like COLLECT that do require APPLY$ in the chronology.
+
+; We often limit our attention to user-defined G1 and G2 functions as opposed
+; to all G1 and G2 functions, thus removing from consideration the boot
+; functions like TAMEP, APPLY$, and EV$.
+
+; Every function in G1 is tame.  Some functions in G2 may be tame.  For
+; example, (defun collect-squares (lst) (collect lst 'SQUARE)) is a tame G2
+; function.
+
+; We believe every tame expression is G1 definable in the sense that an
+; equivalent expression could be written in terms of (possibly newly
+; introduced) G1 functions.  See the discussion in
+; acceptable-warranted-justificationp in apply.lisp.  However, we do not
+; exploit that belief (or prove it) here.
+
+; If a formal has ilk :FN or has ilk :EXPR we call it a :FN/:EXPR formal or say
+; it has ilk :FN/:EXPR.  That's technically a misnomer: there is no :FN/:EXPR
+; formal because there is no ``:FN/:EXPR'' ilk.  The ilks are NIL, :FN, and
+; :EXPR.
+
+; Some important facts about any user-defined badged function, f, with formals
+; (x1 ... xn), and body, b, include the following.  Note that the first three
+; bullet points apply to both G1 and G2 functions but the final ones are
+; relevant only to G2 functions (because no G1 function can call a function
+; with :FN/:EXPR ilks or else it would be dependent on APPLY$):
+
+; - f's measure term is entirely in G1 functions.  In our model, this is
+;   insured by the acceptable-warranted-justificationp called from badger in
+;   apply.lisp: the measure is tame (all badged) and ancestrally independent of
+;   APPLY$, i.e., G1.
+
+; - f's measure is natural number valued and its well-founded relation is O<
+;   over O-P.  We assume without loss of generality that the measure takes all
+;   of the formals.
+
+; - f is singly recursive, not in a mutually recursive clique.
+
+; - in every recursive call of f in b, the actuals in :FN/:EXPR positions are
+;   passed identically, i.e., if the ith formal, v_i, is of ilk :FN/:EXPR then
+;   the ith actual of every recursive call is v_i.
+
+; - in every call of a G2 function other than f in b, the actuals in :FN slots
+;   are either formals of ilk :FN or else quoted tame functions and the
+;   actuals in :EXPR slots are either formals of ilk :EXPR or else quoted
+;   tame expressions.  Clarification for emphasis: The same :FN/:EXPR formal
+;   may be used multiple times in different slots of the appropriate ilk.  If
+;   the called G2 function, g, has two :FN slots and v_1 is a :FN formal of f,
+;   then v_1 may be passed into both :FN slots of the call of g in f.  This is
+;   not allowed in calls of f in f, where each formal must occupy its original
+;   position.
+
+; - every function symbol mentioned in every quoted tame object in a :FN/:EXPR
+;   slot of b was warranted before f was warranted in the user's chronology.
+;   Corollary: f is not used as a function symbol in any quoted tame object in
+;   a :FN/:EXPR slot of its body.  Clarification 1: A function g may be defun'd
+;   and not immediately assigned a warrant: no warrant is generated until
+;   (def-warrant g) occurs.  But if g appears in, say, a quoted LAMBDA
+;   expression in a :FN slot in the definition of f after g has been defun'd
+;   but before g has been warranted, that LAMBDA expression would not be tame
+;   and hence the function f would not have a badge.  Clarification 2: the
+;   notion of the functions mentioned in a quoted object is the obvious
+;   extension of the more familiar notion of function symbols in pseudoterms.
+;   By virtue of the fact that f has a badge, we know these quoted objects are
+;   appropriately tame and the tameness computation identifies which of the
+;   symbols in the quoted object represent ``functions'' and checks that they
+;   have the appropriate badges and thus that they have been defined.
+
+
+; All of these facts (and others) are checked by (def-warrant f) which fails if
+; any of the checks fail.
+
+; We could loosen some of the restrictions.  The insistence that the measure be
+; a natp is only relevant for G2 functions and even then could be loosened to
+; bounded ordinal.  We'd have to change the proof here.  We could eliminate the
+; restriction that measures be independent of APPLY$ if we were sure of the
+; claim that every tame expression is G1 definable.  See the discussion in
+; acceptable-warranted-justificationp.  We could allow mutual recursion if we
+; generalized the badger to handle it; we'd have to allow it in our G2
+; doppelganger construction.
+
+; In the evaluation theory, all G1 functions will be defined exactly as in the
+; user's history, except that we omit any mention of guards.
+
+; All G2 functions will have doppelgangers.
+
+; The name of the doppelganger for a G2 function f is written f!.
+
+; =================================================================
+; The Standard Doppelganger Construction:
+
+; In constructing the model we will define every G1 function exactly as the
+; user did, except that we will omit any :guards because we don't need guards
+; in this application.  We know that every G1 function is justified in terms of
+; G1 functions (every justification of a badged function has well-founded
+; relation O< on domain O-P with a tame measure that is ancestrally independent
+; of APPLY$ (and, coincidentally, natp valued, though while always enforced
+; that observation needn't be for G1 functions)).  That means that if we just
+; copy the user's unguarded G1 definitions down in the same order they will be
+; admissible for the same reasons as before.  None of them rely on G2 functions
+; for admission.
+
+; So now we describe how to define the doppelgangers for G2 functions.
+
+; Suppose f is a user-defined G2 function with formals (v1 ... vn), and body b.
+; Let (m v1 ... vn) be the measure used to admit f.  Note that the measure is
+; entirely in G1 and so can be written after the G1 functions are defined.
+; The measure is also a natp, which will be discussed when we discuss the
+; measure for the G2 doppelgangers.   Then the definition of the
+; doppelganger of f, namely f!, is (DEFUN f! (v1 ... vn) b''), where b'' is
+; obtained in two steps as follows.  First, let b' be the result of
+; renaming in b every G2 function called, replacing the called function
+; by its doppelganger name.  (Here we truly mean only ACL2 function calls, not
+; ``calls'' within quoted LAMBDAs and terms.)  Next, consider a call of f! in b'
+; ``marked'' if the measure conjecture for that call, 
+
+; (IMPLIES (AND t1 ... tn) (O< (m a1 ... an) (m v1 ... vn)))
+
+; mentions a G2 function.  Create b'' by visiting every marked call, c, in b'
+; and replacing c by
+
+; (IF (O< (m a1 ... an)
+;         (m v1 ... vn))
+;     c
+;     NIL).
+
+; We call the O< term above the ``O< condition'' for the marked call.  The O<
+; condition will be sufficient to justify call c during the admission of the
+; clique.  These conditions cannot be proved until all the G2 functions are
+; defined.  However, once all the G2 functions are defined, each O< condition
+; is implied by the tests governing it.  Logically this follows from the proof
+; that the doppelgangers are equivalent to their counterparts in the evaluation
+; theory.  But, practically speaking, to prove that equivalence may require
+; recapitulating for the doppelgangers the lemma development the user used
+; during the admission of f.
+
+; Example of the Standard Doppelganger Construction:
+
+; Let (PROW LST FN) be a G2 function and define the G2 function
+
+; (DEFUN$ PROW* (LST FN)
+;   (DECLARE (XARGS :MEASURE (LEN LST)))
+;   (COND ((OR (ENDP LST)
+;              (ENDP (CDR LST)))
+;          (APPLY$ FN (LIST LST LST)))
+;         (T (PROW* (PROW LST FN) FN))))
+
+; To create the doppelganger definition we carry out the steps described.
+; First, rename the G2 functions to their doppelgangers.  Note that the G2
+; functions mentioned in PROW* are APPLY$, PROW, and PROW*.  So the renaming
+; produces:
+
+; (DEFUN$ PROW*! (LST FN)
+;   (DECLARE (XARGS :MEASURE (LEN LST)))
+;   (COND ((OR (ENDP LST)
+;              (ENDP (CDR LST)))
+;          (APPLY$! FN (LIST LST LST)))
+;         (T (PROW*! (PROW! LST FN) FN))))
+
+; The call (PROW*! (PROW! LST FN) FN) is marked because the
+; measure conjecture for that call is:
+
+; (IMPLIES (AND (NOT (ENDP LST))
+;               (NOT (ENDP (CDR LST))))
+;          (O< (LEN (PROW! LST FN)) (LEN LST)))
+
+; and involves the doppelganger of a G2 function, namely PROW.  So in the next
+; step we replace the marked call by the IF expression described above and get
+; the final definition of the doppelganger for prow*:
+
+; (DEFUN$ PROW*! (LST FN)
+;   (DECLARE (XARGS :MEASURE (LEN LST)))
+;   (COND ((OR (ENDP LST)
+;              (ENDP (CDR LST)))
+;          (APPLY$! FN (LIST LST LST)))
+;         (T (IF (O< (LEN (PROW! LST FN)) (LEN LST))
+;                (PROW*! (PROW! LST FN) FN)
+;                NIL))))
+
+; We claim that the O< condition inserted is implied by the governing tests --
+; or will be once all the G2 functions are defined.  Intuitively, the proof is
+; ``the same'' as that of the measure conjecture proved for that case in the
+; user's chronology:
+
+; (IMPLIES (AND (NOT (ENDP LST))
+;               (NOT (ENDP (CDR LST))))
+;          (O< (LEN (PROW LST FN)) (LEN LST)))
+
+; If the user had to prove lemmas to handle the admission of PROW*, then the
+; analogous lemmas, with the analogous proofs, will be provable in the
+; evaluation theory because in the evaluation theory each doppelganger is
+; provably equivalent to its correspondent in the user's chronology.
+
+; =================================================================
+; On the Practicality of the Standard Construction:
+
+; Note that the doppelganger construction would be simplest to carry out on a
+; fully translated, beta-reduced body b.  The result wouldn't necessarily be
+; executable and so all the doppelgangers ought to be introduced with defun-nx.
+; Producing an executable version of the body from the translated,
+; beta-reduced, renamed, and properly annotated marked calls is harder and
+; would require some creativity.  For the purposes of showing that all warrants
+; are valid, having executable doppelgangers is unnecessary.
+
+; But from time to time we are tempted to implement a ``Doppelganger Button''
+; that would actually carry out the method described here to produce an
+; executable theory containing the doppelgangers of all the currently badged
+; functions.  That is a good project for a student, perhaps.
+
+; In that spirit, here is a suggestion for how one might do it:
+
+;   Given a translated term u, let's write [u] for the result of applying
+;   ec-call to every function call.  Let f be a G2 function with formals (v1
+;   ... vn) and body b and measure (old-m v1 ... vn).  Let xb be the
+;   translation of b.  Let xb'' be the transformation of xb as described in the
+;   Standard Doppelganger Construction.
+
+;   Define f! as:
+
+;   (DEFUN f! (v1 ... vn)
+;     (declare (xargs :guard t
+;                     :measure (f!-measure v1 ... vn) ;   see f!-measure below
+;                     :well-founded-relation l<))
+;     (MBE :LOGIC xb''
+;          :EXEC [xb]))
+
+;   Then guard verification should be trivial because of the ec-call wrappers,
+;   and execution would work out because we have left the mv-let forms (etc.)
+;   in place in the :EXEC.
+
+;   Of course, *1* functions (via ec-call) run a bit slower than their raw Lisp
+;   counterparts.  But this shouldn't be important if we provide fast
+;   execution, so the more direct execution capability via this MBE is just for
+;   use during development, or maybe later for debugging.
+
+; But let's remind ourselves that we don't really need executable
+; doppelgangers.  During evaluation, each step needs to be justified by the
+; evaluation theory.  (apply$ 'f (list x y ...)) = (f x y ...) is provable
+; in the evaluation theory (when the tameness of the :FN/:EXPR arguments among
+; (list x y ...) is established).  However, we cannot assume that the call of
+; f on the right-hand side satisfies the guards of f.  So we implement the call
+; with (*1*f x y ...).
+
+; =================================================================
+; Doppelganger Chronology
+
+; (1) Define badge-userfn! as shown in the following schema, where {f_1, ...,
+; f_k} is the set of all user-defined G1 and G2 function names and where
+; badge_{f_i} means the badge of f_i.
+
+; (DEFUN BADGE-USERFN! (FN)
+;   (DECLARE (XARGS :GUARD T))
+;   (CASE FN
+;     (f_1 'badge_{f_1})
+;     ...
+;     (f_k 'badge_{f_k})
+;     (OTHERWISE NIL)))
+
+; For each user-defined G1 or G2 function name, badge-userfn! returns its badge
+; constant.  It is trivial to show that it satisfies the requirements for its
+; attachment to badge-userfn, i.e., that is guard verified, that its guards are
+; implied by those of badge-userfn, and that it returns nil or a well-formed
+; badge.
+
+; (2) Use the standard doppelganger construction to get the definitions of
+; BADGE!, TAMEP!, TAMEP-FUNCTIONP!, and SUITABLY-TAMEP-LISTP!
+
+; (3) Introduce each G1 function with the user's definition except with any
+; :guard declaration removed.  The order of the G1 functions should be as in
+; the user's chronology.
+
+; (4) Define APPLY$!, APPLY$-USERFN1!, EV$!, EV$-LIST! and the doppelgangers of
+; all G2 functions in a mutual-recursion event.  We give schematic definitions
+; of APPLY$!, APPLY$-USERFN1!, EV$!, and EV$-LIST! below; the G2 functions are
+; handled via the standard construction.  We describe the measure used to admit
+; this clique in this essay.  Clarification:  Note that in this step we define
+; a function named APPLY$-USERFN1!, not APPLY$-USERFN!.
+
+; (5) Define
+;  (DEFUN APPLY$-USERFN! (FN ARGS)
+;    (DECLARE (XARGS :GUARD T))
+;    (EC-CALL (APPLY$-USERFN1! FN ARGS)))
+
+; The doppelganger chronology is admissible.  The only questionable part is
+; the proof of the measure conjectures for the clique introduced in step (4).
+; That proof is given below.
+
+; Once all 5 steps have been carried out it is possible to prove that
+; every doppelganger is equal to its user counterpart in the evaluation theory
+; produced by
+
+; (DEFATTACH BADGE-USERFN BADGE-USERFN!)
+; (DEFATTACH APPLY$-USERFN APPLY$-USERFN!)
+
+; The proofs are by straightforward recursion induction.  For the G2 functions
+; the recursion induction is with respect to the recursion exhibited in the
+; doppelganger mutual-recursion.  For the G2 functions all of the equivalences
+; must be proved simultaneously along with the proofs that the inserted O<
+; conditions on marked calls are implied by their governors.  The latter can be
+; proved because the induction hypotheses equating doppelgangers and their
+; counterparts allow us to rewrite the O< conditions (which are stated in
+; doppelganger terms) into their counterparts, and the resulting conjecture is
+; known to be a theorem by the measure conjectures proved during the admission
+; of the user's functions.
+
+; =================================================================
+; Schematic Definitions of APPLY$!, EV$!, EV$!-LIST
+
+; Below we exhibit schematic definitions of the G2 boot functions.  They are
+; all defined in a mutually recursive clique with the doppelgangers of all
+; user-defined G2 functions.  The definitions below are schematic because they
+; have to handle the (here unknown) user-defined functions.
+
+; We will argue below that there is a measure that justifies this clique.  We
+; exhibit measures later.  But the proof that our measures decrease requires a
+; complete analysis of inter-clique calls.  We list all inter-clique calls in
+; the section named Table of Inter-Clique Calls below.  Some of those calls are
+; schematic and so we annotate some calls below with bracketed numbers
+; indicating that the annotated call is addressed by the indicated row of the
+; table.  The inter-clique call by APPLY$! to APPLY$-USERFN1!
+; is annotated with a mysterious ``[  ].''  We explain later!
+
+; None of the following defuns have explicit :guards: their guards are
+; implicitly T but they are not guard verified.
+
+; (DEFUN APPLY$! (FN ARGS)
+;   (COND
+;    ((CONSP FN)
+;     (EV$! (LAMBDA-BODY FN)                                          ; [ 1]
+;           (PAIRLIS$ (LAMBDA-FORMALS FN) ARGS)))
+;    ((APPLY$-PRIMP FN)
+;     (APPLY$-PRIM FN ARGS))
+;    ((EQ FN 'BADGE)
+;     (BADGE! (CAR ARGS)))
+;    ((EQ FN 'TAMEP)
+;     (TAMEP! (CAR ARGS)))
+;    ((EQ FN 'TAMEP-FUNCTIONP)
+;     (TAMEP-FUNCTIONP! (CAR ARGS)))
+;    ((EQ FN 'SUITABLY-TAMEP-LISTP)
+;     (SUITABLY-TAMEP-LISTP! (CAR ARGS) (CADR ARGS) (CADDR ARGS)))
+;    ((EQ FN 'APPLY$)
+;     (IF (TAMEP-FUNCTIONP! (CAR ARGS))
+;         (APPLY$! (CAR ARGS) (CADR ARGS))                           ; [ 2]
+;         (UNTAME-APPLY$ FN ARGS)))
+;    ((EQ FN 'EV$)
+;     (IF (TAMEP! (CAR ARGS))
+;         (EV$! (CAR ARGS) (CADR ARGS))                              ; [ 3]
+;         (UNTAME-APPLY$ FN ARGS)))
+;    (T (APPLY$-USERFN1! FN ARGS))))                                 ; [  ]
+
+; The definition of APPLY$-USERFN1!, which is used in the defun above of
+; APPLY$-USERFN!, is shown below.  But we need some notation.
+
+; In the definition of APPLY$-USERFN1! let {g_1, ..., g_j} be the user-defined
+; G1 function names and let {f_1, ..., f_k} be the user-defined G2 function
+; names.
+
+; We introduce some rather unconventional notation to describe APPLY$-USERFN1!
+; schematically.
+
+; If g is some user-defined G1 function of arity n, then (g (CAR ARGS) (CADR
+; ARGS) ...) denotes a call of g on the first n elements of ARGS, extending
+; with NILs as necessary.
+
+; Let f be some user-defined G2 function of arity n.  Then in the pattern:
+
+; (IF (AND (tame! (CAR ARGS)) (tame! (CADR ARGS)) ...)
+;     (f! (CAR ARGS) (CADR ARGS) ...)
+;     (UNTAME-APPLY$ FN ARGS))
+
+; (tame! x), where x is the car/cdr expression for the ith (0-based) element of
+; ARGS, means T, (TAMEP-FUNCTIONP! x), or (TAMEP! x) depending on whether the
+; ilk of the ith formal is NIL, :FN, or :EXPR.  The call of f! is to the first
+; n elements of ARGS, extending with NILs as necessary.
+
+; For example, if TWOFER has ilks (NIL :FN :EXPR NIL), then
+
+; (IF (AND (tame! (CAR ARGS)) (tame! (CADR ARGS)) ...)
+;     (TWOFER! (CAR ARGS) (CADR ARGS) ...)
+;     (UNTAME-APPLY$ FN ARGS))
+
+; means
+
+; (IF (AND T
+;          (TAMEP-FUNCTIONP! (CADR ARGS))
+;          (TAMEP! (CADDR ARGS))
+;          T)
+;     (TWOFER! (CAR ARGS) (CADR ARGS) (CADDR ARGS) (CADDDR ARGS))
+;     (UNTAME-APPLY$ FN ARGS))
+
+; which is logically equivalent to
+
+; (IF (AND (TAMEP-FUNCTIONP! (CADR ARGS))
+;          (TAMEP! (CADDR ARGS)))
+;     (TWOFER! (CAR ARGS) (CADR ARGS) (CADDR ARGS) (CADDDR ARGS))
+;     (UNTAME-APPLY$ FN ARGS))
+
+; If f has no :FN/:EXPR formals, then the IF test reduces to T and the IF can
+; be eliminated.
+
+; We use this rather cumbersome notation to remind the reader, later during our
+; measure proof, that we have tameness hypotheses about every :FN/:EXPR element
+; of ARGS and that they are phrased in terms of the doppelgangers of
+; tamep-functionp and tamep.
+
+; (DEFUN APPLY$-USERFN1! (FN ARGS)
+;   (CASE FN
+;     (g_1 (g_1 (CAR ARGS) (CADR ARGS) ...))
+;     ...
+;     (g_j (g_j (CAR ARGS) (CADR ARGS) ...))
+;     (f_1 (IF (AND (tame! (CAR ARGS)) (tame! (CADR ARGS)) ...)
+;              (f_1! (CAR ARGS) (CADR ARGS) ...)
+;              (UNTAME-APPLY$ FN ARGS)))
+;     ...                                                              ; [ 4]
+;     (f_k (IF (AND (tame! (CAR ARGS)) (tame! (CADR ARGS)) ...)
+;              (f_k! (CAR ARGS) (CADR ARGS) ...)
+;              (UNTAME-APPLY$ FN ARGS)))
+;     (OTHERWISE
+;      (UNTAME-APPLY$ FN ARGS))))
+
+; Note: APPLY$-USERFN1! calls every G1 function, but calls the doppelganger of
+; every G2 function (after appropriate tameness tests).
+
+; To define EV$ we need some notation.
+
+; Let f be some G2 function of arity n.  The expression
+
+; (APPLY$! 'f list-ev$!-or-cadr-exprs)
+
+; means
+
+; (APPLY$! 'f (LIST z1 ... zn)),
+
+; where zi is (EV$! (NTH i X) A), if the ilk of the ith (1-based) formal of f
+; is NIL, and is (CADR (NTH i X)) otherwise.  The NTHs are actually expanded to
+; car/cdr expressions since i is fixed.
+
+; For example, if TWOFER has ilks (NIL :FN :EXPR NIL), then
+
+; (APPLY$! 'TWOFER list-ev!-or-cadr-exprs)
+
+; means
+
+; (APPLY$! 'TWOFER
+;          (LIST (EV$! (NTH 1 X) A)
+;                (CADR (NTH 2 X))
+;                (CADR (NTH 3 X))
+;                (EV$! (NTH 4 X) A)))
+
+; which is logically equivalent to:
+
+; (APPLY$! 'TWOFER
+;          (LIST (EV$! (CADR X) A)
+;                (CADR (CADDR X))
+;                (CADR (CADDDR X))
+;                (EV$! (CAR (CDDDDR X)) A)))
+
+; The odd treatment of the :FN/:EXPR argument positions simplifies the
+; termination argument.  We explain later.
+
+; In the following, {f_1, ..., f_k} is the set of user-defined functions of G2
+; that have one or more :FN/:EXPR arguments.  All user-defined G1 functions and
+; those user-defined G2 functions with no :FN/:EXPR arguments are handled by
+; the last COND clause.
+
+; (DEFUN EV$! (X A)
+;   (COND
+;    ((NOT (TAMEP! X))
+;     (UNTAME-EV$ X A))
+;    ((VARIABLEP X)
+;     (CDR (ASSOC-EQUAL X A)))
+;    ((FQUOTEP X)
+;     (CADR X))
+;    ((EQ (CAR X) 'IF)
+;     (IF (EV$! (CADR X) A)                                       ; [ 5]
+;         (EV$! (CADDR X) A)                                      ; [ 6]
+;         (EV$! (CADDDR X) A)))                                   ; [ 7]
+;    ((EQ (CAR X) 'APPLY$)
+;     (APPLY$! 'APPLY$                                            ; [ 8]
+;              (LIST (CADR (CADR X))
+;                    (EV$! (CADDR X) A))))                        ; [12]
+;    ((EQ (CAR X) 'EV$)
+;     (APPLY$! 'EV$ (LIST (CADR (CADR X)) (EV$! (CADDR X) A))))   ; [ 9]
+;    ((EQ (CAR X) 'f_1)
+;     (APPLY$! 'f_1 list-ev$!-or-cadr-exprs))
+;    ...                                                          ; [10]
+;    ((EQ (CAR X) 'f_k)
+;     (APPLY$! 'f_k list-ev$!-or-cadr-exprs))
+;    (T
+;     (APPLY$! (CAR X)                                            ; [11]
+;              (EV$!-LIST (CDR X) A)))))                          ; [13]
+
+; (DEFUN EV$!-LIST (X A)
+;   (COND
+;    ((ATOM X) NIL)
+;    (T (CONS (EV$! (CAR X) A)                                    ; [14]
+;             (EV$!-LIST (CDR X) A)))))                           ; [15]
+
+; Note: Inspection of the four definitions in this section reveals that
+; APPLY$-USERFN1! is only called by APPLY$!.  It cannot be called by any user
+; defined function because it does not have a badge.  Thus, it could be
+; eliminated from the clique and inlined in APPLY$!.  However, we want a
+; function name for the big-switch that is APPLY$-USERFN1! so we can use it
+; (under an EC-CALL) in our definition of APPLY$-USERFN!.
+
+; =================================================================
+; The Measure for the APPLY$! Clique
+
+; We start by describing the measure for the doppelgangers of user-defined G2
+; functions and only afterwards do we present the measures for APPLY$!, EV$!,
+; and EV$-LIST!.
+
+; Let f be a user-defined G2 function with doppelganger f!.
+
+; The measure for f! is a lexicographic 5-tuple where the first four components
+; are computed by the macro expressions given below.  The fifth component is
+; always 1.
+
+; (tameness-bit f): 0 if all of the :FN/:EXPR formals of f are tame, 1
+;    otherwise.  Here by ``tame'' we mean accepted by tamep-functionp! or
+;    tamep!, respectively according to the ilk of the formal.
+
+; (max-internal-weight f): maximal weight of the internals: see below
+
+; (chronological-position f): the position of (def-warrant f) in the user's
+;    chronology.  The position of APPLY$ and APPLY$-USERFN is 0, the positions
+;    of EV$ and EV$-LIST are 1, the position of the first badged user-defined
+;    function is 2, the next such function 3, etc.
+
+; (original-measure f): measure term used to admit f in the user's chronology
+;    (which we have required to exist rather than being local; indeed to be
+;    definable in terms of G1 functions).
+
+; Implementation Note: Each component above requires knowledge of how f was
+; defined and so requires looking at the world created by the user's
+; chronology.  So in fact, the four macros mentioned above look at the constants
+; described below:
+
+; *USER-FNS*                      list of user-defined badged functions in
+;                                  chronological order of their def-warrant
+;                                  events
+
+; *G2-FNS*                        list of all G2 functions, including APPLY$
+;                                  and EV$, which are the first two elements,
+;                                  listed in chronological order of their
+;                                  def-warrants
+
+; *G1-FNS*                        list of all G1 functions in chronological
+;                                  order of their def-warrants
+
+; *TAMENESS-CONDITIONS*           alist pairing each user-defined G2 function
+;                                  symbol to the list of tameness expressions
+;                                  determining tameness bit
+
+; *WEIGHT-ALIST*                  alist pairing each user-defined G2 function
+;                                  symbol with its weight
+
+; *MAX-INTERNAL-WEIGHT-ALIST*     alist pairing each user-defined G2 function
+;                                  symbol with the term expressing the
+;                                  maximal weight of its internals
+
+; *ORIGINAL-MEASURES-ALIST*       alist pairing each user-defined G2 function
+;                                  symbol with the original measure
+;                                  term used in its admission
+
+; The values of these constants are computed from the world by make-event forms
+; in doppelgangers.lisp, run after locally including "user-defs".  We list the
+; constants in this note because they may help you understand the definitions.
+; For example, if you (include-book "doppelgangers") and then print the value of
+; *MAX-INTERNAL-WEIGHT-ALIST* you will see each user-defined G2 function in
+; "user-defs" together with the expression to be used as the second component
+; of the measure of its doppelganger.
+
+; End of Implementation Note
+
+; Our notion of ``maximal internal weight'' requires explanation!
+
+; The ``internals'' of the definition of f are
+
+; i.   the :FN/:EXPR formals,
+
+; ii.  the quotations of every user-defined G2 function name (other than f
+;      itself) whose doppelganger is called in the body of f!, and
+
+; iii. the quoted :FN/:EXPR actuals (i.e., quoted LAMBDA expressions to apply
+;      and terms to evaluate) occurring in the body of f!.
+
+; For example, consider the G2 function COLLECT-A, which maps over its ordinary
+; argument, lst, applying its :FN argument, FN, and also calls the G2 function
+; SUMLIST on a quoted LAMBDA in a :FN position.  Note also that the quoted
+; LAMBDA mentions the G2 function FOLDR.  [Note: the terms in this example are
+; not schemas despite their mixed case.  These are concrete terms from
+; user-defs.lisp.  We have uppercased the ``internals''.]
+
+; (defun$ collect-a (lst FN)
+;   (cond ((endp lst) nil)
+;         (t (cons (apply$ fn (list
+;                              (SUMLIST (nats (car lst))
+;                                       '(LAMBDA (I)
+;                                          (FOLDR (NATS I)
+;                                                 '(LAMBDA (J K)
+;                                                    (BINARY-* (SQUARE J) K))
+;                                                 '1)))))
+;                  (collect-a (cdr lst) fn)))))
+
+; The internals are thus
+; i.   FN
+; ii. 'SUMLIST
+; iii. the quoted LAMBDA expression, '(LAMBDA (I) (FOLDR ...)).
+
+; The ``maximal internal weight'' for collect-a, written (max-internal-weight
+; collect-a), expands to the maximum of the ``weights'' of the internals above:
+
+; (max (weight FN)
+;      (max (weight 'SUMLIST)
+;           (weight '(LAMBDA (I)
+;                            (FOLDR (NATS I)
+;                                   '(LAMBDA (J K)
+;                                      (BINARY-* (SQUARE J) K))
+;                                   '1)))))
+
+; Note: Weight is defined below but the weights of items ii and iii in the
+; expression above can simply be computed.  It will turn out that the
+; expression above is equivalent to (max (weight fn) (max 26 50)) = (max
+; (weight fn) 50), but this is less informative.
+
+; End of example.
+
+; The weight of an object is computed in a way similar to the acl2-count: sum
+; the recursively obtained weights of the components.  However, while
+; ACL2-COUNT assigns every symbol a size of 0, WEIGHT assigns G2 function
+; symbols a non-0 size determined by the weight of the function's beta-reduced
+; body as of the point in the chronology at which the function is introduced.
+; Still undefined symbols have weight 0 but acquire non-0 weight upon their
+; definition as G2 functions.  We will give formal definition in a moment.
+
+; For example, consider the G2 function (again, this is not a schema):
+
+; (defun$ sumlist (lst fn)
+;   (cond ((endp lst) 0)
+;         (t (+ (apply$ fn (list (car lst)))
+;               (sumlist (cdr lst) fn))))).
+
+; Its weight (at the position in the chronology when the function is defined)
+; is 26, which happens to also be the acl2-count of its beta-reduced body.  The
+; weight of the symbol SUMLIST in its body is 0 when SUMLIST is being defined.
+; But occurrences of SUMLIST in subsequent G2 functions will have weight 26.
+; The weight of FOLDR is 25, which is also the acl2-count of its beta-reduced
+; body.
+
+; However, the weight of the LAMBDA expression quoted in the collect-a example
+; above, which necessarily occurred after FOLDR was defined, is 50 even though
+; its acl2-count is just 25.  The reason its weight is larger than its
+; acl2-count is that the symbol FOLDR in the LAMBDA expression contributes an
+; additional 25 (whereas it contributes nothing to the acl2-count of the
+; LAMBDA).
+
+; End of example.
+
+; An important observation is that if a G2 function mentions a quoted LAMBDA
+; expression in a :FN position, then every function symbol occurring in the
+; LAMBDA's body will have already been defined.  If a function g mentions a
+; quoted LAMBDA in a :FN position and the LAMBDA uses an undefined (or even an
+; un-badged) symbol, then g would be un-badged and not be a G2 function.
+
+; The weight of an object is determined with respect to an alist that maps G2
+; functions to their weights.  This concept is named WEIGHT1:
+
+; (DEFUN WEIGHT1 (X WEIGHT-ALIST)
+;   (IF (CONSP X)
+;       (+ 1
+;          (WEIGHT1 (CAR X) WEIGHT-ALIST)
+;          (WEIGHT1 (CDR X) WEIGHT-ALIST))
+;       (IF (SYMBOLP X)
+;           (LET ((TEMP (ASSOC-EQ X WEIGHT-ALIST)))
+;             (COND
+;              ((NULL TEMP) 0)
+;              (T (CDR TEMP))))
+;           (ACL2-COUNT X))))
+
+; and is just ACL2-COUNT except for the symbols bound in the alist.
+
+; To determine the weights of the G2 symbols we process the G2 functions
+; (except for APPLY$ and EV$) in chronological order of their def-warrants,
+; binding each symbol to the weight of its beta-reduced body as computed with
+; respect to the weights of the preceding function symbols.
+
+; (DEFUN GENERATE-WEIGHT-ALIST (FNS WEIGHT-ALIST WRLD)
+;   (DECLARE (XARGS :MODE :PROGRAM))
+;   (COND
+;    ((ENDP FNS) WEIGHT-ALIST)
+;    (T (GENERATE-WEIGHT-ALIST
+;        (CDR FNS)
+;        (CONS (CONS (CAR FNS)
+;                    (WEIGHT1 (EXPAND-ALL-LAMBDAS (BODY (CAR FNS) NIL WRLD))
+;                             WEIGHT-ALIST))
+;              WEIGHT-ALIST)
+;        WRLD))))
+
+; We define the constant *WEIGHT-ALIST* to be the resultant alist:
+
+; (MAKE-EVENT
+;  `(DEFCONST *WEIGHT-ALIST*
+;     ',(GENERATE-WEIGHT-ALIST (CDDR *G2-FNS*) NIL (W STATE))))
+
+; and then we define the function weight to use this fixed alist:
+
+; (DEFUN WEIGHT (X) (WEIGHT1 X *WEIGHT-ALIST*))
+
+; We now make some observations about weights and measures.
+
+; Reminder: An easily made mistake is to think of the weight of f as the
+; second component of f's measure.  That is wrong!  The second component of
+; f's measure is the maximal internal weight of f.
+
+; Weight Observation 1:  (weight x) is a natural number.
+
+; Weight Observation 2: If x is a cons, its weight is strictly greater than the
+; weights of its car and cdr.  This will allow EV$! to recur into the car and
+; cdr of expressions.
+
+; Weight Observation 3: The weight assigned to any recursive G2 function symbol
+; f is strictly greater than the weight of any proper subexpression in the
+; beta-reduced body of f.  The weight is calculated as of the chronological
+; position of the function's introduction and sums the ``then-current'' weight
+; of every symbol occurrence in the beta-reduced body plus increments for
+; the conses in the body.  Furthermore, because the function is in G2, it calls
+; at least one function (i.e., its body is not a simple variable) so there is
+; at least one cons in the body.  A corollary of this observation is that the
+; weight assigned to any recursive G2 function symbol is strictly greater than
+; the weight of internals ii and iii.
+
+; Note: The whole notion of weight (actually, of WEIGHT1) is odd as a concept
+; to be applied to terms because it does not treat its argument x as a term but
+; as a binary tree.  In particular, it is completely insensitive to which
+; symbols are used as variables, which are inside quotes, and which are used as
+; functions.  It is exactly like acl2-count in this regard and yet acl2-count
+; is a very useful general-purpose measure for functions that recur into terms.
+; So is weight.  But it bears noting that a function whose defining event uses
+; previously defined symbols inside quoted constants or as variable symbols
+; will have an ``artificially'' high weight.
+
+; It remains to discuss the measures for APPLY$!, APPLY$-USERFN1!, EV$!, and
+; EV$-LIST!.
+
+; (DEFUN APPLY$!-MEASURE (FN ARGS)
+;   (LLIST 0
+;          (MAX (WEIGHT FN)
+;               (IF (FN/EXPR-ARGS FN ARGS)
+;                   (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS FN ARGS)))
+;                   0))
+;          (CHRONOLOGICAL-POSITION APPLY$)
+;          0
+;          1))
+
+; The function FN/EXPR-ARGS returns the elements of its second argument that
+; are in positions with the :FN/:EXPR ilks of its first argument.  For example,
+; if TWOFER has ilks (NIL :FN :EXPR NIL) then (FN/EXPR-ARGS 'TWOFER '(A SQUARE
+; (REV X) D)) is '(SQUARE (REV X)).  The function MAXIMAL-WEIGHT returns the
+; maximal weight of the elements of its arguments.
+
+; (DEFUN APPLY$-USERFN1!-MEASURE (FN ARGS)
+;   (LLIST 0
+;          (MAX (WEIGHT FN)
+;               (IF (FN/EXPR-ARGS FN ARGS)
+;                   (+ 1 (MAX-WEIGHT (FN/EXPR-ARGS FN ARGS)))
+;                   0))
+;          (CHRONOLOGICAL-POSITION APPLY$-USERFN)
+;          0
+;          0))
+
+; The measures of EV$! and EV$-LIST! are:
+
+; (DEFUN EV$!-MEASURE (X A)
+;   (LLIST 0 (WEIGHT X) (CHRONOLOGICAL-POSITION EV$) 0 1))
+
+; (DEFUN EV$!-LIST-MEASURE (X A)
+;   (LLIST 0 (WEIGHT X)  (CHRONOLOGICAL-POSITION EV$-LIST) 0 1))
+
+; As already explained, the measure of each user-defined doppelganger, f!, is
+
+; (DEFUN f!-MEASURE (...)
+;   (LLIST (TAMENESS-BIT f)
+;          (MAX-INTERNAL-WEIGHT f)
+;          (CHRONOLOGICAL-POSITION f)
+;          (ORIGINAL-MEASURE f)
+;          1))
+
+; As mentioned earlier, APPLY$-USERFN1! is only called by APPLY$! and is could
+; have been inlined.  The measures given above employ a standard construction
+; for justifying the call of such a function.  All measures in the clique
+; except that for APPLY$-USERFN1! have a fifth component of 1.  The measure of
+; APPLY$-USERFN1! uses the same first four components as its only caller,
+; APPLY$!, but uses 0 as its fifth component.  Thus APPLY$! can call
+; APPLY$-USERFN1! (preserving the first four components of APPLY$!'s measure)
+; and APPLY$-USERFN1! can then call any function whose measure is dominated by
+; APPLY$!'s.  Intuitively, it's just as though we've inlined the call of
+; APPLY$-USERFN1!.
+
+; The proof below that the measures decrease is actually for the version of the
+; clique in which we have inlined the call of APPLY$-USERFN1! in APPLY$!.  Only
+; the first four components of the measures are relevant.  This explains why
+; we annotated the call by APPLY$! to APPLY\$-USERFN1! with [  ].
+
+; =================================================================
+; Table of Inter-Clique Calls
+
+; The proof that our measures decrease must inspect the definitions of APPLY$!,
+; EV$!, EV$-LIST!, and any user-defined function, f!, and consider every call
+; from any of those functions to any other, including (in the case of calls
+; from the generic f!) calls to other user-defined G2 functions.
+
+; If f! is the doppelganger of a user-defined G2 function then the only allowed
+; calls from f! into the clique may be classified as follows.  The bracketed
+; numbers are those used in our table of inter-clique calls below.
+
+; [16] (APPLY$! v ...)  -- where v is a :FN formal of f!.  Of note is the
+;                          fact that we know nothing about the term occupying
+;                          the second argument of APPLY$! here.  E.g.,
+;                          f could be defined:
+;                          (DEFUN f (V U) (APPLY$ V U)).
+
+; [17] (APPLY$! 'x ...) -- where x is a tame function (symbol or LAMBDA)
+
+; [18] (EV$! v ...)     -- where v is an :EXPR formal of f!
+
+; [19] (EV$! 'x ...)    -- where x is a tame expression
+
+; [20] (g! ...)         -- g! is the doppelganger of a user-defined G2 function
+;                          other than f and every :FN slot of the call of g! is
+;                          occupied by either a :FN formal of f! or a quoted
+;                          tame function symbol or LAMBDA expression, and every
+;                          :EXPR argument of the call of g! is occupied by
+;                          either an :EXPR formal of f! or a quoted tame
+;                          expression.
+
+; [21] (f! ...)         -- where every :FN/:EXPR slot of the call is occupied
+;                          by the corresponding formal of f!.
+
+; Note that f! may not call EV$-LIST! because that function does not have a
+; badge.  In calls [17], [19], and [20] we know that the quoted objects in
+; :FN/:EXPR positions are tame! because if they were not, f would not have a
+; badge and would not be in G2.
+
+; Below is a complete listing of all inter-clique calls.  Each line raises a
+; measure proof obligation.  For example, line [ 1] means that (APPLY$! FN
+; ARGS) calls (EV$! (CADDR FN) ...)  when (CONSP FN), i.e., when FN is treated
+; as a LAMBDA expression.  We elide irrelevant arguments.  This line means we
+; have to show that
+
+; (IMPLIES (CONSP FN)
+;          (L< (EV$!-MEASURE (CADDR FN) ...)
+;              (APPLY$!-MEASURE FN ARGS))).
+
+; The reader's immediate obligation is to confirm that these 21 cases cover all
+; of the possible inter-clique calls.  Our earlier definitions of APPLY$!,
+; APPLY$-USERFN1!, EV$!, and EV$-LIST! are annotated with these same bracketed
+; numbers to point out the calls in question.  The possible inter-clique calls
+; made by the doppelganger of the arbitrary user-defined G2 function, f!, are
+; listed above.
+
+; Some calls in the table are syntactically different, e.g., (CADDR x) vs
+; (LAMBDA-BODY x) vs (NTH 2 x), but logically equivalent.  Our proof deals with
+; some calls collectively because the same logical argument justifies them,
+; e.g., for (EV$! (CADR X) A) and (EV$! (CADDR X) A).  But we list all classes
+; of calls.
+
+; Table of Inter-Clique Calls
+
+; [A] (APPLY$! FN ARGS)
+;  [ 1]  (EV$! (CADDR FN) ...)           ; (CONSP FN)
+;  [ 2]  (APPLY$! (CAR ARGS) (CADR ARGS)); FN='APPLY$ and (CAR ARGS) tame!
+;  [ 3]  (EV$! (CAR ARGS) (CADR ARGS))   ; FN='EV$ and (CAR ARGS) tame!
+;  [ 4]  (f! (CAR ARGS) ...)             ; FN='f and the :FN/:EXPR ARGS tame!
+
+; [B] (EV$! X A)                         ; in all calls below, (CONSP X) and
+;                                        ;   X is tame!
+;  [ 5]  (EV$! (CADR X) A)               ; (CAR X)='IF
+;  [ 6]  (EV$! (CADDR X) A)              ; (CAR X)='IF
+;  [ 7]  (EV$! (CADDDR X) A)             ; (CAR X)='IF
+;  [ 8]  (APPLY$! 'APPLY$ args')         ; (CAR X)='APPLY$; see note below
+;  [ 9]  (APPLY$! 'EV$ args')            ; (CAR X)='EV$; see note below
+;  [10]  (APPLY$! 'f args')              ; (CAR X)='f and f has :FN/:EXPR
+;                                        ;   formals; see note below
+;  [11]  (APPLY$! (CAR X) ...)           ; (CAR X) has no :FN/:EXPR formals
+;  [12]  (EV$! (NTH i X) ...)            ; (CAR X)='f and ith ilk of f is NIL;
+;                                        ;   see note below
+;  [13]  (EV$!-LIST (CDR X) ...)         ; (CAR X) has no :FN/:EXPR formals
+
+; [C] (EV$-LIST! X A)
+;  [14]  (EV$! (CAR X) ...)              ; (CONSP X)
+;  [15]  (EV$!-LIST (CDR X) ...)         ; (CONSP X)
+
+; [D] (f! v_1 ... v_n)
+;  [16]  (APPLY$! v ...)                 ; v is a formal of f! of ilk :FN
+;  [17]  (APPLY$! 'x ...)                ; x is a tame! function
+;  [18]  (EV$ v ...)                     ; v is a formal of f! of ilk :EXPR
+;  [19]  (EV$ 'x ...)                    ; x is a tame! expression
+;  [20]  (g! ...)                        ; each :FN/:EXPR actual is a formal
+;                                        ;   of f! or a quoted tame! object
+;  [21]  (f! ...)                        ; each :FN/:EXPR actual is the
+;                                        ;   corresponding formal of f!
+
+; Note: Lines [8], [9], [10] mean that (EV$! X A) calls APPLY$! on 'APPLY$,
+; 'EV$, and 'f with argument list args', where args' is (LIST e_1 e_2 ... e_n),
+; where n is the arity of (CAR X) and where e_i is (CADR (NTH i X)) if the ith
+; formal of (CAR X) is of ilk :FN/:EXPR and is (EV$! (NTH i X) A) otherwise.
+
+; For example, if f is a function whose ilks are (NIL :FN NIL :EXPR NIL), then
+; line 10 would read:
+
+; [10] (APPLY$! 'f (LIST (EV$! (NTH 1 X) A) ; ilk NIL
+;                        (CADR (NTH 2 X))   ; ilk :FN
+;                        (EV$! (NTH 3 X) A) ; ilk NIL
+;                        (CADR (NTH 4 X))   ; ilk :EXPR
+;                        (EV$! (NTH 5 X) A) ; ilk NIL
+;                        ))
+
+; Intuitively, each e_i is (EV$! (NTH i X) A).  But if X is tame!, we know the
+; elements of X in :FN/:EXPR slots are actually QUOTEd, so the intuitive (EV$!
+; (NTH i X) A) will in fact evaluate to (CADR (NTH i X)).  It makes our
+; termination argument simpler if we go ahead and define EV$! this way.  By
+; the way, line [10] is only applicable if f has at least one :FN/:EXPR formal.
+; If f is a G2 function with no :FN or :EXPR formals, then it is handled by
+; line [11].
+
+; =================================================================
+; Proofs of the Measure Obligations
+
+; -----------------------------------------------------------------
+; [A] (APPLY$! FN ARGS)
+;  [ 1]  (EV$! (CADDR FN) ...)           ; (CONSP FN)
+
+; Proof Obligation:
+; (IMPLIES (CONSP FN)
+;          (L< (EV$!-MEASURE (CADDR FN) ...)
+;              (APPLY$!-MEASURE FN ARGS)))
+
+; The crux of this argument is that both measures have first component 0 and
+; their second components settle the question.  The second component of
+; (EV$!-MEASURE (CADDR FN) ...) is (WEIGHT (CADDR FN)).  The second component
+; of (APPLY$!-MEASURE FN ARGS) is
+
+; (MAX (WEIGHT FN)
+;      (IF (FN/EXPR-ARGS FN ARGS)
+;          (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS FN ARGS)))
+;          0))
+
+; But (WEIGHT (CADDR FN)) < (WEIGHT FN), when FN is a CONSP, no matter what
+; legal value *weight-alist* has.  In particular, the following is a theorem
+
+; (IMPLIES (AND (CONSP X)
+;               (NOT (ASSOC-EQUAL NIL WA))
+;               (SYMBOLP-TO-NATP-ALISTP WA))
+;          (< (WEIGHT1 (CADDR X) WA)
+;             (WEIGHT1 X WA)))
+
+; and all legal values of *WEIGHT-ALIST* are SYMBOLP-TO-NATP-ALISTPS and NIL is
+; never bound on that alist because it is not an ACL2 function symbol.  We do
+; not go into this level of detail in our proofs below and only do so here to
+; remind the reader that we're dealing with meta-theorems about the ACL2 world.
+; That is, one might think that this particular Proof Obligation above could be
+; dispatched by loading doppelgangers.lisp and doing
+
+; (thm (IMPLIES (CONSP FN)
+;               (L< (EV$!-MEASURE (CADDR FN) A)
+;                   (APPLY$!-MEASURE FN ARGS))))
+
+; because no user functions are involved in this conjecture.  But that is wrong
+; because WEIGHT is a function of *WEIGHT-ALIST* which is a function of the
+; user's chronology.
+
+; -----------------------------------------------------------------
+; [A] (APPLY$! FN ARGS)
+;  [ 2]  (APPLY$! (CAR ARGS) (CADR ARGS)); FN='APPLY$ and (CAR ARGS) tame!
+
+; Proof Obligation:
+; (IMPLIES (AND (EQ FN 'APPLY$)
+;               (TAMEP-FUNCTIONP! (CAR ARGS)))
+;          (L< (APPLY$!-MEASURE (CAR ARGS) (CADR ARGS))
+;              (APPLY$!-MEASURE FN ARGS)))
+
+; The first components are both 0 and this lexicographic inequality is settled
+; by the second components.  The inequality of the second components is
+
+; (< (MAX (WEIGHT (CAR ARGS))
+;         (IF
+;          (FN/EXPR-ARGS (CAR ARGS) (CADR ARGS))
+;          (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS (CAR ARGS) (CADR ARGS))))
+;          0))
+;    (MAX (WEIGHT 'APPLY$)
+;         (IF
+;          (FN/EXPR-ARGS 'APPLY$ ARGS)
+;          (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS 'APPLY$ ARGS)))
+;          0)))
+
+; The weight of 'APPLY$ is 0.  Consider the FN/EXPR-ARGS term on the left-hand
+; side.  If (CAR ARGS) is a tame function, there are no functional/expressional
+; arguments, so the left-hand side reduces to (WEIGHT (CAR ARGS)).
+
+; On the right-hand side, (FN/EXPR-ARGS 'APPLY$ ARGS) is (LIST (CAR ARGS))
+; because the ilks of 'APPLY$ is (:FN NIL).  The MAXIMAL-WEIGHT of that list is
+; (WEIGHT (CAR ARGS)).  So the right-hand side is (+ 1 (WEIGHT (CAR ARGS))).
+
+; So the inequality above is
+
+; (< (WEIGHT (CAR ARGS)) (+ 1 (WEIGHT (CAR ARGS))))
+
+; This explains why there is a +1 in the second component of the APPLY$!
+; measure: so APPLY$ can apply itself (and, as it will turn out in case [3]
+; below, 'EV$) when the first element of ARGS is tame.
+
+; -----------------------------------------------------------------
+; [A] (APPLY$! FN ARGS)
+;  [ 3]  (EV$! (CAR ARGS) (CADR ARGS))   ; FN='EV$ and (CAR ARGS) tame!
+
+; Proof Obligation:
+; (IMPLIES (AND (EQ FN 'EV$)
+;               (TAMEP! (CAR ARGS)))
+;          (L< (EV$!-MEASURE (CAR ARGS) (CADR ARGS))
+;              (APPLY$!-MEASURE FN ARGS)))
+
+; Both measures have first component 0 and the question is settled by the
+; second components.  The inequality in question is:
+
+; (< (WEIGHT (CAR ARGS))
+;    (IF (FN/EXPR-ARGS 'EV$ ARGS)
+;        (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS 'EV$ ARGS)))
+;        0))
+
+; after simplifying (WEIGHT 'EV$) in the second component of (APPLY$!-MEASURE
+; 'EV$ ARGS) to 0.  Similiar to case [2], the FN/EXPR-ARGS term simplifies to
+; (LIST (CAR ARGS)) and so the inequality becomes
+
+; (< (WEIGHT (CAR ARGS)) (+ 1 (WEIGHT (CAR ARGS))))
+
+; -----------------------------------------------------------------
+; [A] (APPLY$! FN ARGS)
+;  [ 4]  (f! (CAR ARGS) ...)             ; FN='f and the :FN/:EXPR ARGS tame!
+
+; Proof Obligation:
+
+; We are considering (APPLY$ 'f ARGS), where f is a user-defined G2 function
+; and all of the elements of ARGS in :FN/:EXPR positions correspond,
+; appropriately, to tame functions or expressions.
+
+; We wish to show the conclusion:
+
+; (L< (f!-MEASURE (CAR ARGS) ... (CAD...DR ARGS))
+;     (APPLY$!-MEASURE 'f ARGS))
+
+; Since we know all the :FN/:EXPR arguments of ARGS are tame, the tameness-bit
+; of the left-hand side is 0, as is the tameness-bit of the right-hand side.
+; The inequality of second components reduces to:
+
+; (< (MAX weights-i
+;         (MAX weights-ii
+;              weights-iii))
+;    (MAX (WEIGHT 'f)
+;         (IF
+;          (FN/EXPR-ARGS 'f ARGS)
+;          (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS 'f ARGS)))
+;          0)))
+
+; where weights-i is the maximal weight of any :FN/:EXPR element of ARGS,
+; weights-ii is the maximal weight of any other user-defined G2 function called
+; in the body of f, and weights-iii is the maximal weight of any quoted tame
+; function or expression used in :FN/:EXPR slots in the body of f.
+
+; Note that (WEIGHT 'f) is strictly larger than weights-ii and weights-iii
+; because the weight of a function is the sum of the weights of all objects in
+; its body.  Furthermore, (FN/EXPR-ARGS 'f ARGS) is the list of all the ARGS
+; measured in weights-i, so (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS 'f ARGS))) is
+; strictly bigger than weights-i.  Thus, the inequality above holds.
+
+; -----------------------------------------------------------------
+; [B] (EV$! X A)                         ; in all calls below, (CONSP X) and
+;                                        ;   X is tame!
+;  [ 5]  (EV$! (CADR X) A)               ; (CAR X)='IF
+;  [ 6]  (EV$! (CADDR X) A)              ; (CAR X)='IF
+;  [ 7]  (EV$! (CADDDR X) A)             ; (CAR X)='IF
+;  [12]  (EV$! (NTH i X) ...)            ; (CAR X)='f and ith ilk of f is NIL
+;  [13]  (EV$!-LIST (CDR X) ...)         ; (CAR X) has no :FN/:EXPR formals
+; [C] (EV$-LIST! X A)
+;  [14]  (EV$! (CAR X) ...)              ; (CONSP X)
+;  [15]  (EV$!-LIST (CDR X) ...)         ; (CONSP X)
+
+; Proof Obligation: We can consider these inter-calls of EV$! and EV$-LIST!
+; together because it is always the second components of the measures that
+; decide the questions and the first two components of (EV$!-MEASURE X A) and
+; of (EV$-LIST! X A) are identical, namely (LLIST 0 (WEIGHT X) ...).
+
+; So taking [12], say, as typical, the proof obligation is
+
+; (IMPLIES (AND (CONSP X)
+;               (TAMEP! X))
+;          (L< (EV$!-MEASURE (CAD...DR X) ...)
+;              (EV$!-MEASURE X A)))
+
+; But the WEIGHT of any proper subtree of X is smaller than that of X.  The
+; same argument works for all these cases.
+
+; -----------------------------------------------------------------
+; [B] (EV$! X A)                         ; in all calls below, (CONSP X) and
+;                                        ;   X is tame!
+;  [ 8]  (APPLY$! 'APPLY$ args')         ; (CAR X)='APPLY$; see note below
+;  [ 9]  (APPLY$! 'EV$ args')            ; (CAR X)='EV$; see note below
+
+; Proof Obligation: When X is a tame term and (CAR X)='APPLY$,
+; (EV$! X A)
+; calls
+; (APPLY$! 'APPLY$ (LIST (CADR (CADR X)) (EV$! (CADDR X) A)))
+
+; Case [ 9] is exactly the same except EV$ calls APPLY$ with first argument
+; 'EV$ instead of 'APPLY$.
+
+; The proofs of [ 8] and [ 9] are otherwise identical so we focus on [ 8].
+
+; The second element of the list-expression above is irrelevant and we will
+; generalize it to Z below.
+
+; The proof obligation is thus:
+
+; (IMPLIES (AND (CONSP X)
+;               (TAMEP! X)
+;               (EQ (CAR X) 'APPLY$))
+;          (L< (APPLY$!-MEASURE 'APPLY$ (LIST (CADR (CADR X)) Z))
+;              (EV$!-MEASURE X A)))
+
+; The first components of both sides are 0 and the comparison of the second
+; components becomes:
+
+; (< (MAX (WEIGHT 'APPLY$)
+;         (IF (FN/EXPR-ARGS 'APPLY$
+;                           (LIST (CADR (CADR X)) Z))
+;             (+ 1 (MAXIMAL-WEIGHT
+;                   (FN/EXPR-ARGS 'APPLY$
+;                                 (LIST (CADR (CADR X)) Z))))
+;             0))
+;    (WEIGHT X))
+
+; which in turn becomes
+
+; (< (+ 1 (WEIGHT (CADR (CADR X))))
+;    (WEIGHT X))
+
+; But if X is tamep! and its CAR is APPLY$ (or EV$) then the length of X is 3
+; and the inequality holds.  This can be confirmed in general by
+
+; (THM
+;  (IMPLIES (AND (CONSP X)
+;                (OR (EQ (CAR X) 'APPLY$)
+;                    (EQ (CAR X) 'EV$))
+;                (TAMEP X)          ; Note the general TAMEP, not the model TAME!
+;                (SYMBOLP-TO-NATP-ALISTP WA))
+;           (< (+ 1 (WEIGHT1 (CADR (CADR X)) WA))
+;              (WEIGHT1 X WA))))
+
+; -----------------------------------------------------------------
+; [B] (EV$! X A)                         ; in all calls below, (CONSP X) and
+;                                        ;   X is tame!
+;  [10]  (APPLY$! 'f args')              ; (CAR X)='f and f has :FN/:EXPR
+;                                        ;   formals; see note below
+
+; As explained in the note referenced above, args' is (LIST e_1 e_2
+; ... e_n), where n is the arity of f and where e_i is (CADR (NTH i X)) if the
+; ith formal of (CAR X) is of ilk :FN/:EXPR and is (EV$! (NTH i X) A)
+; otherwise.
+
+; Proof Obligation: We know X is a tame expression, its CAR is 'f, and that f
+; has at least one :FN/:EXPR formal.  From tameness we know X is a true-list of
+; length 1+n, where n is the arity of f.  We could thus write X as '(f x_1
+; ... x_n), where x_i is (NTH i X).  Let m be an i such that x_i is in a
+; :FN/:EXPR slot of f and has maximal weight among all :FN/:EXPR x_i.  That is,
+; x_m is in a :FN/:EXPR slot and (WEIGHT x_m) is maximal among the :FN/:EXPR
+; x_i.  We know x_m exists because f has at least one :FN/:EXPR formal.  From
+; tameness we also know that each :FN/:EXPR x_i is of the form (QUOTE ...).
+; Thus (WEIGHT (CADR x_m)) is maximal among the weights of (CADR x_i) for
+; :FN/:EXPR x_i.
+
+; We must prove
+
+; (L< (APPLY$!-MEASURE 'f args')
+;     (EV$!-MEASURE X A))
+
+; The first components are both 0.  The comparisons of the second components is
+
+; (< (MAX (WEIGHT 'f)
+;         (IF (FN/EXPR-ARGS 'f args')
+;             (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS 'f args')))
+;             0))
+;    (WEIGHT X))
+
+; But since f has at least one :FN/:EXPR formal, (FN/EXPR-ARGS 'f args') is
+; non-nil and (MAXIMAL-WEIGHT (FN/EXPR-ARGS 'f args')) is (WEIGHT (CADR x_m)).
+; Thus, the inequality reduces to:
+
+; (< (MAX (WEIGHT 'f)
+;         (+ 1 (WEIGHT (CADR x_m))))
+;    (WEIGHT X))
+
+; But both f and x_m are proper subtrees of X (and indeed there is at least 1
+; cons in X holding f and x_m together!), so (WEIGHT X) dominates the WEIGHTs
+; of both (even when we add 1 to that of (CADR x_m)).
+
+; -----------------------------------------------------------------
+; [B] (EV$! X A)                         ; in all calls below, (CONSP X) and
+;                                        ;   X is tame!
+;  [11]  (APPLY$! (CAR X) ...)           ; (CAR X) has no :FN/:EXPR formals
+
+; Proof Obligation: We know x is tame, its car is 'f and thus x is of the form
+; (f x_1 ... x_n), where n is the arity of f.  No formal of f has ilk :FN or
+; :EXPR.  In this case, (EV$! X A) calls (APPLY$ 'f (EV$-LIST! (CDR X) A)).  We
+; must prove
+
+; (L< (APPLY$!-MEASURE 'f (EV$-LIST! (CDR X) A))
+;     (EV$!-MEASURE X A))
+
+; As usual, the first components of the measures are 0 and the question is
+; decided by the second components with the question:
+
+; (< (MAX (WEIGHT 'f)
+;         (IF (FN/EXPR-ARGS 'f (EV$-LIST! (CDR X) A))
+;             (+ 1 (MAXIMAL-WEIGHT
+;                   (FN/EXPR-ARGS 'f (EV$-LIST! (CDR X) A))))
+;             0))
+;    (WEIGHT '(f x_1 ... x_j)))
+
+; However, since there are no :FN/:EXPR arguments for f, the FN/EXPR-ARGS
+; expression is NIL and the inequality simplifies to
+
+; (< (WEIGHT f)
+;    (WEIGHT '(f x_1 ... x_j)))
+
+; which is obviously true.
+
+; -----------------------------------------------------------------
+; [D] (f! v_1 ... v_n)
+;  [16]  (APPLY$! v ...)                 ; v is a formal of f! of ilk :FN
+
+; Proof Obligation.  In this case, the definition of f! calls APPLY$! on one of
+; the {v_1, ..., v_n}, namely v, and v is of ilk :FN.  We know nothing about
+; the second argument of that APPLY$!, denoted by the ellipsis in [16].  For
+; clarity we replace that ellipsis by a variable z and must prove:
+
+; (L< (APPLY$!-MEASURE v z)
+;     (f!-MEASURE v_1 ... v_n)
+
+; If any of the :FN/:EXPR arguments among v_i is not tame, the tameness bit of
+; the f!-MEASURE is 1.  But the tameness bit of APPLY$!-MEASURE is 0 and so the
+; inequality holds.  Thus, we may assume all :FN/:EXPR v_i are tame!.  Thus, v
+; is a tame! function.
+
+; Consider the comparison of the second components.
+
+; (< (MAX (WEIGHT v)
+;         (IF (FN/EXPR-ARGS v z)
+;             (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS v z)))
+;             0))
+;    (max weight-i
+;         (max weight-ii
+;              weight-iii)))
+
+; Weight-i is the maximum of the WEIGHTs of the :FN/:EXPR elements of {v_1,
+; ..., v_n}.  Note that v is in that set and thus (WEIGHT v) <= weight-i.  The
+; right hand side above is thus no smaller than (WEIGHT v).
+
+; But since v is tame, (FN/EXPR-ARGS v z) is NIL and the inequality becomes:
+
+; (< (weight v)
+;    (max weight-i
+;         (max weight-ii
+;              weight-iii)))
+
+; which is either true or else the equality holds between the left- and
+; right-hand sides.
+
+; In the case of the equality, L< compares the third components, the
+; chronological-position of APPLY$ to that of f.  But f's position is always
+; strictly larger.
+
+; So the L< holds.
+
+; -----------------------------------------------------------------
+; [D] (f! v_1 ... v_n)
+;  [17]  (APPLY$! 'x ...)                ; x is a tame! function
+
+; Proof Obligation: We have the preconditions described for case [16] except
+; here f is calling APPLY$! on a quoted tame! function, x.
+
+; (L< (APPLY$!-MEASURE 'x z)
+;     (f!-MEASURE v_1 ... v_n))
+
+; Because x is tame the situation is much like that above.  The first
+; components are both 0, the (FN/EXPR-ARGS 'x z) introduced by expanding
+; APPLY$!-MEASURE is NIL, and the comparison of the second components becomes:
+
+; (< (weight 'x)
+;    (max weight-i
+;         (max weight-ii
+;              weight-iii)))
+
+; Here, weight-iii is the maximum of the weights of every quoted object
+; occurring in a :FN/:EXPR slot of the body of f and x is one of those objects.
+; So again, either the inequality holds or an equality holds and we consider
+; the third components.
+
+; But the chronological-position of APPLY$ is smaller than that of f.
+
+; -----------------------------------------------------------------
+; [D] (f! v_1 ... v_n)
+;  [18]  (EV$ v ...)                     ; v is a formal of f! of ilk :EXPR
+;  [19]  (EV$ 'x ...)                    ; x is a tame! expression
+
+; Proof Obligation: These two cases are analogous to [16] and [17] because the
+; second component of EV$!-MEASURE is just the weight of the object being
+; evaluated, which, here, is either v or 'x.  That is, [18] is like [16] after
+; [16] has simplified away the FN/EXPR-ARGS expression, and [19] is analogously
+; like [17].
+
+; For example, the comparison of the second components for [18] becomes:
+
+; (< (weight v)
+;    (max weight-i
+;         (max weight-ii
+;              weight-iii)))
+
+; which was proved in [16], and that for [19] becomes
+
+; (< (weight 'x)
+;    (max (max weight-i
+;         (max weight-ii
+;              weight-iii)))
+; which was proved in [17].
+
+; -----------------------------------------------------------------
+; [D] (f! v_1 ... v_n)
+;  [20]  (g! ...)                        ; each :FN/:EXPR actual is a formal
+;                                        ;   of f! or a quoted tame! object
+
+; Proof Obligation: This is the case where f! is calling some other G2
+; function.  Let g! be of arity m and denote the actuals in the (g! ...) term
+; as a_1, ..., a_m.  Every actual in a :FN position of g! is either a :FN
+; formal of f! or is a quoted tame function symbol or LAMBDA.  Similarly,
+; every actual in an :EXPR position of g! is either an :EXPR formal of f! or a
+; quoted tame expression.
+
+; The conclusion of the proof obligation is
+
+; (l< (g!-MEASURE a_1 ... a_m)
+;     (f!-MEASURE v_1 ... v_n))
+
+; Consider the first components of the two measures, call them g-bit and f-bit.
+; Each depends on the tameness of their respective arguments.  If g-bit < f-bit
+; we are done.  If g-bit = f-bit we must consider the other components.  The
+; remaining case, g-bit > f-bit, means g-bit = 1 and f-bit = 0, which means
+; some :FN/:EXPR actual, a_i, is untame while every :FN/:EXPR v_j is tame.  But
+; a_i is either one of {v_1, ..., v_n} or is tame.  So g-bit > f-bit is
+; impossible.
+
+; Thus, at worst we must consider the second components of the two measures.
+
+; (< (MAX-INTERNAL-WEIGHT g)
+;    (MAX-INTERNAL-WEIGHT f))
+
+; which is
+
+; (< (MAX g-weight-i
+;         (MAX g-weight-ii
+;              g-weight-iii))
+;    (MAX f-weight-i
+;         (MAX f-weight-ii
+;              f-weight-iii)))
+
+; The meaning of the meta-variables above is as follows:
+
+; g-weight-i: maximal WEIGHT of the :FN/:EXPR actuals among {a_1, ..., a_m}.
+
+; g-weight-ii: maximal WEIGHT of G2 functions other than g called in the body
+;              of g
+
+; g-weight-iii: maximal WEIGHT of the quoted tame functions and expressions
+;               occurring in :FN/:EXPR slots in the body of g
+
+; We analogously define the ``f-weights.''
+
+; We will show that the left-hand side is weakly dominated by the right-hand
+; side.
+
+; Consider g-weight-i.  Note that every object measured in g-weight-i is
+; measured either in f-weight-i or f-weight-iii.  In particular, consider an
+; object measured in g-weight-i.  That object is in a :FN/:EXPR argument of the
+; call of g! and is either a :FN/:EXPR formal of f! or is a quoted tame object.
+; If it is a :FN/:EXPR formal of f! it is measured in f-weight-i.  If it is a
+; quoted tame object in a :FN/:EXPR position of the call of g! it is measured
+; in f-weight-iii because the call of g! occurs in the body of f!.  Thus,
+; g-weight-i can be no bigger than the right-hand side above.
+
+; As for g-weight-ii and g-weight-iii, both are strictly smaller than (WEIGHT
+; 'g) because they just measure components of the body of g.  But since g! is
+; called in f!, (WEIGHT 'g) is among the things measured in f-weight-ii.  Thus,
+; g-weight-ii and g-weight-iii can be no bigger than the right-hand side above.
+
+; Thus, the comparison of the second components is, at worst, an equality, and
+; we must consider the third components.  But (chronological-position g) is
+; strictly less than (chronological-position f).
+
+; -----------------------------------------------------------------
+; [D] (f! v_1 ... v_n)
+;  [21]  (f! ...)                        ; each :FN/:EXPR actual is the
+;                                        ;   corresponding formal of f!
+
+; Proof Obligation: Here f! is calling itself recursively.  Let the actuals of
+; the call of f! above be a_1, ..., a_n.  We know that if the v_i has ilk
+; :FN/:EXPR then a_i is v_i.  This recursive call is governed by some tests
+; whose conjunction we will denote by tst.  The proof obligation for this call
+; of f! is
+
+; (IMPLIES tst
+;          (L< (f!-MEASURE a_1 ... a_n)
+;              (f!-MEASURE v_1 ... v_n)))
+
+; Because the :FN/:EXPR a_i are equal to the corresponding v_i the first three
+; components of the two measures are equal and the comparison above can be
+; decided by the comparison of the fourth components.  Let the original measure
+; function used to admit f be m.  Thus, the conjecture above reduces to
+
+; (IMPLIES tst
+;          (O< (m a_1 ... a_n)
+;              (m v_1 ... v_n)))
+
+; If this formula involves any G2 function then the call of recursive f! was
+; considered marked by the standard doppelganger construction and thus the
+; concluding O< comparison is one of the tests governing the recursive call.
+; Hence, the formula trivially holds.
+
+; Otherwise, up to the renaming of G1 functions to their doppelgangers, the
+; formula is identical to the measure conjecture proved for the corresponding
+; call of f when f was admitted.  But the doppelganger of each G1 function is
+; defined identically to its counterpart except for renaming, so the formula is
+; a theorem here too.
+
+; -----------------------------------------------------------------
+; Q.E.D.
+; -----------------------------------------------------------------
+; 

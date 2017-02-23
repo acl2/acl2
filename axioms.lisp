@@ -19489,6 +19489,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defthm rationalp-implies-acl2-numberp
   (implies (rationalp x) (acl2-numberp x)))
 
+; Addition suggested by Dmitry Nadezhin (a proof that succeeded in ACL2 using
+; the lemma just above failed without the following):
+
+#+:non-standard-analysis
+(defthm realp-implies-acl2-numberp
+  (implies (realp x) (acl2-numberp x)))
+
 (defun pop-timer (name flg state)
 
 ; If flg is nil we discard the popped value.  If flg is t we
@@ -26268,14 +26275,14 @@ Lisp definition."
 
 (defmacro state-mac ()
 
-; Keep in sync with state-mac@par.
+; Keep in sync with state-mac@par.  The "mac" suffix is for "macro".
 
   'state)
 
 #+acl2-par
 (defmacro state-mac@par ()
 
-; Keep in sync with state-mac.
+; Keep in sync with state-mac.  The "mac" suffix is for "macro".
 
   nil)
 

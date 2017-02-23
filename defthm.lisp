@@ -10647,73 +10647,93 @@
          (cons (car rules) (collect-abbreviation-subclass (cdr rules))))
         (t (collect-abbreviation-subclass (cdr rules)))))
 
-(defun runes-to-monitor-warnings (runes wrld ctx state
-                                        only-simple only-simple-count
-                                        some-simple some-s-all some-s-bad)
-
-; This function assumes that "Monitor" warnings are enabled.
-
+(defun runes-to-monitor1 (runes x wrld ctx state
+                                only-simple only-simple-count
+                                some-simple some-s-all some-s-bad
+                                acc)
   (cond
    ((endp runes)
-    (pprogn (cond
-             (only-simple
-              (warning$ ctx ("Monitor")
-                        "The rune~#0~[~/s~] ~&0 name~#1~[s only a~/ only~] ~
-                         simple abbreviation rule~#1~[~/s~].  Monitors can be ~
-                         installed on abbreviation rules, but will not fire ~
-                         during preprocessing, so you may want to supply the ~
-                         hint :DO-NOT '(PREPROCESS); see :DOC hints.  For an ~
-                         explanation of what a simple abbreviation rule is, ~
-                         see :DOC simple.  Also, see :DOC monitor."
-                        only-simple
-                        (if (> only-simple-count 1) 1 0)))
-             (t state))
-            (cond
-             (some-simple
-              (assert$
-               (< 1 some-s-all)
-               (warning$ ctx ("Monitor")
-                         "Among the ~n0 rules named ~v1 ~#2~[is a simple ~
-                          abbreviation rule~/are ~n3 simple abbreviation ~
-                          rules~].  Such rules can be monitored, but will not ~
-                          fire during preprocessing, so you may want to ~
-                          supply the hint :DO-NOT '(PREPROCESS); see :DOC ~
-                          hints,  For an explanation of what a simple ~
-                          abbreviation rule is, see :DOC simple.  Also, see ~
-                          :DOC monitor."
-                         some-s-all
-                         some-simple
-                         (if (< 1 some-s-bad) 1 0)
-                         some-s-bad)))
-             (t state))))
+    (cond
+     ((null acc)
+      (er soft ctx
+          "~x0 does not represent any runes to be monitored.  See :DOC ~
+           monitor."
+          x))
+     (t
+      (pprogn
+       (cond
+        (only-simple
+         (warning$ ctx "Monitor"
+                   "The rune~#0~[~/s~] ~&0 name~#1~[s only a~/ only~] simple ~
+                    abbreviation rule~#1~[~/s~].  Monitors can be installed ~
+                    on abbreviation rules, but will not fire during ~
+                    preprocessing, so you may want to supply the hint :DO-NOT ~
+                    '(PREPROCESS); see :DOC hints.  For an explanation of ~
+                    what a simple abbreviation rule is, see :DOC simple.  ~
+                    Also, see :DOC monitor."
+                   only-simple
+                   (if (> only-simple-count 1) 1 0)))
+        (t state))
+       (cond
+        (some-simple
+         (assert$
+          (< 1 some-s-all)
+          (warning$ ctx "Monitor"
+                    "Among the ~n0 rules named ~v1 ~#2~[is a simple ~
+                     abbreviation rule~/are ~n3 simple abbreviation rules~].  ~
+                     Such rules can be monitored, but will not fire during ~
+                     preprocessing, so you may want to supply the hint ~
+                     :DO-NOT '(PREPROCESS); see :DOC hints.  For an ~
+                     explanation of what a simple abbreviation rule is, see ~
+                     :DOC simple.  Also, see :DOC monitor."
+                    some-s-all
+                    some-simple
+                    (if (< 1 some-s-bad) 1 0)
+                    some-s-bad)))
+        (t state))
+       (value (reverse acc))))))
    (t
     (let ((rune (car runes)))
       (cond
        ((member-eq (car rune) '(:rewrite :definition))
-        (let* ((rules (find-rules-of-rune rune wrld))
-               (bad-rewrite-rules (collect-abbreviation-subclass rules)))
-          (assert$
-           rules
-           (cond
-            ((equal (length bad-rewrite-rules) (length rules))
-             (runes-to-monitor-warnings
-              (cdr runes) wrld ctx state
-              (cons rune only-simple)
-              (+ (length rules) only-simple-count)
-              some-simple some-s-all some-s-bad))
-            (bad-rewrite-rules
-             (runes-to-monitor-warnings
-              (cdr runes) wrld ctx state
-              only-simple only-simple-count
-              (cons rune some-simple)
-              (+ (length rules) some-s-all)
-              (+ (length bad-rewrite-rules) some-s-bad)))
-            (t (runes-to-monitor-warnings (cdr runes) wrld ctx state
-                                          only-simple only-simple-count
-                                          some-simple some-s-all some-s-bad))))))
-       (t (runes-to-monitor-warnings (cdr runes) wrld ctx state
+        (let ((rules (find-rules-of-rune rune wrld)))
+          (cond
+           ((null rules)
+            (pprogn (warning$ ctx "Monitor"
+                              "No rules are named ~x0."
+                              rune)
+                    (runes-to-monitor1
+                     (cdr runes) x wrld ctx state
+                     only-simple
+                     only-simple-count
+                     some-simple some-s-all some-s-bad
+                     acc)))
+           (t
+            (let ((bad-rewrite-rules (collect-abbreviation-subclass rules)))
+              (cond
+               ((equal (length bad-rewrite-rules) (length rules))
+                (runes-to-monitor1
+                 (cdr runes) x wrld ctx state
+                 (cons rune only-simple)
+                 (+ (length rules) only-simple-count)
+                 some-simple some-s-all some-s-bad
+                 (cons rune acc)))
+               (bad-rewrite-rules
+                (runes-to-monitor1
+                 (cdr runes) x wrld ctx state
+                 only-simple only-simple-count
+                 (cons rune some-simple)
+                 (+ (length rules) some-s-all)
+                 (+ (length bad-rewrite-rules) some-s-bad)
+                 (cons rune acc)))
+               (t (runes-to-monitor1 (cdr runes) x wrld ctx state
                                      only-simple only-simple-count
-                                     some-simple some-s-all some-s-bad)))))))
+                                     some-simple some-s-all some-s-bad
+                                     (cons rune acc)))))))))
+       (t (runes-to-monitor1 (cdr runes) x wrld ctx state
+                             only-simple only-simple-count
+                             some-simple some-s-all some-s-bad
+                             acc)))))))
 
 (defconst *monitorable-rune-types*
   '(:rewrite :definition :linear))
@@ -10727,39 +10747,29 @@
 
 (defun monitorable-runes-from-mapping-pairs (sym wrld)
 
-; Warning: keep this in sync with convert-theory-to-unordered-mapping-pairs1.
-; In both cases we are guided by the discussion of runic designators in :doc
-; theories.  However, here we do not include :induction runes, and we do not
-; accommodate theories because we wonder what complexity that might introduce
-; in providing useful errors and warnings from :monitor, and we don't (yet?)
-; consider it likely that users will want to monitor theories.
+; Note: another function that deals in runic mapping pairs is
+; convert-theory-to-unordered-mapping-pairs1.  In both cases we are guided by
+; the discussion of runic designators in :doc theories.  However, here we do
+; not include :induction runes, and we do not accommodate theories because we
+; wonder what complexity that might introduce in providing useful errors and
+; warnings from :monitor, and we don't (yet?)  consider it likely that users
+; will want to monitor theories.
 
-; We accumuate runic mapping pairs of sym into ans, except in the case that sym
-; is a defined function, we only include the :definition rune and, if indp is
-; true, the induction rune.
+; We accumulate runic mapping pairs of sym into ans, except in the case that
+; sym is a defined function, we only include the :definition rune and, if indp
+; is true, the induction rune.
 
   (let ((temp (strip-cdrs
                (getpropc (deref-macro-name sym (macro-aliases wrld))
                          'runic-mapping-pairs nil wrld))))
-    (cond
-     ((and temp
-           (eq (car (cdr (car temp))) :DEFINITION)
-           (eq (car (cdr (cadr temp))) :EXECUTABLE-COUNTERPART))
-      (list (car temp)))
-     (t (monitorable-runes temp)))))
+    (monitorable-runes temp)))
 
 (defun runes-to-monitor (x ctx state)
   (er-let* ((wrld (value (w state)))
             (runes
              (cond
               ((symbolp x)
-               (let ((runes (monitorable-runes-from-mapping-pairs x wrld)))
-                 (cond ((null runes)
-                        (er soft ctx
-                            "The symbol ~x0 does not represent any runes to ~
-                             be monitored.  See :DOC monitor."
-                            x))
-                       (t (value runes)))))
+               (value (monitorable-runes-from-mapping-pairs x wrld)))
               (t
                (let ((rune (translate-abbrev-rune x (macro-aliases wrld))))
                  (cond
@@ -10772,11 +10782,10 @@
                        *monitorable-rune-types*
                        rune))
                   (t (value (list rune)))))))))
-    (pprogn (cond ((warning-disabled-p "Monitor") state)
-                  (t (runes-to-monitor-warnings runes wrld ctx state
-                                                nil 0
-                                                nil 0 0)))
-            (value runes))))
+    (runes-to-monitor1 runes x wrld ctx state
+                       nil 0
+                       nil 0 0
+                       nil)))
 
 (defun delete-assoc-equal? (key alist)
   (cond ((assoc-equal key alist)
@@ -11019,9 +11028,14 @@
 ; design for that yet.
 
   (er-let*
-   ((lst (if (eq runes t)
-             (value nil)
-           (runes-to-monitor runes ctx state))))
+   ((lst (cond ((eq runes t)
+                (value nil))
+               ((eq runes nil)
+
+; This special case avoids getting an error when calling runes-to-monitor.
+
+                (value nil))
+               (t (runes-to-monitor runes ctx state)))))
    (pprogn
     (put-brr-local 'saved-standard-oi
                    (f-get-global 'standard-oi state)

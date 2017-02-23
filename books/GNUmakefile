@@ -628,7 +628,9 @@ CLEAN_FILES_EXPLICIT := \
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
-   doc/xdoc.sao
+   doc/xdoc.sao \
+   projects/apply-model/ex2/evaluation-apply.lisp \
+   projects/apply-model/ex2/evaluation-user-defs.lisp
 
 .PHONY: clean_books clean
 
@@ -797,6 +799,20 @@ endif # ifndef ACL2_COMP
 # order to maximize parallelism.  If they go at the end, maybe we'll
 # have an expensive sequential tail in the regression.
 OK_CERTS := $(ACL2_CUSTOM_TARGETS) $(OK_CERTS)
+
+# Extra dependencies for projects/apply-model/:
+
+projects/apply-model/ex1/evaluation-apply.lisp:
+	@cp -pf projects/apply-model/apply.lisp $@
+
+projects/apply-model/ex2/evaluation-apply.lisp:
+	@cp -pf projects/apply-model/apply.lisp $@
+
+projects/apply-model/ex1/evaluation-user-defs.lisp:
+	@cp -pf projects/apply-model/ex1/user-defs.lisp $@
+
+projects/apply-model/ex2/evaluation-user-defs.lisp:
+	@cp -pf projects/apply-model/ex2/user-defs.lisp $@
 
 ##############################
 ### Section: Support for ACL2_COMP
@@ -1479,10 +1495,6 @@ vl: centaur/vl/bin/vl \
 # Verilog simulators that many ACL2 users may not have.
 
 vlfull: vl sv_cosims
-
-sv_cosims: centaur/sv/cosims/cosim-core
-	@echo "Running Passing SV Cosims."
-	@cd centaur/sv/cosims; $(MAKE) passing
 
 centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
 	@echo "Making VL Verilog Toolkit, 2014 Edition"

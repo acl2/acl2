@@ -1427,11 +1427,14 @@ ACL2 from scratch.")
    (or (not (probe-file *acl2-status-file*))
        (delete-file *acl2-status-file*))
    (load "acl2-check.lisp")
-   (with-open-file (str *acl2-status-file*
-                        :direction :output)
-                   (format str
-                           "~s"
-                           :checked))
+
+; At one time we wrote ":CHECKED" to the file *acl2-status-file*, in order to
+; avoid both running this check here and then later, running this check again
+; in compile-acl2.  But as of 2/2017 we timed the load above at about 1/5
+; second; that seemed sufficiently negligible that it seemed fine to
+; run the check twice in return for being able to avoid having "make full"
+; needlessly recompile when *acl2-status-file* is up-to-date.
+
    t))
 
 (defun note-compile-ok ()
@@ -1456,11 +1459,10 @@ ACL2 from scratch.")
 ; functions for ACL2 are in package "ACL2", so invoke (in-package
 ; "ACL2") to obviate typing package names.
 
-; NOTE:  In order to compile ACL2, checks must first be run on the suitability
+; NOTE: In order to compile ACL2, checks must first be run on the suitability
 ; of the underlying Common Lisp implementation, by executing
-; (check-suitability-for-acl2).  If the Common Lisp is suitable, this form will
-; write the file acl2-status.txt with the symbol :CHECKED.  Successful
-; compilation should write out that same file with the symbol :COMPILED.
+; (check-suitability-for-acl2).  Successful compilation should write out file
+; *acl2-status* with the symbol :COMPILED.
 
 ; Compiling is a no-op if *suppress-compile-build-time* is non-nil, but we
 ; still write :COMPILED as indicated above.
@@ -2114,9 +2116,11 @@ You are using version ~s.~s.~s."
                 (with-open-file (str *acl2-status-file*
                                      :direction :input)
                                 (eq (read str nil)
-                                    (if use-acl2-proclaims
-                                        :compiled
-                                      :checked))))
+
+; This check is insufficient to avoid running the check twice, but that's OK.
+; Seee the comment about ":CHECKED" in check-suitability-for-acl2.
+
+                                    :compiled)))
      (check-suitability-for-acl2))
    (when (not *suppress-compile-build-time*)
      (our-with-compilation-unit

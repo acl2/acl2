@@ -1,6 +1,6 @@
 ; Fresh Names
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,7 +24,7 @@
   :returns (fresh-name "A @(tsee symbolp).")
   :mode :program
   :parents (kestrel-utilities system-utilities)
-  :short "Append as many &lsquo;@('$')&rsquo; signs to a name
+  :short "Append as many @('$') signs to a name
           as needed to make the name new in the world, i.e. not already in use,
           and not among a given list of names to avoid."
   :long

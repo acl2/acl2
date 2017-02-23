@@ -1,6 +1,6 @@
 ; Typed Tuples
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,11 +42,10 @@
    @({
      (let ((x object))
        (and (true-listp x)
-            (= (len x) N)
+            (equal (len x) N)
             (type1 (nth 0 x))
             ...
-            (typeN (nth N-1 x))
-            t))
+            (typeN (nth N-1 x))))
    })
    <p>
    When @('N') is 0, @('typed-tuplep') recognizes just @('nil').
@@ -54,10 +53,6 @@
    <p>
    When called with no arguments, i.e. @('(typed-tuplep)'),
    the macro (arbitrarily) expands to @('t').
-   </p>
-   <p>
-   The final @('t') conjunct ensures that
-   the macro always returns a @(tsee booleanp).
    </p>
    @(def typed-tuplep)"
 
@@ -81,6 +76,6 @@
               (variable 'x))
           `(let ((,variable ,object))
              (and (true-listp ,variable)
-                  (= (len ,variable) ,(len component-types))
-                  ,@(typed-tuplep-conjuncts component-types 0 variable nil)
-                  t))))))
+                  (equal (len ,variable) ,(len component-types))
+                  ,@(typed-tuplep-conjuncts
+                     component-types 0 variable nil)))))))

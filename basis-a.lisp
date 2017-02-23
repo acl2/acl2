@@ -6454,18 +6454,6 @@
 ; variance of a defconst value from one underlying Lisp to another.
 
 #-acl2-loop-only
-(defun our-pwd ()
-
-; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
-; variable is not necessarily maintained, for example in Solaris/SunOS as one
-; make invokes another make in a different directory.
-
-  (pathname-os-to-unix
-   (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
-   (get-os)
-   *the-live-state*))
-
-#-acl2-loop-only
 (initialize-state-globals)
 
 ; Case-match (needed for parse-with-local-stobj, below)
