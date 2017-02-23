@@ -499,3 +499,72 @@
                     (gobj-to-param-space
                      (get-bvar->term$a n bvar-db) p)))))
 
+
+
+
+
+;; (defund gnumber-from-param-space (n p)
+;;   (declare (xargs :guard t))
+;;   (b* (((mv rnum rden inum iden) (break-g-number n)))
+;;     (mk-g-number (bfr-list-from-param-space p rnum)
+;;                  (bfr-list-from-param-space p rden)
+;;                  (bfr-list-from-param-space p inum)
+;;                  (bfr-list-from-param-space p iden))))
+
+;; (mutual-recursion
+;;  (defun gobj-from-param-space (x p)
+;;    (declare (xargs :guard t
+;;                    :verify-guards nil))
+;;    (if (atom x)
+;;        x
+;;      (pattern-match x
+;;        ((g-concrete &) x)
+;;        ((g-boolean b) (mk-g-boolean (bfr-from-param-space p b)))
+;;        ((g-number n) (gnumber-from-param-space n p))
+;;        ((g-ite if then else)
+;;         (mk-g-ite (gobj-from-param-space if p)
+;;                   (gobj-from-param-space then p)
+;;                   (gobj-from-param-space else p)))
+;;        ((g-apply fn args) (g-apply fn (gobj-list-from-param-space args p)))
+;;        ((g-var &) x)
+;;        (& (gl-cons (gobj-from-param-space (car x) p)
+;;                    (gobj-from-param-space (cdr x) p))))))
+;;  (defun gobj-list-from-param-space (x p)
+;;    (declare (xargs :guard t))
+;;    (if (atom x)
+;;        nil
+;;      (cons (gobj-from-param-space (car x) p)
+;;            (gobj-list-from-param-space (cdr x) p)))))
+
+;; (Verify-guards gobj-from-param-space)
+
+;; (defthm gnumber-from-param-space-correct
+;;   (implies (bfr-eval p (car env))
+;;            (equal (generic-geval (gnumber-from-param-space n p)
+;;                                  env)
+;;                   (generic-geval (g-number n)
+;;                                  (genv-param p env))))
+;;   :hints(("Goal" :in-theory (e/d (gnumber-from-param-space
+;;                                   generic-geval
+;;                                   genv-param)
+;;                                  (components-to-number
+;;                                   break-g-number
+;;                                   bfr-param-env)))))
+
+;; (defthm-gobj-flag
+;;   (defthm gobj-from-param-space-correct
+;;     (implies (bfr-eval p (car env))
+;;              (equal (generic-geval (gobj-from-param-space x p) env)
+;;                     (generic-geval x (genv-param p env))))
+;;     :hints ('(:expand ((gobj-from-param-space x p))
+;;               :in-theory (enable genv-param))
+;;             (and stable-under-simplificationp
+;;                  '(:in-theory (enable generic-geval))))
+;;     :flag gobj)
+;;   (defthm gobj-list-from-param-space-correct
+;;     (implies (bfr-eval p (car env))
+;;              (equal (generic-geval-list (gobj-list-from-param-space x p) env)
+;;                     (generic-geval-list x (genv-param p env))))
+;;     :hints ('(:expand ((gobj-list-from-param-space x p))
+;;               :in-theory (enable generic-geval-list)))
+;;     :flag list))

@@ -178,6 +178,30 @@
 (local (include-book "std/lists/nthcdr" :dir :system))
 
 
+(define find-non-space ((str stringp)
+                        (pos natp)
+                        (len (equal len (length str))))
+  :guard (<= pos len)
+  :measure (nfix (- (length str) (nfix pos)))
+  :returns (nonspace-pos (or (natp nonspace-pos)
+                             (equal nonspace-pos nil))
+                         :rule-classes :type-prescription)
+  (b* ((len (mbe :logic (length str) :exec len))
+       (pos (lnfix pos))
+       ((when (mbe :logic (zp (- len (nfix pos)))
+                   :exec (eql len pos)))
+        nil)
+       ((unless (eql (char str pos) #\Space))
+        pos))
+    (find-non-space str (1+ pos) len))
+  ///
+  (std::defret find-non-space-less-than-length
+    (implies nonspace-pos
+             (< nonspace-pos (length str)))
+    :rule-classes :linear))
+       
+  
+
 
 ;; takes:
 ;; str -- the string to read from
@@ -227,7 +251,9 @@
          (loc (str::strpos-fast prompt str pos prompt-length strlen))
          ((unless loc)
           (mv nil nil))
-         (numloc (+ loc prompt-length))
+         (numloc (find-non-space str (+ loc prompt-length) strlen))
+         ((unless numloc)
+          (mv nil nil))
          ((mv num numend)
           (str::parse-nat-from-string str 0 0 numloc strlen))
          ((when (= numloc numend))
@@ -260,30 +286,26 @@
                       occurred, and total number of bits."))
   (b* (((when (atom strings)) (mv nil nil))
        (str (car strings))
-       (seqp (str::strprefixp "Sequential counterex." str))
-       (combp (and (not seqp)
-                   (str::strprefixp "Combinational counterex." str)))
-       ((when (and (not seqp) (not combp)))
+       (pos (str::strpos "CEX:" str))
+       ((unless pos)
         (find-ctrex-line (cdr strings)))
-       (prompts (if combp
-                    '("PIs = ")
-                  '("PIs = "
-                    "Regs = "
-                    "PO = "
-                    "Frame = "
-                    "Bits = ")))
-       (start (if combp
-                  (length "Combinational counterex.")
-                (length "Sequential counterex.")))
-       ((mv ok nums) (read-ctrex-entries str start prompts (length str)))
+       (seq-prompts '("Po = "
+                      "Frame = "
+                      "FF = "
+                      "PI = "
+                      "Bit = "))
+       ((mv ok nums) (read-ctrex-entries str pos seq-prompts (length str)))
+       ((when ok) (mv :seq nums))
+       (comb-prompts '("Po = " "PI = "))
+       ((mv ok nums) (read-ctrex-entries str pos comb-prompts (length str)))
        ((unless ok)
         (mv (msg "Bad counterexample line: ~s0" str) nil)))
-    (mv (if combp :comb :seq) nums))
+    (mv :comb nums))
   ///
   (std::defret len-of-find-ctrex-line
     (equal (len nums)
            (case type
-             (:comb 1)
+             (:comb 2)
              (:seq 5)
              (otherwise 0)))))
 
@@ -349,7 +371,9 @@
         ;; error
         (mv (msg "Aignet-run-abc: Error parsing counterexample status line: ~@0" ctrex-type)
             frames state))
-       (ctrex-num-ins (nth 0 ctrex-stats))
+       (ctrex-num-ins (if (eq ctrex-type :comb)
+                          (nth 1 ctrex-stats)
+                        (nth 3 ctrex-stats)))
        ((unless (eql (lnfix num-ins) ctrex-num-ins))
         (mv (msg "Aignet-run-abc: Error -- counterexample claims there are ~x0 inputs but we have ~x1."
                  ctrex-num-ins (lnfix num-ins))
@@ -357,7 +381,7 @@
        ((mv regs nframes)
         (if (eq ctrex-type :comb)
             (mv 0 0)
-          (mv (nth 1 ctrex-stats) (nth 3 ctrex-stats))))
+          (mv (nth 2 ctrex-stats) (nth 1 ctrex-stats))))
        
        (frames (frames-resize-rows 0 frames))
        (frames (frames-resize-cols num-ins frames))
@@ -628,13 +652,13 @@ differently:</p>
                  (and (implies (< (nfix n) (num-outs input-aignet))
                                (equal (id-eval (node-count (lookup-stype n (po-stype) input-aignet))
                                                invals regvals input-aignet)
-                                      1))
+                                      0))
                       (implies (< (nfix n) (num-regs input-aignet))
                                (equal (id-eval (node-count (lookup-reg->nxst
                                                             (node-count (lookup-stype n (reg-stype) input-aignet))
                                                             input-aignet))
                                                invals regvals input-aignet)
-                                      1))))))
+                                      0))))))
 
     (defthm aignet-abc-comb-simp-correct
       (b* (((mv status output-aignet ?frames)
@@ -678,13 +702,13 @@ differently:</p>
                       (and (implies (< (nfix n) (num-outs input-aignet))
                                     (equal (id-eval (node-count (lookup-stype n (po-stype) input-aignet))
                                                     invals regvals input-aignet)
-                                           1))
+                                           0))
                            (implies (< (nfix n) (num-regs input-aignet))
                                     (equal (id-eval (node-count (lookup-reg->nxst
                                                                  (node-count (lookup-stype n (reg-stype) input-aignet))
                                                                  input-aignet))
                                                     invals regvals input-aignet)
-                                           1))))
+                                           0))))
              (implies (and (member status '(:proved :refuted :failed nil)) ;; not error msg
                            output-filename)
                       (and (comb-equiv output-aignet input-aignet)
@@ -714,7 +738,7 @@ differently:</p>
                       (< (nfix n) (num-outs input-aignet)))
                  (equal (id-eval-seq k (node-count (lookup-stype n (po-stype) input-aignet))
                                      inframes nil input-aignet)
-                        1))))
+                        0))))
 
     (defthm aignet-abc-seq-simp-correct
       (b* (((mv status output-aignet ?frames)
@@ -755,7 +779,7 @@ differently:</p>
                            (< (nfix n) (num-outs input-aignet)))
                       (equal (id-eval-seq k (node-count (lookup-stype n (po-stype) input-aignet))
                                           inframes nil input-aignet)
-                             1))
+                             0))
              (implies (and (member status '(:proved :refuted :failed nil)) ;; not error msg
                            output-filename)
                       (and (seq-equiv output-aignet input-aignet)
@@ -802,6 +826,7 @@ differently:</p>
                         :script-filename script-filename
                         :input-filename input-filename
                         :output-filename output-filename
+                        :ctrex-filename ctrex-filename
                         :force-status force-status
                         :quiet quiet)))
 

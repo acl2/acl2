@@ -114,7 +114,10 @@
 
       ;; force checks
       gl-force-check-fn
-      binary-minus-for-gl))
+      binary-minus-for-gl
+
+      ;; measure stuff
+      o< o-p))
 
 (in-theory (disable glcp-generic-geval))
 

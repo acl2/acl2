@@ -1305,3 +1305,16 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
 (defconst *glcp-fnnames*
   (event-forms-collect-fn-names (list *glcp-interp-template*
                                       *glcp-clause-proc-template*)))
+
+(defun glcp-name-subst (clause-proc)
+  (b* ((subst-names (append '(run-gified
+                              geval
+                              geval-list
+                              geval-ev
+                              geval-ev-lst
+                              geval-ev-falsify
+                              geval-ev-meta-extract-global-badguy)
+                            (remove 'clause-proc *glcp-fnnames*))))
+    (pairlis$ (cons 'clause-proc subst-names)
+              (cons clause-proc
+                    (glcp-put-name-each clause-proc subst-names)))))

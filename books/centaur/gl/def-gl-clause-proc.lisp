@@ -279,6 +279,9 @@
   (not (gobj-depends-on k p nil)))
 
 
+
+
+
 (defun def-gl-clause-processor-fn
   (clause-proc output state)
   (declare (xargs :mode :program :stobjs state))
@@ -315,18 +318,24 @@
        ;;  (incat clause-proc (symbol-name clause-proc) "-RUN-PARAMETRIZED"))
        ;; (run-cases
        ;;  (incat clause-proc (symbol-name clause-proc) "-RUN-CASES"))
-       (subst-names (append '(run-gified
-                              geval
-                              geval-list
-                              geval-ev
-                              geval-ev-lst
-                              geval-ev-falsify
-                              geval-ev-meta-extract-global-badguy)
-                            (remove 'clause-proc *glcp-fnnames*)))
-       (fn-names (cons clause-proc (glcp-put-name-each clause-proc subst-names)))
-       (subst (pairlis$ (cons 'clause-proc subst-names) fn-names))
-       (fi-subst (pairlis$ (cons 'glcp-generic (glcp-put-name-each 'glcp-generic subst-names))
+       (subst (glcp-name-subst clause-proc))
+       (fn-names (strip-cdrs subst))
+       (generic-subst (glcp-name-subst 'glcp-generic))
+       (fi-subst (pairlis$ (strip-cdrs generic-subst)
                            (pairlis$ fn-names nil)))
+
+       ;; (subst-names (append '(run-gified
+       ;;                        geval
+       ;;                        geval-list
+       ;;                        geval-ev
+       ;;                        geval-ev-lst
+       ;;                        geval-ev-falsify
+       ;;                        geval-ev-meta-extract-global-badguy)
+       ;;                      (remove 'clause-proc *glcp-fnnames*)))
+       ;; (fn-names (cons clause-proc (glcp-put-name-each clause-proc subst-names)))
+       ;; (subst (pairlis$ (cons 'clause-proc subst-names) fn-names))
+       ;; (fi-subst (pairlis$ (cons 'glcp-generic (glcp-put-name-each 'glcp-generic subst-names))
+       ;;                     (pairlis$ fn-names nil)))
        (f-i-lemmas (incat clause-proc (symbol-name clause-proc)
                           "-FUNCTIONAL-INSTANCE-LEMMAS"))
        (correct-thm (incat clause-proc (symbol-name clause-proc) "-CORRECT")))

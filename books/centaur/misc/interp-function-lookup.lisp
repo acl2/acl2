@@ -218,6 +218,7 @@
                 ;; the & is the rune equating the function call with
                 ;; the body
                 (and (symbolp fn)
+                     (not (eq fn 'quote))
                      (pseudo-termp body)
                      (nonnil-symbol-listp formals)
                      (no-duplicatesp formals)))))

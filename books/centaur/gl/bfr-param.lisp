@@ -52,7 +52,6 @@
                          :aig (acl2::aig-restrict-list
                                x (acl2::aig-extract-iterated-assigns-alist p 10))))))
 
-
 (defthm bfr-eval-list-to-param-space-list
   (implies (bfr-eval p env)
            (equal (bfr-eval-list (bfr-list-to-param-space p x)
@@ -135,3 +134,36 @@
            (ignorable p))
   (cons (bfr-unparam-env p (car env))
         (cdr env)))
+
+
+
+
+
+;; (defun bfr-list-from-param-space (p x)
+;;   (declare (xargs :guard t))
+;;   (if (atom x)
+;;       nil
+;;     (cons (bfr-from-param-space p (car x))
+;;           (bfr-list-from-param-space p (cdr x)))))
+
+;; (defthm bfr-list-from-param-space-of-list-fix
+;;   (equal (bfr-list-from-param-space p (list-fix x))
+;;          (bfr-list-from-param-space p x)))
+
+
+;; (defthm bfr-eval-list-from-param-space
+;;   (implies (bfr-eval p env)
+;;            (equal (bfr-eval-list (bfr-list-from-param-space p x) env)
+;;                   (bfr-eval-list x (bfr-param-env p env)))))
+
+;; (defthm bfr-list->s-from-param-space
+;;   (implies (bfr-eval p env)
+;;            (equal (bfr-list->s (bfr-list-from-param-space p x) env)
+;;                   (bfr-list->s x (bfr-param-env p env))))
+;;   :hints(("Goal" :in-theory (enable bfr-list->s s-endp scdr))))
+
+;; (defthm bfr-list->u-from-param-space
+;;   (implies (bfr-eval p env)
+;;            (equal (bfr-list->u (bfr-list-from-param-space p x) env)
+;;                   (bfr-list->u x (bfr-param-env p env))))
+;;   :hints(("Goal" :in-theory (enable bfr-list->u))))

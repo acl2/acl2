@@ -106,53 +106,10 @@
         (vars-onto-alist (cdr vars) val al)
       (vars-onto-alist (cdr vars) val (hons-acons (car vars) val al)))))
 
-(defun nat-list-max (x)
-  (declare (xargs :guard (nat-listp x)
-                  :guard-hints (("goal" :in-theory (enable nat-listp)))))
-  (if (atom x)
-      0
-    (max (+ 1 (lnfix (car x)))
-         (nat-list-max (cdr x)))))
 
 
-(defines shape-spec-max-bvar
-  (define shape-spec-max-bvar ((x shape-specp))
-    :verify-guards nil
-    :returns (max-bvar natp :rule-classes :type-prescription)
-    (if (atom x)
-        0
-      (case (tag x)
-        (:g-number (b* ((num (g-number->num x))
-                        ((list rn rd in id) num))
-                     (max (nat-list-max rn)
-                          (max (nat-list-max rd)
-                               (max (nat-list-max in)
-                                    (nat-list-max id))))))
-        (:g-integer (max (+ 1 (lnfix (g-integer->sign x)))
-                         (nat-list-max (g-integer->bits x))))
-        (:g-integer? (max (+ 1 (lnfix (g-integer?->sign x)))
-                          (max (+ 1 (lnfix (g-integer?->intp x)))
-                               (nat-list-max (g-integer?->bits x)))))
-        (:g-boolean (+ 1 (lnfix (g-boolean->bool x))))
-        (:g-concrete 0)
-        (:g-var 0)
-        (:g-ite (max (shape-spec-max-bvar (g-ite->test x))
-                     (max (shape-spec-max-bvar (g-ite->then x))
-                          (shape-spec-max-bvar (g-ite->else x)))))
-        (:g-call (shape-spec-max-bvar-list (g-call->args x)))
-        (otherwise (max (shape-spec-max-bvar (car x))
-                        (shape-spec-max-bvar (cdr x)))))))
-  (define shape-spec-max-bvar-list ((x shape-spec-listp))
-    :returns (max-bvar natp :rule-classes :type-prescription)
-    (if (atom x)
-        0
-      (max (shape-spec-max-bvar (car x))
-           (shape-spec-max-bvar-list (cdr x)))))
-  ///
-  (verify-guards shape-spec-max-bvar
-    :hints (("goal" :expand ((shape-specp x)
-                             (shape-spec-listp x))
-             :in-theory (enable number-specp)))))
+
+
 
 
 
@@ -932,7 +889,7 @@
             assigns
             (gobj-alist-to-param-space
              (shape-spec-to-gobj config.shape-spec-alist) config.param-bfr)
-             bvar-db config state))))
+            bvar-db config state))))
 
 (defthm glcp-gen-ctrexes-does-not-fail
   (not (mv-nth 0 (glcp-gen-ctrexes ctrex-info bvar-db config state)))

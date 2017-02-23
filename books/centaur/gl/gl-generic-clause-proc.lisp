@@ -629,11 +629,11 @@
     (b* (((when (atom (car alist)))
           (preferred-defs-to-overrides (cdr alist) state))
          ((cons fn defname) (car alist))
-         ((unless (and (symbolp fn) (symbolp defname)))
+         ((unless (and (symbolp fn) (symbolp defname) (not (eq fn 'quote))))
           (glcp-error
            (acl2::msg "~
 The GL preferred-defs table contains an invalid entry ~x0.
-The key and value of each entry should both be symbols."
+The key and value of each entry should both be function symbols."
                       (car alist))))
          (rule (ec-call (fgetprop defname 'theorem nil (w state))))
          ((unless rule)
@@ -690,24 +690,9 @@ The definition body, ~x1, is not a pseudo-term."
 (in-theory (disable preferred-defs-to-overrides))
 
 ;; A version of ACL2's dumb-negate-lit that behaves logically wrt an evaluator.
-(define dumb-negate-lit ((term pseudo-termp))
-  (cond ((null term) ''t)
-        ((atom term) `(not ,term))
-        ((eq (car term) 'quote)
-         (acl2::kwote (not (cadr term))))
-        ((eq (car term) 'not)
-         (cadr term))
-        ((eq (car term) 'equal)
-         (cond ((or (eq (cadr term) nil)
-                    (equal (cadr term) ''nil))
-                (caddr term))
-               ((or (eq (caddr term) nil)
-                    (equal (caddr term) ''nil))
-                (cadr term))
-               (t `(not ,term))))
-        (t `(not ,term)))
-  ///
+(defsection dumb-negate-lit
 
+  (local (in-theory (enable dumb-negate-lit)))
   (defthm glcp-generic-geval-ev-dumb-negate-lit
     (iff (glcp-generic-geval-ev (dumb-negate-lit lit) a)
          (not (glcp-generic-geval-ev lit a))))

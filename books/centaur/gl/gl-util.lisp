@@ -275,3 +275,31 @@ passed to ~x2 in that theorem.~%"
        nil
      (union-equal (collect-vars (car x))
                   (collect-vars-list (cdr x))))))
+
+
+
+
+
+;; A version of ACL2's dumb-negate-lit that behaves logically wrt an evaluator.
+(defund dumb-negate-lit (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond ((null term) ''t)
+        ((atom term) `(not ,term))
+        ((eq (car term) 'quote)
+         (acl2::kwote (not (cadr term))))
+        ((eq (car term) 'not)
+         (cadr term))
+        ((eq (car term) 'equal)
+         (cond ((or (eq (cadr term) nil)
+                    (equal (cadr term) ''nil))
+                (caddr term))
+               ((or (eq (caddr term) nil)
+                    (equal (caddr term) ''nil))
+                (cadr term))
+               (t `(not ,term))))
+        (t `(not ,term))))
+
+(defthm pseudo-termp-of-dumb-negate-lit
+  (implies (pseudo-termp term)
+           (pseudo-termp (dumb-negate-lit term)))
+  :hints(("Goal" :in-theory (enable dumb-negate-lit pseudo-termp))))

@@ -692,3 +692,125 @@
        nil
      (cons (shape-spec-to-gobj (car x))
            (shape-spec-to-gobj-list (cdr x))))))
+
+
+(defun nat-list-max (x)
+  (declare (xargs :guard (nat-listp x)
+                  :guard-hints (("goal" :in-theory (enable nat-listp)))))
+  (if (atom x)
+      0
+    (max (+ 1 (lnfix (car x)))
+         (nat-list-max (cdr x)))))
+
+
+(defines shape-spec-max-bvar
+  (define shape-spec-max-bvar ((x shape-specp))
+    :verify-guards nil
+    :returns (max-bvar natp :rule-classes :type-prescription)
+    (if (atom x)
+        0
+      (case (tag x)
+        (:g-number (b* ((num (g-number->num x))
+                        ((list rn rd in id) num))
+                     (max (nat-list-max rn)
+                          (max (nat-list-max rd)
+                               (max (nat-list-max in)
+                                    (nat-list-max id))))))
+        (:g-integer (max (+ 1 (lnfix (g-integer->sign x)))
+                         (nat-list-max (g-integer->bits x))))
+        (:g-integer? (max (+ 1 (lnfix (g-integer?->sign x)))
+                          (max (+ 1 (lnfix (g-integer?->intp x)))
+                               (nat-list-max (g-integer?->bits x)))))
+        (:g-boolean (+ 1 (lnfix (g-boolean->bool x))))
+        (:g-concrete 0)
+        (:g-var 0)
+        (:g-ite (max (shape-spec-max-bvar (g-ite->test x))
+                     (max (shape-spec-max-bvar (g-ite->then x))
+                          (shape-spec-max-bvar (g-ite->else x)))))
+        (:g-call (shape-spec-max-bvar-list (g-call->args x)))
+        (otherwise (max (shape-spec-max-bvar (car x))
+                        (shape-spec-max-bvar (cdr x)))))))
+  (define shape-spec-max-bvar-list ((x shape-spec-listp))
+    :returns (max-bvar natp :rule-classes :type-prescription)
+    (if (atom x)
+        0
+      (max (shape-spec-max-bvar (car x))
+           (shape-spec-max-bvar-list (cdr x)))))
+  ///
+  (verify-guards shape-spec-max-bvar
+    :hints (("goal" :expand ((shape-specp x)
+                             (shape-spec-listp x))
+             :in-theory (enable number-specp)))))
+
+
+
+(defsection shape-spec-bindingsp
+  (local (in-theory (enable shape-spec-bindingsp)))
+  (defthm shape-spec-bindingsp-of-cons
+    (equal (shape-spec-bindingsp (cons a b))
+           (and (consp a)
+                (consp (cdr a))
+                (variablep (car a))
+                (shape-specp (cadr a))
+                (shape-spec-bindingsp b)))))
+
+(define shape-spec-bindings->sspecs ((x shape-spec-bindingsp))
+  :returns (sspecs shape-spec-listp :hyp :guard)
+  (if (atom x)
+      nil
+    (if (mbt (consp (car x)))
+        (cons (cadr (car x))
+              (shape-spec-bindings->sspecs (cdr x)))
+      (shape-spec-bindings->sspecs (cdr x)))))
+
+
+(define gobj-alistp (x)
+  (if (atom x)
+      (equal x nil)
+    (and (consp (car x))
+         (variablep (caar x))
+         (gobj-alistp (cdr x))))
+  ///
+  (defthm gobj-alistp-of-cons
+    (Equal (gobj-alistp (cons a b))
+           (and (consp a)
+                (variablep (car a))
+                (gobj-alistp b)))))
+
+(define shape-specs-to-interp-al ((bindings shape-spec-bindingsp))
+  :returns (alist gobj-alistp :hyp :guard)
+  (if (atom bindings)
+      nil
+    (if (mbt (consp (car bindings)))
+        (cons (cons (caar bindings) (gl::shape-spec-to-gobj (cadar bindings)))
+              (shape-specs-to-interp-al (cdr bindings)))
+      (shape-specs-to-interp-al (cdr bindings))))
+  ///
+  (defthm alistp-shape-specs-to-interp-al
+    (alistp (shape-specs-to-interp-al x)))
+
+  (defthm gobj-alistp-shape-specs-to-interp-al
+    (implies (shape-spec-bindingsp x)
+             (gobj-alistp (shape-specs-to-interp-al x)))
+    :hints(("Goal" :in-theory (enable shape-specs-to-interp-al))))
+
+  (defthm strip-cdrs-shape-specs-to-interp-al
+    (equal (strip-cdrs (shape-specs-to-interp-al x))
+           (shape-spec-to-gobj-list (shape-spec-bindings->sspecs x)))
+    :hints(("Goal" :induct (len x)
+            :expand ((:free (a b) (shape-spec-to-gobj-list (cons a b)))
+                     (shape-spec-bindings->sspecs x)))))
+
+  (defthm assoc-in-shape-specs-to-interp-al
+    (equal (assoc k (shape-specs-to-interp-al al))
+           (and (hons-assoc-equal k al)
+                (cons k (shape-spec-to-gobj (cadr (hons-assoc-equal k al))))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+
+  (defthm hons-assoc-equal-in-shape-specs-to-interp-al
+    (equal (hons-assoc-equal k (shape-specs-to-interp-al al))
+           (and (hons-assoc-equal k al)
+                (cons k (shape-spec-to-gobj (cadr (hons-assoc-equal k al))))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+
+

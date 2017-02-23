@@ -1105,15 +1105,13 @@
              (cw "Note: hypothesis is not satisfiable~%"))
       (cw "Note: vacuity check did not finish~%"))))
 
+
+
 (defconst *glcp-generic-template-subst*
-  (let ((names (cons 'run-gified
-                     (remove 'clause-proc *glcp-fnnames*))))
-    (cons '(clause-proc . glcp-generic)
-          (pairlis$ names (glcp-put-name-each 'glcp-generic names)))))
+  (glcp-name-subst 'glcp-generic))
 
 (make-event ;; glcp-generic-interp
  (sublis *glcp-generic-template-subst*
          *glcp-interp-template*))
-
 
 
