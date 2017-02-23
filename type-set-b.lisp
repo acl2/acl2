@@ -615,7 +615,8 @@
 
 (defun convert-theory-to-unordered-mapping-pairs1 (lst macro-aliases wrld ans)
 
-; Warning: Keep this in sync with monitorable-runes-from-mapping-pairs.
+; Note: another function that deals in runic mapping pairs is
+; monitorable-runes-from-mapping-pairs.
 
 ; This is the place we give meaning to the "runic interpretation" of a
 ; rule name designator.  Every element of lst is a rule name

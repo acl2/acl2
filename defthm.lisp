@@ -10747,12 +10747,13 @@
 
 (defun monitorable-runes-from-mapping-pairs (sym wrld)
 
-; Warning: keep this in sync with convert-theory-to-unordered-mapping-pairs1.
-; In both cases we are guided by the discussion of runic designators in :doc
-; theories.  However, here we do not include :induction runes, and we do not
-; accommodate theories because we wonder what complexity that might introduce
-; in providing useful errors and warnings from :monitor, and we don't (yet?)
-; consider it likely that users will want to monitor theories.
+; Note: another function that deals in runic mapping pairs is
+; convert-theory-to-unordered-mapping-pairs1.  In both cases we are guided by
+; the discussion of runic designators in :doc theories.  However, here we do
+; not include :induction runes, and we do not accommodate theories because we
+; wonder what complexity that might introduce in providing useful errors and
+; warnings from :monitor, and we don't (yet?)  consider it likely that users
+; will want to monitor theories.
 
 ; We accumulate runic mapping pairs of sym into ans, except in the case that
 ; sym is a defined function, we only include the :definition rune and, if indp
