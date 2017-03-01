@@ -3336,9 +3336,26 @@ off looking at the source code.</p>")
     :hints (("goal" :induct (logapp size i j)
              :in-theory (disable (force)))))
 
+  (local (defun logapp-of-loghead-ind (n m x)
+           (if (zp n)
+               (list m x)
+             (logapp-of-loghead-ind (1- n) (1- m) (logcdr x)))))
+
+  (defthm logapp-of-loghead
+    (implies (<= (nfix n) (nfix m))
+             (equal (logapp n (loghead m x) y)
+                    (logapp n x y)))
+    :hints (("goal" :induct (logapp-of-loghead-ind n m x))))
+
+  (defthm logapp-of-logtail
+    (equal (logapp n x (logtail n x))
+           (ifix x)))
+
   (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-of-logapp
                                       signed-byte-p-of-logapp
-                                      logapp-sign))
+                                      logapp-sign
+                                      logapp-of-loghead
+                                      logapp-of-logtail))
 
   ;; (defthm logapp-zeros
   ;;   (equal (logapp i 0 0) 0))
