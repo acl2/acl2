@@ -1918,8 +1918,11 @@ mv) binding that will bind:</p>
 </ul>
 
 <p>Aside from some technical details regarding congruent stobjs (see @(see
-acl2::stobj)) this is almost straightforward.  However, there are a few more
-details that you should understand...</p>
+acl2::stobj)) this is almost straightforward.  However, in purely logical
+contexts such as theorem bodies and non-executable functions, it might be
+desirable to ignore stobjs and name the stobj outputs just like all the rest.
+You can use @(':ignore-stobjs t') as an optional argument to the @('ret')
+binder, occurring after the name (if any), to get this behavior.</p>
 
 
 <h5>Ignorability</h5>
@@ -2070,31 +2073,35 @@ may not work with macros that generate names like @('args.extensions').</p>"
    varname         ;; NIL for ((ret) ...), or varname for ((ret varname) ...)
    formals/actuals ;; see below
    rest-expr       ;; rest-expr from the b*
+   ignore-stobjs
    )
   (b* (((when (atom rets)) nil)
        ((cons retname stobj) (car rets))
-       ((when stobj)
+       ((when (and stobj (not ignore-stobjs)))
         ;; The return name might not be the stobj name, and the stobj name
         ;; might not be the one in use due to congruent stobjs.  So we parse
         ;; the function call (elsewhere) and pair up the formals with actual
         ;; actuals so that we can look up what stobj was passed in and bind
         ;; that.
         (cons (cdr (assoc stobj formals/actuals))
-              (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr)))
+              (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr ignore-stobjs)))
        (name (if varname
                  (concatenate 'string (symbol-name varname) "." (symbol-name retname))
                (symbol-name retname)))
        (symbol (find-symbol-of-name-in-expr name rest-expr)))
     (cons symbol
-          (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr))))
+          (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr ignore-stobjs))))
 
 
 (defun patbind-ret-fn (rets macro-formals args forms rest-expr)
-  (b* ((varname (car args))
+  (b* (((mv varname ignore-stobjs)
+        (if (eq (car args) :ignore-stobjs)
+            (mv nil (cadr args))
+          (mv (car args) (cadr (assoc-keyword :ignore-stobjs (cdr args))))))
        (call (car forms))
        (formals/actuals
         (match-define-formals-with-actuals macro-formals (cdr call) (car forms)))
-       (mv-names (patbind-ret-mv-names rets varname formals/actuals rest-expr)))
+       (mv-names (patbind-ret-mv-names rets varname formals/actuals rest-expr ignore-stobjs)))
     (if (< 1 (len mv-names))
         `(mv-let ,mv-names ,(car forms)
            (declare (ignorable . ,mv-names))

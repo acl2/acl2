@@ -438,7 +438,8 @@
                        (a (ifl-ev-falsify (disjoin clause))))
             (:instance ifl-ev-falsify
                        (x (disjoin (cons lit clause)))
-                       (a (ifl-ev-falsify (disjoin clause)))))))
+                       (a (ifl-ev-falsify (disjoin clause)))))
+           :in-theory (enable ifl-ev-disjoin-cons)))
   :otf-flg t)
 
 

@@ -65,6 +65,16 @@
           `((ev . ,ev)
             (falsify . ,falsify)
             (theoremp . ,theoremp)
+            (disjoin-cons-unless-theoremp
+             . ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name theoremp)
+                              "-DISJOIN-CONS-UNLESS-THEOREMP")
+                 ev))
+            (disjoin-when-consp-unless-theoremp
+             . ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name theoremp)
+                              "-DISJOIN-WHEN-CONSP-UNLESS-THEOREMP")
+                 ev))
             (conjoin-cons
              . ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name theoremp)
@@ -84,7 +94,9 @@
              . ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name theoremp)
                               "-CONJOIN-CLAUSES-APPEND")
-                 ev))))
+                 ev))
+            (disjoin-cons . ,(ev-mk-rulename ev 'disjoin-cons))
+            (disjoin-when-consp . ,(ev-mk-rulename ev 'disjoin-when-consp))))
          (event
           (sublis
            subst
@@ -141,7 +153,24 @@
                      (and (theoremp (conjoin-clauses cls1))
                           (theoremp (conjoin-clauses cls2))))
                 :hints (("goal" :in-theory (enable append endp car-cdr-elim)
-                         :induct (append cls1 cls2))))))))
+                         :induct (append cls1 cls2))))
+
+              (defthm disjoin-cons-unless-theoremp
+                (implies (and (equal aa (falsify (disjoin (cons x y))))
+                              (syntaxp (not (equal a aa))))
+                         (iff (ev (disjoin (cons x y)) a)
+                              (or (ev x a)
+                                  (ev (disjoin y) a)))))
+
+              (defthmd disjoin-when-consp-unless-theoremp
+                (implies (syntaxp (not (equal a `(falsify ,x))))
+                         (implies (consp x)
+                                  (iff (ev (disjoin x) a)
+                                       (or (ev (car x) a)
+                                           (ev (disjoin (cdr x)) a)))))
+                :hints(("Goal" :in-theory (enable disjoin-when-consp))))
+
+              (in-theory (disable disjoin-cons))))))
     event))
 
 

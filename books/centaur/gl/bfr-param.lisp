@@ -62,8 +62,9 @@
                                  (bfr-param-env)))))
 
 (defthm bfr-eval-list-to-param-space-list-with-unparam-env
-  (implies (syntaxp (not (and (consp env)
-                              (eq (car env) 'bfr-param-env))))
+  (implies (and (syntaxp (not (and (consp env)
+                                   (eq (car env) 'bfr-param-env))))
+                (bdd-mode-or-p-true p env))
            (equal (bfr-eval-list (bfr-list-to-param-space p x)
                                  env)
                   (bfr-eval-list x (bfr-unparam-env p env))))
@@ -86,8 +87,9 @@
           :expand ((bfr-list->s x env)))))
 
 (defthm bfr-list->s-to-param-space-list-with-unparam-env
-  (implies (syntaxp (not (and (consp env)
-                              (eq (car env) 'bfr-param-env))))
+  (implies (and (syntaxp (not (and (consp env)
+                                   (eq (car env) 'bfr-param-env))))
+                (bdd-mode-or-p-true p env))
            (equal (bfr-list->s (bfr-list-to-param-space p x)
                                env)
                   (bfr-list->s x (bfr-unparam-env p env))))
@@ -112,8 +114,9 @@
                                   bfr-param-env)))))
 
 (defthm bfr-list->u-to-param-space-list-with-unparam-env
-  (implies (syntaxp (not (and (consp env)
-                              (eq (car env) 'bfr-param-env))))
+  (implies (and (syntaxp (not (and (consp env)
+                                   (eq (car env) 'bfr-param-env))))
+                (bdd-mode-or-p-true p env))
            (equal (bfr-list->u (bfr-list-to-param-space p x)
                                env)
                   (bfr-list->u x (bfr-unparam-env p env))))
