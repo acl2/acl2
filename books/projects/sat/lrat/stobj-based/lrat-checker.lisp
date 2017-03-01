@@ -1285,9 +1285,9 @@
              (b* ((current-index (access add-step add-step :index))
                   ((list er-type earlier-index & nlit) flg))
                (case er-type
-                 (unit-propagation$-failure
+                 (unit-propagation-failure
                   (er hard? 'verify-clause$
-                      "Unit propagation failure has cause the RAT check to ~
+                      "Unit propagation failure has caused the RAT check to ~
                        fail when attempting to add proof clause #~x0 for ~
                        earlier RAT clause #~x1."
                       current-index earlier-index))
