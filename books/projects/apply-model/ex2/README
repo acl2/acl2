@@ -8,5 +8,5 @@ from the top-level ACL2 directory or books/.
 
 Running "make" in this directory, however, will not guarantee that the
 books in the parent directory are certified, which is necessary.
-Either run make in the parent directory or run cert.pl in either
-directory _after_ copying as shown above.
+Either run make in the parent directory or run cert.pl with option
+--include-excludes in either directory _after_ copying as shown above.

@@ -629,6 +629,8 @@ MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
    doc/xdoc.sao \
+   projects/apply-model/ex1/evaluation-apply.lisp \
+   projects/apply-model/ex1/evaluation-user-defs.lisp \
    projects/apply-model/ex2/evaluation-apply.lisp \
    projects/apply-model/ex2/evaluation-user-defs.lisp
 
@@ -734,6 +736,11 @@ ACL2_CUSTOM_TARGETS := \
   workshops/2003/kaufmann/support/input/defs-in.cert \
   workshops/2004/sumners-ray/support/success.txt
 
+# Currently, apply-model doesn't work for ACL2(r).
+ifeq ($(ACL2_HAS_REALS), )
+ACL2_CUSTOM_TARGETS += projects/apply-model/phony
+endif
+
 # Warning!  For each target below, if there is a cert_pl_exclude file
 # in the directory or it is exluded explicitly by
 # REBUILD_MAKEFILE_BOOKS, and a "deps" file is used, then that "deps"
@@ -791,6 +798,10 @@ workshops/2003/kaufmann/support/input/defs-in.cert: \
 workshops/2004/sumners-ray/support/success.txt:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
+.PHONY: projects/apply-model/phony
+projects/apply-model/phony: projects/apply-model-deps.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
 endif # ifeq ($(ACL2_HAS_REALS), )
 
 endif # ifndef ACL2_COMP
@@ -799,20 +810,6 @@ endif # ifndef ACL2_COMP
 # order to maximize parallelism.  If they go at the end, maybe we'll
 # have an expensive sequential tail in the regression.
 OK_CERTS := $(ACL2_CUSTOM_TARGETS) $(OK_CERTS)
-
-# Extra dependencies for projects/apply-model/:
-
-projects/apply-model/ex1/evaluation-apply.lisp:
-	@cp -pf projects/apply-model/apply.lisp $@
-
-projects/apply-model/ex2/evaluation-apply.lisp:
-	@cp -pf projects/apply-model/apply.lisp $@
-
-projects/apply-model/ex1/evaluation-user-defs.lisp:
-	@cp -pf projects/apply-model/ex1/user-defs.lisp $@
-
-projects/apply-model/ex2/evaluation-user-defs.lisp:
-	@cp -pf projects/apply-model/ex2/user-defs.lisp $@
 
 ##############################
 ### Section: Support for ACL2_COMP
