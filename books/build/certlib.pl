@@ -71,6 +71,7 @@ my $clean_certs = 0;
 my $print_deps = 0;
 my $believe_cache = 0;
 my $pcert_all = 0;
+my $include_excludes = 0;
 #  However, now it makes sense to do it in two
 # passes:
 # - update the dependency-info cache, including the cert and source
@@ -97,6 +98,7 @@ sub certlib_set_opts {
     $print_deps = $opts->{"print_deps"};
     $believe_cache = $opts->{"believe_cache"};
     $pcert_all = $opts->{"pcert_all"};
+    $include_excludes = $opts->{"include_excludes"};
 }
 
 
@@ -1004,6 +1006,9 @@ sub ftimestamp {
 }
 
 sub excludep {
+    if ($include_excludes) {
+	return 0;
+    }
     my $prev = shift;
     my $dirname = dirname($prev);
     # Memoize this?

@@ -211,6 +211,10 @@ of books.
 
 CERT_PL_EXCLUDE FILES
 
+Note: The following behavior is nullified if the --include-excludes
+command line option is given; that is, the existence of cert_pl_exclude
+files will just be ignored.
+
 Cert.pl can be prevented from exploring a directory (recursively) by
 creating a file called "cert_pl_exclude".  Any book found to be
 under a directory containing that file will not be scanned for
@@ -448,6 +452,9 @@ COMMAND LINE OPTIONS
           This option allows you to specify this default extension as (say)
           \'pcert0\' instead.
 
+   --include-excludes
+          If this option is set then cert_pl_exclude files are ignored; see the
+          section CERT_PL_EXCLUDE FILES above.
 
 USEFUL ENVIRONMENT VARIABLES
 
@@ -567,6 +574,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
             "write-certs=s"        => \$write_certs,
             "write-sources=s"        => \$write_sources,
             "pcert-all"            =>\$certlib_opts{"pcert_all"},
+            "include-excludes"     =>\$certlib_opts{"include_excludes"},
             "target-ext|e=s"       => \$target_ext,
 	    "<>"                   => sub { push(@user_targets, shift); },
 	    );

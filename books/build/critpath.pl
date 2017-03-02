@@ -147,6 +147,16 @@ my $debug = 0;
 
 my $cache_file = 0;
 my $params_file = 0;
+
+my %certlib_opts = ( "debugging" => 0,
+		     "clean_certs" => 0,
+		     "print_deps" => 0,
+		     "all_deps" => 1,
+                     "pcert_all" => 0,
+		     "include_excludes" => 0,
+    );
+
+
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
@@ -167,7 +177,8 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "params=s"             => \$params_file,
 			     "write-costs|w=s" => \$OPTIONS{'write_costs'},
 			     "costs-file=s" => \$OPTIONS{'costs_file'},
-                             "pcert-all"    => \$OPTIONS{'pcert_all'},
+                             "pcert-all"    => \$certlib_opts{'pcert_all'},
+                             "include-excludes"  => \$certlib_opts{'include_excludes'},
                              "target-ext|e=s"    => \$OPTIONS{'target_ext'},
 			     );
 
@@ -186,13 +197,6 @@ if (!$options_okp || $OPTIONS{"help"})
 
 my $costs = {};
 my $warnings = [];
-
-my %certlib_opts = ( "debugging" => 0,
-		     "clean_certs" => 0,
-		     "print_deps" => 0,
-		     "all_deps" => 1,
-                     "pcert_all" => $OPTIONS{'pcert_all'},
-    );
 
 certlib_set_opts(\%certlib_opts);
 
