@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "LRAT")
 
 ;! Limits and Recognizers
 

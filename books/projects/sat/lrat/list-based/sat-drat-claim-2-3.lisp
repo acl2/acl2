@@ -4,7 +4,7 @@
 
 ; See soundness.lisp.  Here we prove a key lemma in support of that book.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "satisfiable-add-proof-clause-base")
 
@@ -104,7 +104,9 @@
 
 (defun defclaim-fn (n hyps body args)
   `(defthm ,(if n
-                (packn (list 'main '- n))
+                (intern$ (coerce (acl2::packn1 (list 'main '- n))
+                                 'string)
+                         "LRAT")
               'main)
      ,(make-claim-fn hyps body)
      ,@args

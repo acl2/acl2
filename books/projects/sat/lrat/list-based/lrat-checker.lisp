@@ -7,7 +7,7 @@
 ; a more recent input proof format to speed up unit propagation and add
 ; deletion (to obtain a DRAT checker).
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (defun literalp (x)
   (declare (xargs :guard t))

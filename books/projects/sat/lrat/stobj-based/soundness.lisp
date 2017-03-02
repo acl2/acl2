@@ -11,7 +11,7 @@
 ; the handling of assignments, in particular, evaluation of literals and
 ; clauses.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "lrat-checker")
 (local (include-book "../list-based/soundness"))

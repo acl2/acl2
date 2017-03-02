@@ -195,7 +195,7 @@ So B |= D by truth-remove-irrelevant-lit-3. -|
 
 ||#
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "lrat-checker")
 

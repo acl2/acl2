@@ -25,7 +25,7 @@
 
 ; Note that each index j must exceed all preceding clause indices.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "lrat-checker")
@@ -272,7 +272,7 @@
 
 (defun show-lrat-parse-raw (lrat-file state)
   (er-let* ((proof (parse-lrat-file lrat-file state)))
-    (pprogn (print-on-separate-lines
+    (pprogn (acl2::print-on-separate-lines
              (show-lrat-proof-raw nil proof nil)
              nil *standard-co* state)
             (value :invisible))))

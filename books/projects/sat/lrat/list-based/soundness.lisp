@@ -7,7 +7,7 @@
 ; a more recent input proof format to speed up unit propagation and add
 ; deletion (to obtain a DRAT checker).  See lrat-checker.lisp.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "lrat-checker")
 (include-book "satisfiable-maybe-shrink-formula")

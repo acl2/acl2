@@ -8,7 +8,7 @@
 
 ; See tests/README for tests.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (local (include-book "lrat-checker"))
 (local (include-book "soundness"))

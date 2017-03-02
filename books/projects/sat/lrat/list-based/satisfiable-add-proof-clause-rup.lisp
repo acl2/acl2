@@ -4,7 +4,7 @@
 
 ; See soundness.lisp.  Here we prove a key lemma in support of that book.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "satisfiable-add-proof-clause-base")
 (include-book "satisfiable-maybe-shrink-formula")

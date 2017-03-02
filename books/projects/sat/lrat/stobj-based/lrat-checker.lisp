@@ -11,7 +11,7 @@
 ; the handling of assignments, in particular, evaluation of literals and
 ; clauses.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "../list-based/lrat-checker")
 
@@ -1547,7 +1547,7 @@
   (implies (add-step-p x)
            (and (weak-add-step-p x)
                 (posp (access add-step x :index))
-                (acl2::clause-or-assignment-p
+                (clause-or-assignment-p
                  (access add-step x :clause))
                 (index-listp (access add-step x :rup-indices))
                 (drat-hint-listp

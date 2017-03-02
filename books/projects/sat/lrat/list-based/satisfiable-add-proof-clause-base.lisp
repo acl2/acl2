@@ -6,7 +6,7 @@
 ; which in turn proves the main lemma for soundness.lisp.  See
 ; lrat-checker.lisp for the actual checker.
 
-(in-package "ACL2")
+(in-package "LRAT")
 
 (include-book "lrat-checker")
 (include-book "truth-monotone")

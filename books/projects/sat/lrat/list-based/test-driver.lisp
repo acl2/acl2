@@ -19,7 +19,7 @@
 ; (depends-on "../tests/uuf-30-1.cnf")
 ; (depends-on "../tests/uuf-30-1.lrat")
 
-(in-package "ACL2")
+(in-package "LRAT")
 (include-book "lrat-parser")
 (make-event
  (er-let* ((okp (lrat-test
