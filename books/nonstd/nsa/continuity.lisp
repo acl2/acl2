@@ -5,7 +5,7 @@
 ; builds: it already requires ACL2(r), since it depends on nsa.lisp, which
 ; specifies the cert_param of uses-acl2r, but now we also specify:
 
-; cert_param: (non-acl2r)
+; cert_param: (uses-acl2r)
 
 ;; This book establishes some facts about real continuous functions.
 ;; First, it shows that a function that is continuous on a closed
@@ -871,10 +871,17 @@
 				rcfn-find-zero-<=-z
 				rcfn-find-zero->=-z)))))
 
-(defthm x-outside-interval
-    (not (inside-interval-p x (interval (+ 1 x) (+ 2 x))))
-  :hints (("Goal"
-	   :in-theory (enable interval-definition-theory))))
+
+(local
+ (defthm rcfn-domain-non-trivial-direct
+   (implies (and (interval-left-endpoint (rcfn-domain))
+		 (interval-right-endpoint (rcfn-domain)))
+	    (< (interval-left-endpoint (rcfn-domain))
+	       (interval-right-endpoint (rcfn-domain))))
+   :hints (("Goal"
+	    :use ((:instance rcfn-domain-non-trivial))))
+   :rule-classes (:built-in-clause)))
+   
 
 ; Matt K. note, 2/5/2017: This theorem took advantage of the soundness bug in
 ; functionsl instantiation fixed after ACL2 7.3.  It now fails.  So I'm
@@ -898,11 +905,12 @@
 ; Originally for "Subgoal 3", but deleted now:
 ;           :in-theory (disable subinterval-interval-closed-closed inside-trivial-interval)
 	    :use ((:functional-instance weak-intermediate-value-theorem
-					(rcfn-domain (lambda () (if (and (< a b)
-									   (inside-interval-p a (rcfn-domain))
-									   (inside-interval-p b (rcfn-domain)))
-								      (interval a b)
-								      (interval (+ 1 (realfix x)) (+ 2 (realfix x)))))))
+					(rcfn-domain (lambda ()
+						       (if (and (< a b)
+								(inside-interval-p a (rcfn-domain))
+								(inside-interval-p b (rcfn-domain)))
+							   (interval a b)
+							 (rcfn-domain)))))
                   (:instance inside-interval-p-contains-left-endpoint
 			     (interval (interval a b)))
 		  (:instance inside-interval-p-contains-right-endpoint
@@ -914,7 +922,7 @@
 		  (:instance inside-trivial-interval
 			     (a y)
 			     (b x))
-                  (:instance rcfn-domain-non-trivial)))
+		  ))
 	   ))
 
 ;; Now, what happens when f(a)>z and f(b)<z.  First, we find the root.

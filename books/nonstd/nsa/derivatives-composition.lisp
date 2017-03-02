@@ -1169,11 +1169,11 @@
 				     (rdfn dc-minus-fn1)
 				     (rdfn-domain dc-fn-domain))
 	   :in-theory (enable differential-dc-minus-fn1-definition))
-	  ("Subgoal 4"
+	  ("Subgoal 3"
 	   :use ((:instance derivative-dc-minus-fn1-is-close-to-differential
 			    (x x)
 			    (eps (/ (i-large-integer))))))
-	  ("Subgoal 3"
+	  ("Subgoal 2"
 	   :use ((:instance non-trivial-interval-eps-or--eps-dc-fn-domain
 			    (eps (/ (i-large-integer))))))
 	  ("Subgoal 1"
