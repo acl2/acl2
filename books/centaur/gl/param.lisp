@@ -248,8 +248,9 @@
                                   bfr-param-env)))))
 
 (defthm gnumber-to-param-space-correct-with-unparam-env
-  (implies (syntaxp (not (case-match env
-                           (('cons ('bfr-param-env . &) . &) t))))
+  (implies (and (syntaxp (not (case-match env
+                                (('cons ('bfr-param-env . &) . &) t))))
+                (bdd-mode-or-p-true p (car env)))
            (equal (generic-geval (gnumber-to-param-space n p)
                                  env)
                   (generic-geval (g-number n)
@@ -313,12 +314,14 @@
 
 (defthm-gobj-flag
   (defthm gobj-to-param-space-correct-with-unparam-env
-    (implies (syntaxp (not (and (consp env) (eq (car env) 'genv-param))))
+    (implies (and (syntaxp (not (and (consp env) (eq (car env) 'genv-param))))
+                  (bdd-mode-or-p-true p (car env)))
              (equal (generic-geval (gobj-to-param-space x p) env)
                     (generic-geval x (genv-unparam p env))))
     :flag gobj)
   (defthm gobj-list-to-param-space-correct-with-unparam-env
-    (implies (syntaxp (not (and (consp env) (eq (car env) 'genv-param))))
+    (implies (and (syntaxp (not (and (consp env) (eq (car env) 'genv-param))))
+                  (bdd-mode-or-p-true p (car env)))
              (equal (generic-geval-list (gobj-list-to-param-space x p) env)
                     (generic-geval-list x (genv-unparam p env))))
     :flag list)

@@ -38,10 +38,10 @@
    (ctrex-transform :default '(lambda (x) x))
    (abort-vacuous booleanp :default t)
    (check-vacuous booleanp :default t)
-   (n-counterexamples natp :rule-classes :type-prescription :default 3)
-   (hyp-clk posp :rule-classes :type-prescription :default 1000000)
-   (concl-clk posp :rule-classes :type-prescription :default 1000000)
-   (clause-proc symbolp :rule-classes :type-prescription)
+   (n-counterexamples natp :rule-classes (:rewrite :type-prescription) :default 3)
+   (hyp-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)
+   (concl-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)
+   (clause-proc symbolp :rule-classes (:rewrite :type-prescription))
    (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check
      ;;  the guards in clause processors
    (param-bfr :default t)

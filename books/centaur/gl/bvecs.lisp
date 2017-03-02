@@ -541,3 +541,10 @@ environment."
            (nfix x))
     :hints(("Goal" :in-theory (enable bfr-ucons
                                       n2v)))))
+
+
+
+
+
+(defcong bfr-env-equiv equal (bfr-list->s x env) 2)
+(defcong bfr-env-equiv equal (bfr-list->u x env) 2)

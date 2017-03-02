@@ -379,19 +379,6 @@
 
 ;; (in-theory (disable glcp-counterexample-wormhole))
 
-(defun glcp-error-fn (msg state)
-  (declare (xargs :guard t))
-  (mv msg nil state))
-
-(defmacro glcp-error (msg)
-  `(glcp-error-fn ,msg state))
-
-(add-macro-alias glcp-error glcp-error-fn)
-
-
-
-
-
 
 
 
@@ -621,56 +608,6 @@
   (equal (strip-cars (shape-specs-to-interp-al al))
          (alist-keys al))
   :hints(("Goal" :in-theory (enable shape-specs-to-interp-al alist-keys))))
-
-(defun preferred-defs-to-overrides (alist state)
-  (declare (xargs :stobjs state :guard t))
-  (if (atom alist)
-      (value nil)
-    (b* (((when (atom (car alist)))
-          (preferred-defs-to-overrides (cdr alist) state))
-         ((cons fn defname) (car alist))
-         ((unless (and (symbolp fn) (symbolp defname) (not (eq fn 'quote))))
-          (glcp-error
-           (acl2::msg "~
-The GL preferred-defs table contains an invalid entry ~x0.
-The key and value of each entry should both be function symbols."
-                      (car alist))))
-         (rule (ec-call (fgetprop defname 'theorem nil (w state))))
-         ((unless rule)
-          (glcp-error
-           (acl2::msg "~
-The preferred-defs table contains an invalid entry ~x0.
-The :definition rule ~x1 was not found in the ACL2 world."
-                      (car alist) defname)))
-         ((unless (case-match rule
-                    (('equal (rulefn . &) &) (equal fn rulefn))))
-          (glcp-error
-           (acl2::msg "~
-The preferred-defs table contains an invalid entry ~x0.
-The :definition rule ~x1 is not suitable as a GL override.
-Either it is a conditional definition rule, it uses a non-EQUAL
-equivalence relation, or its format is unexpected.  The rule
-found is ~x2." (car alist) defname rule)))
-         (formals (cdadr rule))
-         (body (caddr rule))
-         ((unless (and (nonnil-symbol-listp formals)
-                       (acl2::no-duplicatesp formals)))
-          (glcp-error
-           (acl2::msg "~
-The preferred-defs table contains an invalid entry ~x0.
-The formals used in :definition rule ~x1 either are not all
-variable symbols or have duplicates, making this an unsuitable
-definition for use in a GL override.  The formals listed are
-~x2." (car alist) defname formals)))
-         ((unless (pseudo-termp body))
-          (glcp-error
-           (acl2::msg "~
-The preferred-defs table contains an invalid entry ~x0.
-The definition body, ~x1, is not a pseudo-term."
-                      (car alist) body)))
-         ((er rest) (preferred-defs-to-overrides (cdr alist) state)))
-      (value (hons-acons fn (list* formals body defname)
-                         rest)))))
 
 
 (local
@@ -1293,6 +1230,19 @@ The definition body, ~x1, is not a pseudo-term."
                   (equal (alist-keys x)
                          (strip-cars x)))
          :hints(("Goal" :in-theory (enable shape-spec-bindingsp alist-keys)))))
+
+
+
+
+(local (in-theory (disable glcp-generic-interp-hyp/concl-hyp)))
+
+(local (defthm eval-of-bfr-to-param-space-self
+         (implies (bfr-eval p (bfr-unparam-env p env))
+                  (bfr-eval (bfr-to-param-space p p) env))
+         :hints (("goal" :cases ((bdd-mode-or-p-true p env))
+                  :in-theory (enable bdd-mode-or-p-true))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable bfr-unparam-env))))))
 
 (local
  (defthm glcp-generic-run-parametrized-correct-lemma
