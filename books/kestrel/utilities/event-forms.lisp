@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides shallow recognizers of event forms and lists thereof.
+; This file provides utilities for event forms.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +21,7 @@
 
 (defxdoc event-forms
   :parents (kestrel-utilities system-utilities)
-  :short "Shallow recognizers of event forms and lists thereof.")
+  :short "Utilities for event forms.")
 
 (define pseudo-event-formp (x)
   :returns (yes/no booleanp)
@@ -56,3 +56,26 @@
           of an event form</see>."
   :true-listp t
   :elementp-of-nil nil)
+
+(define function-intro-macro
+  ((enable booleanp "Enable function or not.")
+   (non-executable booleanp "Make function non-executable or not."))
+  :returns (macro (member-eq macro '(defun defund defun-nx defund-nx)))
+  :parents (event-forms)
+  :short "Macro (name) for introducing a function
+          with given enablement and non-executability."
+  (if enable
+      (if non-executable
+          'defun-nx
+        'defun)
+    (if non-executable
+        'defund-nx
+      'defund)))
+
+(define theorem-intro-macro ((enable booleanp "Enable theorem or not."))
+  :returns (macro (member-eq macro '(defthm defthmd)))
+  :parents (event-forms)
+  :short "Macro (name) for introducing a theorem with a given enablement."
+  (if enable
+      'defthm
+    'defthmd))
