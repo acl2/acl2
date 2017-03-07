@@ -865,7 +865,7 @@
                   :verify-guards nil
                   :stobjs state))
   (b* (; ((unless (state-p1 state)) nil)
-       (str (read-file-into-string file-name state))
+       (str (read-file-into-string file-name))
        (len (length str))
        ((unless (lrat-guard str len 0)) NIL)
        (ans (my-rev (lrat-str str len 0 len nil))))
@@ -943,7 +943,7 @@
                   :verify-guards nil
                   :stobjs state))
   (b* (; ((unless (state-p1 state)) nil)
-       (str (read-file-into-string file-name state))
+       (str (read-file-into-string file-name))
        (len (length str))
        ((unless (lrat-guard str len 0)) NIL)
        (pos (pos-to-eol+1 str len 0))

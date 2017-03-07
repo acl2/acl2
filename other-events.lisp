@@ -29200,34 +29200,40 @@
 
   (1- (ash 1 60)))
 
-(encapsulate ()
+#-acl2-loop-only
+(defvar *read-file-into-string-alist*
 
-(local
- (defthm stringp-read-file-into-string1
-   (implies (car (read-file-into-string1 channel state ans bound))
-            (stringp (car (read-file-into-string1 channel state ans bound))))))
+; Associates filenames (in the native OS) with streams and positions.  The pair
+; ("fname" str . pos) means that the next time we call read-file-into-string to
+; read the next chunk from a file whose filename is "fname", we will be read
+; from the stream, str, at position pos.  When pos reaches end of file we
+; delete that entry.
 
-(defun read-file-into-string2 (filename state)
+  nil)
 
-; Filename is an ACL2 pathname; see the Essay on Pathnames.
-
-; Parallelism wart: avoid potential illegal behavior caused by this function.
-; A simple but expensive solution is probably to add a lock.  But with some
-; thought one might provide for correct parallel evaluations of this function.
-; Perhaps that's already the case!
-
-  (declare (xargs :stobjs state :guard (stringp filename)))
-  #-acl2-loop-only
-  (let ((os-filename (pathname-unix-to-os filename state)))
-    (with-open-file
-      (stream os-filename :direction :input :if-does-not-exist nil)
-      (and stream
-           (let ((len (file-length stream)))
-             (and (< len *read-file-into-string-bound*)
-                  (let ((fwd (file-write-date os-filename)))
-                    (or (check-against-read-file-alist filename fwd)
-                        (push (cons filename fwd)
-                              *read-file-alist*))
+#-acl2-loop-only
+(defun read-file-into-string2-raw (os-filename stream posn bytes)
+  (let* ((file-len (file-length stream))
+         (max-bytes (if (<= posn file-len)
+                        (- file-len posn)
+                      (error "The :start position, ~s, specified for a call ~%~
+                              of read-file-into-string, exceeds the length ~%~
+                              of file ~s, which is ~s."
+                             posn os-filename file-len)))
+         (finish-p (or (null bytes)
+                       (< max-bytes bytes)))
+         (bytes (if bytes
+                    (min bytes max-bytes)
+                  max-bytes)))
+    (and (<= bytes *read-file-into-string-bound*)
+         (let ((fwd (file-write-date os-filename)))
+           (or (check-against-read-file-alist os-filename fwd)
+               (push (cons os-filename fwd)
+                     *read-file-alist*))
+           (when (not (eql fwd (file-write-date os-filename)))
+             (error "Illegal attempt to call ~s concurrently with some write ~
+                     to that file!~%See :DOC read-file-into-string."
+                    'read-file-into-string))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
 ; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
@@ -29237,15 +29243,78 @@
 
 ; The URL above says ``You can do anything you like with the code.''
 
-                    (let ((seq (make-string len)))
-                      (declare (type string seq))
-                      (read-sequence seq stream)
-                      (when (not (eql fwd (file-write-date os-filename)))
-                        (error "Illegal attempt to call ~s concurrently with ~
-                                some write to that file!~%See :DOC ~
-                                read-file-into-string."
-                               'read-file-into-string))
-                      seq)))))))
+           (let ((seq (make-string bytes)))
+             (declare (type string seq))
+             (read-sequence seq stream)
+             (let ((temp (delete-assoc-equal os-filename
+                                             *read-file-into-string-alist*)))
+               (cond
+                (finish-p
+                 (setq *read-file-into-string-alist* temp))
+                (t
+                 (setq *read-file-into-string-alist*
+                       (cons (list* os-filename stream (+ posn bytes))
+                             temp)))))
+             seq)))))
+
+(encapsulate ()
+
+(local
+ (defthm stringp-read-file-into-string1
+   (implies (car (read-file-into-string1 channel state ans bound))
+            (stringp (car (read-file-into-string1 channel state ans bound))))))
+
+(defun read-file-into-string2 (filename start bytes state)
+
+; Filename is an ACL2 pathname; see the Essay on Pathnames.
+
+; Parallelism wart: avoid potential illegal behavior caused by this function.
+; A simple but expensive solution is probably to add a lock.  But with some
+; thought one might provide for correct parallel evaluations of this function.
+; Perhaps that's already the case!
+
+  (declare (xargs :stobjs state :guard (and (stringp filename)
+                                            (natp start)
+                                            (or (null bytes)
+                                                (natp bytes)))))
+  #-acl2-loop-only
+  (let* ((os-filename (pathname-unix-to-os filename state))
+         (triple (assoc-equal os-filename
+                              *read-file-into-string-alist*)))
+    (cond
+     ((eql start 0)
+      (when triple
+        (setq *read-file-into-string-alist*
+              (delete-assoc-equal os-filename
+                                  *read-file-into-string-alist*)))
+      (let ((stream
+             (open os-filename :direction :input :if-does-not-exist nil)))
+        (cond
+         (stream
+          (push (list* os-filename stream 0)
+                *read-file-into-string-alist*)
+          (read-file-into-string2-raw os-filename stream 0 bytes))
+         (t nil))))
+     ((null triple) ; and start > 0
+      (error "It is illegal to call read-file-into-string with a non-zero ~%~
+              :start value, in this case ~s, when there is no suitable ~%~
+              preceding call of read-file-into-string on the same file,~%~
+              ~s.  See :DOC read-file-into-string."
+             start os-filename))
+     ((not (eql (cddr triple) ; position
+                start))
+      (error "It is illegal to call read-file-into-string with a ~%~
+              non-zero :start value, in this case ~s, that is not the ~%~
+              position of the first byte unread by the preceding call ~%~
+              of read-file-into-string on the same file, in this case, ~%~
+              position ~s of file ~s.~%~
+              See :DOC read-file-into-string."
+             start (cddr triple) os-filename))
+     (t ; start = (cddr triple) > 0
+      (read-file-into-string2-raw os-filename
+                                  (cadr triple) ; stream
+                                  start         ; (cddr triple)
+                                  bytes))))
   #+acl2-loop-only
   (let* ((st (coerce-state-to-object state)))
     (mv-let
@@ -29262,10 +29331,9 @@
 ; The following is to simplify guard verification.
                    (not (state-p state)))
                (mv nil nil state))
-              (t (pprogn
-                  (f-put-global 'guard-checking-on t state)
-                  (mv-let
-                    (val state)
+              (t (with-guard-checking-error-triple
+                  t
+                  (mv-let (val state)
                     (ec-call ; guard verification here seems unimportant
                      (read-file-into-string1 chan state nil
                                              *read-file-into-string-bound*))
@@ -29273,15 +29341,19 @@
                      (ec-call ; guard verification here seems unimportant
                       (close-input-channel chan state))
                      (mv nil val state))))))))
-         (mv erp val)))
+         (mv erp
+             (subseq val
+                     start
+                     (if bytes
+                         (min (+ start bytes)
+                              (length val))
+                       (length val))))))
       (declare (ignore erp))
       val)))
 )
 
-(defun read-file-into-string (filename state)
-  (declare (xargs :stobjs state :guard (stringp filename)))
-  (and (mbt (stringp filename))
-       (read-file-into-string2 filename state)))
+(defmacro read-file-into-string (filename &key (start '0) bytes)
+  `(read-file-into-string2 ,filename ,start ,bytes state))
 
 ; Support for experiments with apply$: logic code.  See apply-raw.lisp for raw
 ; Lisp support and relevant background.
