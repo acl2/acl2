@@ -29250,6 +29250,7 @@
                                              *read-file-into-string-alist*)))
                (cond
                 (finish-p
+                 (close stream)
                  (setq *read-file-into-string-alist* temp))
                 (t
                  (setq *read-file-into-string-alist*
@@ -29284,6 +29285,7 @@
     (cond
      ((eql start 0)
       (when triple
+        (close (cadr triple)) ; close the stream
         (setq *read-file-into-string-alist*
               (delete-assoc-equal os-filename
                                   *read-file-into-string-alist*)))
