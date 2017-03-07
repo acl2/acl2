@@ -399,9 +399,7 @@
    Otherwise, return the numbered name with base @('name') and index @('index')
    (i.e. add the index).
    </p>"
-  (mv-let (is-numbered-name base index1)
-    (check-numbered-name name wrld)
-    (declare (ignore index1))
+  (b* (((mv is-numbered-name base &) (check-numbered-name name wrld)))
     (if is-numbered-name
         (make-numbered-name base index wrld)
       (make-numbered-name name index wrld))))
@@ -498,8 +496,7 @@
    where @('i') is the result of @(tsee max-numbered-name-index-in-use).
    Otherwise, return @('name').
    </p>"
-  (mv-let (is-numbered-name base index)
-    (check-numbered-name name wrld)
+  (b* (((mv is-numbered-name base index) (check-numbered-name name wrld)))
     (if (and is-numbered-name
              (= index 0))
         (make-numbered-name base
@@ -532,8 +529,7 @@
    <see topic='@(url global-numbered-name-index)'>global index
    for numbered names</see>.
    </p>"
-  (mv-let (is-numbered-name base index)
-    (check-numbered-name name wrld)
+  (b* (((mv is-numbered-name base index) (check-numbered-name name wrld)))
     (if is-numbered-name
         (let ((next-index (if (= index 0)
                               (next-numbered-name-aux
