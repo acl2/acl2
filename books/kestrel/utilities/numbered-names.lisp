@@ -1,6 +1,6 @@
 ; Numbered Names
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,6 +21,7 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
 (include-book "characters")
+(include-book "event-forms")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -433,25 +434,28 @@
   :short "Record that a numbered name is in use."
   :long
   "<p>
-   This macro generates an event to add a numbered name
+   This macro generates an event form to add a numbered name
    to the table of numbered names in use.
+   If the name is not a numbered name,
+   or it is a numbered name with a wildcard,
+   tha table is unchanged (via an empty @(tsee progn)).
    </p>
    @(def add-numbered-name-in-use)"
 
-  (define add-numbered-name-in-use-new-indices
-    ((base symbolp) (index posp) (wrld plist-worldp))
-    :returns (indices "A @(tsee pos-listp) without duplicates.")
+  (define add-numbered-name-in-use-fn ((name symbolp) (wrld plist-worldp))
+    :returns (event pseudo-event-formp)
     :verify-guards nil
-    :parents (add-numbered-name-in-use)
-    :short "Result of adding @('index')
-            to the set of indices that the table associates to @('base')."
-    (let* ((tab (table-alist 'numbered-names-in-use wrld))
-           (current-indices (cdr (assoc-eq base tab))))
-      (add-to-set-eql index current-indices)))
+    (b* (((mv is-numbered-name base index) (check-numbered-name name wrld)))
+      (if (and is-numbered-name
+               (/= index 0))
+          (b* ((table (table-alist 'numbered-names-in-use wrld))
+               (current-indices (cdr (assoc-eq base table)))
+               (new-indices (add-to-set-eql index current-indices)))
+            `(table numbered-names-in-use ',base ',new-indices))
+        '(progn))))
 
-  (defmacro add-numbered-name-in-use (base index)
-    `(table numbered-names-in-use
-       ,base (add-numbered-name-in-use-new-indices ,base ,index world))))
+  (defmacro add-numbered-name-in-use (name)
+    `(make-event (add-numbered-name-in-use-fn ',name (w state)))))
 
 (define max-numbered-name-index-in-use ((base symbolp) (wrld plist-worldp))
   :returns (max-index natp)

@@ -1,6 +1,6 @@
 ; Numbered Names -- Tests
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -151,20 +151,24 @@
  (set-numbered-name-index-end "}")
  (set-numbered-name-index-wildcard "*")
 
- (add-numbered-name-in-use 'fn 4)
- (add-numbered-name-in-use 'fn 1)
+ (add-numbered-name-in-use fn{4})
+ (add-numbered-name-in-use fn{1})
  (assert-equal (max-numbered-name-index-in-use 'fn (w state))
                4)
 
- (add-numbered-name-in-use 'fn 3)
+ (add-numbered-name-in-use fn{3})
  (assert-equal (max-numbered-name-index-in-use 'fn (w state))
                4)
 
- (add-numbered-name-in-use 'fn 9)
+ (add-numbered-name-in-use fn{9})
  (assert-equal (max-numbered-name-index-in-use 'fn (w state))
                9)
 
- (add-numbered-name-in-use 'ffn 12)
+ (add-numbered-name-in-use ffn{12})
+ (assert-equal (max-numbered-name-index-in-use 'fn (w state))
+               9)
+
+ (add-numbered-name-in-use g)
  (assert-equal (max-numbered-name-index-in-use 'fn (w state))
                9))
 
@@ -182,8 +186,8 @@
  (assert-equal (resolve-numbered-name-wildcard 'f{3} (w state))
                'f{3})
 
- (add-numbered-name-in-use 'f 2)
- (add-numbered-name-in-use 'f 5)
+ (add-numbered-name-in-use f{2})
+ (add-numbered-name-in-use f{5})
  (assert-equal (resolve-numbered-name-wildcard 'f{*} (w state))
                'f{5}))
 
