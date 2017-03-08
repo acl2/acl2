@@ -22,8 +22,14 @@
 
 #  Example invocations for users:
 
-#   make             ; Build ${PREFIXsaved_acl2} from scratch.  Same as make large.
 #   make large       ; Build ${PREFIXsaved_acl2} from scratch.  Same as make.
+#   make all         ; Same as make large TAGS-acl2-doc
+#   make TAGS-acl2-doc ; Build tags-table for books (used by acl2-doc browser)
+#   make             ; Same as make all.
+#   make update      ; Same as make large, except that if the desired
+#                    ; executable is up-to-date with respect to the
+#                    ; ACL2 sources, then do nothing.  See warning
+#                    ; next to `update' target, below.
 #   make LISP=cl PREFIX=allegro-
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
@@ -65,7 +71,6 @@
 #   make check-sum ; Call only after ACL2 is completely compiled.
 #   make full LISP=lucid PREFIX=lucid-  ; makes acl2 in Lucid
 #   make full LISP=cl PREFIX=allegro- ; makes acl2 in allegro
-#                  ; Note:  Allegro is not always named cl.
 #   make full LISP=lispworks PREFIX=lispworks- ; makes acl2 in lispworks
 #   make copy-distribution DIR=/stage/ftp/pub/moore/acl2/v2-9/acl2-sources
 #                  ; copies all of acl2 plus books, doc, etc., to the named
@@ -265,21 +270,10 @@ TAGS-acl2-doc: $(ACL2_DEPS)
 
 .PHONY: acl2r
 acl2r:
-	@rm -f acl2r.lisp.temp
-	@echo "Building acl2r.lisp if necessary."
-	@$(MAKE) acl2r.lisp.temp
-	@if [ ! -f acl2r.lisp ] ; then \
-	    mv acl2r.lisp.temp acl2r.lisp ;\
-	else \
-	diff acl2r.lisp.temp acl2r.lisp 2>&1 > /dev/null ;\
-	if [ $$? != 0 ] ; then \
-	    mv acl2r.lisp.temp acl2r.lisp ;\
-	else \
-	    rm acl2r.lisp.temp ;\
-	fi ;\
-	fi
+	rm -f acl2r.lisp
+	$(MAKE) acl2r.lisp
 
-acl2r.lisp.temp:
+acl2r.lisp:
 # It might be good to remove old compiled files acl2-fns.o etc., but at
 # the moment it seems painful to deal with all possible compiled file
 # extensions.
@@ -390,12 +384,7 @@ check-sum:
 	rm -f workxxx
 
 .PHONY: full
-full: acl2-status.txt
-
-# WARNING: The following does not assume that acl2r is up-to-date,
-# because TAGS takes care of that.  So if TAGS is removed from the
-# dependencies, be sure to run acl2r.
-acl2-status.txt: TAGS $(ACL2_DEPS)
+full: TAGS
 	$(MAKE) compile
 	rm -f acl2-proclaims.lisp
 # The following two forms should do nothing, and quickly, if
@@ -403,12 +392,6 @@ acl2-status.txt: TAGS $(ACL2_DEPS)
 	$(MAKE) acl2-proclaims.lisp
 	$(MAKE) compile USE_ACL2_PROCLAIMS=t
 
-# Note that compile is a phony target, hence will be done every time.
-# However, the target "full", which is really just acl2-status.txt,
-# avoids unnecessary recompilation; that seems sufficient in general.
-# This approach is a bit unfortunate when calling "make full" (or just
-# "make") only to build an executabe with a different PREFIX.  But we
-# can live with that.
 .PHONY: compile
 compile:
 	rm -f workxxx
@@ -491,9 +474,7 @@ acl2-proclaims.lisp: ${sources}
 	[ -f acl2-proclaims.lisp ]
 
 .PHONY: init
-init: $(PREFIXsaved_acl2)
-
-$(PREFIXsaved_acl2): acl2-proclaims.lisp $(ACL2_DEPS)
+init: acl2-proclaims.lisp
 # Note:  If you believe that compilation is up-to-date, do
 # make compile-ok init
 # rather than
@@ -595,8 +576,7 @@ acl2-manual:
 # doc.lisp will be newer than books/system/doc/acl2-doc.lisp, and
 # hence doc.lisp won't later be rebuilt needlessly.
 .PHONY: update-doc.lisp
-update-doc.lisp: books/system/doc/acl2-doc.lisp \
-	  books/system/doc/rendered-doc.lsp
+update-doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/rendered-doc.lsp
 	@diff doc.lisp books/system/doc/rendered-doc.lsp 2>&1 > /dev/null ; \
 	  if [ $$? != 0 ] ; then \
 	    mv -f doc.lisp doc.lisp.backup ; \
@@ -656,6 +636,27 @@ clean:
 
 .PHONY: large
 large: acl2r full init
+
+# The following target should be used with care, since it fails to
+# rebuild the desired executable when it already exists and is more
+# recent than the sources.  For example, if you change Lisp
+# implementations without changing PREFIX, perhaps even only changing
+# the version of your Lisp, then use "make large", not "make update".
+.PHONY: update
+update: $(PREFIXsaved_acl2)
+
+$(PREFIXsaved_acl2): $(ACL2_DEPS)
+	@$(MAKE) large \
+	PREFIX=$(PREFIX) \
+	LISP=$(LISP) \
+	ACL2_SAFETY=$(ACL2_SAFETY) \
+	ACL2_STACK_ACCESS=$(ACL2_STACK_ACCESS) \
+	ACL2_COMPILER_DISABLED=$(ACL2_COMPILER_DISABLED) \
+	ACL2_EGC_ON=$(ACL2_EGC_ON) \
+	ACL2_EXIT_LISP_HOOK=$(ACL2_EXIT_LISP_HOOK) \
+	ACL2_SIZE=$(ACL2_SIZE) \
+	ACL2_IGNORE=$(ACL2_IGNORE) \
+	TAGS_ACL2_DOC=$(TAGS_ACL2_DOC)
 
 .PHONY: large-acl2r
 large-acl2r:
@@ -790,7 +791,7 @@ clean-books:
 tar:
 	rm -f acl2.tar.Z acl2.tar.gz acl2.tar
 	rm -f SUM
-# Historical comment (maybe be updated some day...):
+# Historical comment (may be updated some day...):
 # We want the extracted tar files to have permission for everyone to write,
 # so that when they use -p with tar they get that permission.
 # But we don't want the tar file itself to have that permission.  We may as
