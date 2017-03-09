@@ -611,6 +611,84 @@ shown.</p>"
   (defttag :vl-lint-suppress-large-integer-problems)
   (acl2::include-raw "lint-raw.lsp"))
 
+
+(defconst *vl-svbad-limit* (expt 2 20))
+
+(define vl-datatype-svbad-p ((x vl-datatype-p))
+  (b* (((unless (vl-datatype-resolved-p x))
+        t)
+       ((mv err size)
+        (vl-datatype-size x)))
+    (or err
+        (and size (> size *vl-svbad-limit*)))))
+
+(define vl-vardecl-svbad-warnings ((x        vl-vardecl-p)
+                                   (warnings vl-warninglist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-vardecl x))
+       ((unless (vl-datatype-svbad-p x.type))
+        (ok)))
+    (fatal :type :vl-warn-svbad-p
+           :msg "~a0: type ~a1 looks like it will cause problems for SV."
+           :args (list x x.type))))
+
+(define vl-vardecllist-svbad-warnings ((x        vl-vardecllist-p)
+                                       (warnings vl-warninglist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* (((when (atom x))
+        (ok))
+       (warnings (vl-vardecl-svbad-warnings (car x) warnings)))
+    (vl-vardecllist-svbad-warnings (cdr x) warnings)))
+
+(define vl-module-add-svbad-warnings ((x    vl-module-p)
+                                      (good vl-modulelist-p)
+                                      (bad  vl-modulelist-p))
+  :returns (mv (good vl-modulelist-p)
+               (bad  vl-modulelist-p))
+  (b* (((vl-module x) (vl-module-fix x))
+       (good (vl-modulelist-fix good))
+       (bad  (vl-modulelist-fix bad))
+       (warnings (vl-vardecllist-svbad-warnings x.vardecls nil))
+       ((unless warnings)
+        ;; no obvious problems, so keep this module
+        (mv (cons x good) bad))
+       ;; some wire looks really big and is probably going to cause
+       ;; problems for SV, so drop this module
+       (new-x (change-vl-module x :warnings (append-without-guard warnings x.warnings))))
+    (mv good (cons new-x bad))))
+
+(define vl-modulelist-add-svbad-warnings ((x    vl-modulelist-p)
+                                          (good vl-modulelist-p)
+                                          (bad  vl-modulelist-p))
+  :returns (mv (good vl-modulelist-p)
+               (bad  vl-modulelist-p))
+  (b* (((when (atom x))
+        (mv (vl-modulelist-fix good) (vl-modulelist-fix bad)))
+       ((mv good bad) (vl-module-add-svbad-warnings (first x) good bad)))
+    (vl-modulelist-add-svbad-warnings (rest x) good bad)))
+
+(define vl-lint-design->svex-modalist-wrapper ((x      vl-design-p)
+                                               (config vl-simpconfig-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x))
+       (- (sneaky-save :vl-lint-svconfig config))
+       (- (sneaky-save :vl-lint-pre-sv-design x))
+
+       ((mv good bad) (vl-modulelist-add-svbad-warnings x.mods nil nil))
+
+       ;; Strip out the bad mods so that we don't try to build SV
+       ;; modules for them.
+       (good-x (change-vl-design x :mods good))
+       ((mv reportcard ?modalist)
+        (xf-cwtime (vl-design->svex-modalist good-x :config config)))
+
+       ;; Reattach the bad mods so that we get their warning.
+       (merged-x (change-vl-design x :mods (append-without-guard good bad)))
+
+       ;; Finally get the warnings from SV translation from the reportcard.
+       (final-x (xf-cwtime (vl-apply-reportcard merged-x reportcard))))
+    final-x))
+
 (define run-vl-lint-main ((design vl-design-p)
                           (config vl-lintconfig-p))
   :guard-debug t
