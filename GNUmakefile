@@ -606,27 +606,34 @@ STATS:
 	export ACL2_SOURCES ;\
 	doc/create-acl2-code-size
 
-.PHONY: clean
-clean:
-# Does not remove executable or corresponding scripts
+.PHONY: clean-lite
+clean-lite:
+# Unlike clean-all, this does not remove executables or corresponding scripts
 # (since there could be many executables that one prefers not to delete),
 # except for *osaved_acl2* files.
-	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
+	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx* workyyy* *.lib \
 	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl *.dxl \
 	  *.d64fsl *.dx64fsl *.lx64fsl \
 	  *.lx32fsl *.x86f *.sse2f *.o *.fn \
-	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
-	  *osaved_acl2* \
-	  *.log TMP*
+	  TAGS TAGS-acl2-doc acl2-status.txt acl2r.lisp acl2-proclaims.lisp \
+	  .acl2rc *osaved_acl2* *.log devel-check.out TMP*
 	rm -rf saved
 	rm -f doc/*.o doc/*#* doc/*.c doc/*.h doc/*.data doc/gazonk.* \
 	   doc/workxxx doc/workyyy doc/*.lib \
 	   doc/*.fasl doc/*.fas doc/*.sparcf doc/*.ufsl doc/*.64ufasl doc/*.ufasl doc/*.dfsl \
-	   doc/*.d64fsl doc/*.dx64fsl doc/*.lx64fsl \
-	   doc/*.lx32fsl doc/*.x86f doc/*.o \
-	   doc/*.cert doc/*.out \
+	   doc/*.dxl doc/*.d64fsl doc/*.dx64fsl doc/*.lx64fsl \
+	   doc/*.lx32fsl doc/*.x86f doc/*.sse2f doc/*.o doc/*.fn \
+	   doc/*.cert doc/*.port doc/*.out \
 	   doc/*.log doc/TMP*
 	rm -rf doc/TEX doc/HTML doc/EMACS
+
+.PHONY: clean-all
+clean-all: clean-lite
+	rm -f *saved_acl2* doc.lisp.backup
+
+# The following is likely to be deprecated.
+.PHONY: clean
+clean: clean-lite
 
 # The .NOTPARALLEL target avoids our doing any build process in
 # parallel.  Uses of makefiles in other directories, even if invoked

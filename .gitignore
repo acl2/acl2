@@ -1,10 +1,11 @@
 doc.lisp.backup
-workxxx
-workyyy
+workxxx*
+workyyy*
 aux
 saved
 logs
 TAGS
+TAGS-acl2-doc
 acl2-status.txt
 acl2r.lisp
 acl2-proclaims.lisp
@@ -12,6 +13,7 @@ acl2-proclaims.lisp
 *saved_acl2*
 TMP*.*
 temp-emacs-file.lsp
+devel-check.out
 *~
 *.log
 *.64ufasl
