@@ -506,7 +506,7 @@
            :exec name))))
 
 (define next-numbered-name ((name symbolp) (wrld plist-worldp))
-  :returns (next-index "A @(tsee posp).")
+  :returns (new-name "A symbol.")
   :mode :program
   :parents (numbered-names)
   :short "Next numbered name with the same base."
@@ -538,7 +538,8 @@
                                wrld)
                             (next-numbered-name-aux base (1+ index) wrld))))
           (make-numbered-name base next-index wrld))
-      (make-numbered-name name 1 wrld)))
+      (let ((next-index (next-numbered-name-aux name 1 wrld)))
+        (make-numbered-name name next-index wrld))))
 
   :prepwork
   ((define next-numbered-name-aux
