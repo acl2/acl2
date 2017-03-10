@@ -25,7 +25,11 @@
 #   make large       ; Build ${PREFIXsaved_acl2} from scratch.  Same as make.
 #   make all         ; Same as make large TAGS-acl2-doc
 #   make TAGS-acl2-doc ; Build tags-table for books (used by acl2-doc browser)
-#   make             ; Same as make all.
+#   make             ; Same as make all
+#   make clean-all   ; Remove all generated files in top-level directory and doc/
+#   make distclean   ; Same as above
+#   make clean-lite  ; Same as clean-all, except do not delete *saved_acl2*
+#                    ; or doc.lisp.backup
 #   make update      ; Same as make large, except that if the desired
 #                    ; executable is up-to-date with respect to the
 #                    ; ACL2 sources, then do nothing.  See warning
@@ -630,6 +634,10 @@ clean-lite:
 .PHONY: clean-all
 clean-all: clean-lite
 	rm -f *saved_acl2* doc.lisp.backup
+
+# Inspired by https://www.gnu.org/prep/standards/html_node/Standard-Targets.html:
+.PHONY: distclean
+distclean: clean-all
 
 # The following is likely to be deprecated.
 .PHONY: clean

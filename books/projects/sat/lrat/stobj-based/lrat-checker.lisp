@@ -81,51 +81,7 @@
                 (not (conflicting-literalsp x))))
   :rule-classes (:rewrite :forward-chaining))
 
-(defun ordered-clausep (x)
-  (declare (xargs :guard (literal-listp x)))
-  (cond ((endp x) t)
-        (t (or (null (cdr x))
-               (and (< (abs (car x)) (abs (cadr x)))
-                    (ordered-clausep (cdr x)))))))
-
-(defthm ordered-clausep-implies-not-member
-  (implies (and (consp x)
-                (< (abs a) (abs (car x)))
-                (ordered-clausep x))
-           (not (member a x))))
-
-(defthm ordered-clausep-implies-unique-literalsp
-  (implies (ordered-clausep x)
-           (unique-literalsp x)))
-
-(defthm ordered-clausep-implies-not-member-negate
-  (implies (and (consp x)
-                (< (abs a) (abs (car x)))
-                (ordered-clausep x))
-           (not (member (negate a) x))))
-
-(defthm ordered-clausep-implies-not-conflicting-literalsp
-  (implies (ordered-clausep x)
-           (not (conflicting-literalsp x))))
-
-(defun lrat-clausep$ (x a$)
-  (declare (xargs :stobjs a$ :guard t))
-  (or (null x)
-      (and (literal-listp$ x a$)
-           (not (member (car x) (cdr x)))
-           (not (member (negate (car x)) (cdr x)))
-           (ordered-clausep (cdr x)))))
-
-(defthm lrat-clausep$-implies-clausep$
-
-; !! This lemma should allow us to replace clausep$ in guards by
-; lrat-clausep$.
-
-  (implies (lrat-clausep$ x a$)
-           (clausep$ x a$))
-  :rule-classes (:rewrite :forward-chaining))
-
-(in-theory (disable clausep$ lrat-clausep$))
+(in-theory (disable clausep$))
 
 (defun find-var-on-stk (var i a$)
 
