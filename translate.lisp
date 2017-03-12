@@ -5381,15 +5381,15 @@
              (chk-state-ok-msg wrld)
            nil))
         ((not (true-listp args))
-         (msg "The argument list to a function must be a true list but ~x0 is ~
-               not."
+         (msg "The argument list to a function or macro must be a true list ~
+               but ~x0 is not."
               args))
         (t (mv-let (culprit explan)
                    (find-first-bad-arg args)
-                   (msg "The argument list to a function must be a true list ~
-                         of distinct, legal variable names.  ~x0 is not such ~
-                         a list.  The element ~x1 violates the rules because ~
-                         it ~@2."
+                   (msg "The argument list to a function or macro must be a ~
+                         true list of distinct, legal variable names.  ~x0 is ~
+                         not such a list.  The element ~x1 violates the rules ~
+                         because it ~@2."
                         args culprit explan)))))
 
 (defun msg-to-cmp (ctx msg)
