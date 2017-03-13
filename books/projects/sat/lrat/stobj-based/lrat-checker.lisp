@@ -2247,13 +2247,19 @@
 
 (defun valid-proofp$-top (formula proof incomplete-okp)
   (declare (xargs :guard t))
-  (and (formula-p formula)
-       (with-local-stobj a$
-         (mv-let (v c a$)
-           (valid-proofp$ formula proof a$)
-           (and v
-                (or incomplete-okp
-                    c))))))
+  (if (formula-p formula)
+      (with-local-stobj a$
+        (mv-let (v c a$)
+          (valid-proofp$ formula proof a$)
+          (if v
+              (or incomplete-okp
+                  c
+                  (er hard? 'valid-proofp$-top
+                      "Incomplete proof!"))
+            (er hard? 'valid-proofp$-top
+                "Invalid proof!"))))
+    (er hard? 'valid-proofp$-top
+        "Invalid formula!")))
 
 (defun refutation-p$ (proof formula)
   (declare (xargs :guard t))

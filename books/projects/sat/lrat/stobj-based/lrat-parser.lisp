@@ -962,7 +962,7 @@
 (defun verify-lrat-proof-fn (cnf-file lrat-file incomplete-okp state)
   (b* (((er formula) (time$ (parse-cnf-file cnf-file state)))
        ((er proof) (time$ (parse-lrat-file lrat-file state))))
-    (value (time$ (ec-call (valid-proofp$-top formula proof incomplete-okp))))))
+    (value (time$ (valid-proofp$-top formula proof incomplete-okp)))))
 
 (defmacro verify-lrat-proof (cnf-file lrat-file
                                       &optional (incomplete-okp 'nil))
