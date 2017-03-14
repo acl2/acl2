@@ -606,7 +606,9 @@
          :initially 0
          :resizable t)
   :renaming ((a$arrp a$arrp-weak)
-             (a$p a$p-weak)))
+             (a$p a$p-weak))
+  :non-memoizable t
+  :inline t)
 
 ; Now that assignments are about to be stored in our new stobj, let's rename
 ; clause-or-assignment-p to the now-more-precise name, clausep.

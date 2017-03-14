@@ -28,7 +28,9 @@
          :initially 0
          :resizable t)
   :renaming ((a$arrp a$arrp-weak)
-             (a$p a$p-weak)))
+             (a$p a$p-weak))
+  :non-memoizable t
+  :inline t)
 
 (defthm a$arrp-weak-is-true-listp
   (equal (a$arrp-weak x)
