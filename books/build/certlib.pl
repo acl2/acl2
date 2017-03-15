@@ -1894,6 +1894,14 @@ sub process_labels_and_targets {
 	    }
 	} else {
 	    # filename.
+
+	    # BOZO We should check for cert_pl_excluded files here and
+	    # complain about them for top-level command-line targets.
+	    # But we probably need to rework the horrible hackery of
+	    # this function first.  We can't currently distinguish
+	    # between command-line targets and ones from --targets
+	    # files, so for now we'll remain silent.
+
 	    my $target = canonical_path(to_cert_name($str, $target_ext));
 	    if ($target) {
 		push(@targets, $target);

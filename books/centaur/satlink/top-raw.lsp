@@ -61,8 +61,8 @@
 
 (defun satlink-run (config formula env$)
   (b* ((state acl2::*the-live-state*)
-       (prev-okp            (f-get-global 'acl2::writes-okp state))
-       (state               (f-put-global 'acl2::writes-okp t state))
-       ((mv res env$ state) (satlink-run-impl config formula env$))
-       (?state              (f-put-global 'acl2::writes-okp prev-okp state)))
-    (mv res env$)))
+       (prev-okp                       (f-get-global 'acl2::writes-okp state))
+       (state                          (f-put-global 'acl2::writes-okp t state))
+       ((mv res env$ lrat-proof state) (satlink-run-impl config formula env$))
+       (?state                         (f-put-global 'acl2::writes-okp prev-okp state)))
+    (mv res env$ lrat-proof)))

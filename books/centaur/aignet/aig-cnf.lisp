@@ -60,9 +60,15 @@
   :guard (fanin-litp lit aignet)
   :returns (mv (cnf satlink::lit-list-listp)
                (sat-lits (sat-lits-wfp sat-lits aignet)))
-  (b* (((local-stobjs aignet-refcounts)
+  (b* ((sat-lits (sat-lits-empty (num-nodes aignet) sat-lits))
+       ((when (eql (mbe :logic (lit-fix lit) :exec lit) 1))
+        ;; true -- empty cnf
+        (mv nil sat-lits))
+       ((when (eql (mbe :logic (lit-fix lit) :exec lit) 0))
+        ;; false -- empty clause
+        (mv '(nil) sat-lits))
+       ((local-stobjs aignet-refcounts)
         (mv cnf sat-lits aignet-refcounts))
-       (sat-lits (sat-lits-empty (num-nodes aignet) sat-lits))
        (aignet-refcounts (resize-u32 (num-nodes aignet) aignet-refcounts))
        (aignet-refcounts (aignet-count-refs aignet-refcounts aignet))
        ((mv sat-lits cnf)
