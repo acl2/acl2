@@ -29333,23 +29333,26 @@
 ; The following is to simplify guard verification.
                    (not (state-p state)))
                (mv nil nil state))
-              (t (with-guard-checking-error-triple
-                  t
-                  (mv-let (val state)
+              (t (mv-let (val state)
+                   (read-file-into-string1 chan state nil
+                                           *read-file-into-string-bound*)
+                   (pprogn
                     (ec-call ; guard verification here seems unimportant
-                     (read-file-into-string1 chan state nil
-                                             *read-file-into-string-bound*))
-                    (pprogn
-                     (ec-call ; guard verification here seems unimportant
-                      (close-input-channel chan state))
-                     (mv nil val state))))))))
+                     (close-input-channel chan state))
+                    (mv nil val state)))))))
          (mv erp
-             (subseq val
-                     start
-                     (if bytes
-                         (min (+ start bytes)
-                              (length val))
-                       (length val))))))
+             (and (stringp val)
+
+; If the following conjunct is false, then raw Lisp would cause an error; so
+; there is no harm in adding it (and, it helps with guard verification).
+
+                  (<= start (len val))
+                  (subseq val
+                          start
+                          (if bytes
+                              (min (+ start bytes)
+                                   (len val))
+                            (len val)))))))
       (declare (ignore erp))
       val)))
 )
