@@ -1,0 +1,2 @@
+; Define "BITOPS" package:
+(include-book "centaur/misc/context-rw" :dir :system)

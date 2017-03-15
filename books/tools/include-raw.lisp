@@ -203,8 +203,10 @@ differences between ACL2's reader and what raw Lisp code is expecting.</p>")
         ;; See comment in raw-compile, above, for why we avoid #+cltl2/#-cltl2.
         (let* ((fname          (extend-pathname (cbd) name state))
                (compiled-fname (compile-file-pathname fname))
-               (src-date       (file-write-date fname))
-               (compiled-date  (file-write-date compiled-fname)))
+; Matt K. mod: Using our-ignore-errors because file-write-date can cause an
+; error when the file does not exist (I have seen that happen in SBCL).
+               (src-date       (our-ignore-errors (file-write-date fname)))
+               (compiled-date  (our-ignore-errors (file-write-date compiled-fname))))
           (cond
 
            ((and src-date compiled-date (< compiled-date src-date))

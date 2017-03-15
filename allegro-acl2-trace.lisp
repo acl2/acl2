@@ -126,7 +126,7 @@
                 (push (list* (car x) (car x) (cdr x)) new-lst))
             (interface-er "~s0 is not a bound function symbol." sym)))))))
 
-(defun trace-entry (name l)
+(defun trace-entry-rec (name l entry evisc-tuple)
 
 ; We construct the (excl:advise <fn-name> :before ...) form that performs the
 ; tracing on entry.
@@ -138,19 +138,21 @@
                                :in
                                (cons ',name
                                      (trace-hide-world-and-state
-                                      *trace-arglist*))))))
+                                      ,(if entry
+                                           (sublis *trace-sublis*
+                                                   entry)
+                                         '*trace-arglist*)))
+                               ,@(and evisc-tuple
+                                      (list evisc-tuple))))))
         ((eq (car l) :entry)
-         `(excl:advise ,name :before nil nil
-                       (progn (setq *trace-arglist* si::arglist)
-                              (custom-trace-ppr
-                               :in
-                               (cons ',name
-                                     (trace-hide-world-and-state
-                                      ,(sublis *trace-sublis*
-                                               (cadr l))))))))
+         (trace-entry-rec name (cdr l) (cadr l) evisc-tuple))
+        ((eq (car l) :evisc-tuple)
+         (trace-entry-rec name (cdr l) entry (cadr l)))
         (t
-         (trace-entry name (cdr l)))))
+         (trace-entry-rec name (cdr l) entry evisc-tuple))))
 
+(defun trace-entry (name l)
+  (trace-entry-rec name l nil nil))
 
 ; These next two functions were blindly copied from akcl-acl2-trace.lisp
 
@@ -176,41 +178,54 @@
     (cons `(nth ,i ,var)
           (make-nths (1+ i) (1- n) var))))
 
-(defun trace-exit (name original-name l &aux (state *the-live-state*))
+(defun trace-exit-rec (name original-name l state exit evisc-tuple)
 
 ; We construct the (excl:advise <fn-name> :after ...) form that performs the
 ; tracing on entry.
 
   (cond ((null l)
-         `(excl:advise
-           ,name :after nil nil
-           (progn (setq *trace-values*
-                        (trace-hide-world-and-state
-                         ,(trace-values original-name)))
-                  ,(protect-mv
-                    `(custom-trace-ppr
-                      :out
-                      (cons ',name *trace-values*))
-                    (trace-multiplicity original-name state)))))
-        ((eq (car l) :exit)
-         (let ((multiplicity (trace-multiplicity original-name state)))
+         (cond
+          ((null exit)
            `(excl:advise
              ,name :after nil nil
-             (progn ,(protect-mv
-                      `(progn (setq *trace-values*
-                                    (trace-hide-world-and-state
-                                     ,(trace-values original-name)))
-                              (setq *trace-arglist* (trace-hide-world-and-state
-                                                     si::arglist)))
-                      multiplicity)
+             (progn (setq *trace-values*
+                          (trace-hide-world-and-state
+                           ,(trace-values original-name)))
                     ,(protect-mv
                       `(custom-trace-ppr
                         :out
-                        (cons ',name
-                              ,(sublis *trace-sublis* (cadr l))))
-                      multiplicity)))))
+                        (cons ',name *trace-values*)
+                        ,@(and evisc-tuple
+                               (list evisc-tuple)))
+                      (trace-multiplicity original-name state)))))
+          (t
+           (let ((multiplicity (trace-multiplicity original-name state)))
+             `(excl:advise
+               ,name :after nil nil
+               (progn ,(protect-mv
+                        `(progn (setq *trace-values*
+                                      (trace-hide-world-and-state
+                                       ,(trace-values original-name)))
+                                (setq *trace-arglist* (trace-hide-world-and-state
+                                                       si::arglist)))
+                        multiplicity)
+                      ,(protect-mv
+                        `(custom-trace-ppr
+                          :out
+                          (cons ',name
+                                ,(sublis *trace-sublis* exit))
+                          ,@(and evisc-tuple
+                                 (list evisc-tuple)))
+                        multiplicity)))))))
+        ((eq (car l) :exit)
+         (trace-exit-rec name original-name (cdr l) state (cadr l) evisc-tuple))
+        ((eq (car l) :evisc-tuple)
+         (trace-exit-rec name original-name (cdr l) state exit (cadr l)))
         (t
-         (trace-exit name original-name (cdr l)))))
+         (trace-exit-rec name original-name (cdr l) state exit evisc-tuple))))
+
+(defun trace-exit (name original-name l)
+  (trace-exit-rec name original-name l *the-live-state* nil nil))
 
 (defun traced-fns-lst (lst)
   (list 'QUOTE (mapcar #'car lst)))

@@ -1,0 +1,6 @@
+(in-package "ACL2")
+
+; Matt K.: Avoid ACL2(p) errors.
+(set-waterfall-parallelism nil)
+
+; cert-flags: ? t :ttags :all :skip-proofs-okp t

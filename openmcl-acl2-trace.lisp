@@ -98,30 +98,33 @@
                 (push (list* (car x) (car x) (cdr x)) new-lst))
             (interface-er "~s0 is not a bound function symbol." sym)))))))
 
-(defun trace-entry (name l)
+(defun trace-entry-rec (name l entry evisc-tuple)
 
 ; We construct the (ccl:advise <fn-name> ... :when :before) form that performs the
 ; tracing on entry.
 
-  (cond ((null l) ; no :entry directive was found
+  (cond ((null l)
          `(ccl:advise ,name
                       (progn (setq *trace-arglist* ccl::arglist)
-                             (custom-trace-ppr :in
-                                               (cons ',name
-                                                     (trace-hide-world-and-state
-                                                      *trace-arglist*))))
+                             (custom-trace-ppr
+                              :in
+                              (cons ',name
+                                    (trace-hide-world-and-state
+                                     ,(if entry
+                                          (sublis *trace-sublis* entry)
+                                        '*trace-arglist*)))
+                              ,@(and evisc-tuple
+                                     (list evisc-tuple))))
                       :when :before))
         ((eq (car l) :entry)
-         `(ccl:advise ,name
-                      (progn (setq *trace-arglist* ccl::arglist)
-                             (custom-trace-ppr :in
-                                               (cons ',name
-                                                     (trace-hide-world-and-state
-                                                      ,(sublis *trace-sublis*
-                                                               (cadr l))))))
-                      :when :before))
+         (trace-entry-rec name (cdr l) (cadr l) evisc-tuple))
+        ((eq (car l) :evisc-tuple)
+         (trace-entry-rec name (cdr l) entry (cadr l)))
         (t
-         (trace-entry name (cdr l)))))
+         (trace-entry-rec name (cdr l) entry evisc-tuple))))
+
+(defun trace-entry (name l)
+  (trace-entry-rec name l nil nil))
 
 (defun trace-values (name)
   (declare (ignore name))
@@ -132,34 +135,47 @@
         avoid feature acl2-mv-as-values.  See corresponding mods made for ~%~
         Version  3.4 in akcl-acl2-trace.lisp and allegro-acl2-trace.lisp.")
 
-(defun trace-exit (name original-name l)
+(defun trace-exit-rec (name original-name l exit evisc-tuple)
 
 ; We construct the (ccl:advise <fn-name> ... :when :after) form that performs
 ; the tracing on exit.
 
   (cond ((null l)
-         `(ccl:advise ,name
-                      (progn (setq *trace-values*
-                                   ,(trace-values original-name))
-                             (custom-trace-ppr :out
-                                               (cons ',name
-                                                     (trace-hide-world-and-state
-                                                      *trace-values*))))
-                      :when :after))
+         (cond
+          (exit
+           `(ccl:advise ,name
+                        (progn (setq *trace-values*
+                                     ,(trace-values original-name))
+                               (setq *trace-arglist*
+                                     ccl::arglist)
+                               (custom-trace-ppr :out
+                                                 (cons ',name
+                                                       (trace-hide-world-and-state
+                                                        ,(sublis *trace-sublis*
+                                                                 exit)))
+                                                 ,@(and evisc-tuple
+                                                        (list evisc-tuple))))
+                        :when :after))
+          (t
+           `(ccl:advise ,name
+                        (progn (setq *trace-values*
+                                     ,(trace-values original-name))
+                               (custom-trace-ppr :out
+                                                 (cons ',name
+                                                       (trace-hide-world-and-state
+                                                        *trace-values*))
+                                                 ,@(and evisc-tuple
+                                                        (list evisc-tuple))))
+                        :when :after))))
         ((eq (car l) :exit)
-         `(ccl:advise ,name
-                      (progn (setq *trace-values*
-                                   ,(trace-values original-name))
-                             (setq *trace-arglist*
-                                   ccl::arglist)
-                             (custom-trace-ppr :out
-                                               (cons ',name
-                                                     (trace-hide-world-and-state
-                                                      ,(sublis *trace-sublis*
-                                                               (cadr l))))))
-                      :when :after))
+         (trace-exit-rec name original-name (cdr l) (cadr l) evisc-tuple))
+        ((eq (car l) :evisc-tuple)
+         (trace-exit-rec name original-name (cdr l) exit (cadr l)))
         (t
-         (trace-exit name original-name (cdr l)))))
+         (trace-exit-rec name original-name (cdr l) exit evisc-tuple))))
+
+(defun trace-exit (name original-name l)
+  (trace-exit-rec name original-name l nil nil))
 
 (defun traced-fns-lst (lst)
   (list 'QUOTE (mapcar #'car lst)))

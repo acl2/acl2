@@ -101,8 +101,6 @@
  (verify-termination-boot-strap read-file-into-string2) ; and guards
  )
 
-(verify-termination-boot-strap read-file-into-string) ; and guards
-
 ; miscellaneous
 
 (verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards

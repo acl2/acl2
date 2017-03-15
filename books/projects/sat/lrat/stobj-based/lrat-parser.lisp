@@ -865,7 +865,7 @@
                   :verify-guards nil
                   :stobjs state))
   (b* (; ((unless (state-p1 state)) nil)
-       (str (read-file-into-string file-name state))
+       (str (read-file-into-string file-name))
        (len (length str))
        ((unless (lrat-guard str len 0)) NIL)
        (ans (my-rev (lrat-str str len 0 len nil))))
@@ -943,7 +943,7 @@
                   :verify-guards nil
                   :stobjs state))
   (b* (; ((unless (state-p1 state)) nil)
-       (str (read-file-into-string file-name state))
+       (str (read-file-into-string file-name))
        (len (length str))
        ((unless (lrat-guard str len 0)) NIL)
        (pos (pos-to-eol+1 str len 0))
@@ -962,7 +962,7 @@
 (defun verify-lrat-proof-fn (cnf-file lrat-file incomplete-okp state)
   (b* (((er formula) (time$ (parse-cnf-file cnf-file state)))
        ((er proof) (time$ (parse-lrat-file lrat-file state))))
-    (value (time$ (ec-call (valid-proofp$-top formula proof incomplete-okp))))))
+    (value (time$ (valid-proofp$-top formula proof incomplete-okp)))))
 
 (defmacro verify-lrat-proof (cnf-file lrat-file
                                       &optional (incomplete-okp 'nil))
