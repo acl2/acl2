@@ -35,15 +35,13 @@
 (include-book "cnf")
 (include-book "dimacs")
 (include-book "lrat-interface")
-(include-book "projects/sat/lrat/stobj-based/lrat-checker" :dir :system)
-(include-book "projects/sat/lrat/stobj-based/lrat-parser" :dir :system)
+(include-book "projects/sat/lrat/main/lrat-parser" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "config")
 (local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "projects/sat/lrat/stobj-based/soundness" :dir :system))
 
 (defxdoc satlink
   :parents (acl2::boolean-reasoning)
@@ -716,7 +714,9 @@ satlink-run).</p>"
                :mintime config.mintime))
        (lrat-proof
         (if (and (eq status :unsat) config.lrat-check)
-            (ec-call (lrat::lrat-read-file (str::cat filename ".lrat") state))
+            (time$ (lrat::lrat-read-file (str::cat filename ".lrat") state)
+                   :msg "; SATLINK: read lrat file: ~st sec, ~sa bytes~%"
+                   :mintime config.mintime)
           nil))
        (- (and (or (eq status :sat)
                    (eq status :unsat))
@@ -769,7 +769,7 @@ should contain the satisfying assignment.</dd>
 
 <dd>@('lrat-proof') will be NIL unless @('config.lrat-check') is true.  In that
 case, it is expected that the solver will write a file
-\"<input-filename>.lrat\" containing an LRAT proof; see
+\"[input-filename].lrat\" containing an LRAT proof; see
 \"projects/sat/lrat/README\".</dd>
 
 </dl>
@@ -906,7 +906,7 @@ when there is a counterexample or an LRAT proof available.</p>"
                :mintime config.mintime))
        ((when (and (eq status :unsat) config.lrat-check))
         (b* ((lrat-formula (formula-to-lrat-formula formula 1))
-             (ok (time$ (acl2::refutation-p$ lrat-proof lrat-formula)
+             (ok (time$ (lrat::lrat-refutation-p$ lrat-proof lrat-formula)
                         :msg "; SATLINK: lrat check: ~st sec, ~sa bytes.~%"
                         :mintime config.mintime))
              ((unless ok)
@@ -936,16 +936,14 @@ when there is a counterexample or an LRAT proof available.</p>"
     (b* (((mv status &) (sat formula env$ :config config)))
       (implies (equal (eval-formula formula env) 1)
                (not (equal status :unsat))))
-    :hints (("goal" :use ((:instance satlink-run-fn-unsat-claim
-                                     (env$ nil))
-                          (:instance lrat::main-theorem-stobj-based
+    :hints (("goal" :use ((:instance lrat::main-theorem
                            (proof (mv-nth 2 (satlink-run config formula env$)))
                            (formula (formula-to-lrat-formula formula 1)))
                           (:instance lrat::satisfiable-suff
                            (assignment (env$-to-lrat-assignment (+ 1 (max-index-formula formula)) env))
                            (formula (formula-to-lrat-formula formula 1))))
              :in-theory (e/d (trivial-unsat-p-correct)
-                             (acl2::refutation-p$))))))
+                             (lrat::lrat-refutation-p$))))))
 
 
 #||
