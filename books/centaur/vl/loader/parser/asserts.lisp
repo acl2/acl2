@@ -101,33 +101,92 @@
                        assertion)))))
 
 
-(defparser vl-parse-sequence-formal-type ()
-  :short "Parse @('sequence_formal_type')."
-  :long "@({ sequence_formal_type ::= 'untyped' | 'sequence' | data_type_or_implicit })"
-  :result (vl-datatype-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count weak
-  (seq tokstream
-       (when (vl-is-token? :vl-kwd-untyped)
-         (return (make-vl-coretype :name :vl-untyped)))
-       (when (vl-is-token? :vl-kwd-sequence)
-         (return (make-vl-coretype :name :vl-sequence)))
-       (ans := (vl-parse-datatype-or-implicit))
-       (return ans)))
 
-(defparser vl-parse-property-formal-type ()
-  :short "Parse @('property_formal_type')."
-  :long "@({ property_formal_type ::= sequence_formal_type | 'property' })"
-  :result (vl-datatype-p val)
-  :resultp-of-nil nil
+;; I think the following was wrong because a property_formal_type might be a
+;; data_type_or_implicit, but we aren't properly accounting for the case where
+;; this is implicit and there is nothing at all -- i.e., if there is no type at
+;; all, then this will incorrectly eat the ID!
+
+;; (defparser vl-parse-sequence-formal-type ()
+;;   :short "Parse @('sequence_formal_type')."
+;;   :long "@({ sequence_formal_type ::= 'untyped' | 'sequence' | data_type_or_implicit })"
+;;   :result (vl-datatype-p val)
+;;   :resultp-of-nil nil
+;;   :fails gracefully
+;;   :count weak
+;;   (seq tokstream
+;;        (when (vl-is-token? :vl-kwd-untyped)
+;;          (return (make-vl-coretype :name :vl-untyped)))
+;;        (when (vl-is-token? :vl-kwd-sequence)
+;;          (return (make-vl-coretype :name :vl-sequence)))
+;;        (ans := (vl-parse-datatype-or-implicit))
+;;        (return ans)))
+
+;; (defparser vl-parse-property-formal-type ()
+;;   :short "Parse @('property_formal_type')."
+;;   :long "@({ property_formal_type ::= sequence_formal_type | 'property' })"
+;;   :result (vl-datatype-p val)
+;;   :resultp-of-nil nil
+;;   :fails gracefully
+;;   :count weak
+;;   (seq tokstream
+;;        (when (vl-is-token? :vl-kwd-property)
+;;          (return (make-vl-coretype :name :vl-property)))
+;;        (ans := (vl-parse-sequence-formal-type))
+;;        (return ans)))
+
+;; Replacement that fixes the problem:
+
+(defparser vl-parse-property-formal-type-and-id ()
+  :short "Parse @('property_formal_type id')."
+  :long "<p>Relevant grammar rules</p>
+         @({
+              sequence_formal_type ::= 'untyped' | 'sequence' | data_type_or_implicit
+
+              property_formal_type ::= sequence_formal_type | 'property'
+         })
+         <p>We match @('property_formal_type') followed by an ID, which allows
+         us to resolve the usual ambiguity due to a @('data_type_or_implicit')
+         being followed by a regular identifier.</p>"
+  :result (and (consp val)
+               (vl-datatype-p (car val))
+               (vl-idtoken-p (cdr val)))
   :fails gracefully
-  :count weak
+  :count strong
   (seq tokstream
-       (when (vl-is-token? :vl-kwd-property)
-         (return (make-vl-coretype :name :vl-property)))
-       (ans := (vl-parse-sequence-formal-type))
-       (return ans)))
+       (when (vl-is-some-token? '(:vl-kwd-untyped
+                                  :vl-kwd-sequence
+                                  :vl-kwd-property))
+         (type := (vl-match))
+         (id   := (vl-match-token :vl-idtoken))
+         (return (cons (make-vl-coretype :name (case (vl-token->type type)
+                                                 (:vl-kwd-untyped  :vl-untyped)
+                                                 (:vl-kwd-sequence :vl-sequence)
+                                                 (:vl-kwd-property :vl-property)))
+                       id)))
+       ;; Styled loosely after vl-parse-net-declaration
+       (return-raw
+        (b* ((backup (vl-tokstream-save))
+             ;; Even though vl-parse-datatype-or-implicit tries both ways, it
+             ;; can still be wrong if, e.g., the datatype was supposed to be
+             ;; implicit but it instead found something (identifier) that it
+             ;; could parse as a datatype.  So we still may need to backtrack
+             ;; here.
+             ((mv erp ans tokstream)
+              (seq tokstream
+                   (type := (vl-parse-datatype-or-implicit))
+                   (id   := (vl-match-token :vl-idtoken))
+                   (return (cons type id))))
+             ((unless erp)
+              ;; That worked so great, nothing more to do
+              (mv erp ans tokstream))
+             ;; Else, didn't work.  Try to instead forge ahead and just match
+             ;; an id without a datatype.
+             (tokstream (vl-tokstream-restore backup)))
+          (seq tokstream
+               (id := (vl-match-token :vl-idtoken))
+               (return (cons (make-vl-coretype :name :vl-logic) ;; BOZO should this be :vl-untyped ??
+                             id)))))))
 
 (defparser vl-parse-property-port-item ()
   :short "Parse @('property_port_item')."
@@ -153,8 +212,9 @@
            ;; You can say input but it's also the default so there's no real
            ;; sense in this, just match it and ignore it.
            (:= (vl-match))))
-       (type := (vl-parse-property-formal-type))
-       (name := (vl-match-token :vl-idtoken))
+       ;; (type := (vl-parse-property-formal-type))
+       ;; (name := (vl-match-token :vl-idtoken))
+       ((type . name) := (vl-parse-property-formal-type-and-id))
        (dims := (vl-parse-0+-variable-dimensions))
        (when (vl-is-token? :vl-equalsign)
          (:= (vl-match))
@@ -191,8 +251,7 @@
        (when (vl-is-token? :vl-kwd-local)
          (local := (vl-match))
          (dir := (vl-parse-optional-port-direction)))
-       (type := (vl-parse-property-formal-type))
-       (name := (vl-match-token :vl-idtoken))
+       ((type . name) := (vl-parse-property-formal-type-and-id))
        (dims := (vl-parse-0+-variable-dimensions))
        (when (vl-is-token? :vl-equalsign)
          (:= (vl-match))
