@@ -26,6 +26,8 @@
                     clausep clausep$
                     formula-p formula-p$))
 
+(local (in-theory (disable nth update-nth)))
+
 (defthm arr-matches-stk-implies-booleanp-alt
   (implies (and (a$p a$)
                 (natp i)

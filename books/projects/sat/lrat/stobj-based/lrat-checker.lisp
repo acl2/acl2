@@ -347,7 +347,7 @@
                   (or (booleanp val)
                       (equal val 0)))))
 
-(in-theory (disable nth update-nth))
+(local (in-theory (disable nth update-nth)))
 
 (defthm find-var-on-stk-update-nth
   (implies (if (equal j *a$arri*)

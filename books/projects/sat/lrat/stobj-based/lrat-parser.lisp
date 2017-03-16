@@ -860,9 +860,8 @@
 
 (defun lrat-read-file (file-name state)
   (declare (xargs :guard (stringp file-name)
-                  :guard-hints
-                  (("Goal" :in-theory (disable read-file-into-string)))
-                  :verify-guards nil
+                  :guard-hints (("Goal"
+                                 :in-theory (disable open-input-channel)))
                   :stobjs state))
   (b* (; ((unless (state-p1 state)) nil)
        (str (read-file-into-string file-name))
