@@ -27,11 +27,13 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 # Original author: Jared Davis <jared@centtech.com>
+# Modified to support LRAT proof output: Sol Swords <sswords@centtech.com>
 
 use warnings;
 use strict;
 require File::Temp;
 use File::Copy "cp";
+use English;
 
 # SCRIPT is the compact name of the script being run, e.g., "glucose-cert", for
 # use in debugging and error messages.
@@ -56,7 +58,7 @@ my @satlink_rm_files = ();
 
 sub satlink_temp_file
 {
-    my $fd = File::Temp->new( TEMPLATE => 'TMP-satlink-$PID.XXXXXX', UNLINK => 0 );
+    my $fd = File::Temp->new( TEMPLATE => "TMP-satlink-${PROCESS_ID}.XXXXXX", UNLINK => 0 );
     my $filename = $fd->filename;
     push(@satlink_rm_files, $filename);
     return $filename;
@@ -126,15 +128,14 @@ sub run_sat_solver
 
 sub check_unsat_proof
 {
-    # Call drat-trim to check an UNSAT proof.  On any failure we abort by
+    # Call checker to check an UNSAT proof.  On any failure we abort by
     # calling fatal().  That is, if this function returns, then the UNSAT proof
     # was verified successfully.
 
-    my ($infile, $proof_file) = @_;
-    my @args = ($infile, $proof_file);
+    my ($infile, $proof_file, $checker, $checkerargs) = @_;
+    my @args = ($infile, $proof_file, @$checkerargs);
 
-    # I'll just hard-code this in for now.
-    my $cmd = "drat-trim";
+    my $cmd = $checker;
 
     debug("Checker command: $cmd @args\n");
 
@@ -146,7 +147,8 @@ sub check_unsat_proof
 
     while(my $line = <$fd>)
     {
-	if ($line =~ /^s (.+)$/) {
+	my $match;
+	if (($match = $line) =~ /^[^[:print:]]*s (.+)$/) {
 	    debug("Intercepted status line ($1).");
 	    fatal("multiple status lines!") if ($status);
 	    $status = $1;
@@ -168,6 +170,7 @@ sub check_unsat_proof
     }
 
     debug("Woah -- Proof rejected!");
+    debug("Status = $status\n");
     debug("Copying offending files so you can debug this.");
     cp($infile,     "satlink-rejected.in");
     cp($proof_file, "satlink-rejected.proof");
@@ -181,8 +184,12 @@ sub run_sat_and_check
 {
     # Top level function for running SAT and checking unsat proofs.
 
-    my ($solver, $args, $infile, $proof_file) = @_;
 
+    my ($solver, $args, $infile, $proof_file, $checker, $checkerargs) = @_;
+
+    $checker = defined($checker) ? $checker : "drup-trim";
+    $checkerargs = defined($checkerargs) ? $checkerargs : [];
+    
     my $solution = run_sat_solver($solver, $args);
 
     if ($solution eq "SATISFIABLE") {
@@ -202,7 +209,7 @@ sub run_sat_and_check
     }
 
     debug("Verifying the UNSAT proof.\n");
-    check_unsat_proof($infile, $proof_file);
+    check_unsat_proof($infile, $proof_file, $checker, $checkerargs);
     print "s UNSATISFIABLE\n";
 }
 
