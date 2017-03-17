@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "elements")
+(include-book "timeunits")
 (include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
@@ -175,6 +176,7 @@
        (params   := (vl-maybe-parse-parameter-port-list))
        (portinfo := (vl-parse-module-port-list-top))
        (:= (vl-match-token :vl-semi))
+       ((timeunit . timeprec) := (vl-parse-optional-timeunits-declaration))
        (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
@@ -192,7 +194,12 @@
               (vl-parse-error "ANSI module cannot have internal port declarations."))
              (items (append (vl-modelementlist->genelements imports) items))
              (module (vl-make-module-by-items name params ansi-portdecls ports ansi-p items
-                                              atts minloc maxloc warnings)))
+                                              atts minloc maxloc warnings))
+             (module (if (or timeunit timeprec)
+                         (change-vl-module module
+                                           :timeunit timeunit
+                                           :timeprecision timeprec)
+                       module)))
           (mv nil module tokstream)))))
 
 (defparser vl-parse-module-main (atts module_keyword id)

@@ -4709,6 +4709,43 @@ the type information between the variable and port declarations.</p>"
 (defoption vl-maybe-parse-temps vl-parse-temps)
 
 
+(defprod vl-timeliteral
+  :short "Representation of a single @('time_literal') token."
+  :tag :vl-timeliteral
+  :layout :fulltree
+  ((quantity stringp :rule-classes :type-prescription
+             "An ACL2 string with the amount.  In practice, the amount should
+              match either @('unsigned_number') or @('fixed_point_number'),
+              e.g., @('\"3\"') or @('\"45.617\"').  We don't try to process
+              this further because (1) we don't expect it to matter for much,
+              and (2) ACL2 doesn't really support fixed point numbers.")
+   (units    vl-timeunit-p
+             "The kind of time unit this is, e.g., seconds, milliseconds,
+              microseconds, ..."))
+  :long "<p>This is used in @(see vl-timeunitdecl)s and @(see
+         vl-timeprecisiondecl)s.</p>")
+
+(defoption vl-maybe-timeliteral vl-timeliteral)
+
+(defprod vl-timeunitdecl
+  :short "Representation of a 'timeunit' declaration."
+  :tag :vl-timeunitdecl
+  :layout :fulltree
+  ((numerator   vl-timeliteral-p)
+   (denominator vl-maybe-timeliteral-p)
+   (loc         vl-location-p)))
+
+(defoption vl-maybe-timeunitdecl vl-timeunitdecl)
+
+(defprod vl-timeprecisiondecl
+  :short "Representation of a 'timeprecision' declaration."
+  :tag :vl-timeprecisiondecl
+  :layout :fulltree
+  ((precision vl-timeliteral-p)
+   (loc       vl-location-p)))
+
+(defoption vl-maybe-timeprecisiondecl vl-timeprecisiondecl)
+
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
@@ -4795,7 +4832,11 @@ the type information between the variable and port declarations.</p>"
    ;; the "default lifetime (static or automatic) of subroutines defined within
    ;; the module."  Which doesn't seem like a very good idea anyway...
 
-   ;; BOZO possibly add timeunits declarations.
+   (timeunit   vl-maybe-timeunitdecl-p
+               "The @('timeunits') for this module, if specified.")
+
+   (timeprecision vl-maybe-timeprecisiondecl-p
+                  "The @('timeprecision') for this module, if specified.")
 
    (alwayses   vl-alwayslist-p
                "Always blocks like @('always @(posedge clk) ...').")
