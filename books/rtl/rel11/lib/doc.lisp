@@ -40,11 +40,11 @@
       |Floating-Point Decomposition|
       |Exactness|)
      (|Floating-Point Formats| ; reps.lisp
-       |Classification of Formats|
-       |Normal Encodings|
-       |Denormals and Zeroes|
-       |Infinities and NaNs|
-       |Rebiasing Exponents|)
+      |Classification of Formats|
+      |Normal Encodings|
+      |Denormals and Zeroes|
+      |Infinities and NaNs|
+      |Rebiasing Exponents|)
      (|Rounding| ; round.lisp
       |Truncation|
       |Rounding Away from Zero|
@@ -52,18 +52,14 @@
       |Odd Rounding|
       |IEEE Rounding|
       |Denormal Rounding|))
-     (|Floating-Point Exceptions and Specification of x86 Elementary Arithmetic Instructions| ; exps.lisp
-      (|SSE Floating-Point Instructions|
-       |The SSE Control and Status Register|
-       |Overview of SSE Floating-Point Exceptions|
-       |SSE Pre-Computation Exceptions|
-       |SSE Post-Computation Exceptions|)
-      (|x87 Instructions|
-       |x87 Control Word|
-       |x87 Status Word|
-       |Overview of x87 Exceptions|
-       |x87 Pre-Computation Exceptions|
-       |x87 Post-Computation Exceptions|))
+    (|Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions| ; excps.lisp
+     (|IEEE-Compliant Square Root| ; sqrt.lisp
+      |Truncated Square Root|
+      |Odd-Rounded Square Root|
+      |IEEE-Rounded Square Root|)
+     |SSE Floating-Point Instructions|
+     |x87 Instructions|
+     |ARM AArch32 Floating-Point Instructions|)
     (|Implementation of Elementary Operations|
      (|Addition| ; add.lisp
       |Bit Vector Addition|
@@ -81,22 +77,8 @@
      (|SRT Division and Square Root| ; srt.lisp
       |SRT Division and Quotient Digit Selection|
       |SRT Square Root Extraction|
-      |Square Root Seed Tables|)
-     (|IEEE-Compliant Square Root| ; sqrt.lisp
-      |Truncation {Square Root}|
-      |Odd Rounding {Square Root}|
-      |IEEE Rounding {Square Root}|))
-    (|Modeling Algorithms in SystemC and ACL2| ; masc.lisp
-     (|MASC: The Formal Language|
-      |Language Overview|
-      |Arithmetic|
-      |Control Restrictions|
-      |Mapping SystemC to MASC|
-      |Mapping MASC to ACL2|)
-     (|Applications|
-      |Integer Multiplication|
-      |Vector Compression|
-      |Fused Multiply-Accumulate|))
+      |Square Root Seed Tables|))
+    |Modeling Algorithms in SystemC and ACL2| ; masc.lisp
     |Bibliography|))
 
 (defun rtl-node-name-basic (sym)
@@ -190,7 +172,8 @@
        :short ,(symbol-name name)
        :long ,(concatenate 'string
                            "<p>See also <a href='" url "'>"
-                           "the corresponding section in David Russinoff's "
+                           "the corresponding section</a> in David Russinoff's "
+                           "<a href='http://russinoff.com/libman/'>"
                            "online rtl manual</a>.</p>"
                            (defsection-rtl-defs events))
        (deflabel ,(intern-in-package-of-symbol
@@ -235,7 +218,7 @@
 
 (rtl-order-subtopics rtl (|Register-Transfer Logic|
                           |Floating-Point Arithmetic|
-                          |Floating-Point Exceptions and Specification of x86 Elementary Arithmetic Instructions|
+                          |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
                           |Implementation of Elementary Operations|
                           |Modeling Algorithms in SystemC and ACL2|
                           |Bibliography|))
@@ -262,5 +245,7 @@
 
 (defsection-rtl-list)
 
-; Handle top-level leaf:
+; Handle top-level leaves:
+
 (defsection-rtl |Bibliography| rtl)
+(defsection-rtl |Modeling Algorithms in SystemC and ACL2| rtl)
