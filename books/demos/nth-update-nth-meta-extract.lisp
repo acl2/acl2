@@ -8,6 +8,10 @@
 ; of the form (f (update-g val st)), where f is a stobj accessor and update-g
 ; is a stobj updater, without expanding their definitions.
 
+; This example is discussed in Section 2.1.2 of the 2017 ACL2 Workshop paper,
+; "Meta-extract: Using Existing Facts in Meta-reasoning",
+; by Matt Kaufmann and Sol Swords.
+
 (in-package "ACL2")
 
 (defun fn-nth-index (reader formula)

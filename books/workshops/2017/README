@@ -1,3 +1,12 @@
+Note: This directory will likely be updated with more contributions
+after the ACL2 Version 7.4 release.  Updates are on github:
+
+https://github.com/acl2/acl2/tree/master/books/workshops/2017
+
+============================================================
+
+To authors:
+
 Supporting materials should go into directories named after
 authors of accepted papers.  Typically, they go into a support/
 subdirectory of each such directory; see past directories
@@ -43,7 +52,7 @@ The x86isa Books: Features, Usage, and Future Plans.
 ----------
 
 Matt Kaufmann and Sol Swords,
-Meta-extract.
+Meta-extract: Using Existing Facts in Meta-reasoning.
 
 See subdirectory kaufmann-swords/.
 

@@ -1,4 +1,5 @@
-Examples supporting "Meta-extract" by Matt Kaufmann and Sol Swords
+Examples supporting "Meta-extract: Using Existing Facts in Meta-reasoning"
+by Matt Kaufmann and Sol Swords
 
 Section 2.1.1 is based on the book intro.lisp in this directory.
 

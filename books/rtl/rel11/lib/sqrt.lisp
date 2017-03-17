@@ -24,7 +24,7 @@
 ;;;		    	      RTZ-SQRT
 ;;;**********************************************************************
 
-(defsection-rtl |Truncation {Square Root}| |IEEE-Compliant Square Root|
+(defsection-rtl |Truncated Square Root| |IEEE-Compliant Square Root|
 
 (defund rtz-sqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
@@ -101,7 +101,7 @@
 ;;;		    	    RTO-SQRT
 ;;;**********************************************************************
 
-(defsection-rtl |Odd Rounding {Square Root}| |IEEE-Compliant Square Root|
+(defsection-rtl |Odd-Rounded Square Root| |IEEE-Compliant Square Root|
 
 (defund rto-sqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
@@ -222,7 +222,7 @@
 ;;;		    	       QSQRT
 ;;;**********************************************************************
 
-(defsection-rtl |IEEE Rounding {Square Root}| |IEEE-Compliant Square Root|
+(defsection-rtl |IEEE-Rounded Square Root| |IEEE-Compliant Square Root|
 
 (defund qsqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
