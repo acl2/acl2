@@ -447,21 +447,45 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
           (signing := (vl-match)))
 
         (when (vl-is-token? :vl-lbrack)
-          ;; the grammar allows things like parameter signed [3:0][4:0] ..., but I don't
-          ;; know what we would really do with those, so for now I'm just going to accept
-          ;; at most a single range here.
-          (range := (vl-parse-range)))
+          (dims := (vl-parse-0+-packed-dimensions)))
 
-        (when (or signing range)
-          ;; This is similar to what we do in the Verilog-2005 version.
+        (when (or signing dims)
           (decls := (vl-parse-list-of-param-assignments
                      atts
                      (eq (vl-token->type start) :vl-kwd-localparam)
-                     (make-vl-implicitvalueparam :range range
-                                                 :sign (and signing
-                                                            (case (vl-token->type signing)
-                                                              (:vl-kwd-signed   :vl-signed)
-                                                              (:vl-kwd-unsigned :vl-unsigned))))))
+                     (if (or (atom dims)
+                             (and (atom (cdr dims))
+                                  (vl-packeddimension-case (car dims) :range)))
+                         ;; If any dimensions are provided, there is only one
+                         ;; of them and it is an ordinary sized dimension, so
+                         ;; this is something like parameter [3:0] foo.  This
+                         ;; is a partially implicit parameter; do basically
+                         ;; like the Verilog-2005 version does.
+                         (make-vl-implicitvalueparam :range (if (atom dims)
+                                                                nil
+                                                              (vl-packeddimension->range (car dims)))
+                                                     :sign (and signing
+                                                                (case (vl-token->type signing)
+                                                                  (:vl-kwd-signed   :vl-signed)
+                                                                  (:vl-kwd-unsigned :vl-unsigned))))
+                       ;; Otherwise: there are multiple or complex dimensions
+                       ;; here, but there is no base type like "logic".  That
+                       ;; is, we're dealing with something like "parameter
+                       ;; signed [3:0][4:0] foo" or perhaps "parameter
+                       ;; [3:0][4:0] bar".  I don't know how to reconcile this
+                       ;; with the different Verilog rules for implicit versus
+                       ;; explicit parameters.  I think the most sensible thing
+                       ;; to do here is treat this like an *explicitly* typed
+                       ;; parameter, by acting as though it was written as
+                       ;; "parameter logic [3:0][4:0] bar" or similar.
+                       (make-vl-explicitvalueparam
+                        :type (make-vl-coretype :name :vl-logic
+                                                :pdims dims
+                                                :udims nil
+                                                :signedp (and signing
+                                                              (case (vl-token->type signing)
+                                                                (:vl-kwd-signed   t)
+                                                                (:vl-kwd-unsigned nil))))))))
           (return decls))
 
         ;; Now this is tricky.  We know we don't have a signing or range, but
