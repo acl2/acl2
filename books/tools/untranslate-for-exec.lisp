@@ -121,7 +121,7 @@
   :parents (untranslate-for-execution)
   :short "Recognize the kinds of terms that can be processed by @(see
 untranslate-for-execution)."
-  :long "<p>These are similar to @(see psuedo-termp)s, but we also explicitly
+  :long "<p>These are similar to @(see pseudo-termp)s, but we also explicitly
 support @(see mv-let) and @(see mv) forms.</p>"
   :flag-local nil
 
