@@ -2,8 +2,9 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This book supports Section 2.1.1 of the paper "Meta-extract" by Matt Kaufmann
-; and Sol Swords.
+; This book supports Section 2.1.1 of the paper
+; "Meta-extract: Using Existing Facts in Meta-reasoning"
+; by Matt Kaufmann and Sol Swords.
 
 (in-package "ACL2")
 

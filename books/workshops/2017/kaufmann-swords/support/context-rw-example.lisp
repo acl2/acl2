@@ -30,8 +30,9 @@
 
 ; context-rw-example.lisp
 
-; This book supports Section 4.3 of the paper "Meta-extract" by Matt Kaufmann
-; and Sol Swords.
+; This book supports Section 4.3 of the paper
+; "Meta-extract: Using Existing Facts in Meta-reasoning"
+; by Matt Kaufmann and Sol Swords.
 
 (in-package "BITOPS")
 
