@@ -278,6 +278,14 @@
                                  (vl-print-loc (vl-class->loc x)))
                     ps)))
 
+      (:vl-covergroup
+       (vl-ps-seq (vl-print "Covergroup ")
+                  (vl-print-str (vl-covergroup->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-covergroup->loc x)))
+                    ps)))
+
       ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)
        (vl-ps-seq (vl-print "Generate block at ")
                   (vl-print-loc (vl-genelement->loc x))))
@@ -338,6 +346,7 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-dpiexport     (vl-pp-dpiexport x))
       (:vl-bind          (vl-pp-bind x nil))
       (:vl-class         (vl-pp-class x))
+      (:vl-covergroup    (vl-pp-covergroup x))
       (:vl-assertion     (vl-pp-assertion x :include-name t))
       (:vl-cassertion    (vl-pp-cassertion x :include-name t))
       ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)

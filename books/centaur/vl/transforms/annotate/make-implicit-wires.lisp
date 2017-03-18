@@ -750,6 +750,7 @@ Our version of VCS says this isn't yet implemented.</li>
                   (eq tag :vl-gclkdecl)
                   (eq tag :vl-bind)
                   (eq tag :vl-class)
+                  (eq tag :vl-covergroup)
                   ))
         ;; These don't declare any names, nothing to do.
         (mv (ok) st impitems))

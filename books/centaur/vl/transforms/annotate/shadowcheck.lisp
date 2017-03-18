@@ -1743,6 +1743,7 @@ explicit declarations.</p>")
        ((when (eq tag :vl-fwdtypedef)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-bind))       (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-class))      (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-covergroup)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        )
     (impossible)
     (mv st warnings)))

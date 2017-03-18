@@ -925,6 +925,7 @@ elements.")
     (:vl-dpiexport     ans) ;; I don't think we care?
     (:vl-bind          ans) ;; BOZO figure out what to do here -- also update module/interface-immdeps!!
     (:vl-class         ans) ;; BOZO figure out what to do here -- also update module/package/interface-immdeps!!
+    (:vl-covergroup    ans) ;; BOZO figure out what to do here -- also update module/package/interface-immdeps!!
     (:vl-assertion     (vl-assertion-top-immdeps x ans))
     (:vl-cassertion    (vl-cassertion-top-immdeps x ans))
     (otherwise         (vl-modport-immdeps x ans))))
@@ -1290,6 +1291,21 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
     (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
 
 (def-vl-immdeps*-list vl-classlist vl-class)
+
+
+(define vl-covergroup-immdeps* ((x     vl-covergroup-p)
+                                (graph vl-immdepgraph-p)
+                                &key
+                                ((ss vl-scopestack-p) 'ss))
+  :returns (new-graph vl-immdepgraph-p)
+  (declare (ignorable ss))
+  (b* (((vl-covergroup x) (vl-covergroup-fix x))
+       (ans (make-vl-immdeps))
+       ;; BOZO do stuff here if we ever implement covergroupes
+       )
+    (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
+
+(def-vl-immdeps*-list vl-covergrouplist vl-covergroup)
 
 
 ;; Wrappers for top-level elements that we'd normally expect to see within some

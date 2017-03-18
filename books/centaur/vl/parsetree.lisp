@@ -4099,6 +4099,26 @@ be non-sliceable, at least if it's an input.</p>"
   (vl-class->name x))
 
 
+(defprod vl-covergroup
+  :short "Representation of a single @('covergroup')."
+  :tag :vl-covergroup
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this covergroup as a string.")
+   (loc  vl-location-p)
+   (atts     vl-atts-p))
+  :long "BOZO incomplete stub -- we don't really support covergroupes yet.")
+
+(fty::deflist vl-covergrouplist :elt-type vl-covergroup-p
+  :elementp-of-nil nil)
+
+(defprojection vl-covergrouplist->names ((x vl-covergrouplist-p))
+  :parents (vl-covergrouplist-p)
+  :returns (names string-listp)
+  (vl-covergroup->name x))
+
+
 (defsection modelements
   :parents nil
 
@@ -4129,7 +4149,9 @@ be non-sliceable, at least if it's an input.</p>"
       dpiimport
       dpiexport
       bind
-      class))
+      class
+      covergroup
+      ))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -4898,6 +4920,9 @@ the type information between the variable and port declarations.</p>"
    (classes     vl-classlist-p
                 "Classes declared within this module.")
 
+   (covergroups vl-covergrouplist-p
+                "Covergroups declared within this module.")
+
    (parse-temps  vl-maybe-parse-temps-p
                  "Temporary stuff recorded by the parser, used to generate real
                   module contents.")
@@ -5243,6 +5268,7 @@ packages.  Eventually there will be new fields here.</p>")
    (gclkdecls   vl-gclkdecllist-p)
    (binds       vl-bindlist-p)
    (classes     vl-classlist-p)
+   ;; can interfaces have covergroups?? (covergroups vl-covergrouplist-p)
 
    ;; interface_or_generate_item ::= module_common_item
    (modinsts    vl-modinstlist-p     ;; allowed via module_common_item (interface_instantiation)

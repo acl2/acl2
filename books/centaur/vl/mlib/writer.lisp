@@ -4052,6 +4052,25 @@ expression into a string."
     (vl-ps-seq (vl-pp-class (car x))
                (vl-pp-classlist (cdr x)))))
 
+
+
+(define vl-pp-covergroup ((x vl-covergroup-p) &key (ps 'ps))
+  (b* (((vl-covergroup x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "covergroup "))
+               (vl-print-modname x.name)
+               (vl-println "/* BOZO */ ;")
+               (vl-println " // BOZO implement cover groups")
+               (vl-ps-span "vl_key" (vl-println "endgroup"))
+               (vl-println ""))))
+
+(define vl-pp-covergrouplist ((x vl-covergrouplist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-covergroup (car x))
+               (vl-pp-covergrouplist (cdr x)))))
+
+
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
   (let ((x (vl-modelement-fix x)))
     (case (tag x)
@@ -4081,6 +4100,7 @@ expression into a string."
       (:vl-dpiexport  (vl-pp-dpiexport x))
       (:vl-bind       (vl-pp-bind x nil))
       (:vl-class      (vl-pp-class x))
+      (:vl-covergroup (vl-pp-covergroup x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
       (OTHERWISE (progn$ (impossible) ps)))))
@@ -4234,7 +4254,8 @@ expression into a string."
                (vl-pp-assertionlist x.assertions)
                (vl-pp-cassertionlist x.cassertions)
                (vl-pp-bindlist x.binds ss)
-               (vl-pp-classlist x.classes))))
+               (vl-pp-classlist x.classes)
+               (vl-pp-covergrouplist x.covergroups))))
 
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")

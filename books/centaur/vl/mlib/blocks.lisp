@@ -267,7 +267,7 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
           (set-difference-eq
            *vl-modelement-typenames*
            ;; things in genblobs that are not in interfaces
-           '(gateinst fwdtypedef))))
+           '(gateinst fwdtypedef covergroup))))
 
 (make-event
  `(define vl-module->genblob

@@ -84,6 +84,7 @@
                                               :vl-dpiexport
                                               :vl-bind
                                               :vl-class
+                                              :vl-covergroup
                                               )))
        (warnings
         (if (not bad-item)

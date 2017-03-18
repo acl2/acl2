@@ -42,6 +42,7 @@
 (include-book "dpi")
 (include-book "clocking")
 (include-book "classes")
+(include-book "covergroups")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -443,6 +444,11 @@ rules:</p>
           (seq tokstream
                (class := (vl-parse-class-declaration atts))
                (return (list class))))
+
+         ((when (eq type1 :vl-kwd-covergroup))
+          (seq tokstream
+               (covergroup := (vl-parse-covergroup-declaration atts))
+               (return (list covergroup))))
 
          ((when (eq type1 :vl-semi))
           ;; SystemVerilog-2012 seems to allow allows empty items to occur most anywhere:
@@ -925,6 +931,7 @@ returns a @(see vl-genblock).</li>
     (:vl-dpiexport  "DPI export")
     (:vl-bind       "bind declaration")
     (:vl-class      "class declaration")
+    (:vl-covergroup "covergroup")
     (otherwise      (progn$ (impossible)
                             "invalid"))))
 
