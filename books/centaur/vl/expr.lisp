@@ -624,7 +624,11 @@ and generally makes it easier to write safe expression-processing code.</p>")
    :vl-$
    ;; :vl-$root
    ;; :vl-$unit
-   :vl-emptyqueue)
+   :vl-emptyqueue
+   ;; To make any SystemVerilog-2012 delay_value just an expression, it's
+   ;; convenient to add 1step here.
+   :vl-1step
+   )
   :parents (vl-special))
 
 (defenum vl-leftright-p

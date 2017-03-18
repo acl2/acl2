@@ -622,6 +622,7 @@ displays.  The module browser's web pages are responsible for defining the
       (:vl-null (vl-print "null"))
       (:vl-$    (vl-print "$"))
       (:vl-emptyqueue (vl-print "{ }"))
+      (:vl-1step (vl-print "1step"))
       (otherwise (prog2$ (impossible) ps)))))
 
 
