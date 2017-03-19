@@ -111,6 +111,7 @@ interface_ansi_header ::=
                                               ;; covergroups?  not sure -- if you add them, add them to the parsetree,
                                               ;; here, below, and remove them from the excluded fields in
                                               ;; *vl-interface/genblob-fields* in mlib/blocks.lisp
+                                              :vl-elabtask
                                               )))
        (warnings
         (if (not bad-item)
@@ -139,6 +140,7 @@ interface_ansi_header ::=
                         :gclkdecls   c.gclkdecls
                         :binds       c.binds
                         :classes     c.classes
+                        :elabtasks   c.elabtasks
                         :modinsts    c.modinsts
                         :assigns     c.assigns
                         :assertions  c.assertions

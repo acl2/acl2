@@ -286,6 +286,14 @@
                                  (vl-print-loc (vl-covergroup->loc x)))
                     ps)))
 
+      (:vl-elabtask
+       (vl-ps-seq (vl-print "Elaboration system task ")
+                  (vl-pp-stmt (vl-elabtask->stmt x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-elabtask->loc x)))
+                    ps)))
+
       ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)
        (vl-ps-seq (vl-print "Generate block at ")
                   (vl-print-loc (vl-genelement->loc x))))
@@ -347,6 +355,7 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-bind          (vl-pp-bind x nil))
       (:vl-class         (vl-pp-class x))
       (:vl-covergroup    (vl-pp-covergroup x))
+      (:vl-elabtask      (vl-pp-elabtask x))
       (:vl-assertion     (vl-pp-assertion x :include-name t))
       (:vl-cassertion    (vl-pp-cassertion x :include-name t))
       ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)

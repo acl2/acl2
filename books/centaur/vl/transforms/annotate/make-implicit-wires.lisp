@@ -751,6 +751,7 @@ Our version of VCS says this isn't yet implemented.</li>
                   (eq tag :vl-bind)
                   (eq tag :vl-class)
                   (eq tag :vl-covergroup)
+                  (eq tag :vl-elabtask)
                   ))
         ;; These don't declare any names, nothing to do.
         (mv (ok) st impitems))

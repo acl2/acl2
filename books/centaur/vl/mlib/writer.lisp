@@ -4071,6 +4071,18 @@ expression into a string."
                (vl-pp-covergrouplist (cdr x)))))
 
 
+
+(define vl-pp-elabtask ((x vl-elabtask-p) &key (ps 'ps))
+  (b* (((vl-elabtask x) x))
+    (vl-pp-stmt x.stmt)))
+
+(define vl-pp-elabtasklist ((x vl-elabtasklist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-elabtask (car x))
+               (vl-pp-elabtasklist (cdr x)))))
+
+
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
   (let ((x (vl-modelement-fix x)))
     (case (tag x)
@@ -4101,6 +4113,7 @@ expression into a string."
       (:vl-bind       (vl-pp-bind x nil))
       (:vl-class      (vl-pp-class x))
       (:vl-covergroup (vl-pp-covergroup x))
+      (:vl-elabtask   (vl-pp-elabtask x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
       (OTHERWISE (progn$ (impossible) ps)))))
@@ -4255,7 +4268,8 @@ expression into a string."
                (vl-pp-cassertionlist x.cassertions)
                (vl-pp-bindlist x.binds ss)
                (vl-pp-classlist x.classes)
-               (vl-pp-covergrouplist x.covergroups))))
+               (vl-pp-covergrouplist x.covergroups)
+               (vl-pp-elabtasklist x.elabtasks))))
 
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")

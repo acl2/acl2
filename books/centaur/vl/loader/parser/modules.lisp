@@ -85,6 +85,7 @@
                                               :vl-bind
                                               :vl-class
                                               :vl-covergroup
+                                              :vl-elabtask
                                               )))
        (warnings
         (if (not bad-item)
@@ -126,6 +127,8 @@
                     :dpiexports  c.dpiexports
                     :binds       c.binds
                     :classes     c.classes
+                    :covergroups c.covergroups
+                    :elabtasks   c.elabtasks
                     :atts        atts
                     :minloc      minloc
                     :maxloc      maxloc

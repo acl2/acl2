@@ -4118,6 +4118,29 @@ be non-sliceable, at least if it's an input.</p>"
   :returns (names string-listp)
   (vl-covergroup->name x))
 
+(defprod vl-elabtask
+  :short "Representation of a SystemVerilog @('elaboration_system_task')."
+  :tag :vl-elabtask
+  :layout :tree
+  ((stmt vl-stmt-p
+         "In practice this should always be a @(see vl-callstmt), and should be
+          a call of @('$fatal'), @('$error'), @('$warning'), or @('$info').")
+   ;; Potentially we could add other fields here, but the callstmt has its
+   ;; own location, atts, etc., so it's probably best to just use that.
+   )
+  :extra-binder-names (loc))
+
+(define vl-elabtask->loc ((x vl-elabtask-p))
+  :returns (loc vl-location-p)
+  (b* (((vl-elabtask x)))
+    (vl-stmt-case x.stmt
+      (:vl-callstmt x.stmt.loc)
+      (:otherwise   (progn$
+                     (raise "Elabtask is not a call stmt?")
+                     *vl-fakeloc*)))))
+
+(fty::deflist vl-elabtasklist :elt-type vl-elabtask
+  :elementp-of-nil nil)
 
 (defsection modelements
   :parents nil
@@ -4151,6 +4174,7 @@ be non-sliceable, at least if it's an input.</p>"
       bind
       class
       covergroup
+      elabtask
       ))
 
   (local (defun typenames-to-tags (x)
@@ -4498,7 +4522,9 @@ initially kept in a big, mixed list.</p>"
      vl-dpiimport
      vl-dpiexport
      vl-bind
-     vl-class))
+     vl-class
+     vl-covergroup
+     vl-elabtask))
 
   (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
            (implies (and (vl-ctxelement-p x)
@@ -4544,6 +4570,8 @@ initially kept in a big, mixed list.</p>"
                  (equal (tag x) :vl-dpiexport)
                  (equal (tag x) :vl-bind)
                  (equal (tag x) :vl-class)
+                 (equal (tag x) :vl-covergroup)
+                 (equal (tag x) :vl-elabtask)
                  ))
     :rule-classes (:forward-chaining)
     :hints(("Goal" :in-theory (enable tag-reasoning vl-ctxelement-p))))
@@ -4591,7 +4619,9 @@ initially kept in a big, mixed list.</p>"
         (:vl-dpiimport (vl-dpiimport->loc x))
         (:vl-dpiexport (vl-dpiexport->loc x))
         (:vl-bind (vl-bind->loc x))
-        (:vl-class (vl-class->loc x))))))
+        (:vl-class (vl-class->loc x))
+        (:vl-covergroup (vl-covergroup->loc x))
+        (:vl-elabtask (vl-elabtask->loc x))))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4922,6 +4952,9 @@ the type information between the variable and port declarations.</p>"
 
    (covergroups vl-covergrouplist-p
                 "Covergroups declared within this module.")
+
+   (elabtasks   vl-elabtasklist-p
+                "Elaboration system tasks like @('$fatal').")
 
    (parse-temps  vl-maybe-parse-temps-p
                  "Temporary stuff recorded by the parser, used to generate real
@@ -5269,6 +5302,7 @@ packages.  Eventually there will be new fields here.</p>")
    (binds       vl-bindlist-p)
    (classes     vl-classlist-p)
    ;; can interfaces have covergroups?? (covergroups vl-covergrouplist-p)
+   (elabtasks   vl-elabtasklist-p)
 
    ;; interface_or_generate_item ::= module_common_item
    (modinsts    vl-modinstlist-p     ;; allowed via module_common_item (interface_instantiation)
@@ -5277,7 +5311,7 @@ packages.  Eventually there will be new fields here.</p>")
                  are allowed to have interface instances.  We check in @(see
                  basicsanity) that modinsts within each interface do indeed
                  refer to interfaces.")
-                  
+
    (assigns     vl-assignlist-p)     ;; allowed via module_common_item (continuous_assign)
    (aliases     vl-aliaslist-p)      ;; allowed via module_common_item (net_alias)
    (assertions  vl-assertionlist-p)  ;; allowed via module_common_item (assertion_item)
