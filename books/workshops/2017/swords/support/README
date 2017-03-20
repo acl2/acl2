@@ -1,0 +1,6 @@
+The file demos.lisp demonstrates some of the features discussed in the
+paper, which are coded in books/centaur/gl in the ACL2 public
+repository.  Certification of demos.lisp requires a version of these
+books containing commit 55a7cf3e39c803c604, which was published to
+that repository on January 30, 2017, and additionally an installation
+of the SAT solver glucose.

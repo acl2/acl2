@@ -1,0 +1,5 @@
+
+(in-package "ACL2")
+(include-book "centaur/satlink/portcullis" :dir :system)
+(include-book "centaur/gl/portcullis" :dir :system)
+; cert-flags: ? t :ttags :all
