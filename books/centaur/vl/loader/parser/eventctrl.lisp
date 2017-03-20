@@ -111,52 +111,82 @@
 ; Handling sequence_instance would require making this mutually recursive with
 ; sequences, which are a godawful mess.
 
-(defparser vl-parse-event-expression-2012 ()
-  :result (vl-evatomlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
+(defparser vl-parse-optional-edge-identifier ()
+  :result (vl-evatomtype-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails never
+  :count weak
   (seq tokstream
+       (when (vl-is-some-token? '(:vl-kwd-posedge
+                                  :vl-kwd-negedge
+                                  :vl-kwd-edge))
+         (edge := (vl-match)))
+       (return (if (not edge)
+                   :vl-noedge
+                 (case (vl-token->type edge)
+                   (:vl-kwd-posedge :vl-posedge)
+                   (:vl-kwd-negedge :vl-negedge)
+                   (:vl-kwd-edge    :vl-edge)
+                   (t (impossible)))))))
 
-       (when (vl-is-token? :vl-lparen)
-         ;; SystemVerilog-2012 adds support for arbitrary paren nesting here.
-         (:= (vl-match))
-         (subexpr := (vl-parse-event-expression-2012))
-         (:= (vl-match-token :vl-rparen))
-         (return subexpr))
+(with-output
+  ;; Gads, induction schemes are huge and awful...
+  :off (prove proof-tree)
+  (defparser vl-parse-event-expression-2012 ()
+    :result (vl-evatomlist-p val)
+    :resultp-of-nil t
+    :true-listp t
+    :fails gracefully
+    :count strong
+    :prepwork ( ;; Implicitly local
+               (set-ruler-extenders :all))
+    :verify-guards nil
+    (seq tokstream
 
-        (when (vl-is-some-token? '(:vl-kwd-posedge
-                                   :vl-kwd-negedge
-                                   :vl-kwd-edge))
-          (edge := (vl-match)))
-        (expr := (vl-parse-expression))
+         (when (vl-is-token? :vl-lparen)
+           ;; SystemVerilog-2012 adds support for arbitrary paren nesting here.
+           (:= (vl-match))
+           (nested :w= (vl-parse-event-expression-2012))
+           (:= (vl-match-token :vl-rparen))
+           ;; BUGFIX 2017-04-20.  We used to (return subexpr) here.  That
+           ;; is good enough for simple cases of extra parentheses, like
+           ;;
+           ;;    always @((posedge foo))
+           ;;
+           ;; but it doesn't correctly parse the rest of the event expression
+           ;; when there are things like
+           ;;
+           ;;    always @(((posedge foo)) or ((posedge bar)))
+           ;;
+           ;; or similar.  To handle those, we don't return here but instead fall
+           ;; through to the rest of the function, and flatten the subexpr into
+           ;; the list as we go.
+           )
 
-        (when (vl-is-token? :vl-kwd-iff)
-          ;; We don't have anywhere in our parse tree structures yet to put the
-          ;; IFF part yet.
-          (return-raw
-           (vl-parse-error "BOZO need to implement event_expressions with 'iff' clauses.")))
+         (unless nested
+           (edge := (vl-parse-optional-edge-identifier))
+           (expr := (vl-parse-expression)))
 
-        (when (vl-is-some-token? '(:vl-kwd-or :vl-comma))
-          (:= (vl-match))
-          (rest := (vl-parse-event-expression-2012)))
-        (return
-         (let ((edgetype (if (not edge)
-                             :vl-noedge
-                           (case (vl-token->type edge)
-                             (:vl-kwd-posedge :vl-posedge)
-                             (:vl-kwd-negedge :vl-negedge)
-                             (:vl-kwd-edge    :vl-edge)
-                             (t (impossible))))))
-           (cons (make-vl-evatom :type edgetype
-                                 :expr expr)
-                 rest))))
-  ///
-  (defthm consp-of-vl-parse-event-expression-2012
-    (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2012)))
-      (equal (consp val)
-             (not err)))))
+         (when (vl-is-token? :vl-kwd-iff)
+           ;; We don't have anywhere in our parse tree structures yet to put the
+           ;; IFF part yet.
+           (return-raw
+            (vl-parse-error "BOZO need to implement event_expressions with 'iff' clauses.")))
+         (when (vl-is-some-token? '(:vl-kwd-or :vl-comma))
+           (:= (vl-match))
+           (rest := (vl-parse-event-expression-2012)))
+         (return (if nested
+                     (append nested rest)
+                   (cons (make-vl-evatom :type edge
+                                         :expr expr)
+                         rest))))
+    ///
+    (defthm consp-of-vl-parse-event-expression-2012
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2012)))
+        (equal (consp val)
+               (not err))))
+    (verify-guards vl-parse-event-expression-2012-fn)))
 
 (defparser vl-parse-event-expression ()
   :result (vl-evatomlist-p val)
