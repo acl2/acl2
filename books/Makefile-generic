@@ -1,5 +1,5 @@
 #; Support for ACL2 Community Books
-#; Copyright (C) 2016, Regents of the University of Texas
+#; Copyright (C) 2017, Regents of the University of Texas
 #; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 #; Written by:  Matt Kaufmann               and J Strother Moore
@@ -133,7 +133,7 @@ BOOKS_CERT    = $(patsubst %, %.cert,    $(BOOKS))
 
 # Keep the following compiled file extensions in sync with those
 # mentioned in the 'clean' target in ../GNUmakefile.
-BOOKS_SKIP_COMP := 
+BOOKS_SKIP_COMP :=
 BOOKS_COMP    = $(filter-out $(BOOKS_SKIP_COMP),$(BOOKS))
 BOOKS_FASL    = $(patsubst %, %.fasl,    $(BOOKS_COMP))
 BOOKS_FAS     = $(patsubst %, %.fas,     $(BOOKS_COMP))
@@ -236,7 +236,7 @@ define cert_cmd
 	  echo "" ;\
 	  cat $(WORKXXX).$(*F) ;\
 	  echo "" ;\
-	fi	
+	fi
 	($(ACL2) < $(WORKXXX).$(*F) 2>&1) > $*$(ACL2_OUTFILE_SUFFIX).out
 	((test -f $<) && (ls -al $@)) || \
 	     (echo "" ;\
@@ -503,7 +503,7 @@ ACL2_SED_CMD_COMMENT    = sed "s/^/\# /"
 
 # See comments above.
 .PHONY: dependencies
-dependencies: 
+dependencies:
 	@for book in $(BOOKS) ; \
 	do \
 	echo "" ; \

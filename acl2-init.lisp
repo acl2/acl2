@@ -1,5 +1,5 @@
-; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2016, Regents of the University of Texas
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -895,29 +895,29 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-; ""
+""
 
 ; Normally:
 
-  (format
-   nil
-   "
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
- + (git commit hash: ~a).        +
- + The authors of ACL2 consider such distributions to be experimental; +
- + they may be incomplete, fragile, and unable to pass our own         +
- + regression tests.                                                   +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"
-   (git-commit-hash))
+;   (format
+;    nil
+;    "
+;  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;  + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
+;  + (git commit hash: ~a).        +
+;  + The authors of ACL2 consider such distributions to be experimental; +
+;  + they may be incomplete, fragile, and unable to pass our own         +
+;  + regression tests.                                                   +
+;  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; "
+;    (git-commit-hash))
   )
 
 (defvar *saved-string*
   (concatenate
    'string
    "~% ~a built ~a.~
-    ~% Copyright (C) 2016, Regents of the University of Texas"
+    ~% Copyright (C) 2017, Regents of the University of Texas"
    "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
