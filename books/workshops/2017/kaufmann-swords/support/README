@@ -1,0 +1,9 @@
+Examples supporting "Meta-extract: Using Existing Facts in Meta-reasoning"
+by Matt Kaufmann and Sol Swords
+
+Section 2.1.1 is based on the book intro.lisp in this directory.
+
+Section 2.1.2 is based on community book
+demos/nth-update-nth-meta-extract.lisp.
+
+Section 4.3 is based on the book context-rw-example.lisp in this directory.

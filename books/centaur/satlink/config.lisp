@@ -66,7 +66,13 @@ invoke the SAT solver.</p>"
                   for comparing SAT solvers' performance.  Note that these
                   files are created with @(see oslib::tempfile), see its
                   documentation for details about their paths and filenames."
-                  booleanp :rule-classes :type-prescription)))
+                  booleanp :rule-classes :type-prescription)
+
+   (lrat-check  "Should we check an LRAT proof output by the solver? When this
+                 is set, SATLINK will use the Heule/Hunt/Kaufmann checker from
+                 projects/sat/lrat/stobj-based to check an LRAT proof which should
+                 be output to file [input filename].lrat."
+                booleanp :rule-classes :type-prescription)))
 
 (defsection *default-config*
   :parents (config-p)

@@ -28,8 +28,6 @@
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.
 (add-macro-alias cat binary-cat)
 
-(defsection-rtl |Language Overview| |MASC: The Formal Language|
-
 (defun setbits (x w i j y)
   (declare (xargs :guard (and (natp x)
                               (integerp y)
@@ -123,7 +121,6 @@
 
 (defmacro in-function (fn term)
   `(if1 ,term () (er hard ',fn "Assertion ~x0 failed" ',term)))
-)
 
 
 ;;;**********************************************************************
@@ -263,8 +260,6 @@
 ;;;                      Fixed-Point Registers
 ;;;**********************************************************************
 
-(defsection-rtl |Arithmetic| |MASC: The Formal Language|
-
 (defund ui (r) r)
 
 (defund si (r n)
@@ -350,4 +345,3 @@
                 (< y (expt 2 (1- n))))
             (equal (sf r n m)
                    (* (expt 2 (- m n)) y))))
-)

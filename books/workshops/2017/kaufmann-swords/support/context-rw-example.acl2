@@ -1,0 +1,6 @@
+; Define "BITOPS" package:
+(include-book "centaur/misc/context-rw" :dir :system)
+
+; Computed hint LOGBITP-REASONING modifies state:
+#+acl2-par
+(set-waterfall-parallelism nil)

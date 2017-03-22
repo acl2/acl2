@@ -1,5 +1,5 @@
-; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2016, Regents of the University of Texas
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1900,7 +1900,7 @@
 ; renaming in b every G2 function called, replacing the called function
 ; by its doppelganger name.  (Here we truly mean only ACL2 function calls, not
 ; ``calls'' within quoted LAMBDAs and terms.)  Next, consider a call of f! in b'
-; ``marked'' if the measure conjecture for that call, 
+; ``marked'' if the measure conjecture for that call,
 
 ; (IMPLIES (AND t1 ... tn) (O< (m a1 ... an) (m v1 ... vn)))
 
@@ -3231,4 +3231,4 @@
 ; -----------------------------------------------------------------
 ; Q.E.D.
 ; -----------------------------------------------------------------
-; 
+;

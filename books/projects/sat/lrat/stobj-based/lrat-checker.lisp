@@ -28,7 +28,9 @@
          :initially 0
          :resizable t)
   :renaming ((a$arrp a$arrp-weak)
-             (a$p a$p-weak)))
+             (a$p a$p-weak))
+  :non-memoizable t
+  :inline t)
 
 (defthm a$arrp-weak-is-true-listp
   (equal (a$arrp-weak x)
@@ -81,51 +83,7 @@
                 (not (conflicting-literalsp x))))
   :rule-classes (:rewrite :forward-chaining))
 
-(defun ordered-clausep (x)
-  (declare (xargs :guard (literal-listp x)))
-  (cond ((endp x) t)
-        (t (or (null (cdr x))
-               (and (< (abs (car x)) (abs (cadr x)))
-                    (ordered-clausep (cdr x)))))))
-
-(defthm ordered-clausep-implies-not-member
-  (implies (and (consp x)
-                (< (abs a) (abs (car x)))
-                (ordered-clausep x))
-           (not (member a x))))
-
-(defthm ordered-clausep-implies-unique-literalsp
-  (implies (ordered-clausep x)
-           (unique-literalsp x)))
-
-(defthm ordered-clausep-implies-not-member-negate
-  (implies (and (consp x)
-                (< (abs a) (abs (car x)))
-                (ordered-clausep x))
-           (not (member (negate a) x))))
-
-(defthm ordered-clausep-implies-not-conflicting-literalsp
-  (implies (ordered-clausep x)
-           (not (conflicting-literalsp x))))
-
-(defun lrat-clausep$ (x a$)
-  (declare (xargs :stobjs a$ :guard t))
-  (or (null x)
-      (and (literal-listp$ x a$)
-           (not (member (car x) (cdr x)))
-           (not (member (negate (car x)) (cdr x)))
-           (ordered-clausep (cdr x)))))
-
-(defthm lrat-clausep$-implies-clausep$
-
-; !! This lemma should allow us to replace clausep$ in guards by
-; lrat-clausep$.
-
-  (implies (lrat-clausep$ x a$)
-           (clausep$ x a$))
-  :rule-classes (:rewrite :forward-chaining))
-
-(in-theory (disable clausep$ lrat-clausep$))
+(in-theory (disable clausep$))
 
 (defun find-var-on-stk (var i a$)
 
@@ -389,7 +347,7 @@
                   (or (booleanp val)
                       (equal val 0)))))
 
-(in-theory (disable nth update-nth))
+(local (in-theory (disable nth update-nth)))
 
 (defthm find-var-on-stk-update-nth
   (implies (if (equal j *a$arri*)
@@ -2291,13 +2249,19 @@
 
 (defun valid-proofp$-top (formula proof incomplete-okp)
   (declare (xargs :guard t))
-  (and (formula-p formula)
-       (with-local-stobj a$
-         (mv-let (v c a$)
-           (valid-proofp$ formula proof a$)
-           (and v
-                (or incomplete-okp
-                    c))))))
+  (if (formula-p formula)
+      (with-local-stobj a$
+        (mv-let (v c a$)
+          (valid-proofp$ formula proof a$)
+          (if v
+              (or incomplete-okp
+                  c
+                  (er hard? 'valid-proofp$-top
+                      "Incomplete proof!"))
+            (er hard? 'valid-proofp$-top
+                "Invalid proof!"))))
+    (er hard? 'valid-proofp$-top
+        "Invalid formula!")))
 
 (defun refutation-p$ (proof formula)
   (declare (xargs :guard t))

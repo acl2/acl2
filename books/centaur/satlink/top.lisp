@@ -34,6 +34,8 @@
 (in-package "SATLINK")
 (include-book "cnf")
 (include-book "dimacs")
+(include-book "lrat-interface")
+(include-book "projects/sat/lrat/main/lrat-parser" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
@@ -656,6 +658,7 @@ extra information to your hook, e.g., state globals or similar.</li>
    (state 'state))
   :returns (mv (status ":sat, :unsat, or :failed")
                (env$ "Variable assignment, in the :sat case.")
+               (lrat-proof "LRAT proof, in the :unsat case, if config.lrat-check is set.")
                (state state-p1 :hyp (state-p1 state)))
   :long "<p>This function actually runs the SAT solver: it exports the formula
 into a @(see dimacs) file, invokes the SAT solver on it, and interprets the
@@ -667,7 +670,7 @@ satlink-run).</p>"
        ((mv filename state) (oslib::tempfile "satlink"))
        ((unless filename)
         (cw "SATLINK: Error generating temporary filename.~%")
-        (mv :failed env$ state))
+        (mv :failed env$ nil state))
 
        ((mv okp max-index state)
         (time$ (dimacs-export cnf :filename filename)
@@ -677,7 +680,7 @@ satlink-run).</p>"
 
        ((unless okp)
         (cw "SATLINK: Error writing dimacs file ~s0~%" filename)
-        (mv :failed env$ state))
+        (mv :failed env$ nil state))
 
        ((acl2::fun (cleanup filename config))
         (b* (((unless (config->remove-temps config))
@@ -702,21 +705,26 @@ satlink-run).</p>"
        ((unless (string-listp lines))
         (cw "SATLINK: Tshell somehow didn't give us a string list.~%")
         (cleanup filename config)
-        (mv :failed env$ state))
+        (mv :failed env$ nil state))
        ((mv status env$)
         (time$ (b* ((env$ (resize-bits (1+ max-index) env$))
                     ((mv status env$) (satlink-parse-output lines env$)))
                  (mv status env$))
                :msg "; SATLINK: interpreting output: ~st sec, ~sa bytes~%"
-               :mintime config.mintime)))
-    ;; Successful round trips --> invoke the extra hook.  We do this BEFORE
-    ;; cleaning up so that the input file still exists.
-    (if (or (eq status :sat)
-            (eq status :unsat))
-        (satlink-extra-hook cnf filename status env$ state)
-      nil)
+               :mintime config.mintime))
+       (lrat-proof
+        (if (and (eq status :unsat) config.lrat-check)
+            (time$ (lrat::lrat-read-file (str::cat filename ".lrat") state)
+                   :msg "; SATLINK: read lrat file: ~st sec, ~sa bytes~%"
+                   :mintime config.mintime)
+          nil))
+       (- (and (or (eq status :sat)
+                   (eq status :unsat))
+               ;; Successful round trips --> invoke the extra hook.  We do this
+               ;; BEFORE cleaning up so that the input file still exists.
+               (satlink-extra-hook cnf filename status env$ state))))
     (cleanup filename config)
-    (mv status env$ state)))
+    (mv status env$ lrat-proof state)))
 
 
 (defsection logical-story
@@ -759,6 +767,11 @@ output that we weren't expecting, like \"Segmentation fault\" or
 <dd>@('env$') is the updated @(see env$) bit array; in the @(':sat') case it
 should contain the satisfying assignment.</dd>
 
+<dd>@('lrat-proof') will be NIL unless @('config.lrat-check') is true.  In that
+case, it is expected that the solver will write a file
+\"[input-filename].lrat\" containing an LRAT proof; see
+\"projects/sat/lrat/README\".</dd>
+
 </dl>
 
 <h3>Axiomatization</h3>
@@ -768,7 +781,7 @@ feature to assume that the function satisfies certain constraints.</p>
 
 <p>To make our story as tight as possible, we would like to assume very little
 about @('satlink-run-fn').  It turns out we only need three constraints, with
-the first two constraints just saying that the function returns two values:</p>
+the first two constraints just saying that the function returns three values:</p>
 
 @(thm true-listp-of-satlink-run-fn)
 @(thm len-of-satlink-run-fn)
@@ -780,11 +793,18 @@ the first two constraints just saying that the function returns two values:</p>
    then the formula evaluates to false under every environment.
 </p></box>
 
+<p>However, we don't even need to assume that if our solver outputs an LRAT
+proof that can be checked by the LRAT checker in \"projects/sat/lrat\".  So if
+the configuration option @('lrat-check') is set to true, then we don't assume
+this.  If @('lrat-check') is @('NIL'), then we'll just assume the solver is
+correct.</p>
+
 <p>But the quantification here isn't quite right for a rewrite rule, so
 instead we assume the contrapositive:</p>
 
 <box><p>
    if NOT(the formula evaluates to false under every environment),<br/>
+   and we are not checking an LRAT proof,<br/>
    then NOT( @('satlink-run-fn') returns @(':unsat') )
 </p></box>
 
@@ -792,6 +812,7 @@ instead we assume the contrapositive:</p>
 
 <box><p>
    if the formula evaluates to true under any environment,<br/>
+   and we are not checking an LRAT proof,<br/>
    then @('satlink-run-fn') does not return @(':unsat')
 </p></box>
 
@@ -801,8 +822,8 @@ instead we assume the contrapositive:</p>
 
 
 <p>And that's it.  We don't need to assume anything about what happens in the
-@(':sat') case, because our top-level @(see sat) wrapper can just check any
-@(':sat') answers.</p>")
+@(':sat') case or the case where we're checking LRAT proofs, because our
+top-level @(see sat) wrapper will verify those answers.</p>")
 
 (defun satlink-useless-clauseproc (clause)
   (list clause))
@@ -814,24 +835,25 @@ instead we assume the contrapositive:</p>
   (satlink-run-fn)
   :partial-theory
   (encapsulate
-    (((satlink-run-fn * * env$) => (mv * env$)
+    (((satlink-run-fn * * env$) => (mv * env$ *)
       :formals (config formula env$)
       :guard (and (config-p config)
                   (lit-list-listp formula))))
     (local (defun satlink-run-fn (config formula env$)
              (declare (ignore config formula)
                       (xargs :stobjs env$))
-             (mv :failed env$)))
+             (mv :failed env$ nil)))
 
     (defthm true-listp-of-satlink-run-fn
       (true-listp (satlink-run-fn config formula env$))
       :rule-classes :type-prescription)
 
     (defthm len-of-satlink-run-fn
-      (equal (len (satlink-run-fn config formula env$)) 2))
+      (equal (len (satlink-run-fn config formula env$)) 3))
 
     (defthm satlink-run-fn-unsat-claim
-      (implies (equal (eval-formula formula arbitrary-env) 1)
+      (implies (and (equal (eval-formula formula arbitrary-env) 1)
+                    (not (config->lrat-check config)))
                (not (equal (mv-nth 0 (satlink-run-fn config formula env$))
                            :unsat))))))
 
@@ -847,7 +869,7 @@ logical-story).</p>
 invoke @(see satlink-run-impl), which actually calls the SAT solver.</p>"
 
   (defun satlink-run (config formula env$)
-    "Returns (MV STATUS ENV$)"
+    "Returns (MV STATUS ENV$ LRAT-PROOF)"
     (declare (xargs :stobjs env$
                     :guard (and (config-p config)
                                 (lit-list-listp formula))))
@@ -855,6 +877,7 @@ invoke @(see satlink-run-impl), which actually calls the SAT solver.</p>"
 
 ; (depends-on "top-raw.lsp")
 (acl2::include-raw "top-raw.lsp")
+
 
 (define sat
   :parents (satlink)
@@ -871,14 +894,25 @@ invoke @(see satlink-run-impl), which actually calls the SAT solver.</p>"
 
   :long "<p>This is the top-level wrapper for calling SAT.  It handles the
 details of clearing out the @(see env$) and checking the SAT solver's answers
-in the SAT case.</p>"
+when there is a counterexample or an LRAT proof available.</p>"
 
-  (b* (((config config) config)
-       (env$ (mbe :logic (non-exec nil) :exec (resize-bits 0 env$)))
-       ((mv status env$)
+  (b* ((env$ (mbe :logic (non-exec nil) :exec (resize-bits 0 env$)))
+       ((when (trivial-unsat-p formula))
+        (mv :unsat env$))
+       ((config config) config)
+       ((mv status env$ lrat-proof)
         (time$ (satlink-run config formula env$)
                :msg "; SATLINK: round trip: ~st sec, ~sa bytes.~%"
                :mintime config.mintime))
+       ((when (and (eq status :unsat) config.lrat-check))
+        (b* ((lrat-formula (formula-to-lrat-formula formula 1))
+             (ok (time$ (lrat::lrat-refutation-p$ lrat-proof lrat-formula)
+                        :msg "; SATLINK: lrat check: ~st sec, ~sa bytes.~%"
+                        :mintime config.mintime))
+             ((unless ok)
+              (cw "SAT: Supposedly unsatisfiable, but check of LRAT proof failed!~%")
+              (mv :failed env$)))
+          (mv :unsat env$)))
        ((unless (eq status :sat))
         (mv status env$))
        ((when (time$ (int= 0 (eval-formula formula env$))
@@ -902,8 +936,14 @@ in the SAT case.</p>"
     (b* (((mv status &) (sat formula env$ :config config)))
       (implies (equal (eval-formula formula env) 1)
                (not (equal status :unsat))))
-    :hints (("goal" :use ((:instance satlink-run-fn-unsat-claim
-                                     (env$ nil)))))))
+    :hints (("goal" :use ((:instance lrat::main-theorem
+                           (proof (mv-nth 2 (satlink-run config formula env$)))
+                           (formula (formula-to-lrat-formula formula 1)))
+                          (:instance lrat::satisfiable-suff
+                           (assignment (env$-to-lrat-assignment (+ 1 (max-index-formula formula)) env))
+                           (formula (formula-to-lrat-formula formula 1))))
+             :in-theory (e/d (trivial-unsat-p-correct)
+                             (lrat::lrat-refutation-p$))))))
 
 
 #||

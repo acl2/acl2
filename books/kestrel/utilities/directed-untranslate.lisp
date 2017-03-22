@@ -68,7 +68,10 @@
  increasingly sophisticated heuristics.</li>
 
  <li>The heuristics are optimized for an intended use case in which @('sterm')
- has no @(tsee lambda) applications.</li>
+ has no @(tsee lambda) applications.  An attempt is made to insert suitable
+ @('LET') and/or @('LET*') bindings into the result.  The utility
+ @('directed-untranslate-no-lets') is similar but does not make such an
+ attempt.</li>
 
  <li>Here are some features that are not yet implemented but might be in the
  future.
@@ -1250,13 +1253,27 @@
 
 (defun directed-untranslate (uterm tterm sterm iff-flg wrld)
 
-; Uterm is an untranslated form that translates to the term, tterm.  Sterm is a
-; term, which may largely agree with tterm.  The result is an untranslated form
-; whose translation is provably equal to sterm, with the goal that the sharing
-; of structure between tterm and sterm is reflected in similar sharing between
-; uterm and that result.
+; Uterm is an untranslated form that we expect to translate to the term, tterm
+; (otherwise we just untranslate sterm).  Sterm is a term, which may largely
+; agree with tterm.  The result is an untranslated form whose translation is
+; provably equal to sterm, with the goal that the sharing of structure between
+; tterm and sterm is reflected in similar sharing between uterm and that
+; result.
 
-  (directed-untranslate-rec uterm tterm sterm iff-flg t wrld))
+; Warning: check-du-inv-fn will fail if set-ignore-ok is required for uterm to
+; translate to tterm.
+
+  (if (check-du-inv-fn uterm tterm wrld)
+      (directed-untranslate-rec uterm tterm sterm iff-flg t wrld)
+    (untranslate sterm iff-flg wrld)))
+
+(defun directed-untranslate-no-lets (uterm tterm sterm iff-flg wrld)
+
+; See directed-untranslate.  Here we refuse to introduce lambdas into sterm.
+
+  (if (check-du-inv-fn uterm tterm wrld)
+      (directed-untranslate-rec uterm tterm sterm iff-flg nil wrld)
+    (untranslate sterm iff-flg wrld)))
 
 ; Essay on Handling of Lambda Applications by Directed-untranslate
 

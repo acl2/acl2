@@ -48,16 +48,10 @@
 (defsection cnf-basics
   :extension eval-formula
 
-  (defcong var-equiv equal (eval-var x env) 1
-    :hints(("Goal" :in-theory (enable eval-var))))
-
   (defcong bits-equiv equal (eval-var x env) 2
     :hints(("Goal" :in-theory (enable eval-var))))
 
 
-
-  (defcong lit-equiv equal (eval-lit x env) 1
-    :hints(("Goal" :in-theory (enable eval-lit))))
 
   (defcong bits-equiv equal (eval-lit x env) 2
     :hints(("Goal" :in-theory (enable eval-lit))))

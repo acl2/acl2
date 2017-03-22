@@ -24,7 +24,10 @@
 ;;;                   SSE Operations
 ;;;***************************************************************
 
-;; Exception flag bits (indices shared by SSE and x87):
+(defsection-rtl |SSE Floating-Point Instructions|
+  |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
+
+  ;; Exception flag bits (indices shared by SSE and x87):
 
 (defnd ibit () 0)
 (defnd dbit () 1)
@@ -405,10 +408,13 @@
                    result)
               (logior (logior mxcsr pre-flags) post-flags)))))))
 
-
+)
 ;;;***************************************************************
 ;;;                   x87 Operations
 ;;;***************************************************************
+
+(defsection-rtl |x87 Instructions|
+  |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
 
 ;; Rounding and precision control in FCW
 
@@ -648,10 +654,14 @@
                 (if (unmasked-excp-p post-flags fcw)
                     (set-es (logior (logior fsw pre-flags) post-flags))
                   (logior (logior fsw pre-flags) post-flags)))))))))
+)
 
 ;;;***************************************************************
 ;;;                   ARM Instructions
 ;;;***************************************************************
+
+(defsection-rtl |ARM AArch32 Floating-Point Instructions|
+  |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
 
 ;; FPSCR bits:
 
@@ -841,7 +851,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-;; The arguments of SSE-SQRT-SPEC are a data input, the initial FPSCR register, and
+;; The arguments of ARM-SQRT-SPEC are a data input, the initial FPSCR register, and
 ;; a floating-point formay. It returns a data result and the updated MXCSR.
 
 (defun arm-sqrt-pre-comp-excp (a fpscr f)
@@ -983,3 +993,5 @@
     (if result
         (mv result fpscr)
       (arm-fma-post-comp a b c fpscr f))))
+
+)

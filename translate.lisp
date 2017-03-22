@@ -1,5 +1,5 @@
-; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2016, Regents of the University of Texas
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -5381,15 +5381,15 @@
              (chk-state-ok-msg wrld)
            nil))
         ((not (true-listp args))
-         (msg "The argument list to a function must be a true list but ~x0 is ~
-               not."
+         (msg "The argument list to a function or macro must be a true list ~
+               but ~x0 is not."
               args))
         (t (mv-let (culprit explan)
                    (find-first-bad-arg args)
-                   (msg "The argument list to a function must be a true list ~
-                         of distinct, legal variable names.  ~x0 is not such ~
-                         a list.  The element ~x1 violates the rules because ~
-                         it ~@2."
+                   (msg "The argument list to a function or macro must be a ~
+                         true list of distinct, legal variable names.  ~x0 is ~
+                         not such a list.  The element ~x1 violates the rules ~
+                         because it ~@2."
                         args culprit explan)))))
 
 (defun msg-to-cmp (ctx msg)
@@ -8830,17 +8830,16 @@
                       (and fn
                            (not (member-eq fn *ec-call-bad-ops*))))))))
                 (trans-er ctx
-                          "A call of ~x0 (including macroexpansion of such a ~
-                           call) must only be made on an argument of the form ~
-                           (FN ...), where FN is a known function symbol of ~
-                           the current ACL2 world not belonging to the list ~
-                           that is the value of the constant ~x1, or is a ~
-                           macro expanding in a certain direct way (as with ~
-                           defun-inline) to a call of FN$INLINE (i.e., the ~
-                           result of adding suffix \"$INLINE\" to the ~
-                           symbol-name of FN).  The argument ~x2 is thus ~
-                           illegal for ~x0, because ~@3.  See :DOC ec-call."
-                          'ec-call '*ec-call-bad-ops* (car (last x))
+                          "The argument ~x0 is illegal for ~x2, because ~@1.  ~
+                           A call of ~x2 must only be made on an argument of ~
+                           the form (FN ...), where FN is a known function ~
+                           symbol of the current ACL2 world not belonging to ~
+                           the list that is the value of the constant ~x3, or ~
+                           is a macro expanding in a certain direct way (as ~
+                           with defun-inline) to a call of FN$INLINE (i.e., ~
+                           the result of adding suffix \"$INLINE\" to the ~
+                           symbol-name of FN).  See :DOC ec-call."
+                          (car (last x))
                           (let* ((fn0 (and (consp arg3)
                                            (car arg3)))
                                  (fn (and fn0
@@ -8857,10 +8856,17 @@
                                   ((not (symbolp fn0))
                                    (msg "~x0 is not a symbol" fn0))
                                   ((member-eq fn *ec-call-bad-ops*)
-                                   (msg "~x0 belongs to the above list" fn))
+                                   (msg "~x0 belongs to ~x1"
+                                        fn
+                                        '*ec-call-bad-ops*))
                                   ((eq (getpropc fn0 'macro-args t wrld)
                                        t)
-                                   (msg "~x0 is not a macro"
+
+; At this point we know that fn is nil and fn0 is not nil.  So
+; (corresponding-inline-fn fn0 wrld) is nil.  So fn0 is not a function symbol.
+; From the test just above we also know that fn0 is not a macro.
+
+                                   (msg "~x0 is not defined"
                                         fn0))
                                   (t (msg "~x0 is a macro, not a function ~
                                            symbol~@1"
@@ -8877,7 +8883,8 @@
                                                     macro-aliases-table), so ~
                                                     a solution might be to ~
                                                     replace ~x0 by ~x1"
-                                                   fn0 sym))))))))))
+                                                   fn0 sym))))))))
+                          'ec-call '*ec-call-bad-ops*))
                ((and
                  (eq key 'with-guard-checking1-raw)
                  (or (not (case-match arg2

@@ -226,7 +226,14 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
   :returns (var varp :rule-classes (:rewrite :type-prescription))
 
   ///
-  (defcong lit-equiv equal (lit->var lit) 1))
+  (defcong lit-equiv equal (lit->var lit) 1)
+
+  (defthmd lit-val-bound-by-lit->var
+    (<= (lit-val x) (+ 1 (* 2 (var->index (lit->var x)))))
+    :hints(("Goal" :in-theory (enable lit-val var->index acl2::logcons)
+            :use ((:instance bitops::logcons-destruct
+                   (x x)))))
+    :rule-classes :linear))
 
 
 (define lit->neg ((lit litp))
@@ -287,7 +294,7 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
     (equal (lit->neg (make-lit var neg))
            (bfix neg)))
 
-  (defthm make-lit->varentity
+  (defthm make-lit-identity
     (equal (make-lit (lit->var lit)
                      (lit->neg lit))
            (lit-fix lit))
@@ -300,9 +307,9 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
                                 (equal (var->index (lit->var a)) (var->index var))
                                 (equal (lit->neg a) neg))))
            :hints(("Goal" :in-theory (disable make-lit
-                                              make-lit->varentity
+                                              make-lit-identity
                                               lit->var lit->neg)
-                   :use ((:instance make-lit->varentity (lit a)))))
+                   :use ((:instance make-lit-identity (lit a)))))
            :rule-classes nil))
 
   (defthmd equal-of-make-lit

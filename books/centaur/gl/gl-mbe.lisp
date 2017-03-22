@@ -227,7 +227,7 @@ different results.  For example:</p>
   :short "When found in an @('if') test, forces GL to check satisfiability of the test."
   :long "<p>When using GL's AIG-based modes, it is sometimes important to force
 GL to check whether an IF test is constant-true or constant-false.  For
-example, if the \texttt{if} guards a recursive call, then symbolic
+example, if the @('if') guards a recursive call, then symbolic
 interpretation of the function may diverge if the test isn't checked.</p>
 
 <p>Usage:</p>

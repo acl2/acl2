@@ -155,10 +155,13 @@ about this basic approach.</p>"
          ;; Increment all IDs to account for 0 not being a valid DIMACS variable
          (dimacs-num-vars (+ 1 max-index))
          (acc nil)
-         (acc (str::revappend-chars
-               "c CNF problem in DIMACS format, exported from ACL2."
-               acc))
-         (acc (cons #\Newline acc))
+
+         ;; sswords: removed this comment because not supported yet by lrat proof checker
+         ;; (acc (str::revappend-chars
+         ;;       "c CNF problem in DIMACS format, exported from ACL2."
+         ;;       acc))
+         ;; (acc (cons #\Newline acc))
+
          ;; P CNF NUM-VARS NUM-CLAUSES
          (acc (str::revappend-chars "p cnf " acc))
          (acc (str::revappend-natchars dimacs-num-vars acc))

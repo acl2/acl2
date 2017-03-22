@@ -1,0 +1,93 @@
+#!/usr/bin/env perl
+#
+# SATLINK - Link from ACL2 to SAT Solvers
+# Copyright (C) 2013 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# License: (An MIT/X11-style license)
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#   DEALINGS IN THE SOFTWARE.
+#
+# Original author: Jared Davis <jared@centtech.com>
+# Modified to support LRAT proof output: Sol Swords <sswords@centtech.com>
+
+# GLUCOSE-LRAT
+#
+# This script is part of Satlink, a tool for connecting ACL2 to SAT solvers.
+# for more information on Satlink, see, e.g.,
+#
+#     http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____SATLINK
+#
+# Prerequisites: "glucose" and "drat-trim" are installed and in your PATH.
+#
+# Usage:  glucose-lrat [OPTIONS] FILE
+#
+# Where:
+#
+#   - [OPTIONS] are any extra options for glucose.
+#
+#     (This script automatically supplies the options that are necessary to
+#      tell the solver to emit a proof.)
+#
+#   - FILE is the input dimacs CNF file you want to process.  We dumbly assume
+#     the file to process comes last, so that we don't have to know which
+#     options the solver takes.
+
+use warnings;
+use strict;
+use FindBin qw($RealBin);
+
+(do "$RealBin/satlink_lib.pl") or
+    die("Error loading $RealBin/satlink_lib.pl: $!\n");
+
+# We stupidly assume the input file is the last argument, just because it's
+# easy to do and means we don't need to know all of the options that the solver
+# takes.
+
+fatal("no arguments") if (@ARGV == 0);
+
+my $infile = $ARGV[@ARGV-1];
+fatal("file not found: $infile\n") if (! -f $infile);
+
+my $proof_file = satlink_temp_file();
+my $lrat_file_tmp = satlink_temp_file();
+my $lrat_file = "${infile}.lrat";
+my @args = ("-model");
+
+if (!$ENV{"SATLINK_TRUST_SOLVER"})
+{
+    @args = (@args,
+	     "-certified",
+	     "-certified-output=" . $proof_file);
+}
+
+@args = (@args, @ARGV); # Tack on [OPTIONS] FILE
+
+run_sat_and_check("glucose", \@args, $infile, $proof_file, "drat-trim", ["-L", $lrat_file_tmp ]);
+if (!$ENV{"SATLINK_TRUST_SOLVER"})
+{
+    `sort -n $lrat_file_tmp > $lrat_file`;
+}
+satlink_cleanup();
+
+exit(0);

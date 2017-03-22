@@ -40,6 +40,7 @@
 (include-book "osicat")
 (include-book "shellpool")
 (include-book "uiop")
+(include-book "cffi")
 
 (defsection quicklisp
   :parents (interfacing-tools)

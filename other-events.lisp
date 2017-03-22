@@ -1,5 +1,5 @@
-; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2016, Regents of the University of Texas
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -19741,50 +19741,141 @@
               (declare (ignore unify-subst))
               ans)))
 
-(defun obviously-iff-equiv-terms (x y)
+(mutual-recursion
 
-; Warning: It would be best to keep this in sync with untranslate1,
+(defun obviously-equiv-terms (x y iff-flg)
+
+; Warning: It is desirable to keep this reasonably in sync with untranslate1,
 ; specifically, giving similar attention in both to functions like implies,
 ; iff, and not, which depend only on the propositional equivalence class of
 ; each argument.
 
-; Here we code a weak version of Boolean equivalence of x and y, for use in
+; Here we code a restricted version of equivalence of x and y, for use in
 ; chk-defabsstobj-method-lemmas or other places where we expect this to be
-; sufficient.  For example, in the lambda case we could weaken the requirement
-; that the args are equal by beta-reducing x and y, but that would be less
-; efficient so we don't bother.
+; sufficient.  The only requirement is that if (obviously-equiv-terms x y
+; iff-flg), then (equal x y) a theorem (in every theory extending the
+; ground-zero theory) unless iff-flg is true, in which case (iff x y) is a
+; theorem.
 
   (or (equal x y) ; common case
       (cond ((or (variablep x)
-                 (fquotep x)
-                 (variablep y)
-                 (fquotep y))
+                 (variablep y))
              nil)
+            ((or (fquotep x)
+                 (fquotep y))
+             (and iff-flg
+                  (equal (equal x *nil*)
+                         (equal y *nil*))))
             ((flambda-applicationp x)
              (and (flambda-applicationp y)
-                  (equal (lambda-formals x) (lambda-formals y))
-                  (obviously-iff-equiv-terms (lambda-body x) (lambda-body y))
-                  (equal (fargs x) (fargs y))))
+
+; There are (at least) two ways that x and y can be obviously equivalent.
+
+; (1) The arguments agree, and their lambdas (function symbols) are equivalent
+;     but have different formals and correspondingly different bodies, for
+;     example:
+;       ((lambda (x y) (cons x y)) '3 '4)
+;       ((lambda (u v) (cons u v)) '3 '4)
+
+; (2) The formals in the lambdas have been permuted and the arguments have been
+;     correspondingly permuted, and the bodies of the lambdas are the same, for
+;     example:
+;       ((lambda (x y) (cons x y)) '3 '4)
+;       ((lambda (y x) (cons x y)) '4 '3)
+
+; Of course the function symbols of x and y can be equal, which fits into both
+; (1) and (2).  And the discrepancies of (1) and (2) can happen together, as in
+; the following example:
+;       ((lambda (x y) (cons x y)) '3 '4)
+;       ((lambda (u v) (cons v u)) '4 '3)
+
+; But it is more complicated to handle this combination in full generality, so
+; we content ourselves with (1) and (2).
+
+                  (let ((x-fn (ffn-symb x))
+                        (y-fn (ffn-symb y))
+                        (x-args (fargs x))
+                        (y-args (fargs y)))
+                    (cond
+                     ((equal x-fn y-fn) ; simple case
+                      (obviously-equiv-terms-lst x-args y-args))
+                     (t
+                      (let ((x-formals (lambda-formals x-fn))
+                            (x-body (lambda-body x-fn))
+                            (y-formals (lambda-formals y-fn))
+                            (y-body (lambda-body y-fn)))
+                        (and (eql (length x-formals) (length y-formals))
+                             (or
+
+; (1) -- see above
+
+                              (and (obviously-equiv-terms
+                                    (subcor-var x-formals y-formals x-body)
+                                    y-body
+                                    iff-flg)
+                                   (obviously-equiv-terms-lst x-args y-args))
+
+; (2) -- see above
+
+                              (and (obviously-equiv-terms
+                                    x-body y-body iff-flg)
+                                   (obviously-equal-lambda-args
+                                    x-formals (fargs x)
+                                    y-formals (fargs y)))))))))))
             ((not (eq (ffn-symb x) (ffn-symb y)))
              nil)
             ((member-eq (ffn-symb x) '(implies iff))
-             (and (obviously-iff-equiv-terms (fargn x 1) (fargn y 1))
-                  (obviously-iff-equiv-terms (fargn x 2) (fargn y 2))))
+             (and (obviously-equiv-terms (fargn x 1) (fargn y 1) t)
+                  (obviously-equiv-terms (fargn x 2) (fargn y 2) t)))
             ((eq (ffn-symb x) 'not)
-             (obviously-iff-equiv-terms (fargn x 1) (fargn y 1)))
+             (obviously-equiv-terms (fargn x 1) (fargn y 1) t))
             ((eq (ffn-symb x) 'if)
-             (and (obviously-iff-equiv-terms (fargn x 1) (fargn y 1))
-                  (obviously-iff-equiv-terms (fargn x 3) (fargn y 3))
-                  (or (obviously-iff-equiv-terms (fargn x 2) (fargn y 2))
+             (and (obviously-equiv-terms (fargn x 1) (fargn y 1) t)
+                  (obviously-equiv-terms (fargn x 3) (fargn y 3) iff-flg)
+                  (or (obviously-equiv-terms (fargn x 2) (fargn y 2) iff-flg)
 
 ; Handle case that a term is of the form (or u v).
 
-                      (cond ((equal (fargn x 2) *t*)
-                             (equal (fargn y 2) (fargn y 1)))
-                            ((equal (fargn y 2) *t*)
-                             (equal (fargn x 2) (fargn x 1)))
-                            (t nil)))))
-            (t nil))))
+                      (and iff-flg
+                           (cond ((equal (fargn x 2) *t*)
+                                  (obviously-equiv-terms
+                                   (fargn y 2) (fargn y 1) t))
+                                 ((equal (fargn y 2) *t*)
+                                  (obviously-equiv-terms
+                                   (fargn x 2) (fargn x 1) t))
+                                 (t nil))))))
+            (t (and (equal (length (fargs x))
+                           (length (fargs y)))
+                    (obviously-equiv-terms-lst (fargs x) (fargs y)))))))
+
+(defun obviously-equiv-terms-lst (x y)
+
+; X and y are true-lists of the same length.
+
+  (cond ((endp x) t)
+        (t (and (obviously-equiv-terms (car x) (car y) nil)
+                (obviously-equiv-terms-lst (cdr x) (cdr y))))))
+
+(defun obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
+                                                   y-args)
+
+; We know that y-formals is a permutation of x-formals.  We recur through
+; x-formals and x-args, checking that correspond arguments are equal.
+
+  (cond ((endp x-formals-tail) t)
+        (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
+             (assert$
+              posn
+              (and (equal (car x-args-tail)
+                          (nth posn y-args))
+                   (obviously-equal-lambda-args (cdr x-formals-tail)
+                                                (cdr x-args-tail)
+                                                y-formals y-args)))))))
+
+)
+
+(defun obviously-iff-equiv-terms (x y)
+  (obviously-equiv-terms x y t))
 
 (defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn
                                              missing wrld state)
@@ -29333,23 +29424,26 @@
 ; The following is to simplify guard verification.
                    (not (state-p state)))
                (mv nil nil state))
-              (t (with-guard-checking-error-triple
-                  t
-                  (mv-let (val state)
+              (t (mv-let (val state)
+                   (read-file-into-string1 chan state nil
+                                           *read-file-into-string-bound*)
+                   (pprogn
                     (ec-call ; guard verification here seems unimportant
-                     (read-file-into-string1 chan state nil
-                                             *read-file-into-string-bound*))
-                    (pprogn
-                     (ec-call ; guard verification here seems unimportant
-                      (close-input-channel chan state))
-                     (mv nil val state))))))))
+                     (close-input-channel chan state))
+                    (mv nil val state)))))))
          (mv erp
-             (subseq val
-                     start
-                     (if bytes
-                         (min (+ start bytes)
-                              (length val))
-                       (length val))))))
+             (and (stringp val)
+
+; If the following conjunct is false, then raw Lisp would cause an error; so
+; there is no harm in adding it (and, it helps with guard verification).
+
+                  (<= start (len val))
+                  (subseq val
+                          start
+                          (if bytes
+                              (min (+ start bytes)
+                                   (len val))
+                            (len val)))))))
       (declare (ignore erp))
       val)))
 )

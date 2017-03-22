@@ -1,0 +1,79 @@
+Note: This directory will likely be updated with more contributions
+after the ACL2 Version 7.4 release.  Updates are on github:
+
+https://github.com/acl2/acl2/tree/master/books/workshops/2017
+
+============================================================
+
+To authors:
+
+Supporting materials should go into directories named after
+authors of accepted papers.  Typically, they go into a support/
+subdirectory of each such directory; see past directories
+books/workshops/20??/ for examples.
+
+Note: If you are not a frequent contributor to the community books,
+you will likely be using pull requests if you contribute books using
+git.  See :doc git-quick-start, e.g.:
+
+http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____GIT-QUICK-START
+
+============================================================
+
+Information about workshop contributions (full papers) is below.
+
+----------
+
+Cuong Chau,
+Extended Abstract: A DE Verification Framework for Asynchronous
+Circuit Verification.
+
+----------
+
+Cuong Chau,
+Extended Abstract: Formal Specification and Verification of the FM9001
+Microprocessor Using the DE System.
+
+----------
+
+Alessandro Coglio, Matt Kaufmann and Eric Smith,
+A Versatile, Sound Tool for Simplifying Definitions.
+
+----------
+
+John Cowles and Ruben Gamboa,
+The Cayley-Dickson Construction in ACL2.
+
+----------
+
+Shilpi Goel,
+The x86isa Books: Features, Usage, and Future Plans.
+
+----------
+
+Matt Kaufmann and Sol Swords,
+Meta-extract: Using Existing Facts in Meta-reasoning.
+
+See subdirectory kaufmann-swords/.
+
+----------
+
+David M. Russinoff,
+A Computationally Survivable Proof of the Group Properties of an Elliptic
+Curve.
+
+See directory books/projects/curve25519 and the supporting directories
+books/projects/quadratic-reciprocity and books/projects/shnf.
+
+----------
+
+Rob Sumners,
+Proof Reduction of Fair Stuttering Refinement of Asynchronous Systems
+and Applications.
+
+----------
+
+Sol Swords,
+Term-Level Reasoning In Support Of Bit-Blasting.
+
+----------
