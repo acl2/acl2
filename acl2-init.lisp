@@ -895,22 +895,22 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-""
+; ""
 
 ; Normally:
 
-;   (format
-;    nil
-;    "
-;  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;  + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
-;  + (git commit hash: ~a).        +
-;  + The authors of ACL2 consider such distributions to be experimental; +
-;  + they may be incomplete, fragile, and unable to pass our own         +
-;  + regression tests.                                                   +
-;  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-; "
-;    (git-commit-hash))
+  (format
+   nil
+   "
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
+ + (git commit hash: ~a).        +
+ + The authors of ACL2 consider such distributions to be experimental; +
+ + they may be incomplete, fragile, and unable to pass our own         +
+ + regression tests.                                                   +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+"
+   (git-commit-hash))
   )
 
 (defvar *saved-string*
