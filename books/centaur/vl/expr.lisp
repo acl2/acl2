@@ -836,14 +836,19 @@ and generally makes it easier to write safe expression-processing code.</p>")
      :base-name vl-call
      :short "A call of a function or a system function, e.g., @('myencode(foo,
              3)') or @('$bits(foo_t)')."
+     :long "<p>SystemVerilog allows named arguments and a combination of named
+and ordered arguments.  In general, a function call can have some
+unnamed (plain) arguments followed by some named arguments.</p>"
      ((name    vl-scopeexpr-p
                "The function being called.  Typically this is just the function
                 name, but in general it is possible to call functions from
                 other scopes and other places in the hierarchy, say
                 @('foo::top.bar.myencode(baz, 3)'), so to be sufficiently
                 general we represent this as a @(see vl-scopeexpr).")
-      (args    vl-exprlist-p
-               "The (non-datatype) arguments to the function, in order.")
+      (plainargs vl-maybe-exprlist-p
+                 "The unnamed arguments to the function, in order.")
+      (namedargs vl-call-namedargs-p
+                 "The named arguments to the function.")
       (typearg vl-maybe-datatype-p
                "Most function calls just take expressions as arguments, in
                 which case @('typearg') will be @('nil').  However, certain
@@ -945,6 +950,22 @@ and generally makes it easier to write safe expression-processing code.</p>")
   (defoption vl-maybe-expr vl-expr
     :measure (two-nats-measure (acl2-count x) 100)
     :parents (vl-expr))
+
+  (fty::deflist vl-maybe-exprlist
+    :measure (two-nats-measure (acl2-count x) 10)
+    :elt-type vl-maybe-expr
+    :elementp-of-nil t
+    :true-listp t
+    :parents (vl-expr))
+
+  (fty::defalist vl-call-namedargs
+    :measure (two-nats-measure (acl2-count x) 10)
+    :key-type stringp
+    :val-type vl-maybe-expr
+    :true-listp t
+    :short "Representation of any named arguments of a function call."
+    :long "<p>This is really the same type as @(see vl-atts), but we use a different
+           name because the purposes they're used for are so different.</p>")
 
   (fty::defalist vl-atts
     :measure (two-nats-measure (acl2-count x) 10)

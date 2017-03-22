@@ -722,24 +722,30 @@ expression with @(see vl-expr-to-svex).</p>")
           (mv (and* ok1 ok2) warnings new-x elabindex))
 
         :vl-call
-        (b* (((wmv ok1 warnings new-args elabindex)
+        (b* (((wmv ok1 warnings new-plainargs elabindex)
               ;; Heuristic decision: Resolve arguments to constants iff this is
               ;; a system call.  That way we get the dimension resolved for
               ;; things like $size.
               (if x.systemp
-                  (vl-indexlist-resolve-constants x.args elabindex :reclimit reclimit)
-                (vl-exprlist-elaborate x.args elabindex :reclimit reclimit)))
-             ((wmv ok2 warnings new-typearg elabindex)
+                  (vl-maybe-indexlist-resolve-constants x.plainargs elabindex :reclimit reclimit)
+                (vl-maybe-exprlist-elaborate x.plainargs elabindex :reclimit reclimit)))
+             ((wmv ok2 warnings new-namedargs elabindex)
+              (vl-call-namedargs-elaborate x.namedargs elabindex :reclimit reclimit))
+             ((wmv ok3 warnings new-typearg elabindex)
               (if x.typearg
                   (vl-datatype-elaborate x.typearg elabindex :reclimit reclimit)
                 (mv t nil nil elabindex)))
-             ((wmv ok3 warnings new-fnname elabindex)
+             ((wmv ok4 warnings new-fnname elabindex)
               (vl-scopeexpr-elaborate x.name elabindex :reclimit reclimit))
-             (new-x (change-vl-call x :typearg new-typearg :args new-args :name new-fnname))
+             (new-x (change-vl-call x
+                                    :typearg new-typearg
+                                    :plainargs new-plainargs
+                                    :namedargs new-namedargs
+                                    :name new-fnname))
              ((when x.systemp) (mv (and* ok1 ok2 ok3) warnings new-x elabindex))
-             ((wmv ok4 warnings elabindex)
+             ((wmv ok5 warnings elabindex)
               (vl-function-compile-and-bind new-fnname elabindex :reclimit reclimit)))
-          (mv (and* ok1 ok2 ok3 ok4) warnings new-x elabindex))
+          (mv (and* ok1 ok2 ok3 ok4 ok5) warnings new-x elabindex))
 
         :vl-cast
         ;; what is different here from elaborate-aux?
@@ -774,6 +780,26 @@ expression with @(see vl-expr-to-svex).</p>")
       (mv (and* ok1 ok2) warnings (cons first rest) elabindex))
     ///
     (in-theory (disable vl-indexlist-resolve-constants)))
+
+  (define vl-maybe-indexlist-resolve-constants ((x vl-maybe-exprlist-p)
+                                                elabindex
+                                                &key ((reclimit natp) '1000))
+    :measure (acl2::nat-list-measure
+              (list reclimit 1 (vl-maybe-exprlist-count x) 12))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-maybe-exprlist-p)
+                 new-elabindex)
+    (b* (((when (atom x)) (mv t nil nil elabindex))
+         ((mv ok2 warnings rest elabindex)
+          (vl-maybe-indexlist-resolve-constants (cdr x) elabindex :reclimit reclimit))
+         ((unless (car x))
+          (mv ok2 warnings (cons nil rest) elabindex))
+         ((wmv ok1 ?constantp warnings first ?svex elabindex)
+          (vl-expr-maybe-resolve-to-constant (car x) elabindex :reclimit reclimit)))
+      (mv (and* ok1 ok2) warnings (cons first rest) elabindex))
+    ///
+    (in-theory (disable vl-maybe-indexlist-resolve-constants)))
 
 
   ;; Order 100.  We are done with the expr/datatype nest; on to vardecls,

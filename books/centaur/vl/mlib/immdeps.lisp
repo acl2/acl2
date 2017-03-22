@@ -279,8 +279,9 @@ elements.")
     (vl-expr-case x
       :vl-call (if x.systemp
                    ;; Skip the function name.
-                   (b* ((ans (vl-maybe-datatype-immdeps x.typearg ans)))
-                     (vl-exprlist-immdeps x.args ans))
+                   (b* ((ans (vl-maybe-datatype-immdeps x.typearg ans))
+                        (ans (vl-maybe-exprlist-immdeps x.plainargs ans)))
+                     (vl-call-namedargs-immdeps x.namedargs ans))
                  (vl-expr-immdeps-aux x ans))
       :otherwise
       (vl-expr-immdeps-aux x ans)))
@@ -525,6 +526,7 @@ elements.")
 ;;     (:vl-arguments-plain (vl-plainarglist-immdeps x.args ans))
 ;;     (:vl-arguments-named (vl-namedarglist-immdeps x.args ans))))
 
+;; sswords NOTE: this use of vl-argumentlist is no longer correct -- changed meaning 3/21/2017
 ;; (def-vl-immdeps-list vl-argumentlist vl-arguments)
 
 ;; (def-vl-immdeps vl-paramvalue

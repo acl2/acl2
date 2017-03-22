@@ -1059,7 +1059,7 @@ values.</p>"
             (make-vl-call
              :name (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name fname))
              :typearg typearg
-             :args (if arg1 (cons arg1 args) args)
+             :plainargs (if arg1 (cons arg1 args) args)
              :systemp t
              :atts (vl-extend-atts-with-linestart linestart nil))))))
 
@@ -1646,7 +1646,59 @@ identifier, so we convert it into a hidpiece.</p>"
            (rest := (vl-parse-scoped-hid))
            (return (make-vl-scopeexpr-colon :first first :rest rest)))))
 
+  (defparser vl-parse-call-namedarg-pair ()
+    :measure (two-nats-measure (vl-tokstream-measure) 10)
+    (seq tokstream
+         (:= (vl-match-token :vl-dot))
+         (id := (vl-match-token :vl-idtoken))
+         (:= (vl-match-token :vl-lparen))
+         (unless (vl-is-token? :vl-rparen)
+           (expr :s= (vl-parse-expression)))
+         (:= (vl-match-token :vl-rparen))
+         (return (cons (vl-idtoken->name id) expr))))
 
+  (defparser vl-parse-call-namedargs-aux ()
+    :measure (two-nats-measure (vl-tokstream-measure) 10)
+    (seq tokstream
+         (unless (vl-is-token? :vl-comma)
+           (return nil))
+         (:= (vl-match)) ;; comma
+         (pair :s= (vl-parse-call-namedarg-pair))
+         (rest := (vl-parse-call-namedargs-aux))
+         (return (cons pair rest))))
+
+  (defparser vl-parse-call-namedargs ()
+    :measure (two-nats-measure (vl-tokstream-measure) 20)
+    (seq tokstream
+         (when (vl-is-token? :vl-rparen)
+           (return nil))
+         (pair :s= (vl-parse-call-namedarg-pair))
+         (rest := (vl-parse-call-namedargs-aux))
+         (return (cons pair rest))))
+
+  (defparser vl-parse-call-plainargs-aux ()
+    :measure (two-nats-measure (vl-tokstream-measure) 10)
+    (seq tokstream
+         (unless (vl-is-token? :vl-comma)
+           (return nil))
+         (:= (vl-match)) ;; comma
+         (when (vl-is-token? :vl-dot)
+           ;; go to namedargs
+           (return nil))
+         (unless (vl-is-token? :vl-comma)
+           (expr :s= (vl-parse-expression)))
+         (rest := (vl-parse-call-plainargs-aux))
+         (return (cons expr rest))))
+
+  (defparser vl-parse-call-plainargs ()
+    :measure (two-nats-measure (vl-tokstream-measure) 1000)
+    (seq tokstream
+         (when (vl-is-token? :vl-dot)
+           (return nil))
+         (unless (vl-is-token? :vl-comma)
+           (expr :s= (vl-parse-expression)))
+         (rest := (vl-parse-call-plainargs-aux))
+         (return (cons expr rest))))
 
   (defparser vl-parse-function-call ()
     :measure (two-nats-measure (vl-tokstream-measure) 10)
@@ -1664,15 +1716,16 @@ identifier, so we convert it into a hidpiece.</p>"
            ;; going to try to support that yet.
            (:= (vl-match-token :vl-rparen))
            (return (make-vl-call :name id
-                                 :args nil
                                  :systemp nil
                                  :atts (vl-extend-atts-with-linestart linestart atts))))
 
-         (args := (vl-parse-1+-expressions-separated-by-commas))
+         (plainargs :w= (vl-parse-call-plainargs))
+         (namedargs :w= (vl-parse-call-namedargs))
          (:= (vl-match-token :vl-rparen))
          (return
           (make-vl-call :name id
-                        :args args
+                        :plainargs plainargs
+                        :namedargs namedargs
                         :systemp nil
                         :atts (vl-extend-atts-with-linestart linestart atts)))))
 
@@ -1770,7 +1823,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
   (defparser vl-parse-assignment-pattern ()
     :measure (two-nats-measure (vl-tokstream-measure) 500)
-    (declare (xargs :measure-debug t))
+    ;; (declare (xargs :measure-debug t))
     ;; We've parsed the initial '{ and need to figure out which form it is.  To
     ;; do that, we parse a patternkey (which is more general than an expression).
 
@@ -2782,6 +2835,11 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-val-when-error-claim vl-parse-slice-size)
         ,(vl-val-when-error-claim vl-parse-any-sort-of-concatenation)
         ,(vl-val-when-error-claim vl-parse-hierarchical-identifier :args (recursivep))
+        ,(vl-val-when-error-claim vl-parse-call-namedarg-pair)
+        ,(vl-val-when-error-claim vl-parse-call-namedargs-aux)
+        ,(vl-val-when-error-claim vl-parse-call-namedargs)
+        ,(vl-val-when-error-claim vl-parse-call-plainargs-aux)
+        ,(vl-val-when-error-claim vl-parse-call-plainargs)
         ,(vl-val-when-error-claim vl-parse-function-call)
         ,(vl-val-when-error-claim vl-parse-0+-bracketed-expressions)
         ,(vl-val-when-error-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
@@ -2862,6 +2920,11 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-0+-attribute-instances-aux)
         ,(vl-warning-claim vl-parse-0+-attribute-instances)
         ,(vl-warning-claim vl-parse-1+-expressions-separated-by-commas)
+        ,(vl-warning-claim vl-parse-call-namedarg-pair)
+        ,(vl-warning-claim vl-parse-call-namedargs-aux)
+        ,(vl-warning-claim vl-parse-call-namedargs)
+        ,(vl-warning-claim vl-parse-call-plainargs-aux)
+        ,(vl-warning-claim vl-parse-call-plainargs)
         ,(vl-warning-claim vl-parse-system-function-call)
         ,(vl-warning-claim vl-parse-mintypmax-expression)
         ,(vl-warning-claim vl-parse-range-expression)
@@ -3120,6 +3183,11 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-slice-size)
       ,(vl-progress-claim vl-parse-any-sort-of-concatenation)
       ,(vl-progress-claim vl-parse-hierarchical-identifier :args (recursivep))
+      ,(vl-progress-claim vl-parse-call-namedarg-pair)
+      ,(vl-progress-claim vl-parse-call-namedargs-aux :strongp nil)
+      ,(vl-progress-claim vl-parse-call-namedargs :strongp nil)
+      ,(vl-progress-claim vl-parse-call-plainargs-aux :strongp nil)
+      ,(vl-progress-claim vl-parse-call-plainargs :strongp nil)
       ,(vl-progress-claim vl-parse-function-call)
       ,(vl-progress-claim vl-parse-0+-bracketed-expressions :strongp nil)
       ,(vl-progress-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
@@ -3226,6 +3294,11 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-slice-size :error)
         ,(vl-eof-claim vl-parse-any-sort-of-concatenation :error)
         ,(vl-eof-claim vl-parse-hierarchical-identifier :error :args (recursivep))
+        ,(vl-eof-claim vl-parse-call-namedarg-pair :error)
+        ,(vl-eof-claim vl-parse-call-namedargs-aux nil)
+        ,(vl-eof-claim vl-parse-call-namedargs :error)
+        ,(vl-eof-claim vl-parse-call-plainargs-aux nil)
+        ,(vl-eof-claim vl-parse-call-plainargs :error)
         ,(vl-eof-claim vl-parse-function-call :error)
         ,(vl-eof-claim vl-parse-0+-bracketed-expressions nil)
         ,(vl-eof-claim vl-parse-indexed-id-2005 :error :args (scopes recursivep))
@@ -3300,6 +3373,11 @@ identifier, so we convert it into a hidpiece.</p>"
                        (:streamexpr     'vl-streamexpr-p)
                        (:streamexprlist 'vl-streamexprlist-p)
                        (:keyvallist     'vl-keyvallist-p)
+                       (:maybe-exprlist 'vl-maybe-exprlist-p)
+                       (:call-namedargs 'vl-call-namedargs-p)
+                       (:call-namedarg-pair '(lambda (x) (and (consp x)
+                                                              (stringp (car x))
+                                                              (vl-maybe-expr-p (cdr x)))))
                        (otherwise
                         (er hard? 'vl-expression-claim-fn
                             "Bad type: ~x0." type)))
@@ -3342,6 +3420,11 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-slice-size :slicesize)
       ,(vl-expression-claim vl-parse-any-sort-of-concatenation :expr)
       ,(vl-expression-claim vl-parse-hierarchical-identifier :hidexpr :args (recursivep))
+      ,(vl-expression-claim vl-parse-call-namedarg-pair :call-namedarg-pair)
+      ,(vl-expression-claim vl-parse-call-namedargs-aux :call-namedargs)
+      ,(vl-expression-claim vl-parse-call-namedargs :call-namedargs)
+      ,(vl-expression-claim vl-parse-call-plainargs-aux :maybe-exprlist)
+      ,(vl-expression-claim vl-parse-call-plainargs :maybe-exprlist)
       ,(vl-expression-claim vl-parse-function-call :expr)
       ,(vl-expression-claim vl-parse-0+-bracketed-expressions :exprlist)
       ,(vl-expression-claim vl-parse-indexed-id-2005 :expr :args (scopes recursivep))
@@ -3410,6 +3493,11 @@ identifier, so we convert it into a hidpiece.</p>"
 ;;                                (VL-MATCH :TOKSTREAM (LIST TOKSTREAM1 TOKSTREAM3))))))
 ;;          :hints(("Goal" :in-theory (enable vl-lookahead-is-token?
 ;;                                            vl-match)))))
+
+(local (defthm vl-maybe-exprlist-p-when-vl-exprlist-p
+         (implies (vl-exprlist-p x)
+                  (vl-maybe-exprlist-p x))
+         :hints(("Goal" :induct (len x))))) 
 
 (with-output
   :off (prove event) :gag-mode :goals
