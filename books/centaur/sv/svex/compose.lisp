@@ -929,14 +929,19 @@ we've seen before with a mask that overlaps with that one.</p>"
        ;;    (sneaky-save 'updates updates)
        ;;    (sneaky-save 'final-masks final-masks)
        ;;    (sneaky-save 'loop-vars vars))
+       (final-masks (make-fast-alist final-masks))
        (- (with-fast-alist x
-            (with-fast-alist final-masks
-              (svex-masks-summarize-loops vars final-masks x))))
+            (svex-masks-summarize-loops vars final-masks x)))
+       (res1 (with-fast-alist rest
+               (svex-alist-compose* updates rest)))
+       (res1-updates (svex-compose-keep-nonzero-mask-updates res1 final-masks))
        (- (fast-alist-free final-masks))
-       (res (with-fast-alist rest
-              (svex-alist-compose updates rest))))
-    (clear-memoize-table 'svex-compose)
-    res)
+       ;; This attempts to resolve apparent combinational loops by adding
+       ;; another iteration for variables that are still used in the masks.
+       ;; This isn't necessarily sufficient but it might be for simple cases.
+       (res2 (with-fast-alist res1-updates (svex-alist-compose* res1 res1-updates))))
+    (clear-memoize-table 'svex-compose*)
+    res2)
   ///
   (deffixequiv svex-assigns-compose))
 
