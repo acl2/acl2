@@ -1,5 +1,5 @@
-; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2016, Regents of the University of Texas
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v7-3/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v7-4/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-7-3                            ;;; g   ; current release notes
+    note-7-4                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -212,7 +212,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 7.2</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 7.3</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -297,8 +297,8 @@ included in a much more complete <A href=\"~sk\">acknowledgments page</A>.)
 <LI>National Science Foundation
   <UL>
   <LI>This material is based upon work supported by the National Science
-      Foundation under Grant Nos. CCF-1153558, EIA-0303609, CNS-0429591, ISS-0417413,
-      CCF-0945316, and CNS-0910913.</LI>
+      Foundation under Grant Nos. CCF-1526760, CNS-1525472, CCF-1153558,
+      EIA-0303609, CNS-0429591, ISS-0417413, CCF-0945316, and CNS-0910913.</LI>
   <LI>Any opinions, findings and conclusions or recomendations expressed in
       this material are those of the authors and do not necessarily reflect the
       views of the National Science Foundation.</LI>
@@ -339,12 +339,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.3)</li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.4)</li>
 
 <li><A HREF=\"~s3\">ACL2+Books Manual</A> (for
 \"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions)</li>
 
-<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.3)</li>
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.4)</li>
 
 </ul>
 

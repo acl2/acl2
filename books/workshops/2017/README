@@ -58,9 +58,12 @@ See subdirectory kaufmann-swords/.
 
 ----------
 
-David Russinoff,
-A Computationally Surveyable Proof of the Group Properties of an
-Elliptic Curve.
+David M. Russinoff,
+A Computationally Survivable Proof of the Group Properties of an Elliptic
+Curve.
+
+See directory books/projects/curve25519 and the supporting directories
+books/projects/quadratic-reciprocity and books/projects/shnf.
 
 ----------
 
