@@ -135,13 +135,13 @@
     :measure (two-nats-measure (vl-expr-count x) 1)
     (b* (((mv warnings x1) (vl-expr-type-disambiguate-aux x ss)))
       (vl-expr-case x1
-        :vl-call (if (and x1.systemp (not x1.typearg) (consp x1.args))
+        :vl-call (if (and x1.systemp (not x1.typearg) (consp x1.plainargs) (car x1.plainargs))
                      ;; System calls' first argument may be a type
                      (b* (((wmv warnings typearg)
-                           (vl-expr-to-datatype (car x1.args) ss)))
+                           (vl-expr-to-datatype (car x1.plainargs) ss)))
                        (mv warnings
                            (if typearg
-                               (change-vl-call x1 :typearg typearg :args (cdr x1.args))
+                               (change-vl-call x1 :typearg typearg :plainargs (cdr x1.plainargs))
                              x1)))
                    (mv warnings x1))
         :otherwise (mv warnings x1))))

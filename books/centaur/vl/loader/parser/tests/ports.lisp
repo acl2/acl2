@@ -127,13 +127,6 @@
 
 
 
-(defun vl-pretty-maybe-exprlist (x)
-  (if (atom x)
-      nil
-    (cons (if (car x)
-              (vl-pretty-expr (car x))
-            nil)
-          (vl-pretty-maybe-exprlist (cdr x)))))
 
 (defparser-top vl-parse-module-port-list-top)
 

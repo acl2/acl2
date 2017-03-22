@@ -1199,6 +1199,90 @@ construct fast alists binding identifiers to things, etc.</p>"
                     (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-assignpat->subexprs)))))
 
+(define vl-maybe-exprlist->subexprs ((x vl-maybe-exprlist-p))
+  :returns (subexprs vl-exprlist-p)
+  (if (atom x)
+      nil
+    (if (car x)
+        (cons (vl-expr-fix (car x))
+              (vl-maybe-exprlist->subexprs (cdr x)))
+      (vl-maybe-exprlist->subexprs (cdr x))))
+  ///
+  (defret vl-exprlist-count-of-vl-maybe-exprlist->subexprs
+    (<= (vl-exprlist-count subexprs)
+        (vl-maybe-exprlist-count x))
+    :hints(("Goal" :in-theory (enable vl-exprlist-count vl-maybe-exprlist-count)))
+    :rule-classes :linear))
+
+(define vl-maybe-exprlist-update-subexprs ((x vl-maybe-exprlist-p)
+                                           (subexprs vl-exprlist-p))
+  :guard (equal (len subexprs)
+                (len (vl-maybe-exprlist->subexprs x)))
+  :guard-hints (("goal" :in-theory (enable vl-maybe-exprlist->subexprs)))
+  :returns (new-x vl-maybe-exprlist-p)
+  (if (atom x)
+      nil
+    (if (car x)
+        (cons (vl-expr-fix (car subexprs))
+              (vl-maybe-exprlist-update-subexprs (cdr x) (cdr subexprs)))
+      (cons nil (vl-maybe-exprlist-update-subexprs (cdr x) subexprs))))
+  ///
+  (defthm vl-maybe-exprlist-update-subexprs-identity
+    (equal (vl-maybe-exprlist-update-subexprs x (vl-maybe-exprlist->subexprs x))
+           (vl-maybe-exprlist-fix x))
+    :hints(("Goal" :in-theory (enable vl-maybe-exprlist->subexprs))))
+
+  (defthm vl-maybe-exprlist-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-maybe-exprlist->subexprs x)))
+             (equal (vl-maybe-exprlist->subexprs (vl-maybe-exprlist-update-subexprs x y))
+                    (vl-exprlist-fix y)))
+    :hints(("Goal" :in-theory (enable vl-maybe-exprlist->subexprs)))))
+
+(define vl-call-namedargs->subexprs ((x vl-call-namedargs-p))
+  :returns (subexprs vl-exprlist-p)
+  :measure (len (vl-call-namedargs-fix x))
+  (b* ((x (vl-call-namedargs-fix x)))
+    (if (atom x)
+        nil
+      (if (cdar x)
+          (cons (vl-expr-fix (cdar x))
+                (vl-call-namedargs->subexprs (cdr x)))
+        (vl-call-namedargs->subexprs (cdr x)))))
+  ///
+  (defret vl-exprlist-count-of-vl-call-namedargs->subexprs
+    (<= (vl-exprlist-count subexprs)
+        (vl-call-namedargs-count x))
+    :hints(("Goal" :in-theory (enable vl-exprlist-count vl-call-namedargs-count)))
+    :rule-classes :linear))
+
+(define vl-call-namedargs-update-subexprs ((x vl-call-namedargs-p)
+                                           (subexprs vl-exprlist-p))
+  :guard (equal (len subexprs)
+                (len (vl-call-namedargs->subexprs x)))
+  :guard-hints (("goal" :in-theory (enable vl-call-namedargs->subexprs)))
+  :returns (new-x vl-call-namedargs-p)
+  :measure (len (vl-call-namedargs-fix x))
+  (b* ((x (vl-call-namedargs-fix x)))
+    (if (atom x)
+        nil
+      (if (cdar x)
+          (cons (cons (string-fix (caar x)) (vl-expr-fix (car subexprs)))
+                (vl-call-namedargs-update-subexprs (cdr x) (cdr subexprs)))
+        (cons (car x)
+              (vl-call-namedargs-update-subexprs (cdr x) subexprs)))))
+  ///
+  (defthm vl-call-namedargs-update-subexprs-identity
+    (equal (vl-call-namedargs-update-subexprs x (vl-call-namedargs->subexprs x))
+           (vl-call-namedargs-fix x))
+    :hints(("Goal" :in-theory (enable vl-call-namedargs->subexprs))))
+
+  (defthm vl-call-namedargs-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-call-namedargs->subexprs x)))
+             (equal (vl-call-namedargs->subexprs (vl-call-namedargs-update-subexprs x y))
+                    (vl-exprlist-fix y)))
+    :hints(("Goal" :in-theory (enable vl-call-namedargs->subexprs)))))
+
+
 (define vl-expr->subexprs ((x vl-expr-p))
   :returns (subexprs vl-exprlist-p)
   (vl-expr-case x
@@ -1215,7 +1299,9 @@ construct fast alists binding identifiers to things, etc.</p>"
     :vl-multiconcat (cons x.reps x.parts)
     :vl-stream (append (vl-slicesize->subexprs x.size)
                        (vl-streamexprlist->subexprs x.parts))
-    :vl-call (append (vl-scopeexpr->subexprs x.name) x.args)
+    :vl-call (append (vl-scopeexpr->subexprs x.name)
+                     (vl-maybe-exprlist->subexprs x.plainargs)
+                     (vl-call-namedargs->subexprs x.namedargs))
     :vl-cast (vl-casttype-case x.to
                :size (list x.to.size x.expr)
                :otherwise (list x.expr))
@@ -1279,9 +1365,13 @@ construct fast alists binding identifiers to things, etc.</p>"
          :size (vl-slicesize-update-subexprs x.size (take nsizeexprs subexprs))
          :parts (vl-streamexprlist-update-subexprs x.parts (nthcdr nsizeexprs subexprs))))
       :vl-call
-      (let ((nnameexprs (len (vl-scopeexpr->subexprs x.name))))
+      (let* ((nnameexprs (len (vl-scopeexpr->subexprs x.name)))
+             (plainargexprs (len (vl-maybe-exprlist->subexprs x.plainargs))))
         (change-vl-call x :name (vl-scopeexpr-update-subexprs x.name (take nnameexprs subexprs))
-                        :args (nthcdr nnameexprs subexprs)))
+                        :plainargs (vl-maybe-exprlist-update-subexprs x.plainargs
+                                                                      (take plainargexprs (nthcdr nnameexprs subexprs)))
+                        :namedargs (vl-call-namedargs-update-subexprs
+                                    x.namedargs (nthcdr (+ nnameexprs plainargexprs) subexprs))))
       :vl-cast
       (vl-casttype-case x.to
         :size (change-vl-cast x :to (change-vl-casttype-size x.to :size (car subexprs))

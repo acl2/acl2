@@ -285,10 +285,12 @@
         :vl-call (list* (if x.systemp :vl-syscall :vl-funcall)
                         (vl-pretty-atts atts)
                         (vl-pretty-scopeexpr x.name)
-                        (if x.typearg
-                            (cons (vl-pretty-maybe-datatype x.typearg)
-                                  (vl-pretty-exprlist x.args))
-                          (vl-pretty-exprlist x.args)))
+                        ;; bozo no tests for namedargs yet
+                        (append (if x.typearg
+                                    (cons (vl-pretty-maybe-datatype x.typearg)
+                                          (vl-pretty-maybe-exprlist x.plainargs))
+                                  (vl-pretty-maybe-exprlist x.plainargs))
+                                (vl-pretty-call-namedargs x.namedargs)))
         :vl-cast (list :cast
                        (vl-pretty-atts atts)
                        (vl-pretty-casttype x.to)
@@ -325,6 +327,27 @@
         nil
       (cons (vl-pretty-expr (car x))
             (vl-pretty-exprlist (cdr x)))))
+
+  (define vl-pretty-maybe-exprlist ((x vl-maybe-exprlist-p))
+    :measure (vl-maybe-exprlist-count x)
+    (if (atom x)
+        nil
+      (if (car x)
+          (cons (vl-pretty-expr (car x))
+                (vl-pretty-maybe-exprlist (cdr x)))
+        (cons nil
+              (vl-pretty-maybe-exprlist (cdr x))))))
+
+  (define vl-pretty-call-namedargs ((x vl-call-namedargs-p))
+    :measure (vl-call-namedargs-count x)
+    (b* ((x (vl-call-namedargs-fix x)))
+      (if (atom x)
+          nil
+        (if (cdar x)
+            (cons (list (caar x) (vl-pretty-expr (cdar x)))
+                  (vl-pretty-call-namedargs (cdr x)))
+          (cons (list (caar x) nil)
+                (vl-pretty-call-namedargs (cdr x)))))))
 
   (define vl-pretty-maybe-expr ((x vl-maybe-expr-p))
     :measure (vl-maybe-expr-count x)

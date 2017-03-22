@@ -1797,11 +1797,6 @@ variety.</p>"
     :vl-arguments-named x.args
     :vl-arguments-plain x.args))
 
-(fty::deflist vl-argumentlist
-              :elt-type vl-arguments-p
-              :true-listp nil
-              :elementp-of-nil nil)
-
 
 
 

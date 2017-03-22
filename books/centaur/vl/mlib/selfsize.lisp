@@ -1068,14 +1068,16 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                      (b* ((name (vl-simple-id-name x.name))
                           ((unless (member-equal name '("$signed" "$unsigned")))
                            (vl-syscall-selfsize x))
-                          ((unless (and (consp x.args)
-                                        (atom (cdr x.args))
-                                        (not x.typearg)))
+                          ((unless (and (consp x.plainargs)
+                                        (car x.plainargs)
+                                        (atom (cdr x.plainargs))
+                                        (not x.typearg)
+                                        (not x.namedargs)))
                            (mv (fatal :type :vl-selfsize-fail
                                       :msg "Bad arguments to system call ~a0"
                                       :args (list x))
                                nil)))
-                       (vl-expr-selfsize (car x.args) ss scopes))
+                       (vl-expr-selfsize (car x.plainargs) ss scopes))
                    (vl-funcall-selfsize x ss scopes))
 
         :vl-cast (vl-casttype-case x.to

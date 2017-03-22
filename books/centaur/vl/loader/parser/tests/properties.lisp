@@ -2332,10 +2332,10 @@
                     (:prop "a" <- (:and (id "y") (id "z")))))
 
 (test-prop :input "foo(.a(x), .b(y), .c())"
-           :expect (:inst "foo"
-                    (:prop "a" <- (id "x"))
-                    (:prop "b" <- (id "y"))
-                    (:blank "c")))
+           :expect (:vl-funcall nil "foo"
+                    ("a" (id "x"))
+                    ("b" (id "y"))
+                    ("c" nil)))
 
 (test-prop :input "foo(.a(x), .b(posedge clk or negedge resetb), .c())"
            :expect (:inst "foo"
@@ -2358,14 +2358,11 @@
                     (id "a") (id "b") (id "c")))
 
 (test-prop :input "foo.bar(.a(1), .b(2))"
-           :expect (:inst (:dot "foo" "bar")
-                    (:prop "a" <- 1)
-                    (:prop "b" <- 2)))
+           :expect (:vl-funcall nil (:dot "foo" "bar")
+                    ("a" 1) ("b" 2)))
 
 (test-prop :input "foo.bar(1, .b(2))"
-           :expect (:inst (:dot "foo" "bar")
-                    (:prop nil <- 1)
-                    (:prop "b" <- 2)))
+           :expect (:vl-funcall nil (:dot "foo" "bar") 1 ("b" 2)))
 
 (test-prop :input "foo.bar(.a(posedge foo), .b(2))"
            :expect (:inst (:dot "foo" "bar")
