@@ -47,10 +47,10 @@ top of github.com/acl2/acl2.  Alternatively you get a copy from git as
 follows:
 
 ```
-git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout -b acl2-7.3-local-branch v7.3
+git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout -b acl2-7.4-local-branch v7.4
 ```
 
-Your current directory is now a copy of ACL2 Version 7.3.  Please see
+Your current directory is now a copy of ACL2 Version 7.4.  Please see
 the [ACL2 home page][ACL2], specifically its [installation
 instructions][installation], for how to build an executable and
 certify books in your new directory.

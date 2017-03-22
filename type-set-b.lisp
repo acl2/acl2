@@ -1,5 +1,5 @@
-; ACL2 Version 7.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2016, Regents of the University of Texas
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7921,14 +7921,14 @@
 ;      (implies (force (and (natp x) (natp y)))
 ;               (natp (logior x y)))
 ;      :rule-classes :type-prescription))
-;   
+;
 ;   (defun foo (x)
 ;     (cond
 ;      ((consp x)
 ;       (logior (foo (car x))
 ;               (foo (cdr x))))
 ;      (t 0)))
-;   
+;
 ;   ; This is *ts-non-negative-integer*, but formerly it was *ts-integer*.
 ;   (caar (getpropc 'foo 'type-prescriptions))
 
