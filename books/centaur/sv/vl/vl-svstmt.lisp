@@ -2154,7 +2154,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                 (sv::svex-alist-compose nbst-subst nb-delaysubst))))
               (vl-always-apply-trigger-to-updates
                trigger nbst-subst2))
-          (sv::svex-alist-add-delay nbst-subst 1)))
+          ;; (sv::svex-alist-add-delay nbst-subst 1)
+          nbst-subst))
 
        (blkst-trigger (if trigger
                           (vl-always-apply-trigger-to-updates trigger blkst-subst)
