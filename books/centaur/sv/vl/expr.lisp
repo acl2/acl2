@@ -2677,6 +2677,148 @@ the way.</li>
                    (lnfix rhs-selfsize)))
        (make-vl-type-error-trunc/extend :lhs-size lhs-size :rhs-selfsize rhs-selfsize)))
 
+(define vl-funcall-args-to-ordered ((ports vl-portdecllist-p "port declarations of the function")
+                                    (plainargs vl-maybe-exprlist-p "initial plainargs")
+                                    (namedargs vl-call-namedargs-p "named args"))
+  :prepwork ((local (defthm alistp-of-namedargs
+                      (implies (vl-call-namedargs-p x) (alistp x))
+                      :hints(("Goal" :in-theory (enable alistp)))))
+             (local (defthm vl-expr-p-of-lookup-in-namedargs
+                      (implies (and (vl-call-namedargs-p x)
+                                    (cdr (assoc key x)))
+                               (vl-expr-p (cdr (assoc key x))))
+                      :hints(("Goal" :in-theory (enable assoc))))))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (args vl-exprlist-p))
+  (b* (((when (atom ports)) (mv nil nil))
+       ((vl-portdecl port) (car ports))
+       (arg (if (consp plainargs)
+                (car plainargs)
+              (cdr (assoc-equal port.name (vl-call-namedargs-fix namedargs)))))
+       ((unless arg)
+        (mv (vmsg "Blank or no argument for port ~a0" port.name) nil))
+       ((mv err rest) (vl-funcall-args-to-ordered (cdr ports) (cdr plainargs) namedargs)))
+    (mv err
+        (and (not err)
+             (cons (vl-expr-fix arg) rest))))
+  ///
+  (std::defret len-of-args-when-no-error
+    (implies (not err)
+             (equal (len args) (len ports))))
+
+  (local (include-book "centaur/misc/remove-assoc" :dir :system))
+
+  (local (defthm namedargs-count-of-remove-assoc-weak
+           (implies (vl-call-namedargs-p x)
+                    (<= (vl-call-namedargs-count (acl2::remove-assoc key x))
+                        (vl-call-namedargs-count x)))
+           :hints(("Goal" :in-theory (enable assoc acl2::remove-assoc-equal
+                                             vl-call-namedargs-count
+                                             vl-call-namedargs-p
+                                             vl-call-namedargs-fix
+                                             vl-maybe-expr-some->val)
+                   :induct t
+                   :expand ((vl-call-namedargs-count x)
+                            (:free (x) (vl-maybe-expr-count x))
+                            (:free (a b) (vl-call-namedargs-count (cons a b))))))
+           :rule-classes :linear))
+
+  (local (defthm namedargs-count-of-remove-assoc
+           (implies (and (vl-call-namedargs-p x)
+                         (assoc key x)
+                         (cdr (assoc key x)))
+                    (< (vl-call-namedargs-count (acl2::remove-assoc key x))
+                        (- (vl-call-namedargs-count x)
+                           (vl-expr-count (cdr (assoc key x))))))
+           :hints(("Goal" :in-theory (enable assoc acl2::remove-assoc-equal
+                                             vl-call-namedargs-count
+                                             vl-call-namedargs-p
+                                             vl-call-namedargs-fix
+                                             vl-maybe-expr-some->val)
+                   :induct t
+                   :expand ((vl-call-namedargs-count x)
+                            (:free (x) (vl-maybe-expr-count x))
+                            (:free (a b) (vl-call-namedargs-count (cons a b))))))
+           :rule-classes :linear))
+
+  (local (defun args-to-ordered-alt (ports namedargs)
+           (b* (((when (atom ports)) (mv nil nil))
+                ((vl-portdecl port) (car ports))
+                (arg (cdr (assoc-equal port.name (vl-call-namedargs-fix namedargs))))
+                (namedargs (acl2::remove-assoc-equal port.name (vl-call-namedargs-fix namedargs)))
+                ((unless arg)
+                 (mv (vmsg "Blank or no argument for port ~a0" port.name) nil))
+                ((mv err rest) (args-to-ordered-alt (cdr ports) namedargs)))
+             (mv err
+                 (and (not err)
+                      (cons (vl-expr-fix arg) rest))))))
+
+  (local (defthm vl-call-namedargs-p-of-remove-assoc
+           (implies (vl-call-namedargs-p x)
+                    (vl-call-namedargs-p (acl2::remove-assoc key x)))
+           :hints(("Goal" :in-theory (enable acl2::remove-assoc-equal)))))
+
+  (local (defthm funcall-args-to-ordered-of-remove-assoc-when-not-member
+           (implies (not (member key (vl-portdecllist->names ports)))
+                    (equal (vl-funcall-args-to-ordered
+                            ports plainargs (acl2::remove-assoc key (vl-call-namedargs-fix namedargs)))
+                           (vl-funcall-args-to-ordered ports plainargs namedargs)))
+           :hints(("Goal" :in-theory (enable vl-portdecllist->names member)))))
+
+  (local (defthm funcall-args-to-ordered-when-atom-plainargs
+           (implies (and (syntaxp (not (equal plainargs ''nil)))
+                         (atom plainargs))
+                    (equal (vl-funcall-args-to-ordered ports plainargs namedargs)
+                           (vl-funcall-args-to-ordered ports nil namedargs)))
+           :hints(("Goal" :in-theory (enable vl-funcall-args-to-ordered)))))
+                         
+
+  (local (defthm funcall-args-to-ordered-is-args-to-ordered-alt
+           (implies (and (no-duplicatesp (vl-portdecllist->names ports)))
+                    (equal (vl-funcall-args-to-ordered ports nil namedargs)
+                           (args-to-ordered-alt ports namedargs)))
+           :hints(("Goal" :in-theory (enable vl-portdecllist->names)
+                   :induct (args-to-ordered-alt ports namedargs)))))
+           
+  (local (defthm count-of-args-to-ordered
+           (b* (((mv err args) (args-to-ordered-alt ports namedargs)))
+             (implies (and (no-duplicatesp (vl-portdecllist->names ports))
+                           (not err))
+                      (<= (vl-exprlist-count args)
+                          (vl-call-namedargs-count namedargs))))
+           :hints(("Goal" :in-theory (enable vl-exprlist-count)))
+           :rule-classes :linear))
+
+
+  (std::defret count-of-vl-funcall-args-to-ordered
+    (implies (and (no-duplicatesp (vl-portdecllist->names ports))
+                  (not err))
+             (<= (vl-exprlist-count args)
+                 (+ (vl-maybe-exprlist-count plainargs)
+                    (vl-call-namedargs-count namedargs))))
+    :hints(("Goal" :in-theory (e/d (vl-maybe-exprlist-count vl-exprlist-count
+                                                            vl-portdecllist->names)
+                                   ((:d vl-funcall-args-to-ordered)))
+            :induct t)
+           (and stable-under-simplificationp
+                (or (member-equal '(not (consp plainargs)) clause)
+                    (member-equal '(consp ports) clause))
+                '(:expand ((vl-funcall-args-to-ordered ports plainargs namedargs)))))
+    :rule-classes :linear)
+
+  (defthm count-of-vl-funcall-args-to-ordered-rw
+    (b* (((vl-call x))
+         ((mv err args) (vl-funcall-args-to-ordered ports x.plainargs x.namedargs)))
+      (implies (and (no-duplicatesp (vl-portdecllist->names ports))
+                    (not err)
+                    (equal (vl-expr-kind x) :vl-call))
+               (< (vl-exprlist-count args)
+                  (vl-expr-count x))))
+    :hints(("Goal" :in-theory (e/d () (vl-funcall-args-to-ordered))
+            :expand ((vl-expr-count x))))
+    :rule-classes (:rewrite :linear)))
+       
+(local (in-theory (disable acl2::hons-dups-p)))
 
 (defines vl-expr-to-svex
   :ruler-extenders :all
@@ -2712,6 +2854,19 @@ the way.</li>
                                (iff (or* x y)
                                     (or x y)))
                       :hints(("Goal" :in-theory (enable or*)))))
+
+             (local (defthm expr-count-of-car-plainargs-when-unary-syscall-p
+                      (implies (vl-unary-syscall-p fn x)
+                               (< (vl-expr-count (car (vl-call->plainargs x)))
+                                  (vl-expr-count x)))
+                      :hints(("Goal" :in-theory (enable vl-unary-syscall-p)
+                              :expand ((vl-expr-count x)
+                                       (vl-maybe-exprlist-count (vl-call->plainargs x))
+                                       (vl-maybe-expr-count (car (vl-call->plainargs x))))))))
+             (local (defthm expr-p-of-car-plainargs-when-unary-syscall-p
+                      (implies (vl-unary-syscall-p fn x)
+                               (vl-expr-p (car (vl-call->plainargs x))))
+                      :hints(("Goal" :in-theory (enable vl-unary-syscall-p)))))
              
              ;; (local (defthm and*-lhs
              ;;          (implies (and* x y)
@@ -3244,11 +3399,15 @@ functions can assume all bits of it are good.</p>"
          (warnings nil)
          ;; Bozo -- to optimize proof time, maybe pull some of this
          ;; junk out into a different function in the mutual recursion.
-         (args-ok (if x.typearg
-                      (or (atom x.args) (atom (cdr x.args)))
-                    (and (consp x.args)
-                         (or (atom (cdr x.args))
-                             (atom (cddr x.args))))))
+         (args-ok (and (if x.typearg
+                           (or (atom x.plainargs)
+                               (and (car x.plainargs)
+                                    (atom (cdr x.plainargs))))
+                         (and (consp x.plainargs)
+                              (car x.plainargs)
+                              (or (atom (cdr x.plainargs))
+                                  (atom (cddr x.plainargs)))))
+                       (not x.namedargs)))
          ((unless args-ok)
           (mv nil
               (fatal :type :vl-expr-unsupported
@@ -3256,10 +3415,10 @@ functions can assume all bits of it are good.</p>"
                      :args (list x))
               nil nil))
          ((when x.typearg)
-          (mv t nil x.typearg (and (consp x.args) (car x.args))))
+          (mv t nil x.typearg (and (consp x.plainargs) (car x.plainargs))))
          ((mv warnings ?arg-svex type ?size)
-          (vl-expr-to-svex-untyped (car x.args) ss scopes)))
-      (mv t warnings type (and (consp (cdr x.args)) (cadr x.args)))))
+          (vl-expr-to-svex-untyped (car x.plainargs) ss scopes)))
+      (mv t warnings type (and (consp (cdr x.plainargs)) (cadr x.plainargs)))))
 
 
 
@@ -3403,44 +3562,46 @@ functions can assume all bits of it are good.</p>"
 
                  ((when (member-equal simple-name '("$signed" "$unsigned")))
                   ;; Same as a signedness cast -- don't need to do anything but check arity.
-                  (b* (((unless (and (consp x.args)
-                                     (not (consp (cdr x.args)))
-                                     (not x.typearg)))
+                  (b* (((unless (and (consp x.plainargs)
+                                     (car x.plainargs)
+                                     (not (consp (cdr x.plainargs)))
+                                     (not x.typearg)
+                                     (not x.namedargs)))
                         (mv (fatal :type :vl-expr-to-svex-fail
                                    :msg "Bad arity for system call ~a0"
                                    :args (list x))
                             (svex-x)))
                        ((mv warnings svex &)
-                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                        (vl-expr-to-svex-selfdet (car x.plainargs) nil ss scopes)))
                     (mv warnings svex)))
 
                  ((when (vl-unary-syscall-p "$clog2" x))
                   (b* (((wmv warnings arg-svex ?size)
-                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                        (vl-expr-to-svex-selfdet (car x.plainargs) nil ss scopes)))
                     (mv warnings
                         (sv::svcall sv::clog2 arg-svex))))
 
                  ((when (vl-unary-syscall-p "$isunknown" x))
                   (b* (((wmv warnings arg-svex ?size)
-                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                        (vl-expr-to-svex-selfdet (car x.plainargs) nil ss scopes)))
                     (mv warnings
                         (sv::svcall sv::uxor (sv::svcall sv::bitxor arg-svex arg-svex)))))
 
                  ((when (vl-unary-syscall-p "$countones" x))
                   (b* (((wmv warnings arg-svex ?size)
-                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                        (vl-expr-to-svex-selfdet (car x.plainargs) nil ss scopes)))
                     (mv warnings
                         (sv::svcall sv::countones arg-svex))))
 
                  ((when (vl-unary-syscall-p "$onehot" x))
                   (b* (((wmv warnings arg-svex ?size)
-                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                        (vl-expr-to-svex-selfdet (car x.plainargs) nil ss scopes)))
                     (mv warnings
                         (sv::svcall sv::onehot arg-svex))))
 
                  ((when (vl-unary-syscall-p "$onehot0" x))
                   (b* (((wmv warnings arg-svex ?size)
-                        (vl-expr-to-svex-selfdet (car x.args) nil ss scopes)))
+                        (vl-expr-to-svex-selfdet (car x.plainargs) nil ss scopes)))
                     (mv warnings
                         (sv::svcall sv::onehot0 arg-svex))))
 
@@ -3665,11 +3826,16 @@ functions can assume all bits of it are good.</p>"
                            types in portdecls): ~a0"
                      :args (list x))
               (svex-x) nil))
-         ((unless (eql (len port-types) (len x.args)))
+         ((when (acl2::hons-dups-p (vl-portdecllist->names item.portdecls)))
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Wrong number of arguments in function call ~a0: ~
-                           supposed to be ~x1 ports"
-                     :args (list x (len port-types)))
+                     :msg "Function declaration has duplicate port names so we can't process call ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         ((mv err x.args) (vl-funcall-args-to-ordered item.portdecls x.plainargs x.namedargs))
+         ((when err)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Bad arguments in function call ~a0: ~@1"
+                     :args (list x err))
               (svex-x) nil))
          ((unless item.function)
           (mv (fatal :type :vl-expr-to-svex-fail

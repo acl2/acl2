@@ -1218,11 +1218,15 @@ displays.  The module browser's web pages are responsible for defining the
                             (vl-print "(")
                             (if x.typearg
                                 (vl-ps-seq (vl-pp-datatype x.typearg)
-                                           (if (consp x.args)
+                                           (if (consp x.plainargs)
                                                (vl-print ", ")
                                              ps))
                               ps)
-                            (vl-pp-exprlist x.args)
+                            (vl-pp-maybe-exprlist x.plainargs)
+                            (if (and (consp x.plainargs) (consp x.namedargs))
+                                (vl-print ", ")
+                              ps)
+                            (vl-pp-call-namedargs x.namedargs)
                             (vl-print ")"))
 
         :vl-cast (vl-ps-seq
@@ -1271,6 +1275,31 @@ displays.  The module browser's web pages are responsible for defining the
                      ps
                    (vl-ps-seq (vl-print ", ")
                               (vl-pp-exprlist (cdr X)))))))
+
+  (define vl-pp-maybe-exprlist ((x vl-maybe-exprlist-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-maybe-exprlist-count x) 10)
+    (if (atom x)
+        ps
+      (vl-ps-seq (if (car x) (vl-pp-expr (car x)) ps)
+                 (if (atom (cdr x))
+                     ps
+                   (vl-ps-seq (vl-print ", ")
+                              (vl-pp-maybe-exprlist (cdr X)))))))
+
+  (define vl-pp-call-namedargs ((x vl-call-namedargs-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-call-namedargs-count x) 10)
+    (b* ((x (vl-call-namedargs-fix x)))
+      (if (atom x)
+          ps
+      (vl-ps-seq (vl-print-str ".")
+                 (vl-print-str (caar x))
+                 (vl-print-str "(")
+                 (if (cdar x) (vl-pp-expr (cdar x)) ps)
+                 (vl-print-str ")")
+                 (if (atom (cdr x))
+                     ps
+                   (vl-ps-seq (vl-print ", ")
+                              (vl-pp-call-namedargs (cdr X))))))))
 
   (define vl-pp-atts-aux ((x vl-atts-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-atts-count x) 10)

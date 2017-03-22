@@ -66,7 +66,8 @@
   (vl-expr-case x
     :vl-call (and x.systemp
                   (equal (vl-simple-id-name x.name) (string-fix name))
-                  (atom x.args))
+                  (atom x.plainargs)
+                  (atom x.namedargs))
     :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-0ary-syscall-p
@@ -74,7 +75,8 @@
              (vl-expr-case x
                :vl-call (and x.systemp
                              (equal (vl-simple-id-name x.name) (string-fix name))
-                             (atom x.args))
+                             (atom x.plainargs)
+                             (atom x.namedargs))
                :otherwise nil))
     :rule-classes :forward-chaining))
 
@@ -91,7 +93,11 @@
   (vl-expr-case x
     :vl-call (and x.systemp
                   (equal (vl-simple-id-name x.name) (string-fix name))
-                  (eql (len x.args) 1))
+                  ;; BOZO Can these system functions be called with a named
+                  ;; arg?  We don't allow it for now.
+                  (eql (len x.plainargs) 1)
+                  (car x.plainargs)
+                  (atom x.namedargs))
     :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-unary-syscall-p
@@ -99,8 +105,10 @@
              (vl-expr-case x
                :vl-call (and x.systemp
                              (equal (vl-simple-id-name x.name) (string-fix name))
-                             (eql (len x.args) 1)
-                             (consp x.args))
+                             (eql (len x.plainargs) 1)
+                             (consp x.plainargs)
+                             (car x.plainargs)
+                             (atom x.namedargs))
                :otherwise nil))
     :rule-classes :forward-chaining))
 
@@ -128,7 +136,8 @@ is the first argument to the @(':vl-syscall').</p>
     :vl-call (and x.systemp
                   (equal (vl-simple-id-name x.name) (string-fix name))
                   x.typearg
-                  (atom x.args))
+                  (atom x.plainargs)
+                  (atom x.namedargs))
     :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-typearg-syscall-p
@@ -137,7 +146,8 @@ is the first argument to the @(':vl-syscall').</p>
                :vl-call (and x.systemp
                              (equal (vl-simple-id-name x.name) (string-fix name))
                              x.typearg
-                             (not (consp x.args)))
+                             (not (consp x.plainargs))
+                             (not (consp x.namedargs)))
                :otherwise nil))
     :rule-classes :forward-chaining))
 
