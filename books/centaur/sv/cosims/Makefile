@@ -92,9 +92,7 @@ FAILING_TEST_TARGETS := \
   inst_size3/ok \
   inst_size4/ok \
   sqrt/ok \
-  udp_wide1/ok \
-  nonblklatch/ok \
-  nonblkff/ok
+  udp_wide1/ok
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
