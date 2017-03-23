@@ -209,7 +209,7 @@
 (defund dy (p)
   (f/ (cadr p) (expt (caddr p) 3)))
 
-(defun decode (p)
+(defun decode3 (p)
   (cons (dx p) (dy p)))
 
 ;; Note that any point (x,y) admits the canonical encoding (x,y,1).
@@ -217,7 +217,7 @@
 ;; This method is applicable in two cases: (1) the two triples coincide,
 ;; and (2) one of the triples is canonical.
 
-;; Case (1): P + P, where P = decode(u,v,z) 
+;; Case (1): P + P, where P = decode3(u,v,z) 
 ;; We define polynomial functions zdbl, udbl, and vdbl 
 ;; such that
 
@@ -280,11 +280,11 @@
 (defthmd dbl-formula
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
-           (equal (decode (dbl p))
-                  (ec+ (decode p) (decode p)))))
+           (equal (decode3 (dbl p))
+                  (ec+ (decode3 p) (decode3 p)))))
 
-;; Case (2): P1 + P2, where P1 = (x,y) = decode(x,y,1) and
-;; P2 = decode(u,v,z) <> P1. 
+;; Case (2): P1 + P2, where P1 = (x,y) = decode3(x,y,1) and
+;; P2 = decode3(u,v,z) <> P1. 
 
 ;; We define polynomial functions zsum, usum, and vsum such that
 ;; P1 + P2 = (u'/z'^2, v',z'^2), where
@@ -341,8 +341,8 @@
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
-            (equal (decode (sum p1 p2))
-                  (ec+ (decode p1) (decode p2)))))
+            (equal (decode3 (sum p1 p2))
+                  (ec+ (decode3 p1) (decode3 p2)))))
 
 
 ;;*********************************************************************************
@@ -529,8 +529,8 @@
         (evalp$ (cadr p))
         (evalp$ (caddr p))))
 
-(defun decode$ (p)
-  (decode (eval3$ p)))
+(defun decode3$ (p)
+  (decode3 (eval3$ p)))
 
 ;; The following triples arer mapped to the points P1, P2, P3, and O:
 
@@ -547,13 +547,13 @@
 (defthm tripp$o$
   (tripp$ (o$)))
 
-(defthm decode$p$
-  (and (equal (decode$ (p0$)) (p0))
-       (equal (decode$ (p1$)) (p1))
-       (equal (decode$ (p2$)) (p2))))
+(defthm decode3$p$
+  (and (equal (decode3$ (p0$)) (p0))
+       (equal (decode3$ (p1$)) (p1))
+       (equal (decode3$ (p2$)) (p2))))
 
-(defthm decode$o$
-  (equal (decode$ (o$)) (o)))
+(defthm decode3$o$
+  (equal (decode3$ (o$)) (o)))
 
 ;; We define addition operations on term triples corresponding to the
 ;; two addition operations on integer triples.
@@ -597,16 +597,16 @@
 
 (defthmd tripp$-dbl$
   (implies (and (tripp$ p)
-                (ecp (decode$ p))
-                (not (equal (decode$ p) (o))))
+                (ecp (decode3$ p))
+                (not (equal (decode3$ p) (o))))
            (tripp$ (dbl$ p))))
 
 (defthmd dbl$-formula
   (implies (and (tripp$ p)
-                (ecp (decode$ p))
-                (not (equal (decode$ p) (o))))
-           (equal (decode$ (dbl$ p))
-                  (ec+ (decode$ p) (decode$ p)))))
+                (ecp (decode3$ p))
+                (not (equal (decode3$ p) (o))))
+           (equal (decode3$ (dbl$ p))
+                  (ec+ (decode3$ p) (decode3$ p)))))
 
 ;; Addition of distinct points, one of which is canonical:
 
@@ -677,17 +677,17 @@
 (defthm tripp$-sum$
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (tripp$ (sum$ p1 p2))))
 
 (defthmd sum$-formula
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
-           (equal (decode$ (sum$ p1 p2))
-                  (ec+ (decode$ p1) (decode$ p2)))))
+           (equal (decode3$ (sum$ p1 p2))
+                  (ec+ (decode3$ p1) (decode3$ p2)))))
 
 ;; Negation:
 
@@ -696,14 +696,14 @@
 
 (defthm tripp$-neg$
   (implies (and (tripp$ p)
-                (ecp (decode$ p)))
+                (ecp (decode3$ p)))
            (tripp$ (neg$ p))))
 
 (defthmd neg$-formula
   (implies (and (tripp$ p)
-                (ecp (decode$ p)))
-           (equal (decode$ (neg$ p))
-                  (ec- (decode$ p)))))
+                (ecp (decode3$ p)))
+           (equal (decode3$ (neg$ p))
+                  (ec- (decode3$ p)))))
 
 ;; The next two lemmas will be critical in establishing the group axioms.
 
@@ -725,7 +725,7 @@
 (defthmd ecp$ecp 
   (implies (and (tripp$ p)
                 (ecp$ p))
-           (ecp (decode$ p))))
+           (ecp (decode3$ p))))
 
 ;; The equivalence relation:
 
@@ -745,14 +745,14 @@
   (implies (and (tripp$ p1)
                 (tripp$ p2)
                 (eq$ p1 p2))
-           (equal (decode$ p1) (decode$ p2))))
+           (equal (decode3$ p1) (decode3$ p2))))
 
 
 ;;*********************************************************************************
 ;;                              Group Axioms
 ;;*********************************************************************************
 
-(defthm prop-1
+(defthm comp-1
   (and (ecp$ (dbl$ (p0$)))
        (ecp$ (sum$ (p0$) (p1$))))
   :rule-classes ())
@@ -763,7 +763,7 @@
   (implies (and (ecp p) (ecp q))
            (ecp (ec+ p q))))
 
-(defthm prop-2
+(defthm comp-2
   (eq$ (sum$ (p0$) (p1$))
        (sum$ (p1$) (p0$)))
   :rule-classes ())
@@ -777,7 +777,7 @@
 
 ;; (-P0) + (-P0) = -(P0 + P0)
 
-(defthm prop-3
+(defthm comp-3
   (eq$ (dbl$ (neg$ (p0$)))
        (neg$ (dbl$ (p0$))))
   :rule-classes ())
@@ -786,7 +786,7 @@
 
 ;; (-P0) + (-P1) = -(P0 + P1)
 
-(defthm prop-4
+(defthm comp-4
   (eq$ (sum$ (neg$ (p0$)) (neg$ (p1$)))
        (neg$ (sum$ (p0$) (p1$))))
   :rule-classes ())
@@ -801,7 +801,7 @@
 
 ;; P0 + P0 <> -P0 => (-P0) + (P0 + P0) = P0
 
-(defthm prop-5
+(defthm comp-5
   (eq$ (sum$ (neg$ (p0$))
              (dbl$ (p0$)))
        (p0$))
@@ -811,7 +811,7 @@
 
 ;; P0 <> +-P1 and P0 + P1 <> -P0 => (-P0) + (P0 + P1) = P1
 
-(defthm prop-6
+(defthm comp-6
   (eq$ (sum$ (neg$ (p0$))
              (sum$ (p0$) (p1$)))
        (p1$))
@@ -828,7 +828,7 @@
 
 ;; P0 <> +-P1 and P0 + P1 <> +-P2 and P0 <> +-P2 and P0 + P2 <> +-P1 => P2 + (P0 + P1) = P1 + (P0 + P2)
 
-(defthm prop-7
+(defthm comp-7
   (eq$ (sum$ (p2$) (sum$ (p0$) (p1$)))             
        (sum$ (p1$) (sum$ (p0$) (p2$))))
   :rule-classes ())
@@ -837,7 +837,7 @@
 
 ;; P0 <> +-P1 and P0 + P0 <> +-P1 and P0 + P1 <> -P0 => P1 + (P0 + P0) = P0 + (P0 + P1)
 
-(defthm prop-8
+(defthm comp-8
   (eq$ (sum$ (p1$) (dbl$ (p0$)))
        (sum$ (p0$) (sum$ (p0$) (p1$))))
   :rule-classes ())
@@ -854,7 +854,7 @@
 
 ;; (P0 + P0 <> -P0 and (P0 + P0) + P0 <> -P0 => (P0 + P0) + (P0 + P0) = P0 + (P0 + (P0 + P0))
 
-(defthm prop-9
+(defthm comp-9
   (eq$ (dbl$ (dbl$ (p0$)))
        (sum$ (p0$) (sum$ (p0$) (dbl$ (p0$)))))
   :rule-classes ())
@@ -863,7 +863,7 @@
 
 ;; P0 <> +-P1 and (P0 + P1 <> -P0 and (P0 + P1) + P0 <> +-P1 => (P0 + P1) + (P0 + P1) = P0 + (P1 + (P0 + P1))
 
-(defthm prop-10
+(defthm comp-10
   (eq$ (dbl$ (sum$ (p0$) (p1$)))
        (sum$ (p0$) (sum$ (p1$) (sum$ (p0$) (p1$)))))
   :rule-classes ())
@@ -899,7 +899,7 @@
     `(* (- ,ud (* x1 (expt ,zd 2)))
         (expt ,zs 2))))
 
-(defthm prop-11
+(defthm comp-11
   (equal (reduce$ (phi))
          (reduce$ (psi)))
   :rule-classes ())
@@ -927,7 +927,7 @@
 
 ;; (P0 + O) + (P0 + O) = P0 + P0 + P0
 
-(defthm prop-12
+(defthm comp-12
   (eq$ (dbl$ (sum$ (p0$) (o$)))
        (dbl$ (p0$)))
   :rule-classes ())
@@ -936,7 +936,7 @@
 
 ;; (O + (P0 + O) = P0
 
-(defthm prop-13
+(defthm comp-13
   (eq$ (sum$ (o$) (sum$ (p0$) (o$)))
        (p0$))
   :rule-classes ())
