@@ -2012,7 +2012,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                          (scopes vl-elabscopes-p)
                          &key
                          (verbosep 'nil)
-                         (simplify 't))
+                         (simplify 't)
+                         (nb-latch-delay-hack 'nil))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -2154,8 +2155,9 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                 (sv::svex-alist-compose nbst-subst nb-delaysubst))))
               (vl-always-apply-trigger-to-updates
                trigger nbst-subst2))
-          ;; (sv::svex-alist-add-delay nbst-subst 1)
-          nbst-subst))
+          (if nb-latch-delay-hack
+              (sv::svex-alist-add-delay nbst-subst 1)
+            nbst-subst)))
 
        (blkst-trigger (if trigger
                           (vl-always-apply-trigger-to-updates trigger blkst-subst)
@@ -2185,7 +2187,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                              (scopes vl-elabscopes-p)
                              &key
                              (verbosep 'nil)
-                             (simplify 't))
+                             (simplify 't)
+                             (nb-latch-delay-hack 'nil))
   :short "Translate a combinational or latch-type always block into a set of SVEX
           expressions."
   :returns (mv (warnings vl-warninglist-p)
@@ -2194,12 +2197,14 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil))
        ((wmv warnings assigns1)
-        (time$ (vl-always->svex (car x) ss scopes :verbosep verbosep :simplify simplify)
+        (time$ (vl-always->svex (car x) ss scopes :verbosep verbosep :simplify simplify
+                                :nb-latch-delay-hack nb-latch-delay-hack)
                :mintime 1
                :msg "; vl-always->svex at ~s0 total: ~st sec, ~sa bytes~%"
                :args (list (vl-location-string (vl-always->loc (car x))))))
        ((wmv warnings assigns2)
-        (vl-alwayslist->svex (cdr x) ss scopes :verbosep verbosep :simplify simplify)))
+        (vl-alwayslist->svex (cdr x) ss scopes :verbosep verbosep :simplify simplify
+                             :nb-latch-delay-hack nb-latch-delay-hack)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
 
