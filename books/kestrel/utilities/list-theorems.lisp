@@ -1,6 +1,6 @@
 ; Theorems about Lists
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,7 @@
 
 (in-package "ACL2")
 
+(include-book "std/lists/list-fix" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,4 +74,9 @@
     (equal (last (cdr x))
            (if (consp (cdr x))
                (last x)
-             (cdr x)))))
+             (cdr x))))
+
+  (defrule list-of-car-when-one
+    (implies (and (consp list)
+                  (not (consp (cdr list))))
+             (equal (list (car list)) (list-fix list)))))
