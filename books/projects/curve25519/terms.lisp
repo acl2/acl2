@@ -79,8 +79,8 @@
         (evalp$ (cadr p))
         (evalp$ (caddr p))))
 
-(defun decode$ (p)
-  (decode (eval3$ p)))
+(defun decode3$ (p)
+  (decode3 (eval3$ p)))
 
 (defthm integerp-evalp$
   (implies (polyp$ x)
@@ -89,7 +89,7 @@
   :hints (("Goal" :use ((:instance integerp-evalp (vals (vals)) (vars (vars))))
                   :in-theory (enable vlist))))
 
-(in-theory (disable polyp$ evalp$ (eval3$) (decode$)))
+(in-theory (disable polyp$ evalp$ (eval3$) (decode3$)))
 
 (defthm tripp$tripp
   (implies (tripp$ x)
@@ -100,12 +100,12 @@
 (defund p1$ () (list 'x1 'y1 1))
 (defund p2$ () (list 'x2 'y2 1))
 
-(defthm decode$p$
-  (and (equal (decode$ (p0$)) (p0))
-       (equal (decode$ (p1$)) (p1))
-       (equal (decode$ (p2$)) (p2)))
+(defthm decode3$p$
+  (and (equal (decode3$ (p0$)) (p0))
+       (equal (decode3$ (p1$)) (p1))
+       (equal (decode3$ (p2$)) (p2)))
   :hints (("Goal" :use (ecp-assumption)
-                  :in-theory (enable ecp vals dx dy vlist decode evalp$))))
+                  :in-theory (enable ecp vals dx dy vlist decode3 evalp$))))
   
 ;; Inverse:
 
@@ -234,7 +234,7 @@
 
 (in-theory (disable zdbl$ udbl$ vdbl$ zsum$ usum$ vsum$)) 
 
-(in-theory (disable decode))
+(in-theory (disable decode3))
 
 (local-defthm tripp$-dbl$-1
   (implies (and (tripp$ p)
@@ -262,18 +262,18 @@
 (local-defthmd tripp$-dbl$-4
   (implies (and (tripp$ p)
                 (= (mod (evalp$ (cadr p)) (p)) 0))
-           (= (y (decode$ p)) 0))
-  :hints (("goal" :in-theory (enable eval3$ dy decode$ decode tripp$)
+           (= (y (decode3$ p)) 0))
+  :hints (("goal" :in-theory (enable eval3$ dy decode3$ decode3 tripp$)
                   :use ((:instance mod*rewrite-1 (a (evalp$ (cadr p)))
                                                  (b (frcp (expt (evalp$ (caddr p)) 3))))))))
 (local-defthmd tripp$-dbl$-5
   (implies (and (tripp$ p)
-                (ecp (decode$ p))
-                (not (equal (y (decode$ p)) 0)))
+                (ecp (decode3$ p))
+                (not (equal (y (decode3$ p)) 0)))
            (tripp$ (dbl$ p)))
   :hints (("Goal" :in-theory (enable tripp$)
                   :use (tripp$-dbl$-3 tripp$-dbl$-4
-                        (:instance ec-x-0 (x (x (decode$ p))))))))
+                        (:instance ec-x-0 (x (x (decode3$ p))))))))
 
 (local-defthm tripp$-dbl$-6
   (implies (and (ecp p) (= (y p) 0))
@@ -283,17 +283,17 @@
 
 (defthmd tripp$-dbl$
   (implies (and (tripp$ p)
-                (ecp (decode$ p))
-                (not (equal (decode$ p) (o))))
+                (ecp (decode3$ p))
+                (not (equal (decode3$ p) (o))))
            (tripp$ (dbl$ p)))
   :hints (("Goal" :in-theory (enable tripp$)
                   :use (tripp$-dbl$-5
-                        (:instance tripp$-dbl$-6 (p (decode$ p)))))))
+                        (:instance tripp$-dbl$-6 (p (decode3$ p)))))))
 
 (local-defthmd dbl$-dbl
   (implies (tripp$ p)
-           (equal (decode$ (dbl$ p))
-                  (decode (dbl (eval3$ p)))))
+           (equal (decode3$ (dbl$ p))
+                  (decode3 (dbl (eval3$ p)))))
   :hints (("Goal" :in-theory (enable dbl))))
 
 (local-defthm eval3$cadr
@@ -304,9 +304,9 @@
 (local-defthmd dbl$-formula-1
   (implies (and (tripp$ p)
                 (not (= (mod (evalp$ (cadr p)) (p)) 0)))
-           (equal (decode$ (dbl$ p))
-                  (ec+ (decode$ p) (decode$ p))))
-  :hints (("Goal" :in-theory '(eval3$ decode$ evalp$)
+           (equal (decode3$ (dbl$ p))
+                  (ec+ (decode3$ p) (decode3$ p))))
+  :hints (("Goal" :in-theory '(eval3$ decode3$ evalp$)
                   :use (dbl$-dbl
                         eval3$cadr
                         (:instance tripp$tripp (x p))
@@ -315,20 +315,20 @@
 (local-defthmd dbl$-formula-2
   (implies (and (tripp$ p)
                 (= (mod (evalp$ (cadr p)) (p)) 0))
-           (= (y (decode$ p)) 0))
-  :hints (("goal" :in-theory (enable eval3$ dy decode$ decode tripp$)
+           (= (y (decode3$ p)) 0))
+  :hints (("goal" :in-theory (enable eval3$ dy decode3$ decode3 tripp$)
                   :use ((:instance mod*rewrite-1 (a (evalp$ (cadr p)))
                                                  (b (frcp (expt (evalp$ (caddr p)) 3))))))))
 
 (local-defthmd dbl$-formula-3
   (implies (and (tripp$ p)
-                (ecp (decode$ p))
-                (not (equal (y (decode$ p)) 0)))
-           (equal (decode$ (dbl$ p))
-                  (ec+ (decode$ p) (decode$ p))))
+                (ecp (decode3$ p))
+                (not (equal (y (decode3$ p)) 0)))
+           (equal (decode3$ (dbl$ p))
+                  (ec+ (decode3$ p) (decode3$ p))))
   :hints (("Goal" :in-theory (enable tripp$)
                   :use (dbl$-formula-1 dbl$-formula-2
-                        (:instance ec-x-0 (x (x (decode$ p))))))))
+                        (:instance ec-x-0 (x (x (decode3$ p))))))))
 
 (local-defthm dbl$-formula-4
   (implies (and (ecp p) (= (y p) 0))
@@ -338,27 +338,27 @@
 
 (defthmd dbl$-formula
   (implies (and (tripp$ p)
-                (ecp (decode$ p))
-                (not (equal (decode$ p) (o))))
-           (equal (decode$ (dbl$ p))
-                  (ec+ (decode$ p) (decode$ p))))
+                (ecp (decode3$ p))
+                (not (equal (decode3$ p) (o))))
+           (equal (decode3$ (dbl$ p))
+                  (ec+ (decode3$ p) (decode3$ p))))
   :hints (("Goal" :in-theory (enable tripp$)
                   :use (dbl$-formula-3
-                        (:instance dbl$-formula-4 (p (decode$ p)))))))
+                        (:instance dbl$-formula-4 (p (decode3$ p)))))))
 
 (local-defthmd sum$-sum
   (implies (and (tripp$ p1)
                 (tripp$ p2))
-           (equal (decode$ (sum$ p1 p2))
-                  (decode (sum (eval3$ p1) (eval3$ p2)))))
+           (equal (decode3$ (sum$ p1 p2))
+                  (decode3 (sum (eval3$ p1) (eval3$ p2)))))
   :hints (("Goal" :in-theory (enable sum))))
 
-(local-defthm decode$dx
-  (equal (x (decode$ p))
+(local-defthm decode3$dx
+  (equal (x (decode3$ p))
          (dx (eval3$ p)))
-  :hints (("Goal" :in-theory (enable decode))))
+  :hints (("Goal" :in-theory (enable decode3))))
 
-(local-defthm caddr-decode$
+(local-defthm caddr-decode3$
   (implies (equal (caddr p) 1)
            (equal (caddr (eval3$ p)) 1))
   :hints (("Goal" :in-theory (enable evalp$)))) 
@@ -366,16 +366,16 @@
 (local-defthmd tripp$-sum$-1
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (not (= (mod (evalp$ (car p1)) (p))
                    (mod (* (evalp$ (car p2)) (frcp (expt (evalp$ (caddr p2)) 2))) (p)))))
-  :hints (("Goal" :expand ((EVALP$ 1)) :in-theory (enable decode dx tripp$))))
+  :hints (("Goal" :expand ((EVALP$ 1)) :in-theory (enable decode3 dx tripp$))))
 
 (local-defthmd tripp$-sum$-2
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (= (mod (evalp$ (car p1)) (p))
               (mod (* (evalp$ (car p1)) (frcp (expt (evalp$ (caddr p2)) 2)) (expt (evalp$ (caddr p2)) 2)) (p))))
@@ -386,7 +386,7 @@
 (local-defthmd tripp$-sum$-3
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (not (= (mod (* (evalp$ (car p1)) (frcp (expt (evalp$ (caddr p2)) 2)) (expt (evalp$ (caddr p2)) 2)) (p))
                    (mod (* (evalp$ (car p2)) (frcp (expt (evalp$ (caddr p2)) 2))) (p)))))
@@ -395,7 +395,7 @@
 (local-defthmd tripp$-sum$-4
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (not (= (mod (* (evalp$ (car p1)) (expt (evalp$ (caddr p2)) 2)) (p))
                    (mod (evalp$ (car p2)) (p)))))
@@ -409,7 +409,7 @@
 (local-defthmd tripp$-sum$-5
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (not (= (mod (- (* (evalp$ (car p1)) (expt (evalp$ (caddr p2)) 2))
                            (evalp$ (car p2)))
@@ -424,7 +424,7 @@
 (local-defthm tripp$-sum$-6
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (not (= (mod (evalp$ (zsum$ p1 p2)) (p)) 0)))
   :hints (("Goal" :in-theory (enable tripp$ zsum)
@@ -436,7 +436,7 @@
 (local-defthm tripp$-sum$-7
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (and (polyp$ (usum$ p1 p2))
                 (polyp$ (vsum$ p1 p2))
@@ -446,7 +446,7 @@
 (defthm tripp$-sum$
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
            (tripp$ (sum$ p1 p2)))
   :hints (("Goal" :in-theory (enable tripp$ sum)
@@ -455,16 +455,16 @@
 (defthmd sum$-formula
   (implies (and (tripp$ p1)
                 (tripp$ p2)
-                (not (= (x (decode$ p1)) (x (decode$ p2))))
+                (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
-           (equal (decode$ (sum$ p1 p2))
-                  (ec+ (decode$ p1) (decode$ p2))))
-  :hints (("Goal" :in-theory '(eval3$ decode$ evalp$)
+           (equal (decode3$ (sum$ p1 p2))
+                  (ec+ (decode3$ p1) (decode3$ p2))))
+  :hints (("Goal" :in-theory '(eval3$ decode3$ evalp$)
                   :use (sum$-sum
                         eval3$cadr
-                        (:instance caddr-decode$ (p p1))
-                        (:instance decode$dx (p p1))
-                        (:instance decode$dx (p p2))
+                        (:instance caddr-decode3$ (p p1))
+                        (:instance decode3$dx (p p1))
+                        (:instance decode3$dx (p p2))
                         (:instance tripp$tripp (x p1))
                         (:instance tripp$tripp (x p2))
                         (:instance sum-formula (p1 (eval3$ p1)) (p2 (eval3$ p2)))))))
@@ -678,9 +678,9 @@
 (defthmd ecp$ecp 
   (implies (and (tripp$ p)
                 (ecp$ p))
-           (ecp (decode$ p)))
+           (ecp (decode3$ p)))
   :hints (("Goal" :use (ecp-term-frcp-13 ecp-term-frcp-14)
-                  :in-theory (enable ecp decode decode$))))
+                  :in-theory (enable ecp decode3 decode3$))))
 
 (defun eq$ (p1 p2)
   (let ((u1 (car p1))
@@ -824,8 +824,8 @@
   (implies (and (tripp$ p1)
                 (tripp$ p2)
                 (eq$ p1 p2))
-           (equal (decode$ p1) (decode$ p2)))
+           (equal (decode3$ p1) (decode3$ p2)))
   :hints (("Goal" :use (eq$eq-8)
-                  :in-theory (enable tripp$ decode$ decode dx dy))))
+                  :in-theory (enable tripp$ decode3$ decode3 dx dy))))
 
 
