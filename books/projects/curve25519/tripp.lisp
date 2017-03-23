@@ -88,7 +88,7 @@
            (equal (mod (dy p) (p)) (dy p)))
   :hints (("Goal" :in-theory (enable tripp dy))))
 
-(defun decode (p)
+(defun decode3 (p)
   (cons (dx p) (dy p)))
 
 ;; Doubling: we define polynomial functions zdbl, udbl, and vdbl 
@@ -227,7 +227,7 @@
         (vdbl p)
         (zdbl p)))
 
-(local-defthm decode-dbl-1
+(local-defthm decode3-dbl-1
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (not (= (mod (dy p) (p)) 0)))
@@ -237,51 +237,51 @@
                         (:instance mod-frcp-0 (n (caddr p)))
                         (:instance mod*0 (n (cadr p)) (m (frcp (expt (caddr p) 3))))))))
 
-(defthmd decode-dbl-2
+(defthmd decode3-dbl-2
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (not (equal (mod (* 2 (dy p)) (p)) 0)))
-  :hints (("Goal" :use (decode-dbl-1
+  :hints (("Goal" :use (decode3-dbl-1
                         (:instance odd-char (n (dy p)))))))
 
-(defthmd ec-decode-dbp
+(defthmd ec-decode3-dbp
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
-           (not (equal (ec- (decode p)) (decode p))))
-  :hints (("Goal" :use (decode-dbl-2
+           (not (equal (ec- (decode3 p)) (decode3 p))))
+  :hints (("Goal" :use (decode3-dbl-2
                         (:instance mod-equal-0 (a (dy p)) (b (- (dy p))) (n (p))))
                   :in-theory (enable ec-))))
 
-(local-defthm decode-dbl-3
+(local-defthm decode3-dbl-3
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (ec+slope (cons (dx p) (dy p)) (cons (dx p) (dy p)))
                   (lamdbl p)))
   :hints (("Goal" :in-theory (enable ec+slope lamdbl)
-                  :use (decode-dbl-2))))
+                  :use (decode3-dbl-2))))
 
-(local-defthm decode-dbl-4
+(local-defthm decode3-dbl-4
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (ec+x (cons (dx p) (dy p)) (cons (dx p) (dy p)))
                   (xdbl p)))
-  :hints (("Goal" :in-theory (enable decode-dbl-2 xdbl ec+x))))
+  :hints (("Goal" :in-theory (enable decode3-dbl-2 xdbl ec+x))))
 
-(local-defthm decode-dbl-5
+(local-defthm decode3-dbl-5
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (ec+y (cons (dx p) (dy p)) (cons (dx p) (dy p)))
                   (ydbl p)))
-  :hints (("Goal" :in-theory (enable decode-dbl-2 ydbl ec+y))))
+  :hints (("Goal" :in-theory (enable decode3-dbl-2 ydbl ec+y))))
 
-(defthmd decode-dbl-6
+(defthmd decode3-dbl-6
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
-           (equal (ec+ (decode p) (decode p))
+           (equal (ec+ (decode3 p) (decode3 p))
                   (cons (xdbl p) (ydbl p))))
-  :hints (("Goal" :use (ec-decode-dbp) :in-theory (enable ec+rewrite))))
+  :hints (("Goal" :use (ec-decode3-dbp) :in-theory (enable ec+rewrite))))
 
-(local-defthmd decode-dbl-7
+(local-defthmd decode3-dbl-7
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (lamdbl p)
@@ -295,7 +295,7 @@
                                             (n (+ (* 3 (expt (dx p) 2)) (* 2 (a) (dx p)) 1))
                                             (m (* 2 (dy p))))))))
 
-(local-defthmd decode-dbl-8
+(local-defthmd decode3-dbl-8
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 3 (expt (caddr p) 4) (expt (dx p) 2)) (p))
@@ -303,16 +303,16 @@
   :hints (("Goal" :in-theory (enable frcp-expt dx)
                   :use ((:instance mod-expt-0 (p (p)) (n (caddr p)) (k 4))))))
 
-(local-defthmd decode-dbl-9
+(local-defthmd decode3-dbl-9
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 3 (expt (caddr p) 4) (expt (dx p) 2)) (p))
                   (mod (* 3 (expt (car p) 2)) (p))))
-  :hints (("Goal" :use (decode-dbl-8
+  :hints (("Goal" :use (decode3-dbl-8
                         (:instance mod-expt-0 (p (p)) (k 4) (n (caddr p))) 
                         (:instance frcp-cor (m (* 3 (expt (car p) 2))) (n (expt (caddr p) 4)))))))
 
-(local-defthmd decode-dbl-10
+(local-defthmd decode3-dbl-10
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 2 (a) (expt (caddr p) 4) (dx p)) (p))
@@ -320,16 +320,16 @@
   :hints (("Goal" :in-theory (enable frcp-expt dx)
                   :use ((:instance mod-expt-0 (p (p)) (n (caddr p)) (k 2))))))
 
-(local-defthmd decode-dbl-11
+(local-defthmd decode3-dbl-11
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 2 (a) (expt (caddr p) 4) (dx p)) (p))
                   (mod (* 2 (a) (car p) (expt (caddr p) 2)) (p))))
-  :hints (("Goal" :use (decode-dbl-10
+  :hints (("Goal" :use (decode3-dbl-10
                         (:instance mod-expt-0 (p (p)) (n (caddr p)) (k 2))
                         (:instance frcp-cor (m (* 2 (a) (car p) (expt (caddr p) 2))) (n (expt (caddr p) 2)))))))
 
-(local-defthmd decode-dbl-12
+(local-defthmd decode3-dbl-12
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 2 (expt (caddr p) 4) (dy p)) (p))
@@ -337,24 +337,24 @@
   :hints (("Goal" :in-theory (enable frcp-expt dy)
                   :use ((:instance mod-expt-0 (p (p)) (n (caddr p)) (k 3))))))
 
-(local-defthmd decode-dbl-13
+(local-defthmd decode3-dbl-13
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 2 (expt (caddr p) 4) (dy p)) (p))
                   (mod (* 2 (cadr p) (caddr p)) (p))))
-  :hints (("Goal" :use (decode-dbl-12
+  :hints (("Goal" :use (decode3-dbl-12
                         (:instance mod-expt-0 (p (p)) (n (caddr p)) (k 3))
                         (:instance frcp-cor (m (* 2 (cadr p) (caddr p))) (n (expt (caddr p) 3)))))))
 
-(local-defthmd decode-dbl-14
+(local-defthmd decode3-dbl-14
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (not (= (mod (* 2 (expt (caddr p) 4) (dy p)) (p)) 0)))
-  :hints (("Goal" :use (decode-dbl-13
+  :hints (("Goal" :use (decode3-dbl-13
                         (:instance mod*0 (n 2) (m (* (cadr p) (caddr p))))
                         (:instance mod*0 (n (cadr p)) (m (caddr p)))))))
 
-(local-defthmd decode-dbl-15
+(local-defthmd decode3-dbl-15
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (+ (mod (* 3 (expt (caddr p) 4) (expt (dx p) 2)) (p))
@@ -366,10 +366,10 @@
                           (mod (expt (caddr p) 4) (p)))
                        (p))))
   :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-dbl-9
-                        decode-dbl-11))))
+                  :use (decode3-dbl-9
+                        decode3-dbl-11))))
 
-(local-defthmd decode-dbl-16
+(local-defthmd decode3-dbl-16
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (+ (* 3 (expt (caddr p) 4) (expt (dx p) 2))
@@ -380,9 +380,9 @@
                           (* 2 (a) (car p) (expt (caddr p) 2))
                           (expt (caddr p) 4))
                        (p))))
-  :hints (("Goal" :use (decode-dbl-15))))
+  :hints (("Goal" :use (decode3-dbl-15))))
 
-(local-defthmd decode-dbl-17
+(local-defthmd decode3-dbl-17
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (lamdbl p)
@@ -392,14 +392,14 @@
                            (p))
                       (mod (* 2 (expt (caddr p) 4) (dy p))
                            (p)))))
-  :hints (("Goal" :in-theory (enable decode-dbl-7)
-                  :use (decode-dbl-14
+  :hints (("Goal" :in-theory (enable decode3-dbl-7)
+                  :use (decode3-dbl-14
                         (:instance f/mod (n (+ (* 3 (expt (caddr p) 4) (expt (dx p) 2))
                                                (* 2 (a) (expt (caddr p) 4) (dx p))
                                                (expt (caddr p) 4)))
                                          (m (* 2 (expt (caddr p) 4) (dy p))))))))
 
-(local-defthmd decode-dbl-18
+(local-defthmd decode3-dbl-18
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (lamdbl p)
@@ -408,22 +408,22 @@
                               (expt (caddr p) 4))
                            (p))
                       (mod (* 2 (cadr p) (caddr p)) (p)))))
-  :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory) '(decode-dbl-17))
-                  :use (decode-dbl-13 decode-dbl-16))))
+  :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory) '(decode3-dbl-17))
+                  :use (decode3-dbl-13 decode3-dbl-16))))
 
-(local-defthmd decode-dbl-19
+(local-defthmd decode3-dbl-19
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (lamdbl p)
                   (f/ (wdbl p) (zdbl p))))
-  :hints (("Goal" :in-theory (enable wdbl zdbl decode-dbl-18)
-                  :use (decode-dbl-14 decode-dbl-13
+  :hints (("Goal" :in-theory (enable wdbl zdbl decode3-dbl-18)
+                  :use (decode3-dbl-14 decode3-dbl-13
                         (:instance f/mod (n (+ (* 3 (expt (car p) 2))
                                                (* 2 (a) (car p) (expt (caddr p) 2))
                                                (expt (caddr p) 4)))
                                          (m (* 2 (cadr p) (caddr p))))))))
 
-(local-defthmd decode-dbl-20
+(local-defthmd decode3-dbl-20
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (xdbl p) (expt (zdbl p) 2)) (p))
@@ -432,7 +432,7 @@
                        (p))))
   :hints (("Goal" :in-theory (enable xdbl))))
 
-(local-defthmd decode-dbl-21
+(local-defthmd decode3-dbl-21
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (- (* (expt (zdbl p) 2) (expt (lamdbl p) 2))
@@ -442,33 +442,33 @@
                           (mod (* (expt (zdbl p) 2) (+ (a) (* 2 (dx p)))) (p)))
                        (p)))))
 
-(local-defthmd decode-dbl-22
+(local-defthmd decode3-dbl-22
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (xdbl p) (expt (zdbl p) 2)) (p))
                   (mod (- (mod (* (expt (zdbl p) 2) (expt (lamdbl p) 2)) (p))
                           (mod (* (expt (zdbl p) 2) (+ (a) (* 2 (dx p)))) (p)))
                        (p))))
-  :hints (("Goal" :use (decode-dbl-20 decode-dbl-21)
+  :hints (("Goal" :use (decode3-dbl-20 decode3-dbl-21)
                     :in-theory (theory 'minimal-theory))))
 
-(local-defthmd decode-dbl-23
+(local-defthmd decode3-dbl-23
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 2) (expt (lamdbl p) 2)) (p))
                   (mod (* (expt (wdbl p) 2) (frcp (expt (zdbl p) 2)) (expt (zdbl p) 2)) (p))))
-  :hints (("Goal" :in-theory (enable frcp-expt decode-dbl-19))))
+  :hints (("Goal" :in-theory (enable frcp-expt decode3-dbl-19))))
 
-(local-defthmd decode-dbl-24
+(local-defthmd decode3-dbl-24
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 2) (expt (lamdbl p) 2)) (p))
                   (mod (expt (wdbl p) 2) (p))))
-  :hints (("Goal" :use (decode-dbl-23
+  :hints (("Goal" :use (decode3-dbl-23
                         (:instance frcp-cor (m (expt (wdbl p) 2)) (n (expt (zdbl p) 2)))
                         (:instance mod-expt-0 (p (p)) (k 2) (n (zdbl p)))))))
 
-(local-defthmd decode-dbl-25
+(local-defthmd decode3-dbl-25
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 2) (+ (a) (* 2 (dx p)))) (p))
@@ -477,7 +477,7 @@
                        (p))))                          
   :hints (("Goal" :in-theory (enable zdbl dx))))
 
-(local-defthmd decode-dbl-26
+(local-defthmd decode3-dbl-26
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* 8 (car p) (expt (cadr p) 2) (expt (caddr p) 2) (frcp (expt (caddr p) 2))) (p))
@@ -485,26 +485,26 @@
   :hints (("Goal" :use ((:instance frcp-cor (m (* 8 (car p) (expt (cadr p) 2))) (n (expt (caddr p) 2)))
                         (:instance mod-expt-0 (p (p)) (k 2) (n (caddr p)))))))
 
-(local-defthmd decode-dbl-27
+(local-defthmd decode3-dbl-27
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 2) (+ (a) (* 2 (dx p)))) (p))
                   (mod (+ (* 4 (a) (expt (* (cadr p) (caddr p)) 2))
                           (mod (* 8 (car p) (expt (cadr p) 2)) (p)))
                        (p))))                          
-  :hints (("Goal" :use (decode-dbl-25 decode-dbl-26)
+  :hints (("Goal" :use (decode3-dbl-25 decode3-dbl-26)
                   :in-theory (theory 'minimal-theory))))
 
-(local-defthmd decode-dbl-28
+(local-defthmd decode3-dbl-28
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 2) (+ (a) (* 2 (dx p)))) (p))
                   (mod (+ (* 4 (a) (expt (* (cadr p) (caddr p)) 2))
                           (* 8 (car p) (expt (cadr p) 2)))
                        (p))))                          
-  :hints (("Goal" :use (decode-dbl-27))))
+  :hints (("Goal" :use (decode3-dbl-27))))
 
-(local-defthmd decode-dbl-29
+(local-defthmd decode3-dbl-29
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (xdbl p) (expt (zdbl p) 2)) (p))
@@ -513,10 +513,10 @@
                                   (* 8 (car p) (expt (cadr p) 2)))
                                (p)))
                        (p))))
-  :hints (("Goal" :use (decode-dbl-22 decode-dbl-24 decode-dbl-28)
+  :hints (("Goal" :use (decode3-dbl-22 decode3-dbl-24 decode3-dbl-28)
                   :in-theory (theory 'minimal-theory))))
 
-(local-defthmd decode-dbl-30
+(local-defthmd decode3-dbl-30
   (implies (and (tripp p) (integerp (expt (wdbl p) 2))
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (xdbl p) (expt (zdbl p) 2)) (p))
@@ -524,9 +524,9 @@
                           (+ (* 4 (a) (expt (* (cadr p) (caddr p)) 2))
                              (* 8 (car p) (expt (cadr p) 2))))
                        (p))))
-  :hints (("Goal" :use (decode-dbl-29))))
+  :hints (("Goal" :use (decode3-dbl-29))))
 
-(local-defthmd decode-dbl-31
+(local-defthmd decode3-dbl-31
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (xdbl p) (expt (zdbl p) 2)) (p))
@@ -534,28 +534,28 @@
                           (+ (* 4 (a) (expt (* (cadr p) (caddr p)) 2))
                              (* 8 (car p) (expt (cadr p) 2))))
                        (p))))
-  :hints (("Goal" :use (decode-dbl-30))))
+  :hints (("Goal" :use (decode3-dbl-30))))
 
-(local-defthmd decode-dbl-32
+(local-defthmd decode3-dbl-32
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (xdbl p) (expt (zdbl p) 2)) (p))
                   (mod (udbl p) (p))))
-  :hints (("Goal" :use (decode-dbl-31)
+  :hints (("Goal" :use (decode3-dbl-31)
                   :in-theory (enable udbl))))
 
-(local-defthmd decode-dbl-33
+(local-defthmd decode3-dbl-33
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (xdbl p) (p))
                   (f/ (udbl p) (expt (zdbl p) 2))))
-  :hints (("Goal" :use (decode-dbl-32
+  :hints (("Goal" :use (decode3-dbl-32
                         (:instance mod-expt-0 (p (p)) (k 2) (n (zdbl p)))
                         (:instance f*/ (m (udbl p)) (a (expt (zdbl p) 2)) (n (xdbl p)))))))
 
 (local (in-theory (enable nary::mod-rules)))
 
-(local-defthmd decode-dbl-34
+(local-defthmd decode3-dbl-34
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (ydbl p) (expt (zdbl p) 3)) (p))
@@ -565,15 +565,15 @@
                        (p))))
   :hints (("Goal" :in-theory (enable ydbl))))
 
-(local-defthmd decode-dbl-35
+(local-defthmd decode3-dbl-35
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 3) (lamdbl p) (dx p)) (p))
                   (mod (* (expt (zdbl p) 2) (wdbl p) (dx p)) (p))))
-  :hints (("Goal" :in-theory (enable decode-dbl-19)
+  :hints (("Goal" :in-theory (enable decode3-dbl-19)
                   :use ((:instance frcp-cor (m (* (expt (zdbl p) 2) (wdbl p) (dx p))) (n (zdbl p)))))))
 
-(local-defthmd decode-dbl-36
+(local-defthmd decode3-dbl-36
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 2) (wdbl p) (dx p)) (p))
@@ -581,22 +581,22 @@
   :hints (("Goal" :in-theory (enable dx zdbl)
                   :use ((:instance frcp-cor (m (* 4 (car p) (expt (cadr p) 2) (wdbl p))) (n (expt (caddr p) 2)))))))
 
-(local-defthmd decode-dbl-37
+(local-defthmd decode3-dbl-37
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 3) (lamdbl p) (dx p)) (p))
                   (mod (* 4 (car p) (expt (cadr p) 2) (wdbl p)) (p))))
-  :hints (("Goal" :use (decode-dbl-36 decode-dbl-35))))
+  :hints (("Goal" :use (decode3-dbl-36 decode3-dbl-35))))
 
-(local-defthmd decode-dbl-38
+(local-defthmd decode3-dbl-38
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 3) (lamdbl p) (xdbl p)) (p))
                   (mod (* (wdbl p) (udbl p)) (p))))
   :hints (("Goal" :use ((:instance frcp-cor (m (* (wdbl p) (udbl p))) (n (expt (zdbl p) 3))))
-                  :in-theory (enable frcp-expt decode-dbl-19 decode-dbl-33))))
+                  :in-theory (enable frcp-expt decode3-dbl-19 decode3-dbl-33))))
 
-(local-defthmd decode-dbl-39
+(local-defthmd decode3-dbl-39
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (expt (zdbl p) 3) (dy p)) (p))
@@ -604,7 +604,7 @@
   :hints (("Goal" :use ((:instance frcp-cor (m (* 8 (expt (cadr p) 4))) (n (expt (caddr p) 3))))
                   :in-theory (enable frcp-expt zdbl dy))))
 
-(local-defthmd decode-dbl-40
+(local-defthmd decode3-dbl-40
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (ydbl p) (expt (zdbl p) 3)) (p))
@@ -613,9 +613,9 @@
                              (mod (* 8 (expt (cadr p) 4)) (p))))
                        (p))))
   :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-dbl-34 decode-dbl-37 decode-dbl-38 decode-dbl-39))))
+                  :use (decode3-dbl-34 decode3-dbl-37 decode3-dbl-38 decode3-dbl-39))))
 
-(local-defthmd decode-dbl-41
+(local-defthmd decode3-dbl-41
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (ydbl p) (expt (zdbl p) 3)) (p))
@@ -623,21 +623,21 @@
                           (+ (* (wdbl p) (udbl p))
                              (* 8 (expt (cadr p) 4))))
                        (p))))
-  :hints (("Goal" :in-theory (disable NARY::MOD-*-CONGRUENCE) :use (decode-dbl-40))))
+  :hints (("Goal" :in-theory (disable NARY::MOD-*-CONGRUENCE) :use (decode3-dbl-40))))
 
-(local-defthmd decode-dbl-42
+(local-defthmd decode3-dbl-42
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (* (ydbl p) (expt (zdbl p) 3)) (p))
                   (mod (vdbl p) (p))))
-  :hints (("Goal" :in-theory (e/d (vdbl) (nary::mod-rules)) :use (decode-dbl-41))))
+  :hints (("Goal" :in-theory (e/d (vdbl) (nary::mod-rules)) :use (decode3-dbl-41))))
 
-(local-defthmd decode-dbl-43
+(local-defthmd decode3-dbl-43
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (mod (ydbl p) (p))
                   (f/ (vdbl p) (expt (zdbl p) 3))))
-  :hints (("Goal" :use (decode-dbl-42
+  :hints (("Goal" :use (decode3-dbl-42
                         (:instance mod-expt-0 (p (p)) (k 3) (n (zdbl p)))
                         (:instance f*/ (m (vdbl p)) (a (expt (zdbl p) 3)) (n (ydbl p)))))))
 
@@ -646,36 +646,36 @@
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (xdbl p)
                   (f/ (udbl p) (expt (zdbl p) 2))))
-  :hints (("Goal" :use (decode-dbl-33) :in-theory (e/d (xdbl) (nary::mod-rules)))))
+  :hints (("Goal" :use (decode3-dbl-33) :in-theory (e/d (xdbl) (nary::mod-rules)))))
 
 (local-defthmd ydbl-rewrite
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
            (equal (ydbl p)
                   (f/ (vdbl p) (expt (zdbl p) 3))))
-  :hints (("Goal" :use (decode-dbl-43) :in-theory (e/d (ydbl) (nary::mod-rules)))))
+  :hints (("Goal" :use (decode3-dbl-43) :in-theory (e/d (ydbl) (nary::mod-rules)))))
 
-(local-defthmd decode-dbl-44
+(local-defthmd decode3-dbl-44
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
-           (equal (decode (dbl p))
+           (equal (decode3 (dbl p))
                   (cons (f/ (udbl p) (expt (zdbl p) 2))
                         (f/ (vdbl p) (expt (zdbl p) 3)))))
-  :hints (("Goal" :in-theory (enable decode dx dy dbl decode-dbl-2))))
+  :hints (("Goal" :in-theory (enable decode3 dx dy dbl decode3-dbl-2))))
 
-(local-defthmd decode-dbl-45
+(local-defthmd decode3-dbl-45
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
-           (equal (decode (dbl p))
+           (equal (decode3 (dbl p))
                   (cons (xdbl p) (ydbl p))))
-  :hints (("Goal" :use (decode-dbl-44 xdbl-rewrite ydbl-rewrite))))
+  :hints (("Goal" :use (decode3-dbl-44 xdbl-rewrite ydbl-rewrite))))
 
 (defthmd dbl-formula
   (implies (and (tripp p)
                 (not (= (mod (cadr p) (p)) 0)))
-           (equal (decode (dbl p))
-                  (ec+ (decode p) (decode p))))
-  :hints (("Goal" :use (decode-dbl-6 decode-dbl-45) :in-theory (theory 'minimal-theory))))
+           (equal (decode3 (dbl p))
+                  (ec+ (decode3 p) (decode3 p))))
+  :hints (("Goal" :use (decode3-dbl-6 decode3-dbl-45) :in-theory (theory 'minimal-theory))))
 
 ;; Addition of distinct points: we define polynomial functions zsum 
 ;; usum and vsum that satisfy the following:
@@ -769,7 +769,7 @@
         (vsum p1 p2)
         (zsum p1 p2)))
 
-(defthm decode-sum1
+(defthm decode3-sum1
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1))))
@@ -777,7 +777,7 @@
                   (lamsum p1 p2)))
   :hints (("Goal" :in-theory (enable ec+slope lamsum))))
 
-(local-defthm decode-sum-2
+(local-defthm decode3-sum-2
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1))))
@@ -785,7 +785,7 @@
                   (xsum p1 p2)))
   :hints (("Goal" :in-theory (enable xsum ec+x))))
 
-(local-defthm decode-sum-3
+(local-defthm decode3-sum-3
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1))))
@@ -793,15 +793,15 @@
                   (ysum p1 p2)))
   :hints (("Goal" :in-theory (enable ysum ec+y))))
 
-(local-defthmd decode-sum-4
+(local-defthmd decode3-sum-4
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1))))
-           (equal (ec+ (decode p1) (decode p2))
+           (equal (ec+ (decode3 p1) (decode3 p2))
                   (cons (xsum p1 p2) (ysum p1 p2))))
   :hints (("Goal" :in-theory (enable ec- ec+rewrite))))
 
-(local-defthmd decode-sum-5
+(local-defthmd decode3-sum-5
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -820,7 +820,7 @@
                                          (m (* (expt (caddr p2) 3) (f- (dx p1) (dx p2)))))
                         (:instance mod-expt-0 (p (p)) (k 3) (n (caddr p2)))))))
 
-(local-defthmd decode-sum-6
+(local-defthmd decode3-sum-6
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -831,7 +831,7 @@
                   :use ((:instance frcp-cor (m (cadr p2)) (n (expt (caddr p2) 3)))
                         (:instance mod-expt-0 (p (p)) (k 3) (n (caddr p2)))))))
 
-(local-defthmd decode-sum-7
+(local-defthmd decode3-sum-7
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -842,7 +842,7 @@
                   :use ((:instance frcp-cor (m (* (caddr p2) (car p2))) (n (expt (caddr p2) 2)))
                         (:instance mod-expt-0 (p (p)) (k 2) (n (caddr p2)))))))
 
-(local-defthmd decode-sum-8
+(local-defthmd decode3-sum-8
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -852,7 +852,7 @@
                        (f/ (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                            (zsum p1 p2)))))
   :hints (("Goal" :in-theory (e/d (zsum) (f/))
-                  :use (decode-sum-5 decode-sum-6 decode-sum-7
+                  :use (decode3-sum-5 decode3-sum-6 decode3-sum-7
                         (:instance f/mod (n (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)))
                                          (m (* (caddr p2) (- (* (expt (caddr p2) 2) (car p1)) (car p2)))))))))
 
@@ -871,7 +871,7 @@
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
            (not (equal (mod (zsum p1 p2) (p)) 0)))
-  :hints (("Goal" :use (decode-sum-8))))
+  :hints (("Goal" :use (decode3-sum-8))))
 
 (defthm zsum-0-2
   (implies (and (tripp p1)
@@ -915,7 +915,7 @@
   :hints (("Goal" :in-theory (enable usum vsum)))
   :rule-classes (:type-prescription :rewrite)) 
 
-(local-defthmd decode-sum-9
+(local-defthmd decode3-sum-9
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -926,7 +926,7 @@
                       (p))))
   :hints (("Goal" :in-theory (enable xsum))))
 
-(local-defthmd decode-sum-10
+(local-defthmd decode3-sum-10
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -936,9 +936,9 @@
                          (expt (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)) 2)
                          (expt (frcp (zsum p1 p2)) 2))
                       (p))))                         
-  :hints (("Goal" :in-theory (e/d (decode-sum-8 frcp-expt) (nary::MOD-*-CONGRUENCE)))))
+  :hints (("Goal" :in-theory (e/d (decode3-sum-8 frcp-expt) (nary::MOD-*-CONGRUENCE)))))
 
-(local-defthmd decode-sum-11
+(local-defthmd decode3-sum-11
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -956,7 +956,7 @@
                                                  (c (expt (frcp (zsum p1 p2)) 2))))
                   :in-theory (disable expt mod*rewrite-3 NARY::MOD-rules))))
 
-(local-defthmd decode-sum-12
+(local-defthmd decode3-sum-12
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -965,7 +965,7 @@
                  (frcp (expt (zsum p1 p2) 2))))
   :hints (("Goal" :in-theory (enable frcp-expt))))
 
-(local-defthmd decode-sum-13
+(local-defthmd decode3-sum-13
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -975,21 +975,21 @@
                          (expt (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)) 2)
                          (frcp (expt (zsum p1 p2) 2)))
                       (p))))                         
-  :hints (("Goal" :use (decode-sum-10 decode-sum-11 decode-sum-12)
+  :hints (("Goal" :use (decode3-sum-10 decode3-sum-11 decode3-sum-12)
                   :in-theory (theory 'minimal-theory))))
 
-(local-defthmd decode-sum-14
+(local-defthmd decode3-sum-14
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
           (equal (mod (* (expt (zsum p1 p2) 2) (expt (lamsum p1 p2) 2)) (p))
                  (mod (expt (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)) 2) (p))))
-  :hints (("Goal" :use (decode-sum-13
+  :hints (("Goal" :use (decode3-sum-13
                         (:instance frcp-cor (m (expt (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)) 2)) (n (expt (zsum p1 p2) 2))))
                   :in-theory (disable nary::mod-rules))))
 
-(local-defthmd decode-sum-15
+(local-defthmd decode3-sum-15
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1005,7 +1005,7 @@
            (natp (f/ m n)))
   :rule-classes (:type-prescription :rewrite))
 
-(local-defthmd decode-sum-16
+(local-defthmd decode3-sum-16
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1023,7 +1023,7 @@
                                                  (b (expt (caddr p2) 2))
                                                  (c (+ (a) (f/ (car p1) 1) (f/ (car p2) (expt (caddr p2) 2)))))))))
 
-(local-defthmd decode-sum-17
+(local-defthmd decode3-sum-17
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1031,7 +1031,7 @@
           (equal (mod (+ (a) (f/ (car p1) 1) (f/ (car p2) (expt (caddr p2) 2))) (p))
                  (mod (+ (a) (car p1) (* (car p2) (frcp (expt (caddr p2) 2)))) (p)))))
 
-(local-defthmd decode-sum-18
+(local-defthmd decode3-sum-18
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1044,10 +1044,10 @@
                          (expt (caddr p2) 2)
                          (mod (+ (a) (car p1) (* (car p2) (frcp (expt (caddr p2) 2)))) (p)))
                       (p))))
-  :hints (("Goal" :use (decode-sum-17 decode-sum-16)
+  :hints (("Goal" :use (decode3-sum-17 decode3-sum-16)
                   :in-theory (theory 'minimal-theory))))
 
-(local-defthmd decode-sum-19
+(local-defthmd decode3-sum-19
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1065,7 +1065,7 @@
                                                  (b (expt (caddr p2) 2))
                                                  (c (+ (a) (car p1) (* (car p2) (frcp (expt (caddr p2) 2))))))))))
 
-(local-defthmd decode-sum-20
+(local-defthmd decode3-sum-20
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1076,9 +1076,9 @@
                          (+ (a) (car p1) (* (car p2) (frcp (expt (caddr p2) 2)))))
                       (p))))
  :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-sum-15 decode-sum-16 decode-sum-18 decode-sum-19))))
+                  :use (decode3-sum-15 decode3-sum-16 decode3-sum-18 decode3-sum-19))))
 
-(local-defthmd decode-sum-21
+(local-defthmd decode3-sum-21
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1097,7 +1097,7 @@
                                                  (b (* (expt (caddr p2) 2)
                                                        (+ (a) (car p1) (* (car p2) (frcp (expt (caddr p2) 2)))))))))))
 
-(local-defthmd decode-sum-22
+(local-defthmd decode3-sum-22
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1109,7 +1109,7 @@
                          (mod (* (expt (caddr p2) 2) (car p2) (frcp (expt (caddr p2) 2))) (p)))
                       (p)))))
 
-(local-defthmd decode-sum-23
+(local-defthmd decode3-sum-23
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1118,7 +1118,7 @@
                  (mod (car p2) (p))))
   :hints (("Goal" :use ((:instance frcp-cor (m (car p2)) (n (expt (caddr p2) 2)))))))
 
-(local-defthmd decode-sum-24
+(local-defthmd decode3-sum-24
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1129,9 +1129,9 @@
                  (mod (+ (* (expt (caddr p2) 2) (+ (a) (car p1)))
                          (mod (car p2) (p)))
                       (p))))
-  :hints (("Goal" :use (decode-sum-22 decode-sum-23))))
+  :hints (("Goal" :use (decode3-sum-22 decode3-sum-23))))
 
-(local-defthmd decode-sum-25
+(local-defthmd decode3-sum-25
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1143,7 +1143,7 @@
                          (car p2))
                       (p)))))
 
-(local-defthmd decode-sum-26
+(local-defthmd decode3-sum-26
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1158,9 +1158,9 @@
                               (p)))
                       (p))))
  :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-sum-21 decode-sum-24 decode-sum-25))))
+                  :use (decode3-sum-21 decode3-sum-24 decode3-sum-25))))
 
-(local-defthmd decode-sum-27
+(local-defthmd decode3-sum-27
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1178,7 +1178,7 @@
                   :use ((:instance mod*rewrite-2 (a (expt (- (* (car p1) (expt (caddr p2) 2)) (car p2)) 2))
                                                  (b (+ (* (expt (caddr p2) 2) (+ (a) (car p1))) (car p2))))))))
 
-(local-defthmd decode-sum-28
+(local-defthmd decode3-sum-28
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1189,9 +1189,9 @@
                             (car p2)))
                       (p))))
  :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-sum-20 decode-sum-26 decode-sum-27))))
+                  :use (decode3-sum-20 decode3-sum-26 decode3-sum-27))))
 
-(local-defthmd decode-sum-29
+(local-defthmd decode3-sum-29
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1204,9 +1204,9 @@
                               (p)))
                       (p))))
  :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-sum-9 decode-sum-28 decode-sum-14))))
+                  :use (decode3-sum-9 decode3-sum-28 decode3-sum-14))))
 
-(local-defthmd decode-sum-30
+(local-defthmd decode3-sum-30
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1227,7 +1227,7 @@
                                                  (b (* (expt (- (* (car p1) (expt (caddr p2) 2)) (car p2)) 2)
                                                        (+ (* (expt (caddr p2) 2) (+ (a) (car p1))) (car p2)))))))))
 
-(local-defthmd decode-sum-31
+(local-defthmd decode3-sum-31
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1247,7 +1247,7 @@
                                                  (b (* (expt (- (* (car p1) (expt (caddr p2) 2)) (car p2)) 2)
                                                        (+ (* (expt (caddr p2) 2) (+ (a) (car p1))) (car p2)))))))))
 
-(local-defthmd decode-sum-32
+(local-defthmd decode3-sum-32
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1258,18 +1258,18 @@
                             (+ (* (expt (caddr p2) 2) (+ (a) (car p1)))
                                (car p2))))
                       (p))))
- :hints (("Goal" :in-theory (theory 'minimal-theory) :use (decode-sum-29 decode-sum-30 decode-sum-31))))
+ :hints (("Goal" :in-theory (theory 'minimal-theory) :use (decode3-sum-29 decode3-sum-30 decode3-sum-31))))
 
-(local-defthmd decode-sum-33
+(local-defthmd decode3-sum-33
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
           (equal (mod (* (xsum p1 p2) (expt (zsum p1 p2) 2)) (p))
                  (mod (usum p1 p2) (p))))
- :hints (("Goal" :in-theory (e/d (usum) (nary::mod-rules)) :use (decode-sum-32))))
+ :hints (("Goal" :in-theory (e/d (usum) (nary::mod-rules)) :use (decode3-sum-32))))
 
-(local-defthmd decode-sum-34
+(local-defthmd decode3-sum-34
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1277,7 +1277,7 @@
           (equal (mod (xsum p1 p2) (p))
                  (f/ (usum p1 p2) (expt (zsum p1 p2) 2))))
  :hints (("Goal" :in-theory (disable nary::mod-rules)
-                 :use (decode-sum-33
+                 :use (decode3-sum-33
                        (:instance f*/ (m (usum p1 p2)) (a (expt (zsum p1 p2) 2)) (n (xsum p1 p2)))))))
 
 (local-defthmd xsum-rewrite
@@ -1287,9 +1287,9 @@
                 (= (caddr p1) 1))
           (equal (xsum p1 p2)
                  (f/ (usum p1 p2) (expt (zsum p1 p2) 2))))
-  :hints (("Goal" :use (decode-sum-34) :in-theory (e/d (xsum) (nary::mod-rules)))))
+  :hints (("Goal" :use (decode3-sum-34) :in-theory (e/d (xsum) (nary::mod-rules)))))
 
-(local-defthmd decode-sum-36
+(local-defthmd decode3-sum-36
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1301,7 +1301,7 @@
                       (p))))
   :hints (("Goal" :in-theory (enable ysum))))
 
-(local-defthmd decode-sum-37
+(local-defthmd decode3-sum-37
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1310,7 +1310,7 @@
                   (mod (car p1) (p))))
   :hints (("Goal" :in-theory (enable dx))))
 
-(local-defthmd decode-sum-38
+(local-defthmd decode3-sum-38
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1319,9 +1319,9 @@
                   (mod (* (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                           (frcp (zsum p1 p2)))
                        (p))))
-  :hints (("Goal" :in-theory (enable decode-sum-8))))
+  :hints (("Goal" :in-theory (enable decode3-sum-8))))
 
-(local-defthmd decode-sum-39
+(local-defthmd decode3-sum-39
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1333,9 +1333,9 @@
                               (p))
                          (mod (car p1) (p)))
                      (p))))
-  :hints (("Goal" :in-theory '(decode-sum-37 decode-sum-38))))
+  :hints (("Goal" :in-theory '(decode3-sum-37 decode3-sum-38))))
 
-(local-defthmd decode-sum-40
+(local-defthmd decode3-sum-40
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1347,13 +1347,13 @@
                          (mod (car p1) (p)))
                      (p))))
   :hints (("Goal" :in-theory (disable mod*rewrite-1 nary::mod-rules)
-                  :use (decode-sum-39
+                  :use (decode3-sum-39
                         (:instance mod*rewrite-1 (a (* (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                        (frcp (zsum p1 p2))))
                                                  (b (* (expt (zsum p1 p2) 3)
                                                        (mod (car p1) (p)))))))))
 
-(local-defthmd decode-sum-41
+(local-defthmd decode3-sum-41
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1365,13 +1365,13 @@
                          (car p1))
                      (p))))
   :hints (("Goal" :in-theory (disable mod*rewrite-1 nary::mod-rules)
-                  :use (decode-sum-40
+                  :use (decode3-sum-40
                         (:instance mod*rewrite-1 (a (car p1))
                                                  (b (* (expt (zsum p1 p2) 3)
                                                        (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                        (frcp (zsum p1 p2)))))))))
 
-(local-defthmd decode-sum-42
+(local-defthmd decode3-sum-42
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1382,13 +1382,13 @@
                          (car p1))
                      (p))))
   :hints (("Goal" :in-theory (disable mod*rewrite-1 nary::mod-rules)
-                  :use (decode-sum-41
+                  :use (decode3-sum-41
                         (:instance frcp-cor (m (* (expt (zsum p1 p2) 2)
                                                  (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                  (car p1)))
                                            (n (zsum p1 p2)))))))
 
-(local-defthmd decode-sum-44
+(local-defthmd decode3-sum-44
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1400,9 +1400,9 @@
                               (p))
                          (xsum p1 p2))
                       (p))))
-  :hints (("Goal" :in-theory (enable decode-sum-38))))
+  :hints (("Goal" :in-theory (enable decode3-sum-38))))
 
-(local-defthmd decode-sum-45
+(local-defthmd decode3-sum-45
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1413,9 +1413,9 @@
                          (frcp (zsum p1 p2))
                          (xsum p1 p2))
                       (p))))
-  :hints (("Goal" :use (decode-sum-44))))
+  :hints (("Goal" :use (decode3-sum-44))))
 
-(local-defthmd decode-sum-46
+(local-defthmd decode3-sum-46
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1425,13 +1425,13 @@
                          (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                          (xsum p1 p2))
                       (p))))
-  :hints (("Goal" :use (decode-sum-45
+  :hints (("Goal" :use (decode3-sum-45
                         (:instance frcp-cor (m (* (expt (zsum p1 p2) 2)
                                                  (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                  (xsum p1 p2)))
                                            (n (zsum p1 p2)))))))
 
-(local-defthmd decode-sum-47
+(local-defthmd decode3-sum-47
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1440,7 +1440,7 @@
                  (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p))))
   :hints (("Goal" :in-theory (enable dy))))
 
-(local-defthmd decode-sum-48
+(local-defthmd decode3-sum-48
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1457,9 +1457,9 @@
                             (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p))))
                       (p))))
   :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-sum-36 decode-sum-42 decode-sum-46 decode-sum-47))))
+                  :use (decode3-sum-36 decode3-sum-42 decode3-sum-46 decode3-sum-47))))
 
-(local-defthmd decode-sum-49
+(local-defthmd decode3-sum-49
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1472,7 +1472,7 @@
                           (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)))
                        (p)))))
 
-(local-defthmd decode-sum-50
+(local-defthmd decode3-sum-50
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1484,9 +1484,9 @@
                   (mod (* (mod (usum p1 p2) (p))
                           (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)))
                        (p))))
-  :hints (("Goal" :use (decode-sum-49 decode-sum-33))))
+  :hints (("Goal" :use (decode3-sum-49 decode3-sum-33))))
 
-(local-defthmd decode-sum-51
+(local-defthmd decode3-sum-51
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1498,9 +1498,9 @@
                   (mod (* (usum p1 p2)
                           (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)))
                        (p))))
-  :hints (("Goal" :use (decode-sum-50))))
+  :hints (("Goal" :use (decode3-sum-50))))
 
-(local-defthmd decode-sum-52
+(local-defthmd decode3-sum-52
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1516,10 +1516,10 @@
                             (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p))))
                       (p))))
   :hints (("Goal" :in-theory (theory 'minimal-theory)
-                  :use (decode-sum-48 decode-sum-51))))
+                  :use (decode3-sum-48 decode3-sum-51))))
 
 
-(local-defthmd decode-sum-53
+(local-defthmd decode3-sum-53
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1534,7 +1534,7 @@
                             (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p))))
                       (p))))
   :hints (("Goal" :in-theory (disable mod-rewrite-1 nary::mod-rules)
-                  :use (decode-sum-52
+                  :use (decode3-sum-52
                         (:instance mod-rewrite-1 (a (* (expt (zsum p1 p2) 2)
                                                        (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                        (car p1)))
@@ -1543,7 +1543,7 @@
                                                             (p))
                                                        (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p)))))))))
 
-(local-defthmd decode-sum-54
+(local-defthmd decode3-sum-54
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1556,14 +1556,14 @@
                             (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p))))
                       (p))))
   :hints (("Goal" :in-theory (disable mod-rewrite-2 nary::mod-rules)
-                  :use (decode-sum-53
+                  :use (decode3-sum-53
                         (:instance mod-rewrite-2 (a (- (* (expt (zsum p1 p2) 2)
                                                           (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                           (car p1))
                                                        (mod (* (expt (zsum p1 p2) 3) (cadr p1)) (p))))
                                                  (b (* (usum p1 p2) (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)))))))))
 
-(local-defthmd decode-sum-55
+(local-defthmd decode3-sum-55
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1576,14 +1576,14 @@
                             (* (expt (zsum p1 p2) 3) (cadr p1))))
                       (p))))
   :hints (("Goal" :in-theory (disable mod-rewrite-2 nary::mod-rules)
-                  :use (decode-sum-54
+                  :use (decode3-sum-54
                         (:instance mod-rewrite-2 (a (- (* (expt (zsum p1 p2) 2)
                                                           (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2))
                                                           (car p1))
                                                        (* (usum p1 p2) (- (* (expt (caddr p2) 3) (cadr p1)) (cadr p2)))))
                                                  (b (* (expt (zsum p1 p2) 3) (cadr p1))))))))
 
-(local-defthmd decode-sum-56
+(local-defthmd decode3-sum-56
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1591,9 +1591,9 @@
           (equal (mod (* (ysum p1 p2) (expt (zsum p1 p2) 3)) (p))
                  (mod (vsum p1 p2) (p))))
   :hints (("Goal" :in-theory (e/d (vsum) (nary::mod-rules))
-                  :use (decode-sum-55))))
+                  :use (decode3-sum-55))))
 
-(local-defthmd decode-sum-57
+(local-defthmd decode3-sum-57
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
@@ -1601,7 +1601,7 @@
           (equal (mod (ysum p1 p2) (p))
                  (f/ (vsum p1 p2) (expt (zsum p1 p2) 3))))
   :hints (("Goal" :in-theory (disable nary::mod-rules)
-                  :use (decode-sum-56
+                  :use (decode3-sum-56
                        (:instance f*/ (m (vsum p1 p2)) (a (expt (zsum p1 p2) 3)) (n (ysum p1 p2)))))))
 
 (local-defthmd ysum-rewrite
@@ -1611,33 +1611,33 @@
                 (= (caddr p1) 1))
           (equal (ysum p1 p2)
                  (f/ (vsum p1 p2) (expt (zsum p1 p2) 3))))
-  :hints (("Goal" :use (decode-sum-57)  :in-theory (e/d (ysum) (nary::mod-rules)))))
+  :hints (("Goal" :use (decode3-sum-57)  :in-theory (e/d (ysum) (nary::mod-rules)))))
 
-(local-defthmd decode-sum-59
+(local-defthmd decode3-sum-59
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
-           (equal (decode (sum p1 p2))
+           (equal (decode3 (sum p1 p2))
                   (cons (f/ (usum p1 p2) (expt (zsum p1 p2) 2))
                         (f/ (vsum p1 p2) (expt (zsum p1 p2) 3)))))
-  :hints (("Goal" :in-theory (enable decode dx dy sum))))
+  :hints (("Goal" :in-theory (enable decode3 dx dy sum))))
 
-(local-defthmd decode-sum-60
+(local-defthmd decode3-sum-60
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
-           (equal (decode (sum p1 p2))
+           (equal (decode3 (sum p1 p2))
                   (cons (xsum p1 p2) (ysum p1 p2))))
-  :hints (("Goal" :use (decode-sum-59 ysum-rewrite xsum-rewrite))))
+  :hints (("Goal" :use (decode3-sum-59 ysum-rewrite xsum-rewrite))))
 
 (defthmd sum-formula
   (implies (and (tripp p1)
                 (tripp p2)
                 (not (= (dx p2) (dx p1)))
                 (= (caddr p1) 1))
-            (equal (decode (sum p1 p2))
-                  (ec+ (decode p1) (decode p2))))
-  :hints (("Goal" :use (decode-sum-4 decode-sum-60) :in-theory (theory 'minimal-theory))))
+            (equal (decode3 (sum p1 p2))
+                  (ec+ (decode3 p1) (decode3 p2))))
+  :hints (("Goal" :use (decode3-sum-4 decode3-sum-60) :in-theory (theory 'minimal-theory))))
 

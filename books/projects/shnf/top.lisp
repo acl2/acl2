@@ -62,7 +62,7 @@
 (defthm integerp-evalp
   (implies (and (distinct-symbols vars)
                 (all-integers vals)
-                (= (len vars) (len vals))
+                (<= (len vars) (len vals))
                 (polyp x vars))
            (integerp (evalp x (pairlis$ vars vals))))
   :rule-classes ())
@@ -92,10 +92,9 @@
 (defun shfp (x)
   (if (atom x)
       (integerp x)
-    (let ((i (cadr x)) (p (caddr x)) (q (cadddr x)))
-      (case (car x)
-        (pop (and (natp i) (shfp p)))
-        (pow (and (natp i) (shfp p) (shfp q)))))))
+    (case (car x)
+      (pop (and (natp (cadr x)) (shfp (caddr x)) (null (cdddr x))))
+      (pow (and (natp (cadr x)) (shfp (caddr x)) (shfp (cadddr x)) (null (cddddr x)))))))
 
 ;; Thus, a SHF is a tree.  This function counts its nodes:
 
@@ -143,7 +142,6 @@
     (let ((i (cadr x)) (p (caddr x)) (q (cadddr x)))
       (case (car x)
         (pop (and (not (= i 0))
-                  (normp p)
                   (consp p)
                   (eql (car p) 'pow)
                   (normp p)))
@@ -258,7 +256,7 @@
 (defthm evalh-norm-var
   (implies (and (distinct-symbols vars)
                 (all-integers vals)
-                (= (len vars) (len vals))
+                (<= (len vars) (len vals))
                 (member x vars))
            (equal (evalh (norm-var x vars) vals)
                   (evalp x (pairlis$ vars vals)))))
@@ -378,6 +376,10 @@
            (equal (evalh (norm-neg x) vals)
                   (- (evalh x vals)))))
 
+(defthmd norm-neg-norm-neg
+  (implies (shfp x)
+           (equal (norm-neg (norm-neg x)) x)))
+
 (defund mul-int (x y)
   (if (= x 0)
       0
@@ -488,9 +490,78 @@
 (defthm evalh-norm
   (implies (and (distinct-symbols vars)
                 (all-integers vals)
-                (= (len vars) (len vals))
+                (<= (len vars) (len vals))
                 (polyp x vars))
            (and (shnfp (norm x vars))
                 (equal (evalh (norm x vars) vals)
                        (evalp x (pairlis$ vars vals))))))
 
+;;*********************************************************************************
+;;                                   Completeness
+;;*********************************************************************************
+
+;; We shall show that if two polynomials have the same values for all variable 
+;; assignments, then they produce the same SHNF.
+
+(defun pad0 (i n)
+  (if (zp i)
+      n
+    (cons 0 (pad0 (1- i) n))))
+
+(defun ew (x y)
+  (if (atom x)
+      ()
+    (if (eq (car x) 'pop)
+        (let ((i (cadr x))
+              (p (caddr x)))
+          (pad0 i (ew p y)))
+      (let ((p (caddr x))
+            (q (cadddr x)))
+        (if (or (atom p) (eq (car p) 'pop))
+            (let ((n (ew p y)))
+              (cons (ifix (+ (abs (evalh q (cdr n)))
+                             (abs (evalh y (cdr n)))
+                             1))
+                    (cdr n)))
+          (ew p
+              (norm-add (norm-mul q q)
+                        (norm-mul y y))))))))
+
+(defund evalh-witness (x)
+  (ew x 1))
+
+(defthmd evalh-not-zero
+  (implies (and (shnfp x)
+                (not (= x 0)))
+	   (let ((n (evalh-witness x)))
+	     (and (all-integers n)
+                  (not (equal (evalh x n) 0))))))
+
+(defthmd evalh-not-equal
+  (let ((n (evalh-witness (norm-add (norm-neg y) x))))
+    (implies (and (shnfp x)
+                  (shnfp y)
+		  (not (equal x y)))
+	     (not (equal (evalh x n) (evalh y n))))))
+
+(defun list0 (k)
+  (if (zp k)
+      ()
+    (cons 0 (list0 (1- k)))))
+
+(defund evalp-witness (x y vars)
+   (let ((n (evalh-witness (norm-add (norm-neg (norm y vars)) (norm x vars)))))
+     (append n (list0 (- (len vars) (len n))))))
+
+(defthmd all-ints-evalp-witness
+  (all-integers (evalp-witness x y vars)))
+
+(defthm evalp-not-equal
+  (let ((a (pairlis$ vars (evalp-witness x y vars))))
+    (implies (and (distinct-symbols vars)
+                  (polyp x vars)
+  		  (polyp y vars)
+		  (equal (evalp x a) (evalp y a)))
+	     (equal (norm x vars) 
+	            (norm y vars))))
+  :rule-classes ())
