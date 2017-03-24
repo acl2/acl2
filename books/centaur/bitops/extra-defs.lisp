@@ -487,3 +487,108 @@ bit)."
   (defcong nat-equiv equal (bitscan-rev src) 1))
 
 
+
+
+(define install-bit ((n natp) (val bitp) (x integerp))
+  :parents (bitops)
+  :short "@(call install-bit) sets @('x[n] = val'), where @('x') is an integer,
+@('n') is a bit position, and @('val') is a bit."
+
+  (mbe :logic
+       (b* ((x     (ifix x))
+            (n     (nfix n))
+            (val   (bfix val))
+            (place (ash 1 n))
+            (mask  (lognot place)))
+         (logior (logand x mask)
+                 (ash val n)))
+       :exec
+       (logior (logand x (lognot (ash 1 n)))
+               (ash val n)))
+  ///
+
+  (defthmd install-bit**
+    (equal (install-bit n val x)
+           (if (zp n)
+               (logcons val (logcdr x))
+             (logcons (logcar x)
+                      (install-bit (1- n) val (logcdr x)))))
+    :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs)))
+    :rule-classes
+    ((:definition
+      :clique (install-bit)
+      :controller-alist ((install-bit t nil nil)))))
+
+  (add-to-ruleset ihsext-redefs install-bit**)
+  (add-to-ruleset ihsext-recursive-redefs install-bit**)
+
+  (defthm natp-install-bit
+    (implies (not (and (integerp x)
+                       (< x 0)))
+             (natp (install-bit n val x)))
+    :rule-classes :type-prescription)
+
+  (defcong nat-equiv equal (install-bit n val x) 1)
+  (defcong bit-equiv equal (install-bit n val x) 2)
+  (defcong int-equiv equal (install-bit n val x) 3)
+
+  (defthmd logbitp-of-install-bit-split
+    ;; Disabled by default since it can cause case splits.
+    (equal (logbitp m (install-bit n val x))
+           (if (= (nfix m) (nfix n))
+               (equal val 1)
+             (logbitp m x)))
+    :hints(("Goal" :in-theory (enable logbitp-of-ash-split))))
+
+  (add-to-ruleset ihsext-advanced-thms logbitp-of-install-bit-split)
+  (acl2::add-to-ruleset! logbitp-case-splits logbitp-of-install-bit-split)
+
+  (local (in-theory (e/d (logbitp-of-install-bit-split)
+                         (install-bit))))
+
+  (defthm logbitp-of-install-bit-same
+    (equal (logbitp m (install-bit m val x))
+           (equal val 1)))
+
+  (defthm logbitp-of-install-bit-diff
+    (implies (not (equal (nfix m) (nfix n)))
+             (equal (logbitp m (install-bit n val x))
+                    (logbitp m x))))
+
+  (local
+   (defthm install-bit-induct
+     t
+     :rule-classes ((:induction
+                     :pattern (install-bit pos v i)
+                     :scheme (logbitp-ind pos i)))))
+
+  (defthm install-bit-of-install-bit-same
+    (equal (install-bit a v (install-bit a v2 x))
+           (install-bit a v x))
+    :hints(("Goal" :in-theory (enable install-bit**))))
+
+  (defthm install-bit-of-install-bit-diff
+    (implies (not (equal (nfix a) (nfix b)))
+             (equal (install-bit a v (install-bit b v2 x))
+                    (install-bit b v2 (install-bit a v x))))
+    :hints(("Goal" :in-theory (enable install-bit**)))
+    :rule-classes ((:rewrite :loop-stopper ((a b install-bit)))))
+
+  (add-to-ruleset ihsext-basic-thms
+                  '(logbitp-of-install-bit-same
+                    logbitp-of-install-bit-diff
+                    install-bit-of-install-bit-same
+                    install-bit-of-install-bit-diff))
+
+  (defthm install-bit-when-redundant
+    (implies (equal (logbit n x) b)
+             (equal (install-bit n b x)
+                    (ifix x)))
+    :hints(("Goal" :in-theory (enable install-bit**))))
+
+  (defthm unsigned-byte-p-of-install-bit
+    (implies (and (unsigned-byte-p n x)
+                  (< (nfix i) n))
+             (unsigned-byte-p n (install-bit i v x)))
+    :hints(("Goal" :in-theory (e/d (install-bit** unsigned-byte-p**)
+                                   (unsigned-byte-p))))))
