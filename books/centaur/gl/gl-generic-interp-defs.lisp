@@ -1154,7 +1154,7 @@ The definition body, ~x1, is not a pseudo-term."
   (b* (((mv vac-check-sat vac-check-succeeded &)
         (if (glcp-config->check-vacuous config)
             (bfr-sat hyp-bfr)
-          (mv nil t nil)))
+          (mv t t nil)))
        ((when (and (glcp-config->abort-vacuous config)
                    (or (not vac-check-sat)
                        (not vac-check-succeeded))))

@@ -38,7 +38,8 @@
 
 (defxdoc fast-alist-pop
   :parents (fast-alists)
-  :short "@('fast-alist-pop') removes the first key-value pair from a fast alist."
+  :short "@('fast-alist-pop') removes the first key-value pair from a fast
+alist, provided that the key is not bound in the remainder of the alist."
   :long "<p>This is a user extension to the ACL2 (in particular, ACL2H) system.
 It may eventually be added to acl2h proper, but until then it requires a trust
 tag since it hasn't been thoroughly vetted for soundness.</p>
@@ -60,7 +61,9 @@ and constant-time performance, fast-alist-pop has a guard requiring that the
 key of that first pair not be bound in the cdr of the alist.  Otherwise, simply
 removing that pair from the hash table would not be correct, since the key
 would remain in the alist bound to some value, which could only be discovered
-by linearly traversing the alist.</p>")
+by linearly traversing the alist.</p>
+
+<p>Note this is just a special case of @(see fast-alist-pop*).</p>")
 
 (defun fast-alist-pop (x)
   "Has an under-the-hood definition."
@@ -78,35 +81,33 @@ by linearly traversing the alist.</p>")
 
 (defxdoc fast-alist-pop*
   :parents (fast-alists)
-  :short "@('fast-alist-pop*') removes the first key-value pair from a fast alist, rebinding that key to its previous value in the backing hash table.  That value must be provided as a second argument."
+  :short "@('fast-alist-pop*') removes the first key-value pair from a fast
+alist, rebinding that key to its previous value in the backing hash table.
+That value must be provided as the prev-binding argument."
   :long "<p>This is a user extension to the ACL2 (in particular, ACL2H) system.
 It may eventually be added to acl2h proper, but until then it requires a trust
 tag since it hasn't been thoroughly vetted for soundness.</p>
 
-<p>Logically, fast-alist-pop* is just @('CDR').  However, it has a special
-side-effect when called on a fast alist (see @(see hons-acons)).  A fast alist
-has a backing hash table mapping its keys to their corresponding (unshadowed)
-pairs, which supports constant-time alist lookup.  @(see Hons-acons) adds
-key/value pairs to the alist and its backing hash table, and @(see hons-get)
-performs constant-time lookup by finding the backing hash table and looking up
-the key in the table.  However, logically, hons-get is just @(see
-hons-assoc-equal), a more traditional alist lookup function that traverses the
-alist until it finds the matching key.  Correspondingly, fast-alist-pop is
-logically just CDR, but it removes the key/value pair corresponding to the CAR
-of the alist from its backing hash table.</p>
-
-<p>To maintain both the consistency of the alist with the backing hash table
-and constant-time performance, fast-alist-pop has a guard requiring that the
-key of that first pair not be bound in the cdr of the alist.  Otherwise, simply
-removing that pair from the hash table would not be correct, since the key
-would remain in the alist bound to some value, which could only be discovered
-by linearly traversing the alist.</p>")
+<p>Logically, @('(fast-alist-pop* pair x)') is just @('(cdr x)').  However, it
+has a special side-effect when called on a fast alist (see @(see hons-acons)).
+A fast alist has a backing hash table mapping its keys to their
+corresponding (unshadowed) pairs, which supports constant-time alist lookup.
+@(see Hons-acons) adds key/value pairs to the alist and its backing hash table,
+and @(see hons-get) performs constant-time lookup by finding the backing hash
+table and looking up the key in the table.  However, logically, hons-get is
+just @(see hons-assoc-equal), a more traditional alist lookup function that
+traverses the alist until it finds the matching key.  Correspondingly,
+fast-alist-pop* is logically just CDR, but it undoes the binding in the backing
+hash table represented by the CAR of the alist.  The guard requires that the
+@('prev-binding') argument is the shadowed binding of @('(caar x)') in the
+remainder of the alist, so to undo that binding in the backing hash table, we
+associate that key to the cdr of the @('prev-binding').</p>")
 
 (defun fast-alist-pop* (prev-binding x)
   "Has an under-the-hood definition."
-  (declare (xargs :guard (and (consp x)
-                              (consp (car x))
-                              (equal (hons-assoc-equal (caar x) (cdr x)) prev-binding)))
+  (declare (xargs :guard (or (not (consp x))
+                             (not (consp (car x)))
+                             (equal (hons-assoc-equal (caar x) (cdr x)) prev-binding)))
            (ignorable prev-binding))
   (mbe :logic (cdr x)
        :exec

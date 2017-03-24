@@ -1342,7 +1342,9 @@ gives the full case-split.  The case split must cover the theorem's hypotheses;
 that is, the theorem's hypothesis must imply the disjunction of the case
 hypotheses.  To prove this, we symbolically simulate this disjunction using the
 shape specs given in the @('cov-bindings'), which are formatted like the
-var-bindings above.</p>
+var-bindings above.  Note that this case-split coverage step is not done as
+part of @(':test-side-goals'), but it happens first otherwise, so it's easy to
+tell if it's successful.</p>
 
 <p>A simple example is as follows:</p>
 
