@@ -53,6 +53,7 @@
 (include-book "typed-list-theorems")
 (include-book "typed-tuples")
 (include-book "ubi")
+(include-book "untranslate-preprocessing")
 (include-book "user-interface")
 (include-book "verify-guards-program")
 (include-book "world-queries")
