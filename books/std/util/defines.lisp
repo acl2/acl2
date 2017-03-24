@@ -522,11 +522,11 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
         (caar retspec-hints)
       (find-first-string-hint (cdr retspec-hints)))))
 
-(defun returnspecs-flag-entries (retspecs flag fnname binds world)
+(defun returnspecs-flag-entries (retspecs flag fnname binds subst world)
   (b* (((when (atom retspecs)) nil)
        (formula (returnspec-thm-body fnname binds (car retspecs) world))
        ((when (eq formula t))
-        (returnspecs-flag-entries (cdr retspecs) flag fnname binds world))
+        (returnspecs-flag-entries (cdr retspecs) flag fnname binds subst world))
        ((returnspec x) (car retspecs))
        (subgoal (find-first-string-hint x.hints))
        (- (and subgoal
@@ -541,10 +541,10 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                                   "." (symbol-name x.name))
                      fnname)
              ,formula
-             :hints ,x.hints
-             :rule-classes ,x.rule-classes
+             :hints ,(sublis subst x.hints)
+             :rule-classes ,(sublis subst x.rule-classes)
              :flag ,flag)
-          (returnspecs-flag-entries (cdr retspecs) flag fnname binds world))))
+          (returnspecs-flag-entries (cdr retspecs) flag fnname binds subst world))))
 
 (defun fn-returnspec-flag-entries (guts world)
   (b* (((defguts guts) guts)
@@ -555,8 +555,10 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                    (ignorable-names (make-symbols-ignorable names)))
                 (if (consp (cdr ignorable-names))
                     `((mv . ,ignorable-names) ,fncall)
-                  `(,(car ignorable-names) ,fncall)))))
-    (returnspecs-flag-entries guts.returnspecs flag guts.name-fn binds world)))
+                  `(,(car ignorable-names) ,fncall))))
+       (subst (returnspec-return-value-subst
+               guts.name guts.name-fn formals (returnspeclist->names guts.returnspecs))))
+    (returnspecs-flag-entries guts.returnspecs flag guts.name-fn binds subst world)))
 
 (defun collect-returnspec-flag-thms (gutslist world)
   (if (atom gutslist)

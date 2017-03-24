@@ -535,7 +535,7 @@ For example, @('natp-of-foo').</dd>
 (set-returnspec-default-hints
  ((returnspec-default-default-hint 'fnname acl2::id world)))
 
-(defun returnspec-single-thm (name name-fn x badname-okp world)
+(defun returnspec-single-thm (name name-fn x subst badname-okp world)
   "Returns EVENTS"
   ;; Only valid to call AFTER the function has been submitted, because we look
   ;; up the guard/formals from the world.
@@ -548,14 +548,14 @@ For example, @('natp-of-foo').</dd>
        (binds `(,x.name (,name-fn . ,formals)))
        (formula (returnspec-thm-body name-fn binds x world))
        ((when (eq formula t)) nil)
-       (hints (if x.hintsp x.hints
+       (hints (if x.hintsp (sublis subst x.hints)
                 (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x t badname-okp)
         ,formula
         :hints ,hints
-        :rule-classes ,x.rule-classes))))
+        :rule-classes ,(sublis subst x.rule-classes)))))
 
-(defun returnspec-multi-thm (name name-fn binds x badname-okp world)
+(defun returnspec-multi-thm (name name-fn binds x subst badname-okp world)
   "Returns EVENTS"
   (declare (xargs :guard (and (symbolp name)
                               (symbolp name-fn)
@@ -565,14 +565,14 @@ For example, @('natp-of-foo').</dd>
        (formula (returnspec-thm-body name-fn binds x world))
        ((when (equal formula t)) nil)
        (hints (if x.hintsp
-                  x.hints
+                  (sublis subst x.hints)
                 (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x nil badname-okp)
         ,formula
         :hints ,hints
-        :rule-classes ,x.rule-classes))))
+        :rule-classes ,(sublis subst x.rule-classes)))))
 
-(defun returnspec-multi-thms (name name-fn binds x badname-okp world)
+(defun returnspec-multi-thms (name name-fn binds x subst badname-okp world)
   "Returns EVENTS"
   (declare (xargs :guard (and (symbolp name)
                               (symbolp name-fn)
@@ -580,8 +580,8 @@ For example, @('natp-of-foo').</dd>
                               (plist-worldp world))))
   (if (atom x)
       nil
-    (append (returnspec-multi-thm name name-fn binds (car x) badname-okp world)
-            (returnspec-multi-thms name name-fn binds (cdr x) badname-okp world))))
+    (append (returnspec-multi-thm name name-fn binds (car x) subst badname-okp world)
+            (returnspec-multi-thms name name-fn binds (cdr x) subst badname-okp world))))
 
 
 
@@ -598,6 +598,24 @@ For example, @('natp-of-foo').</dd>
     (cons (make-symbol-ignorable (car x))
           (make-symbols-ignorable (cdr x)))))
 
+(defun returnspec-mv-nth-subst (names idx call)
+  (if (atom names)
+      nil
+    (cons (cons (car names) `(mv-nth ,idx ,call))
+          (returnspec-mv-nth-subst (cdr names) (1+ idx) call))))
+
+(defun returnspec-return-value-subst (name name-fn formals names)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbol-listp names))))
+  (b* ((call-sym (intern-in-package-of-symbol "<CALL>" name))
+       (call (cons name-fn formals))
+       ((when (eql (len names) 1))
+        (list (cons call-sym call)
+              (cons (car names) call))))
+    (cons (cons call-sym call)
+          (returnspec-mv-nth-subst names 0 call))))
+       
+
 (defun returnspec-thms (name name-fn specs world)
   "Returns EVENTS"
   (declare (xargs :guard (and (symbolp name)
@@ -608,13 +626,14 @@ For example, @('natp-of-foo').</dd>
        ((unless specs)
         nil)
        (badname-okp t)
-       ((when (equal (len specs) 1))
-        (returnspec-single-thm name name-fn (car specs) badname-okp world))
        (names   (returnspeclist->names specs))
-       (ignorable-names (make-symbols-ignorable names))
        (formals (look-up-formals name-fn world))
+       (subst (returnspec-return-value-subst name name-fn formals names))
+       ((when (equal (len specs) 1))
+        (returnspec-single-thm name name-fn (car specs) subst badname-okp world))
+       (ignorable-names (make-symbols-ignorable names))
        (binds   `((mv . ,ignorable-names) (,name-fn . ,formals))))
-    (returnspec-multi-thms name name-fn binds specs badname-okp world)))
+    (returnspec-multi-thms name name-fn binds specs subst badname-okp world)))
 
 
 

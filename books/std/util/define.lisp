@@ -1606,8 +1606,11 @@ specifiers is ignored.  You should usually put such documentation into the
                (returnspec->name newspec)))
        (badname-okp
         ;; This is meant to avoid name clashes.
-        nil))
-    (returnspec-single-thm guts.name guts.name-fn newspec badname-okp world)))
+        nil)
+       (subst (returnspec-return-value-subst guts.name guts.name-fn
+                                             (look-up-formals guts.name-fn world)
+                                             (list (returnspec->name origspec)))))
+    (returnspec-single-thm guts.name guts.name-fn newspec subst badname-okp world)))
 
 (defun returnspec-additional-single-thms (guts newspecs world)
   (if (atom newspecs)
@@ -1627,8 +1630,9 @@ specifiers is ignored.  You should usually put such documentation into the
         (raise "No return value named ~x0 for function ~x1."
                (car (set-difference-equal new-return-names fn-return-names))
                guts.name))
-       (badname-okp nil))
-    (returnspec-multi-thms guts.name guts.name-fn binds newspecs badname-okp world)))
+       (badname-okp nil)
+       (subst (returnspec-return-value-subst guts.name guts.name-fn fn-formals fn-return-names)))
+    (returnspec-multi-thms guts.name guts.name-fn binds newspecs subst badname-okp world)))
 
 (defun returnspec-additional-thms (guts newspecs world)
   ;; This deals with either the single- or multi-valued return case.
@@ -1756,6 +1760,7 @@ names between your formals and returns.</p>")
        (names (returnspeclist->names guts.returnspecs))
        (ign-names (make-symbols-ignorable names))
        (formals (look-up-formals guts.name-fn world))
+       (subst (returnspec-return-value-subst fn guts.name-fn formals names))
        (binding `((,(if (consp (cdr ign-names))
                         `(mv . ,ign-names)
                       (car ign-names))
@@ -1774,9 +1779,9 @@ names between your formals and returns.</p>")
               concl)))
     `(,(if disablep 'defthmd 'defthm) ,name
       ,thm
-      ,@(and hints?        `(:hints ,(cdr hints?)))
+      ,@(and hints?        `(:hints ,(sublis subst (cdr hints?))))
       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-      ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+      ,@(and rule-classes? `(:rule-classes ,(sublis subst (cdr rule-classes?)))))))
 
 
 (defun defret-fn (name args disablep world)
