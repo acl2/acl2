@@ -269,7 +269,10 @@ current one.  We translate module @('a') as follows:</p>
              "Determines whether we apply svex rewriting to the results of compiling
               procedural blocks.")
    (verbosep booleanp :default nil
-             "Determines whether we verbosely report svex rewriting statistics.")))
+             "Determines whether we verbosely report svex rewriting statistics.")
+   (nb-latch-delay-hack
+    :default nil
+    "Determines whether we artificially add a delay to nonblocking assignments in latch-like contexts.")))
 
 
 
@@ -3814,7 +3817,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          ((vl->sv-config config))
          ((wmv warnings always-assigns)
           (vl-alwayslist->svex x.alwayses ss scopes
-                               :verbosep config.verbosep :simplify config.simplify))
+                               :verbosep config.verbosep :simplify config.simplify
+                               :nb-latch-delay-hack config.nb-latch-delay-hack))
          ((wmv warnings) (vl-initiallist-size-warnings x.initials ss scopes))
          ((wmv warnings) (vl-finallist-size-warnings x.finals ss scopes))
 
