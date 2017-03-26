@@ -17,7 +17,7 @@
   :short "Basic utilities for x86 machine-code proofs"
   )
 
-(defsection x86-programs-proof-debugging
+(defsection debugging-code-proofs
   :parents (proof-utilities x86isa)
   )
 
