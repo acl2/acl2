@@ -39,7 +39,7 @@
   program-execution
   model-validation
   proof-utilities
-  x86-programs-proof-debugging
+  debugging-code-proofs
   Contributors
   Publications
   TO-DO
