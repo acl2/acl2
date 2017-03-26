@@ -72,7 +72,7 @@
 ;; wrap-output) can rewrite to a call to ALL-GOOD-PAIRS.  Simplify-defun
 ;; applies these three simplifications:
 
-(simplify-defun all-good-pairs :disable endp)
+(simplify-defun all-good-pairs)
 
 ;; giving:
 
@@ -113,7 +113,7 @@
 ;; use simplify-defun to change all-good-pairs{1} by applying the rewrite rule
 ;; just introduced:
 
-(simplify-defun all-good-pairs{1} :disable endp)
+(simplify-defun all-good-pairs{1})
 
 ;; This yields:
 
