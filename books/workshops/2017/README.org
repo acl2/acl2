@@ -1,0 +1,41 @@
+Supporting materials should go into directories named after authors of
+accepted papers.  Typically, they go into a ~support/~ subdirectory of
+each such directory; see past workshop directories at
+[[file:../][/books/workshops/]] for examples.
+
+Note: If you are not a frequent contributor to the community books,
+you will likely be using pull requests if you contribute books using
+git.  See ~:doc git-quick-start~, e.g. [[http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____GIT-QUICK-START][in the online XDOC manual]].
+
+-----
+
+Information about workshop contributions (full papers) is below.
+
+- Cuong Chau.  Extended Abstract: /A DE Verification Framework for
+  Asynchronous Circuit Verification/.
+
+- Cuong Chau.  Extended Abstract: /Formal Specification and
+  Verification of the FM9001 Microprocessor Using the DE System/.
+
+- Alessandro Coglio, Matt Kaufmann, and Eric Smith.  /A Versatile,
+  Sound Tool for Simplifying Definitions/.  See subdirectory
+  [[file:coglio-kaufmann-smith/][coglio-kaufmann-smith/]].
+
+- John Cowles and Ruben Gamboa.  /The Cayley-Dickson Construction in
+  ACL2/.
+
+- Shilpi Goel.  /The x86isa Books: Features, Usage, and Future Plans/.
+  See directory [[file:../../projects/x86isa/][/books/projects/x86isa/]].
+
+- Matt Kaufmann and Sol Swords.  /Meta-extract: Using Existing Facts
+  in Meta-reasoning/.  See subdirectory [[file:kaufmann-swords/][kaufmann-swords/]]
+
+- David M. Russinoff.  /A Computationally Survivable Proof of the
+  Group Properties of an Elliptic Curve/.  See directory
+  [[file:../../projects/curve25519/][/books/projects/curve25519/]] and the supporting directories
+  [[file:../../projects/quadratic-reciprocity/][/books/projects/quadratic-reciprocity/]] and [[file:../../projects/shnf/][/books/projects/shnf/]].
+
+- Rob Sumners.  /Proof Reduction of Fair Stuttering Refinement of
+  Asynchronous Systems and Applications/.
+
+- Sol Swords.  /Term-Level Reasoning In Support Of Bit-Blasting/.
