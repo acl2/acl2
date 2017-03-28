@@ -1,0 +1,47 @@
+Organization (where so many include lrat-checker.lisp that I'll
+omit it below).
+
+top.lisp
+  soundness.lisp
+    satisfiable-add-proof-clause.lisp
+      satisfiable-add-proof-clause-base.lisp
+        truth-monotone.lisp
+        unit-propagation-implies-unsat.lisp
+          truth-monotone.lisp
+        unit-propagation-monotone.lisp
+        unit-propagation-correct.lisp
+          truth-monotone.lisp
+          unit-propagation-monotone.lisp
+          unit-propagation-implies-unsat.lisp
+      satisfiable-add-proof-clause-rup.lisp
+      satisfiable-add-proof-clause-drat.lisp
+	satisfiable-add-proof-clause-base.lisp
+	  [... see above]
+        sat-drat-claim-1.lisp
+          satisfiable-add-proof-clause-base.lisp
+   	    [... see above]
+          satisfiable-add-proof-clause-rup.lisp
+   	    [... see above]
+        sat-drat-claim-2.lisp
+          satisfiable-add-proof-clause-base.lisp
+   	    [... see above]
+        sat-drat-claim-2-3.lisp
+          satisfiable-add-proof-clause-base.lisp
+   	    [... see above]
+          sat-drat-claim-1.lisp
+   	    [... see above]
+    satisfiable-maybe-shrink-formula.lisp
+      satisfiable-add-proof-clause-base.lisp
+        [... see above]
+  lrat-parser.lisp [no actual include-book]
+    tools/bstar.lisp [:dir :system]
+
+===== Organization of this repository: =====
+
+*.lisp
+  Lrat (Linear RAT) checker with proof, and parser;
+  see top.lisp and tests/README
+correctness.txt
+  Hand proof
+tests/
+  Tests (see README there)
