@@ -13,6 +13,7 @@
 
 (in-package "ACL2")
 
+(include-book "abnf/top")
 (include-book "soft/top")
 (include-book "utilities/top")
 
