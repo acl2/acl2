@@ -1,0 +1,33 @@
+Outline of high-level DRAT soundness.
+
+Theorem. Let F be a formula (i.e., a set of clauses) and let C be a
+clause that passes the DRAT check (i.e., from a proof).  Suppose F is
+satisfiable.  Then F union {C} is satisfiable.
+
+Proof. Let A be an assignment that makes F true.  Without loss of
+generality, A assigns to all literals in F union {C}.
+
+If A also makes C true, then we are done.  So we assume that A makes
+every literal in C false.  Let L be the "special" literal (for the
+DRAT check) from C and let A2 be the assignment obtained from A by
+assigning L to true instead of false.  Then since L is in C, A2 makes
+C true.  Let C2 be an arbitrary clause in F.  It suffices to show that
+A2 makes C2 true.  This is obvious if the negation -L of L is not in
+C2, because A makes C2 true.  So we may assume that -L is in C2; let
+C3 = C2 \ {-L}.  It remains to show that A2 makes C3 true; suppose
+not, to obtain a contradiction.  So A2, and hence A, contains the
+negation of every literal in C3.
+
+It remains to get a contradiction from everything that we have assumed
+above.  Let A3 = {lit : -lit \in (C3 union C)}.  Then our assumptions
+at this point include all of the following.
+
+(a) F is true under assignment A.
+(b) A contains A3.
+(c) -L is in C2.
+
+By (c), C2 is a RAT clause.  The RAT check tells us that unit
+propagation from F starting with A3 yields a contradiction; thus, no
+assignment satisfying F can contain A3.  But by (a) and (b), A is
+such an assignment, so we have a contradiction.
+

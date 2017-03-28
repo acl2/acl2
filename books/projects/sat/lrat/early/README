@@ -1,0 +1,15 @@
+The checkers in these subdirectories are precursors of the ones
+parallel to this directory, as follows.
+
+drat/
+  This slight variant of Nathan Wetzler's ITP 2013 checker adds
+  deletion to that checker.
+
+rev1/
+  This is the first checker that accepts lrat (Linear RAT) proof input
+  files.
+
+rev2/
+  This variant of rev1/ can heuristically shrink the formula's
+  fast-alist from time to time.  The list-based checker (parallel to
+  this early/ directory) is just a slight clean-up of rev2/.
