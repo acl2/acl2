@@ -2092,9 +2092,8 @@
 (defthm a$p-initialize-a$
   (implies (and (true-listp a$)
                 (equal (len a$) 3)
-                (natp (proof-max-var proof (formula-max-var formula 0))))
-           (a$p (initialize-a$ (proof-max-var proof (formula-max-var formula 0))
-                               a$)))
+                (natp n))
+           (a$p (initialize-a$ n a$)))
   :hints (("Goal" :in-theory (enable initialize-a$ a$p a$arrp))))
 
 (defthm a$ptr-initialize-a$
