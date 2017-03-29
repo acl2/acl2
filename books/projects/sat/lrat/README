@@ -26,8 +26,8 @@ is your ACL2.  This may take about a minute if supporting books
 outside this directory are already certified, but not much longer even
 if not.
 
-ACL2_DIR/books/build/cert.pl --acl2 ACL2 -j 8 list-based/*.lisp stobj-based/*.lisp
+ACL2_DIR/books/build/cert.pl --acl2 ACL2 -j 8 */*.lisp
 
 For example, Matt uses the following command.
 
-time /projects/acl2/acl2/books/build/cert.pl --acl2 acl2c -j 8 list-based/*.lisp stobj-based/*.lisp
+time /projects/acl2/acl2/books/build/cert.pl --acl2 acl2c -j 8 */*.lisp
