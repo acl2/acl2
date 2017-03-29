@@ -51,6 +51,10 @@
         (value lst)))
     (read-to-0 channel (cons val lst) ctx state)))
 
+(defun equal-symbol-name (sym name)
+  (and (symbolp sym)
+       (equal (symbol-name sym) name)))
+
 (defun parse-cnf-channel-first-line (channel ctx state)
 
 ; E.g., the first line could be: p cnf 4 8.
@@ -71,13 +75,13 @@
           (read-object channel state))
          ((when eof)
           (eof-error channel ctx state))
-         ((unless (eq val 'p))
+         ((unless (equal-symbol-name val "P"))
           (expected-error channel 1 "`p'" val ctx state))
          ((mv eof val state)
           (read-object channel state))
          ((when eof)
           (eof-error channel ctx state))
-         ((unless (eq val 'cnf))
+         ((unless (equal-symbol-name val "CNF"))
           (expected-error channel 2 "`cnf'" val ctx state))
          ((mv eof val state)
           (read-object channel state))
@@ -175,7 +179,7 @@
          (er soft ctx
              "Found empty first part of addition step.")))
        (val (reverse val0))
-       ((when (eq (cadr val) 'd))
+       ((when (equal-symbol-name (cadr val) "D"))
         (value (cons t ; flag the deletion
                      (cddr val))))
        ((cons j clause) val)
@@ -211,14 +215,14 @@
             lrat-file)))
     (parse-lrat-channel channel ctx state nil)))
 
-(defun verify-lrat-proof (cnf-file lrat-file state)
+(defun verify-lrat-proof (cnf-file lrat-file incomplete-okp state)
   (b* (((er formula) (time$ (parse-cnf-file cnf-file state)))
        ((er proof) (time$ (parse-lrat-file lrat-file state))))
-    (value (time$ (valid-proofp formula proof)))))
+    (value (time$ (valid-proofp formula proof incomplete-okp)))))
 
 #||
 
-(verify-lrat-proof "tests/example-4-vars.cnf" "tests/example-4-vars.lrat" state)
+(verify-lrat-proof "tests/example-4-vars.cnf" "tests/example-4-vars.lrat" nil state)
 
 ||#
 
@@ -286,9 +290,9 @@
              (lrat (concatenate 'string dir (cadr d))))
         (pprogn
          (fms "Starting ~x0.~|"
-              (list (cons #\0 `(verify-lrat-proof ,cnf ,lrat state)))
+              (list (cons #\0 `(verify-lrat-proof ,cnf ,lrat nil state)))
               chan state nil)
-         (er-let* ((val (verify-lrat-proof cnf lrat state)))
+         (er-let* ((val (verify-lrat-proof cnf lrat nil state)))
            (pprogn
             (princ$ "Result: " chan state)
             (princ$ (if val "success" "FAILURE") chan state)

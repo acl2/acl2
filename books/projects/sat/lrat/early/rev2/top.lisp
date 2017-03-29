@@ -498,22 +498,18 @@
                (null (access add-step entry :clause))))
         (proof-contradiction-p (cdr proof)))))
 
-(defun valid-proofp (formula proof)
+(defun valid-proofp (formula proof incomplete-okp)
   (declare (xargs :guard (formula-p formula)))
   (and (proofp proof)
-
-; We could replace the following conjunct by (equal (car (last proof))
-; *d-clause-contradiction* proof)); we will probably do so if that simplifies
-; our reasoning.
-
-       (proof-contradiction-p proof)
+       (or incomplete-okp
+           (proof-contradiction-p proof))
        (verify-proof formula proof)))
 
 ; The functions defined below are only relevant to the correctness statement.
 
 (defun refutation-p (proof formula)
   (declare (xargs :guard (formula-p formula)))
-  (and (valid-proofp formula proof)
+  (and (valid-proofp formula proof nil)
        (proof-contradiction-p proof)))
 
 (defun-sk formula-truep (formula assignment)

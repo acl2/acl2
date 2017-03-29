@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# To run this script, first save a suitable executable, for example:
+
+# (include-book "projects/sat/lrat/incremental/run" :dir :system)
+# (save-exec "large-lrat-saved_acl2" "Executable including run.lisp")
+
 if [ $# -eq 2 ] ; then \
     partial="" ; \
     outfile=${2%.*}.out ; \
@@ -54,4 +59,5 @@ elif [ $lrat_status -eq 0 ] && [ "`grep '^s VERIFIED' $outfile`" != "" ] ; then 
 else \
     echo "s FAILED" ; \
     echo "  (see $outfile)" ; \
+    exit 1
 fi

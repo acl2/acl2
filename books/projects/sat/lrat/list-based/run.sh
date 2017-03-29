@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# To run this script, first save a suitable executable.  For example,
+# if running with SBCL and you want to run a multi-gigabyte test, for
+# example start ACL2 and do this:
+
+# (include-book "projects/sat/lrat/list-based/run" :dir :system)
+# (save-exec "large-lrat-saved_acl2"
+#            "Large executable including run.lisp, saved with --dynamic-space-size 240000"
+#            :host-lisp-args "--dynamic-space-size 240000")
+
 if [ $# -eq 2 ] ; then \
     partial="" ; \
     outfile=${2%.*}.out ; \

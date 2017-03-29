@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# To run this script, first save a suitable executable.  For example,
+# if running with SBCL and you want to run a multi-gigabyte test, for
+# example start ACL2 and do this:
+
+# (include-book "projects/sat/lrat/early/rev2/run" :dir :system)
+# (save-exec "large-lrat-saved_acl2"
+#            "Large executable including run.lisp, saved with --dynamic-space-size 240000"
+#            :host-lisp-args "--dynamic-space-size 240000")
+
 if [ $# -eq 2 ] ; then \
     partial="" ; \
     outfile=${2%.*}.out ; \
@@ -11,7 +20,7 @@ elif [ $# -eq 4 ] ; then \
     outfile=$4 ; \
 else
     echo "Usage:  $0 takes two to four arguments, as follows." ; \
-    echo "        # Third argument is t for partial proof, else omitted or nil ." ; \
+    echo "        # Third argument must be omitted or nil ." ; \
     echo "        # Fourth argument is t for standard output, else an output file;" ; \
     echo "        # default for omitted out-file is lrat-file with .lrat replaced by .out ." ; \
     echo "        $0 cnf-file lrat-file" ; \

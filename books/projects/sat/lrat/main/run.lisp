@@ -29,5 +29,6 @@
                    (prog2$ (exit 1)
                            (mv erp val state)))))))
 
+; Note that lrat::lrat-check and acl2::lrat-check are the same symbol.
 (defmacro lrat-check (cnf-file lrat-file &optional incomplete-okp)
   `(lrat-check-fn ,cnf-file ,lrat-file ,incomplete-okp state))
