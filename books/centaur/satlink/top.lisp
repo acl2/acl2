@@ -35,7 +35,7 @@
 (include-book "cnf")
 (include-book "dimacs")
 (include-book "lrat-interface")
-(include-book "projects/sat/lrat/main/lrat-parser" :dir :system)
+(include-book "projects/sat/lrat/sorted/lrat-parser" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "oslib/tempfile" :dir :system)

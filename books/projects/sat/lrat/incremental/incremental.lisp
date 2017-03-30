@@ -6,7 +6,7 @@
 
 (in-package "LRAT")
 
-(include-book "../main/lrat-checker")
+(include-book "../sorted/lrat-checker")
 
 (include-book "../stobj-based/lrat-checker")
 

@@ -7,7 +7,7 @@
 (in-package "LRAT")
 
 (local (include-book "incremental"))
-(include-book "../main/lrat-checker")
+(include-book "../sorted/lrat-checker")
 (include-book "clrat-parser")
 
 (defun incl-verify-proof$-rec (ncls ndel formula proof a$)
