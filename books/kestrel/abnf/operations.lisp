@@ -1215,7 +1215,9 @@
   "<p>
    This theorem can be used to show that an alternation is unambiguous,
    one constituting concatenation at a time,
-   starting with @(tsee concatenation-alternation-disjointp-of-nil).
+   starting with
+   <see topic='@(url concatenation-alternation-disjointp)'
+   >@('concatenation-alternation-disjointp-of-nil')</see>.
    In other words, it must be showed that the alternatives of the alternation
    are all disjoint, i.e. they have no lists of lists of trees in common.
    </p>"

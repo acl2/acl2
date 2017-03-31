@@ -7517,7 +7517,7 @@
    shows the incompatibility
    between @('(*c-wsp \"/\" *c-wsp concatenation)')
    and @('(1*c-wsp repetition)'):
-   the completeness theorem @(tsee parse-1*-c-wsp-when-tree-list-match)
+   the completeness theorem @(tsee parse-1*cwsp-when-tree-list-match)
    is used to go past the unbounded @('1*c-wsp')
    that could start @('(*c-wsp \"/\" *c-wsp concatenation)')
    to show that @('repetition') is incompatible with @('\"/\"').
