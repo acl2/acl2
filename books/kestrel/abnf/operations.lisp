@@ -345,6 +345,10 @@
    The second condition is justifiable
    because duplicate rules are redundant.
    The third condition is reasonably implied by RFC.3.3.
+   </p>
+   <p>
+   Non-emptiness is not required by the rule @('rulelist') in RFC.4,
+   which allows just @('(*c-wsp c-nl)') groups without @('rule')s.
    </p>"
   (and (rule-list-wfp rules)
        (no-duplicatesp-equal rules)
