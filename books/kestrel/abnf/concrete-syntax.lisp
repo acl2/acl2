@@ -299,7 +299,7 @@
     (rulelist-in-termset-p *all-concrete-syntax-rules*
                            (integers-from-to 0 127))))
 
-(define parse-grammar ((nats nat-listp))
+(define parse-grammar* ((nats nat-listp))
   :returns (result (or (tree-setp result)
                        (equal result :infinite))
                    :hints (("Goal" :use (:instance
@@ -313,7 +313,7 @@
   "<p>
    This is a declaratively defined, non-executable parser
    for the ABNF language itself
-   (@(tsee parse-grammar!) is a verified executable parser).
+   (@(tsee parse-grammar) is a verified executable parser).
    It turns text (represented as a sequence of natural numbers)
    with ABNF grammar rules (defining the concrete syntax of some language)
    into parse trees;

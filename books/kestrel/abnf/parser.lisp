@@ -31,7 +31,7 @@
   :short "A verified executable parser of ABNF grammars."
   :long
   "<p>
-   It may be possible to derive this parser from @(tsee parse-grammar)
+   It may be possible to derive this parser from @(tsee parse-grammar*)
    (or a variant of it that resolves the ambiguity discussed there)
    via transformational refinements,
    but here we write an implementation directly and we prove its correctness.
@@ -88,12 +88,12 @@
    </p>
 
    <p>
-   The @(tsee parse-grammar!) top-level function
+   The @(tsee parse-grammar) top-level function
    takes as input a list of natural numbers
    and returns as output just a tree, or @('nil') to indicate failure;
    this function consumes all the input, failing if there is unparsed input.
    The @(tsee parse-grammar-from-file) function
-   takes as input a file name and calls @(tsee parse-grammar!) on its content,
+   takes as input a file name and calls @(tsee parse-grammar) on its content,
    returning a tree or @('nil').
    </p>
 
@@ -108,7 +108,7 @@
    <h3>Disambiguation and Look-Ahead</h3>
 
    <p>
-   As explained in the documentation of @(tsee parse-grammar),
+   As explained in the documentation of @(tsee parse-grammar*),
    the grammar of the ABNF concrete syntax (RFC.4) is ambiguous:
    the @('rulelist') rule allows strings &lsquo;@('c-nl WSP')&rsquo;
    either to be split into an ending @('c-nl') under @('rule')
@@ -3050,7 +3050,7 @@
     (equal (parse-rulelist (nat-list-fix input))
            (parse-rulelist input))))
 
-(define parse-grammar! ((nats nat-listp))
+(define parse-grammar ((nats nat-listp))
   :returns (tree? maybe-treep)
   :parents (grammar-parser-implementation)
   :short "Parse a sequence of natural numbers into an ABNF grammar."
@@ -3070,9 +3070,9 @@
   :no-function t
   ///
 
-  (defrule parse-grammar!-of-nat-list-fix
-    (equal (parse-grammar! (nat-list-fix nats))
-           (parse-grammar! nats))))
+  (defrule parse-grammar-of-nat-list-fix
+    (equal (parse-grammar (nat-list-fix nats))
+           (parse-grammar nats))))
 
 (define parse-grammar-from-file ((filename acl2::stringp) state)
   :returns (mv (tree? maybe-treep)
@@ -3121,7 +3121,7 @@
         (mv (hard-error 'abnf "ABNF Grammar File Reading Error." nil)
             state))
        (nats (chars=>nats chars))
-       (tree? (parse-grammar! nats))
+       (tree? (parse-grammar nats))
        ((unless tree?)
         (mv (hard-error 'abnf "ABNF Grammar File Parsing Error." nil)
             state)))
@@ -3140,9 +3140,9 @@
    <ul>
      <li>
      Soundness:
-     if @(tsee parse-grammar!) succeeds,
+     if @(tsee parse-grammar) succeeds,
      it returns a parse tree for the input rooted at @('rulelist'):
-     @(def parse-treep-of-parse-grammar!)
+     @(def parse-treep-of-parse-grammar)
      That is, the parser recognizes only grammars (i.e. lists of rules).
      </li>
      <li>
@@ -3155,9 +3155,9 @@
      <see topic='@(url grammar-parser-implementation)'>grammar parser
      implementation</see>
      resolves the @('rulelist') ambiguity),
-     @(tsee parse-grammar!) succeeds on the string at the leaves of the tree
+     @(tsee parse-grammar) succeeds on the string at the leaves of the tree
      and returns that tree:
-     @(def parse-grammar!-when-tree-match)
+     @(def parse-grammar-when-tree-match)
      That is, the parser recognizes all grammars (i.e. lists of rules)
      whose trees satisfy the
      <see topic='@(url grammar-parser-disambiguating-restrictions)'
@@ -3174,13 +3174,13 @@
   :short "Soundness theorems for the parser of ABNF grammars."
   :long
   "<p>
-   If @(tsee parse-grammar!) succeeds,
+   If @(tsee parse-grammar) succeeds,
    it returns a parse tree for the input rooted at @('rulelist'):
-   @(def parse-treep-of-parse-grammar!)
+   @(def parse-treep-of-parse-grammar)
    </p>
    <p>
    This is proved via two sets of theorems
-   for the parsing functions out of which @(tsee parse-grammar!) is built:
+   for the parsing functions out of which @(tsee parse-grammar) is built:
    </p>
    <ul>
      <li>
@@ -5224,28 +5224,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule parse-treep-of-parse-grammar!
+(defrule parse-treep-of-parse-grammar
   :parents (grammar-parser-soundness)
   :short "Top-level soundness theorem of the parser of ABNF grammars."
   :long
   "<p>
-   If @(tsee parse-grammar!) succeeds,
+   If @(tsee parse-grammar) succeeds,
    it returns a parse tree for the input rooted at @('rulelist').
    This is proved from
    the input decomposition theorem and tree matching theorem for @('rulelist'),
-   and the fact that @(tsee parse-grammar!) fails if there is extra input.
+   and the fact that @(tsee parse-grammar) fails if there is extra input.
    </p>
    <p>
    An alternative formulation is to avoid @(tsee nat-list-fix)
    but include the hypothesis that the input satisfies @(tsee nat-listp).
    </p>"
-  (let ((tree? (parse-grammar! nats)))
+  (let ((tree? (parse-grammar nats)))
     (implies tree?
              (parse-treep tree?
                           (nat-list-fix nats)
                           *rulelist*
                           *all-concrete-syntax-rules*)))
-  :enable (parse-grammar! parse-treep)
+  :enable (parse-grammar parse-treep)
   :use (:instance input-decomposition-of-parse-rulelist
                   (input nats)))
 
@@ -9096,14 +9096,14 @@
    <see topic='@(url grammar-parser-implementation)'>grammar parser
    implementation</see>
    resolves the @('rulelist') ambiguity),
-   @(tsee parse-grammar!) succeeds on the string at the leaves of the tree
+   @(tsee parse-grammar) succeeds on the string at the leaves of the tree
    and returns that tree:
-   @(def parse-grammar!-when-tree-match)
+   @(def parse-grammar-when-tree-match)
    </p>
 
    <p>
    This is proved by proving the following,
-   for each parsing function out of which @(tsee parse-grammar!) is built:
+   for each parsing function out of which @(tsee parse-grammar) is built:
    if a (list of) terminated tree(s) matches a certain syntactic entity
    and possibly satisfies certain
    <see topic='@(url grammar-parser-disambiguating-restrictions)'
@@ -12998,7 +12998,7 @@
            tree-rulelist-restriction-p
            fail-wsp-when-match-*-rule-/-*cwsp-cnl-and-restriction))
 
-(defrule parse-grammar!-when-tree-match
+(defrule parse-grammar-when-tree-match
   :parents (grammar-parser-completeness)
   :short "Top-level completeness theorem of the parser of ABNF grammars."
   :long
@@ -13011,7 +13011,7 @@
    <see topic='@(url grammar-parser-implementation)'>grammar parser
    implementation</see>
    resolves the @('rulelist') ambiguity),
-   @(tsee parse-grammar!) succeeds on the string at the leaves of the tree
+   @(tsee parse-grammar) succeeds on the string at the leaves of the tree
    and returns that tree.
    </p>
    <p>
@@ -13028,9 +13028,9 @@
                                       *all-concrete-syntax-rules*)
                 (tree-terminatedp tree)
                 (tree-rulelist-restriction-p tree))
-           (equal (parse-grammar! (tree->string tree))
+           (equal (parse-grammar (tree->string tree))
                   (tree-fix tree)))
-  :enable parse-grammar!
+  :enable parse-grammar
   :disable parse-rulelist-when-tree-match-and-restriction
   :use (:instance parse-rulelist-when-tree-match-and-restriction
                   (rest-input nil)))
