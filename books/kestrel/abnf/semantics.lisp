@@ -565,7 +565,7 @@
                     (equal n 0)))
     :enable numrep-match-repeat-range-p))
 
-(define lookup-rulename ((rulename rulenamep) (rules rule-listp))
+(define lookup-rulename ((rulename rulenamep) (rules rulelistp))
   :returns (alternation alternationp)
   :parents (semantics)
   :short "Collect all the alternatives associated to a rule name
@@ -591,7 +591,7 @@
 
   (define tree-list-list-match-alternation-p ((treess tree-list-listp)
                                               (alternation alternationp)
-                                              (rules rule-listp))
+                                              (rules rulelistp))
     :returns (yes/no booleanp)
     :parents (semantics)
     :short "Semantics of alternations."
@@ -614,7 +614,7 @@
 
   (define tree-list-list-match-concatenation-p ((treess tree-list-listp)
                                                 (concatenation concatenationp)
-                                                (rules rule-listp))
+                                                (rules rulelistp))
     :returns (yes/no booleanp)
     :parents (semantics)
     :short "Semantics of concatenations."
@@ -638,7 +638,7 @@
 
   (define tree-list-match-repetition-p ((trees tree-listp)
                                         (repetition repetitionp)
-                                        (rules rule-listp))
+                                        (rules rulelistp))
     :returns (yes/no booleanp)
     :parents (semantics)
     :short "Semantics of repetitions."
@@ -660,7 +660,7 @@
 
   (define tree-list-match-element-p ((trees tree-listp)
                                      (element elementp)
-                                     (rules rule-listp))
+                                     (rules rulelistp))
     :returns (yes/no booleanp)
     :parents (semantics)
     :short "Auxiliary function to define @(tsee tree-list-match-repetition-p)."
@@ -682,7 +682,7 @@
 
   (define tree-match-element-p ((tree treep)
                                 (element elementp)
-                                (rules rule-listp))
+                                (rules rulelistp))
     :returns (yes/no booleanp)
     :parents (semantics)
     :short "Semantics of elements."
@@ -874,7 +874,7 @@
     (tree-match-element-p x element rules)
     :guard (and (tree-listp x)
                 (elementp element)
-                (rule-listp rules))
+                (rulelistp rules))
     :elementp-of-nil :unknown)
 
   (defrule nat-listp-of-tree->string-when-match-element-num/char-val
@@ -888,7 +888,7 @@
              tree->string)))
 
 (define parse-treep
-  (tree (string stringp) (rulename rulenamep) (rules rule-listp))
+  (tree (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Recognize the parse trees of a string,
@@ -915,7 +915,7 @@
              (treep tree))))
 
 (define-sk string-parsablep
-  ((string stringp) (rulename rulenamep) (rules rule-listp))
+  ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Notion of parsable string."
@@ -936,7 +936,7 @@
              (not (parse-treep tree string rulename rules)))))
 
 (define-sk string-ambiguousp
-  ((string stringp) (rulename rulenamep) (rules rule-listp))
+  ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Notion of ambiguous string."
@@ -963,7 +963,7 @@
     :rule-classes nil))
 
 (define string-unambiguousp
-  ((string stringp) (rulename rulenamep) (rules rule-listp))
+  ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Notion of unambiguous string."
@@ -991,7 +991,7 @@
              (treep (string-parsablep-witness string rulename rules)))))
 
 (define-sk parse-trees-of-string-p
-  ((trees tree-setp) (string stringp) (rulename rulenamep) (rules rule-listp))
+  ((trees tree-setp) (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Check if a finite set of trees is
@@ -1073,7 +1073,7 @@
                                       string rulename rules)))))))
 
 (define-sk finite-parse-trees-p
-  ((string stringp) (rulename rulenamep) (rules rule-listp))
+  ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Check if a string has a finite number of parse trees."
@@ -1143,7 +1143,7 @@
              string-parsablep-suff
              parse-trees-of-string-p)))
 
-(define parse ((string stringp) (rulename rulenamep) (rules rule-listp))
+(define parse ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (result (or (tree-setp result)
                        (equal result :infinite))
                    :hints (("Goal" :in-theory (enable finite-parse-trees-p))))
@@ -1187,7 +1187,7 @@
                             nil))
              (string-unambiguousp string rulename rules))))
 
-(define parse! ((string stringp) (rulename rulenamep) (rules rule-listp))
+(define parse! ((string stringp) (rulename rulenamep) (rules rulelistp))
   :guard (string-unambiguousp string rulename rules)
   :returns (tree treep)
   :parents (semantics)
@@ -1208,7 +1208,7 @@
                     (insert (parse! string rulename rules) nil)))
     :enable string-unambiguousp))
 
-(define-sk languagep (nats (rules rule-listp))
+(define-sk languagep (nats (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Notion of language."

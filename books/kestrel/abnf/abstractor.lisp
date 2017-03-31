@@ -1065,7 +1065,7 @@
   :no-function t)
 
 (define abstract-*-rule-/-*cwsp-cnl ((trees tree-listp))
-  :returns (rules rule-listp)
+  :returns (rules rulelistp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('( rule / (*c-wsp c-nl) )') parse trees
           is abstracted to the list of its corresponding rules."
@@ -1080,7 +1080,7 @@
   :no-function t)
 
 (define abstract-rulelist ((tree treep))
-  :returns (rules rule-listp)
+  :returns (rules rulelistp)
   :parents (concrete-to-abstract-syntax)
   :short "A @('rulelist') parse tree is abstracted to
           its corresponding list of rules."

@@ -264,11 +264,11 @@
 
   (add-const-to-untranslate-preprocess *concrete-syntax-rules*)
 
-  (defruled rule-listp-of-*concrete-syntax-rules*
-    (rule-listp *concrete-syntax-rules*))
+  (defruled rulelistp-of-*concrete-syntax-rules*
+    (rulelistp *concrete-syntax-rules*))
 
-  (defruled rule-list-wfp-of-*concrete-syntax-rules*
-    (rule-list-wfp *concrete-syntax-rules*)))
+  (defruled rulelist-wfp-of-*concrete-syntax-rules*
+    (rulelist-wfp *concrete-syntax-rules*)))
 
 (defval *all-concrete-syntax-rules*
   :parents (concrete-syntax)
@@ -289,15 +289,15 @@
 
   (add-const-to-untranslate-preprocess *all-concrete-syntax-rules*)
 
-  (defruled rule-list-wfp-of-*all-concrete-syntax-rules*
-    (rule-list-wfp *all-concrete-syntax-rules*))
+  (defruled rulelist-wfp-of-*all-concrete-syntax-rules*
+    (rulelist-wfp *all-concrete-syntax-rules*))
 
-  (defruled rule-list-closedp-of-*all-concrete-syntax-rules*
-    (rule-list-closedp *all-concrete-syntax-rules*))
+  (defruled rulelist-closedp-of-*all-concrete-syntax-rules*
+    (rulelist-closedp *all-concrete-syntax-rules*))
 
   (defruled ascii-only-*all-concrete-syntax-rules*
-    (rule-list-in-termset-p *all-concrete-syntax-rules*
-                            (integers-from-to 0 127))))
+    (rulelist-in-termset-p *all-concrete-syntax-rules*
+                           (integers-from-to 0 127))))
 
 (define parse-grammar ((nats nat-listp))
   :returns (result (or (tree-setp result)

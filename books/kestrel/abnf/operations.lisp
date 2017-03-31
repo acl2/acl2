@@ -288,14 +288,14 @@
        (alternation-wfp (rule->definiens rule)))
   :no-function t)
 
-(std::deflist rule-list-all-wfp (x)
+(std::deflist rule-list-wfp (x)
   (rule-wfp x)
-  :guard (rule-listp x)
+  :guard (rulelistp x)
   :parents (well-formedness)
   :short "Check if all the rules in a list of rules are well-formed."
   :elementp-of-nil nil)
 
-(define rule-list-incremental-ok-p ((rules rule-listp))
+(define rulelist-incremental-ok-p ((rules rulelistp))
   :returns (yes/no booleanp)
   :parents (well-formedness)
   :short "Check if incremental rules appear after
@@ -307,15 +307,15 @@
    A non-incremental rule may appear
    only if there is no preceding rule with the same name.
    </p>"
-  (rule-list-incremental-ok-p-aux nil rules)
+  (rulelist-incremental-ok-p-aux nil rules)
   :no-function t
 
   :prepwork
-  ((define rule-list-incremental-ok-p-aux ((previous-rules rule-listp)
-                                           (next-rules rule-listp))
+  ((define rulelist-incremental-ok-p-aux ((previous-rules rulelistp)
+                                          (next-rules rulelistp))
      :returns (yes/no booleanp)
-     :parents (rule-list-incremental-ok-p)
-     :short "Auxiliary function to define @(tsee rule-list-incremental-ok-p)."
+     :parents (rulelist-incremental-ok-p)
+     :short "Auxiliary function to define @(tsee rulelist-incremental-ok-p)."
      :long
      "<p>
       The rules in @('next-rules') are examined one after the other,
@@ -326,13 +326,13 @@
          (and (iff (rule->incremental (car next-rules))
                    (lookup-rulename (rule->name (car next-rules))
                                     previous-rules))
-              (rule-list-incremental-ok-p-aux (append previous-rules
-                                                      (list (car next-rules)))
-                                              (cdr next-rules))))
+              (rulelist-incremental-ok-p-aux (append previous-rules
+                                                     (list (car next-rules)))
+                                             (cdr next-rules))))
      :measure (len next-rules)
      :no-function t)))
 
-(define rule-list-wfp ((rules rule-listp))
+(define rulelist-wfp ((rules rulelistp))
   :returns (yes/no booleanp)
   :parents (well-formedness)
   :short "A rule list is well-formed iff
@@ -346,9 +346,9 @@
    because duplicate rules are redundant.
    The third condition is reasonably implied by RFC.3.3.
    </p>"
-  (and (rule-list-all-wfp rules)
+  (and (rule-list-wfp rules)
        (no-duplicatesp-equal rules)
-       (rule-list-incremental-ok-p rules))
+       (rulelist-incremental-ok-p rules))
   :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -433,35 +433,35 @@
   (alternation-called-rules (rule->definiens rule))
   :no-function t)
 
-(define rule-list-called-rules ((rules rule-listp))
+(define rulelist-called-rules ((rules rulelistp))
   :returns (rulenames rulename-setp)
   :parents (closure)
   :short "Rule names that occur in (the definientia of) a list of rules."
   (cond ((endp rules) nil)
         (t (union (rule-called-rules (car rules))
-                  (rule-list-called-rules (cdr rules)))))
+                  (rulelist-called-rules (cdr rules)))))
   :no-function t)
 
-(define rule-list-defined-rules ((rules rule-listp))
+(define rulelist-defined-rules ((rules rulelistp))
   :returns (rulenames rulename-setp)
   :parents (closure)
   :short "Rule names that are defined in a list of rules."
   (cond ((endp rules) nil)
         (t (insert (rule->name (car rules))
-                   (rule-list-defined-rules (cdr rules)))))
+                   (rulelist-defined-rules (cdr rules)))))
   :no-function t)
 
-(define rule-list-closedp ((rules rule-listp))
+(define rulelist-closedp ((rules rulelistp))
   :returns (yes/no booleanp)
   :parents (closure)
   :short "A rule list is closed iff it defines all the rules that it calls."
-  (subset (rule-list-called-rules rules)
-          (rule-list-defined-rules rules))
+  (subset (rulelist-called-rules rules)
+          (rulelist-defined-rules rules))
   :no-function t)
 
-(define rules-of-name ((rulename rulenamep) (rules rule-listp))
-  :returns (mv (rulename-rules rule-listp)
-               (other-rules rule-listp))
+(define rules-of-name ((rulename rulenamep) (rules rulelistp))
+  :returns (mv (rulename-rules rulelistp)
+               (other-rules rulelistp))
   :parents (closure)
   :short "Separate from some rules the ones that define a rule name."
   :long
@@ -494,9 +494,9 @@
     :rule-classes :linear))
 
 (define calc-trans-rules-of-names ((workset rulename-setp)
-                                   (accumulator rule-listp)
-                                   (rules rule-listp))
-  :returns (result rule-listp)
+                                   (accumulator rulelistp)
+                                   (rules rulelistp))
+  :returns (result rulelistp)
   :parents (closure)
   :short "Calculate the rules from a list of rules
           that transitively define names in a list of rule names,
@@ -522,20 +522,20 @@
    (if no rules are taken out of @('rules')),
    in which case the length of @('rules') stays the same.
    </p>"
-  (b* (((when (empty workset)) (rule-list-fix accumulator))
+  (b* (((when (empty workset)) (rulelist-fix accumulator))
        (rulename (head workset))
        (workset (tail workset))
        ((mv rulename-rules other-rules) (rules-of-name rulename rules))
        ((when (not rulename-rules))
         (calc-trans-rules-of-names workset accumulator rules))
-       (workset (union workset (rule-list-called-rules rulename-rules)))
+       (workset (union workset (rulelist-called-rules rulename-rules)))
        (accumulator (append accumulator rulename-rules)))
     (calc-trans-rules-of-names workset accumulator other-rules))
   :measure (two-nats-measure (len rules) (cardinality workset))
   :no-function t)
 
-(define trans-rules-of-names ((rulenames rulename-setp) (rules rule-listp))
-  :returns (result rule-listp)
+(define trans-rules-of-names ((rulenames rulename-setp) (rules rulelistp))
+  :returns (result rulelistp)
   :parents (closure)
   :short "Find the rules from a list of rules
           that transitively define the names in a list of rule names."
@@ -709,8 +709,8 @@
   (alternation-in-termset-p (rule->definiens rule) termset)
   :no-function t)
 
-(std::deflist rule-list-in-termset-p (x termset)
-  :guard (and (rule-listp x)
+(std::deflist rulelist-in-termset-p (x termset)
+  :guard (and (rulelistp x)
               (nat-setp termset))
   :parents (in-terminal-set)
   :short "Check if all the terminal value notations in a list of rules
@@ -721,7 +721,7 @@
   ///
 
   (defrule alternation-in-termset-p-of-lookup-rulename
-    (implies (rule-list-in-termset-p rules termset)
+    (implies (rulelist-in-termset-p rules termset)
              (alternation-in-termset-p (lookup-rulename rulename rules)
                                        termset))
     :enable (lookup-rulename rule-in-termset-p)))
@@ -857,7 +857,7 @@
                                                         alternation
                                                         rules)
                     (alternation-in-termset-p alternation termset)
-                    (rule-list-in-termset-p rules termset))
+                    (rulelist-in-termset-p rules termset))
                (string-in-termset-p (tree-list-list->string treess) termset))
       :flag tree-list-list-match-alternation-p)
 
@@ -866,28 +866,28 @@
                                                           concatenation
                                                           rules)
                     (concatenation-in-termset-p concatenation termset)
-                    (rule-list-in-termset-p rules termset))
+                    (rulelist-in-termset-p rules termset))
                (string-in-termset-p (tree-list-list->string treess) termset))
       :flag tree-list-list-match-concatenation-p)
 
     (defthm leaves-in-termset-when-match-repetition-in-termset
       (implies (and (tree-list-match-repetition-p trees repetition rules)
                     (repetition-in-termset-p repetition termset)
-                    (rule-list-in-termset-p rules termset))
+                    (rulelist-in-termset-p rules termset))
                (string-in-termset-p (tree-list->string trees) termset))
       :flag tree-list-match-repetition-p)
 
     (defthm leaves-in-termset-when-list-match-element-in-termset
       (implies (and (tree-list-match-element-p trees element rules)
                     (element-in-termset-p element termset)
-                    (rule-list-in-termset-p rules termset))
+                    (rulelist-in-termset-p rules termset))
                (string-in-termset-p (tree-list->string trees) termset))
       :flag tree-list-match-element-p)
 
     (defthm leaves-in-termset-when-match-element-in-termset
       (implies (and (tree-match-element-p tree element rules)
                     (element-in-termset-p element termset)
-                    (rule-list-in-termset-p rules termset))
+                    (rulelist-in-termset-p rules termset))
                (string-in-termset-p (tree->string tree) termset))
       :flag tree-match-element-p)
 
@@ -913,7 +913,7 @@
   :short "Rules whose terminal value notations all denote values in a set,
           generate languages consisting of terminals in the set."
   (implies (and (languagep nats rules)
-                (rule-list-in-termset-p rules termset))
+                (rulelist-in-termset-p rules termset))
            (list-in nats termset))
   :enable (languagep string-parsablep parse-treep element-in-termset-p)
   :use (:instance leaves-in-termset-when-match-element-in-termset
@@ -935,7 +935,7 @@
 
 (xdoc::order-subtopics ambiguity nil t)
 
-(define-sk rules-ambiguousp ((rules rule-listp))
+(define-sk rules-ambiguousp ((rules rulelistp))
   :returns (yes/no booleanp)
   :parents (ambiguity)
   :short "Notion of ambiguous lists of rules."
@@ -1010,7 +1010,7 @@
                 (tree-match-prose-val-p tree1 prose-val)
                 (tree-match-prose-val-p tree2 prose-val))))
 
-(define-sk element-unambiguousp ((element elementp) (rules rule-listp))
+(define-sk element-unambiguousp ((element elementp) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (ambiguity)
   :short "Notion of unambiguous elements."
@@ -1070,7 +1070,7 @@
                           :rulename? nil
                           :branches (list (list (tree-leafterm '(1 2))))))))
 
-(define-sk repetition-unambiguousp ((repetition repetitionp) (rules rule-listp))
+(define-sk repetition-unambiguousp ((repetition repetitionp) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (ambiguity)
   :short "Notion of unambiguous repetitions."
@@ -1101,7 +1101,7 @@
     :enable tree-list-match-repetition-p))
 
 (define-sk concatenation-unambiguousp ((concatenation concatenationp)
-                                       (rules rule-listp))
+                                       (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (ambiguity)
   :short "Notion of unambiguous concatenations."
@@ -1132,7 +1132,7 @@
     :enable tree-list-list-match-concatenation-p))
 
 (define-sk alternation-unambiguousp ((alternation alternationp)
-                                     (rules rule-listp))
+                                     (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (ambiguity)
   :short "Notion of unambiguous alternations."
@@ -1164,7 +1164,7 @@
 
 (define-sk concatenation-alternation-disjointp ((concatenation concatenationp)
                                                 (alternation alternationp)
-                                                (rules rule-listp))
+                                                (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (ambiguity)
   :short "Notion of disjoint concatenation-alternation pairs."
@@ -1290,8 +1290,8 @@
                        (element-case element :prose-val)))))))
   :no-function t)
 
-(define remove-prose-rules ((rules1 rule-listp) (rules2 rule-listp))
-  :returns (rules rule-listp)
+(define remove-prose-rules ((rules1 rulelistp) (rules2 rulelistp))
+  :returns (rules rulelistp)
   :parents (plugging)
   :short "Remove from a list of rules all the prose rules
           whose names have definitions in another list of rules."
@@ -1311,8 +1311,8 @@
                     (cons rule (remove-prose-rules (cdr rules1) rules2)))))))
   :no-function t)
 
-(define plug-rules ((rules1 rule-listp) (rules2 rule-listp))
-  :returns (rules rule-listp)
+(define plug-rules ((rules1 rulelistp) (rules2 rulelistp))
+  :returns (rules rulelistp)
   :parents (plugging)
   :short "Plug a list of rules into another list of rules."
   :long
@@ -1353,8 +1353,8 @@
    </p>"
   (b* ((rules1 (remove-prose-rules rules1 rules2))
        (rules2 (trans-rules-of-names (difference
-                                      (rule-list-called-rules rules1)
-                                      (rule-list-defined-rules rules1))
+                                      (rulelist-called-rules rules1)
+                                      (rulelist-defined-rules rules1))
                                      rules2)))
     (append rules1 rules2))
   :no-function t)
@@ -1473,16 +1473,16 @@
                                                  oldname newname))
   :no-function t)
 
-(define rule-list-rename-rule ((rules rule-listp)
-                               (oldname rulenamep)
-                               (newname rulenamep))
-  :returns (new-rules rule-listp)
+(define rulelist-rename-rule ((rules rulelistp)
+                              (oldname rulenamep)
+                              (newname rulenamep))
+  :returns (new-rules rulelistp)
   :parents (renaming)
   :short "Rename all the occurrences of a rule name to a new rule name,
           in all the rules in a list of rules."
   (cond ((endp rules) nil)
         (t (cons (rule-rename-rule (car rules) oldname newname)
-                 (rule-list-rename-rule (cdr rules) oldname newname))))
+                 (rulelist-rename-rule (cdr rules) oldname newname))))
   :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1510,8 +1510,8 @@
 
 (xdoc::order-subtopics removal nil t)
 
-(define remove-rules-that-define ((rulenames rulename-setp) (rules rule-listp))
-  :returns (new-rules rule-listp)
+(define remove-rules-that-define ((rulenames rulename-setp) (rules rulelistp))
+  :returns (new-rules rulelistp)
   :parents (removal)
   :short "Remove from a list of rules all the ones
           that define one of the given rule names."

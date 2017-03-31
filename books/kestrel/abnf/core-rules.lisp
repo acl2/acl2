@@ -184,18 +184,18 @@
 
   (add-const-to-untranslate-preprocess *core-rules*)
 
-  (defruled rule-listp-of-*core-rules*
-    (rule-listp *core-rules*))
+  (defruled rulelistp-of-*core-rules*
+    (rulelistp *core-rules*))
 
-  (defruled rule-list-wfp-of-*core-rules*
-    (rule-list-wfp *core-rules*))
+  (defruled rulelist-wfp-of-*core-rules*
+    (rulelist-wfp *core-rules*))
 
-  (defruled rule-list-closedp-of-*core-rules*
-    (rule-list-closedp *core-rules*))
+  (defruled rulelist-closedp-of-*core-rules*
+    (rulelist-closedp *core-rules*))
 
   (defruled octet-only-*core-rules*
-    (rule-list-in-termset-p *core-rules* (integers-from-to 0 255)))
+    (rulelist-in-termset-p *core-rules* (integers-from-to 0 255)))
 
   (defruled ascii-only-*core-rules*-without-*octet*
-    (rule-list-in-termset-p (remove-equal *rule_octet* *core-rules*)
-                            (integers-from-to 0 127))))
+    (rulelist-in-termset-p (remove-equal *rule_octet* *core-rules*)
+                           (integers-from-to 0 127))))

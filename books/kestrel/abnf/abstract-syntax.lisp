@@ -350,7 +350,7 @@
   :short "Union of rules and @('nil')."
   :pred maybe-rulep)
 
-(fty::deflist rule-list
+(fty::deflist rulelist
   :parents (abstract-syntax)
   :short "Lists of rules in the abstract syntax."
   :long
@@ -362,12 +362,12 @@
    </p>"
   :elt-type rule
   :true-listp t
-  :pred rule-listp)
+  :pred rulelistp)
 
 (defxdoc grammar
   :parents (abstract-syntax)
   :short "An ABNF grammar is
-          a <see topic='@(url rule-list)'>list of rules</see>."
+          a <see topic='@(url rulelist)'>list of rules</see>."
   :long
   "<p>
    Unlike the typical notion of formal grammar in textbooks,
