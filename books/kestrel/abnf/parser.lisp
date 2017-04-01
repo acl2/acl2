@@ -109,12 +109,24 @@
 
    <p>
    As explained in the documentation of @(tsee parse-grammar*),
-   the grammar of the ABNF concrete syntax (RFC.4) is ambiguous:
-   the @('rulelist') rule allows strings &lsquo;@('c-nl WSP')&rsquo;
-   either to be split into an ending @('c-nl') under @('rule')
-   and a starting @('WSP') under @('(*c-wsp c-nl)'),
+   the grammar of the ABNF concrete syntax (RFC.4) is ambiguous.
+   The rule @('rulelist') allows strings &lsquo;@('c-nl WSP')&rsquo;
+   either to be split into an ending @('c-nl') under a @('rule')
+   and a starting @('WSP') under an immediately following @('(*c-wsp c-nl)'),
    or to be made into a @('c-wsp')
-   in the ending part of @('elements') under @('rule').
+   in the ending part of @('elements') under the @('rule').
+   The same kind of choice applies when,
+   instead of a @('rule') immediately followed by a @('(*c-wsp c-nl)'),
+   there are two subsequent @('(*c-wsp c-nl)')s:
+   the string &lsquo;@('c-nl WSP')&rsquo; can be
+   either split between the two @('(*c-wsp c-nl)')s
+   or put all under the first one.
+   Indeed, expanding @('elements') in the definiens of @('rule')
+   gives @('... *c-wsp c-nl'),
+   which ends in the same way as the group @('(*c-wsp c-nl)'):
+   this is why the ambiguity applies equally to
+   a @('rule') immediately followed by a @('(*c-wsp c-nl)')
+   and to a @('(*c-wsp c-nl)') immediately followed by a @('(*c-wsp c-nl)').
    </p>
 
    <p>
@@ -172,6 +184,23 @@
    </ul>
 
    <p>
+   In each of the three rules listed above,
+   the two choices have the first character in common.
+   Thus, it may seem that these rules are actually LL(1),
+   by first parsing the first character in common
+   and then deciding how to proceed based on the next character.
+   However, each character pair like @('\"=/\"') and @('\"%s\"')
+   is parsed in one shot via one call to @(tsee parse-ichars)
+   which produces a single leaf tree with the list of those two character codes,
+   not via two calls to @(tsee parse-ichar)
+   which would produce two leaf trees
+   each with a singleton list of one character code.
+   If the rules were formulated as concatenations of single-character strings
+   (e.g. @('\"=\" \"/\"') and @('\"%\" \"s\"')) instead,
+   these rules would be LL(1).
+   </p>
+
+   <p>
    Aside from the
    @('rulelist'),
    @('repeat'),
@@ -184,22 +213,28 @@
 
    <p>
    The parser resolves the @('rulelist') ambiguity
-   by keeping strings &lsquo;@('c-nl WSP')&rsquo; as @('c-wsp')s under @('rule')
-   instead of splitting them into a @('c-nl') to end @('rule')
-   and a @('WSP') to start @('(*c-wsp c-nl)').
+   by keeping strings &lsquo;@('c-nl WSP')&rsquo; as @('c-wsp')s
+   under @('rule') or
+   under the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
+   instead of splitting them into a @('c-nl')
+   to end the @('rule') or
+   to end the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
+   and a @('WSP') to start the subsequent @('(*c-wsp c-nl)').
    The decision point is when a @('c-nl') is encountered
-   while parsing the ending @('*c-wsp') of @('elements'):
-   should the @('elements') be considered finished
-   and the @('c-nl') used to end the @('rule'),
-   or should the parser attempt to extend the @('elements')
+   while parsing the ending @('*c-wsp') of @('elements')
+   or while parsing the @('*c-wsp') of a @('(*c-wsp c-nl)'):
+   should the @('*c-wsp') be considered finished
+   and the @('c-nl') used to end the @('rule') or @('(*c-wsp c-nl)'),
+   or should the parser attempt to extend the @('*c-wsp')
    with an extra @('c-wsp'), if the @('c-nl') is followed by a @('WSP')?
-   By having @(tsee parse-elements) always try the extra @('c-wsp'),
+   By having @(tsee parse-*cwsp) always try the extra @('c-wsp'),
    we never split strings &lsquo;@('c-nl WSP')&rsquo;.
-   Thus, @(tsee parse-elements) tries to parse as many @('c-wsp')s as possible.
+   Thus, @(tsee parse-*cwsp) tries to parse as many @('c-wsp')s as possible,
+   like all the other @('parse-*...') parsing functions.
    If the @('c-nl') is not followed by a @('WSP'),
    the parsing of the extra @('c-wsp') fails
-   and the only possibility left is to finish the @('elements')
-   and use the @('c-nl') to end the @('rule');
+   and the only possibility left is to finish the @('*c-wsp')
+   and use the @('c-nl') to end the @('rule') or the @('(*c-wsp c-nl)');
    there is no ambiguity in this case.
    </p>
 
@@ -3148,13 +3183,9 @@
      <li>
      Completeness:
      for every terminated tree rooted at @('rulelist')
-     that has @('c-wsp')s under @('rule')s
-     rather than under @('(*c-wsp c-nl)') groups
-     when they could ambiguously go under either
-     (see the discussion about how the
-     <see topic='@(url grammar-parser-implementation)'>grammar parser
-     implementation</see>
-     resolves the @('rulelist') ambiguity),
+     that satisfies the
+     <see topic='@(url grammar-parser-disambiguating-restrictions)'
+     >disambiguating restrictions</see>,
      @(tsee parse-grammar) succeeds on the string at the leaves of the tree
      and returns that tree:
      @(def parse-grammar-when-tree-match)
@@ -5260,14 +5291,15 @@
    As explained in the documentation of the
    <see topic='@(url grammar-parser-implementation)'>grammar parser
    implementation</see>,
-   the @('rulelist') ambiguity is resolved
-   by keeping strings &lsquo;@('c-nl WSP')&rsquo; as @('c-wsp')s under @('rule')
-   instead of splitting them into a @('c-nl') to end @('rule')
-   and a @('WSP') to start @('(*c-wsp c-nl)').
+   the @('rulelist') ambiguity is naturally resolved
+   by having @(tsee parse-*cwsp) parse as many @('c-wsp')s as possible,
+   like the other @('parse-*...') parsing functions.
    This means that the parser generates only parse trees
    whose @('(*c-wsp c-nl)') subtrees of @('rulelist') trees
    do not start with @('WSP')s,
-   because such @('WSP')s always go under @('rule') during parsing.
+   because such @('WSP')s always go
+   under the immediately preceding @('rule') or @('(*c-wsp c-nl)')
+   during parsing.
    </p>
    <p>
    The following predicates capture these restrictions.
@@ -5384,8 +5416,7 @@
               (tree-terminatedp tree))
   :returns (yes/no booleanp)
   :parents (grammar-parser-disambiguating-restrictions)
-  :short "Restrictions on the @('rulelist') trees
-          generated by the parser."
+  :short "Restrictions on the @('rulelist') trees generated by the parser."
   :long
   "<p>
    This lifts the restriction
@@ -9089,13 +9120,9 @@
 
   "<p>
    For every terminated tree rooted at @('rulelist')
-   that has @('c-wsp')s under @('rule')s
-   rather than under @('(*c-wsp c-nl)') groups
-   when they could ambiguously go under either
-   (see the discussion about how the
-   <see topic='@(url grammar-parser-implementation)'>grammar parser
-   implementation</see>
-   resolves the @('rulelist') ambiguity),
+   that satisfies the
+   <see topic='@(url grammar-parser-disambiguating-restrictions)'
+   >disambiguating restrictions</see>,
    @(tsee parse-grammar) succeeds on the string at the leaves of the tree
    and returns that tree:
    @(def parse-grammar-when-tree-match)
@@ -13004,13 +13031,9 @@
   :long
   "<p>
    For every terminated tree rooted at @('rulelist')
-   that has @('c-wsp')s under @('rule')s
-   rather than under @('(*c-wsp c-nl)') groups
-   when they could ambiguously go under either
-   (see the discussion about how the
-   <see topic='@(url grammar-parser-implementation)'>grammar parser
-   implementation</see>
-   resolves the @('rulelist') ambiguity),
+   that satisfies the
+   <see topic='@(url grammar-parser-disambiguating-restrictions)'
+   >disambiguating restrictions</see>,
    @(tsee parse-grammar) succeeds on the string at the leaves of the tree
    and returns that tree.
    </p>
