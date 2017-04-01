@@ -3117,8 +3117,9 @@
   :long
   "<p>
    The ABNF language consists of sequences of ASCII codes,
-   as shown by theorem @('ascii-only-*all-concrete-syntax-rules*')
-   in the documentation of @(tsee *all-concrete-syntax-rules*).
+   as shown by theorem
+   <see topic='@(url *all-concrete-syntax-rules*)'
+   >@('ascii-only-*all-concrete-syntax-rules*')</see>.
    ASCII codes are octets (i.e. 8-bit bytes).
    Thus, instead of parsing sequences of natural numbers,
    we can parse sequences of characters (which are isomorphic to octets),
@@ -9695,7 +9696,8 @@
    because it interferes with the proof
    by preventing @(tsee nat-list-fix) from being eliminated
    via the rewrite rule that shows that the parsing function fixes the input
-   (e.g. the theorem @('parse-*bit-of-nat-list-fix')).
+   (e.g. the theorem
+   <see topic='@(url parse-*bit)'>@('parse-*bit-of-nat-list-fix')</see>).
    </p>
 
    <p>
