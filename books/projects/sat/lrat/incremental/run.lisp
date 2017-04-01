@@ -16,22 +16,36 @@
 (include-book "incremental")
 
 (defun lrat-check-fn (cnf-file lrat-file incomplete-okp state)
+
+; We use 1,000,000 for the chunk-size.
+
   (declare (xargs :mode :program :stobjs state))
-  (mv-let (erp val state)
-    (time$ (incl-verify-proof-fn cnf-file lrat-file incomplete-okp
-                                 *default-chunk-size* t state))
-    (cond ((and (null erp)
-                (eq val t))
-           (pprogn (princ$ "s VERIFIED" (standard-co state) state)
-                   (newline (standard-co state) state)
-                   (prog2$ (exit 0)
-                           (mv erp val state))))
-          (t
-           (pprogn (princ$ "s FAILED" (standard-co state) state)
-                   (newline (standard-co state) state)
-                   (prog2$ (exit 1)
-                           (mv erp val state)))))))
+  (mv-let (erp s state)
+    (getenv$ "LRAT_CHUNK_SIZE" state)
+    (let ((chunk-size (or (and (null erp)
+                               (stringp s)
+                               (acl2::decimal-string-to-number s (length s) 0))
+                          1000000)))
+      (mv-let (erp val state)
+        (time$ (incl-verify-proof cnf-file lrat-file
+                                  :incomplete-okp incomplete-okp
+                                  :chunk-size chunk-size
+                                  :debug t))
+        (cond ((and (null erp)
+                    (eq val t))
+               (pprogn (princ$ "s VERIFIED" (standard-co state) state)
+                       (newline (standard-co state) state)
+                       (prog2$ (exit 0)
+                               (mv erp val state))))
+              (t
+               (pprogn (princ$ "s FAILED" (standard-co state) state)
+                       (newline (standard-co state) state)
+                       (prog2$ (exit 1)
+                               (mv erp val state)))))))))
 
 ; Note that lrat::lrat-check and acl2::lrat-check are the same symbol.
 (defmacro lrat-check (cnf-file lrat-file &optional incomplete-okp)
+
+; We use 1,000,000 for the chunk-size.
+
   `(lrat-check-fn ,cnf-file ,lrat-file ,incomplete-okp state))
