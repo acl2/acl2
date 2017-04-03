@@ -38,11 +38,9 @@
                                                   state))
                  :complete)
           (formula-p formula)
-          (posp clrat-file-length)
           (a$p a$)
           (equal (a$ptr a$) 0)
           (integerp max-var)
-          (natp posn)
           (<= (formula-max-var formula 0) max-var))
      (not (satisfiable formula)))))
 

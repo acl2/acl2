@@ -45,14 +45,21 @@
         (mv-let (ncls ndel new-formula a$)
           (verify-clause$ formula entry ncls ndel a$)
           (cond (ncls ; success
-                 (incl-verify-proof$-rec
-                  (1+ ncls)
-                  ndel
-                  (add-proof-clause (access add-step entry :index)
-                                    (access add-step entry :clause)
-                                    new-formula)
-                  (cdr proof)
-                  a$))
+                 (let* ((entry-clause (access add-step entry :clause))
+                        (newest-formula
+                         (add-proof-clause (access add-step entry :index)
+                                           entry-clause
+                                           new-formula)))
+                   (cond
+                    ((null entry-clause)
+                     (mv :complete newest-formula a$))
+                    (t
+                     (incl-verify-proof$-rec
+                      (1+ ncls)
+                      ndel
+                      newest-formula
+                      (cdr proof)
+                      a$)))))
                 (t (mv nil formula a$))))))))))
 
 (defun incl-verify-proof$ (formula proof a$)
@@ -348,10 +355,9 @@
                (incl-verify-proof$ formula proof a$)
                (mv v
                    new-formula
-                   (proof-contradiction-p proof)
                    max-var
                    a$))))
-          (t (mv nil formula nil old-max-var a$)))))
+          (t (mv nil formula old-max-var a$)))))
 
 (include-book "clrat-parser")
 
@@ -371,9 +377,9 @@
            (clrat-read-next clrat-file posn chunk-size
                             old-suffix clrat-file-length state))))
 
-(defthm natp-mv-nth-3-incl-valid-proofp$
+(defthm natp-mv-nth-2-incl-valid-proofp$
   (implies (force (natp max-var))
-           (natp (mv-nth 3 (incl-valid-proofp$ formula proof max-var a$))))
+           (natp (mv-nth 2 (incl-valid-proofp$ formula proof max-var a$))))
   :rule-classes :type-prescription)
 
 ; Start proof of formula-p-incl-valid-proofp$
@@ -480,7 +486,7 @@
                 (natp old-max-var)
                 (<= (formula-max-var formula 0)
                     old-max-var))
-           (a$p (mv-nth 4
+           (a$p (mv-nth 3
                         (incl-valid-proofp$ formula proof old-max-var a$)))))
 
 ; Start proof of formula-max-monotone-for-incl-valid-proofp$
@@ -517,6 +523,14 @@
                                                          ncls ndel)))
                m))
   :hints (("Goal" :in-theory (enable verify-clause maybe-shrink-formula))))
+
+(encapsulate
+  ()
+  (local (include-book "../list-based/soundness"))
+  (defthm formula-p-mv-nth-2-verify-clause
+    (implies (formula-p formula)
+             (formula-p (mv-nth 2
+                                (verify-clause formula entry ncls ndel))))))
 
 (defthm formula-max-monotone-for-incl-verify-proofp$-rec-lemma
   (implies (and (<= (formula-max-var-1 formula)
@@ -579,7 +593,7 @@
                  (incl-valid-proofp$ formula proof old-max-var a$))
                 0)
                (mv-nth
-                3
+                2
                 (incl-valid-proofp$ formula proof old-max-var a$)))))
 
 (defthm natp-clrat-read-next-1-position
@@ -685,7 +699,7 @@
                  'clrat-read-next)
              a$))
         (t
-         (mv-let (v new-formula c new-max-var a$)
+         (mv-let (v new-formula new-max-var a$)
            (prog2$
             (cw "; Note: Checking next proof segment.~|")
             (incl-valid-proofp$ formula proof old-max-var a$))
@@ -697,13 +711,14 @@
                      new-posn *2^56*)
                  a$))
             ((not v) (mv nil a$))
-            (c
+            ((eq v :complete)
              (mv :complete a$))
             ((> new-posn clrat-file-length)
 
 ; If new-posn is exactly clrat-file-length, then as per the discussion of the
-; "truncation case"in :doc read-file-into-string, we need to iterate.  But if
-; new-posn exceeds clrat-file-length, then we're done.
+; "truncation case" in :doc read-file-into-string, we need to iterate.  But if
+; new-posn exceeds clrat-file-length, then we have a valid proof that does not
+; include the empty clause.
 
              (mv :incomplete a$))
             (t
@@ -781,7 +796,7 @@
                 (equal (a$ptr a$) 0)
                 (car (incl-valid-proofp$ formula proof old-max-var a$)))
            (equal (a$ptr (mv-nth
-                          4
+                          3
                           (incl-valid-proofp$ formula proof old-max-var a$)))
                   0))
   :hints (("Goal"

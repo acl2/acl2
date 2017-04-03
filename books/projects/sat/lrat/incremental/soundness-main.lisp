@@ -23,36 +23,48 @@
                     (incl-valid-proofp$ formula proof max-var a$)))))
 )
 
-(skip-proofs
+(defthm not-satisfiable-add-proof-clause-nil
+  (not (satisfiable (cons (cons index nil) formula)))
+  :hints (("Goal"
+           :in-theory (enable add-proof-clause satisfiable)
+           :restrict ((formula-truep-necc ((index index)))))))
+
+(defthm incl-verify-proofp$-rec-complete-implies-not-satisfiable
+  (implies
+   (and (proofp proof)
+        (equal (car (incl-verify-proof$-rec ncls ndel formula proof a$))
+               :complete))
+   (not
+    (satisfiable
+     (mv-nth
+      1
+      (incl-verify-proof$-rec ncls ndel formula proof a$)))))
+  :hints (("Goal"
+           :induct t
+           :in-theory (disable delete-clauses verify-clause$))))
+
 (defthmd incl-valid-proofp$-complete-implies-not-satisfiable
   (implies
    (and (formula-p formula)
-        (posp clrat-file-length)
         (a$p a$)
         (equal (a$ptr a$) 0)
         (integerp max-var)
-        (natp posn)
         (<= (formula-max-var formula 0) max-var)
-        (car (incl-valid-proofp$ formula proof max-var a$))
-        (mv-nth 2 ; reached a contradiction
-                (incl-valid-proofp$ formula proof max-var a$)))
+        (equal (car (incl-valid-proofp$ formula proof max-var a$))
+               :complete))
    (not (satisfiable
          (mv-nth 1
                  (incl-valid-proofp$ formula proof max-var a$))))))
-)
 
 (defthm soundness-incl-valid-proofp$
   (implies
    (and (formula-p formula)
-        (posp clrat-file-length)
         (a$p a$)
         (equal (a$ptr a$) 0)
         (integerp max-var)
-        (natp posn)
         (<= (formula-max-var formula 0) max-var)
-        (car (incl-valid-proofp$ formula proof max-var a$))
-        (mv-nth 2 ; reached a contradiction
-                (incl-valid-proofp$ formula proof max-var a$)))
+        (equal (car (incl-valid-proofp$ formula proof max-var a$))
+               :complete))
    (not (satisfiable formula)))
   :hints (("Goal"
            :use incl-valid-proofp$-complete-implies-not-satisfiable
@@ -67,11 +79,9 @@
                                                 state))
                :complete)
         (formula-p formula)
-        (posp clrat-file-length)
         (a$p a$)
         (equal (a$ptr a$) 0)
         (integerp max-var)
-        (natp posn)
         (<= (formula-max-var formula 0) max-var))
    (not (satisfiable formula)))
   :hints (("Goal"
