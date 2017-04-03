@@ -43,15 +43,32 @@
 ;;                              Polynomial Terms
 ;;*********************************************************************************
 
+(defn distinct-symbols (vars)
+  (if (consp vars)
+      (and (distinct-symbols (cdr vars))
+           (symbolp (car vars))
+           (not (member (car vars) (cdr vars))))
+    (null vars)))
+
+(defrule eqlable-listp-distinct-symbols
+  (implies (distinct-symbols vars)
+           (eqlable-listp vars)))
+
 (defun polyp (x vars)
+  (declare (xargs :guard (distinct-symbols vars)))
   (if (atom x)
       (or (integerp x) (member x vars))
-    (let ((y (cadr x)) (z (caddr x)))
-      (case (car x)
-        (+ (and (polyp y vars) (polyp z vars)))
-        (- (and (polyp y vars) (or (not (cddr x)) (polyp z vars))))
-        (* (and (polyp y vars) (polyp z vars)))
-        (expt (and (polyp y vars) (natp z)))))))
+    (and (true-listp x)
+         (case (len x)
+           (2 (let ((y (cadr x)))
+                (case (car x)
+                  (- (polyp y vars)))))
+           (3 (let ((y (cadr x)) (z (caddr x)))
+                (case (car x)
+                  (+ (and (polyp y vars) (polyp z vars)))
+                  (- (and (polyp y vars) (polyp z vars)))
+                  (* (and (polyp y vars) (polyp z vars)))
+                  (expt (and (polyp y vars) (natp z))))))))))
 
 ;; Evaluation of a polynomial term:
 
@@ -89,12 +106,23 @@
 ;;    (2) A list (POP i p), where i is a nat and p is a SHF
 ;;    (3) A list (POW i p q), where i is a nat and p and q are SHFs
 
-(defun shfp (x)
+(defn shfp (x)
   (if (atom x)
       (integerp x)
     (case (car x)
-      (pop (and (natp (cadr x)) (shfp (caddr x)) (null (cdddr x))))
-      (pow (and (natp (cadr x)) (shfp (caddr x)) (shfp (cadddr x)) (null (cddddr x)))))))
+      (pop (and (consp (cdr x))   (natp (cadr x))
+                (consp (cddr x))  (shfp (caddr x))
+                (null (cdddr x))))
+      (pow (and (consp (cdr x))   (natp (cadr x))
+                (consp (cddr x))  (shfp (caddr x))
+                (consp (cdddr x)) (shfp (cadddr x))
+                (null (cddddr x)))))))
+;(defun shfp (x)
+;  (if (atom x)
+;      (integerp x)
+;    (case (car x)
+;      (pop (and (natp (cadr x)) (shfp (caddr x)) (null (cdddr x))))
+;      (pow (and (natp (cadr x)) (shfp (caddr x)) (shfp (cadddr x)) (null (cddddr x)))))))
 
 ;; Thus, a SHF is a tree.  This function counts its nodes:
 
@@ -154,7 +182,24 @@
 
 ;;      (evalh x vals) = (evalp z (pairlis vars vals)).
 
+(defn all-integers (vals)
+  (if (consp vals)
+      (and (all-integers (cdr vals))
+           (integerp (car vals)))
+    (null vals)))
+
+(defrule true-listp-all-integers
+  (implies (all-integers vals)
+           (true-listp vals)))
+
+(defthm all-integers-nthcdr
+  (implies (all-integers vals)
+           (all-integers (nthcdr n vals))))
+
 (defun evalh (x vals)
+  (declare (xargs :guard (and (shfp x)
+                              (all-integers vals))
+                  :verify-guards nil))
   (if (atom x)
       x
     (case (car x)
@@ -173,6 +218,7 @@
 ;;    (2) x = (POW i p q) => p neither 0 nor (POW j r 0)
 
 (defun normp (x)
+  (declare (xargs :guard (shfp x)))
   (if (atom x)
       t
     (let ((i (cadr x)) (p (caddr x)) (q (cadddr x)))
@@ -189,7 +235,7 @@
                     (not (and (eql (car p) 'pow)
                               (equal (cadddr p) 0))))))))))
 
-(defun shnfp (x)
+(defn shnfp (x)
   (and (shfp x) (normp x)))
 
 (defthm shnfp-shfp
@@ -198,9 +244,30 @@
   ;; [Jared] trying to cheapen this very expensive rule.
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
+;(local (defruled shnfp-atom-structure
+;  (implies (and (shnfp x)
+;                (not (consp x)))
+;           (integerp x))
+;  :enable shnfp))
+
+(local (defruled shnfp-pop-structure
+  (implies (and (shnfp x)
+                (eql (car x) 'pop))
+           (and (consp (cdr x))
+                (consp (cddr x))))
+  :enable shnfp))
+
+(local (defruled shnfp-pow-structure
+  (implies (and (shnfp x)
+                (eql (car x) 'pow))
+           (and (consp (cdr x))
+                (consp (cddr x))
+                (consp (cdddr x))))
+  :enable shnfp))
+
 (local (defruled shnfp-atom
   (implies (and (shnfp x)
-                (atom x))
+                (not (consp x)))
            (integerp x))))
 
 (local (defruled shnfp-forward
@@ -313,16 +380,6 @@
   (implies (integerp x)
            (acl2-numberp x)))
 
-(defun all-integers (vals)
-  (if (consp vals)
-      (and (all-integers (cdr vals))
-           (integerp (car vals)))
-    t))
-
-(defthm all-integers-nthcdr
-  (implies (all-integers vals)
-           (all-integers (nthcdr n vals))))
-
 (defrule integerp-evalh
   (implies (and (shfp x)
                 (all-integers vals))
@@ -332,6 +389,10 @@
   ;; reasoning stuff anyway.
   ;; :rule-classes (:type-prescription :rewrite)
   :enable acl2::expt-type-prescription-integerp-base)
+
+(acl2::with-arith5-help
+ (verify-guards evalh))
+ ; 0.64 33351
 
 (local (defruled integerp-evalh-shnfp
   (implies (and (shnfp x)
@@ -369,6 +430,12 @@
            evalh-pow-2
            integerp-evalh-shnfp)))
 
+(local (deftheory shnfp-guard
+         (union-theories '(;shnfp-atom-structure
+                           shnfp-pop-structure
+                           shnfp-pow-structure)
+                         (theory 'shnfp-new))))
+
 (local (in-theory (disable shnfp-old)))
 
 ;; We shall define a function norm that computes a SHNF
@@ -377,6 +444,9 @@
 ;; norm-pop normalizes (POP i p), where p is normal:
 
 (defun norm-pop (i p)
+  (declare (xargs :guard (and (natp i)
+                              (shnfp p))
+                  :guard-hints (("goal" :in-theory (enable shnfp-guard)))))
   (if (or (= i 0) (atom p))
       p
     (if (eql (car p) 'pop)
@@ -419,6 +489,10 @@
 ;; norm-pow normalizes (POW i p q), where p and p are normal:
 
 (defun norm-pow (i p q)
+  (declare (xargs :guard (and (natp i)
+                              (shnfp p)
+                              (shnfp q))
+                  :guard-hints (("Goal" :in-theory (enable shnfp-guard)))))
   (if (equal p 0)
       (norm-pop 1 q)
     (if (and (consp p) (eql (car p) 'pow) (equal (cadddr p) 0))
@@ -463,6 +537,8 @@
 ;; norm-var handles the case where the polynomial is a simple variable:
 
 (defun var-index (x vars)
+  (declare (xargs :guard (and (distinct-symbols vars)
+                              (member x vars))))
   (if (consp vars)
       (if (eql x (car vars))
           0
@@ -475,18 +551,13 @@
   :rule-classes (:type-prescription :rewrite))
 
 (defun norm-var (x vars)
+  (declare (xargs :guard (and (distinct-symbols vars)
+                              (member x vars))))
   (norm-pop (var-index x vars) '(pow 1 1 0)))
 
 (defthm shnfp-norm-var
   (implies (member x vars)
            (shnfp (norm-var x vars))))
-
-(defun distinct-symbols (vars)
-  (if (consp vars)
-      (and (distinct-symbols (cdr vars))
-           (symbolp (car vars))
-           (not (member (car vars) (cdr vars))))
-    t))
 
 (defthm car-nthcdr
   (equal (car (nthcdr i l))
@@ -559,6 +630,9 @@
 ;; add-int handles the case where x is an integer:
 
 (defun add-int (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (shnfp y))
+                  :guard-hints (("Goal" :in-theory (enable shnfp-guard)))))
   (if (atom y)
       (+ x y)
     (case (car y)
@@ -626,19 +700,21 @@
         (norm-pow i (norm-add (list 'pow (- j i) r 0) p) (norm-add s q))))))
 
 (defun norm-add (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
-  (and (shfp x)
-       (if (atom x)
-           (add-int x y)
-         (if (atom y)
-             (add-int y x)
-           (case (car x)
-             (pop (case (car y)
-                    (pop (add-pop-pop x y))
-                    (pow (add-pop-pow x y))))
-             (pow (case (car y)
-                    (pop (add-pop-pow y x))
-                    (pow (add-pow-pow x y)))))))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :guard (and (shnfp x)
+                              (shnfp y))
+                  :verify-guards nil))
+  (if (atom x)
+      (add-int x y)
+    (if (atom y)
+        (add-int y x)
+      (case (car x)
+        (pop (case (car y)
+               (pop (add-pop-pop x y))
+               (pow (add-pop-pow x y))))
+        (pow (case (car y)
+               (pop (add-pop-pow y x))
+               (pow (add-pow-pow x y))))))))
 
 (defthm evalh-norm-add-int
   (implies (and (shnfp x)
@@ -654,6 +730,9 @@
   :enable shnfp-new)
 ; old 2.67 444117
 ; new 0.23  19005
+
+(verify-guards norm-add
+  :hints (("Goal" :in-theory (enable shnfp-guard))))
 
 (defthm normp-norm-add
   (implies (and (shnfp x)
@@ -874,6 +953,8 @@
 ;; The remaining cases are handled by norm-neg, norm-mul, and norm-expt:
 
 (defun norm-neg (x)
+  (declare (xargs :guard (shnfp x)
+                  :guard-hints (("Goal" :in-theory (enable shnfp-guard)))))
   (if (atom x)
       (- x)
     (case (car x)
@@ -912,6 +993,9 @@
 ; new 0.12  9452
 
 (defun mul-int (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (shnfp y))
+                  :verify-guards nil))
   (if (= x 0)
       0
     (if (atom y)
@@ -936,6 +1020,9 @@
      :enable shnfp)))
 ; old 0.15 24505
 ; new 0.02  1843
+
+(verify-guards mul-int
+  :hints (("Goal" :in-theory (enable shnfp-guard))))
 
 (local-defthm normp-mul-int
   (implies (and (shnfp x)
@@ -984,19 +1071,21 @@
 (in-theory (enable norm-pop norm-pow))
 
 (defun norm-mul (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
-  (and (shfp x)
-       (if (atom x)
-           (mul-int x y)
-         (if (atom y)
-             (mul-int y x)
-           (case (car x)
-             (pop (case (car y)
-                    (pop (mul-pop-pop x y))
-                    (pow (mul-pop-pow x y))))
-             (pow (case (car y)
-                    (pop (mul-pop-pow y x))
-                    (pow (mul-pow-pow x y)))))))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :guard (and (shnfp x)
+                              (shnfp y))
+                  :verify-guards nil))
+  (if (atom x)
+      (mul-int x y)
+    (if (atom y)
+        (mul-int y x)
+      (case (car x)
+        (pop (case (car y)
+               (pop (mul-pop-pop x y))
+               (pow (mul-pop-pow x y))))
+        (pow (case (car y)
+               (pop (mul-pop-pow y x))
+               (pow (mul-pow-pow x y))))))))
 
 (in-theory (disable norm-pop norm-pow))
 
@@ -1015,6 +1104,9 @@
   :enable shnfp-new)
 ; old 11.06 1691622
 ; new  0.07    6313
+
+(verify-guards norm-mul
+  :hints (("Goal" :in-theory (enable shnfp-guard))))
 
 (in-theory (enable norm-pop norm-pow))
 
@@ -1173,6 +1265,9 @@
 ; new 0.37  32092
 
 (defun norm-expt (x k)
+  (declare (xargs :guard (and (shnfp x)
+                              (natp k))
+                  :verify-guards nil))
   (if (zp k)
       1
     (norm-mul x (norm-expt x (1- k)))))
@@ -1180,6 +1275,8 @@
 (defthm shnfp-norm-expt
   (implies (shnfp x)
            (shnfp (norm-expt x k))))
+
+(verify-guards norm-expt)
 
 (defthm evalh-norm-expt
   (implies (and (shnfp x)
@@ -1190,6 +1287,9 @@
   :hints (("Goal" :induct (norm-expt x k))))
 
 (defun norm (x vars)
+  (declare (xargs :guard (and (distinct-symbols vars)
+                              (polyp x vars))
+                  :verify-guards nil))
   (if (integerp x)
       x
     (if (atom x)
@@ -1205,6 +1305,9 @@
   (implies (and (distinct-symbols vars)
                 (polyp x vars))
            (shnfp (norm x vars))))
+
+(verify-guards norm
+  :hints (("Goal" :in-theory (enable shnfp-guard))))
 
 (defthm evalh-norm
   (implies (and (distinct-symbols vars)
