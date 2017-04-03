@@ -59,11 +59,11 @@
       (let ((y (cadr x)) (z (caddr x)))
         (case (car x)
           (+ (+ (evalp y alist) (evalp z alist)))
-          (- (if (cddr x) (- (evalp y alist) (evalp z alist)) (- (evalp y alist)))) 
+          (- (if (cddr x) (- (evalp y alist) (evalp z alist)) (- (evalp y alist))))
           (* (* (evalp y alist) (evalp z alist)))
           (expt (expt (evalp y alist) (evalp z alist))))))))
 
-;; As a matter of curiosity, it will be interesting to count the monomials 
+;; As a matter of curiosity, it will be interesting to count the monomials
 ;; that would result from the expansion of a term:
 
 (defun mono-count (x)
@@ -103,9 +103,9 @@
       (t 0))))
 
 ;; A SHF represents a polynomial term relative to an ordering of variables.
-;; We shall define a procedure that derives a SHF x from a term z and show 
+;; We shall define a procedure that derives a SHF x from a term z and show
 ;; that the value of z may be computed by the function evalh as defined
-;; below.  That is, if vars is the ordered list of variables and vals is a 
+;; below.  That is, if vars is the ordered list of variables and vals is a
 ;; list of corresponding values, then
 
 ;;      (evalh x vals) = (evalp z (pairlis vars vals)).
@@ -648,9 +648,9 @@
                   (eql (car x) 'pow)
                   (eql (car y) 'pow))
              (and (shnfp p)
-                  (shnfp q) 
-                  (shnfp r) 
-                  (shnfp s) 
+                  (shnfp q)
+                  (shnfp r)
+                  (shnfp s)
                   (integerp (car0 vals))
                   (integerp (evalh p vals))
                   (integerp (evalh q (cdr vals)))
@@ -787,9 +787,9 @@
                   (eql (car y) 'pow)
                   (> i j))
              (and (shnfp (list 'pow (- i j) p 0))
-                  (shnfp q) 
-                  (shnfp r) 
-                  (shnfp s) 
+                  (shnfp q)
+                  (shnfp r)
+                  (shnfp s)
                   (integerp (car0 vals))
                   (integerp (evalh (list 'pow (- i j) p 0) vals))
                   (integerp (evalh q (cdr vals)))
@@ -863,8 +863,8 @@
                        (evalh s (cdr vals))))))
   :rule-classes ()
   :hints (("Goal" :do-not '(eliminate-destructors generalize)
-                  :in-theory (disable ACL2::|(equal x (if a b c))| ACL2::|(+ x (if a b c))| ACL2::|(equal (if a b c) x)| 
-                                      ACL2::|(+ (if a b c) x)| ACL2::|(* (if a b c) x)| car0 evalh-pow-rewrite evalh norm-add 
+                  :in-theory (disable ACL2::|(equal x (if a b c))| ACL2::|(+ x (if a b c))| ACL2::|(equal (if a b c) x)|
+                                      ACL2::|(+ (if a b c) x)| ACL2::|(* (if a b c) x)| car0 evalh-pow-rewrite evalh norm-add
                                       ACL2::|(* x (if a b c))|)
                   :use ((:instance hack-1 (i (expt (car0 vals) (cadr y)))
                                           (p (evalh (list 'pow (- (cadr x) (cadr y)) (caddr x) 0) vals))
@@ -874,7 +874,7 @@
                                           (pr (evalh (norm-add (list 'pow (- (cadr x) (cadr y)) (caddr x) 0) (caddr y)) vals))
                                           (qs (evalh (norm-add (cadddr x) (cadddr y)) (cdr vals))))))))
 
-(local-defthm evalh-add-pow-pow-15 
+(local-defthm evalh-add-pow-pow-15
   (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
         (j (cadr x)) (r (caddr x)) (s (cadddr x)))
     (implies (and (shnfp x)
@@ -924,9 +924,9 @@
                   (eql (car y) 'pow)
                   (> i j))
              (and (shnfp (list 'pow (- i j) p 0))
-                  (shnfp q) 
-                  (shnfp r) 
-                  (shnfp s) 
+                  (shnfp q)
+                  (shnfp r)
+                  (shnfp s)
                   (integerp (car0 vals))
                   (integerp (evalh (list 'pow (- i j) p 0) vals))
                   (integerp (evalh q (cdr vals)))
@@ -1319,7 +1319,7 @@
       (let ((y (cadr x)) (z (caddr x)))
         (case (car x)
           (+ (norm-add (norm y vars) (norm z vars)))
-          (- (if (cddr x) (norm-add (norm y vars) (norm-neg (norm z vars))) (norm-neg (norm y vars)))) 
+          (- (if (cddr x) (norm-add (norm y vars) (norm-neg (norm z vars))) (norm-neg (norm y vars))))
           (* (norm-mul (norm y vars) (norm z vars)))
           (expt (norm-expt (norm y vars) (norm z vars))))))))
 
@@ -1435,7 +1435,7 @@
 		(integerp p)
 		(not (= p 0)))
            (>= (abs (* (expt k i) p)) k))
-  :rule-classes ()  
+  :rule-classes ()
   :hints (("Goal" :nonlinearp t)))
 
 (local-defthm ew-8
@@ -1489,7 +1489,7 @@
                  (- k (abs (evalh q (cdr n)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable evalh evalh-pow-rewrite)
-                  :use (ew-8 ew-9 
+                  :use (ew-8 ew-9
                         (:instance ew-7 (i (cadr x)) (p (evalh (caddr x) n)))))))
 
 (local-defthm ew-11
@@ -1608,7 +1608,7 @@
   		  (all-integers n))
       (equal (evalh yp (cdr n))
              (+ (* (evalh q (cdr n)) (evalh q (cdr n)))
-                (* (evalh y (cdr n)) (evalh y (cdr n)))))))              
+                (* (evalh y (cdr n)) (evalh y (cdr n)))))))
   :hints (("Goal" :use (ew-14)
            :in-theory (disable shnfp-pow-p shnfp-pow-q))))
 
@@ -1654,7 +1654,7 @@
                   (all-integers n))
       (equal (abs (evalh yp (cdr n)))
              (+ (* (evalh q (cdr n)) (evalh q (cdr n)))
-                (* (evalh y (cdr n)) (evalh y (cdr n)))))))              
+                (* (evalh y (cdr n)) (evalh y (cdr n)))))))
   :hints (("Goal" :use (ew-20 ew-22))))
 
 (local-defthmd ew-24
@@ -1842,7 +1842,7 @@
 
 (local-defthm na0-1
   (implies (equal (norm-pop i p) 0)
-           (equal p 0))	   
+           (equal p 0))
   :rule-classes ()
   :hints (("Goal" :expand ((norm-pop i p)))))
 
@@ -2313,13 +2313,13 @@
                 (shnfp y)
 		(equal (norm-add x y) 0))
            (equal (norm-neg x) y))
-  :rule-classes ()  
+  :rule-classes ()
   :hints (("Goal" :induct (norm-add x y) :expand ((shnfp x) (shfp x) (shnfp y) (shfp y) (norm-add x y)))
           ("Subgoal *1/13" :use (na0-27))
           ("Subgoal *1/12" :use (na0-27))
           ("Subgoal *1/11" :use (na0-27))
           ("Subgoal *1/10" :use (na0-16))
-          ("Subgoal *1/9" :use (na0-16))	  
+          ("Subgoal *1/9" :use (na0-16))
           ("Subgoal *1/5" :use (na0-15))
           ("Subgoal *1/4" :use (na0-15))
           ("Subgoal *1/3" :use (na0-15))
@@ -2373,7 +2373,7 @@
 
 (local-defthm induct-evalh-2-non-nil
   (induct-evalh-2 x n n0))
-  
+
 (local-defthm evalh-append0p
   (implies (and (shnfp x) (append0p n n0))
            (equal (evalh x n)
@@ -2431,7 +2431,7 @@
                   (polyp x vars)
   		  (polyp y vars)
 		  (equal (evalp x a) (evalp y a)))
-	     (equal (norm x vars) 
+	     (equal (norm x vars)
 	            (norm y vars))))
   :rule-classes ()
   :hints (("Goal" :expand ((evalp-witness x y vars)) :in-theory (enable evalh-append-0)

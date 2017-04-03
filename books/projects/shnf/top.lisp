@@ -42,7 +42,7 @@
       (let ((y (cadr x)) (z (caddr x)))
         (case (car x)
           (+ (+ (evalp y alist) (evalp z alist)))
-          (- (if (cddr x) (- (evalp y alist) (evalp z alist)) (- (evalp y alist)))) 
+          (- (if (cddr x) (- (evalp y alist) (evalp z alist)) (- (evalp y alist))))
           (* (* (evalp y alist) (evalp z alist)))
           (expt (expt (evalp y alist) (evalp z alist))))))))
 
@@ -67,7 +67,7 @@
            (integerp (evalp x (pairlis$ vars vals))))
   :rule-classes ())
 
-;; As a matter of curiosity, it will be interesting to count the monomials 
+;; As a matter of curiosity, it will be interesting to count the monomials
 ;; that would result from the expansion of a term:
 
 (defun mono-count (x)
@@ -107,9 +107,9 @@
       (t 0))))
 
 ;; A SHF represents a polynomial term relative to an ordering of variables.
-;; We shall define a procedure that derives a SHF x from a term z and show 
+;; We shall define a procedure that derives a SHF x from a term z and show
 ;; that the value of z may be computed by the function evalh as defined
-;; below.  That is, if vars is the ordered list of variables and vals is a 
+;; below.  That is, if vars is the ordered list of variables and vals is a
 ;; list of corresponding values, then
 
 ;;      (evalh x vals) = (evalp z (pairlis vars vals)).
@@ -478,7 +478,7 @@
       (let ((y (cadr x)) (z (caddr x)))
         (case (car x)
           (+ (norm-add (norm y vars) (norm z vars)))
-          (- (if (cddr x) (norm-add (norm y vars) (norm-neg (norm z vars))) (norm-neg (norm y vars)))) 
+          (- (if (cddr x) (norm-add (norm y vars) (norm-neg (norm z vars))) (norm-neg (norm y vars))))
           (* (norm-mul (norm y vars) (norm z vars)))
           (expt (norm-expt (norm y vars) (norm z vars))))))))
 
@@ -500,7 +500,7 @@
 ;;                                   Completeness
 ;;*********************************************************************************
 
-;; We shall show that if two polynomials have the same values for all variable 
+;; We shall show that if two polynomials have the same values for all variable
 ;; assignments, then they produce the same SHNF.
 
 (defun pad0 (i n)
@@ -562,6 +562,6 @@
                   (polyp x vars)
   		  (polyp y vars)
 		  (equal (evalp x a) (evalp y a)))
-	     (equal (norm x vars) 
+	     (equal (norm x vars)
 	            (norm y vars))))
   :rule-classes ())
