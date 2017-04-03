@@ -1032,7 +1032,6 @@
 
 
 
-
 (defparsers vl-parse-statement
   :flag-local nil
 ;;  :measure-debug t
@@ -1850,10 +1849,9 @@
        (vl-parse-statement-2005-aux atts)
      (vl-parse-statement-2012-aux atts)))
 
- (defparser vl-parse-statement ()
-   :short "Top level function for parsing a @('statement') into a @(see
-           vl-stmt)."
-   :measure (two-nats-measure (vl-tokstream-measure) 100)
+ (defparser vl-parse-statement-wrapped (null-okp)
+   :short "Parse a statement or null, possibly with a label."
+   :measure (two-nats-measure (vl-tokstream-measure) 80)
    :long "<p>This mainly handles SystemVerilog-2012 style statement labels; see
           Section 9.3.5 (Page 178).  We treat these labels as if they just
           create named blocks around the statement that they label.  Note that
@@ -1875,7 +1873,12 @@
           (blockid := (vl-match))
           (:= (vl-match)))
         (atts :w= (vl-parse-0+-attribute-instances))
-        (core := (vl-parse-statement-aux atts))
+        (core :s= (if (and null-okp
+                           (vl-is-token? :vl-semi))
+                      (seq tokstream
+                           (:= (vl-match-token :vl-semi))
+                           (return (make-vl-nullstmt :atts atts)))
+                    (vl-parse-statement-aux atts)))
         (unless blockid
           (return core))
         ;; Need to "install" the block ID.
@@ -1908,6 +1911,15 @@
                                      :atts nil)
                   tokstream)))))))
 
+
+ (defparser vl-parse-statement ()
+   :short "Top level function for parsing a (non-null) @('statement') into a
+           @(see vl-stmt)."
+   :measure (two-nats-measure (vl-tokstream-measure) 100)
+   (seq tokstream
+        (stmt :s= (vl-parse-statement-wrapped nil))
+        (return stmt)))
+
  (defparser vl-parse-statement-or-null ()
    :short "Parse a @('statement_or_null') into a @(see vl-stmt), which is
            possible since we allow a @(see vl-nullstmt) as a @(see vl-stmt)."
@@ -1919,12 +1931,8 @@
           })"
    :measure (two-nats-measure (vl-tokstream-measure) 150)
    (seq tokstream
-         (atts :w= (vl-parse-0+-attribute-instances))
-         (when (vl-is-token? :vl-semi)
-           (:= (vl-match-token :vl-semi))
-           (return (make-vl-nullstmt :atts atts)))
-         (ret := (vl-parse-statement-aux atts))
-         (return ret)))
+        (stmt :s= (vl-parse-statement-wrapped t))
+        (return stmt)))
 
  (defparser vl-parse-statements-until-join ()
    :measure (two-nats-measure (vl-tokstream-measure) 160)
@@ -1973,11 +1981,14 @@
         ,(vl-val-when-error-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement-aux :args (atts))
+        ,(vl-val-when-error-claim vl-parse-statement-wrapped :args (null-okp))
         ,(vl-val-when-error-claim vl-parse-statement)
         ,(vl-val-when-error-claim vl-parse-statement-or-null)
         ,(vl-val-when-error-claim vl-parse-statements-until-end)
         ,(vl-val-when-error-claim vl-parse-statements-until-join)
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 
 (defsection warning
@@ -2003,11 +2014,14 @@
         ,(vl-warning-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-warning-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-warning-claim vl-parse-statement-aux :args (atts))
+        ,(vl-warning-claim vl-parse-statement-wrapped :args (null-okp))
         ,(vl-warning-claim vl-parse-statement)
         ,(vl-warning-claim vl-parse-statement-or-null)
         ,(vl-warning-claim vl-parse-statements-until-end)
         ,(vl-warning-claim vl-parse-statements-until-join)
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 
 (defsection progress
@@ -2033,6 +2047,7 @@
         ,(vl-progress-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement-aux :args (atts))
+        ,(vl-progress-claim vl-parse-statement-wrapped :args (null-okp))
         ,(vl-progress-claim vl-parse-statement)
         ,(vl-progress-claim vl-parse-statement-or-null)
 
@@ -2054,7 +2069,9 @@
                           (vl-tokstream-measure))))
          :rule-classes ((:rewrite) (:linear)))
 
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 
 
@@ -2146,6 +2163,9 @@
                         (vl-stmt-p val)
                         :args (atts)
                         :extra-hyps ((force (vl-atts-p atts))))
+        ,(vl-stmt-claim vl-parse-statement-wrapped
+                        (vl-stmt-p val)
+                        :args (null-okp))
         ,(vl-stmt-claim vl-parse-statement
                         (vl-stmt-p val))
         ,(vl-stmt-claim vl-parse-statement-or-null
@@ -2156,7 +2176,9 @@
         ,(vl-stmt-claim vl-parse-statements-until-join
                         (vl-stmtlist-p val)
                         :true-listp t)
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 (with-output
   :off prove
