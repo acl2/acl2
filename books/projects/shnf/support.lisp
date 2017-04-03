@@ -198,6 +198,42 @@
   ;; [Jared] trying to cheapen this very expensive rule.
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
+(local (defruled shnfp-atom
+  (implies (and (shnfp x)
+                (atom x))
+           (integerp x))))
+
+(local (defruled shnfp-forward
+  (implies (shnfp x)
+           (or (integerp x)
+               (and (consp x)
+                    (or (eql (car x) 'pop)
+                        (eql (car x) 'pow)))))
+  :rule-classes :forward-chaining))
+
+(local (defruled shnfp-label
+  (implies (and (shnfp x)
+                (consp x))
+           (and (implies (not (equal (car x) 'pop))
+                         (equal (equal (car x) 'pow) t))
+                (implies (not (equal (car x) 'pow))
+                         (equal (equal (car x) 'pop) t))))))
+
+(local (defrule shnfp-split
+  (implies (shnfp p)
+           (or (integerp p)
+               (and (consp p)
+                    (or (eql (car p) 'pop)
+                        (eql (car p) 'pow)))))
+  :rule-classes ()))
+
+(local (defruled shnfp-pow-i-type
+  (implies (and (shnfp x)
+                (eql (car x) 'pow))
+           (posp (cadr x)))
+  :rule-classes :type-prescription
+  :expand (normp x)))
+
 (defthm shnfp-pow-q
   (implies (and (shnfp x) (eql (car x) 'pow))
            (shnfp (cadddr x))))
@@ -206,6 +242,24 @@
   (implies (and (shnfp x) (eql (car x) 'pow))
            (shnfp (caddr x))))
 
+(local (defruled shnfp-pow-p-ext
+  (implies (and (shnfp x) (eql (car x) 'pow))
+           (and (not (equal (caddr x) 0))
+                (not (equal (cadddr (caddr x)) 0))))))
+
+(local (defruled shnfp-pop-i-type
+  (implies (and (shnfp x)
+                (eql (car x) 'pop))
+           (posp (cadr x)))
+  :rule-classes :type-prescription
+  :expand (normp x)))
+
+(local (defruled shnfp-pop-p
+  (implies (and (shnfp x) (eql (car x) 'pop))
+           (and (shnfp (caddr x))
+                (consp (caddr x))
+                (equal (car (caddr x)) 'pow)))))
+
 (defthm shfp-pop-pow-atom
   (implies (and (shfp x) (not (eql (car x) 'pow)) (not (eql (car x) 'pop)))
            (atom x)))
@@ -213,6 +267,51 @@
 (defthm shnfp-int
   (implies (integerp x)
            (shnfp x)))
+
+(local (defruled shnfp-pop-suff
+  (implies (and (posp i)
+                (shnfp p)
+                (eql (car p) 'pow))
+           (shnfp (list 'pop i p)))))
+
+(local (defruled shnfp-pow-suff
+  (implies (and (posp i)
+                (shnfp p)
+                (shnfp q)
+                (or (and (atom p) (not (= p 0)))
+                    (eql (car p) 'pop)
+                    (and (eql (car p) 'pow) (not (= (cadddr p) 0)))))
+           (shnfp (list 'pow i p q)))))
+
+(local (defruled evalh-pop
+  (implies (and (shnfp x)
+                (equal (car x) 'pop))
+           (equal (evalh x vals)
+                  (evalh (caddr x) (nthcdr (cadr x) vals))))))
+
+(local (defruled evalh-pop-2
+  (equal (evalh (list 'pop i p) vals)
+         (evalh p (nthcdr i vals)))))
+
+(local (defruled evalh-pow
+  (implies (and (shnfp x)
+                (equal (car x) 'pow))
+           (equal (evalh x vals)
+                  (+ (* (expt (if (consp vals) (car vals) 0) (cadr x))
+                        (evalh (caddr x) vals))
+                     (evalh (cadddr x) (cdr vals)))))))
+
+(local (defruled evalh-pow-2
+  (implies (and (shnfp x)
+                (equal (car x) 'pow))
+           (equal (evalh (list 'pow i p q) vals)
+                  (+ (* (expt (if (consp vals) (car vals) 0) i)
+                        (evalh p vals))
+                     (evalh q (cdr vals)))))))
+
+(defruled integerp-is-acl2-numberp
+  (implies (integerp x)
+           (acl2-numberp x)))
 
 (defun all-integers (vals)
   (if (consp vals)
@@ -234,6 +333,44 @@
   ;; :rule-classes (:type-prescription :rewrite)
   :enable acl2::expt-type-prescription-integerp-base)
 
+(local (defruled integerp-evalh-shnfp
+  (implies (and (shnfp x)
+                (all-integers vals))
+           (integerp (evalh x vals)))))
+
+;; [Dima] Two theories for reasoning about shnfp.
+
+;; Old theory enables definition and a few public theorems.
+(local (deftheory shnfp-old
+         '(shnfp
+           shnfp-pow-p
+           shnfp-pow-q
+           shfp-pop-pow-atom
+           shnfp-int
+           integerp-evalh)))
+
+;; New theory disables definition but provides full set of lemmas.
+;; Forward rule shnfp-forward is intentionally not in the theory.
+(local (deftheory shnfp-new
+         '(shnfp-atom
+           shnfp-label
+           shnfp-pow-i-type
+           shnfp-pow-q
+           shnfp-pow-p
+           shnfp-pow-p-ext
+           shnfp-pop-i-type
+           shnfp-pop-p
+           shnfp-int
+           shnfp-pop-suff
+           shnfp-pow-suff
+           evalh-pop
+           evalh-pop-2
+           evalh-pow
+           evalh-pow-2
+           integerp-evalh-shnfp)))
+
+(local (in-theory (disable shnfp-old)))
+
 ;; We shall define a function norm that computes a SHNF
 ;; representing a polynomial with respect to a given variable ordering.
 
@@ -246,9 +383,12 @@
         (list 'pop (+ i (cadr p)) (caddr p))
       (list 'pop i p))))
 
-(defthm norm-pop-shnfp
+(defrule norm-pop-shnfp
   (implies (and (shnfp p) (natp i))
-           (shnfp (norm-pop i p))))
+           (shnfp (norm-pop i p)))
+  :enable shnfp-new)
+; old 0.03  3275
+; new 0.01   330
 
 (defthm norm-pop-normp
   (implies (and (shnfp p) (natp i))
@@ -266,11 +406,13 @@
                   (nthcdr (+ m n) x)))
   :hints (("Goal" :induct (nthcdr n x))))
 
-(defthm norm-pop-evalh
+(defrule norm-pop-evalh
   (implies (and (shnfp p) (natp i))
            (equal (evalh (norm-pop i p) n)
                   (evalh `(pop ,i ,p) n)))
-  :hints (("Goal" :expand ((evalh p (nthcdr i n)) (evalh (list 'pop i p) N)))))
+  :enable shnfp-new)
+; old 0.06  6744
+; new 0.05  3471
 
 (in-theory (disable norm-pop))
 
@@ -283,9 +425,12 @@
         (list 'pow (+ i (cadr p)) (caddr p) q)
       (list 'pow i p q))))
 
-(defthm norm-pow-shnfp
+(defrule norm-pow-shnfp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
-           (shnfp (norm-pow i p q))))
+           (shnfp (norm-pow i p q)))
+  :enable shnfp-new)
+; old 0.07  9932
+; new 0.01   734
 
 (defthm norm-pow-normp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
@@ -308,7 +453,10 @@
                     (natp i)
                     (natp j))
                (equal (* z (expt x (+ i j)))
-                      (* (expt x i) z (expt x j))))))))
+                      (* (expt x i) z (expt x j)))))))
+  :enable shnfp-new)
+; old 0.21 32443
+; new 0.11 10635
 
 (in-theory (disable norm-pow))
 
@@ -401,7 +549,7 @@
                 (member x vars))
            (equal (evalh (norm-var x vars) vals)
                   (evalp x (pairlis$ vars vals))))
-  :enable acl2::|arith (expt x 1)|)
+  :disable norm-var)
 
 ;; norm-add computes a normal representation of (+ a b),
 ;; given normal representations x and y of a and b.
@@ -424,18 +572,31 @@
            (normp (add-int x y)))
   :hints (("Subgoal *1/5" :expand ((add-int x (caddr y))))))
 
-(defthm shnfp-add-int
+(defrule shnfp-add-int
   (implies (and (shnfp x)
                 (shnfp y)
                 (atom x))
-           (shnfp (add-int x y))))
+           (shnfp (add-int x y)))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (shnfp y)
+              (equal (car (add-int x y)) (car y)))
+     :enable shnfp-label))
+  :enable (shnfp-new shnfp-forward))
+; old XXXX
+; new 0.02  1143
 
-(defthm evalh-add-int
+(defrule evalh-add-int
   (implies (and (shnfp x)
                 (shnfp y)
                 (atom x))
            (equal (evalh (add-int x y) vals)
-                  (+ (evalh x vals) (evalh y vals)))))
+                  (+ (evalh x vals) (evalh y vals))))
+  :enable (acl2::|(* 0 x)|
+           acl2::|arith (expt 0 n)|
+           shnfp-new))
+; old 0.12 14673
+; new 0.08  6297
 
 (in-theory (disable add-int))
 
@@ -486,10 +647,13 @@
            (equal (evalh (norm-add x y) vals)
                   (+ (evalh x vals) (evalh y vals)))))
 
-(defthm shnfp-norm-add
+(defrule shnfp-norm-add
   (implies (and (shnfp x)
                 (shnfp y))
-           (shnfp (norm-add x y))))
+           (shnfp (norm-add x y)))
+  :enable shnfp-new)
+; old 2.67 444117
+; new 0.23  19005
 
 (defthm normp-norm-add
   (implies (and (shnfp x)
@@ -535,68 +699,6 @@
                 (list (norm-add-induct (list 'pow (- j i) r 0) p vals)
                       (norm-add-induct s q (cdr vals)))))))))))
 
-(local-defthm evalh-add-pop-pop
-  (let ((i (cadr x)) (p (caddr x))
-        (j (cadr y)) (q (caddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pop)
-                  (eql (car y) 'pop)
-                  (implies (and (= i j) (shnfp p) (shnfp q))
-                           (= (evalh (norm-add p q) (nthcdr i vals))
-                              (+ (evalh p (nthcdr i vals)) (evalh q (nthcdr i vals)))))
-                  (implies (and (> i j) (shnfp (list 'pop (- i j) p)) (shnfp q))
-                           (= (evalh (norm-add (list 'pop (- i j) p) q) (nthcdr j vals))
-                              (+ (evalh (list 'pop (- i j) p) (nthcdr j vals))
-                                 (evalh q (nthcdr j vals)))))
-                  (implies (and (< i j) (shnfp (list 'pop (- j i) q)) (shnfp p))
-                           (= (evalh (norm-add (list 'pop (- j i) q) p) (nthcdr i vals))
-                              (+ (evalh (list 'pop (- j i) q) (nthcdr i vals))
-                                 (evalh p (nthcdr i vals))))))
-             (= (evalh (norm-add x y) vals)
-                (+ (evalh x vals) (evalh y vals))))))
-
-(local-defthm evalh-add-pop-pow
-  (let ((i (cadr x)) (p (caddr x)) (r (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pop)
-                  (eql (car y) 'pow)
-                  (implies (and (= i 1) (shnfp r) (shnfp p))
-                           (= (evalh (norm-add r p) (cdr vals))
-                              (+ (evalh r (cdr vals)) (evalh p (cdr vals)))))
-                  (implies (and (not (= i 1)) (shnfp r) (shnfp (list 'pop (1- i) p)))
-                           (= (evalh (norm-add r (list 'pop (1- i) p)) (cdr vals))
-                              (+ (evalh r (cdr vals))
-                                 (evalh (list 'pop (1- i) p) (cdr vals))))))
-             (= (evalh (norm-add x y) vals)
-                (+ (evalh x vals) (evalh y vals))))))
-
-(local-defthm evalh-add-pow-pop
-  (let ((i (cadr y)) (p (caddr y)) (r (cadddr x)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pop)
-                  (implies (and (= i 1) (shnfp r) (shnfp p))
-                           (= (evalh (norm-add r p) (cdr vals))
-                              (+ (evalh r (cdr vals)) (evalh p (cdr vals)))))
-                  (implies (and (not (= i 1)) (shnfp r) (shnfp (list 'pop (1- i) p)))
-                           (= (evalh (norm-add r (list 'pop (1- i) p)) (cdr vals))
-                              (+ (evalh r (cdr vals))
-                                 (evalh (list 'pop (1- i) p) (cdr vals))))))
-             (= (evalh (norm-add x y) vals)
-                (+ (evalh x vals) (evalh y vals))))))
-
 (defun car0 (vals)
   (if (consp vals) (car vals) 0))
 
@@ -607,438 +709,165 @@
                         (evalh (caddr x) vals))
                      (evalh (cadddr x) (cdr vals))))))
 
-(local-defthm hack-1
-  (implies (and (integerp i)
-                (integerp p)
-                (integerp q)
-                (integerp r)
-                (integerp s)
-                (integerp pr)
-                (integerp qs)
-                (= pr (+ p r))
-                (= qs (+ q s)))
-           (= (+ (* i pr) qs)
-              (+ (* i p) (* i r) q s)))
-  :rule-classes ())
-
-;; [Jared] disabling this because accumulated persistence says it's expensive and never
-;; useful (but it gets explicitly :use'd later)o
-(local-defthmd evalh-add-pow-pow-1
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (= i j))
-             (equal (evalh (norm-add x y) vals)
-                    (+ (* (expt (car0 vals) i)
-                          (evalh (norm-add p r) vals))
-                       (evalh (norm-add q s) (cdr vals))))))
-  :hints (("Goal" :expand ((norm-add x y)))))
-
-(local-defthm evalh-add-pow-pow-2
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (r (caddr y)) (s (cadddr y)))
-    (implies (and (integerp (car0 vals))
-                  (integerp (evalh p vals))
-                  (integerp (evalh q (cdr vals)))
-                  (integerp (evalh r vals))
-                  (integerp (evalh s (cdr vals)))
-                  (= (evalh (norm-add p r) vals)
-                     (+ (evalh p vals) (evalh r vals)))
-                  (= (evalh (norm-add q s) (cdr vals))
-                     (+ (evalh q (cdr vals)) (evalh s (cdr vals)))))
-             (equal (+ (* (expt (car0 vals) i)
-                          (evalh (norm-add p r) vals))
-                       (evalh (norm-add q s) (cdr vals)))
-                    (+ (* (expt (car0 vals) i)
-                          (evalh p vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) i)
-                          (evalh r vals))
-                       (evalh s (cdr vals))))))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance hack-1 (i (expt (car0 vals) (cadr x)))
-                                          (p (evalh (caddr x) vals))
-                                          (q (evalh (cadddr x) (cdr vals)))
-                                          (r (evalh (caddr y) vals))
-                                          (s (evalh (cadddr y) (cdr vals)))
-                                          (pr (evalh (norm-add (caddr x) (caddr y)) vals))
-                                          (qs (evalh (norm-add (cadddr x) (cadddr y)) (cdr vals))))))))
-
-(local-defthm evalh-add-pow-pow-3
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow))
-             (equal (+ (evalh x vals) (evalh y vals))
-                    (+ (* (expt (car0 vals) i)
-                          (evalh p vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals))))))
-  :rule-classes ())
-
-(local-defthm evalh-add-pow-pow-4
-  (let ((p (caddr x)) (q (cadddr x))
-        (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow))
-             (and (shnfp p)
-                  (shnfp q)
-                  (shnfp r)
-                  (shnfp s)
-                  (integerp (car0 vals))
-                  (integerp (evalh p vals))
-                  (integerp (evalh q (cdr vals)))
-                  (integerp (evalh r vals))
-                  (integerp (evalh s (cdr vals))))))
-  :rule-classes ())
-
-(local-defthm evalh-add-pow-pow-5
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (= i j)
-                  (implies (and (shnfp p) (shnfp r) (shnfp q) (shnfp s))
-                           (and (= (evalh (norm-add p r) vals)
-                                   (+ (evalh p vals) (evalh r vals)))
-                                (= (evalh (norm-add q s) (cdr vals))
-                                   (+ (evalh q (cdr vals)) (evalh s (cdr vals)))))))
-             (equal (evalh (norm-add x y) vals)
-                    (+ (evalh x vals) (evalh y vals)))))
-  :hints (("Goal" :use (evalh-add-pow-pow-1 evalh-add-pow-pow-2 evalh-add-pow-pow-3 evalh-add-pow-pow-4)
-                  :in-theory (theory 'minimal-theory))))
-
-(local-defthm evalh-add-pow-pow-6
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j))
-             (equal (evalh (norm-add x y) vals)
-                    (+ (* (expt (car0 vals) j)
-                          (evalh (norm-add (list 'pow (- i j) p 0) r) vals))
-                       (evalh (norm-add q s) (cdr vals))))))
-  :hints (("Goal" :in-theory (disable norm-add evalh)
-                  :expand ((norm-add x y)))))
-
-(local-defthm evalh-add-pow-pow-7
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (integerp (car0 vals))
-                  (integerp (evalh (list 'pow (- i j) p 0) vals))
-                  (integerp (evalh q (cdr vals)))
-                  (integerp (evalh r vals))
-                  (integerp (evalh s (cdr vals)))
-                  (= (evalh (norm-add (list 'pow (- i j) p 0) r) vals)
-                     (+ (evalh (list 'pow (- i j) p 0) vals) (evalh r vals)))
-                  (= (evalh (norm-add q s) (cdr vals))
-                     (+ (evalh q (cdr vals)) (evalh s (cdr vals)))))
-             (equal (+ (* (expt (car0 vals) j)
-                          (evalh (norm-add (list 'pow (- i j) p 0) r) vals))
-                       (evalh (norm-add q s) (cdr vals)))
-                    (+ (* (expt (car0 vals) j)
-                          (evalh (list 'pow (- i j) p 0) vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals))))))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (disable ACL2::|(* x (if a b c))|)
-                  :use ((:instance hack-1 (i (expt (car0 vals) (cadr y)))
-                                          (p (evalh (list 'pow (- (cadr x) (cadr y)) (caddr x) 0) vals))
-                                          (q (evalh (cadddr x) (cdr vals)))
-                                          (r (evalh (caddr y) vals))
-                                          (s (evalh (cadddr y) (cdr vals)))
-                                          (pr (evalh (norm-add (list 'pow (- (cadr x) (cadr y)) (caddr x) 0) (caddr y)) vals))
-                                          (qs (evalh (norm-add (cadddr x) (cadddr y)) (cdr vals))))))))
-
-(local (defrule evalh-add-pow-pow-8
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow))
-             (equal (+ (* (expt (car0 vals) j)
-                          (evalh (list 'pow (- i j) p 0) vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals)))
-                    (+ (* (expt (car0 vals) i)
-                          (evalh p vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals))))))
-  :rule-classes ()
-  :prep-lemmas
-  ((acl2::with-arith5-help
-    (defrule lemma
-      (implies (and (acl2-numberp x)
-                    (posp i)
-                    (posp j))
-               (equal (* (expt x j) y (expt x (- i j)))
-                      (* y (expt x i)))))))))
-
-(local (defrule evalh-add-pow-pow-9
-  (implies (and (shnfp x)
-                (all-integers vals)
-                (consp x)
-                (eql (car x) 'pow))
-           (integerp (evalh (caddr x) vals)))
-  :rule-classes ()
-  :enable default-car))
-
-(local (defrule evalh-add-pow-pow-10
-  (let ((i (cadr x)) (p (caddr x)) (j (cadr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j))
-             (integerp (evalh (list 'pow (- i j) p 0) vals))))
-  :rule-classes ()
-  :use evalh-add-pow-pow-9
-  :enable acl2::expt-type-prescription-integerp-base
-  :disable integerp-evalh))
-
-(local-defthm evalh-add-pow-pow-11
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j))
-             (and (shnfp (list 'pow (- i j) p 0))
-                  (shnfp q)
-                  (shnfp r)
-                  (shnfp s)
-                  (integerp (car0 vals))
-                  (integerp (evalh (list 'pow (- i j) p 0) vals))
-                  (integerp (evalh q (cdr vals)))
-                  (integerp (evalh p vals))
-                  (integerp (evalh r vals))
-                  (integerp (evalh s (cdr vals))))))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (disable evalh) :use (evalh-add-pow-pow-10))))
-
-(local-defthm evalh-add-pow-pow-12
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j)
-                  (implies (and (shnfp (list 'pow (- i j) p 0)) (shnfp r) (shnfp q) (shnfp s))
-                           (and (= (evalh (norm-add (list 'pow (- i j) p 0) r) vals)
-                                   (+ (evalh (list 'pow (- i j) p 0) vals) (evalh r vals)))
-                                (= (evalh (norm-add q s) (cdr vals))
-                                   (+ (evalh q (cdr vals)) (evalh s (cdr vals)))))))
-             (equal (evalh (norm-add x y) vals)
-                    (+ (evalh x vals) (evalh y vals)))))
-  :hints (("Goal" :use (evalh-add-pow-pow-3 evalh-add-pow-pow-6 evalh-add-pow-pow-7 evalh-add-pow-pow-8 evalh-add-pow-pow-11)
-                  :in-theory (theory 'minimal-theory))))
-
-;; [Jared] disabling this because accumulated persistence says it is expensive and never
-;; useful.  it is, however, :use'd later on.
-(local-defthmd evalh-add-pow-pow-13
-  (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
-        (j (cadr x)) (r (caddr x)) (s (cadddr x)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j))
-             (equal (evalh (norm-add x y) vals)
-                    (+ (* (expt (car0 vals) j)
-                          (evalh (norm-add (list 'pow (- i j) p 0) r) vals))
-                       (evalh (norm-add q s) (cdr vals))))))
-  :hints (("Goal" :in-theory (disable norm-add evalh)
-                  :expand ((norm-add x y)))))
-
-(local-defthm evalh-add-pow-pow-14
-  (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
-        (j (cadr x)) (r (caddr x)) (s (cadddr x)))
-    (implies (and (integerp (car0 vals))
-                  (integerp (evalh (list 'pow (- i j) p 0) vals))
-                  (integerp (evalh q (cdr vals)))
-                  (integerp (evalh r vals))
-                  (integerp (evalh s (cdr vals)))
-                  (= (evalh (norm-add (list 'pow (- i j) p 0) r) vals)
-                     (+ (evalh (list 'pow (- i j) p 0) vals) (evalh r vals)))
-                  (= (evalh (norm-add q s) (cdr vals))
-                     (+ (evalh q (cdr vals)) (evalh s (cdr vals)))))
-             (equal (+ (* (expt (car0 vals) j)
-                          (evalh (norm-add (list 'pow (- i j) p 0) r) vals))
-                       (evalh (norm-add q s) (cdr vals)))
-                    (+ (* (expt (car0 vals) j)
-                          (evalh (list 'pow (- i j) p 0) vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals))))))
-  :rule-classes ()
-  :hints (("Goal" :do-not '(eliminate-destructors generalize)
-                  :in-theory (disable ACL2::|(equal x (if a b c))| ACL2::|(+ x (if a b c))| ACL2::|(equal (if a b c) x)|
-                                      ACL2::|(+ (if a b c) x)| ACL2::|(* (if a b c) x)| car0 evalh-pow-rewrite evalh norm-add
-                                      ACL2::|(* x (if a b c))|)
-                  :use ((:instance hack-1 (i (expt (car0 vals) (cadr y)))
-                                          (p (evalh (list 'pow (- (cadr x) (cadr y)) (caddr x) 0) vals))
-                                          (q (evalh (cadddr x) (cdr vals)))
-                                          (r (evalh (caddr y) vals))
-                                          (s (evalh (cadddr y) (cdr vals)))
-                                          (pr (evalh (norm-add (list 'pow (- (cadr x) (cadr y)) (caddr x) 0) (caddr y)) vals))
-                                          (qs (evalh (norm-add (cadddr x) (cadddr y)) (cdr vals))))))))
-
-(local (defrule evalh-add-pow-pow-15
-  (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
-        (j (cadr x)) (r (caddr x)) (s (cadddr x)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow))
-             (equal (+ (* (expt (car0 vals) j)
-                          (evalh (list 'pow (- i j) p 0) vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals)))
-                    (+ (* (expt (car0 vals) i)
-                          (evalh p vals))
-                       (evalh q (cdr vals))
-                       (* (expt (car0 vals) j)
-                          (evalh r vals))
-                       (evalh s (cdr vals))))))
-  :rule-classes ()
-  :prep-lemmas
-  ((acl2::with-arith5-help
-    (defrule lemma
-      (implies (and (acl2-numberp x)
-                    (posp i)
-                    (posp j))
-               (equal (* (expt x j) y (expt x (+ (- j) i)))
-                      (* y (expt x i)))))))))
-
-(local (defrule evalh-add-pow-pow-16
-  (let ((i (cadr y)) (p (caddr y)) (j (cadr x)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j))
-             (integerp (evalh (list 'pow (- i j) p 0) vals))))
-  :rule-classes ()
-  :use (:instance evalh-add-pow-pow-9 (x y))
-  :enable acl2::expt-type-prescription-integerp-base
-  :disable integerp-evalh))
-
-(local-defthm evalh-add-pow-pow-17
-  (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
-        (j (cadr x)) (r (caddr x)) (s (cadddr x)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j))
-             (and (shnfp (list 'pow (- i j) p 0))
-                  (shnfp q)
-                  (shnfp r)
-                  (shnfp s)
-                  (integerp (car0 vals))
-                  (integerp (evalh (list 'pow (- i j) p 0) vals))
-                  (integerp (evalh q (cdr vals)))
-                  (integerp (evalh p vals))
-                  (integerp (evalh r vals))
-                  (integerp (evalh s (cdr vals))))))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (disable evalh) :use (evalh-add-pow-pow-16))))
-
-(local-defthm evalh-add-pow-pow-18
-  (let ((i (cadr y)) (p (caddr y)) (q (cadddr y))
-        (j (cadr x)) (r (caddr x)) (s (cadddr x)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow)
-                  (> i j)
-                  (implies (and (shnfp (list 'pow (- i j) p 0)) (shnfp r) (shnfp q) (shnfp s))
-                           (and (= (evalh (norm-add (list 'pow (- i j) p 0) r) vals)
-                                   (+ (evalh (list 'pow (- i j) p 0) vals) (evalh r vals)))
-                                (= (evalh (norm-add q s) (cdr vals))
-                                   (+ (evalh q (cdr vals)) (evalh s (cdr vals)))))))
-             (equal (evalh (norm-add x y) vals)
-                    (+ (evalh x vals) (evalh y vals)))))
-  :hints (("Goal" :use (evalh-add-pow-pow-3 evalh-add-pow-pow-13 evalh-add-pow-pow-14 evalh-add-pow-pow-15 evalh-add-pow-pow-17)
-                  :in-theory (theory 'minimal-theory))))
-
 (in-theory (disable normp norm-add evalh))
 
-(defthm evalh-norm-add
+(local (defrule evalh-add-pop-pop
+  (let ((i (cadr x)) (p (caddr x))
+        (j (cadr y)) (q (caddr y)))
+    (implies (and (shnfp x)
+                  (shnfp y)
+                  (eql (car x) 'pop)
+                  (eql (car y) 'pop)
+                  (if (= i j)
+                      (equal (evalh (norm-add p q) (nthcdr i vals))
+                             (+ (evalh p (nthcdr i vals))
+                                (evalh q (nthcdr i vals))))
+                    (if (> i j)
+                        (equal (evalh (norm-add (list 'pop (- i j) p) q) (nthcdr j vals))
+                               (+ (evalh (list 'pop (- i j) p) (nthcdr j vals))
+                                  (evalh q (nthcdr j vals))))
+                      (equal (evalh (norm-add (list 'pop (- j i) q) p) (nthcdr i vals))
+                             (+ (evalh (list 'pop (- j i) q) (nthcdr i vals))
+                                (evalh p (nthcdr i vals)))))))
+             (equal (evalh (norm-add x y) vals)
+                    (+ (evalh x vals) (evalh y vals)))))
+  :expand (norm-add x y)
+  :enable shnfp-new
+  :disable (evalh-pow evalh-pow-rewrite)))
+; old XXXX
+; new 0.08  8781
+
+(local (defrule evalh-add-pop-pow
+  (let ((i (cadr x)) (p (caddr x))
+        (r (cadddr y)))
+    (implies (and (shnfp x)
+                  (shnfp y)
+                  (eql (car x) 'pop)
+                  (eql (car y) 'pow)
+                  (if (= i 1)
+                      (equal (evalh (norm-add r p) (cdr vals))
+                             (+ (evalh r (cdr vals))
+                                (evalh p (cdr vals))))
+                    (equal (evalh (norm-add r (list 'pop (1- i) p)) (cdr vals))
+                           (+ (evalh r (cdr vals))
+                              (evalh (list 'pop (1- i) p) (cdr vals))))))
+             (equal (evalh (norm-add x y) vals)
+                    (+ (evalh x vals) (evalh y vals)))))
+  :expand (norm-add x y)
+  :enable shnfp-new
+  :disable expt))
+; old XXXX
+; new 0.40 27962
+; dis 0.83 65454
+
+(local (defrule evalh-add-pow-pop
+  (let ((i (cadr y)) (p (caddr y))
+        (r (cadddr x)))
+    (implies
+     (and (shnfp x)
+          (shnfp y)
+          (eql (car x) 'pow)
+          (eql (car y) 'pop)
+          (if (= i 1)
+              (equal (evalh (norm-add r p) (cdr vals))
+                     (+ (evalh r (cdr vals))
+                        (evalh p (cdr vals))))
+            (equal (evalh (norm-add r (list 'pop (1- i) p)) (cdr vals))
+                   (+ (evalh r (cdr vals))
+                      (evalh (list 'pop (1- i) p) (cdr vals))))))
+     (equal (evalh (norm-add x y) vals)
+            (+ (evalh x vals) (evalh y vals)))))
+  :expand (norm-add x y)
+  :enable shnfp-new
+  :disable expt))
+; old XXXX
+; new 0.39 28433
+; dis 0.84 66783
+
+(local (defrule evalh-add-pow-pow
+  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
+        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
+    (implies
+     (and (shnfp x)
+          (shnfp y)
+          (all-integers vals)
+          (eql (car x) 'pow)
+          (eql (car y) 'pow)
+          (if (= i j)
+              (and (equal (evalh (norm-add p r) vals)
+                          (+ (evalh p vals)
+                             (evalh r vals)))
+                   (equal (evalh (norm-add q s) (cdr vals))
+                          (+ (evalh q (cdr vals))
+                             (evalh s (cdr vals)))))
+            (if (> i j)
+                (and (equal (evalh (norm-add (list 'pow (- i j) p 0) r) vals)
+                            (+ (evalh (list 'pow (- i j) p 0) vals)
+                               (evalh r vals)))
+                     (equal (evalh (norm-add q s) (cdr vals))
+                            (+ (evalh q (cdr vals))
+                               (evalh s (cdr vals)))))
+              (and (equal (evalh (norm-add (list 'pow (- j i) r 0) p) vals)
+                          (+ (evalh (list 'pow (- j i) r 0) vals)
+                             (evalh p vals)))
+                   (equal (evalh (norm-add s q) (cdr vals))
+                          (+ (evalh s (cdr vals))
+                             (evalh q (cdr vals))))))))
+     (equal (evalh (norm-add x y) vals)
+            (+ (evalh x vals) (evalh y vals)))))
+  :expand (norm-add x y)
+  :cases ((= (cadr x) (cadr y))
+          (> (cadr x) (cadr y))
+          (< (cadr x) (cadr y)))
+  :hints (("subgoal 2" :use (:instance lemma
+                                       (i (cadr x))
+                                       (j (cadr y))
+                                       (p (evalh (caddr x) vals))
+                                       (r (evalh (caddr y) vals))))
+          ("subgoal 1" :use (:instance lemma
+                                       (i (cadr y))
+                                       (j (cadr x))
+                                       (p (evalh (caddr y) vals))
+                                       (r (evalh (caddr x) vals)))))
+  :enable shnfp-new
+  :disable (all-integers evalh-pow-rewrite)
+  :prep-lemmas
+  ((acl2::with-arith5-help
+    (defrule lemma
+      (let ((x (car0 vals)))
+        (implies (and (all-integers vals)
+                      (posp i)
+                      (posp j))
+                 (equal (* (expt x j) (+ (* (expt x (- i j)) p) r))
+                        (+ (* (expt x i) p)
+                           (* (expt x j) r))))))))))
+; old  XXXX
+; new  0.78 72652
+; dis  0.93 84085
+; dis1 0.86 78468
+; dis2 0.85 77378
+
+(defrule evalh-norm-add
   (implies (and (shnfp x)
                 (shnfp y)
                 (all-integers vals))
            (equal (evalh (norm-add x y) vals)
                   (+ (evalh x vals)
                      (evalh y vals))))
-  :hints (("Goal" :induct (norm-add-induct x y vals))))
+  :induct (norm-add-induct x y vals)
+  :enable (shnfp-new shnfp-forward)
+  :disable (evalh-pow
+            evalh-pow-rewrite
+;           rules below may be disabled optionally
+            expt
+            evalh-pop
+            evalh-pop-2
+            evalh-pow-2
+            shnfp-atom
+            shnfp-int))
+; old XXXX
+; new 0.38 36010
+; dis 0.72 64087
 
 (in-theory (enable normp evalh))
 
@@ -1051,15 +880,19 @@
       (pop (list 'pop (cadr x) (norm-neg (caddr x))))
       (pow (list 'pow (cadr x) (norm-neg (caddr x)) (norm-neg (cadddr x)))))))
 
-(local-defthm norm-neg-0
-  (implies (and (shfp x) (not (equal x 0)))
-           (not (equal (norm-neg x) 0))))
+(local (defrule norm-neg-0
+  (implies (and (shnfp x) (not (equal x 0)))
+           (not (equal (norm-neg x) 0)))
+  :enable (shnfp-new shnfp-forward)))
 
-(defthm shnfp-norm-neg
+(defrule shnfp-norm-neg
   (implies (shnfp x)
            (shnfp (norm-neg x)))
+  :enable (shnfp-old)
   :hints (("Subgoal *1/3" :expand ((norm-neg (caddr x))))
           ("subgoal *1/2" :expand ((norm-neg (caddr x))))))
+; old 0.35 55646
+; new XXXX
 
 (defrule evalh-norm-neg
   (implies (and (shnfp x)
@@ -1073,7 +906,10 @@
                       (- (evalh x vals)))
                (equal (* y (evalh (norm-neg x) vals))
                       (- (* (evalh x vals) y))))
-      :disable (evalh norm-neg)))))
+      :disable (evalh norm-neg))))
+  :enable shnfp-new)
+; old 0.26 23691
+; new 0.12  9452
 
 (defun mul-int (x y)
   (if (= x 0)
@@ -1084,18 +920,29 @@
         (pop (norm-pop (cadr y) (mul-int x (caddr y))))
         (pow (norm-pow (cadr y) (mul-int x (caddr y)) (mul-int x (cadddr y))))))))
 
-(defthm shnfp-mul-int
+(defrule shnfp-mul-int
   (implies (and (shnfp x)
                 (shnfp y)
                 (atom x))
-           (shnfp (mul-int x y))))
+           (shnfp (mul-int x y)))
+  :enable shnfp-new
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (shnfp x)
+                   (shnfp y)
+                   (atom x)
+                   (atom y))
+              (shnfp (* x y)))
+     :enable shnfp)))
+; old 0.15 24505
+; new 0.02  1843
 
 (local-defthm normp-mul-int
   (implies (and (shnfp x)
                 (shnfp y)
                 (atom x))
            (normp (mul-int x y)))
-  :hints (("Goal" :use shnfp-mul-int)))
+  :hints (("Goal" :use shnfp-mul-int :in-theory (disable shnfp-mul-int))))
 
 (defrule evalh-mul-int
   (implies (and (shnfp x)
@@ -1104,7 +951,10 @@
                 (all-integers vals))
            (equal (evalh (mul-int x y) vals)
                   (* (evalh x vals) (evalh y vals))))
-  :enable acl2::|arith (* y (* x z))|)
+  :enable (acl2::|arith (* y (* x z))|
+                 shnfp-new))
+; old 0.54 42712
+; new 0.22 16423
 
 (in-theory (disable mul-int))
 
@@ -1158,10 +1008,13 @@
            (equal (evalh (norm-mul x y) vals)
                   (* (evalh x vals) (evalh y vals)))))
 
-(defthm shnfp-norm-mul
+(defrule shnfp-norm-mul
   (implies (and (shnfp x)
                 (shnfp y))
-           (shnfp (norm-mul x y))))
+           (shnfp (norm-mul x y)))
+  :enable shnfp-new)
+; old 11.06 1691622
+; new  0.07    6313
 
 (in-theory (enable norm-pop norm-pow))
 
@@ -1206,137 +1059,79 @@
 
 (in-theory (disable norm-pop norm-pow))
 
-(local-defthm evalh-mul-pop-pop-1
-  (let ((i (cadr x)) (p (caddr x))
-        (j (cadr y)) (q (caddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pop)
-                  (eql (car y) 'pop))
-             (and (shnfp p)
-                  (shnfp q)
-                  (not (zp i))
-                  (not (zp j))
-                  (implies (> i j) (shnfp (list 'pop (- i j) p)))
-                  (implies (> j i) (shnfp (list 'pop (- j i) q))))))
-  :rule-classes ())
-
 (local (defrule evalh-mul-pop-pop
   (let ((i (cadr x)) (p (caddr x))
         (j (cadr y)) (q (caddr y)))
     (implies (and (shnfp x)
                   (shnfp y)
                   (all-integers vals)
-                  (consp x)
-                  (consp y)
                   (eql (car x) 'pop)
                   (eql (car y) 'pop)
-                  (implies (and (= i j) (shnfp p) (shnfp q))
-                           (= (evalh (norm-mul p q) (nthcdr i vals))
-                              (* (evalh p (nthcdr i vals)) (evalh q (nthcdr i vals)))))
-                  (implies (and (> i j) (shnfp (list 'pop (- i j) p)) (shnfp q))
-                           (= (evalh (norm-mul (list 'pop (- i j) p) q) (nthcdr j vals))
-                              (* (evalh (list 'pop (- i j) p) (nthcdr j vals))
-                                 (evalh q (nthcdr j vals)))))
-                  (implies (and (< i j) (shnfp (list 'pop (- j i) q)) (shnfp p))
-                           (= (evalh (norm-mul (list 'pop (- j i) q) p) (nthcdr i vals))
-                              (* (evalh (list 'pop (- j i) q) (nthcdr i vals))
-                                 (evalh p (nthcdr i vals))))))
+                  (if (= i j)
+                      (= (evalh (norm-mul p q) (nthcdr i vals))
+                         (* (evalh p (nthcdr i vals))
+                            (evalh q (nthcdr i vals))))
+                    (if (> i j)
+                        (= (evalh (norm-mul (list 'pop (- i j) p) q) (nthcdr j vals))
+                           (* (evalh (list 'pop (- i j) p) (nthcdr j vals))
+                              (evalh q (nthcdr j vals))))
+                      (= (evalh (norm-mul (list 'pop (- j i) q) p) (nthcdr i vals))
+                         (* (evalh (list 'pop (- j i) q) (nthcdr i vals))
+                            (evalh p (nthcdr i vals)))))))
              (equal (evalh (norm-mul x y) vals)
                     (* (evalh x vals) (evalh y vals)))))
-  :use evalh-mul-pop-pop-1
-  :enable default-car
-  :disable shnfp))
-
-(local-defthm evalh-mul-pop-pow-1
-  (let ((i (cadr x)) (p (caddr x)) (j (cadr y)) (q (caddr y)) (r (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pop)
-                  (eql (car y) 'pow))
-             (and (shnfp p)
-                  (shnfp q)
-                  (shnfp r)
-                  (not (zp i))
-                  (not (zp j))
-                  (implies (not (= i 1)) (shnfp (list 'pop (1- i) p))))))
-  :rule-classes ())
+  :enable shnfp-new
+  :disable (expt evalh-pow evalh-pow-rewrite)))
+; old 0.38  37918
+; new 0.32  24965
 
 (local (defrule evalh-mul-pop-pow
   (let ((i (cadr x)) (p (caddr x)) (q (caddr y)) (r (cadddr y)))
     (implies (and (shnfp x)
                   (shnfp y)
                   (all-integers vals)
-                  (consp x)
-                  (consp y)
                   (eql (car x) 'pop)
                   (eql (car y) 'pow)
-                  (implies (and (= i 1) (shnfp q)  (shnfp r) (shnfp p))
-                           (and (= (evalh (norm-mul x q) vals)
-                                   (* (evalh x vals) (evalh q vals)))
-                                (= (evalh (norm-mul p r) (cdr vals))
-                                   (* (evalh p (cdr vals)) (evalh r (cdr vals))))))
-                  (implies (and (not (= i 1)) (shnfp q) (shnfp r) (shnfp (list 'pop (1- i) p)))
-                           (and (= (evalh (norm-mul x q) vals)
-                                   (* (evalh x vals) (evalh q vals)))
-                                (= (evalh (norm-mul (list 'pop (1- i) p) r) (cdr vals))
-                                   (* (evalh (list 'pop (1- i) p) (cdr vals))
-                                      (evalh r (cdr vals)))))))
+                  (if (= i 1)
+                      (and (= (evalh (norm-mul x q) vals)
+                              (* (evalh x vals) (evalh q vals)))
+                           (= (evalh (norm-mul p r) (cdr vals))
+                              (* (evalh p (cdr vals)) (evalh r (cdr vals)))))
+                    (and (= (evalh (norm-mul x q) vals)
+                            (* (evalh x vals) (evalh q vals)))
+                         (= (evalh (norm-mul (list 'pop (1- i) p) r) (cdr vals))
+                            (* (evalh (list 'pop (1- i) p) (cdr vals))
+                               (evalh r (cdr vals)))))))
              (equal (evalh (norm-mul x y) vals)
                     (* (evalh x vals) (evalh y vals)))))
-  :use evalh-mul-pop-pow-1
-  :enable acl2::|arith (* y (* x z))|
-  :disable shnfp))
+  :enable (shnfp-new acl2::|arith (* y (* x z))|)
+  :disable (expt evalh-pow evalh-pow-rewrite)))
+; old 3.11  345377
+; new 1.50  126486
 
 (local (defrule evalh-mul-pow-pop
   (let ((i (cadr y)) (p (caddr y)) (q (caddr x)) (r (cadddr x)))
     (implies (and (shnfp x)
                   (shnfp y)
                   (all-integers vals)
-                  (consp x)
-                  (consp y)
                   (eql (car x) 'pow)
                   (eql (car y) 'pop)
-                  (implies (and (= i 1) (shnfp q)  (shnfp r) (shnfp p))
-                           (and (= (evalh (norm-mul y q) vals)
-                                   (* (evalh y vals) (evalh q vals)))
-                                (= (evalh (norm-mul p r) (cdr vals))
-                                   (* (evalh p (cdr vals)) (evalh r (cdr vals))))))
-                  (implies (and (not (= i 1)) (shnfp q) (shnfp r) (shnfp (list 'pop (1- i) p)))
-                           (and (= (evalh (norm-mul y q) vals)
-                                   (* (evalh y vals) (evalh q vals)))
-                                (= (evalh (norm-mul (list 'pop (1- i) p) r) (cdr vals))
-                                   (* (evalh (list 'pop (1- i) p) (cdr vals))
-                                      (evalh r (cdr vals)))))))
+                  (if (= i 1)
+                      (and (= (evalh (norm-mul y q) vals)
+                              (* (evalh y vals) (evalh q vals)))
+                           (= (evalh (norm-mul p r) (cdr vals))
+                              (* (evalh p (cdr vals)) (evalh r (cdr vals)))))
+                    (and (= (evalh (norm-mul y q) vals)
+                            (* (evalh y vals) (evalh q vals)))
+                         (= (evalh (norm-mul (list 'pop (1- i) p) r) (cdr vals))
+                            (* (evalh (list 'pop (1- i) p) (cdr vals))
+                               (evalh r (cdr vals)))))))
              (equal (evalh (norm-mul x y) vals)
                     (* (evalh x vals) (evalh y vals)))))
-  :use (:instance evalh-mul-pop-pow-1 (x y) (y x))
-  :enable acl2::|arith (* y (* x z))|
-  :disable shnfp))
-
-(local-defthm evalh-mul-pow-pow-1
-  (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
-        (j (cadr y)) (r (caddr y)) (s (cadddr y)))
-    (implies (and (shnfp x)
-                  (shnfp y)
-                  (all-integers vals)
-                  (consp x)
-                  (consp y)
-                  (eql (car x) 'pow)
-                  (eql (car y) 'pow))
-             (and (shnfp p)
-                  (shnfp q)
-                  (shnfp r)
-                  (shnfp s)
-                  (not (zp i))
-                  (not (zp j)))))
-  :rule-classes ())
+  :enable (shnfp-new acl2::|arith (* y (* x z))|)
+  :disable (expt evalh-pow evalh-pow-rewrite)))
+; old XXXX
+; new 1.52  126526
 
 (local (defrule evalh-mul-pow-pow
   (let ((p (caddr x)) (q (cadddr x))
@@ -1344,38 +1139,38 @@
     (implies (and (shnfp x)
                   (shnfp y)
                   (all-integers vals)
-                  (consp x)
-                  (consp y)
                   (eql (car x) 'pow)
                   (eql (car y) 'pow)
-                  (implies (and (shnfp p) (shnfp r))
-                           (= (evalh (norm-mul p r) vals)
-                              (* (evalh p vals) (evalh r vals))))
-                  (implies (and (shnfp q) (shnfp s))
-                           (= (evalh (norm-mul q s) (cdr vals))
-                              (* (evalh q (cdr vals)) (evalh s (cdr vals)))))
-                  (implies (and (shnfp p) (shnfp (norm-pop 1 s)))
-                           (= (evalh (norm-mul p (norm-pop 1 s)) vals)
-                              (* (evalh p vals) (evalh (norm-pop 1 s) vals))))
-                  (implies (and (shnfp r) (shnfp (norm-pop 1 q)))
-                           (= (evalh (norm-mul r (norm-pop 1 q)) vals)
-                              (* (evalh r vals) (evalh (norm-pop 1 q) vals)))))
+                  (= (evalh (norm-mul p r) vals)
+                     (* (evalh p vals) (evalh r vals)))
+                  (= (evalh (norm-mul q s) (cdr vals))
+                     (* (evalh q (cdr vals)) (evalh s (cdr vals))))
+                  (= (evalh (norm-mul p (norm-pop 1 s)) vals)
+                     (* (evalh p vals) (evalh (norm-pop 1 s) vals)))
+                  (= (evalh (norm-mul r (norm-pop 1 q)) vals)
+                     (* (evalh r vals) (evalh (norm-pop 1 q) vals))))
              (equal (evalh (norm-mul x y) vals)
                     (* (evalh x vals) (evalh y vals)))))
-  :use evalh-mul-pow-pow-1
-  :enable (acl2::|arith (* y (* x z))| acl2::|arith (expt x (+ m n))|)
-  :disable shnfp))
+  :enable (shnfp-new acl2::|arith (* y (* x z))|
+                     acl2::|arith (expt x (+ m n))|)
+  :disable (expt evalh-pow evalh-pow-rewrite)))
+; old XXXX
+; new 3.45   281321
 
 (in-theory (disable shnfp normp norm-mul evalh))
 
-(defthm evalh-norm-mul
+(defrule evalh-norm-mul
   (implies (and (shnfp x)
                 (shnfp y)
                 (all-integers vals))
            (equal (evalh (norm-mul x y) vals)
                   (* (evalh x vals)
                      (evalh y vals))))
-  :hints (("Goal" :induct (norm-mul-induct x y vals))))
+  :induct (norm-mul-induct x y vals)
+  :enable shnfp-new
+  :disable (evalh-pow-rewrite evalh-pow))
+; old XXXX
+; new 0.37  32092
 
 (defun norm-expt (x k)
   (if (zp k)
@@ -1539,7 +1334,7 @@
   :hints (("Goal" :use (ew-6) :in-theory (disable evalh evalh-pow-rewrite)
                   :expand ((normp x) (normp (caddr x)) (shnfp x)))))
 
-(local-defthm ew-9
+(local (defrule ew-9
   (let* ((i (cadr x))
          (p (caddr x))
          (q (cadddr x))
@@ -1555,8 +1350,11 @@
 	          (integerp (evalh q (cdr n)))
 	          (integerp (expt k i)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable evalh evalh-pow-rewrite)
-                  :expand ((normp x) (normp (caddr x)) (shnfp x)))))
+  :expand ((normp x) (normp (caddr x)) (shnfp x))
+  :enable shnfp-old
+  :disable (evalh evalh-pow-rewrite)))
+; old 0.14 20084
+; new XXXX
 
 (local-defthm ew-10
   (let* ((p (caddr x))
@@ -1578,7 +1376,7 @@
 (local-defthm ew-11
   (all-integers (ew x y)))
 
-(local-defthmd ew-12
+(local (defruled ew-12
   (let ((p (caddr x)) (q (cadddr x)))
     (implies (and (shnfp x)
                   (shnfp y)
@@ -1586,7 +1384,10 @@
                   (eq (car x) 'pow)
                   (not (= (evalh p (ew p y)) 0)))
              (and (integerp (evalh q (cdr n)))
-                  (integerp (evalh y (cdr n)))))))
+                  (integerp (evalh y (cdr n))))))
+  :enable shnfp-new))
+; old 0.02  2010
+; new 0.02  1503
 
 (local-defthmd ew-13
   (let ((p (caddr x)))
@@ -1600,7 +1401,7 @@
 		     (abs (evalh y (cdr (ew x y)))))
                   (not (= (evalh x (ew x y)) 0)))))
   :hints (("Goal" :expand ((evalh x (pad0 (cadr x) (ew (caddr x) y))))
-                  :in-theory (disable integerp-evalh evalh-pow-rewrite)
+                  :in-theory (disable integerp-evalh integerp-evalh-shnfp evalh-pow-rewrite)
                   :use ((:instance ew-12 (n (ew (caddr x) y)))
 		        (:instance ew-10 (n (ew (caddr x) y))
 		                         (k (ifix (+ (abs (evalh (cadddr x) (cdr (ew (caddr x) y))))
@@ -1618,7 +1419,7 @@
                   (shnfp q))))
   :hints (("Goal" :expand ((normp x) (shfp x) (shnfp x)))))
 
-(local-defthmd ew-15
+(local (defruled ew-15
   (let ((p (caddr x))
         (q (cadddr x)))
     (implies (and (shnfp x)
@@ -1628,7 +1429,11 @@
              (and (integerp (evalh p n))
                   (integerp (evalh q (cdr n)))
                   (integerp (evalh y (cdr n))))))
-  :hints (("Goal" :use (ew-14) :expand ((shnfp y)))))
+  :use ew-14
+  :expand (shnfp y)
+  :enable shnfp-new))
+; old 0.04  3760
+; new 0.02  1654
 
 (local (defruled ew-16
   (let ((i (cadr x))
@@ -1664,8 +1469,7 @@
                  (- (abs (* (expt (car n) i) (evalh p n)))
                     (abs (evalh q (cdr n)))))))
   :hints (("Goal" :use (ew-14 ew-15 ew-16)
-                  :in-theory (disable shnfp-pow-p shnfp-pow-q
-                                      integerp-evalh))))
+                  :in-theory (disable integerp-evalh))))
 
 (local-defthm int-abs
   (implies (integerp x) (integerp (abs x)))
@@ -1682,8 +1486,7 @@
              (>= (abs (evalh x n))
                  (- (abs (evalh p n)) (abs (evalh q (cdr n)))))))
   :hints (("Goal" :use (ew-15 ew-16 ew-17)
-                  :in-theory (disable abs shnfp-pow-p shnfp-pow-q
-                                      integerp-evalh))))
+                  :in-theory (disable abs integerp-evalh))))
 
 (local-defthm ew-19
   (implies (all-integers n)
@@ -1747,7 +1550,7 @@
                 (* (evalh y (cdr n)) (evalh y (cdr n)))))))
   :hints (("Goal" :use (ew-20 ew-22))))
 
-(local-defthmd ew-24
+(local (defruled ew-24
   (let* ((p (caddr x))
          (q (caddr x))
          (yp (norm-add (norm-mul q q) (norm-mul y y))))
@@ -1762,7 +1565,11 @@
              (> (abs (evalh p n))
                 (+ (* (evalh q (cdr n)) (evalh q (cdr n)))
                    (* (evalh y (cdr n)) (evalh y (cdr n)))))))
-  :hints (("Goal" :use (ew-23))))
+  :use ew-23
+  :enable shnfp-new
+  :disable (evalh-pow evalh-pow-rewrite)))
+; old 0.06 10292
+; new 0.03  3026
 
 (local (acl2::with-arith5-help (defrule hack-3
   (implies (integerp a)
@@ -1784,12 +1591,15 @@
 		  :nonlinearp t
                   :in-theory (disable integerp-evalh))))
 
-(local-defthmd ew-26
+(local (defruled ew-26
   (let* ((p (caddr x)))
     (implies (and (shnfp x)
                   (all-integers n)
 		  (eq (car x) 'pow))
-             (integerp (evalh p n)))))
+             (integerp (evalh p n))))
+  :enable shnfp-new))
+; old XXXX
+; new 0.00  166
 
 (local-defthmd ew-27
   (let ((q (cadddr x)))
@@ -2316,7 +2126,7 @@
   :hints (("Goal" :expand ((shnfp x) (normp x))
                   :use (na0-16 na0-23))))
 
-(local-defthm na0-25
+(local (defrule na0-25
   (let ((i (cadr x))
         (p (caddr x))
         (q (cadddr x))
@@ -2337,8 +2147,13 @@
 		           (equal p (norm-neg (list 'pow (- j i) r 0)))))
 	     (equal (norm-neg x) y)))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp x) (normp x))
-                  :use (na0-18 na0-21 na0-24))))
+;  :expand ((shnfp x) (normp x))
+  :use (na0-18 na0-21 na0-24)
+  :enable shnfp-new))
+; old-expand  6.34 1240744
+; old XXXX
+; new-expand 17.59 4125184
+; new         1.32  153638
 
 (local-defthmd na0-26
   (let ((i (cadr x))
@@ -2398,13 +2213,16 @@
 
 (in-theory (enable norm-add))
 
-(local-defthm norm-add-0
+(local (defrule norm-add-0
   (implies (and (shnfp x)
                 (shnfp y)
 		(equal (norm-add x y) 0))
            (equal (norm-neg x) y))
   :rule-classes ()
-  :hints (("Goal" :induct (norm-add x y) :expand ((shnfp x) (shfp x) (shnfp y) (shfp y) (norm-add x y)))
+  :induct (norm-add x y)
+  :expand (;(shnfp x) (shfp x) (shnfp y) (shfp y)
+           (norm-add x y))
+  :hints (
           ("Subgoal *1/13" :use (na0-27))
           ("Subgoal *1/12" :use (na0-27))
           ("Subgoal *1/11" :use (na0-27))
@@ -2414,7 +2232,14 @@
           ("Subgoal *1/4" :use (na0-15))
           ("Subgoal *1/3" :use (na0-15))
           ("Subgoal *1/2" :use (na0-4 na0-16))
-          ("Subgoal *1/1" :use (na0-3))))
+          ("Subgoal *1/1" :use (na0-3)))
+  :enable shnfp-new))
+; nul-expand 7.76 1371877
+; nul        XXXX
+; old-expand XXXX
+; old        XXXX
+; new-expand 4.38  740072
+; new        1.40  165000
 
 (defthmd evalh-not-equal
   (let ((n (evalh-witness (norm-add (norm-neg y) x))))
