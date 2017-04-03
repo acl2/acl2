@@ -25,24 +25,26 @@
 
 (in-theory (disable reverse))
 
-(skip-proofs
-(defthm soundness-main
-  (implies
-   (and (equal (car (incl-valid-proofp$-top-rec formula
-                                                clrat-file posn chunk-size
-                                                clrat-file-length
-                                                old-suffix debug max-var a$ ctx
-                                                state))
-               :complete)
-        (formula-p formula)
-        (posp clrat-file-length)
-        (a$p a$)
-        (equal (a$ptr a$) 0)
-        (integerp max-var)
-        (natp posn)
-        (<= (formula-max-var formula 0) max-var))
-   (not (satisfiable formula))))
-)
+(encapsulate
+  ()
+  (local (include-book "soundness-main"))
+  (set-enforce-redundancy t)
+  (defthm soundness-main
+    (implies
+     (and (equal (car (incl-valid-proofp$-top-rec formula
+                                                  clrat-file posn chunk-size
+                                                  clrat-file-length
+                                                  old-suffix debug max-var a$ ctx
+                                                  state))
+                 :complete)
+          (formula-p formula)
+          (posp clrat-file-length)
+          (a$p a$)
+          (equal (a$ptr a$) 0)
+          (integerp max-var)
+          (natp posn)
+          (<= (formula-max-var formula 0) max-var))
+     (not (satisfiable formula)))))
 
 (defthm a$p-initial-a$
   (a$p (resize-a$arr 2 (create-a$)))

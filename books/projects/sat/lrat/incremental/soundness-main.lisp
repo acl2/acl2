@@ -9,36 +9,55 @@
 (include-book "incremental")
 
 (skip-proofs
-(defthm a$p-mv-nth-4-incl-valid-proofp$
-  (implies (and (a$p a$)
-                (equal (a$ptr a$) 0)
+(defthm satisfiability-preserved-when-incl-valid-proofp$
+  (implies (and (car (incl-valid-proofp$ formula proof max-var a$))
+                (satisfiable formula)
                 (formula-p formula)
-                (natp max-var)
+                (a$p a$)
+                (equal (a$ptr a$) 0)
+                (integerp max-var)
                 (<= (formula-max-var formula 0)
-                    old-max-var))
-           (a$p (mv-nth 4
-                        (incl-valid-proofp$
-                         formula
-                         proof
-                         max-var a$)))))
+                    max-var))
+           (satisfiable
+            (mv-nth 1
+                    (incl-valid-proofp$ formula proof max-var a$)))))
 )
 
 (skip-proofs
+(defthmd incl-valid-proofp$-complete-implies-not-satisfiable
+  (implies
+   (and (formula-p formula)
+        (posp clrat-file-length)
+        (a$p a$)
+        (equal (a$ptr a$) 0)
+        (integerp max-var)
+        (natp posn)
+        (<= (formula-max-var formula 0) max-var)
+        (car (incl-valid-proofp$ formula proof max-var a$))
+        (mv-nth 2 ; reached a contradiction
+                (incl-valid-proofp$ formula proof max-var a$)))
+   (not (satisfiable
+         (mv-nth 1
+                 (incl-valid-proofp$ formula proof max-var a$))))))
+)
+
 (defthm soundness-incl-valid-proofp$
   (implies
    (and (formula-p formula)
         (posp clrat-file-length)
         (a$p a$)
+        (equal (a$ptr a$) 0)
         (integerp max-var)
         (natp posn)
         (<= (formula-max-var formula 0) max-var)
-        (mv-nth 2
+        (car (incl-valid-proofp$ formula proof max-var a$))
+        (mv-nth 2 ; reached a contradiction
                 (incl-valid-proofp$ formula proof max-var a$)))
    (not (satisfiable formula)))
-  :hints (("Goal" :in-theory (disable incl-valid-proofp$ clrat-read-next))))
-)
+  :hints (("Goal"
+           :use incl-valid-proofp$-complete-implies-not-satisfiable
+           :in-theory (disable incl-valid-proofp$))))
 
-(skip-proofs
 (defthm soundness-main
   (implies
    (and (equal (car (incl-valid-proofp$-top-rec formula
@@ -55,6 +74,7 @@
         (natp posn)
         (<= (formula-max-var formula 0) max-var))
    (not (satisfiable formula)))
-  :hints (("Goal" :in-theory (disable incl-valid-proofp$ clrat-read-next))))
-)
+  :hints (("Goal"
+           :in-theory (disable incl-valid-proofp$ clrat-read-next a$ptr)
+           :induct t)))
 
