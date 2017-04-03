@@ -106,6 +106,46 @@
       (pow (+ 2 (shf-count (caddr x)) (shf-count (cadddr x))))
       (t 0))))
 
+(local (defrule shf-count-atom
+  (implies (atom x)
+           (equal (shf-count x) 1))))
+
+(local (defrule shf-count-pop
+  (equal (shf-count (list 'pop i p))
+         (+ 2 (shf-count p)))))
+
+(local (defrule shf-count-pow
+  (equal (shf-count (list 'pow i p q))
+         (+ 2 (shf-count p) (shf-count q)))))
+
+(local (defrule shf-count-pop-p
+  (implies (eql (car x) 'pop)
+           (equal (shf-count (caddr x))
+                  (- (shf-count x) 2)))))
+
+(local (defrule shf-count-pow-p
+  (implies (eql (car x) 'pow)
+           (equal (shf-count (caddr x))
+                  (- (shf-count x) (+ 2 (shf-count (cadddr x))))))))
+
+(local (defrule shf-count-shfp
+  (implies (shfp x)
+           (>= (shf-count x) 1))
+  :rule-classes :linear))
+
+(local (defrule shf-cound-pow-q
+  (implies (eql (car x) 'pow)
+           (<= (shf-count (cadddr x)) (- (shf-count x) 2)))
+  :rule-classes :linear))
+
+(local (defrule shf-cound-pow-q-shfp
+  (implies (and (shfp x)
+                (eql (car x) 'pow))
+           (<= (shf-count (cadddr x)) (- (shf-count x) 3)))
+  :rule-classes :linear))
+
+(local (in-theory (disable shf-count)))
+
 ;; A SHF represents a polynomial term relative to an ordering of variables.
 ;; We shall define a procedure that derives a SHF x from a term z and show
 ;; that the value of z may be computed by the function evalh as defined
@@ -425,8 +465,7 @@
         (norm-pow i (norm-add (list 'pow (- j i) r 0) p) (norm-add s q))))))
 
 (defun norm-add (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))
-                  :hints(("Goal" :in-theory (enable jared-disables)))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
   (and (shfp x)
        (if (atom x)
            (add-int x y)
@@ -459,8 +498,7 @@
   :hints (("Goal" :use shnfp-norm-add)))
 
 (defun norm-add-induct (x y vals)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))
-                  :hints(("Goal" :in-theory (enable jared-disables)))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
   (if (or (not (shnfp x))
           (not (shnfp y))
           (atom x)
@@ -1096,8 +1134,7 @@
 (in-theory (enable norm-pop norm-pow))
 
 (defun norm-mul (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))
-                  :hints(("Goal" :in-theory (enable jared-disables)))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
   (and (shfp x)
        (if (atom x)
            (mul-int x y)
@@ -1129,8 +1166,7 @@
 (in-theory (enable norm-pop norm-pow))
 
 (defun norm-mul-induct (x y vals)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))
-                  :hints(("Goal" :in-theory (enable jared-disables)))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
   (if (or (not (shnfp x))
           (not (shnfp y))
           (atom x)
