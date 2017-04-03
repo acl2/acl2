@@ -743,6 +743,57 @@ the indicated file.</p>"
        (state (princ$ (vl-ps->string) channel state)))
     (close-output-channel channel state)))
 
+(define vl-print-to-file-and-clear-aux ((x       vl-printedlist-p "Should be already un-reversed")
+                                        (channel (and (symbolp channel)
+                                                      (open-output-channel-p channel :character state)))
+                                        (state))
+  :parents (vl-print-to-file-and-clear)
+  :hooks nil
+  :returns (state state-p1 :hyp :guard)
+  (if (atom x)
+      state
+    (let* ((x1    (car x))
+           (state (vl-printedtree-case x1
+                    (:leaf (princ$ x1.elt channel state))
+                    (:list (princ$ (vl-printedlist->string x1.list) channel state)))))
+      (vl-print-to-file-and-clear-aux (cdr x) channel state)))
+  ///
+  (defthm open-output-channel-p1-of-vl-print-to-file-and-clear-aux
+    (implies (and (force (vl-printedlist-p x))
+                  (force (symbolp channel))
+                  (force (open-output-channel-p channel :character state))
+                  (force (state-p1 state)))
+             (open-output-channel-p1 channel :character
+                                     (vl-print-to-file-and-clear-aux x channel state)))))
+
+(define vl-print-to-file-and-clear ((filename stringp) &key (ps 'ps) (state 'state))
+  :returns (mv (ps)
+               (state state-p1 :hyp (force (state-p1 state))))
+  :short "Write the printed characters to a file and clear out the @('ps')."
+  :long "<p>This is similar to @(see vl-print-to-file) except that it also
+clears out the characters in @('ps').  This allows us to optimize this function
+under the hood in various ways that wouldn't be sound for
+@('vl-print-to-file').</p>"
+  (b* ((filename (string-fix filename))
+       ((mv channel state)
+        (open-output-channel! filename :character state))
+       ((unless channel)
+        (raise "Error opening file ~s0 for writing." filename)
+        (mv ps state))
+       (rchars (vl-ps->rchars))
+       (ps     (vl-ps-update-rchars nil))
+       (ps     (vl-ps-update-col 0))
+       ;; Under-the-hood version optimizes this to nreverse and uses raw
+       ;; printing routines to speed up file output
+       (state  (vl-print-to-file-and-clear-aux (reverse rchars) channel state))
+       (state  (close-output-channel channel state)))
+    (mv ps state))
+  ///
+  (defttag vl-optimize)
+; (depends-on "print-fast.lsp")
+  (acl2::include-raw "print-fast.lsp")
+  (defttag nil))
+
 
 (defsection with-ps-file
   :parents (accessing-printed-output)
@@ -750,9 +801,9 @@ the indicated file.</p>"
   :long "<p>The basic idea of this is that you can do, e.g.,</p>
 
 @({
- (with-ps-file \"my-file.txt\"
-    (vl-print \"Hello,\")
-    (vl-println \"World!\"))
+    (with-ps-file \"my-file.txt\"
+      (vl-print \"Hello,\")
+      (vl-println \"World!\"))
 })
 
 <p>And end up with a file called @('my-file.txt') that says @('Hello, World!').
@@ -770,12 +821,10 @@ with-local-stobj), so previously printed content isn't included.</p>
     `(acl2::with-local-stobj
       ps
       (mv-let (ps state)
-        (let* ((ps     (vl-ps-seq ,@forms))
-               (state  (vl-print-to-file ,filename)))
+        (b* ((ps            (vl-ps-seq ,@forms))
+             ((mv ps state) (vl-print-to-file-and-clear ,filename)))
           (mv ps state))
         state))))
-
-
 
 (defsection printing-locally
   :parents (printer)
