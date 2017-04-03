@@ -149,7 +149,7 @@
 ;;    (1) x = (POP i p) => p is a POW
 ;;    (2) x = (POW i p q) => p neither 0 nor (POW j r 0)
 
-(defund normp (x)
+(defund shf-normp (x)
   (declare (xargs :guard (shfp x)))
   (if (atom x)
       t
@@ -158,17 +158,17 @@
         (pop (and (not (= i 0))
                   (consp p)
                   (eql (car p) 'pow)
-                  (normp p)))
+                  (shf-normp p)))
         (pow (and (not (= i 0))
-                  (normp p)
-                  (normp q)
+                  (shf-normp p)
+                  (shf-normp q)
                   (if (atom p)
                       (not (= p 0))
                     (not (and (eql (car p) 'pow)
                               (equal (cadddr p) 0))))))))))
 
 (defnd shnfp (x)
-  (and (shfp x) (normp x)))
+  (and (shfp x) (shf-normp x)))
 
 (defthm shnfp-shfp
   (implies (shnfp x)
@@ -216,7 +216,7 @@
 
 (defthm norm-pop-normp
   (implies (and (shnfp p) (natp i))
-           (normp (norm-pop i p))))
+           (shf-normp (norm-pop i p))))
 
 (defthm norm-pop-shfp
   (implies (and (shnfp p) (natp i))
@@ -245,7 +245,7 @@
 
 (defthm norm-pow-normp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
-           (normp (norm-pow i p q))))
+           (shf-normp (norm-pow i p q))))
 
 (defthm norm-pow-shfp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
@@ -299,10 +299,10 @@
       (pop (list 'pop (cadr y) (add-int x (caddr y)))))))
 
 (defthm normp-add-int
-  (implies (and (normp x)
-                (normp y)
+  (implies (and (shf-normp x)
+                (shf-normp y)
                 (atom x))
-           (normp (add-int x y))))
+           (shf-normp (add-int x y))))
 
 (defthm shnfp-add-int
   (implies (and (shnfp x)
@@ -373,7 +373,7 @@
 (defthm normp-norm-add
   (implies (and (shnfp x)
                 (shnfp y))
-           (normp (norm-add x y))))
+           (shf-normp (norm-add x y))))
 
 (defthm evalh-norm-add
   (implies (and (shnfp x)

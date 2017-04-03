@@ -217,7 +217,7 @@
 ;;    (1) x = (POP i p) => p is a POW
 ;;    (2) x = (POW i p q) => p neither 0 nor (POW j r 0)
 
-(defun normp (x)
+(defun shf-normp (x)
   (declare (xargs :guard (shfp x)))
   (if (atom x)
       t
@@ -226,17 +226,17 @@
         (pop (and (not (= i 0))
                   (consp p)
                   (eql (car p) 'pow)
-                  (normp p)))
+                  (shf-normp p)))
         (pow (and (not (= i 0))
-                  (normp p)
-                  (normp q)
+                  (shf-normp p)
+                  (shf-normp q)
                   (if (atom p)
                       (not (= p 0))
                     (not (and (eql (car p) 'pow)
                               (equal (cadddr p) 0))))))))))
 
 (defn shnfp (x)
-  (and (shfp x) (normp x)))
+  (and (shfp x) (shf-normp x)))
 
 (defthm shnfp-shfp
   (implies (shnfp x)
@@ -299,7 +299,7 @@
                 (eql (car x) 'pow))
            (posp (cadr x)))
   :rule-classes :type-prescription
-  :expand (normp x)))
+  :expand (shf-normp x)))
 
 (defthm shnfp-pow-q
   (implies (and (shnfp x) (eql (car x) 'pow))
@@ -319,7 +319,7 @@
                 (eql (car x) 'pop))
            (posp (cadr x)))
   :rule-classes :type-prescription
-  :expand (normp x)))
+  :expand (shf-normp x)))
 
 (local (defruled shnfp-pop-p
   (implies (and (shnfp x) (eql (car x) 'pop))
@@ -399,7 +399,7 @@
                 (all-integers vals))
            (integerp (evalh x vals)))))
 
-;; [Dima] Two theories for reasoning about shnfp.
+;; [Dima] Thow theories for reasoning about shnfp.
 
 ;; Old theory enables definition and a few public theorems.
 (local (deftheory shnfp-old
@@ -462,7 +462,7 @@
 
 (defthm norm-pop-normp
   (implies (and (shnfp p) (natp i))
-           (normp (norm-pop i p)))
+           (shf-normp (norm-pop i p)))
   :hints (("Goal" :use norm-pop-shnfp)))
 
 (defthm norm-pop-shfp
@@ -508,7 +508,7 @@
 
 (defthm norm-pow-normp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
-           (normp (norm-pow i p q)))
+           (shf-normp (norm-pow i p q)))
   :hints (("Goal" :use norm-pow-shnfp)))
 
 (defthm norm-pow-shfp
@@ -640,10 +640,10 @@
       (pop (list 'pop (cadr y) (add-int x (caddr y)))))))
 
 (defthm normp-add-int
-  (implies (and (normp x)
-                (normp y)
+  (implies (and (shf-normp x)
+                (shf-normp y)
                 (atom x))
-           (normp (add-int x y)))
+           (shf-normp (add-int x y)))
   :hints (("Subgoal *1/5" :expand ((add-int x (caddr y))))))
 
 (defrule shnfp-add-int
@@ -737,7 +737,7 @@
 (defthm normp-norm-add
   (implies (and (shnfp x)
                 (shnfp y))
-           (normp (norm-add x y)))
+           (shf-normp (norm-add x y)))
   :hints (("Goal" :use shnfp-norm-add)))
 
 (defun norm-add-induct (x y vals)
@@ -788,7 +788,7 @@
                         (evalh (caddr x) vals))
                      (evalh (cadddr x) (cdr vals))))))
 
-(in-theory (disable normp norm-add evalh))
+(in-theory (disable shf-normp norm-add evalh))
 
 (local (defrule evalh-add-pop-pop
   (let ((i (cadr x)) (p (caddr x))
@@ -948,7 +948,7 @@
 ; new 0.38 36010
 ; dis 0.72 64087
 
-(in-theory (enable normp evalh))
+(in-theory (enable shf-normp evalh))
 
 ;; The remaining cases are handled by norm-neg, norm-mul, and norm-expt:
 
@@ -1028,7 +1028,7 @@
   (implies (and (shnfp x)
                 (shnfp y)
                 (atom x))
-           (normp (mul-int x y)))
+           (shf-normp (mul-int x y)))
   :hints (("Goal" :use shnfp-mul-int :in-theory (disable shnfp-mul-int))))
 
 (defrule evalh-mul-int
@@ -1249,7 +1249,7 @@
 ; old XXXX
 ; new 3.45   281321
 
-(in-theory (disable shnfp normp norm-mul evalh))
+(in-theory (disable shnfp shf-normp norm-mul evalh))
 
 (defrule evalh-norm-mul
   (implies (and (shnfp x)
@@ -1390,7 +1390,7 @@
                 (equal (cdr n1) (cdr n2)))
            (= (evalh z n1) (evalh z n2)))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp z) (normp z))
+  :hints (("Goal" :expand ((shnfp z) (shf-normp z))
                   :use ((:instance ew-4 (n n1))
                         (:instance ew-4 (n n2))))))
 
@@ -1408,7 +1408,7 @@
                    (evalh q (cdr n))))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance ew-5 (z (caddr x)) (n1 n) (n2 (cons k (cdr n)))))
-                  :expand ((evalh x (cons k (cdr n))) (shnfp x) (shfp x) (normp x)))))
+                  :expand ((evalh x (cons k (cdr n))) (shnfp x) (shfp x) (shf-normp x)))))
 
 (local-defthm ew-7
   (implies (and (not (zp k))
@@ -1435,7 +1435,7 @@
 		    (abs (evalh q (cdr n)))))))
   :rule-classes ()
   :hints (("Goal" :use (ew-6) :in-theory (disable evalh evalh-pow-rewrite)
-                  :expand ((normp x) (normp (caddr x)) (shnfp x)))))
+                  :expand ((shf-normp x) (shf-normp (caddr x)) (shnfp x)))))
 
 (local (defrule ew-9
   (let* ((i (cadr x))
@@ -1453,7 +1453,7 @@
 	          (integerp (evalh q (cdr n)))
 	          (integerp (expt k i)))))
   :rule-classes ()
-  :expand ((normp x) (normp (caddr x)) (shnfp x))
+  :expand ((shf-normp x) (shf-normp (caddr x)) (shnfp x))
   :enable shnfp-old
   :disable (evalh evalh-pow-rewrite)))
 ; old 0.14 20084
@@ -1520,7 +1520,7 @@
              (and (not (zp i))
                   (shnfp p)
                   (shnfp q))))
-  :hints (("Goal" :expand ((normp x) (shfp x) (shnfp x)))))
+  :hints (("Goal" :expand ((shf-normp x) (shfp x) (shnfp x)))))
 
 (local (defruled ew-15
   (let ((p (caddr x))
@@ -1803,7 +1803,7 @@
   (implies (and (shnfp x) (eq (car x) 'pow))
            (not (= (caddr x) 0)))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp x) (shfp x) (normp x)))))
+  :hints (("Goal" :expand ((shnfp x) (shfp x) (shf-normp x)))))
 
 (local-defthm ew-34
   (implies (and (shnfp x) (eq (car x) 'pop))
@@ -1811,7 +1811,7 @@
 	        (shnfp (caddr x))
 		(eq (caaddr x) 'pow)))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp x) (shfp x) (normp x)))))
+  :hints (("Goal" :expand ((shnfp x) (shfp x) (shf-normp x)))))
 
 (local-in-theory (disable evalh-int shnfp-pow-p shnfp-pow-q shnfp-norm-add shnfp-norm-mul shfp-pop-pow-atom evalh-norm-add evalh-norm-mul evalh-pow-rewrite ew-11 ew-19))
 
@@ -1955,7 +1955,7 @@
 		           (equal q (norm-neg (list 'pop (- i j) p)))))
 	     (not (> i j))))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp y) (normp y))
+  :hints (("Goal" :expand ((shnfp y) (shf-normp y))
                   :use (na0-4 na0-8))))
 
 (local-defthm na0-10
@@ -2004,7 +2004,7 @@
 		           (equal p (norm-neg (list 'pop (- j i) q)))))
 	     (not (< i j))))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp x) (normp x))
+  :hints (("Goal" :expand ((shnfp x) (shf-normp x))
                   :use (na0-4 na0-11))))
 
 (local-defthmd na0-13
@@ -2023,7 +2023,7 @@
 		  (implies (and (< i j) (equal (norm-add (list 'pop (- j i) q) p) 0))
 		           (equal p (norm-neg (list 'pop (- j i) q)))))
 	     (equal (norm-neg x) y)))
-  :hints (("Goal" :expand ((shnfp x) (normp x))
+  :hints (("Goal" :expand ((shnfp x) (shf-normp x))
                   :use (na0-6 na0-9 na0-12))))
 
 (local-defthmd na0-14
@@ -2040,9 +2040,9 @@
 		  (implies (> i j) (shnfp (list 'pop (- i j) p)))
 		  (implies (< i j) (shnfp (list 'pop (- j i) q))))))
   :hints (("Goal" :use (na0-4)
-                  :expand ((:free (x) (shnfp x)) (normp x) (normp y)
+                  :expand ((:free (x) (shnfp x)) (shf-normp x) (shf-normp y)
                            (:free (i p) (shnfp (list 'pop i p)))
-                           (:free (i p) (normp (list 'pop i p)))))))
+                           (:free (i p) (shf-normp (list 'pop i p)))))))
 
 (local-defthmd na0-15
   (let ((i (cadr x))
@@ -2171,7 +2171,7 @@
 		           (equal r (norm-neg (list 'pow (- i j) p 0)))))
 	     (not (> i j))))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp y) (normp y))
+  :hints (("Goal" :expand ((shnfp y) (shf-normp y))
                   :use (na0-16 na0-20))))
 
 (local-defthm na0-22
@@ -2226,7 +2226,7 @@
 		           (equal p (norm-neg (list 'pow (- j i) r 0)))))
 	     (not (< i j))))
   :rule-classes ()
-  :hints (("Goal" :expand ((shnfp x) (normp x))
+  :hints (("Goal" :expand ((shnfp x) (shf-normp x))
                   :use (na0-16 na0-23))))
 
 (local (defrule na0-25
@@ -2250,7 +2250,7 @@
 		           (equal p (norm-neg (list 'pow (- j i) r 0)))))
 	     (equal (norm-neg x) y)))
   :rule-classes ()
-;  :expand ((shnfp x) (normp x))
+;  :expand ((shnfp x) (shf-normp x))
   :use (na0-18 na0-21 na0-24)
   :enable shnfp-new))
 ; old-expand  6.34 1240744
@@ -2276,9 +2276,9 @@
 		  (implies (> i j) (shnfp (list 'pow (- i j) p 0)))
 		  (implies (< i j) (shnfp (list 'pow (- j i) r 0))))))
   :hints (("Goal" :use (na0-16)
-                  :expand ((:free (x) (shnfp x)) (normp x) (normp y)
+                  :expand ((:free (x) (shnfp x)) (shf-normp x) (shf-normp y)
                            (:free (i p q) (shnfp (list 'pow i p q)))
-                           (:free (i p q) (normp (list 'pow i p q)))))))
+                           (:free (i p q) (shf-normp (list 'pow i p q)))))))
 
 (local-defthmd na0-27
   (let ((i (cadr x))
@@ -2397,8 +2397,8 @@
            (equal (evalh x n)
                   (evalh x n0)))
   :hints (("Goal" :induct (induct-evalh-2 x n n0))
-          ("Subgoal *1/3" :expand ((evalh x n) (evalh x n0) (shnfp x) (shfp x) (normp x)))
-          ("Subgoal *1/2" :expand ((evalh x n) (evalh x n0) (shnfp x) (shfp x) (normp x)))))
+          ("Subgoal *1/3" :expand ((evalh x n) (evalh x n0) (shnfp x) (shfp x) (shf-normp x)))
+          ("Subgoal *1/2" :expand ((evalh x n) (evalh x n0) (shnfp x) (shfp x) (shf-normp x)))))
 
 (defun list0 (k)
   (if (zp k)
