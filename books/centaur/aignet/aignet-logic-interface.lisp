@@ -367,16 +367,16 @@
                     (aignet$a::io-id->ionum id aignet))
    :gate  (mk-snode (gate-type)
                     0 (aignet$a::id->phase id aignet)
-                    (lit-val (aignet$a::gate-id->fanin0 id aignet))
-                    (lit-val (aignet$a::gate-id->fanin1 id aignet)))
+                    (lit-fix (aignet$a::gate-id->fanin0 id aignet))
+                    (lit-fix (aignet$a::gate-id->fanin1 id aignet)))
    :po    (mk-snode (out-type)
                     0
                     (aignet$a::id->phase id aignet)
-                    (lit-val (aignet$a::co-id->fanin id aignet))
+                    (lit-fix (aignet$a::co-id->fanin id aignet))
                     (aignet$a::io-id->ionum id aignet))
    :nxst  (mk-snode (out-type) 1
                     (aignet$a::id->phase id aignet)
-                    (lit-val (aignet$a::co-id->fanin id aignet))
+                    (lit-fix (aignet$a::co-id->fanin id aignet))
                     (aignet$a::nxst-id->reg id aignet)))
   ///
   (defthm snode->type-of-id-slot

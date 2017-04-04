@@ -68,6 +68,11 @@
            (b-not (eval-lit lit env)))
     :hints(("Goal" :in-theory (enable eval-lit))))
 
+  (defthm eval-lit-of-lit-negate-cond
+    (equal (eval-lit (lit-negate-cond lit neg) env)
+           (b-xor neg (eval-lit lit env)))
+    :hints(("Goal" :in-theory (enable eval-lit))))
+
 
   (defthm eval-clause-when-atom
     (implies (atom clause)
@@ -139,12 +144,12 @@
 
   (defthm max-index-clause-of-cons
     (equal (max-index-clause (cons lit clause))
-           (max (var->index (lit->var lit))
+           (max (lit->var lit)
                 (max-index-clause clause))))
 
   (defthm index-of-literals-is-bounded-by-max-index-clause
     (implies (member lit clause)
-             (<= (var->index (lit->var lit)) (max-index-clause clause)))
+             (<= (lit->var lit) (max-index-clause clause)))
     :rule-classes ((:rewrite) (:linear)))
 
   (local (defthm l0
@@ -198,7 +203,7 @@
 
   (local (defthm l0
            (implies (member-equal a f1)
-                    (member-equal (var->index (lit->var a)) (clause-indices f1)))))
+                    (member-equal (lit->var a) (clause-indices f1)))))
 
   (local (defthm l1
            (implies (subsetp-equal f1 f2)

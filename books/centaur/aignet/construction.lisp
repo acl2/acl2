@@ -59,7 +59,7 @@
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::bfix-when-not-bitp
                              id-eval
-                             equal-of-to-lit-backchain
+                             ;; equal-of-to-lit-backchain
                              o<)))
 
   (define two-id-measure ((x natp) (y natp))

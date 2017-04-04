@@ -589,6 +589,16 @@
            (equal (lit-eval (mk-lit 0 neg) invals regvals aignet)
                   (bfix neg))))
 
+  (defthm lit-eval-of-lit-negate
+    (equal (lit-eval (lit-negate lit) invals regvals aignet)
+           (b-not (lit-eval lit invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable lit-eval lit-negate))))
+
+  (defthm lit-eval-of-lit-negate-cond
+    (equal (lit-eval (lit-negate-cond lit neg) invals regvals aignet)
+           (b-xor neg (lit-eval lit invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable lit-eval lit-negate-cond))))
+
   (defthm lit-eval-of-aignet-lit-fix
     (equal (lit-eval (aignet-lit-fix x aignet) invals regvals aignet)
            (lit-eval x invals regvals aignet))

@@ -34,8 +34,12 @@
 
 (in-package "SATLINK")
 (include-book "varp")
+(include-book "centaur/fty/deftypes" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (in-theory (disable nfix)))
 (set-tau-auto-mode nil)
+
+(local (std::add-default-post-define-hook :fix))
 
 (define litp (x)
   :parents (cnf)
@@ -46,7 +50,7 @@ represent a Boolean variable or its negation.  More concretely, you can think
 of a literal as an structure with two fields:</p>
 
 <ul>
-<li>@('var'), a variable, represented as an @(see varp), and</li>
+<li>@('var'), a variable, represented as a natural number, and</li>
 <li>@('neg'), a bit that says whether the variable is negated or not,
 represented as a @(see bitp).</li>
 </ul>
@@ -59,166 +63,160 @@ identifiers as natural numbers.)</p>"
   (natp x)
 
   ;; Not :type-prescription, ACL2 infers that automatically
-  :returns (bool booleanp :rule-classes :tau-system))
+  :returns (bool booleanp :rule-classes :tau-system)
+  ///
+  (defthm litp-compound-recognizer
+    (equal (litp x) (natp x))
+    :rule-classes :compound-recognizer))
 
 
 (local (in-theory (enable litp)))
 
 
-(define to-lit ((nat natp))
-  :parents (litp)
-  :short "Raw constructor for literals."
-  :long "<p>This exposes the underlying representation of literals.  You
-should generally use @(see make-lit) instead.</p>"
 
-  (lnfix nat)
+
+(define lit-fix ((x litp))
+  :parents (litp)
+  :short "Basic fixing function for literals."
+  :guard-hints (("goal" :in-theory (enable litp)))
+  (lnfix x)
 
   :inline t
-  :returns (lit litp :rule-classes (:rewrite :tau-system)))
+  :returns (x-fix litp :rule-classes :type-prescription)
 
+  ///
 
-(define lit-val ((lit litp))
-  :parents (litp)
-  :short "Raw value of a literal."
-  :long "<p>This exposes the underlying representation of literals.  You should
-generally use @(see lit->index) and @(see lit->neg) instead.</p>"
-
-  (lnfix lit)
-
-  :inline t
-  ;; Not :type-prescription, ACL2 infers that automatically
-  :returns (nat natp :rule-classes (:rewrite :tau-system)))
-
-(local (in-theory (enable to-lit lit-val)))
+  (defthm lit-fix-of-lit
+    (implies (litp x)
+             (equal (lit-fix x) x))))
 
 
 (define lit-equiv ((x litp) (y litp))
   :parents (litp)
   :short "Basic equivalence relation for literals."
   :enabled t
-
-  (int= (lit-val x) (lit-val y))
+  (int= (lit-fix x) (lit-fix y))
 
   ///
 
   (defequiv lit-equiv)
-
-  ;; BOZO ugly event name stuff works around defcong name stupidity and
-  ;; incompatibility with defcongs for to-lit in the aignet package.
-  (defcong lit-equiv equal (lit-val x) 1
-    :event-name lit-equiv-implies-equal-lit-val-1)
-
-  (defcong nat-equiv equal (to-lit x) 1
-    :event-name nat-equiv-implies-equal-to-lit-1))
-
-
-(define lit-fix ((x litp))
-  :parents (litp)
-  :short "Basic fixing function for literals."
-
-  (to-lit (lit-val x))
-
-  :inline t
-  :returns (x-fix litp)
-
-  ///
+  
+  (local (in-theory (enable lit-fix)))
 
   (defcong lit-equiv equal (lit-fix x) 1
     :event-name lit-equiv-implies-equal-lit-fix-1)
 
-  (defthm lit-fix-of-lit
-    (implies (litp x)
-             (equal (lit-fix x) x)))
-
   (defthm lit-equiv-of-lit-fix
-    (lit-equiv (lit-fix lit) lit)))
+    (lit-equiv (lit-fix lit) lit))
 
-(local (in-theory (enable lit-fix)))
+  (fty::deffixtype lit :pred litp :fix lit-fix :equiv lit-equiv
+    :forward t))
+
+(local (in-theory (enable lit-fix lit-equiv)))
 
 
-(defsection lit-raw-theorems
-  :parents (litp)
-  :short "Basic theorems about raw literal functions like @(see to-lit) and
-@(see lit-val)."
+;; (define to-lit ((nat natp))
+;;   :parents (litp)
+;;   :short "Raw constructor for literals."
+;;   :long "<p>This exposes the underlying representation of literals.  You
+;; should generally use @(see make-lit) instead.</p>"
 
-  (defthm lit-val-of-to-lit
-    (equal (lit-val (to-lit x))
-           (nfix x)))
+;;   (lnfix nat)
 
-  (defthm lit-equiv-of-to-lit-of-lit-val
-    (lit-equiv (to-lit (lit-val lit)) lit))
+;;   :inline t
+;;   :returns (lit litp :rule-classes (:rewrite :tau-system)))
 
-  (defthm equal-of-to-lit-hyp
-    (implies (syntaxp (acl2::rewriting-negative-literal-fn
-                       `(equal (to-lit$inline ,x) ,y)
-                       mfc state))
-             (equal (equal (to-lit x) y)
-                    (and (litp y)
-                         (equal (nfix x) (lit-val y))))))
 
-  (defthm equal-of-lit-fix-hyp
-    (implies (syntaxp (acl2::rewriting-negative-literal-fn
-                       `(equal (lit-fix$inline ,x) ,y)
-                       mfc state))
-             (equal (equal (lit-fix x) y)
-                    (and (litp y)
-                         (equal (lit-val x) (lit-val y))))))
+;; (define lit-val ((lit litp))
+;;   :parents (litp)
+;;   :short "Raw value of a literal."
+;;   :long "<p>This exposes the underlying representation of literals.  You should
+;; generally use @(see lit->index) and @(see lit->neg) instead.</p>"
 
-  (defthm equal-of-to-lit-backchain
-    (implies (and (litp y)
-                  (equal (nfix x) (lit-val y)))
-             (equal (equal (to-lit x) y) t))
-    :hints (("goal" :use equal-of-to-lit-hyp)))
+;;   (lnfix lit)
 
-  (defthm equal-of-lit-fix-backchain
-    (implies (and (litp y)
-                  (equal (lit-val x) (lit-val y)))
-             (equal (equal (lit-fix x) y) t))
-    :hints (("goal" :use equal-of-to-lit-hyp)))
+;;   :inline t
+;;   ;; Not :type-prescription, ACL2 infers that automatically
+;;   :returns (nat natp :rule-classes (:rewrite :tau-system)))
 
-  (in-theory (disable litp to-lit lit-val))
+;; (local (in-theory (enable to-lit lit-val)))
 
-  (defthm equal-lit-val-forward-to-lit-equiv
-    (implies (and (equal (lit-val x) y)
-                  (syntaxp (not (and (consp y)
-                                     (or (eq (car y) 'lit-val)
-                                         (eq (car y) 'nfix))))))
-             (lit-equiv x (to-lit y)))
-    :rule-classes :forward-chaining)
 
-  (defthm equal-lit-val-nfix-forward-to-lit-equiv
-    (implies (equal (lit-val x) (nfix y))
-             (lit-equiv x (to-lit y)))
-    :rule-classes :forward-chaining)
+;; (defsection lit-raw-theorems
+;;   :parents (litp)
+;;   :short "Basic theorems about raw literal functions like @(see to-lit) and
+;; @(see lit-val)."
 
-  (defthm equal-lit-val-forward-to-lit-equiv-both
-    (implies (equal (lit-val x) (lit-val y))
-             (lit-equiv x y))
-    :rule-classes :forward-chaining)
+;;   (defthm lit-val-of-to-lit
+;;     (equal (lit-val (to-lit x))
+;;            (nfix x)))
 
-  (defthm to-lit-of-lit-val
-    (equal (to-lit (lit-val x))
-           (lit-fix x))))
+;;   (defthm lit-equiv-of-to-lit-of-lit-val
+;;     (lit-equiv (to-lit (lit-val lit)) lit))
+
+;;   (defthm equal-of-to-lit-hyp
+;;     (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+;;                            `(equal (to-lit$inline ,x) ,y)
+;;                            mfc state)
+;;                           (acl2::rewriting-negative-literal-fn
+;;                            `(equal ,y (to-lit$inline ,x))
+;;                            mfc state)))
+;;              (equal (equal (to-lit x) y)
+;;                     (and (litp y)
+;;                          (equal (nfix x) (lit-val y))))))
+
+;;   (defthm equal-of-to-lit-backchain
+;;     (implies (and (litp y)
+;;                   (equal (nfix x) (lit-val y)))
+;;              (equal (equal (to-lit x) y) t))
+;;     :hints (("goal" :use equal-of-to-lit-hyp)))
+
+;;   (defthm equal-lit-val-forward-to-lit-equiv
+;;     (implies (and (equal (lit-val x) y)
+;;                   (syntaxp (not (and (consp y)
+;;                                      (or (eq (car y) 'lit-val)
+;;                                          (eq (car y) 'nfix))))))
+;;              (lit-equiv x (to-lit y)))
+;;     :rule-classes :forward-chaining)
+
+;;   (defthm equal-lit-val-nfix-forward-to-lit-equiv
+;;     (implies (equal (lit-val x) (nfix y))
+;;              (lit-equiv x (to-lit y)))
+;;     :rule-classes :forward-chaining)
+
+;;   ;; (defthm equal-lit-val-forward-to-lit-equiv-both
+;;   ;;   (implies (equal (lit-val x) (lit-val y))
+;;   ;;            (lit-equiv x y))
+;;   ;;   :rule-classes :forward-chaining)
+
+;;   (defthm equal-of-lit-vals-is-lit-equiv
+;;     (equal (equal (lit-val x) (lit-val y))
+;;            (lit-equiv x y)))
+
+;;   (defthm to-lit-of-lit-val
+;;     (equal (to-lit (lit-val x))
+;;            (lit-fix x)))
+
+;;   (in-theory (disable litp to-lit lit-val)))
 
 
 
 (local (in-theory (disable litp
-                           to-lit
-                           lit-val
+                           ;; to-lit
+                           ;; lit-val
                            lit-fix)))
 
 
 (local (in-theory (enable* acl2::ihsext-recursive-redefs
-                           acl2::ihsext-bounds-thms
-                           nfix natp)))
+                           acl2::ihsext-bounds-thms)))
 
 
 (define lit->var ((lit litp))
   :parents (litp)
   :short "Access the @('var') component of a literal."
 
-  (make-var (ash (the (integer 0 *) (lit-val lit))
-                 -1))
+  (ash (the (integer 0 *) (lit-fix lit))
+       -1)
 
   :inline t
   ;; BOZO type-prescription doesn't make sense unless we strengthen
@@ -226,11 +224,9 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
   :returns (var varp :rule-classes (:rewrite :type-prescription))
 
   ///
-  (defcong lit-equiv equal (lit->var lit) 1)
-
-  (defthmd lit-val-bound-by-lit->var
-    (<= (lit-val x) (+ 1 (* 2 (var->index (lit->var x)))))
-    :hints(("Goal" :in-theory (enable lit-val var->index acl2::logcons)
+  (defthmd lit-fix-bound-by-lit->var
+    (<= (lit-fix x) (+ 1 (* 2 (lit->var x))))
+    :hints(("Goal" :in-theory (enable lit-fix acl2::logcons)
             :use ((:instance bitops::logcons-destruct
                    (x x)))))
     :rule-classes :linear))
@@ -240,10 +236,10 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
   :parents (litp)
   :short "Access the @('neg') bit of a literal."
 
-  (the bit (logand 1 (the (integer 0 *) (lit-val lit))))
+  (the bit (logand 1 (the (integer 0 *) (lit-fix lit))))
 
   :inline t
-  :returns (neg bitp)
+  :returns (neg bitp :rule-classes (:rewrite :type-prescription))
 
   ///
 
@@ -258,24 +254,23 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
 
   (defthm lit->neg-bound
     (<= (lit->neg lit) 1)
-    :rule-classes :linear)
-
-  (defcong lit-equiv equal (lit->neg lit) 1))
+    :rule-classes :linear))
 
 
-(acl2::def-b*-decomp lit
-                     (var . lit->var)
-                     (neg . lit->neg))
+
+;; (acl2::def-b*-decomp lit
+;;                      (var . lit->var)
+;;                      (neg . lit->neg))
 
 
 (define make-lit ((var varp) (neg bitp))
   :parents (litp)
   :short "Construct a literal with the given @('var') and @('neg')."
 
-  (to-lit (the (integer 0 *)
-            (logior (the (integer 0 *)
-                      (ash (the (integer 0 *) (var->index var)) 1))
-                    (the bit (lbfix neg)))))
+  (the (integer 0 *)
+       (logior (the (integer 0 *)
+                    (ash (the (integer 0 *) (var-fix var)) 1))
+               (the bit (lbfix neg))))
 
   :inline t
   ;; BOZO type-prescription doesn't make sense unless we strenghten
@@ -283,8 +278,7 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
   :returns (lit litp :rule-classes (:rewrite :type-prescription))
   :prepwork ((local (in-theory (enable lit->var lit->neg))))
   ///
-  (defcong var-equiv equal (make-lit var neg) 1)
-  (defcong bit-equiv equal (make-lit var neg) 2)
+  (fty::deffixequiv make-lit)
 
   (defthm lit->var-of-make-lit
     (equal (lit->var (make-lit var neg))
@@ -300,26 +294,53 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
            (lit-fix lit))
     :hints(("Goal" :in-theory (disable bitops::logior$))))
 
-  (local (defthm equal-of-make-lit-lemma
-           (implies (and (varp var) (bitp neg))
-                    (equal (equal a (make-lit var neg))
-                           (and (litp a)
-                                (equal (var->index (lit->var a)) (var->index var))
-                                (equal (lit->neg a) neg))))
-           :hints(("Goal" :in-theory (disable make-lit
-                                              make-lit-identity
-                                              lit->var lit->neg)
-                   :use ((:instance make-lit-identity (lit a)))))
-           :rule-classes nil))
+  ;; (local (defthm equal-of-make-lit-lemma
+  ;;          (implies (and (varp var) (bitp neg))
+  ;;                   (equal (equal a (make-lit var neg))
+  ;;                          (and (litp a)
+  ;;                               (equal (lit->var a) (var-fix var))
+  ;;                               (equal (lit->neg a) neg))))
+  ;;          :hints(("Goal" :in-theory (disable make-lit
+  ;;                                             make-lit-identity
+  ;;                                             lit->var lit->neg)
+  ;;                  :use ((:instance make-lit-identity (lit a)))))
+  ;;          :rule-classes nil))
 
   (defthmd equal-of-make-lit
     (equal (equal a (make-lit var neg))
            (and (litp a)
-                (equal (var->index (lit->var a)) (var->index var))
-                (equal (lit->neg a) (bfix neg))))
-    :hints(("Goal" :use ((:instance equal-of-make-lit-lemma
-                          (var (var-fix var)) (neg (bfix neg))))
-            :in-theory (disable lit->var lit->neg)))))
+                (equal (lit->var a) (var-fix var))
+                (equal (lit->neg a) (bfix neg))))))
+
+(defthm equal-of-lit-fix-hyp
+  (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+                         `(equal (lit-fix$inline ,x) ,y)
+                         mfc state)
+                        (acl2::rewriting-negative-literal-fn
+                         `(equal ,y (lit-fix$inline ,x))
+                         mfc state)))
+           (equal (equal (lit-fix x) y)
+                  (and (litp y)
+                       (equal (lit->var x) (lit->var y))
+                       (bit-equiv (lit->neg x) (lit->neg y)))))
+  :hints (("goal" :use ((:instance make-lit-identity
+                         (lit y))
+                        (:instance make-lit-identity
+                         (lit x)))
+           :in-theory (e/d () (make-lit-identity)))))
+
+(defthm equal-of-lit-fix-backchain
+  (implies (and (litp y)
+                (var-equiv (lit->var x) (lit->var y))
+                (bit-equiv (lit->neg x) (lit->neg y)))
+           (equal (equal (lit-fix x) y) t))
+  :hints (("goal" :use equal-of-lit-fix-hyp)))
+
+(defthm equal-of-lit->var-implies-lit-equiv
+  (implies (and (equal (lit->var x) (lit->var y))
+                (equal (lit->neg x) (lit->neg y)))
+           (lit-equiv x y))
+  :rule-classes :forward-chaining)
 
 
 (local (in-theory (e/d (bitops::logxor**)
@@ -329,17 +350,61 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
 (define lit-negate ((lit litp))
   :parents (litp)
   :short "Efficiently negate a literal."
-  :enabled t
   :inline t
+  :returns (new-lit litp)
   (mbe :logic (b* ((var (lit->var lit))
                    (neg (lit->neg lit)))
                 (make-lit var (b-not neg)))
-       :exec (to-lit
-              (the (integer 0 *)
-                (logxor (the (integer 0 *) (lit-val lit))
-                        1))))
+       :exec (the (integer 0 *)
+                  (logxor (the (integer 0 *) lit)
+                          1)))
 
-  :guard-hints(("Goal" :in-theory (enable make-lit lit->var lit->neg))))
+  :guard-hints(("Goal" :in-theory (enable make-lit lit->var lit->neg)))
+  ///
+  (defret lit->var-of-lit-negate
+    (equal (lit->var new-lit) (lit->var lit)))
+
+  (defret lit->neg-of-lit-negate
+    (equal (lit->neg new-lit) (b-not (lit->neg lit))))
+
+  (defthm lit-negate-of-make-lit
+    (equal (lit-negate (make-lit var neg))
+           (make-lit var (b-not neg))))
+
+  (defthm lit-negate-of-lit-negate
+    (equal (lit-negate (lit-negate x))
+           (lit-fix x))
+    :hints(("Goal" :in-theory (disable b-not))))
+
+  (defthm b-not-not-equal
+    (not (equal (b-not x) x))
+    :hints(("Goal" :in-theory (enable b-not))))
+
+  (defthm lit-negate-not-equal-when-vars-mismatch
+    (implies (not (equal (lit->var x) (lit->var y)))
+             (not (equal (lit-negate x) y))))
+
+  (defthm lit-negate-not-equal-when-neg-matches
+    (implies (equal (lit->neg x) (lit->neg y))
+             (not (equal (lit-negate x) y))))
+
+  (defthm equal-of-lit-negate-hyp
+    (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+                           `(equal (lit-negate$inline ,x) ,y) mfc state)
+                          (acl2::rewriting-negative-literal-fn
+                           `(equal ,y (lit-negate$inline ,x)) mfc state)))
+             (equal (equal (lit-negate x) y)
+                    (and (litp y)
+                         (equal (lit->var x) (lit->var y))
+                         (equal (lit->neg x) (b-not (lit->neg y))))))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+
+  (defthm equal-of-lit-negate-backchain
+    (implies (and (litp y)
+                  (equal (lit->var x) (lit->var y))
+                  (equal (lit->neg x) (b-not (lit->neg y))))
+             (equal (equal (lit-negate x) y) t))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit)))))
 
 
 
@@ -348,87 +413,68 @@ generally use @(see lit->index) and @(see lit->neg) instead.</p>"
   :short "Efficiently negate a literal."
   :long "<p>When @('c') is 1, we negate @('lit').  Otherwise, when @('c') is 0,
 we return @('lit') unchanged.</p>"
-  :enabled t
   :inline t
-
+  :returns (new-lit litp)
   (mbe :logic (b* ((var (lit->var lit))
                    (neg (b-xor (lit->neg lit) c)))
                 (make-lit var neg))
-       :exec (to-lit (the (integer 0 *)
-                       (logxor (the (integer 0 *) (lit-val lit))
-                               (the bit c)))))
+       :exec (the (integer 0 *)
+                  (logxor (the (integer 0 *) lit)
+                          (the bit c))))
 
   :guard-hints(("Goal" :in-theory (enable make-lit lit->var lit->neg)))
 
   ///
 
-  (defthmd lit-negate-cond-correct
-    (implies (and (litp lit)
-                  (bitp c))
-             (equal (lit-negate-cond lit c)
-                    (if (= c 1)
-                        (lit-negate lit)
-                      lit)))
-    :hints(("Goal" :in-theory (enable b-xor equal-of-make-lit)))))
+  (defret lit->var-of-lit-negate-cond
+    (equal (lit->var new-lit) (lit->var lit)))
+
+  (defret lit->neg-of-lit-negate-cond
+    (equal (lit->neg new-lit) (b-xor c (lit->neg lit))))
+
+  (defthm lit-negate-cond-of-make-lit
+    (equal (lit-negate-cond (make-lit var neg) c)
+           (make-lit var (b-xor c neg))))
+
+  (defthm lit-negate-cond-not-equal-when-vars-mismatch
+    (implies (not (equal (lit->var x) (lit->var y)))
+             (not (equal (lit-negate-cond x c) y))))
+
+  (local (defthm b-xor-b-xor
+           (equal (b-xor c (b-xor c x)) (bfix x))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (defthm lit-negate-cond-not-equal-when-neg-mismatches
+    (implies (not (equal (lit->neg x) (b-xor c (lit->neg y))))
+             (not (equal (lit-negate-cond x c) y))))
+
+  (defthm equal-of-lit-negate-cond-hyp
+    (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+                           `(equal (lit-negate-cond$inline ,x ,c) ,y) mfc state)
+                          (acl2::rewriting-negative-literal-fn
+                           `(equal ,y (lit-negate-cond$inline ,x ,c)) mfc state)))
+             (equal (equal (lit-negate-cond x c) y)
+                    (and (litp y)
+                         (equal (lit->var x) (lit->var y))
+                         (equal (lit->neg x) (b-xor c (lit->neg y))))))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+
+  (defthm equal-of-lit-negate-cond-backchain
+    (implies (and (litp y)
+                  (equal (lit->var x) (lit->var y))
+                  (equal (lit->neg x) (b-xor c (lit->neg y))))
+             (equal (equal (lit-negate-cond x c) y) t))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit)))))
 
 
-(define lit-listp (x)
+
+
+(fty::deflist lit-list :pred lit-listp :elt-type litp :true-listp t
   :parents (litp)
-  :short "Recognize a list of literals."
+  :short "List of literals")
 
-  (if (atom x)
-      (eq x nil)
-    (and (litp (car x))
-         (lit-listp (cdr x))))
-
-  ///
-  (defthm lit-listp-when-atom
-    (implies (atom x)
-             (equal (lit-listp x)
-                    (not x))))
-
-  (defthm lit-listp-of-cons
-    (equal (lit-listp (cons a x))
-           (and (litp a)
-                (lit-listp x))))
-
-  (defthm true-listp-when-lit-listp
-    (implies (lit-listp x)
-             (true-listp x))
-    :rule-classes :compound-recognizer))
-
-
-(define lit-list-listp (x)
+(fty::deflist lit-list-list :pred lit-list-listp :elt-type lit-list :true-listp t
   :parents (litp)
-  :short "Recognize a list of @(see lit-listp)s."
+  :short "List of @(see lit-list)s")
 
-  (if (atom x)
-      (eq x nil)
-    (and (lit-listp (car x))
-         (lit-list-listp (cdr x))))
-
-  ///
-  (defthm lit-list-listp-when-atom
-    (implies (atom x)
-             (equal (lit-list-listp x)
-                    (not x))))
-
-  (defthm lit-list-listp-of-cons
-    (equal (lit-list-listp (cons a x))
-           (and (lit-listp a)
-                (lit-list-listp x))))
-
-  (defthm true-listp-when-lit-list-listp
-    (implies (lit-list-listp x)
-             (true-listp x))
-    :rule-classes :compound-recognizer))
-
-
-(defsection lit->index
-  :parents (litp)
-  :short "Shorthand for @('(var->index (lit->var x))')."
-  :long "@(def lit->index)"
-
-  (defmacro lit->index (x)
-    `(var->index (lit->var ,x))))
 

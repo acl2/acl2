@@ -45,6 +45,8 @@
             b-ior
             b-xor
             b-eqv
+            bool->bit
+            bit->bool
             defxdoc
             defsection
             defstobj-clone
@@ -70,3 +72,34 @@
           std::*std-exports*
           acl2::*standard-acl2-imports*))
 
+(defpkg "DIMACS"
+  (append '(b*
+            bitp
+            lnfix
+            lbfix
+            bfix
+            b-not
+            b-and
+            b-ior
+            b-xor
+            b-eqv
+            bool->bit
+            bit->bool
+            defxdoc
+            defsection
+            satlink::satlink-to-dimacs-lit
+            satlink::dimacs-to-satlink-lit)
+          std::*std-exports*
+          acl2::*standard-acl2-imports*))
+
+(defconst satlink::*satlink-exports*
+  #!satlink
+  '(litp make-lit lit->var lit->neg var->index make-var
+         lit-to-dimacs
+         eval-var eval-lit eval-clause eval-cube
+         eval-formula lit-listp lit-list-listp env$
+         var-equiv var-fix to-lit lit-val lit-fix lit-equiv lit lit-negate
+         lit-negate-cond lit->index
+         max-index-clause max-index-formula clause-indices formula-indices
+         satlink-to-dimacs-lit
+         dimacs-to-satlink-lit))

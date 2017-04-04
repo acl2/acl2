@@ -38,7 +38,7 @@
 (include-book "std/stobjs/clone" :dir :system)
 (include-book "std/stobjs/bitarr" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))
-
+(local (std::add-default-post-define-hook :fix))
 
 (defsection env$
   :parents (cnf)
@@ -84,6 +84,32 @@ ordinary lists of literals.  See @(see lit-listp).</li>
 <p>The semantics of these formulas are given by @(see eval-formula).</p>")
 
 
+(define eval-var ((var varp) env$)
+  :returns (bit bitp)
+  :inline t
+  (mbe :logic (get-bit (var-fix var) env$)
+       ;; We'll pay the price of a bounds check just to make the guards
+       ;; here much easier to satisfy.
+       :exec (if (< (the (integer 0 *) var)
+                    (the (integer 0 *) (bits-length env$)))
+                 (get-bit var env$)
+               0)))
+
+(define eval-lit ((lit litp) env$)
+  :returns (bit bitp)
+  (b-xor (lit->neg lit)
+         (eval-var (lit->var lit) env$)))
+
+(define eval-clause ((clause lit-listp) env$)
+  :returns (bit bitp)
+  (if (atom clause)
+      0
+    (mbe :logic (b-ior (eval-lit (car clause) env$)
+                       (eval-clause (cdr clause) env$))
+         :exec (if (bit->bool (eval-lit (car clause) env$))
+                   1
+                 (eval-clause (cdr clause) env$)))))
+
 (define eval-formula
   :parents (cnf)
   :short "Semantics of CNF formulas."
@@ -98,55 +124,34 @@ environment to assign values to the identifiers.</p>
 bit array.  Our evaluators produce a <b>BIT</b> (i.e., 0 or 1) instead of a
 BOOL (i.e., T or NIL) to make it directly compatible with the bitarr
 stobj.</p>"
-
-  :prepwork
-  ((define eval-var ((var varp) env$)
-     :returns (bit bitp)
-     :inline t
-     (mbe :logic (get-bit (var->index var) env$)
-          ;; We'll pay the price of a bounds check just to make the guards
-          ;; here much easier to satisfy.
-          :exec (if (< (the (integer 0 *) (var->index var))
-                       (the (integer 0 *) (bits-length env$)))
-                    (get-bit (var->index var) env$)
-                  0))
-     ///
-     (defcong var-equiv equal (eval-var var env$) 1))
-
-   (define eval-lit ((lit litp) env$)
-     :returns (bit bitp)
-     (b-xor (lit->neg lit)
-            (eval-var (lit->var lit) env$))
-     ///
-     (defcong lit-equiv equal (eval-lit lit env$) 1))
-
-   (define eval-clause ((clause lit-listp) env$)
-     :returns (bit bitp)
-     (if (atom clause)
-         0
-       (b-ior (eval-lit (car clause) env$)
-              (eval-clause (cdr clause) env$)))))
-
   (if (atom formula)
       1
     (mbe :logic
          (b-and (eval-clause (car formula) env$)
                 (eval-formula (cdr formula) env$))
          :exec
-         (let ((a (eval-clause (car formula) env$)))
-           (if (eql a 1)
-               (eval-formula (cdr formula) env$)
-             0)))))
+         (if (bit->bool (eval-clause (car formula) env$))
+             (eval-formula (cdr formula) env$)
+           0))))
 
+(define eval-cube ((cube lit-listp) env$)
+  :returns (bit bitp)
+  (if (atom cube)
+      1
+    (mbe :logic (b-and (eval-lit (car cube) env$)
+                       (eval-cube (cdr cube) env$))
+         :exec (if (bit->bool (eval-lit (car cube) env$))
+                   (eval-cube (cdr cube) env$)
+                 0))))
 
 
 (define fast-max-index-clause ((clause lit-listp) (max natp))
   :parents (max-index-clause)
   :short "Tail-recursive version of @(see max-index-clause)."
   (b* (((when (atom clause))
-        max)
-       (id1 (var->index (lit->var (car clause))))
-       (max (max max id1)))
+        (lnfix max))
+       (id1 (lit->var (car clause)))
+       (max (max (lnfix max) id1)))
     (fast-max-index-clause (cdr clause) max)))
 
 (define max-index-clause ((clause lit-listp))
@@ -157,15 +162,14 @@ stobj.</p>"
   (mbe :logic
        (if (atom clause)
            0
-         (max (var->index (lit->var (car clause)))
+         (max (lit->var (car clause))
               (max-index-clause (cdr clause))))
        :exec
        (fast-max-index-clause clause 0))
   ///
   (defthm fast-max-index-clause-removal
-    (implies (natp max)
-             (equal (fast-max-index-clause clause max)
-                    (max max (max-index-clause clause))))
+    (equal (fast-max-index-clause clause max)
+           (max (nfix max) (max-index-clause clause)))
     :hints(("Goal" :in-theory (enable fast-max-index-clause))))
 
   (verify-guards max-index-clause))
@@ -176,7 +180,7 @@ stobj.</p>"
   :parents (max-index-formula)
   :short "Tail recursive version of @(see max-index-formula)."
   (b* (((when (atom formula))
-        max)
+        (lnfix max))
        (max (fast-max-index-clause (car formula) max)))
     (fast-max-index-formula (cdr formula) max)))
 
@@ -193,9 +197,8 @@ stobj.</p>"
        :exec (fast-max-index-formula formula 0))
   ///
   (defthm fast-max-index-formula-removal
-    (implies (natp max)
-             (equal (fast-max-index-formula formula max)
-                    (max max (max-index-formula formula))))
+    (equal (fast-max-index-formula formula max)
+           (max (nfix max) (max-index-formula formula)))
     :hints(("Goal" :in-theory (enable fast-max-index-formula))))
 
   (verify-guards max-index-formula))
@@ -208,7 +211,7 @@ stobj.</p>"
 
   (if (atom clause)
       nil
-    (cons (var->index (lit->var (car clause)))
+    (cons (lit->var (car clause))
           (clause-indices (cdr clause))))
 
   ///
@@ -219,7 +222,7 @@ stobj.</p>"
 
   (defthm clause-indices-of-cons
     (equal (clause-indices (cons lit clause))
-           (cons (var->index (lit->var lit))
+           (cons (lit->var lit)
                  (clause-indices clause)))))
 
 
@@ -249,29 +252,23 @@ stobj.</p>"
 
 
 (define lit-assumedp ((lit litp) assums$)
-  :guard (< (+ 1 (* 2 (var->index (lit->var lit)))) (bits-length assums$))
-  :guard-hints ('(:use ((:instance lit-val-bound-by-lit->var (x lit))))
+  :guard (< (+ 1 (* 2 (lit->var lit))) (bits-length assums$))
+  :guard-hints ('(:use ((:instance lit-fix-bound-by-lit->var (x lit))))
                 (and stable-under-simplificationp
                      '(:in-theory (enable lit-val litp))))
-  (eql 1 (get-bit (mbe :logic (lit-val lit)
-                       :exec lit)
-                  assums$))
-  ///
-  (defcong lit-equiv equal (lit-assumedp lit assums$) 1))
+  (eql 1 (get-bit (lit-fix lit) assums$)))
 
 (define lit-assume ((lit litp) assums$)
-  :guard (< (+ 1 (* 2 (var->index (lit->var lit)))) (bits-length assums$))
-  :guard-hints ('(:use ((:instance lit-val-bound-by-lit->var (x lit))))
+  :guard (< (+ 1 (* 2 (lit->var lit))) (bits-length assums$))
+  :guard-hints ('(:use ((:instance lit-fix-bound-by-lit->var (x lit))))
                 (and stable-under-simplificationp
-                     '(:in-theory (enable lit-val litp))))
-  (set-bit (mbe :logic (lit-val lit) :exec lit) 1 assums$)
+                     '(:in-theory (enable litp))))
+  (set-bit (mbe :logic (lit-fix lit) :exec lit) 1 assums$)
   ///
   (defthm lit-assumedp-of-lit-assume
     (equal (lit-assumedp lit1 (lit-assume lit assums$))
            (if (lit-equiv lit1 lit) t (lit-assumedp lit1 assums$)))
     :hints(("Goal" :in-theory (enable lit-assumedp))))
-
-  (defcong lit-equiv equal (lit-assume lit assums$) 1)
 
   (defthm len-of-lit-assume
     (<= (len assums$) (len (lit-assume lit assums$)))
@@ -294,7 +291,9 @@ stobj.</p>"
   :hints (("goal" :use ((:instance env-satisfies-assums-necc
                          (var (lit->var lit)))
                         (:instance make-lit-identity))
-           :in-theory (e/d (eval-lit) (make-lit-identity)))))
+           :in-theory (e/d (eval-lit) (make-lit-identity
+                                       equal-of-lit-fix-hyp
+                                       equal-of-lit-fix-backchain)))))
 
 (defthm env-satisfies-assums-implies-not-lit-eval
   (implies (and (env-satisfies-assums env$ assums$)
@@ -303,19 +302,21 @@ stobj.</p>"
   :hints (("goal" :use ((:instance env-satisfies-assums-necc
                          (var (lit->var lit)))
                         (:instance make-lit-identity))
-           :in-theory (e/d (eval-lit) (make-lit-identity)))))
+           :in-theory (e/d (eval-lit lit-negate) (make-lit-identity
+                                                  equal-of-lit-fix-backchain
+                                                  equal-of-make-lit)))))
 
-(local (defthm equal-of-lit-val
-         (equal (equal (lit-val x) (lit-val y))
-                (equal (lit-fix x) (lit-fix y)))))
+;; (local (defthm equal-of-lit-val
+;;          (equal (equal (lit-val x) (lit-val y))
+;;                 (equal (lit-fix x) (lit-fix y)))))
 
-(local (defthm equal-of-var->index
-         (equal (equal (var->index x) (var->index y))
-                (equal (var-fix x) (var-fix y)))))
+;; (local (defthm equal-of-var->index
+;;          (equal (equal (var->index x) (var->index y))
+;;                 (equal (var-fix x) (var-fix y)))))
 
-(local (defthm make-lit-of-var-fix
-         (equal (make-lit (var-fix x) neg)
-                (make-lit x neg))))
+;; (local (defthm make-lit-of-var-fix
+;;          (equal (make-lit (var-fix x) neg)
+;;                 (make-lit x neg))))
 
 (defthm lit-assumedp-of-opposite-when-env-satisfies
   (implies (and (lit-assumedp (lit-negate lit) assums$)
@@ -410,7 +411,7 @@ stobj.</p>"
 
   (std::defret clause-unit-under-assums-unit-lit-implies-in-bounds
     (implies (equal final-possibles 1)
-             (<= (var->index (lit->var unit-lit))
+             (<= (lit->var unit-lit)
                  (max-index-clause clause)))
     :hints(("Goal" :in-theory (enable max-index-clause)))
     :rule-classes :linear))

@@ -1592,7 +1592,17 @@ suffix.</p>"
   (defthm aignet-extension-simplify-aignet-litp
     (implies (and (aignet-extension-binding)
                   (aignet-litp lit orig))
-             (aignet-litp lit new))))
+             (aignet-litp lit new)))
+
+  (defthm aignet-litp-of-lit-negate
+    (equal (aignet-litp (lit-negate x) aignet)
+           (aignet-litp x aignet))
+    :hints(("Goal" :in-theory (enable lit-negate))))
+
+  (defthm aignet-litp-of-lit-negate-cond
+    (equal (aignet-litp (lit-negate-cond x neg) aignet)
+           (aignet-litp x aignet))
+    :hints(("Goal" :in-theory (enable lit-negate-cond)))))
 
 
 (define aignet-nodes-ok ((aignet node-listp))
@@ -1866,7 +1876,8 @@ suffix.</p>"
                     (lit-fix lit)))
     :hints(("Goal" :in-theory (enable aignet-litp
                                       lookup-id-in-bounds
-                                      aignet::equal-of-mk-lit))))
+                                      ;; aignet::equal-of-mk-lit
+                                      ))))
 
   (defcong lit-equiv equal (aignet-lit-fix lit aignet) 1)
   (local (defun-nx aignet-lit-fix-ind2a (x aignet aignet2)
@@ -1892,7 +1903,26 @@ suffix.</p>"
     :hints(("Goal" :use ((:instance aignet-litp-implies-id-lte-max-fanin
                           (lit (aignet-lit-fix lit aignet))))
             :in-theory (disable aignet-litp-implies-id-lte-max-fanin)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (local (defthm b-xor-b-not
+           (equal (b-xor (b-not x) y)
+                  (b-not (b-xor x y)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+  (local (defthm b-xor-assoc
+           (equal (b-xor (b-xor x y) z)
+                  (b-xor x (b-xor y z)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (defthm aignet-lit-fix-of-lit-negate
+    (equal (aignet-lit-fix (lit-negate x) aignet)
+           (lit-negate (aignet-lit-fix x aignet)))
+    :hints(("Goal" :in-theory (enable lit-negate lit-negate-cond))))
+
+  (defthm aignet-lit-fix-of-lit-negate-cond
+    (equal (aignet-lit-fix (lit-negate-cond x neg) aignet)
+           (lit-negate-cond (aignet-lit-fix x aignet) neg))
+    :hints(("Goal" :in-theory (enable lit-negate-cond)))))
 
 
 (define aignet-id-fix ((x natp) aignet)

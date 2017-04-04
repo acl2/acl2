@@ -35,7 +35,10 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/basic/arith-equivs" :dir :system)
+(include-book "centaur/fty/fixequiv" :dir :system)
 (set-tau-auto-mode nil)
+
+(local (std::add-default-post-define-hook :fix))
 
 (define varp (x)
   :parents (cnf)
@@ -75,128 +78,156 @@ blog post by Edward Z. Yang.</p>"
   (natp x)
 
   ;; Not :type-prescription, ACL2 infers that automatically
-  :returns (bool booleanp :rule-classes :tau-system))
+  :returns (bool booleanp :rule-classes :tau-system)
+  ///
+  (defthm varp-compound-recognizer
+    (equal (varp x) (natp x))
+    :rule-classes :compound-recognizer))
 
 (local (in-theory (enable varp)))
 
 
-(define make-var ((index natp))
-  :parents (varp)
-  :short "Construct an identifier with the given index."
-  (lnfix index)
+;; (define make-var ((index natp))
+;;   :parents (varp)
+;;   :short "Construct an identifier with the given index."
+;;   (lnfix index)
 
-  :inline t
-  ;; Not :type-prescription, ACL2 infers that automatically
-  :returns (id varp :rule-classes (:rewrite :tau-system)))
+;;   :inline t
+;;   ;; Not :type-prescription, ACL2 infers that automatically
+;;   :returns (id varp :rule-classes (:rewrite :tau-system)))
 
 
-(define var->index ((id varp))
-  :parents (varp)
-  :short "Get the index from an identifier."
-  (lnfix id)
-
-  :inline t
-  ;; Not :type-prescription, ACL2 infers that automatically
-  :returns (index natp :rule-classes (:rewrite :tau-system)))
+;; (local (in-theory (enable make-var)))
 
 
 
-(local (in-theory (enable make-var var->index)))
+;; (define var-fix ((x varp))
+;;   :parents (varp)
+;;   :short "Basic fixing function for identifiers."
+;;   :guard-hints (("goal" :in-theory (enable varp)))
+;;   (lnfix x)
 
-(define var-equiv ((x varp) (y varp))
-  :parents (varp)
-  :short "Basic equivalence relation for identifiers."
-  :enabled t
-
-  (int= (var->index x) (var->index y))
-
-  ///
-
-  (defequiv var-equiv)
-  (defcong var-equiv equal (var->index x) 1)
-  (defcong nat-equiv equal (make-var x) 1))
+;;   :inline t
+;;   :returns (x-fix varp :rule-classes :type-prescription)
+;;   ///
 
 
-
-(define var-fix ((x varp))
-  :parents (varp)
-  :short "Basic fixing function for identifiers."
-
-  (make-var (var->index x))
-
-  :inline t
-  :returns (x-fix varp)
-  ///
-
-  (defcong var-equiv equal (var-fix x) 1)
-
-  (defthm var-fix-of-id
-    (implies (varp x)
-             (equal (var-fix x) x)))
-
-  (defthm var-equiv-of-var-fix
-    (var-equiv (var-fix id) id)))
-
-(local (in-theory (enable var-fix)))
+;;   (defthm var-fix-of-id
+;;     (implies (varp x)
+;;              (equal (var-fix x) x))))
 
 
+;; (define var-equiv ((x varp) (y varp))
+;;   :parents (varp)
+;;   :short "Basic equivalence relation for variables."
+;;   :enabled t
+;;   (int= (var-fix x) (var-fix y))
+;;   ///
+
+;;   (defequiv var-equiv)
+
+;;   (local (in-theory (enable var-fix)))
+
+;;   (defcong var-equiv equal (var-fix x) 1)
+
+;;   (defthm var-equiv-of-var-fix
+;;     (var-equiv (var-fix id) id))
+
+;;   (fty::deffixtype var :pred varp :fix var-fix :equiv var-equiv :forward t))
+
+;; (local (in-theory (enable var-fix var-equiv)))
+
+(defmacro var-fix (x) `(nfix ,x))
+(add-macro-alias var-fix nfix)
+
+(defmacro var-equiv (x y) `(nat-equiv ,x ,y))
+(add-macro-alias var-equiv nat-equiv)
+
+(fty::deffixtype var :pred varp :fix var-fix :equiv var-equiv)
+
+;; (define var->index ((id varp))
+;;   :parents (varp)
+;;   :short "Get the index from an identifier."
+;;   (lnfix id)
+
+;;   :inline t
+;;   ;; Not :type-prescription, ACL2 infers that automatically
+;;   :returns (index natp :rule-classes (:rewrite :tau-system)))
+
+;; (local (in-theory (enable var->index)))
 
 (defsection varp-reasoning
   :parents (varp)
   :short "Basic rules for reasoning about identifiers."
 
-  (defthm var->index-of-make-var
-    (equal (var->index (make-var x))
-           (nfix x)))
+  ;; (defthm var->index-of-make-var
+  ;;   (equal (var->index (make-var x))
+  ;;          (nfix x)))
 
-  (defthm var-equiv-of-make-var-of-var->index
-    (var-equiv (make-var (var->index id)) id))
+  ;; (defthm var-equiv-of-make-var-of-var->index
+  ;;   (var-equiv (make-var (var->index id)) id))
 
-  (defthm equal-of-make-var-hyp
-    (implies (syntaxp (acl2::rewriting-negative-literal-fn
-                       `(equal (make-var$inline ,x) ,y)
-                       mfc state))
-             (equal (equal (make-var x) y)
-                    (and (varp y)
-                         (equal (nfix x) (var->index y))))))
+  ;; (defthm equal-of-make-var-hyp
+  ;;   (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+  ;;                          `(equal (make-var$inline ,x) ,y)
+  ;;                          mfc state)
+  ;;                         (acl2::rewriting-negative-literal-fn
+  ;;                          `(equal ,y (make-var$inline ,x))
+  ;;                          mfc state)))
+  ;;            (equal (equal (make-var x) y)
+  ;;                   (and (varp y)
+  ;;                        (equal (nfix x) (var->index y))))))
 
-  (defthm equal-of-var-fix-hyp
-    (implies (syntaxp (acl2::rewriting-negative-literal-fn
-                       `(equal (var-fix$inline ,x) ,y)
-                       mfc state))
-             (equal (equal (var-fix x) y)
-                    (and (varp y)
-                         (equal (var->index x) (var->index y))))))
+  ;; (defthm equal-of-make-var-const
+  ;;   (implies (syntaxp (quotep y))
+  ;;            (equal (equal (make-var x) y)
+  ;;                   (and (varp y)
+  ;;                        (equal (nfix x) (var->index y))))))
 
-  (defthm equal-of-make-var-backchain
-    (implies (and (varp y)
-                  (equal (nfix x) (var->index y)))
-             (equal (equal (make-var x) y) t)))
+  ;; (defthm equal-of-var->index-const
+  ;;   (implies (syntaxp (quotep y))
+  ;;            (equal (equal (var->index x) y)
+  ;;                   (and (natp y)
+  ;;                        (equal (var-fix x) (make-var y))))))
 
-  (defthm equal-of-var-fix-backchain
-    (implies (and (varp y)
-                  (equal (var->index x) (var->index y)))
-             (equal (equal (var-fix x) y) t)))
+  ;; (defthm equal-of-var-fix-hyp
+  ;;   (implies (syntaxp (acl2::rewriting-negative-literal-fn
+  ;;                      `(equal (var-fix$inline ,x) ,y)
+  ;;                      mfc state))
+  ;;            (equal (equal (var-fix x) y)
+  ;;                   (and (varp y)
+  ;;                        (equal (var->index x) (var->index y))))))
 
-  (defthm equal-var->index-forward-make-var-equiv
-    (implies (and (equal (var->index x) y)
-                  (syntaxp (not (and (consp y)
-                                     (or (eq (car y) 'var->index)
-                                         (eq (car y) 'nfix))))))
-             (var-equiv x (make-var y)))
-    :rule-classes :forward-chaining)
+  ;; (defthm equal-of-make-var-backchain
+  ;;   (implies (and (varp y)
+  ;;                 (equal (nfix x) (var->index y)))
+  ;;            (equal (equal (make-var x) y) t)))
 
-  (defthm equal-var->index-nfix-forward-make-var-equiv
-    (implies (equal (var->index x) (nfix y))
-             (var-equiv x (make-var y)))
-    :rule-classes :forward-chaining)
+  ;; (defthm equal-of-var-fix-backchain
+  ;;   (implies (and (varp y)
+  ;;                 (equal (var->index x) (var->index y)))
+  ;;            (equal (equal (var-fix x) y) t)))
 
-  (defthm equal-var->index-forward-make-var-equiv-both
-    (implies (equal (var->index x) (var->index y))
-             (var-equiv x y))
-    :rule-classes :forward-chaining)
+  ;; (defthm equal-var->index-forward-make-var-equiv
+  ;;   (implies (and (equal (var->index x) y)
+  ;;                 (syntaxp (not (and (consp y)
+  ;;                                    (or (eq (car y) 'var->index)
+  ;;                                        (eq (car y) 'nfix))))))
+  ;;            (var-equiv x (make-var y)))
+  ;;   :rule-classes :forward-chaining)
 
-  (defthm make-var-of-var->index
-    (equal (make-var (var->index x))
-           (var-fix x))))
+  ;; (defthm equal-var->index-nfix-forward-make-var-equiv
+  ;;   (implies (equal (var->index x) (nfix y))
+  ;;            (var-equiv x (make-var y)))
+  ;;   :rule-classes :forward-chaining)
+
+  ;; (defthm equal-var->index-forward-make-var-equiv-both
+  ;;   (implies (equal (var->index x) (var->index y))
+  ;;            (var-equiv x y))
+  ;;   :rule-classes :forward-chaining)
+
+  ;; (defthm make-var-of-var->index
+  ;;   (equal (make-var (var->index x))
+  ;;          (var-fix x)))
+  )
 

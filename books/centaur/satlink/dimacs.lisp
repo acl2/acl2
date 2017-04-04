@@ -128,7 +128,7 @@ about this basic approach.</p>"
     :inline t
     (b* ((negatedp (int= (lit->neg lit) 1))
          ;; Increment all IDs to account for 0 not being a valid DIMACS variable.
-         (id+1     (+ 1 (var->index (lit->var lit))))
+         (id+1     (+ 1 (lit->var lit)))
          (acc      (if negatedp (cons #\- acc) acc)))
       (str::revappend-natchars id+1 acc)))
 

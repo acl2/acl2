@@ -134,7 +134,9 @@
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
             *aignet-exports*
-            *aignet-imports*))
+            *aignet-imports*
+            satlink::*satlink-exports*
+            std::*std-exports*))
 
 ;; (defconst *aignet$a-exports*
 ;;   #!AIGNET

@@ -551,3 +551,32 @@
              :cases ((env-lookup n env))))))
          
   
+(define swap-vars ((n natp) (m natp) (truth integerp) (numvars natp))
+  :guard (and (< n numvars) (< m numvars))
+  :returns (swapped-truth integerp :rule-classes :type-prescription)
+  (b* ((xn1 (positive-cofactor n truth numvars))
+       (xn0 (negative-cofactor n truth numvars))
+       (xn1m1 (positive-cofactor m xn1 numvars))
+       (xn1m0 (negative-cofactor m xn1 numvars))
+       (xn0m1 (positive-cofactor m xn0 numvars))
+       (xn0m0 (negative-cofactor m xn0 numvars))
+       (mvar (var m numvars))
+       (nvar (var n numvars))
+       (~mvar (lognot mvar))
+       (~nvar (lognot nvar))
+       ;; want (if n (if m xn1m1 xn0m1) (if m xn1m0 xn0m0))
+       (n1case (logior (logand mvar xn1m1)
+                       (logand ~mvar xn0m1)))
+       (n0case (logior (logand mvar xn1m0)
+                       (logand ~mvar xn0m0))))
+    (logior (logand nvar n1case)
+            (logand ~nvar n0case)))
+  ///
+  (defret eval-of-swap-vars
+    (implies (and (< (nfix n) (nfix numvars))
+                  (< (nfix m) (nfix numvars)))
+             (equal (truth-eval swapped-truth env numvars)
+                    (truth-eval truth
+                                (env-update n (env-lookup m env)
+                                            (env-update m (env-lookup n env) env))
+                                numvars)))))

@@ -44,7 +44,7 @@
                    :hints(("Goal" :in-theory (enable lrat::literalp lit->neg lit->var))))
   (b* ((negate (mbe :logic (if (eql (lit->neg x) 1) -1 1)
                     :exec (- 1 (* 2 (lit->neg x))))))
-    (* negate (+ 1 (var->index (lit->var x)))))
+    (* negate (+ 1 (lit->var x))))
   ///
   (std::defret negate-of-lit-to-lrat-literal
     ;; is this the direction to go?
@@ -60,8 +60,7 @@
     (equal (equal (lit-to-lrat-literal x) (lit-to-lrat-literal y))
            (equal (lit-fix x) (lit-fix y)))
     :hints(("Goal" :in-theory (e/d (equal-of-make-lit
-                                    lit-fix-is-make-lit
-                                    var->index)
+                                    lit-fix-is-make-lit)
                                    (make-lit-identity))))))
            
 (define env$-to-lrat-assignment ((idx natp)
@@ -70,15 +69,14 @@
   :guard (<= idx (bits-length env$))
   (b* (((when (zp idx)) nil)
        (idx (1- idx))
-       (var (make-var idx))
-       (val (eval-var var env$))
-       (lit (make-lit var (b-not val))))
+       (val (eval-var idx env$))
+       (lit (make-lit idx (b-not val))))
     (cons (lit-to-lrat-literal lit)
           (env$-to-lrat-assignment idx env$)))
   ///
 
   (local (std::defret not-member-literal
-           (implies (<= (nfix idx) (var->index (lit->var lit)))
+           (implies (<= (nfix idx) (lit->var lit))
                     (not (member (lit-to-lrat-literal lit)
                                  assign)))
            :hints(("Goal" :in-theory (enable equal-of-make-lit)))))
@@ -104,7 +102,7 @@
     :hints(("Goal" :in-theory (enable lrat::clause-or-assignment-p))))
 
   (std::defret evaluate-literal-of-env$-to-lrat-assignment
-    (implies (< (var->index (lit->var lit)) (nfix idx))
+    (implies (< (lit->var lit) (nfix idx))
              (equal (lrat::evaluate-literal (lit-to-lrat-literal lit) assign)
                     (acl2::bit->bool (eval-lit lit env$))))
     :hints(("Goal" :in-theory (enable eval-lit equal-of-make-lit)))))

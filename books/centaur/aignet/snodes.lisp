@@ -87,7 +87,7 @@
 
   (definlined snode->fanin (slot)
     (declare (type (integer 0 *) slot))
-    (to-lit (ash (lnfix slot) -2)))
+    (ash (lnfix slot) -2))
 
   (defcong nat-equiv equal (snode->fanin slot) 1
     :hints(("Goal" :in-theory (enable snode->fanin))))
@@ -160,9 +160,9 @@
 
   (defthm snode->fanin-of-mk-snode
     (and (equal (snode->fanin (mv-nth 0 (mk-snode type regp phase fanin0 fanin1)))
-                (to-lit fanin0))
+                (nfix fanin0))
          (equal (snode->fanin (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))
-                (to-lit fanin1)))
+                (nfix fanin1)))
     :hints(("Goal" :in-theory (enable snode->fanin))))
 
   (defthm snode->regid-of-mk-snode-0

@@ -229,7 +229,8 @@ correctness criterion we've described.</p>
                                 (id-eval eval-and-of-lits
                                          lit-eval-of-mk-lit-split-rw)
                                 ( acl2::b-xor acl2::b-and
-                                              acl2::b-ior acl2::b-not))
+                                              acl2::b-ior acl2::b-not
+                                              satlink::equal-of-lit-negate-hyp))
              :expand ((lit-eval (aignet-lit-fix (gate-node->fanin0 (car (lookup-id id aignet)))
                                                 (cdr (lookup-id id aignet)))
                                 in-vals reg-vals aignet)
@@ -318,7 +319,7 @@ correctness criterion we've described.</p>
                            0))
            :hints(("Goal" :induct t)
                   (and stable-under-simplificationp
-                       '(:in-theory (enable acl2::b-and))))))
+                       '(:in-theory (enable acl2::b-and b-xor lit-eval))))))
 
   (local (in-theory (enable id-less-than-max-fanin-by-stype)))
 
@@ -340,7 +341,7 @@ correctness criterion we've described.</p>
                          (b* (((mv muxp & & &) (id-is-mux (lit-id lit) aignet)))
                            muxp))))
           (cond ((or (member (lit-negate lit) supergate)
-                     (int= (lit-val lit) 0))
+                     (int= (lit-fix lit) 0))
                  ;; Complementary literal is in the supergate, so add 0.
                  (list 0))
                 ((member lit supergate) supergate)
@@ -490,15 +491,15 @@ correctness criterion we've described.</p>
   (defund sat-varp (x sat-lits)
     (declare (xargs :stobjs sat-lits))
     (and (satlink::varp x)
-         (< 0 (satlink::var->index x))
-         (< (satlink::var->index x) (lnfix (sat-next-var sat-lits)))))
+         (< 0 x)
+         (< x (lnfix (sat-next-var sat-lits)))))
 
   (local (in-theory (enable sat-varp)))
 
   (defthm sat-varp-when-varp
     (implies (and (satlink::varp x)
-                  (< 0 (satlink::var->index x))
-                  (< (satlink::var->index x) (lnfix (sat-next-var sat-lits))))
+                  (< 0 x)
+                  (< x (lnfix (sat-next-var sat-lits))))
              (sat-varp x sat-lits)))
 
   (local (defthm litp-of-nth-sat->aignet
@@ -513,8 +514,8 @@ correctness criterion we've described.</p>
                                 (sat-lits-sizedp sat-lits))
                     :guard-hints ('(:in-theory (enable nth-lit)))))
     ;; Could use the phase here, won't for now
-    (mbe :logic (non-exec (nth-lit (satlink::var->index var) (nth *sat->aigneti* sat-lits)))
-         :exec (sat->aigneti (satlink::var->index var) sat-lits)))
+    (mbe :logic (non-exec (nth-lit (var-fix var) (nth *sat->aigneti* sat-lits)))
+         :exec (sat->aigneti (var-fix var) sat-lits)))
 
   (local (in-theory (enable sat-var->aignet-lit)))
 
@@ -530,19 +531,19 @@ correctness criterion we've described.</p>
                                 (sat-lits-sizedp sat-lits))
                     :guard-hints ('(:in-theory (enable update-nth-lit)))))
     (mbe :logic (non-exec (update-nth *sat->aigneti*
-                                      (update-nth-lit (satlink::var->index var) (lit-fix lit)
+                                      (update-nth-lit (var-fix var) (lit-fix lit)
                                                       (nth *sat->aigneti* sat-lits))
                                       sat-lits))
          :exec (if (< (the (integer 0 *) lit) (expt 2 32))
-                   (update-sat->aigneti (satlink::var->index var) lit sat-lits)
-                 (ec-call (update-sat->aigneti (satlink::var->index var) lit sat-lits)))))
+                   (update-sat->aigneti var lit sat-lits)
+                 (ec-call (update-sat->aigneti var lit sat-lits)))))
 
 
   (definlined aignet-id-has-sat-var (id sat-lits)
     (declare (xargs :stobjs (sat-lits)
                     :guard (natp id)))
     (b* ((lit (aignet-id->sat-lit id sat-lits)))
-      (not (int= (satlink::var->index (satlink::lit->var lit)) 0))))
+      (not (int= (satlink::lit->var lit) 0))))
 
   (local (in-theory (enable aignet-id-has-sat-var)))
 
@@ -557,7 +558,7 @@ correctness criterion we've described.</p>
       (b* ((n (1- n))
            (nid n))
         (and (b* ((sat-lit (aignet-id->sat-lit nid sat-lits))
-                  ((when (int= (satlink::var->index (satlink::lit->var sat-lit)) 0)) t)
+                  ((when (int= (satlink::lit->var sat-lit) 0)) t)
                   ((unless (id-existsp nid aignet)) nil)
                   ((unless (sat-varp (satlink::lit->var sat-lit) sat-lits))
                    nil)
@@ -569,7 +570,7 @@ correctness criterion we've described.</p>
 
   (defthm aignet->sat-well-formedp-implies
     (implies (and (aignet-id-has-sat-var m sat-lits)
-                  (< (nfix m) (nfix n))
+                  (< (var-fix m) (nfix n))
                   (aignet->sat-well-formedp n sat-lits aignet))
              (and (equal (sat-var->aignet-lit
                           (satlink::lit->var (aignet-id->sat-lit m sat-lits))
@@ -601,7 +602,7 @@ correctness criterion we've described.</p>
                     :guard-debug t))
     (b* ((n (1- n))
          ((when (zp n)) t)
-         (nvar (satlink::make-var n)))
+         (nvar n))
       (and (b* ((aignet-lit (sat-var->aignet-lit nvar sat-lits))
                 (aignet-id (lit-id aignet-lit))
                 ((unless (and (fanin-litp aignet-lit aignet)
@@ -614,8 +615,8 @@ correctness criterion we've described.</p>
            (sat->aignet-well-formedp n sat-lits aignet))))
 
   (defthm sat->aignet-well-formedp-implies
-    (implies (and (< (satlink::var->index m) (nfix n))
-                  (< 0 (satlink::var->index m))
+    (implies (and (< (var-fix m) (nfix n))
+                  (< 0 (var-fix m))
                   (sat->aignet-well-formedp n sat-lits aignet))
              (and (equal (aignet-id->sat-lit
                           (lit-id (sat-var->aignet-lit m sat-lits))
@@ -992,8 +993,8 @@ correctness criterion we've described.</p>
          ((when (aignet-id-has-sat-var id sat-lits))
           sat-lits)
          (sat-lits (maybe-grow-sat->aignet sat-lits))
-         (new-var  (satlink::make-var (sat-next-var sat-lits)))
-         (sat-lits (update-sat-next-var (+ 1 (satlink::var->index new-var)) sat-lits))
+         (new-var  (var-fix (sat-next-var sat-lits)))
+         (sat-lits (update-sat-next-var (+ 1 new-var) sat-lits))
          (new-lit  (satlink::make-lit new-var (lit-neg lit)))
          (sat-lits (set-sat-var->aignet-lit new-var lit sat-lits))
          (sat-lits (set-aignet-id->sat-lit id new-lit sat-lits)))
@@ -1279,25 +1280,25 @@ correctness criterion we've described.</p>
              (var-in-cnf var (cdr clauses)))))
 
   (defthm satlink::eval-lit-of-update-unused
-    (implies (not (equal (satlink::lit->var lit) (satlink::make-var var)))
+    (implies (not (equal (satlink::lit->var lit) (var-fix var)))
              (equal (satlink::eval-lit lit (update-nth var val bits))
                     (satlink::eval-lit lit bits)))
     :hints(("Goal" :in-theory (enable satlink::eval-lit
                                       satlink::eval-var))))
 
   (defthm satlink::eval-clause-of-update-unused
-    (implies (not (var-in-clause (satlink::make-var var) clause))
+    (implies (not (var-in-clause var clause))
              (equal (satlink::eval-clause clause (update-nth var val bits))
                     (satlink::eval-clause clause bits)))
     :hints(("Goal" :in-theory (enable satlink::eval-clause))))
 
   (defthm cnf-eval-conjunction-of-update-unused
-    (implies (not (var-in-clause (satlink::make-var var) conjunction))
+    (implies (not (var-in-clause var conjunction))
              (equal (cnf-eval-conjunction conjunction (update-nth var val bits))
                     (cnf-eval-conjunction conjunction bits))))
 
   (defthm satlink::eval-formula-of-update-unused
-    (implies (not (var-in-cnf (satlink::make-var var) cnf))
+    (implies (not (var-in-cnf var cnf))
              (equal (satlink::eval-formula cnf (update-nth var val bits))
                     (satlink::eval-formula cnf bits)))
     :hints(("Goal" :in-theory (enable satlink::eval-formula))))
@@ -1322,7 +1323,7 @@ correctness criterion we've described.</p>
                                 (<= (num-nodes aignet) (bits-length vals))
                                 (<= (sat-next-var sat-lits) (bits-length
                                                              cnf-vals)))))
-    (b* ((var (satlink::make-var n))
+    (b* ((var (var-fix n))
          (lit (sat-var->aignet-lit var sat-lits))
          (val (aignet-eval-lit lit vals)))
       (set-bit n val cnf-vals))
@@ -1365,7 +1366,7 @@ correctness criterion we've described.</p>
            (if (and (posp n)
                     (< n (nfix m)))
                (aignet-eval-lit
-                (sat-var->aignet-lit (satlink::make-var n) sat-lits)
+                (sat-var->aignet-lit n sat-lits)
                 vals)
              (nth n cnf-vals)))
     :hints((acl2::just-induct-and-expand
@@ -1374,9 +1375,9 @@ correctness criterion we've described.</p>
 
   (defthm nth-of-aignet->cnf-vals
     (equal (nth n (aignet->cnf-vals vals cnf-vals sat-lits aignet))
-           (if (sat-varp (satlink::make-var n) sat-lits)
+           (if (sat-varp (var-fix n) sat-lits)
                (aignet-eval-lit
-                (sat-var->aignet-lit (satlink::make-var n) sat-lits)
+                (sat-var->aignet-lit n sat-lits)
                 vals)
              (nth n cnf-vals)))
     :hints(("Goal" :in-theory (enable sat-varp))))
@@ -1401,7 +1402,7 @@ correctness criterion we've described.</p>
   (defthm eval-var-in-aignet->cnf-vals-of-sat-lit-extension
     (implies (and (sat-lit-extension-binding)
                   (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (sat-varp (satlink::var-fix var) sat-lits1))
+                  (sat-varp (nfix var) sat-lits1))
              (equal (satlink::eval-var
                      var (aignet->cnf-vals
                           vals cnf-vals sat-lits2 aignet))
@@ -2169,7 +2170,7 @@ correctness criterion we've described.</p>
           (lit (mk-lit id 0))
           (supergate (lit-collect-supergate
                       lit t use-muxes nil aignet-refcounts aignet))
-          ((when (member (to-lit 0) supergate))
+          ((when (member 0 supergate))
            ;; one of the fanins is const 0, so the node is const 0
            (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
                 (sat-lit (aignet-id->sat-lit id sat-lits)))
@@ -2242,7 +2243,7 @@ correctness criterion we've described.</p>
                       (lit (mk-lit id 0))
                       (supergate (lit-collect-supergate
                                   lit t use-muxes nil aignet-refcounts aignet))
-                      ((when (member (to-lit 0) supergate))
+                      ((when (member 0 supergate))
                        ;; one of the fanins is const 0, so the node is const 0
                        (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
                             (sat-lit (aignet-id->sat-lit id sat-lits)))

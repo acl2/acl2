@@ -381,7 +381,7 @@
   (acl2::def-1d-arr litarr
                     :slotname lit
                     :pred litp
-                    :fix lit-fix$inline
+                    :fix satlink::lit-fix$inline
                     :type-decl (unsigned-byte 32)
                     :default-val 0
                     :rename ((get-lit . get-lit_)
