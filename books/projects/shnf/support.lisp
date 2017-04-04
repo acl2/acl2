@@ -50,18 +50,6 @@
                   (* (and (polyp y vars) (polyp z vars)))
                   (expt (and (polyp y vars) (natp z))))))))))
 
-;; New code of polyp is equivalent to old code in :logic mode.
-;; However, old code breaks in :program mode on some bad inputs like '( * )
-;(defun polyp (x vars)
-;  (if (atom x)
-;    (or (integerp x) (member x vars))
-;    (let ((y (cadr x)) (z (caddr x)))
-;      (case (car x)
-;        (+ (and (polyp y vars) (polyp z vars)))
-;        (- (and (polyp y vars) (or (not (cddr x)) (polyp z vars))))
-;        (* (and (polyp y vars) (polyp z vars)))
-;        (expt (and (polyp y vars) (natp z)))))))
-
 ;; Evaluation of a polynomial term:
 
 (defun evalp (x alist)
@@ -109,15 +97,6 @@
                 (consp (cddr x))  (shfp (caddr x))
                 (consp (cdddr x)) (shfp (cadddr x))
                 (null (cddddr x)))))))
-
-;; New code of shfp is equivalent to old code in :logic mode.
-;; Hoever, old code breaks in :program mode on some bad inputs like '( pop )
-;(defun shfp (x)
-;  (if (atom x)
-;      (integerp x)
-;    (case (car x)
-;      (pop (and (natp (cadr x)) (shfp (caddr x)) (null (cdddr x))))
-;      (pow (and (natp (cadr x)) (shfp (caddr x)) (shfp (cadddr x)) (null (cddddr x)))))))
 
 ;; Thus, a SHF is a tree.  This function counts its nodes:
 
@@ -381,26 +360,13 @@
 
 (acl2::with-arith5-help
  (verify-guards evalh))
- ; 0.64 33351
 
 (local (defruled integerp-evalh-shnfp
   (implies (and (shnfp x)
                 (all-integers vals))
            (integerp (evalh x vals)))))
 
-;; [Dima] Two theories shnfp-old and shnfp-new for reasoning about shnfp.
-;; Some theorems below can be proved by either of these theories.
-;; There may be comments after them which report proof time and number
-;; of proof steps in both proofs.
-;; nul    - theories are not enabled
-;; old    - :enable shnfp-old
-;; new    - :enable shnfp-new
-;; Some theorems have :disable (rule1 rule2 ...) list
-;; dis    - timing without :disable
-;; dis1   - timing without disabling rule1
-;; dis2   - timing without disabling rule2
-;; Some theorems have commented :expand (..)
-;; expand - timing with uncommented :expand
+;; Two theories shnfp-old and shnfp-new for reasoning about shnfp.
 
 ;; Old theory enables definition and a few public theorems.
 (local (deftheory shnfp-old
@@ -458,8 +424,6 @@
   (implies (and (shnfp p) (natp i))
            (shnfp (norm-pop i p)))
   :enable shnfp-new)
-; old 0.03  3275
-; new 0.01   330
 
 (defthm norm-pop-normp
   (implies (and (shnfp p) (natp i))
@@ -482,8 +446,6 @@
            (equal (evalh (norm-pop i p) n)
                   (evalh `(pop ,i ,p) n)))
   :enable shnfp-new)
-; old 0.06  6744
-; new 0.05  3471
 
 (in-theory (disable norm-pop))
 
@@ -504,8 +466,6 @@
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
            (shnfp (norm-pow i p q)))
   :enable shnfp-new)
-; old 0.07  9932
-; new 0.01   734
 
 (defthm norm-pow-normp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
@@ -530,8 +490,6 @@
                (equal (* z (expt x (+ i j)))
                       (* (expt x i) z (expt x j)))))))
   :enable shnfp-new)
-; old 0.21 32443
-; new 0.11 10635
 
 (in-theory (disable norm-pow))
 
@@ -658,8 +616,6 @@
               (equal (car (add-int x y)) (car y)))
      :enable shnfp-label))
   :enable (shnfp-new shnfp-forward))
-; old XXXX
-; new 0.02  1143
 
 (defrule evalh-add-int
   (implies (and (shnfp x)
@@ -670,8 +626,6 @@
   :enable (acl2::|(* 0 x)|
            acl2::|arith (expt 0 n)|
            shnfp-new))
-; old 0.12 14673
-; new 0.08  6297
 
 (in-theory (disable add-int))
 
@@ -729,8 +683,6 @@
                 (shnfp y))
            (shnfp (norm-add x y)))
   :enable shnfp-new)
-; old 2.67 444117
-; new 0.23  19005
 
 (verify-guards norm-add
   :hints (("Goal" :in-theory (enable shnfp-guard))))
@@ -814,8 +766,6 @@
   :expand (norm-add x y)
   :enable shnfp-new
   :disable (evalh-pow evalh-pow-rewrite)))
-; old XXXX
-; new 0.08  8781
 
 (local (defrule evalh-add-pop-pow
   (let ((i (cadr x)) (p (caddr x))
@@ -836,9 +786,6 @@
   :expand (norm-add x y)
   :enable shnfp-new
   :disable expt))
-; old XXXX
-; new 0.40 27962
-; dis 0.83 65454
 
 (local (defrule evalh-add-pow-pop
   (let ((i (cadr y)) (p (caddr y))
@@ -860,9 +807,6 @@
   :expand (norm-add x y)
   :enable shnfp-new
   :disable expt))
-; old XXXX
-; new 0.39 28433
-; dis 0.84 66783
 
 (local (defrule evalh-add-pow-pow
   (let ((i (cadr x)) (p (caddr x)) (q (cadddr x))
@@ -921,11 +865,6 @@
                  (equal (* (expt x j) (+ (* (expt x (- i j)) p) r))
                         (+ (* (expt x i) p)
                            (* (expt x j) r))))))))))
-; old  XXXX
-; new  0.78 72652
-; dis  0.93 84085
-; dis1 0.86 78468
-; dis2 0.85 77378
 
 (defrule evalh-norm-add
   (implies (and (shnfp x)
@@ -945,9 +884,6 @@
             evalh-pow-2
             shnfp-atom
             shnfp-int))
-; old XXXX
-; new 0.38 36010
-; dis 0.72 64087
 
 (in-theory (enable shf-normp evalh))
 
@@ -973,8 +909,6 @@
   :enable (shnfp-old)
   :hints (("Subgoal *1/3" :expand ((norm-neg (caddr x))))
           ("subgoal *1/2" :expand ((norm-neg (caddr x))))))
-; old 0.35 55646
-; new XXXX
 
 (defrule evalh-norm-neg
   (implies (and (shnfp x)
@@ -990,8 +924,6 @@
                       (- (* (evalh x vals) y))))
       :disable (evalh norm-neg))))
   :enable shnfp-new)
-; old 0.26 23691
-; new 0.12  9452
 
 (defun mul-int (x y)
   (declare (xargs :guard (and (integerp x)
@@ -1019,8 +951,6 @@
                    (atom y))
               (shnfp (* x y)))
      :enable shnfp)))
-; old 0.15 24505
-; new 0.02  1843
 
 (verify-guards mul-int
   :hints (("Goal" :in-theory (enable shnfp-guard))))
@@ -1041,8 +971,6 @@
                   (* (evalh x vals) (evalh y vals))))
   :enable (acl2::|arith (* y (* x z))|
                  shnfp-new))
-; old 0.54 42712
-; new 0.22 16423
 
 (in-theory (disable mul-int))
 
@@ -1103,8 +1031,6 @@
                 (shnfp y))
            (shnfp (norm-mul x y)))
   :enable shnfp-new)
-; old 11.06 1691622
-; new  0.07    6313
 
 (verify-guards norm-mul
   :hints (("Goal" :in-theory (enable shnfp-guard))))
@@ -1175,8 +1101,6 @@
                     (* (evalh x vals) (evalh y vals)))))
   :enable shnfp-new
   :disable (expt evalh-pow evalh-pow-rewrite)))
-; old 0.38  37918
-; new 0.32  24965
 
 (local (defrule evalh-mul-pop-pow
   (let ((i (cadr x)) (p (caddr x)) (q (caddr y)) (r (cadddr y)))
@@ -1199,8 +1123,6 @@
                     (* (evalh x vals) (evalh y vals)))))
   :enable (shnfp-new acl2::|arith (* y (* x z))|)
   :disable (expt evalh-pow evalh-pow-rewrite)))
-; old 3.11  345377
-; new 1.50  126486
 
 (local (defrule evalh-mul-pow-pop
   (let ((i (cadr y)) (p (caddr y)) (q (caddr x)) (r (cadddr x)))
@@ -1223,8 +1145,6 @@
                     (* (evalh x vals) (evalh y vals)))))
   :enable (shnfp-new acl2::|arith (* y (* x z))|)
   :disable (expt evalh-pow evalh-pow-rewrite)))
-; old XXXX
-; new 1.52  126526
 
 (local (defrule evalh-mul-pow-pow
   (let ((p (caddr x)) (q (cadddr x))
@@ -1247,8 +1167,6 @@
   :enable (shnfp-new acl2::|arith (* y (* x z))|
                      acl2::|arith (expt x (+ m n))|)
   :disable (expt evalh-pow evalh-pow-rewrite)))
-; old XXXX
-; new 3.45   281321
 
 (in-theory (disable shnfp shf-normp norm-mul evalh))
 
@@ -1262,8 +1180,6 @@
   :induct (norm-mul-induct x y vals)
   :enable shnfp-new
   :disable (evalh-pow-rewrite evalh-pow))
-; old XXXX
-; new 0.37  32092
 
 (defun norm-expt (x k)
   (declare (xargs :guard (and (shnfp x)
@@ -1457,8 +1373,6 @@
   :expand ((shf-normp x) (shf-normp (caddr x)) (shnfp x))
   :enable shnfp-old
   :disable (evalh evalh-pow-rewrite)))
-; old 0.14 20084
-; new XXXX
 
 (local-defthm ew-10
   (let* ((p (caddr x))
@@ -1490,8 +1404,6 @@
              (and (integerp (evalh q (cdr n)))
                   (integerp (evalh y (cdr n))))))
   :enable shnfp-new))
-; old 0.02  2010
-; new 0.02  1503
 
 (local-defthmd ew-13
   (let ((p (caddr x)))
@@ -1536,8 +1448,6 @@
   :use ew-14
   :expand (shnfp y)
   :enable shnfp-new))
-; old 0.04  3760
-; new 0.02  1654
 
 (local (defruled ew-16
   (let ((i (cadr x))
@@ -1672,8 +1582,6 @@
   :use ew-23
   :enable shnfp-new
   :disable (evalh-pow evalh-pow-rewrite)))
-; old 0.06 10292
-; new 0.03  3026
 
 (local (acl2::with-arith5-help (defrule hack-3
   (implies (integerp a)
@@ -1702,8 +1610,6 @@
 		  (eq (car x) 'pow))
              (integerp (evalh p n))))
   :enable shnfp-new))
-; old XXXX
-; new 0.00  166
 
 (local-defthmd ew-27
   (let ((q (cadddr x)))
@@ -2251,13 +2157,8 @@
 		           (equal p (norm-neg (list 'pow (- j i) r 0)))))
 	     (equal (norm-neg x) y)))
   :rule-classes ()
-;  :expand ((shnfp x) (shf-normp x))
   :use (na0-18 na0-21 na0-24)
   :enable shnfp-new))
-; old-expand  6.34 1240744
-; old XXXX
-; new-expand 17.59 4125184
-; new         1.32  153638
 
 (local-defthmd na0-26
   (let ((i (cadr x))
@@ -2324,8 +2225,7 @@
            (equal (norm-neg x) y))
   :rule-classes ()
   :induct (norm-add x y)
-  :expand (;(shnfp x) (shfp x) (shnfp y) (shfp y)
-           (norm-add x y))
+  :expand (norm-add x y)
   :hints (
           ("Subgoal *1/13" :use (na0-27))
           ("Subgoal *1/12" :use (na0-27))
@@ -2338,12 +2238,6 @@
           ("Subgoal *1/2" :use (na0-4 na0-16))
           ("Subgoal *1/1" :use (na0-3)))
   :enable shnfp-new))
-; nul-expand 7.76 1371877
-; nul        XXXX
-; old-expand XXXX
-; old        XXXX
-; new-expand 4.38  740072
-; new        1.40  165000
 
 (defthmd evalh-not-equal
   (let ((n (evalh-witness (norm-add (norm-neg y) x))))
