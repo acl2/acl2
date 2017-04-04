@@ -125,7 +125,36 @@
 
 (encapsulate
   ()
-  (local (include-book "lrat-checker-support"))
+
+  (local (defthm ordered-literalsp-implies-not-member
+           (implies (and (consp x)
+                         (< (abs a) (abs (car x)))
+                         (ordered-literalsp x))
+                    (not (member a x)))))
+
+  (local (defthm ordered-literalsp-implies-unique-literalsp
+           (implies (ordered-literalsp x)
+                    (unique-literalsp x))))
+
+  (local (defthm ordered-literalsp-implies-not-member-negate
+           (implies (and (consp x)
+                         (< (abs a) (abs (car x)))
+                         (ordered-literalsp x))
+                    (not (member (negate a) x)))))
+
+  (local (defthm ordered-literalsp-implies-not-conflicting-literalsp
+           (implies (ordered-literalsp x)
+                    (not (conflicting-literalsp x)))))
+
+  (local (defthm lrat-add-step-p-implies-add-step-p
+           (implies (lrat-add-step-p proof)
+                    (add-step-p proof))
+           :rule-classes :forward-chaining))
+
+  (local (defthm lrat-proof-entry-p-implies-proof-entry-p
+           (implies (lrat-proof-entry-p proof)
+                    (proof-entry-p proof))
+           :rule-classes :forward-chaining))
 
   (defthm lrat-proofp-implies-proofp
     (implies (lrat-proofp proof)
@@ -522,7 +551,8 @@
                                           (verify-clause formula add-step
                                                          ncls ndel)))
                m))
-  :hints (("Goal" :in-theory (enable verify-clause maybe-shrink-formula))))
+  :hints (("Goal" :in-theory (enable verify-clause maybe-shrink-formula)))
+  :rule-classes (:rewrite :linear))
 
 (encapsulate
   ()
