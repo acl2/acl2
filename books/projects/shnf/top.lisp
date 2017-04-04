@@ -22,15 +22,28 @@
 
 ;; A polynomial term over a list of variables:
 
+(defn distinct-symbols (vars)
+  (if (consp vars)
+      (and (distinct-symbols (cdr vars))
+           (symbolp (car vars))
+           (not (member (car vars) (cdr vars))))
+    (null vars)))
+
 (defun polyp (x vars)
+  (declare (xargs :guard (distinct-symbols vars)))
   (if (atom x)
       (or (integerp x) (member x vars))
-    (let ((y (cadr x)) (z (caddr x)))
-      (case (car x)
-        (+ (and (polyp y vars) (polyp z vars)))
-        (- (and (polyp y vars) (or (not (cddr x)) (polyp z vars))))
-        (* (and (polyp y vars) (polyp z vars)))
-        (expt (and (polyp y vars) (natp z)))))))
+    (and (true-listp x)
+         (case (len x)
+           (2 (let ((y (cadr x)))
+                (case (car x)
+                  (- (polyp y vars)))))
+           (3 (let ((y (cadr x)) (z (caddr x)))
+                (case (car x)
+                  (+ (and (polyp y vars) (polyp z vars)))
+                  (- (and (polyp y vars) (polyp z vars)))
+                  (* (and (polyp y vars) (polyp z vars)))
+                  (expt (and (polyp y vars) (natp z))))))))))
 
 ;; Evaluation of a polynomial term:
 
@@ -42,22 +55,15 @@
       (let ((y (cadr x)) (z (caddr x)))
         (case (car x)
           (+ (+ (evalp y alist) (evalp z alist)))
-          (- (if (cddr x) (- (evalp y alist) (evalp z alist)) (- (evalp y alist)))) 
+          (- (if (cddr x) (- (evalp y alist) (evalp z alist)) (- (evalp y alist))))
           (* (* (evalp y alist) (evalp z alist)))
           (expt (expt (evalp y alist) (evalp z alist))))))))
 
-(defun distinct-symbols (vars)
-  (if (consp vars)
-      (and (distinct-symbols (cdr vars))
-           (symbolp (car vars))
-           (not (member (car vars) (cdr vars))))
-    t))
-
-(defun all-integers (vals)
+(defn all-integers (vals)
   (if (consp vals)
       (and (all-integers (cdr vals))
            (integerp (car vals)))
-    t))
+    (null vals)))
 
 (defthm integerp-evalp
   (implies (and (distinct-symbols vars)
@@ -67,7 +73,7 @@
            (integerp (evalp x (pairlis$ vars vals))))
   :rule-classes ())
 
-;; As a matter of curiosity, it will be interesting to count the monomials 
+;; As a matter of curiosity, it will be interesting to count the monomials
 ;; that would result from the expansion of a term:
 
 (defun mono-count (x)
@@ -89,12 +95,17 @@
 ;;    (2) A list (POP i p), where i is a nat and p is a SHF
 ;;    (3) A list (POW i p q), where i is a nat and p and q are SHFs
 
-(defun shfp (x)
+(defn shfp (x)
   (if (atom x)
       (integerp x)
     (case (car x)
-      (pop (and (natp (cadr x)) (shfp (caddr x)) (null (cdddr x))))
-      (pow (and (natp (cadr x)) (shfp (caddr x)) (shfp (cadddr x)) (null (cddddr x)))))))
+      (pop (and (consp (cdr x))   (natp (cadr x))
+                (consp (cddr x))  (shfp (caddr x))
+                (null (cdddr x))))
+      (pow (and (consp (cdr x))   (natp (cadr x))
+                (consp (cddr x))  (shfp (caddr x))
+                (consp (cdddr x)) (shfp (cadddr x))
+                (null (cddddr x)))))))
 
 ;; Thus, a SHF is a tree.  This function counts its nodes:
 
@@ -107,14 +118,16 @@
       (t 0))))
 
 ;; A SHF represents a polynomial term relative to an ordering of variables.
-;; We shall define a procedure that derives a SHF x from a term z and show 
+;; We shall define a procedure that derives a SHF x from a term z and show
 ;; that the value of z may be computed by the function evalh as defined
-;; below.  That is, if vars is the ordered list of variables and vals is a 
+;; below.  That is, if vars is the ordered list of variables and vals is a
 ;; list of corresponding values, then
 
 ;;      (evalh x vals) = (evalp z (pairlis vars vals)).
 
 (defun evalh (x vals)
+  (declare (xargs :guard (and (shfp x)
+                              (all-integers vals))))
   (if (atom x)
       x
     (case (car x)
@@ -136,7 +149,8 @@
 ;;    (1) x = (POP i p) => p is a POW
 ;;    (2) x = (POW i p q) => p neither 0 nor (POW j r 0)
 
-(defund normp (x)
+(defund shf-normp (x)
+  (declare (xargs :guard (shfp x)))
   (if (atom x)
       t
     (let ((i (cadr x)) (p (caddr x)) (q (cadddr x)))
@@ -144,17 +158,17 @@
         (pop (and (not (= i 0))
                   (consp p)
                   (eql (car p) 'pow)
-                  (normp p)))
+                  (shf-normp p)))
         (pow (and (not (= i 0))
-                  (normp p)
-                  (normp q)
+                  (shf-normp p)
+                  (shf-normp q)
                   (if (atom p)
                       (not (= p 0))
                     (not (and (eql (car p) 'pow)
                               (equal (cadddr p) 0))))))))))
 
-(defund shnfp (x)
-  (and (shfp x) (normp x)))
+(defnd shnfp (x)
+  (and (shfp x) (shf-normp x)))
 
 (defthm shnfp-shfp
   (implies (shnfp x)
@@ -188,6 +202,8 @@
 ;; norm-pop normalizes (POP i p), where p is normal:
 
 (defund norm-pop (i p)
+  (declare (xargs :guard (and (natp i)
+                              (shnfp p))))
   (if (or (= i 0) (atom p))
       p
     (if (eql (car p) 'pop)
@@ -200,7 +216,7 @@
 
 (defthm norm-pop-normp
   (implies (and (shnfp p) (natp i))
-           (normp (norm-pop i p))))
+           (shf-normp (norm-pop i p))))
 
 (defthm norm-pop-shfp
   (implies (and (shnfp p) (natp i))
@@ -214,6 +230,9 @@
 ;; norm-pow normalizes (POW i p q), where p and p are normal:
 
 (defund norm-pow (i p q)
+  (declare (xargs :guard (and (natp i)
+                              (shnfp p)
+                              (shnfp q))))
   (if (equal p 0)
       (norm-pop 1 q)
     (if (and (consp p) (eql (car p) 'pow) (equal (cadddr p) 0))
@@ -226,7 +245,7 @@
 
 (defthm norm-pow-normp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
-           (normp (norm-pow i p q))))
+           (shf-normp (norm-pow i p q))))
 
 (defthm norm-pow-shfp
   (implies (and (shnfp p) (shnfp q) (not (zp i)))
@@ -240,6 +259,8 @@
 ;; norm-var handles the case where the polynomial is a simple variable:
 
 (defun var-index (x vars)
+  (declare (xargs :guard (and (distinct-symbols vars)
+                              (member x vars))))
   (if (consp vars)
       (if (eql x (car vars))
           0
@@ -247,6 +268,8 @@
     ()))
 
 (defund norm-var (x vars)
+  (declare (xargs :guard (and (distinct-symbols vars)
+                              (member x vars))))
   (norm-pop (var-index x vars) '(pow 1 1 0)))
 
 (defthm shnfp-norm-var
@@ -267,6 +290,8 @@
 ;; add-int handles the case where x is an integer:
 
 (defund add-int (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (shnfp y))))
   (if (atom y)
       (+ x y)
     (case (car y)
@@ -274,10 +299,10 @@
       (pop (list 'pop (cadr y) (add-int x (caddr y)))))))
 
 (defthm normp-add-int
-  (implies (and (normp x)
-                (normp y)
+  (implies (and (shf-normp x)
+                (shf-normp y)
                 (atom x))
-           (normp (add-int x y))))
+           (shf-normp (add-int x y))))
 
 (defthm shnfp-add-int
   (implies (and (shnfp x)
@@ -318,19 +343,20 @@
         (norm-pow i (norm-add (list 'pow (- j i) r 0) p) (norm-add s q))))))
 
 (defun norm-add (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
-  (and (shfp x)
-       (if (atom x)
-           (add-int x y)
-         (if (atom y)
-             (add-int y x)
-           (case (car x)
-             (pop (case (car y)
-                    (pop (add-pop-pop x y))
-                    (pow (add-pop-pow x y))))
-             (pow (case (car y)
-                    (pop (add-pop-pow y x))
-                    (pow (add-pow-pow x y)))))))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :guard (and (shnfp x)
+                              (shnfp y))))
+  (if (atom x)
+      (add-int x y)
+    (if (atom y)
+        (add-int y x)
+      (case (car x)
+        (pop (case (car y)
+               (pop (add-pop-pop x y))
+               (pow (add-pop-pow x y))))
+        (pow (case (car y)
+               (pop (add-pop-pow y x))
+               (pow (add-pow-pow x y))))))))
 
 (defthm evalh-norm-add-int
   (implies (and (shnfp x)
@@ -347,7 +373,7 @@
 (defthm normp-norm-add
   (implies (and (shnfp x)
                 (shnfp y))
-           (normp (norm-add x y))))
+           (shf-normp (norm-add x y))))
 
 (defthm evalh-norm-add
   (implies (and (shnfp x)
@@ -360,6 +386,7 @@
 ;; The remaining cases are handled by norm-neg, norm-mul, and norm-expt:
 
 (defun norm-neg (x)
+  (declare (xargs :guard (shnfp x)))
   (if (atom x)
       (- x)
     (case (car x)
@@ -381,6 +408,8 @@
            (equal (norm-neg (norm-neg x)) x)))
 
 (defund mul-int (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (shnfp y))))
   (if (= x 0)
       0
     (if (atom y)
@@ -427,19 +456,20 @@
                (norm-pow j (norm-mul r (norm-pop 1 q)) 0))))               ;r * q * z^j
 
 (defund norm-mul (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))))
-  (and (shfp x)
-       (if (atom x)
-           (mul-int x y)
-         (if (atom y)
-             (mul-int y x)
-           (case (car x)
-             (pop (case (car y)
-                    (pop (mul-pop-pop x y))
-                    (pow (mul-pop-pow x y))))
-             (pow (case (car y)
-                    (pop (mul-pop-pow y x))
-                    (pow (mul-pow-pow x y)))))))))
+  (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                  :guard (and (shnfp x)
+                              (shnfp y))))
+  (if (atom x)
+      (mul-int x y)
+    (if (atom y)
+        (mul-int y x)
+      (case (car x)
+        (pop (case (car y)
+               (pop (mul-pop-pop x y))
+               (pow (mul-pop-pow x y))))
+        (pow (case (car y)
+               (pop (mul-pop-pow y x))
+               (pow (mul-pow-pow x y))))))))
 
 (defthm shnfp-norm-mul
   (implies (and (shnfp x)
@@ -455,6 +485,8 @@
                      (evalh y vals)))))
 
 (defun norm-expt (x k)
+  (declare (xargs :guard (and (shnfp x)
+                              (natp k))))
   (if (zp k)
       1
     (norm-mul x (norm-expt x (1- k)))))
@@ -471,6 +503,8 @@
                  (expt (evalh x vals) k))))
 
 (defun norm (x vars)
+  (declare (xargs :guard (and (distinct-symbols vars)
+                              (polyp x vars))))
   (if (integerp x)
       x
     (if (atom x)
@@ -478,7 +512,7 @@
       (let ((y (cadr x)) (z (caddr x)))
         (case (car x)
           (+ (norm-add (norm y vars) (norm z vars)))
-          (- (if (cddr x) (norm-add (norm y vars) (norm-neg (norm z vars))) (norm-neg (norm y vars)))) 
+          (- (if (cddr x) (norm-add (norm y vars) (norm-neg (norm z vars))) (norm-neg (norm y vars))))
           (* (norm-mul (norm y vars) (norm z vars)))
           (expt (norm-expt (norm y vars) (norm z vars))))))))
 
@@ -500,7 +534,7 @@
 ;;                                   Completeness
 ;;*********************************************************************************
 
-;; We shall show that if two polynomials have the same values for all variable 
+;; We shall show that if two polynomials have the same values for all variable
 ;; assignments, then they produce the same SHNF.
 
 (defun pad0 (i n)
@@ -562,6 +596,6 @@
                   (polyp x vars)
   		  (polyp y vars)
 		  (equal (evalp x a) (evalp y a)))
-	     (equal (norm x vars) 
+	     (equal (norm x vars)
 	            (norm y vars))))
   :rule-classes ())
