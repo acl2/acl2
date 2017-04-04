@@ -867,5 +867,5 @@ if ($success) {
 print "-- Final result appears to be success.\n" if $DEBUG;
 
 # Else, we made it!
-system("ls -l '$goal'");
+system("ls -l '$goal'") if $DEBUG;
 exit(0);
