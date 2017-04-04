@@ -9,6 +9,7 @@
 (local (include-book "incremental"))
 (include-book "../sorted/lrat-checker")
 (include-book "clrat-parser")
+(include-book "soundness")
 
 (defun incl-verify-proof$-rec (ncls ndel formula proof a$)
   (declare (xargs :stobjs a$
@@ -387,3 +388,20 @@
                          ,(or chunk-size *default-chunk-size*)
                          ,debug
                          state))
+
+; Soundness
+
+(defun-sk incl-proved-p (formula)
+  (exists (cnf-file clrat-file chunk-size debug ctx st)
+          (mv-let (erp val/formula st)
+            (incl-valid-proofp$-top cnf-file clrat-file
+                                    nil ; incomplete-okp
+                                    chunk-size debug ctx st)
+            (declare (ignore st))
+            (and (not erp)
+                 (equal formula (reverse (cdr val/formula)))
+                 (car val/formula)))))
+
+(defthm soundness
+  (implies (incl-proved-p formula) ; essentially checks (formula-p formula)
+           (not (satisfiable formula))))

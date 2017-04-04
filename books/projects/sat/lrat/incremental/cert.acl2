@@ -1,4 +1,1 @@
 (include-book "../portcullis")
-
-; Guards are verified but soundness isn't yet proved.
-; cert-flags: ? t :skip-proofs-okp t
