@@ -64,7 +64,7 @@
 (defxdoc kestrel-utilities
   :parents (kestrel-books)
   :short "Utilities that are part of the
-          <see topic='@(kestrel-books)'>Kestrel Books</see>.")
+          <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
