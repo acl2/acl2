@@ -11,30 +11,10 @@
 
 
 ;; [Jared] trying to speed up this book
-;; [Dima] Most of them are disabled using with-arith5-help
+;; [Dima] Remove those rules which are already disabled using with-arith5-help
 (local (deftheory jared-disables
-         '(;ACL2::ACL2-NUMBERP-X
-           ;ACL2::RATIONALP-X
-           ;ACL2::DEFAULT-PLUS-2
-           ;ACL2::DEFAULT-TIMES-2
-           default-car
-           default-cdr
-
-           ;acl2::default-plus-1
-           ;acl2::default-times-1
-           ;acl2::default-expt-1
-           ;acl2::default-expt-2
-           ;acl2::default-minus
-
-           ;acl2::|(equal (/ x) (/ y))|
-           ;acl2::|(equal c (/ x))|
-           ;acl2::|(equal (- x) (- y))|
-           ;acl2::|(equal c (- x))|
-           ;acl2::|(equal (- x) c)|
-           ;acl2::REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL
-           ;acl2::EQUAL-OF-PREDICATES-REWRITE
-
-           )))
+         '(default-car
+           default-cdr)))
 
 (local (in-theory (disable jared-disables)))
 
@@ -69,6 +49,18 @@
                   (- (and (polyp y vars) (polyp z vars)))
                   (* (and (polyp y vars) (polyp z vars)))
                   (expt (and (polyp y vars) (natp z))))))))))
+
+;; New code of polyp is equivalent to old code in :logic mode.
+;; However, old code breaks in :program mode on some bad inputs like '( * )
+;(defun polyp (x vars)
+;  (if (atom x)
+;    (or (integerp x) (member x vars))
+;    (let ((y (cadr x)) (z (caddr x)))
+;      (case (car x)
+;        (+ (and (polyp y vars) (polyp z vars)))
+;        (- (and (polyp y vars) (or (not (cddr x)) (polyp z vars))))
+;        (* (and (polyp y vars) (polyp z vars)))
+;        (expt (and (polyp y vars) (natp z)))))))
 
 ;; Evaluation of a polynomial term:
 
@@ -117,6 +109,9 @@
                 (consp (cddr x))  (shfp (caddr x))
                 (consp (cdddr x)) (shfp (cadddr x))
                 (null (cddddr x)))))))
+
+;; New code of shfp is equivalent to old code in :logic mode.
+;; Hoever, old code breaks in :program mode on some bad inputs like '( pop )
 ;(defun shfp (x)
 ;  (if (atom x)
 ;      (integerp x)
@@ -243,12 +238,6 @@
            (shfp x))
   ;; [Jared] trying to cheapen this very expensive rule.
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
-
-;(local (defruled shnfp-atom-structure
-;  (implies (and (shnfp x)
-;                (not (consp x)))
-;           (integerp x))
-;  :enable shnfp))
 
 (local (defruled shnfp-pop-structure
   (implies (and (shnfp x)
@@ -399,7 +388,19 @@
                 (all-integers vals))
            (integerp (evalh x vals)))))
 
-;; [Dima] Thow theories for reasoning about shnfp.
+;; [Dima] Two theories shnfp-old and shnfp-new for reasoning about shnfp.
+;; Some theorems below can be proved by either of these theories.
+;; There may be comments after them which report proof time and number
+;; of proof steps in both proofs.
+;; nul    - theories are not enabled
+;; old    - :enable shnfp-old
+;; new    - :enable shnfp-new
+;; Some theorems have :disable (rule1 rule2 ...) list
+;; dis    - timing without :disable
+;; dis1   - timing without disabling rule1
+;; dis2   - timing without disabling rule2
+;; Some theorems have commented :expand (..)
+;; expand - timing with uncommented :expand
 
 ;; Old theory enables definition and a few public theorems.
 (local (deftheory shnfp-old
