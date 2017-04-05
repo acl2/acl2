@@ -2,7 +2,7 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Test driver.
+; Test driver for the lrat checker.
 
 ; (depends-on "../../tests/example-4-vars.cnf")
 ; (depends-on "../../tests/example-4-vars.lrat")

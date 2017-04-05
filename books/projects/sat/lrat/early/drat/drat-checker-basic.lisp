@@ -7,6 +7,8 @@
 ; a more recent input proof format to speed up unit propagation and add
 ; deletion (to obtain a DRAT checker).
 
+; See ../../README.
+
 (in-package "PROOF-CHECKER-ITP13")
 
 (include-book "supplemental/ternary" :dir :itp13)

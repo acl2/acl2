@@ -2,11 +2,13 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; See ../../README.
+
 ; This work is derived from earlier work by Nathan Wetzler.  See
 ; lrat-checker.lisp.  Here, we give just the definitions in support of the
 ; checker and the proved soundness theorem.
 
-; See tests/README for tests.
+; See ../../tests/README for tests.
 
 (in-package "ACL2")
 

@@ -2,6 +2,8 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; See ../README.
+
 ; This file was originally created by Nathan Wetzler, but now is being
 ; modified by Warren Hunt and Matt Kaufmannn so as to produce a faster,
 ; lrat proof checker.
