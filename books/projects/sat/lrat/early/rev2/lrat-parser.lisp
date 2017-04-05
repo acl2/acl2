@@ -27,7 +27,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "lrat-checker")
 (program) ; because of (er soft ...), which calls the fmt functions
 (set-state-ok t)
