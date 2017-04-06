@@ -1,3 +1,7 @@
+; Copyright (C) 2016, Regents of the University of Texas
+; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "LRAT")
 
 ;! Limits and Recognizers

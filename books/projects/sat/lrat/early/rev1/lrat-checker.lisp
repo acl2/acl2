@@ -2,16 +2,7 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This work is based on Nathan Wetzler's RAT checker work in ACL2 community
-; books directory books/projects/sat/proof-checker-itp13/.  Here we accommodate
-; a more recent input proof format to speed up unit propagation and add
-; deletion (to obtain a DRAT checker).
-
-; (ld "drat-checker.lisp")
-; or
-; (certify-book "drat-checker" ? t :ttags :all :skip-proofs-okp t)
-
-; See also notes/comments.txt.
+; See ../../README.
 
 (in-package "ACL2")
 

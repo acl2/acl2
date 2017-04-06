@@ -1,9 +1,3 @@
-
-; (ld "clrat-parser.lisp" :ld-pre-eval-print t)
-
-; Reader for CNF files and reader-and-checker for Compressed LRAT ("clrat") files.
-
-
 ; Copyright (C) 2016, Regents of the University of Texas
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
@@ -41,10 +35,18 @@
 
 ; Note that each index j must exceed all preceding clause indices.
 
+; See the function LRAT-GUARD (below) for a description of our
+; string/file reading invariant.
+
+; See the function CHECK-LRAT-LINE-TO-LF (below) for a description of
+; our coding approach.
+
+; (in-package "ACL2")
 (in-package "LRAT")
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "limits")
+
 ; (include-book "misc/disassemble" :dir :system)
 
 
@@ -202,23 +204,11 @@
          (list-of-integer-listp (cdr x)))))
 
 
-; Guard for accessing STR
-
-(defun lrat-guard (str len pos)
-  (declare (xargs :guard t))
-  (and (stringp str)
-       (natp len)
-       (natp pos)
-       (equal len (length str))
-       (<= pos len)
-       (< len *2^56*)))
-
-
-
-; Convert character decimal digit to natural number
-
 (defun-inline char-to-nat (ch)
-  ;; If CH is '0' to '9', return corresponding number; otherwise NIL
+
+; Convert character decimal digit to natural number.  If CH is '0' to
+; '9', return corresponding natural number; otherwise NIL
+
   (declare (xargs :guard (characterp ch)))
   (let ((code (u59 (char-code ch))))
     (and (>= code 48)
@@ -242,9 +232,29 @@
 (in-theory (disable char-to-nat))
 
 
-; Guard for accessing STR
+; Our CLRAT reader processes the contents of a file and makes it ready
+; for our SAT-checking algorithm..  This proof processing is done
+; incrementally.  We process a SAT-proof file by reading some of it,
+; processing what we read, and then, reading some more of the file and
+; follow that with more processing, and so on.  We repeat this process
+; until an entire file has been processed.
+
 
 (defun lrat-guard (str len pos)
+
+; Guard for string processing functions.  The requirement that LEN is
+; less than 2^56 ensures that keeping track of our position can be
+; done with FIXNUMs.  The diagram below is meant to represent a string.
+
+; POS is a natural number <= LEN.
+; LEN is the length of STR.
+; "_ _ _ _ _ _ _ _ _ _ _ _ _ ... _ _ _ _" is some string STR.
+;            ^                           ^
+;           POS                          LEN
+
+; Functions that accept a STR, POS, and LEN, and return a position,
+; POS, are proven to return a position that is in bounds.
+
   (declare (xargs :guard t))
   (and (stringp str)
        (natp len)
@@ -254,30 +264,53 @@
        (< len *2^56*)))
 
 
-; Check for allowable characters
+(defun check-lrat-line-to-lf (str len pos)  ; This function unused.
 
-(defun check-lrat-line-to-lf (str len pos)
+; Check STR up to a #\LineFeed for allowable characters; this is a
+; general syntatic check that a file only contains characters that can
+; be converted into a proof.  This function shows our idiomatic
+; approach to functions that are guarded by our recognizer LRAT-GUARD
+; (defined just above).  We we reach the end, we return LEN.  We also
+; return LEN when we recognize an error condition.
+
+; We use a certain idiomatic style here, which we follow in later
+; functions.
+
   (declare (xargs :guard (lrat-guard str len pos)
                   :measure (nfix (- len pos))))
+  ;; Declare LEN and POS to be 56-bit natural (fixnum) numbers.
   (let* ((len (u56 len))
          (pos (u56 pos)))
+
+    ;; LEN is returned whenever we reach `the end'.
     (if (mbe :logic (zp (- len pos))
              :exec  (>= pos len))
         len ; At end
+
       (let ((ch  (char str pos)))
         (if (eql ch #\Newline)
-            pos
+            pos ; At end of line, return POS.
+
           (if (not (or (eql ch #\Space)
                        (eql ch #\Tab)
                        (eql ch #\-)
-                       (eql ch #\d) ; Deletion
+                       (eql ch #\d) ; Part of deletion command
                        (char-to-nat ch)))
-              len ; Report at end
+
+              (prog2$
+               (er hard?
+                   "check-lrat-line-to-lf:  Check byte at position ~x0.~%"
+                   pos)
+               len) ; If unrecognized character, report at end
+
             (let ((pos+1 (u59 (1+ pos))))
               (check-lrat-line-to-lf str len pos+1))))))))
 
 
 (defun find-next-space (str len pos)
+
+; Starting at POS, find next space character.
+
   (declare (xargs :guard (lrat-guard str len pos)
                   :measure (nfix (- len pos))))
   (b* ((pos (u56 pos))
@@ -297,8 +330,7 @@
 
 (defthm bound-find-next-space
   (implies (and (natp len) (natp pos) (<= pos len))
-           (and (<= 0 (find-next-space str len pos))
-                (<= pos (find-next-space str len pos))
+           (and (<= pos (find-next-space str len pos))
                 (<= (find-next-space str len pos) len)))
   :rule-classes (:rewrite :linear))
 
@@ -306,7 +338,9 @@
 
 
 (defun find-lf (str len pos)
-  ;; Find next #\Newline character
+
+; Find next #\Newline character
+
   (declare (xargs :guard (lrat-guard str len pos)
                   :measure (nfix (- len pos)))
            (type string str))
@@ -340,14 +374,17 @@
 (in-theory (disable find-lf))
 
 
-(defun lrat-pos-skip-spaces (str len pos) ; Returns pos
-  ;; Skip space characters, leave POS at first non-space character
+(defun lrat-pos-skip-spaces (str len pos)
+
+; Skip space characters, leave POS at first non-space character
+
   (declare (xargs :guard (lrat-guard str len pos)
                   :measure (nfix (- len pos))))
   (b* ((len (u56 len))
        (pos (u56 pos))
        ((if (mbe :logic (zp (- len pos))
-                 :exec  (>= pos len))) len)
+                 :exec  (>= pos len)))
+        len)
        (ch (char str pos))
        ((when (not (eql ch #\Space))) pos)
        (pos+1 (u56 (1+ pos))))
@@ -369,11 +406,12 @@
 (in-theory (disable lrat-pos-skip-spaces))
 
 
-; Natural number reader
-
 (with-arithmetic-help-5
  (defun lrat-nat1 (str len pos n)
-   ;; Can read 18-decimal-digit numbers; otherwise, it fails
+
+; Natural number reader.  Can read (approximately) 18-decimal-digit
+; numbers; otherwise, it will fail.  Returns natural number (fixnum).
+
    (declare (xargs :guard (and (lrat-guard str len pos)
                                (natp n)
                                (< n *2^60*))
@@ -384,13 +422,16 @@
      (if (mbe :logic (zp (- len pos))
               :exec  (>= pos len))
          0 ; File end
+
        (let* ((ch (char str pos))
               (digit (char-to-nat ch)))
+
          (if (null digit)
              n ; At end of base-10 numerals, return answer
+
            (if (not (< n *2^56*))
                (prog2$ (er hard? 'lrat-nat1
-                           "lrat-nat1:  Number too large; position:  ~x0.~%"
+                           "lrat-nat1:  Number too large; position: ~x0.~%"
                            pos)
                        0)
              (let* ((digit (u04 digit))
@@ -424,7 +465,7 @@
 (defthm bound-lrat-nat1
    (implies (and (natp n) (< n *2^60*))
             (and (<= 0 (lrat-nat1 str len pos n))
-                 (< (lrat-nat1 str len pos n) 1152921504606846976))) ; *2^60*
+                 (< (lrat-nat1 str len pos n) *2^60*)))
    :hints
    (("Goal"
      :in-theory (disable length)
@@ -435,7 +476,9 @@
 
 
 (defun lrat-nat (str len pos)
-  ;; Read natural number starting at POS
+
+; Read natural number starting at POS
+
   (declare (xargs :guard (lrat-guard str len pos)))
   (b* ((pos (u56 pos))
        (len (u56 len))
@@ -452,16 +495,16 @@
 
 (defthm bound-lrat-nat
    (and (<= 0 (lrat-nat str len pos))
-        (< (lrat-nat str len pos) 1152921504606846976))
+        (< (lrat-nat str len pos) *2^60*))
   :rule-classes :linear)
 
 (in-theory (disable lrat-nat))
 
 
-; Integer reader
-
 (defun lrat-int (str len pos)
-  ;; Read integer starting at POS
+
+; Read integer starting at POS
+
   (declare (xargs :guard (lrat-guard str len pos)))
   (b* ((pos (u56 pos))
        (len (u56 len))
@@ -486,6 +529,9 @@
 
 
 (defun lrat-flg-int (str len pos)
+
+; Read an integer and return (mv <end-of-integer-pos> <integer>)
+
   (declare (xargs :guard (lrat-guard str len pos)))
   (b* ((pos (u56 pos))
        (len (u56 len))
@@ -558,11 +604,10 @@
 (in-theory (disable lrat-flg-int))
 
 
-
 (defun lrat-flg-nat-list-until-0 (str len pos lst)
 
-; Read list of NATs until "0" found.
-; Return (mv pos-after-0 nat-list); Finished when (= pos len)
+; Read list of natural numbers until a stand-alone "0" is found.
+; Return (mv <pos-after-0> <nat-list>)
 
   (declare (xargs :guard (and (lrat-guard str len pos)
                               (nat-listp lst))
@@ -586,7 +631,7 @@
        ;; Locate space after number
        (pos-after-nat (find-next-space str len pos-after-spaces))
 
-       ;; For measure, why?
+       ;; For measure
        ((unless (< pos pos-after-nat)) (mv len lst)))
 
     (lrat-flg-nat-list-until-0 str len pos-after-nat (cons nat-read lst))))
@@ -599,8 +644,7 @@
 (defthm bound-lrat-flg-nat-list-until-0
   (implies (and (natp len) (natp pos) (<= pos len))
            (and (<= pos (car (lrat-flg-nat-list-until-0 str len pos lst)))
-                (<= (car (lrat-flg-nat-list-until-0 str len pos lst)) len)
-                ))
+                (<= (car (lrat-flg-nat-list-until-0 str len pos lst)) len)))
   :rule-classes :linear)
 
 (defthm nat-listp-lrat-flg-nat-list-until-0
@@ -610,11 +654,10 @@
 (in-theory (disable lrat-flg-nat-list-until-0))
 
 
-
 (defun lrat-flg-int-list-until-0 (str len pos lst)
 
 ; Read list of INTEGERs until "0" found.
-; Return (mv pos-after-0 int-list); When Error or End, then (= pos len)
+; Return (mv <pos-after-0> <int-list>);  When Error or End, then (= pos len)
 
   (declare (xargs :guard (and (lrat-guard str len pos)
                               (integer-listp lst))
@@ -638,7 +681,7 @@
        ;; Locate space after number
        (pos-after-int (find-next-space str len pos-after-spaces))
 
-       ;; For measure, why?
+       ;; For measure; !!! This is an error return.
        ((unless (< pos pos-after-int)) (mv len lst)))
 
     (lrat-flg-int-list-until-0 str len pos-after-int (cons int-read lst))))
@@ -693,7 +736,7 @@
        ;; Locate space after number
        (pos-after-nat (find-next-space str len pos-after-spaces))
 
-       ;; For measure, why?
+       ;; For measure
        ((unless (< pos pos-after-nat)) (mv len lst)))
 
     (lrat-flg-nat-list-until-0-or-- str len pos-after-nat (cons nat-read lst))))
@@ -715,14 +758,6 @@
 
 (in-theory (disable lrat-flg-nat-list-until-0-or--))
 
-
-
-(defun list-of-integer-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (integer-listp (car x))
-         (list-of-integer-listp (cdr x)))))
 
 (defun lrat-flg-nat-rev-list-of-lists-until-0-or-- (str len pos lst)
 
@@ -755,7 +790,6 @@
       (lrat-flg-nat-rev-list-of-lists-until-0-or--
        str len pos-after-int-list (cons int-list lst))))
 
-
 (defthm natp-lrat-flg-nat-rev-list-of-lists-until-0-or--
   (implies
    (and (natp len) (natp pos))
@@ -782,8 +816,8 @@
   (declare (xargs :guard (lrat-guard str len pos)))
 
 ; Expects POS at beginning of line
-; Leaves  POS at \#Newline or :eof
-; Reads next line or returns NIL.
+; Leaves  POS at #\Newline or :eof
+; Reads the next line or returns NIL.
 
   (b* ((pos (u56 pos))
        (len (u56 len))
@@ -800,10 +834,7 @@
 
        ;; Deletion command if ch is #\d
        ((unless (< pos-after-proof-step+1 len)) (mv len nil))
-       (ch (char str pos-after-proof-step+1))
-
-       ;; (- (cw "pos-after-proof-step+1:  ~p0, proof-step: ~p1~%" pos-after-proof-step+1 proof-step))
-       )
+       (ch (char str pos-after-proof-step+1)))
 
     (if (eql ch #\d)
 
@@ -832,15 +863,11 @@
 
       (b* (((mv pos-after-int-list-1 int-list-1)
             (lrat-flg-int-list-until-0 str len pos-after-proof-step+1 nil))
-           ((unless (< pos-after-int-list-1 len)) (mv len (cons proof-step int-list-1))) ; nil))
-
-           ;; (- (cw "pos-after-int-list-1: ~p0, il-1: ~p1~%" pos-after-int-list-1 int-list-1))
+           ((unless (< pos-after-int-list-1 len)) (mv len (cons proof-step int-list-1)))
 
            ((mv pos-after-int-list-2 int-list-2)
             (lrat-flg-nat-list-until-0-or-- str len pos-after-int-list-1 nil))
-           ((unless (< pos-after-int-list-2 len)) (mv len int-list-2)) ; nil))
-
-           ;; (- (cw "pos-after-int-list-2: ~p0, il-2: ~p1~%" pos-after-int-list-2 int-list-2))
+           ((unless (< pos-after-int-list-2 len)) (mv len int-list-2))
 
            ((mv pos-after-int-list-3 int-list-3)
             (lrat-flg-nat-rev-list-of-lists-until-0-or--
@@ -848,19 +875,14 @@
 
            ;; POS-AFTER-INT-LIST-3 should now be pointing at #\Newline
 
-           ((unless (< pos pos-after-int-list-3)) (mv len int-list-3)) ; nil))
+           ((unless (< pos pos-after-int-list-3)) (mv len int-list-3))
            ((unless (< pos-after-int-list-3 len)) (mv len int-list-3))
 
            ;; Put the answer together
            (ans (cons (cons proof-step int-list-1)
-                      (cons int-list-2 int-list-3)))
-
-;           (ans (list (cons proof-step int-list-1)
-;                       int-list-2 int-list-3))
-           )
+                      (cons int-list-2 int-list-3))))
 
         (mv pos-after-int-list-3 ans)))))
-
 
 (defthm natp-lrat-line-mv
   (implies (and (natp len) (natp pos))
@@ -930,20 +952,6 @@
     (lrat-str str len pos-after-line+1 more-rev-lines)))
 
 
-(defun lrat-read-file (file-name state)
-  (declare (xargs :guard (stringp file-name)
-                  :guard-hints
-                  (("Goal" :in-theory (disable read-file-into-string)))
-                  :verify-guards nil
-                  :stobjs state))
-  (b* (; ((unless (state-p1 state)) nil)
-       (str (read-file-into-string file-name))
-       (len (length str))
-       ((unless (lrat-guard str len 0)) NIL)
-       (ans (my-rev (lrat-str str len 0 nil))))
-    ans))
-
-
 (defun pos-at-eol (str len pos)
 
 ; Find position at end of line.
@@ -979,9 +987,13 @@
 
 (in-theory (disable pos-at-eol))
 
+
 (defun pos-at-next-digit-or-minus-char (str len pos)
 
-; Find position of next integer -- skipping blank and comment lines
+; Find position of next integer -- skipping blank and comment lines.
+; Return LEN if none.  LEN is often return when we discover an error.
+; Assuming the LEN is (length STR), (char STR LEN) will not pass a
+; guard check.
 
   (declare (xargs :guard (lrat-guard str len pos)
                   :measure (nfix (- len pos))))
@@ -991,13 +1003,17 @@
              :exec  (>= pos len))
         len
       (let ((ch (char str pos)))
-        (if (or (eql ch #\c)
+
+        ;; !!! Investigate removing this test...
+        (if (or (eql ch #\c)  ; CNF-style comments
                 (eql ch #\C))
+
             ;; Skip comment lines...
             (let ((pos-at-eol (pos-at-eol str len pos)))
               (if (< pos (u56 pos-at-eol))
                   (pos-at-next-digit-or-minus-char str len pos-at-eol)
                 len))
+
           (let* ((digit? (char-to-nat ch))
                  (minus-ch (eql ch #\-)))
             (if (or digit? minus-ch)
@@ -1024,7 +1040,46 @@
 (in-theory (disable pos-at-next-digit-or-minus-char))
 
 
+(defun lrat-read-file (file-name state)
+
+; Returns a formula data structure, i.e., a list of (index . clause) pairs.
+; See formula-p in list-based/lrat-checker.lisp.  Note that the formula is
+; _not_ a fast-alist.
+
+  (declare (xargs :guard (stringp file-name)
+                  :guard-hints
+                  (("Goal" :in-theory (disable acl2::read-file-into-string2)))
+                  :stobjs (state)))
+  (b* ((str (read-file-into-string file-name))
+       ((unless (stringp str))
+        (prog2$ (er hard? 'lrat-read-file
+                    "lrat-read-file: (read-file-into-string ~x0 .~%" file-name)
+                nil))
+       (len (length str))
+       ((unless (< len *2^56*))
+        (prog2$ (er hard? 'lrat-read-file
+                    "lrat-read-file:  file ~x0 is too long.~%" file-name)
+                nil))
+       ;; Skip forward until the beginning of an integer
+       (start (pos-at-next-digit-or-minus-char str len 0))
+       ((unless (lrat-guard str len start))
+        (prog2$ (er hard? 'cnf-read-file
+                    "lrat-read-file:  LRAT-GUARD fails.~%")
+                nil))
+       (rev-lines (lrat-str str len start nil)))
+    rev-lines))
+
+
 (defun cnf-str (str len pos line-num rev-lines)
+
+; Read a string containing a CNF formula, returns a list of
+; adddition/deletion commands
+
+; !!! For GCL, check whether a DECLARATION is required for U56, etc.
+; !!! Have a look at: ../books/projects/sat/dimacs-reader/reader.lisp
+; !!! Write formal spec and make it available on the Web (after
+; !!! 4/10/17).
+
   (declare (xargs :guard (and (lrat-guard str len pos)
                               (natp line-num))
                   :measure (nfix (- len pos))))
@@ -1036,22 +1091,23 @@
                  :exec  (>= pos len)))
         (mv len rev-lines))
 
-       ;; Read list of naturals until 0
-       ((mv pos-after-nat-list int-list)
+       ;; Read list of integers until 0
+       ((mv pos-after-int-list int-list)
         (lrat-flg-int-list-until-0 str len pos nil))
 
        ;; If nothing read or at EOF, return what there is
-       ((unless (and (< pos pos-after-nat-list)
-                     (< pos-after-nat-list len)))
+       ((unless (and (< pos pos-after-int-list)
+                     (< pos-after-int-list len)))
         (mv len rev-lines))
 
        ;; Find the next digit, possibly skipping blank lines
        (pos-at-next-digit-or-minus-char
-        (pos-at-next-digit-or-minus-char str len pos-after-nat-list))
-       ((unless (< pos-after-nat-list
+        (pos-at-next-digit-or-minus-char str len pos-after-int-list))
+       ((unless (< pos-after-int-list
                    pos-at-next-digit-or-minus-char))
         (mv len rev-lines))
 
+       ;; Collect this line, and continue...
        (line (cons line-num int-list)))
     (cnf-str str len pos-at-next-digit-or-minus-char (1+ line-num)
              (cons line rev-lines))))
@@ -1082,31 +1138,55 @@
 
   (declare (xargs :guard (stringp file-name)
                   :guard-hints
-                  (("Goal" :in-theory (disable read-file-into-string-1
-                                               read-file-into-string-2)))
-                  :verify-guards nil
+                  (("Goal" :in-theory (disable acl2::read-file-into-string2)))
                   :stobjs (state)))
   (b* ((str (read-file-into-string file-name))
+       ((unless (stringp str))
+        (prog2$ (er hard? 'cnf-read-file
+                    "cnf-read-file: (read-file-into-string ~x0 .~%" file-name)
+                nil))
        (len (length str))
-;      (start (1+ (pos-at-eol str len 0)))
+       ((unless (< len *2^56*))
+        (prog2$ (er hard? 'cnf-read-file
+                    "cnf-read-file:  file ~x0 is too long.~%" file-name)
+                nil))
+       ;; Skip forward until the beginning of an integer
        (start (pos-at-next-digit-or-minus-char str len 0))
-       ((unless (lrat-guard str len start)) NIL)
+       ((unless (lrat-guard str len start))
+        (prog2$ (er hard? 'cnf-read-file
+                    "cnf-read-file:  LRAT-GUARD fails.~%")
+                nil))
        ((mv & rev-lines)
          (cnf-str str len start 1 nil)))
     rev-lines))
 
 
-; Compressed reading functions
+; CLRAT Parser
+
+; We now turn our attention to reading Compressed LRAT (CLRAT) files.
+; CLRAT files are binary files and must be processed character by
+; character.  CLRAT files are broken into lines by reading until one 0
+; is found (when reading a deletion command) or until a second 0 is
+; found (when reading an addition command).
+
 
 (defun pos-after-clrat-nums (str len pos)
-  ;; POS after reading compressed numbers
+
+; Return POS after reading compressed numbers.  The last byte of a
+; command is 0; thus we find a byte containing 0 -- and then, we
+; finally return the POSition just after the zero byte.
+
   (declare (xargs :guard (lrat-guard str len pos)
                   :measure (nfix (- len pos))))
+  ;; Declare LEN and POS to be56-bit natural (fixnum) numbers.
   (b*  ((pos (u56 pos))
         (len (u56 len))
-        ;; End of string, also loop termination
+
+        ;; If at end of string, then stop
         ((if (mbe :logic (zp (- len pos))
-                  :exec  (>= pos len))) len) ; At end of str
+                  :exec  (>= pos len)))
+         len) ; Report at end of STR.
+
         (ch (char str pos))
         (byte (u08 (char-code ch)))
         (zero (= byte 0))
@@ -1128,11 +1208,11 @@
 (in-theory (disable pos-after-clrat-nums))
 
 
-; Read compressed natural number from string
-
 (with-arithmetic-help-5
  (defun clrat-nat (str len pos n shift)
-   ;; Compressed natural number reader
+
+; Read compressed natural number from string; return number read.
+
    (declare (xargs :guard (and (lrat-guard str len pos)
                                (natp n)
                                (< n *2^60*)
@@ -1145,7 +1225,7 @@
         (n   (u60 n))
 
         ;; Maximum clause number permitted
-        ((unless (< n 4503599627370496)) 0)
+        ((unless (< n *2^52*)) 0)
         (n (u52 n))
 
         ;; End of string?  Terminate read
@@ -1221,12 +1301,11 @@
   :rule-classes :type-prescription)
 
 (defthm bound-clrat-int
-  (and (<= (- 1152921504606846976) (clrat-int str len pos))
-       (< (clrat-int str len pos) 1152921504606846976))
+  (and (<= (- *2^60*) (clrat-int str len pos))
+       (< (clrat-int str len pos) *2^60*))
   :rule-classes :linear)
 
 (in-theory (disable clrat-int))
-
 
 
 (defun clrat-zero (str len pos)
@@ -1241,7 +1320,8 @@
 
        ;; At End of STR?  If so, return position at end of STR.
        ((if (mbe :logic (zp (- len pos))
-                 :exec  (>= pos len))) len)
+                 :exec  (>= pos len)))
+        len)
 
        (ch (char str pos))
        (byte (u08 (char-code ch)))
@@ -1263,6 +1343,7 @@
 
 (in-theory (disable clrat-zero))
 
+
 (defun-inline clrat-zero+1 (str len pos)
   (declare (xargs :guard (lrat-guard str len pos)))
   (b* ((clrat-zero (clrat-zero str len pos))
@@ -1283,8 +1364,6 @@
 (in-theory (disable clrat-zero+1))
 
 
-; Position just after just number being read
-
 (defun clrat-int-end+1 (str len pos)
 
 ; Return the position in STR just after the end of a compressed integer.
@@ -1296,7 +1375,8 @@
 
        ;; At end of STR?  If so, return end position
        ((if (mbe :logic (zp (- len pos))
-                 :exec  (>= pos len))) len) ; At end of str
+                 :exec  (>= pos len)))
+        len) ; At end of str
 
        (ch (char str pos))
        (byte (u08 (char-code ch)))
@@ -1324,7 +1404,7 @@
 (with-arithmetic-help-5
  (defun clrat-ints (str len pos ints)
 
-   ;; Read list of compressed integers from STR, until 0 discovered
+; Read list of compressed integers from STR, until a 0 is discovered
 
    (declare (xargs :guard (lrat-guard str len pos)
                    :measure (nfix (- len pos))))
@@ -1333,7 +1413,8 @@
 
         ;; If at end of string, quit
         ((if (mbe :logic (zp (- len pos))
-                  :exec  (>= pos len))) nil)
+                  :exec  (>= pos len)))
+         nil)
 
         (ch (char str pos))
         (byte (u08 (char-code ch)))
@@ -1354,7 +1435,6 @@
            (integer-listp (clrat-ints str len pos ints))))
 
 (in-theory (disable clrat-ints))
-
 
 
 (defun cut-at-first-negative-integer (lst)
@@ -1381,7 +1461,7 @@
 (defun delete-until-first-negative-integer (lst)
 
 ; Eliminate natural numbers in LST until first negative number; return
-; remainder of LST.
+; remainder of LST (including negative number discovered).
 
   (declare (xargs :guard (integer-listp lst)))
   (if (atom lst)
@@ -1420,12 +1500,10 @@
       (break-into-lists-at-negative-integers rest-of-rats (cons rat-clause rat-list)))))
 
 
-; Read an addition line
-
 (defun clrat-read-a-line (str len pos)
 
-; Read addition command.  Returns (MV <new-pos> <addition-command>)
-; where <new-pos> is the position in the string after this <command>.
+; Read addition command.  Returns (MV <new-pos> <command>) where
+; <new-pos> is the position in the string after this <command>.
 
   (declare (xargs :guard (lrat-guard str len pos)))
   (b* ((pos (u56 pos))
@@ -1502,7 +1580,6 @@
       ;; proof-step a <nat>* 0 nat* {-int nat*}*
       (clrat-read-a-line str len pos+1))))
 
-
 (defthm natp-car-clrat-line-mv
   (implies (and (natp len) (natp pos))
            (natp (car (clrat-line-mv str len pos))))
@@ -1551,6 +1628,7 @@
 
 (in-theory (disable skip-clrat-command))
 
+
 (defun skip-clrat-commands (str len pos)
   (declare (xargs :guard (lrat-guard str len pos)
                    :measure (nfix (- len pos))))
@@ -1559,7 +1637,8 @@
 
         ;; If at end of string, quit
         ((if (mbe :logic (zp (- len pos))
-                  :exec  (>= pos len))) len)
+                  :exec  (>= pos len)))
+         len)
 
         (next-cmd-pos (skip-clrat-command str len pos))
         ((unless (< next-cmd-pos len)) pos)
@@ -1650,18 +1729,19 @@
        ""
        position))
 
-(defun clrat-read-next-1 (filename  ; Filename
-                          position  ; Position in file
+(defun clrat-read-next-1 (filename    ; Filename
+                          position    ; Position in file
                           read-amount ; Amount to read from file
                           suffix      ; Left over from previous chunck
                           file-length ; Length of filename contents
                           state)
 
-; First read the contents of filename starting from position, returning a
-; string of length read-amount (or less if end-of-file is reached).  Return (mv
-; proof suffix), where proof is a list of add-step records parsed from that
-; string and suffix is the final portion of that string that is unused in that
-; parse.  However, in the case of error return (mv nil nil) instead.
+; First read the contents of filename starting from position,
+; returning a string of length read-amount (or less if end-of-file is
+; reached).  Return (mv proof suffix), where proof is a list of
+; add-step records parsed from that string and suffix is the final
+; portion of that string that is unused in that parse.  However, in
+; the case of error return (mv nil nil) instead.
 
   (declare (xargs :guard (and (stringp filename)
                               (natp position)
@@ -1672,49 +1752,63 @@
                   :stobjs (state)
                   :guard-hints
                   (("Goal" :in-theory (disable acl2::read-file-into-string2)))))
-  (b* (((if (or (not (natp position))
-                (not (posp read-amount))
-                (>= position *2^56*)))
+  (b* (((unless (mbt (and (stringp filename)
+                          (natp position)
+                          (< position *2^56*)
+                          (posp read-amount)
+                          (stringp suffix)
+                          (natp file-length))))
+        ;; Guard finesse
         (clrat-read-next-er "Illegal arguments.~%"))
+
        (input-chars (read-file-into-string
                      filename
                      :start position
                      :bytes read-amount))
+
        ((unless input-chars) ; !! Don't we know it's a string?
         (clrat-read-next-er "Input file problem.~%"))
+
        ((unless (stringp input-chars)) ; !! Don't we know it's a string?
         (clrat-read-next-er "Input from file not a string.~%"))
+
        (new-position (+ position read-amount))
        (final
         (and (= new-position file-length)
 
-; Then close the stream:
+             ;; Then close the stream:
 
              (read-file-into-string
               filename
               :start file-length
               :bytes 1)))
+
        ((if (and final (not (equal final ""))))
         (clrat-read-next-er "Implementation error: expected final read to ~
                              yield \"\".~%"))
+
        (str (if (equal suffix "") ; optimization
                 input-chars
               (string-append suffix input-chars)))
        (len (length str))
+
        ((unless (< len *2^56*)) ; !! presumably we know len <= read-amount
         (clrat-read-next-er "String too long to process."))
 
-; If both SUFFIX and INPUT-CHARS empty, then finished:
+       ;; If both SUFFIX and INPUT-CHARS empty, then finished:
 
        ((if (= len 0))
         (mv nil "" position))
        ((mv suffix commands)
         (clrat-read-some-lines str len 0 nil))
+
        ((unless (stringp suffix))
         (clrat-read-next-er "Bad suffix returned from CLRAT-READ-SOME-LINES"))
        ((unless (< (+ position read-amount) *2^56*))
         (clrat-read-next-er "Proof file too big")))
+
     (mv commands suffix new-position)))
+
 
 (defun clrat-read-next (filename    ; Filename
                         position    ; Position in file
@@ -1729,8 +1823,13 @@
                               (stringp suffix)
                               (natp file-length))
                   :measure (nfix (- file-length position))
-                  :hints ; not necessary but can reduce time from 33s to 3s
+                  :hints ; not necessary but greatly reduces processing time
                   (("Goal" :in-theory (disable acl2::read-file-into-string2)))
+                  :guard-hints ; also unnecessary, but also greatly reduces time
+                  (("Goal" :in-theory
+                    (disable open-input-channel
+                             open-input-channels
+                             acl2::read-file-into-string2)))
                   :stobjs (state)))
   (mv-let (proof new-suffix new-posn)
     (clrat-read-next-1 filename position read-amount suffix file-length state)
@@ -1749,33 +1848,8 @@
           (clrat-read-next filename new-posn read-amount new-suffix file-length
                            state)))))))
 
-; For debugging:
-
-(defrec add-step
-  ((index . clause)
-   .
-   (rup-indices . drat-hints))
-  t)
-
-(defun show-proof (proof acc)
-  (cond ((endp proof) (reverse acc))
-        (t (show-proof
-            (cdr proof)
-            (let ((step (if (eq (caar proof) t)
-                            (list :delete (cdar proof))
-                          (let* ((x (car proof))
-                                 (index (access add-step x :index))
-                                 (clause (access add-step x :clause))
-                                 (rup-indices (access add-step x :rup-indices))
-                                 (drat-hints (access add-step x :drat-hints)))
-                            (list :index index
-                                  :clause clause
-                                  :rup-indices rup-indices
-                                  :drat-hints drat-hints)))))
-              (cons step acc))))))
-
-; The rest of the file defines function clrat-read-file, which can be used to
-; read the entire file into an alleged proof before it is checked.
+; The rest of this file defines function CLRAT-READ-FILE, which can be
+; used to read the entire file into an alleged proof before it is checked.
 
 (defun clrat-read-all-lines-rev (str len pos lines state)
 
@@ -1818,33 +1892,65 @@
     (mv (my-rev lines-rev) state)))
 
 
-(defun clrat-read-file (filename state)
+(defun clrat-read-file (file-name state)
 
-; Reads the Compressed-LRAT file named FILENAME and returns Lisp
-; constant that can be processed by our LRAT proof checker.
+; Reads a Compressed-LRAT file nameed FILE-NAME.  Returns a formula
+; data structure, i.e., a list of (index . clause) pairs.  See
+; formula-p in list-based/lrat-checker.lisp.  Note that the formula is
+; _not_ a fast-alist.
 
-  (declare (xargs :guard (stringp filename)
-                  :stobjs (state)
-                  :verify-guards nil))
-  (b* ((str (read-file-into-string filename))
-       (len (length str))
-       (pos 0)
-       ((if (zp len))
-; !! Consider error instead.
+  (declare (xargs :guard (stringp file-name)
+                  :guard-hints
+                  (("Goal" :in-theory (disable acl2::read-file-into-string2)))
+                  :stobjs (state)))
+  (b* ((str (read-file-into-string file-name))
+       ((unless (stringp str))
         (mv (er hard? 'clrat-read-file
-                "No characters were read from alleged file ~p0; does it ~
-                 exist?~|"
-                filename)
-            state)))
+                    "clrat-read-file: (read-file-into-string ~x0 .~%" file-name)
+            state))
+       (len (length str))
+       ((unless (< len *2^56*))
+        (mv (er hard? 'clrat-read-file
+                "clrat-read-file:  file ~x0 is too long.~%" file-name)
+            state))
+       (start 0)
+       ((unless (lrat-guard str len start))
+        (mv (er hard? 'clrat-read-file
+                "clrat-read-file:  LRAT-GUARD fails.~%")
+            state))
+       (pos start))
     (clrat-read-all-lines str len pos state)))
 
-; Finally, we produce a converter from clrat to lrat, which can be useful for
-; viewing clrat files.  For this first cut we read the entire file, but it
-; should be easy to deal with chunks if need be.
 
-;  j l1 l2 ... lk 0 d1 d2 ... dm -e1 f11 ... f1{m_1} -e2 f21 ... f2{m_2} ... 0
 
-; No need to reason about these functions:
+; For debugging:
+
+(defrec add-step
+  ((index . clause)
+   .
+   (rup-indices . drat-hints))
+  t)
+
+(defun show-proof (proof acc)
+  (cond ((endp proof) (reverse acc))
+        (t (show-proof
+            (cdr proof)
+            (let ((step (if (eq (caar proof) t)
+                            (list :delete (cdar proof))
+                          (let* ((x (car proof))
+                                 (index (access add-step x :index))
+                                 (clause (access add-step x :clause))
+                                 (rup-indices (access add-step x :rup-indices))
+                                 (drat-hints (access add-step x :drat-hints)))
+                            (list :index index
+                                  :clause clause
+                                  :rup-indices rup-indices
+                                  :drat-hints drat-hints)))))
+              (cons step acc))))))
+
+
+; No need to reason about these printing and debugging functions...
+
 (program)
 (set-state-ok t)
 
@@ -1869,7 +1975,13 @@
                    (print-integers (cdar drat-hints) nil chan state)
                    (print-drat-hints (cdr drat-hints) chan state)))))
 
+
 (defun clrat-to-lrat-add-step (add-step chan state)
+
+; Finally, we produce a converter from clrat to lrat, which can be useful for
+; viewing clrat files.  For this first cut we read the entire file, but it
+; should be easy to deal with chunks if need be.
+
 ;  j l1 l2 ... lk 0 d1 d2 ... dm -e1 f11 ... f1{m_1} -e2 f21 ... f2{m_2} ... 0
 
   (let ((index (access add-step add-step :index))

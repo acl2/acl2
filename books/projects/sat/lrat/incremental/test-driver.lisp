@@ -2,7 +2,7 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Test driver for ../lrat-checker.lisp.
+; Test driver for the lrat checker.
 
 ; (depends-on "../tests/example-4-vars.cnf")
 ; (depends-on "../tests/example-4-vars.clrat")
@@ -21,7 +21,7 @@
 ; (depends-on "../tests/uuf-30-1.clrat")
 
 (in-package "LRAT")
-(include-book "incremental")
+(include-book "soundness")
 
 ; Test driver
 
@@ -52,17 +52,13 @@
         (pprogn
          (fms "Starting ~x0.~|"
               (list (cons #\0
-                          `(incl-verify-proof ,cnf ,clrat
-                                              :incomplete-okp ,incomplete-okp
-                                              :chunk-size ,chunk-size
-                                              :debug ,debug)))
+                          `(proved-formula ,cnf ,clrat ,chunk-size ,debug
+                                           ,incomplete-okp 'test state)))
               chan state nil)
          (mv-let
            (erp val state)
-           (incl-verify-proof cnf clrat
-                              :incomplete-okp incomplete-okp
-                              :chunk-size chunk-size
-                              :debug debug)
+           (proved-formula cnf clrat chunk-size debug incomplete-okp 'test
+                           state)
            (pprogn
             (princ$ "Result: " chan state)
             (princ$ (if (and (null erp) val) "success" "FAILURE") chan state)

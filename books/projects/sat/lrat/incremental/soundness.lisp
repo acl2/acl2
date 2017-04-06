@@ -12,16 +12,31 @@
 
 (in-theory (theory 'ground-zero))
 
-(defun-sk incl-proved-p (formula)
-  (exists (cnf-file clrat-file chunk-size debug ctx st)
-          (mv-let (erp val/formula st)
-            (incl-valid-proofp$-top cnf-file clrat-file
-                                    nil ; incomplete-okp
-                                    chunk-size debug ctx st)
-            (declare (ignore st))
-            (and (not erp)
-                 (equal formula (reverse (cdr val/formula)))
-                 (car val/formula)))))
+(defthm ordered-formula-p-forward-to-true-listp
+  (implies (ordered-formula-p formula)
+           (true-listp formula))
+  :hints (("Goal" :in-theory (enable ordered-formula-p)))
+  :rule-classes :forward-chaining)
+
+(defun proved-formula (cnf-file clrat-file chunk-size debug incomplete-okp ctx
+                                state)
+  (declare (xargs :stobjs state
+                  :guard-hints
+                  (("Goal" :in-theory (enable incl-valid-proofp$-top
+                                              acl2::error1-logic)))))
+  (mv-let (erp val/formula state)
+    (incl-valid-proofp$-top cnf-file clrat-file
+                            incomplete-okp
+                            chunk-size debug ctx state)
+    (value (and (null erp)
+                (consp val/formula)
+                (eq (car val/formula) t)
+
+; The formula returned by incl-valid-proofp$-top is in reverse order.  We
+; prefer to return a formula that we expect to agree with the formula
+; represented in the input cnf-file.
+
+                (reverse (cdr val/formula))))))
 
 (in-theory (disable reverse))
 
@@ -69,95 +84,93 @@
    (not (satisfiable formula)))
   :hints (("Goal" :in-theory (enable natp-formula-max-var))))
 
-; Start proof of satisfiable-reverse
+(encapsulate ; Prove satisfiable-reverse.
+  ()
 
-; Start proof of hons-assoc-equal-reverse
+  (local
+   (progn ; Prove hons-assoc-equal-reverse.
 
-(defthm hons-assoc-equal-revappend-lemma-1
-  (implies (and (ordered-formula-p1 formula i)
-                (natp i)
-                (natp j)
-                (<= i j))
-           (equal (hons-assoc-equal j (revappend formula acc))
-                  (hons-assoc-equal j acc)))
-  :hints (("Goal"
-           :in-theory (enable ordered-formula-p1))))
+     (defthm hons-assoc-equal-revappend-lemma-1
+       (implies (and (ordered-formula-p1 formula i)
+                     (natp i)
+                     (natp j)
+                     (<= i j))
+                (equal (hons-assoc-equal j (revappend formula acc))
+                       (hons-assoc-equal j acc)))
+       :hints (("Goal"
+                :in-theory (enable ordered-formula-p1))))
 
-(defthm hons-assoc-equal-revappend-lemma-2
-  (implies (and (ordered-formula-p1 formula i)
-                (natp i)
-                (natp j)
-                (<= i j))
-           (equal (hons-assoc-equal j formula)
-                  nil))
-  :hints (("Goal"
-           :in-theory (enable ordered-formula-p1))))
+     (defthm hons-assoc-equal-revappend-lemma-2
+       (implies (and (ordered-formula-p1 formula i)
+                     (natp i)
+                     (natp j)
+                     (<= i j))
+                (equal (hons-assoc-equal j formula)
+                       nil))
+       :hints (("Goal"
+                :in-theory (enable ordered-formula-p1))))
 
-(defthm hons-assoc-equal-revappend
-  (implies (ordered-formula-p1 formula start)
-           (equal (hons-assoc-equal index (revappend formula acc))
-                  (or (hons-assoc-equal index formula)
-                      (hons-assoc-equal index acc))))
-  :hints (("Goal"
-           :in-theory (enable ordered-formula-p1))))
+     (defthm hons-assoc-equal-revappend
+       (implies (ordered-formula-p1 formula start)
+                (equal (hons-assoc-equal index (revappend formula acc))
+                       (or (hons-assoc-equal index formula)
+                           (hons-assoc-equal index acc))))
+       :hints (("Goal"
+                :in-theory (enable ordered-formula-p1))))
 
-(defthm hons-assoc-equal-reverse
-  (implies (ordered-formula-p formula)
-           (equal (hons-assoc-equal index (reverse formula))
-                  (hons-assoc-equal index formula)))
-  :hints (("Goal" :in-theory (enable reverse ordered-formula-p))))
+     (defthm hons-assoc-equal-reverse
+       (implies (ordered-formula-p formula)
+                (equal (hons-assoc-equal index (reverse formula))
+                       (hons-assoc-equal index formula)))
+       :hints (("Goal" :in-theory (enable reverse ordered-formula-p))))))
 
-(defthm solution-p-reverse-implies-solution-p
-  (implies (and (ordered-formula-p formula)
-                (solution-p assignment (reverse formula)))
-           (solution-p assignment formula))
-  :hints (("Goal"
-           :in-theory (enable formula-truep-necc solution-p)
-           :restrict ((formula-truep-necc
-                       ((index (formula-truep-witness formula assignment)))))
-           :expand ((formula-truep formula assignment)))))
+  (local
+   (defthm solution-p-reverse-implies-solution-p
+     (implies (and (ordered-formula-p formula)
+                   (solution-p assignment (reverse formula)))
+              (solution-p assignment formula))
+     :hints (("Goal"
+              :in-theory (enable formula-truep-necc solution-p)
+              :restrict ((formula-truep-necc
+                          ((index (formula-truep-witness formula assignment)))))
+              :expand ((formula-truep formula assignment))))))
 
-(defthm satisfiable-reverse
-  (implies (and (ordered-formula-p formula)
-                (not (satisfiable formula)))
-           (not (satisfiable (reverse formula))))
-  :hints (("Goal"
-           :in-theory (enable satisfiable-suff)
-           :restrict ((satisfiable-suff
-                       ((assignment (satisfiable-witness (reverse formula))))))
-           :expand ((satisfiable (reverse formula))))))
+  (defthm satisfiable-reverse
+    (implies (and (ordered-formula-p formula)
+                  (not (satisfiable formula)))
+             (not (satisfiable (reverse formula))))
+    :hints (("Goal"
+             :in-theory (enable satisfiable-suff)
+             :restrict ((satisfiable-suff
+                         ((assignment (satisfiable-witness (reverse formula))))))
+             :expand ((satisfiable (reverse formula)))))))
 
 (defthm soundness-helper-2
-  (implies (mv-let (erp val/formula st)
+  (implies (mv-let (erp val/formula state)
              (incl-valid-proofp$-top cnf-file clrat-file nil
-                                     chunk-size debug ctx st)
-             (declare (ignore st))
+                                     chunk-size debug ctx state)
+             (declare (ignore state))
              (and (not erp)
                   (equal formula (reverse (cdr val/formula)))
                   (car val/formula)))
            (not (satisfiable formula)))
-  :otf-flg t
   :hints (("Goal"
            :in-theory (enable incl-valid-proofp$-top
                               acl2::error1-logic
                               incl-valid-proofp$-top-aux
-                              ordered-formula-p-implies-formula-p)))
-  :rule-classes nil)
+                              ordered-formula-p-implies-formula-p))))
 
 (defthm soundness
-  (implies (incl-proved-p formula) ; essentially checks (formula-p formula)
-           (not (satisfiable formula)))
-  :hints (("Goal"
-           :use ((:instance soundness-helper-2
-                            (cnf-file
-                             (mv-nth 0 (incl-proved-p-witness formula)))
-                            (clrat-file
-                             (mv-nth 1 (incl-proved-p-witness formula)))
-                            (chunk-size
-                             (mv-nth 2 (incl-proved-p-witness formula)))
-                            (debug
-                             (mv-nth 3 (incl-proved-p-witness formula)))
-                            (ctx
-                             (mv-nth 4 (incl-proved-p-witness formula)))
-                            (st
-                             (mv-nth 5 (incl-proved-p-witness formula))))))))
+  (let ((formula (mv-nth 1
+                         (proved-formula cnf-file clrat-file chunk-size debug
+                                         nil ; incomplete-okp
+                                         ctx state))))
+    (implies formula
+             (not (satisfiable formula))))
+  :hints (("Goal" :restrict ((soundness-helper-2
+                              ((state state)
+                               (ctx ctx)
+                               (debug debug)
+                               (chunk-size chunk-size)
+                               (clrat-file clrat-file)
+                               (cnf-file cnf-file)))))))

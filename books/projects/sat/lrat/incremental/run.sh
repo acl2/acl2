@@ -2,9 +2,12 @@
 
 # To run this script, first save a suitable executable, for example:
 
-# (include-book "projects/sat/lrat/incremental/run" :dir :system)
+# (include-book "run")
 # :q
 # (save-exec "lrat-check" "Executable including run.lisp")
+
+export LRAT_PRINT_FORMULA=""
+export cnf_outfile=""
 
 if [ $# -eq 2 ] ; then \
     partial="" ; \
@@ -15,18 +18,27 @@ elif [ $# -eq 3 ] ; then \
 elif [ $# -eq 4 ] ; then \
     partial=" $3" ; \
     outfile=$4 ; \
+elif [ $# -eq 5 ] ; then \
+    partial=" $3" ; \
+    outfile=$4 ; \
+    export LRAT_PRINT_FORMULA="$5"
+    export cnf_outfile="$5"
 else
-    echo "Usage:  $0 takes two to four arguments, as follows." ; \
+    echo "Usage:  $0 takes two to five arguments, as follows." ; \
     echo "        # Third argument is t for partial proof, else omitted or nil ." ; \
     echo "        # Fourth argument is t for standard output, else an output file;" ; \
-    echo "        # default for omitted out-file is lrat-file with .lrat replaced by .out ." ; \
-    echo "        $0 cnf-file lrat-file" ; \
-    echo "        $0 cnf-file lrat-file t" ; \
-    echo "        $0 cnf-file lrat-file nil out-file" ; \
-    echo "        $0 cnf-file lrat-file t   out-file" ; \
-    echo "        $0 cnf-file lrat-file nil t" ; \
-    echo "        $0 cnf-file lrat-file t   t" ; \
+    echo "        # Fifth argument is t for standard output, else an output cnf file to diff with input;" ; \
+    echo "        # default for omitted fourth argument is clrat-file with .clrat replaced by .out ." ; \
+    echo "        $0 cnf-file clrat-file" ; \
+    echo "        $0 cnf-file clrat-file nil [out-file [cnf-outfile]]" ; \
+    echo "        $0 cnf-file clrat-file t   [out-file [cnf-outfile]]" ; \
+    echo "        $0 cnf-file clrat-file nil [t [cnf-outfile]]" ; \
+    echo "        $0 cnf-file clrat-file t   [t [cnf-outfile]]" ; \
     exit 1 ; \
+fi
+
+if [ "$cnf_outfile" != "" ] ; then \
+    rm -f $cnf_outfile ; \
 fi
 
 invocation_dir=$(dirname "$0")
@@ -53,7 +65,7 @@ fi
 lrat_status=$?
 
 if [ "$outfile" = t ] ; then \
-    echo -n "" ; \
+    /bin/echo -n "" ; \
 elif [ $lrat_status -eq 0 ] && [ "`grep '^s VERIFIED' $outfile`" != "" ] ; then \
     echo "s VERIFIED" ; \
     echo "  (see $outfile)" ; \
@@ -61,4 +73,11 @@ else \
     echo "s FAILED" ; \
     echo "  (see $outfile)" ; \
     exit 1
+fi
+
+if [ "$cnf_outfile" != "" ] && [ "$cnf_outfile" != "t" ] && [ "$cnf_outfile" != "T" ] ; then \
+    ./cnf_diff.sh "$1" "$cnf_outfile" ; \
+    if [ $? -ne 0 ] ; then \
+	exit 1 ; \
+    fi \
 fi

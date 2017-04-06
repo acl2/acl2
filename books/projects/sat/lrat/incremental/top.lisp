@@ -11,6 +11,9 @@
 (include-book "clrat-parser")
 (include-book "soundness")
 
+; All events are from included (or locally included) books:
+(set-enforce-redundancy t)
+
 (defun incl-verify-proof$-rec (ncls ndel formula proof a$)
   (declare (xargs :stobjs a$
                   :guard (and (a$p a$)
@@ -391,17 +394,27 @@
 
 ; Soundness
 
-(defun-sk incl-proved-p (formula)
-  (exists (cnf-file clrat-file chunk-size debug ctx st)
-          (mv-let (erp val/formula st)
-            (incl-valid-proofp$-top cnf-file clrat-file
-                                    nil ; incomplete-okp
-                                    chunk-size debug ctx st)
-            (declare (ignore st))
-            (and (not erp)
-                 (equal formula (reverse (cdr val/formula)))
-                 (car val/formula)))))
+(defun proved-formula (cnf-file clrat-file chunk-size debug incomplete-okp ctx
+                                state)
+  (declare (xargs :stobjs state))
+  (mv-let (erp val/formula state)
+    (incl-valid-proofp$-top cnf-file clrat-file
+                            incomplete-okp
+                            chunk-size debug ctx state)
+    (value (and (null erp)
+                (consp val/formula)
+                (eq (car val/formula) t)
+
+; The formula returned by incl-valid-proofp$-top is in reverse order.  We
+; prefer to return a formula that we expect to agree with the formula
+; represented in the input cnf-file.
+
+                (reverse (cdr val/formula))))))
 
 (defthm soundness
-  (implies (incl-proved-p formula) ; essentially checks (formula-p formula)
-           (not (satisfiable formula))))
+  (let ((formula (mv-nth 1
+                         (proved-formula cnf-file clrat-file chunk-size debug
+                                         nil ; incomplete-okp
+                                         ctx state))))
+    (implies formula
+             (not (satisfiable formula)))))
