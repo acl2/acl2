@@ -1388,6 +1388,22 @@
                             (list (car uterm) (cadr x))))))))))
 )
 
+(defun set-ignore-ok-world (val wrld)
+
+; We return a world in which let-bound variables can be ignored, by extending
+; the world with an updated acl2-defaults-table if necessary.
+
+  (let* ((acl2-defaults-table (table-alist 'acl2-defaults-table wrld))
+         (old-val (cdr (assoc-eq :ignore-ok acl2-defaults-table))))
+    (cond
+     ((eq old-val val) wrld)
+     (t (putprop 'acl2-defaults-table
+                 'table-alist
+                 (acons :ignore-ok
+                        val
+                        acl2-defaults-table)
+                 wrld)))))
+
 (defun directed-untranslate (uterm tterm sterm iff-flg wrld)
 
 ; Uterm is an untranslated form that we expect to translate to the term, tterm
@@ -1397,20 +1413,23 @@
 ; tterm and sterm is reflected in similar sharing between uterm and that
 ; result.
 
-; Warning: check-du-inv-fn will fail if set-ignore-ok is required for uterm to
-; translate to tterm.
+; Warning: check-du-inv-fn, called in directed-untranslate-rec, requires that
+; uterm translates to tterm.  We ensure with set-ignore-ok-world below that
+; such failures are not merely due to ignored formals.
 
-  (if (check-du-inv-fn uterm tterm wrld)
-      (directed-untranslate-rec uterm tterm sterm iff-flg t wrld)
-    (untranslate sterm iff-flg wrld)))
+  (let ((wrld (set-ignore-ok-world t wrld)))
+    (if (check-du-inv-fn uterm tterm wrld)
+        (directed-untranslate-rec uterm tterm sterm iff-flg t wrld)
+      (untranslate sterm iff-flg wrld))))
 
 (defun directed-untranslate-no-lets (uterm tterm sterm iff-flg wrld)
 
 ; See directed-untranslate.  Here we refuse to introduce lambdas into sterm.
 
-  (if (check-du-inv-fn uterm tterm wrld)
-      (directed-untranslate-rec uterm tterm sterm iff-flg nil wrld)
-    (untranslate sterm iff-flg wrld)))
+  (let ((wrld (set-ignore-ok-world t wrld)))
+    (if (check-du-inv-fn uterm tterm wrld)
+        (directed-untranslate-rec uterm tterm sterm iff-flg nil wrld)
+      (untranslate sterm iff-flg wrld))))
 
 ; Essay on Handling of Lambda Applications by Directed-untranslate
 
