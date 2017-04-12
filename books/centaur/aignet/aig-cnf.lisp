@@ -211,16 +211,26 @@
                     :do-not-induct t))))
 
   (defret eval-output-of-aig->aignet
-    (equal (id-eval (node-count (lookup-stype 0 :po new-aignet))
-                    invals regvals new-aignet)
+    (equal (output-eval 0 invals regvals new-aignet)
            (acl2::bool->bit (aig-eval aig (aignet-bitarr-to-aig-env vars invals))))
-    :hints(("Goal" :in-theory (enable lookup-stype)
+    :hints(("Goal" :in-theory (enable lookup-stype output-eval)
             :expand ((:free (n aignet) (id-eval (+ 1 n) invals regvals aignet)))
             :do-not-induct t)))
 
   (defret vars-of-aig->aignet
     (equal vars
            (acl2::aig-vars-unordered-list (list aig)))))
+
+(local (defthm lit-eval-of-fanin-equals-output-eval
+         (implies (< (nfix n) (stype-count :po aignet))
+                  (equal (lit-eval (aignet-lit-fix (co-node->fanin (car (lookup-stype n :po aignet)))
+                                                   (cdr (lookup-stype n :po aignet)))
+                                   invals regvals aignet)
+                         (output-eval n invals regvals aignet)))
+         :hints(("Goal" :in-theory (enable output-eval)
+                 :expand ((:free (invals regvals aignet)
+                           (id-eval (node-count (lookup-stype n :po aignet))
+                                    invals regvals aignet)))))))
 
 (define aig->cnf (aig sat-lits aignet)
   :returns (mv (cnf satlink::lit-list-listp)

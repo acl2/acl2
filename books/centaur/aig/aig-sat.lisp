@@ -35,6 +35,13 @@
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (in-theory (disable nth update-nth aig-eval)))
 
+
+
+(local (defthm true-listp-accumulate-aig-vars
+         (equal (true-listp (mv-nth 1 (acl2::accumulate-aig-vars x nodetable acc)))
+                (true-listp acc))
+         :hints(("Goal" :in-theory (enable acl2::accumulate-aig-vars)))))
+
 (define aig-sat
   :parents (aig)
   :short "Determine whether an AIG is satisfiable."
@@ -92,7 +99,8 @@ translation and conversion steps are all verified.</p>"
   (defthm aig-sat-when-sat
     (b* (((mv status env) (aig-sat aig :config config)))
       (implies (equal status :sat)
-               (aig-eval aig env))))
+               (aig-eval aig env)))
+    :hints(("Goal" :in-theory (disable aignet::vars-of-aig->cnf))))
 
   (defthm aig-sat-when-unsat
     (b* (((mv status &) (aig-sat aig :config config)))
