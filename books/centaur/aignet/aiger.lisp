@@ -316,8 +316,8 @@
   (local (include-book "arithmetic/top-with-meta" :dir :system))
   (defthm mk-lit-compare
     (implies (< (nfix id1) (nfix id2))
-             (< (lit-val (mk-lit id1 neg1))
-                (lit-val (mk-lit id2 neg2))))
+             (< (mk-lit id1 neg1)
+                (mk-lit id2 neg2)))
     :hints(("Goal" :in-theory (e/d* (mk-lit
                                      acl2::ihsext-redefs)))))
 
@@ -359,10 +359,10 @@
                                      (cdr look)))
                             aigernums))
                   (mid (nth m aigernums)))
-               (and (< (lit-val (mk-lit a0 neg0))
-                       (lit-val (mk-lit mid 0)))
-                    (< (lit-val (mk-lit a1 neg1))
-                       (lit-val (mk-lit mid 0))))))
+               (and (< (mk-lit a0 neg0)
+                       (mk-lit mid 0))
+                    (< (mk-lit a1 neg1)
+                       (mk-lit mid 0)))))
     :rule-classes :linear))
 
 
@@ -511,12 +511,12 @@
          (lit1 (aignet-to-aiger-lit lit1 aigernums))
          (lit2 (aignet-to-aiger-lit lit2 aigernums))
          ((mv lit1 lit2)
-          (if (< (lit-val lit1) (lit-val lit2))
+          (if (< lit1 lit2)
               (mv lit2 lit1)
             (mv lit1 lit2)))
          (lhslit (aignet-to-aiger-lit (mk-lit id 0) aigernums))
-         (delta1 (- (lit-val lhslit) (lit-val lit1)))
-         (delta2 (- (lit-val lit1) (lit-val lit2)))
+         (delta1 (- lhslit lit1))
+         (delta2 (- lit1 lit2))
          (state (acl2::aiger-write-delta delta1 channel state)))
       (acl2::aiger-write-delta delta2 channel state))
     :returns state
@@ -796,7 +796,7 @@
         (cw "Failed to parse number~%")
         (break$)
         (mv "Failed to parse number" litarr nxtbyte state))
-       (litarr (set-lit idx (to-lit num) litarr))
+       (litarr (set-lit idx num litarr))
        ((mv nxt nxtbyte state)
         (acl2::read-byte-buf channel nxtbyte state))
        ((when (not (eql nxt (char-code #\Newline))))
@@ -858,11 +858,10 @@
                    (posp delta1))
               (<
                (LIT-ID
-                (TO-LIT
-                 (+ (LIT-VAL (MK-LIT num-nodes 0))
-                    (- delta1))))
+                (+ (MK-LIT num-nodes 0)
+                   (- delta1)))
                num-nodes))
-     :hints(("Goal" :in-theory (e/d (lit-id mk-lit
+     :hints(("Goal" :in-theory (e/d (lit-id mk-lit lit-fix
                                             nfix)
                                     (floor))))
      :rule-classes :linear)
@@ -873,11 +872,10 @@
                    (natp delta2))
               (<
                (LIT-ID
-                (TO-LIT
-                 (+
-                  (LIT-VAL (MK-LIT num-nodes 0))
-                  (- delta1)
-                  (- delta2))))
+                (+
+                 (MK-LIT num-nodes 0)
+                 (- delta1)
+                 (- delta2)))
                num-nodes))
      :hints (("goal" :use ((:instance id-in-bounds-of-diff
                             (delta1 (+ delta1 delta2))))))
@@ -911,13 +909,15 @@
                   :measure (nfix (- (nfix numgates)
                                     (nfix idx)))
                   :guard-hints (("goal" :do-not-induct t
-                                 :in-theory (enable aignet-litp aignet-idp)))))
+                                 :in-theory (enable aignet-litp aignet-idp))
+                                (and stable-under-simplificationp
+                                     '(:in-theory (enable litp))))))
   :returns (mv msg aignet nxtbyte state)
   (b* (((when (mbe :logic (zp (- (nfix numgates)
                                  (nfix idx)))
                    :exec (= idx numgates)))
         (mv nil aignet nxtbyte state))
-       (aiger-idx (lit-val (mk-lit (num-nodes aignet) 0)))
+       (aiger-idx (mk-lit (num-nodes aignet) 0))
        ((mv err delta1 nxtbyte state)
         (acl2::read-bytecoded-nat channel nxtbyte state))
        ((when err) (mv err aignet nxtbyte state))
@@ -934,8 +934,8 @@
        ((when err) (mv err aignet nxtbyte state))
        (aiger-rhs1 (- aiger-idx delta1))
        (aiger-rhs2 (- aiger-rhs1 delta2))
-       (rhs1 (to-lit aiger-rhs1))
-       (rhs2 (to-lit aiger-rhs2))
+       (rhs1 aiger-rhs1)
+       (rhs2 aiger-rhs2)
        (aignet (aignet-add-gate rhs1 rhs2 aignet)))
     (aignet-read-aiger-gates
      (1+ (nfix idx)) numgates aignet nxtbyte channel state))
@@ -1123,7 +1123,7 @@
                                  (nfix idx)))
                    :exec (int= idx outnum)))
         (mv nil aignet))
-       (fanin (to-lit (get-lit idx outarr)))
+       (fanin (get-lit idx outarr))
        ((when (<= (lnfix maxid) (lit-id fanin)))
         (mv "Register fanin out of bounds" aignet))
        (aignet (aignet-add-out fanin aignet)))

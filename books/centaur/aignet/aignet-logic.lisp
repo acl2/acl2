@@ -1272,7 +1272,8 @@ suffix.</p>"
     (implies (< (nfix n) (stype-count stype aignet))
              (equal (stype (car (lookup-stype n stype aignet)))
                     (stype-fix stype))))
-  (defthmd lookup-stype-in-bounds
+
+  (defthm lookup-stype-in-bounds
     (iff (consp (lookup-stype n stype aignet))
          (< (nfix n) (stype-count stype aignet))))
   (defthm lookup-stype-aignet-extension-p
@@ -1296,7 +1297,7 @@ suffix.</p>"
                              (stype-count stype orig)))))))
 
   (defthm lookup-stype-in-extension
-    (implies (and (aignet-extension-p new orig)
+    (implies (and (aignet-extension-binding)
                   (consp (lookup-stype n stype orig)))
              (equal (lookup-stype n stype new)
                     (lookup-stype n stype orig)))
@@ -1315,15 +1316,6 @@ suffix.</p>"
              (equal (stype (car (lookup-stype n stype aignet)))
                     (stype-fix stype))))
 
-  
-  (defthm aignet-extension-simplify-lookup-stype
-    (implies (and (aignet-extension-binding)
-                  (consp (lookup-stype n stype orig)))
-             (equal (lookup-stype n stype new)
-                    (lookup-stype n stype orig)))
-    :hints(("Goal" :in-theory (enable lookup-stype
-                                      aignet-extension-p))))
-
   (defthm aignet-extension-simplify-lookup-stype-when-counts-same
     (implies (and (aignet-extension-binding)
                   (equal (stype-count stype new)
@@ -1337,7 +1329,11 @@ suffix.</p>"
     (implies (and (aignet-extension-bind-inverse)
                   (consp (lookup-stype n stype orig)))
              (equal (lookup-stype n stype orig)
-                    (lookup-stype n stype new)))))
+                    (lookup-stype n stype new))))
+
+  (defthm lookup-stype-out-of-bounds
+    (implies (<= (stype-count stype aignet) (nfix n))
+             (list-equiv (lookup-stype n stype aignet) nil))))
 
 
 (define find-max-fanin ((aignet node-listp))
@@ -1469,7 +1465,11 @@ suffix.</p>"
 
   (defthm lookup-reg->nxst-out-of-bounds
     (implies (< (node-count aignet) (nfix id))
-             (not (consp (lookup-reg->nxst id aignet))))))
+             (list-equiv (lookup-reg->nxst id aignet) nil)))
+
+  (defthm lookup-reg->nxst-of-0
+    (list-equiv (lookup-reg->nxst 0 aignet) nil)
+    :hints(("Goal" :in-theory (enable lookup-reg->nxst)))))
 
 
 ;; (defthm node-by-stype-types

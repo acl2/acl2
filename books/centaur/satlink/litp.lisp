@@ -312,29 +312,51 @@ identifiers as natural numbers.)</p>"
                 (equal (lit->var a) (var-fix var))
                 (equal (lit->neg a) (bfix neg))))))
 
-(defthm equal-of-lit-fix-hyp
-  (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
-                         `(equal (lit-fix$inline ,x) ,y)
-                         mfc state)
-                        (acl2::rewriting-negative-literal-fn
-                         `(equal ,y (lit-fix$inline ,x))
-                         mfc state)))
-           (equal (equal (lit-fix x) y)
-                  (and (litp y)
-                       (equal (lit->var x) (lit->var y))
-                       (bit-equiv (lit->neg x) (lit->neg y)))))
-  :hints (("goal" :use ((:instance make-lit-identity
+(defthm equal-of-lit->var-equal-hyp
+  (implies (and (syntaxp (acl2::rewriting-negative-literal-fn
+                          `(equal (lit->var$inline ,x) (lit->var$inline ,y))
+                          mfc state))
+                (equal (lit->neg x) (lit->neg y)))
+           (equal (equal (lit->var x) (lit->var y))
+                  (equal (lit-fix x) (lit-fix y))))
+  :hints (("goal" :use ((:instance lit->var$inline-of-lit-fix-lit
+                         (lit y))
+                        (:instance lit->var$inline-of-lit-fix-lit
+                         (lit x))
+                        (:instance make-lit-identity
                          (lit y))
                         (:instance make-lit-identity
                          (lit x)))
-           :in-theory (e/d () (make-lit-identity)))))
+           :in-theory (e/d () (lit->var$inline-of-lit-fix-lit
+                               lit->var$inline-lit-equiv-congruence-on-lit
+                               make-lit-identity)))))
+
+(defthm equal-of-lit-fix-forward1
+  (implies (equal (lit-fix x) y)
+           (lit-equiv x y))
+  :rule-classes :forward-chaining)
+
+(defthm equal-of-lit-fix-forward2
+  (implies (equal y (lit-fix x))
+           (lit-equiv x y))
+  :rule-classes :forward-chaining)
+
+(defthm equal-of-lit-fix-forward-both
+  (implies (equal (lit-fix x) (lit-fix y))
+           (lit-equiv x y))
+  :rule-classes :forward-chaining)
 
 (defthm equal-of-lit-fix-backchain
-  (implies (and (litp y)
-                (var-equiv (lit->var x) (lit->var y))
-                (bit-equiv (lit->neg x) (lit->neg y)))
-           (equal (equal (lit-fix x) y) t))
-  :hints (("goal" :use equal-of-lit-fix-hyp)))
+  (implies (and (syntaxp (not (or (acl2::rewriting-negative-literal-fn
+                                   `(equal (lit-fix$inline ,x) ,y)
+                                   mfc state)
+                                  (acl2::rewriting-negative-literal-fn
+                                   `(equal ,y (lit-fix$inline ,x))
+                                   mfc state))))
+                (litp y)
+                (equal (lit->var x) (lit->var y))
+                (equal (lit->neg x) (lit->neg y)))
+           (equal (equal (lit-fix x) y) t)))
 
 (defthm equal-of-lit->var-implies-lit-equiv
   (implies (and (equal (lit->var x) (lit->var y))
@@ -388,22 +410,62 @@ identifiers as natural numbers.)</p>"
     (implies (equal (lit->neg x) (lit->neg y))
              (not (equal (lit-negate x) y))))
 
-  (defthm equal-of-lit-negate-hyp
-    (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
-                           `(equal (lit-negate$inline ,x) ,y) mfc state)
-                          (acl2::rewriting-negative-literal-fn
-                           `(equal ,y (lit-negate$inline ,x)) mfc state)))
-             (equal (equal (lit-negate x) y)
-                    (and (litp y)
-                         (equal (lit->var x) (lit->var y))
-                         (equal (lit->neg x) (b-not (lit->neg y))))))
-    :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+  ;; (defthm equal-of-lit-negate-hyp
+  ;;   (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+  ;;                          `(equal (lit-negate$inline ,x) ,y) mfc state)
+  ;;                         (acl2::rewriting-negative-literal-fn
+  ;;                          `(equal ,y (lit-negate$inline ,x)) mfc state)))
+  ;;            (equal (equal (lit-negate x) y)
+  ;;                   (and (litp y)
+  ;;                        (equal (lit->var x) (lit->var y))
+  ;;                        (equal (lit->neg x) (b-not (lit->neg y))))))
+  ;;   :hints(("Goal" :in-theory (enable equal-of-make-lit))))
 
   (defthm equal-of-lit-negate-backchain
-    (implies (and (litp y)
+    (implies (and (syntaxp (not (or (acl2::rewriting-negative-literal-fn
+                                   `(equal (lit-negate$inline ,x) ,y)
+                                   mfc state)
+                                  (acl2::rewriting-negative-literal-fn
+                                   `(equal ,y (lit-negate$inline ,x))
+                                   mfc state))))
+                  (litp y)
                   (equal (lit->var x) (lit->var y))
                   (equal (lit->neg x) (b-not (lit->neg y))))
              (equal (equal (lit-negate x) y) t))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+
+  (local (defthm not-equal-of-bits
+           (implies (and (syntaxp (acl2::rewriting-positive-literal-fn
+                                   `(equal ,x ,y) mfc state))
+                         (bitp x) (bitp y))
+                    (equal (equal x y)
+                           (not (equal x (b-not y)))))
+           :hints(("Goal" :in-theory (enable bitp)))))
+
+  (defthm equal-of-lit->var-negated-hyp
+    (implies (and (syntaxp (acl2::rewriting-negative-literal-fn
+                            `(equal (lit->var$inline ,x) (lit->var$inline ,y))
+                            mfc state))
+                  (not (equal (lit->neg x) (lit->neg y))))
+             (equal (equal (lit->var x) (lit->var y))
+                    (equal (lit-fix x) (lit-negate y))))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+
+  (defthm equal-of-lit-negate-component-rewrites
+    (implies (equal (lit-negate x) (lit-fix y))
+             (and (equal (lit->var y) (lit->var x))
+                  (equal (lit->neg y) (b-not (lit->neg x)))))
+    :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+
+  ;; BOZO move to bitops or something
+  (defthm equal-of-b-not-cancel
+    (equal (equal (b-not x) (b-not y))
+           (bit-equiv x y))
+    :hints(("Goal" :in-theory (enable b-not))))
+
+  (defthm equal-of-lit-negate-cancel
+    (equal (equal (lit-negate x) (lit-negate y))
+           (equal (lit-fix x) (lit-fix y)))
     :hints(("Goal" :in-theory (enable equal-of-make-lit)))))
 
 
@@ -448,19 +510,31 @@ we return @('lit') unchanged.</p>"
     (implies (not (equal (lit->neg x) (b-xor c (lit->neg y))))
              (not (equal (lit-negate-cond x c) y))))
 
-  (defthm equal-of-lit-negate-cond-hyp
-    (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
-                           `(equal (lit-negate-cond$inline ,x ,c) ,y) mfc state)
-                          (acl2::rewriting-negative-literal-fn
-                           `(equal ,y (lit-negate-cond$inline ,x ,c)) mfc state)))
-             (equal (equal (lit-negate-cond x c) y)
-                    (and (litp y)
-                         (equal (lit->var x) (lit->var y))
-                         (equal (lit->neg x) (b-xor c (lit->neg y))))))
+  ;; (defthm equal-of-lit-negate-cond-hyp
+  ;;   (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+  ;;                          `(equal (lit-negate-cond$inline ,x ,c) ,y) mfc state)
+  ;;                         (acl2::rewriting-negative-literal-fn
+  ;;                          `(equal ,y (lit-negate-cond$inline ,x ,c)) mfc state)))
+  ;;            (equal (equal (lit-negate-cond x c) y)
+  ;;                   (and (litp y)
+  ;;                        (equal (lit->var x) (lit->var y))
+  ;;                        (equal (lit->neg x) (b-xor c (lit->neg y))))))
+  ;;   :hints(("Goal" :in-theory (enable equal-of-make-lit))))
+
+  (defthm equal-of-lit-negate-cond-component-rewrites
+    (implies (equal (lit-negate-cond x c) (lit-fix y))
+             (and (equal (lit->var y) (lit->var x))
+                  (equal (lit->neg y) (b-xor c (lit->neg x)))))
     :hints(("Goal" :in-theory (enable equal-of-make-lit))))
 
   (defthm equal-of-lit-negate-cond-backchain
-    (implies (and (litp y)
+    (implies (and (syntaxp (not (or (acl2::rewriting-negative-literal-fn
+                                     `(equal (lit-negate-cond$inline ,x ,c) ,y)
+                                     mfc state)
+                                    (acl2::rewriting-negative-literal-fn
+                                     `(equal ,y (lit-negate-cond$inline ,x ,c))
+                                     mfc state))))
+                  (litp y)
                   (equal (lit->var x) (lit->var y))
                   (equal (lit->neg x) (b-xor c (lit->neg y))))
              (equal (equal (lit-negate-cond x c) y) t))

@@ -42,6 +42,7 @@
 (include-book "centaur/aig/accumulate-nodes-vars" :dir :system)
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
+(local (include-book "centaur/aig/eval-restrict" :dir :system)) ;; for congruences
 (local (in-theory (e/d (aiglist-to-aignet)
                        (create-sat-lits
                         (create-sat-lits)
@@ -87,28 +88,33 @@
   (local (in-theory (e/d (satlink-eval-lit-of-make-lit-of-lit-var)
                          (satlink::eval-lit-of-make-lit))))
 
+  ;; (local (defthm lit-when-var-and-neg-known
+  ;;          (implies (and (syntaxp (quotep var))
+  ;;                        (natp var)
+  ;;                        (syntaxp (or (acl2::rewriting-negative-literal-fn
+  ;;                                      `(equal (satlink::lit->var$inline ,lit) ,var)
+  ;;                                      mfc state)
+  ;;                                     (acl2::rewriting-negative-literal-fn
+  ;;                                      `(equal ,var (satlink::lit->var$inline ,lit))
+  ;;                                      mfc state)))
+  ;;                        (equal (lit->neg lit) neg)
+  ;;                        (syntaxp (quotep neg)))
+  ;;                   (equal (equal (lit->var lit) var)
+  ;;                          (lit-equiv lit (make-lit var neg))))))
+
+  ;; (local (in-theory (disable satlink::equal-of-lit-fix-hyp)))
+                         
+
   (defthm aignet-satisfying-assign-induces-cnf-satisfying-assign
     (b* (((mv cnf sat-lits) (aignet-one-lit->cnf lit sat-lits aignet))
-         (vals (aignet-eval
-                       (aignet-invals->vals
-                        aignet-invals
-                        (aignet-regvals->vals
-                         aignet-regvals vals aignet)
-                        aignet)
-                       aignet))
-         (cnf-vals (aignet->cnf-vals vals cnf-vals sat-lits aignet)))
+         (cnf-vals (aignet->cnf-vals invals regvals cnf-vals sat-lits aignet)))
       (implies (and (aignet-litp lit aignet)
                     (sat-lits-wfp sat-lits aignet))
                (equal (satlink::eval-formula cnf cnf-vals)
-                      (lit-eval lit aignet-invals aignet-regvals aignet))))
+                      (lit-eval lit invals regvals aignet))))
     :hints(("Goal" :in-theory (e/d ()
                                    (cnf-for-aignet-implies-cnf-sat-when-lit-sat))
             :use ((:instance cnf-for-aignet-implies-cnf-sat-when-lit-sat
-                   (vals (aignet-invals->vals
-                                 aignet-invals
-                                 (aignet-regvals->vals
-                                  aignet-regvals vals aignet)
-                                 aignet))
                    (cnf-vals cnf-vals)
                    (cnf (cdr (mv-nth 0 (aignet-one-lit->cnf lit sat-lits aignet))))
                    (sat-lits (mv-nth 1 (aignet-one-lit->cnf lit sat-lits aignet))))))))
@@ -118,22 +124,17 @@
 
   (defthm cnf-satisfying-assign-induces-aignet-satisfying-assign
     (b* (((mv cnf sat-lits) (aignet-one-lit->cnf lit sat-lits aignet))
-         (vals (resize-bits (num-nodes aignet) (acl2::create-bitarr)))
-         (vals (cnf->aignet-vals vals cnf-vals sat-lits aignet)))
+         (invals (cnf->aignet-invals invals cnf-vals sat-lits aignet))
+         (regvals (cnf->aignet-regvals regvals cnf-vals sat-lits aignet)))
       (implies (and (aignet-litp lit aignet)
                     (equal (satlink::eval-formula cnf cnf-vals) 1))
-               (equal (lit-eval lit
-                                (aignet-vals->invals nil vals aignet)
-                                (aignet-vals->regvals nil vals aignet)
-                                aignet)
+               (equal (lit-eval lit invals regvals aignet)
                       1)))
     :hints (("goal" :use ((:instance
                            cnf-for-aignet-implies-lit-sat-when-cnf-sat
                            (cnf (cdr (mv-nth 0 (aignet-one-lit->cnf lit sat-lits aignet))))
                            (sat-lits (mv-nth 1 (aignet-one-lit->cnf lit sat-lits aignet)))
-                           (vals (resize-bits (num-nodes aignet) (acl2::create-bitarr)))
-                           (cnf-vals cnf-vals)
-                           (aignet-invals nil) (aignet-regvals nil)))
+                           (cnf-vals cnf-vals)))
              :in-theory (e/d ()
                              (aignet-lit->cnf
                               cnf-for-aignet-implies-lit-sat-when-cnf-sat))))))
@@ -144,14 +145,20 @@
   (good-varmap-p nil x)
   :hints(("Goal" :in-theory (enable good-varmap-p))))
 
-(define aig->cnf (aig sat-lits aignet)
-  :returns (mv (cnf satlink::lit-list-listp)
-               (lit litp)
-               (vars "variables from the hons aig, as ordered in the aignet")
-               sat-lits
-               aignet)
+(local (defthmd equal-of-hons-assoc-equal
+             (equal (equal (hons-assoc-equal k x) y)
+                    (if (hons-assoc-equal k x)
+                        (and (consp y)
+                             (equal (car y) k)
+                             (equal (cdr y) (cdr (hons-assoc-equal k x))))
+                      (not y)))
+             :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+
+(define aig->aignet (aig aignet)
+  :returns (mv (vars "variables from the hons aig, as ordered in the aignet")
+               new-aignet)
   (b* (((local-stobjs strash)
-        (mv cnf lit vars sat-lits aignet strash))
+        (mv vars aignet strash))
        (aiglist (list aig))
        (vars (acl2::aig-vars-unordered-list aiglist))
        (aignet (aignet-clear aignet))
@@ -161,18 +168,80 @@
        ((mv lits strash aignet)
         (aiglist-to-aignet-top aiglist varmap (mk-gatesimp 4 t)
                                strash aignet))
-       (- (fast-alist-free varmap))
-       (aignet-lit (car lits))
+       (aignet (aignet-add-out (car lits) aignet)))
+    (fast-alist-free varmap)
+    (mv vars aignet strash))
+  ///
+  (defthm normalize-aig->aignet
+    (implies (syntaxp (not (equal aignet ''nil)))
+             (equal (aig->aignet aig aignet)
+                    (aig->aignet aig nil))))
+
+  (defret num-outs-of-aig->aignet
+    (equal (stype-count :po new-aignet) 1))
+
+  (defret num-regs-of-aig->aignet
+    (equal (stype-count :reg new-aignet) 0))
+
+  (defret num-nxsts-of-aig->aignet
+    (equal (stype-count :nxst new-aignet) 0))
+
+  (defret num-ins-of-aig->aignet
+    (equal (stype-count :pi new-aignet)
+           (len (acl2::aig-vars-unordered-list (list aig)))))
+
+  (defret aignet-nodes-ok-aig->aignet
+    (aignet-nodes-ok new-aignet))
+
+  (local (defthm acl2-numberp-of-index-of-when-member
+             (implies (member x lst)
+                      (acl2-numberp (acl2::index-of x lst)))
+             :hints(("Goal" :in-theory (enable acl2::index-of member)))))
+
+  (local (defthm aignet-eval-to-env-of-consecutive-vars-to-varmap
+           (implies (and (no-duplicatesp vars)
+                         (non-bool-atom-listp vars))
+                    (acl2::alist-equiv (aignet-eval-to-env
+                                        (consecutive-vars-to-varmap 1 vars nil)
+                                        invals regvals
+                                        (aignet-add-ins (len vars) nil))
+                                       (aignet-bitarr-to-aig-env vars invals)))
+           :hints (("goal" :in-theory (enable acl2::alist-equiv-iff-agree-on-bad-guy
+                                              equal-of-hons-assoc-equal)
+                    :do-not-induct t))))
+
+  (defret eval-output-of-aig->aignet
+    (equal (id-eval (node-count (lookup-stype 0 :po new-aignet))
+                    invals regvals new-aignet)
+           (acl2::bool->bit (aig-eval aig (aignet-bitarr-to-aig-env vars invals))))
+    :hints(("Goal" :in-theory (enable lookup-stype)
+            :expand ((:free (n aignet) (id-eval (+ 1 n) invals regvals aignet)))
+            :do-not-induct t)))
+
+  (defret vars-of-aig->aignet
+    (equal vars
+           (acl2::aig-vars-unordered-list (list aig)))))
+
+(define aig->cnf (aig sat-lits aignet)
+  :returns (mv (cnf satlink::lit-list-listp)
+               (lit litp)
+               (vars "variables from the hons aig, as ordered in the aignet")
+               sat-lits
+               new-aignet)
+  :guard-hints (("goal" :in-theory (enable lookup-stype-in-bounds)))
+  (b* (((mv vars aignet) (aig->aignet aig aignet))
+       (aignet-lit (co-id->fanin (outnum->id 0 aignet) aignet))
        ((mv cnf sat-lits)
         (aignet-one-lit->cnf aignet-lit sat-lits aignet)))
-    (mv cnf aignet-lit vars sat-lits aignet strash))
+    (mv cnf aignet-lit vars sat-lits aignet))
 
   ///
 
   (defthm aignet-litp-of-aig->cnf
     (b* (((mv & lit & & aignet)
           (aig->cnf aig sat-lits aignet)))
-      (aignet-litp lit aignet)))
+      (aignet-litp lit aignet))
+    :hints(("Goal" :in-theory (enable lookup-stype-in-bounds))))
 
   (defthm normalize-aig->cnf-aignet
     (implies (syntaxp (not (equal aignet ''nil)))
@@ -191,7 +260,34 @@
   (defthm sat-lits-wfp-of-aig->cnf
     (sat-lits-wfp (mv-nth 3 (aig->cnf aig sat-lits aignet))
                   (mv-nth 4 (aig->cnf aig sat-lits aignet)))
-    :hints(("Goal" :in-theory (enable aig->cnf)))))
+    :hints(("Goal" :in-theory (enable aig->cnf))))
+
+  (defret eval-lit-of-aig->aignet
+    (equal (lit-eval lit invals regvals new-aignet)
+           (acl2::bool->bit (aig-eval aig (aignet-bitarr-to-aig-env vars invals))))
+    :hints(("Goal" :use (eval-output-of-aig->aignet)
+            :in-theory (disable eval-output-of-aig->aignet)
+            :expand ((:free (aignet aignet2)
+                      (id-eval (node-count (lookup-stype 0 :po aignet))
+                               invals regvals aignet2))))))
+
+  (defret vars-of-aig->cnf
+    (equal vars
+           (acl2::aig-vars-unordered-list (list aig))))
+
+  (defret num-outs-of-aig->cnf
+    (equal (stype-count :po new-aignet) 1))
+
+  (defret num-regs-of-aig->cnf
+    (equal (stype-count :reg new-aignet) 0))
+
+  (defret num-nxsts-of-aig->cnf
+    (equal (stype-count :nxst new-aignet) 0))
+
+  (defret num-ins-of-aig->cnf
+    (equal (stype-count :pi new-aignet)
+           (len (acl2::aig-vars-unordered-list (list aig))))))
+
 
 
 
@@ -203,9 +299,7 @@
        (cnf-vals (resize-bits 0 cnf-vals))
        (cnf-vals (resize-bits (sat-next-var sat-lits) cnf-vals))
        (cnf-vals (non-exec
-                  (b* ((vals (aignet-invals->vals in-vals nil aignet))
-                       (vals (aignet-eval vals aignet))
-                       (cnf-vals (aignet->cnf-vals vals cnf-vals sat-lits aignet)))
+                  (b* ((cnf-vals (aignet->cnf-vals in-vals nil cnf-vals sat-lits aignet)))
                     cnf-vals))))
     cnf-vals))
 
@@ -505,6 +599,23 @@
                  (varmap0 nil))))))
 
 
+(defthm aignet-bitarr-to-aig-env-of-env-to-bitarr
+  (acl2::alist-equiv (aignet-bitarr-to-aig-env
+                      vars (env-to-bitarr vars env))
+                     (acl2::aig-env-extract vars env))
+  :hints(("Goal" :in-theory (enable acl2::alist-equiv-iff-agree-on-bad-guy
+                                    equal-of-hons-assoc-equal
+                                    acl2::aig-env-lookup))))
+
+(defcong acl2::set-equiv acl2::alist-equiv (acl2::aig-env-extract vars env) 1
+  :hints(("Goal" :in-theory (enable acl2::alist-equiv-iff-agree-on-bad-guy))))
+
+
+#!acl2
+(defthm aig-eval-of-aig-env-extract
+  (implies (subsetp (aig-vars x) vars)
+           (equal (aig-eval x (aig-env-extract vars env))
+                  (aig-eval x env))))
 
 (defthm aig-satisfying-assign-induces-aig->cnf-satisfying-assign
   (b* (((mv cnf ?lit vars sat-lits aignet) (aig->cnf aig sat-lits aignet))
@@ -515,135 +626,139 @@
                          aignet-satisfying-assign-induces-cnf-satisfying-assign
                          (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet)))
                          (lit (mv-nth 1 (aig->cnf aig sat-lits aignet)))
-                         (aignet-invals
+                         (invals
                           (env-to-bitarr
                            (mv-nth 2 (aig->cnf aig sat-lits aignet))
                            env))
-                         (aignet-regvals nil)
-                         (vals nil)
+                         (regvals nil)
                          (cnf-vals (resize-bits (sat-next-var
                                                  (mv-nth 3 (aig->cnf aig sat-lits aignet)))
                                                 nil))))
            :in-theory (e/d* (aignet-regvals->vals
                              aignet-regvals->vals-iter
-                             aig->cnf)
-                            (aignet-satisfying-assign-induces-cnf-satisfying-assign)))))
+                             lookup-stype-in-bounds)
+                            (aignet-satisfying-assign-induces-cnf-satisfying-assign)))
+          (and stable-under-simplificationp
+               '(:in-theory (enable aig->cnf)))))
 
 
 (local (defthm len-equal-0
          (equal (equal (len x) 0)
                 (atom x))))
 
-(defun aignet-vals-make-env (vars innum vals aignet)
-  (Declare (xargs :stobjs (vals aignet)
-                  :guard (and (<= (num-nodes aignet) (bits-length vals))
-                              (natp innum)
-                              (<= (+ (len vars) innum) (num-ins aignet)))))
-  (if (atom vars)
-      nil
-    (cons (cons (car vars)
-                (equal 1 (get-bit (innum->id innum aignet) vals)))
-          (aignet-vals-make-env (cdr vars) (1+ (lnfix innum)) vals aignet))))
+;; (defun aignet-vals-make-env (vars innum vals aignet)
+;;   (Declare (xargs :stobjs (vals aignet)
+;;                   :guard (and (<= (num-nodes aignet) (bits-length vals))
+;;                               (natp innum)
+;;                               (<= (+ (len vars) innum) (num-ins aignet)))))
+;;   (if (atom vars)
+;;       nil
+;;     (cons (cons (car vars)
+;;                 (equal 1 (get-bit (innum->id innum aignet) vals)))
+;;           (aignet-vals-make-env (cdr vars) (1+ (lnfix innum)) vals aignet))))
 
 
 
 
 
-(defthm memo-tablep-cnf->aignet-vals-iter
-  (implies (< (node-count aignet) (len vals))
-           (< (node-count aignet)
-              (len (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet1))))
-  :hints(("Goal" :in-theory (enable cnf->aignet-vals-iter)))
-  :rule-classes :linear)
+;; (defthm memo-tablep-cnf->aignet-vals-iter
+;;   (implies (< (node-count aignet) (len vals))
+;;            (< (node-count aignet)
+;;               (len (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet1))))
+;;   :hints(("Goal" :in-theory (enable cnf->aignet-vals-iter)))
+;;   :rule-classes :linear)
 
-(defthm memo-tablep-cnf->aignet-vals
-  (implies (< (node-count aignet) (len vals))
-           (< (node-count aignet)
-              (len (cnf->aignet-vals vals cnf-vals sat-lits aignet1))))
-  :hints(("Goal" :in-theory (enable cnf->aignet-vals))))
+;; (defthm memo-tablep-cnf->aignet-vals
+;;   (implies (< (node-count aignet) (len vals))
+;;            (< (node-count aignet)
+;;               (len (cnf->aignet-vals vals cnf-vals sat-lits aignet1))))
+;;   :hints(("Goal" :in-theory (enable cnf->aignet-vals))))
 
 
 (defun aig-cnf-vals->env (cnf-vals vars sat-lits aignet)
   (declare (xargs :stobjs (cnf-vals sat-lits aignet)
                   :guard (and (sat-lits-wfp sat-lits aignet)
-                              (<= (len vars) (num-ins aignet)))))
-  (b* (((local-stobjs vals)
-        (mv env vals))
-       (vals (resize-bits (num-nodes aignet) vals))
-       (vals (cnf->aignet-vals vals cnf-vals sat-lits
-                                      aignet))
-       (env (aignet-vals-make-env vars 0 vals aignet)))
-    (mv env vals)))
+                              (<= (len vars) (num-ins aignet))
+                              (true-listp vars))))
+  (b* (((local-stobjs invals)
+        (mv env invals))
+       (invals (resize-bits (num-ins aignet) invals))
+       (invals (cnf->aignet-invals invals cnf-vals sat-lits aignet))
+       (env (aignet-bitarr-to-aig-env vars invals)))
+    (mv env invals)))
 
 
-(defthm lookup-in-aignet-vals-make-env
-  (equal (acl2::aig-env-lookup v (aignet-vals-make-env vars innum vals
-                                                       aignet))
-         (or (not (member v vars))
-             (equal 1 (get-bit (innum->id (+ (nfix innum)
-                                             (acl2::index-of v vars))
-                                              aignet)
-                                   vals))))
-  :hints(("Goal" :in-theory (enable acl2::aig-env-lookup acl2::index-of))))
+;; (defthm lookup-in-aignet-vals-make-env
+;;   (equal (acl2::aig-env-lookup v (aignet-vals-make-env vars innum vals
+;;                                                        aignet))
+;;          (or (not (member v vars))
+;;              (equal 1 (get-bit (innum->id (+ (nfix innum)
+;;                                              (acl2::index-of v vars))
+;;                                               aignet)
+;;                                    vals))))
+;;   :hints(("Goal" :in-theory (enable acl2::aig-env-lookup acl2::index-of))))
 
-(defthm aignet-vals-make-env-of-extension
-  (implies (and (aignet-extension-binding)
-                (<= (+ (nfix innum) (len vars)) (num-ins orig)))
-           (equal (aignet-vals-make-env vars innum vals new)
-                  (aignet-vals-make-env vars innum vals orig)))
-  :hints(("Goal" :in-theory (enable lookup-stype-in-bounds))))
+;; (defthm aignet-vals-make-env-of-extension
+;;   (implies (and (aignet-extension-binding)
+;;                 (<= (+ (nfix innum) (len vars)) (num-ins orig)))
+;;            (equal (aignet-vals-make-env vars innum vals new)
+;;                   (aignet-vals-make-env vars innum vals orig)))
+;;   :hints(("Goal" :in-theory (enable lookup-stype-in-bounds))))
 
-(defthm aignet-vals-in-vals-iter-of-extension
-  (implies (and (aignet-extension-binding)
-                (equal (num-ins new) (num-ins orig)))
-           (bits-equiv (aignet-vals->invals in-vals vals new)
-                       (aignet-vals->invals in-vals vals orig)))
-  :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))
-                 :in-theory (enable lookup-stype-in-bounds)))))
+;; (defthm aignet-vals-in-vals-iter-of-extension
+;;   (implies (and (aignet-extension-binding)
+;;                 (equal (num-ins new) (num-ins orig)))
+;;            (bits-equiv (aignet-vals->invals in-vals vals new)
+;;                        (aignet-vals->invals in-vals vals orig)))
+;;   :hints ((and stable-under-simplificationp
+;;                `(:expand (,(car (last clause)))
+;;                  :in-theory (enable lookup-stype-in-bounds)))))
 
-(defthm aignet-vals-reg-vals-iter-of-extension
-  (implies (and (aignet-extension-binding)
-                (equal (num-regs new) (num-regs orig)))
-           (bits-equiv (aignet-vals->regvals reg-vals vals new)
-                       (aignet-vals->regvals reg-vals vals orig)))
-  :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))
-                 :in-theory (enable lookup-stype-in-bounds)))))
-
-(local (defthmd equal-1-rewrite-under-congruence
-         (implies (and (equal y (double-rewrite (bfix x)))
-                       (syntaxp ;(prog2$ (cw "x: ~x0~%y: ~x1~%" x y)
-                        (and (not (equal x y))
-                             (not (equal y `(acl2::bfix$inline ,x))))))
-                  (equal (equal x 1)
-                         (equal y 1)))))
+;; (defthm aignet-vals-reg-vals-iter-of-extension
+;;   (implies (and (aignet-extension-binding)
+;;                 (equal (num-regs new) (num-regs orig)))
+;;            (bits-equiv (aignet-vals->regvals reg-vals vals new)
+;;                        (aignet-vals->regvals reg-vals vals orig)))
+;;   :hints ((and stable-under-simplificationp
+;;                `(:expand (,(car (last clause)))
+;;                  :in-theory (enable lookup-stype-in-bounds)))))
 
 
-(encapsulate nil
-  (local (in-theory (disable aignet-vals-make-env
-                             no-duplicatesp-equal
-                             subsetp-equal acl2::aig-env-lookup
-                             aignet-eval-to-env)))
-  (defthm aig-eval-of-aignet-vals-make-env
-    (implies (and (equal (num-ins aignet) 0)
-                  (equal (node-count aignet) 0)
-                  (no-duplicatesp-equal vars)
-                  (double-rewrite (subsetp-equal (aig-vars aig) vars)))
-           (let ((varmap (consecutive-vars-to-varmap 1 vars nil))
-                 (new (aignet-add-ins (len vars) aignet)))
-             (equal (aig-eval aig
-                              (aignet-vals-make-env
-                               vars 0 vals new))
-                    (aig-eval aig
-                              (aignet-eval-to-env
-                               varmap
-                               (aignet-vals->invals nil vals new)
-                               (aignet-vals->regvals nil vals new)
-                               new)))))
-    :hints(("Goal" :in-theory (e/d (aig-eval
-                                    equal-1-rewrite-under-congruence))
-            :induct t))))
+(defthm bit-equiv-under-equal-to-1-second-arg
+  (implies (bit-equiv x y)
+           (equal (equal 1 x)
+                  (equal 1 y)))
+  :rule-classes :congruence)
+
+(defthm bit-equiv-under-equal-to-1-first-arg
+  (implies (bit-equiv x y)
+           (equal (equal x 1)
+                  (equal y 1)))
+  :rule-classes :congruence)
+
+
+;; (encapsulate nil
+;;   (local (in-theory (disable aignet-vals-make-env
+;;                              no-duplicatesp-equal
+;;                              subsetp-equal acl2::aig-env-lookup
+;;                              aignet-eval-to-env)))
+;;   (defthm aig-eval-of-aignet-vals-make-env
+;;     (implies (and (equal (num-ins aignet) 0)
+;;                   (equal (node-count aignet) 0)
+;;                   (no-duplicatesp-equal vars)
+;;                   (double-rewrite (subsetp-equal (aig-vars aig) vars)))
+;;            (let ((varmap (consecutive-vars-to-varmap 1 vars nil))
+;;                  (new (aignet-add-ins (len vars) aignet)))
+;;              (equal (aig-eval aig
+;;                               (aignet-vals-make-env
+;;                                vars 0 vals new))
+;;                     (aig-eval aig
+;;                               (aignet-eval-to-env
+;;                                varmap
+;;                                invals regvals new)))))
+;;     :hints(("Goal" :in-theory (e/d (aig-eval
+;;                                     equal-1-rewrite-under-congruence))
+;;             :induct t))))
 
 
 (defcong bits-equiv equal (aignet-eval-to-env varmap in-vals reg-vals aignet) 2
@@ -652,20 +767,44 @@
 (defcong bits-equiv equal (aignet-eval-to-env varmap in-vals reg-vals aignet) 3
   :hints(("Goal" :in-theory (enable aignet-eval-to-env))))
 
+;; (local (defthm lookup-exists-of-aignet-vals-make-env
+;;          (iff (hons-assoc-equal k (aignet-vals-make-env vars innum vals aignet))
+;;               (member k vars))
+;;          :hints(("Goal" :in-theory (enable aignet-vals-make-env)))))
+
+;; (local (defthm cdr-lookup-of-aignet-vals-make-env
+;;          (implies (member k vars)
+;;                   (equal (cdr (hons-assoc-equal k (aignet-vals-make-env vars innum vals aignet)))
+;;                          (acl2::bit->bool (nth (innum->id (+ (lnfix innum) (acl2::index-of k vars)) aignet)
+;;                                                vals))))
+;;          :hints(("Goal" :in-theory (enable aignet-vals-make-env acl2::index-of)))))
+
+
+;; (defthm aignet-vals-make-env-is-aignet-bitarr-to-aig-env-of-aignet-vals->invals
+;;   (implies (<= (+ (nfix n) (len vars)) (stype-count :pi aignet))
+;;            (acl2::alist-equiv (aignet-vals-make-env vars n vals aignet)
+;;                               (Aignet-bitarr-to-aig-env vars (nthcdr n (aignet-vals->invals nil vals aignet)))))
+;;   :hints(("Goal" :in-theory (enable acl2::alist-equiv-iff-agree-on-bad-guy
+;;                                     equal-of-hons-assoc-equal)
+;;           :do-not-induct t)))
+
 (defthm cnf-satisfying-assign-induces-aig-satisfying-assign
-    (b* (((mv cnf ?lit vars sat-lits aignet)
-          (aig->cnf aig sat-lits aignet))
-         (env (aig-cnf-vals->env cnf-vals vars sat-lits aignet)))
-      (implies (equal (satlink::eval-formula cnf cnf-vals) 1)
-               (aig-eval aig env)))
-    :hints(("Goal" :in-theory (e/d (aig->cnf)
-                                   (cnf-satisfying-assign-induces-aignet-satisfying-assign
-                                    b-and b-ior b-xor b-not))
-            :use ((:instance
-                   cnf-satisfying-assign-induces-aignet-satisfying-assign
-                   (lit (mv-nth 1 (aig->cnf aig sat-lits aignet)))
-                   (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet)))))
-            :do-not-induct t)))
+  (b* (((mv cnf ?lit vars sat-lits aignet)
+        (aig->cnf aig sat-lits aignet))
+       (env (aig-cnf-vals->env cnf-vals vars sat-lits aignet)))
+    (implies (equal (satlink::eval-formula cnf cnf-vals) 1)
+             (aig-eval aig env)))
+  :hints(("Goal" :in-theory (e/d ()
+                                 (cnf-satisfying-assign-induces-aignet-satisfying-assign
+                                  b-and b-ior b-xor b-not))
+          :use ((:instance
+                 cnf-satisfying-assign-induces-aignet-satisfying-assign
+                 (lit (mv-nth 1 (aig->cnf aig sat-lits aignet)))
+                 (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet)))
+                 (invals (acl2::repeat (len (mv-nth 2 (aig->cnf aig sat-lits aignet))) 0))))
+          :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:in-theory (enable aig->cnf)))))
 
 (defthm len-vars-of-aig->cnf
   (equal (len (mv-nth 2 (aig->cnf aig sat-lits aignet)))

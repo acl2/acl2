@@ -35,10 +35,10 @@
 
 
 (defmacro lit-id (x) `(lit->var ,x))
-(add-macro-alias lit-id lit->var)
+(add-macro-alias lit-id satlink::lit->var$inline)
 
 (defmacro lit-neg (x) `(lit->neg ,x))
-(add-macro-alias lit-neg lit->neg)
+(add-macro-alias lit-neg satlink::lit->neg$inline)
 
 (defmacro mk-lit (var neg) `(make-lit ,var ,neg))
-(add-macro-alias mk-lit make-lit)
+(add-macro-alias mk-lit satlink::make-lit$inline)

@@ -38,7 +38,7 @@
 (include-book "centaur/misc/equal-sets" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (enable eval-clause eval-formula)))
+(local (in-theory (enable eval-clause eval-formula eval-cube)))
 
 (local (defthm equal-1-when-bitp
          (implies (bitp x)
@@ -84,6 +84,11 @@
            (b-ior (eval-lit lit env)
                   (eval-clause clause env))))
 
+  (defthm eval-clause-of-append
+    (equal (eval-clause (append a b) env)
+           (b-ior (eval-clause a env)
+                  (eval-clause b env))))
+
   (defthm eval-clause-when-some-true-literal
     (implies (and (member lit clause)
                   (equal (eval-lit lit env) 1))
@@ -103,6 +108,40 @@
 
 
 
+  (defthm eval-cube-when-atom
+    (implies (atom cube)
+             (equal (eval-cube cube env)
+                    1)))
+
+  (defthm eval-cube-of-cons
+    (equal (eval-cube (cons lit cube) env)
+           (b-and (eval-lit lit env)
+                  (eval-cube cube env))))
+
+  (defthm eval-cube-of-append
+    (equal (eval-cube (append a b) env)
+           (b-and (eval-cube a env)
+                  (eval-cube b env))))
+
+  (defthm eval-cube-when-some-false-literal
+    (implies (and (member lit cube)
+                  (equal (eval-lit lit env) 0))
+             (equal (eval-cube cube env)
+                    0)))
+
+  (defthmd eval-cube-when-subset
+    (implies (and (subsetp c1 c2)
+                  (equal (eval-cube c2 env) 1))
+             (equal (eval-cube c1 env) 1))
+    :hints(("Goal" :induct (len c1))))
+
+  (defcong set-equiv equal (eval-cube cube env) 1
+    :hints(("Goal" :in-theory (enable set-equiv eval-cube-when-subset))))
+
+  (defcong bits-equiv equal (eval-cube cube env) 2)
+
+
+
   (defthm eval-formula-when-atom
     (implies (atom formula)
              (equal (eval-formula formula env)
@@ -112,6 +151,11 @@
     (equal (eval-formula (cons clause formula) env)
            (b-and (eval-clause clause env)
                   (eval-formula formula env))))
+
+  (defthm eval-formula-of-append
+    (equal (eval-formula (append a b) env)
+           (b-and (eval-formula a env)
+                  (eval-formula b env))))
 
   (defthm eval-formula-when-some-false-clause
     (implies (and (member clause formula)

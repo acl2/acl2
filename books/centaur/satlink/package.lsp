@@ -94,11 +94,12 @@
 
 (defconst satlink::*satlink-exports*
   #!satlink
-  '(litp make-lit lit->var lit->neg var->index make-var
+  '(litp make-lit lit->var lit->neg ;; var->index make-var
          lit-to-dimacs
          eval-var eval-lit eval-clause eval-cube
-         eval-formula lit-listp lit-list-listp env$
-         var-equiv var-fix to-lit lit-val lit-fix lit-equiv lit lit-negate
+         eval-formula lit-listp lit-list-fix lit-list-listp lit-list-list-fix env$
+         var-equiv var-fix ;; to-lit lit-val
+         lit-fix lit-equiv lit lit-negate
          lit-negate-cond lit->index
          max-index-clause max-index-formula clause-indices formula-indices
          satlink-to-dimacs-lit

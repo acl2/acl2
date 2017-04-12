@@ -342,6 +342,8 @@
     :hints ((acl2::just-induct-and-expand
              (u32v-zero-iter m id u32v))))
 
+  
+
 
   (defthm vecsim-to-eval-of-u32v-zero-iter
     (equal (vecsim-to-eval-iter n slot bit (u32v-zero-iter slot1 m u32v) vals aignet)
@@ -668,6 +670,11 @@
            (stobjs::2darr->ncols u32v))
     :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n u32v aignet))))
 
+  (defthm nrows-of-aignet-vecsim*-iter
+    (implies (<= n (len (stobjs::2darr->rows u32v)))
+             (equal (len (stobjs::2darr->rows (aignet-vecsim*-iter n u32v aignet)))
+                    (len (stobjs::2darr->rows u32v)))))
+
   (defthmd nth-in-aignet-vecsim*-iter-preserved
     (implies (and (< (nfix m) (nfix n))
                   (equal nm (1+ (nfix m)))
@@ -786,3 +793,51 @@
                                     (bitops::logbit-to-logbitp
                                      aignet-vecsim*))
              :cases ((aignet-idp id aignet))))))
+
+(define u32v-randomize-inputs ((n natp "start at 0")
+                               (u32v)
+                               (aignet)
+                               (state))
+  :guard (and (<= n (num-ins aignet))
+              (<= (+ 1 (max-fanin aignet)) (u32v-nrows u32v)))
+  :measure (nfix (- (num-ins aignet) (nfix n)))
+  :returns (mv new-u32v new-state)
+  (if (mbe :logic (zp (- (num-ins aignet) (nfix n)))
+           :exec (eql n (num-ins aignet)))
+      (mv u32v state)
+    (b* (((mv u32v state) (u32v-randomize (innum->id n aignet) u32v state)))
+      (u32v-randomize-inputs (1+ (lnfix n)) u32v aignet state)))
+  ///
+  (defret ncols-of-u32v-randomize-inputs
+    (equal (stobjs::2darr->ncols new-u32v)
+           (stobjs::2darr->ncols u32v)))
+
+  (defret nrows-of-u32v-randomize-inputs
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows u32v)))
+             (equal (len (stobjs::2darr->rows new-u32v))
+                    (len (stobjs::2darr->rows u32v))))))
+
+(define u32v-randomize-regs ((n natp "start at 0")
+                             (u32v)
+                             (aignet)
+                             (state))
+  :guard (and (<= n (num-regs aignet))
+              (<= (+ 1 (max-fanin aignet)) (u32v-nrows u32v)))
+  :measure (nfix (- (num-regs aignet) (nfix n)))
+  :returns (mv new-u32v new-state)
+  (if (mbe :logic (zp (- (num-regs aignet) (nfix n)))
+           :exec (eql n (num-regs aignet)))
+      (mv u32v state)
+    (b* (((mv u32v state) (u32v-randomize (regnum->id n aignet) u32v state)))
+      (u32v-randomize-regs (1+ (lnfix n)) u32v aignet state)))
+  ///
+  (defret ncols-of-u32v-randomize-regs
+    (equal (stobjs::2darr->ncols new-u32v)
+           (stobjs::2darr->ncols u32v)))
+
+  (defret nrows-of-u32v-randomize-regs
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows u32v)))
+             (equal (len (stobjs::2darr->rows new-u32v))
+                    (len (stobjs::2darr->rows u32v))))))
+  
+  

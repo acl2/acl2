@@ -83,7 +83,8 @@
                  (aignet$a::regnum->id n aigneta))))
      :rewrite :direct)
 
-   (in-theory (disable regnums-correct))
+   (in-theory (disable regnums-correct
+                       lookup-stype-in-bounds))
    (in-theory (enable aignet$c::regnum->id))
 
 

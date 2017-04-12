@@ -410,6 +410,13 @@
            0)
     :hints(("Goal" :in-theory (enable b-and b-xor b-not))))
 
+  (defthm b-and-of-xor-not-free
+    (implies (equal c (b-not a))
+             (equal (b-and (b-xor c b)
+                           (b-xor a b))
+                    0))
+    :hints(("Goal" :in-theory (enable b-and b-xor b-not))))
+
   (def-gate-simp aignet-gate-simp-level1
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
@@ -430,7 +437,7 @@
       (mv nil nil lit1 lit2))
     :eval-hints (("Goal" :in-theory (e/d* (eval-and-of-lits
                                            id-eval lit-eval
-                                           equal-of-mk-lit
+                                           satlink::equal-of-make-lit
                                            acl2::arith-equiv-forwarding)))))
 
   (defund aignet-gate-simp-l2-step1-cond (a b c)
@@ -465,7 +472,7 @@
     :reqs ((int= (id->type (lit-id lit1) aignet) (gate-type)))
     :guard-hints (("goal" :in-theory (enable aignet-gate-simp-l2-step1-cond)))
     :eval-hints (("goal" :in-theory (e/d (eval-and-of-lits lit-eval
-                                                           equal-of-mk-lit)))
+                                                           satlink::equal-of-make-lit)))
                  (and stable-under-simplificationp
                       '(:expand ((id-eval (lit-id lit1) aignet-invals aignet-regvals aignet)
                                  (:free (a b c) (aignet-gate-simp-l2-step1-cond a b
@@ -515,7 +522,7 @@
                            (and (litp x)
                                 (equal (lit-id x) (nfix id))
                                 (equal (lit-neg x) (bfix neg)))))
-           :hints(("Goal" :in-theory (enable equal-of-mk-lit)))))
+           :hints(("Goal" :in-theory (enable satlink::equal-of-make-lit)))))
 
   (local (defthm bfix-of-lit-neg
            (Equal (bfix (lit-neg x)) (lit-neg x))))
@@ -766,7 +773,7 @@
            (int= (id->type (lit-id lit2) aignet) (gate-type)))
     :guard-hints (("goal" :in-theory (enable aignet-gate-simp-level4-cond)))
     :eval-hints (("goal" :in-theory (e/d (eval-and-open
-                                          equal-of-mk-lit)))
+                                          satlink::equal-of-make-lit)))
                  (and stable-under-simplificationp
                       '(:expand ((lit-eval lit1 aignet-invals aignet-regvals aignet)
                                  (lit-eval lit2 aignet-invals aignet-regvals aignet)
@@ -948,13 +955,13 @@
     (declare (xargs :stobjs (aignet strash)
                     :guard (and (litp lit1) (fanin-litp lit1 aignet)
                                 (litp lit2) (fanin-litp lit2 aignet))))
-    (b* ((key (aignet-addr-combine (lit-val lit1) (lit-val lit2)))
+    (b* ((key (aignet-addr-combine (lit-fix lit1) (lit-fix lit2)))
          (id (strashtab-get key strash))
          ((unless (and (natp id)
                        (id-existsp id aignet)
                        (int= (id->type id aignet) (gate-type))
-                       (int= (gate-id->fanin0 id aignet) lit1)
-                       (int= (gate-id->fanin1 id aignet) lit2)))
+                       (int= (gate-id->fanin0 id aignet) (lit-fix lit1))
+                       (int= (gate-id->fanin1 id aignet) (lit-fix lit2))))
           (mv nil key 0)))
       (mv t key id)))
 
@@ -967,9 +974,11 @@
                     (aignet-litp (mk-lit id bit) aignet)
                     (b* (((cons node tail) (lookup-id id aignet)))
                       (and (equal (stype node) (gate-stype))
-                           (equal (aignet-lit-fix (gate-node->fanin0 node) tail) lit1)
+                           (equal (aignet-lit-fix (gate-node->fanin0 node) tail)
+                                  (lit-fix lit1))
                            (equal (aignet-lit-fix (gate-node->fanin1 node)
-                                                  tail) lit2))))))
+                                                  tail)
+                                  (lit-fix lit2)))))))
     :hints(("Goal" :in-theory (enable aignet-litp))))
 
   (defthm strash-lookup-id-type
@@ -1046,7 +1055,11 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
            (type (integer 0 *) lit2)
            (type (integer 0 *) gatesimp)
            (xargs :guard (and (fanin-litp lit1 aignet)
-                              (fanin-litp lit2 aignet))))
+                              (fanin-litp lit2 aignet))
+                  :split-types t))
+  :returns (mv (and-lit litp :rule-classes (:rewrite :type-prescription))
+               (new-strash)
+               (new-aignet))
   (b* ((lit1 (lit-fix lit1))
        (lit2 (lit-fix lit2))
        (gatesimp (lnfix gatesimp))

@@ -315,17 +315,17 @@
          :rule-classes ((:forward-chaining :trigger-terms ((car x))))))
 
 
-(defsection aignet-invals
+(defsection invals
   :parents (semantics)
   :short "Bit array for the primary inputs to an aignet."
 
-  (defstobj-clone aignet-invals bitarr :strsubst (("BIT" . "AIGNET-INVAL"))))
+  (defstobj-clone invals bitarr :strsubst (("BIT" . "AIGNET-INVAL"))))
 
 (encapsulate
   nil
 
 
-  (defstobj-clone aignet-regvals bitarr :strsubst (("BIT" . "AIGNET-REGVAL")))
+  (defstobj-clone regvals bitarr :strsubst (("BIT" . "AIGNET-REGVAL")))
 
   ; (local (in-theory (enable gate-orderedp co-orderedp)))
 
@@ -343,36 +343,36 @@
 
 
   (mutual-recursion
-   (defun lit-eval (lit aignet-invals aignet-regvals aignet)
-     (declare (xargs :stobjs (aignet aignet-invals aignet-regvals)
+   (defun lit-eval (lit invals regvals aignet)
+     (declare (xargs :stobjs (aignet invals regvals)
                      :guard (and (litp lit)
                                  (fanin-litp lit aignet)
-                                 (<= (num-ins aignet) (bits-length aignet-invals))
-                                 (<= (num-regs aignet) (bits-length aignet-regvals)))
+                                 (<= (num-ins aignet) (bits-length invals))
+                                 (<= (num-regs aignet) (bits-length regvals)))
                      :measure (acl2::two-nats-measure (lit-id lit) 1)
                      :verify-guards nil))
-     (b-xor (id-eval (lit-id lit) aignet-invals aignet-regvals aignet)
+     (b-xor (id-eval (lit-id lit) invals regvals aignet)
             (lit-neg lit)))
 
-   (defun eval-and-of-lits (lit1 lit2 aignet-invals aignet-regvals aignet)
-     (declare (xargs :stobjs (aignet aignet-invals aignet-regvals)
+   (defun eval-and-of-lits (lit1 lit2 invals regvals aignet)
+     (declare (xargs :stobjs (aignet invals regvals)
                      :guard (and (litp lit1) (fanin-litp lit1 aignet)
                                  (litp lit2) (fanin-litp lit2 aignet)
-                                 (<= (num-ins aignet) (bits-length aignet-invals))
+                                 (<= (num-ins aignet) (bits-length invals))
                                  (<= (num-regs aignet) (bits-length
-                                                        aignet-regvals)))
+                                                        regvals)))
                      :measure (acl2::two-nats-measure
                                (max (lit-id lit1)
                                     (lit-id lit2))
                                2)))
-    (b-and (lit-eval lit1 aignet-invals aignet-regvals aignet)
-           (lit-eval lit2 aignet-invals aignet-regvals aignet)))
+    (b-and (lit-eval lit1 invals regvals aignet)
+           (lit-eval lit2 invals regvals aignet)))
 
-   (defun id-eval (id aignet-invals aignet-regvals aignet)
-     (declare (xargs :stobjs (aignet aignet-invals aignet-regvals)
+   (defun id-eval (id invals regvals aignet)
+     (declare (xargs :stobjs (aignet invals regvals)
                      :guard (and (natp id) (id-existsp id aignet)
-                                 (<= (num-ins aignet) (bits-length aignet-invals))
-                                 (<= (num-regs aignet) (bits-length aignet-regvals)))
+                                 (<= (num-ins aignet) (bits-length invals))
+                                 (<= (num-regs aignet) (bits-length regvals)))
                      :measure (acl2::two-nats-measure id 0)
                      :hints(("Goal" :in-theory (enable aignet-idp)))))
      (b* (((unless (mbt (id-existsp id aignet)))
@@ -384,19 +384,19 @@
         :gate (b* ((f0 (gate-id->fanin0 id aignet))
                    (f1 (gate-id->fanin1 id aignet)))
                 (mbe :logic (eval-and-of-lits
-                             f0 f1 aignet-invals aignet-regvals aignet)
+                             f0 f1 invals regvals aignet)
                      :exec (b-and (b-xor (id-eval (lit-id f0)
-                                                  aignet-invals aignet-regvals aignet)
+                                                  invals regvals aignet)
                                          (lit-neg f0))
                                   (b-xor (id-eval (lit-id f1)
-                                                  aignet-invals aignet-regvals
+                                                  invals regvals
                                                   aignet)
                                          (lit-neg f1)))))
         :in    (if (int= (io-id->regp id aignet) 1)
-                   (get-bit (io-id->ionum id aignet) aignet-regvals)
-                 (get-bit (io-id->ionum id aignet) aignet-invals))
+                   (get-bit (io-id->ionum id aignet) regvals)
+                 (get-bit (io-id->ionum id aignet) invals))
         :out (b* ((f (co-id->fanin id aignet)))
-               (lit-eval f aignet-invals aignet-regvals aignet))
+               (lit-eval f invals regvals aignet))
         :const 0))))
 
   (in-theory (disable id-eval lit-eval eval-and-of-lits))
@@ -655,28 +655,28 @@
 
   (verify-guards lit-eval)
 
-  (defun lit-eval-list (x aignet-invals aignet-regvals aignet)
-    (declare (xargs :stobjs (aignet aignet-invals aignet-regvals)
+  (defun lit-eval-list (x invals regvals aignet)
+    (declare (xargs :stobjs (aignet invals regvals)
                     :guard (and (lit-listp x)
                                 (aignet-lit-listp x aignet)
-                                (<= (num-ins aignet) (bits-length aignet-invals))
-                                (<= (num-regs aignet) (bits-length aignet-regvals)))))
+                                (<= (num-ins aignet) (bits-length invals))
+                                (<= (num-regs aignet) (bits-length regvals)))))
     (if (atom x)
         nil
-      (cons (lit-eval (car x) aignet-invals aignet-regvals aignet)
-            (lit-eval-list (cdr x) aignet-invals aignet-regvals aignet))))
+      (cons (lit-eval (car x) invals regvals aignet)
+            (lit-eval-list (cdr x) invals regvals aignet))))
 
   (defthm lit-eval-list-preserved-by-extension
     (implies (and (aignet-extension-binding)
                   (aignet-lit-listp lits orig))
-             (equal (lit-eval-list lits aignet-invals aignet-regvals new)
-                    (lit-eval-list lits aignet-invals aignet-regvals orig))))
+             (equal (lit-eval-list lits invals regvals new)
+                    (lit-eval-list lits invals regvals orig))))
 
   (defthm lit-eval-list-preserved-by-extension-inverse
     (implies (and (aignet-extension-bind-inverse)
                   (aignet-lit-listp lits orig))
-             (equal (lit-eval-list lits aignet-invals aignet-regvals orig)
-                    (lit-eval-list lits aignet-invals aignet-regvals new))))
+             (equal (lit-eval-list lits invals regvals orig)
+                    (lit-eval-list lits invals regvals new))))
 
 
   (defthm id-eval-of-aignet-add-gate-new
@@ -698,6 +698,59 @@
   (defthm lit-eval-of-0-and-1
     (and (equal (lit-eval 0 invals regvals aignet) 0)
          (equal (lit-eval 1 invals regvals aignet) 1))))
+
+
+(define output-eval ((n natp) invals regvals aignet)
+  :guard (and (< n (num-outs aignet))
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  (id-eval (outnum->id n aignet) invals regvals aignet)
+  ///
+  (defthm output-eval-out-of-bounds
+    (implies (<= (stype-count :po aignet) (nfix n))
+             (equal (output-eval n invals regvals aignet) 0))
+    :hints(("Goal" :in-theory (enable output-eval))))
+
+  (defthm output-eval-of-extension
+    (implies (and (aignet-extension-binding)
+                  (< (nfix n) (num-outs orig)))
+             (equal (output-eval n in-vals reg-vals new)
+                    (output-eval n in-vals reg-vals orig)))
+    :hints(("Goal" :in-theory (enable output-eval
+                                      lookup-stype-in-bounds)))))
+
+(define nxst-eval ((n natp) invals regvals aignet)
+  :guard (and (< n (num-regs aignet))
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  (id-eval (reg-id->nxst (regnum->id n aignet) aignet)
+           invals regvals aignet)
+  ///
+
+  (defthm nxst-eval-out-of-bounds
+    (implies (<= (stype-count :reg aignet) (nfix n))
+             (equal (nxst-eval n in-vals reg-vals aignet)
+                    0))
+    :hints(("Goal" :in-theory (enable nxst-eval))))
+
+  (local (defthm lookup-reg->nxst-of-extension-when-no-new-nxsts
+           (implies (and (aignet-extension-binding)
+                         (equal (stype-count :nxst new) (stype-count :nxst orig))
+                         (equal (stype (car (lookup-id n orig))) :reg))
+                    (equal (lookup-reg->nxst n new) (lookup-reg->nxst n orig)))
+           :hints(("Goal" :in-theory (enable lookup-reg->nxst stype-count lookup-id)
+                   :induct (lookup-reg->nxst n new)
+                   :expand ((Aignet-extension-p new orig))))))
+
+  (defthm nxst-eval-of-extension
+    (implies (and (aignet-extension-binding)
+                  (< (nfix n) (num-regs orig))
+                  (equal (num-nxsts new) (num-nxsts orig)))
+             (equal (nxst-eval n in-vals reg-vals new)
+                    (nxst-eval n in-vals reg-vals orig)))
+    :hints(("Goal" :in-theory (enable nxst-eval
+                                      lookup-stype-in-bounds)))))
+
 
 (encapsulate nil ;; defsection semantics-seq
 
@@ -902,7 +955,28 @@
                       (:free (id)
                        (id-eval-seq (+ -1 k) id frames initsts aignet))))))
 
-  (verify-guards id-eval-seq)
+  (verify-guards id-eval-seq))
+
+
+(define output-eval-seq ((k natp) (n natp) frames initsts aignet)
+  :guard (and (< n (num-outs aignet))
+              (< k (frames-nrows frames))
+              (<= (num-ins aignet) (frames-ncols frames))
+              (<= (num-regs aignet) (bits-length initsts)))
+  (id-eval-seq k (outnum->id n aignet) frames initsts aignet))
+
+(define reg-eval-seq ((k natp) (n natp) frames initsts aignet)
+  :guard (and (< n (num-regs aignet))
+              (<= k (frames-nrows frames))
+              (<= (num-ins aignet) (frames-ncols frames))
+              (<= (num-regs aignet) (bits-length initsts)))
+  (if (zp k)
+      (get-bit n initsts)
+    (id-eval-seq (1- k)
+                 (reg-id->nxst (regnum->id n aignet) aignet)
+                 frames initsts aignet)))
+
+(defsection frame-regvals
 
   (def-list-constructor frame-regvals (k frames initsts aignet)
     (declare (xargs :stobjs (frames initsts aignet)
@@ -912,11 +986,7 @@
                                     (frames-ncols frames))
                                 (<= (num-regs aignet)
                                     (bits-length initsts)))))
-    (if (zp k)
-        (get-bit n initsts)
-      (id-eval-seq (1- k)
-                   (reg-id->nxst (regnum->id n aignet) aignet)
-                   frames initsts aignet))
+    (reg-eval-seq k n frames initsts aignet)
     :length (num-regs aignet))
 
   (defthmd id-eval-seq-in-terms-of-id-eval
@@ -930,9 +1000,12 @@
                       (:free (invals regvals)
                              (id-eval id invals regvals aignet))
                       (:free (k lit)
-                             (lit-eval-seq k lit invals regvals aignet)))
+                             (lit-eval-seq k lit frames initsts aignet))
+                      (:free (k lit1 lit2)
+                       (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet)))
              :in-theory (e/d (lit-eval
-                              eval-and-of-lits)
+                              eval-and-of-lits
+                              reg-eval-seq)
                              (id-eval-seq
                               id-eval)))))
 
@@ -995,97 +1068,191 @@
              (equal (frame-regvals k frames initvals new)
                     (frame-regvals k frames initvals orig)))
     :hints ((and stable-under-simplificationp
-                 (acl2::equal-by-nths-hint))))
+                 (acl2::equal-by-nths-hint))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable reg-eval-seq)))))
 
   (defthm frame-regvals-when-zp
     (implies (zp k)
              (bits-equiv (frame-regvals k frames initvals aignet)
                          (take (num-regs aignet) initvals)))
-    :hints(("Goal" :in-theory (enable bits-equiv
+    :hints(("Goal" :in-theory (enable bits-equiv reg-eval-seq
                                       nth-of-frame-regvals-split)))))
 
 
 
 
 
-(defsection comb-equiv
+(defsection outs-comb-equiv
+  :parents (semantics)
+  :short "Combinational equivalence of aignets, considering only primary outputs"
+  :long "<p>@('outs-comb-equiv') says that two aignets' outputs are
+combinationally equivalent, that is, corresponding outputs evaluate to the same
+value under the same input/register assignment.</p>"
+
+  (defun-sk outs-comb-equiv (aignet aignet2)
+    (forall (n invals regvals)
+            (equal (equal (output-eval n invals regvals aignet)
+                          (output-eval n invals regvals aignet2))
+                   t))
+    :rewrite :direct)
+
+  (in-theory (disable outs-comb-equiv outs-comb-equiv-necc))
+
+  (local (defthm refl
+           (outs-comb-equiv x x)
+           :hints(("Goal" :in-theory (enable outs-comb-equiv)))))
+
+  (local
+   (defthm symm
+     (implies (outs-comb-equiv aignet aignet2)
+              (outs-comb-equiv aignet2 aignet))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance outs-comb-equiv-necc
+                           (n (mv-nth 0 (outs-comb-equiv-witness aignet2 aignet)))
+                           (invals (mv-nth 1 (outs-comb-equiv-witness aignet2 aignet)))
+                           (regvals (mv-nth 2 (outs-comb-equiv-witness aignet2
+                                                                  aignet))))))))))
+
+  (local
+   (defthm trans-lemma
+     (implies (and (outs-comb-equiv aignet aignet2)
+                   (outs-comb-equiv aignet2 aignet3))
+              (outs-comb-equiv aignet aignet3))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance outs-comb-equiv-necc
+                           (n (mv-nth 0 (outs-comb-equiv-witness aignet aignet3)))
+                           (invals (mv-nth 1 (outs-comb-equiv-witness aignet aignet3)))
+                           (regvals (mv-nth 2 (outs-comb-equiv-witness aignet aignet3))))
+                          (:instance outs-comb-equiv-necc
+                           (aignet aignet2) (aignet2 aignet3)
+                           (n (mv-nth 0 (outs-comb-equiv-witness aignet aignet3)))
+                           (invals (mv-nth 1 (outs-comb-equiv-witness aignet aignet3)))
+                           (regvals (mv-nth 2 (outs-comb-equiv-witness aignet
+                                                                  aignet3))))))))))
+
+  (defequiv outs-comb-equiv)
+
+  (defcong outs-comb-equiv equal (output-eval n invals regvals aignet) 4
+    :hints(("Goal" :in-theory (enable outs-comb-equiv-necc)))))
+
+
+(defsection nxsts-comb-equiv
+  :parents (semantics)
+  :short "Combinational equivalence of aignets, considering only next-states"
+  :long "<p>@('outs-comb-equiv') says that two aignets' next-states are
+combinationally equivalent, that is, the next-states of corresponding registers
+evaluate to the same value under the same input/register assignment.</p>"
+
+  (defun-sk nxsts-comb-equiv (aignet aignet2)
+    (forall (n invals regvals)
+            (equal (equal (nxst-eval n invals regvals aignet)
+                          (nxst-eval n invals regvals aignet2))
+                   t))
+    :rewrite :direct)
+
+  (in-theory (disable nxsts-comb-equiv nxsts-comb-equiv-necc))
+
+  (local (defthm refl
+           (nxsts-comb-equiv x x)
+           :hints(("Goal" :in-theory (enable nxsts-comb-equiv)))))
+
+  (local
+   (defthm symm
+     (implies (nxsts-comb-equiv aignet aignet2)
+              (nxsts-comb-equiv aignet2 aignet))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance nxsts-comb-equiv-necc
+                           (n (mv-nth 0 (nxsts-comb-equiv-witness aignet2 aignet)))
+                           (invals (mv-nth 1 (nxsts-comb-equiv-witness aignet2 aignet)))
+                           (regvals (mv-nth 2 (nxsts-comb-equiv-witness aignet2
+                                                                  aignet))))))))))
+
+  (local
+   (defthm trans-lemma
+     (implies (and (nxsts-comb-equiv aignet aignet2)
+                   (nxsts-comb-equiv aignet2 aignet3))
+              (nxsts-comb-equiv aignet aignet3))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance nxsts-comb-equiv-necc
+                           (n (mv-nth 0 (nxsts-comb-equiv-witness aignet aignet3)))
+                           (invals (mv-nth 1 (nxsts-comb-equiv-witness aignet aignet3)))
+                           (regvals (mv-nth 2 (nxsts-comb-equiv-witness aignet aignet3))))
+                          (:instance nxsts-comb-equiv-necc
+                           (aignet aignet2) (aignet2 aignet3)
+                           (n (mv-nth 0 (nxsts-comb-equiv-witness aignet aignet3)))
+                           (invals (mv-nth 1 (nxsts-comb-equiv-witness aignet aignet3)))
+                           (regvals (mv-nth 2 (nxsts-comb-equiv-witness aignet
+                                                                  aignet3))))))))))
+
+  (defequiv nxsts-comb-equiv)
+
+  (defcong nxsts-comb-equiv equal (nxst-eval n invals regvals aignet) 4
+    :hints(("Goal" :in-theory (enable nxsts-comb-equiv-necc)))))
+
+(define comb-equiv (aignet aignet2)
   :parents (semantics)
   :short "Combinational equivalence of aignets"
   :long "<p>We consider two aignets to be combinationally equivalent if:
 <ul>
-<li>they have the same number of primary outputs</li>
-<li>they have the same number of registers</li>
 <li>corresponding outputs evaluate to the same value under the same input/register
 assignment</li>
 <li>next-states of corresponding registers evaluate to the same value under the
 same input/register assignment.</li></ul>
 </p>"
+  (and (ec-call (outs-comb-equiv aignet aignet2))
+       (ec-call (nxsts-comb-equiv aignet aignet2)))
+  ///
+  (defthmd comb-equiv-necc
+    (implies (comb-equiv aignet aignet2)
+             (and (equal (equal (output-eval n invals regvals aignet)
+                                (output-eval n invals regvals aignet2))
+                   t)
+                  (equal (equal (nxst-eval n invals regvals aignet)
+                                (nxst-eval n invals regvals aignet2))
+                         t)))
+    :hints(("Goal" :in-theory (enable outs-comb-equiv-necc
+                                      nxsts-comb-equiv-necc))))
 
-  (defun-sk comb-equiv (aignet aignet2)
-    (forall (n invals regvals)
-            (and (equal (equal (id-eval (node-count (lookup-stype n
-                                                                  (po-stype)
-                                                                  aignet))
-                                        invals regvals aignet)
-                               (id-eval (node-count (lookup-stype n
-                                                                  (po-stype)
-                                                                  aignet2))
-                                        invals regvals aignet2))
-                        t)
-                 (equal (equal (id-eval (node-count
-                                         (lookup-reg->nxst
-                                          (node-count
-                                           (lookup-stype n (reg-stype)
-                                                         aignet))
-                                          aignet))
-                                        invals regvals aignet)
-                               (id-eval (node-count
-                                         (lookup-reg->nxst
-                                          (node-count
-                                           (lookup-stype n (reg-stype)
-                                                         aignet2))
-                                          aignet2))
-                                        invals regvals aignet2))
-                        t)))
-    :rewrite :direct)
+  (defthmd comb-equiv-necc-id-eval
+    (implies (comb-equiv aignet aignet2)
+             (and (equal (equal (id-eval (node-count (lookup-stype n
+                                                             (po-stype)
+                                                             aignet))
+                                   invals regvals aignet)
+                          (id-eval (node-count (lookup-stype n
+                                                             (po-stype)
+                                                             aignet2))
+                                   invals regvals aignet2))
+                   t)
+                  (equal (equal (id-eval (node-count
+                                          (lookup-reg->nxst
+                                           (node-count
+                                            (lookup-stype n (reg-stype)
+                                                          aignet))
+                                           aignet))
+                                         invals regvals aignet)
+                                (id-eval (node-count
+                                          (lookup-reg->nxst
+                                           (node-count
+                                            (lookup-stype n (reg-stype)
+                                                          aignet2))
+                                           aignet2))
+                                         invals regvals aignet2))
+                         t)))
+    :hints(("Goal" :in-theory (e/d (output-eval nxst-eval)
+                                   (comb-equiv-necc))
+            :use comb-equiv-necc)))
 
-  (in-theory (disable comb-equiv comb-equiv-necc))
+  (defequiv comb-equiv)
+  (defrefinement comb-equiv outs-comb-equiv)
+  (defrefinement comb-equiv nxsts-comb-equiv))
 
-  (local (defthm refl
-           (comb-equiv x x)
-           :hints(("Goal" :in-theory (enable comb-equiv)))))
 
-  (local
-   (defthm symm
-     (implies (comb-equiv aignet aignet2)
-              (comb-equiv aignet2 aignet))
-     :hints ((and stable-under-simplificationp
-                  `(:expand (,(car (last clause)))
-                    :use ((:instance comb-equiv-necc
-                           (n (mv-nth 0 (comb-equiv-witness aignet2 aignet)))
-                           (invals (mv-nth 1 (comb-equiv-witness aignet2 aignet)))
-                           (regvals (mv-nth 2 (comb-equiv-witness aignet2
-                                                                  aignet))))))))))
-
-  (local
-   (defthm trans-lemma
-     (implies (and (comb-equiv aignet aignet2)
-                   (comb-equiv aignet2 aignet3))
-              (comb-equiv aignet aignet3))
-     :hints ((and stable-under-simplificationp
-                  `(:expand (,(car (last clause)))
-                    :use ((:instance comb-equiv-necc
-                           (n (mv-nth 0 (comb-equiv-witness aignet aignet3)))
-                           (invals (mv-nth 1 (comb-equiv-witness aignet aignet3)))
-                           (regvals (mv-nth 2 (comb-equiv-witness aignet aignet3))))
-                          (:instance comb-equiv-necc
-                           (aignet aignet2) (aignet2 aignet3)
-                           (n (mv-nth 0 (comb-equiv-witness aignet aignet3)))
-                           (invals (mv-nth 1 (comb-equiv-witness aignet aignet3)))
-                           (regvals (mv-nth 2 (comb-equiv-witness aignet
-                                                                  aignet3))))))))))
-
-  (defequiv comb-equiv))
 
 
 
@@ -1130,14 +1297,8 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
   ;; NOTE: This assumes the initial states of both aignets are all-zero.
   (defun-sk seq-equiv (aignet aignet2)
     (forall (k n inframes)
-            (equal (equal (id-eval-seq k (node-count (lookup-stype n
-                                                                   (po-stype)
-                                                                   aignet))
-                                       inframes nil aignet)
-                          (id-eval-seq k (node-count (lookup-stype n
-                                                                   (po-stype)
-                                                                   aignet2))
-                                       inframes nil aignet2))
+            (equal (equal (output-eval-seq k n inframes nil aignet)
+                          (output-eval-seq k n inframes nil aignet2))
                    t))
     :rewrite :direct)
 
@@ -1177,6 +1338,9 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
 
   (defequiv seq-equiv)
 
+  (defcong seq-equiv equal (output-eval-seq k n frames nil aignet) 5
+    :hints(("Goal" :in-theory (enable seq-equiv-necc))))
+
   (local (defun count-down (k)
            (if (zp k)
                k
@@ -1205,13 +1369,15 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
             (and stable-under-simplificationp
                  `(:expand (,(car (last clause)))
                    :in-theory (enable nth-of-frame-regvals-split
+                                      reg-eval-seq
                                       id-eval-seq-in-terms-of-id-eval
-                                      comb-equiv-necc)))))
+                                      comb-equiv-necc-id-eval)))))
 
   (defthm comb-equiv-implies-seq-equiv
     (implies (comb-equiv aignet aignet2)
              (seq-equiv aignet aignet2))
-    :hints(("Goal" :in-theory (enable seq-equiv comb-equiv-necc
+    :hints(("Goal" :in-theory (enable seq-equiv comb-equiv-necc-id-eval
+                                      output-eval-seq
                                       comb-equiv-implies-same-frame-regvals
                                       id-eval-seq-in-terms-of-id-eval)
             :cases ((<= (num-regs aignet)
@@ -1229,14 +1395,8 @@ same outputs when run starting at that initial state.</p>"
 
   (defun-sk seq-equiv-init (aignet initsts aignet2 initsts2)
     (forall (k n inframes)
-            (equal (equal (id-eval-seq k (node-count (lookup-stype n
-                                                                   (po-stype)
-                                                                   aignet))
-                                       inframes initsts aignet)
-                          (id-eval-seq k (node-count (lookup-stype n
-                                                                   (po-stype)
-                                                                   aignet2))
-                                       inframes initsts2 aignet2))
+            (equal (equal (output-eval-seq k n inframes initsts aignet)
+                          (output-eval-seq k n inframes initsts2 aignet2))
                    t))
     :rewrite :direct)
 
@@ -1288,8 +1448,9 @@ same outputs when run starting at that initial state.</p>"
   (defthm comb-equiv-implies-seq-equiv-init
     (implies (comb-equiv aignet aignet2)
              (seq-equiv-init aignet initvals aignet2 initvals))
-    :hints(("Goal" :in-theory (enable seq-equiv-init comb-equiv-necc
+    :hints(("Goal" :in-theory (enable seq-equiv-init comb-equiv-necc-id-eval
                                       comb-equiv-implies-same-frame-regvals
+                                      output-eval-seq
                                       id-eval-seq-in-terms-of-id-eval)
             :cases ((<= (num-regs aignet) (num-regs aignet2)))))))
 

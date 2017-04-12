@@ -292,7 +292,6 @@ stobj.</p>"
                          (var (lit->var lit)))
                         (:instance make-lit-identity))
            :in-theory (e/d (eval-lit) (make-lit-identity
-                                       equal-of-lit-fix-hyp
                                        equal-of-lit-fix-backchain)))))
 
 (defthm env-satisfies-assums-implies-not-lit-eval
