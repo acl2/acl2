@@ -36,6 +36,7 @@
 (include-book "std/strings/strsubst" :dir :system)
 (include-book "xdoc/str" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (in-theory (disable nth update-nth nfix)))
 (local (in-theory (enable* arith-equiv-forwarding)))
 
@@ -188,6 +189,59 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
             (and stable-under-simplificationp
                  '(:nonlinearp t)))))
 
+
+(local (in-theory (disable floor)))
+
+(local (defthm floor-bound
+         (implies (and (natp x) (natp y))
+                  (<= (* y (floor x y)) x))
+         :rule-classes :linear))
+
+
+(define 2darr-index-inverse ((idx :type (integer 0 *))
+                             (nrows :type (integer 0 *))
+                             (ncols :type (integer 0 *)))
+  :guard (< idx (* ncols nrows))
+  (declare (ignore nrows))
+  :returns (mv (row-idx natp :rule-classes :type-prescription)
+               (col-idx natp :rule-classes :type-prescription))
+  (b* ((idx (lnfix idx))
+       (ncols (lnfix ncols)))
+    (if (eql 0 ncols)
+        (mv 0 idx)
+      (mv (floor idx ncols)
+          (mod idx ncols))))
+  ///
+  (defthm 2darr-index-inverse-of-2darr-index
+    (implies (and (< (nfix row) (nfix nrows))
+                  (< (nfix col) (nfix ncols)))
+             (equal (2darr-index-inverse (2darr-index row col nrows ncols) nrows ncols)
+                    (mv (nfix row) (nfix col))))
+    :hints(("Goal" :in-theory (enable 2darr-index))))
+
+  (defthm 2darr-index-of-2darr-index-inverse
+    (b* (((mv row col) (2darr-index-inverse idx nrows ncols)))
+      (equal (2darr-index row col nrows ncols)
+             (nfix idx)))
+    :hints(("Goal" :in-theory (enable 2darr-index))))
+
+  (local (defthm nonlinear-lemma
+           (implies (and (< x (* y z))
+                         (<= z f)
+                         (natp x) (natp y) (natp z) (natp f))
+                    (< x (* y f)))
+           :hints (("goal" :nonlinearp t))))
+
+  (defthm 2darr-index-inverse-in-bounds
+    (implies (< (nfix idx) (* (nfix ncols) (nfix nrows)))
+             (b* (((mv row col) (2darr-index-inverse idx nrows ncols)))
+               (and (< row (nfix nrows))
+                    (< col (nfix ncols)))))
+    :hints (("goal" :use ((:instance floor-bound (x (nfix idx)) (y ncols)))
+             :in-theory (disable floor-bound)))
+    :rule-classes :linear))
+
+
 (def-ruleset! 2d-arr-base-theory
   (let ((world (w state)))
     (current-theory :here)))
@@ -317,6 +371,27 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
        (let ((elt (_prefix_e-datai (_prefix_e-index row col _prefix_e-arr2) _prefix_e-arr2)))
          (mbe :logic (_elt-fix_ elt) :exec elt)))
 
+     (defsection _prefix_e-get
+       (defund-inline _prefix_e-get (idx _prefix_e-arr2)
+         (declare (xargs :stobjs _prefix_e-arr2
+                         :guard (and (_prefix_e-arr2-wfp _prefix_e-arr2)
+                                     (natp idx)
+                                     (< idx (* (_prefix_e-nrows _prefix_e-arr2)
+                                               (_prefix_e-ncols _prefix_e-arr2))))
+                         :split-types t)
+                  (type (integer 0 *) idx))
+         (let ((elt (_prefix_e-datai idx _prefix_e-arr2)))
+           (mbe :logic (_elt-fix_ elt) :exec elt)))
+
+       (local (in-theory (enable _prefix_e-get)))
+
+       (defthm _prefix_e-get-in-terms-of-_prefix_e-get2
+         (equal (_prefix_e-get idx _prefix_e-arr2)
+                (b* (((mv row col) (2darr-index-inverse
+                                    idx (_prefix_e-nrows _prefix_e-arr2)
+                                    (_prefix_e-ncols _prefix_e-arr2))))
+                  (_prefix_e-get2 row col _prefix_e-arr2)))))
+
      (defsection _prefix_e-set2
        (defund-inline _prefix_e-set2 (row col val _prefix_e-arr2)
          (declare (xargs :stobjs _prefix_e-arr2
@@ -354,7 +429,52 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
          (implies (and (< (nfix row) (nfix (_prefix_e-nrows _prefix_e-arr2)))
                        (< (nfix col) (nfix (_prefix_e-ncols _prefix_e-arr2)))
                        (_prefix_e-arr2-wfp _prefix_e-arr2))
+                  (_prefix_e-arr2-wfp (_prefix_e-set2 row col val _prefix_e-arr2))))
+
+       (defthm _prefix_e-get2-of-_prefix_e-set2
+         (implies (and (< (nfix col1) (nfix (_prefix_e-ncols _prefix_e-arr2)))
+                       (< (nfix col2) (nfix (_prefix_e-ncols _prefix_e-arr2))))
+                  (equal (_prefix_e-get2 row1 col1 (_prefix_e-set2 row2 col2 val2 _prefix_e-arr2))
+                         (if (and (equal (nfix row1) (nfix row2))
+                                  (equal (nfix col1) (nfix col2)))
+                             (_elt-fix_ val2)
+                           (_prefix_e-get2 row1 col1 _prefix_e-arr2)))))
+
+       (defthm _prefix_e-ncols-of-_prefix_e-set2
+         (equal (_prefix_e-ncols (_prefix_e-set2 row col val _prefix_e-arr2))
+                (_prefix_e-ncols _prefix_e-arr2)))
+
+       (defthm _prefix_e-nrows-of-_prefix_e-set2
+         (equal (_prefix_e-nrows (_prefix_e-set2 row col val _prefix_e-arr2))
+                (_prefix_e-nrows _prefix_e-arr2)))
+
+       (defthm _prefix_e-arr2-wfp-of-_prefix_e-set2
+         (implies (and (< (nfix row) (nfix (_prefix_e-nrows _prefix_e-arr2)))
+                       (< (nfix col) (nfix (_prefix_e-ncols _prefix_e-arr2)))
+                       (_prefix_e-arr2-wfp _prefix_e-arr2))
                   (_prefix_e-arr2-wfp (_prefix_e-set2 row col val _prefix_e-arr2)))))
+
+     (defsection _prefix_e-set
+       (defund-inline _prefix_e-set (idx val _prefix_e-arr2)
+         (declare (xargs :stobjs _prefix_e-arr2
+                         :guard (and (_prefix_e-arr2-wfp _prefix_e-arr2)
+                                     (_elt-typep_ val)
+                                     (natp idx)
+                                     (< idx (* (_prefix_e-nrows _prefix_e-arr2)
+                                               (_prefix_e-ncols _prefix_e-arr2))))
+                         :split-types t)
+                  (type (integer 0 *) idx)
+                  (type _elt-type_ val))
+         (update-_prefix_e-datai idx val _prefix_e-arr2))
+
+       (local (in-theory (enable _prefix_e-set _prefix_e-set2)))
+
+       (defthm _prefix_e-set-in-terms-of-_prefix_e-set2
+         (equal (_prefix_e-set idx val _prefix_e-arr2)
+                (b* (((mv row col) (2darr-index-inverse
+                                    idx (_prefix_e-nrows _prefix_e-arr2)
+                                    (_prefix_e-ncols _prefix_e-arr2))))
+                  (_prefix_e-set2 row col val _prefix_e-arr2)))))
 
      (defsection _prefix_e-resize-rows
        ;; changes the number of rows, preserving data
@@ -502,6 +622,15 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                                    (< col (_prefix_l-ncols _prefix_l-arr2)))))
        (_elt-fix_ (nth col (nth row (2darr->rows _prefix_l-arr2)))))
 
+     (defun _prefix_l-get (idx _prefix_l-arr2)
+       (declare (type (integer 0 *) idx)
+                (xargs :guard (and (_prefix_l-arr2-wfp _prefix_l-arr2)
+                                   (< idx (* (_prefix_l-nrows _prefix_l-arr2)
+                                             (_prefix_l-ncols _prefix_l-arr2))))))
+       (b* (((mv row col) (2darr-index-inverse idx (_prefix_l-nrows _prefix_l-arr2)
+                                             (_prefix_l-ncols _prefix_l-arr2))))
+         (_prefix_l-get2 row col _prefix_l-arr2)))
+
      (defsection _prefix_l-set2
        (defund _prefix_l-set2 (row col val _prefix_l-arr2)
          (declare (type (integer 0 *) row)
@@ -556,6 +685,16 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                        (_elt-typep_ val)
                        (_prefix_l-arr2-wfp _prefix_l-arr2))
                   (_prefix_l-arr2-wfp (_prefix_l-set2 row col val _prefix_l-arr2)))))
+
+     (defun _prefix_l-set (idx val _prefix_l-arr2)
+         (declare (type (integer 0 *) idx)
+                  (type _elt-type_ val)
+                  (xargs :guard (and (_prefix_l-arr2-wfp _prefix_l-arr2)
+                                     (< idx (* (_prefix_l-nrows _prefix_l-arr2)
+                                               (_prefix_l-ncols _prefix_l-arr2))))))
+         (b* (((mv row col) (2darr-index-inverse idx (_prefix_l-nrows _prefix_l-arr2)
+                                               (_prefix_l-ncols _prefix_l-arr2))))
+           (_prefix_l-set2 row col val _prefix_l-arr2)))
 
      (defsection _prefix_l-resize-rows
        ;; changes the number of rows, preserving data
@@ -704,7 +843,9 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
        :exports ((_prefix_-nrows  :logic _prefix_l-nrows :exec _prefix_e-nrows)
                  (_prefix_-ncols  :logic _prefix_l-ncols :exec _prefix_e-ncols)
                  (_prefix_-get2   :logic _prefix_l-get2  :exec _prefix_e-get2$inline)
+                 (_prefix_-get    :logic _prefix_l-get   :exec _prefix_e-get$inline)
                  (_prefix_-set2$g :logic _prefix_l-set2  :exec _prefix_e-set2$inline)
+                 (_prefix_-set$g  :logic _prefix_l-set   :exec _prefix_e-set$inline)
                  (_prefix_-resize-rows$g :logic _prefix_l-resize-rows
                                          :exec _prefix_e-resize-rows$inline
                                          :protect t)
@@ -732,6 +873,17 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
             :exec (if _elt-okp_
                       (_prefix_-set2$g row col _xvar_ _stobj-name_)
                     (ec-call (_prefix_-set2$g row col _xvar_ _stobj-name_)))))
+
+     (defun _prefix_-set (idx _xvar_ _stobj-name_)
+       (declare (xargs :guard (and (natp idx)
+                                   (< idx (* (_prefix_-nrows _stobj-name_)
+                                             (_prefix_-ncols _stobj-name_)))
+                                   _elt-guard_)
+                       :stobjs _stobj-name_))
+       (mbe :logic (_prefix_-set$g idx _xvar_ _stobj-name_)
+            :exec (if _elt-okp_
+                      (_prefix_-set$g idx _xvar_ _stobj-name_)
+                    (ec-call (_prefix_-set$g idx _xvar_ _stobj-name_)))))
 
      (defun _prefix_-resize-rows (nrows _stobj-name_)
        (declare (xargs :stobjs _stobj-name_
@@ -938,4 +1090,5 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
                                                 (def2darr-events)
                                                 ',stobj-name))))
       (value events))))
+
 

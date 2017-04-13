@@ -756,7 +756,7 @@
 
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
-  (local (in-theory (enable acl2::make-list-ac-redef)))
+  (local (in-theory (enable acl2::make-list-ac-redef resize-list)))
   (local (in-theory (disable acl2::make-list-ac-removal)))
 
   (acl2::def-2d-arr frames
