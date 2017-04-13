@@ -538,31 +538,31 @@
 ;; assignments, then they produce the same SHNF.
 
 (defun pad0 (i n)
+  (declare (xargs :guard (natp i)))
   (if (zp i)
       n
     (cons 0 (pad0 (1- i) n))))
 
-(defun ew (x y)
+; Invariant of evalh-witness:
+; Let (list n0 n1 n2 ...) is (evalh-witness x) and x is not atom.
+; Then (1-norm (evalh x (list v n1 n2 ...))) >= 1 for all rational v >= n0
+(defun evalh-witness (x)
+  (declare (xargs :guard (shnfp x)))
   (if (atom x)
       ()
-    (if (eq (car x) 'pop)
-        (let ((i (cadr x))
-              (p (caddr x)))
-          (pad0 i (ew p y)))
-      (let ((p (caddr x))
-            (q (cadddr x)))
-        (if (or (atom p) (eq (car p) 'pop))
-            (let ((n (ew p y)))
-              (cons (ifix (+ (abs (evalh q (cdr n)))
-                             (abs (evalh y (cdr n)))
-                             1))
-                    (cdr n)))
-          (ew p
-              (norm-add (norm-mul q q)
-                        (norm-mul y y))))))))
-
-(defund evalh-witness (x)
-  (ew x 1))
+    (case (car x)
+      (pop (let ((i (cadr x))
+                 (p (caddr x)))
+             (pad0 i (evalh-witness p))))
+      (pow (let* ((p (caddr x))
+                  (q (cadddr x))
+                  (n (evalh-witness p))
+                  (vq (evalh q (cdr n)))
+                  (normq (+ (abs (realpart vq)) (abs (imagpart vq)))))
+             (if (atom p)
+                 (let ((normp (+ (abs (realpart p)) (abs (imagpart p)))))
+                   (list (max 1 (cg (/ (1+ normq) normp)))))
+               (cons (max (car n) (1+ (cg normq))) (cdr n))))))))
 
 (defthmd evalh-not-zero
   (implies (and (shnfp x)
