@@ -2215,6 +2215,1006 @@
 ;;                            Instantiation Macro
 ;;*********************************************************************************
 
+(defn gen-basic (p list polyp evalp shfp evalh shf-normp shnfp
+                   closure-evalp closure-evalh
+                   shnfp-shfp shnfp-pow-q shnfp-pow-p shfp-pop-pow-atom
+                   shnfp-num)
+  (let* ((list-cmd ; list[?p]
+          `(defn ,list (vals)
+             (if (consp vals)
+                 (and (,list (cdr vals))
+                      (,p (car vals)))
+               (null vals))))
+
+         (polyp-cmd ; polyp[?p]
+          `(defun ,polyp (x vars)
+             (declare (xargs :guard (distinct-symbols vars)))
+             (if (atom x)
+                 (or (,p x) (member x vars))
+               (and (true-listp x)
+                    (case (len x)
+                      (2 (let ((y (cadr x)))
+                           (case (car x)
+                             (- (,polyp y vars)))))
+                      (3 (let ((y (cadr x)) (z (caddr x)))
+                           (case (car x)
+                             (+ (and (,polyp y vars) (,polyp z vars)))
+                             (- (and (,polyp y vars) (,polyp z vars)))
+                             (* (and (,polyp y vars) (,polyp z vars)))
+                             (expt (and (,polyp y vars) (natp z)))))))))))
+
+         (evalp-cmd ; evalp[?p]
+          `(defun ,evalp (x alist)
+             (if (,p x)
+                 x
+               (if (atom x)
+                   (cdr (assoc x alist))
+                 (let ((y (cadr x)) (z (caddr x)))
+                   (case (car x)
+                     (+ (+ (,evalp y alist) (,evalp z alist)))
+                     (- (if (cddr x) (- (,evalp y alist) (,evalp z alist)) (- (,evalp y alist))))
+                     (* (* (,evalp y alist) (,evalp z alist)))
+                     (expt (expt (,evalp y alist) (,evalp z alist)))))))))
+
+         (closure-evalp-cmd
+          `(acl2::def-functional-instance ,closure-evalp
+             closure-evalp[?p] ((?p ,p)
+                                (list[?p] ,list)
+                                (polyp[?p] ,polyp)
+                                (evalp[?p] ,evalp))))
+
+         (shfp-cnd ; shfp[?p]
+          `(defn ,shfp (x)
+             (if (atom x)
+                 (,p x)
+               (case (car x)
+                 (pop (and (consp (cdr x))   (natp (cadr x))
+                           (consp (cddr x))  (,shfp (caddr x))
+                           (null (cdddr x))))
+                 (pow (and (consp (cdr x))   (natp (cadr x))
+                           (consp (cddr x))  (,shfp (caddr x))
+                           (consp (cdddr x)) (,shfp (cadddr x))
+                           (null (cddddr x))))))))
+
+         (evalh-cmd ; evalh[?p]
+          `(defun ,evalh (x vals)
+             (declare (xargs :guard (and (,shfp x)
+                                         (,list vals))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem evalh[?p])
+                                                         (?p ,p)
+                                                         (list[?p] ,list)
+                                                         (shfp[?p] ,shfp)
+                                                         (evalh[?p] ,evalh))))))
+             (if (atom x)
+                 x
+               (case (car x)
+                 (pop (,evalh (caddr x) (nthcdr (cadr x) vals)))
+                 (pow (+ (* (expt (if (consp vals) (car vals) 0) (cadr x))
+                            (,evalh (caddr x) vals))
+                         (,evalh (cadddr x) (cdr vals))))))))
+
+         (closure-evalh-cmd
+          `(acl2::def-functional-instance ,closure-evalh
+             closure-evalh[?p] ((?p ,p)
+                                (list[?p] ,list)
+                                (shfp[?p] ,shfp)
+                                (evalh[?p] ,evalh))))
+
+         (shf-normp-cmd ; shf-normp[?p]
+          `(defund ,shf-normp (x)
+             (declare (xargs :guard (,shfp x)))
+             (if (atom x)
+                 t
+               (let ((i (cadr x)) (p (caddr x)) (q (cadddr x)))
+                 (case (car x)
+                   (pop (and (not (= i 0))
+                             (consp p)
+                             (eql (car p) 'pow)
+                             (,shf-normp p)))
+                   (pow (and (not (= i 0))
+                             (,shf-normp p)
+                             (,shf-normp q)
+                             (if (atom p)
+                                 (not (= p 0))
+                               (not (and (eql (car p) 'pow)
+                                         (equal (cadddr p) 0)))))))))))
+
+         (shnfp-cmd ; shnfp[?p]
+          `(defnd ,shnfp (x)
+             (and (,shfp x) (,shf-normp x))))
+
+         (shnfp-shfp-cmd
+          `(acl2::def-functional-instance ,shnfp-shfp
+             shnfp-shfp[?p] ((?p ,p)
+                             (shfp[?p] ,shfp)
+                             (shnfp[?p] ,shnfp))))
+
+         (shnfp-pow-q-cmd
+          `(acl2::def-functional-instance ,shnfp-pow-q
+             shnfp-pow-q[?p] ((?p ,p)
+                              (shfp[?p] ,shfp)
+                              (shf-normp[?p] ,shf-normp)
+                              (shnfp[?p] ,shnfp))
+             :hints (("subgoal 2" :in-theory (enable ,shnfp))
+                     ("subgoal 1" :in-theory (enable ,shf-normp)))))
+
+         (shnfp-pow-p-cmd
+          `(acl2::def-functional-instance ,shnfp-pow-p
+             shnfp-pow-p[?p] ((?p ,p)
+                              (shfp[?p] ,shfp)
+                              (shf-normp[?p] ,shf-normp)
+                              (shnfp[?p] ,shnfp))))
+
+         (shfp-pop-pow-atom-cmd
+          `(acl2::def-functional-instance ,shfp-pop-pow-atom
+             shfp-pop-pow-atom[?p] ((?p ,p)
+                                    (shfp[?p] ,shfp))))
+
+         (shnfp-num-cmd
+          `(acl2::def-functional-instance ,shnfp-num
+             shnfp-num[?p] ((?p ,p)
+                            (shfp[?p] ,shfp)
+                            (shf-normp[?p] ,shf-normp)
+                            (shnfp[?p] ,shnfp)))))
+
+    (list list-cmd
+          polyp-cmd
+          evalp-cmd closure-evalp-cmd
+          shfp-cnd
+          evalh-cmd closure-evalh-cmd
+          shf-normp-cmd
+          shnfp-cmd shnfp-shfp-cmd shnfp-pow-q-cmd shnfp-pow-p-cmd
+          shfp-pop-pow-atom-cmd shnfp-num-cmd)))
+
+(defn gen-norm-pop (p shfp evalh shf-normp shnfp norm-pop
+                      norm-pop-shnfp norm-pop-normp norm-pop-shfp norm-pop-evalh)
+  (let* ((norm-pop-cmd ; norm-pop[?p]
+          `(defun ,norm-pop (i p)
+             (declare (xargs :guard (and (natp i)
+                                         (,shnfp p))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm-pop[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pop[?p] ,norm-pop))))))
+             (if (or (= i 0) (atom p))
+                 p
+               (if (eql (car p) 'pop)
+                   (list 'pop (+ i (cadr p)) (caddr p))
+                 (list 'pop i p)))))
+
+         (norm-pop-shnfp-cmd
+          `(acl2::def-functional-instance ,norm-pop-shnfp
+             norm-pop-shnfp[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop))))
+
+         (disable-norm-pop-cmd
+          `(in-theory (disable ,norm-pop)))
+
+         (norm-pop-normp-cmd
+          `(acl2::def-functional-instance ,norm-pop-normp
+             norm-pop-normp[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop))))
+
+         (norm-pop-shfp-cmd
+          `(acl2::def-functional-instance ,norm-pop-shfp
+             norm-pop-shfp[?p] ((?p ,p)
+                                (shfp[?p] ,shfp)
+                                (shf-normp[?p] ,shf-normp)
+                                (shnfp[?p] ,shnfp)
+                                (norm-pop[?p] ,norm-pop))))
+
+         (norm-pop-evalh-cmd
+          `(acl2::def-functional-instance ,norm-pop-evalh
+             norm-pop-evalh[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (evalh[?p] ,evalh)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop)))))
+    (list norm-pop-cmd norm-pop-shnfp-cmd disable-norm-pop-cmd
+          norm-pop-normp-cmd norm-pop-shfp-cmd norm-pop-evalh-cmd)))
+
+(defn gen-norm-pow (p list shfp evalh shf-normp shnfp norm-pop norm-pow
+                      norm-pow-shnfp norm-pow-normp norm-pow-shfp
+                      norm-pow-evalh)
+  (let* ((norm-pow-cmd ; norm-pow[?p]
+          `(defun ,norm-pow (i p q)
+             (declare (xargs :guard (and (natp i)
+                                         (,shnfp p)
+                                         (,shnfp q))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm-pow[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pop[?p] ,norm-pop)
+                                                         (norm-pow[?p] ,norm-pow))))))
+             (if (equal p 0)
+                 (,norm-pop 1 q)
+               (if (and (consp p) (eql (car p) 'pow) (equal (cadddr p) 0))
+                   (list 'pow (+ i (cadr p)) (caddr p) q)
+                 (list 'pow i p q)))))
+
+         (norm-pow-shnfp-cmd
+          `(acl2::def-functional-instance ,norm-pow-shnfp
+             norm-pow-shnfp[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (norm-pow[?p] ,norm-pow))))
+
+         (disable-norm-pow-cmd
+          `(in-theory (disable ,norm-pow)))
+
+         (norm-pow-normp-cmd
+          `(acl2::def-functional-instance ,norm-pow-normp
+             norm-pow-normp[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (norm-pow[?p] ,norm-pow))))
+
+         (norm-pow-shfp-cmd
+          `(acl2::def-functional-instance ,norm-pow-shfp
+             norm-pow-shfp[?p] ((?p ,p)
+                                (shfp[?p] ,shfp)
+                                (shf-normp[?p] ,shf-normp)
+                                (shnfp[?p] ,shnfp)
+                                (norm-pop[?p] ,norm-pop)
+                                (norm-pow[?p] ,norm-pow))))
+
+         (norm-pow-evalh-cmd
+          `(acl2::def-functional-instance ,norm-pow-evalh
+             norm-pow-evalh[?p] ((?p ,p)
+                                 (list[?p] ,list)
+                                 (shfp[?p] ,shfp)
+                                 (evalh[?p] ,evalh)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (norm-pow[?p] ,norm-pow)))))
+    (list norm-pow-cmd norm-pow-shnfp-cmd disable-norm-pow-cmd
+          norm-pow-normp-cmd norm-pow-shfp-cmd norm-pow-evalh-cmd)))
+
+(defn gen-norm-var (p list evalp shfp evalh shf-normp shnfp norm-pop norm-var
+                      shnfp-norm-var evalh-norm-var)
+  (let* ((norm-var-cmd ; norm-var[?p]
+          `(defun ,norm-var (x vars)
+             (declare (xargs :guard (and (distinct-symbols vars)
+                                         (member x vars))))
+             (,norm-pop (var-index x vars) '(pow 1 1 0))))
+
+         (shnfp-norm-var-cmd
+          `(defrule ,shnfp-norm-var
+             (implies (member x vars)
+                      (,shnfp (,norm-var x vars)))))
+
+         (evalh-norm-var-cmd
+          `(defrule ,evalh-norm-var
+             (implies (and (distinct-symbols vars)
+                           (,list vals)
+                           (<= (len vars) (len vals))
+                           (member x vars))
+                      (equal (,evalh (,norm-var x vars) vals)
+                             (,evalp x (pairlis$ vars vals))))
+             :use lemma
+             :prep-lemmas
+             ((acl2::def-functional-instance lemma
+                evalh-norm-var[?p] ((?p ,p)
+                                    (list[?p] ,list)
+                                    (evalp[?p] ,evalp)
+                                    (shfp[?p] ,shfp)
+                                    (evalh[?p] ,evalh)
+                                    (shf-normp[?p] ,shf-normp)
+                                    (shnfp[?p] ,shnfp)
+                                    (norm-pop[?p] ,norm-pop)
+                                    (norm-var[?p] ,norm-var))))))
+
+         (disable-norm-var-cmd
+          `(in-theory (disable ,norm-var))))
+    (list norm-var-cmd shnfp-norm-var-cmd evalh-norm-var-cmd
+          disable-norm-var-cmd)))
+
+(defn gen-add-num (p shfp evalh shf-normp shnfp add-num
+                     normp-add-num shnfp-add-num evalh-add-num)
+  (let* ((add-num-cmd ; add-num[?p]
+          `(defun ,add-num (x y)
+             (declare (xargs :guard (and (,p x)
+                                         (,shnfp y))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem add-num[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (add-num[?p] ,add-num))))))
+             (if (atom y)
+                 (+ x y)
+               (case (car y)
+                 (pow (list 'pow (cadr y) (caddr y) (,add-num x (cadddr y))))
+                 (pop (list 'pop (cadr y) (,add-num x (caddr y))))))))
+
+         (normp-add-num-cmd
+          `(acl2::def-functional-instance ,normp-add-num
+             normp-add-num[?p] ((?p ,p)
+                                (shfp[?p] ,shfp)
+                                (shf-normp[?p] ,shf-normp)
+                                (add-num[?p] ,add-num))))
+
+         (disable-add-num-cmd
+          `(in-theory (disable ,add-num)))
+
+         (shnfp-add-num-cmd
+          `(acl2::def-functional-instance ,shnfp-add-num
+             shnfp-add-num[?p] ((?p ,p)
+                                (shfp[?p] ,shfp)
+                                (shf-normp[?p] ,shf-normp)
+                                (shnfp[?p] ,shnfp)
+                                (add-num[?p] ,add-num))))
+
+         (evalh-add-num-cmd
+          `(acl2::def-functional-instance ,evalh-add-num
+             evalh-add-num[?p] ((?p ,p)
+                                (shfp[?p] ,shfp)
+                                (evalh[?p] ,evalh)
+                                (shf-normp[?p] ,shf-normp)
+                                (shnfp[?p] ,shnfp)
+                     (add-num[?p] ,add-num)))))
+    (list add-num-cmd normp-add-num-cmd disable-add-num-cmd shnfp-add-num-cmd evalh-add-num-cmd)))
+
+(defn gen-norm-add (p list shfp evalh shf-normp shnfp norm-pop norm-pow add-num norm-add
+                      add-pop-pop add-pop-pow add-pow-pow
+                      evalh-norm-add-num shnfp-norm-add normp-norm-add evalh-norm-add)
+  (let* ((add-pop-pop-cmd
+          `(defmacro ,add-pop-pop (x y)
+             `(let ((i (cadr ,x)) (p (caddr ,x))
+                    (j (cadr ,y)) (q (caddr ,y)))
+                (if (= i j)
+                    (,',norm-pop i (,',norm-add p q))
+                  (if (> i j)
+                      (,',norm-pop j (,',norm-add (list 'pop (- i j) p) q))
+                    (,',norm-pop i (,',norm-add (list 'pop (- j i) q) p)))))))
+
+         (add-pop-pow-cmd
+          `(defmacro ,add-pop-pow (x y)
+             `(let ((i (cadr ,x)) (p (caddr ,x))
+                    (j (cadr ,y)) (q (caddr ,y)) (r (cadddr ,y)))
+                (if (= i 1)
+                    (list 'pow j q (,',norm-add r p))
+                  (list 'pow j q (,',norm-add r (list 'pop (1- i) p)))))))
+
+         (add-pow-pow-cmd
+          `(defmacro ,add-pow-pow (x y)
+             `(let ((i (cadr ,x)) (p (caddr ,x)) (q (cadddr ,x))
+                    (j (cadr ,y)) (r (caddr ,y)) (s (cadddr ,y)))
+                (if (= i j)
+                    (,',norm-pow i (,',norm-add p r) (,',norm-add q s))
+                  (if (> i j)
+                      (,',norm-pow j (,',norm-add (list 'pow (- i j) p 0) r) (,',norm-add q s))
+                    (,',norm-pow i (,',norm-add (list 'pow (- j i) r 0) p) (,',norm-add s q)))))))
+
+         (norm-add-cmd ; norm-add[?p]
+          `(defun ,norm-add (x y)
+             (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                             :guard (and (,shnfp x)
+                                         (,shnfp y))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm-add[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pow[?p] ,norm-pow)
+                                                         (norm-pop[?p] ,norm-pop)
+                                                         (add-num[?p] ,add-num)
+                                                         (norm-add[?p] ,norm-add))))))
+          (if (atom x)
+              (,add-num x y)
+            (if (atom y)
+                (,add-num y x)
+              (case (car x)
+                (pop (case (car y)
+                       (pop (,add-pop-pop x y))
+                       (pow (,add-pop-pow x y))))
+                (pow (case (car y)
+                       (pop (,add-pop-pow y x))
+                       (pow (,add-pow-pow x y)))))))))
+
+         (evalh-norm-add-num-cmd
+          `(acl2::def-functional-instance ,evalh-norm-add-num
+             evalh-norm-add-num[?p] ((?p ,p)
+                                     (shfp[?p] ,shfp)
+                                     (evalh[?p] ,evalh)
+                                     (shf-normp[?p] ,shf-normp)
+                                     (shnfp[?p] ,shnfp)
+                                     (norm-pow[?p] ,norm-pow)
+                                     (norm-pop[?p] ,norm-pop)
+                                     (add-num[?p] ,add-num)
+                                     (norm-add[?p] ,norm-add))))
+
+         (shnfp-norm-add-cmd
+          `(acl2::def-functional-instance ,shnfp-norm-add
+             shnfp-norm-add[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pow[?p] ,norm-pow)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (add-num[?p] ,add-num)
+                                 (norm-add[?p] ,norm-add))))
+
+         (normp-norm-add-cmd
+          `(acl2::def-functional-instance ,normp-norm-add
+             normp-norm-add[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pow[?p] ,norm-pow)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (add-num[?p] ,add-num)
+                                 (norm-add[?p] ,norm-add))))
+
+         (evalh-norm-add-cmd
+          `(acl2::def-functional-instance ,evalh-norm-add
+             evalh-norm-add[?p] ((?p ,p)
+                                 (list[?p] ,list)
+                                 (shfp[?p] ,shfp)
+                                 (evalh[?p] ,evalh)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pow[?p] ,norm-pow)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (add-num[?p] ,add-num)
+                                 (norm-add[?p] ,norm-add)))))
+    (list add-pop-pop-cmd add-pop-pow-cmd add-pow-pow-cmd
+          norm-add-cmd evalh-norm-add-num-cmd shnfp-norm-add-cmd
+          normp-norm-add-cmd evalh-norm-add-cmd)))
+
+(defn gen-norm-neg (p list shfp evalh shf-normp shnfp norm-neg
+                      shnfp-norm-neg evalh-norm-neg norm-neg-norm-neg)
+  (let* ((norm-neg-cmd ; norm-neg[?p]
+          `(defun ,norm-neg (x)
+             (declare (xargs :guard (,shnfp x)
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm-neg[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-neg[?p] ,norm-neg))))))
+             (if (atom x)
+                 (- x)
+               (case (car x)
+                 (pop (list 'pop (cadr x) (,norm-neg (caddr x))))
+                 (pow (list 'pow (cadr x) (,norm-neg (caddr x)) (,norm-neg (cadddr x))))))))
+         (shnfp-norm-neg-cmd
+          `(acl2::def-functional-instance ,shnfp-norm-neg
+             shnfp-norm-neg[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-neg[?p] ,norm-neg))))
+
+         (evalh-norm-neg-cmd
+          `(acl2::def-functional-instance ,evalh-norm-neg
+             evalh-norm-neg[?p] ((?p ,p)
+                                 (list[?p] ,list)
+                                 (shfp[?p] ,shfp)
+                                 (evalh[?p] ,evalh)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-neg[?p] ,norm-neg))))
+
+         (norm-neg-norm-neg-cmd
+          `(acl2::def-functional-instance ,norm-neg-norm-neg
+             norm-neg-norm-neg[?p] ((?p ,p)
+                                    (shfp[?p] ,shfp)
+                                    (shf-normp[?p] ,shf-normp)
+                                    (shnfp[?p] ,shnfp)
+                                    (norm-neg[?p] ,norm-neg)))))
+    (list norm-neg-cmd shnfp-norm-neg-cmd evalh-norm-neg-cmd norm-neg-norm-neg-cmd)))
+
+(defn gen-mul-num (p list shfp evalh shf-normp shnfp norm-pop norm-pow mul-num
+                     shnfp-mul-num evalh-mul-num)
+  (let* ((mul-num-cmd ; mul-num[?p]
+          `(defund ,mul-num (x y)
+             (declare (xargs :guard (and (,p x)
+                                         (,shnfp y))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem mul-num[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pop[?p] ,norm-pop)
+                                                         (norm-pow[?p] ,norm-pow)
+                                                         (mul-num[?p] ,mul-num))))))
+             (if (= x 0)
+                 0
+               (if (atom y)
+                   (* x y)
+                 (case (car y)
+                   (pop (,norm-pop (cadr y) (,mul-num x (caddr y))))
+                   (pow (,norm-pow (cadr y) (,mul-num x (caddr y)) (,mul-num x (cadddr y)))))))))
+
+         (shnfp-mul-num-cmd
+          `(acl2::def-functional-instance ,shnfp-mul-num
+             shnfp-mul-num[?p] ((?p ,p)
+                                (shfp[?p] ,shfp)
+                                (shf-normp[?p] ,shf-normp)
+                                (shnfp[?p] ,shnfp)
+                                (norm-pop[?p] ,norm-pop)
+                                (norm-pow[?p] ,norm-pow)
+                                (mul-num[?p] ,mul-num))))
+
+         (evalh-mul-num-cmd
+          `(acl2::def-functional-instance ,evalh-mul-num
+             evalh-mul-num[?p] ((?p ,p)
+                                (list[?p] ,list)
+                                (shfp[?p] ,shfp)
+                                (evalh[?p] ,evalh)
+                                (shf-normp[?p] ,shf-normp)
+                                (shnfp[?p] ,shnfp)
+                                (norm-pop[?p] ,norm-pop)
+                                (norm-pow[?p] ,norm-pow)
+                                (mul-num[?p] ,mul-num)))))
+    (list mul-num-cmd shnfp-mul-num-cmd evalh-mul-num-cmd)))
+
+(defn gen-norm-mul (p list shfp evalh shf-normp shnfp norm-pop norm-pow add-num
+                      norm-add mul-num norm-mul
+                      mul-pop-pop mul-pop-pow mul-pow-pow shnfp-norm-mul
+                      evalh-norm-mul)
+  (let* ((mul-pop-pop-cmd
+          `(defmacro ,mul-pop-pop (x y)
+             `(let ((i (cadr ,x)) (p (caddr ,x))
+                    (j (cadr ,y)) (q (caddr ,y)))
+                (if (= i j)
+                    (,',norm-pop i (,',norm-mul p q))
+                  (if (> i j)
+                      (,',norm-pop j (,',norm-mul (list 'pop (- i j) p) q))
+                    (,',norm-pop i (,',norm-mul (list 'pop (- j i) q) p)))))))
+
+         (mul-pop-pow-cmd
+          `(defmacro ,mul-pop-pow (x y)
+             `(let ((i (cadr ,x)) (p (caddr ,x))
+                    (j (cadr ,y)) (q (caddr ,y)) (r (cadddr ,y)))
+                (if (= i 1)
+                    (,',norm-pow j (,',norm-mul ,x q) (,',norm-mul p r))
+                  (,',norm-pow j (,',norm-mul ,x q) (,',norm-mul (list 'pop (1- i) p) r))))))
+
+         (mul-pow-pow-cmd
+          `(defmacro ,mul-pow-pow (x y)
+             `(let ((i (cadr ,x)) (p (caddr ,x)) (q (cadddr ,x))   ;x = p * z^i + q
+                    (j (cadr ,y)) (r (caddr ,y)) (s (cadddr ,y)))  ;y = r * z^j + s
+                (,',norm-add (,',norm-add (,',norm-pow (+ i j) (,',norm-mul p r) (,',norm-mul q s))  ;p * r * z^(i+j) + q * s
+                                          (,',norm-pow i (,',norm-mul p (,',norm-pop 1 s)) 0))       ;p * s * z^i
+                             (,',norm-pow j (,',norm-mul r (,',norm-pop 1 q)) 0)))))                 ;r * q * z^j
+
+         (norm-mul-cmd ; norm-mul[?p]
+          `(defun ,norm-mul (x y)
+             (declare (xargs :measure (+ (shf-count x) (shf-count y))
+                             :guard (and (,shnfp x)
+                                         (,shnfp y))
+                             :hints (("goal" :use (:functional-instance
+                                                   (:termination-theorem norm-mul[?p])
+                                                   (?p ,p)
+                                                   (shfp[?p] ,shfp)
+                                                   (shf-normp[?p] ,shf-normp)
+                                                   (shnfp[?p] ,shnfp)
+                                                   (norm-pop[?p] ,norm-pop)
+                                                   (norm-pow[?p] ,norm-pow)
+                                                   (add-num[?p] ,add-num)
+                                                   (norm-add[?p] ,norm-add)
+                                                   (mul-num[?p] ,mul-num)
+                                                   (norm-mul[?p] ,norm-mul))))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm-mul[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pop[?p] ,norm-pop)
+                                                         (norm-pow[?p] ,norm-pow)
+                                                         (add-num[?p] ,add-num)
+                                                         (norm-add[?p] ,norm-add)
+                                                         (mul-num[?p] ,mul-num)
+                                                         (norm-mul[?p] ,norm-mul))))))
+             (if (atom x)
+                 (,mul-num x y)
+               (if (atom y)
+                   (,mul-num y x)
+                 (case (car x)
+                   (pop (case (car y)
+                          (pop (,mul-pop-pop x y))
+                          (pow (,mul-pop-pow x y))))
+                   (pow (case (car y)
+                          (pop (,mul-pop-pow y x))
+                          (pow (,mul-pow-pow x y)))))))))
+
+         (shnfp-norm-mul-cmd
+          `(acl2::def-functional-instance ,shnfp-norm-mul
+             shnfp-norm-mul[?p] ((?p ,p)
+                                 (shfp[?p] ,shfp)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (norm-pow[?p] ,norm-pow)
+                                 (add-num[?p] ,add-num)
+                                 (norm-add[?p] ,norm-add)
+                                 (mul-num[?p] ,mul-num)
+                                 (norm-mul[?p] ,norm-mul))))
+
+
+         (evalh-norm-mul-cmd
+          `(acl2::def-functional-instance ,evalh-norm-mul
+             evalh-norm-mul[?p] ((?p ,p)
+                                 (list[?p] ,list)
+                                 (shfp[?p] ,shfp)
+                                 (evalh[?p] ,evalh)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (norm-pop[?p] ,norm-pop)
+                                 (norm-pow[?p] ,norm-pow)
+                                 (add-num[?p] ,add-num)
+                                 (norm-add[?p] ,norm-add)
+                                 (mul-num[?p] ,mul-num)
+                                 (norm-mul[?p] ,norm-mul)))))
+    (list mul-pop-pop-cmd mul-pop-pow-cmd mul-pow-pow-cmd
+           norm-mul-cmd shnfp-norm-mul-cmd evalh-norm-mul-cmd)))
+
+(defn gen-norm-expt (p list shfp evalh shf-normp shnfp norm-pop norm-pow add-num
+                       norm-add mul-num norm-mul norm-expt
+                       shnfp-norm-expt evalh-norm-expt)
+  (let* ((norm-expt-cmd ; norm-expt[?p]
+          `(defun ,norm-expt (x k)
+             (declare (xargs :guard (and (,shnfp x)
+                                         (natp k))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm-expt[?p])
+                                                         (?p ,p)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pop[?p] ,norm-pop)
+                                                         (norm-pow[?p] ,norm-pow)
+                                                         (add-num[?p] ,add-num)
+                                                         (norm-add[?p] ,norm-add)
+                                                         (mul-num[?p] ,mul-num)
+                                                         (norm-mul[?p] ,norm-mul)
+                                                         (norm-expt[?p] ,norm-expt))))))
+             (if (zp k)
+                 1
+               (,norm-mul x (,norm-expt x (1- k))))))
+
+         (shnfp-norm-expt-cmd
+          `(acl2::def-functional-instance ,shnfp-norm-expt
+             shnfp-norm-expt[?p] ((?p ,p)
+                                  (shfp[?p] ,shfp)
+                                  (shf-normp[?p] ,shf-normp)
+                                  (shnfp[?p] ,shnfp)
+                                  (norm-pop[?p] ,norm-pop)
+                                  (norm-pow[?p] ,norm-pow)
+                                  (add-num[?p] ,add-num)
+                                  (norm-add[?p] ,norm-add)
+                                  (mul-num[?p] ,mul-num)
+                                  (norm-mul[?p] ,norm-mul)
+                                  (norm-expt[?p] ,norm-expt))))
+
+          (disable-norm-expt-cmd
+           `(in-theory (disable ,norm-expt)))
+
+         (evalh-norm-expt-cmd
+          `(acl2::def-functional-instance ,evalh-norm-expt
+             evalh-norm-expt[?p] ((?p ,p)
+                                  (list[?p] ,list)
+                                  (shfp[?p] ,shfp)
+                                  (evalh[?p] ,evalh)
+                                  (shf-normp[?p] ,shf-normp)
+                                  (shnfp[?p] ,shnfp)
+                                  (norm-pop[?p] ,norm-pop)
+                                  (norm-pow[?p] ,norm-pow)
+                                  (add-num[?p] ,add-num)
+                                  (norm-add[?p] ,norm-add)
+                                  (mul-num[?p] ,mul-num)
+                                  (norm-mul[?p] ,norm-mul)
+                                  (norm-expt[?p] ,norm-expt)))))
+    (list norm-expt-cmd shnfp-norm-expt-cmd disable-norm-expt-cmd evalh-norm-expt-cmd)))
+
+(defn gen-norm (p list polyp evalp shfp evalh shf-normp shnfp norm-pop norm-pow
+                  norm-var add-num norm-add norm-neg mul-num norm-mul norm-expt norm
+                  shnfp-norm evalh-norm)
+  (let* ((norm-cmd
+          `(defun ,norm (x vars)
+             (declare (xargs :guard (and (distinct-symbols vars)
+                                         (,polyp x vars))
+                             :guard-hints (("goal" :use (:functional-instance
+                                                         (:guard-theorem norm[?p])
+                                                         (?p ,p)
+                                                         (polyp[?p] ,polyp)
+                                                         (shfp[?p] ,shfp)
+                                                         (shf-normp[?p] ,shf-normp)
+                                                         (shnfp[?p] ,shnfp)
+                                                         (norm-pop[?p] ,norm-pop)
+                                                         (norm-pow[?p] ,norm-pow)
+                                                         (norm-var[?p] ,norm-var)
+                                                         (add-num[?p] ,add-num)
+                                                         (norm-add[?p] ,norm-add)
+                                                         (norm-neg[?p] ,norm-neg)
+                                                         (mul-num[?p] ,mul-num)
+                                                         (norm-mul[?p] ,norm-mul)
+                                                         (norm-expt[?p] ,norm-expt)
+                                                         (norm[?p] ,norm))))))
+             (if (,p x)
+                 x
+               (if (atom x)
+                   (,norm-var x vars)
+                 (let ((y (cadr x)) (z (caddr x)))
+                   (case (car x)
+                     (+ (,norm-add (,norm y vars) (,norm z vars)))
+                     (- (if (cddr x) (,norm-add (,norm y vars) (,norm-neg (,norm z vars))) (,norm-neg (,norm y vars))))
+                     (* (,norm-mul (,norm y vars) (,norm z vars)))
+                     (expt (,norm-expt (,norm y vars) (,norm z vars)))))))))
+
+         (shnfp-norm-cmd
+          `(acl2::def-functional-instance ,shnfp-norm
+             shnfp-norm[?p] ((?p ,p)
+                             (polyp[?p] ,polyp)
+                             (shfp[?p] ,shfp)
+                             (shf-normp[?p] ,shf-normp)
+                             (shnfp[?p] ,shnfp)
+                             (norm-pop[?p] ,norm-pop)
+                             (norm-pow[?p] ,norm-pow)
+                             (norm-var[?p] ,norm-var)
+                             (add-num[?p] ,add-num)
+                             (norm-add[?p] ,norm-add)
+                             (norm-neg[?p] ,norm-neg)
+                             (mul-num[?p] ,mul-num)
+                             (norm-mul[?p] ,norm-mul)
+                  (norm-expt[?p] ,norm-expt)
+                  (norm[?p] ,norm))))
+
+         (disable-norm-cmd
+          `(in-theory (disable ,norm)))
+
+         (evalh-norm-cmd
+          `(acl2::def-functional-instance ,evalh-norm
+             evalh-norm[?p] ((?p ,p)
+                             (polyp[?p] ,polyp)
+                             (list[?p] ,list)
+                             (evalp[?p] ,evalp)
+                             (shfp[?p] ,shfp)
+                             (evalh[?p] ,evalh)
+                             (shf-normp[?p] ,shf-normp)
+                             (shnfp[?p] ,shnfp)
+                             (norm-pop[?p] ,norm-pop)
+                             (norm-pow[?p] ,norm-pow)
+                             (norm-var[?p] ,norm-var)
+                             (add-num[?p] ,add-num)
+                             (norm-add[?p] ,norm-add)
+                             (norm-neg[?p] ,norm-neg)
+                             (mul-num[?p] ,mul-num)
+                             (norm-mul[?p] ,norm-mul)
+                             (norm-expt[?p] ,norm-expt)
+                             (norm[?p] ,norm)))))
+    (list norm-cmd shnfp-norm-cmd disable-norm-cmd evalh-norm-cmd)))
+
+(defn gen-evalh-witness (p list shfp evalh shf-normp shnfp norm-pop norm-pow
+                           norm-var add-num norm-add norm-neg evalh-witness
+                           evalh-not-zero evalh-not-equal)
+  (let* ((evalh-witness-cmd ; evalh-witness[?p]
+          `(defun ,evalh-witness (x)
+             (declare (xargs :guard (,shnfp x)
+                             :guard-hints (("goal" :in-theory (e/d (,evalh-witness) (max abs))
+                                            :use (:functional-instance
+                                                  (:guard-theorem evalh-witness[?p])
+                                                  (?p ,p)
+                                                  (list[?p] ,list)
+                                                  (shfp[?p] ,shfp)
+                                                  (shf-normp[?p] ,shf-normp)
+                                                  (shnfp[?p] ,shnfp)
+                                                  (evalh[?p] ,evalh)
+                                                  (evalh-witness[?p] ,evalh-witness))))))
+             (if (atom x)
+                 ()
+               (case (car x)
+                 (pop (let ((i (cadr x))
+                            (p (caddr x)))
+                        (pad0 i (,evalh-witness p))))
+                 (pow (let* ((p (caddr x))
+                             (q (cadddr x))
+                             (n (,evalh-witness p))
+                             (vq (,evalh q (cdr n)))
+                             (normq (+ (abs (realpart vq)) (abs (imagpart vq)))))
+                        (if (atom p)
+                            (let ((normp (+ (abs (realpart p)) (abs (imagpart p)))))
+                              (list (max 1 (cg (/ (1+ normq) normp)))))
+                          (cons (max (car n) (1+ (cg normq))) (cdr n)))))))))
+
+         (evalh-not-zero-cmd
+          `(acl2::def-functional-instance ,evalh-not-zero
+             evalh-not-zero[?p] ((?p ,p)
+                                 (list[?p] ,list)
+                                 (shfp[?p] ,shfp)
+                                 (evalh[?p] ,evalh)
+                                 (shf-normp[?p] ,shf-normp)
+                                 (shnfp[?p] ,shnfp)
+                                 (evalh-witness[?p] ,evalh-witness))))
+
+         (evalh-not-equal-cmd
+          `(acl2::def-functional-instance ,evalh-not-equal
+             evalh-not-equal[?p] ((?p ,p)
+                                  (list[?p] ,list)
+                                  (shfp[?p] ,shfp)
+                                  (evalh[?p] ,evalh)
+                                  (shf-normp[?p] ,shf-normp)
+                                  (shnfp[?p] ,shnfp)
+                                  (norm-pop[?p] ,norm-pop)
+                                  (norm-pow[?p] ,norm-pow)
+                                  (norm-var[?p] ,norm-var)
+                                  (add-num[?p] ,add-num)
+                                  (norm-add[?p] ,norm-add)
+                                  (norm-neg[?p] ,norm-neg)
+                                  (evalh-witness[?p] ,evalh-witness)))))
+    (list evalh-witness-cmd evalh-not-zero-cmd evalh-not-equal-cmd)))
+
+
+(defn gen-evalp-witness (p polyp evalp shfp evalh shf-normp shnfp norm-pop
+                           norm-pow norm-var add-num norm-add norm-neg mul-num
+                           norm-mul norm-expt norm evalh-witness evalp-witness
+                           all-ints-evalp-witness evalp-not-equal)
+  (let* ((evalp-witness-cmd
+          `(defun ,evalp-witness (x y vars)
+             (let ((n (,evalh-witness (,norm-add (,norm-neg (,norm y vars)) (,norm x vars)))))
+               (append n (list0 (- (len vars) (len n)))))))
+
+         (all-ints-evalp-witness-cmd
+          `(acl2::def-functional-instance ,all-ints-evalp-witness
+             all-ints-evalp-witness[?p] ((?p ,p)
+                                         (evalp[?p] ,evalp)
+                                         (shfp[?p] ,shfp)
+                                         (evalh[?p] ,evalh)
+                                         (shf-normp[?p] ,shf-normp)
+                                         (shnfp[?p] ,shnfp)
+                                         (norm-pop[?p] ,norm-pop)
+                                         (norm-pow[?p] ,norm-pow)
+                                         (norm-var[?p] ,norm-var)
+                                         (add-num[?p] ,add-num)
+                                         (norm-add[?p] ,norm-add)
+                                         (norm-neg[?p] ,norm-neg)
+                                         (mul-num[?p] ,mul-num)
+                                         (norm-mul[?p] ,norm-mul)
+                                         (norm-expt[?p] ,norm-expt)
+                                         (norm[?p] ,norm)
+                                         (evalh-witness[?p] ,evalh-witness)
+                                         (evalp-witness[?p] ,evalp-witness))))
+
+         (evalp-not-equal-cmd
+          `(acl2::def-functional-instance ,evalp-not-equal
+             evalp-not-equal[?p] ((?p ,p)
+                                  (polyp[?p] ,polyp)
+                                  (evalp[?p] ,evalp)
+                                  (shfp[?p] ,shfp)
+                                  (evalh[?p] ,evalh)
+                                  (shf-normp[?p] ,shf-normp)
+                                  (shnfp[?p] ,shnfp)
+                                  (norm-pop[?p] ,norm-pop)
+                                  (norm-pow[?p] ,norm-pow)
+                                  (norm-var[?p] ,norm-var)
+                                  (add-num[?p] ,add-num)
+                                  (norm-add[?p] ,norm-add)
+                                  (norm-neg[?p] ,norm-neg)
+                                  (mul-num[?p] ,mul-num)
+                                  (norm-mul[?p] ,norm-mul)
+                                  (norm-expt[?p] ,norm-expt)
+                                  (norm[?p] ,norm)
+                                  (evalh-witness[?p] ,evalh-witness)
+                                  (evalp-witness[?p] ,evalp-witness)))))
+    (list evalp-witness-cmd all-ints-evalp-witness-cmd evalp-not-equal-cmd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun defshnf-fn (
+  p    ; ?p subring predicate
+  list
+  polyp
+  evalp closure-evalp
+  shfp
+  evalh closure-evalh
+  shf-normp
+  shnfp shnfp-shfp shnfp-pow-q shnfp-pow-p shfp-pop-pow-atom shnfp-num
+  norm-pop norm-pop-shnfp norm-pop-normp norm-pop-shfp norm-pop-evalh
+  norm-pow norm-pow-shnfp norm-pow-normp norm-pow-shfp norm-pow-evalh
+  norm-var shnfp-norm-var evalh-norm-var
+  add-num normp-add-num shnfp-add-num evalh-add-num
+  add-pop-pop add-pop-pow add-pow-pow
+  norm-add evalh-norm-add-num shnfp-norm-add normp-norm-add evalh-norm-add
+  norm-neg shnfp-norm-neg evalh-norm-neg norm-neg-norm-neg
+  mul-num shnfp-mul-num evalh-mul-num
+  mul-pop-pop mul-pop-pow mul-pow-pow norm-mul shnfp-norm-mul evalh-norm-mul
+  norm-expt shnfp-norm-expt evalh-norm-expt
+  norm shnfp-norm evalh-norm
+  evalh-witness evalh-not-zero evalh-not-equal
+  evalp-witness all-ints-evalp-witness evalp-not-equal)
+
+  (let* ((basic-cmds (gen-basic
+                       p list polyp evalp shfp evalh shf-normp shnfp
+                       closure-evalp closure-evalh
+                       shnfp-shfp shnfp-pow-q shnfp-pow-p shfp-pop-pow-atom
+                       shnfp-num))
+         (norm-pop-cmds (gen-norm-pop
+                         p shfp evalh shf-normp shnfp norm-pop
+                         norm-pop-shnfp norm-pop-normp norm-pop-shfp norm-pop-evalh))
+         (norm-pow-cmds (gen-norm-pow
+                         p list shfp evalh shf-normp shnfp norm-pop norm-pow
+                         norm-pow-shnfp norm-pow-normp norm-pow-shfp norm-pow-evalh))
+         (norm-var-cmds (gen-norm-var
+                         p list evalp shfp evalh shf-normp shnfp norm-pop norm-var
+                         shnfp-norm-var evalh-norm-var))
+         (add-num-cmds (gen-add-num
+                        p shfp evalh shf-normp shnfp add-num
+                        normp-add-num shnfp-add-num evalh-add-num))
+         (norm-add-cmds (gen-norm-add
+                         p list shfp evalh shf-normp shnfp norm-pop norm-pow add-num norm-add
+                         add-pop-pop add-pop-pow add-pow-pow
+                         evalh-norm-add-num shnfp-norm-add normp-norm-add evalh-norm-add))
+         (norm-neg-cmds (gen-norm-neg
+                         p list shfp evalh shf-normp shnfp norm-neg
+                         shnfp-norm-neg evalh-norm-neg norm-neg-norm-neg))
+         (mul-num-cmds (gen-mul-num
+                        p list shfp evalh shf-normp shnfp norm-pop norm-pow mul-num
+                        shnfp-mul-num evalh-mul-num))
+         (norm-mul-cmds (gen-norm-mul
+                         p list shfp evalh shf-normp shnfp norm-pop norm-pow
+                         add-num norm-add mul-num norm-mul
+                         mul-pop-pop mul-pop-pow mul-pow-pow shnfp-norm-mul evalh-norm-mul))
+         (norm-expt-cmds (gen-norm-expt
+                          p list shfp evalh shf-normp shnfp norm-pop norm-pow
+                          add-num norm-add mul-num norm-mul norm-expt
+                          shnfp-norm-expt evalh-norm-expt))
+         (norm-cmds (gen-norm
+                     p list polyp evalp shfp evalh shf-normp shnfp norm-pop
+                       norm-pow norm-var add-num norm-add norm-neg mul-num
+                       norm-mul norm-expt norm
+                       shnfp-norm evalh-norm))
+         (evalh-witness-cmds (gen-evalh-witness
+                              p list shfp evalh shf-normp shnfp norm-pop
+                              norm-pow norm-var add-num norm-add norm-neg
+                              evalh-witness
+                              evalh-not-zero evalh-not-equal))
+         (evalp-witness-cmds (gen-evalp-witness
+                               p polyp evalp shfp evalh shf-normp shnfp
+                               norm-pop norm-pow norm-var add-num norm-add
+                               norm-neg mul-num  norm-mul norm-expt norm
+                               evalh-witness evalp-witness
+                               all-ints-evalp-witness evalp-not-equal))
+         (cmds (append basic-cmds
+                       norm-pop-cmds
+                       norm-pow-cmds
+                       norm-var-cmds
+                       add-num-cmds
+                       norm-add-cmds
+                       norm-neg-cmds
+                       mul-num-cmds
+                       norm-mul-cmds
+                       norm-expt-cmds
+                       norm-cmds
+                       evalh-witness-cmds
+                       evalp-witness-cmds)))
+    `(progn . ,cmds)))
+
 ;; Instantiate generic functions above for paritular subring of comples
 ;; Arguments of this macro specify names of function and theorem instantiates
 (acl2::defmacro defshnf
@@ -2240,795 +3240,32 @@
   norm shnfp-norm evalh-norm
   evalh-witness evalh-not-zero evalh-not-equal
   evalp-witness all-ints-evalp-witness evalp-not-equal)
- `(progn
-; ?p
-; list[?p]
-
-(defn ,list (vals)
-  (if (consp vals)
-      (and (,list (cdr vals))
-           (,p (car vals)))
-    (null vals)))
-
-; polyp[?p]
-(defun ,polyp (x vars)
-  (declare (xargs :guard (distinct-symbols vars)))
-  (if (atom x)
-      (or (,p x) (member x vars))
-    (and (true-listp x)
-         (case (len x)
-           (2 (let ((y (cadr x)))
-                (case (car x)
-                  (- (,polyp y vars)))))
-           (3 (let ((y (cadr x)) (z (caddr x)))
-                (case (car x)
-                  (+ (and (,polyp y vars) (,polyp z vars)))
-                  (- (and (,polyp y vars) (,polyp z vars)))
-                  (* (and (,polyp y vars) (,polyp z vars)))
-                  (expt (and (,polyp y vars) (natp z))))))))))
-
-; evalp[?p]
-(defun ,evalp (x alist)
-  (if (,p x)
-      x
-    (if (atom x)
-        (cdr (assoc x alist))
-      (let ((y (cadr x)) (z (caddr x)))
-        (case (car x)
-          (+ (+ (,evalp y alist) (,evalp z alist)))
-          (- (if (cddr x) (- (,evalp y alist) (,evalp z alist)) (- (,evalp y alist))))
-          (* (* (,evalp y alist) (,evalp z alist)))
-          (expt (expt (,evalp y alist) (,evalp z alist))))))))
-
-(acl2::def-functional-instance ,closure-evalp
-  closure-evalp[?p] ((?p ,p)
-                     (list[?p] ,list)
-                     (polyp[?p] ,polyp)
-                     (evalp[?p] ,evalp)))
-
-; shfp[?p]
-(defn ,shfp (x)
-  (if (atom x)
-      (,p x)
-    (case (car x)
-      (pop (and (consp (cdr x))   (natp (cadr x))
-                (consp (cddr x))  (,shfp (caddr x))
-                (null (cdddr x))))
-      (pow (and (consp (cdr x))   (natp (cadr x))
-                (consp (cddr x))  (,shfp (caddr x))
-                (consp (cdddr x)) (,shfp (cadddr x))
-                (null (cddddr x)))))))
-
-; evalh[?p]
-(defun ,evalh (x vals)
-  (declare (xargs :guard (and (,shfp x)
-                              (,list vals))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem evalh[?p])
-                                              (?p ,p)
-                                              (list[?p] ,list)
-                                              (shfp[?p] ,shfp)
-                                              (evalh[?p] ,evalh))))))
-  (if (atom x)
-      x
-    (case (car x)
-      (pop (,evalh (caddr x) (nthcdr (cadr x) vals)))
-      (pow (+ (* (expt (if (consp vals) (car vals) 0) (cadr x))
-                 (,evalh (caddr x) vals))
-             (,evalh (cadddr x) (cdr vals)))))))
-
-(acl2::def-functional-instance ,closure-evalh
-  closure-evalh[?p] ((?p ,p)
-                     (list[?p] ,list)
-                     (shfp[?p] ,shfp)
-                     (evalh[?p] ,evalh)))
-
-; shf-normp[?p]
-(defund ,shf-normp (x)
-  (declare (xargs :guard (,shfp x)))
-  (if (atom x)
-      t
-    (let ((i (cadr x)) (p (caddr x)) (q (cadddr x)))
-      (case (car x)
-        (pop (and (not (= i 0))
-                  (consp p)
-                  (eql (car p) 'pow)
-                  (,shf-normp p)))
-        (pow (and (not (= i 0))
-                  (,shf-normp p)
-                  (,shf-normp q)
-                  (if (atom p)
-                      (not (= p 0))
-                    (not (and (eql (car p) 'pow)
-                              (equal (cadddr p) 0))))))))))
-
-; shnfp[?p]
-(defnd ,shnfp (x)
-  (and (,shfp x) (,shf-normp x)))
-
-(acl2::def-functional-instance ,shnfp-shfp
-  shnfp-shfp[?p] ((?p ,p)
-                  (shfp[?p] ,shfp)
-                  (shnfp[?p] ,shnfp)))
-
-(acl2::def-functional-instance ,shnfp-pow-q
-  shnfp-pow-q[?p] ((?p ,p)
-                   (shfp[?p] ,shfp)
-                   (shf-normp[?p] ,shf-normp)
-                   (shnfp[?p] ,shnfp))
-  :hints (("subgoal 2" :in-theory (enable ,shnfp))
-          ("subgoal 1" :in-theory (enable ,shf-normp))))
-
-(acl2::def-functional-instance ,shnfp-pow-p
-  shnfp-pow-p[?p] ((?p ,p)
-                   (shfp[?p] ,shfp)
-                   (shf-normp[?p] ,shf-normp)
-                   (shnfp[?p] ,shnfp)))
-
-(acl2::def-functional-instance ,shfp-pop-pow-atom
-  shfp-pop-pow-atom[?p] ((?p ,p)
-                         (shfp[?p] ,shfp)))
-
-(acl2::def-functional-instance ,shnfp-num
-  shnfp-num[?p] ((?p ,p)
-                 (shfp[?p] ,shfp)
-                 (shf-normp[?p] ,shf-normp)
-                 (shnfp[?p] ,shnfp)))
-
-; norm-pop[?p]
-(defun ,norm-pop (i p)
-  (declare (xargs :guard (and (natp i)
-                              (,shnfp p))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm-pop[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pop[?p] ,norm-pop))))))
-  (if (or (= i 0) (atom p))
-      p
-    (if (eql (car p) 'pop)
-        (list 'pop (+ i (cadr p)) (caddr p))
-      (list 'pop i p))))
-
-(acl2::def-functional-instance ,norm-pop-shnfp
-  norm-pop-shnfp[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pop[?p] ,norm-pop)))
-
-(in-theory (disable ,norm-pop))
-
-(acl2::def-functional-instance ,norm-pop-normp
-  norm-pop-normp[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pop[?p] ,norm-pop)))
-
-(acl2::def-functional-instance ,norm-pop-shfp
-  norm-pop-shfp[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)))
-
-(acl2::def-functional-instance ,norm-pop-evalh
-  norm-pop-evalh[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (evalh[?p] ,evalh)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)))
-
-; norm-pow[?p]
-(defun ,norm-pow (i p q)
-  (declare (xargs :guard (and (natp i)
-                              (,shnfp p)
-                              (,shnfp q))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm-pow[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pop[?p] ,norm-pop)
-                                              (norm-pow[?p] ,norm-pow))))))
-  (if (equal p 0)
-      (,norm-pop 1 q)
-    (if (and (consp p) (eql (car p) 'pow) (equal (cadddr p) 0))
-        (list 'pow (+ i (cadr p)) (caddr p) q)
-      (list 'pow i p q))))
-
-(acl2::def-functional-instance ,norm-pow-shnfp
-  norm-pow-shnfp[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pop[?p] ,norm-pop)
-                      (norm-pow[?p] ,norm-pow)))
-
-(in-theory (disable ,norm-pow))
-
-(acl2::def-functional-instance ,norm-pow-normp
-  norm-pow-normp[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pop[?p] ,norm-pop)
-                      (norm-pow[?p] ,norm-pow)))
-
-(acl2::def-functional-instance ,norm-pow-shfp
-  norm-pow-shfp[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)))
-
-(acl2::def-functional-instance ,norm-pow-evalh
-  norm-pow-evalh[?p] ((?p ,p)
-                      (list[?p] ,list)
-                      (shfp[?p] ,shfp)
-                      (evalh[?p] ,evalh)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pop[?p] ,norm-pop)
-                      (norm-pow[?p] ,norm-pow)))
-
-; shnfp-norm-var[?p]
-(defun ,norm-var (x vars)
-  (declare (xargs :guard (and (distinct-symbols vars)
-                              (member x vars))))
-  (,norm-pop (var-index x vars) '(pow 1 1 0)))
-
-(defrule ,shnfp-norm-var
-  (implies (member x vars)
-           (,shnfp (,norm-var x vars))))
-
-(defrule ,evalh-norm-var
-  (implies (and (distinct-symbols vars)
-                (,list vals)
-                (<= (len vars) (len vals))
-                (member x vars))
-           (equal (,evalh (,norm-var x vars) vals)
-                  (,evalp x (pairlis$ vars vals))))
-  :use lemma
-  :prep-lemmas
-  ((acl2::def-functional-instance lemma
-     evalh-norm-var[?p] ((?p ,p)
-                         (list[?p] ,list)
-                         (evalp[?p] ,evalp)
-                         (shfp[?p] ,shfp)
-                         (evalh[?p] ,evalh)
-                         (shf-normp[?p] ,shf-normp)
-                         (shnfp[?p] ,shnfp)
-                         (norm-pop[?p] ,norm-pop)
-                         (norm-var[?p] ,norm-var)))))
-
-(in-theory (disable ,norm-var))
-
-; add-int[?p]
-(defun ,add-num (x y)
-  (declare (xargs :guard (and (,p x)
-                              (,shnfp y))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem add-num[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (add-num[?p] ,add-num))))))
-  (if (atom y)
-      (+ x y)
-    (case (car y)
-      (pow (list 'pow (cadr y) (caddr y) (,add-num x (cadddr y))))
-      (pop (list 'pop (cadr y) (,add-num x (caddr y)))))))
-
-(acl2::def-functional-instance ,normp-add-num
-  normp-add-num[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (add-num[?p] ,add-num)))
-(in-theory (disable ,add-num))
-
-(acl2::def-functional-instance ,shnfp-add-num
-  shnfp-add-num[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (add-num[?p] ,add-num)))
-
-(acl2::def-functional-instance ,evalh-add-num
-  evalh-add-num[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (evalh[?p] ,evalh)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (add-num[?p] ,add-num)))
-
-(defmacro ,add-pop-pop (x y)
-  `(let ((i (cadr ,x)) (p (caddr ,x))
-         (j (cadr ,y)) (q (caddr ,y)))
-     (if (= i j)
-         (,',norm-pop i (,',norm-add p q))
-          (if (> i j)
-              (,',norm-pop j (,',norm-add (list 'pop (- i j) p) q))
-            (,',norm-pop i (,',norm-add (list 'pop (- j i) q) p))))))
-
-(defmacro ,add-pop-pow (x y)
-  `(let ((i (cadr ,x)) (p (caddr ,x))
-         (j (cadr ,y)) (q (caddr ,y)) (r (cadddr ,y)))
-     (if (= i 1)
-         (list 'pow j q (,',norm-add r p))
-       (list 'pow j q (,',norm-add r (list 'pop (1- i) p))))))
-
-(defmacro ,add-pow-pow (x y)
-  `(let ((i (cadr ,x)) (p (caddr ,x)) (q (cadddr ,x))
-         (j (cadr ,y)) (r (caddr ,y)) (s (cadddr ,y)))
-     (if (= i j)
-         (,',norm-pow i (,',norm-add p r) (,',norm-add q s))
-       (if (> i j)
-           (,',norm-pow j (,',norm-add (list 'pow (- i j) p 0) r) (,',norm-add q s))
-         (,',norm-pow i (,',norm-add (list 'pow (- j i) r 0) p) (,',norm-add s q))))))
-
-; norm-add[?p]
-(defun ,norm-add (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))
-                  :guard (and (,shnfp x)
-                              (,shnfp y))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm-add[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pow[?p] ,norm-pow)
-                                              (norm-pop[?p] ,norm-pop)
-                                              (add-num[?p] ,add-num)
-                                              (norm-add[?p] ,norm-add))))))
-  (if (atom x)
-      (,add-num x y)
-    (if (atom y)
-        (,add-num y x)
-      (case (car x)
-        (pop (case (car y)
-               (pop (,add-pop-pop x y))
-               (pow (,add-pop-pow x y))))
-        (pow (case (car y)
-               (pop (,add-pop-pow y x))
-               (pow (,add-pow-pow x y))))))))
-
-(acl2::def-functional-instance ,evalh-norm-add-num
-  evalh-norm-add-num[?p] ((?p ,p)
-                          (shfp[?p] ,shfp)
-                          (evalh[?p] ,evalh)
-                          (shf-normp[?p] ,shf-normp)
-                          (shnfp[?p] ,shnfp)
-                          (norm-pow[?p] ,norm-pow)
-                          (norm-pop[?p] ,norm-pop)
-                          (add-num[?p] ,add-num)
-                          (norm-add[?p] ,norm-add)))
-
-(acl2::def-functional-instance ,shnfp-norm-add
-  shnfp-norm-add[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pow[?p] ,norm-pow)
-                      (norm-pop[?p] ,norm-pop)
-                      (add-num[?p] ,add-num)
-                      (norm-add[?p] ,norm-add)))
-
-(acl2::def-functional-instance ,normp-norm-add
-  normp-norm-add[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pow[?p] ,norm-pow)
-                      (norm-pop[?p] ,norm-pop)
-                      (add-num[?p] ,add-num)
-                      (norm-add[?p] ,norm-add)))
-
-(acl2::def-functional-instance ,evalh-norm-add
-  evalh-norm-add[?p] ((?p ,p)
-                      (list[?p] ,list)
-                      (shfp[?p] ,shfp)
-                      (evalh[?p] ,evalh)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-pow[?p] ,norm-pow)
-                      (norm-pop[?p] ,norm-pop)
-                      (add-num[?p] ,add-num)
-                      (norm-add[?p] ,norm-add)))
-
-(defun ,norm-neg (x)
-  (declare (xargs :guard (,shnfp x)
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm-neg[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-neg[?p] ,norm-neg))))))
-  (if (atom x)
-      (- x)
-    (case (car x)
-      (pop (list 'pop (cadr x) (,norm-neg (caddr x))))
-      (pow (list 'pow (cadr x) (,norm-neg (caddr x)) (,norm-neg (cadddr x)))))))
-
-(acl2::def-functional-instance ,shnfp-norm-neg
-  shnfp-norm-neg[?p] ((?p ,p)
-                      (shfp[?p] ,shfp)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-neg[?p] ,norm-neg)))
-
-(acl2::def-functional-instance ,evalh-norm-neg
-  evalh-norm-neg[?p] ((?p ,p)
-                      (list[?p] ,list)
-                      (shfp[?p] ,shfp)
-                      (evalh[?p] evalh)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (norm-neg[?p] ,norm-neg)))
-
-(acl2::def-functional-instance ,norm-neg-norm-neg
-  norm-neg-norm-neg[?p] ((?p ,p)
-                         (shfp[?p] ,shfp)
-                         (shf-normp[?p] ,shf-normp)
-                         (shnfp[?p] ,shnfp)
-                         (norm-neg[?p] ,norm-neg)))
-
-; mul-num[?p]
-(defund ,mul-num (x y)
-  (declare (xargs :guard (and (,p x)
-                              (,shnfp y))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem mul-num[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pop[?p] ,norm-pop)
-                                              (norm-pow[?p] ,norm-pow)
-                                              (mul-num[?p] ,mul-num))))))
-  (if (= x 0)
-      0
-    (if (atom y)
-        (* x y)
-      (case (car y)
-        (pop (,norm-pop (cadr y) (,mul-num x (caddr y))))
-        (pow (,norm-pow (cadr y) (,mul-num x (caddr y)) (,mul-num x (cadddr y))))))))
-
-(acl2::def-functional-instance ,shnfp-mul-num
-  shnfp-mul-num[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)
-                     (mul-num[?p] ,mul-num)))
-
-(acl2::def-functional-instance ,evalh-mul-num
-  evalh-mul-num[?p] ((?p ,p)
-                     (list[?p] ,list)
-                     (shfp[?p] ,shfp)
-                     (evalh[?p] ,evalh)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)
-                     (mul-num[?p] ,mul-num)))
-(defmacro ,mul-pop-pop (x y)
-  `(let ((i (cadr ,x)) (p (caddr ,x))
-         (j (cadr ,y)) (q (caddr ,y)))
-     (if (= i j)
-         (,',norm-pop i (,',norm-mul p q))
-       (if (> i j)
-           (,',norm-pop j (,',norm-mul (list 'pop (- i j) p) q))
-         (,',norm-pop i (,',norm-mul (list 'pop (- j i) q) p))))))
-
-(defmacro ,mul-pop-pow (x y)
-  `(let ((i (cadr ,x)) (p (caddr ,x))
-         (j (cadr ,y)) (q (caddr ,y)) (r (cadddr ,y)))
-     (if (= i 1)
-         (,',norm-pow j (,',norm-mul ,x q) (,',norm-mul p r))
-       (,',norm-pow j (,',norm-mul ,x q) (,',norm-mul (list 'pop (1- i) p) r)))))
-
-(defmacro ,mul-pow-pow (x y)
-  `(let ((i (cadr ,x)) (p (caddr ,x)) (q (cadddr ,x))   ;x = p * z^i + q
-         (j (cadr ,y)) (r (caddr ,y)) (s (cadddr ,y)))  ;y = r * z^j + s
-     (,',norm-add (,',norm-add (,',norm-pow (+ i j) (,',norm-mul p r) (,',norm-mul q s))  ;p * r * z^(i+j) + q * s
-                         (,',norm-pow i (,',norm-mul p (,',norm-pop 1 s)) 0))       ;p * s * z^i
-               (,',norm-pow j (,',norm-mul r (,',norm-pop 1 q)) 0))))               ;r * q * z^j
-
-(defun ,norm-mul (x y)
-  (declare (xargs :measure (+ (shf-count x) (shf-count y))
-                  :guard (and (,shnfp x)
-                              (,shnfp y))
-                  :hints (("goal" :use (:functional-instance
-                                        (:termination-theorem norm-mul[?p])
-                                        (?p ,p)
-                                        (shfp[?p] ,shfp)
-                                        (shf-normp[?p] ,shf-normp)
-                                        (shnfp[?p] ,shnfp)
-                                        (norm-pop[?p] ,norm-pop)
-                                        (norm-pow[?p] ,norm-pow)
-                                        (add-num[?p] ,add-num)
-                                        (norm-add[?p] ,norm-add)
-                                        (mul-num[?p] ,mul-num)
-                                        (norm-mul[?p] ,norm-mul))))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm-mul[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pop[?p] ,norm-pop)
-                                              (norm-pow[?p] ,norm-pow)
-                                              (add-num[?p] ,add-num)
-                                              (norm-add[?p] ,norm-add)
-                                              (mul-num[?p] ,mul-num)
-                                              (norm-mul[?p] ,norm-mul))))))
-  (if (atom x)
-      (,mul-num x y)
-    (if (atom y)
-        (,mul-num y x)
-      (case (car x)
-        (pop (case (car y)
-               (pop (,mul-pop-pop x y))
-               (pow (,mul-pop-pow x y))))
-        (pow (case (car y)
-               (pop (,mul-pop-pow y x))
-               (pow (,mul-pow-pow x y))))))))
-
-(acl2::def-functional-instance ,shnfp-norm-mul
-  shnfp-norm-mul[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)
-                     (add-num[?p] ,add-num)
-                     (norm-add[?p] ,norm-add)
-                     (mul-num[?p] ,mul-num)
-                     (norm-mul[?p] ,norm-mul)))
-
-
-(acl2::def-functional-instance ,evalh-norm-mul
-  evalh-norm-mul[?p] ((?p ,p)
-                     (list[?p] ,list)
-                     (shfp[?p] ,shfp)
-                     (evalh[?p] ,evalh)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)
-                     (add-num[?p] ,add-num)
-                     (norm-add[?p] ,norm-add)
-                     (mul-num[?p] ,mul-num)
-                     (norm-mul[?p] ,norm-mul)))
-
-; norm-expt[?p]
-(defun ,norm-expt (x k)
-  (declare (xargs :guard (and (,shnfp x)
-                              (natp k))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm-expt[?p])
-                                              (?p ,p)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pop[?p] ,norm-pop)
-                                              (norm-pow[?p] ,norm-pow)
-                                              (add-num[?p] ,add-num)
-                                              (norm-add[?p] ,norm-add)
-                                              (mul-num[?p] ,mul-num)
-                                              (norm-mul[?p] ,norm-mul)
-                                              (norm-expt[?p] ,norm-expt))))))
-  (if (zp k)
-      1
-    (,norm-mul x (,norm-expt x (1- k)))))
-
-(acl2::def-functional-instance ,shnfp-norm-expt
-  shnfp-norm-expt[?p] ((?p ,p)
-                     (shfp[?p] ,shfp)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)
-                     (add-num[?p] ,add-num)
-                     (norm-add[?p] ,norm-add)
-                     (mul-num[?p] ,mul-num)
-                     (norm-mul[?p] ,norm-mul)
-                     (norm-expt[?p] ,norm-expt)))
-(in-theory (disable ,norm-expt))
-
-(acl2::def-functional-instance ,evalh-norm-expt
-  evalh-norm-expt[?p] ((?p ,p)
-                     (list[?p] ,list)
-                     (shfp[?p] ,shfp)
-                     (evalh[?p] ,evalh)
-                     (shf-normp[?p] ,shf-normp)
-                     (shnfp[?p] ,shnfp)
-                     (norm-pop[?p] ,norm-pop)
-                     (norm-pow[?p] ,norm-pow)
-                     (add-num[?p] ,add-num)
-                     (norm-add[?p] ,norm-add)
-                     (mul-num[?p] ,mul-num)
-                     (norm-mul[?p] ,norm-mul)
-                     (norm-expt[?p] ,norm-expt)))
-
-; norm[?p]
-(defun ,norm (x vars)
-  (declare (xargs :guard (and (distinct-symbols vars)
-                              (,polyp x vars))
-                  :guard-hints (("goal" :use (:functional-instance
-                                              (:guard-theorem norm[?p])
-                                              (?p ,p)
-                                              (polyp[?p] ,polyp)
-                                              (shfp[?p] ,shfp)
-                                              (shf-normp[?p] ,shf-normp)
-                                              (shnfp[?p] ,shnfp)
-                                              (norm-pop[?p] ,norm-pop)
-                                              (norm-pow[?p] ,norm-pow)
-                                              (norm-var[?p] ,norm-var)
-                                              (add-num[?p] ,add-num)
-                                              (norm-add[?p] ,norm-add)
-                                              (norm-neg[?p] ,norm-neg)
-                                              (mul-num[?p] ,mul-num)
-                                              (norm-mul[?p] ,norm-mul)
-                                              (norm-expt[?p] ,norm-expt)
-                                              (norm[?p] ,norm))))))
-  (if (,p x)
-      x
-    (if (atom x)
-        (,norm-var x vars)
-      (let ((y (cadr x)) (z (caddr x)))
-        (case (car x)
-          (+ (,norm-add (,norm y vars) (,norm z vars)))
-          (- (if (cddr x) (,norm-add (,norm y vars) (,norm-neg (,norm z vars))) (,norm-neg (,norm y vars))))
-          (* (,norm-mul (,norm y vars) (,norm z vars)))
-          (expt (,norm-expt (,norm y vars) (,norm z vars))))))))
-
-(acl2::def-functional-instance ,shnfp-norm
-  shnfp-norm[?p] ((?p ,p)
-                  (polyp[?p] ,polyp)
-                  (shfp[?p] ,shfp)
-                  (shf-normp[?p] ,shf-normp)
-                  (shnfp[?p] ,shnfp)
-                  (norm-pop[?p] ,norm-pop)
-                  (norm-pow[?p] ,norm-pow)
-                  (norm-var[?p] ,norm-var)
-                  (add-num[?p] ,add-num)
-                  (norm-add[?p] ,norm-add)
-                  (norm-neg[?p] ,norm-neg)
-                  (mul-num[?p] ,mul-num)
-                  (norm-mul[?p] ,norm-mul)
-                  (norm-expt[?p] ,norm-expt)
-                  (norm[?p] ,norm)))
-(in-theory (disable ,norm))
-
-(acl2::def-functional-instance ,evalh-norm
-  evalh-norm[?p] ((?p ,p)
-                  (polyp[?p] ,polyp)
-                  (list[?p] ,list)
-                  (evalp[?p] ,evalp)
-                  (shfp[?p] ,shfp)
-                  (evalh[?p] ,evalh)
-                  (shf-normp[?p] ,shf-normp)
-                  (shnfp[?p] ,shnfp)
-                  (norm-pop[?p] ,norm-pop)
-                  (norm-pow[?p] ,norm-pow)
-                  (norm-var[?p] ,norm-var)
-                  (add-num[?p] ,add-num)
-                  (norm-add[?p] ,norm-add)
-                  (norm-neg[?p] ,norm-neg)
-                  (mul-num[?p] ,mul-num)
-                  (norm-mul[?p] ,norm-mul)
-                  (norm-expt[?p] ,norm-expt)
-                  (norm[?p] ,norm)))
-
-; (evalh-witness[?p] evalh-witness)
-(defun ,evalh-witness (x)
-  (declare (xargs :guard (,shnfp x)
-                  :guard-hints (("goal" :in-theory (e/d (,evalh-witness) (max abs))
-                                 :use (:functional-instance
-                                       (:guard-theorem evalh-witness[?p])
-                                       (?p ,p)
-                                       (list[?p] ,list)
-                                       (shfp[?p] ,shfp)
-                                       (shf-normp[?p] ,shf-normp)
-                                       (shnfp[?p] ,shnfp)
-                                       (evalh[?p] ,evalh)
-                                       (evalh-witness[?p] ,evalh-witness))))))
-  (if (atom x)
-      ()
-    (case (car x)
-      (pop (let ((i (cadr x))
-                 (p (caddr x)))
-             (pad0 i (,evalh-witness p))))
-      (pow (let* ((p (caddr x))
-                  (q (cadddr x))
-                  (n (,evalh-witness p))
-                  (vq (,evalh q (cdr n)))
-                  (normq (+ (abs (realpart vq)) (abs (imagpart vq)))))
-             (if (atom p)
-                 (let ((normp (+ (abs (realpart p)) (abs (imagpart p)))))
-                   (list (max 1 (cg (/ (1+ normq) normp)))))
-               (cons (max (car n) (1+ (cg normq))) (cdr n))))))))
-
-(acl2::def-functional-instance ,evalh-not-zero
-  evalh-not-zero[?p] ((?p ,p)
-                      (list[?p] ,list)
-                      (shfp[?p] ,shfp)
-                      (evalh[?p] ,evalh)
-                      (shf-normp[?p] ,shf-normp)
-                      (shnfp[?p] ,shnfp)
-                      (evalh-witness[?p] ,evalh-witness)))
-
-(acl2::def-functional-instance ,evalh-not-equal
-  evalh-not-equal[?p] ((?p ,p)
-                       (list[?p] ,list)
-                       (shfp[?p] ,shfp)
-                       (evalh[?p] ,evalh)
-                       (shf-normp[?p] ,shf-normp)
-                       (shnfp[?p] ,shnfp)
-                       (norm-pop[?p] ,norm-pop)
-                       (norm-pow[?p] ,norm-pow)
-                       (norm-var[?p] ,norm-var)
-                       (add-num[?p] ,add-num)
-                       (norm-add[?p] ,norm-add)
-                       (norm-neg[?p] ,norm-neg)
-                       (evalh-witness[?p] ,evalh-witness)))
-
-(defun ,evalp-witness (x y vars)
-   (let ((n (,evalh-witness (,norm-add (,norm-neg (,norm y vars)) (,norm x vars)))))
-     (append n (list0 (- (len vars) (len n))))))
-
-(acl2::def-functional-instance ,all-ints-evalp-witness
-  all-ints-evalp-witness[?p] ((?p ,p)
-                              (evalp[?p] ,evalp)
-                              (shfp[?p] ,shfp)
-                              (evalh[?p] ,evalh)
-                              (shf-normp[?p] ,shf-normp)
-                              (shnfp[?p] ,shnfp)
-                              (norm-pop[?p] ,norm-pop)
-                              (norm-pow[?p] ,norm-pow)
-                              (norm-var[?p] ,norm-var)
-                              (add-num[?p] ,add-num)
-                              (norm-add[?p] ,norm-add)
-                              (norm-neg[?p] ,norm-neg)
-                              (mul-num[?p] ,mul-num)
-                              (norm-mul[?p] ,norm-mul)
-                              (norm-expt[?p] ,norm-expt)
-                              (norm[?p] ,norm)
-                              (evalh-witness[?p] ,evalh-witness)
-                              (evalp-witness[?p] ,evalp-witness)))
-
-(acl2::def-functional-instance ,evalp-not-equal
-  evalp-not-equal[?p] ((?p ,p)
-                       (polyp[?p] ,polyp)
-                       (evalp[?p] ,evalp)
-                       (shfp[?p] ,shfp)
-                       (evalh[?p] ,evalh)
-                       (shf-normp[?p] ,shf-normp)
-                       (shnfp[?p] ,shnfp)
-                       (norm-pop[?p] ,norm-pop)
-                       (norm-pow[?p] ,norm-pow)
-                       (norm-var[?p] ,norm-var)
-                       (add-num[?p] ,add-num)
-                       (norm-add[?p] ,norm-add)
-                       (norm-neg[?p] ,norm-neg)
-                       (mul-num[?p] ,mul-num)
-                       (norm-mul[?p] ,norm-mul)
-                       (norm-expt[?p] ,norm-expt)
-                       (norm[?p] ,norm)
-                       (evalh-witness[?p] ,evalh-witness)
-                       (evalp-witness[?p] ,evalp-witness)))))
+ `(make-event
+   (defshnf-fn
+     ',p
+     ',list
+     ',polyp
+     ',evalp ',closure-evalp
+     ',shfp
+     ',evalh ',closure-evalh
+     ',shf-normp
+     ',shnfp
+     ',shnfp-shfp ',shnfp-pow-q ',shnfp-pow-p ',shfp-pop-pow-atom ',shnfp-num
+     ',norm-pop ',norm-pop-shnfp ',norm-pop-normp ',norm-pop-shfp ',norm-pop-evalh
+     ',norm-pow ',norm-pow-shnfp ',norm-pow-normp ',norm-pow-shfp ',norm-pow-evalh
+     ',norm-var ',shnfp-norm-var ',evalh-norm-var
+     ',add-num ',normp-add-num ',shnfp-add-num ',evalh-add-num
+     ',add-pop-pop ',add-pop-pow ',add-pow-pow
+     ',norm-add
+     ',evalh-norm-add-num ',shnfp-norm-add ',normp-norm-add ',evalh-norm-add
+     ',norm-neg ',shnfp-norm-neg ',evalh-norm-neg ',norm-neg-norm-neg
+     ',mul-num ',shnfp-mul-num ',evalh-mul-num
+     ',mul-pop-pop ',mul-pop-pow ',mul-pow-pow
+     ',norm-mul ',shnfp-norm-mul ',evalh-norm-mul
+     ',norm-expt ',shnfp-norm-expt ',evalh-norm-expt
+     ',norm ',shnfp-norm ',evalh-norm
+     ',evalh-witness ',evalh-not-zero ',evalh-not-equal
+     ',evalp-witness ',all-ints-evalp-witness ',evalp-not-equal)))
 
 ;;*********************************************************************************
 ;;                            Instantiations
