@@ -39,6 +39,7 @@
 (include-book "std/lists/index-of" :dir :system)
 (include-book "coi/nary/nary" :dir :system)
 (include-book "std/strings/eqv" :dir :system)
+(include-book "std/stobjs/nested-stobjs" :dir :system)
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
@@ -88,50 +89,8 @@
 
 (local (in-theory (disable acl2::nth-of-take)))
 
-#!acl2
-(def-b*-binder sv::stobj-get
-  :short "Syntactic sugar for using stobj-let to get some fields from a sub-stobj."
-  :long "<p>If you need read-only access to a nested stobj, stobj-let incurs a
-lot of extra repetitious syntax.  This b* binder makes such accesses shorter to
-code.  For example:</p>
-@({
- (b* (((stobj-get instname submodidx)
-       ((elab-mod (moddb->modsi modidx moddb)))
-       (mv (elab-mod->instname instidx elab-mod)
-           (elab-mod->inst-modidx instidx elab-mod))))
-    ...)
- })
-<p>can be used instead of:</p>
-@({
- (b* (((mv instname submodidx)
-      (stobj-let ((elab-mod (moddb->modsi modidx moddb)))
-                 (instname submodidx)
-                 (mv (elab-mod->instname instidx elab-mod)
-                     (elab-mod->inst-modidx instidx elab-mod))
-                 (mv instname submodidx))))
-  ...)
- })
-<p>(Notice that the names of the bound variables are listed only once instead
-of three times each.)</p>"
-
-  :decls
-  ((declare (xargs :guard (and (symbol-listp args)
-                               (consp forms)
-                               (doublet-listp (car forms))
-                               (consp (cdr forms))))))
-  :body
-  `(b* ((,(cond ((atom args) '-)
-                ((atom (cdr args)) (car args))
-                (t `(mv . ,args)))
-           (stobj-let ,(car forms)
-                      ,args
-                      (progn$ . ,(cdr forms))
-                      ,(cond ((atom args) nil)
-                             ((atom (cdr args)) (car args))
-                             (t `(mv . ,args))))))
-     ,rest-expr))
-
-
+(defmacro patbind-stobj-get (&rest args)
+  `(acl2::patbind-stobj-get . ,args))
 
 
 (defxdoc moddb
