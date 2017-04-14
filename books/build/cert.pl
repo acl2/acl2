@@ -48,6 +48,7 @@
 
 use strict;
 use warnings;
+
 use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
@@ -94,6 +95,8 @@ my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
 my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
+my $startjob = $ENV{"STARTJOB"};
+if (! $startjob ) { $startjob = "bash"; }
 my $keep_going = 0;
 my $var_prefix = "CERT_PL";
 my %certlib_opts = ( "debugging" => 0,
@@ -487,6 +490,15 @@ USEFUL ENVIRONMENT VARIABLES
          certification instructions) and .cert.out files.  Note that this
          does not affect .cert.time files.
 
+    STARTJOB (default: "bash")
+         Can be set to the name of a command to use instead of bash
+         when launching a subprocess that will run ACL2.  The command
+         will be called as `$STARTJOB -c "bash code"`.  This is mainly
+         useful if you wish ACL2 to always be run in some environment
+         other than the current shell -- for example, if you want to
+         run ACL2 on a managed compute cluster, you might set
+         $STARTJOB to the name of a script that queues a job on the cluster.
+
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -589,9 +601,8 @@ certlib_set_opts(\%certlib_opts);
 
 my $cache = retrieve_cache($cache_file);
 
-# If $acl2_books is still not set, then:
-# - set it based on the location of acl2 in the path, if available
-# - otherwise set it to the directory containing this script.
+# If $acl2 is still not set, then set it based on the location of acl2
+# in the path, if available
 
 unless ($acl2) {
     $acl2 = "acl2";
@@ -620,18 +631,49 @@ flag or ACL2 environment variable.\n";
     }
 }
 
-if (! $acl2_books) {
-    if ($acl2) {
-	# was:
-	# my $tmp_acl2_books = rel_path(dirname($acl2), "books");
-	my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
-	if (-d $tmp_acl2_books) {
-	    $acl2_books = $tmp_acl2_books;
-	} else {
-	    $acl2_books = "$RealBin/..";
-	}
-    } else {
-	$acl2_books = "$RealBin/..";
+# If $acl2_books is still not set, then try the following in order
+# until one succeeds:
+#   - set it based on the location of acl2 in the path
+#   - set it by running acl2 and dumping (@ system-books-dir)
+#   - set it to the parent of the directory containing this script.
+
+if (! $acl2_books && $acl2 ) {
+    # was:
+    # my $tmp_acl2_books = rel_path(dirname($acl2), "books");
+    my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
+    if (-d $tmp_acl2_books) {
+        $acl2_books = $tmp_acl2_books;
+    }
+}
+
+if (! $acl2_books && $acl2 ) {
+    my $dumper1 = # command to send to ACL2
+        '(cw \"~%CERT_PL_VAL:~S0~%\" (@ acl2::system-books-dir))';
+    my $dumper2 = # command to send to STARTJOB
+        'echo "' . $dumper1 . '" | ' .
+        "$acl2 2>$devnull | " .
+        'awk -F: "/CERT_PL_VAL/ { print \$2 }"';
+    my $dumper3 = # command to send to the shell
+        "$startjob -c '$dumper2'";
+    my $tmp_acl2_books = `$dumper3`;
+    chomp($tmp_acl2_books);
+    if (-d $tmp_acl2_books) {
+        $acl2_books = $tmp_acl2_books;
+    }
+}
+
+if (! $acl2_books ) {
+    my $tmp_acl2_books = "$RealBin/..";
+    if (-d $tmp_acl2_books) {
+        $acl2_books = $tmp_acl2_books;
+    }
+}
+
+if (! $acl2_books ) {
+    unless ($quiet || $no_build) {
+        print
+"ACL2 system books not found.  Please specify with --acl2-books
+command line flag or ACL2_SYSTEM_BOOKS environment variable.";
     }
 }
 

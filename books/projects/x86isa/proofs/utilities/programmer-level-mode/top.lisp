@@ -10,7 +10,7 @@
 (include-book "programmer-level-memory-utils" :ttags :all)
 
 (defsection programmer-level-mode-proof-utilities
-  :parents (proof-utilities x86-programs-proof-debugging)
+  :parents (proof-utilities debugging-code-proofs)
 
   :short "General-purpose code-proof libraries to include in the
   programmer-level mode"

@@ -184,8 +184,8 @@
                 (eql (car h) 'pow))
            (not (zp (cadr h))))
   :hints (("Goal" :use ((:instance shfp (x h))
-                        (:instance normp (x h)))
-                  :in-theory (disable shfp normp))))
+                        (:instance shf-normp (x h)))
+                  :in-theory (disable shfp shf-normp))))
 
 (local-defthm split$-case-5-2
   (implies (and (shnfp h)
@@ -193,8 +193,8 @@
                 (eql (car h) 'pow))
            (natp (cadr h)))
   :hints (("Goal" :use ((:instance shfp (x h))
-                        (:instance normp (x h)))
-                  :in-theory (disable shfp normp)))
+                        (:instance shf-normp (x h)))
+                  :in-theory (disable shfp shf-normp)))
   :rule-classes (:type-prescription :rewrite))
 
 (local-defthm split$-case-5-3
@@ -207,8 +207,8 @@
                   (shnfp q))))
   :hints (("Goal" :use ((:instance shfp (x h))
                         (:instance shnfp (x h))
-                        (:instance normp (x h)))
-                  :in-theory (disable shfp normp))))
+                        (:instance shf-normp (x h)))
+                  :in-theory (disable shfp shf-normp))))
 
 (local-defthm nthcdr-cdr
   (equal (nthcdr i (cdr l))
@@ -1460,8 +1460,8 @@
                 (eql (car h) 'pop))
            (not (zp (cadr h))))
   :hints (("Goal" :use ((:instance shfp (x h))
-                        (:instance normp (x h)))
-                  :in-theory (disable shfp normp))))
+                        (:instance shf-normp (x h)))
+                  :in-theory (disable shfp shf-normp))))
 
 (local-defthm split$-case-2-2
   (implies (and (shnfp h)
@@ -1469,8 +1469,8 @@
                 (eql (car h) 'pop))
            (natp (cadr h)))
   :hints (("Goal" :use ((:instance shfp (x h))
-                        (:instance normp (x h)))
-                  :in-theory (disable shfp normp)))
+                        (:instance shf-normp (x h)))
+                  :in-theory (disable shfp shf-normp)))
   :rule-classes (:type-prescription :rewrite))
 
 (local-defthm split$-case-2-3
@@ -1481,8 +1481,8 @@
            (shnfp (caddr h)))
   :hints (("Goal" :use ((:instance shfp (x h))
                         (:instance shnfp (x h))
-                        (:instance normp (x h)))
-                  :in-theory (disable shfp normp))))
+                        (:instance shf-normp (x h)))
+                  :in-theory (disable shfp shf-normp))))
 
 (local-defthmd split$-case-2-4
   (implies (and (natp k)

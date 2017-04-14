@@ -2,6 +2,8 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; See ../README.
+
 ; This file was originally created by Nathan Wetzler, but now is being
 ; modified by Warren Hunt and Matt Kaufmannn so as to produce a faster,
 ; lrat proof checker.
@@ -51,6 +53,10 @@
         (value lst)))
     (read-to-0 channel (cons val lst) ctx state)))
 
+(defun equal-symbol-name (sym name)
+  (and (symbolp sym)
+       (equal (symbol-name sym) name)))
+
 (defun parse-cnf-channel-first-line (channel ctx state)
 
 ; E.g., the first line could be: p cnf 4 8.
@@ -71,13 +77,13 @@
           (read-object channel state))
          ((when eof)
           (eof-error channel ctx state))
-         ((unless (eq val 'p))
+         ((unless (equal-symbol-name val "P"))
           (expected-error channel 1 "`p'" val ctx state))
          ((mv eof val state)
           (read-object channel state))
          ((when eof)
           (eof-error channel ctx state))
-         ((unless (eq val 'cnf))
+         ((unless (equal-symbol-name val "CNF"))
           (expected-error channel 2 "`cnf'" val ctx state))
          ((mv eof val state)
           (read-object channel state))
@@ -175,7 +181,7 @@
          (er soft ctx
              "Found empty first part of addition step.")))
        (val (reverse val0))
-       ((when (eq (cadr val) 'd))
+       ((when (equal-symbol-name (cadr val) "D"))
         (value (cons t ; flag the deletion
                      (cddr val))))
        ((cons j clause) val)

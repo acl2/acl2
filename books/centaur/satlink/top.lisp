@@ -35,7 +35,7 @@
 (include-book "cnf")
 (include-book "dimacs")
 (include-book "lrat-interface")
-(include-book "projects/sat/lrat/main/lrat-parser" :dir :system)
+(include-book "projects/sat/lrat/sorted/lrat-parser" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
@@ -714,9 +714,12 @@ satlink-run).</p>"
                :mintime config.mintime))
        (lrat-proof
         (if (and (eq status :unsat) config.lrat-check)
-            (time$ (lrat::lrat-read-file (str::cat filename ".lrat") state)
-                   :msg "; SATLINK: read lrat file: ~st sec, ~sa bytes~%"
-                   :mintime config.mintime)
+            (b* ((lrat-proof (time$ (lrat::lrat-read-file (str::cat filename ".lrat") state)
+                                    :msg "; SATLINK: read lrat file: ~st sec, ~sa bytes~%"
+                                    :mintime config.mintime))
+                 ((unless (config->remove-temps config)) lrat-proof)
+                 ((mv & &) (acl2::tshell-call (str::cat "rm " (str::cat filename ".lrat")))))
+              lrat-proof)
           nil))
        (- (and (or (eq status :sat)
                    (eq status :unsat))

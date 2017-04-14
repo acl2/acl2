@@ -103,8 +103,10 @@
                         ctx wrld state-vars)
          (cond
           (erp (er hard ctx
-                   "Surprise: Translate failed for body of ~x0!"
-                   (car fns)))
+                   "Translate failed for body of ~x0 with the following ~
+                    message:~|~@1"
+                   (car fns)
+                   tbody))
           (t (all-ffn-symbs tbody
                             (all-ffn-symbs (guard (car fns) nil wrld)
                                            acc)))))))))

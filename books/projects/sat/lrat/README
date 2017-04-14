@@ -1,24 +1,56 @@
 Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 Initial version (including soundness proof) completed November, 2016
 
-This work is based on Nathan Wetzler's RAT checker work in ACL2
-community books directory books/projects/sat/proof-checker-itp13/.
-Here we accommodate a more recent input proof format, which provides
-hints to speed up unit propagation -- "lrat" is mnemonic for "Linear
-RAT" -- and we add deletion (to obtain a DRAT checker).  Because of
-deletion, the hints, and other features (in particular, using a
-fast-alist to represent formulas, which is occasionally compressed),
-our checker can run much faster than Nathan's checker.
+This work is based on Nathan Wetzler's ITP 2013 RAT checker work in
+ACL2 community books directory
+books/projects/sat/proof-checker-itp13/.  Here we accommodate a more
+recent input proof format, which provides hints to speed up unit
+propagation -- "lrat" is mnemonic for "Linear RAT" -- and we add
+deletion (to obtain a DRAT checker).  Because of deletion, the hints,
+and other features (in particular, using a fast-alist to represent
+formulas, which is occasionally compressed), our checker can run much
+faster than Nathan's checker.
 
-We have verified two lrat checkers.  Directory list-based/ contains an
-lrat checker with a proof that it is sound.  That checker represents
-assignments as lists of literals (positive and negative integers).
-Directory stobj-based/ contains a variant of that checker that uses a
-stobj to encode assignments.  It soundness proof is derived as a
-corollary of soundness of the list-based checker, by proving that if
-the stobj-based checker validates a proof of a formula, then so does
-the list-based checker.  See list-based/README and stobj-based/README
-for more information.
+We have verified several checkers, each with a name that we sometimes
+use informally in talks and in a paper submission.
+
+drat (directory early/drat/)
+  Modification of Wetzler's ITP 2013 RAT checker that adds deletion
+  (the "D" in "DRAT"), verified easily by tweaking Wetzler's proof
+
+lrat-1 (directory early/rev1/)
+  Use lrat (linear rat) proof format to avoid search and delete
+  clauses efficiently, implemented using fast-alists (applicative hash
+  tables); soundness proved from scratch
+
+lrat-2 (directory early/rev2/)
+  Modification of lrat-1 to shrink fast-alists, to keep the formulas
+  small
+
+lrat-3 (directory list-based/)
+  Modification of lrat-2 with slightly more compact formula data
+  structure
+
+lrat-4 (directory stobj-based/)
+  Modification of lrat-3 that uses single-threaded objects (stobjs) to
+  represent assignments, for efficient evaluation of literals,
+  clauses, and formulas
+
+lrat-5 (directory incremental/)
+  Modification of lrat-4 that reads clrat (compressed lrat) files
+  efficiently for parsing, and importantly for memory usage, can read
+  them in chunks
+
+To elaborate a bit on some of that:
+
+Directory list-based/ contains an lrat checker with a proof that it is
+sound.  That checker represents assignments as lists of literals
+(positive and negative integers).  Directory stobj-based/ contains a
+variant of that checker that uses a stobj to encode assignments.  It
+soundness proof is derived as a corollary of soundness of the
+list-based checker, by proving that if the stobj-based checker
+validates a proof of a formula, then so does the list-based checker.
+See list-based/README and stobj-based/README for more information.
 
 To certify all books while standing in this directory, you can execute
 the following command, where ACL2_DIR is your ACL2 directory and ACL2
@@ -26,8 +58,8 @@ is your ACL2.  This may take about a minute if supporting books
 outside this directory are already certified, but not much longer even
 if not.
 
-ACL2_DIR/books/build/cert.pl --acl2 ACL2 -j 8 list-based/*.lisp stobj-based/*.lisp
+ACL2_DIR/books/build/cert.pl --acl2 ACL2 -j 8 */*.lisp
 
 For example, Matt uses the following command.
 
-time /projects/acl2/acl2/books/build/cert.pl --acl2 acl2c -j 8 list-based/*.lisp stobj-based/*.lisp
+time /projects/acl2/acl2/books/build/cert.pl --acl2 acl2c -j 8 */*.lisp

@@ -977,16 +977,29 @@ and @('list*') may be nested inside other bindings.</p>"
       `(patbind ,(car args) ,forms ,rest-expr)
     `(patbind-cons (,(car args) (list* . ,(cdr args))) ,forms ,rest-expr)))
 
-(defun assigns-for-assocs (args alist)
+(defun assigns-for-assocs (getter args alist)
   (if (atom args)
       nil
     (cons (if (consp (car args))
-              `(,(caar args) (cdr (assoc ,(cadar args) ,alist)))
+              `(,(caar args) (cdr (,getter ,(cadar args) ,alist)))
             (mv-let (sym ign)
               (decode-varname-for-patbind (car args))
               (declare (ignore ign))
-              `(,(car args) (cdr (assoc ',sym ,alist)))))
-          (assigns-for-assocs (cdr args) alist))))
+              `(,(car args) (cdr (,getter ',sym ,alist)))))
+          (assigns-for-assocs getter (cdr args) alist))))
+
+(defun body-for-assocs (getter args forms rest-expr)
+  (mv-let (pre-bindings name rest)
+    (if (and (consp (car forms))
+             (not (eq (caar forms) 'quote)))
+        (mv `((?tmp-for-assocs ,(car forms)))
+            'tmp-for-assocs
+            `(check-vars-not-free (tmp-for-assocs)
+                                  ,rest-expr))
+      (mv nil (car forms) rest-expr))
+    `(b* (,@pre-bindings
+          . ,(assigns-for-assocs getter args name))
+       ,rest)))
 
 (def-b*-binder assocs
   :short "@(see b*) binder for extracting particular values from an alist."
@@ -1023,18 +1036,7 @@ to the pair @('(var 'var)').</li>
 <p>Each of the arguments in the @('var') position of the pair form may be a
 recursive binder, and @('assocs') may be nested inside other bindings.</p>"
 
-  :body
-  (mv-let (pre-bindings name rest)
-    (if (and (consp (car forms))
-             (not (eq (caar forms) 'quote)))
-        (mv `((?tmp-for-assocs ,(car forms)))
-            'tmp-for-assocs
-            `(check-vars-not-free (tmp-for-assocs)
-                            ,rest-expr))
-      (mv nil (car forms) rest-expr))
-    `(b* (,@pre-bindings
-          . ,(assigns-for-assocs args name))
-       ,rest)))
+  :body (body-for-assocs 'assoc args forms rest-expr))
 
 (def-b*-binder er
   :short "@(see b*) binder for error triples."

@@ -1,5 +1,7 @@
 This directory contains the 'Kestrel Books', a collection of ACL2 books
-contributed by Kestrel Institute (www.kestrel.edu). Copyright, author, and
-license information is provided in the individual files and subdirectories.
+contributed mainly by Kestrel Institute (http://www.kestrel.edu). Copyright,
+author, and license information is provided in the individual files and
+subdirectories.
 
-The Kestrel Books are documented in the kestrel-books XDOC topic.
+The Kestrel Books are documented in the manual at:
+http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____KESTREL-BOOKS

@@ -16,7 +16,7 @@
 ;; ======================================================================
 
 (defsection system-level-non-marking-mode-proof-utilities
-  :parents (proof-utilities x86-programs-proof-debugging)
+  :parents (proof-utilities debugging-code-proofs)
 
   :short "General-purpose code-proof libraries to include in the
   system-level non-marking mode (with A/D flag updates off)"

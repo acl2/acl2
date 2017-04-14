@@ -2,10 +2,7 @@
 ; Marijn Heule, Warren A. Hunt, Jr., and Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This work is based on Nathan Wetzler's RAT checker work in ACL2 community
-; books directory books/projects/sat/proof-checker-itp13/.  Here we accommodate
-; a more recent input proof format to speed up unit propagation and add
-; deletion (to obtain a DRAT checker).
+; See ../README.
 
 ; This modification of the list-based lrat-checker.lisp uses stobjs to speed up
 ; the handling of assignments, in particular, evaluation of literals and
@@ -2092,9 +2089,8 @@
 (defthm a$p-initialize-a$
   (implies (and (true-listp a$)
                 (equal (len a$) 3)
-                (natp (proof-max-var proof (formula-max-var formula 0))))
-           (a$p (initialize-a$ (proof-max-var proof (formula-max-var formula 0))
-                               a$)))
+                (natp n))
+           (a$p (initialize-a$ n a$)))
   :hints (("Goal" :in-theory (enable initialize-a$ a$p a$arrp))))
 
 (defthm a$ptr-initialize-a$

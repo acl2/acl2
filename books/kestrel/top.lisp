@@ -1,18 +1,19 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file provides a collection of ACL2 books
-; contributed by Kestrel Institute.
+; contributed mainly by Kestrel Institute.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
+(include-book "abnf/top")
 (include-book "soft/top")
 (include-book "utilities/top")
 
@@ -22,13 +23,13 @@
 
   :parents (software-verification)
 
-  :short "A collection of ACL2 books contributed by Kestrel Institute."
+  :short "A collection of ACL2 books contributed mainly by Kestrel Institute."
 
   :long
   "<img src='res/kestrel/kestrel-logo.png'/>
   <p>
   The <b>Kestrel Books</b> are a collection of ACL2 books
-  contributed by <a href='http://www.kestrel.edu'>Kestrel Institute</a>.
+  contributed mainly by <a href='http://www.kestrel.edu'>Kestrel Institute</a>.
   The Kestrel Books are freely available under a liberal license.
   Specific copyright, author, and license information
   is provided in the individual files and subdirectories.

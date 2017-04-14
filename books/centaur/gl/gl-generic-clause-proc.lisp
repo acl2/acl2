@@ -53,7 +53,7 @@
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (disable* set::double-containment w)))
 
 

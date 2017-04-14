@@ -110,7 +110,7 @@
  })
 
  <p>First suppose that @('dcl') is not present.  Then the proposed definition
- must be have a simple tail-recursive structure (see the discussion of
+ must have a simple tail-recursive structure (see the discussion of
  @('defp') below for a workaround if this is not the case).</p>
 
  <p>If @('dcl') is present, then the definition need not be tail-recursive, and

@@ -1,0 +1,7 @@
+See ../README for information about this project for checking lrat
+proofs.
+
+This directory is a variant of ../stobj-based/ that implements a
+slightly more efficient checker by assuming that for every clause
+(l1 l2 ... lk) specified for addition in a given proof, the literals
+(l2 ... lk) are sorted by absolute value.
