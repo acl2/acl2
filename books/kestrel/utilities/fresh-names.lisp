@@ -8,7 +8,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides a function for generating fresh names.
+; This file provides a function for
+; generating fresh names for functions, theorems, etc.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,7 +19,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fresh-name-in-world-with-$s ((name symbolp)
+(define fresh-name-in-world-with-$s ((name (and (symbolp name)
+                                                (not (keywordp name))))
                                      (names-to-avoid symbol-listp)
                                      (wrld plist-worldp))
   :returns (fresh-name "A @(tsee symbolp).")
@@ -29,10 +31,33 @@
           and not among a given list of names to avoid."
   :long
   "<p>
-   If @('name') is already new and not among the names to avoid,
-   it is left unchanged.
+   The name returned by this function should be usable for
+   a new function, theorem, etc.
+   </p>
+   <p>
+   The input name must not be a keyword,
+   because it would remain a keyword
+   (which cannot be the name of a function, theorem, etc.)
+   when @('$') signs are appended to it.
+   </p>
+   <p>
+   Since symbols in the main Lisp package are not usable
+   to name new functions, theorems, etc.,
+   if the input name is in the main Lisp package,
+   the output name is in the @('\"ACL2\"') package,
+   and has at least one @('$') appended to it.
+   </p>
+   <p>
+   If the input name is already new,
+   not among the names to avoid,
+   and not in the main Lisp package,
+   it is returned unchanged.
    </p>"
   (if (or (logical-namep name wrld)
-          (member name names-to-avoid))
-      (fresh-name-in-world-with-$s (add-suffix name "$") names-to-avoid wrld)
-    name))
+          (member name names-to-avoid)
+          (equal (symbol-package-name name) *main-lisp-package-name*))
+      (fresh-name-in-world-with-$s (add-suffix-to-fn name "$")
+                                   names-to-avoid
+                                   wrld)
+    name)
+  :no-function t)
