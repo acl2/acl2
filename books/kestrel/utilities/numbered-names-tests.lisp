@@ -208,7 +208,11 @@
  (defun g{5} (x) x)
  (defun g{6} (x) x)
  (assert-equal (next-numbered-name 'g{4} (w state))
-               'g{7}))
+               'g{7})
+
+ (defun g{1} (x) x)
+ (assert-equal (next-numbered-name 'g (w state))
+               'g{2}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
