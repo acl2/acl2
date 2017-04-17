@@ -235,6 +235,7 @@
                        (guard-hints 'nil)
                        (measure-hints 'nil)
                        (skip-measure 'nil)
+                       (skip-precedes 'nil)
                        (aignet-litp-hints 'nil)
                        (lit-cong1-hints 'nil)
                        (lit-cong2-hints 'nil)
@@ -287,21 +288,23 @@
         ,(+ 3 (len extra-args))
         :hints ,list-cong-hints)
 
-      (defthm ,(mksym name "FANIN-PRECEDES-GATE-OF-" (symbol-name name))
-        (implies (and (< (lit-id lit1) gate)
-                      (< (lit-id lit2) gate)
-                      ;; (aignet-litp lit1 aignet)
-                      ;; (aignet-litp lit2 aignet)
-                      (natp gate)
-                      . ,reqs)
-                 (b* (((mv extra ?flg nlit1 nlit2)
-                       (,name lit1 lit2 ,@extra-args aignet)))
-                   (and (implies extra
-                                 (< (lit-id extra) gate))
-                        (< (lit-id nlit1) gate)
-                        (< (lit-id nlit2) gate))))
-        :hints ,fanin-hints
-        :rule-classes (:rewrite))
+      ,@(and
+         (not skip-precedes)
+         `((defthm ,(mksym name "FANIN-PRECEDES-GATE-OF-" (symbol-name name))
+             (implies (and (< (lit-id lit1) gate)
+                           (< (lit-id lit2) gate)
+                           ;; (aignet-litp lit1 aignet)
+                           ;; (aignet-litp lit2 aignet)
+                           (natp gate)
+                           . ,reqs)
+                      (b* (((mv extra ?flg nlit1 nlit2)
+                            (,name lit1 lit2 ,@extra-args aignet)))
+                        (and (implies extra
+                                      (< (lit-id extra) gate))
+                             (< (lit-id nlit1) gate)
+                             (< (lit-id nlit2) gate))))
+             :hints ,fanin-hints
+             :rule-classes (:rewrite))))
 
       ,@(and
          (not skip-measure)
@@ -957,13 +960,16 @@
                                 (litp lit2) (fanin-litp lit2 aignet))))
     (b* ((key (aignet-addr-combine (lit-fix lit1) (lit-fix lit2)))
          (id (strashtab-get key strash))
-         ((unless (and (natp id)
-                       (id-existsp id aignet)
-                       (int= (id->type id aignet) (gate-type))
-                       (int= (gate-id->fanin0 id aignet) (lit-fix lit1))
-                       (int= (gate-id->fanin1 id aignet) (lit-fix lit2))))
-          (mv nil key 0)))
-      (mv t key id)))
+         ((when id)
+          (b* (((unless (and (natp id)
+                             (id-existsp id aignet)
+                             (int= (id->type id aignet) (gate-type))
+                             (int= (gate-id->fanin0 id aignet) (lit-fix lit1))
+                             (int= (gate-id->fanin1 id aignet) (lit-fix lit2))))
+                (er hard? 'strash-lookup "Strash lookup found bogus value!")
+                (mv nil key 0)))
+            (mv t key id))))
+      (mv nil key 0)))
 
   (local (in-theory (enable strash-lookup)))
 
@@ -987,7 +993,9 @@
 
   (defthm strash-lookup-key-type
     (acl2-numberp (mv-nth 1 (strash-lookup lit1 lit2 strash aignet)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defcong list-equiv equal (strash-lookup lit1 lit2 strash aignet) 4))
 
 (defsection gatesimp
   :parents (aignet-construction)
@@ -1043,6 +1051,42 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
     :hints(("Goal" :in-theory (enable mk-gatesimp)))
     :rule-classes :type-prescription))
 
+(defsection aignet-and-gate-simp/strash
+  (def-gate-simp aignet-and-gate-simp/strash
+    ;; BOZO The flag returned from this does not mean what it does in the
+    ;; gate-simplifiers above. We use the second return value for the strash key
+    ;; instead of the simplified flag, which is mainly used to stop iterating
+    ;; when no simplification is found.
+    (b* ((lit1 (lit-fix lit1))
+         (lit2 (lit-fix lit2))
+         (gatesimp (lnfix gatesimp))
+         ((mv existing ?flg lit1 lit2)
+          (aignet-gate-simp lit1 lit2 (gatesimp-level gatesimp) aignet))
+         ((when existing)
+          (mv existing nil lit1 lit2))
+         ((when (not (gatesimp-hashp gatesimp)))
+          (mv nil nil lit1 lit2))
+         ((mv found ?key id) (strash-lookup lit1 lit2 strash aignet))
+         ((when found)
+          (mv (mk-lit id 0) nil lit1 lit2)))
+      (mv nil key lit1 lit2))
+
+    :extra-args (gatesimp strash)
+    :guard (natp gatesimp)
+    :xargs (:stobjs strash
+            :guard-hints (("goal" :no-thanks t)))
+    :eval-hints (("goal" :expand ((:free (id) (lit-eval (make-lit id 0) aignet-invals aignet-regvals aignet))
+                                  (:free (lit1 lit2)
+                                   (id-eval (mv-nth 2 (strash-lookup lit1 lit2 strash aignet)) aignet-invals aignet-regvals aignet)))))
+    :skip-measure t
+    :skip-precedes t)
+
+  (defthm key-type-of-aignet-and-gate-simp/strash
+    (or (not (mv-nth 1 (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet)))
+        (acl2-numberp (mv-nth 1 (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet))))
+    :hints(("Goal" :in-theory (enable aignet-and-gate-simp/strash)))
+    :rule-classes :type-prescription))
+
 (define aignet-hash-and ((lit1 litp "Literal to AND with lit2")
                          (lit2 litp)
                          (gatesimp natp "Configuration for how much simplification to try and whether to use hashing")
@@ -1063,21 +1107,17 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
   (b* ((lit1 (lit-fix lit1))
        (lit2 (lit-fix lit2))
        (gatesimp (lnfix gatesimp))
-       ((mv existing & lit1 lit2)
-        (aignet-gate-simp lit1 lit2 (gatesimp-level gatesimp) aignet))
+       ((mv existing key lit1 lit2)
+        (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet))
        ((when existing)
         (mv existing strash aignet))
-       ((when (not (gatesimp-hashp gatesimp)))
-        (b* ((lit (mk-lit (num-nodes aignet) 0))
-             (aignet (aignet-add-gate lit1 lit2 aignet)))
-          (mv lit strash aignet)))
-       ((mv found key id) (strash-lookup lit1 lit2 strash aignet))
-       ((when found)
-        (mv (mk-lit id 0) strash aignet))
-       (lit (mk-lit (num-nodes aignet) 0))
+       (new-id (num-nodes aignet))
+       (new-lit (mk-lit new-id 0))
        (aignet (aignet-add-gate lit1 lit2 aignet))
-       (strash (strashtab-put key (lit-id lit) strash)))
-    (mv lit strash aignet))
+       ((when (not key))
+        (mv new-lit strash aignet))
+       (strash (strashtab-put key new-id strash)))
+    (mv new-lit strash aignet))
 
   ///
 
@@ -1132,9 +1172,9 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                                (eval-and-of-lits
                                 lit-eval-of-aignet-lit-fix
                                 lit-eval)
-                               (eval-of-aignet-gate-simp))
-                   :use ((:instance eval-of-aignet-gate-simp
-                          (level (gatesimp-level (nfix gatesimp)))
+                               (eval-of-aignet-and-gate-simp/strash))
+                   :use ((:instance eval-of-aignet-and-gate-simp/strash
+                          (gatesimp (nfix gatesimp))
                           (lit1 (lit-fix lit1))
                           (lit2 (lit-fix lit2))))))))
 
