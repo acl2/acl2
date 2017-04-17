@@ -521,8 +521,11 @@
    with base @('base') and the wildcard as index,
    the behavior is the same as if this function were called
    on the result of @(tsee resolve-numbered-name-wildcard) on @('name').
-   If @('name') is not a numbered name, return 1
-   (as if @('name') had numeric index 0).
+   If @('name') is not a numbered name, treat it as if it had numeric index 0,
+   i.e. return the numbered name with base @('name') and index @('j'),
+   where @('j') is the smallest positive integer
+   such that the numbered name with base @('name') and index @('j')
+   is not in the ACL2 world.
    </p>
    <p>
    This function is independent from the
