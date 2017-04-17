@@ -100,7 +100,10 @@ More explicitly, this macroexpands (more or less) to the following:</p>
    ...)
  })
 
-<p>@('BINDINGS') are bindings of stobj names to stobj accessorsThe @('VARS') here correspond to the values returned by the last element of 
+<p>@('BINDINGS') are bindings of stobj names to stobj accessors.  @('SUBFORMS')
+are the forms that are evaluated under the bindings, in an implicit progn (so
+all but the last are just for side effects).  The @('VARS') correspond to
+the values returned by the last subform.</p>
 
 "
 

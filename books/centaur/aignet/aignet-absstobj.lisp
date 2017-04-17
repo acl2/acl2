@@ -906,3 +906,8 @@
 
 
 
+(defxdoc literal
+  :parents (base-api)
+  :short "See @(see satlink::litp)."
+  :long "<p>Aignet used to use a literal representation of its own, but now it
+just borrows @(see satlink::satlink)'s.</p>")

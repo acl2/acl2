@@ -44,7 +44,12 @@
   :parents (cnf)
   :short "Representation of a Boolean variable."
 
-  :long "<p>Think of a <b>VARIABLE</b> as an abstract data type that represents
+  :long "<p>A variable is now represented as just a natural number, and the
+abstract data type wrapper described below is no longer used (we found it too
+hard to reason about).  We're preserving the documentation below for reference,
+but it's no longer true.</p>
+
+<p>Think of a <b>VARIABLE</b> as an abstract data type that represents
 a Boolean variable.  A variable has an <i>index</i> that can be used to
 distinguish it from other variables.  The interface for working with variables
 is simply:</p>
@@ -53,16 +58,16 @@ is simply:</p>
 <dt>@(call varp) &rarr; @('bool')</dt>
 <dd>Recognize valid identifiers.</dd>
 
-<dt>@(call make-var) &rarr; @('id')</dt>
+<dt>@('(make-var index)') &rarr; @('id')</dt>
 <dd>Construct an identifier with the given given a natural number index.</dd>
 
-<dt>@(call var->index) &rarr; @('index')</dt>
+<dt>@('(var->index id)') &rarr; @('index')</dt>
 <dd>Get the index from an identifier.</dd>
 </dl>
 
 <p>In the implementation, variables are nothing more than natural numbers.
-That is, @(see varp) is just @(see natp), while @(see make-var) and @(see
-var->index) are logically just @(see nfix) and in the execution are the
+That is, @(see varp) is just @(see natp), while @('make-var') and
+@('var->index') are logically just @(see nfix) and in the execution are the
 identity.</p>
 
 <p>Why, then, bother with a variable type at all?  We use (for efficiency)
