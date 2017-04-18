@@ -177,7 +177,7 @@ and the inputs from the appropriate frame.</p>
 
   (defiteration aignet-vals->invals (invals vals aignet)
     (declare (xargs :stobjs (vals aignet invals)
-                    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                    :guard (and (< (max-fanin aignet) (bits-length vals))
                                 (<= (num-ins aignet) (bits-length invals)))))
     (b* ((id (innum->id n aignet))
          (val (get-bit id vals)))
@@ -212,7 +212,7 @@ and the inputs from the appropriate frame.</p>
 
   (defiteration aignet-invals->vals (invals vals aignet)
     (declare (xargs :stobjs (vals aignet invals)
-                    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                    :guard (and (< (max-fanin aignet) (bits-length vals))
                                 (<= (num-ins aignet) (bits-length invals)))))
     (b* ((id (innum->id n aignet))
          (val (get-bit n invals)))
@@ -269,7 +269,7 @@ and the inputs from the appropriate frame.</p>
 
   (defiteration aignet-vals->regvals (regvals vals aignet)
     (declare (xargs :stobjs (vals aignet regvals)
-                    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                    :guard (and (< (max-fanin aignet) (bits-length vals))
                                 (<= (num-regs aignet) (bits-length regvals)))))
     (b* ((id (regnum->id n aignet))
          (val (get-bit id vals)))
@@ -304,7 +304,7 @@ and the inputs from the appropriate frame.</p>
 
   (defiteration aignet-regvals->vals (regvals vals aignet)
     (declare (xargs :stobjs (vals aignet regvals)
-                    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                    :guard (and (< (max-fanin aignet) (bits-length vals))
                                 (<= (num-regs aignet) (bits-length regvals)))))
     (b* ((id (regnum->id n aignet))
          (val (get-bit n regvals)))
