@@ -299,7 +299,7 @@
     (CDAAAR CDR CAAAR) (CDDAAR CDR CDAAR)
     (CDADDR CDR CADDR) (CDDDDR CDR CDDDR)))
 
-(defun bind-? (alist free-vars old-formals)
+(defun bind-?-final (alist free-vars old-formals)
 
 ; See weak-one-way-unify; here we finish off alist by associating every unbound
 ; variable with itself.
@@ -309,17 +309,17 @@
          (assert$
 
 ; Since free-vars is the free variables of the new term, which was created by
-; generalizing with the top-level alist using fresh variables, the following
-; should be impossible.  We bind the old formal to itself; see the discussion
-; about this in weak-one-way-unify.
+; generalizing with the top-level alist using fresh variables, this assertion
+; should hold.  We bind the old formal to itself; see the discussion about this
+; in weak-one-way-unify.
 
           (or (eq (cdar alist) (car old-formals))
               (not (member-eq (cdar alist) free-vars)))
           (acons (car old-formals)
                  (car old-formals)
-                 (bind-? (cdr alist) free-vars (cdr old-formals)))))
+                 (bind-?-final (cdr alist) free-vars (cdr old-formals)))))
         (t (cons (car alist)
-                 (bind-? (cdr alist) free-vars (cdr old-formals))))))
+                 (bind-?-final (cdr alist) free-vars (cdr old-formals))))))
 
 (defun extend-gen-alist1 (sterm var alist)
 
@@ -622,54 +622,103 @@
                          new-body)
             new-extra-vars)))))
 
+(defun gen-alist-args (gen-alist vars)
+
+; Gen-alist is an alist that associates terms with variables, where (u . v)
+; indicates that the term u is generalized to the variable v in a term b with
+; free variables var.  The goal is to produce a suitable lambda, which we might
+; write as (let ( ... (v u) ... ) b'), where b' is the result of applying such
+; a generalization to b.  If however v does not occur in b, we could drop the
+; binding (v u).  Instead, we prefer to leave the binding (because our
+; unification algorithm looks for lambdas with formals of the same length), but
+; to replace u by nil, which can be useful for other routines.
+
+  (cond ((endp gen-alist) nil)
+        (t (cons (if (member-eq (cdar gen-alist) vars)
+                     (caar gen-alist)
+                   *nil*)
+                 (gen-alist-args (cdr gen-alist) vars)))))
+
+(defun lambda-subst (formals actuals term)
+
+; Formals and actuals are in one-one correspondence.  Suppose that the
+; following condition holds: for each corresponding formal and actual, either
+; formal equals actual or else actual occurs in term.  Then we collect all of
+; the latter cases (where also formal does not equal actual) and return the
+; corresponding sublists of formals and actuals.  But if the condition fails,
+; then we return (mv :fail <don't-care>).
+
+  (cond ((endp formals) (mv nil nil))
+        ((eq (car formals) (car actuals))
+         (lambda-subst (cdr formals) (cdr actuals) term))
+        ((dumb-occur (car actuals) term)
+         (mv-let (f1 a1)
+           (lambda-subst (cdr formals) (cdr actuals) term)
+           (cond ((eq f1 :fail)
+                  (mv :fail nil))
+                 (t (mv (cons (car formals) f1)
+                        (cons (car actuals) a1))))))
+        (t (mv :fail nil))))
+
+(defun some-var-dumb-occur (lst1 term)
+  (cond ((null lst1) nil)
+        ((dumb-occur-var (car lst1) term) t)
+        (t (some-var-dumb-occur (cdr lst1) term))))
+
 (mutual-recursion
 
-(defun weak-one-way-unify (tterm sterm alist old-formals)
+(defun weak-one-way-unify (tterm sterm new-formals old-formals)
 
 ; See the Essay on Handling of Lambda Applications by Directed-untranslate.
 
-; Somewhat like directed-untranslate, this function exploits analogies in tterm
-; and sterm.  This function attempts to flesh out alist to the inverse of a
-; substitution that heuristically aligns sterm with tterm.  Initially alist
-; contains pairs (:? . var) where each var is a distinct variable.  When the
-; generalization of a subterm x of sterm by var would make sterm "more like"
-; tterm, then that entry is replaced by (x . var).  Moreover, a new sterm is
-; returned that reflects such substitutions.
+; Tterm is a term all of whose free variables are among new-formals, which are
+; disjoint from the free variables of sterm.  Somewhat like
+; directed-untranslate, this function exploits analogies in tterm and sterm.
+; This function attempts to flesh out alist to the inverse of a substitution
+; that heuristically aligns sterm with tterm.  Initially alist contains pairs
+; (:? . var) where each var is a distinct variable.  When the generalization of
+; a subterm x of sterm by var would make sterm "more like" tterm, then that
+; entry is replaced by (x . var).  Moreover, a new sterm is returned that
+; reflects such substitutions.
 
 ; Ultimately, we return (mv new-sterm new-alist), where (the inverse of)
-; new-alist binds every variable in its range (to a term, not to :?), and
-; new-sterm is either sterm or a lambda-abstraction of sterm.
+; new-alist binds the variables of new-formals (which constitutes its range) to
+; terms in its domains, and new-sterm results from sterm by applying
+; replacements indicated by new-alist and possibly also from introducing
+; lambdas.  If B is the bindings resulting by reversing each pair in new-alist,
+; then (let B new-sterm) should be provably equal to sterm.
 
 ; An interesting case is when a variable v in the range of alist receives no
 ; binding by weak-one-way-unify-rec, i.e., the pair (:? . v) is in the alist
 ; returned by weak-one-way-unify-rec.  In that case we replace :? by v, so that
-; v is bound to itself.  Let us see why this choice is (1) sound and (2)
-; heuristically desirable.  (1) First note that our intention is to substitute
-; the resulting new-alist into the resulting new-sterm and then lambda-abstract
-; with the inverse of new-alist; for example, if new-alist is ((E1 . v1) (E2
-; . v2)) and new-sterm is (f E1 (g x) E2) then we will produce the term
-; ((lambda (v1 v2 x) (f v1 (g x) v2)) E1 x E2).  We need this to be equivalent
-; to (f E1 (g x) E2), which it will be if v1 and v2 are fresh with respect to
-; sterm.  (2) Suppose that in this example we have replaced the binding (:?
-; . v2) with (v2 . v2) as described above.  The term ((lambda (v1 v2 x) (f v1
-; (g x) v2)) E1 E2 x) is then ((lambda (v1 v2 x) (f v1 (g x) v2)) E1 v2 x),
-; which natively untranslates to (let ((v1 E1) (v2 v2) (x x)) (f v1 (g x) v2)),
-; but actually then untranslates to (let ((v1 E1)) (f v1 (g x) v2)).  Thus, by
-; binding v2 to itself we ultimately have punted on trying to bind v2, which is
-; appropriate since weak-one-way-unify-rec didn't suggest a binding.
+; v is bound to itself.  Let us see why this choice is both sound and
+; heuristically desirable.  (1) First note that our intention is to
+; lambda-abstract with the inverse of new-alist; for example, if new-alist is
+; ((E1 . v1) (E2 . v2)) and new-sterm is (f E1 E2) then we will produce the
+; term ((lambda (v1 v2) (f v1 v2)) E1 E2).  We need this to be equivalent to (f
+; E1 E2), which it will be if v1 and v2 are fresh with respect to sterm.  (2)
+; Suppose that in this example, E2 is v2 and new-alist was produced by
+; replacing the binding (:?  . v2) with (v2 . v2) as described above.  The term
+; ((lambda (v1 v2) (f v1 v2)) E1 E2) is then ((lambda (v1 v2) (f v1 v2)) E1
+; v2), which naively would seem to untranslate to (let ((v1 E1) (v2 v2)) (f v1
+; v2)), but it is illuminating to see that it actually untranslates to (let
+; ((v1 E1)) (f v1 (g x) v2)).  Thus, by binding v2 to itself, in effect we have
+; punted on trying to bind v2, which is appropriate since
+; weak-one-way-unify-rec didn't suggest a binding.
 
-  (mv-let (new-sterm? alist)
-    (weak-one-way-unify-rec tterm sterm alist)
-    (let* ((new-sterm (or new-sterm? sterm))
-           (new-alist (bind-? alist (all-vars new-sterm) old-formals)))
-      (mv new-sterm new-alist))))
+  (let ((alist (pairlis-x1 :? new-formals)))
+    (mv-let (sterm? alist)
+      (weak-one-way-unify-rec tterm sterm alist)
+      (let ((sterm (or sterm? sterm)))
+        (mv sterm
+            (bind-?-final alist (all-vars sterm) old-formals))))))
 
 (defun weak-one-way-unify-rec (tterm sterm alist)
 
 ; This function is just as described in weak-one-way-unify, with two
-; exceptions.  First, the present function makes no attempt to add pairs as
-; with the bind-? call in weak-one-way-unify.  Second, the first value returned
-; is nil if sterm has not changed.
+; exceptions.  First, the present function makes no attempt to add pairs using
+; bind-?-final (as in weak-one-way-unify).  Second, the first value returned is
+; nil if sterm has not changed.
 
 ; Invariant: Every variable free in tterm should be bound in (a cdr of) alist.
 
@@ -681,48 +730,11 @@
    ((or (variablep sterm)
         (fquotep sterm)
 
-; The following test could be important.  Consider the following example.
-
-#||
-  (defstub f1 (x y) t)
-  (defstub f2 (z x y) t)
-  (defstub f3 (x) t)
-  (directed-untranslate '(let* ((z (f3 x))
-                                (y (f2 z x y)))
-                           (f1 x y))
-                        '((lambda (z y x)
-                            ((lambda (y x) (f1 x y)) (f2 z x y) x))
-                          (f3 x)
-                          y
-                          x)
-                        '(f1 x (binary-append (f3 x) y))
-                        nil
-                        (w state))
-||#
-
-; Without the following test, we get the following, which is quite confusing
-; since X1, which looks like X, is bound to Y.
-
-#||
-  (LET ((Z (F3 X)) (X1 Y))
-       (LET* ((Y (APPEND Z X1))) (F1 X Y)))
-||#
-
-; But with the following test, we get a nicer answer:
-
-#||
-  (LET* ((Y (APPEND (F3 X) Y)))
-       (F1 X Y))
-||#
-
-; The problem is that the matching was wrong: when (f2 z x1 y1) was matched to
-; (binary-append (f3 x) y) (where here x1 and y1 were created when taking
-; alpha-variants to avoid capture), x1 was bound to y when instead y1 should
-; have been bound to y.  Of course, such incorrect matching is possible in
-; other cases too; imagine a term (g u v) being simplified to (h v u).  So
-; maybe we will revisit the entire algorithm involving lambdafy-rec and
-; weak-one-way-unify; but for now we at least exclude the case where the
-; arities don't agree.
+; At one time the following disjunct was important: we had an example where (f2
+; z x1 y1) was matched to (binary-append (f3 x) y), so that x1 was bound to y
+; when instead y1 should have been bound to y.  That example no longer applies;
+; perhaps some other code avoids this problem.  But we leave the disjunct here
+; for robustness.
 
         (and (not (lambda-applicationp tterm))
              (not (eql (length (fargs tterm))
@@ -780,7 +792,7 @@
 ; equivalent to sterm, but we heuristically attempt to match the lambda
 ; structure of tterm.  We make no attempt to have decent heuristics unless
 ; sterm is free of lambda applications.  We do, however, try to handle the case
-; that sterm has different free variables than those in tterm since when we we
+; that sterm has different free variables than those in tterm since when we
 ; recur, we match sterms against lambda-bodies of tterms.
 
   (cond
@@ -789,44 +801,68 @@
         (not (flambdap (ffn-symb tterm))))
     sterm)
    (t
-    (let* ((tfn (ffn-symb tterm))
-           (old-tformals (lambda-formals tfn))
-           (tfn-body (lambda-body tfn)))
-      (mv-let (new-tformals new-tbody)
-        (alpha-convert-lambda old-tformals old-tformals tfn-body
-                              (all-vars sterm)
-                              nil)
-        (mv-let (new-sterm gen-alist)
-          (weak-one-way-unify new-tbody
-                              sterm
-                              (pairlis-x1 :? new-tformals)
-                              old-tformals)
 
-; We must basically ignore tterm at this point.  Its body helped us to produce
-; gen-alist, which we now use to generalize new-sterm to introduce a suitable
-; lambda.  Because we were careful to use fresh variables in new-formals to
-; avoid capture, the resulting lambda-application is equivalent to sterm.  (We
-; also allowed binding variables to themselves, but that does not destroy this
-; property.  Imagine generalizing the term tree where every replaced term is
-; generalized to a fresh variable; then beta-reduction of the resulting lambda
-; application amounts to replacing each such fresh variable with the
-; corresponding original term.  From this perspective, binding a variable to
-; itself is like not binding it at all.)  See also weak-one-way-unify.
+; There are two cases below, (or case1 case2).  Case2 is the normal case.  In
+; case1 we deal with the case that tterm is of the form (let ((v u)) b) -- more
+; precisely, ((lambda (v) b) u) -- where u occurs in sterm and v does not.  In
+; that case we decide right now that the result will be of the form ((lambda
+; (v) body) u), for some body.  We actually handle the case of more than one
+; lambda formal, provided every lambda formal is bound to itself
 
-          (let* ((new-tformals (strip-cdrs gen-alist))
+    (or (case-match tterm
+          ((('lambda formals body) . actuals)
+           (mv-let (f1 a1)
+             (lambda-subst formals actuals sterm)
+             (and (not (eq f1 :fail))
+                  f1 ; optimization
+                  (not (some-var-dumb-occur f1 sterm))
+                  (let* ((gen-sterm (sublis-expr (pairlis$ a1 f1) sterm))
+                         (lambdafied-sterm
+                          (lambdafy-rec body gen-sterm))
+                         (extra-vars ; to create a proper lambda application
+                          (set-difference-eq (all-vars lambdafied-sterm)
+                                             formals)))
+                    `((lambda ,(append? formals extra-vars)
+                        ,lambdafied-sterm)
+                      ,@(append? actuals extra-vars)))))))
+        (let* ((tfn (ffn-symb tterm))
+               (old-tformals (lambda-formals tfn))
+               (tfn-body (lambda-body tfn)))
+          (mv-let (new-tformals new-tbody)
+            (alpha-convert-lambda old-tformals old-tformals tfn-body
+                                  (all-vars sterm)
+                                  nil)
+            (mv-let (new-sterm gen-alist)
+              (weak-one-way-unify new-tbody
+                                  sterm
+                                  new-tformals
+                                  old-tformals)
+
+; We must basically ignore tterm at this point.  Its body helped us to
+; generalize sterm to new-sterm and record that generalization in gen-alist.
+; Because we were careful to use fresh variables in new-formals to avoid
+; capture, we can bind those variables with gen-alist to create a
+; lambda-application that is equivalent to sterm.  See also weak-one-way-unify.
+
+              (let* ((new-tformals (strip-cdrs gen-alist))
 
 ; Since weak-one-way-unify(-rec) substitutes into sterm as it updates
-; gen-alist, one might expect the following sublis-expr to be unnecessary.
-; But suppose that a term u only matches a variable v at the second occurrence
-; of u.  Then we need to generalize that first occurrence of u to v as well.
-; Here is an example.
+; gen-alist, one might expect the following sublis-expr to be unnecessary.  But
+; suppose that a term u only matches a variable v at the second occurrence of
+; u.  Then we need to generalize that first occurrence of u to v as well.  We
+; have seen this happen in practice [obscure note: see first S.W. example in
+; Kestrel simplify-defun test file].
 
-                 (new-body (sublis-expr gen-alist new-sterm))
-                 (new-args (strip-cars gen-alist)))
-            (mv-let (lam new-extra-vars)
-              (lambdafy-restore old-tformals new-tformals new-body)
-              (fcons-term lam
-                          (append? new-args new-extra-vars))))))))))
+                     (new-body (sublis-expr gen-alist new-sterm))
+                     (new-args (gen-alist-args gen-alist (all-vars new-body))))
+                (mv-let (lam new-extra-vars)
+
+; Replace some variables in new-tformals by corresponding variables in
+; old-tformals when that is sound.
+
+                  (lambdafy-restore old-tformals new-tformals new-body)
+                  (fcons-term lam
+                              (append? new-args new-extra-vars)))))))))))
 
 (defun lambdafy (tterm sterm)
   (let ((tterm
@@ -901,6 +937,57 @@
   (let ((new-bindings (make-let-smart-bindings bindings vars)))
     (cond ((null new-bindings) body)
           (t (make-let new-bindings body)))))
+
+(mutual-recursion
+
+(defun all-vars-for-real1-lambda (formals actuals body-vars ans)
+  (cond ((endp formals) ans)
+        ((member-eq (car formals) body-vars)
+         (all-vars-for-real1-lambda (cdr formals) (cdr actuals) body-vars
+                                    (all-vars-for-real1 (car actuals) ans)))
+        (t (all-vars-for-real1-lambda (cdr formals) (cdr actuals) body-vars
+                                      ans))))
+
+(defun all-vars-for-real1 (term ans)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp ans))
+                  :mode :program))
+  (cond ((variablep term)
+         (add-to-set-eq term ans))
+        ((fquotep term) ans)
+        ((flambda-applicationp term)
+         (all-vars-for-real1-lambda (lambda-formals (ffn-symb term))
+                                    (fargs term)
+                                    (all-vars-for-real1
+                                     (lambda-body (ffn-symb term)) nil)
+                                    ans))
+        (t (all-vars-for-real1-lst (fargs term) ans))))
+
+(defun all-vars-for-real1-lst (lst ans)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-listp ans))
+                  :mode :program))
+  (cond ((endp lst) ans)
+        (t (all-vars-for-real1-lst (cdr lst)
+                                   (all-vars-for-real1 (car lst) ans)))))
+
+)
+
+(defun all-vars-for-real (term)
+
+; This variant of all-vars returns a subset V of what is returned by all-vars,
+; sufficient so that V determines the value of term: If s1 and s2 are two
+; substitutions that agree on V, then term/s1 = term/s2.
+
+; Consider for example the case that term is:
+
+;   ((LAMBDA (R C) (BINARY-APPEND (F1 C) C)) ALL-R C)
+
+; Since R does not occur in the body, ALL-R is not in the beta-reduction of
+; this term.  So we do not include ALL-R in the result -- its value is
+; irrelevant to the value of term.
+
+  (all-vars-for-real1 term nil))
 
 (mutual-recursion
 
@@ -1019,7 +1106,7 @@
                        (bindings (collect-non-trivial-bindings sformals-main
                                                                args)))
                   (if bindings
-                      (make-let-smart bindings body (all-vars sbody))
+                      (make-let-smart bindings body (all-vars-for-real sbody))
                     body)))))
         (du-untranslate sterm iff-flg wrld))))
     ((and (lambda-applicationp tterm)
@@ -1493,14 +1580,16 @@
 
 ; Note: We focus on the case that sterm has no lambda applications, because
 ; that is the case in our intended application.  But the algorithm should be
-; correct regardless, and may even work decently when sterm does have lambda
-; applications.
+; correct regardless, and may sometimes work decently when sterm does have
+; lambda applications.
 
 ; Examples below includes annotated traces with DU for directed-untranslate, LF
 ; for lambdafy, and WO for weak-one-way-unify.  Note that all of these examples
 ; were developed to help guide code development; thus, all traces shown were
-; created by hand.  If one of them looks wrong, consider tracing the relevant
-; functions and perhaps fixing the corresponding trace below.
+; created by hand.  Moreover, while the comments (including by-hand traces)
+; below are perhaps useful, they have generally not been kept up-to-date.  If
+; one of them looks wrong, consider tracing the relevant functions and perhaps
+; fixing the corresponding trace below.
 
 ; ------------------------------
 ; EXAMPLES.
@@ -2832,7 +2921,8 @@
                         '(f1 x1 (binary-append (f3 x1) x2))
                         nil
                         (w state))
-  '(LET* ((X4 (APPEND (F3 X1) X2)))
+  '(LET* ((X3 (F3 X1))
+          (X4 (APPEND X3 X2)))
          (F1 X1 X4))))
 
 ; Worse yet, the result could be not only ugly, but confusing.  Consider the
@@ -2859,7 +2949,8 @@
                         '(f1 x (binary-append (f3 x) y))
                         nil
                         (w state))
-  '(let* ((y (append (f3 x) y)))
+  '(let* ((z (f3 x))
+          (y (append z y)))
      (f1 x y))))
 
 ; A preliminary attempt to deal with capture produced the following, which is
@@ -2875,3 +2966,29 @@
 ||#
 
 )
+
+; The following once produced this bad result for directed-untranslate:
+; (LET ((ALL-R R)) (APPEND (F1 C) C))
+
+(local-test
+ (defstub f1 (x) t)
+ (defun app3 (r c ign)
+   (declare (ignore ign))
+   (append r c))
+ (defun f2 (c)
+   (f1 c))
+ (defun g (c)
+   (let* ((all-r (f2 c))
+          (r all-r))
+     (app3 r c 17)))
+ (assert!
+  (equal (directed-untranslate
+          '(let* ((all-r (f2 c)) (r all-r))
+             (app3 r c 17))
+          '((lambda (all-r c)
+              ((lambda (r c) (app3 r c '17)) all-r c))
+            (f2 c)
+            c)
+          '(binary-append (f1 c) c)
+          nil (w state))
+         '(APPEND (F1 C) C))))
