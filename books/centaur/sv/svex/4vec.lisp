@@ -570,7 +570,7 @@ corresponding bits of the two inputs as follows:</p>
                value -- examine the backtrace to diagnose.~%"
                std::__function__ ,n)
            (break$)))
-  
+
 
 (define 4vec-zero-ext ((n 4vec-p "Position to truncate/zero-extend at.")
                        (x 4vec-p "The @(see 4vec) to truncate/zero-extend."))
@@ -1259,9 +1259,9 @@ will be true.</p>"
 @(see boolean-convention):</p>
 
 <ul>
-<li>All Xes if either input has any X bits, or</li>
 <li>True (all 1s) when the inputs are purely Boolean and are equal, or</li>
-<li>False (all 0s) otherwise.</li>
+<li>False (all 0s) if any bit is 0 in one input and is 1 in another, or</li>
+<li>All Xes otherwise</li>
 </ul>
 
 <p>This properly treats X as an unknown, i.e., whether or not an X bit is equal
@@ -1280,9 +1280,9 @@ to anything else, including another X bit, is always unknown.</p>"
   :long "<p>We return, following the @(see boolean-convention),</p>
 
 <ul>
-<li>All Xes if either input has any X or Z bits, or</li>
 <li>True (all 1s) when the inputs are purely Boolean and are equal, or</li>
-<li>False (all 0s) otherwise.</li>
+<li>False (all 0s) if any bit is 0 in one input and is 1 in another, or</li>
+<li>All Xes otherwise</li>
 </ul>
 
 <p>This properly treats X and Z values as unknowns, i.e., whether or not an X/Z
@@ -1890,7 +1890,7 @@ an unknown.</p>"
 ;;ANNA: Converting 4vec-p / 4veclist-p to string(s) of 0s, 1s, Xs, and Zs
 ;;MSB first
 
-(define 4v-to-characterp 
+(define 4v-to-characterp
   ((upper booleanp)
    (lower booleanp))
   :returns (c characterp)
@@ -1919,7 +1919,7 @@ an unknown.</p>"
         (logbitp (1- i) x.lower))
        ac)))
   )
-                 
+
 (define 4vec-p-to-stringp
   ((x 4vec-p))
   :short "Converts 4vec-p into string of 0,1,x,z's msb-first"
@@ -1927,19 +1927,19 @@ an unknown.</p>"
   :prepwork ((local
               (defthm character-listp-of-explode-nonnegative-integer
                 (implies
-                 (and 
+                 (and
                   (integerp x)
                   (<= 0 x)
                   (character-listp ans))
                  (character-listp (explode-nonnegative-integer x base ans)))
-                :hints (("goal" 
+                :hints (("goal"
                          :in-theory (enable explode-nonnegative-integer) ))
                 )))
   :guard-hints (("goal" :in-theory (e/d (4vec-p)(floor) )))
   (if (integerp x)
       (coerce (explode-atom x 2) 'string)
-    (4vec-p-to-stringp-aux 
-     (car x) (cdr x) 
+    (4vec-p-to-stringp-aux
+     (car x) (cdr x)
      (max (integer-length (car x))
           (integer-length (cdr x)))
      nil))
