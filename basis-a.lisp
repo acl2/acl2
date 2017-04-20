@@ -6080,20 +6080,11 @@
 ; stobj (introduced after x).  We return nil if x is not either sort of valid
 ; type spec.
 
-; Our intended use of this function is in generation of guards for field
-; accessors and updaters, in the case of fields that are themselves stobjs.
-; When the defstobj is introduced, there are no stobj declarations, so the
-; subfield's recognizer (stobj-recog, below) is called on an ordinary object.
-; We started allowing such calls when translating for execution after
-; Version_6.1; see translate11-call.
-
-; Presumably the two arguments of OR below -- the guard corresponding to the
-; type x, and the stobj recognizer term -- cannot both be non-nil, since types
-; are in the main Lisp package and hence cannot be stobj names.  Nevertheless,
-; in case we're wrong about that, we translate the type first, in order to
-; avoid ambiguity in case there is a stobj previously defined locally in a book
-; or encapsulate, for example (which would cause x to translate as a type in
-; the first pass but to a type in the second pass).
+; Our intended use of this function is in generation of guards for recognizers
+; of stobj fields that may themselves be stobjs.  We do not use this however in
+; accessors or updators, where translate-declaration-to-guard suffices: we do
+; not want to generate a stobj recognizer since the child stobj is supplied
+; explicitly using :stobjs.
 
   (or (translate-declaration-to-guard x var wrld)
       (let ((stobj-recog (and (not (eq x 'state))

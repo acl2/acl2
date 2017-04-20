@@ -18001,6 +18001,11 @@
             (chk-all-but-new-name name ctx 'stobj wrld state)
             (cond ((or (eq name 'I)
                        (eq name 'V))
+
+; Not only is 'v used in the logical definition of an updater when the field is
+; not a child stobj (or array of such) -- also 'v is used in the raw definition
+; of the updater in all cases.
+
                    (er soft ctx
                        "DEFSTOBJ does not allow single-threaded objects with ~
                         the names ~x0 or ~x1 because those symbols are used ~
@@ -18142,17 +18147,28 @@
              (init (if creator
                        `(non-exec (,creator))
                      (kwote init0)))
+             (array-etype (and arrayp (cadr type)))
+             (stobj-formal
+              (cond (arrayp (and (not (eq array-etype 'state))
+                                 (stobjp array-etype t wrld)
+                                 array-etype))
+                    (t (and (not (eq type 'state))
+                            (stobjp type t wrld)
+                            type))))
+             (v-formal (or stobj-formal 'v))
+             (stobj-xargs (and stobj-formal
+                               `(:stobjs ,stobj-formal)))
              (type-term            ; used in guard
               (and (not arrayp)    ; else type-term is not used
                    (if (null wrld) ; called from raw Lisp, so guard is ignored
                        t
-                     (translate-stobj-type-to-guard type 'v wrld))))
-             (array-etype (and arrayp (cadr type)))
+                     (translate-declaration-to-guard type v-formal wrld))))
              (array-etype-term     ; used in guard
               (and arrayp          ; else array-etype-term is not used
                    (if (null wrld) ; called from raw Lisp, so guard is ignored
                        t
-                     (translate-stobj-type-to-guard array-etype 'v wrld))))
+                     (translate-declaration-to-guard array-etype v-formal
+                                                     wrld))))
              (array-length (and arrayp (car (caddr type))))
              (accessor-name (access defstobj-field-template
                                     field-template
@@ -18198,26 +18214,38 @@
                            (list (cons #\0 ',accessor-name)
                                  (cons #\1 ',var)))
                           ,var)))
-              (,accessor-name (i ,var)
-                              (declare (xargs :guard
-                                              (and (,top-recog ,var)
-                                                   (integerp i)
-                                                   (<= 0 i)
-                                                   (< i (,length-name ,var)))
-                                              :verify-guards t))
-                              (nth i (nth ,n ,var)))
-              (,updater-name (i v ,var)
+             (,accessor-name (i ,var)
                              (declare (xargs :guard
                                              (and (,top-recog ,var)
                                                   (integerp i)
                                                   (<= 0 i)
-                                                  (< i (,length-name ,var))
-                                                  ,@(if (eq array-etype-term
-                                                            t)
-                                                        nil
-                                                      (list array-etype-term)))
+                                                  (< i (,length-name ,var)))
                                              :verify-guards t))
-                             (update-nth-array ,n i v ,var)))
+                             (nth i (nth ,n ,var)))
+             (,updater-name (i ,v-formal ,var)
+                            (declare
+                             (xargs :guard
+                                    (and (,top-recog ,var)
+                                         (integerp i)
+                                         (<= 0 i)
+                                         (< i (,length-name ,var))
+
+; We avoid laying down the stobj recognizer twice for a child stobj (although
+; that would nevertheless be removed by the use of stobj-optp).
+
+                                         ,@(and (not stobj-xargs)
+                                                (assert$
+                                                 array-etype-term
+                                                 (if (eq array-etype-term
+                                                         t)
+                                                     nil
+                                                   (list array-etype-term)))))
+                                    :verify-guards t
+                                    ,@stobj-xargs))
+                            ,(if stobj-formal
+                                 `(non-exec
+                                   (update-nth-array ,n i ,v-formal ,var))
+                               `(update-nth-array ,n i ,v-formal ,var))))
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr field-templates) wrld)))
          (t
@@ -18226,14 +18254,25 @@
                              (declare (xargs :guard (,top-recog ,var)
                                              :verify-guards t))
                              (nth ,n ,var))
-             (,updater-name (v ,var)
+             (,updater-name (,v-formal ,var)
                             (declare (xargs :guard
-                                            ,(if (eq type-term t)
+                                            ,(if (or (eq type-term t)
+
+; We avoid laying down the stobj recognizer twice for a child stobj (although
+; that would nevertheless be removed by the use of stobj-optp).
+
+                                                     stobj-xargs)
                                                  `(,top-recog ,var)
-                                               `(and ,type-term
-                                                     (,top-recog ,var)))
-                                            :verify-guards t))
-                            (update-nth ,n v ,var)))
+                                               (assert$
+                                                type-term
+                                                `(and ,type-term
+                                                      (,top-recog ,var))))
+                                            :verify-guards t
+                                            ,@stobj-xargs))
+                            ,(if stobj-formal
+                                 `(non-exec
+                                   (update-nth ,n ,v-formal ,var))
+                               `(update-nth ,n ,v-formal ,var))))
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr field-templates) wrld))))))))
 

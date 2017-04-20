@@ -6380,8 +6380,8 @@
   (cond
    ((not (stobjp stobj known-stobjs wrld))
     (msg
-     "The name ~x0 is not the name of a known single-threaded object in the ~
-      current context."
+     "The name ~x0 is being used as a single-threaded object.  But in the ~
+      current context, ~x0 is not a declared stobj name."
      stobj))
    ((getpropc stobj 'absstobj-info nil wrld)
     (msg
