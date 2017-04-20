@@ -26,6 +26,7 @@
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
+(include-book "doublets")
 (include-book "enumerations")
 (include-book "event-forms")
 (include-book "fresh-names")
