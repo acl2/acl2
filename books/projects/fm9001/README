@@ -1,0 +1,35 @@
+The FM9001 microprocessor design was originally specified and verified
+in the Nqthm logic by Brock and Hunt using the DUAL-EVAL system. We
+have converted it to the ACL2 logic using the DE system, the successor
+to DUAL-EVAL.
+
+----------------------------------------------------------------------
+Book Certification
+----------------------------------------------------------------------
+
+To certify books, execute the following:
+
+make ACL2=<Path of the ACL2 image>
+
+To remove certificate files, etc., execute the following:
+
+make clean ACL2=<Path of the ACL2 image>
+
+See Makefile file for the detail.
+
+----------------------------------------------------------------------
+Book Organization
+----------------------------------------------------------------------
+
+The DE simulator is implemented in de.lisp.
+
+The memory model is specified in memory.lisp.
+
+The monotonicity property for simulation is established in
+approx.lisp.
+
+Our final statements about the correctness of the FM9001
+microprocessor are described in the last three lemmas in
+final-reset.lisp.
+
+
