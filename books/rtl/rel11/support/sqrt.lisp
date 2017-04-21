@@ -21,7 +21,8 @@
 
 (defund rtz-sqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (natp n))))
+                              (natp n))
+                  :verify-guards nil))
   (if (zp n)
       0
     (let* ((lower (rtz-sqrt x (1- n)))
@@ -32,7 +33,8 @@
 
 (defund rto-sqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (posp n))))
+                              (posp n))
+                  :verify-guards nil))
   (let ((trunc (rtz-sqrt x (1- n))))
     (if (< (* trunc trunc) x)
         (+ trunc (expt 2 (- n)))
@@ -42,7 +44,8 @@
 
 (defund qsqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (posp n))))
+                              (posp n))
+                  :verify-guards nil))
   (let ((e (1+ (fl (/ (expo x) 2)))))
     (* (expt 2 e)
        (rto-sqrt (/ x (expt 2 (* 2 e))) n))))

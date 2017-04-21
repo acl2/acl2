@@ -996,12 +996,12 @@
 ;; result and the updated FPSCR.
 
 ;; ARM-BINARY-SPEC is based on two auxiliary functions: ARM-BINARY-PRE-COMP returns
-;; an optional value and an updated FPSCR, and ARM-BINARY-POST-COMP returns a value 
+;; an optional value and an updated FPSCR, and ARM-BINARY-POST-COMP returns a value
 ;; an updated FPSCR.
 
 ;; ARM-BINARY-PRE-COMP calls ARM-BINARY-PRE-COMP-EXCP, which detects pre-computation
 ;; exceptions, and ARM-BINARY-PRE-COMP-VAL, which may compute a value.  If the value
-;; is NIL, then the computation proceeds by calling ARM-BINARY-POST-COMP, and if non-NIL, 
+;; is NIL, then the computation proceeds by calling ARM-BINARY-POST-COMP, and if non-NIL,
 ;; the operation is terminated and that value is returned.
 
 ;; ARM-BINARY-POST-COMP either returns an infinity or decodes the operands and computes the

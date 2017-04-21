@@ -38,7 +38,8 @@
 ;;;**********************************************************************
 
 (defund trunc (x n)
-  (declare (xargs :guard (integerp n)))
+  (declare (xargs :guard (integerp n)
+                  :verify-guards nil))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))

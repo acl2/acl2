@@ -39,18 +39,34 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (expo-measure x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
+(defnd expo (x)
+  (declare (xargs :measure (expo-measure x)
+                  :verify-guards nil))
+  (mbe
+   :logic
+   (cond ((or (not (rationalp x)) (equal x 0)) 0)
+         ((< x 0) (expo (- x)))
+         ((< x 1) (1- (expo (* 2 x))))
+         ((< x 2) 0)
+         (t (1+ (expo (/ x 2)))))
+   :exec
+   (if (rationalp x)
+       (let* ((n (abs (numerator x)))
+              (d (denominator x))
+              (ln (integer-length n))
+              (ld (integer-length d))
+              (l (- ln ld)))
+         (if (>= ln ld)
+             (if (>= (ash n (- l)) d) l (1- l))
+           (if (> ln 1)
+               (if (> n (ash d l)) l (1- l))
+             (- (integer-length (1- d))))))
+     0)))
 
 ;could redefine to divide by the power of 2 (instead of making it a negative power of 2)...
 (defund sig (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :verify-guards nil))
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -77,7 +93,8 @@
 
 
 (defund trunc (x n)
-  (declare (xargs :guard (integerp n)))
+  (declare (xargs :guard (integerp n)
+                  :verify-guards nil))
   (* (sgn x) (fl (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n))))
 
 ;generated automatically by ACL2 when we define trunc, but included here just to be safe
