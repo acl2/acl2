@@ -6506,7 +6506,8 @@
    ((symbolp pat)
     (cond
      ((or (eq pat t)
-          (eq pat nil))
+          (eq pat nil)
+          (keywordp pat))
       (mv (cons (list 'eq x pat) tests) bindings))
      ((and (> (length (symbol-name pat)) 0)
            (eql #\* (char (symbol-name pat) 0)))

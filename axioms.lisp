@@ -19055,9 +19055,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #+acl2-loop-only
   (declare (ignore command-string args))
   #-acl2-loop-only
-  (let ((rslt (system-call command-string args)))
-    (progn (setq *last-sys-call-status* rslt)
-           nil))
+  (when (not (f-get-global 'in-prove-flg *the-live-state*))
+    (let ((rslt (system-call command-string args)))
+      (progn (setq *last-sys-call-status* rslt)
+             nil)))
   #+acl2-loop-only
   nil)
 
