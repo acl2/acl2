@@ -16,7 +16,6 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "all-vars-theorems")
-(include-book "applicability-conditions")
 (include-book "auto-termination")
 (include-book "characters")
 (include-book "copy-def")
@@ -38,6 +37,7 @@
 (include-book "maybe-msgp")
 (include-book "maybe-unquote")
 (include-book "minimize-ruler-extenders")
+(include-book "named-formulas")
 (include-book "nati")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
