@@ -12727,6 +12727,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     sys-call-status ; *last-sys-call-status*
     sys-call ; system-call
     sys-call+ ; system-call+
+    sys-call* ; system-call+
 
     canonical-pathname ; under dependent clause-processor
 
@@ -15627,6 +15628,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (alistp (table-alist 'acl2-defaults-table wrld)))))
   (cdr (assoc-eq :ttag (table-alist 'acl2-defaults-table wrld))))
 
+(defun get-register-invariant-risk-world (wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (let ((pair (assoc-eq :register-invariant-risk
+                        (table-alist 'acl2-defaults-table wrld))))
+    (cond (pair (cdr pair))
+          (t ; default
+           t))))
+
 (table acl2-defaults-table nil nil
 
 ; Warning: If you add or delete a new key, there will probably be a change you
@@ -15759,6 +15770,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                "An active trust tag is required for setting ~
                                 the :check-invariant-risk key to nil in the ~
                                 acl2-defaults-table."
+                               nil)))))
+        ((eq key :register-invariant-risk)
+         (or (eq val t)
+             (and (eq val nil)
+                  (or (null (get-register-invariant-risk-world world))
+                      (ttag world)
+                      (illegal 'acl2-defaults-table
+                               "An active trust tag is required for setting ~
+                                the :register-invariant-risk key to nil in ~
+                                the acl2-defaults-table."
                                nil)))))
         ((eq key :user)
 
@@ -19051,16 +19072,40 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defvar *last-sys-call-status* 0)
 
 (defun sys-call (command-string args)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (and (stringp command-string)
+                              (string-listp args))))
   #+acl2-loop-only
   (declare (ignore command-string args))
   #-acl2-loop-only
-  (when (not (f-get-global 'in-prove-flg *the-live-state*))
+  (cond
+   ((or (f-get-global 'in-prove-flg *the-live-state*)
+        (f-get-global 'in-verify-flg *the-live-state*))
+
+; We use (er hard ...) rather than (er hard! ...) to avoid a distracting error
+; when reasoning about calls of sys-call on concrete data during a proof.  We
+; really only want to see this error message when sys-call is invoked by a
+; metafunction or a clause-processor.
+
+    (er hard 'sys-call
+        "It is illegal to call ~x0 inside the ~s1.  Consider using ~x2 ~
+         or ~x3 instead."
+        'sys-call
+        (if (f-get-global 'in-prove-flg *the-live-state*)
+            "prover"
+          "proof-builder")
+        'sys-call+
+        'sys-call*))
+   (t
     (let ((rslt (system-call command-string args)))
       (progn (setq *last-sys-call-status* rslt)
-             nil)))
+             nil))))
   #+acl2-loop-only
   nil)
+
+; Avoid running sys-call on terms.  We already prevent this under prover and
+; proof-builder calls, but not for example under the expander from community
+; book books/misc/expander.lisp.
+(in-theory (disable (:executable-counterpart sys-call)))
 
 (defun sys-call-status (state)
   (declare (xargs :stobjs state))
@@ -19100,29 +19145,56 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (in-theory (disable update-acl2-oracle))
 
 (defun sys-call+ (command-string args state)
-  (declare (xargs :stobjs state))
+  (declare (xargs :stobjs state
+                  :guard (and (stringp command-string)
+                              (string-listp args))))
   #+acl2-loop-only
   (declare (ignore command-string args))
-  #+acl2-loop-only
-  (mv-let (erp1 erp state)
-          (read-acl2-oracle state)
-          (declare (ignore erp1))
-          (mv-let (erp2 val state)
-                  (read-acl2-oracle state)
-                  (declare (ignore erp2))
-                  (mv (and (integerp erp)
-                           (not (eql 0 erp))
-                           erp)
-                      (if (stringp val) val "")
-                      state)))
   #-acl2-loop-only
-  (multiple-value-bind
-      (status rslt)
-      (system-call+ command-string args)
-    (mv (if (eql status 0)
+  (when (live-state-p state)
+    (return-from sys-call+
+      (multiple-value-bind
+          (status rslt)
+          (system-call+ command-string args)
+        (mv (if (eql status 0)
+                nil
+              status)
+            rslt
+            state))))
+  (mv-let (erp1 erp state)
+    (read-acl2-oracle state)
+    (declare (ignore erp1))
+    (mv-let (erp2 val state)
+      (read-acl2-oracle state)
+      (declare (ignore erp2))
+      (mv (and (integerp erp)
+               (not (eql 0 erp))
+               erp)
+          (if (stringp val) val "")
+          state))))
+
+(defun sys-call* (command-string args state)
+  (declare (xargs :stobjs state
+                  :guard (and (stringp command-string)
+                              (string-listp args))))
+  #+acl2-loop-only
+  (declare (ignore command-string args))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from sys-call*
+      (let ((status (system-call command-string args)))
+        (mv (if (eql status 0)
+                nil
+              status)
             nil
-          status)
-        rslt
+            state))))
+  (mv-let (erp1 erp state)
+    (read-acl2-oracle state)
+    (declare (ignore erp1))
+    (mv (and (integerp erp)
+             (not (eql 0 erp))
+             erp)
+        nil
         state)))
 
 ; End of system calls
@@ -26405,6 +26477,7 @@ Lisp definition."
     (set-temp-touchable-fns)
     (set-temp-touchable-vars)
     (sys-call)
+    (sys-call*)
     (sys-call+)
     ))
 

@@ -95,19 +95,23 @@
 (encapsulate
  ()
 
- (defun solver-sys-call-fn (arg-str)
-   (sys-call *perl*
-             (list* (full-sat-script-name)
-                    "-dir"
-                    *temp-dir*
-                    *input-filename*
-                    arg-str)))
+ (defun solver-sys-call-fn (arg-str state)
+   (sys-call* *perl*
+              (list* (full-sat-script-name)
+                     "-dir"
+                     *temp-dir*
+                     *input-filename*
+                     arg-str)
+              state))
 
  (defmacro solver-sys-call (&rest args)
-   `(solver-sys-call-fn (list . ,args)))
+   `(solver-sys-call-fn (list . ,args) state))
 
- (defun rm-output-file ()
-   (sys-call "rm" (list "-f" (full-output-filename))))
+ (defmacro rm-output-file () ; Matt K. mod in the spirit of pre-4-2017 behavior
+   '(mv-let (erp val state)
+      (sys-call+ "rm" (list "-f" (full-output-filename)) state)
+      (declare (ignore erp val))
+      state))
  )
 
 (defun read-alist (acc channel state)
@@ -146,31 +150,27 @@
 
 (defun run-sat-solver (num-vars num-clauses $sat state)
   (declare (xargs :stobjs $sat))
-  (let* ((out-return-val
-          (prog2$
-           (print-msg 1
-                      (msg "Calling SAT solver.  Num-vars: ~x0, Num-clauses: ~x1 ~%"
-                           num-vars num-clauses)
-                      $sat)
-           (solver-sys-call "--solve"
-                            (num-to-str num-vars)
-                            (num-to-str num-clauses)
-                            *output-filename*))))
-    (if out-return-val
-        (mv (er hard 'run-sat-solver
-                "Error: SAT solver script, returned ~x0~%"
-                out-return-val)
-            state)
-      (prog2$
-       (print-msg 2 (msg "Reading solver's output~%") $sat)
-       (mv-let
-        (sat-output time state)
-        (read-sat-file (full-output-filename) state)
-        (let ((ret-val0 (rm-output-file)))
-          (declare (ignore ret-val0))
-          (prog2$
-           (print-msg 1 (msg "Time spent by SAT solver: ~s0~%" time) $sat)
-           (mv sat-output state))))))))
+  (mv-let (erp val state)
+    (prog2$
+     (print-msg 1
+                (msg "Calling SAT solver.  Num-vars: ~x0, Num-clauses: ~x1 ~%"
+                     num-vars num-clauses)
+                $sat)
+     (solver-sys-call "--solve"
+                      (num-to-str num-vars)
+                      (num-to-str num-clauses)
+                      *output-filename*))
+    (declare (ignore erp val)) ; Matt K. comment: this conforms with behavior pre-4-2017
+    (prog2$
+     (print-msg 2 (msg "Reading solver's output~%") $sat)
+     (mv-let
+       (sat-output time state)
+       (read-sat-file (full-output-filename) state)
+       (pprogn
+        (rm-output-file)
+        (prog2$
+         (print-msg 1 (msg "Time spent by SAT solver: ~s0~%" time) $sat)
+         (mv sat-output state)))))))
 
 ;; Look up an input-variable's i-var in the
 ;; input-alist, or create one if none exists.
@@ -759,28 +759,39 @@
          ($sat (remove-un-fn-val entry $sat)))
     $sat))
 
+(defmacro with-solver-sys-call (arg form)
+  `(mv-let (erp-with-solver-sys-call val-with-solver-sys-call state)
+     (solver-sys-call ,arg)
+     (declare (ignore val-with-solver-sys-call))
+     (prog2$ (and erp-with-solver-sys-call
+                  (er hard! 'solver-sys-call
+                      "Sys-call+ returned non-zero error status from:~|~x0"
+                      '(solver-sys-call ,arg)))
+             ,form)))
+
 (defun acl2::sat-instance-exploration-begin ($sat state)
   (declare (xargs :stobjs $sat))
   (cond
    ((or (equal (problem-stack-depth $sat) 3)
         (equal (problem-stack-depth $sat) 4))
-    (let* ((ret-val0 (solver-sys-call "--push"))
-           ($sat (update-problem-stack-depth 5 $sat))
-           ($sat (create-exploration-list $sat))
-           ($sat (update-num-f-clauses-pre-explore (num-f-clauses $sat) $sat))
-           ($sat (generate-up-to-curr-entry $sat)))
-      (declare (ignore ret-val0))
-      (mv nil $sat state)))
+    (with-solver-sys-call
+     "--push"
+     (let* (($sat (update-problem-stack-depth 5 $sat))
+            ($sat (create-exploration-list $sat))
+            ($sat (update-num-f-clauses-pre-explore (num-f-clauses $sat) $sat))
+            ($sat (generate-up-to-curr-entry $sat)))
+       (mv nil $sat state))))
    ((<= 5 (problem-stack-depth $sat))
     ;; We're restarting the current exploration
-    (let* (($sat (restart-exploration-list $sat))
-           (ret-val0 (solver-sys-call "--pop"))
-           ($sat (update-num-f-clauses (num-f-clauses-pre-explore $sat) $sat))
-           (ret-val1 (solver-sys-call "--push"))
-           ($sat (generate-up-to-curr-entry $sat))
-           ($sat (update-problem-stack-depth 5 $sat)))
-      (declare (ignore ret-val0 ret-val1))
-      (mv nil $sat state)))
+    (let (($sat (restart-exploration-list $sat)))
+      (with-solver-sys-call
+       "--pop"
+       (let (($sat (update-num-f-clauses (num-f-clauses-pre-explore $sat) $sat)))
+         (with-solver-sys-call
+          "--push"
+          (let* (($sat (generate-up-to-curr-entry $sat))
+                 ($sat (update-problem-stack-depth 5 $sat)))
+            (mv nil $sat state)))))))
    (t
     (mv (er hard 'acl2::sat-instance-exploration-begin
             "ERROR: This operation is only legal after sat-solve ~
@@ -915,16 +926,17 @@
         $sat state))
    ((equal (problem-stack-depth $sat) 6)
     (let* ((entry (current-exploration-entry $sat))
-           ($sat (remove-exploration-val entry $sat))
-           (ret-val0 (solver-sys-call "--pop"))
-           ($sat (update-num-f-clauses (num-f-clauses-pre-explore $sat) $sat))
-           (ret-val1 (solver-sys-call "--push"))
-           ($sat (update-problem-stack-depth 5 $sat)))
-      (declare (ignore ret-val0 ret-val1))
-      (mv-let
-       ($sat state)
-       (rerun-exploration-list $sat state)
-       (acl2::sat-ie-set! val $sat state))))
+           ($sat (remove-exploration-val entry $sat)))
+      (with-solver-sys-call
+       "--pop"
+       (let (($sat (update-num-f-clauses (num-f-clauses-pre-explore $sat) $sat)))
+         (with-solver-sys-call
+          "--push"
+          (let (($sat (update-problem-stack-depth 5 $sat)))
+            (mv-let
+              ($sat state)
+              (rerun-exploration-list $sat state)
+              (acl2::sat-ie-set! val $sat state))))))))
    (t
     (let* ((entry (current-exploration-entry $sat)))
       (mv-let
@@ -971,12 +983,12 @@
   (declare (xargs :stobjs $sat))
   (cond
    ((<= 5 (problem-stack-depth $sat))
-    (let* ((ret-val0 (solver-sys-call "--pop"))
-           ($sat (update-num-f-clauses (num-f-clauses-pre-explore $sat) $sat))
-           ($sat (update-problem-stack-depth 3 $sat))
-           ($sat (remove-exploration-list $sat)))
-      (declare (ignore ret-val0))
-      (mv nil $sat state)))
+    (with-solver-sys-call
+     "--pop"
+     (let* (($sat (update-num-f-clauses (num-f-clauses-pre-explore $sat) $sat))
+            ($sat (update-problem-stack-depth 3 $sat))
+            ($sat (remove-exploration-list $sat)))
+       (mv nil $sat state))))
    (t
     (mv (er hard 'acl2::sat-instance-exploration-end
             "ERROR: No exploration to end~%")
@@ -1108,13 +1120,13 @@
      ($sat state)
      (zero-sat-stobj $sat state)
      (let* (($sat (construct-sat-stobj $sat))
-            ($sat (update-problem-stack-depth 1 $sat))
-            (ret-val0 (solver-sys-call "--new-problem")))
-       (declare (ignore ret-val0))
-       (mv-let
-        ($sat state)
-        (open-temp-sat-file $sat state)
-        (mv nil $sat state)))))))
+            ($sat (update-problem-stack-depth 1 $sat)))
+       (with-solver-sys-call
+        "--new-problem"
+        (mv-let
+          ($sat state)
+          (open-temp-sat-file $sat state)
+          (mv nil $sat state))))))))
 
 (defun acl2::sat-new-problem! ($sat state)
   (declare (xargs :stobjs $sat))
@@ -1124,13 +1136,13 @@
      ($sat state)
      (zero-sat-stobj! $sat state)
      (let* (($sat (construct-sat-stobj $sat))
-            ($sat (update-problem-stack-depth 1 $sat))
-            (ret-val0 (solver-sys-call "--new-problem")))
-       (declare (ignore ret-val0))
-       (mv-let
-        ($sat state)
-        (open-temp-sat-file $sat state)
-        (mv nil $sat state)))))
+            ($sat (update-problem-stack-depth 1 $sat)))
+       (with-solver-sys-call
+        "--new-problem"
+        (mv-let
+          ($sat state)
+          (open-temp-sat-file $sat state)
+          (mv nil $sat state))))))
    (t
     (mv-let
      (erp $sat state)
@@ -1151,22 +1163,22 @@
     (mv-let
      ($sat state)
      (zero-sat-stobj $sat state)
-     (let* (($sat (update-problem-stack-depth 0 $sat))
-            (ret-val0 (solver-sys-call "--end-problem")))
-       (declare (ignore ret-val0))
-       (mv nil $sat state))))))
+     (let (($sat (update-problem-stack-depth 0 $sat)))
+       (with-solver-sys-call
+        "--end-problem"
+        (mv nil $sat state)))))))
 
 (defun acl2::sat-end-problem! ($sat state)
   (declare (xargs :stobjs $sat))
   (cond
    ((< (problem-stack-depth $sat) 5)
     (mv-let
-     ($sat state)
-     (zero-sat-stobj! $sat state)
-     (let* (($sat (update-problem-stack-depth 0 $sat))
-            (ret-val0 (solver-sys-call "--end-problem")))
-       (declare (ignore ret-val0))
-       (mv nil $sat state))))
+      ($sat state)
+      (zero-sat-stobj! $sat state)
+      (let (($sat (update-problem-stack-depth 0 $sat)))
+        (with-solver-sys-call
+         "--end-problem"
+         (mv nil $sat state)))))
    (t
     (mv-let
      (erp $sat state)

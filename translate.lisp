@@ -9673,7 +9673,14 @@
                      (user-stobj-alist-safe 'trans-eval vars state))))
     (mv-let
      (erp val latches)
-     (ev trans alist state alist nil aok)
+     (ev trans alist state alist
+
+; The next argument is hard-error-returns-nilp.  Think hard before changing it!
+; For example, ev-for-trans-eval is called by eval-clause-processor; hence if a
+; clause-processor invokes sys-call, the call (er hard ...) under sys-call will
+; be guaranteed to cause an error that the user can see (and react to).
+
+         nil aok)
 
 ; The first state binding below is the state produced by the evaluation of the
 ; form.  The second state is the first, but with the user-stobj-alist of that
