@@ -638,19 +638,13 @@
   :hints (("Goal" :in-theory (e/d (subset-p) nil))))
 
 (defthm disjoint-p-two-create-canonical-address-lists-thm-0
-  (implies (and (canonical-address-p y)
-                (canonical-address-p (+ -1 j y))
-                (< 0 j)
-                (<= (+ i x) y))
+  (implies (<= (+ i x) y)
            (disjoint-p (create-canonical-address-list i x)
                        (create-canonical-address-list j y)))
   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
 (defthm disjoint-p-two-create-canonical-address-lists-thm-1
-  (implies (and (canonical-address-p y)
-                (integerp j)
-                (< 0 j)
-                (<= (+ j y) x))
+  (implies (<= (+ j y) x)
            (disjoint-p (create-canonical-address-list i x)
                        (create-canonical-address-list j y)))
   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))

@@ -549,7 +549,7 @@
                                       'x86-cmovcc)
     (add-to-implemented-opcodes-table 'CMOVBE #x0F46 '(:nil nil)
                                       'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNBE #x0F40F4 '(:nil nil)
+    (add-to-implemented-opcodes-table 'CMOVNBE #x0F47 '(:nil nil)
                                       'x86-cmovcc)
     (add-to-implemented-opcodes-table 'CMOVS #x0F48 '(:nil nil)
                                       'x86-cmovcc)

@@ -62,8 +62,7 @@
 (define ia32e-valid-code-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid code segment descriptor \(which is a
-  64-bit field\)"
+  :short "Recognizer for a valid code segment descriptor"
 
   (b* ((type (code-segment-descriptor-layout-slice :type descriptor))
        (msb-of-type (part-select type :low 3 :width 1))
@@ -87,15 +86,14 @@
        ;; 64 bits when no error below.
        ((when (not (equal (code-segment-descriptor-layout-slice :d descriptor) 0)))
         (mv nil (cons :IA32e-Default-Operand-Size-Incorrect descriptor))))
-      (mv t 0)))
+    (mv t 0)))
 
 ;; Data Segment Descriptor:
 
 (define ia32e-valid-data-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid data segment descriptor \(which is a
-  64-bit field\)"
+  :short "Recognizer for a valid data segment descriptor"
 
   (b* ((type (data-segment-descriptor-layout-slice :type descriptor))
        (msb-of-type (part-select type :low 3 :width 1))
@@ -119,8 +117,7 @@
 (define ia32e-valid-ldt-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid LDT segment descriptor \(which is a
-  128-bit field\)"
+  :short "Recognizer for a valid LDT segment descriptor"
 
 
   (b* ((type (system-segment-descriptor-layout-slice :type descriptor))
@@ -147,8 +144,7 @@
 (define ia32e-valid-available-tss-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Available TSS segment descriptor
-  \(which is a 128-bit field\)"
+  :short "Recognizer for a valid Available TSS segment descriptor"
 
   (b* ((type (system-segment-descriptor-layout-slice :type descriptor))
        ((when (not (equal type #x9)))
@@ -168,8 +164,7 @@
 (define ia32e-valid-busy-tss-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Busy TSS segment descriptor \(which
-  is a 128-bit field\)"
+  :short "Recognizer for a valid Busy TSS segment descriptor"
 
   (b* ((type (system-segment-descriptor-layout-slice :type descriptor))
        ((when (not (equal type #xB)))
@@ -191,8 +186,7 @@
 (define ia32e-valid-call-gate-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Call Gate segment descriptor \(which
-  is a 128-bit field\)"
+  :short "Recognizer for a valid Call Gate segment descriptor"
 
   (b* ((type (call-gate-descriptor-layout-slice :type descriptor))
        ((when (not (equal type #xC)))
@@ -210,8 +204,7 @@
 (define ia32e-valid-interrupt-gates-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Interrupt Gate segment descriptor
-  \(which is a 128-bit field\)"
+  :short "Recognizer for a valid Interrupt Gate segment descriptor"
 
   (b* ((type (interrupt/trap-gate-descriptor-layout-slice :type descriptor))
        ((when (not (equal type #xE)))
@@ -220,13 +213,12 @@
         (mv nil (cons :Invalid-Segment-Type descriptor)))
        ((when (not (equal (interrupt/trap-gate-descriptor-layout-slice :p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor))))
-      (mv t 0)))
+    (mv t 0)))
 
 (define ia32e-valid-trap-gates-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Trap Gate segment descriptor \(which
-  is a 128-bit field\)"
+  :short "Recognizer for a valid Trap Gate segment descriptor"
 
   (b* ((type (interrupt/trap-gate-descriptor-layout-slice :type descriptor))
        ((when (not (equal type #xF)))
@@ -243,77 +235,13 @@
 ;; to the attribute field in the hidden portions of the segment
 ;; registers.
 
-(local (include-book "centaur/gl/gl" :dir :system))
-
 ;; Code Segment:
-
-(local
- (def-gl-thm make-code-segment-attr-guard-helper
-   :hyp (unsigned-byte-p 64 descriptor)
-   :concl (equal
-           (logior
-            (loghead 4 (logtail 40 descriptor))
-            (ash (bool->bit (logbitp 44 descriptor))
-                 4)
-            (logand
-             65504
-             (logior
-              (ash (loghead 2 (logtail 45 descriptor))
-                   5)
-              (logand
-               65424
-               (logior
-                (ash (bool->bit (logbitp 47 descriptor))
-                     7)
-                (logand
-                 65392
-                 (logior
-                  (ash (bool->bit (logbitp 52 descriptor))
-                       8)
-                  (logand 65264
-                          (logior (ash (bool->bit (logbitp 53 descriptor))
-                                       9)
-                                  (logand 65008
-                                          (ash (bool->bit (logbitp 55 descriptor))
-                                               11)))))))))))
-           (logior
-            (loghead 4 (logtail 40 descriptor))
-            (logand
-             65520
-             (logior
-              (ash (bool->bit (logbitp 44 descriptor))
-                   4)
-              (logand
-               65519
-               (logior
-                (ash (loghead 2 (logtail 45 descriptor))
-                     5)
-                (logand
-                 65439
-                 (logior
-                  (ash (bool->bit (logbitp 47 descriptor))
-                       7)
-                  (logand
-                   65407
-                   (logior
-                    (ash (bool->bit (logbitp 52 descriptor))
-                         8)
-                    (logand 65279
-                            (logior (ash (bool->bit (logbitp 53 descriptor))
-                                         9)
-                                    (logand 65023
-                                            (ash (bool->bit (logbitp 55 descriptor))
-                                                 11))))))))))))))
-   :g-bindings (gl::auto-bindings
-                (:nat descriptor 64))))
-
 (define make-code-segment-attr-field
   ((descriptor  :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
   :short "Constructor for the Code Segment attribute field"
 
-  :guard-hints (("Goal" :in-theory (e/d ()
-                                        (unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
   (b* ((type
         (code-segment-descriptor-layout-slice :type descriptor))
@@ -330,100 +258,39 @@
        (g
         (code-segment-descriptor-layout-slice :g descriptor)))
 
+    (!code-segment-descriptor-attributes-layout-slice
+     :type type
+     (!code-segment-descriptor-attributes-layout-slice
+      :s s
       (!code-segment-descriptor-attributes-layout-slice
-       :type type
+       :dpl dpl
        (!code-segment-descriptor-attributes-layout-slice
-        :s s
+        :p p
         (!code-segment-descriptor-attributes-layout-slice
-         :dpl dpl
+         :avl avl
          (!code-segment-descriptor-attributes-layout-slice
-          :p p
+          :l l
           (!code-segment-descriptor-attributes-layout-slice
-           :avl avl
-           (!code-segment-descriptor-attributes-layout-slice
-            :l l
-            (!code-segment-descriptor-attributes-layout-slice
-             :g g
-             0))))))))
+           :g g
+           0))))))))
 
-  ///
-
+  ///  
+  
   (defthm-usb n16p-make-code-segment-attr
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-code-segment-attr-field descriptor)
+    :hints-l (("Goal" :in-theory (e/d* () (make-code-segment-attr-field))))
     :gen-type t
     :gen-linear t))
 
 ;; Data Segment:
-
-(local
- (def-gl-thm make-data-segment-attr-guard-helper
-   :hyp (unsigned-byte-p 64 descriptor)
-   :concl (equal
-           (logior
-            (loghead 4 (logtail 40 descriptor))
-            (ash (bool->bit (logbitp 44 descriptor))
-                 4)
-            (logand
-             65504
-             (logior
-              (ash (loghead 2 (logtail 45 descriptor))
-                   5)
-              (logand
-               65424
-               (logior
-                (ash (bool->bit (logbitp 47 descriptor))
-                     7)
-                (logand
-                 65392
-                 (logior
-                  (ash (bool->bit (logbitp 52 descriptor))
-                       8)
-                  (logand 65264
-                          (logior (ash (bool->bit (logbitp 54 descriptor))
-                                       9)
-                                  (logand 65008
-                                          (ash (bool->bit (logbitp 55 descriptor))
-                                               10)))))))))))
-           (logior
-            (loghead 4 (logtail 40 descriptor))
-            (logand
-             65520
-             (logior
-              (ash (bool->bit (logbitp 44 descriptor))
-                   4)
-              (logand
-               65519
-               (logior
-                (ash (loghead 2 (logtail 45 descriptor))
-                     5)
-                (logand
-                 65439
-                 (logior
-                  (ash (bool->bit (logbitp 47 descriptor))
-                       7)
-                  (logand
-                   65407
-                   (logior
-                    (ash (bool->bit (logbitp 52 descriptor))
-                         8)
-                    (logand 65279
-                            (logior (ash (bool->bit (logbitp 54 descriptor))
-                                         9)
-                                    (logand 65023
-                                            (ash (bool->bit (logbitp 55 descriptor))
-                                                 10))))))))))))))
-   :g-bindings (gl::auto-bindings
-                (:nat descriptor 64))))
-
 (define make-data-segment-attr-field
   ((descriptor  :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
   :short "Constructor for the Data Segment attribute field"
 
-  :guard-hints (("Goal" :in-theory (e/d ()
-                                        (unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
   (b* ((type
         (data-segment-descriptor-layout-slice :type descriptor))
@@ -440,21 +307,21 @@
        (g
         (data-segment-descriptor-layout-slice :g descriptor)))
 
+    (!data-segment-descriptor-attributes-layout-slice
+     :type type
+     (!data-segment-descriptor-attributes-layout-slice
+      :s s
       (!data-segment-descriptor-attributes-layout-slice
-       :type type
+       :dpl dpl
        (!data-segment-descriptor-attributes-layout-slice
-        :s s
+        :p p
         (!data-segment-descriptor-attributes-layout-slice
-         :dpl dpl
+         :avl avl
          (!data-segment-descriptor-attributes-layout-slice
-          :p p
+          :d/b d/b
           (!data-segment-descriptor-attributes-layout-slice
-           :avl avl
-           (!data-segment-descriptor-attributes-layout-slice
-            :d/b d/b
-            (!data-segment-descriptor-attributes-layout-slice
-             :g g
-             0))))))))
+           :g g
+           0))))))))
 
   ///
 
@@ -462,55 +329,11 @@
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-data-segment-attr-field descriptor)
+    :hints-l (("Goal" :in-theory (e/d* () (make-data-segment-attr-field))))
     :gen-type t
     :gen-linear t))
 
 ;; System Segment:
-
-(local
- (def-gl-thm make-system-segment-attr-guard-helper
-   :hyp (and (unsigned-byte-p 1 g)
-             (unsigned-byte-p 1 avl)
-             (unsigned-byte-p 1 p)
-             (unsigned-byte-p 2 dpl)
-             (unsigned-byte-p 1 s)
-             (unsigned-byte-p 4 type))
-   :concl (equal
-           (logior
-            type (ash s #x4)
-            (logand
-             #xffe0
-             (logior
-              (ash dpl #x5)
-              (logand #xff90
-                      (logior (ash p #x7)
-                              (logand #xff70
-                                      (logior (ash avl #x8)
-                                              (logand #xfef0 (ash g #x9)))))))))
-           (logior
-            type
-            (logand
-             #xfff0
-             (logior
-              (ash s #x4)
-              (logand
-               #xffef
-               (logior
-                (ash dpl #x5)
-                (logand #xff9f
-                        (logior (ash p #x7)
-                                (logand #xff7f
-                                        (logior (ash avl #x8)
-                                                (logand #xfeff (ash g #x9))))))))))))
-   :g-bindings (gl::auto-bindings
-                (:nat g    1)
-                (:nat avl  1)
-                (:nat p    1)
-                (:nat dpl  2)
-                (:nat s    1)
-                (:nat type 4))))
-
-
 (define make-system-segment-attr-field
   ((descriptor  :type (unsigned-byte 128)))
 
@@ -532,19 +355,19 @@
        (g
         (system-segment-descriptor-layout-slice :g descriptor)))
 
+    (!system-segment-descriptor-attributes-layout-slice
+     :type type
+     (!system-segment-descriptor-attributes-layout-slice
+      :s s
       (!system-segment-descriptor-attributes-layout-slice
-       :type type
+       :dpl dpl
        (!system-segment-descriptor-attributes-layout-slice
-        :s s
+        :p p
         (!system-segment-descriptor-attributes-layout-slice
-         :dpl dpl
+         :avl avl
          (!system-segment-descriptor-attributes-layout-slice
-          :p p
-          (!system-segment-descriptor-attributes-layout-slice
-           :avl avl
-           (!system-segment-descriptor-attributes-layout-slice
-            :g g
-            0)))))))
+          :g g
+          0)))))))
 
   ///
 
@@ -552,6 +375,7 @@
     :hyp (unsigned-byte-p 128 descriptor)
     :bound 16
     :concl (make-system-segment-attr-field descriptor)
+    :hints-l (("Goal" :in-theory (e/d* () (make-system-segment-attr-field))))
     :gen-type t
     :gen-linear t))
 

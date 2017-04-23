@@ -224,6 +224,8 @@ decoding with the execution in this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+  :guard-hints (("Goal" :in-theory (e/d* () ())))
+                 
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'PUSH #x68 '(:nil nil)

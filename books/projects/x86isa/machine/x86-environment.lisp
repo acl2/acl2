@@ -145,15 +145,12 @@
     (defthm byte-listp-mv-nth-1-read-memory-zero-terminated
       (implies (and (x86p x86)
                     (byte-listp acc))
-               (byte-listp (mv-nth
-                            1
-                            (read-memory-zero-terminated ptr x86 acc))))
+               (byte-listp (mv-nth 1 (read-memory-zero-terminated ptr x86 acc))))
       :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-2-read-memory-zero-terminated
       (implies (x86p x86)
-               (x86p (mv-nth 2
-                             (read-memory-zero-terminated ptr x86 acc))))))
+               (x86p (mv-nth 2 (read-memory-zero-terminated ptr x86 acc))))))
 
   (define read-string-zero-terminated
     ((ptr :type (signed-byte 49))
@@ -174,14 +171,12 @@
 
     (defthm stringp-mv-nth-1-read-string-zero-terminated
       (implies (force (x86p x86))
-               (stringp (mv-nth 1
-                                (read-string-zero-terminated ptr x86))))
+               (stringp (mv-nth 1 (read-string-zero-terminated ptr x86))))
       :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-2-read-string-zero-terminated
       (implies (x86p x86)
-               (x86p (mv-nth 2
-                             (read-string-zero-terminated ptr x86))))))
+               (x86p (mv-nth 2 (read-string-zero-terminated ptr x86))))))
 
   (define read-bytes-from-memory
     ((ptr    :type (signed-byte #.*max-linear-address-size+1*))
@@ -222,14 +217,12 @@
     (defthm byte-listp-mv-nth-1-read-bytes-from-memory
       (implies (forced-and (x86p x86)
                            (byte-listp acc))
-               (byte-listp (mv-nth 1 (read-bytes-from-memory ptr nbytes
-                                                             x86 acc))))
+               (byte-listp (mv-nth 1 (read-bytes-from-memory ptr nbytes x86 acc))))
       :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-2-read-bytes-from-memory
       (implies (x86p x86)
-               (x86p (mv-nth 2 (read-bytes-from-memory ptr nbytes x86
-                                                       acc))))))
+               (x86p (mv-nth 2 (read-bytes-from-memory ptr nbytes x86 acc))))))
 
   (define read-string-from-memory
     ((ptr    :type (signed-byte #.*max-linear-address-size+1*))
