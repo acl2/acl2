@@ -7,7 +7,7 @@
 #      ACL2=<Path of the ACL2 image>
 
 #======================================================================
-.PHONY: all write_exec_fn top execclean clean
+.PHONY: all model tools write_exec_fn top execclean clean
 #======================================================================
 
 ifndef ACL2
@@ -58,17 +58,27 @@ endif # ifeq ($(X86ISA_EXEC), t)
 
 all: $(X86ISA_EXEC_CERTS) top
 
+model: $(X86ISA_EXEC_CERTS)
+	@${info X86ISA_EXEC       := $(X86ISA_EXEC)}
+	@${info X86ISA_EXEC_CERTS := $(X86ISA_EXEC_CERTS)}
+	@${info Building the x86 ISA model...}
+	$(BUILD_DIR)/cert.pl -j $(JOBS) machine/x86
+
+tools: model
+	@${info Building tools to enable concrete simulation of x86 programs...}
+	$(BUILD_DIR)/cert.pl -j $(JOBS) tools/execution/top
+
 write_exec_fn: # Here only when X86ISA_EXEC=t, X86ISA_EXEC_CERTS is not empty, and if generated files don't exist already	
-	@${info Note: Including the following C shared libraries: $(SYSCALL_LIB)}
+	@${info Including the following C shared libraries: $(SYSCALL_LIB)}
 	@echo ';; File contents generated during the make process:' > machine/x86isa_full_exec_support.lisp 
 	@echo '(in-package "X86ISA")' >> machine/x86isa_full_exec_support.lisp
 	@echo '(defun x86isa_syscall_exec_support () 42)' >> machine/x86isa_full_exec_support.lisp 
 	@${info machine/x86isa_full_exec_support.lisp created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
-	@${info Note: Please do not add machine/x86isa_full_exec_support.lisp to the repository!} 
+	@${info Do not add machine/x86isa_full_exec_support.lisp to the repository!} 
 	@cp machine/cert.acl2 machine/x86-syscalls.acl2
 	@echo '(ld "x86isa_full_exec_support.lisp" :ld-missing-input-ok t)' >> machine/x86-syscalls.acl2 
 	@${info machine/x86-syscalls.acl2 created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
-	@${info Note: Please do not add machine/x86-syscalls.acl2 to the repository!} 
+	@${info Do not add machine/x86-syscalls.acl2 to the repository!} 
 	@${info Remember to do 'make execclean' if you wish to build with X86ISA_EXEC=nil.} 
 	@${info ----------------------------------------------------------------------} 
 
@@ -82,8 +92,8 @@ machine/shared/libsyscallutils.so: machine/shared/syscall-utils.c
 	$(CC) -shared -o machine/shared/libsyscallutils.so machine/shared/syscall-utils.o
 
 top: $(X86ISA_EXEC_CERTS)
-	@${info Note: X86ISA_EXEC       := $(X86ISA_EXEC)}
-	@${info Note: X86ISA_EXEC_CERTS := $(X86ISA_EXEC_CERTS)}
+	@${info X86ISA_EXEC       := $(X86ISA_EXEC)}
+	@${info X86ISA_EXEC_CERTS := $(X86ISA_EXEC_CERTS)}
 	$(BUILD_DIR)/cert.pl -j $(JOBS) top
 
 execclean:

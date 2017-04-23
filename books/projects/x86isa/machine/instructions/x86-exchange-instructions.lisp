@@ -15,6 +15,22 @@
 ;; INSTRUCTION: XCHG
 ;; ======================================================================
 
+(local
+ (defthm-sb i49p-mv-nth-3-x86-operand-from-modr/m-and-sib-bytes
+   ;; Useful in guard proofs
+   :hyp (forced-and (x86p x86))
+   :bound 49
+   :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
+                     reg-type operand-size inst-ac? memory-ptr?
+                     p2 p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+   :hints (("Goal"
+            :use
+            ((:instance i48p-x86-operand-from-modr/m-and-sib-bytes))
+            :in-theory
+            (e/d* () (signed-byte-p
+                      i48p-x86-operand-from-modr/m-and-sib-bytes))))
+   :gen-linear t))
+
 (def-inst x86-xchg
 
   ;; Note that for XCHG, the Op/En RM and MR are essentially the same.
@@ -38,7 +54,8 @@
   ;; efficiency.
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-debug t
+  :guard-hints (("Goal" :in-theory (e/d* () (not))))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -97,7 +114,7 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               v-addr))))
+                                  v-addr))))
         (!!ms-fresh :v-addr-not-canonical v-addr))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
@@ -106,15 +123,15 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
+              temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
+              start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
