@@ -29297,6 +29297,17 @@
                       state)
                     (value x))))))
 
+(defun get-register-invariant-risk (state)
+  (get-register-invariant-risk-world (w state)))
+
+(defmacro set-register-invariant-risk (val)
+  (declare (xargs :guard ; note: table event enforces ttag if val is nil
+                  (booleanp val)))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :register-invariant-risk ,val)
+            (table acl2-defaults-table :register-invariant-risk))))
+
 ; read-file-into-string (must come after with-local-state is defined)
 
 (defun read-file-into-string1 (channel state ans bound)

@@ -1,3 +1,6 @@
+# Matt K. comment 4/22/2017: The following sort of "make" doesn't seem
+# to work directly for me.  However, things work fine when using "make
+# regression" in the main ACL2 directory.
 # make ACL2_SYSTEM_BOOKS=/projects/acl2/v3-2-linux/books ACL2=/projects/acl2/v3-2-linux/allegro-saved_acl2
 
 # Your Perl interpreter
@@ -18,7 +21,7 @@ CC = gcc
 
 ACL2_SYSTEM_BOOKS ?= $(shell cd ../.. ; pwd)
 
-# I need a full path so that I can hardcode a call to 
+# I need a full path so that I can hardcode a call to
 # ACL2 in our SULFA smt solver.
 ACL2 ?= ${PWD}/${ACL2_SYSTEM_BOOKS}/../saved_acl2
 
@@ -47,12 +50,12 @@ check_sat_exec:
 
 scripts/sulfa-smt: subdirs scripts/interpret_sulfa_file
 
-scripts/sulfa-smt: 
+scripts/sulfa-smt:
 	@${MAKE} sulfa-smt -C scripts
 
-subdirs: scripts/interpret_sulfa_file 
+subdirs: scripts/interpret_sulfa_file
 
-subdirs: 
+subdirs:
 	@for dir in ${DIRS}; do \
        ${MAKE} -C $$dir; \
         done
@@ -78,10 +81,10 @@ chmod ugo+rx-w scripts/interpret_sulfa_file
 
 clean:
 	rm -f \#*\# *~
-	rm -f scripts/interpret_sulfa_file 
+	rm -f scripts/interpret_sulfa_file
 	${MAKE} clean-subdirs
 
-clean-subdirs: 
+clean-subdirs:
 	for dir in ${DIRS}; do \
         ${MAKE} clean -C $$dir; \
         done

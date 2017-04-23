@@ -5195,7 +5195,9 @@
 ; invariants, so there is no risk to bypassing guards in the evaluation of
 ; bodies.
 
-  (cond (non-executablep wrld)
+  (cond ((or non-executablep
+             (null (get-register-invariant-risk-world wrld)))
+         wrld)
         (t (let ((new-fns (if (eq symbol-class :common-lisp-compliant)
                               (remove-guard-t names guards wrld nil)
                             names)))

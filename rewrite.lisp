@@ -8627,7 +8627,12 @@
   #-acl2-loop-only
   (return-from ev-fncall!
                (mv nil (apply fn args) latches))
-  (ev-fncall fn args state latches nil aok))
+  (ev-fncall fn args state latches
+
+; Since ev-fncall-meta calls ev-fncall!, the comment about sys-call under
+; ev-fncall-meta explains why the following argument of nil is important.
+
+             nil aok))
 
 (defun ev-fncall-meta (fn args state)
   (declare (xargs :guard
@@ -8661,7 +8666,14 @@
 ; aok = t in the calls of ev-fncall! and ev-fncall just below.
 
            (ev-fncall! fn args state nil t))
-          (t (ev-fncall fn args state nil nil t)))))
+          (t (ev-fncall fn args state nil
+
+; The next argument, hard-error-returns-nilp, is nil.  Think hard before
+; changing it!  For example, it guarantees that if a metafunction invokes
+; sys-call, then the call (er hard ...) under sys-call will cause an error that
+; the user can see (and react to).
+
+                        nil t)))))
 
 (defun get-evg (q ctx)
 
