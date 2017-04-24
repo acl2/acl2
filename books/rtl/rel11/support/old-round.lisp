@@ -175,17 +175,33 @@
       0
     (if (< x 0) -1 +1)))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
+(defnd expo (x)
+  (declare (xargs :measure (:? x)
+                  :verify-guards nil))
+  (mbe
+   :logic
+   (cond ((or (not (rationalp x)) (equal x 0)) 0)
+         ((< x 0) (expo (- x)))
+         ((< x 1) (1- (expo (* 2 x))))
+         ((< x 2) 0)
+         (t (1+ (expo (/ x 2)))))
+   :exec
+   (if (rationalp x)
+       (let* ((n (abs (numerator x)))
+              (d (denominator x))
+              (ln (integer-length n))
+              (ld (integer-length d))
+              (l (- ln ld)))
+         (if (>= ln ld)
+             (if (>= (ash n (- l)) d) l (1- l))
+           (if (> ln 1)
+               (if (> n (ash d l)) l (1- l))
+             (- (integer-length (1- d))))))
+     0)))
 
 (defund sig (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :verify-guards nil))
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -193,7 +209,8 @@
     0))
 
 (defund exactp$ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))
+                  :verify-guards nil))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (local-defthm exactp$-rewrite
@@ -201,7 +218,8 @@
   :hints (("Goal" :in-theory (enable exactp exactp$))))
 
 (defun fp+$ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))
+                  :verify-guards nil))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm fp+$-rewrite
@@ -214,7 +232,8 @@
 
 (defund rtz$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -468,7 +487,8 @@
 
 (defund raz$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (* (sgn x)
      (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -752,7 +772,8 @@
 
 (defund rne$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re$ (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
@@ -1282,7 +1303,8 @@
 
 (defund rna$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (< (re$ (* (expt 2 (1- n)) (sig x)))
 	 1/2)
       (rtz$ x n)
@@ -1599,7 +1621,8 @@
 
 (defund rto$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (exactp$ x (1- n))
       x
     (+ (rtz$ x (1- n))
@@ -1762,7 +1785,8 @@
 
 (defun rup$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (>= x 0)
       (raz$ x n)
     (rtz$ x n)))
@@ -1780,7 +1804,8 @@
 
 (defun rdn$ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (>= x 0)
       (rtz$ x n)
     (raz$ x n)))
@@ -2468,17 +2493,33 @@
       0
     (if (< x 0) -1 +1)))
 
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
+(defnd expo (x)
+  (declare (xargs :measure (:? x)
+                  :verify-guards nil))
+  (mbe
+   :logic
+   (cond ((or (not (rationalp x)) (equal x 0)) 0)
+         ((< x 0) (expo (- x)))
+         ((< x 1) (1- (expo (* 2 x))))
+         ((< x 2) 0)
+         (t (1+ (expo (/ x 2)))))
+   :exec
+   (if (rationalp x)
+       (let* ((n (abs (numerator x)))
+              (d (denominator x))
+              (ln (integer-length n))
+              (ld (integer-length d))
+              (l (- ln ld)))
+         (if (>= ln ld)
+             (if (>= (ash n (- l)) d) l (1- l))
+           (if (> ln 1)
+               (if (> n (ash d l)) l (1- l))
+             (- (integer-length (1- d))))))
+     0)))
 
 (defund sig (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :verify-guards nil))
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -2486,7 +2527,8 @@
     0))
 
 (defund exactp (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))
+                  :verify-guards nil))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (local-defthm exactp-rewrite
@@ -2494,7 +2536,8 @@
   :hints (("Goal" :in-theory (enable exactp exactp$))))
 
 (defun fp+ (x n)
-  (declare (xargs :guard (and (real/rationalp x) (integerp n))))
+  (declare (xargs :guard (and (real/rationalp x) (integerp n))
+                  :verify-guards nil))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm fp+-rewrite
@@ -2526,7 +2569,8 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -2780,7 +2824,8 @@
 
 (defund raz (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (* (sgn x)
      (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -3075,7 +3120,8 @@
 
 (defund rne (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
@@ -3623,7 +3669,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defund rna (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (< (re (* (expt 2 (1- n)) (sig x)))
 	 1/2)
       (rtz x n)
@@ -4180,7 +4227,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defund rto (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (exactp x (1- n))
       x
     (+ (rtz x (1- n))
@@ -4343,7 +4391,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defun rup (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (>= x 0)
       (raz x n)
     (rtz x n)))
@@ -4362,7 +4411,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defun rdn (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (>= x 0)
       (rtz x n)
     (raz x n)))
@@ -4393,7 +4443,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defund rnd (x mode n)
   (declare (xargs :guard (and (real/rationalp x)
                               (common-mode-p mode)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (case mode
     (raz (raz x n))
     (rna (rna x n))
@@ -6418,7 +6469,8 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defund drnd (x mode f)
   (declare (xargs :guard (and (real/rationalp x)
                               (common-mode-p mode)
-                              (formatp f))))
+                              (formatp f))
+                  :verify-guards nil))
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
 
 (local-defthm bias-rewrite

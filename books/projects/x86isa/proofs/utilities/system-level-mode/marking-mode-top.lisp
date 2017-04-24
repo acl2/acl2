@@ -1675,7 +1675,7 @@
 ;; ======================================================================
 
 (define rb-alt ((l-addrs canonical-address-listp)
-                (r-w-x :type (member :r :w :x))
+                (r-w-x :type (member :r :x))
                 (x86))
 
   :parents (system-level-marking-mode-proof-utilities)

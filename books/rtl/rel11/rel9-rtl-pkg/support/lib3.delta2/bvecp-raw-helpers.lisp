@@ -40,14 +40,29 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
-(defun expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
+(defnd expo (x)
+  (declare (xargs :measure (:? x)
+                  :verify-guards nil))
+  (mbe
+   :logic
+   (cond ((or (not (rationalp x)) (equal x 0)) 0)
+         ((< x 0) (expo (- x)))
+         ((< x 1) (1- (expo (* 2 x))))
+         ((< x 2) 0)
+         (t (1+ (expo (/ x 2)))))
+   :exec
+   (if (rationalp x)
+       (let* ((n (abs (numerator x)))
+              (d (denominator x))
+              (ln (integer-length n))
+              (ld (integer-length d))
+              (l (- ln ld)))
+         (if (>= ln ld)
+             (if (>= (ash n (- l)) d) l (1- l))
+           (if (> ln 1)
+               (if (> n (ash d l)) l (1- l))
+             (- (integer-length (1- d))))))
+     0)))
 
 ;; bits
 

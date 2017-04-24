@@ -168,10 +168,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    DEFAULT-STATE-VARS
-    MSGP
-    REMOVE-GUARD-HOLDERS
-    SUBLIS-FN SUBLIS-FN-LST-SIMPLE SUBLIS-FN-SIMPLE
     ))
 
 (defun missing-from-acl2-exports (wrld)

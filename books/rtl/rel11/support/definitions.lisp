@@ -620,12 +620,25 @@
 (defnd expo (x)
   (declare (xargs :hints (("goal" :in-theory (enable fl)))
                   :well-founded-relation e0-ord-<
-                  :measure (expo-measure x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
+                  :measure (expo-measure x)
+                  :verify-guards nil))
+  (mbe :logic (cond ((or (not (rationalp x)) (equal x 0)) 0)
+                    ((< x 0) (expo (- x)))
+                    ((< x 1) (1- (expo (* 2 x))))
+                    ((< x 2) 0)
+                    (t (1+ (expo (/ x 2)))))
+       :exec (if (rationalp x)
+                 (let* ((n (abs (numerator x)))
+                        (d (denominator x))
+                        (ln (integer-length n))
+                        (ld (integer-length d))
+                        (l (- ln ld)))
+                   (if (>= ln ld)
+                       (if (>= (ash n (- l)) d) l (1- l))
+                     (if (> ln 1)
+                         (if (> n (ash d l)) l (1- l))
+                       (- (integer-length (1- d))))))
+               0)))
 
 ; m from IEEE 754-2008
 (defund sigm (x b)
@@ -643,6 +656,7 @@
   (* (sigm x b) (expt b (1- p))))
 
 (defnd sig (x)
+  (declare (xargs :verify-guards nil))
   (if (rationalp x)
       (if (< x 0)
           (- (* x (expt 2 (- (expo x)))))
@@ -657,7 +671,8 @@
 
 (defund exactp (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (integerp (* (sig x) (expt 2 (1- n)))))
 
 (defun fpr+ (x p b)
@@ -667,7 +682,8 @@
 
 (defun fp+ (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 (defun fpr- (x p b)
@@ -679,7 +695,8 @@
 
 (defun fp- (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (= x (expt 2 (expo x)))
       (- x (expt 2 (- (expo x) n)))
     (- x (expt 2 (- (1+ (expo x)) n)))))
@@ -817,6 +834,7 @@
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
 
 (defnd nrepp (x f)
+  (declare (xargs :verify-guards nil))
   (and (rationalp x)
        (formatp f)
        (not (= x 0))
@@ -885,6 +903,7 @@
     (ndecode x f)))
 
 (defnd drepp (x f)
+  (declare (xargs :verify-guards nil))
   (and (rationalp x)
        (formatp f)
        (not (= x 0))
@@ -967,14 +986,16 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (* (sgn x)
      (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (* (sgn x)
      (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
@@ -985,7 +1006,8 @@
 
 (defund rne (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
@@ -1003,7 +1025,8 @@
 
 (defund rna (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (< (re (* (expt 2 (1- n)) (sig x)))
 	 1/2)
       (rtz x n)
@@ -1016,7 +1039,8 @@
 
 (defund rto (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (exactp x (1- n))
       x
     (+ (rtz x (1- n))
@@ -1024,14 +1048,16 @@
 
 (defun rup (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (>= x 0)
       (raz x n)
     (rtz x n)))
 
 (defun rdn (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (if (>= x 0)
       (rtz x n)
     (raz x n)))
@@ -1045,7 +1071,8 @@
 (defund rnd (x mode n)
   (declare (xargs :guard (and (real/rationalp x)
                               (common-mode-p mode)
-                              (integerp n))))
+                              (integerp n))
+                  :verify-guards nil))
   (case mode
     (raz (raz x n))
     (rna (rna x n))
@@ -1109,14 +1136,16 @@
 (defund drnd (x mode f)
   (declare (xargs :guard (and (real/rationalp x)
                               (common-mode-p mode)
-                              (formatp f))))
+                              (formatp f))
+                  :verify-guards nil))
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
 
 ;; from sqrt.lisp:
 
 (defund rtz-sqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (natp n))))
+                              (natp n))
+                  :verify-guards nil))
   (if (zp n)
       0
     (let* ((lower (rtz-sqrt x (1- n)))
@@ -1132,7 +1161,8 @@
 
 (defund rto-sqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (posp n))))
+                              (posp n))
+                  :verify-guards nil))
   (let ((trunc (rtz-sqrt x (1- n))))
     (if (< (* trunc trunc) x)
         (+ trunc (expt 2 (- n)))
@@ -1140,7 +1170,8 @@
 
 (defund qsqrt (x n)
   (declare (xargs :guard (and (real/rationalp x)
-                              (posp n))))
+                              (posp n))
+                  :verify-guards nil))
   (let ((e (1+ (fl (/ (expo x) 2)))))
     (* (expt 2 e)
        (rto-sqrt (/ x (expt 2 (* 2 e))) n))))

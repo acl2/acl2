@@ -264,110 +264,127 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
   (defmacro defthm-natp (name &key hyp concl hints)
     (if concl
         `(defthm ,name
-           (implies ,(or hyp t)
-                    (natp ,concl))
+           ,(if (atom hyp)
+                `(natp ,concl)
+              `(implies ,hyp (natp ,concl)))
            ,@(and hints `(:hints ,hints))
            :rule-classes
            ((:type-prescription
              :corollary
-             (implies ,(or hyp t)
-                      (natp ,concl))
+             ,(if (atom hyp)
+                  `(natp ,concl)
+                `(implies ,hyp (natp ,concl)))
              ,@(and hints `(:hints ,hints)))
             (:linear
              :corollary
-             (implies ,(or hyp t)
-                      (<= 0 ,concl))
+             ,(if (atom hyp)
+                  `(<= 0 ,concl)
+                `(implies ,hyp (<= 0 ,concl)))
              ,@(and hints `(:hints ,hints)))))
       nil))
 
   (defmacro defthm-usb
-    (name &key hyp bound concl
-          gen-type gen-linear
-          hyp-t hyp-l
-          hints
-          hints-t hints-l
-          otf-flg)
+      (name &key hyp bound concl
+            gen-type gen-linear
+            hyp-t hyp-l
+            hints
+            hints-t hints-l
+            otf-flg)
 
     (if (and concl bound)
-        (let ((hyp (or hyp t))
-              (hints-t (or hints-t hints))
+        (let ((hints-t (or hints-t hints))
               (hints-l (or hints-l hints))
               (2^bound (if (natp bound)
                            (expt 2 bound)
                          `(expt 2 ,bound))))
           `(defthm ,name
-             (implies ,hyp
-                      (unsigned-byte-p ,bound ,concl))
+             ,(if (atom hyp)
+                  `(unsigned-byte-p ,bound ,concl)
+                `(implies ,hyp
+                          (unsigned-byte-p ,bound ,concl)))
              ,@(and hints `(:hints ,hints))
              ,@(and otf-flg `(:otf-flg t))
              :rule-classes
              ((:rewrite
                :corollary
-               (implies ,hyp
-                        (unsigned-byte-p ,bound ,concl))
+               ,(if (atom hyp)
+                  `(unsigned-byte-p ,bound ,concl)
+                `(implies ,hyp
+                          (unsigned-byte-p ,bound ,concl)))
                ,@(and hints `(:hints ,hints)))
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
-                        (implies ,(or hyp-t hyp)
-                                 (natp ,concl))
+                        ,(if (or (and (atom hyp-t) (atom hyp))
+                                 (equal hyp-t 't))
+                             `(natp ,concl)
+                           `(implies ,(or hyp-t hyp)
+                                     (natp ,concl)))
                         ,@(and hints-t `(:hints ,hints-t)))))
               ,@(and gen-linear
                      `((:linear
                         :corollary
-                        (implies ,(or hyp-l hyp)
-                                 (< ,concl ,2^bound))
+                        ,(if (or (and (atom hyp-l) (atom hyp))
+                                 (equal hyp-l 't))
+                             `(< ,concl ,2^bound)
+                           `(implies ,(or hyp-l hyp)
+                                     (< ,concl ,2^bound)))
                         ,@(and hints-l `(:hints ,hints-l))))))))
       nil))
 
   (defmacro defthm-sb
-    (name &key hyp bound concl
-          gen-type gen-linear
-          hyp-t hyp-l
-          hints
-          hints-t hints-l
-          otf-flg)
+      (name &key hyp bound concl
+            gen-type gen-linear
+            hyp-t hyp-l
+            hints
+            hints-t hints-l
+            otf-flg)
 
     (if (and concl bound)
-        (let ((hyp (or hyp t))
-              (hints-t (or hints-t hints))
-              (hints-l (or hints-l hints))
-              (2^bound-1 (if (natp bound)
-                             (expt 2 (1- bound))
-                           `(expt 2 (1- ,bound)))))
+        (let* ((hints-t (or hints-t hints))
+               (hints-l (or hints-l hints))
+               (2^bound-1 (if (natp bound)
+                              (expt 2 (1- bound))
+                            `(expt 2 (1- ,bound))))
+               (low-2^bound-1 (if (natp bound)
+                                  (- 2^bound-1)
+                                `(- (expt 2 (1- ,bound))))))
           `(defthm ,name
-             (implies ,hyp
-                      (signed-byte-p ,bound ,concl))
+             ,(if (atom hyp)
+                  `(signed-byte-p ,bound ,concl)
+                `(implies ,hyp
+                          (signed-byte-p ,bound ,concl)))
              ,@(and hints `(:hints ,hints))
              ,@(and otf-flg `(:otf-flg t))
              :rule-classes
              ((:rewrite
                :corollary
-               (implies ,hyp
-                        (signed-byte-p ,bound ,concl))
+               ,(if (atom hyp)
+                  `(signed-byte-p ,bound ,concl)
+                `(implies ,hyp
+                          (signed-byte-p ,bound ,concl)))
                ,@(and hints `(:hints ,hints)))
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
-                        (implies ,(or hyp-t hyp)
-                                 (integerp ,concl))
+                        ,(if (or (and (atom hyp-t) (atom hyp))
+                                 (equal hyp-t 't))
+                             `(integerp ,concl)
+                           `(implies ,(or hyp-t hyp)
+                                     (integerp ,concl)))
                         ,@(and hints-t `(:hints ,hints-t)))))
               ,@(and gen-linear
                      `((:linear
                         :corollary
-                        (implies ,(or hyp-l hyp)
-                                 (<= (- ,2^bound-1) ,concl))
-                        ,@(and hints-l `(:hints ,hints-l)))))
-              ,@(and gen-linear
-                     `((:linear
-                        :corollary
-                        (implies ,(or hyp-l hyp)
-                                 (< ,concl ,2^bound-1))
+                        ,(if (or (and (atom hyp-l) (atom hyp))
+                                 (equal hyp-l 't))
+                             `(< ,concl ,2^bound-1)
+                           `(implies ,(or hyp-l hyp)
+                                     (and
+                                      (<= ,low-2^bound-1 ,concl)
+                                      (< ,concl ,2^bound-1))))
                         ,@(and hints-l `(:hints ,hints-l))))))))
-      nil))
-
-
-  )
+      nil)))
 
 ;; Misc.:
 

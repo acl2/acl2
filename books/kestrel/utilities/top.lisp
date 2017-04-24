@@ -16,7 +16,6 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "all-vars-theorems")
-(include-book "applicability-conditions")
 (include-book "auto-termination")
 (include-book "characters")
 (include-book "copy-def")
@@ -26,6 +25,7 @@
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
 (include-book "directed-untranslate")
+(include-book "doublets")
 (include-book "enumerations")
 (include-book "event-forms")
 (include-book "fresh-names")
@@ -37,6 +37,7 @@
 (include-book "maybe-msgp")
 (include-book "maybe-unquote")
 (include-book "minimize-ruler-extenders")
+(include-book "named-formulas")
 (include-book "nati")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))

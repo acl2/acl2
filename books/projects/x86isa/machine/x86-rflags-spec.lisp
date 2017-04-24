@@ -33,7 +33,6 @@ arithmetic.</p>"
   ///
 
   (defthm-usb n01p-general-cf-spec-fn
-    :hyp t
     :bound 1
     :concl (general-cf-spec-fn result-nbits raw-result)
     :gen-linear t
@@ -52,7 +51,6 @@ arithmetic.</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-cf-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "cf-spec" result-nbits) raw-result)
        :gen-linear t
@@ -97,7 +95,6 @@ complement) arithmetic.</p>"
   ///
 
   (defthm-usb n01p-general-of-spec-fn
-    :hyp t
     :bound 1
     :concl (general-of-spec-fn result-nbits signed-raw-result)))
 
@@ -116,7 +113,6 @@ complement) arithmetic.</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-of-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "of-spec" result-nbits) signed-raw-result)
        :gen-type t
@@ -159,7 +155,6 @@ otherwise.</p>"
   ///
 
   (defthm-usb n01p-zf-spec
-    :hyp t
     :bound 1
     :concl (zf-spec result)
     :gen-type t
@@ -313,7 +308,6 @@ otherwise.</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-pf-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "pf-spec" result-nbits) result)
        :gen-type t
@@ -352,7 +346,6 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
   ///
 
   (defthm-usb n01p-general-pf-spec-fn
-    :hyp t
     :bound 1
     :concl (general-pf-spec-fn result-nbits result)
     :gen-type t
@@ -392,7 +385,6 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-sf-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "sf-spec" result-nbits) result)
        :gen-type t
@@ -432,7 +424,6 @@ positive value and 1 indicates a negative value.)</p>"
   ///
 
   (defthm-usb n01p-general-sf-spec-fn
-    :hyp t
     :bound 1
     :concl (general-sf-spec-fn result-nbits result)
     :gen-type t
@@ -485,7 +476,6 @@ positive value and 1 indicates a negative value.)</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-add-af-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "add-af-spec" result-nbits) dst src)
        :gen-linear t
@@ -535,7 +525,6 @@ positive value and 1 indicates a negative value.)</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-sub-af-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "sub-af-spec" result-nbits)
                 dst src)
@@ -589,7 +578,6 @@ positive value and 1 indicates a negative value.)</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-adc-af-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "adc-af-spec" result-nbits)
                 dst src cf)
@@ -642,7 +630,6 @@ positive value and 1 indicates a negative value.)</p>"
      ///
 
      (defthm-usb ,(mk-name "n01p-sbb-af-spec" result-nbits)
-       :hyp t
        :bound 1
        :concl (,(mk-name "sbb-af-spec" result-nbits)
                 dst src cf)

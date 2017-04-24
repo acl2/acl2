@@ -1,0 +1,5 @@
+(defttag t)
+(set-register-invariant-risk nil)
+(defttag nil)
+
+; cert-flags: ? t :ttags :all

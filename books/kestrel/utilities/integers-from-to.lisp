@@ -1,6 +1,6 @@
 ; Lists of Contiguous Integers
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,51 +28,23 @@
    The range goes from @('min') to @('max'), inclusive.
    If @('min') exceeds @('max'), the result is @('nil').
    </p>"
-  (integers-from-to-aux min max nil)
+  (mbe :logic (b* ((min (ifix min))
+                   (max (ifix max)))
+                (cond ((> min max) nil)
+                      (t (cons min (integers-from-to (1+ min) max)))))
+       :exec (integers-from-to-aux min max nil))
+  :measure (nfix (- (1+ (ifix max)) (ifix min)))
+  :verify-guards nil ; done below
 
   :prepwork
   ((define integers-from-to-aux ((min integerp)
                                  (max integerp)
                                  (ints integer-listp))
-     :returns (final-ints integer-listp :hyp (integer-listp ints))
      (b* ((min (mbe :logic (ifix min) :exec min))
           (max (mbe :logic (ifix max) :exec max)))
        (cond ((> min max) ints)
              (t (integers-from-to-aux min (1- max) (cons max ints)))))
-     :measure (nfix (- (1+ (ifix max)) (ifix min)))
-     ///
-
-     (defrule nat-listp-of-integers-from-to-aux
-       (equal (nat-listp (integers-from-to-aux min max ints))
-              (and (nat-listp ints)
-                   (or (> (ifix min) (ifix max))
-                       (natp (ifix min))))))
-
-     (defrule integers-from-to-iff-min<=max-or-ints
-       (iff (integers-from-to-aux min max ints)
-            (or (<= (ifix min) (ifix max))
-                ints)))
-
-     (defrule int-equiv-implies-equal-integers-from-to-aux-1
-       (implies (int-equiv min min-equiv)
-                (equal (integers-from-to-aux min max ints)
-                       (integers-from-to-aux min-equiv max ints)))
-       :rule-classes nil
-       :hints ('(:expand ((integers-from-to-aux 0 max ints)))))
-
-     (defrule int-equiv-implies-equal-integers-from-to-aux-2
-       (implies (int-equiv max max-equiv)
-                (equal (integers-from-to-aux min max ints)
-                       (integers-from-to-aux min max-equiv ints)))
-       :rule-classes nil
-       :hints ('(:expand ((integers-from-to-aux min 0 ints)))))
-
-     (defrule member-of-integers-from-to-aux
-       (iff (member x (integers-from-to-aux min max ints))
-            (or (and (integerp x)
-                     (<= (ifix min) x)
-                     (<= x (ifix max)))
-                (member x ints))))))
+     :measure (nfix (- (1+ (ifix max)) (ifix min)))))
 
   ///
 
@@ -86,24 +58,40 @@
            (or (> (ifix min) (ifix max))
                (natp (ifix min)))))
 
+  (defcong int-equiv equal (integers-from-to min max) 1)
+
+  (defcong int-equiv equal (integers-from-to min max) 2)
+
+  (defrule integers-from-to-nil-when-min>max
+    (implies (> (ifix min) (ifix max))
+             (equal (integers-from-to min max)
+                    nil))
+    :enable integers-from-to)
+
   (defrule integers-from-to-iff-min<=max
     (iff (integers-from-to min max)
          (<= (ifix min) (ifix max))))
-
-  (defcong int-equiv equal (integers-from-to min max) 1
-    :hints (("Goal"
-             :use (int-equiv-implies-equal-integers-from-to-aux-1
-                   (:instance int-equiv-implies-equal-integers-from-to-aux-1
-                              (ints nil))))))
-
-  (defcong int-equiv equal (integers-from-to min max) 2
-    :hints (("Goal"
-             :use (int-equiv-implies-equal-integers-from-to-aux-2
-                   (:instance int-equiv-implies-equal-integers-from-to-aux-2
-                              (ints nil))))))
 
   (defrule member-of-integers-from-to
     (iff (member x (integers-from-to min max))
          (and (integerp x)
               (<= (ifix min) x)
-              (<= x (ifix max))))))
+              (<= x (ifix max)))))
+
+  (local
+   (defrule verify-guards-lemma-1
+     (implies (and (integerp min)
+                   (integerp max)
+                   (integer-listp ints))
+              (equal (integers-from-to-aux min max ints)
+                     (append (integers-from-to min max) ints)))
+     :enable (integers-from-to-aux integers-from-to)))
+
+  (local
+   (defrule verify-guards-lemma-2
+     (implies (and (integerp min)
+                   (integerp max))
+              (equal (integers-from-to-aux min max nil)
+                     (integers-from-to min max)))))
+
+  (verify-guards integers-from-to))

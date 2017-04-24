@@ -1,6 +1,6 @@
 ; Character Utilities
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -70,28 +70,39 @@
   :parents (character-utilities)
   :short "Convert a list of natural numbers below 256
           to the corresponding list of characters."
-  (nats=>chars-aux nats nil)
+  (mbe :logic (cond ((endp nats) nil)
+                    (t (cons (code-char (car nats))
+                             (nats=>chars (cdr nats)))))
+       :exec (nats=>chars-aux nats nil))
+  :verify-guards nil ; done below
 
   :prepwork
   ((define nats=>chars-aux ((nats (unsigned-byte-listp 8 nats))
                             (rev-chars character-listp))
-     :returns (final-chars character-listp :hyp (character-listp rev-chars))
-     (cond ((endp nats) (reverse rev-chars))
+     (cond ((endp nats) (rev rev-chars))
            (t (nats=>chars-aux (cdr nats)
                                (cons (code-char (car nats))
                                      rev-chars))))
-     ///
-     (more-returns
-      (final-chars true-listp
-                   :hyp (true-listp rev-chars)
-                   :name true-listp-of-nats=>chars-aux
-                   :rule-classes :type-prescription))))
+     :enabled t))
+
   ///
 
   (more-returns
    (chars true-listp
           :name true-listp-of-nats=>chars
-          :rule-classes :type-prescription)))
+          :rule-classes :type-prescription))
+
+  (local
+   (defrule verify-guards-lemma-1
+     (equal (nats=>chars-aux nats rev-chars)
+            (revappend rev-chars (nats=>chars nats)))))
+
+  (local
+   (defrule verify-guards-lemma-2
+     (equal (nats=>chars-aux nats nil)
+            (nats=>chars nats))))
+
+  (verify-guards nats=>chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,26 +111,21 @@
   :parents (character-utilities)
   :short "Convert a list of characters
           to the corresponding list of natural numbers below 256."
-  (chars=>nats-aux chars nil)
+  (mbe :logic (cond ((endp chars) nil)
+                    (t (cons (char-code (car chars))
+                             (chars=>nats (cdr chars)))))
+       :exec (chars=>nats-aux chars nil))
+  :verify-guards nil ; done below
 
   :prepwork
   ((define chars=>nats-aux ((chars character-listp)
                             (rev-nats (unsigned-byte-listp 8 rev-nats)))
-     :returns (final-nats (unsigned-byte-listp 8 final-nats)
-                          :hyp (unsigned-byte-listp 8 rev-nats))
-     (cond ((endp chars) (reverse rev-nats))
+     (cond ((endp chars) (rev rev-nats))
            (t (chars=>nats-aux (cdr chars)
                                (cons (char-code (car chars))
                                      rev-nats))))
-     ///
-     (more-returns
-      (final-nats true-listp
-                  :hyp (true-listp rev-nats)
-                  :name true-listp-of-chars=>nats-aux
-                  :rule-classes :type-prescription)
-      (final-nats nat-listp
-                  :hyp (nat-listp rev-nats)
-                  :name nat-listp-of-chars=>nats-aux))))
+     :enabled t))
+
   ///
 
   (more-returns
@@ -127,4 +133,16 @@
          :name true-listp-of-chars=>nats
          :rule-classes :type-prescription)
    (nats nat-listp
-         :name nat-listp-of-chars=>nats)))
+         :name nat-listp-of-chars=>nats))
+
+  (local
+   (defrule verify-guards-lemma-1
+     (equal (chars=>nats-aux chars rev-nats)
+            (revappend rev-nats (chars=>nats chars)))))
+
+  (local
+   (defrule verify-guards-lemma-2
+     (equal (chars=>nats-aux chars nil)
+            (chars=>nats chars))))
+
+  (verify-guards chars=>nats))
