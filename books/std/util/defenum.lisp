@@ -153,11 +153,41 @@ fast alist or other schemes, based on the elements it is given.</p>")
                                      name)
       name)))
 
-(defun defenum-fn (name members mode parents short long defaultp default state)
+(defconst *defenum-keywords* 
+  '(:mode
+    :parents
+    :short
+    :long
+    :default
+    :fix
+    :equiv))
+
+(defun defenum-fn (name members rest-args state)
   (declare (xargs :mode :program))
   (b* ((__function__ 'defenum)
        ((unless (symbolp name))
         (raise "Name must be a symbol, but is ~x0." name))
+
+       (ctx  `(defenum ,name))
+       ((mv kwd-alist rest)
+        (extract-keywords ctx *defenum-keywords* rest-args nil))
+
+       ((when rest)
+        (raise "Extra non-keyword arguments to ~x0: ~x1~%" ctx rest))
+
+       (mode (let ((look (assoc :mode kwd-alist)))
+               (if look
+                   (cdr look)
+                 (default-defun-mode (w state)))))
+       (parents (let ((look (assoc :parents kwd-alist)))
+                  (if look
+                      (cdr look)
+                    (or (xdoc::get-default-parents (w state))
+                        '(acl2::undocumented)))))
+       (short (cdr (assoc :short kwd-alist)))
+       (long  (cdr (assoc :long kwd-alist)))
+       (default (cdr (assoc :default kwd-alist)))
+       (defaultp  (consp (assoc :default kwd-alist)))
 
        (?mksym-package-symbol name)
        (x (intern-in-package-of-symbol "X" name))
@@ -217,12 +247,14 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
        (name-without-p (std::strip-p-from-symbol name))
 
-       (fixname (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name-without-p) "-FIX")
-                 name))
-       (equivname (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name-without-p) "-EQUIV")
-                   name))
+       (fixname (or (cdr (assoc :fix kwd-alist))
+                    (intern-in-package-of-symbol
+                     (concatenate 'string (symbol-name name-without-p) "-FIX")
+                     name)))
+       (equivname (or (cdr (assoc :equiv kwd-alist))
+                      (intern-in-package-of-symbol
+                       (concatenate 'string (symbol-name name-without-p) "-EQUIV")
+                       name)))
 
        (fix `(defund-inline ,fixname (,x)
                (declare (xargs :guard (,name ,x)))
@@ -234,12 +266,12 @@ fast alist or other schemes, based on the elements it is given.</p>")
                     ,x)))
 
        (fix-type `(defthm ,(intern-in-package-of-symbol
-                            (concatenate 'string "RETURN-TYPE-OF-" (symbol-name name) "-FIX")
+                            (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fixname))
                             name)
                     (,name (,fixname ,x))))
 
        (fix-id `(defthm ,(intern-in-package-of-symbol
-                            (concatenate 'string (symbol-name name) "-FIX-IDEMPOTENT")
+                            (concatenate 'string (symbol-name fixname) "-IDEMPOTENT")
                             name)
                   (implies (,name ,x)
                            (equal (,fixname ,x) ,x)))))
@@ -275,19 +307,8 @@ fast alist or other schemes, based on the elements it is given.</p>")
          :define t)
        )))
 
-(defmacro defenum (name members
-                        &key
-                        mode
-                        (parents 'nil parents-p)
-                        (short 'nil)
-                        (long 'nil)
-                        (default 'nil defaultp))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state))))
-                     (parents (if ',parents-p
-                                  ',parents
-                                (or (xdoc::get-default-parents (w state))
-                                    '(acl2::undocumented)))))
-                 (defenum-fn ',name ',members mode parents ',short ',long ,defaultp ',default state))))
+(defmacro defenum (name members &rest keys)
+  `(make-event (defenum-fn ',name ',members ',keys state)))
 
 
 ;; Primitive tests

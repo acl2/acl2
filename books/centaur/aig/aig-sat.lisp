@@ -48,7 +48,8 @@
   ((aig "The AIG to inspect.")
    &key
    ((config satlink::config-p "How to invoke the SAT solver.")
-    'satlink::*default-config*))
+    'satlink::*default-config*)
+   ((transform-config) 'nil))
   :returns (mv (status "Either :sat, :unsat, or :failed")
                (env    "When :sat, an (ordinary, slow) alist binding the
                         aig vars to t/nil."))
@@ -83,7 +84,7 @@ translation and conversion steps are all verified.</p>"
 
        ;; Convert the AIG into a CNF formula, using fancy AIGNET algorithm
        ((mv cnf ?lit vars aignet::sat-lits aignet::aignet)
-        (aignet::aig->cnf aig aignet::sat-lits aignet::aignet))
+        (aignet::aig->cnf aig aignet::sat-lits aignet::aignet :transform-config transform-config))
 
        ((mv result satlink::env$)
         (satlink::sat cnf satlink::env$ :config config))
@@ -97,13 +98,13 @@ translation and conversion steps are all verified.</p>"
 
   ///
   (defthm aig-sat-when-sat
-    (b* (((mv status env) (aig-sat aig :config config)))
+    (b* (((mv status env) (aig-sat aig :config config :transform-config transform-config)))
       (implies (equal status :sat)
                (aig-eval aig env)))
     :hints(("Goal" :in-theory (disable aignet::vars-of-aig->cnf))))
 
   (defthm aig-sat-when-unsat
-    (b* (((mv status &) (aig-sat aig :config config)))
+    (b* (((mv status &) (aig-sat aig :config config :transform-config transform-config)))
       (implies (aig-eval aig env)
                (not (equal status :unsat))))
     :hints (("goal"
@@ -111,6 +112,7 @@ translation and conversion steps are all verified.</p>"
                     aignet::aig-satisfying-assign-induces-aig->cnf-satisfying-assign
                     (aignet::aig      aig)
                     (aignet::env      env)
+                    (aignet::transform-config transform-config)
                     (aignet::sat-lits (aignet::create-sat-lits))
                     (aignet::aignet   (acl2::create-aignet))))
              :in-theory (disable

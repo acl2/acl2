@@ -56,7 +56,7 @@
    :bdd (mv nil nil nil) ;; fail
    :aig
    (b* (((mv status env)
-         (acl2::aig-sat prop :config (gl-satlink-config))))
+         (acl2::aig-sat prop :config (gl-satlink-config) :transform-config t))) ;; why not?
      (case status
        (:sat (mv t t env))
        (:unsat (mv nil t nil))
@@ -73,5 +73,6 @@ satlink) to solve queries."
        (defattach bfr-mode bfr-aig)
        (defattach bfr-counterex-mode bfr-counterex-alist)
        (defattach (bfr-sat bfr-satlink)
-         :hints(("Goal" :in-theory (enable bfr-eval)))))))
+         :hints(("Goal" :in-theory (enable bfr-eval))))
+       (defattach #!aignet (aig->cnf-aignet-transform aig->cnf-default-aignet-transform)))))
 

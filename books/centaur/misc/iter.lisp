@@ -34,7 +34,8 @@
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/base" :dir :system)
-
+(include-book "centaur/fty/fixtype" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
 
 (encapsulate nil
   (local (in-theory (enable* arith-equiv-forwarding)))
@@ -315,9 +316,8 @@
               (,index (1- (lifix ,index)))
               (,returns (,iter . ,iter-formals)))
            ,step-call))
-       (defcong int-equiv equal (,iter . ,iter-formals) 1
-         :hints(("Goal" :expand ((,iter . ,iter-formals))
-                 :in-theory (enable ,iter))))
+       (fty::deffixcong int-equiv equal (,iter . ,iter-formals) ,index
+         :hints (("goal" :in-theory (enable ,iter))))
        (encapsulate nil
          (set-ignore-ok t)
          (defthm ,thmname

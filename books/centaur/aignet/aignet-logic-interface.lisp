@@ -35,14 +35,14 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
+;; (local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
                            resize-list
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
-                           set::double-containment
-                           set::sets-are-true-lists
+                           ;; set::double-containment
+                           ;; set::sets-are-true-lists
                            make-list-ac)))
 
 (local (in-theory (disable true-listp-update-nth
@@ -126,27 +126,21 @@
   :guard (and (aignet$a::id-existsp id aignet)
               (eql (aignet$a::id->type id aignet) (out-type)))
   :enabled t
-  (aignet-lit-fix
-   (co-node->fanin (car (lookup-id id aignet)))
-   (cdr (lookup-id id aignet))))
+  (fanin :co (lookup-id id aignet)))
 
 (define aignet$a::gate-id->fanin0 ((id natp)
                                    (aignet aignet$a::aignet-well-formedp))
   :guard (and (aignet$a::id-existsp id aignet)
               (eql (aignet$a::id->type id aignet) (gate-type)))
   :enabled t
-  (aignet-lit-fix
-   (gate-node->fanin0 (car (lookup-id id aignet)))
-   (cdr (lookup-id id aignet))))
+  (fanin :gate0 (lookup-id id aignet)))
 
 (define aignet$a::gate-id->fanin1 ((id natp)
                                    (aignet aignet$a::aignet-well-formedp))
   :guard (and (aignet$a::id-existsp id aignet)
               (eql (aignet$a::id->type id aignet) (gate-type)))
   :enabled t
-  (aignet-lit-fix
-   (gate-node->fanin1 (car (lookup-id id aignet)))
-   (cdr (lookup-id id aignet))))
+  (fanin :gate1 (lookup-id id aignet)))
 
 (define aignet$a::io-id->ionum ((id natp) (aignet aignet$a::aignet-well-formedp))
   :guard (and (aignet$a::id-existsp id aignet)
@@ -326,10 +320,18 @@
         aignet)
   :enabled t
   ///
+  (local (defthm equal-reg-when-stype-is-reg
+           (implies (node-p x)
+                    (equal (equal (stype x) :reg)
+                           (equal x '(:reg))))
+           :hints(("Goal" :in-theory (enable node-p stype)))))
+                         
   (defthm aignet-nodes-ok-of-aignet-set-nxst
     (implies (and (aignet-nodes-ok aignet)
                   (aignet$a::fanin-litp f aignet)
-                  (aignet-idp regid aignet))
+                  (aignet-idp regid aignet)
+                  (eql (aignet$a::id->type regid aignet) (in-type))
+                  (eql (aignet$a::io-id->regp regid aignet) 1))
              (aignet-nodes-ok (cons (nxst-node f regid) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 

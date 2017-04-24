@@ -139,11 +139,11 @@
                                            (cdr (lookup-id n aignet))))
                    n)))
 
-     (defthm not-output-when-aignet-litp
-       (implies (aignet-litp x aignet)
-                (not (equal (ctype (stype (car (lookup-id (lit-id x) aignet))))
-                            :output)))
-       :hints(("Goal" :in-theory (enable aignet-litp))))
+     ;; (defthm not-output-when-aignet-litp
+     ;;   (implies (aignet-litp x aignet)
+     ;;            (not (equal (ctype (stype (car (lookup-id (lit-id x) aignet))))
+     ;;                        :output)))
+     ;;   :hints(("Goal" :in-theory (enable aignet-litp))))
 
      
      (defthm not-output-of-lookup-lit
@@ -170,7 +170,8 @@
                               aignet-levels)
   :returns (aignet-levels
             (< (node-count (find-max-fanin aignet))
-               (len aignet-levels)))
+               (len aignet-levels))
+            :rule-classes :linear)
   (b* ((aignet-levels (resize-u32 (+ 1 (max-fanin aignet)) aignet-levels)))
     (aignet-record-levels-aux 0 aignet aignet-levels))
   ///

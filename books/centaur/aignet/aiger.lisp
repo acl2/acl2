@@ -326,13 +326,9 @@
                   (< (nfix m) (nfix n))
                   (equal (id->type m aignet) (gate-type)))
              (let* ((look (lookup-id m aignet))
-                    (a0 (nth (lit-id (aignet-lit-fix
-                                      (gate-node->fanin0 (car look))
-                                      (cdr look)))
+                    (a0 (nth (lit-id (fanin :gate0 look))
                              aigernums))
-                    (a1 (nth (lit-id (aignet-lit-fix
-                                      (gate-node->fanin1 (car look))
-                                      (cdr look)))
+                    (a1 (nth (lit-id (fanin :gate1 look))
                              aigernums)))
                (and (< (nfix a0) (nfix (nth m aigernums)))
                     ;; (implies (natp a0)
@@ -350,13 +346,9 @@
                   (< (nfix m) (nfix n))
                   (equal (id->type m aignet) (gate-type)))
              (b* ((look (lookup-id m aignet))
-                  (?a0 (nth (lit-id (aignet-lit-fix
-                                     (gate-node->fanin0 (car look))
-                                     (cdr look)))
+                  (?a0 (nth (lit-id (fanin :gate0 look))
                             aigernums))
-                  (?a1 (nth (lit-id (aignet-lit-fix
-                                     (gate-node->fanin1 (car look))
-                                     (cdr look)))
+                  (?a1 (nth (lit-id (fanin :gate1 look))
                             aigernums))
                   (mid (nth m aigernums)))
                (and (< (mk-lit a0 neg0)

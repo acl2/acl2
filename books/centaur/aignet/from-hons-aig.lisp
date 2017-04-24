@@ -926,7 +926,8 @@
 (define aignet-add-ins ((n natp) aignet)
   :returns (new-aignet)
   (if (zp n)
-      aignet
+      (mbe :logic (non-exec (node-list-fix aignet))
+           :exec aignet)
     (b* ((aignet (aignet-add-in aignet)))
       (aignet-add-ins (1- n) aignet)))
   ///
@@ -1007,7 +1008,8 @@
 (define aignet-add-regs ((n natp) aignet)
   :returns (new-aignet)
   (if (zp n)
-      aignet
+      (mbe :logic (non-exec (node-list-fix aignet))
+           :exec aignet)
     (b* ((aignet (aignet-add-reg aignet)))
       (aignet-add-regs (1- n) aignet)))
   ///
@@ -1546,9 +1548,9 @@
                                                            max-gates aignet)))
       :rule-classes (:rewrite :type-prescription))
 
-    (defthm aignet-nodes-ok-of-aig-fsm-prepare-aignet/varmap
-      (aignet-nodes-ok (mv-nth 3 (aig-fsm-prepare-aignet/varmap
-                                  reg-alist out-list max-nodes aignet))))
+    ;; (defthm aignet-nodes-ok-of-aig-fsm-prepare-aignet/varmap
+    ;;   (aignet-nodes-ok (mv-nth 3 (aig-fsm-prepare-aignet/varmap
+    ;;                               reg-alist out-list max-nodes aignet))))
 
     (std::defret num-outs-of-aig-fsm-prepare-aignet/varmap
       (equal (stype-count :po new-aignet) 0))
@@ -1948,15 +1950,13 @@
     ;;               (aignet (aignet-set-nxst (car reg-lits) reg-id aignet)))
     ;;            (aig-fsm-set-nxsts-nth-ind (1- (nfix n)) (1+ (lnfix regnum)) (cdr reg-lits) aignet))))
     
-    (std::defret lookup-nxst-of-aig-fsm-set-nxsts
+    (std::defret lookup-nxst-fanin-of-aig-fsm-set-nxsts
       (implies (And (aignet-lit-listp reg-lits aignet)
                     (< (nfix n) (+ (stype-count :nxst aignet) (len reg-lits))))
-               (equal (car (lookup-stype n :nxst new-aignet))
+               (equal (fanin-if-co (lookup-stype n :nxst new-aignet))
                       (if (< (nfix n) (stype-count :nxst aignet))
-                          (car (lookup-stype n :nxst  aignet))
-                        (nxst-node
-                         (lit-fix (nth (- (nfix n) (stype-count :nxst aignet)) reg-lits))
-                         (regnum->id (+ (nfix regnum) (- (nfix n) (stype-count :nxst aignet))) aignet)))))
+                          (fanin-if-co (lookup-stype n :nxst  aignet))
+                        (lit-fix (nth (- (nfix n) (stype-count :nxst aignet)) reg-lits)))))
       :hints(("Goal" :in-theory (e/d (nth lookup-stype))
               :induct t :do-not-induct t)))
 
@@ -1978,18 +1978,17 @@
              (+ (len reg-lits)
                 (stype-count :nxst aignet))))
 
-    (std::defret lookup-reg->nxst-of-aig-fsm-set-nxsts
-      (b* ((n (stype-count :reg (cdr (lookup-id reg-id aignet)))))
-        (implies (and (equal (stype (car (lookup-id reg-id aignet))) :reg)
-                      (< (nfix n) (+ (nfix regnum) (len reg-lits)))
+    (std::defret lookup-regnum->nxst-of-aig-fsm-set-nxsts
+      ;; (b* ((n (stype-count :reg (cdr (lookup-id reg-id aignet)))))
+        (implies (and (< (nfix n) (+ (nfix regnum) (len reg-lits)))
                       (<= (+ (nfix regnum) (len reg-lits)) (num-regs aignet)))
-                 (equal (lookup-reg->nxst reg-id new-aignet)
+                 (equal (lookup-regnum->nxst n new-aignet)
                         (if (<= (nfix regnum) (nfix n))
                             (lookup-stype (+ (stype-count :nxst aignet)
                                              (- (nfix n) (nfix regnum)))
                                           :nxst new-aignet)
-                          (lookup-reg->nxst reg-id aignet)))))
-      :hints(("Goal" :in-theory (enable* lookup-reg->nxst
+                          (lookup-regnum->nxst n aignet))))
+      :hints(("Goal" :in-theory (enable* lookup-regnum->nxst
                                          lookup-stype
                                          acl2::arith-equiv-forwarding)
               :induct t
@@ -2166,14 +2165,21 @@
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet))))
 
-    (std::defret lookup-output-of-aig-fsm-add-outs
+    (std::defret lookup-output-fanin-of-aig-fsm-add-outs
       (implies (aignet-lit-listp out-lits aignet)
-               (equal (car (lookup-stype n :po new-aignet))
+               (equal (fanin :co (lookup-stype n :po new-aignet))
+                      ;;
                       (cond ((< (nfix n) (stype-count :po aignet))
-                             (car (lookup-stype n :po  aignet)))
+                             (fanin :co (lookup-stype n :po aignet)))
                             ((< (nfix n) (+ (stype-count :po aignet) (len out-lits)))
-                             (po-node (lit-fix (nth (- (nfix n) (stype-count :po aignet)) out-lits))))
-                            (t nil))))
+                             (lit-fix (nth (- (nfix n) (stype-count :po aignet)) out-lits)))
+                            (t 0))
+                      ;; (cond ((< (nfix n) (stype-count :po aignet))
+                      ;;        (car (lookup-stype n :po  aignet)))
+                      ;;       ((< (nfix n) (+ (stype-count :po aignet) (len out-lits)))
+                      ;;        (po-node (lit-fix (nth (- (nfix n) (stype-count :po aignet)) out-lits))))
+                      ;;       (t nil))
+                      ))
       :hints(("Goal" :in-theory (enable nth lookup-stype)
               :induct t :do-not-induct t)))
 
@@ -2298,11 +2304,11 @@
       ;;              '(:in-theory (enable* aignet-frame-thms))))
       :guard-debug t)
 
-    (defthm aignet-nodes-ok-of-aig-fsm-to-aignet
-      (implies (non-bool-atom-listp (alist-keys regs))
-               (aignet-nodes-ok
-                (mv-nth 0 (aig-fsm-to-aignet regs outs max-gates gatesimp
-                                             aignet)))))
+    ;; (defthm aignet-nodes-ok-of-aig-fsm-to-aignet
+    ;;   (implies (non-bool-atom-listp (alist-keys regs))
+    ;;            (aignet-nodes-ok
+    ;;             (mv-nth 0 (aig-fsm-to-aignet regs outs max-gates gatesimp
+    ;;                                          aignet)))))
 
     (defthm true-listp-aig-fsm-to-aignet-invars
       (true-listp (mv-nth 2 (aig-fsm-to-aignet regs outs max-gates gatesimp aignet)))
@@ -2332,13 +2338,36 @@
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
         (implies (and (non-bool-atom-listp (alist-keys reg-alist))
                       (< (nfix n) (len out-list)))
-                 (equal (id-eval (node-count (lookup-stype n (po-stype) aignet))
-                                 in-vals reg-vals aignet)
+                 (equal (lit-eval (fanin :co (lookup-stype n (po-stype) aignet))
+                                  in-vals reg-vals aignet)
                         (acl2::bool->bit (aig-eval (nth n out-list) env)))))
       :hints (("goal" :do-not-induct t
                :expand ((:free (aignet1 aignet2)
                          (id-eval (node-count (lookup-stype n (po-stype) aignet1))
                                   in-vals reg-vals aignet2))))))
+
+    ;; (defthm aig-fsm-to-aignet-nxst-correct
+    ;;   (b* (((mv aignet varmap ?invars ?regvars)
+    ;;         (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
+    ;;        (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
+    ;;     (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+    ;;                   (< (nfix n) (len (alist-keys reg-alist))))
+    ;;              (equal (lit-eval (node-count (lookup-stype n (nxst-stype) aignet))
+    ;;                              in-vals reg-vals aignet)
+    ;;                     (acl2::bool->bit (aig-eval (nth n (alist-vals reg-alist)) env)))))
+    ;;   :hints (("goal" :do-not-induct t
+    ;;            :expand ((:free (aignet1 aignet2)
+    ;;                      (id-eval (node-count (lookup-stype n (nxst-stype) aignet1))
+    ;;                               in-vals reg-vals aignet2))))))
+
+    ;; (defthm aig-fsm-to-aignet-reg-update-correct
+    ;;   (b* (((mv aignet ?varmap ?invars ?regvars)
+    ;;         (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet)))
+    ;;     (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+    ;;                   (< (nfix n) (len (alist-keys reg-alist))))
+    ;;              (equal (node-count (lookup-reg->nxst (node-count (lookup-stype n (reg-stype) aignet)) aignet))
+    ;;                     (node-count (lookup-stype n (nxst-stype) aignet)))))
+    ;;   :hints (("goal" :do-not-induct t)))
 
     (defthm aig-fsm-to-aignet-nxst-correct
       (b* (((mv aignet varmap ?invars ?regvars)
@@ -2346,38 +2375,16 @@
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
         (implies (and (non-bool-atom-listp (alist-keys reg-alist))
                       (< (nfix n) (len (alist-keys reg-alist))))
-                 (equal (id-eval (node-count (lookup-stype n (nxst-stype) aignet))
-                                 in-vals reg-vals aignet)
+                 (equal (lit-eval (fanin-if-co (lookup-regnum->nxst n aignet))
+                                  in-vals reg-vals aignet)
                         (acl2::bool->bit (aig-eval (nth n (alist-vals reg-alist)) env)))))
-      :hints (("goal" :do-not-induct t
-               :expand ((:free (aignet1 aignet2)
-                         (id-eval (node-count (lookup-stype n (nxst-stype) aignet1))
-                                  in-vals reg-vals aignet2))))))
-
-    (defthm aig-fsm-to-aignet-reg-update-correct
-      (b* (((mv aignet ?varmap ?invars ?regvars)
-            (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet)))
-        (implies (and (non-bool-atom-listp (alist-keys reg-alist))
-                      (< (nfix n) (len (alist-keys reg-alist))))
-                 (equal (node-count (lookup-reg->nxst (node-count (lookup-stype n (reg-stype) aignet)) aignet))
-                        (node-count (lookup-stype n (nxst-stype) aignet)))))
-      :hints (("goal" :do-not-induct t)))
-
-    (defthm aig-fsm-to-aignet-nxst-correct2
-      (b* (((mv aignet varmap ?invars ?regvars)
-            (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
-           (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
-        (implies (and (non-bool-atom-listp (alist-keys reg-alist))
-                      (< (nfix n) (len (alist-keys reg-alist))))
-                 (equal (id-eval (node-count (lookup-reg->nxst (node-count (lookup-stype n (reg-stype) aignet)) aignet))
-                                 in-vals reg-vals aignet)
-                        (acl2::bool->bit (aig-eval (nth n (alist-vals reg-alist)) env)))))
-      :hints (("goal" :do-not-induct t
-               :in-theory (disable aig-fsm-to-aignet)
-               ;; :expand ((:free (aignet1 aignet2)
-               ;;           (id-eval (node-count (lookup-stype n (nxst-stype) aignet1))
-               ;;                   in-vals reg-vals aignet2)))
-               )))
+    :hints (("goal" :do-not-induct t)))
+      ;; :hints (("goal" :do-not-induct t
+      ;;          :in-theory (disable aig-fsm-to-aignet)
+      ;;          ;; :expand ((:free (aignet1 aignet2)
+      ;;          ;;           (id-eval (node-count (lookup-stype n (nxst-stype) aignet1))
+      ;;          ;;                   in-vals reg-vals aignet2)))
+      ;;          )))
 
 
     (local (defthm alist-keys-of-aignet-eval-to-env

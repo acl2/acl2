@@ -40,15 +40,14 @@
 (local (include-book "clause-processors/generalize" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment
-                           nth
+(local (in-theory (disable nth
                            update-nth
                            resize-list
                            acl2::nfix-when-not-natp
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
-                           set::double-containment
-                           set::sets-are-true-lists
+                           ;; set::double-containment
+                           ;; set::sets-are-true-lists
                            make-list-ac
                            true-listp-update-nth
                            acl2::nth-with-large-index)))
@@ -486,10 +485,14 @@
                      (aignet-litp lit aignet))
                 :hints((and stable-under-simplificationp
                             '(:in-theory (enable aignet-litp)))))
+  :guard-hints (("goal" :in-theory (enable fanin-if-co
+                                           lookup-id-in-bounds)))
   (b* ((nxst (reg-id->nxst id aignet)))
-    (if (int= (id->type nxst aignet) (out-type))
-        (co-id->fanin nxst aignet)
-      (mk-lit nxst 0)))
+    (mbe :logic (non-exec (fanin-if-co (lookup-id nxst aignet)))
+         :exec
+         (if (int= (id->type nxst aignet) (out-type))
+             (co-id->fanin nxst aignet)
+           (mk-lit nxst 0))))
   ///
   (defthm reg-id->nxst-lit-id-lte-max-fanin
     (<= (lit-id (reg-id->nxst-lit id aignet))
@@ -836,6 +839,11 @@
 
 
 ;; Fanin Lookup
+(defxdoc fanin
+  :short "@(call fanin) gets the specified kind of fanin from the first node of
+          the input network and fixes it to be a valid fanin literal of the rest
+          of the network.")
+
 
 (defxdoc gate-id->fanin0
   :short "@(call gate-id->fanin0) gets the 0th fanin @(see literal) of the AND
@@ -843,11 +851,10 @@
   :long "<p>Logically this is just</p>
 
   @({
-      (aignet-lit-fix (gate-node->fanin0 (car (lookup-id id aignet)))
-                      (cdr (lookup-id id aignet)))
+      (fanin :gate0 (lookup-id id aignet))
   })
 
-  <p>The @(see aignet-lit-fix) ensures that the literal returned is a valid
+  <p>The @(see fanin) function ensures that the literal returned is a valid
   fanin, i.e. its ID is less than the ID of the gate node, and is not a
   combinational output node.</p>
 
@@ -862,11 +869,10 @@
   :long "<p>Logically this is just</p>
 
   @({
-      (aignet-lit-fix (gate-node->fanin1 (car (lookup-id id aignet)))
-                      (cdr (lookup-id id aignet)))
+      (fanin :gate1 (lookup-id id aignet))
   })
 
-  <p>The @(see aignet-lit-fix) ensures that the literal returned is a valid
+  <p>The @(see fanin) function ensures that the literal returned is a valid
   fanin, i.e. its ID is less than the ID of the gate node, and is not a
   combinational output node.</p>
 
@@ -881,11 +887,10 @@
   :long "<p>Logically this is just</p>
 
   @({
-      (aignet-lit-fix (co-node->fanin (car (lookup-id id aignet)))
-                      (cdr (lookup-id id aignet)))
+      (fanin :co (lookup-id id aignet))
   })
 
-  <p>The @(see aignet-lit-fix) ensures that the literal returned is a valid
+  <p>The @(see fanin) function ensures that the literal returned is a valid
   fanin, i.e. its ID is less than the ID of the CO node and is not a CO node
   itself.</p>
 
