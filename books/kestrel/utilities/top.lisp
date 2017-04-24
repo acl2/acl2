@@ -27,6 +27,7 @@
 (include-book "directed-untranslate")
 (include-book "doublets")
 (include-book "enumerations")
+(include-book "error-checking")
 (include-book "event-forms")
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
