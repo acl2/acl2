@@ -106,7 +106,7 @@
 
      <li>
      Each @('<xi>') is a symbol or
-     an <see topic='@(url extended-formals)'>extended formal</see>.
+     an <see topic='@(url std::extended-formals)'>extended formal</see>.
      Let @('<xi\'>') be:
      @('<xi>') if @('<xi>') is a symbol;
      the name of the @('<xi>') extended formal otherwise.
@@ -114,7 +114,7 @@
 
      <li>
      @('<y>') is a symbol
-     or <see topic='@(url returns-specifiers)'>return specifier</see>
+     or <see topic='@(url std::returns-specifiers)'>return specifier</see>
      that describes the value returned
      inside an <see topic='@(url error-triple)'>error triple</see>.
      Since the error-checking function is generated in program mode
@@ -233,7 +233,8 @@
     :parents (def-error-checker)
     :short
     "Turn each @('xi') symbol into itself
-     and each @('xi') <see topic='@(url extended-formals)'>extended formal</see>
+     and each @('xi')
+     <see topic='@(url std::extended-formals)'>extended formal</see>
      into its underlying symbol."
     (def-error-checker-x-symbols-aux xs nil)
 
