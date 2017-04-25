@@ -435,7 +435,8 @@
   :short "Run abc on an aignet; takes and returns state."
   :long "<p>See @(see aignet-run-abc-core), which is identical except that it
 hides the usage of state.</p>"
-  (b* ((input-filename (mbe :logic (acl2::str-fix input-filename) :exec input-filename))
+  (b* ((output-aignet (aignet-clear output-aignet))
+       (input-filename (mbe :logic (acl2::str-fix input-filename) :exec input-filename))
        (script-filename (mbe :logic (acl2::str-fix script-filename) :exec script-filename))
        (state (aignet-write-aiger input-filename input-aignet state))
        ((mv channel state) (open-output-channel! script-filename :character state))
@@ -631,9 +632,35 @@ differently:</p>
                               force-status
                               quiet
                               axiom))
-             (mv "error" output-aignet frames)))
+             (b* ((output-aignet (aignet-clear output-aignet)))
+               (mv "error" output-aignet frames))))
 
     (local (in-theory '((equal) (member-equal) aignet-abc-fn)))
+
+    (defthm output-aignet-irrelevevant-of-aignet-abc
+      (implies (syntaxp (not (equal output-aignet ''nil)))
+               (equal (aignet-abc input-aignet
+                                  output-aignet
+                                  frames
+                                  script
+                                  :script-filename script-filename
+                                  :input-filename input-filename
+                                  :output-filename output-filename
+                                  :ctrex-filename ctrex-filename
+                                  :force-status force-status
+                                  :quiet quiet
+                                  :axiom axiom)
+                      (aignet-abc input-aignet
+                                  nil
+                                  frames
+                                  script
+                                  :script-filename script-filename
+                                  :input-filename input-filename
+                                  :output-filename output-filename
+                                  :ctrex-filename ctrex-filename
+                                  :force-status force-status
+                                  :quiet quiet
+                                  :axiom axiom))))
 
     (defthm aignet-abc-comb-prove-correct
       (b* (((mv status ?output-aignet ?frames)
@@ -673,7 +700,7 @@ differently:</p>
                         :force-status force-status
                         :quiet quiet
                         :axiom :comb-simp)))
-        (implies (and (member status '(:proved :refuted :failed nil)) ;; not error msg
+        (implies (and (not (stringp status)) ;; not error msg
                       output-filename)
                  (and (comb-equiv output-aignet input-aignet)
                       (equal (stype-count :reg output-aignet)
@@ -709,7 +736,7 @@ differently:</p>
                                                                  input-aignet))
                                                     invals regvals input-aignet)
                                            0))))
-             (implies (and (member status '(:proved :refuted :failed nil)) ;; not error msg
+             (implies (and (not (stringp status)) ;; not error msg
                            output-filename)
                       (and (comb-equiv output-aignet input-aignet)
                            (equal (stype-count :reg output-aignet)
@@ -753,7 +780,7 @@ differently:</p>
                         :force-status force-status
                         :quiet quiet
                         :axiom :seq-simp)))
-        (implies (and (member status '(:proved :refuted :failed nil)) ;; not error msg
+        (implies (and (not (stringp status)) ;; not error msg
                       output-filename)
                  (and (seq-equiv output-aignet input-aignet)
                       (equal (stype-count :pi output-aignet)
@@ -780,7 +807,7 @@ differently:</p>
                       (equal (id-eval-seq k (node-count (lookup-stype n (po-stype) input-aignet))
                                           inframes nil input-aignet)
                              0))
-             (implies (and (member status '(:proved :refuted :failed nil)) ;; not error msg
+             (implies (and (not (stringp status)) ;; not error msg
                            output-filename)
                       (and (seq-equiv output-aignet input-aignet)
                            (equal (stype-count :pi output-aignet)
@@ -803,7 +830,38 @@ differently:</p>
                         :axiom axiom)))
         (implies (and (equal status :refuted)
                       ctrex-filename)
-                 (equal (stobjs::2darr->ncols frames) (num-ins input-aignet)))))))
+                 (equal (stobjs::2darr->ncols frames) (num-ins input-aignet)))))
+
+    (defthm aignet-abc-status
+      (b* (((mv status ?output-aignet ?frames)
+            (aignet-abc input-aignet
+                        output-aignet
+                        frames
+                        script
+                        :script-filename script-filename
+                        :input-filename input-filename
+                        :output-filename output-filename
+                        :ctrex-filename ctrex-filename
+                        :force-status force-status
+                        :quiet quiet
+                        :axiom axiom)))
+        (or (equal status :proved)
+            (equal status :refuted)
+            (equal status :failed)
+            (equal status nil)
+            (stringp status)))
+      :rule-classes ((:forward-chaining
+                      :trigger-terms ((mv-nth 0 (aignet-abc input-aignet
+                                                            output-aignet
+                                                            frames
+                                                            script
+                                                            :script-filename script-filename
+                                                            :input-filename input-filename
+                                                            :output-filename output-filename
+                                                            :ctrex-filename ctrex-filename
+                                                            :force-status force-status
+                                                            :quiet quiet
+                                                            :axiom axiom))))))))
 
 (progn!
  (set-raw-mode t)
