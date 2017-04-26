@@ -4,6 +4,10 @@
 
 ; The Doppelgangers for user-book.lisp
 
+; We define the doppelgangers for the functions in user-defs.lisp.  See
+; "Limited Second-Order Functionality in a First-Order Setting" for a
+; description of what we're doing.
+
 (in-package "MODAPP")
 
 (include-book "../weights-and-measures")
@@ -434,11 +438,6 @@
 ; G2 Doppelgangers
 
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
-
-;(defthm consp-implies-acl2-count-non-0
-;  (implies (consp x)
-;           (< 0 (acl2-count x)))
-;  :rule-classes :linear)
 
 (defun fn/expr-args (fn args)
   (case fn

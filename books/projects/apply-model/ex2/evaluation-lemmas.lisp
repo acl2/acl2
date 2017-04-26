@@ -2,19 +2,24 @@
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Lemmas Needed to Prove that the Warrants of User-Book are Valid
+; Lemmas Needed to Prove that the Warrants of user-defs.lisp are Valid
 
 ; The book basically just proves, for every function fn that has a doppelganger
 ; fn!, that fn!=fn, in the evaluation theory of
 ; (defattach badge-userfn badge-userfn!)
-; (defattach apply$-userfn apply$-userfn!)
-; after defining all the doppelgangers of user-book.lisp.
+; (defattach apply$-userfn apply$-userfn!).
 
-; That evaluation theory is realized as a current theory by
-; (defun badge-userfn (fn) (badge-userfn! fn))
-; (defun apply$-userfn (fn args) (apply$-userfn! fn args))
-; and then re-certifying apply.lisp and user-book.lisp.  That's
-; how evaluation-user-book.lisp, in the portcullis above, was built.
+; That evaluation theory is realized as a current theory by (defun badge-userfn
+; (fn) (badge-userfn! fn)) (defun apply$-userfn (fn args) (apply$-userfn! fn
+; args)) and then ``re-certifying'' apply.lisp and user-defs.lisp.  However, to
+; ``re-certify'' apply.lisp and user-defs.lisp under a different portcullis
+; than normal we have to rename the files.  We copied
+; /books/projects/apply-model/apply.lisp to
+; /books/projects/apply-model/ex2/evaluation-apply.lisp and
+; /books/projects/apply-model/ex2/user-defs.lisp to
+; /books/projects/apply-model/ex2/evaluation-user-defs.lisp.  Furthermore, we
+; provided those new ``evaluation-'' books with .acl2 files that specify the
+; new portcullises.
 
 (in-package "MODAPP")
 
@@ -266,5 +271,3 @@
 (defthm apply$-lambda!-is-apply$-lambda
   (equal (apply$-lambda! fn args) (apply$-lambda fn args)))
 
-; =================================================================
-; The End

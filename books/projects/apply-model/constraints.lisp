@@ -51,6 +51,16 @@
 ; from the user!  The easiest way to do that would add a new property, e.g.,
 ; BADGE, to the logical world and store each symbol's badge (if any) there.
 
+; Standard Explanation: We currently distribute two sets of books,
+; /books/projects/apply/ and /books/projects/apply-model/.  The files
+; apply-prim.lisp, constraints.lisp, and apply.lisp on those two directories
+; are identical copies of their namesakes with one exception: in the former
+; directory, all the development is in "ACL2" package and in the latter
+; directory, all the development is in the "MODAPP" package.  The byte counts
+; of the files should be identical to that of their namesakes, it's just that
+; the semicolon below is on a different line!
+
+; (in-package "ACL2")
 (in-package "MODAPP")
 (include-book "apply-prim")
 
@@ -178,23 +188,6 @@
 ; function symbols.  It is extended by def-warrant.  The user best not mess
 ; with it!
 
-; The apply.lisp book itself introduces several functions that ultimately carry
-; badges, but these functions can't be processed by def-warrant for
-; bootstrapping reasons.  So we specify their badges below.
-
-(defrec apply$-badge (authorization-flg arity . ilks) nil)
-
-(defconst *generic-tame-badge-1*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
-(defconst *generic-tame-badge-2*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
-(defconst *generic-tame-badge-3*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
-(defconst *apply$-badge*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
-(defconst *ev$-badge*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
-
 ; Three categories of function symbols have badges:
 
 ; * ACL2 primitives -- all the primitives and their badges are listed in
@@ -214,9 +207,9 @@
     (APPLY$ . ,*apply$-badge*)
     (EV$ . ,*ev$-badge*)))
 
-; * nonprimitives -- functions successfully processed by def-warrant and listed
-;   under the key :badge-userfn-structure (currently a simple alist) in the
-;   badge-table, initialized below but accumulated by def-warrant.  (The
+; * user-defined functions -- functions successfully processed by def-warrant
+;   and listed under the key :badge-userfn-structure (currently a simple alist)
+;   in the badge-table, initialized below but accumulated by def-warrant.  (The
 ;   badge-table has another key, described and initialized further below.)
 
 (table badge-table
@@ -267,29 +260,4 @@
 ; If fn has a badge, bdg, in :badge-userfn-structure then fn has a warrant iff
 ; (access apply$-badge bdg :authorization-flg).  The warrant, if it exists, is
 ; named APPLY$-WARRANT-fn and takes 0 arguments.
-
-; The following entry in the badge-table is maintained as a courtesy to the
-; ACL2 system developers in case certain dependency information is needed to
-; enforce acyclicity restrictions on attachments or axioms.  We imagine that at
-; every moment in the evolution of a logical world the four apply$ stubs have
-; attachments.  The attachment for apply$-userfn is the doppelganger of that
-; function in the current world and is here named apply$-userfn!.  Logically,
-; apply$-userfn! is defined as a big case analysis that finds the symbol, fn,
-; being applied among the current list of warranted function symbols, checks
-; that the supplied arguments satisfy the tameness conditions specified by the
-; badge of fn, and if so calls fn on the appropriate arguments.  (Actually, the
-; doppelganger does not exist as a logical entity in the world but is
-; implemented under the hood as concrete-apply$-userfn.)  The question might
-; arise: what function symbols are called by the logical definition of
-; apply$-userfn!?  The answer is given by the value of the
-; :apply$-userfn!-supporters in the badge-table.  It is initialized below to
-; include the TAMEP clique and the undefined value functions for apply$ and
-; ev$.  The warranted functions involved in the definition of apply$-userfn!
-; are added to this list each time def-warrant succeeds.
-
-(table badge-table
-       :apply$-userfn!-supporters
-       '(TAMEP-FUNCTIONP TAMEP SUITABLY-TAMEP-LISTP
-         UNTAME-APPLY$ UNTAME-EV$)
-       :put)
 
