@@ -2692,7 +2692,10 @@
                   (t
                    (pprogn
                     (princ$ c channel state)
-                    (fmt-tilde-s1 s (1+f i) maximum (1+f col)
+                    (fmt-tilde-s1 s (1+f i) maximum
+                                  (if (eql c #\Newline)
+                                      0
+                                    (1+f col))
                                   channel state)))))))))
 
 (defun fmt-tilde-cap-s1 (s i maximum col channel state)
@@ -2707,7 +2710,10 @@
             (declare (type character c))
             (pprogn
              (princ$ c channel state)
-             (fmt-tilde-cap-s1 s (1+f i) maximum (1+f col)
+             (fmt-tilde-cap-s1 s (1+f i) maximum
+                               (if (eql c #\Newline)
+                                   0
+                                 (1+f col))
                                channel state)))))))
 
 (defun fmt-var (s alist i maximum)
