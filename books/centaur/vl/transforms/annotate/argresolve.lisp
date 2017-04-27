@@ -568,6 +568,14 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
        (inst (vl-modinst-fix inst))
        ((vl-modinst inst) inst)
 
+       ;; If it's an empty plainarglist, treat it as an empty namedarglist,
+       ;; because otherwise we get bad instance errors.
+       (x (vl-arguments-case x
+            :vl-arguments-plain (if (atom x.args)
+                                    (make-vl-arguments-named :args nil :starp nil)
+                                  x)
+            :otherwise x))
+
        ((when (eq (vl-arguments-kind x) :vl-arguments-plain))
         ;; Already uses plain arguments, nothing to do.
         (mv t (ok) x))
