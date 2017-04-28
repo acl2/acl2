@@ -312,33 +312,19 @@
 ; such that :MODE :PROGRAM does not appear in any XARGS declaration,
 ; and BODY is the defining body as in DEFUN.
 ;
-; DEFUN2 generates a DEFUN event via DEFINE,
+; DEFUN2 generates a DEFUN event,
 ; updates the table of second-order functions,
 ; and checks that the supplied function variables are
 ; all and only the ones that the new function depends on.
 ; If the new function is recursive,
 ; it also checks that the well-founded relation is O<.
 ;
-; DEFUN2 sets the :NO-FUNCTION option of DEFINE to T,
-; to prevent DEFINE from wrapping the function body
-; with a LET binding of __FUNCTION__ to the name of the function.
-;
-; DEFUN2 sets the :ENABLED option of DEFINE to T
-; to leave the new function enabled after the DEFUN2,
-; matching the behavior of DEFUN.
-;
 ; DEFUN2 directly checks the name and the function parameters,
-; but relies on DEFINE to check the rest of the form
+; but relies on DEFUN to check the rest of the form
 ; (individual parameters,
 ; optional documentation string,
 ; optional declarations,
 ; and body).
-; Since DEFINE accepts richer forms than DEFUN,
-; it may be possible to use, without an immediate error,
-; correspondingly richer forms of DEFUN2
-; than just adding the function parameters to DEFUN,
-; but this is currently not supported by SOFT,
-; i.e. the behavior is undefined from the perspective of SOFT.
 
 (define defun2-event (sofun fparams rest (w plist-worldp))
   :verify-guards nil
@@ -350,7 +336,7 @@
                fparams))
        (info (list 'plain fparams)))
     `(progn
-       (define ,sofun ,@rest :no-function t :enabled t)
+       (defun ,sofun ,@rest)
        (table second-order-functions ',sofun ',info)
        (value-triple (and (check-wfrel-o< ',sofun (w state))
                           (check-fparams-dependency ',sofun
