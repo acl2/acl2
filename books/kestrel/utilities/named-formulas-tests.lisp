@@ -1,6 +1,6 @@
 ; Named Formulas -- Tests
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,8 +15,8 @@
 (in-package "ACL2")
 
 (include-book "named-formulas")
-(include-book "kestrel/utilities/testing" :dir :system)
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "testing")
+(include-book "world-queries")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
