@@ -39,7 +39,7 @@
         (t (cons (?f (car l))
                  (map[?f] (cdr l))))))
 
-(verify-guards map[?f])
+(verify-guards map[?f]) ; omitted from the presentation, for brevity
 
 ; MAP[?F] preserves length.
 
@@ -55,7 +55,7 @@
 (defun rev-fix-cons (a x)
   (cons a (map[fix] (rev x))))
 
-(verify-guards rev-fix-cons)
+(verify-guards rev-fix-cons) ; omitted from the presentation, for brevity
 
 ; Instantiate LEN-OF-MAP[?F] and use to prove a theorem about REV-FIX-CONS.
 
@@ -83,7 +83,7 @@
           (equal (?op (?op x y) z)
                  (?op x (?op y z)))))
 
-(verify-guards semigroup[?op])
+(verify-guards semigroup[?op]) ; omitted from the presentation, for brevity
 
 ; Identity ID for operation ?OP.
 
@@ -91,7 +91,7 @@
   (forall x (and (equal (?op id x) x)
                  (equal (?op x id) x))))
 
-(verify-guards identity[?op])
+(verify-guards identity[?op]) ; omitted from the presentation, for brevity
 
 ; Monoid with operation ?OP and identity ID.
 
@@ -99,7 +99,7 @@
   (and (semigroup[?op])
        (identity[?op] id)))
 
-(verify-guards monoid[?op])
+(verify-guards monoid[?op]) ; omitted from the presentation, for brevity
 
 ; Inverse ?INV for identity ID of operation ?OP.
 
@@ -107,7 +107,7 @@
   (forall x (and (equal (?op x (?inv x)) id)
                  (equal (?op (?inv x) x) id))))
 
-(verify-guards inverse[?op_?inv])
+(verify-guards inverse[?op_?inv]) ; omitted from the presentation, for brevity
 
 ; Group with operation ?OP, inverse ?INV, and identity ID.
 
@@ -115,4 +115,4 @@
   (and (monoid[?op] id)
        (inverse[?op_?inv] id)))
 
-(verify-guards group[?op_?inv])
+(verify-guards group[?op_?inv]) ; omitted from the presentation, for brevity
