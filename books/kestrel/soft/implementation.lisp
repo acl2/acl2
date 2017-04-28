@@ -267,7 +267,7 @@
                   fun fparams funvars))
           (t ; FUN is 1st-order
            (raise "~x0 must depend on no function parameters, ~
-                   but depens on ~x1 instead.~%"
+                   but depends on ~x1 instead.~%"
                   fun funvars)))))
 
 ; When a recursive second-order function (which is always plain) is introduced,
