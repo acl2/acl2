@@ -3107,7 +3107,18 @@ correctness criterion we've described.</p>
             (and stable-under-simplificationp
                  '(:in-theory (enable collect-supergate-correct
                                       collect-supergate-correct-rw-when-0
-                                      id-eval-when-id-is-mux))))))
+                                      id-eval-when-id-is-mux)))))
+
+  (local (defthm cdr-of-lit-list-fix
+           (equal (cdr (lit-list-fix x))
+                  (lit-list-fix (cdr x)))))
+
+  (local (defthm car-of-lit-list-fix
+           (implies (consp x)
+                    (equal (car (lit-list-fix x))
+                           (lit-fix (car x))))))
+
+  (fty::deffixequiv-mutual aignet-lit->cnf))
       
                 
 
