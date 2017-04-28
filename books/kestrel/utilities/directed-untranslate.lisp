@@ -4,7 +4,7 @@
 
 ; TODO:
 
-; - Handle more built-in macros, such as mv-let and case.
+; - Handle more built-in macros, such as case.
 
 ; - Handle b*.  A possible strategy is to use macroexpand1* to translate away
 ;   all b* calls, then try to reconstruct b* from the result and the given
@@ -989,6 +989,171 @@
 
   (all-vars-for-real1 term nil))
 
+(defun uterm-values-len (x wrld)
+
+; X is an untranslated term.  We return 1 if we cannot make a reasonable guess
+; about the stobjs-out of x.
+
+; Note that we currently assume that x does not include lambda applications.
+; If x was produced by any reasonable untranslation routine, that seems to be a
+; reasonable assumption.  We can probably add handling of lambdas if necessary.
+
+  (declare (xargs :guard (plist-worldp wrld)
+                  :ruler-extenders (if)))
+  (or (and (consp x)
+           (not (eq (car x) 'quote))
+           (true-listp x)
+           (cond ((eq (car x) 'mv)
+                  (length (cdr x)))
+                 ((eq (car x) 'let)
+                  (uterm-values-len (car (last x)) wrld))
+
+; Keep the following code in sync with stobjs-out.
+
+                 ((or (not (symbolp (car x)))
+                      (member-eq (car x) *stobjs-out-invalid*))
+                  1)
+                 (t (len (getpropc (car x) 'stobjs-out '(nil) wrld)))))
+      1))
+
+(defun du-nthp (n xn x)
+
+; Xn and x are untranslated terms.  It is permissible (and desirable) to return
+; t if xn is provably equal to (nth n x).  Otherwise, return nil.
+
+; We could improve this function by returning t in more cases, for example:
+; (nthp 1 '(cadr x) x).
+
+  (declare (xargs :guard (natp n)))
+  (cond ((and (true-listp xn)
+              (member-eq (car xn) '(nth mv-nth))
+              (eql (cadr xn) n)
+              (equal (caddr xn) x))
+         t)
+        ((and (consp xn)
+              (consp (cdr xn))
+              (eq (car xn) 'hide))
+         (du-nthp n (cadr xn) x))
+        ((zp n) ; xn is (car x)
+         (and (consp xn)
+              (consp (cdr xn))
+              (eq (car xn) 'car)
+              (equal (cadr xn) x)))
+        (t nil)))
+
+(defun du-make-mv-let-aux (bindings mv-var n acc-vars)
+
+; See du-make-mv-let.  Here we check that bindings are as expected for
+; untranslation of the translation of an mv-let.
+
+  (declare (xargs :guard (and (doublet-listp bindings)
+                              (natp n)
+                              (symbolp mv-var)
+                              (true-listp acc-vars))))
+  (cond ((endp bindings) (mv t (reverse acc-vars)))
+        (t (let* ((b (car bindings))
+                  (xn (cadr b)))
+             (cond ((du-nthp n xn mv-var)
+                    (du-make-mv-let-aux (cdr bindings)
+                                        mv-var
+                                        (1+ n)
+                                        (cons (car b) acc-vars)))
+                   (t (mv nil nil)))))))
+
+(defun du-make-mv-let (x wrld)
+
+; This function returns an untranslated term that is provably equal to the
+; input untranslated term, x.
+
+; The following simple evaluation helped to guide us in writing this code.
+
+;   ACL2 !>:trans (mv-let (x y) (mv x y) (declare (ignore y)) (append x x))
+;
+;   ((LAMBDA (MV)
+;            ((LAMBDA (X Y) (BINARY-APPEND X X))
+;             (MV-NTH '0 MV)
+;             (HIDE (MV-NTH '1 MV))))
+;    (CONS X (CONS Y 'NIL)))
+;
+;   => *
+;
+;   ACL2 !>(untranslate '((LAMBDA (MV)
+;                                 ((LAMBDA (X Y) (BINARY-APPEND X X))
+;                                  (MV-NTH '0 MV)
+;                                  (HIDE (MV-NTH '1 MV))))
+;                         (CONS X (CONS Y 'NIL)))
+;                        nil (w state))
+;   (LET ((MV (LIST X Y)))
+;        (LET ((X (MV-NTH 0 MV))
+;              (Y (HIDE (MV-NTH 1 MV))))
+;             (APPEND X X)))
+;   ACL2 !>
+
+  (declare (xargs :guard (plist-worldp wrld)))
+  (or (case-match x
+        (('LET ((mv-var mv-let-body))
+               ('LET bindings main-body))
+
+; In the example above, directed-untranslate would already have replaced (LIST
+; X Y) by (MV X Y).  So we can expect mv-let-body to be a cons whose car is
+; either MV or else an untranslated term whose list of returned values is of
+; the same length as bindings.
+
+         (and (symbolp mv-var)         ; always true?
+              (doublet-listp bindings) ; always true?
+              (eql (uterm-values-len mv-let-body wrld)
+                   (length bindings))
+              (mv-let (flg vars)
+                (du-make-mv-let-aux bindings mv-var 0 nil)
+                (and flg
+                     `(mv-let ,vars
+                        ,mv-let-body
+                        ,main-body))))))
+      x))
+
+(defun expand-mv-let (uterm tterm)
+
+; Uterm is an untranslated term (mv-let ...).  Tterm is the translation of
+; uterm.  So we have for example:
+
+; uterm
+;   (mv-let (x y) (foo u v) (append x y))
+
+; tterm
+;   ((lambda (mv)
+;      ((lambda (x y) (binary-append x y))
+;       (mv-nth '0 mv)
+;       (mv-nth '1 mv)))
+;    (foo u v))
+
+; We expand away the LET from uterm.  In the example above, we get:
+
+;   ACL2 !>(let ((uterm '(mv-let (x y) (mv x y) (append x y)))
+;                (tterm '((lambda (mv) ((lambda (x y) (binary-append x y))
+;                                       (mv-nth '0 mv)
+;                                       (mv-nth '1 mv)))
+;                         (cons x (cons y 'nil)))))
+;            (expand-mv-let uterm tterm))
+;   (LET ((MV (MV X Y)))
+;        (LET ((X (MV-NTH 0 MV)) (Y (MV-NTH 1 MV)))
+;             (APPEND X Y)))
+;   ACL2 !>
+
+  (or (case-match uterm
+        (('mv-let vars mv-let-body . rest)
+         (case-match tterm
+           ((('lambda (mv-var . &)
+               (('lambda lvars &) . &))
+             . &)
+            (and (equal vars (take (length vars) lvars))
+                 `(let ((,mv-var ,mv-let-body))
+                    (let ,(make-mv-nths vars mv-var 0)
+                      ,@(butlast rest 1)
+                      ,(car (last rest)))))))))
+      (er hard? 'expand-mv-let
+          "Implementation error: Unexpected uterm,~|~x0"
+          uterm)))
+
 (mutual-recursion
 
 (defun directed-untranslate-rec (uterm tterm sterm iff-flg lflg wrld)
@@ -1024,6 +1189,11 @@
             (('prog2$ & uterm2)
              (directed-untranslate-rec
               uterm2 (fargn tterm 3) sterm iff-flg lflg wrld)))))
+    ((and (consp uterm) (eq (car uterm) 'mv-let))
+     (let* ((uterm (expand-mv-let uterm tterm))
+            (ans (directed-untranslate-rec uterm tterm sterm iff-flg lflg
+                                           wrld)))
+       (du-make-mv-let ans wrld)))
     ((and (consp uterm) (eq (car uterm) 'let*))
      (case-match uterm
        (('let* () . &)
@@ -1285,7 +1455,14 @@
 ; list*.
 
                      (case-match uterm
-                       (('list) uterm)
+                       (('mv . x)
+                        (let ((list-version
+                               (directed-untranslate-rec
+                                (cons 'list x)
+                                tterm sterm iff-flg lflg wrld)))
+                          (cond ((eq (car list-version) 'list)
+                                 (cons 'mv (cdr list-version)))
+                                (t list-version))))
                        (('list x) ; tterm is (cons x' nil)
                         (case-match sterm
                           (('cons a *nil*)
@@ -2992,3 +3169,48 @@
           '(binary-append (f1 c) c)
           nil (w state))
          '(APPEND (F1 C) C))))
+
+; ------------------------------
+
+; Example 6: Handling of mv and mv-let
+
+(local-test
+
+(assert!
+ (equal (let ((uterm '(mv (first x) (car (cons y y))))
+              (tterm '(cons (car x) (cons (car (cons y y)) 'nil)))
+              (sterm '(cons (car x) (cons y 'nil))))
+          (directed-untranslate uterm tterm sterm nil (w state)))
+        '(mv (first x) y)))
+
+; !! Add an assert! for the following.  Also consider changing du-untranslate
+; to try to eliminate every (let () ...), or otherwise avoid that when the
+; following example is run before handling mv-let.
+
+(defund foo (x y) (mv x y))
+(defund foo2 (x y) (mv x y))
+(defund bar (x y) (mv x y))
+(defund bar2 (x y) (mv x y))
+
+(assert!
+ (equal (let ((uterm '(mv-let (x y) (foo x y) (bar x y)))
+              (tterm '((lambda (mv) ((lambda (x y) (bar x y))
+                                     (mv-nth '0 mv)
+                                     (mv-nth '1 mv)))
+                       (foo x y)))
+              (sterm '(bar2 (mv-nth 0 (foo2 x y))
+                            (mv-nth 1 (foo2 x y)))))
+          (directed-untranslate uterm tterm sterm nil (w state)))
+        '(mv-let (x y) (foo2 x y) (bar2 x y))))
+
+(assert!
+ (equal (let ((uterm '(mv-let (x y) (foo x y) (bar x y)))
+              (tterm '((lambda (mv) ((lambda (x y) (bar x y))
+                                     (mv-nth '0 mv)
+                                     (mv-nth '1 mv)))
+                       (foo x y)))
+              (sterm '(bar2 (car (foo2 x y))
+                            (nth 1 (foo2 x y)))))
+          (directed-untranslate uterm tterm sterm nil (w state)))
+        '(mv-let (x y) (foo2 x y) (bar2 x y))))
+)
