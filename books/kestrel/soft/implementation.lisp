@@ -850,15 +850,15 @@
                    (sothm-inst-facts (cdr fsbs) w)))
             (t (sothm-inst-facts (cdr fsbs) w))))))
 
-; Instances of second-order theorems are proved using the ACL2 proof checker.
+; Instances of second-order theorems are proved using the ACL2 proof builder.
 ; Each such instance is proved by
 ; first using the :FUNCTIONAL-INSTANCE described above,
 ; then using the facts described above on the subgoals.
 ; Each sugoal only needs a subset of those facts,
 ; but for simplicity all the facts are used for each subgoal,
-; using the proof checker :REPEAT command.
+; using the proof builder :REPEAT command.
 ; Since sometimes the facts are not quite identical to the subgoals,
-; the proof checker :PROVE command is used to iron out any such differences.
+; the proof builder :PROVE command is used to iron out any such differences.
 
 (define sothm-inst-proof
   ((sothm symbolp) (fsbs fun-substp) (w plist-worldp))
@@ -889,7 +889,7 @@
 ; relying on DEFTHM to check it.
 ; Supplying :HINTS causes an error because DEFTHM does not allow
 ; both :HINTS and :INSTRUCTIONS.
-; Supplying :OTF-FLG has no effect because the proof is via the proof checker.
+; Supplying :OTF-FLG has no effect because the proof is via the proof builder.
 
 ; check that SOTHM-INST has the form (SOTHM (F1 . G1) ... (Fm . Gm)),
 ; where SOTHM is a 2nd-order theorem
