@@ -38,7 +38,7 @@
          (function-symbol-listp (cdr syms) w))))
 
 ; Second-order functions and theorems depend on function variables.
-; Each function variable is typed by the number of its arguments (1 or more).
+; Each function variable is typed by the number of its arguments (0 or more).
 ; Types of function variables are denoted
 ; by the ACL2-signature-like notation (* ... *) => *.
 
@@ -360,8 +360,7 @@
 ; DEFCHOOSE2 has the form
 ;   (DEFCHOOSE2 SOFUN (BVAR1 ... BVARm) (FVAR1 ... FVARn) (VAR1 ... VARp)
 ;     BODY
-;     :STRENGTHEN ...
-;     :DOC ...)
+;     :STRENGTHEN ...)
 ; where SOFUN is the name of the function
 ; (BVAR1 ... BVARm) are the bound variables as in DEFCHOOSE,
 ; (FVAR1 ... FVARn) is a non-empty list without duplicates of function variables
@@ -421,7 +420,6 @@
 ;   (DEFUN-SK2 SOFUN (FVAR1 ... FVARn) (VAR1 ... VARm)
 ;     BODY
 ;     :STRENGTHEN ...
-;     :DOC ...
 ;     :QUANT-OK ...
 ;     :WITNESS-DCLS ...
 ;     :SKOLEM-NAME ...
@@ -892,10 +890,6 @@
 ; Supplying :HINTS causes an error because DEFTHM does not allow
 ; both :HINTS and :INSTRUCTIONS.
 ; Supplying :OTF-FLG has no effect because the proof is via the proof checker.
-; Supplying :DOC just attaches a documentation string to THM,
-; but generally documentation should be attached
-; to second-order theorems introduced via DEFTHM2,
-; and not to their instances.
 
 ; check that SOTHM-INST has the form (SOTHM (F1 . G1) ... (Fm . Gm)),
 ; where SOTHM is a 2nd-order theorem
@@ -958,7 +952,7 @@
 ; of function parameters of FUN (whose order is immaterial),
 ; SOFUN is the second-order function being instantiated,
 ; ((F1 . G1) ... (Fm . Gm)) is the instantiation that defines FUN,
-; and the optional :VERIFY-GUARDS, :DOC, :SKOLEM-NAME, and :REWRITE
+; and the optional :VERIFY-GUARDS, :SKOLEM-NAME, and :REWRITE
 ; are explained below.
 ;
 ; If (FVAR1 ... FVARn) is present, FUN is a second-order function;
