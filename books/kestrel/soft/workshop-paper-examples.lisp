@@ -45,10 +45,14 @@
 (defun2 quad[?f] (?f) (x)
   (?f (?f (?f (?f x)))))
 
+(verify-guards quad[?f]) ; omitted from the paper, for brevity
+
 (defun2 all[?p] (?p) (l)
   (cond ((atom l) (null l))
         (t (and (?p (car l))
                 (all[?p] (cdr l))))))
+
+(verify-guards all[?p]) ; omitted from the paper, for brevity
 
 (defun2 map[?f_?p] (?f ?p) (l)
   (declare (xargs :guard (all[?p] l)))
@@ -61,6 +65,8 @@
         (t (?g (fold[?f_?g] (car bt))
                (fold[?f_?g] (cdr bt))))))
 
+(verify-guards fold[?f_?g]) ; omitted from the paper, for brevity
+
 ; 1.2.2  Choice Functions
 
 (defchoose2 fixpoint[?f] x (?f) ()
@@ -72,6 +78,8 @@
   (forall (x y)
           (implies (equal (?f x) (?f y))
                    (equal x y))))
+
+(verify-guards injective[?f]) ; omitted from the paper, for brevity
 
 ; 1.3  Instances of Second-Order Functions
 
@@ -147,6 +155,8 @@
                      (?io x (?f x))))
   :rewrite :direct)
 
+(verify-guards atom-io[?f_?io]) ; omitted from the paper, for brevity
+
 (defun-sk2 consp-io[?g_?io] (?g ?io) ()
   (forall (x y1 y2)
           (implies (and (consp x)
@@ -154,6 +164,8 @@
                         (?io (cdr x) y2))
                    (?io x (?g y1 y2))))
   :rewrite :direct)
+
+(verify-guards consp-io[?g_?io]) ; omitted from the paper, for brevity
 
 (defthm fold-io[?f_?g_?io]
   (implies (and (atom-io[?f_?io])
