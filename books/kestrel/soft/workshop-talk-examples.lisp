@@ -1,6 +1,6 @@
 ; SOFT ('Second-Order Functions and Theorems) -- Workshop Talk Examples
 ;
-; Copyright (C) 2015-1026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,6 +39,8 @@
         (t (cons (?f (car l))
                  (map[?f] (cdr l))))))
 
+(verify-guards map[?f])
+
 ; MAP[?F] preserves length.
 
 (defthm len-of-map[?f]
@@ -52,6 +54,8 @@
 
 (defun rev-fix-cons (a x)
   (cons a (map[fix] (rev x))))
+
+(verify-guards rev-fix-cons)
 
 ; Instantiate LEN-OF-MAP[?F] and use to prove a theorem about REV-FIX-CONS.
 
@@ -95,6 +99,8 @@
   (and (semigroup[?op])
        (identity[?op] id)))
 
+(verify-guards monoid[?op])
+
 ; Inverse ?INV for identity ID of operation ?OP.
 
 (defun-sk2 inverse[?op_?inv] (?op ?inv) (id)
@@ -108,3 +114,5 @@
 (defun2 group[?op_?inv] (?op ?inv) (id)
   (and (monoid[?op] id)
        (inverse[?op_?inv] id)))
+
+(verify-guards group[?op_?inv])
