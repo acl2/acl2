@@ -1117,8 +1117,6 @@
        (hints (if fun-measure `(:hints (("Goal" ,@fun-tt-proof))) nil))
        ;; :MEASURE of FUN if recursive, otherwise NIL:
        (measure (if fun-measure `(:measure ,fun-measure) nil))
-       ;; :GUARD of FUN if guarded, otherwise NIL:
-       (guard (if fun-guard `(:guard ,fun-guard) nil))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
        (info (list 'plain fparams))
@@ -1133,7 +1131,7 @@
           ,fun-body
           ,@measure
           ,@hints
-          ,@guard
+          :guard ,fun-guard
           :no-function t
           :enabled t
           ,@options)
