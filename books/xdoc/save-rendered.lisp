@@ -70,6 +70,7 @@
     (state-global-let*
      ((current-package "ACL2" set-current-package-state))
      (b* ((- (initialize-xdoc-errors error))
+          (state (f-put-global 'broken-links-limit nil state))
           ((mv ? all-topics0 state)
            (all-xdoc-topics state))
           (all-topics

@@ -262,10 +262,29 @@
        (state (set-fmt-soft-right-margin 10000 state))
        (state (set-fmt-hard-right-margin 10000 state))
        (num (sum-lengths (strip-cdrs broken)))
-       (- (cw "~%;;; WARNING: Found ~x0 broken topic links: ~%" num)
-          (cw ";;;~%")
-          (report-broken-links-aux broken)
-          (cw ";;;~%"))
+       (broken-links-limit ; set in save-fancy and save-rendered
+        (f-get-global 'broken-links-limit state))
+       (-
+        (cw "~%;;; WARNING: Found ~x0 broken topic link~#1~[~/s~]: ~%"
+            num
+            (if (eql num 1) 0 1))
+        (cw ";;;~%")
+        (report-broken-links-aux broken)
+        (cw ";;;~%")
+
+        ;; [Matt K. addition] Starting late April 2017, we cause an error if
+        ;; there is more than one broken link in the combined manual.  (There
+        ;; is an intentional broken link, some-broken-link, in :doc acl2-doc.)
+        ;; It seems useful to cause an error so that broken links are caught
+        ;; early, without the need to inspect doc/top.cert.out for the broken
+        ;; links report.
+
+        (and broken-links-limit
+             (< broken-links-limit num)
+             (er hard! 'find-broken-links
+                 "Found more than the maximum expected number, ~x0, of broken ~
+                  topic links."
+                 broken-links-limit)))
        (state (set-fmt-soft-right-margin soft state))
        (state (set-fmt-hard-right-margin hard state)))
     state))
