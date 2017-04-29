@@ -36,6 +36,7 @@
                          flambdap
                          fn-symb
                          formals
+                         guard-verified-p
                          lambda-body
                          lambda-formals
                          make-lambda
