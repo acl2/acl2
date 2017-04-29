@@ -82,7 +82,8 @@
                     (redef-okp  'nil)
                     (zip-p      't)
                     (logo-image 'nil)
-                    (error      'nil))
+                    (error      'nil)
+                    (broken-links-limit 'nil))
   (declare (xargs :guard (booleanp error))) ; probably incomplete
   `(progn
      ;; ugh, stupid stupid writes-ok stupidity
@@ -114,6 +115,7 @@
            ;; Now remove all shadowed topics before doing anything more.
            ((mv & & state) (assign acl2::writes-okp t))
            (- (acl2::tshell-ensure))
-           (state (save-fancy all-xdoc-topics ,dir ,zip-p ,logo-image state))
+           (state (save-fancy all-xdoc-topics ,dir ,zip-p ,logo-image
+                              ,broken-links-limit state))
            (- (report-xdoc-errors 'save)))
         (value '(value-triple :invisible))))))
