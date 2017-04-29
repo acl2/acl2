@@ -348,7 +348,8 @@
 ; Step 5
 
 (defun-inst h
-  (fold[?f_?g] (?f . f) (?g . g)))
+  (fold[?f_?g] (?f . f) (?g . g))
+  :verify-guards nil)
 
 (defun-sk2 def-?h (?h) ()
   (forall x (equal (?h x) (h x)))
