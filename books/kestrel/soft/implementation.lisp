@@ -291,8 +291,11 @@
   (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun wrld)))
          (rule-body (formula rule-name nil wrld))
          (fun-body (body fun nil wrld)))
-    (set-equiv (funvars-of-term rule-body wrld)
-               (funvars-of-term fun-body wrld))))
+    (or (set-equiv (funvars-of-term rule-body wrld)
+                   (funvars-of-term fun-body wrld))
+        (raise "The custome rewrite rule ~x0 must have ~
+                the same function variables as the function body ~x1.~%"
+               rule-body fun-body))))
 
 ; The macro DEFUN2 introduces a plain second-order function.
 ; DEFUN2 has the form
