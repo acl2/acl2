@@ -1052,7 +1052,9 @@
      <p>
      An optional flag to attempt or omit the guard verification of @('fun').
      This may be present only if @('sofun') was introduced via @(tsee defun2).
-     The default is @('t').
+     If this flag is absent,
+     the guard verification of @('fun') is attempted
+     iff @('sofun') is guard-verified.
      </p>
 
      <p>
