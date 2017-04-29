@@ -539,7 +539,7 @@
 (define funvar-instp (inst (wrld plist-worldp))
   :verify-guards nil
   (and (fun-substp inst)
-       inst
+       (consp inst)
        (funvar-listp (alist-keys inst) wrld)
        (function-symbol-listp (alist-vals inst) wrld)))
 
