@@ -31,11 +31,11 @@
 
 ; Check that all the symbols in a list are names of functions.
 
-(define function-symbol-listp ((syms symbol-listp) (w plist-worldp))
+(define function-symbol-listp ((syms symbol-listp) (wrld plist-worldp))
   (if (endp syms)
       t
-    (and (function-symbolp (car syms) w)
-         (function-symbol-listp (cdr syms) w))))
+    (and (function-symbolp (car syms) wrld)
+         (function-symbol-listp (cdr syms) wrld))))
 
 ; Second-order functions and theorems depend on function variables.
 ; Each function variable is typed by the number of its arguments (0 or more).
@@ -53,9 +53,9 @@
 (table function-variables nil nil :guard (and (symbolp acl2::key) ; name
                                               (null acl2::val))) ; no extra info
 
-(define funvarp (funvar (w plist-worldp))
+(define funvarp (funvar (wrld plist-worldp))
   :verify-guards nil
-  (let ((table (table-alist 'function-variables w)))
+  (let ((table (table-alist 'function-variables wrld)))
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
 
@@ -94,16 +94,16 @@
 ; The set is represented as a non-empty list without duplicates.
 
 (define funvar-listp ; may be empty or have duplicates
-  (funvars (w plist-worldp))
+  (funvars (wrld plist-worldp))
   :verify-guards nil
   (if (atom funvars)
       (null funvars)
-    (and (funvarp (car funvars) w)
-         (funvar-listp (cdr funvars) w))))
+    (and (funvarp (car funvars) wrld)
+         (funvar-listp (cdr funvars) wrld))))
 
-(define funvar-setp (funvars (w plist-worldp))
+(define funvar-setp (funvars (wrld plist-worldp))
   :verify-guards nil
-  (and (funvar-listp funvars w)
+  (and (funvar-listp funvars wrld)
        funvars
        (no-duplicatesp funvars)))
 
@@ -128,45 +128,45 @@
 ; A table associates to each second-order function name
 ; its kind and the set of its function parameters.
 
-(define sofun-infop (info (w plist-worldp))
+(define sofun-infop (info (wrld plist-worldp))
   :verify-guards nil
   (and (true-listp info)
        (= (len info) 2)
        (sofun-kindp (first info))
-       (funvar-setp (second info) w)))
+       (funvar-setp (second info) wrld)))
 
 (table second-order-functions nil nil
   :guard (and (symbolp acl2::key) ; name
               (sofun-infop acl2::val world)))
 
-(define sofunp (sofun (w plist-worldp))
+(define sofunp (sofun (wrld plist-worldp))
   :verify-guards nil
-  (let ((table (table-alist 'second-order-functions w)))
+  (let ((table (table-alist 'second-order-functions wrld)))
     (and (symbolp sofun)
          (not (null (assoc-eq sofun table))))))
 
-(define sofun-kind (sofun (w plist-worldp))
-  :guard (sofunp sofun w)
+(define sofun-kind (sofun (wrld plist-worldp))
+  :guard (sofunp sofun wrld)
   :verify-guards nil
-  (let ((table (table-alist 'second-order-functions w)))
+  (let ((table (table-alist 'second-order-functions wrld)))
     (first (cdr (assoc-eq sofun table)))))
 
-(defabbrev plain-sofunp (sofun w)
-  (and (sofunp sofun w)
-       (eq (sofun-kind sofun w) 'plain)))
+(defabbrev plain-sofunp (sofun wrld)
+  (and (sofunp sofun wrld)
+       (eq (sofun-kind sofun wrld) 'plain)))
 
-(defabbrev choice-sofunp (sofun w)
-  (and (sofunp sofun w)
-       (eq (sofun-kind sofun w) 'choice)))
+(defabbrev choice-sofunp (sofun wrld)
+  (and (sofunp sofun wrld)
+       (eq (sofun-kind sofun wrld) 'choice)))
 
-(defabbrev quant-sofunp (sofun w)
-  (and (sofunp sofun w)
-       (eq (sofun-kind sofun w) 'quant)))
+(defabbrev quant-sofunp (sofun wrld)
+  (and (sofunp sofun wrld)
+       (eq (sofun-kind sofun wrld) 'quant)))
 
-(define sofun-fparams (sofun (w plist-worldp))
-  :guard (sofunp sofun w)
+(define sofun-fparams (sofun (wrld plist-worldp))
+  :guard (sofunp sofun wrld)
   :verify-guards nil
-  (let ((table (table-alist 'second-order-functions w)))
+  (let ((table (table-alist 'second-order-functions wrld)))
     (second (cdr (assoc-eq sofun table)))))
 
 ; A term may reference a function variable directly
@@ -181,26 +181,26 @@
 (defines funvars-of-term/terms
   :verify-guards nil
 
-  (define funvars-of-term ((term pseudo-termp) (w plist-worldp))
+  (define funvars-of-term ((term pseudo-termp) (wrld plist-worldp))
     (if (or (variablep term)
             (quotep term))
         nil ; no function variables in individual variables and constants
       (let* ((fn (fn-symb term))
              (fn-vars ; function variables in FN
               (if (flambdap fn)
-                  (funvars-of-term (lambda-body fn) w)
-                (if (funvarp fn w)
+                  (funvars-of-term (lambda-body fn) wrld)
+                (if (funvarp fn wrld)
                     (list fn)
-                  (if (sofunp fn w)
-                      (sofun-fparams fn w)
+                  (if (sofunp fn wrld)
+                      (sofun-fparams fn wrld)
                     nil))))) ; is a 1st-order function
-        (append fn-vars (funvars-of-terms (fargs term) w)))))
+        (append fn-vars (funvars-of-terms (fargs term) wrld)))))
 
-  (define funvars-of-terms ((terms pseudo-term-listp) (w plist-worldp))
+  (define funvars-of-terms ((terms pseudo-term-listp) (wrld plist-worldp))
     (if (endp terms)
         nil
-      (append (funvars-of-term (car terms) w)
-              (funvars-of-terms (cdr terms) w)))))
+      (append (funvars-of-term (car terms) wrld)
+              (funvars-of-terms (cdr terms) wrld)))))
 
 ; Plain and quantifier second-order functions and their instances
 ; may reference function variables
@@ -213,16 +213,16 @@
 ; and so plain second-order functions and their instances
 ; may not reference function variables in their well-founded relations.
 
-(define funvars-of-defun ((fun symbolp) (w plist-worldp))
+(define funvars-of-defun ((fun symbolp) (wrld plist-worldp))
   :mode :program
-  (let* ((body (body fun nil w))
-         (measure (if (recursivep fun nil w)
-                      (measure fun w)
+  (let* ((body (body fun nil wrld))
+         (measure (if (recursivep fun nil wrld)
+                      (measure fun wrld)
                     nil))
-         (guard (guard fun nil w))
-         (body-funvars (funvars-of-term body w))
-         (measure-funvars (funvars-of-term measure w)) ; NIL if no measure
-         (guard-funvars (funvars-of-term guard w)))
+         (guard (guard fun nil wrld))
+         (body-funvars (funvars-of-term body wrld))
+         (measure-funvars (funvars-of-term measure wrld)) ; NIL if no measure
+         (guard-funvars (funvars-of-term guard wrld)))
     (append body-funvars
             measure-funvars
             guard-funvars)))
@@ -230,16 +230,16 @@
 ; Choice second-order functions and their instances
 ; may reference function variables in their defining bodies.
 
-(define funvars-of-defchoose ((fun symbolp) (w plist-worldp))
+(define funvars-of-defchoose ((fun symbolp) (wrld plist-worldp))
   :mode :program
-  (funvars-of-term (defchoose-body fun w) w))
+  (funvars-of-term (defchoose-body fun wrld) wrld))
 
 ; Second-order theorems and their instances
 ; may reference function variables in their formulas.
 
-(define funvars-of-defthm ((thm symbolp) (w plist-worldp))
+(define funvars-of-defthm ((thm symbolp) (wrld plist-worldp))
   :mode :program
-  (funvars-of-term (formula thm nil w) w))
+  (funvars-of-term (formula thm nil wrld) wrld))
 
 ; When a second-order function, or an instance thereof, is introduced,
 ; its function parameters must be
@@ -252,14 +252,14 @@
   ((fun symbolp)
    (kind sofun-kindp) ; kind of 2nd-order function of which FUN is an instance
    fparams
-   (w plist-worldp))
-  :guard (or (funvar-setp fparams w) ; if FUN is 2nd-order
-             (null fparams))         ; if FUN is 1st-order
+   (wrld plist-worldp))
+  :guard (or (funvar-setp fparams wrld) ; if FUN is 2nd-order
+             (null fparams))            ; if FUN is 1st-order
   :mode :program
   (let ((funvars (case kind
-                   (plain (funvars-of-defun fun w))
-                   (choice (funvars-of-defchoose fun w))
-                   (quant (funvars-of-defun fun w)))))
+                   (plain (funvars-of-defun fun wrld))
+                   (choice (funvars-of-defchoose fun wrld))
+                   (quant (funvars-of-defun fun wrld)))))
     (cond ((set-equiv funvars fparams) t)
           (fparams ; FUN is 2nd-order
            (raise "~x0 must depend on exactly its function parameters ~x1, ~
@@ -274,10 +274,10 @@
 ; its well-founded relation must be O< for now
 ; (see the possible improvements/extensions at the end of this file).
 
-(define check-wfrel-o< ((fun symbolp) (w plist-worldp))
+(define check-wfrel-o< ((fun symbolp) (wrld plist-worldp))
   :verify-guards nil
-  (if (recursivep fun nil w)
-      (let ((wfrel (well-founded-relation fun w)))
+  (if (recursivep fun nil wrld)
+      (let ((wfrel (well-founded-relation fun wrld)))
         (or (eq wfrel 'o<)
             (raise "~x0 must use O< as well-founded relation, not ~x1.~%"
                    fun wfrel)))
@@ -288,13 +288,13 @@
 ; the custom rewrite rule must have the same function variables
 ; as the matrix (or body) of the function.
 
-(define check-qrewrite-rule-funvars ((fun symbolp) (w plist-worldp))
+(define check-qrewrite-rule-funvars ((fun symbolp) (wrld plist-worldp))
   :mode :program
-  (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun w)))
-         (rule-body (formula rule-name nil w))
-         (fun-body (body fun nil w)))
-    (set-equiv (funvars-of-term rule-body w)
-               (funvars-of-term fun-body w))))
+  (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun wrld)))
+         (rule-body (formula rule-name nil wrld))
+         (fun-body (body fun nil wrld)))
+    (set-equiv (funvars-of-term rule-body wrld)
+               (funvars-of-term fun-body wrld))))
 
 ; The macro DEFUN2 introduces a plain second-order function.
 ; DEFUN2 has the form
@@ -325,11 +325,11 @@
 ; optional declarations,
 ; and body).
 
-(define defun2-event (sofun fparams rest (w plist-worldp))
+(define defun2-event (sofun fparams rest (wrld plist-worldp))
   :verify-guards nil
   (b* (((unless (symbolp sofun))
         (raise "~x0 must be a name." sofun))
-       ((unless (funvar-setp fparams w))
+       ((unless (funvar-setp fparams wrld))
         (raise "~x0 must be a non-empty list of function variables ~
                  without duplicates."
                fparams))
@@ -379,14 +379,14 @@
 ; (individual parameters, body, and keyed options).
 
 (define defchoose2-event
-  (sofun bvars fparams params body options (w plist-worldp))
+  (sofun bvars fparams params body options (wrld plist-worldp))
   :verify-guards nil
   (b* (((unless (symbolp sofun))
         (raise "~x0 must be a name." sofun))
        ((unless (or (symbolp bvars)
                     (symbol-listp bvars)))
         (raise "~x0 must be one or more bound variables." bvars))
-       ((unless (funvar-setp fparams w))
+       ((unless (funvar-setp fparams wrld))
         (raise "~x0 must be a non-empty list of function variables ~
                 without duplicates."
                fparams))
@@ -448,11 +448,11 @@
 ; (it checks that the body has the form (FORALL/EXISTS BOUND-VAR(S) ...)),
 ; but relies on DEFUN-SK to check the keyed options and the matrix of the body.
 
-(define defun-sk2-event (sofun fparams params body options (w plist-worldp))
+(define defun-sk2-event (sofun fparams params body options (wrld plist-worldp))
   :verify-guards nil
   (b* (((unless (symbolp sofun))
         (raise "~x0 must be a name." sofun))
-       ((unless (funvar-setp fparams w))
+       ((unless (funvar-setp fparams wrld))
         (raise "~x0 must be a non-empty list of function variables ~
                 without duplicates."
                fparams))
@@ -492,18 +492,18 @@
 
 ; A theorem may reference function variables in its formula.
 
-(define funvars-of-theorem ((thm symbolp) (w plist-worldp))
+(define funvars-of-theorem ((thm symbolp) (wrld plist-worldp))
   :mode :program
-  (funvars-of-term (formula thm nil w) w))
+  (funvars-of-term (formula thm nil wrld) wrld))
 
 ; A second-order theorem is mimicked by a (first-order) theorem
 ; that depends on one or more function variables,
 ; over which the second-order theorem is universally quantified.
 ; A theorem is second-order iff it depends on one or more function variables.
 
-(define sothmp ((sothm symbolp) (w plist-worldp))
+(define sothmp ((sothm symbolp) (wrld plist-worldp))
   :mode :program
-  (not (null (funvars-of-theorem sothm w))))
+  (not (null (funvars-of-theorem sothm wrld))))
 
 ; When a second-order function or theorem is instantiated,
 ; certain function names are replaced with other function names,
@@ -535,19 +535,19 @@
 ; whose keys are all function variables
 ; and whose values are all function symbols.
 
-(define funvar-instp (inst (w plist-worldp))
+(define funvar-instp (inst (wrld plist-worldp))
   :verify-guards nil
   (and (fun-substp inst)
        inst
-       (funvar-listp (alist-keys inst) w)
-       (function-symbol-listp (alist-vals inst) w)))
+       (funvar-listp (alist-keys inst) wrld)
+       (function-symbol-listp (alist-vals inst) wrld)))
 
-(define funvar-inst-listp (insts (w plist-worldp))
+(define funvar-inst-listp (insts (wrld plist-worldp))
   :verify-guards nil
   (if (atom insts)
       (null insts)
-    (and (funvar-instp (car insts) w)
-         (funvar-inst-listp (cdr insts) w))))
+    (and (funvar-instp (car insts) wrld)
+         (funvar-inst-listp (cdr insts) wrld))))
 
 ; Instantiating a second-order function yields
 ; another second-order function
@@ -560,32 +560,32 @@
 ; This map is represented as an alist,
 ; accessed by treating instantiations equivalent according to ALIST-EQUIV.
 
-(define sof-instancesp (instmap (w plist-worldp))
+(define sof-instancesp (instmap (wrld plist-worldp))
   :verify-guards nil
   (and (alistp instmap)
-       (funvar-inst-listp (alist-keys instmap) w)
+       (funvar-inst-listp (alist-keys instmap) wrld)
        (symbol-listp (alist-vals instmap))))
 
 (define get-sof-instance ; read from map (NIL if absent)
-  (inst instmap (w plist-worldp))
-  :guard (and (funvar-instp inst w)
-              (sof-instancesp instmap w))
+  (inst instmap (wrld plist-worldp))
+  :guard (and (funvar-instp inst wrld)
+              (sof-instancesp instmap wrld))
   :verify-guards nil
   (if (endp instmap)
       nil
     (let ((pair (car instmap)))
       (if (alist-equiv (car pair) inst)
           (cdr pair)
-        (get-sof-instance inst (cdr instmap) w)))))
+        (get-sof-instance inst (cdr instmap) wrld)))))
 
 (define put-sof-instance ; add to map
-  (inst (fun symbolp) instmap (w plist-worldp))
-  :guard (and (funvar-instp inst w)
-              (sof-instancesp instmap w)
+  (inst (fun symbolp) instmap (wrld plist-worldp))
+  :guard (and (funvar-instp inst wrld)
+              (sof-instancesp instmap wrld)
               ;; must not be already in map:
-              (null (get-sof-instance inst instmap w)))
+              (null (get-sof-instance inst instmap wrld)))
   :verify-guards nil
-  (declare (ignore w)) ; only used in guard
+  (declare (ignore wrld)) ; only used in guard
   (acons inst fun instmap))
 
 ; A table maps second-order functions to their instances.
@@ -595,10 +595,10 @@
                                          (sof-instancesp acl2::val world)))
 
 (define sof-instances ; instances of SOFUN (NIL if none)
-  (sofun (w plist-worldp))
-  :guard (sofunp sofun w)
+  (sofun (wrld plist-worldp))
+  :guard (sofunp sofun wrld)
   :verify-guards nil
-  (let ((table (table-alist 'sof-instances w)))
+  (let ((table (table-alist 'sof-instances wrld)))
     (cdr (assoc-eq sofun table))))
 
 ; Applying an instantiation to a term involves replacing
@@ -632,18 +632,18 @@
 ; to instantiate terms.
 
 (define fun-subst-function
-  ((fsbs fun-substp) (fun symbolp) (w plist-worldp))
+  ((fsbs fun-substp) (fun symbolp) (wrld plist-worldp))
   :verify-guards nil
   (let ((pair (assoc-eq fun fsbs)))
     (if pair ; FUN is a key of FSBS
         (cdr pair)
-      (if (sofunp fun w)
-          (let* ((fparams (sofun-fparams fun w))
+      (if (sofunp fun wrld)
+          (let* ((fparams (sofun-fparams fun wrld))
                  (subfsbs (restrict-alist fparams fsbs)))
             (if (null subfsbs) ; FUN does not depend on keys of FSBS
                 fun
-              (let* ((instmap (sof-instances fun w))
-                     (new-fun (get-sof-instance subfsbs instmap w)))
+              (let* ((instmap (sof-instances fun wrld))
+                     (new-fun (get-sof-instance subfsbs instmap wrld)))
                 (if new-fun ; instance of FUN exists
                     new-fun
                   (raise "~x0 has no instance for ~x1."
@@ -654,28 +654,28 @@
   :verify-guards nil
 
   (define fun-subst-term
-    ((fsbs fun-substp) (term pseudo-termp) (w plist-worldp))
+    ((fsbs fun-substp) (term pseudo-termp) (wrld plist-worldp))
     (if (or (variablep term)
             (quotep term))
         term ; no change to individual variables and constants
       (let* ((fn (fn-symb term))
              ;; apply substitution to FN:
              (new-fn (if (symbolp fn)
-                         (fun-subst-function fsbs fn w)
+                         (fun-subst-function fsbs fn wrld)
                        (make-lambda (lambda-formals fn)
                                     (fun-subst-term fsbs
                                                     (lambda-body fn)
-                                                    w))))
+                                                    wrld))))
              ;; apply substitution to arguments:
-             (new-args (fun-subst-terms fsbs (fargs term) w)))
+             (new-args (fun-subst-terms fsbs (fargs term) wrld)))
         (cons new-fn new-args))))
 
   (define fun-subst-terms
-    ((fsbs fun-substp) (terms pseudo-term-listp) (w plist-worldp))
+    ((fsbs fun-substp) (terms pseudo-term-listp) (wrld plist-worldp))
     (if (endp terms)
         nil
-      (cons (fun-subst-term fsbs (car terms) w)
-            (fun-subst-terms fsbs (cdr terms) w)))))
+      (cons (fun-subst-term fsbs (car terms) wrld)
+            (fun-subst-terms fsbs (cdr terms) wrld)))))
 
 ; An instance THM of a second-order theorem SOTHM is also a theorem,
 ; provable using a :FUNCTIONAL-INSTANCE of SOTHM.
@@ -714,39 +714,39 @@
   :mode :program
 
   (define ext-fun-subst-term
-    ((term pseudo-termp) (fsbs fun-substp) (w plist-worldp))
+    ((term pseudo-termp) (fsbs fun-substp) (wrld plist-worldp))
     (if (or (variablep term)
             (quotep term))
         fsbs ; no 2nd-order functions in individual variables and constants
       (let* ((fn (fn-symb term))
              (fsbs (if (symbolp fn)
-                       (ext-fun-subst-function fn fsbs w)
-                     (ext-fun-subst-term (lambda-body fn) fsbs w))))
-        (ext-fun-subst-terms (fargs term) fsbs w))))
+                       (ext-fun-subst-function fn fsbs wrld)
+                     (ext-fun-subst-term (lambda-body fn) fsbs wrld))))
+        (ext-fun-subst-terms (fargs term) fsbs wrld))))
 
   (define ext-fun-subst-terms
-    ((terms pseudo-term-listp) (fsbs fun-substp) (w plist-worldp))
+    ((terms pseudo-term-listp) (fsbs fun-substp) (wrld plist-worldp))
     (if (endp terms)
         fsbs
-      (let ((fsbs (ext-fun-subst-term (car terms) fsbs w)))
-        (ext-fun-subst-terms (cdr terms) fsbs w))))
+      (let ((fsbs (ext-fun-subst-term (car terms) fsbs wrld)))
+        (ext-fun-subst-terms (cdr terms) fsbs wrld))))
 
   (define ext-fun-subst-function
-    ((fun symbolp) (fsbs fun-substp) (w plist-worldp))
+    ((fun symbolp) (fsbs fun-substp) (wrld plist-worldp))
     (cond
      ((assoc fun fsbs) fsbs) ; pair already present
-     ((sofunp fun w)
-      (b* ((fparams (sofun-fparams fun w))
+     ((sofunp fun wrld)
+      (b* ((fparams (sofun-fparams fun wrld))
            (subfsbs (restrict-alist fparams fsbs))
            ((if (null subfsbs)) fsbs) ; FUN unchanged under FSBS
-           (instmap (sof-instances fun w))
-           (funinst (get-sof-instance subfsbs instmap w))
+           (instmap (sof-instances fun wrld))
+           (funinst (get-sof-instance subfsbs instmap wrld))
            ((unless funinst)
             (raise "~x0 has no instance for ~x1." fun fsbs))
            (fsbs (acons fun funinst fsbs))) ; extend FSBS
-          (case (sofun-kind fun w)
-            ((plain quant) (ext-fun-subst-term (body fun nil w) fsbs w))
-            (choice (ext-fun-subst-term (defchoose-body fun w) fsbs w)))))
+          (case (sofun-kind fun wrld)
+            ((plain quant) (ext-fun-subst-term (body fun nil wrld) fsbs wrld))
+            (choice (ext-fun-subst-term (defchoose-body fun wrld) fsbs wrld)))))
      (t fsbs)))) ; FUN is not a 2nd-order function
 
 ; From a function substitution obtained by extending an instantiation as above,
@@ -768,21 +768,21 @@
 ; that extends an instantiation to a function substitution
 ; does not catch these witnesses.
 
-(define sothm-inst-pairs ((fsbs fun-substp) (w plist-worldp))
+(define sothm-inst-pairs ((fsbs fun-substp) (wrld plist-worldp))
   :mode :program
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
            (1st (car pair))
            (2nd (cdr pair)))
-      (if (quant-sofunp 1st w)
-          (let ((1st-wit (defun-sk-info->witness (defun-sk-check 1st w)))
-                (2nd-wit (defun-sk-info->witness (defun-sk-check 2nd w))))
+      (if (quant-sofunp 1st wrld)
+          (let ((1st-wit (defun-sk-info->witness (defun-sk-check 1st wrld)))
+                (2nd-wit (defun-sk-info->witness (defun-sk-check 2nd wrld))))
             (cons (list 1st 2nd) ; pair from FSBS
                   (cons (list 1st-wit 2nd-wit) ; pair of witnesses
-                        (sothm-inst-pairs (cdr fsbs) w))))
+                        (sothm-inst-pairs (cdr fsbs) wrld))))
         (cons (list 1st 2nd) ; pair from FSBS
-              (sothm-inst-pairs (cdr fsbs) w))))))
+              (sothm-inst-pairs (cdr fsbs) wrld))))))
 
 ; When a :FUNCTIONAL-INSTANCE is used in a proof,
 ; proof subgoals are created to ensure that the replacing functions
@@ -831,20 +831,20 @@
 ; - Otherwise, FUN1 is a function variable, which has no constraints,
 ;   so no fact is used in the proof.
 
-(define sothm-inst-facts ((fsbs fun-substp) (w plist-worldp))
+(define sothm-inst-facts ((fsbs fun-substp) (wrld plist-worldp))
   :mode :program
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
            (1st (car pair))
            (2nd (cdr pair)))
-      (cond ((or (plain-sofunp 1st w)
-                 (choice-sofunp 1st w))
-             (cons 2nd (sothm-inst-facts (cdr fsbs) w)))
-            ((quant-sofunp 1st w)
-             (cons (defun-sk-info->rewrite-name (defun-sk-check 2nd w))
-                   (sothm-inst-facts (cdr fsbs) w)))
-            (t (sothm-inst-facts (cdr fsbs) w))))))
+      (cond ((or (plain-sofunp 1st wrld)
+                 (choice-sofunp 1st wrld))
+             (cons 2nd (sothm-inst-facts (cdr fsbs) wrld)))
+            ((quant-sofunp 1st wrld)
+             (cons (defun-sk-info->rewrite-name (defun-sk-check 2nd wrld))
+                   (sothm-inst-facts (cdr fsbs) wrld)))
+            (t (sothm-inst-facts (cdr fsbs) wrld))))))
 
 ; Instances of second-order theorems are proved using the ACL2 proof builder.
 ; Each such instance is proved by
@@ -857,11 +857,11 @@
 ; the proof builder :PROVE command is used to iron out any such differences.
 
 (define sothm-inst-proof
-  ((sothm symbolp) (fsbs fun-substp) (w plist-worldp))
+  ((sothm symbolp) (fsbs fun-substp) (wrld plist-worldp))
   :mode :program
   `(:instructions
-    ((:use (:functional-instance ,sothm ,@(sothm-inst-pairs fsbs w)))
-     (:repeat (:then (:use ,@(sothm-inst-facts fsbs w)) :prove)))))
+    ((:use (:functional-instance ,sothm ,@(sothm-inst-pairs fsbs wrld)))
+     (:repeat (:then (:use ,@(sothm-inst-facts fsbs wrld)) :prove)))))
 
 ; The macro DEFTHM-INST introduces an instance of a second-order theorem.
 ; DEFTHM-INST has the form
@@ -890,19 +890,19 @@
 ; check that SOTHM-INST has the form (SOTHM (F1 . G1) ... (Fm . Gm)),
 ; where SOTHM is a 2nd-order theorem
 ; and ((F1 . G1) ... (Fm . Gm)) is an instantiation:
-(define check-sothm-inst (sothm-inst (w plist-worldp))
+(define check-sothm-inst (sothm-inst (wrld plist-worldp))
   :mode :program
   (and (true-listp sothm-inst)
        (>= (len sothm-inst) 2)
-       (sothmp (car sothm-inst) w)
-       (funvar-instp (cdr sothm-inst) w)))
+       (sothmp (car sothm-inst) wrld)
+       (funvar-instp (cdr sothm-inst) wrld)))
 
-(define defthm-inst-event (thm sothm-inst rest (w plist-worldp))
+(define defthm-inst-event (thm sothm-inst rest (wrld plist-worldp))
   :mode :program
   (b* (;; THM is the name of the new theorem:
        ((unless (symbolp thm)) (raise "~x0 must be a name." thm))
        ;; after THM there is (SOTHM (F1 . G1) ... (Fm . Gm)):
-       ((unless (check-sothm-inst sothm-inst w))
+       ((unless (check-sothm-inst sothm-inst wrld))
         (raise "~x0 must be the name of a second-order theorem ~
                 followed by the pairs of an instantiation."
                sothm-inst))
@@ -910,16 +910,16 @@
        (sothm (car sothm-inst))
        (inst (cdr sothm-inst))
        ;; every Fi must be a function variable that SOTHM depends on:
-       ((unless (subsetp (alist-keys inst) (funvars-of-theorem sothm w)))
+       ((unless (subsetp (alist-keys inst) (funvars-of-theorem sothm wrld)))
         (raise "Each function variable key of ~x0 must be ~
                 among function variable that ~x1 depends on."
                inst sothm))
        ;; apply ((F1 . G1) ... (Fm . Gm)) to the formula of SOTHM:
-       (sothm-formula (formula sothm nil w))
-       (thm-formula (fun-subst-term inst sothm-formula w))
+       (sothm-formula (formula sothm nil wrld))
+       (thm-formula (fun-subst-term inst sothm-formula wrld))
        ;; construct the proof from the instantiation:
-       (fsbs (ext-fun-subst-term sothm-formula inst w))
-       (thm-proof (sothm-inst-proof sothm fsbs w)))
+       (fsbs (ext-fun-subst-term sothm-formula inst wrld))
+       (thm-proof (sothm-inst-proof sothm fsbs wrld)))
       ;; generate event (REST is RULE-CLASSES, if present):
       `(defthm ,thm ,thm-formula ,@thm-proof ,@rest)))
 
@@ -1059,42 +1059,42 @@
 ; check that SOFUN-INST had the form (SOFUN (F1 . G1) ... (Fm . Gm)),
 ; where SOFUN is a 2nd-order function
 ; and ((F1 . G1) ... (Fm . Gm)) is an instantiation:
-(define check-sofun-inst (sofun-inst (w plist-worldp))
+(define check-sofun-inst (sofun-inst (wrld plist-worldp))
   :verify-guards nil
   (and (true-listp sofun-inst)
        (>= (len sofun-inst) 2)
-       (sofunp (car sofun-inst) w)
-       (funvar-instp (cdr sofun-inst) w)))
+       (sofunp (car sofun-inst) wrld)
+       (funvar-instp (cdr sofun-inst) wrld)))
 
 ; events to introduce FUN
 ; and to add it to the table of second-order functions if it is second-order,
 ; when SOFUN is a plain second-order function:
 (define defun-inst-plain-events
-  ((fun symbolp) fparams sofun inst (options true-listp) (w plist-worldp))
-  :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
+  ((fun symbolp) fparams sofun inst (options true-listp) (wrld plist-worldp))
+  :guard (and (or (funvar-setp fparams wrld) ; FUN is 2nd-order
                   (null fparams))         ; FUN is 1st-order
-              (plain-sofunp sofun w))
+              (plain-sofunp sofun wrld))
   :mode :program
   (b* (;; retrieve body, measure, and guard of SOFUN:
-       (sofun-body (body sofun nil w))
-       (sofun-measure (if (recursivep sofun nil w)
-                          (measure sofun w)
+       (sofun-body (body sofun nil wrld))
+       (sofun-measure (if (recursivep sofun nil wrld)
+                          (measure sofun wrld)
                         nil))
-       (sofun-guard (guard sofun nil w))
+       (sofun-guard (guard sofun nil wrld))
        ;; extend instantiation with (SOFUN . FUN) if SOFUN is recursive
        ;; (so that recursive calls to SOFUN can be properly replaced with FUN)
        ;; and apply it to the body of SOFUN:
        (fsbs (if sofun-measure (acons sofun fun inst) inst))
-       (fun-body (fun-subst-term fsbs sofun-body w))
+       (fun-body (fun-subst-term fsbs sofun-body wrld))
        ;; apply instantiation to the measure and guard of SOFUN:
-       (fun-measure (fun-subst-term inst sofun-measure w))
-       (fun-guard (fun-subst-term inst sofun-guard w))
+       (fun-measure (fun-subst-term inst sofun-measure wrld))
+       (fun-guard (fun-subst-term inst sofun-guard wrld))
        ;; construct the termination proof from the instantiation, if recursive:
        (sofun-tt-name `(:termination-theorem ,sofun))
-       (sofun-tt-formula (and (recursivep sofun nil w)
-                              (termination-theorem sofun w)))
-       (fsbs (ext-fun-subst-term sofun-tt-formula inst w))
-       (fun-tt-proof (sothm-inst-proof sofun-tt-name fsbs w))
+       (sofun-tt-formula (and (recursivep sofun nil wrld)
+                              (termination-theorem sofun wrld)))
+       (fsbs (ext-fun-subst-term sofun-tt-formula inst wrld))
+       (fun-tt-proof (sothm-inst-proof sofun-tt-name fsbs wrld))
        ;; :HINTS of FUN if recursive, otherwise NIL:
        (hints (if fun-measure `(:hints (("Goal" ,@fun-tt-proof))) nil))
        ;; :MEASURE of FUN if recursive, otherwise NIL:
@@ -1111,7 +1111,7 @@
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
       ;; generated list of events:
-      `((define ,fun ,(formals sofun w)
+      `((define ,fun ,(formals sofun wrld)
           ,fun-body
           ,@measure
           ,@hints
@@ -1127,16 +1127,16 @@
 ; and to add it to the table of second-order functions if it second-order,
 ; when SOFUN is a choice second-order function:
 (define defun-inst-choice-events
-    ((fun symbolp) fparams sofun inst (options true-listp) (w plist-worldp))
-  :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
-                  (null fparams))         ; FUN is 1st-order
-              (choice-sofunp sofun w))
+    ((fun symbolp) fparams sofun inst (options true-listp) (wrld plist-worldp))
+  :guard (and (or (funvar-setp fparams wrld) ; FUN is 2nd-order
+                  (null fparams))            ; FUN is 1st-order
+              (choice-sofunp sofun wrld))
   :mode :program
   (b* (;; retrieve bound variables of SOFUN:
-       (bound-vars (defchoose-bound-vars sofun w))
+       (bound-vars (defchoose-bound-vars sofun wrld))
        ;; apply instantiation to body of SOFUN:
-       (sofun-body (defchoose-body sofun w))
-       (fun-body (fun-subst-term inst sofun-body w))
+       (sofun-body (defchoose-body sofun wrld))
+       (fun-body (fun-subst-term inst sofun-body wrld))
        ;; info about FUN to add to the table of second-order functions
        ;; (if FUN is second-order):
        (info (list 'choice fparams))
@@ -1147,9 +1147,9 @@
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
       ;; generated list of events:
-      `((defchoose ,fun ,bound-vars ,(formals sofun w)
+      `((defchoose ,fun ,bound-vars ,(formals sofun wrld)
           ,fun-body
-          :strengthen ,(defchoose-strengthen sofun w)
+          :strengthen ,(defchoose-strengthen sofun wrld)
           ,@options)
         ,@table-event)))
 
@@ -1157,19 +1157,19 @@
 ; and to add it to the table of second-order functions if it is second-order,
 ; when SOFUN is a quantifier second-order function:
 (define defun-inst-quant-events
-  ((fun symbolp) fparams sofun inst (options true-listp) (w plist-worldp))
-  :guard (and (or (funvar-setp fparams w) ; FUN is 2nd-order
-                  (null fparams))         ; FUN is 1st-order
-              (quant-sofunp sofun w))
+  ((fun symbolp) fparams sofun inst (options true-listp) (wrld plist-worldp))
+  :guard (and (or (funvar-setp fparams wrld) ; FUN is 2nd-order
+                  (null fparams))            ; FUN is 1st-order
+              (quant-sofunp sofun wrld))
   :mode :program
   (b* (;; retrieve DEFUN-SK-specific constituents of SOFUN:
-       (sofun-info (defun-sk-check sofun w))
+       (sofun-info (defun-sk-check sofun wrld))
        ;; retrieve bound variables and quantifier of SOFUN:
        (bound-vars (defun-sk-info->bound-vars sofun-info))
        (quant (defun-sk-info->quantifier sofun-info))
        ;; apply instantiation to the matrix of SOFUN:
        (sofun-matrix (defun-sk-info->matrix sofun-info))
-       (fun-matrix (fun-subst-term inst sofun-matrix w))
+       (fun-matrix (fun-subst-term inst sofun-matrix wrld))
        ;; the value of :REWRITE for FUN
        ;; is determined from the supplied value (if any),
        ;; otherwise it is inherited from SOFUN:
@@ -1187,11 +1187,11 @@
                  ;; because the term presumably references SOFUN):
                  (let* ((fsbs (acons sofun fun inst))
                         (rule-name (defun-sk-info->rewrite-name sofun-info))
-                        (term (formula rule-name nil w)))
-                   (fun-subst-term fsbs term w)))))))
+                        (term (formula rule-name nil wrld)))
+                   (fun-subst-term fsbs term wrld)))))))
        ;; apply instantiation to the guard of SOFUN:
-       (sofun-guard (guard sofun nil w))
-       (fun-guard (fun-subst-term inst sofun-guard w))
+       (sofun-guard (guard sofun nil wrld))
+       (fun-guard (fun-subst-term inst sofun-guard wrld))
        ;; :WITNESS-DCLS for FUN:
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        ;; info about FUN to add to the table of second-order functions
@@ -1204,7 +1204,7 @@
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
       ;; generated list of events:
-      `((defun-sk ,fun ,(formals sofun w)
+      `((defun-sk ,fun ,(formals sofun wrld)
           (,quant ,bound-vars ,fun-matrix)
           :strengthen ,(defun-sk-info->strengthen sofun-info)
           :quant-ok t
@@ -1218,16 +1218,16 @@
         ,@table-event
         (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
 
-(define defun-inst-event (fun fparams-or-sofuninst rest (w plist-worldp))
+(define defun-inst-event (fun fparams-or-sofuninst rest (wrld plist-worldp))
   :mode :program
   (b* (;; FUN is the name of the new function:
        ((unless (symbolp fun)) (raise "~x0 must be a name." fun))
        ;; after FUN there is (FVAR1 ... FVARn) if FUN is 2nd-order,
        ;; otherwise there is (SOFUN (F1 . G1) ... (Fm . Gm)):
        (2nd-order ; T if FUN is 2nd-order
-        (funvar-setp fparams-or-sofuninst w))
+        (funvar-setp fparams-or-sofuninst wrld))
        ((unless (or 2nd-order
-                    (check-sofun-inst fparams-or-sofuninst w)))
+                    (check-sofun-inst fparams-or-sofuninst wrld)))
         (raise "~x0 must be either a non-empty list of ~
                 function variables without duplicates ~
                 or the name of a second-order function ~
@@ -1241,7 +1241,7 @@
        ;; and its first element must be (SOFUN (F1 . G1) ... (Fm . Gm)):
        ((unless (or (not 2nd-order)
                     (and (consp rest)
-                         (check-sofun-inst (car rest) w))))
+                         (check-sofun-inst (car rest) wrld))))
         (raise "~x0 must start with the name of a second-order function ~
                 followed by an instantiation."
                rest))
@@ -1250,32 +1250,32 @@
        (sofun (car sofun-inst))
        (inst (cdr sofun-inst))
        ;; every Fi must be a function parameter of SOFUN:
-       ((unless (subsetp (alist-keys inst) (sofun-fparams sofun w)))
+       ((unless (subsetp (alist-keys inst) (sofun-fparams sofun wrld)))
         (raise "Each function variable key of ~x0 must be ~
                 among the function parameters ~x1 of ~x2."
-               inst (sofun-fparams sofun w) sofun))
+               inst (sofun-fparams sofun wrld) sofun))
        ;; the options are REST if FUN is 1st-order,
        ;; otherwise they come after (SOFUN (F1 . G1) ... (Fm . Gm)) in REST:
        (options (if 2nd-order (cdr rest) rest))
        ;; events specific to the kind of SOFUN:
        (spec-events
-        (case (sofun-kind sofun w)
+        (case (sofun-kind sofun wrld)
           (plain
-           (defun-inst-plain-events fun fparams sofun inst options w))
+           (defun-inst-plain-events fun fparams sofun inst options wrld))
           (choice
-           (defun-inst-choice-events fun fparams sofun inst options w))
+           (defun-inst-choice-events fun fparams sofun inst options wrld))
           (quant
-           (defun-inst-quant-events fun fparams sofun inst options w))))
+           (defun-inst-quant-events fun fparams sofun inst options wrld))))
        ;; updated entry for SOFUN
        ;; in table of instances of second-order functions:
-       (instmap (sof-instances sofun w))
-       (new-instmap (put-sof-instance inst fun instmap w)))
+       (instmap (sof-instances sofun wrld))
+       (new-instmap (put-sof-instance inst fun instmap wrld)))
       ;; generated event:
       `(progn
          ,@spec-events
          (table sof-instances ',sofun ',new-instmap)
          (value-triple (check-fparams-dependency ',fun
-                                                 ',(sofun-kind sofun w)
+                                                 ',(sofun-kind sofun wrld)
                                                  ',fparams
                                                  (w state))))))
 
