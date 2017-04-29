@@ -818,7 +818,7 @@
 ; - If FUN1 is a plain second-order function,
 ;   the fact used in the the proof is the definition of FUN2
 ;   (by construction, since FUN2 is an instance of FUN1,
-;   FUN2 is introduced by a DEFUN, via a DEFINE),
+;   FUN2 is introduced by a DEFUN),
 ;   whose name is the name of FUN2.
 ; - If FUN1 is a choice second-order function,
 ;   the fact used in the proof is the DEFCHOOSE axiom of FUN2
@@ -988,11 +988,7 @@
 ; DEFUN-INST generates a :HINTS for the termination proof of the same form
 ; as the generated proof of an instance of a second-order theorem above.
 ;
-; Similarly to DEFUN2, DEFUN-INST sets
-; the :NO-FUNCTION and :ENABLED options of DEFINE to T.
-; DEFUN-INST sets
-; the :IGNORE-OK and :IRRELEVANT-FORMALS-OK options of DEFINE to T,
-; in case SOFUN has IGNORE or IGNORABLE declarations.
+; DEFUN-INST sets the :NO-FUNCTION and :ENABLED options of DEFINE to T.
 ;
 ; The :VERIFY-GUARDS option in DEFUN-INST can be used only if SOFUN is plain.
 ; Its meaning is the same as in DEFUN (or DEFINE).
@@ -1052,6 +1048,11 @@
 ; making it necessary to defer guard verification.
 ; Thus, DEFUN-INST also generates :VERIFY-GUARDS NIL
 ; as part of the :WITNESS-DCLS option.
+;
+; Prior to the event that introduces the new function,
+; DEFUN-INST generates local events
+; to avoid errors due to ignored or irrelevant formals in the new function
+; (which may happen if SOFUN had ignored or irrelevant formals).
 ;
 ; For now, SOFT does not support the transitivity of instantiations,
 ; i.e. that if F is an instance of G and G is an instance of H,
@@ -1119,8 +1120,6 @@
           ,@guard
           :no-function t
           :enabled t
-          :ignore-ok t
-          :irrelevant-formals-ok t
           ,@options)
         ,@table-event)))
 
@@ -1271,14 +1270,17 @@
        ;; in table of instances of second-order functions:
        (instmap (sof-instances sofun wrld))
        (new-instmap (put-sof-instance inst fun instmap wrld)))
-      ;; generated event:
-      `(progn
-         ,@spec-events
-         (table sof-instances ',sofun ',new-instmap)
-         (value-triple (check-fparams-dependency ',fun
-                                                 ',(sofun-kind sofun wrld)
-                                                 ',fparams
-                                                 (w state))))))
+    ;; generated event:
+    `(encapsulate
+       ()
+       (set-ignore-ok t)
+       (set-irrelevant-formals-ok t)
+       ,@spec-events
+       (table sof-instances ',sofun ',new-instmap)
+       (value-triple (check-fparams-dependency ',fun
+                                               ',(sofun-kind sofun wrld)
+                                               ',fparams
+                                               (w state))))))
 
 (defmacro defun-inst (fun fparams-or-sofuninst &rest rest)
   `(make-event
