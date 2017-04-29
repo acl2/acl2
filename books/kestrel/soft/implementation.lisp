@@ -24,6 +24,7 @@
 
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
@@ -520,10 +521,10 @@
            (no-trivial-pairsp (cdr alist))))))
 
 (define fun-substp (fsbs)
-  (and (symbol-alistp fsbs)
-       (symbol-listp (alist-vals fsbs))
+  (and (symbol-symbol-alistp fsbs)
        (no-duplicatesp (alist-keys fsbs))
-       (no-trivial-pairsp fsbs)))
+       (no-trivial-pairsp fsbs))
+  :guard-hints (("Goal" :in-theory (enable symbol-symbol-alistp))))
 
 ; A second-order function or theorem is instantiated
 ; by replacing (some of) its function variables
