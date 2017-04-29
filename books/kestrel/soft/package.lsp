@@ -44,5 +44,6 @@
                          recursivep
                          restrict-alist
                          strip-keyword-list
+                         symbol-symbol-alistp
                          variablep
                          well-founded-relation)))
