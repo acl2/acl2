@@ -1218,6 +1218,12 @@
         ,@table-event
         (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
 
+; extract keywords from the even positions of a list:
+(define keywords-of-keyword-value-list ((kvlist keyword-value-listp))
+  (if (endp kvlist)
+      nil
+    (cons (car kvlist) (keywords-of-keyword-value-list (cddr kvlist)))))
+
 (define defun-inst-event (fun fparams-or-sofuninst rest (wrld plist-worldp))
   :mode :program
   (b* (;; FUN is the name of the new function:
@@ -1246,9 +1252,10 @@
                 followed by an instantiation."
                rest))
        (sofun-inst (if 2nd-order (car rest) fparams-or-sofuninst))
-       ;; decompose (SOFUN (F1 . G1) ... (Fm . Gm)):
+       ;; decompose (SOFUN (F1 . G1) ... (Fm . Gm)) and obtain kind of SOFUN:
        (sofun (car sofun-inst))
        (inst (cdr sofun-inst))
+       (kind (sofun-kind sofun wrld))
        ;; every Fi must be a function parameter of SOFUN:
        ((unless (subsetp (alist-keys inst) (sofun-fparams sofun wrld)))
         (raise "Each function variable key of ~x0 must be ~
@@ -1257,9 +1264,36 @@
        ;; the options are REST if FUN is 1st-order,
        ;; otherwise they come after (SOFUN (F1 . G1) ... (Fm . Gm)) in REST:
        (options (if 2nd-order (cdr rest) rest))
+       ;; the options must be a list
+       ;; whose even-position elements are unique keyword:
+       ((unless (keyword-value-listp options))
+        (raise "~x0 must be a list of keyed options." options))
+       (keywords (keywords-of-keyword-value-list options))
+       ((unless (no-duplicatesp keywords))
+        (raise "~x0 must have unique keywords." options))
+       ;; the options can only include :VERIFY-GUARDS
+       ;; if SOFUN is a plain 2nd-order function:
+       ((unless (or (not (eq kind 'plain))
+                    (subsetp keywords '(:verify-guards))))
+        (raise "~x0 must include only :VERIFY-GUARDS, ~
+                because ~x1 is a plain second-order function."
+               options sofun))
+       ;; the options must be absent if SOFUN is a choice 2nd-order function:
+       ((unless (or (not (eq kind 'choice))
+                    (null options)))
+        (raise "~x0 must include no options, ~
+                because ~x1 is a choice second-order function."
+               options sofun))
+       ;; the options must include only :SKOLEM-NAME and :REWRITE
+       ;; if SOFUN is a quantifier second-order function:
+       ((unless (or (not (eq kind 'quant))
+                    (subsetp keywords '(:skolem-name :rewrite))))
+        (raise "~x0 must include only :SKOLEM-NAME and :REWRITE, ~
+                because ~x1 is a quantifier second-order function."
+               options sofun))
        ;; events specific to the kind of SOFUN:
        (spec-events
-        (case (sofun-kind sofun wrld)
+        (case kind
           (plain
            (defun-inst-plain-events fun fparams sofun inst options wrld))
           (choice
