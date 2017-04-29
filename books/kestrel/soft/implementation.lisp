@@ -146,8 +146,7 @@
     (and (symbolp sofun)
          (not (null (assoc-eq sofun table))))))
 
-(define sofun-kind (sofun (wrld plist-worldp))
-  :guard (sofunp sofun wrld)
+(define sofun-kind ((sofun (sofunp sofun wrld)) (wrld plist-worldp))
   :verify-guards nil
   (let ((table (table-alist 'second-order-functions wrld)))
     (first (cdr (assoc-eq sofun table)))))
@@ -164,8 +163,7 @@
   (and (sofunp sofun wrld)
        (eq (sofun-kind sofun wrld) 'quant)))
 
-(define sofun-fparams (sofun (wrld plist-worldp))
-  :guard (sofunp sofun wrld)
+(define sofun-fparams ((sofun (sofunp sofun wrld)) (wrld plist-worldp))
   :verify-guards nil
   (let ((table (table-alist 'second-order-functions wrld)))
     (second (cdr (assoc-eq sofun table)))))
@@ -252,10 +250,9 @@
 (define check-fparams-dependency
   ((fun symbolp)
    (kind sofun-kindp) ; kind of 2nd-order function of which FUN is an instance
-   fparams
+   (fparams (or (funvar-setp fparams wrld) ; if FUN is 2nd-order
+                (null fparams)))           ; if FUN is 1st-order
    (wrld plist-worldp))
-  :guard (or (funvar-setp fparams wrld) ; if FUN is 2nd-order
-             (null fparams))            ; if FUN is 1st-order
   :mode :program
   (let ((funvars (case kind
                    (plain (funvars-of-defun fun wrld))
@@ -568,9 +565,9 @@
        (symbol-listp (alist-vals instmap))))
 
 (define get-sof-instance ; read from map (NIL if absent)
-  (inst instmap (wrld plist-worldp))
-  :guard (and (funvar-instp inst wrld)
-              (sof-instancesp instmap wrld))
+  ((inst (funvar-instp inst wrld))
+   (instmap (sof-instancesp instmap wrld))
+   (wrld plist-worldp))
   :verify-guards nil
   (if (endp instmap)
       nil
@@ -580,11 +577,12 @@
         (get-sof-instance inst (cdr instmap) wrld)))))
 
 (define put-sof-instance ; add to map
-  (inst (fun symbolp) instmap (wrld plist-worldp))
-  :guard (and (funvar-instp inst wrld)
-              (sof-instancesp instmap wrld)
-              ;; must not be already in map:
-              (null (get-sof-instance inst instmap wrld)))
+  ((inst (funvar-instp inst wrld))
+   (fun symbolp)
+   (instmap (and (sof-instancesp instmap wrld)
+                 ;; must not be already in map:
+                 (null (get-sof-instance inst instmap wrld))))
+   (wrld plist-worldp))
   :verify-guards nil
   (declare (ignore wrld)) ; only used in guard
   (acons inst fun instmap))
@@ -596,8 +594,7 @@
                                          (sof-instancesp acl2::val world)))
 
 (define sof-instances ; instances of SOFUN (NIL if none)
-  (sofun (wrld plist-worldp))
-  :guard (sofunp sofun wrld)
+  ((sofun (sofunp sofun wrld)) (wrld plist-worldp))
   :verify-guards nil
   (let ((table (table-alist 'sof-instances wrld)))
     (cdr (assoc-eq sofun table))))
@@ -1062,15 +1059,14 @@
 ; events to introduce FUN
 ; and to add it to the table of second-order functions if it is second-order,
 ; when SOFUN is a plain second-order function:
-(define defun-inst-plain-events ((fun symbolp)
-                                 fparams
-                                 sofun
-                                 inst
-                                 (options keyword-value-listp)
-                                 (wrld plist-worldp))
-  :guard (and (or (funvar-setp fparams wrld) ; FUN is 2nd-order
-                  (null fparams))            ; FUN is 1st-order
-              (plain-sofunp sofun wrld))
+(define defun-inst-plain-events
+  ((fun symbolp)
+   (fparams (or (funvar-setp fparams wrld) ; FUN is 2nd-order
+                (null fparams)))           ; FUN is 1st-order
+   (sofun (plain-sofunp sofun wrld))
+   inst
+   (options keyword-value-listp)
+   (wrld plist-worldp))
   :mode :program
   (b* (;; the keyed options can only include :VERIFY-GUARDS:
        ((unless (subsetp (keywords-of-keyword-value-list options)
@@ -1130,15 +1126,14 @@
 ; events to introduce FUN
 ; and to add it to the table of second-order functions if it second-order,
 ; when SOFUN is a choice second-order function:
-(define defun-inst-choice-events ((fun symbolp)
-                                  fparams
-                                  sofun
-                                  inst
-                                  (options keyword-value-listp)
-                                  (wrld plist-worldp))
-  :guard (and (or (funvar-setp fparams wrld) ; FUN is 2nd-order
-                  (null fparams))            ; FUN is 1st-order
-              (choice-sofunp sofun wrld))
+(define defun-inst-choice-events
+  ((fun symbolp)
+   (fparams (or (funvar-setp fparams wrld) ; FUN is 2nd-order
+                (null fparams)))           ; FUN is 1st-order
+   (sofun (choice-sofunp sofun wrld))
+   inst
+   (options keyword-value-listp)
+   (wrld plist-worldp))
   :mode :program
   (b* (;; the options must be absent:
        ((unless (null options))
@@ -1168,15 +1163,14 @@
 ; events to introduce FUN
 ; and to add it to the table of second-order functions if it is second-order,
 ; when SOFUN is a quantifier second-order function:
-(define defun-inst-quant-events ((fun symbolp)
-                                 fparams
-                                 sofun
-                                 inst
-                                 (options keyword-value-listp)
-                                 (wrld plist-worldp))
-  :guard (and (or (funvar-setp fparams wrld) ; FUN is 2nd-order
-                  (null fparams))            ; FUN is 1st-order
-              (quant-sofunp sofun wrld))
+(define defun-inst-quant-events
+  ((fun symbolp)
+   (fparams (or (funvar-setp fparams wrld) ; FUN is 2nd-order
+                (null fparams)))           ; FUN is 1st-order
+   (sofun (quant-sofunp sofun wrld))
+   inst
+   (options keyword-value-listp)
+   (wrld plist-worldp))
   :mode :program
   (b* (;; the options must include only :SKOLEM-NAME and :REWRITE:
        ((unless (subsetp (keywords-of-keyword-value-list options)
