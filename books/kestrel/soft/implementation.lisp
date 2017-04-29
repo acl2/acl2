@@ -972,11 +972,10 @@
 ;
 ; DEFUN-INST generates a DEFUN, DEFCHOOSE, or DEFUN-SK event,
 ; depending on whether SOFUN is a plain, choice, or quantifier function.
-; DEFUN-INST directly checks the form except for the options,
-; relying on DEFINE, DEFCHOOSE, or DEFUN-SK to check them.
+; DEFUN-INST directly checks the form except the values of the options,
+; relying on DEFUN, DEFCHOOSE, or DEFUN-SK to check them.
 ;
-; If SOFUN is a plain second-order function, DEFUN-INST generates a DEFUN
-; via a DEFINE.
+; If SOFUN is a plain second-order function, DEFUN-INST generates a DEFUN.
 ; The body, measure, and guard of FUN
 ; are obtained by applying the instantiation
 ; to the body, measure, and guard of SOFUN.
@@ -988,17 +987,10 @@
 ; DEFUN-INST generates a :HINTS for the termination proof of the same form
 ; as the generated proof of an instance of a second-order theorem above.
 ;
-; DEFUN-INST sets the :NO-FUNCTION and :ENABLED options of DEFINE to T.
-;
 ; The :VERIFY-GUARDS option in DEFUN-INST can be used only if SOFUN is plain.
-; Its meaning is the same as in DEFUN (or DEFINE).
-; It is passed through as an option to DEFINE.
-;
-; Since DEFINE accepts more options than :VERIFY-GUARDS,
-; it may be possible to supply, without an immediate error,
-; more options than :VERIFY-GUARDS to DEFUN-INST when SOFUN is plain,
-; but this is currently not supported by SOFT,
-; i.e. the behavior is undefined from the perspective of SOFT.
+; Its meaning is the same as in DEFUN.
+; If present, it is passed through to DEFUN;
+; if absent, it is determined by whether SOFUN is guard-verified or not.
 ;
 ; If SOFUN is a choice second-order function, DEFUN-INST generates a DEFCHOOSE.
 ; The body of FUN is obtained
@@ -1025,13 +1017,6 @@
 ; Its meaning is the same as in DEFUN-SK,
 ; except that if :REWRITE is absent and the quantifier is FORALL,
 ; then :REWRITE is inherited from SOFUN.
-;
-; Since DEFUN-SK accepts more options than :SKOLEM-NAME and :REWRITE,
-; it may be possible to supply, without an immediate error,
-; more options than :SKOLEM-NAME and :REWRITE to DEFUN-INST,
-; when SOFUN is a quantifier second-order function,
-; but this is currently not supported by SOFT,
-; i.e. the behavior is undefined from the perspective of SOFT.
 ;
 ; If SOFUN is a quantifier second-order function,
 ; DEFUN-INST checks that the function variables in the rewrite rule
@@ -1093,6 +1078,13 @@
         (raise "~x0 must include only :VERIFY-GUARDS, ~
                 because ~x1 is a plain second-order function."
                options sofun))
+       ;; if present, use the :VERIFY-GUARDS option for FUN,
+       ;; otherwise FUN is guard-verified iff SOFUN is:
+       (verify-guards (let ((verify-guards-option
+                             (assoc-keyword :verify-guards options)))
+                        (if verify-guards-option
+                            (cadr verify-guards-option)
+                          (guard-verified-p sofun wrld))))
        ;; retrieve body, measure, and guard of SOFUN:
        (sofun-body (body sofun nil wrld))
        (sofun-measure (if (recursivep sofun nil wrld)
@@ -1126,16 +1118,14 @@
        (table-event (if fparams ; 2nd-order
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
-      ;; generated list of events:
-      `((define ,fun ,(formals sofun wrld)
-          ,fun-body
-          ,@measure
-          ,@hints
-          :guard ,fun-guard
-          :no-function t
-          :enabled t
-          ,@options)
-        ,@table-event)))
+    ;; generated list of events:
+    `((defun ,fun ,(formals sofun wrld)
+        (declare (xargs :guard ,fun-guard
+                        :verify-guards ,verify-guards
+                        ,@measure
+                        ,@hints))
+        ,fun-body)
+      ,@table-event)))
 
 ; events to introduce FUN
 ; and to add it to the table of second-order functions if it second-order,
@@ -1169,12 +1159,11 @@
        (table-event (if fparams ; 2nd-order
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
-      ;; generated list of events:
-      `((defchoose ,fun ,bound-vars ,(formals sofun wrld)
-          ,fun-body
-          :strengthen ,(defchoose-strengthen sofun wrld)
-          ,@options)
-        ,@table-event)))
+    ;; generated list of events:
+    `((defchoose ,fun ,bound-vars ,(formals sofun wrld)
+        ,fun-body
+        :strengthen ,(defchoose-strengthen sofun wrld))
+      ,@table-event)))
 
 ; events to introduce FUN
 ; and to add it to the table of second-order functions if it is second-order,
@@ -1206,22 +1195,29 @@
        ;; the value of :REWRITE for FUN
        ;; is determined from the supplied value (if any),
        ;; otherwise it is inherited from SOFUN:
-       (rewrite-supplied (cadr (assoc-keyword :rewrite options)))
+       (rewrite-option (assoc-keyword :rewrite options))
        (rewrite
-        (or rewrite-supplied
-            (let ((qrkind (defun-sk-info->rewrite-kind sofun-info)))
-              (case qrkind
-                (:default :default)
-                (:direct :direct)
-                (:custom
-                 ;; apply instantiation to that term
-                 ;; and use result as :REWRITE for FUN
-                 ;; (the instantiation is extended with (SOFUN . FUN)
-                 ;; because the term presumably references SOFUN):
-                 (let* ((fsbs (acons sofun fun inst))
-                        (rule-name (defun-sk-info->rewrite-name sofun-info))
-                        (term (formula rule-name nil wrld)))
-                   (fun-subst-term fsbs term wrld)))))))
+        (if rewrite-option
+            (cadr rewrite-option)
+          (let ((qrkind (defun-sk-info->rewrite-kind sofun-info)))
+            (case qrkind
+              (:default :default)
+              (:direct :direct)
+              (:custom
+               ;; apply instantiation to that term
+               ;; and use result as :REWRITE for FUN
+               ;; (the instantiation is extended with (SOFUN . FUN)
+               ;; because the term presumably references SOFUN):
+               (let* ((fsbs (acons sofun fun inst))
+                      (rule-name (defun-sk-info->rewrite-name sofun-info))
+                      (term (formula rule-name nil wrld)))
+                 (fun-subst-term fsbs term wrld)))))))
+       ;; :SKOLEM-NAME of FUN if supplied, otherwise NIL:
+       (skolem-name (let ((skolem-name-option
+                           (assoc-keyword :skolem-name options)))
+                      (if skolem-name-option
+                          `(:skolem-name ,(cadr skolem-name-option))
+                        nil)))
        ;; apply instantiation to the guard of SOFUN:
        (sofun-guard (guard sofun nil wrld))
        (fun-guard (fun-subst-term inst sofun-guard wrld))
@@ -1236,20 +1232,17 @@
        (table-event (if fparams ; 2nd-order
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
-      ;; generated list of events:
-      `((defun-sk ,fun ,(formals sofun wrld)
-          (,quant ,bound-vars ,fun-matrix)
-          :strengthen ,(defun-sk-info->strengthen sofun-info)
-          :quant-ok t
-          ,@(and (eq quant 'forall)
-                 (list :rewrite rewrite))
-          :witness-dcls (,wit-dcl)
-          ;; Matt K. mod: avoid duplicate keywords:
-          ,@(strip-keyword-list
-             '(:strengthen :quant-ok :rewrite :witness-dcls)
-             options))
-        ,@table-event
-        (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
+    ;; generated list of events:
+    `((defun-sk ,fun ,(formals sofun wrld)
+        (,quant ,bound-vars ,fun-matrix)
+        :strengthen ,(defun-sk-info->strengthen sofun-info)
+        :quant-ok t
+        ,@(and (eq quant 'forall)
+               (list :rewrite rewrite))
+        ,@skolem-name
+        :witness-dcls (,wit-dcl))
+      ,@table-event
+      (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
 
 (define defun-inst-event (fun fparams-or-sofuninst rest (wrld plist-worldp))
   :mode :program
