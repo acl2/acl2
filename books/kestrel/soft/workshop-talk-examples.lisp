@@ -23,9 +23,6 @@
 
 (include-book "implementation")
 
-; Avoid ACL2(p) error in DEFUN2 pertaining to override hints.
-(local (set-waterfall-parallelism nil))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Unary function variable.
