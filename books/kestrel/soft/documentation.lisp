@@ -27,7 +27,7 @@
 
 (defxdoc soft
 
-  :parents (acl2::kestrel-books acl2::macro-libraries)
+  :parents (acl2::kestrel-books acl2::macro-libraries acl2::projects)
 
   :short "SOFT (Second-Order Functions and Theorems)
           is a tool to mimic second-order functions and theorems
