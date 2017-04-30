@@ -36,6 +36,7 @@
                          flambdap
                          fn-symb
                          formals
+                         function-symbol-listp
                          guard-verified-p
                          lambda-body
                          lambda-formals

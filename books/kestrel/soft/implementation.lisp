@@ -30,14 +30,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Check that all the symbols in a list are names of functions.
-
-(define function-symbol-listp ((syms symbol-listp) (wrld plist-worldp))
-  (if (endp syms)
-      t
-    (and (function-symbolp (car syms) wrld)
-         (function-symbol-listp (cdr syms) wrld))))
-
 ; Second-order functions and theorems depend on function variables.
 ; Each function variable is typed by the number of its arguments (0 or more).
 ; Types of function variables are denoted
