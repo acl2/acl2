@@ -1,6 +1,6 @@
 ; World Queries
 ;
-; Copyright (C) 2015-2016
+; Copyright (C) 2015-2017
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -51,6 +51,30 @@
   :short "Check if a symbol names a macro."
   (not (eq t (getpropc sym 'macro-args t wrld))))
 
+(std::deflist function-symbol-listp (x wrld)
+  (function-symbolp x wrld)
+  :guard (and (symbol-listp x)
+              (plist-worldp wrld))
+  :parents (world-queries)
+  :short "Check if all the symbols in a list name functions."
+  :true-listp t)
+
+(std::deflist theorem-symbol-listp (x wrld)
+  (theorem-symbolp x wrld)
+  :guard (and (symbol-listp x)
+              (plist-worldp wrld))
+  :parents (world-queries)
+  :short "Check if all the symbols in a list name theorems."
+  :true-listp t)
+
+(std::deflist macro-symbol-listp (x wrld)
+  (macro-symbolp x wrld)
+  :guard (and (symbol-listp x)
+              (plist-worldp wrld))
+  :parents (world-queries)
+  :short "Check if all the symbols in a list name macros."
+  :true-listp t)
+
 (define function-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)
@@ -72,6 +96,27 @@
   :short "Recognize symbols that name macros."
   (and (symbolp x)
        (macro-symbolp x wrld)))
+
+(std::deflist function-name-listp (x wrld)
+  (function-namep x wrld)
+  :guard (plist-worldp wrld)
+  :parents (world-queries)
+  :short "Recognize @('nil')-terminated of symbols that name functions."
+  :true-listp t)
+
+(std::deflist theorem-name-listp (x wrld)
+  (theorem-namep x wrld)
+  :guard (plist-worldp wrld)
+  :parents (world-queries)
+  :short "Recognize @('nil')-terminated of symbols that name theorems."
+  :true-listp t)
+
+(std::deflist macro-name-listp (x wrld)
+  (macro-namep x wrld)
+  :guard (plist-worldp wrld)
+  :parents (world-queries)
+  :short "Recognize @('nil')-terminated of symbols that name macros."
+  :true-listp t)
 
 (define logical-name-listp (names (wrld plist-worldp))
   :returns (yes/no booleanp)
