@@ -4611,7 +4611,7 @@
 ; ... defn'), where the defi' are computed from the defi depending on
 ; defun-mode-flg and ignorep.  Defun-Mode-flg is either nil (meaning the
 ; function is :non-executable or the parent event is an encapsulate which is
-; trying to define the executable counterparts of the constrained functions) or
+; trying to define the executable-counterparts of the constrained functions) or
 ; a defun-mode (meaning the parent event is an executable DEFUNS and the
 ; defun-mode is the defun-mode of the defined functions).  Ignorep is
 ; 'reclassifying, '(defstobj . stobj-name), or nil.  If ignorep is nil, we add

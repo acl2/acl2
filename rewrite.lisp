@@ -1097,7 +1097,7 @@
 ; below because it doesn't handle lambdas.)  But this ignores some problems.
 ; How do we avoid evaluating :program fns that occur in the body?  How do
 ; we avoid evaluating disabled fns in the body?  How do we report the
-; executable counterparts we use?  Problems, problems.  We punt.
+; executable-counterparts we use?  Problems, problems.  We punt.
 
            (mv nil (cons-term fn args) ttree))
           ((eq fn 'if)
@@ -1141,7 +1141,7 @@
 ; We return three values: a flag indicating whether we changed term,
 ; the new term, and a ttree recording the :CONGRUENCE rules used.
 ; When we create new terms we run enabled fns on constant args.  The
-; executable counterparts used are reported in the ttree.
+; executable-counterparts used are reported in the ttree.
 
 ; (The (mv a b c) expressions below mean we are returning "multiple
 ; values", in this case, triples consisting of a, b, and c.
@@ -11714,7 +11714,7 @@
                              (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
-; executable counterpart of the fn (or just go into the lambda
+; executable-counterpart of the fn (or just go into the lambda
 ; expression if it's a lambda application).  The test however is
 ; obscure.  What it says is "run the function if (a) it is either a
 ; lambda or a :logic function symbol, (b) all of its args are quoted
@@ -13839,7 +13839,7 @@
                                            hyps)
                                           (mv step-limit t rewritten-rhs
 
-; Should we be pushing executable counterparts into ttrees when we applying
+; Should we be pushing executable-counterparts into ttrees when we applying
 ; metafunctions on behalf of meta rules?  NO:  We should only do that if the
 ; meta-rule's use is sensitive to whether or not they're enabled, and it's not
 ; -- all that matters is if the rule itself is enabled.

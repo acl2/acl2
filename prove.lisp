@@ -246,7 +246,7 @@
 
 ; Term collapsed to a constant.  But it wasn't a constant before, and so
 ; it collapsed because cons-term executed fn on constants.  So we record
-; a use of the executable counterpart.
+; a use of the executable-counterpart.
 
               (mv step-limit
                   term

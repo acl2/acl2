@@ -3958,7 +3958,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; We deflabel Rule-Classes here, so we can refer to it in the doc string for
 ; tau-system.  We define tau-system (the noop fn whose rune controls the
 ; whether the tau database is used during proofs) in axioms.lisp because we
-; build in the nume of its executable counterpart as a constant (e.g., as we do
+; build in the nume of its executable-counterpart as a constant (e.g., as we do
 ; with FORCE) and do not want constants additions to the sources to require
 ; changing that nume (as would happen if tau-system were defined in
 ; rewrite.lisp where rule-classes was originally defined).

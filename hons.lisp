@@ -261,7 +261,7 @@
 ; The execution of honsing and fast alist functions during theorem proving
 ; could be very subtle.  It is easy to imagine discipline failures, inadvertent
 ; norming, inadvertent clearing of hash tables, etc.  We try to prevent this at
-; least somewhat by disabling the executable counterparts of many of the above
+; least somewhat by disabling the executable-counterparts of many of the above
 ; functions.  This is not a total solution, but seems like a good idea anyway.
 
             ;; These would probably be pretty harmless

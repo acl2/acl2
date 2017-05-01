@@ -109,7 +109,7 @@
 ;     compile, because everything looked compiled already.  But where that
 ;     really got us was that we use that function to create TMP1.lisp during
 ;     the bootstrapping.  TMP1.lisp, recall, contains the mechanically
-;     generated executable counterparts of logic mode functions defined in
+;     generated executable-counterparts of logic mode functions defined in
 ;     axioms.lisp.  By not generating these we built an image in which the
 ;     relevant functions were undefined.  Because of the rugged way we invoke
 ;     them, catching errors and producing a HIDE term if we can't eval them,
@@ -1487,7 +1487,7 @@ ACL2 from scratch.")
 
 ; The following appears to allow tail recursion elimination for functions
 ; locally defined using LABELS.  This is important for efficiency since we
-; use LABELS in defining executable counterparts (see e.g. oneify-cltl-code).
+; use LABELS in defining executable-counterparts (see e.g. oneify-cltl-code).
 #+allegro
 (setq compiler:tail-call-non-self-merge-switch t)
 

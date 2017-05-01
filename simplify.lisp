@@ -1286,7 +1286,7 @@
 (defun ev-respecting-ens (form alist state latches ttree ens wrld)
 
 ; This is a variant of ev (see also ev-rec) that avoids calling functions whose
-; executable counterparts are disabled.  Thus, here we return (mv erp val
+; executable-counterparts are disabled.  Thus, here we return (mv erp val
 ; latches ttree), where ev would return (mv erp val latches) and ttree extends
 ; the given ttree by adding executable-counterpart runes justifying the
 ; evaluation.  If erp is non-nil then val and ttree are to be taken as
@@ -5484,7 +5484,7 @@
 ; iff) except the nth one.  The nth literal is deleted if delete-flg is t and
 ; is skipped but included in the if delete-flg is nil.  Pt-lst is in 1:1
 ; correspondence with cl.  We return the new clause, a new pt-lst and a ttree
-; recording the congruence and executable counterpart rules used.  It is
+; recording the congruence and executable-counterpart rules used.  It is
 ; possible that this fn will return a clause dramatically shorter than cl,
 ; because lits may evaporate upon evaluation or merge with other literals.  We
 ; may also prove the clause.
