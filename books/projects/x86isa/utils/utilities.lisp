@@ -7,7 +7,6 @@
 
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "misc/definline" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
