@@ -160,6 +160,8 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
     :hints <usual ACL2 hints for the main theorem>
     :gen-type <t or nil>    ;; Generate :type-prescription corollary
     :gen-linear <t or nil>  ;; Generate :linear corollary
+    :hyp-t <hypotheses for the :type-prescription corollary>
+    :hyp-l <hypotheses for the :linear corollary>
     :hints-t <usual ACL2 hints for the :type-prescription corollary>
     :hints-l <usual ACL2 hints for the :linear corollary>
     :otf-flg <t or nil>)
@@ -173,16 +175,17 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
     (implies <hypotheses>
              (unsigned-byte-p <n> <conclusion>))
     :hints <usual ACL2 hints for the main theorem>
+    :otf-flg <t or nil>
     :rule-classes
     (:rewrite
      (:type-prescription
       :corollary
-      (implies <hypotheses>
+      (implies <hypotheses for the :type-prescription corollary>
                (natp <conclusion>))
       :hints <usual ACL2 hints for the :type-prescription corollary>)
      (:linear
       :corollary
-      (implies <hypotheses>
+      (implies <hypotheses for the :linear corollary>
                (< <conclusion> (expt 2 <n>)))
       :hints <usual ACL2 hints for the :linear corollary>)))
 
@@ -208,6 +211,8 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
     :hints <usual ACL2 hints for the main theorem>
     :gen-type <t or nil>    ;; Generate :type-prescription corollary
     :gen-linear <t or nil>  ;; Generate :linear corollary
+    :hyp-t <hypotheses for the :type-prescription corollary>
+    :hyp-l <hypotheses for the :linear corollary>
     :hints-t <usual ACL2 hints for the :type-prescription corollary>
     :hints-l <usual ACL2 hints for the :linear corollary>
     :otf-flg <t or nil>)
@@ -221,16 +226,17 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
     (implies <hypotheses>
              (signed-byte-p <n> <conclusion>))
     :hints <usual ACL2 hints for the main theorem>
+    :otf-flg <t or nil>
     :rule-classes
     (:rewrite
      (:type-prescription
       :corollary
-      (implies <hypotheses>
+      (implies <hypotheses for the :type-prescription corollary>
                (integerp <conclusion>))
       :hints <usual ACL2 hints for the :type-prescription corollary>)
      (:linear
       :corollary
-      (implies <hypotheses>
+      (implies <hypotheses for the :linear corollary>
                (and (<= (- (expt 2 (1- <n>)) <conclusion>))
                (< <conclusion> (expt 2 (1- <n>)))))
       :hints <usual ACL2 hints for the :linear corollary>)))
