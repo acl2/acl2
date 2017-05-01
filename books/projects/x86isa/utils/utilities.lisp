@@ -106,14 +106,13 @@
   :parents (utilities)
 
   :short "Some helpful macros that generate appropriate rewrite,
-  type-prescription, and linear corollaries when needed"
+  type-prescription, and linear rules when needed"
 
   :long "<ul>
-<li><p>Use the macro @('defthm-natp') to prove that some function
-returns a @('natp'), where the @('type-prescription') corollary says
-that the function returns a @('natp'), and the @('linear')
-corollary says that the function returns a value greater than or equal
-to zero.</p>
+<li><p>Use the macro @('defthm-natp') to prove
+a @('type-prescription') rule saying that some function returns a @('natp'),
+and a @('linear') corollary saying that the function
+returns a value greater than or equal to zero.</p>
 
 <p>Usage:</p>
 
@@ -133,11 +132,7 @@ to zero.</p>
              (natp <conclusion>))
     :hints <usual ACL2 hints>
     :rule-classes
-    ((:type-prescription
-      :corollary
-      (implies <hypotheses>
-               (natp <conclusion>))
-      :hints <usual ACL2 hints>)
+    (:type-prescription
      (:linear
       :corollary
       (implies <hypotheses>
@@ -148,11 +143,10 @@ to zero.</p>
 
 </li>
 
-<li><p>Use the macro @('defthm-usb') to prove that some function
-returns an @('unsigned-byte-p'), where the @('rewrite') corollary says
-<tt>(unsigned-byte-p bound function-call)</tt>, the
-@('type-prescription') corollary says that the function returns a
-@('natp'), and the @('linear') corollary says that the function
+<li><p>Use the macro @('defthm-usb') to prove
+a @('rewrite') rule saying that some function returns an @('unsigned-byte-p'),
+a @('type-prescription') corollary saying that the function returns a @('natp'),
+and a @('linear') corollary saying that the function
 returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
 
 <p>Usage:</p>
@@ -180,11 +174,7 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
              (unsigned-byte-p <n> <conclusion>))
     :hints <usual ACL2 hints for the main theorem>
     :rule-classes
-    ((:rewrite
-      :corollary
-      (implies <hypotheses>
-               (unsigned-byte-p <n> <conclusion>))
-      :hints <usual ACL2 hints>)
+    (:rewrite
      (:type-prescription
       :corollary
       (implies <hypotheses>
@@ -200,13 +190,12 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
 
 </li>
 
-<li><p> Use the macro @('defthm-sb') to prove that some function
-returns a @('signed-byte-p'), where the @('rewrite') corollary says
-<tt>(signed-byte-p bound function-call)</tt>, the
-@('type-prescription') corollary says that the function returns an
-@('integerp'), and the @('linear') corollary says that the function
+<li><p>Use the macro @('defthm-sb') to prove
+a @('rewrite') rule saying that some function returns a @('signed-byte-p'),
+a @('type-prescription') corollary saying that the function returns an
+@('integerp'), and a @('linear') corollary saying that the function
 returns a value greater than or equal to <tt>(- (expt 2 (1-
-bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
+bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 
 <p>Usage:</p>
 
@@ -233,11 +222,7 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
              (signed-byte-p <n> <conclusion>))
     :hints <usual ACL2 hints for the main theorem>
     :rule-classes
-    ((:rewrite
-      :corollary
-      (implies <hypotheses>
-               (signed-byte-p <n> <conclusion>))
-      :hints <usual ACL2 hints>)
+    (:rewrite
      (:type-prescription
       :corollary
       (implies <hypotheses>
@@ -246,12 +231,8 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
      (:linear
       :corollary
       (implies <hypotheses>
-               (<= (- (expt 2 (1- <n>)) <conclusion>)))
-      :hints <usual ACL2 hints for the :linear corollary>)
-     (:linear
-      :corollary
-      (implies <hypotheses>
-               (< <conclusion> (expt 2 (1- <n>))))
+               (and (<= (- (expt 2 (1- <n>)) <conclusion>))
+               (< <conclusion> (expt 2 (1- <n>)))))
       :hints <usual ACL2 hints for the :linear corollary>)))
 
   })
@@ -268,12 +249,7 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
               `(implies ,hyp (natp ,concl)))
            ,@(and hints `(:hints ,hints))
            :rule-classes
-           ((:type-prescription
-             :corollary
-             ,(if (atom hyp)
-                  `(natp ,concl)
-                `(implies ,hyp (natp ,concl)))
-             ,@(and hints `(:hints ,hints)))
+           (:type-prescription
             (:linear
              :corollary
              ,(if (atom hyp)
@@ -304,13 +280,7 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
              ,@(and hints `(:hints ,hints))
              ,@(and otf-flg `(:otf-flg t))
              :rule-classes
-             ((:rewrite
-               :corollary
-               ,(if (atom hyp)
-                  `(unsigned-byte-p ,bound ,concl)
-                `(implies ,hyp
-                          (unsigned-byte-p ,bound ,concl)))
-               ,@(and hints `(:hints ,hints)))
+             (:rewrite
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
@@ -356,13 +326,7 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
              ,@(and hints `(:hints ,hints))
              ,@(and otf-flg `(:otf-flg t))
              :rule-classes
-             ((:rewrite
-               :corollary
-               ,(if (atom hyp)
-                  `(signed-byte-p ,bound ,concl)
-                `(implies ,hyp
-                          (signed-byte-p ,bound ,concl)))
-               ,@(and hints `(:hints ,hints)))
+             (:rewrite
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
