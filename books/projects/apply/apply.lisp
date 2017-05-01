@@ -27,8 +27,8 @@
 ; ex2/evaluation-apply.lisp, to be ``re-certified'' with a different
 ; portcullis.  See the README file of ex1/ for an explanation.
 
-(in-package "ACL2")        ; on /books/projects/apply/
-; (in-package "MODAPP")    ; on /books/projects/apply-model/
+(in-package "ACL2")          ; on /books/projects/apply/
+; (in-package "MODAPP")      ; on /books/projects/apply-model/
 
 ; Outline
 
@@ -1433,12 +1433,13 @@
                                    alist1)))))))
  )
 
-(defun ancestrally-dependent-on-apply$p1 (flg x acc)
+(defun ancestrally-dependent-on-apply$p1 (flg x wrld acc)
 
-; This is just all-fnnames1 from the ACL2 sources except it short circuits if
-; it sees the fnnames APPLY$ or EV$.  Flg = t means x is a list of terms; else
-; x is a term.  Acc is just the fns we've seen so far and is returned, but it
-; is incomplete if its car is APPLY$, which is the signal that we found EITHER
+; This is just all-fnnames1 from the ACL2 sources except it recursively
+; explores the body of each fn it encounters and it short circuits if it sees
+; the fnnames APPLY$ or EV$.  Flg = t means x is a list of terms; else x is a
+; term.  Acc is just the fns we've seen so far and is returned, but it is
+; incomplete if its car is APPLY$, which is the signal that we found EITHER
 ; APPLY$ or EV$!
 
   (declare (xargs :mode :program))
@@ -1449,27 +1450,39 @@
           (t (ancestrally-dependent-on-apply$p1
               nil
               (car x)
-              (ancestrally-dependent-on-apply$p1 t (cdr x) acc)))))
+              wrld
+              (ancestrally-dependent-on-apply$p1 t (cdr x) wrld acc)))))
    ((variablep x) acc)
    ((fquotep x) acc)
    ((flambda-applicationp x)
     (ancestrally-dependent-on-apply$p1
      nil
      (lambda-body (ffn-symb x))
-     (ancestrally-dependent-on-apply$p1 t (fargs x) acc)))
+     wrld
+     (ancestrally-dependent-on-apply$p1 t (fargs x) wrld acc)))
    ((or (eq (ffn-symb x) 'apply$)
         (eq (ffn-symb x) 'ev$))
     (cons 'apply$ acc))
-   ((member-eq (ffn-symb x) acc) acc)
-   (t
+   ((member-eq (ffn-symb x) acc)
     (ancestrally-dependent-on-apply$p1
      t
      (fargs x)
-     (cons (ffn-symb x) acc)))))
+     wrld
+     (cons (ffn-symb x) acc)))
+   (t
+    (ancestrally-dependent-on-apply$p1
+     nil
+     (body (ffn-symb x) nil wrld)
+     wrld
+     (ancestrally-dependent-on-apply$p1
+      t
+      (fargs x)
+      wrld
+      (cons (ffn-symb x) acc))))))
 
-(defun ancestrally-dependent-on-apply$p (x)
+(defun ancestrally-dependent-on-apply$p (x wrld)
   (declare (xargs :mode :program))
-  (let ((ans (ancestrally-dependent-on-apply$p1 nil x nil)))
+  (let ((ans (ancestrally-dependent-on-apply$p1 nil x wrld nil)))
     (eq (car ans) 'apply$)))
 
 (defun acceptable-warranted-justificationp (fn ens wrld)
@@ -1534,7 +1547,8 @@
               (access justification just :measure)
               wrld)
              (not (ancestrally-dependent-on-apply$p
-                   (access justification just :measure)))
+                   (access justification just :measure)
+                   wrld))
              (mv-let (ts ttree)
                (type-set (access justification just :measure)
                          nil ; force-flg
