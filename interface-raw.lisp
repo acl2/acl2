@@ -142,14 +142,14 @@
 ; Evaluation in ACL2, which takes place in the ACL2 loop and during theorem
 ; proving, is based on the way evaluation was done in Nqthm.  The idea is to
 ; "oneify" the body of a definition by replacing functions by their so-called
-; "executable counterparts," sometimes called "*1* functions."  The primitives
-; have *1* functions that reflect their logical definitions, so that for
-; example (*1*car x), or more precisely (acl2_*1*_lisp::car x), returns nil
-; when x is an atom -- except that an error occurs if we are checking guards
-; (or are in so-called safe mode, as explained below).  Defined functions have
-; *1* function counterparts that are defined, roughly speaking, by replacing
-; each function call in their bodies by a call of the corresponding *1*
-; function.
+; "executable counterparts," sometimes called "*1* functions."  Also see :doc
+; evaluation.  The primitives have *1* functions that reflect their logical
+; definitions, so that for example (*1*car x), or more precisely
+; (acl2_*1*_lisp::car x), returns nil when x is an atom -- except that an error
+; occurs if we are checking guards (or are in so-called safe mode, as explained
+; below).  Defined functions have *1* function counterparts that are defined,
+; roughly speaking, by replacing each function call in their bodies by a call
+; of the corresponding *1* function.
 
 ; The evaluation mechanism in ACL2 changed radically in v1-8, when guards were
 ; removed from the logic.  It has changed again in Version_2.6, due to a hole
@@ -476,7 +476,7 @@
 ;   (declare (xargs :mode :logic :guard (true-listp x)))
 ;   (if (endp x) 3 (+ 1 (foo (cdr x)))))
 
-; Here is the executable counterpart in Version_2.5, in gcl:
+; Here is the executable-counterpart in Version_2.5, in gcl:
 
 ; ACL2>(symbol-function 'ACL2_*1*_ACL2::FOO) ; in gcl, ACL2 Version_2.5
 ; (LISP:LAMBDA-BLOCK ACL2_*1*_ACL2::FOO (X)
@@ -935,7 +935,7 @@
 
 ; The following should never happen.
 
-         (error "We have called (the executable counterpart of) bad-atom<= on ~
+         (error "We have called (the executable-counterpart of) bad-atom<= on ~
                  ~s and ~s, but bad-atom<= has no Common Lisp definition."
                 x y))
         (t (gv bad-atom<= (x y) nil))))
@@ -1024,7 +1024,7 @@
 
 (defun-*1* if (x y z)
   (error "We just can't stand having a non-lazy IF around.  But we attempted ~%~
-          to call the executable counterpart of IF on argument list ~s."
+          to call the executable-counterpart of IF on argument list ~s."
          (list x y z)))
 
 (defun-*1* imagpart (x)
@@ -1618,7 +1618,7 @@
   (let ((state *the-live-state*))
     (warning$ 'top-level "Guards"
               "Guard-checking will be inhibited on recursive calls of the ~
-               executable counterpart (i.e., in the ACL2 logic) of ~x0.  To ~
+               executable-counterpart (i.e., in the ACL2 logic) of ~x0.  To ~
                check guards on all recursive calls:~%  (set-guard-checking ~
                :all)~%To leave behavior unchanged except for inhibiting this ~
                message:~%  (set-guard-checking :nowarn)"
@@ -2221,9 +2221,10 @@
                          ,@(cond (super-stobjs-in
                                   `((t ,fail_guard)))
                                  (guarded-primitive-p
-                                  `(((or ,guard-checking-is-really-on-form
-                                         ,safe-form)
-                                     ,fail_safe)))
+                                  `((,safe-form
+                                     ,fail_safe)
+                                    (,guard-checking-is-really-on-form
+                                     ,fail_guard)))
                                  (t
                                   `((,guard-checking-is-really-on-form
                                      ,fail_guard))))))))
@@ -2259,7 +2260,9 @@
                                      `(((and (or ,safe-form
                                                  ,guard-checking-is-really-on-form)
                                              (not ,*1*guard))
-                                        ,fail_safe)))
+                                        (if ,safe-form
+                                            ,fail_safe
+                                          ,fail_guard))))
                                     (t
                                      `(((and ,guard-checking-is-really-on-form
                                              (not ,*1*guard))

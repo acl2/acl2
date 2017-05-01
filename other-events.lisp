@@ -18616,7 +18616,7 @@
                                           (pairlis-x1 'defun ax-def-lst)
                                           defconsts
 
-; We disable the executable counterpart of the creator function since its *1*
+; We disable the executable-counterpart of the creator function since its *1*
 ; function always does a throw, which is not useful during proofs.
 
                                           `((encapsulate

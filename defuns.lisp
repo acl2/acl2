@@ -24,7 +24,7 @@
 ; functions.  These are typically functions that use stobjs but which
 ; are translated as though they were theorems rather than definitions.
 ; This is convenient (necessary?) for specifying some stobj
-; properties.  These functions will have executable counterparts that
+; properties.  These functions will have executable-counterparts that
 ; just throw.  These functions will be marked with the property
 ; non-executablep.
 
