@@ -1,9 +1,10 @@
-
-; de.lisp               Cuong Chau & Warren A. Hunt, Jr.
+;; Warren Hunt <hunt@cs.utexas.edu>
+;; Cuong Chau <ckcuong@cs.utexas.edu>
+;; April 2017
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
-; This collection of things I need to define ACL2 version of DUAL-EVAL.
+; This collection of things we need to define ACL2 version of DUAL-EVAL.
 
 ; !!! Nathan believes that CONSP-N and TRUE-LISTP-AT-LEAST-N should
 ; be exchanged for (and (TRUE-LISTP x) (= (LEN x) n)).
