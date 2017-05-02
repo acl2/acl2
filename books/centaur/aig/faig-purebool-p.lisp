@@ -148,7 +148,8 @@ executed; it uses a SAT solver to answer the question.</p>
                    :in-theory (e/d (faig-purebool-p-as-aig-eval)
                                    (aig-sat-when-sat))
                    :use ((:instance aig-sat-when-sat
-                                    (aig (aig-not (faig-purebool-aig x)))))))))
+                          (aig (aig-not (faig-purebool-aig x)))
+                          (transform-config nil)))))))
 
   (local (defthm l1
            (b* (((mv fail purebool ?alist)
@@ -161,7 +162,8 @@ executed; it uses a SAT solver to answer the question.</p>
                                    (aig-sat-when-unsat))
                    :use ((:instance aig-sat-when-unsat
                                     (aig (aig-not (faig-purebool-aig x)))
-                                    (env (faig-purebool-p-witness x))))))))
+                                    (env (faig-purebool-p-witness x))
+                          (transform-config nil)))))))
 
   (defthm faig-purebool-check-correct
     (b* (((mv fail purebool ?alist)
@@ -186,7 +188,8 @@ executed; it uses a SAT solver to answer the question.</p>
                                     faig-eval)
                                    (aig-sat-when-sat))
                    :use ((:instance aig-sat-when-sat
-                                    (aig (aig-not (faig-purebool-aig x)))))))))
+                                    (aig (aig-not (faig-purebool-aig x)))
+                          (transform-config nil)))))))
 
   (defthm faig-purebool-counterexample-correct
     (b* (((mv fail ?purebool alist)
@@ -321,7 +324,8 @@ faig-purebool-list-check).</p>"
                    :in-theory (e/d (faig-purebool-list-p-as-aig-eval)
                                    (aig-sat-when-sat))
                    :use ((:instance aig-sat-when-sat
-                                    (aig (aig-not (faig-purebool-list-aig x)))))))))
+                                    (aig (aig-not (faig-purebool-list-aig x)))
+                          (transform-config nil)))))))
 
   (local (defthm l1
            (b* (((mv fail purebool-list ?alist)
@@ -334,7 +338,8 @@ faig-purebool-list-check).</p>"
                                    (aig-sat-when-unsat))
                    :use ((:instance aig-sat-when-unsat
                                     (aig (aig-not (faig-purebool-list-aig x)))
-                                    (env (faig-purebool-list-witness x))))))))
+                                    (env (faig-purebool-list-witness x))
+                          (transform-config nil)))))))
 
   (defthm faig-purebool-list-check-correct
     (b* (((mv fail purebool-list ?alist)

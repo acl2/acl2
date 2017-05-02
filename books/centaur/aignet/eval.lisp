@@ -32,22 +32,20 @@
 (include-book "semantics")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "data-structures/list-defthms" :dir :system))
+;; (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
                            resize-list
-                           acl2::resize-list-when-empty
-                           acl2::make-list-ac-redef
-                           set::double-containment
-                           set::sets-are-true-lists
+                           ;; acl2::resize-list-when-empty
+                           ;; acl2::make-list-ac-redef
                            make-list-ac)))
 
 (local (in-theory (disable true-listp-update-nth
-                           acl2::nth-with-large-index)))
+                           ;; acl2::nth-with-large-index
+                           )))
 
-
+(local (std::add-default-post-define-hook :fix))
 
 (defsection aignet-eval
  :parents (aignet)
@@ -115,7 +113,7 @@ and the inputs from the appropriate frame.</p>
 
   (defstobj-clone vals bitarr :strsubst (("BIT" . "AIGNET-VAL")))
 
-  (local (in-theory (disable acl2::nth-with-large-index)))
+  ;; (local (in-theory (disable acl2::nth-with-large-index)))
 
   (definline aignet-eval-lit (lit vals)
     (declare (type (integer 0 *) lit)
@@ -644,7 +642,7 @@ and the inputs from the appropriate frame.</p>
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals orig))))))
 
-  (local (in-theory (disable acl2::take-redefinition)))
+  ;; (local (in-theory (disable acl2::take-redefinition)))
 
   (defun set-prefix (n first second)
     (declare (xargs :guard (and (true-listp first)

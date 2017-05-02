@@ -166,7 +166,7 @@
 ; . 2), and (:ELIM ASSOC-OF-APP).  This use of event names allows them
 ; to be confused with rule names.
 
-; Historical Footnote: In nqthm, the executable counterpart of the
+; Historical Footnote: In nqthm, the executable-counterpart of the
 ; function APP actually had a distinct name, *1*APP, and hence we
 ; established the expectation that one could prevent the use of that
 ; "rule" while allowing the use of the other.  We now use the runes
@@ -362,7 +362,7 @@
 ; a set of three runes, one for each rule generated.  The idea here is
 ; to maintain some consistency with the Nqthm way of disabling names.
 ; If the user disables APP then only the symbolic definition is
-; disabled, not the executable counterpart, while if ASSOC-OF-APP is
+; disabled, not the executable-counterpart, while if ASSOC-OF-APP is
 ; disabled, all such rules are disabled.
 
 ; Note: We purposely do not define a function "runic-interpretation"
@@ -1040,7 +1040,7 @@
 
 ; This function applies alist to term and evaluates any ground subexpressions
 ; in that result.  We return (mv term' flg ttree') where term' is the resulting
-; term, ttree' is an extension of ttree containing the executable counterparts
+; term, ttree' is an extension of ttree containing the executable-counterparts
 ; used, and flg is t iff term' is a quoted constant.  We avoid running disabled
 ; functions.  The flg result is probably not interesting to callers outside of
 ; this nest.
@@ -1159,7 +1159,7 @@
 
 ; Before we develop the code for loading a theory into an enabled
 ; structure, we put down code for warning when leaving a 0-ary
-; function disabled while its executable counterpart is enabled.
+; function disabled while its executable-counterpart is enabled.
 
 (defun theory-warning-fns-aux (runes1 runes2 max-nume
                                       nume prev-rune1 prev-rune2 w acc)

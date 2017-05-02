@@ -33,16 +33,15 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "data-structures/list-defthms" :dir :system))
+;; (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
                            resize-list
-                           acl2::resize-list-when-empty
-                           acl2::make-list-ac-redef
-                           set::double-containment
-                           set::sets-are-true-lists
+                           ;; acl2::resize-list-when-empty
+                           ;; acl2::make-list-ac-redef
+                           ;; set::double-containment
+                           ;; set::sets-are-true-lists
                            make-list-ac)))
 
 (local (in-theory (disable BITOPS::commutativity-of-b-xor
@@ -51,6 +50,7 @@
                            BITOPS::B-AND-EQUAL-1-IN-HYP)))
 
 (local (acl2::use-trivial-ancestors-check))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection simplify-gate
 
@@ -77,31 +77,40 @@
 
     (local (in-theory (enable aignet-idp)))
 
-    (defthm two-id-measure-of-gate
+    ;; (defthm two-id-measure-of-gate
+    ;;   (implies (and (equal (id->type id1 aignet) (gate-type))
+    ;;                 (aignet-idp id1 aignet))
+    ;;            (b* (((cons node rest) (lookup-id id1 aignet))
+    ;;                 (ch1 (aignet-lit-fix (gate-node->fanin0 node) rest))
+    ;;                 (ch2 (aignet-lit-fix (gate-node->fanin1 node) rest)))
+    ;;              (and (o< (two-id-measure id2 (lit-id ch1))
+    ;;                       (two-id-measure id1 id2))
+    ;;                   (o< (two-id-measure id2 (lit-id ch2))
+    ;;                       (two-id-measure id1 id2))
+    ;;                   (o< (two-id-measure id2 (lit-id ch1))
+    ;;                       (two-id-measure id2 id1))
+    ;;                   (o< (two-id-measure id2 (lit-id ch2))
+    ;;                       (two-id-measure id2 id1))))))
+    
+    (defthm two-id-measure-of-fanin
       (implies (and (equal (id->type id1 aignet) (gate-type))
                     (aignet-idp id1 aignet))
-               (b* (((cons node rest) (lookup-id id1 aignet))
-                    (ch1 (aignet-lit-fix (gate-node->fanin0 node) rest))
-                    (ch2 (aignet-lit-fix (gate-node->fanin1 node) rest)))
+               (b* ((ch1 (fanin ftype (lookup-id id1 aignet))))
                  (and (o< (two-id-measure id2 (lit-id ch1))
                           (two-id-measure id1 id2))
-                      (o< (two-id-measure id2 (lit-id ch2))
-                          (two-id-measure id1 id2))
                       (o< (two-id-measure id2 (lit-id ch1))
-                          (two-id-measure id2 id1))
-                      (o< (two-id-measure id2 (lit-id ch2))
                           (two-id-measure id2 id1))))))
 
-    (defthm two-id-measure-of-out
-      (implies (and (aignet-nodes-ok aignet)
-                    (equal (id->type id1 aignet) (out-type))
-                    (aignet-idp id1 aignet))
-               (b* (((cons node rest) (lookup-id id1 aignet))
-                    (ch1 (aignet-lit-fix (co-node->fanin node) rest)))
-                 (and (o< (two-id-measure id2 (lit-id ch1))
-                          (two-id-measure id1 id2))
-                      (o< (two-id-measure id2 (lit-id ch1))
-                          (two-id-measure id2 id1)))))))
+    ;; (defthm two-id-measure-of-fanin
+    ;;   (implies (and (aignet-nodes-ok aignet)
+    ;;                 (equal (id->type id1 aignet) (out-type))
+    ;;                 (aignet-idp id1 aignet))
+    ;;            (b* ((ch1 (fanin ftype (lookup-id id1 aignet))))
+    ;;              (and (o< (two-id-measure id2 (lit-id ch1))
+    ;;                       (two-id-measure id1 id2))
+    ;;                   (o< (two-id-measure id2 (lit-id ch1))
+    ;;                       (two-id-measure id2 id1))))))
+    )
 
   (define aignet-gate-simp-order ((lit1 litp)
                                   (lit2 litp)
@@ -357,8 +366,7 @@
                (litp nlit2))))))
 
 
-  (local (in-theory (disable len
-                             acl2::nth-with-large-index)))
+  (local (in-theory (disable len)))
 
   ;; (defthmd bits-equal-of-logxor
   ;;   (implies (and (bitp c)
@@ -978,12 +986,12 @@
       (implies found
                (and (aignet-idp id aignet)
                     (aignet-litp (mk-lit id bit) aignet)
-                    (b* (((cons node tail) (lookup-id id aignet)))
+                    (b* ((suff (lookup-id id aignet))
+                         (node (car suff)))
                       (and (equal (stype node) (gate-stype))
-                           (equal (aignet-lit-fix (gate-node->fanin0 node) tail)
+                           (equal (fanin :gate0 suff)
                                   (lit-fix lit1))
-                           (equal (aignet-lit-fix (gate-node->fanin1 node)
-                                                  tail)
+                           (equal (fanin :gate1 suff)
                                   (lit-fix lit2)))))))
     :hints(("Goal" :in-theory (enable aignet-litp))))
 

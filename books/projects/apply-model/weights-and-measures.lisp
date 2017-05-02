@@ -1,17 +1,26 @@
-; How to use:
+; Weights and Measures for the Doppelganger Construction
 
-; (include-book "weights-and-measures")
-; ...
+; The doppelganger construction requires analysis of the user-defined
+; functions, for example, to identify them, partition them into G1 and G2,
+; determine the weight of each, determine their internals, etc.  This book
+; provides a utility, implemented as a new make-event event named
+; weights-and-measures, for doing that analysis.
+
+; Suppose you want to create a file containing the defuns of the doppelgangers
+; of the badged functions in a book named "some-user-defs.lisp".  Your
+; doppelgangers book should begin by including this book.  Then locally include
+; the book you want to analyze, "some-user-defs", but use the idiom:
+
 ; (local (include-book "some-user-defs")) ; no_port
+
+; so that cert.pl doesn't load that book's portcullis.
+
+; Then invoke the event:
+
 ; (weights-and-measures)
-; ...
 
-; Once upon a time, we put the local include-books inside the macro-expansion of
-; (weights-and-measures "some-user-defs") but that hid it from the cert.pl
-; dependency tracker, so we moved it out.
-
-; Invoking (weights-and-measures) will define the following constants wrt to
-; the some-user-defs.lisp.
+; Invoking (weights-and-measures) will define the following constants by
+; analyzing the world created by the local inclusion of "some-user-defs".
 
 ;   *user-fns*
 ;   *g2-fns*
@@ -27,9 +36,10 @@
 ;   (chronological-position fn)
 ;   (original-measure fn)
 
-; But these forms should only be evaluated in the context of measures for the
-; doppelgangers, e.g., they call tamep! and use variables like FN and ARGS that
-; only make sense in the context of measures.
+; These new macro forms can be used in the definitions of the measures for the
+; G2 doppelgangers.  In fact, they SHOULD ONLY BE USED in that context since
+; they TAMEP! and use formal variables like FN and ARGS that only make sense in
+; the context of those measures.
 
 (in-package "MODAPP")
 
@@ -57,17 +67,6 @@
     (cons `(TAMEP! ,(car vars))
           (generate-g2-tameness-conditions1 (cdr vars) (cdr ilks))))
    (t (generate-g2-tameness-conditions1 (cdr vars) (cdr ilks)))))
-
-(defconst *generic-tame-badge-1*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
-(defconst *generic-tame-badge-2*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
-(defconst *generic-tame-badge-3*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
-(defconst *apply$-badge*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
-(defconst *ev$-badge*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
 
 (defun executable-badge (fn wrld)
   (declare (xargs :mode :program))

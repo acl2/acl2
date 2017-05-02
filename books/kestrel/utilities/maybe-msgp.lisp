@@ -1,6 +1,6 @@
 ; Optional Structured Messages
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
   :long
   "<p>
    Structured messages are
-   constructed by @(tsee msg) and recognized by @('msgp').
+   constructed by @(tsee msg) and recognized by @(tsee msgp).
    </p>"
   (or (msgp x)
       (null x))

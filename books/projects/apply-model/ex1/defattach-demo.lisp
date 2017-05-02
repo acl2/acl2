@@ -5,19 +5,28 @@
 ; Demonstration of Defattach for BADGE-USERFN and APPLY$-USERFN
 ; Matt Kaufmann and J Moore
 
-; This book demonstrates that we can successfully attach the doppelgangers to
-; the four apply$ stubs.  Of course, that is not a hard goal to achieve since
-; the constraints on the stubs are so weak.  But the defattaches below justify
-; our later consideration of an evaluation theory containing the four
-; corresponding attachment equations.  After the four attachments we show that
-; a couple of examples evaluate as we expect.
+; This book demonstrates that we can successfully attach the doppelgangers of
+; the functions in user-defs.lisp to the badge-userfn and apply$-userfn.
+
+; That in itself is not a hard goal to achieve since the constraints on the
+; stubs are so weak.  But, as briefly illustrated below, these particular
+; choices of our attachments give us the ability to evaluate the mapping
+; functions of user-defs.lisp and get the expected results.
+
+; We cite this as evidence that the ACL2 source code contained in The Rubric
+; (which does analogous defattaches) is both permitted and produces a
+; reasonable evaluation theory.
 
 (in-package "MODAPP")
 (include-book "user-defs")
 (include-book "doppelgangers")
 (include-book "misc/eval" :dir :system)
+
 (defattach badge-userfn badge-userfn!)
 (defattach apply$-userfn apply$-userfn!)
+
+; The rest of this book just sets up a few simple tests of the resulting
+; evaluation theory.
 
 (defmacro expected-to (expectation theory form val)
 
@@ -58,11 +67,4 @@
              (sumlist '((1 2 3) (4 5 6))
                       '(lambda (lst) (sumlist lst 'square)))
              91)
-
-
-
-
-
-
-
 

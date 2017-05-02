@@ -631,10 +631,11 @@ manual with others, you should read about @(see deploying-manuals).</li>
 
 @({
     (save <target-dir>
-          [:redef-okp  bool]      ;; default is nil
-          [:zip-p      bool]      ;; default is t
-          [:logo-image path]      ;; default is nil
-          [:error      bool]      ;; default is nil
+          [:redef-okp  bool]               ;; default is nil
+          [:zip-p      bool]               ;; default is t
+          [:logo-image path]               ;; default is nil
+          [:error      bool]               ;; default is nil
+          [:broken-links-limit nil-or-nat] ;; default is nil
           )
 })
 
@@ -683,6 +684,12 @@ command.</dd>
 <dd>The value is @('t') or @('nil'), to indicate whether or not (respectively)
 to cause an error upon encountering a syntax error in xdoc source (marked with
 \"xdoc error\").</dd>
+
+<dt>@(':broken-links-limit')</dt>
+
+<dd>The value is @('nil') by default.  Otherwise, it is a natural number
+specifying the maximum allowed number of broken links; if the ``broken topic
+link'' report shows more broken links than that limit, an error occurs.</dd>
 
 </dl>
 

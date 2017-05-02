@@ -1,3 +1,13 @@
+This is the README file for /books/projects/apply-model/ex2/.  This directory
+is almost analogous to its peer, ../ex1/ and you should see the README file
+there for details.  The ``almost'' is necessary because this directory contains
+one more file, user-thms.lisp, which just illustrates more theorems about
+mapping functions.  Some of these theorems are also in ../report.lisp but a few
+are novel.
+
+Certification instructions for this directory are analogous to those for ex1/
+as described in the README but bear repeating:
+
 Certification of books in this directory depends on the following.
 
 cp -p ../apply.lisp evaluation-apply.lisp

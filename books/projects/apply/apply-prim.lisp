@@ -2,19 +2,29 @@
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Portcullis:  Empty
-
 ; The Maximal Defun of Apply$-Prim
 
-; We define *apply$-primitives*, apply$-primp, and apply$-prim to include all
-; functions in the bootstrap world that satisfy the Fundamental Properties.  We
-; also introduce a metafunction for simplifying (apply$-prim 'fn args) and
-; verify it.
+; We define *apply$-primitives*, apply$-primp, and apply$-prim to include
+; almost all functions in the bootstrap world that could have badges.  We
+; intentionally skip a few problematic or silly primitives, like wormhole1
+; which has some syntactic restrictions on how it can be called -- restrictions
+; that would complicate or confuse any attempt to apply$ 'wormhole1.  We also
+; introduce and verify a metafunction for simplifying (apply$-prim 'fn args).
 
 ; At some point we may fix these books to work with ACL2(r).
 ; cert_param: (non-acl2r)
 
+; Standard Explanation: We currently distribute two sets of books,
+; /books/projects/apply/ and /books/projects/apply-model/.  The files
+; apply-prim.lisp, constraints.lisp, and apply.lisp on those two directories
+; are identical copies of their namesakes with one exception: in the former
+; directory, all the development is in "ACL2" package and in the latter
+; directory, all the development is in the "MODAPP" package.  The byte counts
+; of the files should be identical to that of their namesakes, it's just that
+; the semicolon below is on a different line!
+
 (in-package "ACL2")
+; (in-package "MODAPP")
 
 ; Handling the Primitives
 
@@ -124,13 +134,27 @@
 ; But in apply.lisp and in the support for the execution of the stubs
 ; badge-userfn and apply$-userfn we do not need the formals and we sometimes
 ; need the arities.  So we define another constant which is used in those
-; places.  That constant, *badge-prim-falist* is a fast alist.
+; places.  That constant, *badge-prim-falist*, is a fast alist.
 
 (make-event
  `(defconst *first-order-like-terms-and-out-arities*
     ',(first-order-like-terms-and-out-arities (w state))))
 
 (defrec apply$-badge (authorization-flg arity . ilks) nil)
+
+; These constants are not actually used in this book but are used in several
+; books that include apply-prim.lisp so we define them once, here.
+
+(defconst *generic-tame-badge-1*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
+(defconst *generic-tame-badge-2*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
+(defconst *generic-tame-badge-3*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
+(defconst *apply$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
+(defconst *ev$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
 
 (defun compute-badge-of-primitives (terms-and-out-arities)
   (cond ((endp terms-and-out-arities) nil)
@@ -154,13 +178,16 @@
   (and (hons-get fn *badge-prim-falist*) t))
 
 (defun badge-prim (fn)
-  (declare (xargs :guard t))  
+  (declare (xargs :guard t))
   (cdr (hons-get fn *badge-prim-falist*)))
 
-; We need to know that badge-prim returns either nil or a badge, which is of
-; the form (APPLY$-BADGE flg arity . T).  This would be trivial except for
-; the fact that there are so many cases (because the alist is so long).  So we
-; resort to a standard trick for proving something about a big constant.
+; We need to know that badge-prim returns either nil or a badge of the form
+; (APPLY$-BADGE flg arity . T).  This would be trivial except for the fact that
+; there are so many cases (because the alist is so long).  So we resort to a
+; standard trick for proving something about a big constant: define a function,
+; named check-it! below, to check the property computationally, prove that the
+; property holds of x if (check-it x) is t, then derive the main theorem by
+; instantiating that lemma with {x <-- '<big-constant>}.
 
 (defun apply$-badgep (x)
   (and (consp x)

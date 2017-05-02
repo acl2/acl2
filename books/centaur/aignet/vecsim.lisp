@@ -33,12 +33,14 @@
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "data-structures/list-defthms" :dir :system))
-(local (in-theory (disable nth update-nth set::double-containment)))
+(local (include-book "std/lists/update-nth" :dir :system))
+
+;; (local (include-book "data-structures/list-defthms" :dir :system))
+(local (in-theory (disable nth update-nth acl2::update-nth-when-zp)))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
-(local (in-theory (disable acl2::make-list-ac-removal
-                           signed-byte-p)))
+(local (in-theory (disable signed-byte-p)))
+(local (std::add-default-post-define-hook :fix))
 
 (define s32-fix ((x :type (signed-byte 32)))
   :inline t
@@ -98,7 +100,7 @@
   (signed-byte-p 32 (bit-extend bit))
   :hints(("Goal" :in-theory (enable bit-extend))))
 
-(local (in-theory (disable acl2::nth-with-large-index)))
+;; (local (in-theory (disable acl2::nth-with-large-index)))
 
 (defsection vecsim-to-eval
 

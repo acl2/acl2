@@ -137,6 +137,11 @@ correctness criterion we've described.</p>
 
 ;; Utilities for recognizing muxes and XORs.
 
+(local (in-theory (disable lookup-id-in-bounds-when-positive
+                           ;; lookup-id-out-of-bounds
+                           satlink::equal-of-lit-negate-backchain
+                           satlink::lit-negate-not-equal-when-vars-mismatch
+                           )))
 
 ;; Returns (mv is-mux cond-lit tb-lit fb-lit).
 ;; A mux node is of the form
@@ -230,12 +235,8 @@ correctness criterion we've described.</p>
                                          lit-eval-of-mk-lit-split-rw)
                                 ( acl2::b-xor acl2::b-and
                                               acl2::b-ior acl2::b-not))
-             :expand ((lit-eval (aignet-lit-fix (gate-node->fanin0 (car (lookup-id id aignet)))
-                                                (cdr (lookup-id id aignet)))
-                                in-vals reg-vals aignet)
-                      (lit-eval (aignet-lit-fix (gate-node->fanin1 (car (lookup-id id aignet)))
-                                                (cdr (lookup-id id aignet)))
-                                in-vals reg-vals aignet))))))
+             :expand ((:free (ftype) (lit-eval (fanin ftype (lookup-id id aignet))
+                                               in-vals reg-vals aignet)))))))
 
 
 

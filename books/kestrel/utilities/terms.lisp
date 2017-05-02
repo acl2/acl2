@@ -1,6 +1,6 @@
 ; Term Utilities
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -445,8 +445,7 @@
       (all-non-gv-exec-ffn-symbs-lst (cdr terms) ans wrld))))
 
 (define check-user-term (x (wrld plist-worldp))
-  :returns (mv (term/message "A @(tsee pseudo-termp) or @('msgp')
-                              (see @(tsee msg)).")
+  :returns (mv (term/message "A @(tsee pseudo-termp) or @(tsee msgp).")
                (stobjs-out "A @(tsee symbol-listp)."))
   :mode :program
   :parents (term-utilities)
@@ -513,8 +512,7 @@
       (mv term/message nil))))
 
 (define check-user-lambda (x (wrld plist-worldp))
-  :returns (mv (lambd/message  "A @(tsee pseudo-termp) or @('msgp')
-                                (see @(tsee msg)).")
+  :returns (mv (lambd/message  "A @(tsee pseudo-termp) or @(tsee msgp).")
                (stobjs-out "A @(tsee symbol-listp)."))
   :mode :program
   :parents (term-utilities)

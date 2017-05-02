@@ -1715,36 +1715,49 @@
 ;;; Test :non-executable
 
 (deftest
-  (defund f1 (x y)
+  (defun f1 (x y)
     (mv x y))
-  (defun f2 (x)
-    (mv-let (a b)
-      (f1 (car x) (cdr x))
-      (cons b a)))
-  (must-fail (simplify-defun f2))
-  (must-fail (simplify-defun f2 :non-executable nil))
-  (simplify-defun f2 :non-executable t)
+  (defun-nx f2 (x)
+    (car (f1 (car x) (cdr x))))
+  (simplify-defun f2)
   (must-be-redundant
    (DEFUN-NX F2{1} (X)
      (DECLARE (XARGS :NORMALIZE NIL
                      :GUARD T
                      :VERIFY-GUARDS NIL))
-     (LET ((MV (F1 (CAR X) (CDR X))))
-          (LET ((A (MV-NTH 0 MV)) (B (MV-NTH 1 MV)))
-               (CONS B A)))))
-  (defun-nx f2a (x)
+     (CAR X))))
+
+;;; Test mv-let
+
+(deftest
+  (defund f1 (x y)
+    (mv x y))
+  (defun f2 (x)
     (mv-let (a b)
       (f1 (car x) (cdr x))
-      (cons b a)))
-  (simplify-defun f2a)
+      (cons b (car (cons a a)))))
+  (simplify-defun f2)
   (must-be-redundant
-   (DEFUN-NX F2A{1} (X)
+   (DEFUN F2{1} (X)
      (DECLARE (XARGS :NORMALIZE NIL
                      :GUARD T
                      :VERIFY-GUARDS NIL))
-     (LET ((MV (F1 (CAR X) (CDR X))))
-          (LET ((A (MV-NTH 0 MV)) (B (MV-NTH 1 MV)))
-               (CONS B A))))))
+     (MV-LET (A B)
+       (F1 (CAR X) (CDR X))
+       (CONS B A)))))
+
+;; Test mv
+
+(deftest
+  (defun f1 (x y)
+    (mv y (car (cons x y))))
+  (simplify-defun f1)
+  (must-be-redundant
+   (DEFUN F1{1} (X Y)
+     (DECLARE (XARGS :NORMALIZE NIL
+                     :GUARD T
+                     :VERIFY-GUARDS NIL))
+     (MV Y X))))
 
 ;; Test of simplifying a 0-ary function:
 (deftest

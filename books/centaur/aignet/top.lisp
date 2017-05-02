@@ -48,7 +48,7 @@
 (include-book "semantics")
 (include-book "snodes")
 (include-book "to-hons-aig")
-(include-book "types")
+;; (include-book "types")
 (include-book "vecsim")
 
 (xdoc::add-resource-directory "aignet" "images")
