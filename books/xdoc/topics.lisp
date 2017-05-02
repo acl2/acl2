@@ -733,7 +733,9 @@ then, you may want to do something like this:</p>
 (defxdoc save-rendered
   :parents (XDOC)
   :short "Saves the XDOC database into a file for the acl2-doc browser"
-  :long "
+  :long "<p>Also see @(see save-rendered-event) for a corresponding macro that
+  provides additional functionality.</p>
+
  @({
  General Form:
 
@@ -782,6 +784,40 @@ then, you may want to do something like this:</p>
  @('extend-acl2-doc-manual-alist') is exactly the output file created by
  @('xdoc::save-rendered').</p>")
 
+(defxdoc save-rendered-event
+  :parents (XDOC)
+  :short "Event that invokes @(tsee save-rendered), supporting extra functionality"
+  :long "<p>See @(see save-rendered) for relevant background.</p>
+
+ @({
+ General Form:
+
+ (save-rendered-event outfile
+                      header
+                      topic-list-name
+                      error
+                      &key
+                      script-file script-args timep)
+ })
+
+ <p>where the four required arguments correspond to the same arguments of
+ @(tsee save-rendered).  Although @('save-rendered') and
+ @('save-rendered-event') have similar effects &mdash; indeed,
+ @('save-rendered-event') invokes @('save-rendered') with the same first four
+ arguments &mdash; @('save-rendered-event') is a macro that generates an event
+ form (using @(tsee make-event)) that can be placed in a book.  All arguments
+ are evaluated.  The keyword arguments of @('save-rendered-event') provide
+ additional functionality, as follows.</p>
+
+ <p>Suppose @(':script-file') is supplied with a non-@('nil') value.  Then
+ there must be an active trust tag (see @(see defttag).  The value of
+ @(':script-file') should be a string that names a file to be executed as a
+ shell command, using @(tsee sys-call).  The argument list of that command is
+ provided by the value of @(':script-args').  For an example, see the call of
+ @('xdoc::save-rendered-event') in community book @('doc/top.lisp').</p>
+
+ <p>If @(':timep') is non-@('nil') then the entire computation will be wrapped
+ in a call of @(tsee time$).</p>")
 
 (defxdoc deploying-manuals
   :parents (save)
