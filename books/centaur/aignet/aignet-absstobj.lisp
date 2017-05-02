@@ -374,6 +374,8 @@
                      (equal (node-count (lookup-reg->nxst id aignet))
                             0))))))
 
+(local (std::add-default-post-define-hook :fix))
+
 (acl2::defabsstobj-events aignet
   :concrete aignet$c::aignet
   :corr-fn aignet-corr

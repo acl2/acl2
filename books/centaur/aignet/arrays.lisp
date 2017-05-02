@@ -37,6 +37,13 @@
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+
+(fty::deflist bit-list :pred bit-listp :elt-type bit :true-listp t)
+
+(defthm bitarr$ap-is-bit-listp
+  (equal (acl2::bitarr$ap x)
+         (bit-listp x)))
+
 ;; might be useful for memo tables in places
 ;; (defsection nth-id
 

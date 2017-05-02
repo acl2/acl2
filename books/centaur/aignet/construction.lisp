@@ -1449,3 +1449,162 @@ find a node already representing the required logical expression."
                                                   f0 f1 gatesimp strash
                                                   aignet)))
                     (stype-count stype aignet)))))
+
+
+
+(define aignet-add-ins ((n natp) aignet)
+  :returns (new-aignet)
+  (if (zp n)
+      (mbe :logic (non-exec (node-list-fix aignet))
+           :exec aignet)
+    (b* ((aignet (aignet-add-in aignet)))
+      (aignet-add-ins (1- n) aignet)))
+  ///
+
+  (def-aignet-preservation-thms aignet-add-ins)
+
+  (std::defret pi-count-of-aignet-add-ins
+    (equal (stype-count :pi new-aignet)
+           (+ (nfix n) (stype-count :pi aignet))))
+
+  (std::defret other-stype-count-of-aignet-add-ins
+    (implies (not (equal (stype-fix stype) :pi))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  (std::defret car-of-aignet-add-ins
+    (implies (posp n)
+             (equal (car new-aignet)
+                    (pi-node)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret node-count-of-aignet-add-ins
+    (equal (node-count new-aignet)
+           (+ (nfix n) (node-count aignet))))
+
+  (std::defret lookup-pi-of-aignet-add-ins
+    (implies (< (nfix innum) (+ (nfix n) (stype-count :pi aignet)))
+             (equal (lookup-stype innum :pi new-aignet)
+                    (if (< (nfix innum) (stype-count :pi aignet))
+                        (lookup-stype innum :pi aignet)
+                      (aignet-add-ins (+ 1 (- (nfix innum) (stype-count :pi aignet))) aignet))))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  (std::defret lookup-id-of-aignet-add-ins
+    (implies (<= (nfix id) (+ (nfix n) (node-count aignet)))
+             (equal (lookup-id id new-aignet)
+                    (if (< (nfix id) (node-count aignet))
+                        (lookup-id id aignet)
+                      (aignet-add-ins (- (nfix id) (node-count aignet)) aignet))))
+    :hints(("Goal" :in-theory (enable lookup-id))))
+
+  (std::defret lookup-other-stype-of-aignet-add-ins
+    (implies (not (equal (stype-fix stype) :pi))
+             (equal (lookup-stype typenum stype (aignet-add-ins n aignet))
+                    (lookup-stype typenum stype aignet))))
+  
+
+  (std::defret cdr-of-aignet-add-ins-when-posp
+    (implies (posp n)
+             (equal (cdr new-aignet)
+                    (aignet-add-ins (1- n) aignet)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret lit-eval-of-aignet-add-ins
+    (implies (and (<= (+ 1 (node-count aignet)) (nfix id))
+                  (< id (+ 1 (nfix n) (node-count aignet))))
+             (equal (lit-eval (mk-lit id neg) in-vals reg-vals new-aignet)
+                    (b-xor neg
+                           (nth (+ (num-ins aignet)
+                                   (nfix id)
+                                   (- (+ 1 (node-count aignet))))
+                                in-vals))))
+    :hints(("Goal"
+            :expand ((:free (aignet) (id-eval id in-vals reg-vals aignet))
+                     (:free (aignet) (lit-eval (mk-lit id neg) in-vals reg-vals aignet)))))))
+
+
+(define aignet-add-regs ((n natp) aignet)
+  :returns (new-aignet)
+  (if (zp n)
+      (mbe :logic (non-exec (node-list-fix aignet))
+           :exec aignet)
+    (b* ((aignet (aignet-add-reg aignet)))
+      (aignet-add-regs (1- n) aignet)))
+  ///
+
+  (def-aignet-preservation-thms aignet-add-regs)
+
+  (std::defret reg-count-of-aignet-add-regs
+    (equal (stype-count :reg new-aignet)
+           (+ (nfix n) (stype-count :reg aignet))))
+
+  (std::defret other-stype-count-of-aignet-add-regs
+    (implies (not (equal (stype-fix stype) :reg))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  (std::defret car-of-aignet-add-regs
+    (implies (posp n)
+             (equal (car new-aignet)
+                    (reg-node)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret node-count-of-aignet-add-regs
+    (equal (node-count new-aignet)
+           (+ (nfix n) (node-count aignet))))
+
+  (std::defret lookup-reg-of-aignet-add-regs
+    (implies (< (nfix regnum) (+ (nfix n) (stype-count :reg aignet)))
+             (equal (lookup-stype regnum :reg new-aignet)
+                    (if (< (nfix regnum) (stype-count :reg aignet))
+                        (lookup-stype regnum :reg aignet)
+                      (aignet-add-regs (+ 1 (- (nfix regnum) (stype-count :reg aignet))) aignet))))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  
+
+  (std::defret lookup-id-of-aignet-add-regs
+    (implies (<= (nfix id) (+ (nfix n) (node-count aignet)))
+             (equal (lookup-id id new-aignet)
+                    (if (< (nfix id) (node-count aignet))
+                        (lookup-id id aignet)
+                      (aignet-add-regs (- (nfix id) (node-count aignet)) aignet))))
+    :hints(("Goal" :in-theory (enable lookup-id))))
+
+  (std::defret lookup-other-stype-of-aignet-add-regs
+    (implies (not (equal (stype-fix stype) :reg))
+             (equal (lookup-stype typenum stype (aignet-add-regs n aignet))
+                    (lookup-stype typenum stype aignet))))
+
+  ;; (local (std::defret fanin-id-range-p-of-aignet-add-regs-lemma
+  ;;          (fanin-id-range-p (+ 1 (node-count aignet)) n new-aignet)
+  ;;          :hints(("Goal" :in-theory (enable fanin-id-range-p)))))
+
+  ;; (std::defret fanin-id-range-p-of-aignet-add-regs
+  ;;   (implies (equal id (+ 1 (node-count aignet)))
+  ;;            (fanin-id-range-p id n new-aignet)))
+
+  ;; (std::defret aignet-add-regs-preserves-fanin-id-range-p
+  ;;   (implies (fanin-id-range-p id count aignet)
+  ;;            (fanin-id-range-p id count new-aignet))
+  ;;   :hints(("Goal" :in-theory (enable fanin-id-range-p))))
+
+  (std::defret cdr-of-aignet-add-regs-when-posp
+    (implies (posp n)
+             (equal (cdr new-aignet)
+                    (aignet-add-regs (1- n) aignet)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret lit-eval-of-aignet-add-regs
+    (implies (and (<= (+ 1 (node-count aignet)) (nfix id))
+                  (< id (+ 1 (nfix n) (node-count aignet))))
+             (equal (lit-eval (mk-lit id neg) in-vals reg-vals new-aignet)
+                    (b-xor neg
+                           (nth (+ (num-regs aignet)
+                                   (nfix id)
+                                   (- (+ 1 (node-count aignet))))
+                                reg-vals))))
+    :hints(("Goal" :in-theory (enable lit-eval aignet-idp)
+            :expand ((:free (aignet) (id-eval id in-vals reg-vals aignet))
+                     (:free (aignet) (lit-eval (mk-lit id neg) in-vals reg-vals aignet)))))))
