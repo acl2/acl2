@@ -1,6 +1,6 @@
 ; SOFT ('Second-Order Functions and Theorems') -- Workshop Paper Examples
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,9 +23,6 @@
 
 (include-book "implementation")
 
-; Avoid ACL2(p) error in DEFUN2 pertaining to override hints.
-(local (set-waterfall-parallelism nil))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; 1  Second-Order Functions and Theorems
@@ -43,9 +40,11 @@
 ; 1.2.1   Plain Functions
 
 (defun2 quad[?f] (?f) (x)
+  (declare (xargs :guard t))
   (?f (?f (?f (?f x)))))
 
 (defun2 all[?p] (?p) (l)
+  (declare (xargs :guard t))
   (cond ((atom l) (null l))
         (t (and (?p (car l))
                 (all[?p] (cdr l))))))
@@ -57,6 +56,7 @@
                  (map[?f_?p] (cdr l))))))
 
 (defun2 fold[?f_?g] (?f ?g) (bt)
+  (declare (xargs :guard t))
   (cond ((atom bt) (?f bt))
         (t (?g (fold[?f_?g] (car bt))
                (fold[?f_?g] (cdr bt))))))
@@ -73,20 +73,20 @@
           (implies (equal (?f x) (?f y))
                    (equal x y))))
 
+(verify-guards injective[?f])
+
 ; 1.3  Instances of Second-Order Functions
 
 (defun wrap (x)
+  (declare (xargs :guard t))
   (list x))
-
-(verify-guards wrap) ; omitted from the paper, for brevity
 
 (defun-inst quad[wrap]
   (quad[?f] (?f . wrap)))
 
 (defun octetp (x)
+  (declare (xargs :guard t))
   (and (natp x) (< x 256)))
-
-(verify-guards octetp) ; omitted from the paper, for brevity
 
 (defun-inst all[octetp]
   (all[?p] (?p . octetp)))
@@ -98,15 +98,16 @@
   (fold[?f_?g] (?f . nfix) (?g . binary-+)))
 
 (defun twice (x)
+  (declare (xargs :guard t))
   (* 2 (fix x)))
-
-(verify-guards twice) ; omitted from the paper, for brevity
 
 (defun-inst fixpoint[twice]
   (fixpoint[?f] (?f . twice)))
 
 (defun-inst injective[quad[?f]] (?f)
   (injective[?f] (?f . quad[?f])))
+
+(verify-guards injective[quad[?f]])
 
 ; 1.4  Second-Order Theorems
 
@@ -147,6 +148,8 @@
                      (?io x (?f x))))
   :rewrite :direct)
 
+(verify-guards atom-io[?f_?io])
+
 (defun-sk2 consp-io[?g_?io] (?g ?io) ()
   (forall (x y1 y2)
           (implies (and (consp x)
@@ -154,6 +157,8 @@
                         (?io (cdr x) y2))
                    (?io x (?g y1 y2))))
   :rewrite :direct)
+
+(verify-guards consp-io[?g_?io])
 
 (defthm fold-io[?f_?g_?io]
   (implies (and (atom-io[?f_?io])
@@ -168,16 +173,19 @@
 (defun-inst injective[quad[wrap]]
   (injective[quad[?f]] (?f . wrap)))
 
+(verify-guards injective[quad[wrap]])
+
 (defun-inst injective[wrap]
   (injective[?f] (?f . wrap)))
+
+(verify-guards injective[wrap])
 
 (defthm-inst injective[quad[wrap]]-when-injective[wrap]
   (injective[quad[?f]]-when-injective[?f] (?f . wrap)))
 
 ; 2  Use in Program Refinement
 
-; to keep the program refinement example shorter:
-(set-verify-guards-eagerness 0) ; omitted from the paper, for brevity
+(set-verify-guards-eagerness 0) ; to keep the program refinement example shorter
 
 ; 2.1  Specifications as Second-Order Predicates
 
@@ -336,7 +344,8 @@
 ; Step 5
 
 (defun-inst h
-  (fold[?f_?g] (?f . f) (?g . g)))
+  (fold[?f_?g] (?f . f) (?g . g))
+  :verify-guards nil)
 
 (defun-sk2 def-?h (?h) ()
   (forall x (equal (?h x) (h x)))

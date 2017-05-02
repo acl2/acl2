@@ -14,11 +14,11 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/event-forms" :dir :system)
-(include-book "kestrel/utilities/fresh-names" :dir :system)
-(include-book "kestrel/utilities/prove-interface" :dir :system)
-(include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
-(include-book "kestrel/utilities/symbol-true-list-alists" :dir :system)
+(include-book "event-forms")
+(include-book "fresh-names")
+(include-book "prove-interface")
+(include-book "symbol-symbol-alists")
+(include-book "symbol-true-list-alists")
 
 (local (set-default-parents named-formulas))
 

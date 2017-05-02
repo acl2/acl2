@@ -2277,7 +2277,7 @@
 ; The following function is used throughout the tau system to determine whether
 ; a recognizer will accept (recognize) a given constant or not.  In an earlier
 ; incarnation of the function, it was not sensitive to the enabled status of the
-; executable counterpart of the tau recognizer fn.
+; executable-counterpart of the tau recognizer fn.
 
 ; One argument for making the tau system respect the current enabled structure
 ; is that some authors disable :executable-counterparts in their proofs and if
@@ -2291,7 +2291,7 @@
 ; it is evaluated.  This particular book is not a very good argument for
 ; respecting ens, since the script could probably have been developed without
 ; this Draconian disabling.  A better reason to make tau respect ens is that
-; some executable counterparts could be so inefficient to compute that the user
+; some executable-counterparts could be so inefficient to compute that the user
 ; would prefer that they never be run.  But tau would run them and lose.  In
 ; fact, in that earlier incarnation just mentioned, tau did run them and did
 ; lose.  See the example below.
@@ -2308,7 +2308,7 @@
 ; the stored taus?  We just can't bear the thought!
 
 ; So we have adopted a slightly inelegant approach: Tau is sensitive to the
-; enabled status of the executable counterparts of the tau recognizers it needs
+; enabled status of the executable-counterparts of the tau recognizers it needs
 ; to evaluate but suffers unnecessary incompleteness as a result.  For example,
 ; one might build a tau in the database that contains foop and that (at the
 ; time it was built) also records that 23 is not in the tau.  But then one

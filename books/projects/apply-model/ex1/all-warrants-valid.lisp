@@ -2,9 +2,9 @@
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Verification that All the Warrants in User-Book.lisp Are Valid in
-;               the Evaluation Theory Produced by the
-;  Defattaches of their Doppelgangers to BADGE-USERFN and APPLY$-USERFN
+;        Verification that All the Warrants in User-Book.lisp Are Valid
+;                     in the Evaluation Theory Produced by
+;   the Defattaches of their Doppelgangers to BADGE-USERFN and APPLY$-USERFN
 
 (in-package "MODAPP")
 

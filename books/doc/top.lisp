@@ -448,7 +448,8 @@
                        ;; everything perfect (until it's release time)
                        :redef-okp t
                        :logo-image "./acl2-big.png"
-                       :error t)
+                       :error t
+                       :broken-links-limit 1)
            (value `(value-triple :manual))))
 
 (value-triple

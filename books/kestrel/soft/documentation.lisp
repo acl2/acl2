@@ -27,7 +27,7 @@
 
 (defxdoc soft
 
-  :parents (acl2::kestrel-books acl2::macro-libraries)
+  :parents (acl2::kestrel-books acl2::macro-libraries acl2::projects)
 
   :short "SOFT (Second-Order Functions and Theorems)
           is a tool to mimic second-order functions and theorems
@@ -1052,7 +1052,9 @@
      <p>
      An optional flag to attempt or omit the guard verification of @('fun').
      This may be present only if @('sofun') was introduced via @(tsee defun2).
-     The default is @('t').
+     If this flag is absent,
+     the guard verification of @('fun') is attempted
+     iff @('sofun') is guard-verified.
      </p>
 
      <p>

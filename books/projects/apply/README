@@ -1,52 +1,86 @@
-In this directory we provide the apply.lisp book, which makes available
-the functions:
+This is the README for /books/projects/apply/.  The following summary is
+accurate, insofar as it goes, for ACL2 Version_7.4.  As of this writing, the
+books on this directory
 
-(apply$ fn args)     - applies the warranted function fn to args
+apply-prim.lisp
+constraints.lisp
+apply.lisp
 
-(ev$ x a)            - evaluates an expression x composed of warranted
-                       functions under an alist a binding the variable
-                       symbols
+are identical to their namesakes on /books/projects/apply-model/ with one
+exception: the books here are all in the "ACL2" symbol package while the books
+in /books/projects/apply-model/ are all in an isolated package.  The reasons
+both directories exist are discussed in /books/projects/apply-model/README.
+But the short answer is: we expect the functionality described below eventually
+to become part of ACL2 and in the meantime it is liable to be extended
+experimentally or corrected.
 
-(def-warranted fn)   - analyzes a defun'd function and makes it warranted,
-                       if possible.  If successful, this function creates the
-                       0-ary predicate APPLY$-WARRANT-fn, which hypothesizes
-                       that apply$ fn works appropriately for fn.  These
-                       predicates are called ``warrants'' for their respective
-                       functions.  Warrants are required in any theorem
-                       involving the application via apply$ of user-defined
-                       functions.
+In this directory we provide the apply.lisp book, described in the paper
+"Limited Second-Order Functionality in a First-Order Setting," by Kaufmann and
+Moore, 2017.  
 
-(defun$ fn ...)      - like defun but then makes fn warranted, if possible
+Notable functions defined here include:
 
-Apply$ and ev$ are not, in general, executable at the top-level of the ACL2
-loop because of the involvement of certain undefined (constrained) functions
-namely badge-userfn and apply$-userfn.
+(APPLY$ fn args)     - applies function named fn to args, i.e.,returns
+                       (fn (nth 0 args) ... (nth n-1 args)), where fn is a
+                       function of arity n, provided there is a warrant for fn
+                       and the arguments are suitably tame.  By ``there is a
+                       warrant'' we mean that either fn is one of a large
+                       number of built-ins or that fn is a user-defined
+                       function on which DEF-WARRANT, below, was successful.
+                       Furthermore, in the context of trying to prove theorems
+                       about (APPLY$ fn args), we mean that the warrant
+                       predicate, (APPLY$-WARRANT-fn), for fn is available as a
+                       hypothesis, and in the context of top-level ACL2
+                       evaluation, we mean that The Rubric of ACL2 Version_7.4
+                       has been executed.  The Rubric may be found in the ACL2
+                       Version_7.4 source file apply-raw.lisp.
 
-This directory also contains the books user-book.lisp and foldr-exercises.lisp
-that contain many defun$ forms and some theorems about various mapping
-functions.
+(EV$ x a)            - evaluates an expression x composed of warranted
+                       functions under an alist a binding the variable symbols.
+                       This behavior is conditioned in the obvious way on
+                       warrants as for APPLY$.
 
-This directory also contains the book doppelgangers.lisp which demonstrates
-that we can define versions of badge-userfn and apply$-userfn, called their
-``doppelgangers,'' that we can attach to those two constrained functions to
-obtain an evaluation theory suitable for all the functions in user-book.lisp.
-Not only can we then execute (at the top-level of the ACL2 loop) forms
-ancestrally involving apply$, but we can prove that all the warrants issued in
-user-book.lisp are valid.  This demonstrates, at least for user-book, that the
-theorems we prove about mapping functions like collect and foldr -- which are
-burdened by those odd warrant hypotheses -- are not vacuously true because
-there's no way the warrants are true.
+(DEF-WARRANT fn)     - analyzes a defun'd function, creates a ``badge'' for fn
 
-Unfortunately, the demonstration of successful attachments to make an effective
-evaluation theory for user-book.lisp does not solve the problem of evaluation
-for other books built on apply$.  That is, apply$ is just not evaluable.
+                       if possible, and generates a warrant, if possible.
+                       DEF-WARRANT is an event.  The warrant for fn is a 0-ary
+                       predicate, named APPLY$-WARRANT-fn, which hypothesizes
+                       that APPLY$ fn works appropriately for fn.  DEF-WARRANT
+                       checks a number of important properties of fn's
+                       definition, including that it is free of STATE and
+                       stobjs, that it returns a single value, that it is not
+                       in a mutually recursive clique, that every other
+                       function name in it has a badge, and that the formals of
+                       fn are used in certain restricted ways, e.g., no formal
+                       is used both as a ``function'' (i.e., fed to APPLY$) and
+                       as an ordinary object.
 
-We are working on improving that situation.
+                       Functions returning multiple values cannot be APPLY$'d
+                       because APPLY$ always returns 1 value.  Thus, warrants
+                       for multi-valued functions cannot be issued but, if the
+                       function satisfies the other checks, DEF-WARRANT records
+                       a badge for fn that tells future calls of def-warrant
+                       which arguments of fn are treated as ``functions,'' etc.
+                       This allows a multi-valued function to be defined,
+                       badged but not warranted with a call of DEF-WARRANT, and
+                       then used in the definition of a single-valued function
+                       that can be warranted.
 
-To certify all the books on this directory,
+                       When proving theorems about APPLY$, the warrants for all
+                       user-defined functions involved in the proof must be
+                       available as hypotheses.  To execute a warranted
+                       user-defined function at the top-level of the ACL2 loop,
+                       The Rubric (see the discussion of APPLY$ above) must
+                       have been executed.
 
-(ld "script.lsp" :ld-pre-eval-print t)
+                       The paper cited above contains a meta-level proof that
+                       it is possible to satisfy all the warrants of all the
+                       functions issued by successful DEF-WARRANTs, thus
+                       theorems containing warrant hypotheses are non-vacuous.
 
-You should read script.lsp to see that doppelgangers can be attached
-to the two constrained functions and to see how we show that all
-warrants are valid in the resulting evaluation theory for user-book.
+(DEFUN$ fn ...)      - like DEFUN but executes (DEF-WARRANT fn) afterwards.
+
+A standard cert.pl will certify the books on this directory:
+
+<path-to-acl2-system-books/>build/cert.pl --acl2 <your-acl2> *.lisp
+

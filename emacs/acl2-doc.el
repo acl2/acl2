@@ -1448,12 +1448,13 @@ Manual\" in the acl2-doc online XDOC-based documentation."
 (defun acl2-doc-where-definition (arg)
 
   "Find an ACL2 definition.  This is the same as
-acl2-doc-definition (the acl2-doc `.' command, as well as
-control-t .), except that the default comes from the name of the
-current page's topic instead of the cursor position.  The two
-functions act identically when given a numeric prefix argument:
-the search is continued based on whichever of the two functions
-was most recently invoked."
+acl2-doc-definition (the acl2-doc `/' command, as well as
+control-t /), except that the default comes from the name of the
+current page's topic instead of the cursor position.  Searches
+are continued identically when control-t / is given a numeric
+prefix argument, regardless of whether the first command was /,
+control-t /, or W; thus, a search started with W can be continued
+with, for example, meta-3 control-t /."
 
   (interactive "P")
   (if (and arg (not (equal arg '(4)))) ;; prefix arg, not control-u

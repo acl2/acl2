@@ -1,6 +1,6 @@
 ; World Queries -- Tests
 ;
-; Copyright (C) 2015-2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -40,6 +40,45 @@
 (must-succeed*
  (defmacro m (x) `(list ,x))
  (assert! (macro-symbolp 'm (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (function-symbol-listp nil (w state)))
+
+(assert! (function-symbol-listp '(len cons atom) (w state)))
+
+(assert! (not (function-symbol-listp '(len cons aaaaatom) (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (defun g (x) x)
+ (assert! (function-symbol-listp '(f g g) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (theorem-symbol-listp nil (w state)))
+
+(assert! (theorem-symbol-listp '(car-cdr-elim cons-car-cdr) (w state)))
+
+(assert! (not (theorem-symbol-listp '(car-cdr-elim len) (w state))))
+
+(must-succeed*
+ (defthm th1 (acl2-numberp (+ x y)))
+ (defthm th2 (acl2-numberp (- x)))
+ (assert! (theorem-symbol-listp '(th2 th1) (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (macro-symbol-listp nil (w state)))
+
+(assert! (macro-symbol-listp '(append + * *) (w state)))
+
+(assert! (not (macro-symbol-listp '(append binary-+) (w state))))
+
+(must-succeed*
+ (defmacro m (x) `(list ,x))
+ (defmacro n (x) `(cons ,x ,x))
+ (assert! (macro-symbol-listp '(m n append) (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,6 +127,63 @@
 (assert! (not (macro-namep 5/3 (w state))))
 
 (assert! (not (macro-namep "append" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (function-name-listp nil (w state)))
+
+(assert! (function-name-listp '(len cons atom) (w state)))
+
+(assert! (not (function-name-listp '(len cons aaaaatom) (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (defun g (x) x)
+ (assert! (function-name-listp '(f g g) (w state))))
+
+(assert! (not (function-name-listp 33 (w state))))
+
+(assert! (not (function-name-listp '(1 2 3) (w state))))
+
+(assert! (not (function-name-listp "ab" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (theorem-name-listp nil (w state)))
+
+(assert! (theorem-name-listp '(car-cdr-elim cons-car-cdr) (w state)))
+
+(assert! (not (theorem-name-listp '(car-cdr-elim len) (w state))))
+
+(must-succeed*
+ (defthm th1 (acl2-numberp (+ x y)))
+ (defthm th2 (acl2-numberp (- x)))
+ (assert! (theorem-name-listp '(th2 th1) (w state))))
+
+(assert! (not (theorem-name-listp 33 (w state))))
+
+(assert! (not (theorem-name-listp '(1 2 3) (w state))))
+
+(assert! (not (theorem-name-listp "ab" (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (macro-name-listp nil (w state)))
+
+(assert! (macro-name-listp '(append + * *) (w state)))
+
+(assert! (not (macro-name-listp '(append binary-+) (w state))))
+
+(must-succeed*
+ (defmacro m (x) `(list ,x))
+ (defmacro n (x) `(cons ,x ,x))
+ (assert! (macro-name-listp '(m n append) (w state))))
+
+(assert! (not (macro-name-listp 33 (w state))))
+
+(assert! (not (macro-name-listp '(1 2 3) (w state))))
+
+(assert! (not (macro-name-listp "ab" (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

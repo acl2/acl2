@@ -541,8 +541,9 @@
         state))
     state))
 
-(defun save-fancy (all-topics dir zip-p logo-image state)
-  (b* ((state (prepare-fancy-dir dir logo-image state))
+(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit state)
+  (b* ((state (f-put-global 'broken-links-limit broken-links-limit state))
+       (state (prepare-fancy-dir dir logo-image state))
        (state (save-json-files all-topics dir state))
        (state (if zip-p
                   (run-fancy-zip dir state)

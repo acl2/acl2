@@ -4,6 +4,10 @@
 
 ; The Doppelgangers for user-defs.lisp
 
+; We define the doppelgangers for the functions in user-defs.lisp.  See
+; "Limited Second-Order Functionality in a First-Order Setting" for a
+; description of what we're doing.
+
 (in-package "MODAPP")
 
 (include-book "../weights-and-measures")

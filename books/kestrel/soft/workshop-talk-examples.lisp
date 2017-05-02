@@ -1,6 +1,6 @@
 ; SOFT ('Second-Order Functions and Theorems) -- Workshop Talk Examples
 ;
-; Copyright (C) 2015-1026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,10 +22,6 @@
 (in-package "ACL2")
 
 (include-book "implementation")
-(include-book "std/lists/rev" :dir :system)
-
-; Avoid ACL2(p) error in DEFUN2 pertaining to override hints.
-(local (set-waterfall-parallelism nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,6 +32,7 @@
 ; Apply function to elements of list.
 
 (defun2 map[?f] (?f) (l)
+  (declare (xargs :guard t))
   (cond ((atom l) nil)
         (t (cons (?f (car l))
                  (map[?f] (cdr l))))))
@@ -52,6 +49,7 @@
   (map[?f] (?f . fix)))
 
 (defun rev-fix-cons (a x)
+  (declare (xargs :guard t))
   (cons a (map[fix] (rev x))))
 
 ; Instantiate LEN-OF-MAP[?F] and use to prove a theorem about REV-FIX-CONS.
@@ -93,6 +91,7 @@
 ; Monoid with operation ?OP and identity ID.
 
 (defun2 monoid[?op] (?op) (id)
+  (declare (xargs :guard t))
   (and (semigroup[?op])
        (identity[?op] id)))
 
@@ -107,5 +106,6 @@
 ; Group with operation ?OP, inverse ?INV, and identity ID.
 
 (defun2 group[?op_?inv] (?op ?inv) (id)
+  (declare (xargs :guard t))
   (and (monoid[?op] id)
        (inverse[?op_?inv] id)))

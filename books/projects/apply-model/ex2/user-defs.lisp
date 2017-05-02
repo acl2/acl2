@@ -2,86 +2,10 @@
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Sample Book of User-Defining Functions for which We Will Establish All of the
-; Warrants
-
-; We define a variety of tame and mapping functions.  The motivation is
-; two-fold: (1) illustrate some useful mapping functions, and (2) stress the
-; doppelganger construction method and more generally the proof that all
-; warrants are satisfiable.
-
-; Every time we've realized a problem with with our doppelganger construction
-; we've introduced a function here to show that we've figured out how to handle
-; the problem.  Most of these mapping functions are pretty useless except as
-; exemplars of the doppelganger construction.
-
-; The complete list of functions defined with defun$ in this file is given
-; below.  The list is in the same order in which the functions are defined
-; below and was collected mechanically with an Emacs keyboard macro.  We
-; assemble this list here in this comment so we can more easily confirm that
-; doppelgangers.lisp deals with each of these functions.
-
-#||
-square
-cube
-my-append1
-my-rev
-nats
-expt-2-and-expt-3
-expt-5
-ok-fnp
-collect
-sumlist
-sumlist-with-params
-filter
-all
-xists
-maxlist
-collect-on
-collect-tips
-apply$2
-apply$2x
-apply$2xx
-russell
-foldr
-foldl
-collect-from-to
-collect*
-collect2
-recur-by-collect
-prow
-prow*
-fn-2-and-fn-3
-fn-5
-map-fn-5
-sumlist-expr
-twofer
-collect-a
-collect-b
-collect-c
-collect-d
-collect-e
-my-apply-2
-my-apply-2-1
-collect-my-rev
-my-append2
-sqnats
-sum-of-products
-||#
-
 (in-package "MODAPP")
 
-; -----------------------------------------------------------------
-; Definitions
-
-; For the sake of later modeling, we exhibit all of our defuns together, even
-; though some are only used to state theorems about others.  We group them
-; into: Group 1 (tame functions independent of apply$), Group 3 (mapping
-; functions), and Group 2 (tame functions not independent of apply$).  The
-; groups are discussed in doppelgangers.lisp.
-
 ; ---
-; Group 1 (tame functions independent of apply$)
+; G1 functions
 
 (defun$ square (x) (* x x))
 
@@ -121,7 +45,7 @@ sum-of-products
        (tamep `(,fn X))))
 
 ; ---
-; Group 3 (mapping functions)
+; G2 functions
 
 (defun$ collect (lst fn)
   (cond ((endp lst) nil)
@@ -335,8 +259,7 @@ sum-of-products
 (defun$ my-apply-2-1 (fn x)
   (my-apply-2 fn fn x))
 
-; ---
-; Group 2 continued (functions containing tame subterms involving apply$)
+; These are G2 functions even though they do not have :FN/:EXPR args.
 
 (defun$ collect-my-rev (lst)
   (collect lst 'MY-REV))
@@ -369,9 +292,6 @@ sum-of-products
       nil
       (cons (collect-x1000 (car lst) fn)
             (collect-x1000-caller (cdr lst) fn))))
-
-; ---
-; Group 2 continued (a guarded function)
 
 (defun$ guarded-collect (lst fn)
   (declare (xargs :guard (true-listp lst)))
