@@ -899,10 +899,6 @@ fty::deftranssum).</p>"
        (full-vars-alist (da-patbind-make-field-acc-alist var fields-accs))
        (field-vars      (strip-cars full-vars-alist))
        (used-vars       (da-patbind-find-used-vars rest-expr field-vars nil))
-       (- (or used-vars
-              (cdr (assoc :quietp kwd-alist))
-              (cw "Note: not introducing any ~x0 field bindings for ~x1, ~
-                   since none of its fields appear to be used.~%" name var)))
 
        (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist var
                                                (cdr (assoc :extra-args kwd-alist)))))
