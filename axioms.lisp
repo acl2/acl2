@@ -12718,6 +12718,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     make-fast-alist
     serialize-read-fn serialize-write-fn
     read-object-suppress
+    read-object-with-case
     assign-lock
     throw-or-attach-call
     oracle-apply oracle-apply-raw
@@ -17714,6 +17715,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (open-input-channels state-state))
                 state-state)))
           (t (mv t nil state-state)))))
+
+(defun read-object-with-case (channel mode state)
+  (declare (xargs :guard
+                  (and (state-p state)
+                       (symbolp channel)
+                       (open-input-channel-p channel :object state)
+                       (member-eq mode ; case sensitivity mode
+                                  '(:upcase :downcase :preserve :invert)))))
+  #+acl2-loop-only
+  (declare (ignore mode))
+  #-acl2-loop-only
+  (cond ((live-state-p state)
+         (return-from
+          read-object-with-case
+          (cond ((eq mode :upcase) ; optimization
+                 (read-object channel state))
+                (t (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
+                     (setf (readtable-case *acl2-readtable*) mode)
+                     (read-object channel state)))))))
+  #+acl2-loop-only
+  (read-object channel state))
 
 (defun read-object-suppress (channel state)
 
