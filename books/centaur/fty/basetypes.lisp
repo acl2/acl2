@@ -449,6 +449,63 @@ non-@('nil') symbol to @('t')."
     :equal eql
     :topic maybe-bitp))
 
+(defthm maybe-integerp-when-integerp
+  ;; BOZO non-local, move to std/defs instead?
+  (implies (integerp x)
+           (maybe-integerp x)))
+
+(defthmd integerp-when-maybe-integerp
+  ;; BOZO non-local, move to std/defs instead?
+  (implies (and (maybe-integerp x)
+                (double-rewrite x))
+           (integerp x)))
+
+(defsection maybe-integerp-fix
+  :parents (fty::basetypes maybe-integerp)
+  :short "@(call maybe-integerp-fix) is the identity for @(see maybe-integerp)s, or
+  coerces any invalid object to @('nil')."
+  :long "<p>Performance note.  In the execution this is just an inlined
+  identity function, i.e., it should have zero runtime cost.</p>"
+
+  (defund-inline maybe-integerp-fix (x)
+    (declare (xargs :guard (maybe-integerp x)))
+    (mbe :logic (if x (ifix x) nil)
+         :exec x))
+
+  (local (in-theory (enable maybe-integerp-fix)))
+
+  (defthm maybe-integerp-of-maybe-integerp-fix
+    (maybe-integerp (maybe-integerp-fix x))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm maybe-integerp-fix-when-maybe-integerp
+    (implies (maybe-integerp x)
+             (equal (maybe-integerp-fix x) x)))
+
+  (defthm maybe-integerp-fix-under-iff
+    (iff (maybe-integerp-fix x) x))
+
+  (defthm maybe-integerp-fix-under-int-equiv
+    (acl2::int-equiv (maybe-integerp-fix x) x)
+    :hints(("Goal" :in-theory (enable maybe-integerp-fix)))))
+
+(defsection maybe-integer-equiv
+  :parents (fty::basetypes maybe-integerp)
+  :short "@('(maybe-integerp-equiv x y)') is an equivalence relation for @(see
+  maybe-integerp)s, i.e., equality up to @(see maybe-integerp-fix)."
+  :long "<p>Performance note.  In the execution, this is just an inlined call
+  of @(see eql).</p>"
+
+  (fty::deffixtype maybe-integer
+    :pred maybe-integerp
+    :fix maybe-integerp-fix
+    :equiv maybe-integer-equiv
+    :define t
+    :inline t
+    :equal eql
+    :topic maybe-integerp))
+
+
 
 (defun fty::make-basetypes-table-rchars (table acc)
   (declare (xargs :mode :program))
