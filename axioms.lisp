@@ -12719,6 +12719,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     serialize-read-fn serialize-write-fn
     read-object-suppress
     read-object-with-case
+    print-object$-preserving-case
     assign-lock
     throw-or-attach-call
     oracle-apply oracle-apply-raw
@@ -16465,6 +16466,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :object state))))
   (print-object$-ser x (get-serialize-character state) channel state))
 
+(defun print-object$-preserving-case (x channel state)
+
+; Logically, this function is just print-object$.  Is it unsound to identify
+; these functions, since they print differently?  We think not, because the
+; only way to see what resides in a file is with the various ACL2 reading
+; functions, which all use a file-clock.  See the discussion of "deus ex
+; machina" in :doc current-package.
+
+  (declare (xargs :guard (and (state-p state)
+                              (eq (get-serialize-character state)
+
+; It's not clear that it makes sense to print preserving case when doing
+; serialize printing.  If that capability is needed we can address weaking the
+; guard to match the guard of print-object$.
+
+                                  nil)
+                              (symbolp channel)
+                              (open-output-channel-p channel
+                                                     :object state))))
+  #-(or acl2-loop-only gcl) ; the setf below is sometimes unsupported by GCL
+  (cond ((live-state-p state)
+         (return-from print-object$-preserving-case
+           (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
+             (setf (readtable-case *acl2-readtable*) :preserve)
+             (print-object$ x channel state)))))
+  (print-object$ x channel state))
+
 ;  We start the file-clock at one to avoid any possible confusion with
 ; the wired in standard-input/output channels, whose names end with
 ; "-0".
@@ -17725,7 +17753,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   '(:upcase :downcase :preserve :invert)))))
   #+acl2-loop-only
   (declare (ignore mode))
-  #-acl2-loop-only
+  #-(or acl2-loop-only gcl) ; the setf below is sometimes unsupported by GCL
   (cond ((live-state-p state)
          (return-from
           read-object-with-case

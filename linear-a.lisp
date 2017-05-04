@@ -233,8 +233,7 @@
 
 ; 'lemma
 
-; The tagged object is either a lemma name (a symbolp) or else is the
-; integer 0 indicating the use of linear arithmetic.
+; The tagged object is a rune.
 
 ; 'pt
 
