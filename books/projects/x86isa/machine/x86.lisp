@@ -3297,8 +3297,7 @@ semantic function.</p>"
       (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
 
       (or (programmer-level-mode x86)
-          (and (not (programmer-level-mode x86))
-               (not (page-structure-marking-mode x86))))
+          (not (page-structure-marking-mode x86)))
       (canonical-address-p temp-rip0)
       (if (and (equal prefix-length 0)
                (equal rex-byte 0)

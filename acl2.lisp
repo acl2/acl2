@@ -1777,7 +1777,7 @@ which is saved just in case it's needed later.")
 ;                       Remarks on *acl2-readtable*
 ;
 ;
-; Because read-object$ calls the Common Lisp function read, read-object$
+; Because read-object calls the Common Lisp function read, read-object
 ; is a function of the values of the Common Lisp symbols (a)
 ; *readtable*, (b) *package*, and (c) *features*.  In ACL2, the user can
 ; specify the package to use, via in-package, which sets the global

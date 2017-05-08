@@ -105,6 +105,7 @@
     REMOVE-DIVE-INTO-MACRO
     REWRITE
     SAFE-MODE
+    TAG-TREE
     TYPE-SET
     WATERFALL
 
@@ -167,6 +168,10 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
+
+    READ-OBJECT-SUPPRESS
+    READ-OBJECT-WITH-CASE
+    PRINT-OBJECT$-PRESERVING-CASE
 
     ))
 
