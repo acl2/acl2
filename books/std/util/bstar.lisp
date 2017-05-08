@@ -197,6 +197,11 @@ that are available \"out of the box.\"</p>
    (return-this-expression .....))
 })
 
+<p>Note: The built-in binders are all defined in the ACL2 package, and can be
+used (without package prefix) in any other package that imports the binder
+symbol, or with the @('acl2::') packge prefix anywhere. See also the note about
+packages under user-defined binders below.</p>
+
 <p>We now give some additional details about these built-in binders.  Since
 users can also define their own @('b*') binders, you may wish to see @(see
 b*-binders) for a more comprehensive list of available binder forms.</p>
