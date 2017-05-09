@@ -2255,6 +2255,16 @@ aignet when its initial value is the specified vector:</p>
     :hints(("Goal" :in-theory (enable id-eval-seq-in-terms-of-id-eval)
             :cases ((< (nfix n) (num-outs aignet))))))
 
+  (defthm lit-eval-seq-of-aignet-copy-init
+    (b* ((aignet2 (aignet-copy-init aignet initsts :gatesimp gatesimp)))
+      (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet2))
+                          frames nil aignet2)
+             (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+                           frames initsts aignet)))
+    :hints(("Goal" :use id-eval-seq-of-aignet-copy-init
+            :in-theory (e/d (fanin-if-co)
+                            (id-eval-seq-of-aignet-copy-init)))))
+
   (defthm output-eval-seq-of-aignet-copy-init
     (b* ((aignet2 (aignet-copy-init aignet initsts :gatesimp gatesimp)))
       (equal (output-eval-seq k n frames nil aignet2)
