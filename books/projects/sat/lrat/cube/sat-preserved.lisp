@@ -67,6 +67,7 @@
             (cw "; Note: Checking next proof segment.~|")
             (incl-valid-proofp$ formula proof old-max-var a$))
            (cond
+; !! Move this up if possible.
             ((>= new-posn *2^56*)
              (mv (er hard? ctx
                      "Attempted to read at position ~x0, but the maximum ~
@@ -76,7 +77,7 @@
                  a$))
             ((not v) (mv nil formula a$))
             ((eq v :complete)
-             (mv t formula a$))
+             (mv t new-formula a$))
             ((> new-posn clrat-file-length)
 
 ; If new-posn is exactly clrat-file-length, then as per the discussion of the
@@ -84,7 +85,7 @@
 ; new-posn exceeds clrat-file-length, then we have a valid proof that does not
 ; include the empty clause.
 
-             (mv t formula a$))
+             (mv t new-formula a$))
             (t
              (sp-valid-proofp$-top-rec new-formula clrat-file new-posn
                                        chunk-size clrat-file-length suffix
