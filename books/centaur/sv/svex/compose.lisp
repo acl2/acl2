@@ -939,7 +939,10 @@ we've seen before with a mask that overlaps with that one.</p>"
        ;; This attempts to resolve apparent combinational loops by adding
        ;; another iteration for variables that are still used in the masks.
        ;; This isn't necessarily sufficient but it might be for simple cases.
-       (res2 (with-fast-alist res1-updates (svex-alist-compose* res1 res1-updates))))
+       (res1-updates2 (b* ((vars (svex-alist-keys res1-updates))
+                           (xes-alist (pairlis$ vars (make-list (len vars) :initial-element (svex-x)))))
+                        (with-fast-alist xes-alist (svex-alist-compose* res1-updates xes-alist))))
+       (res2 (with-fast-alist res1-updates2 (svex-alist-compose* res1 res1-updates2))))
     (clear-memoize-table 'svex-compose*)
     res2)
   ///

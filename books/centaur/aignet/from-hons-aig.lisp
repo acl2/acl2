@@ -2716,7 +2716,7 @@
     (frame-regvals-of-aig-fsm-to-aignet-ind k regs outs max-gates gatesimp aignet0 frames initsts))
   ///
 
-  (local (in-theory (enable id-eval-seq-in-terms-of-id-eval)))
+  (local (in-theory (enable lit-eval-seq-in-terms-of-lit-eval)))
 
   (local (defthm subsetp-vars-of-nth-reg
            (subsetp (aig-vars (nth n regvals))
@@ -2786,7 +2786,7 @@
                       (< (nfix k) (len (stobjs::2darr->rows frames)))
                       (non-bool-atom-listp (alist-keys regs))
                       (no-duplicatesp (alist-keys regs)))
-                 (equal (id-eval-seq k (node-count (lookup-reg->nxst (node-count (lookup-stype n :reg aignet)) aignet))
+                 (equal (lit-eval-seq k (fanin-if-co (lookup-regnum->nxst n aignet))
                                      frames initsts aignet)
                         (acl2::bool->bit (aig-eval (nth n (alist-vals regs))
                                                    (aig-fsm-frame-env
@@ -2806,8 +2806,8 @@
                     (< (nfix k) (len (stobjs::2darr->rows frames)))
                     (non-bool-atom-listp (alist-keys regs))
                     (no-duplicatesp (alist-keys regs)))
-               (equal (id-eval-seq k (node-count (lookup-stype n :po aignet))
-                                   frames initsts aignet)
+               (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+                                    frames initsts aignet)
                       (acl2::bool->bit (nth n (nth k (aig-fsm-run outs regs aig-initst aig-ins)))))))
     :hints (("Goal" :use ((:instance frame-regvals-of-aig-fsm-to-aignet))
              :in-theory (disable frame-regvals-of-aig-fsm-to-aignet)))))

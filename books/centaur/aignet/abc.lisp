@@ -677,13 +677,11 @@ differently:</p>
                         :axiom :comb-prove)))
         (implies (equal status :proved)
                  (and (implies (< (nfix n) (num-outs input-aignet))
-                               (equal (id-eval (node-count (lookup-stype n (po-stype) input-aignet))
+                               (equal (lit-eval (fanin :co (lookup-stype n (po-stype) input-aignet))
                                                invals regvals input-aignet)
                                       0))
                       (implies (< (nfix n) (num-regs input-aignet))
-                               (equal (id-eval (node-count (lookup-reg->nxst
-                                                            (node-count (lookup-stype n (reg-stype) input-aignet))
-                                                            input-aignet))
+                               (equal (lit-eval (fanin-if-co (lookup-regnum->nxst n input-aignet))
                                                invals regvals input-aignet)
                                       0))))))
 
@@ -727,13 +725,11 @@ differently:</p>
                         :axiom :comb-prove-simp)))
         (and (implies (equal status :proved)
                       (and (implies (< (nfix n) (num-outs input-aignet))
-                                    (equal (id-eval (node-count (lookup-stype n (po-stype) input-aignet))
+                                    (equal (lit-eval (fanin :co (lookup-stype n (po-stype) input-aignet))
                                                     invals regvals input-aignet)
                                            0))
                            (implies (< (nfix n) (num-regs input-aignet))
-                                    (equal (id-eval (node-count (lookup-reg->nxst
-                                                                 (node-count (lookup-stype n (reg-stype) input-aignet))
-                                                                 input-aignet))
+                                    (equal (lit-eval (fanin-if-co (lookup-regnum->nxst n input-aignet))
                                                     invals regvals input-aignet)
                                            0))))
              (implies (and (not (stringp status)) ;; not error msg
@@ -763,7 +759,7 @@ differently:</p>
                         :axiom :seq-prove)))
         (implies (and (equal status :proved)
                       (< (nfix n) (num-outs input-aignet)))
-                 (equal (id-eval-seq k (node-count (lookup-stype n (po-stype) input-aignet))
+                 (equal (lit-eval-seq k (fanin :co (lookup-stype n (po-stype) input-aignet))
                                      inframes nil input-aignet)
                         0))))
 
@@ -804,7 +800,7 @@ differently:</p>
                         :axiom :seq-prove-simp)))
         (and (implies (and (equal status :proved)
                            (< (nfix n) (num-outs input-aignet)))
-                      (equal (id-eval-seq k (node-count (lookup-stype n (po-stype) input-aignet))
+                      (equal (lit-eval-seq k (fanin :co (lookup-stype n (po-stype) input-aignet))
                                           inframes nil input-aignet)
                              0))
              (implies (and (not (stringp status)) ;; not error msg
