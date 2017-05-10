@@ -123,9 +123,7 @@
                    :exec (eql n numvars)))
         val))
     (var-repetitions (+ 1 n)
-                     (logapp shift val val)
-                     numvars))
-  ///
+                     (logapp shift val val) numvars)) ///
 
   (local (defthmd loghead-less-than-ash-gen-lemma
            (implies (natp i)
@@ -184,6 +182,57 @@
              (unsigned-byte-p (ash 1 numvars) rep-val))
     :hints (("goal" :induct t
              :expand ((ash 1 (+ 1 (nfix n))))
+             :in-theory (enable logcons))))
+
+  (local (defun var-repetitions-masked-size-ind (m n val numvars)
+           (declare (xargs :measure (nfix (- (nfix numvars) (nfix n)))))
+           (b* ((n (lnfix n))
+                (shift (ash 1 n))
+                (val (mbe :logic (loghead shift (nfix val)) :exec val))
+                ((when (mbe :logic (zp (- (nfix numvars) n))
+                            :exec (eql n numvars)))
+                 (list m val)))
+             (var-repetitions-masked-size-ind
+              (+ shift m)
+              (+ 1 n)
+              (logapp shift val val)
+              numvars))))
+
+  (local (defthm lognot-of-logapp
+           (equal (lognot (logapp w a b))
+                  (logapp w (lognot a) (lognot b)))
+           :hints(("Goal" :in-theory (e/d* (ihsext-inductions)
+                                           (bitops::logapp-of-i-0))
+                   :induct (logapp w a b)
+                   :expand ((:free (a b) (logapp w a b)))))))
+
+  (local (defthm loghead-of-logapp
+           (implies (<= (nfix w1) (nfix w2))
+                    (equal (loghead w2 (logapp w1 a b))
+                           (logapp w1 a (loghead (- (nfix w2) (nfix w1)) b))))
+           :hints ((bitops::logbitp-reasoning))))
+
+  (local (defthm unsigned-byte-p-implies-width-natp
+           (implies (unsigned-byte-p n x)
+                    (natp n))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm plus-minus-*-n
+           (implies (and (syntaxp (quotep n))
+                         (natp n))
+                    (equal (+ (- x) (* n x))
+                           (* (+ -1 n) x)))))
+
+  (defret var-repetitions-negated-masked-size
+    (implies (and (<= (nfix n) numvars)
+                  (natp numvars)
+                  (unsigned-byte-p m (loghead (ash 1 (nfix n)) (lognot (nfix val)))))
+             (unsigned-byte-p (- (ash 1 numvars) (- (ash 1 (nfix n)) m))
+                              (loghead (ash 1 numvars) (lognot rep-val))))
+    :hints (("goal" :induct (var-repetitions-masked-size-ind m n val numvars)
+             :expand ((ash 1 (+ 1 (nfix n)))
+                      (var-repetitions n val numvars))
              :in-theory (enable logcons)))))
 
 (local (defthm posp-of-ash-1
@@ -198,6 +247,7 @@
               (<= (ash 1 (nfix n)) (loghead (+ 1 (nfix n)) x)))
          :hints(("Goal" :in-theory (enable* ihsext-inductions
                                             ihsext-recursive-redefs)))))
+
 (define var ((n natp) (numvars natp))
   :guard (< n numvars)
   :returns (var-enc natp :rule-classes :type-prescription)
@@ -247,12 +297,62 @@
              :in-theory (e/d (truth-eval env-lookup)
                              (eval-of-var var)))))
 
-  (defret var-size
+  (defret var-size-basic
     (implies (and (< (nfix n) numvars)
                   (natp numvars))
              (unsigned-byte-p (ash 1 numvars) var-enc))
     :hints (("goal" :expand ((ash 1 (+ 1 (nfix n))))
-             :in-theory (enable logcons)))))
+             :in-theory (enable logcons))))
+
+  (defret var-size
+    (implies (and (natp m)
+                  (<= (ash 1 numvars) m)
+                  (< (nfix n) numvars)
+                  (natp numvars))
+             (unsigned-byte-p m var-enc))
+    :hints (("goal" :use var-size-basic
+             :in-theory (disable var-size-basic))))
+
+  (local (defthm lognot-of-ash
+           (implies (natp n)
+                    (equal (lognot (ash x n))
+                           (logapp n -1 (lognot x))))
+           :hints((bitops::logbitp-reasoning))))
+
+  (local (defthm loghead-of-logapp
+           (implies (<= (nfix w1) (nfix w2))
+                    (equal (loghead w2 (logapp w1 a b))
+                           (logapp w1 a (loghead (- (nfix w2) (nfix w1)) b))))
+           :hints ((bitops::logbitp-reasoning))))
+
+  (local (defthm plus-minus-*-n
+           (implies (and (syntaxp (quotep n))
+                         (natp n))
+                    (equal (+ (- x) (* n x))
+                           (* (+ -1 n) x)))))
+
+  (local (defthm plus-*-minus-n
+           (implies (and (syntaxp (quotep n))
+                         (natp n))
+                    (equal (+ x (- (* n x)))
+                           (- (* (+ -1 n) x))))))
+
+  (local (defthm loghead-lognot-logmask
+           (equal (loghead n (lognot (logmask n))) 0)
+           :hints ((bitops::logbitp-reasoning))))
+
+  (defret var-negated-masked-size
+    (implies (and (< (nfix n) numvars)
+                  (natp numvars))
+             (unsigned-byte-p (- (ash 1 numvars) (ash 1 (nfix n)))
+                              (loghead (ash 1 numvars) (lognot var-enc))))
+    :hints (("Goal" :use ((:instance var-repetitions-negated-masked-size
+                           (n (+ 1 (nfix n)))
+                           (m (ash 1 (nfix n)))
+                           (val (ash (logmask (ash 1 (nfix n))) (ash 1 (nfix n))))))
+             :expand ((ash 1 (+ 1 (nfix n))))
+             :in-theory (e/d (logcons)
+                             (var-repetitions-negated-masked-size))))))
 
 
 (define truth-norm ((truth integerp) (numvars natp))
@@ -355,13 +455,13 @@
                          (natp numvars)
                          (not (unsigned-byte-p numvars (nfix i))))
                     (not (logbitp i (var n numvars))))
-           :hints (("goal" :use ((:instance var-size)
+           :hints (("goal" :use ((:instance var-size-basic)
                                  (:instance logbitp-past-width-lemma
                                   (n (ash 1 numvars))
                                   (i (- (nfix i) (ash 1 numvars)))
                                   (x (var n numvars))))
                     :in-theory (e/d (unsigned-byte-p  bitops::expt-2-is-ash)
-                                    (var-size))))))
+                                    (var-size-basic))))))
 
   (local (defthm logbitp-n-of-plus-ash-1-n
            (implies (integerp x)
@@ -381,14 +481,31 @@
                 '(:cases ((logbitp n (nfix env)))))
            (and stable-under-simplificationp
                 '(:cases ((unsigned-byte-p numvars (+ (ash 1 (nfix n))
-                                (loghead numvars (nfix env))))))))))
+                                (loghead numvars (nfix env)))))))))
+
+  (defret positive-cofactor-size-basic
+    (implies (and (< (nfix n) numvars)
+                  (natp numvars))
+             (unsigned-byte-p (ash 1 numvars) cofactor)))
+
+  (defret positive-cofactor-size
+    (implies (and (natp m)
+                  (<= (ash 1 numvars) m)
+                  (< (nfix n) numvars)
+                  (natp numvars))
+             (unsigned-byte-p m cofactor))
+    :hints (("goal" :use positive-cofactor-size-basic
+             :in-theory (disable positive-cofactor-size-basic)))))
 
 (define negative-cofactor ((n natp) (truth integerp) (numvars natp))
   :guard (< n numvars)
   :returns (cofactor integerp :rule-classes :type-prescription)
-  (B* ((mask (logand (lognot (var n numvars)) truth)))
+  (B* ((mask (logand (lognot (var n numvars))
+                     (loghead (ash 1 (lnfix numvars)) truth))))
     (logior mask (ash mask (ash 1 (lnfix n)))))
   ///
+  (local (in-theory (disable logmask)))
+
   (local (defthmd loghead-of-install-bit-lemma
            (implies (posp i)
                     (Equal (loghead (+ i (nfix n)) (install-bit n v x))
@@ -440,6 +557,21 @@
                        '(:in-theory (enable bitops::equal-logcons-strong
                                             logcdr-of-minus
                                             plus-1-lognot))))))
+
+  (local (defthm install-bit-0-less-than-x
+           (implies (natp x)
+                    (<= (install-bit n 0 x) x))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              install-bit**)
+                   :induct (logbitp n x)))
+           :rule-classes :linear))
+
+  (local (defthm ash-1-greater-than-loghead
+           (implies (natp n)
+                    (< (loghead n x) (ash 1 n)))
+           :hints (("goal" :in-theory (enable* ihsext-inductions
+                                               ihsext-recursive-redefs)))
+           :rule-classes :linear))
 
   ;; (local (defthm logcdr-of-non-integer
   ;;          (implies (not (integerp x))
@@ -505,9 +637,49 @@
                     (truth-eval truth (env-update n nil env) numvars)))
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable env-lookup env-update truth-eval
-                                     bitops::logbitp-of-ash-split)))
+                                     bitops::logbitp-of-ash-split
+                                     bitops::logbitp-of-loghead-split)))
            (and stable-under-simplificationp
-                '(:cases ((logbitp n (nfix env))))))))
+                '(:cases ((logbitp n (nfix env)))))))
+
+  (local (defun size-of-logand-ind (n m a b)
+           (if (zp m)
+               (list n a b)
+             (size-of-logand-ind (1- n) (1- m) (logcdr a) (logcdr b)))))
+
+  (local (defthmd logand-0-by-loghead-lemma
+           (implies (and (unsigned-byte-p m a)
+                         (equal 0 (loghead m b)))
+                    (equal (logand a b) 0))
+           :hints (("goal" :induct (size-of-logand-ind m m a b)
+                    :expand ((loghead m b)
+                             (unsigned-byte-p m a))))))
+
+  (defthmd size-of-logand-by-size-of-loghead
+    (implies (and (unsigned-byte-p m a)
+                  (unsigned-byte-p n (loghead m b)))
+             (unsigned-byte-p n (logand a b)))
+    :hints (("goal" :induct (size-of-logand-ind n m a b)
+             :expand ((loghead m b)
+                      (:free (n a b) (unsigned-byte-p n (logcons a b))))
+             :in-theory (enable logand-0-by-loghead-lemma))))
+
+  (defret negative-cofactor-size-basic
+    (implies (and (< (nfix n) numvars)
+                  (natp numvars))
+             (unsigned-byte-p (ash 1 numvars) cofactor))
+    :hints (("goal" :use ((:instance size-of-logand-by-size-of-loghead
+                           (a (loghead (ash 1 numvars) truth)) (b (lognot (var n numvars)))
+                           (m (ash 1 numvars)) (n (- (ash 1 numvars) (ash 1 (nfix n)))))))))
+
+  (defret negative-cofactor-size
+    (implies (and (natp m)
+                  (<= (ash 1 numvars) m)
+                  (< (nfix n) numvars)
+                  (natp numvars))
+             (unsigned-byte-p m cofactor))
+    :hints (("goal" :use negative-cofactor-size-basic
+             :in-theory (disable negative-cofactor-size-basic)))))
 
 
 (define depends-on ((n natp) (truth integerp) (numvars natp))
