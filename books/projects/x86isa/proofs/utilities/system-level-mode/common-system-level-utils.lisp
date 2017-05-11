@@ -106,7 +106,7 @@
 
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
-           (equal (mv-nth 0 (wb addr-lst x86))
+           (equal (mv-nth 0 (wb addr-lst w x86))
                   (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (wb) (force (force))))))
 

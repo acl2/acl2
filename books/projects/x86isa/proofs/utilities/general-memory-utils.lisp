@@ -110,8 +110,7 @@
            (equal (loghead n x) 0))
   :hints (("Goal" :in-theory (e/d* (loghead mod) ()))))
 
-(local
- (encapsulate
+(encapsulate
   ()
 
   (local (include-book "arithmetic-3/top" :dir :system))
@@ -139,9 +138,11 @@
     (implies (natp n)
              (equal (ash (+ 1 n) 3)
                     (+ 8 (ash n 3))))
-    :hints (("Goal" :in-theory (e/d* (ash) ()))))))
+    :hints (("Goal" :in-theory (e/d* (ash) ())))))
 
 ;; ======================================================================
+
+#||
 
 ;; Lemmas about byte-ify and combine-bytes:
 
@@ -1070,3 +1071,5 @@
                             (n 0))))))
 
 ;; ======================================================================
+
+||#

@@ -382,7 +382,7 @@
 (defthm xlation-governing-entries-paddrs-for-page-table-and-mv-nth-1-wb
   (equal (xlation-governing-entries-paddrs-for-page-table
           lin-addr page-table-base-addr
-          (mv-nth 1 (wb addr-lst x86)))
+          (mv-nth 1 (wb addr-lst w x86)))
          (xlation-governing-entries-paddrs-for-page-table
           lin-addr page-table-base-addr (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (wb
@@ -414,7 +414,7 @@
             (not (programmer-level-mode x86)))
            (equal (xlation-governing-entries-paddrs-for-page-directory
                    lin-addr page-directory-base-addr
-                   (mv-nth 1 (wb addr-lst x86)))
+                   (mv-nth 1 (wb addr-lst w x86)))
                   (xlation-governing-entries-paddrs-for-page-directory
                    lin-addr page-directory-base-addr (double-rewrite x86))))
   :hints (("Goal"
@@ -455,7 +455,7 @@
                 (not (programmer-level-mode x86)))
            (equal (xlation-governing-entries-paddrs-for-page-dir-ptr-table
                    lin-addr page-dir-ptr-table-base-addr
-                   (mv-nth 1 (wb addr-lst x86)))
+                   (mv-nth 1 (wb addr-lst w x86)))
                   (xlation-governing-entries-paddrs-for-page-dir-ptr-table
                    lin-addr page-dir-ptr-table-base-addr (double-rewrite x86))))
   :hints (("Goal"
@@ -496,7 +496,7 @@
                 (not (programmer-level-mode x86)))
            (equal (xlation-governing-entries-paddrs-for-pml4-table
                    lin-addr pml4-table-base-addr
-                   (mv-nth 1 (wb addr-lst x86)))
+                   (mv-nth 1 (wb addr-lst w x86)))
                   (xlation-governing-entries-paddrs-for-pml4-table
                    lin-addr pml4-table-base-addr (double-rewrite x86))))
   :hints (("Goal"
@@ -531,7 +531,7 @@
                                               (double-rewrite x86)))
                         (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
             (not (programmer-level-mode x86)))
-           (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst x86)))
+           (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst w x86)))
                   (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
   :hints (("Goal"
            :do-not-induct t
@@ -559,7 +559,7 @@
             (disjoint-p (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
                         (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
             (not (programmer-level-mode x86)))
-           (equal (all-xlation-governing-entries-paddrs l-addrs (mv-nth 1 (wb addr-lst x86)))
+           (equal (all-xlation-governing-entries-paddrs l-addrs (mv-nth 1 (wb addr-lst w x86)))
                   (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
   :hints (("Goal"
            :in-theory (e/d* (all-xlation-governing-entries-paddrs)

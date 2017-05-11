@@ -593,6 +593,7 @@
                                      (xr :rgf *rdi* x86)
                                      (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
                                    :r x86)))))))
+                            :w
                             (mv-nth
                              2
                              (las-to-pas
@@ -700,6 +701,7 @@
                                                            (byte-ify
                                                             8
                                                             (xr :ctr *cr3* x86)))
+                                                          :w
                                                           (mv-nth
                                                            2
                                                            (las-to-pas
@@ -1374,7 +1376,7 @@
             (addr-byte-alistp addr-lst)
             (not (programmer-level-mode x86))
             (x86p x86))
-           (equal (pdpt-base-addr lin-addr (mv-nth 1 (wb addr-lst x86)))
+           (equal (pdpt-base-addr lin-addr (mv-nth 1 (wb addr-lst w x86)))
                   (pdpt-base-addr lin-addr (double-rewrite x86))))
   :hints (("Goal" :in-theory (e/d* (pdpt-base-addr)
                                    (member-p-strip-cars-of-remove-duplicate-keys
@@ -3065,9 +3067,9 @@
     (canonical-address-p lin-addr)
     (x86p x86))
    (and
-    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr :r cpl (mv-nth 1 (wb addr-lst x86))))
+    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr :r cpl (mv-nth 1 (wb addr-lst w x86))))
            nil)
-    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr :r cpl (mv-nth 1 (wb addr-lst x86))))
+    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr :r cpl (mv-nth 1 (wb addr-lst w x86))))
            (logior
             (loghead 30 lin-addr)
             (ash (loghead 22 (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30)))))
@@ -3231,11 +3233,11 @@
    (and
     (equal (mv-nth 0 (las-to-pas
                       (create-canonical-address-list-alt iteration m lin-addr)
-                      :r cpl (mv-nth 1 (wb addr-lst x86))))
+                      :r cpl (mv-nth 1 (wb addr-lst w x86))))
            nil)
     (equal (mv-nth 1 (las-to-pas
                       (create-canonical-address-list-alt iteration m lin-addr)
-                      :r cpl (mv-nth 1 (wb addr-lst x86))))
+                      :r cpl (mv-nth 1 (wb addr-lst w x86))))
            (addr-range
             (+ (- iteration) m)
             (+ iteration
@@ -3399,11 +3401,11 @@
    (and
     (equal (mv-nth 0 (las-to-pas
                       (create-canonical-address-list *2^30* lin-addr)
-                      :r cpl (mv-nth 1 (wb addr-lst x86))))
+                      :r cpl (mv-nth 1 (wb addr-lst w x86))))
            nil)
     (equal (mv-nth 1 (las-to-pas
                       (create-canonical-address-list *2^30* lin-addr)
-                      :r cpl (mv-nth 1 (wb addr-lst x86))))
+                      :r cpl (mv-nth 1 (wb addr-lst w x86))))
            (addr-range *2^30* (ash (loghead 22 (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30)))))
   :hints (("Goal"
            :do-not '(preprocess)
@@ -3780,7 +3782,7 @@
      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (x86p x86))
-   (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst x86)))
+   (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst w x86)))
           (xlation-governing-entries-paddrs lin-addr x86)))
   :hints
   (("Goal"
@@ -3927,7 +3929,7 @@
        (rm-low-64 (pml4-table-entry-addr
                    lin-addr
                    (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                  (mv-nth 1 (wb addr-lst x86))))
+                  (mv-nth 1 (wb addr-lst w x86))))
       (page-size
        (rm-low-64 (pml4-table-entry-addr
                    lin-addr
@@ -3965,7 +3967,7 @@
                         (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
                        x86)))
           12))
-        (mv-nth 1 (wb addr-lst x86)))))
+        (mv-nth 1 (wb addr-lst w x86)))))
 
      (equal
       (logtail
@@ -3973,7 +3975,7 @@
        (rm-low-64 (pml4-table-entry-addr
                    lin-addr
                    (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                  (mv-nth 1 (wb addr-lst x86))))
+                  (mv-nth 1 (wb addr-lst w x86))))
       (logtail
        12
        (rm-low-64 (pml4-table-entry-addr
@@ -4108,7 +4110,7 @@
     (unsigned-byte-p 30 n)
     (not (programmer-level-mode x86))
     (x86p x86))
-   (equal (xlation-governing-entries-paddrs (+ n lin-addr) (mv-nth 1 (wb addr-lst x86)))
+   (equal (xlation-governing-entries-paddrs (+ n lin-addr) (mv-nth 1 (wb addr-lst w x86)))
           (xlation-governing-entries-paddrs lin-addr x86)))
   :hints (("Goal"
            :do-not-induct t
@@ -4251,7 +4253,7 @@
     (x86p x86))
    (equal
     (all-xlation-governing-entries-paddrs
-     (create-canonical-address-list-alt iteration m lin-addr) (mv-nth 1 (wb addr-lst x86)))
+     (create-canonical-address-list-alt iteration m lin-addr) (mv-nth 1 (wb addr-lst w x86)))
     (all-xlation-governing-entries-paddrs
      (create-canonical-address-list-alt iteration m lin-addr) x86)))
   :hints (("Goal"
@@ -4367,7 +4369,7 @@
     (x86p x86))
    (equal
     (all-xlation-governing-entries-paddrs
-     (create-canonical-address-list m lin-addr) (mv-nth 1 (wb addr-lst x86)))
+     (create-canonical-address-list m lin-addr) (mv-nth 1 (wb addr-lst w x86)))
     (all-xlation-governing-entries-paddrs
      (create-canonical-address-list m lin-addr) (double-rewrite x86))))
   :hints (("Goal"
@@ -4515,11 +4517,11 @@
     (not (programmer-level-mode x86))
     (x86p x86))
    (and
-    (equal (mv-nth 0 (rb (create-canonical-address-list *2^30* lin-addr) :r (mv-nth 1 (wb addr-lst x86))))
+    (equal (mv-nth 0 (rb (create-canonical-address-list *2^30* lin-addr) :r (mv-nth 1 (wb addr-lst w x86))))
            nil)
     (equal (mv-nth 1 (rb
                       (create-canonical-address-list *2^30* lin-addr)
-                      :r (mv-nth 1 (wb addr-lst x86))))
+                      :r (mv-nth 1 (wb addr-lst w x86))))
            (read-from-physical-memory
             (addr-range *2^30*
                         (ash (loghead 22 (logtail 30 (combine-bytes (strip-cdrs addr-lst))))
@@ -5306,6 +5308,7 @@
                                              8
                                              (+ -24 (xr :rgf *rsp* x86)))
                                             (byte-ify 8 (xr :ctr 3 x86)))
+                                           :w
                                            (mv-nth
                                             2
                                             (las-to-pas
@@ -5639,7 +5642,7 @@
      (mv-nth 1
              (wb (create-addr-bytes-alist (create-canonical-address-list 8 lin-addr)
                                           (byte-ify 8 value))
-                 x86)))
+                 w x86)))
     (program-at-alt l-addrs bytes (double-rewrite x86))))
   :hints
   (("Goal"
@@ -6043,6 +6046,7 @@
                                                (xr :rgf *rdi* x86)
                                                (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
                                              :r x86)))))))
+                                      :w
                                       (mv-nth
                                        2
                                        (las-to-pas
@@ -6150,6 +6154,7 @@
                                                                      (byte-ify
                                                                       8
                                                                       (xr :ctr *cr3* x86)))
+                                                                    :w
                                                                     (mv-nth
                                                                      2
                                                                      (las-to-pas

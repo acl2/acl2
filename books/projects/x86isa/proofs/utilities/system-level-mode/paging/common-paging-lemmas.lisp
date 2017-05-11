@@ -638,7 +638,7 @@
                   structure-type lin-addr
                   entry u/s-acc r/w-acc x/d-acc wp
                   smep smap ac nxe r-w-x cpl
-                  (mv-nth 1 (wb addr-lst x86))
+                  (mv-nth 1 (wb addr-lst w x86))
                   access-type))
          (mv-nth 0
                  (paging-entry-no-page-fault-p

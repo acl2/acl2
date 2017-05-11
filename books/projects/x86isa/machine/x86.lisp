@@ -2977,8 +2977,7 @@
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
     (implies (and (or (programmer-level-mode x86)
-                      (and (not (programmer-level-mode x86))
-                           (not (page-structure-marking-mode x86))))
+                      (not (page-structure-marking-mode x86)))
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
@@ -2995,7 +2994,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
@@ -3019,7 +3019,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
@@ -3043,7 +3044,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
@@ -3067,7 +3069,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x))))))
 
@@ -3123,7 +3126,7 @@ semantic function.</p>"
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :non-canonical-address-encountered temp-rip))
 
        ;; If opcode/rex/escape-byte is a rex byte, it is filed away in
@@ -3131,7 +3134,7 @@ semantic function.</p>"
        ((the (unsigned-byte 8) rex-byte)
         (if (and ;; 64-bit-mode
              (equal (the (unsigned-byte 4)
-                      (ash opcode/rex/escape-byte -4))
+                         (ash opcode/rex/escape-byte -4))
                     4))
             opcode/rex/escape-byte
           0))
@@ -3154,7 +3157,7 @@ semantic function.</p>"
             (if (mbe :logic (canonical-address-p temp-rip)
                      :exec (< (the (signed-byte
                                     #.*max-linear-address-size+1*)
-                                temp-rip)
+                                   temp-rip)
                               #.*2^47*))
                 (mv nil temp-rip)
               (mv t temp-rip)))))
@@ -3216,7 +3219,7 @@ semantic function.</p>"
               (if (mbe :logic (canonical-address-p temp-rip)
                        :exec (< (the (signed-byte
                                       #.*max-linear-address-size+1*)
-                                  temp-rip)
+                                     temp-rip)
                                 #.*2^47*))
                   (mv nil temp-rip)
                 (mv t temp-rip)))
@@ -3240,12 +3243,12 @@ semantic function.</p>"
         (if sib?
             (let ((temp-rip
                    (the (signed-byte #.*max-linear-address-size+2*)
-                     (1+ temp-rip))))
+                        (1+ temp-rip))))
               ;; We need to check whether (1+ temp-rip) is canonical.
               (if (mbe :logic (canonical-address-p temp-rip)
                        :exec (< (the (signed-byte
                                       #.*max-linear-address-size+2*)
-                                  temp-rip)
+                                     temp-rip)
                                 #.*2^47*))
                   (mv nil temp-rip)
                 (mv t temp-rip)))

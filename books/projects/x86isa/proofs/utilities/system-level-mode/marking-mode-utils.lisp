@@ -454,7 +454,7 @@
                             (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
                 (addr-byte-alistp addr-lst)
                 (not (programmer-level-mode x86)))
-           (equal (xr :mem index (mv-nth 1 (wb addr-lst x86)))
+           (equal (xr :mem index (mv-nth 1 (wb addr-lst w x86)))
                   (xr :mem index x86)))
   :hints (("Goal"
            :do-not-induct t
@@ -469,7 +469,7 @@
                 (disjoint-p (addr-range 4 index)
                             (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
                 (addr-byte-alistp addr-lst))
-           (equal (rm-low-32 index (mv-nth 1 (wb addr-lst x86)))
+           (equal (rm-low-32 index (mv-nth 1 (wb addr-lst w x86)))
                   (rm-low-32 index x86)))
   :hints (("Goal"
            :do-not-induct t
@@ -486,7 +486,7 @@
                         (all-xlation-governing-entries-paddrs (strip-cars addr-lst) (double-rewrite x86)))
             (addr-byte-alistp addr-lst)
             (integerp index))
-           (equal (rm-low-64 index (mv-nth 1 (wb addr-lst x86)))
+           (equal (rm-low-64 index (mv-nth 1 (wb addr-lst w x86)))
                   (rm-low-64 index x86)))
   :hints (("Goal"
            :do-not-induct t
@@ -550,7 +550,7 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -558,7 +558,7 @@
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -587,7 +587,7 @@
           lin-addr base-addr (double-rewrite x86))))
    (xlate-equiv-entries
     (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
-               (mv-nth 1 (wb addr-lst x86)))
+               (mv-nth 1 (wb addr-lst w x86)))
     (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                x86)))
   :hints (("Goal"
@@ -610,7 +610,7 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -618,7 +618,7 @@
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -629,24 +629,24 @@
                             (e-1 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-page-execute-disable
                             (e-1 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-logtail
                             (n 12)
                             (e-1 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-logtail
                             (n 21)
                             (e-1 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-directory-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86))))))
+                                            (mv-nth 1 (wb addr-lst w x86))))))
            :in-theory (e/d* (disjoint-p
                              disjoint-p-commutative
                              member-p
@@ -669,7 +669,7 @@
           lin-addr base-addr (double-rewrite x86))))
    (xlate-equiv-entries
     (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-               (mv-nth 1 (wb addr-lst x86)))
+               (mv-nth 1 (wb addr-lst w x86)))
     (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                x86)))
   :hints (("Goal"
@@ -692,7 +692,7 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -700,7 +700,7 @@
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -711,24 +711,24 @@
                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-page-execute-disable
                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-logtail
                             (n 12)
                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-logtail
                             (n 30)
                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86))))))
+                                            (mv-nth 1 (wb addr-lst w x86))))))
 
            :in-theory (e/d* (disjoint-p
                              disjoint-p-commutative
@@ -752,7 +752,7 @@
           lin-addr base-addr (double-rewrite x86))))
    (xlate-equiv-entries
     (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
-               (mv-nth 1 (wb addr-lst x86)))
+               (mv-nth 1 (wb addr-lst w x86)))
     (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
                x86)))
   :hints (("Goal"
@@ -775,14 +775,14 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-                            (mv-nth 1 (wb addr-lst x86))))
+                            (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-                            (mv-nth 1 (wb addr-lst x86))))
+                            (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))))
@@ -792,13 +792,13 @@
                             (e-1 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86)))))
+                                            (mv-nth 1 (wb addr-lst w x86)))))
                  (:instance xlate-equiv-entries-and-logtail
                             (n 12)
                             (e-1 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
                                             x86))
                             (e-2 (rm-low-64 (pml4-table-entry-addr lin-addr base-addr)
-                                            (mv-nth 1 (wb addr-lst x86))))))
+                                            (mv-nth 1 (wb addr-lst w x86))))))
            :in-theory (e/d* (disjoint-p
                              disjoint-p-commutative
                              member-p
@@ -816,9 +816,9 @@
                  (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (canonical-address-p lin-addr))
            (and
-            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
@@ -839,9 +839,9 @@
                  (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
                 (canonical-address-listp l-addrs))
            (and
-            (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))))
   :hints (("Goal"
            :induct (all-xlation-governing-entries-paddrs l-addrs x86)
@@ -868,7 +868,7 @@
                 (addr-byte-alistp addr-lst)
                 (not (programmer-level-mode x86))
                 (x86p x86))
-           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
+           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst w x86)))
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
@@ -903,9 +903,9 @@
             (not (programmer-level-mode x86))
             (x86p x86))
            (and
-            (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0 (rb l-addrs r-w-x x86)))
-            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1 (rb l-addrs r-w-x x86)))))
   :hints (("Goal"
            :do-not-induct t
@@ -940,7 +940,7 @@
                 (addr-byte-alistp addr-lst)
                 (not (programmer-level-mode x86))
                 (x86p x86))
-           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst w x86))))
                   (strip-cdrs addr-lst)))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* (disjoint-p-commutative) (force (force)))
@@ -983,7 +983,7 @@
             (addr-byte-alistp addr-lst)
             (not (programmer-level-mode x86))
             (x86p x86))
-           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
+           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst w x86)))
                   (program-at l-addrs bytes x86)))
   :hints (("Goal"
            :do-not-induct t

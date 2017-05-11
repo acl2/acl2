@@ -337,7 +337,7 @@
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (page-structure-marking-mode x86))
                 (not (programmer-level-mode x86)))
-           (equal (xr :mem index (mv-nth 1 (wb addr-lst x86)))
+           (equal (xr :mem index (mv-nth 1 (wb addr-lst w x86)))
                   (xr :mem index x86)))
   :hints (("Goal" :in-theory (e/d* (wb disjoint-p member-p)
                                    (write-to-physical-memory
@@ -378,14 +378,14 @@
                              member-p)
                             (xlation-governing-entries-paddrs)))))
 
-(defun-nx wb-duplicate-writes-induct (addr-list x86)
+(defun-nx wb-duplicate-writes-induct (addr-list w x86)
   (if (endp addr-list)
       nil
     (if (member-p (car (car addr-list)) (strip-cars (cdr addr-list)))
-        (wb-duplicate-writes-induct (cdr addr-list) x86)
+        (wb-duplicate-writes-induct (cdr addr-list) w x86)
       (wb-duplicate-writes-induct
-       (cdr addr-list)
-       (mv-nth 1 (wb (list (car addr-list)) x86))))))
+       (cdr addr-list) w
+       (mv-nth 1 (wb (list (car addr-list)) w x86))))))
 
 (local
  (defthm strip-cars-of-remove-duplicate-keys-is-remove-duplicates-equal-of-strip-cars
@@ -434,11 +434,11 @@
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (x86p x86))
-           (equal (wb addr-lst x86)
+           (equal (wb addr-lst w x86)
                   ;; TO-DO: I need to replace remove-duplicate-keys
                   ;; with remove-duplicate-phy-addresses or something
                   ;; like that.
-                  (wb (remove-duplicate-keys addr-lst) x86)))
+                  (wb (remove-duplicate-keys addr-lst) w x86)))
   :hints (("Goal" :do-not '(generalize)
            :in-theory (e/d (disjoint-p
                             member-p
@@ -450,7 +450,7 @@
                             member-p-and-remove-duplicates-equal
                             disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                             xlation-governing-entries-paddrs))
-           :induct (wb-duplicate-writes-induct addr-lst x86))))
+           :induct (wb-duplicate-writes-induct addr-lst w x86))))
 
 ;; ======================================================================
 
@@ -461,7 +461,7 @@
                 (disjoint-p (addr-range 4 index)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (page-structure-marking-mode x86)))
-           (equal (rm-low-32 index (mv-nth 1 (wb addr-lst x86)))
+           (equal (rm-low-32 index (mv-nth 1 (wb addr-lst w x86)))
                   (rm-low-32 index x86)))
   :hints (("Goal" :in-theory (e/d* (rm-low-32 disjoint-p member-p)
                                    (write-to-physical-memory
@@ -474,7 +474,7 @@
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (not (page-structure-marking-mode x86))
                 (integerp index))
-           (equal (rm-low-64 index (mv-nth 1 (wb addr-lst x86)))
+           (equal (rm-low-64 index (mv-nth 1 (wb addr-lst w x86)))
                   (rm-low-64 index x86)))
   :hints (("Goal"
            :do-not-induct t
@@ -511,7 +511,7 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -519,7 +519,7 @@
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -549,7 +549,7 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -557,7 +557,7 @@
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -588,7 +588,7 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -596,7 +596,7 @@
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -627,14 +627,14 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-                            (mv-nth 1 (wb addr-lst x86))))
+                            (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl
-                            (mv-nth 1 (wb addr-lst x86))))
+                            (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
                             lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))))
@@ -658,9 +658,9 @@
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr))
            (and
-            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
@@ -681,9 +681,9 @@
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs))
            (and
-            (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
   :hints (("Goal"
            :induct (all-xlation-governing-entries-paddrs l-addrs x86)
@@ -708,12 +708,12 @@
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
                 ;; I should try to eliminate the following hyp too...
-                ;; (not (mv-nth 0 (wb addr-lst x86)))
+                ;; (not (mv-nth 0 (wb addr-lst w x86)))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
            (and
-            (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 0 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 0 (rb l-addrs r-w-x x86)))
-            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst w x86))))
                    (mv-nth 1 (rb l-addrs r-w-x x86)))))
   :hints (("Goal" :do-not-induct t)))
 
@@ -727,7 +727,7 @@
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (x86p x86))
-           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst x86)))
+           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb addr-lst w x86)))
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
@@ -748,7 +748,7 @@
                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
                 ;; (not (mv-nth 0 (wb addr-lst x86)))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
-           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst x86))))
+           (equal (mv-nth 1 (rb l-addrs r-w-x (mv-nth 1 (wb addr-lst w x86))))
                   (strip-cdrs addr-lst)))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* () (force (force))))))
@@ -797,9 +797,9 @@
                 (not (page-structure-marking-mode x86))
                 (canonical-address-listp l-addrs)
                 ;; I should try to eliminate the following hyp too...
-                ;; (not (mv-nth 0 (wb addr-lst x86)))
+                ;; (not (mv-nth 0 (wb addr-lst w x86)))
                 (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))))
-           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst x86)))
+           (equal (program-at l-addrs bytes (mv-nth 1 (wb addr-lst w x86)))
                   (program-at l-addrs bytes x86)))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d (program-at) (rb wb)))))
@@ -842,7 +842,7 @@
                 (not (programmer-level-mode x86))
                 (not (page-structure-marking-mode x86))
                 (x86p x86))
-           (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst x86)))
+           (equal (xlation-governing-entries-paddrs lin-addr (mv-nth 1 (wb addr-lst w x86)))
                   (xlation-governing-entries-paddrs lin-addr x86)))
   :hints (("Goal"
            :do-not-induct t
@@ -856,7 +856,7 @@
             (not (programmer-level-mode x86))
             (not (page-structure-marking-mode x86))
             (x86p x86))
-           (equal (all-xlation-governing-entries-paddrs l-addrs (mv-nth 1 (wb addr-lst x86)))
+           (equal (all-xlation-governing-entries-paddrs l-addrs (mv-nth 1 (wb addr-lst w x86)))
                   (all-xlation-governing-entries-paddrs l-addrs x86)))
   :hints (("Goal"
            :in-theory (e/d* (all-xlation-governing-entries-paddrs)

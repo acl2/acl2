@@ -171,7 +171,7 @@
     :concl (pml4t-base-addr x86))
 
   (defthm pml4t-base-addr-and-mv-nth-1-wb
-    (equal (pml4t-base-addr (mv-nth 1 (wb addr-lst x86)))
+    (equal (pml4t-base-addr (mv-nth 1 (wb addr-lst w x86)))
            (pml4t-base-addr x86))))
 
 (defun-nx pdpt-base-addr (lin-addr x86)
@@ -215,7 +215,7 @@
             (not (programmer-level-mode x86))
             (not (page-structure-marking-mode x86))
             (x86p x86))
-           (equal (pdpt-base-addr lin-addr (mv-nth 1 (wb addr-lst x86)))
+           (equal (pdpt-base-addr lin-addr (mv-nth 1 (wb addr-lst w x86)))
                   (pdpt-base-addr lin-addr x86)))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* () (member-p-strip-cars-of-remove-duplicate-keys)))))
@@ -847,7 +847,7 @@
     (:linear rgfi-is-i64p)
     (:rewrite member-p-cdr)
     (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
-    (:rewrite acl2::difference-unsigned-byte-p)    
+    (:rewrite acl2::difference-unsigned-byte-p)
     (:rewrite acl2::append-when-not-consp)
     (:linear rip-is-i48p)
     (:type-prescription byte-ify)
@@ -1345,6 +1345,7 @@
                                                  (create-canonical-address-list
                                                   8 (+ -24 (xr :rgf *rsp* x86)))
                                                  (byte-ify 8 (xr :ctr *cr3* x86)))
+                                                :w
                                                 x86))))))))))))))))))))))
   :hints (("Goal"
            :do-not '(preprocess)
@@ -1753,9 +1754,9 @@
    ;; corresponding to this "lin-addr" has been modified ---
    ;; the new PDPTE is "value".
    (and
-    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
            nil)
-    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
            (logior (loghead 30 lin-addr) (ash (loghead
                                                22
                                                (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30)))))
@@ -2496,11 +2497,11 @@
    (and
     (equal (mv-nth 0 (las-to-pas
                       (create-canonical-address-list-alt iteration m lin-addr)
-                      r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                      r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
            nil)
     (equal (mv-nth 1 (las-to-pas
                       (create-canonical-address-list-alt iteration m lin-addr)
-                      r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                      r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
            (addr-range
             (+ (- iteration) m)
             (+ iteration
@@ -2594,11 +2595,11 @@
    (and
     (equal (mv-nth 0 (las-to-pas
                       (create-canonical-address-list *2^30* lin-addr)
-                      r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                      r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
            nil)
     (equal (mv-nth 1 (las-to-pas
                       (create-canonical-address-list *2^30* lin-addr)
-                      r-w-x cpl (mv-nth 1 (wb addr-lst x86))))
+                      r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
            (addr-range *2^30* (ash (loghead 22 (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30)))))
   :hints (("Goal"
            :do-not '(preprocess)
@@ -2681,7 +2682,7 @@
       (x86p x86))
      (equal (read-from-physical-memory
              (addr-range *2^30* (ash (loghead 22 (logtail 30 value)) 30))
-             (mv-nth 1 (wb addr-lst x86)))
+             (mv-nth 1 (wb addr-lst w x86)))
             (read-from-physical-memory
              (addr-range *2^30* (ash (loghead 22 (logtail 30 value)) 30))
              x86))))
@@ -2772,9 +2773,9 @@
     (not (page-structure-marking-mode x86))
     (x86p x86))
    (and (equal (mv-nth 0 (rb (create-canonical-address-list *2^30* lin-addr)
-                             r-w-x (mv-nth 1 (wb addr-lst x86)))) nil)
+                             r-w-x (mv-nth 1 (wb addr-lst w x86)))) nil)
         (equal (mv-nth 1 (rb (create-canonical-address-list *2^30* lin-addr)
-                             r-w-x (mv-nth 1 (wb addr-lst x86))))
+                             r-w-x (mv-nth 1 (wb addr-lst w x86))))
                (read-from-physical-memory
                 (addr-range *2^30* (ash (loghead 22 (logtail 30 (combine-bytes (strip-cdrs addr-lst)))) 30))
                 x86))))
