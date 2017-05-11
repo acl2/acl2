@@ -32,12 +32,14 @@
 (include-book "semantics")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "std/lists/resize-list" :dir :system))
 ;; (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
                            resize-list
                            ;; acl2::resize-list-when-empty
+                           acl2::resize-list-when-atom
                            ;; acl2::make-list-ac-redef
                            make-list-ac)))
 
@@ -159,6 +161,40 @@ and the inputs from the appropriate frame.</p>
   (in-theory (disable aignet-eval))
   (local (in-theory (enable aignet-eval)))
 
+  (local (defthm bit-listp-of-update-nth
+           (implies (and (bit-listp x)
+                         (< (nfix n) (len x))
+                         (bitp val))
+                    (bit-listp (update-nth n val x)))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (defthm aignet-eval-iter-preserves-size
+    (implies (and (<= (num-nodes aignet) (len vals))
+                  (<= (nfix n) (num-nodes aignet)))
+             (equal (len (aignet-eval-iter n vals aignet))
+                    (len vals)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-eval-iter n vals aignet))))
+
+  (defthm aignet-eval-preserves-size
+    (implies (<= (num-nodes aignet) (len vals))
+             (equal (len (aignet-eval vals aignet))
+                    (len vals)))
+    :hints(("Goal" :in-theory (enable aignet-eval))))
+
+  (defthm aignet-eval-iter-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (nfix n) (num-nodes aignet))
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-eval-iter n vals aignet)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-eval-iter n vals aignet))))
+
+  (defthm aignet-eval-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-eval vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-eval))))
 
   (defthm aignet-vals-well-sizedp-after-aignet-eval-iter
     (<= (len vals)
@@ -221,6 +257,32 @@ and the inputs from the appropriate frame.</p>
 
   (in-theory (disable aignet-invals->vals))
   (local (in-theory (enable aignet-invals->vals)))
+
+  (defthm aignet-invals->vals-iter-preserves-size
+    (implies (and (<= (num-nodes aignet) (len vals)))
+             (equal (len (aignet-invals->vals-iter n invals vals aignet))
+                    (len vals)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-invals->vals-iter n invals vals aignet))))
+
+  (defthm aignet-invals->vals-preserves-size
+    (implies (<= (num-nodes aignet) (len vals))
+             (equal (len (aignet-invals->vals invals vals aignet))
+                    (len vals)))
+    :hints(("Goal" :in-theory (enable aignet-invals->vals))))
+
+  (defthm aignet-invals->vals-iter-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-invals->vals-iter n invals vals aignet)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-invals->vals-iter n invals vals aignet))))
+
+  (defthm aignet-invals->vals-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-invals->vals invals vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-invals->vals))))
 
 
   (defthm nth-of-aignet-invals->vals-iter
@@ -313,6 +375,34 @@ and the inputs from the appropriate frame.</p>
 
   (in-theory (disable aignet-regvals->vals))
   (local (in-theory (enable aignet-regvals->vals)))
+
+
+  (defthm aignet-regvals->vals-iter-preserves-size
+    (implies (and (<= (num-nodes aignet) (len vals)))
+             (equal (len (aignet-regvals->vals-iter n regvals vals aignet))
+                    (len vals)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-regvals->vals-iter n regvals vals aignet))))
+
+  (defthm aignet-regvals->vals-preserves-size
+    (implies (<= (num-nodes aignet) (len vals))
+             (equal (len (aignet-regvals->vals regvals vals aignet))
+                    (len vals)))
+    :hints(("Goal" :in-theory (enable aignet-regvals->vals))))
+
+
+  (defthm aignet-regvals->vals-iter-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-regvals->vals-iter n regvals vals aignet)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-regvals->vals-iter n regvals vals aignet))))
+
+  (defthm aignet-regvals->vals-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-regvals->vals regvals vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-regvals->vals))))
 
 
   (defthm nth-of-aignet-regvals->vals-iter
@@ -740,6 +830,68 @@ and the inputs from the appropriate frame.</p>
            (lit-eval lit invals regvals aignet))
     :hints(("Goal" :expand ((:free (invals regvals)
                              (lit-eval lit invals regvals aignet)))))))
+
+
+(define aignet-record-vals ((vals)
+                            (invals)
+                            (regvals)
+                            (aignet))
+  :guard (and (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  :returns (new-vals)
+  (b* ((vals (mbe :logic (non-exec (bit-list-fix vals)) :exec vals))
+       (vals (resize-bits (num-nodes aignet) vals))
+       (vals (aignet-invals->vals invals vals aignet))
+       (vals (aignet-regvals->vals regvals vals aignet)))
+    (aignet-eval vals aignet))
+  ///
+  (defret len-of-aignet-record-vals
+    (equal (len new-vals) (num-nodes aignet)))
+
+  (local (include-book "std/lists/nth" :dir :system))
+
+  (local (defthm true-listp-when-bit-listp-rw
+           (implies (bit-listp x) (true-listp x))))
+
+  (local (defthm bit-listp-of-resize-list
+           (implies (and (bitp default)
+                         (bit-listp lst))
+                    (bit-listp (acl2::resize-list lst n default)))
+           :hints(("Goal" :in-theory (enable acl2::resize-list)))))
+
+  (local (defthm bitp-nth-of-bit-list
+           (implies (and (bit-listp lst)
+                         (< (nfix n) (len lst)))
+                    (bitp (nth n lst)))
+           :hints(("Goal" :in-theory (enable nth)))))
+
+  (local (in-theory (enable aignet-idp)))
+
+  (local (defthm aignet-eval-records-id-evals-bit-list
+           (implies (and (bind-free '((invals . 'nil) (regvals . 'nil))
+                                    (invals regvals))
+                         (bit-listp vals)
+                         (<= (num-nodes aignet) (len vals))
+                         (aignet-idp id aignet))
+                    (equal (nth id (aignet-eval vals aignet))
+                           (id-eval id
+                                    (aignet-vals->invals invals vals aignet)
+                                    (aignet-vals->regvals regvals vals aignet)
+                                    aignet)))
+           :hints(("Goal" :use ((:instance aignet-eval-records-id-evals))
+                   :in-theory (disable aignet-eval-records-id-evals)))))
+
+  (defthm aignet-record-vals-normalize-input
+    (implies (syntaxp (not (equal vals ''nil)))
+             (equal (aignet-record-vals vals invals regvals aignet)
+                    (aignet-record-vals nil invals regvals aignet)))
+    :hints ((acl2::equal-by-nths-hint)))
+
+  (defret nth-of-aignet-record-vals
+    (implies (< (nfix n) (num-nodes aignet))
+             (equal (nth n new-vals)
+                    (id-eval n invals regvals aignet)))))
+  
 
 
 (defsection aignet-eval-frame

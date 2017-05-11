@@ -41,6 +41,8 @@ lrat-5 (directory incremental/)
   efficiently for parsing, and importantly for memory usage, can read
   them in chunks
 
+Also see cube/README for work on verifying cube-and-conquer proofs.
+
 To elaborate a bit on some of that:
 
 Directory list-based/ contains an lrat checker with a proof that it is
