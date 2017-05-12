@@ -245,7 +245,8 @@
                    ((!FLGI I :VALUE :BASE)
                     (FLGI I :BASE)))
  :constructor-drivers nil
- :state-comps-and-types  nil
+ :state-comps-and-types
+ (((XR :RGF *RDI* X86) (unsigned-byte-p 32 (XR :RGF *RDI* X86))))
  :callp  nil  ;; recognizer fn for states with pc on call instruction
  :ret-pc nil  ;; how to fetch the return pc after a call
  :returnp nil ;; recognizer for states with pc on return instruction
@@ -329,5 +330,21 @@
  ;; :hyps+ ((program1p s)) ; optional - to strengthen the :hyps of API
  :annotations nil ; optional - to modify output generated
  )
+
+(acl2::def-projection
+ :new-fn popcount-result-fn
+ :projector (XR :RGF *RAX* x86)
+ :old-fn SEM-0)
+
+;; Prove that POPCOUNT-RESULT-FN == logcount, given a 32-bit input.
+(include-book "centaur/gl/gl" :dir :system)
+
+(def-gl-thm x86-popcount-32-correct
+  :hyp (and (natp n)
+            (< n (expt 2 32)))
+  :concl (equal (popcount-result-fn n)
+                (logcount n))
+  :g-bindings
+  `((n    (:g-number ,(gl-int 0 1 33)))))
 
 ;; ----------------------------------------------------------------------
