@@ -73,12 +73,13 @@
          (eofp (er-soft-logic ctx
                               "End-of-file encountered before completing read ~
                                for one form in cube file ~x0."
-                              obj))
+                              cube-file))
          ((not (and (symbolp obj)
                     (equal (symbol-name obj) "a")))
-          (er-soft-logic ctx
-                         "Cube file ~x0 starts with ~s, not with the letter a ."
-                         obj))
+          (er-soft-logic
+           ctx
+           "Cube file ~x0 starts with ~x1, not with the letter a ."
+           cube-file obj))
          (t (er-let* ((lst (ec-call (parse-cube-file1 channel ctx state))))
               (cond
                ((not (eql (car (last lst)) 0))
