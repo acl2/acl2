@@ -16466,6 +16466,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :object state))))
   (print-object$-ser x (get-serialize-character state) channel state))
 
+#-acl2-loop-only
+(defmacro set-acl2-readtable-case (mode)
+  (declare (ignore mode))
+  #+gcl
+  (if (fboundp 'system::set-readtable-case)
+      '(setf (readtable-case *acl2-readtable*) :preserve)
+    nil)
+  #-gcl
+  '(setf (readtable-case *acl2-readtable*) :preserve))
+
 (defun print-object$-preserving-case (x channel state)
 
 ; Logically, this function is just print-object$.  Is it unsound to identify
@@ -16492,13 +16502,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           ((not (fboundp 'system::set-readtable-case))
            (cerror "Use print-object$ instead"
                    "Sorry, but ~s is not supported in this older version of ~%~
-                    GCL (because raw Lisp function ~s is undefined."
+                    GCL (because raw Lisp function ~s is undefined)."
                    'print-object$-preserving-case
                    'system::set-readtable-case))
           (t
            (return-from print-object$-preserving-case
              (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
-               (setf (readtable-case *acl2-readtable*) :preserve)
+               (set-acl2-readtable-case :preserve)
                (print-object$ x channel state)))))))
   (print-object$ x channel state))
 
@@ -17769,16 +17779,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           ((not (fboundp 'system::set-readtable-case))
            (cerror "Use read-object instead"
                    "Sorry, but ~s is not supported in this older version of ~%~
-                    GCL (because raw Lisp function ~s is undefined."
+                    GCL (because raw Lisp function ~s is undefined)."
                    'read-object-with-case
                    'system::set-readtable-case))
           (t
-           (return-from
-               read-object-with-case
+           (return-from read-object-with-case
              (cond ((eq mode :upcase) ; optimization
                     (read-object channel state))
-                   (t (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
-                        (setf (readtable-case *acl2-readtable*) mode)
+                   (t (let ((*acl2-readtable*
+                             (copy-readtable *acl2-readtable*)))
+                        (set-acl2-readtable-case :preserve)
                         (read-object channel state)))))))))
   (read-object channel state))
 
