@@ -269,9 +269,12 @@ a renaming r-alist (modulo xi=constant).
          (cw? (verbose-flag vl) "~| Cgen/Note: ~x0 with fixed ~x1 is unlikely to be simultaneously satisfied!~%" E (get1 :Out fruleI))
          (value (list nil '() W{} fxri{}))))
 
+       (curr-vars (union-eq (strip-cars W1{})
+                            (union-eq (strip-cars W{})
+                                      allvars)))
        (rule-hyps (filter-terms-with-vars (get1 :hyps fruleI)
                                           ;;major bugfix [2016-09-09 Fri]
-                                          (union-eq (strip-cars W1{}) allvars)))
+                                          curr-vars))
        ;TODO: rename to avoid variable capture
        (backchain-lits (set-difference-equal (get1 :hyps fruleI) rule-hyps))
        ;;major bugfix [2016-09-09 Fri] add E to the assumption context
