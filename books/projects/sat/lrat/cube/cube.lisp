@@ -68,17 +68,25 @@
                      cube-file))
      (t
       (mv-let (eofp obj state)
+
+; GCL versions before approximately 2017 do not support read-object-with-case,
+; because system::set-readtable-case is not defined.  If we want to support GCL
+; here, the simplest solution is to call read-object instead of
+; read-object-with-case channel :preserve state) (perhaps conditional on (@
+; host-lisp) = :GCL) and then test for symbol-name "A" instead of "a".
+
         (acl2::read-object-with-case channel :preserve state)
         (cond
          (eofp (er-soft-logic ctx
                               "End-of-file encountered before completing read ~
                                for one form in cube file ~x0."
-                              obj))
+                              cube-file))
          ((not (and (symbolp obj)
                     (equal (symbol-name obj) "a")))
-          (er-soft-logic ctx
-                         "Cube file ~x0 starts with ~s, not with the letter a ."
-                         obj))
+          (er-soft-logic
+           ctx
+           "Cube file ~x0 starts with ~x1, not with the letter a ."
+           cube-file obj))
          (t (er-let* ((lst (ec-call (parse-cube-file1 channel ctx state))))
               (cond
                ((not (eql (car (last lst)) 0))
@@ -288,6 +296,15 @@
    ()
    (local (include-book "misc/assert" :dir :system))
    (local (acl2::assert!-stobj
+           #+gcl
+
+; Versions of GCL predating 2017 or so do not define
+; system::set-readtable-case, which makes read-object-with-case cause an error.
+; If we want to be able to use verify-for-cube with GCL, simply change the call
+; of read-object-with-case as indicated above.
+
+           (mv t state)
+           #-gcl
            (mv-let
              (erp formula/cube state)
              (let ((cnf-file "../tests/uuf-30-1.cnf")
