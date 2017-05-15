@@ -86,20 +86,20 @@
   (strip-cdrs *popcount-32*))
 
 (defun-nx popcount-hyps (x86)
-  (and (x86p x86)
-       (equal (programmer-level-mode x86) t)
 ; Initial PC is a constant because of the following (from
 ; codewalker.lisp):
 ; * Every reachable pc (in the region of code to be explored) must be
 ;   constant, starting with the initial pc, i.e., you have to know, in
 ;   concrete terms, where the instructions are stored.
-       (equal (rip x86) 0)
-       (prog-at (rip x86) *popcount-32-bytes* x86)
-       (n32p (rgfi *rdi* x86))
-       (canonical-address-p (rip x86))
-       (canonical-address-p (+ -1 (len *popcount-32-bytes*) (rip x86)))
-       (equal (ms x86) nil)
-       (equal (fault x86) nil)))
+  (b* ((program-rip 0))
+    (and (x86p x86)
+         (equal (programmer-level-mode x86) t)
+         (prog-at program-rip *popcount-32-bytes* x86)
+         (n32p (rgfi *rdi* x86))
+         (canonical-address-p program-rip)
+         (canonical-address-p (+ -1 (len *popcount-32-bytes*) program-rip))
+         (equal (ms x86) nil)
+         (equal (fault x86) nil))))
 
 (acl2::def-model-api
  :run x86-run-ALT               ;; the run function of the model
