@@ -1,0 +1,240 @@
+Copyright (C) 2017, Regents of the University of Texas
+Written by Matt Kaufmann, May 2017
+License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; Log for file demo.lsp, which is a
+; demo for the talk on ACL2 Workshop 2017 paper
+; "A Versatile, Sound Tool for Simplifying Definitions"
+; by Alessandro Coglio, Matt Kaufmann, and Eric W. Smith
+
+ACL2 !>(include-book "simplify-defun")
+
+Summary
+Form:  ( INCLUDE-BOOK "simplify-defun" ...)
+Rules: NIL
+Time:  1.36 seconds (prove: 0.00, print: 0.00, other: 1.36)
+ "/Users/kaufmann/acl2/acl2/books/workshops/2017/coglio-kaufmann-smith/support/simplify-defun.lisp"
+ACL2 !>(defun f1 (x)
+	 (if (zp x) 0 (+ 1 1 (f1 (+ -1 x)))))
+
+The admission of F1 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of F1 is described by the
+theorem (OR (AND (INTEGERP (F1 X)) (< 1 (F1 X))) (EQUAL (F1 X) 0)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ F1
+ACL2 !>(simplify-defun f1)
+ (DEFUN
+      F1{1} (X)
+      (DECLARE (XARGS :NORMALIZE NIL
+                      :GUARD T
+                      :MEASURE (ACL2-COUNT X)
+                      :VERIFY-GUARDS NIL
+                      :HINTS (("Goal" :USE (:TERMINATION-THEOREM F1))
+                              '(:IN-THEORY (DISABLE* F1 (:E F1) (:T F1))))))
+      (IF (ZP X) 0 (+ 2 (F1{1} (+ -1 X)))))
+ACL2 !>:pe f1-becomes-f1{1}
+           3:x(SIMPLIFY-DEFUN F1)
+              \
+>              (DEFTHM F1-BECOMES-F1{1}
+                       (EQUAL (F1 X) (F1{1} X))
+                       :HINTS (("Goal" :USE F1-BECOMES-F1{1}-LEMMA
+                                       :IN-THEORY NIL)))
+ACL2 !>(simplify-defun f1) ; redundant
+NOTE: The transformation (SIMPLIFY-DEFUN F1) is redundant.
+ :REDUNDANT
+ACL2 !>(simplify-defun
+	f1
+	:new-name f1-new
+	:theorem-name f1-becomes-f1-new
+	:theorem-disabled t
+	:function-disabled t
+	:print-def nil)
+ T
+ACL2 !>:pe f1-new
+   d       4:x(SIMPLIFY-DEFUN F1 :NEW-NAME ...)
+              \
+>L d           (DEFUN F1-NEW (X)
+                      (DECLARE (XARGS :NORMALIZE NIL
+                                      :GUARD T
+                                      :VERIFY-GUARDS NIL))
+                      (IF (ZP X) 0 (+ 2 (F1{1} (+ -1 X)))))
+ACL2 !>:pe f1-becomes-f1-new
+   d       4:x(SIMPLIFY-DEFUN F1 :NEW-NAME ...)
+              \
+>  D           (DEFTHM F1-BECOMES-F1-NEW
+                       (EQUAL (F1 X) (F1-NEW X))
+                       :HINTS (("Goal" :USE F1-BECOMES-F1-NEW-LEMMA
+                                       :IN-THEORY NIL)))
+ACL2 !>(defun f2 (x)
+	 (declare (xargs :guard (true-listp x)))
+	 (if (endp x)
+	     x ; = nil
+	   (f2 (cdr x))))
+
+The admission of F2 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of F2 is described by the
+theorem (NOT (CONSP (F2 X))).
+
+Computing the guard conjecture for F2....
+
+The guard conjecture for F2 is trivial to prove, given primitive type
+reasoning.  F2 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ F2
+ACL2 !>(simplify-defun ; note preservation of (endp x)
+	f2
+	:assumptions :guard)
+ (DEFUN
+   F2{1} (X)
+   (DECLARE (XARGS :NORMALIZE NIL
+                   :GUARD (TRUE-LISTP X)
+                   :MEASURE (ACL2-COUNT X)
+                   :VERIFY-GUARDS T
+                   :GUARD-HINTS (("Goal" :USE (:GUARD-THEOREM F2))
+                                 '(:IN-THEORY (DISABLE* F2 (:E F2) (:T F2))))
+                   :HINTS (("Goal" :USE (:TERMINATION-THEOREM F2))
+                           '(:IN-THEORY (DISABLE* F2 (:E F2) (:T F2))))))
+   (IF (ENDP X) NIL (F2{1} (CDR X))))
+ACL2 !>:pe f2-becomes-f2{1}
+           6:x(SIMPLIFY-DEFUN F2 :ASSUMPTIONS ...)
+              \
+>              (DEFTHM F2-BECOMES-F2{1}
+                       (IMPLIES (TRUE-LISTP X)
+                                (EQUAL (F2 X) (F2{1} X)))
+                       :HINTS (("Goal" :USE F2-BECOMES-F2{1}-LEMMA
+                                       :IN-THEORY '(F2-HYPS))))
+ACL2 !>(defun f3 (x y)
+	 (list (car (cons x x))
+	       (cdr (cons y y))))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem
+(AND (CONSP (F3 X Y)) (TRUE-LISTP (F3 X Y))).  We used primitive type
+reasoning.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ F3
+ACL2 !>(simplify-defun f3 :simplify-body (list _ @))
+ (DEFUN F3{1} (X Y)
+        (DECLARE (XARGS :NORMALIZE NIL
+                        :GUARD T
+                        :VERIFY-GUARDS NIL))
+        (LIST (CAR (CONS X X)) Y))
+ACL2 !>(defthm member-equal-revappend
+	 (iff (member-equal a (revappend x y))
+	      (or (member-equal a x)
+		  (member-equal a y))))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM MEMBER-EQUAL-REVAPPEND ...):
+In a :REWRITE rule generated from MEMBER-EQUAL-REVAPPEND, equivalence
+relation SET-EQUIV is maintained at two problematic occurrences of
+variable X in the right-hand side, but not at any binding occurrence
+of X.  Consider replacing those two occurrences of X in the right-
+hand side with (DOUBLE-REWRITE X).  See :doc double-rewrite for more
+information on this issue.
+
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM MEMBER-EQUAL-REVAPPEND ...):
+In a :REWRITE rule generated from MEMBER-EQUAL-REVAPPEND, equivalence
+relation SET-EQUIV is maintained at one problematic occurrence of variable
+Y in the right-hand side, but not at any binding occurrence of Y.
+Consider replacing that occurrence of Y in the right-hand side with
+(DOUBLE-REWRITE Y).  See :doc double-rewrite for more information on
+this issue.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM MEMBER-EQUAL-REVAPPEND ...):  A
+newly proposed :REWRITE rule generated from MEMBER-EQUAL-REVAPPEND
+probably subsumes the previously added :REWRITE rule MEMBER-OF-REVAPPEND,
+in the sense that the new rule will now probably be applied whenever
+the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM MEMBER-EQUAL-REVAPPEND ...):  The
+previously added rule MEMBER-OF-REVAPPEND subsumes a newly proposed
+:REWRITE rule generated from MEMBER-EQUAL-REVAPPEND, in the sense that
+the old rule rewrites a more general target.  Because the new rule
+will be tried first, it may nonetheless find application.
+
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM MEMBER-EQUAL-REVAPPEND ...)
+Rules: ((:CONGRUENCE SET-EQUIV-IMPLIES-IFF-MEMBER-2)
+        (:DEFINITION IFF)
+        (:REWRITE MEMBER-OF-APPEND)
+        (:REWRITE REVAPPEND-UNDER-SET-EQUIV)
+        (:REWRITE SUBSETP-MEMBER . 3)
+        (:REWRITE SUBSETP-REFL))
+Warnings:  Subsume and Double-rewrite
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+Prover steps counted:  229
+ MEMBER-EQUAL-REVAPPEND
+ACL2 !>(defun f4 (a b x y)
+	 (let ((a-mem (member-equal a (revappend x y)))
+	       (b-mem (member-equal b (revappend x y))))
+	   (and a-mem b-mem)))
+
+Since F4 is non-recursive, its admission is trivial.  We observe that
+the type of F4 is described by the theorem
+(OR (CONSP (F4 A B X Y)) (EQUAL (F4 A B X Y) NIL)).  We used the :type-
+prescription rule MEMBER-EQUAL.
+
+Summary
+Form:  ( DEFUN F4 ...)
+Rules: ((:TYPE-PRESCRIPTION MEMBER-EQUAL))
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ F4
+ACL2 !>(simplify-defun
+	f4 ; illustrates equivalences and LET reconstruction
+	:theory
+	(union-theories '(member-equal-revappend)
+			(theory 'ground-zero)))
+ (DEFUN F4{1} (A B X Y)
+        (DECLARE (XARGS :NORMALIZE NIL
+                        :GUARD T
+                        :VERIFY-GUARDS NIL))
+        (LET ((A-MEM (IF (MEMBER-EQUAL A X)
+                         T (MEMBER-EQUAL A Y)))
+              (B-MEM (MEMBER-EQUAL B (REVAPPEND X Y))))
+             (AND A-MEM B-MEM)))
+ACL2 !>(simplify-defun
+	f4 ; illustrates equivalences and LET reconstruction
+	:new-name f4-new
+	:equiv iff
+	:theory
+	(union-theories '(member-equal-revappend)
+			(theory 'ground-zero)))
+ (DEFUN F4-NEW (A B X Y)
+        (DECLARE (XARGS :NORMALIZE NIL
+                        :GUARD T
+                        :VERIFY-GUARDS NIL))
+        (LET ((A-MEM (IF (MEMBER-EQUAL A X)
+                         T (MEMBER-EQUAL A Y)))
+              (B-MEM (IF (MEMBER-EQUAL B X)
+                         T (MEMBER-EQUAL B Y))))
+             (AND A-MEM B-MEM)))
+ACL2 !>:pe f4-becomes-f4-new
+          12:x(SIMPLIFY-DEFUN F4 :NEW-NAME ...)
+              \
+>              (DEFTHM F4-BECOMES-F4-NEW
+                       (IFF (F4 A B X Y) (F4-NEW A B X Y))
+                       :HINTS (("Goal" :USE F4-BECOMES-F4-NEW-LEMMA
+                                       :IN-THEORY NIL)))
+ACL2 !>
