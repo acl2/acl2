@@ -15,7 +15,8 @@ conjunction of literals:
     See theorem VERIFY-FOR-CUBE-SOUNDNESS in file
     verify-for-cube-soundness.lisp.
 
-    Also write ~Gi as a one-line file:
+    Optionally: write F1 and, more importantly, write ~Gi as a
+    one-line file as so (see verify-for-cube-print in file top.lisp):
 
         -lit_1 ... -lit_k 0
 

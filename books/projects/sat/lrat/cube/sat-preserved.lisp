@@ -7,6 +7,7 @@
 (in-package "LRAT")
 
 (include-book "cube")
+(include-book "clean-formula")
 
 (defun sp-valid-proofp$-top-rec (formula clrat-file posn chunk-size
                                          clrat-file-length old-suffix debug
@@ -111,12 +112,38 @@
                             (formula-max-var formula 0)
                             a$ ctx state))
 
+(defthm sp-valid-proofp$-top-rec-preserves-formula-p
+  (implies (and (a$p a$)
+                (eql (a$ptr a$) 0)
+                (formula-p formula)
+                (stringp clrat-file)
+                (natp posn)
+                (< posn *2^56*)
+                (posp chunk-size)
+                (posp clrat-file-length)
+                (stringp old-suffix)
+                (natp old-max-var)
+                (<= (formula-max-var formula 0)
+                    old-max-var))
+           (formula-p
+            (mv-nth 1
+                    (sp-valid-proofp$-top-rec formula clrat-file posn chunk-size
+                                              clrat-file-length old-suffix debug
+                                              old-max-var a$ ctx state))))
+  :hints (("Goal"
+           :in-theory
+           (e/d (sp-valid-proofp$-top-rec)
+                (incl-valid-proofp$ a$ptr clrat-read-next)))))
+
 (defun sat-preserved-check (cnf-file clrat-file chunk-size debug state)
 
 ; This is a variant of incl-valid-proofp$-top.
 ; See sp-valid-proofp$-top-rec.
 
-  (declare (xargs :guard t :stobjs state))
+  (declare (xargs :guard t
+                  :stobjs state
+                  :guard-hints
+                  (("Goal" :in-theory (disable sp-valid-proofp$-top-rec)))))
   (let ((formula (time$ (ec-call (cnf-read-file cnf-file state))))
         (ctx 'sat-preserved-check))
     (cond
@@ -151,7 +178,7 @@
                      (sp-valid-proofp$-top-aux formula clrat-file chunk-size
                                                clrat-file-length debug a$
                                                ctx state))
-                   (mv val new-formula)))))
+                   (mv val (clean-formula new-formula))))))
             (cond (val (value (cons formula new-formula)))
                   (t (er-soft-logic
                       ctx
@@ -193,7 +220,8 @@
   :hints (("Goal"
            :in-theory (e/d (formula-max-var-is-formula-max-var-1)
                            (incl-valid-proofp$ clrat-read-next a$ptr))
-           :induct t)))
+           :induct t))
+  :rule-classes nil)
 
 (defthm sat-preserved
   (let* ((result (mv-nth 1
@@ -205,15 +233,28 @@
                   (satisfiable formula))
              (satisfiable new-formula)))
   :hints (("Goal"
+           :use
+           ((:instance sat-preserved-main
+                       (formula (CNF-READ-FILE CNF-FILE STATE))
+                       (posn 0)
+                       (clrat-file-length (MV-NTH 1 (READ-ACL2-ORACLE STATE)))
+                       (old-suffix "")
+                       (max-var (FORMULA-MAX-VAR (CNF-READ-FILE CNF-FILE STATE)
+                                               0))
+                       (a$ '(0 (NIL) (0 0)))
+                       (state (MV-NTH 2 (READ-ACL2-ORACLE STATE)))
+                       (ctx 'SAT-PRESERVED-CHECK)))
            :in-theory
            (union-theories '(sat-preserved-check
                              acl2::error1-logic
                              sp-valid-proofp$-top-aux
-                             sat-preserved-main
+                             ;sat-preserved-main
                              (:e a$p)
                              (:e resize-a$arr)
                              create-a$
                              (:e a$ptr)
                              natp-formula-max-var
-                             ordered-formula-p-implies-formula-p)
+                             ordered-formula-p-implies-formula-p
+                             clean-formula-preserves-satisfiable
+                             sp-valid-proofp$-top-rec-preserves-formula-p)
                            (theory 'ground-zero)))))

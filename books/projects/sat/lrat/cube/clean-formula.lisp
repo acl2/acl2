@@ -18,27 +18,18 @@
 
 (include-book "cube")
 
-(include-book "defsort/defsort" :dir :system)
+(include-book "demos/sort-by-car" :dir :system) ; redundant, from portcullis
+
+(defun formula-valp (val)
+  (declare (xargs :guard t))
+  (or (deleted-clause-p val)
+      (clause-or-assignment-p val)))
 
 (defun formula-pair-p (pair)
   (declare (xargs :guard t))
   (and (consp pair)
        (posp (car pair))
-       (let ((val (cdr pair)))
-         (or (deleted-clause-p val)
-             (clause-or-assignment-p val)))))
-
-#||
-(defun indexed-pair-p (x)
-  (declare (xargs :guard t))
-  (and (consp x)
-       (rationalp (car x))))
-
-(defun car< (x y)
-  (declare (xargs :guard (and (indexed-pair-p x)
-                              (indexed-pair-p y))))
-  (< (car x) (car y)))
-||#
+       (formula-valp (cdr pair))))
 
 (defun car< (x y)
   (declare (xargs :guard (and (formula-pair-p x)
@@ -97,106 +88,70 @@
              (no-duplicatesp (strip-cars (fast-alist-clean fal))))
     :hints (("Goal" :in-theory (enable fast-alist-clean)))))
 
-; Start proof of sort-by-car<-preserves-clauses
+(defthm sort-by-car<-preserves-assoc
+     (implies (and (alistp alist)
+                   (rational-listp (strip-cars alist))
+                   (no-duplicatesp (strip-cars alist)))
+              (equal (assoc index (sort-by-car< alist))
+                     (assoc index alist)))
+     :otf-flg t
+     :hints (("Goal"
+              :in-theory (enable sort-by-car::sort-by-car<-merge-tr
+                                 sort-by-car::sort-by-car<-merge
+                                 sort-by-car<-merge
+                                 sort-by-car<)
+              :do-not-induct t
+              :by (:functional-instance
+                   sort-by-car::sort-by-car<-preserves-assoc
+                   (sort-by-car::valp formula-valp)
+                   (sort-by-car::indexed-pair-p formula-pair-p)
+                   (sort-by-car::car< car<)
+                   (sort-by-car::sort-by-car< sort-by-car<)
+                   (sort-by-car::sort-by-car<-merge sort-by-car<-merge)
+                   (sort-by-car::sort-by-car<-list-p sort-by-car<-list-p)
+                   (sort-by-car::sort-by-car<-ordered-p sort-by-car<-ordered-p)))))
 
-(defthm formula-p-revappend
-  (implies (and (formula-p f1)
-                (formula-p f2))
-           (formula-p (revappend f1 f2))))
+(encapsulate
+  ()
 
-(defthm formula-p-first-n-ac
-  (implies (and (formula-p f1)
-                (formula-p f2)
-                (<= n (len f1)))
-           (formula-p (first-n-ac n f1 f2))))
+  (local
+   (defthm hons-assoc-equal-is-assoc-equal
+     (implies (alistp x)
+              (equal (hons-assoc-equal key x)
+                     (assoc-equal key x)))))
 
-(local (in-theory (disable floor)))
+  (local
+   (defthm rational-listp-strip-cars-formula
+     (implies (formula-p formula)
+              (rational-listp (strip-cars formula)))))
 
-(local (include-book "arithmetic-5/top" :dir :system))
+  (local
+   (defthm alistp-sort-by-car<
+     (implies (formula-p formula)
+              (alistp (sort-by-car< formula)))))
 
-(defthm formula-p-nthcdr
-  (implies (formula-p x)
-           (formula-p (nthcdr n x))))
+  (defthm sort-by-car<-preserves-clauses
+    (implies (and (formula-p formula)
+                  (no-duplicatesp (strip-cars formula)))
+             (equal (hons-assoc-equal index (sort-by-car< formula))
+                    (hons-assoc-equal index formula)))))
 
-(defthm hons-assoc-equal-implies-member-equal-strip-cars
-  (implies (hons-assoc-equal a x)
-           (member-equal a (strip-cars x))))
+(encapsulate
+  ()
 
-(defthm hons-assoc-equal-sort-by-car<-merge
-  (implies (and (formula-p x)
-                (formula-p y)
-                (force (not (intersectp (strip-cars x) (strip-cars y)))))
-           (equal (hons-assoc-equal index (sort-by-car<-merge x y))
-                  (or (hons-assoc-equal index x)
-                      (hons-assoc-equal index y))))
-  :hints (("Goal" :in-theory (enable sort-by-car<-merge))))
+  (local
+   (defthm no-duplicatesp-strip-cars-remove-deleted-clauses
+     (implies (and (no-duplicatesp (strip-cars fal))
+                   (no-duplicatesp (strip-cars acc))
+                   (not (intersectp (strip-cars fal)
+                                    (strip-cars acc))))
+              (no-duplicatesp
+               (strip-cars (remove-deleted-clauses fal acc))))))
 
-(defthm no-duplicatesp-strip-cars-remove-deleted-clauses
-    (implies (and (no-duplicatesp (strip-cars fal))
-                  (no-duplicatesp (strip-cars acc))
-                  (not (intersectp (strip-cars fal)
-                                   (strip-cars acc))))
-             (no-duplicatesp (strip-cars (remove-deleted-clauses fal acc)))))
-
-(defthm no-duplicatesp-shrink-fast-alist
-  (implies (alistp fal)
-           (no-duplicatesp (strip-cars (shrink-formula fal))))
-  :hints (("Goal" :in-theory (e/d (shrink-formula) (fast-alist-clean)))))
-
-(defthm no-duplicatesp-revappend
-  (implies (and (no-duplicatesp (strip-cars x))
-                (no-duplicatesp (strip-cars y))
-                (not (intersectp (strip-cars x)
-                                 (strip-cars y))))
-           (no-duplicatesp (strip-cars (revappend x y)))))
-
-(defthm no-duplicatesp-strip-cars-first-n-ac
-  (implies (and (no-duplicatesp (strip-cars x))
-                (no-duplicatesp (strip-cars y))
-                (not (intersectp (strip-cars x)
-                                 (strip-cars y)))
-                (natp n)
-                (<= n (len x)))
-           (no-duplicatesp (strip-cars (first-n-ac n x y)))))
-
-(defthm hons-assoc-equal-revappend
-  (implies (and (no-duplicatesp (strip-cars x))
-                (no-duplicatesp (strip-cars y))
-                (not (intersectp (strip-cars x)
-                                 (strip-cars y))))
-           (equal (hons-assoc-equal index (revappend x y))
-                  (or (hons-assoc-equal index x)
-                      (hons-assoc-equal index y))))
-  :hints (("Goal" :induct (revappend x y))))
-
-(defthm hons-assoc-equal-both-implies-intersectp-strip-cars
-  (implies (and (hons-assoc-equal index x)
-                (hons-assoc-equal index y))
-           (intersectp (strip-cars x) (strip-cars y))))
-
-(defthm hons-assoc-equal-first-n-ac
-  (implies (and (no-duplicatesp (strip-cars x))
-                (no-duplicatesp (strip-cars y))
-                (not (intersectp (strip-cars x)
-                                 (strip-cars y)))
-                (natp n)
-                (<= n (len x))
-                (hons-assoc-equal index (first-n-ac n x y)))
-           (equal (hons-assoc-equal index (first-n-ac n x y))
-                  (or (hons-assoc-equal index x)
-                      (hons-assoc-equal index y))))
-  :hints (("Goal" :induct (first-n-ac n x y))))
-
-(skip-proofs
-(defthm sort-by-car<-preserves-clauses
-  (implies (and (formula-p formula)
-                (no-duplicatesp (strip-cars formula)))
-           (equal (hons-assoc-equal index (sort-by-car< formula))
-                  (hons-assoc-equal index formula)))
-  :hints (("Goal"
-           :in-theory (e/d (sort-by-car<) (floor))
-           :induct t)))
-)
+  (defthm no-duplicatesp-shrink-fast-alist
+    (implies (alistp fal)
+             (no-duplicatesp (strip-cars (shrink-formula fal))))
+    :hints (("Goal" :in-theory (e/d (shrink-formula) (fast-alist-clean))))))
 
 (defthm clean-formula-preserves-clauses
   (implies (formula-p formula)
@@ -205,3 +160,55 @@
                     (if (equal (cdr pair) *deleted-clause*)
                         nil
                       pair)))))
+
+(defthm clean-formula-preserves-satisfiable-1
+  (implies (formula-p formula)
+           (implies (satisfiable (clean-formula formula))
+                    (satisfiable formula)))
+  :hints (("Goal"
+           :expand
+           ((satisfiable (sort-by-car< (shrink-formula formula)))
+            (formula-truep
+             formula
+             (satisfiable-witness (sort-by-car< (shrink-formula formula)))))
+           :use
+           ((:instance satisfiable-suff
+                       (assignment (satisfiable-witness
+                                    (sort-by-car< (shrink-formula formula))))
+                       (formula formula)))
+           :restrict
+           ((formula-truep-necc
+             ((index
+               (formula-truep-witness
+                formula
+                (satisfiable-witness (sort-by-car<
+                                      (shrink-formula formula))))))))))
+  :rule-classes nil)
+
+(defthm clean-formula-preserves-satisfiable-2
+  (implies (formula-p formula)
+           (implies (satisfiable formula)
+                    (satisfiable (clean-formula formula))))
+  :hints (("Goal"
+           :expand
+           ((satisfiable formula)
+            (formula-truep (sort-by-car< (shrink-formula formula))
+                           (satisfiable-witness formula)))
+           :use
+           ((:instance satisfiable-suff
+                       (assignment (satisfiable-witness formula))
+                       (formula (sort-by-car< (shrink-formula formula)))))
+           :restrict
+           ((formula-truep-necc
+             ((index
+               (formula-truep-witness
+                (sort-by-car< (shrink-formula formula))
+                (satisfiable-witness formula))))))))
+  :rule-classes nil)
+
+(defthm clean-formula-preserves-satisfiable
+  (implies (formula-p formula)
+           (equal (satisfiable (clean-formula formula))
+                  (satisfiable formula)))
+  :hints (("Goal" :use (clean-formula-preserves-satisfiable-1
+                        clean-formula-preserves-satisfiable-2))))
