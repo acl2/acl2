@@ -96,12 +96,19 @@ additional hyps")
          (state (defdata::putseed seed. state))
          (val-term       (kwote ans)))
       (if (equal size 1) ;size=0 is not possible, also size can be T (inf)
-          (value (list val-term :implied '())) ;additional hyps are empty
-        (value (list val-term :decision '()))))))
+          (value (list val-term :implied))
+        (value (list val-term :decision))))))
 
 
 
+(defloop get-corr-type-hyp (fn H)
+  (for ((hyp in H)) (if (and (consp hyp)
+                             (eq fn (car hyp))
+                             (proper-symbolp (cadr hyp)))
+                        (return hyp))))
 
+;; [2016-10-29 Sat] remove the hyp responsible for symbolic expansion
+;; and return the updated hyps as a whole! API change
 
 (def assign-value (x cs% H partial-A sm vl ctx state)
   (decl :sig ((fixnum cs% pseudo-term-listp symbol-doublet-listp symbol-doublet-listp
@@ -111,20 +118,34 @@ additional hyps")
         :doc "assign a value (expression) to variable x under given constraints")
   
   (b* ((type (access cs% defdata-type))
-       (wrld (w state)))
-    (if (not (defdata::recursive-type-p type wrld)) ;use concrete
-        (if (record-p type wrld)
-            (b* (((mv rec-expansion field-type-hyps) (expand-record x type wrld)))
-              (value (list rec-expansion :expand field-type-hyps)))
+       (wrld (w state))
+       ((when  (and (not (defdata::recursive-type-p type wrld))
+                    (record-p type wrld)))
+        (b* (((mv rec-expansion field-type-hyps)
+              (expand-record x type wrld))
+             (M (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))
+             (type-hyp (get-corr-type-hyp (defdata::predicate-name type M)
+                                          H))
+             (updated-H (remove-equal type-hyp
+                                      (union-equal field-type-hyps H))))
+              (value (list rec-expansion :expand updated-H))))
               
-          (get-concrete-value cs% partial-A sm vl ctx wrld state))
+       ((er ans) (implied-symbolic-value x type H vl state))
+       ((list refined-term additional-hyps) ans))
+    (if (or (null additional-hyps) (equal refined-term x))
+        (b* (((er (list cval kind))
+              (get-concrete-value cs% partial-A sm vl ctx wrld state)))
+          (value (list cval kind H)))
       
-      (b* (((er ans) (implied-symbolic-value x (access cs% defdata-type) H vl state))
-           ((list refined-term additional-hyps) ans))
-        (if (or (null additional-hyps)
-                (equal refined-term x))
-            (get-concrete-value cs% partial-A sm vl ctx wrld state)
-          (value (list refined-term :expand additional-hyps)))))))
+      (b* ((type-hyp (get-corr-type-hyp
+                      (defdata::predicate-name type
+                        (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))
+                      H)))
+        (value (list refined-term
+                     :expand
+                     (remove-equal type-hyp
+                                   (union-equal additional-hyps H))))))))
+
            
 
 
@@ -211,12 +232,13 @@ additional hyps")
               "~|CEGen/Stats: Call was (assign-value ~x0 ~x1 ...)~|" x cs%)
          (mv erp nil state)))
         
-       ((list a kind introduced-hyps) ans)
+       ((list a kind updated-H) ans)
        (i (if (eq kind :decision) (1+ i) i))
 
        (a% (acl2::change a% a% :cs cs% :val a :kind kind :i i))
        
-       ((mv erp res state) (propagate x a (union-equal introduced-hyps H) C vl state))
+       ((mv erp res state) (propagate x a updated-H C vl state))
+
        (str (if erp "inconsistent" "consistent"))
        (- (cw? (verbose-stats-flag vl)
                "~%CEgen/Stats/incremental: Propagate ~x0 := ~x1 (i:~x3) was ~s2.~|" x a str i)))
@@ -337,7 +359,8 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                  
                 (A. (cons a% A.))
 ; ok lets set up a% for the next iteration
-                (x1 (select (cons C H) (debug-flag vl))) ;no need to negate C
+                (x1 (select (cons (cgen-dumb-negate-lit C) H) vl (w state)))
+
                 (a% (acl2::make a% 
                                 :vars vars :hyps H :concl C 
                                 :partial-A partial-A
