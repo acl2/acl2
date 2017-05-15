@@ -454,8 +454,9 @@ thought about how to implement it.
 ; defdata type, but only if the variables in the eq-constraint are
 ; already computed i.e already have an enumcall in the final answer
     (('cs% defdata-type & eq-constraint range 'defdata::empty-mem-constraint &)
-     (b* ((eq-vs (all-vars eq-constraint))
-          (remaining (set-difference-eq eq-vs bound-vars)))
+     (b* ((?eq-vs (all-vars eq-constraint))
+          (?remaining (set-difference-eq eq-vs bound-vars))
+          )
       (if remaining
           (b* ((enum-info% (get-enum-info% defdata-type range vl wrld)))
            (mv (access enum-info% size) (list (access enum-info% expr)
@@ -503,7 +504,8 @@ enumerator call expression")
      (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
                                  ;; add in reverse order
                                  (cons (cons x calls) ans.)))))
-    
+
+
 (defun displayed-range (interval)
   (b* ((lo (acl2::access acl2::tau-interval interval :lo))
        (hi (acl2::access acl2::tau-interval interval :hi))
