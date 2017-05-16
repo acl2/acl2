@@ -37,6 +37,7 @@
                             (cond (formula-file
                                    (print-formula formula
 ; Standard output for t or T.
+                                                  :filename
                                                   (and (not (member-equal
                                                              formula-file
                                                              '("t" "T")))

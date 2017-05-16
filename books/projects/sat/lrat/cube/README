@@ -5,7 +5,7 @@ conjunction of literals:
     "transformed" formula F1 (by adding clauses each verified by RAT).
 
     Run proof to check that if F0 is SAT, then F1 is SAT.
-    See theorem SAT-PRESERVED in file sat-preserved.lisp.
+    See theorem TRANSFORM-PRESERVES-SAT in file transform.lisp.
       + Optionally write F0 and F1 to files, to diff against the files
         that allegedly contain these formulas.
     See clean-formula.lisp for a discussion of writing out F1.

@@ -135,7 +135,7 @@
            (e/d (sp-valid-proofp$-top-rec)
                 (incl-valid-proofp$ a$ptr clrat-read-next)))))
 
-(defun sat-preserved-check (cnf-file clrat-file chunk-size debug state)
+(defun transform (cnf-file clrat-file chunk-size debug state)
 
 ; This is a variant of incl-valid-proofp$-top.
 ; See sp-valid-proofp$-top-rec.
@@ -144,8 +144,8 @@
                   :stobjs state
                   :guard-hints
                   (("Goal" :in-theory (disable sp-valid-proofp$-top-rec)))))
-  (let ((formula (time$ (ec-call (cnf-read-file cnf-file state))))
-        (ctx 'sat-preserved-check))
+  (let ((formula (ec-call (cnf-read-file cnf-file state)))
+        (ctx 'transform))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic
@@ -194,11 +194,11 @@
              "Sorry, Lisp cannot determine the file-length of file ~x0."
              clrat-file))))))))
 
-; Start proof of sat-preserved-main
+; Start proof of transform-preserves-sat-main
 
 (include-book "../incremental/soundness-main")
 
-(defthm sat-preserved-main
+(defthm transform-preserves-sat-main
   (implies
    (and (car (sp-valid-proofp$-top-rec formula
                                        clrat-file posn chunk-size
@@ -220,35 +220,22 @@
   :hints (("Goal"
            :in-theory (e/d (formula-max-var-is-formula-max-var-1)
                            (incl-valid-proofp$ clrat-read-next a$ptr))
-           :induct t))
-  :rule-classes nil)
+           :induct t)))
 
-(defthm sat-preserved
-  (let* ((result (mv-nth 1
-                  (sat-preserved-check cnf-file clrat-file chunk-size debug
-                                       state)))
+(defthm transform-preserves-sat
+  (let* ((result
+          (mv-nth 1 (transform cnf-file clrat-file chunk-size debug state)))
          (formula (car result))
          (new-formula (cdr result)))
     (implies (and result ; non-error case
                   (satisfiable formula))
              (satisfiable new-formula)))
   :hints (("Goal"
-           :use
-           ((:instance sat-preserved-main
-                       (formula (CNF-READ-FILE CNF-FILE STATE))
-                       (posn 0)
-                       (clrat-file-length (MV-NTH 1 (READ-ACL2-ORACLE STATE)))
-                       (old-suffix "")
-                       (max-var (FORMULA-MAX-VAR (CNF-READ-FILE CNF-FILE STATE)
-                                               0))
-                       (a$ '(0 (NIL) (0 0)))
-                       (state (MV-NTH 2 (READ-ACL2-ORACLE STATE)))
-                       (ctx 'SAT-PRESERVED-CHECK)))
            :in-theory
-           (union-theories '(sat-preserved-check
+           (union-theories '(transform
                              acl2::error1-logic
                              sp-valid-proofp$-top-aux
-                             ;sat-preserved-main
+                             transform-preserves-sat-main
                              (:e a$p)
                              (:e resize-a$arr)
                              create-a$
