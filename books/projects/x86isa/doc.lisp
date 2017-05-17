@@ -509,7 +509,7 @@
   (declare (xargs :mode :program))
   ;; (print-implemented-opcodes-table (table-alist 'implemented-opcodes-table (w state)))
   (if (endp op-table)
-      "--------------------------------------------------"
+      nil
     (b* ((t-entry           (car op-table))
          (ins-name          (symbol-name (car (cdr t-entry))))
          (semantic-fn-name  (symbol-name (cdr (cdr t-entry))))
@@ -531,40 +531,43 @@
 
          (table-info-string
           (fms-to-string
-           "~%Opcode: ~s0 Extension: ~y1 ~t3 Mnemonic: ~s2~%~t3 Semantic Function: ~s4~%~%"
+           "<li>Opcode: ~s0 Extension: ~y1 Mnemonic: <b>~s2</b> <br/> Semantic Function: @(see ~s3)</li>"
            (list (cons #\0 opcode-string)
                  (cons #\1 opcode-extns)
                  (cons #\2 ins-name)
-                 (cons #\3 '8)
-                 (cons #\4 semantic-fn-name)))))
+                 (cons #\3 semantic-fn-name)))))
       (concatenate
        'string
-       "--------------------------------------------------"
        table-info-string
        (print-implemented-opcodes-table (cdr op-table))))))
 
-(defsection implemented-opcodes
-  :parents (x86-instructions)
-  :short "Opcodes supported by the x86 model"
-  :long "<p>The x86isa books currently support the following x86
-  opcodes.  In the list below, 'opcode' refers to the x86 opcode (one-
-  or two-byte) in hexadecimal, 'extension' refers to the opcode
-  extension (e.g., an implementation of the CMP instruction is
-  identified by both the opcode 0x80 and the extension 3, which is the
-  value of the REG field in the ModR/M byte of the instruction),
-  'mnemonic' refers to the name of the instruction, and 'semantic
-  function' refers to the specification function of that opcode in the
-  x86isa books.</p>
+(define generate-implemented-opcodes-section (state)
+  :mode :program
+  ;; TO-DO: Link to relevant sections in the Intel manuals?
+  (b* ((long-section
+        (string-append-lst
+         (list
+          "<p>In the list below, <i>opcode</i> refers to the x86
+  opcode (one- or two-byte) in hexadecimal, <i>extension</i> refers to
+  the opcode extension (e.g., an implementation of the CMP instruction
+  is identified by both the opcode 0x80 and the extension 3, which is
+  the value of the REG field in the ModR/M byte of the instruction),
+  <i>mnemonic</i> refers to the name of the instruction, and
+  <i>semantic function</i> refers to the specification function of
+  that opcode in the <tt>x86isa</tt> books.</p>
 
-  <p><b>TO-DO:</b> Link to relevant sections in the Intel manuals
-  and/or x86isa books?</p>
+  <ul>"
+          (print-implemented-opcodes-table
+           (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state))))
 
- @(`
-   (:code (print-implemented-opcodes-table
-            (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state)))))
-`)
+          "</ul>"))))
 
-")
+    `(defsection implemented-opcodes
+       :parents (x86-instructions)
+       :short "Opcodes supported by the x86 model"
+       :long ,long-section)))
+
+(make-event (generate-implemented-opcodes-section state))
 
 (xdoc::order-subtopics
  x86-instructions
