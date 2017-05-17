@@ -1,5 +1,5 @@
 ;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+;; Shilpi Goel <shilpi@centtech.com>
 
 (in-package "X86ISA")
 
@@ -86,12 +86,11 @@
   (strip-cdrs *popcount-32*))
 
 (defun-nx popcount-hyps (x86)
-; Initial PC is a constant because of the following (from
-; codewalker.lisp):
+; From codewalker.lisp:
 ; * Every reachable pc (in the region of code to be explored) must be
 ;   constant, starting with the initial pc, i.e., you have to know, in
 ;   concrete terms, where the instructions are stored.
-  (b* ((program-rip 0))
+  (b* ((program-rip #x400610))
     (and (x86p x86)
          (equal (programmer-level-mode x86) t)
          (prog-at program-rip *popcount-32-bytes* x86)
@@ -119,14 +118,16 @@
                    ((!FLGI I :VALUE :BASE)
                     (FLGI I :BASE)))
  :constructor-drivers nil
+ ;; Determine the "state components" that def-projection can
+ ;; generalize to produce functions independent of state.
  :state-comps-and-types
  (((XR :RGF *RDI* X86) (unsigned-byte-p 32 (XR :RGF *RDI* X86))))
  :callp  nil  ;; recognizer fn for states with pc on call instruction
  :ret-pc nil  ;; how to fetch the return pc after a call
  :returnp nil ;; recognizer for states with pc on return instruction
 
- :clk+ binary-clk+    ; how to add two clocks
- :name-print-base nil ; base to use for pcs appearing in names
+ :clk+ binary-clk+   ; how to add two clocks
+ :name-print-base 16 ; base to use for pcs appearing in names
 ;  (2, 8, 10, or 16)
 
 ; how to generate variable names from state comps
@@ -189,8 +190,8 @@
 ;; (acl2::why prog-at-wb-disjoint)
 
 (acl2::def-semantics
- :init-pc 0
- :focus-regionp (lambda (pc) (and (<= 0 pc) (<= pc 48)))
+ :init-pc #x400610
+ :focus-regionp (lambda (pc) (and (<= 0 pc) (<= pc #x400640)))
  :root-name nil ; optional - to change the fn names chosen
  ;; :hyps+ ((good-popcount-x86p x86)) ; optional - to strengthen the :hyps of API
  :annotations nil ; optional - to modify output generated
@@ -199,7 +200,7 @@
 (acl2::def-projection
  :new-fn popcount-result-fn
  :projector (XR :RGF *RAX* x86)
- :old-fn SEM-0)
+ :old-fn SEM-X400610)
 
 ;; Prove that POPCOUNT-RESULT-FN == logcount, given a 32-bit input.
 (include-book "centaur/gl/gl" :dir :system)

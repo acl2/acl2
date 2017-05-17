@@ -1,5 +1,5 @@
 ;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+;; Shilpi Goel <shilpi@centtech.com>
 
 (in-package "X86ISA")
 
