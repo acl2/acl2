@@ -72,6 +72,9 @@
             general discussion in @(see warnings) for more information on how
             this is used.")
 
+   (suppressedp booleanp :rule-classes :type-prescription
+                "Indicates that this warning was suppressed by an ignore attribute.")
+
    (context "Context object for this warning; should be NIL or printable with \"~a\".")))
 
 (fty::deflist vl-warninglist

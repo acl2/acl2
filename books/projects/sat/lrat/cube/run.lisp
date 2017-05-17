@@ -58,6 +58,7 @@
 (defun maybe-print-success-and-exit (exitp state)
   (cond ((null exitp) (value nil))
         (t (pprogn (princ$ "s VERIFIED" (standard-co state) state)
+                   (newline (standard-co state) state)
                    (prog2$ (exit 0)
                            (value nil))))))
 
@@ -319,5 +320,6 @@
                      :outfile "my-old"))
 ; equivalently:
 ./run.sh ../tests/uuf-30-1.cnf ../tests/uuf-30-1.clrat my-old2
+% diff my-old my-old2
 
 ||#
