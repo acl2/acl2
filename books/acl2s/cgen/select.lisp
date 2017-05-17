@@ -233,12 +233,13 @@ processed, the annotation of edges is also returned"
                                    (put-assoc-equal var nil alst-C)
                                    incoming)))
 
-       ((mget-hyp-var hyp t) ;(mget :const x) hack: give record types preference
-        (b* ((var (mget-hyp-var hyp t)))
-          (build-vdependency-graph (cdr hyp-lst)
-                                   (remove-entry var alst)
-                                   (put-assoc-equal var (cdr (assoc-equal var alst)) alst-C)
-                                   incoming)))
+       ;; ((mget-hyp-var hyp t) ;(mget :const x) hack: give record types preference
+       ;;  (b* ((var (mget-hyp-var hyp t)))
+       ;;    (build-vdependency-graph (cdr hyp-lst)
+       ;;                             (remove-entry var alst)
+       ;;                             (put-assoc-equal var (cdr (assoc-equal var alst)) alst-C)
+       ;;                             incoming)))
+
        
        ((or (atom hyp) ;variable symbols or atomic constants
             (and (equal (len hyp) 2) (equal (len (get-free-vars1 (cadr hyp) nil)) 1))) ;monadic term
@@ -397,6 +398,33 @@ processed, the annotation of edges is also returned"
            (max-var-depth-in-terms ans terms -1))
         (pick-sink-with-max-depth (cdr sinks) terms (car sinks))
       (pick-sink-with-max-depth (cdr sinks) terms ans))))
+
+(defun filter-combinator-type-sinks (sinks vt-alist wrld)
+;collect all sinks that are of type record, map, list, alist
+  (if (endp sinks)
+      '()
+    (b* ((sink (car sinks))
+         ((cons & types) (assoc-equal sink vt-alist))
+         (type (car types))
+         (type-metadata (defdata::get1 type (defdata::type-metadata-table wrld)))
+         )
+      
+      (if (or (consp (defdata::get1 :PRETTYIFIED-DEF type-metadata))
+              (member-eq (car (defdata::get1 :PRETTYIFIED-DEF type-metadata))
+                              '(DEFDATA::RECORD
+                                 ;DEFDATA::MAP
+                                 ;DEFDATA::ALISTOF
+                                 ;DEFDATA::LISTOF
+                                 )))
+          (cons sink (filter-combinator-type-sinks (cdr sinks)
+                                                          vt-alist wrld))
+        (filter-combinator-type-sinks (cdr sinks) vt-alist wrld)))))
+
+(defun pick-sink-heuristic (sinks terms vt-alist wrld ans)
+  (b* ((c-sinks (filter-combinator-type-sinks sinks vt-alist wrld)))
+    (if (consp c-sinks)
+        (pick-sink-with-max-depth (cdr c-sinks) terms (car c-sinks))
+      (pick-sink-with-max-depth sinks terms ans))))
   
     
 (defun pick-constant-hyp-var (terms)
@@ -414,8 +442,8 @@ processed, the annotation of edges is also returned"
 ; incremental algorithm from FMCAD 2011 paper.
 ; the implementation below deviates by reusing
 ; simple-search at each partial assign
-(def select (terms debug)
-  (decl :sig ((pseudo-term-list boolean) 
+(def select (terms vl wrld)
+  (decl :sig ((pseudo-term-list fixnum plist-world) 
               -> symbol)
         :mode :program
         :doc "choose the variable with least dependency. Build a dependency
@@ -432,9 +460,10 @@ processed, the annotation of edges is also returned"
        (G (build-variable-dependency-graph terms vars))
 ;TODO: among the variables of a component, we should vary
 ;the order of selection of variables!!
-       (var1 (car (last (approximate-topological-sort G debug))))
+       (var1 (car (last (approximate-topological-sort G (debug-flag vl)))))
        (sinks (dumb-get-all-sinks G))
        (terms/binary-or-more (filter-terms-with-arity-> terms 1)) ;ignore monadic terms
-       (var (pick-sink-with-max-depth sinks terms/binary-or-more var1))
-       (- (cw? (or t debug) "~|DPLL: Select var: ~x0~%" var)))
+       (dumb-type-alist (dumb-type-alist-infer terms vars vl wrld))
+       (var (pick-sink-heuristic sinks terms/binary-or-more dumb-type-alist wrld var1))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Incremental-search: Select var: ~x0~%" var)))
    var))

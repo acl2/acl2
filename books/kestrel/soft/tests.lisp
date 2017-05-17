@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems') -- Tests
+; SOFT (Second-Order Functions and Theorems) -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file tests SOFT ('Second-Order Functions and Theorems'),
+; This file tests SOFT (Second-Order Functions and Theorems),
 ; a tool to mimic second-order functions and theorems
 ; in the first-order logic of ACL2.
 ; More tests should be added to this file.

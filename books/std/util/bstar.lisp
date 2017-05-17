@@ -70,7 +70,7 @@ mv-let).  For instance:</p>
          (append new-good new-bad))))
 })
 
-<p>Another interesting example is the <see topic='@(url patbind-when)'>when
+<p>Another example is the <see topic='@(url patbind-when)'>when
 binder</see>, which allows for a sort of \"early exit\" from the @('b*') form
 without needing to alternate between @('let*') and @('if').  For instance:</p>
 
@@ -196,6 +196,11 @@ that are available \"out of the box.\"</p>
    (run-this-for-side-effects ...)
    (return-this-expression .....))
 })
+
+<p>Note: The built-in binders are all defined in the ACL2 package, and can be
+used (without package prefix) in any other package that imports the binder
+symbol, or with the @('acl2::') packge prefix anywhere. See also the note about
+packages under user-defined binders below.</p>
 
 <p>We now give some additional details about these built-in binders.  Since
 users can also define their own @('b*') binders, you may wish to see @(see
@@ -376,6 +381,17 @@ found in @('std/util/bstar.lisp'); simply search for uses of @(see
 def-b*-binder).</p>
 
 <p>Here are some further notes on defining binder macros.</p>
+
+<p>Interaction with packages: The macro @('patbind-foo') is derived from a use
+of the @('foo') binder using @('intern-in-package-of-symbol') with @('foo') as
+the package witness.  Practially speaking, this means that you can use a binder
+from a different package (without any package prefix) if either the binder name
+@('foo') or the macro @('patbind-foo') is imported into your package.
+Additionally, if @('foo') was defined as a binder in the @('bar') package and
+not imported into your current package, it can still be invoked as
+@('bar::foo').  Note also that when defining a binder using @('def-b*-binder'),
+the @('args'), @('forms'), and @('rest-expr') formals are always in the ACL2
+package.</p>
 
 <p>Often the simplest way to accomplish the intended effect of a patbind macro
 is to have it construct another @('b*') form to be recursively expanded, or to

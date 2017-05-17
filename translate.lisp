@@ -6646,6 +6646,30 @@
     (defined-symbols (symbol-name sym) (symbol-package-name sym) kpa wrld
       nil)))
 
+(defun match-stobjs (lst1 lst2 acc)
+
+; Lst1 and lst2 are proposed stobjs-out values.  So they are lists of symbols,
+; presumably each with nil as the only possible duplicate.
+
+  (cond ((endp lst1) (mv (null lst2) acc))
+        ((endp lst2) (mv nil nil))
+        ((not (eq (null (car lst1))
+                  (null (car lst2))))
+         (mv nil nil))
+        ((null (car lst1))
+         (match-stobjs (cdr lst1) (cdr lst2) acc))
+        (t (let ((pair (assoc-eq (car lst1) acc)))
+             (cond ((null pair)
+                    (match-stobjs (cdr lst1)
+                                  (cdr lst2)
+                                  (if (eq (car lst1) (car lst2))
+                                      acc
+                                    (acons (car lst1) (car lst2) acc))))
+                   (t (mv (er hard! 'match-stobjs
+                              "Implementation error: expected no duplicates ~
+                               in stobjs-out list!")
+                          nil)))))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7514,6 +7538,78 @@
                                     (remove1-eq whs (all-vars tlambda-body))
                                     (all-vars tlambda-body)))))))))))))))
 
+(defun translate11-call-1 (form fn args bindings
+                                known-stobjs msg flet-alist ctx wrld state-vars
+                                stobjs-in-call flg)
+
+; Here we carve out some code from translate11-call (for the case that both
+; stobjs-out and stobjs-out2 are conses), so that we can invoke it twice
+; without writing the code twice.
+
+  (trans-er-let*
+
+; We handle the special translation of wormhole-eval both here, when stobjs-out
+; is known, and below, where it is not.  Of course, stobjs-out2 (for
+; wormhole-eval) is fixed: (nil).  Keep this code in sync with that below.
+
+; The odd treatment of wormhole-eval's first two arguments below is due to the
+; fact that we actually don't want to translate them.  We will insist that they
+; actually be quoted forms, not macro calls that expand to quoted forms.  So we
+; put bogus nils in here and then swap back the untranslated args below.
+
+   ((targs (trans-or
+            (translate11-lst (if (eq fn 'wormhole-eval)
+                                 (list *nil* *nil* (nth 2 args))
+                               args)
+                             stobjs-in-call
+                             bindings
+                             known-stobjs
+                             msg flet-alist form ctx wrld
+                             state-vars)
+
+; Just below, we allow a stobj recognizer to be applied to an ordinary object,
+; even when translating for execution (function bodies or top-level loop).
+; This is an exception to the the usual rule, which requires stobj functions to
+; respect their stobjs-in arguments when translating for execution.  We take
+; advantage of this exception in our support for stobj fields of stobjs.  For
+; example, consider the following two events.
+
+;   (defstobj sub1 sub1-fld1)
+;   (defstobj top1 (top1-fld :type sub1))
+
+; The axiomatic definition generated in the second defstobj for function
+; top1-fldp is as follows.
+
+;   (defun top1-fldp (x)
+;     (declare (xargs :guard t :verify-guards t)
+;              (ignorable x))
+;     (sub1p x))
+
+; At this point, x is an ordinary object; only at the conclusion of a defstobj
+; event do we put stobjs-in and stobjs-out properties for the new functions.
+; By allowing sub1p to be applied to an ordinary object, we allow the
+; definition to be accepted without any (other) special treatment.
+
+            (and (eq flg :failed)
+                 (stobj-recognizer-p fn wrld))
+            (translate11-lst args
+                             '(nil)
+                             bindings
+                             known-stobjs
+                             msg flet-alist form ctx wrld
+                             state-vars)
+            (msg "  Observe that while it is permitted to apply ~x0 ~
+                           to an ordinary object, this stobj recognizer must ~
+                           not be applied to the wrong stobj."
+                 fn))))
+   (cond ((eq fn 'wormhole-eval)
+          (translate11-wormhole-eval (car args)
+                                     (cadr args)
+                                     (caddr targs)
+                                     bindings flet-alist ctx wrld
+                                     state-vars))
+         (t (trans-value (fcons-term fn targs))))))
+
 (defun translate11-call (form fn args stobjs-out stobjs-out2 bindings
                               known-stobjs msg flet-alist ctx wrld state-vars)
 
@@ -7525,12 +7621,11 @@
 
 ; Note that for this call to be suitable, args has to satisfy the stobjs
 ; discipline of passing a stobj name to a stobjs-in position.  We take
-; advantage of this point in the call of stobjs-in-out below, where we
-; ultimately work our way down to checking stobjp of each arg in
-; stobjs-in-out1.  For that reason, it is good that we do not call
-; translate11-call on arbitrary let expressions, viewed as lambdas, where the
-; args would be arbitrary expressions (from the cadrs of the doublets in the
-; let-bindings).
+; advantage of this requirement: stobjs-in-out (called below) invoked
+; stobjs-in-out1, which checks stobjp of each arg in args.  For that reason, it
+; is important that we do not call translate11-call on arbitrary lambdas, where
+; an arg might not be a stobj name, e.g., ((LAMBDA (ST) ST) (UPDATE-FLD '2
+; ST)).
 
 ; We are tempted to enforce the call-arguments-limit imposed by Common Lisp.
 ; According to the HyperSpec, this constant has an implementation-dependent
@@ -7573,108 +7668,94 @@
       ((consp stobjs-out-call) ; equivalently: (consp stobjs-out2)
        (cond
         ((not (equal stobjs-out stobjs-out-call))
-         (trans-er+ form ctx
-                    "It is illegal to invoke ~@0 here because of a signature ~
-                     mismatch.  This function call returns a result of shape ~
-                     ~x1~@2 where a result of shape ~x3 is required.~@4"
-                    (if (consp fn) msg (msg "~x0" fn))
-                    (prettyify-stobjs-out stobjs-out-call)
-                    (if (and flg (not (eq flg :failed)))
-                        " (after accounting for the replacement of some input ~
-                         stobjs by congruent stobjs)"
-                      "")
-                    (prettyify-stobjs-out stobjs-out)
-                    (let* ((missing (missing-known-stobjs stobjs-out
-                                                          stobjs-out2
-                                                          known-stobjs
-                                                          nil))
-                           (missing-user-stobjs (set-difference-eq missing
-                                                                   '(nil state)))
-                           (state-string
-                            "  This error may occur when the ACL2 state is ~
-                             not available in the current context, for ~
-                             example as a formal parameter of a defun.")
-                           (user-stobj-string
-                            "  This error may~@0 occur when ~&1 ~
-                             ~#1~[is~/are~] not declared to be ~#1~[a ~
-                             stobj~/stobjs~] in the current context."))
-                      (cond
-                       ((and missing-user-stobjs
-                             (member-eq 'state missing))
-                        (msg "~@0~@1"
-                             state-string
-                             (msg user-stobj-string
-                                  " also"
-                                  missing-user-stobjs)))
-                       (missing-user-stobjs
-                        (msg user-stobj-string
-                             ""
-                             missing-user-stobjs))
-                       (missing state-string)
-                       (t "")))))
-        (t (trans-er-let*
 
-; We handle the special translation of wormhole-eval both here, when stobjs-out
-; is known, and below, where it is not.  Of course, stobjs-out2 (for
-; wormhole-eval) is fixed: (nil).  Keep this code in sync with that below.
+; We are definitely in an error case.  But at this point we don't know if the
+; problem is with input stobjs or output stobjs.  Consider the following
+; example.
 
-; The odd treatment of wormhole-eval's first two arguments below is due to the
-; fact that we actually don't want to translate them.  We will insist that they
-; actually be quoted forms, not macro calls that expand to quoted forms.  So we
-; put bogus nils in here and then swap back the untranslated args below.
+;   (defstobj st1 fld1)
+;   (defstobj st2 fld2 :congruent-to st1)
+;   (defun f (st2)
+;     (declare (xargs :stobjs st2))
+;     (let ((st2 (update-fld1 st2 3)))
+;       st2))
 
-            ((targs (trans-or
-                     (translate11-lst (if (eq fn 'wormhole-eval)
-                                          (list *nil* *nil* (nth 2 args))
-                                        args)
-                                      stobjs-in-call
-                                      bindings
-                                      known-stobjs
-                                      msg flet-alist form ctx wrld
-                                      state-vars)
+; The definition of f is ill-formed because the arguments to update-fld1 are in
+; the wrong order.  But what should the error message say?  If we replace
+; update-fld1 by update-fld2 then we get a reasonable error message, saying
+; that st2 "is being used where an ordinary object is expected".  We would also
+; like a reasonable such message in the example above.  So we check whether the
+; two stobjs-out lists match up.  If so, we fall through to the case that
+; stobjs-out equals stobjs-out-call, but with a modified stobjs-in-call, so
+; that we can print the usual sort of error for an input signature mismatch.
+; Otherwise we complain about a signature mismatch for the result.
 
-; Just below, we allow a stobj recognizer to be applied to an ordinary object,
-; even when translating for execution (function bodies or top-level loop).
-; This is an exception to the the usual rule, which requires stobj functions to
-; respect their stobjs-in arguments when translating for execution.  We take
-; advantage of this exception in our support for stobj fields of stobjs.  For
-; example, consider the following two events.
+         (mv-let (flg2 alist2)
+           (match-stobjs stobjs-out stobjs-out2 nil)
+           (cond
+            (flg2
+             (trans-er-let*
+              ((tform (translate11-call-1 form fn args bindings
+                                          known-stobjs msg flet-alist
+                                          ctx wrld state-vars
+                                          (apply-symbol-alist
+                                           alist2
+                                           stobjs-in-call
+                                           nil)
+                                          flg)))
 
-;   (defstobj sub1 sub1-fld1)
-;   (defstobj top1 (top1-fld :type sub1))
+; We should not reach this point, as we fully expect an error from
+; translate11-call-1, as explained above.
 
-; The axiomatic definition generated in the second defstobj for function
-; top1-fldp is as follows.
-
-;   (defun top1-fldp (x)
-;     (declare (xargs :guard t :verify-guards t)
-;              (ignorable x))
-;     (sub1p x))
-
-; At this point, x is an ordinary object; only at the conclusion of a defstobj
-; event do we put stobjs-in and stobjs-out properties for the new functions.
-; By allowing sub1p to be applied to an ordinary object, we allow the
-; definition to be accepted without any (other) special treatment.
-
-                     (and (eq flg :failed)
-                          (stobj-recognizer-p fn wrld))
-                     (translate11-lst args
-                                      '(nil)
-                                      bindings
-                                      known-stobjs
-                                      msg flet-alist form ctx wrld
-                                      state-vars)
-                     (msg "  Observe that while it is permitted to apply ~x0 ~
-                           to an ordinary object, this stobj recognizer must ~
-                           not be applied to the wrong stobj."
-                          fn))))
-            (cond ((eq fn 'wormhole-eval)
-                   (translate11-wormhole-eval (car args)
-                                              (cadr args)
-                                              (caddr targs)
-                                              bindings flet-alist ctx wrld
-                                              state-vars))
-                  (t (trans-value (fcons-term fn targs))))))))
+              (trans-er+ form ctx
+                         "It is illegal to invoke ~@0 here because of a ~
+                          signature mismatch involving congruent stobjs.  ~
+                          ACL2 was unable to determine the exact nature of ~
+                          the mismatch.")))
+          (t
+           (trans-er+ form ctx
+                      "It is illegal to invoke ~@0 here because of a ~
+                       signature mismatch.  This function call returns a ~
+                       result of shape ~x1~@2 where a result of shape ~x3 is ~
+                       required.~@4"
+                      (if (consp fn) msg (msg "~x0" fn))
+                      (prettyify-stobjs-out stobjs-out-call)
+                      (if (and flg (not (eq flg :failed)))
+                          " (after accounting for the replacement of some ~
+                           input stobjs by congruent stobjs)"
+                        "")
+                      (prettyify-stobjs-out stobjs-out)
+                      (let* ((missing (missing-known-stobjs stobjs-out
+                                                            stobjs-out2
+                                                            known-stobjs
+                                                            nil))
+                             (missing-user-stobjs (set-difference-eq missing
+                                                                     '(nil state)))
+                             (state-string
+                              "  This error may occur when the ACL2 state is ~
+                               not available in the current context, for ~
+                               example as a formal parameter of a defun.")
+                             (user-stobj-string
+                              "  This error may~@0 occur when ~&1 ~
+                               ~#1~[is~/are~] not declared to be ~#1~[a ~
+                               stobj~/stobjs~] in the current context."))
+                        (cond
+                         ((and missing-user-stobjs
+                               (member-eq 'state missing))
+                          (msg "~@0~@1"
+                               state-string
+                               (msg user-stobj-string
+                                    " also"
+                                    missing-user-stobjs)))
+                         (missing-user-stobjs
+                          (msg user-stobj-string
+                               ""
+                               missing-user-stobjs))
+                         (missing state-string)
+                         (t ""))))))))
+        (t (translate11-call-1 form fn args bindings
+                               known-stobjs msg flet-alist ctx wrld state-vars
+                               stobjs-in-call flg))))
       (t ; (symbolp stobjs-out2); equivalently, (symbolp stobjs-out-call)
 
 ; If flg is a non-empty alist, then the expected stobjs-out is not the
@@ -9231,7 +9312,18 @@
           (trans-value (cons x y))))
         (t (trans-er-let*
             ((x (translate11 (car lst) '(nil) bindings known-stobjs flet-alist
-                             (car lst) ctx wrld state-vars))
+
+; At one time we passed in (car lst) here for cform (to represent the
+; surrounding context).  But it makes more sense to preserve cform.  To see
+; why, first note that translate11-call passes the call down to
+; translate11-lst.  Now suppose we have an error, for example from the
+; following where st is a stobj and the call should be (foo x st), not (foo st
+; x).
+;   (defun bar (x st) (declare (xargs :stobjs st)) (foo st x))
+; We want to see the call of foo when told that st is being used where an
+; ordinary object is expected.
+
+                             cform ctx wrld state-vars))
              (y (translate11-lst (cdr lst) (cdr stobjs-out)
                                  bindings known-stobjs msg flet-alist cform ctx
                                  wrld state-vars)))
