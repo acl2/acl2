@@ -2778,6 +2778,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
         "The default statement, if provided.  This is optional in the
                   Verilog and SystemVerilog syntax.  If it is omitted, our
                   parser will put a null statement here.")
+      (loc vl-location-p)
       (casetype  vl-casetype-p
         "Basic case statement type: @('case'), @('casez'), or
                   @('casex').")

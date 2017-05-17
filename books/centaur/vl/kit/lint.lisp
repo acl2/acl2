@@ -801,6 +801,27 @@ shown.</p>"
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
      (vl-print-reportcard reportcard :elide nil))))
 
+(define vl-lint-print-all-warnings ((filename stringp)
+                                    (label    stringp)
+                                    (reportcard   vl-reportcard-p)
+                                    &key (ps 'ps))
+  (b* ((reportcard (vl-clean-reportcard reportcard))
+       (count  (length (append-alist-vals reportcard)))
+       (-      (cond ((eql count 0)
+                      (cw "~s0: No ~s1 Warnings.~%" filename label))
+                     ((eql count 1)
+                      (cw "~s0: One ~s1 Warning.~%" filename label))
+                     (t
+                      (cw "~s0: ~x1 ~s2 Warnings.~%" filename count label)))))
+    (vl-ps-seq
+     (cond ((eql count 0)
+            (vl-cw "No ~s0 Warnings.~%~%" label))
+           ((eql count 1)
+            (vl-cw "One ~s0 Warning:~%~%" label))
+           (t
+            (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
+     (vl-print-reportcard reportcard :elide nil))))
+
 (define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps)
@@ -968,12 +989,61 @@ shown.</p>"
 (local (in-theory (disable set::in set::in-tail
                            set::difference set::mergesort)))
 
+(define vl-warninglist-remove-suppressed ((x vl-warninglist-p))
+  :returns (new-x vl-warninglist-p)
+  (if (atom x)
+      nil
+    (if (vl-warning->suppressedp (car x))
+        (vl-warninglist-remove-suppressed (cdr x))
+      (cons (vl-warning-fix (car x))
+            (vl-warninglist-remove-suppressed (cdr x))))))
+
+(define vl-reportcard-remove-suppressed ((x vl-reportcard-p))
+  :returns (new-reportcard vl-reportcard-p)
+  :measure (len (vl-reportcard-fix x))
+  (b* ((x (vl-reportcard-fix x))
+       ((when (atom x)) nil)
+       ((cons key warnings) (car x))
+       (warnings (vl-warninglist-remove-suppressed warnings)))
+    (if warnings
+        (cons (cons (vl-reportcardkey-fix key)
+                    warnings)
+              (vl-reportcard-remove-suppressed (cdr x)))
+      (vl-reportcard-remove-suppressed (cdr x)))))
+
+(define vl-warninglist-keep-suppressed ((x vl-warninglist-p))
+  :returns (new-x vl-warninglist-p)
+  (if (atom x)
+      nil
+    (if (vl-warning->suppressedp (car x))
+        (cons (vl-warning-fix (car x))
+              (vl-warninglist-keep-suppressed (cdr x)))
+      (vl-warninglist-keep-suppressed (cdr x)))))
+
+(define vl-reportcard-keep-suppressed ((x vl-reportcard-p))
+  :returns (new-reportcard vl-reportcard-p)
+  :measure (len (vl-reportcard-fix x))
+  (b* ((x (vl-reportcard-fix x))
+       ((when (atom x)) nil)
+       ((cons key warnings) (car x))
+       (warnings (vl-warninglist-keep-suppressed warnings)))
+    (if warnings
+        (cons (cons (vl-reportcardkey-fix key)
+                    warnings)
+              (vl-reportcard-keep-suppressed (cdr x)))
+      (vl-reportcard-keep-suppressed (cdr x)))))
+
+
+
+
 (defun vl-lint-report (lintresult state)
   (declare (xargs :guard (vl-lintresult-p lintresult)
                   :stobjs state))
 
   (b* (((vl-lintresult lintresult) lintresult)
        (reportcard   lintresult.reportcard)
+       (suppressed (vl-reportcard-keep-suppressed reportcard))
+       (reportcard (vl-reportcard-remove-suppressed reportcard))
        (sd-probs lintresult.sd-probs)
 
        ((mv major minor)
@@ -1177,6 +1247,12 @@ wide addition instead of a 10-bit wide addition.")))
         (vl-ps-update-autowrap-col 68)
         (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes reportcard)))
 
+      (state
+       (with-ps-file
+         "vl-suppressed.txt"
+         (vl-ps-update-autowrap-col 58)
+         (vl-lint-print-all-warnings "vl-suppressed.txt" "suppressed" suppressed)))
+
       (- (cw "~%"))
 
       (state
@@ -1184,6 +1260,16 @@ wide addition instead of a 10-bit wide addition.")))
         (with-ps-file "vl-warnings.json"
                       (vl-print "{\"warnings\":")
                       (vl-jp-reportcard reportcard)
+                      (vl-print ",\"locations\":")
+                      (vl-jp-locations lintresult.design0)
+                      (vl-println "}"))
+        :name write-warnings-json))
+
+      (state
+       (cwtime
+        (with-ps-file "vl-warnings-suppressed.json"
+                      (vl-print "{\"warnings\":")
+                      (vl-jp-reportcard suppressed)
                       (vl-print ",\"locations\":")
                       (vl-jp-locations lintresult.design0)
                       (vl-println "}"))
