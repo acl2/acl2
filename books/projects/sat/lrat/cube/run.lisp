@@ -227,7 +227,11 @@
                       (cond (outfile (print-formula formula
                                                     :filename outfile))
                             (t (value nil)))
-                      (maybe-print-success-and-exit exitp state))))
+                      (maybe-print-success-and-exit exitp state)
+                      (value `(:SUCCESS
+                               ,@(and (stringp outfile)
+                                      (list :input-formula-printed-to
+                                            outfile)))))))
             (t
              (er-progn (maybe-print-failure-and-exit exitp state)
                        (er soft ctx "Cubes-unsat-check FAILED.")))))))
@@ -243,6 +247,24 @@
                          ,timep ,exitp 'cubes-unsat-check state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Single interface
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro cube-check (cnf-infile clrat-infile cnf-outfile
+                                 &optional cube-infile produced-outfile)
+  (cond (cube-infile ; (2)
+         `(verify-for-cube-check ,cnf-infile ,clrat-infile ,cube-infile
+                                 :old-formula-outfile ,cnf-outfile
+                                 :new-clause-outfile ,produced-outfile))
+        (produced-outfile ; (1)
+         `(transform-check ,cnf-infile ,clrat-infile
+                           :old-formula-outfile ,cnf-outfile
+                           :new-formula-outfile ,produced-outfile))
+        (t ; (3)
+         `(cubes-unsat-check ,cnf-infile ,clrat-infile
+                             :outfile ,cnf-outfile))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Examples
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,6 +278,15 @@
 (transform-check "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.clrat"
                  :old-formula-outfile "my-old"
                  :new-formula-outfile "my-new")
+% diff ../tests/uuf-100-5.cnf my-old
+; equivalently
+(cube-check "../tests/uuf-100-5.cnf" "../tests/uuf-100-5-partial.clrat"
+            "my-old2" nil "my-new2")
+; equivalently
+./run.sh ../tests/uuf-100-5.cnf ../tests/uuf-100-5-partial.clrat my-old2 nil my-new2
+
+% diff my-old my-old2
+% diff my-new my-new2
 
 (let ((cnf-file "../tests/uuf-30-1.cnf")
       (clrat-file "../tests/uuf-30-1-cube.clrat")
@@ -263,10 +294,30 @@
   (verify-for-cube-check cnf-file clrat-file cube-file
                          :old-formula-outfile "my-old"
                          :new-clause-outfile "my-new"))
+% diff ../tests/uuf-30-1.cnf my-old
+% # should be just -25 0:
+% cat my-new
+; equivalently
+(cube-check "../tests/uuf-30-1.cnf" "../tests/uuf-30-1-cube.clrat"
+            "my-old2" "../tests/uuf-30-1.cube" "my-new2")
+% diff my-old my-old2
+% diff my-new my-new2
+; equivalently
+./run.sh ../tests/uuf-30-1.cnf ../tests/uuf-30-1-cube.clrat my-old2 \
+          ../tests/uuf-30-1.cube my-new2
 
 (let ((cnf-file "../tests/uuf-30-1.cnf")
       (clrat-file "../tests/uuf-30-1.clrat"))
   (cubes-unsat-check cnf-file clrat-file
                      :outfile t))
+; equivalently:
+(cube-check "../tests/uuf-30-1.cnf" "../tests/uuf-30-1.clrat" t)
+; File version:
+(let ((cnf-file "../tests/uuf-30-1.cnf")
+      (clrat-file "../tests/uuf-30-1.clrat"))
+  (cubes-unsat-check cnf-file clrat-file
+                     :outfile "my-old"))
+; equivalently:
+./run.sh ../tests/uuf-30-1.cnf ../tests/uuf-30-1.clrat my-old2
 
 ||#
