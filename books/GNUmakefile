@@ -1643,7 +1643,7 @@ TAGS : $(CERT_PL_SOURCES)
 
 
 # BOZO --- the comments below should eventually be integrated into the XDOC
-# documentatio about cert.pl.
+# documentation about cert.pl.
 
 # In order to make the book- and dependency-scanning simple and reliable, books
 # are expected to follow certain conventions.  These conventions are generally
