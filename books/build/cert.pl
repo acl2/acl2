@@ -57,6 +57,7 @@ use Getopt::Long qw(:config bundling_override);
 
 my %reqparams = ("hons-only"      => "HONS_ONLY",
 		 "uses-glucose"   => "USES_GLUCOSE",
+		 "uses-ipasir"    => "USES_IPASIR",
 		 "uses-smtlink"   => "USES_SMTLINK",
 		 "uses-quicklisp" => "USES_QUICKLISP",
 		 "ansi-only"      => "ANSI_ONLY",
