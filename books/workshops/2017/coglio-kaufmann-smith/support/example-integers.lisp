@@ -183,7 +183,8 @@
 ; Java method.
 ; The guards are verified by turning the bounded integer operations
 ; to their unbounded counterparts and then doing arithmetic reasoning.
-; The verification of the guards implies the establishment of the loop invariant.
+; The verification of the guards implies
+; the establishment of the loop invariant.
 
 (defun drawline (a b screen)
   (declare

@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems') -- Implementation
+; SOFT (Second-Order Functions and Theorems) -- Implementation
 ;
 ; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file implements SOFT ('Second-Order Functions and Theorems'),
+; This file implements SOFT (Second-Order Functions and Theorems),
 ; a tool to mimic second-order functions and theorems
 ; in the first-order logic of ACL2.
 ; Some possible improvements/extensions are discussed at the end of the file.

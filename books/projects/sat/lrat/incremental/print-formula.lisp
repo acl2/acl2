@@ -45,33 +45,56 @@
                                     (newline channel state))))
                    (print-clause (cdr clause) channel state)))))
 
-(defun print-clauses1 (clause-lst channel state)
+(defun print-clause-lst (clause-lst channel state)
   (cond ((endp clause-lst) state)
         (t (pprogn (print-clause (car clause-lst) channel state)
-                   (print-clauses1 (cdr clause-lst) channel state)))))
+                   (print-clause-lst (cdr clause-lst) channel state)))))
 
-(defun print-clauses (clause-lst filename state)
-  (cond
-   ((null filename) ; print to standard output
-    (pprogn (print-clauses1 clause-lst (standard-co state) state)
-            (value :invisible)))
-   (t
-    (mv-let
-      (channel state)
-      (open-output-channel filename :character state)
-      (cond ((null channel)
-             (er soft 'print-clauses
-                 "Unable to open file ~x0 for output."
-                 filename))
-            (t (pprogn (print-clauses1 clause-lst channel state)
-                       (close-output-channel channel state)
-                       (value filename))))))))
+(defun print-cnf-header (formula channel state)
+  (mv-let (col state)
+    (fmt1 "p cnf ~x0 ~x1~|"
+          (list (cons #\0 (formula-max-var formula 0))
+                (cons #\1 (length formula)))
+          0 channel state nil)
+    (declare (ignore col))
+    state))
 
-(defmacro print-formula (formula &optional filename)
+(defun print-formula-fn1 (formula channel header-p state)
+  (pprogn (if header-p
+              (print-cnf-header formula channel state)
+            state)
+          (print-clause-lst (strip-cdrs formula) channel state)))
+
+(defun print-formula-fn (formula filename header-p ctx state)
+  (prog2$
+   (check-formula-with-increasing-keys formula)
+   (cond
+    ((eq filename t) ; print to standard output
+     (pprogn (print-formula-fn1 formula (standard-co state) header-p state)
+             (value :invisible)))
+    ((not (stringp filename))
+     (er soft ctx
+         "The filename argument for ~x0 must be either a string or (for ~
+          standard output) ~x1.  The argument ~x2 is thus illegal."
+         'print-formula t filename))
+    (t
+     (mv-let
+       (channel state)
+       (open-output-channel filename :character state)
+       (cond ((null channel)
+              (er soft ctx
+                  "Unable to open file ~x0 for output."
+                  filename))
+             (t (pprogn (print-formula-fn1 formula channel header-p state)
+                        (close-output-channel channel state)
+                        (value filename)))))))))
+
+(defmacro print-formula (formula &key
+                                 filename
+                                 (header-p 't)
+                                 (ctx ''print-formula))
 
 ; Print the given formula to the given file, unless filename is nil in which
 ; case print to standard output.
 
-  `(let ((f ,formula))
-     (prog2$ (check-formula-with-increasing-keys f)
-             (print-clauses (strip-cdrs f) ,filename state))))
+  `(print-formula-fn ,formula ,filename ,header-p ,ctx state))

@@ -8218,6 +8218,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
              (format t
                      "~&************ ABORTING from raw Lisp ***********")
              (format t
+                     "~&********** (see :DOC raw-lisp-error) **********")
+             (format t
                      "~&Error:  ~A"
                      condition)))
            (when btp (format t "~%NOTE: See above for backtrace.~%"))

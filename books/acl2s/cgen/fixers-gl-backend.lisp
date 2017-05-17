@@ -2,8 +2,8 @@
 (set-waterfall-parallelism nil)
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner 
-  "../package.lsp")
+(ld "../package.lsp")
+; cert-flags: ? t :ttags :all
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 

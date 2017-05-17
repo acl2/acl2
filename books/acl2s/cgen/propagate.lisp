@@ -151,6 +151,12 @@
          ((er rest)  (simplify-term-lst (cdr terms) hyps hints state)))
       (value (cons sterm rest)))))
 
+(include-book "../defdata/defdata-util")
+(defun type-hyp-p (hyp wrld)
+  (and (consp hyp)
+       (defdata::is-type-predicate (car hyp) wrld)
+       (proper-symbolp (cadr hyp))))
+
 (def simplify-hyps1 (rem-hyps init-hyps hints ans. vl state)
   (decl :sig ((pseudo-term-list pseudo-term-list true-list pseudo-term-list bool state)
               -> (mv erp pseudo-term state))
@@ -182,8 +188,9 @@
      
       (simplify-hyps1 
        (cdr rem-hyps) init-hyps hints
-       (if (equal shyp ''t) ans.
-         (append ans. shyp-list)) ;dont mess with order
+       (cond ((type-hyp-p hyp (w state)) (append ans. (list hyp))) ;leave type hyps unchanged
+             ((equal shyp ''t) ans.)
+             (t (append ans. shyp-list))) ;dont mess with order
        vl state))))
 
 (def simplify-hyps-under-assignment (hyps x a vl state)
