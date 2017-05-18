@@ -642,16 +642,20 @@ CLEAN_FILES_EXPLICIT := \
    centaur/getopt/demo2.lw \
    centaur/getopt/demo2.lx86cl64 \
    centaur/getopt/demo2.ccl \
-   nonstd/workshops/1999/calculus/book/outline/
+   nonstd/workshops/1999/calculus/book/outline/ \
+   projects/sat/lrat/incremental/lrat-check \
+   projects/sat/lrat/incremental/lrat-check.* \
+   projects/sat/lrat/cube/cube-check \
+   projects/sat/lrat/cube/cube-check.* \
+   projects/apply-model/ex1/evaluation-apply.lisp \
+   projects/apply-model/ex1/evaluation-user-defs.lisp \
+   projects/apply-model/ex2/evaluation-apply.lisp \
+   projects/apply-model/ex2/evaluation-user-defs.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
    doc/xdoc.sao \
-   projects/apply-model/ex1/evaluation-apply.lisp \
-   projects/apply-model/ex1/evaluation-user-defs.lisp \
-   projects/apply-model/ex2/evaluation-apply.lisp \
-   projects/apply-model/ex2/evaluation-user-defs.lisp
 
 .PHONY: clean_books clean
 
