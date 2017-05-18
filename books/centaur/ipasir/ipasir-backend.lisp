@@ -35,15 +35,10 @@
 (include-book "centaur/satlink/dimacs-lits" :dir :system)
 (include-book "tools/include-raw" :dir :system)
 (include-book "centaur/quicklisp/cffi" :dir :system)
+; cert_param: (uses-ipasir)
 
-
-;; (depends-on "ipasir-interface-raw.lsp")
-(defttag ipasir-raw)
+; (depends-on "ipasir-interface-raw.lsp")
+; (depends-on "load-ipasir-sharedlib-raw.lsp")
+(defttag ipasir-backend)
+(acl2::include-raw "load-ipasir-sharedlib-raw.lsp")
 (acl2::include-raw "ipasir-interface-raw.lsp" :host-readtable t)
-
-         
-
-
-
-
-

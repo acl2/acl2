@@ -673,17 +673,14 @@ install the under-the-hood backend and therefore doesn't require any trust
 tags.  Additionally, \"ipasir-tools.lisp\" builds on that to create some useful
 shortcuts, also without any trust tags.</p>
 
-<p>To load the generic backend, include \"ipasir-interface.lisp\", which overrides the
-executable definitions of the ipasir interface functions so that they instead
-call C functions in the ipasir interface.  But these C functions won't exist
-until you load an actual SAT solver library.</p>
+<p>To load the backend, include \"ipasir-backend.lisp\".  This book first loads
+the shared library specified by the environmnent variable
+IPASIR_SHARED_LIBRARY, which should contain the path to a SAT solver shared
+library. It then overrides the executable definitions of the ipasir interface
+functions so that they instead call the appropriate functions from the shared
+library.</p>
 
-<p>The book \"ipasir-sharedlib.lisp\" loads the backend library.  For this to
-work, the environment variable IPASIR_SHARED_LIBRARY should be set to the full
-path of the shared library to be loaded.  This book uses the Quicklisp CFFI
-library, so it depends on @(see acl2::Quicklisp).</p>
-
-<p>To build a suitable backend library, you can start with the examples
+<p>To build a suitable SAT solver shared library, you can start with the examples
 included in the ipasir distribution, available 
 <a href=\"https://github.com/biotomas/ipasir\">here</a>.
 Additionally, the incremental solvers that competed in the

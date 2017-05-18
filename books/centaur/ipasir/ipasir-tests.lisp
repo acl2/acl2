@@ -32,8 +32,7 @@
 (in-package "IPASIR")
 
 (include-book "ipasir-tools")
-(include-book "ipasir-interface")
-(include-book "ipasir-sharedlib")
+(include-book "ipasir-backend")
 (include-book "centaur/misc/arith-equiv-defs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
