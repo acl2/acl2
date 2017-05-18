@@ -268,7 +268,8 @@ either upper or lower case, treating - and _ as equivalent, and with or without
        (type (vl-warning-type-mash x1.type))
        ((when (or (vl-lint-scan-for-ignore x1.context type)
                   (vl-lint-scan-for-ignore x1.args type)))
-        (vl-lint-suppress-warnings (cdr x))))
+        (cons (change-vl-warning (car x) :suppressedp t)
+              (vl-lint-suppress-warnings (cdr x)))))
     (cons (vl-warning-fix (car x))
           (vl-lint-suppress-warnings (cdr x)))))
 

@@ -265,6 +265,8 @@
 
 (include-book "kestrel/top" :dir :system)
 
+(include-book "centaur/ipasir/ipasir-tools" :dir :system)
+
 ;; [Jared] keep these near the end to avoid expensive type prescription rules,
 ;; especially related to consp-append.
 (include-book "data-structures/top" :dir :system)

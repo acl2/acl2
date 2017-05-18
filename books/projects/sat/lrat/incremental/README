@@ -1,6 +1,7 @@
 See ../README for information about this project for checking lrat
 proofs.
 
-More will likely be written here later.  In short, this directory
-improves on previous checkers by reading incrementally from the
-compressed lrat (.clrat) proof file.
+This directory improves on previous checkers by reading incrementally
+from the compressed lrat (.clrat) proof file, and by proving a
+soundness theorem that more directly supports trust in the checker's
+claims.
