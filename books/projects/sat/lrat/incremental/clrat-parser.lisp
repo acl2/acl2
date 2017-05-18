@@ -1143,18 +1143,20 @@
   (b* ((str (read-file-into-string file-name))
        ((unless (stringp str))
         (prog2$ (er hard? 'cnf-read-file
-                    "cnf-read-file: (read-file-into-string ~x0 .~%" file-name)
+                    "Unable to read file ~x0." file-name)
                 nil))
        (len (length str))
        ((unless (< len *2^56*))
         (prog2$ (er hard? 'cnf-read-file
-                    "cnf-read-file:  file ~x0 is too long.~%" file-name)
+                    "File ~x0 has length ~x1, which exceeds the maximum of ~
+                     2^56-1 (~x2)."
+                    file-name len (1- *2^56*))
                 nil))
        ;; Skip forward until the beginning of an integer
        (start (pos-at-next-digit-or-minus-char str len 0))
        ((unless (lrat-guard str len start))
         (prog2$ (er hard? 'cnf-read-file
-                    "cnf-read-file:  LRAT-GUARD fails.~%")
+                    "Possible implementation error: LRAT-GUARD failed.~%")
                 nil))
        ((mv & rev-lines)
          (cnf-str str len start 1 nil)))
