@@ -7177,16 +7177,19 @@
 
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)
 
-; WARNING: Before relaxing the requirement implemented by this check, consider
-; the comment in oneify-cltl-code about invariant-risk that says: "... since
-; :logic mode definitions cannot contain calls of :program mode functions,
-; :ideal functions should lead only to calls of *1* :logic-mode functions until
-; reaching a guard-compliant call of a guard-verified function."
-
 ; Assume we are defining names in terms of terms (1:1 correspondence).  Assume
 ; also that the definitions are to be :logic.  Then we insist that every
 ; function used in terms be :logic.  Str is a string used in our error
 ; message and is either "guard", "split-types expression", or "body".
+
+; WARNING: This function guarantees that a call of a :logic mode function
+; cannot lead to a call of a :program mode function.  This guarantee justifies
+; the restriction, implemented in oneify-cltl-code, that only :program mode
+; functions lay down *1* code that is sensitive to invariant-risk.  It seems
+; conceivable that without the guarantee, a :logic mode function could lead to
+; a call of a :program mode function that violates stobj invariants or writes
+; past the end of an array.  So be careful when considering a relaxation of
+; this guarantee!
 
   (cond ((null names) (value nil))
         (t (let ((bad (collect-programs
