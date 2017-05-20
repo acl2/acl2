@@ -30,7 +30,7 @@
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
 
 ; Added for fixers support. [2016-02-19 Fri]
-(include-book "centaur/gl/gl" :dir :system)
-(include-book "centaur/satlink/top" :dir :system)
-(include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all)
-(include-book "centaur/satlink/check-config" :dir :system)
+;; (include-book "centaur/gl/gl" :dir :system)
+;; (include-book "centaur/satlink/top" :dir :system)
+;; (include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all)
+;; (include-book "centaur/satlink/check-config" :dir :system)
