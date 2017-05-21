@@ -48,7 +48,6 @@ if [ "$error" != "" ] ; then \
     exit 1 ; \
 fi
 
-# cnf_infile=" \"$1\""
 cnf_infile=" \"$1\""
 clrat_infile=" \"$2\""
 cnf_outfile=" \"$3\""

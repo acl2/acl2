@@ -1,3 +1,6 @@
+See ../README for information about this project for checking lrat
+proofs.
+
 OVERALL STRUCTURE of cube-and-conquer proof effort, where a cube is a
 conjunction of literals:
 
