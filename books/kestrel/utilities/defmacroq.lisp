@@ -7,7 +7,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc defmacroq
-  :parents (macros defmacro)
+  :parents (macros defmacro kestrel-utilities)
   :short "Define a macro that quotes arguments not wrapped in @(':eval')"
   :long "<p>@('Defmacroq') has the same general form as @('defmacro') (see
  @(see defmacro)), that is:</p>
