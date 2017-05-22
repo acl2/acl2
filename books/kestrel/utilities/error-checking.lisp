@@ -357,6 +357,12 @@
   "Cause an error if a value is not a symbol."
   (((symbolp x) "~@0 must be a symbol." description)))
 
+(def-error-checker ensure-symbol-list
+  ((x "Value to check."))
+  "Cause an error if a value is not a @('nil')-terminated list of symbols."
+  (((symbol-listp x)
+    "~@0 must be a NIL-terminated alist of symbols." description)))
+
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
   "Cause an error if a value is not an alist whose keys are symbols."
