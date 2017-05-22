@@ -365,7 +365,8 @@
 
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
-  "Cause an error if a value is not an alist whose keys are symbols."
+  "Cause an error if a value is not a @('nil')-terminated alist
+   whose keys are symbols."
   (((symbol-alistp x)
     "~@0 must be an alist with symbols as keys." description)))
 
