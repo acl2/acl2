@@ -21297,11 +21297,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-ruler-extenders (x)
-
-; It seems a bit sad to evaluate x twice, but that seems kind of unavoidable if
-; we are to use a table event to set the acl2-defaults-table, since WORLD is
-; not available for the expression of that event.
-
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (er-progn

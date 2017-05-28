@@ -357,9 +357,9 @@
                                               (car t-machine)
                                               :call)))))
 
-; If argn is nil then it means there was no enough args to get the one at pos.
-; This can happen in a mutually recursive clique not all clique members have the
-; same arity.
+; If argn is nil then it means there were not enough args to get the one at
+; pos.  This can happen in a mutually recursive clique where not all clique
+; members have the same arity.
 
                 (and argn
                      (proper-dumb-occur-as-output var argn))))
@@ -7701,7 +7701,12 @@
                                     ctx wrld2
                                     state))
       (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
-                                                    ctx wrld2 state))
+                                                    ctx
+
+; Warning: If you move this binding of ruler-extenders-lst, then consider
+; whether the 'formals property is still set on the new functions in wrld2.
+
+                                                    wrld2 state))
       (rel (get-unambiguous-xargs-flg
             :WELL-FOUNDED-RELATION
             fives
