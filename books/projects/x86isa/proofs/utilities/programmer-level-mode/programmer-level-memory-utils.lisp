@@ -1,5 +1,5 @@
 ;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+;; Shilpi Goel <shilpi@centtech.com>
 
 (in-package "X86ISA")
 
@@ -190,7 +190,9 @@
 
 ;; ======================================================================
 
-;; Lemmas about the interaction of rb and wb:
+;; Some lemmas about the interaction of rb and wb:
+
+;; rb-wb-disjoint --- rb reads bytes not written by wb:
 
 (local
  (defthm rvm08-wb-1-disjoint
@@ -220,6 +222,8 @@
            :use ((:instance rb-1-wb-1-disjoint))
            :in-theory (e/d* (rb wb) (rb-1-wb-1-disjoint wb-1 rb-1)))))
 
+;; rb-wb-equal --- rb reads all the bytes written by wb:
+
 (local
  (defthm rb-1-wb-1-equal
    (implies (and (canonical-address-p addr)
@@ -241,208 +245,144 @@
                   (loghead (ash n 3) val)))
   :hints (("Goal" :in-theory (e/d* (wb) (rb-1 wb-1)))))
 
-#||
-
-;; TODO Prove rb-wb-subset...
-
-(defthm rb-1-wb-1-subset
-  (implies (and
-            ;; (< addr-1 (+ n-2 addr-2))
-            ;; (< addr-2 (+ n-1 addr-1))
-            (not
-             (or (<= (+ n-2 addr-2) addr-1)
-                 (<= (+ n-1 addr-1) addr-2)))
-            (canonical-address-p addr-1)
-            (canonical-address-p (+ -1 n-1 addr-1))
-            (canonical-address-p addr-2)
-            (canonical-address-p (+ -1 n-2 addr-2))
-            (unsigned-byte-p (ash n-2 3) val)
-            (posp n-1)
-            (posp n-2)
-            (x86p x86))
-           (equal (mv-nth 1 (rb-1 n-1 addr-1 r-x
-                                  (mv-nth 1 (wb-1 n-2 addr-2 w val x86))))
-                  (part-select val
-                               :low (ash (- n-2 n-1) 3)
-                               :width (ash n-1 3))))
-  :hints (("Goal" :in-theory (e/d* (ifix
-                                    nfix
-                                    rb-1-opener-theorem
-                                    wb-1-opener-theorem)
-                                   (unsigned-byte-p)))))
+;; rb-wb-subset --- rb reads a subset of the bytes written by wb:
 
 (local
- (defthm rb-wb-equal-assoc-helper-1
-   (implies (and (alistp xs)
-                 (member-p a (cdr (strip-cars xs))))
-            (equal (assoc a (acl2::rev (cdr xs)))
-                   (assoc a (acl2::rev xs))))))
+ (defthmd rb-1-wb-1-subset-helper-1
+   (implies (and (< (+ addr-1 n-1) (+ addr-2 n-2))
+                 (<= addr-2 addr-1)
+                 (canonical-address-p addr-2)
+                 (canonical-address-p (+ -1 n-2 addr-2))
+                 (not (zp n-1)))
+            (signed-byte-p 48 (+ 1 addr-2)))))
 
 (local
- (defthm rb-wb-equal-assoc-list-helper-1
-   (implies (and (alistp xs)
-                 (subset-p as (strip-cars (cdr xs))))
-            (equal (assoc-list as (acl2::rev (cdr xs)))
-                   (assoc-list as (acl2::rev xs))))
+ (defthmd rb-1-wb-1-same-start-address-different-op-sizes
+   (implies (and
+             (< n-1 n-2)
+             (canonical-address-p addr-1)
+             (canonical-address-p (+ -1 n-1 addr-1))
+             (canonical-address-p (+ -1 n-2 addr-1))
+             (unsigned-byte-p (ash n-2 3) val)
+             (posp n-1)
+             (posp n-2)
+             (x86p x86))
+            (equal (mv-nth 1 (rb-1 n-1 addr-1 r-x
+                                   (mv-nth 1 (wb-1 n-2 addr-1 w val x86))))
+                   (loghead (ash n-1 3) val)))
    :hints (("Goal"
-            :in-theory (e/d (subset-p)
-                            (rb-wb-equal-assoc-helper-1))
-            :use ((:instance rb-wb-equal-assoc-helper-1
-                             (a (car as))
-                             (xs xs)))))))
+            :induct (rb-1 n-1 addr-1 r-x (mv-nth 1 (wb-1 n-2 addr-1 w val x86)))
+            :in-theory (e/d* (ifix
+                              nfix
+                              rb-1-opener-theorem
+                              wb-1-opener-theorem
+                              rb-1-wb-1-subset-helper-1)
+                             (unsigned-byte-p))))))
+
+(defun-nx rb-1-wb-1-induction-scheme (n-1 a-1 n-2 a-2 val x86)
+;                      a-2
+;   ------------------------------------------------------------------------
+; ...   |   |   |   | w | w | w | w |   |   |   |   |   |   |   |   |   |  ...
+;   ------------------------------------------------------------------------
+;   0                    a-1                                               max
+  (cond ((or (zp n-1) (zp n-2) (<= n-2 n-1))
+         (mv n-1 a-1 n-2 a-2 val x86))
+        ((equal a-1 a-2)
+         ;; n-1 and n-2 are irrelevant here.  See
+         ;; rb-1-wb-1-same-start-address-different-op-sizes.
+         (mv n-1 a-1 n-2 a-2 val x86))
+        ((< a-2 a-1)
+         ;; Write a byte that won't be read by rb-1.
+         (b* (((mv & x86)
+               (wvm08 a-2 (loghead 8 val) x86))
+              (n-2 (1- n-2))
+              (a-2 (1+ a-2))
+              (val (logtail 8 val)))
+           (rb-1-wb-1-induction-scheme n-1 a-1 n-2 a-2 val x86)))))
 
 (local
- (defthm rb-wb-equal-assoc-list-helper-2
-   (implies (addr-byte-alistp addr-lst)
-            (equal (assoc-list (strip-cars (remove-duplicate-keys (cdr addr-lst)))
-                               (acl2::rev (cdr addr-lst)))
-                   (assoc-list (strip-cars (remove-duplicate-keys (cdr addr-lst)))
-                               (acl2::rev addr-lst))))
+ (defthm rb-1-wb-1-subset
+   (implies (and
+             (< (+ addr-1 n-1) (+ addr-2 n-2))
+             (<= addr-2 addr-1)
+             (canonical-address-p addr-1)
+             (canonical-address-p (+ -1 n-1 addr-1))
+             (canonical-address-p addr-2)
+             (canonical-address-p (+ -1 n-2 addr-2))
+             (unsigned-byte-p (ash n-2 3) val)
+             (posp n-1)
+             (posp n-2)
+             (x86p x86))
+            (equal (mv-nth 1 (rb-1 n-1 addr-1 r-x
+                                   (mv-nth 1 (wb-1 n-2 addr-2 w val x86))))
+                   (part-select val
+                                :low (ash (- addr-1 addr-2) 3)
+                                :width (ash n-1 3))))
    :hints (("Goal"
-            :expand (assoc-list (strip-cars (remove-duplicate-keys (cdr addr-lst)))
-                                (acl2::rev addr-lst))))))
+            :induct (rb-1-wb-1-induction-scheme n-1 addr-1 n-2 addr-2 val x86)
+            :in-theory (e/d* (ifix
+                              nfix
+                              rb-1-opener-theorem
+                              wb-1-opener-theorem
+                              rb-1-wb-1-subset-helper-1
+                              rb-1-wb-1-same-start-address-different-op-sizes)
+                             (unsigned-byte-p
+                              signed-byte-p))))))
 
-(local
- (defthm not-member-assoc-equal-with-rev-and-strip-cars-alt
-   (implies (and (alistp xs)
-                 (not (member-p (car (car xs)) (strip-cars (cdr xs)))))
-            (equal (cdr (assoc (car (car xs)) (acl2::rev xs)))
-                   (cdr (car xs))))
-   :hints (("Goal" :in-theory (e/d* ()
-                                    (not-member-assoc-equal-with-rev-and-strip-cars))
-            :use ((:instance not-member-assoc-equal-with-rev-and-strip-cars
-                             (xs (cdr xs))
-                             (a (car (car xs)))
-                             (b (cdr (car xs)))))))))
-
-(local
- (defthm rvm08-wb-1-not-member-p
-   (implies (and (not (member-p addr (strip-cars addr-lst)))
-                 (programmer-level-mode x86))
-            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
-                   (mv-nth 1 (rvm08 addr x86))))
-   :hints (("Goal" :in-theory (e/d (wm08) ())))))
-
-(local
- (defthm rvm08-wb-1-member-p-helper
-   (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
-                 (programmer-level-mode x86)
-                 (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 addr-lst x86))))
-                   (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal"
-            :in-theory (e/d (wm08 member-p)
-                            (unsigned-byte-p
-                             signed-byte-p))))))
-
-(local
- (defthm rvm08-wb-member-p-helper
-   (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
-                 (programmer-level-mode x86)
-                 (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst w x86))))
-                   (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal" :in-theory (e/d (wb)
-                                   (wb-by-wb-1-for-programmer-level-mode-induction-rule
-                                    reverse
-                                    assoc-equal
-                                    wb-1
-                                    signed-byte-p
-                                    unsigned-byte-p))))))
-
-(local
- (defthm rm08-wb-member-p-helper
-   (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
-                 (programmer-level-mode x86)
-                 (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst w x86))))
-                   (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal" :in-theory (e/d (rm08)
-                                   (wb-by-wb-1-for-programmer-level-mode-induction-rule
-                                    reverse
-                                    assoc-equal
-                                    wb-1
-                                    signed-byte-p
-                                    unsigned-byte-p))))))
-
-(local
- (defthm rm08-wb-member-p
-   (implies (and (member-p addr (strip-cars addr-lst))
-                 (programmer-level-mode x86)
-                 (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst w x86))))
-                   (cdr (assoc-equal addr (reverse addr-lst)))))))
-
-;; (defthm rb-wb-subset
-;;   (implies (and (subset-p addresses (strip-cars addr-lst))
-;;                 (programmer-level-mode x86)
-;;                 ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
-;;                 ;; could remove it if I proved something like
-;;                 ;; subset-p-strip-cars-of-remove-duplicate-keys,
-;;                 ;; commented out below.
-;;                 (canonical-address-listp addresses)
-;;                 (addr-byte-alistp addr-lst))
-;;            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-;;                   (assoc-list addresses (reverse addr-lst))))
-;;   :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
-
-(local
- (defthm rb-wb-subset-helper
-   (implies (and (equal (mv-nth 1
-                                (rb-1 (cdr addresses)
-                                      r-w-x (mv-nth 1 (wb addr-lst w x86))
-                                      nil))
-                        (assoc-list (cdr addresses)
-                                    (acl2::rev addr-lst)))
-                 (subset-p addresses (strip-cars addr-lst))
-                 (xr :programmer-level-mode 0 x86)
-                 (integerp (car addresses))
-                 (<= -140737488355328 (car addresses))
-                 (< (car addresses) 140737488355328)
-                 (canonical-address-listp (cdr addresses))
-                 (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1
-                           (rb-1 addresses
-                                 r-w-x (mv-nth 1 (wb addr-lst w x86))
-                                 nil))
-                   (cons (cdr (assoc-equal (car addresses)
-                                           (acl2::rev addr-lst)))
-                         (assoc-list (cdr addresses)
-                                     (acl2::rev addr-lst)))))
-   :hints (("Goal" :expand (rb-1 addresses r-w-x (mv-nth 1 (wb addr-lst w x86)) nil)
-            :in-theory (e/d (subset-p) ())))))
 
 (defthm rb-wb-subset
-  (implies (and (subset-p addresses (strip-cars addr-lst))
-                (programmer-level-mode x86)
-                ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
-                ;; could remove it if I proved something like
-                ;; subset-p-strip-cars-of-remove-duplicate-keys,
-                ;; commented out below.
-                (canonical-address-listp addresses)
-                (addr-byte-alistp addr-lst))
-           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst w x86))))
-                  (assoc-list addresses (acl2::rev addr-lst))))
-  :hints (("Goal"
-           :in-theory (e/d* (subset-p) ())
-           :induct (assoc-list addresses (reverse addr-lst)))))
+  (implies
+   (and (programmer-level-mode x86)
+        (< (+ addr-1 n-1) (+ addr-2 n-2))
+        (<= addr-2 addr-1)
+        (canonical-address-p addr-1)
+        (canonical-address-p (+ -1 n-1 addr-1))
+        (canonical-address-p addr-2)
+        (canonical-address-p (+ -1 n-2 addr-2))
+        (unsigned-byte-p (ash n-2 3) val)
+        (posp n-1)
+        (posp n-2)
+        (x86p x86))
+   (equal (mv-nth 1 (rb n-1 addr-1 r-x (mv-nth 1 (wb n-2 addr-2 w val x86))))
+          (part-select val :low (ash (- addr-1 addr-2) 3) :width (ash n-1 3)))))
+
+;; rb-rb-subset --- rb re-reads bytes previously read by rb:
+
+(local
+ (defthmd rb-1-rb-1-subset-helper-1
+   (implies (and (posp j)
+                 (x86p x86))
+            (equal (loghead (ash j 3) (mv-nth 1 (rvm08 addr x86)))
+                   (mv-nth 1 (rvm08 addr x86))))
+   :hints (("Goal" :in-theory (e/d* () (n08p-mv-nth-1-rvm08 unsigned-byte-p))
+            :use ((:instance n08p-mv-nth-1-rvm08))))))
+
+(local
+ (encapsulate
+   ()
+   (local (include-book "arithmetic-3/top" :dir :system))
+
+   (defthmd rb-1-rb-1-subset-helper-2
+     (implies (and (natp j)
+                   (natp x))
+              (equal (ash (loghead (ash j 3) x) 8)
+                     (loghead (ash (1+ j) 3) (ash x 8))))
+     :hints (("Goal" :in-theory (e/d* (loghead ash) ()))))))
 
 (defthmd rb-rb-subset
-  ;; [Shilpi]: This theorem can be generalized so that the conclusion
-  ;; mentions addr1, where addr1 <= addr.  Also, this is an expensive
-  ;; rule. Keep it disabled.
-  (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
-                       bytes)
+  ;; [Shilpi]: Expensive rule. Keep this disabled.
+  (implies (and (equal (mv-nth 1 (rb i addr r-x-i x86)) val)
                 (canonical-address-p (+ -1 i addr))
-                (canonical-address-p addr)
-                (xr :programmer-level-mode 0 x86)
-                (posp i)
-                (< j i))
-           (equal (mv-nth 1 (rb (create-canonical-address-list j addr) r-w-x x86))
-                  (take j bytes)))
-  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p) ()))))
-
-||#
+                (posp j)
+                (< j i)
+                (programmer-level-mode x86)
+                (x86p x86))
+           (equal (mv-nth 1 (rb j addr r-x-j x86))
+                  (loghead (ash j 3) val)))
+  :hints (("Goal"
+           :in-theory (e/d* (rb-1-rb-1-subset-helper-1
+                             rb-1-rb-1-subset-helper-2)
+                            (unsigned-byte-p)))))
 
 ;; ----------------------------------------------------------------------
 

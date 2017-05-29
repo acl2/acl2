@@ -63,29 +63,17 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb):
     <br/>
-    Monitor @('rb-in-terms-of-nth-and-pos').
+    Monitor @('one-read-with-rb-from-prog-at').
     </li>
 
    <li>When monitoring other rules above indicates that ACL2 can't
     resolve that the program remained unchanged (@(see
-    program-at)) after a write operation @(see wb) occurred: <br/>
-    Monitor @('program-at-wb-disjoint'). <br/>
+    prog-at)) after a write operation @(see wb) occurred: <br/>
+    Monitor @('prog-at-wb-disjoint'). <br/>
     <br/>
     An instance of where monitoring this rule might be helpful is when
-    the @('program-at') hypothesis of @('rb-in-terms-of-nth-and-pos')
+    the @('prog-at') hypothesis of @('rb-in-terms-of-nth-and-pos')
     is not being relieved.
-   </li>
-
-   <li>When inferring the canonical nature of a linear address:<br/>
-    Monitor @('member-p-canonical-address-listp'). <br/>
-    <br/>
-    This is useful if you believe that the canonical nature of a
-    linear address should be inferable from the canonical nature of a
-    list of addresses, of which that address is a member.  An instance
-    of where monitoring this rule
-    might be helpful is when the @('member-p') hypothesis of
-    @('rb-in-terms-of-nth-and-pos') is not
-    being relieved.
    </li>
 
    <li>When reasoning about disjointness/overlap of memory regions: <br/>
@@ -132,13 +120,9 @@
 
  <h3>Rules related to instruction fetches and program location</h3>
 
- @(def rb-in-terms-of-nth-and-pos)
+ @(def one-read-with-rb-from-prog-at)
 
- @(def program-at-wb-disjoint)
-
- <h3>Rules related to canonical linear addresses</h3>
-
- @(def member-p-canonical-address-listp)
+ @(def prog-at-wb-disjoint)
 
  <h3>Rules related to disjointness/overlap of memory regions</h3>
 
