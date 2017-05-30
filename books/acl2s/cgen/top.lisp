@@ -473,6 +473,13 @@ information in a human-readable form. </p>
 (acl2s-defaults :set sampling-method :random)
 
 
+(defconst *fixers-enabled* nil)
+
 ; [2016-04-03 Sun] Add fixers support to Cgen
-(include-book "fixers2" :ttags :all)
-(include-book "cgen-rules")
+
+(make-event
+ (if *fixers-enabled*
+     '(progn
+        (include-book "fixers2" :ttags :all)
+        (include-book "cgen-rules"))
+   '(value-triple :invisible)))
