@@ -192,9 +192,10 @@
 
 (with-arithmetic-help-5
  (defthm nat-to-clrat-num-helper
-   (implies (< 127 nat)
-         (< (integer-abs (ash nat -7))
-            (acl2-count nat)))))
+   (implies (and (integerp nat) ; needed for ACL2(r) proof
+                 (< 127 nat))
+            (< (integer-abs (ash nat -7))
+               (acl2-count nat)))))
 
 (defun list-of-integer-listp (x)
   (declare (xargs :guard t))
