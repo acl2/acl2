@@ -50,6 +50,7 @@ downloaded from the webpage.
 
 ; Make a Glucose satlink config
 (defconst *my-config* (satlink::make-config :cmdline "glucose"))
+;; (defconst *my-config* (satlink::make-config :cmdline "cryptominisat5.exe"))
 
 (defun gl-my-satlink-config ()
   (declare (xargs :guard t))
