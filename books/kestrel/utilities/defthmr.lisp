@@ -7,7 +7,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc defthmr
-  :parents (defthm events)
+  :parents (defthm events kestrel-utilities)
   :short "Submit a theorem, as a @(see rewrite) rule only if possible."
   :long "<p>@('Defthmr') stands for ``defthm rule''.  It is a macro that is
  intended to be equivalent to @(tsee defthm) &mdash; in particular, it takes

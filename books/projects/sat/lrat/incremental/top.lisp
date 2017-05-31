@@ -658,7 +658,10 @@
 
 (defun verify-clause$ (formula add-step ncls ndel a$)
 
-; This function leaves a$ptr the way it found it.
+; In the normal case this function returns (mv ncls ndel formula a$) for new
+; ncls, ndel, formula, and a$.  Otherwise it returns (mv nil _ formula a$)
+; where formula is unchanged, but in that case a hard error occurs.  Note that
+; a$ptr is the same for the input and output a$.
 
   (declare (xargs :stobjs a$
                   :guard
@@ -1038,11 +1041,18 @@
       (:complete (mv t a$))
       (:incomplete (mv (or incomplete-okp
                            (er hard? ctx
-                               "Incomplete proof!"))
+                               "The proof is valid but does not contain the ~
+                                empty clause."))
                        a$))
-      (t (mv (er hard? ctx
-                 "Invalid proof!")
-             a$)))))
+      (t
+
+; We do not expect to reach the following case.  If nil is returned as the
+; first value, it is ultimately because an error occurred.  In particular,
+; verify-clause$ either succeeds or causes an error.
+
+       (mv (er hard? ctx
+               "Invalid proof!")
+           a$)))))
 
 ; Verify-termination doesn't work here because of how ACL2 handles make-event
 ; during certification.  Hopefully this will be fixed.
@@ -1146,7 +1156,10 @@
         not.~|~x0"
        clrat-file))
      ((not (ordered-formula-p formula))
-      (er-soft-logic ctx "An invalid formula was supplied by the parser!"))
+      (er-soft-logic ctx
+                     "An invalid formula was supplied by the parser from ~
+                      input file ~x0."
+                     cnf-file))
      (t
       (mv-let (clrat-file-length state)
         (file-length$ clrat-file state)

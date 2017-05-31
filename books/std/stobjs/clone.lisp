@@ -149,8 +149,8 @@ the other keyword arguments are unused.  For example:</p>
 (defun clone-stobj-process-rename-alist (rename-alist renaming)
   (if (atom rename-alist)
       nil
-    (cons (cons (clone-stobj-change-symbol (caar rename-alist) renaming)
-                (clone-stobj-change-symbol (cdar rename-alist) renaming))
+    (cons (list (clone-stobj-change-symbol (caar rename-alist) renaming)
+                (clone-stobj-change-symbol (cadar rename-alist) renaming))
           (clone-stobj-process-rename-alist (cdr rename-alist) renaming))))
 
 (defun clone-stobj-process-fields (fields renaming)
@@ -197,12 +197,9 @@ the other keyword arguments are unused.  For example:</p>
        ((when erp)
         (er hard? 'defstobj-clone
             "The stobj to be cloned had bad keyword args~%"))
-       (rename-alist (cdr (assoc-eq :renaming key-alist)))
-       (new-renaming (clone-stobj-process-rename-alist rename-alist renaming))
        (inline (assoc-eq :inline key-alist))
        (fields (clone-stobj-process-fields field-descriptors renaming)))
     (append fields
-            (and renaming (list :renaming new-renaming))
             (and inline (list :inline (cdr inline)))
             (list
 ; Matt K. mod: :doc is no longer supported for defstobj after v7-1
