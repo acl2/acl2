@@ -3301,7 +3301,8 @@ doesn't have to recreate the default heuristics.</p>"
                    (consp (cdr solos))))
         (list (make-vl-warning :type :vl-lucid-multidrive
                                :msg "~w0 has multiple drivers:~%~s1"
-                               :args (list name (vl-lucid-multidrive-summary solos))
+                               :args (list name (vl-lucid-multidrive-summary solos)
+                                           item)
                                :fn __function__)))
 
        ;; If we get this far, there aren't any whole-wire conflicts.  Let's see
@@ -3324,7 +3325,8 @@ doesn't have to recreate the default heuristics.</p>"
                              (vl-pp-ctxelement-summary (vl-lucidctx->elem (vl-lucidocc->ctx (car solos)))
                                                        :withloc t)
                              (vl-println "")
-                             (vl-lucid-pp-multibits (mergesort allbits) resolved item)))
+                             (vl-lucid-pp-multibits (mergesort allbits) resolved item))
+                           item)
                :fn __function__)))
 
        ;; Otherwise, there aren't any writes to the whole wire, but there may
@@ -3338,7 +3340,8 @@ doesn't have to recreate the default heuristics.</p>"
            :type :vl-lucid-multidrive
            :msg "~w0 has multiple drivers on some bits:~%~s1"
            :args (list name (with-local-ps
-                              (vl-lucid-pp-multibits (mergesort dupes) resolved item)))
+                              (vl-lucid-pp-multibits (mergesort dupes) resolved item))
+                       item)
            :fn __function__))))
 
 (define vl-lucid-check-uses-are-spurious-instances ((name stringp)
@@ -3455,7 +3458,8 @@ doesn't have to recreate the default heuristics.</p>"
               (warn :type :vl-lucid-unused
                     :msg "~s0 ~w1 is set but is never used. (~s2)"
                     :args (list vartype name
-                                (with-local-ps (vl-pp-scopestack-path ss)))))
+                                (with-local-ps (vl-pp-scopestack-path ss))
+                                item)))
              ((when used-solop)
               ;; The variable is used somewhere all by itself without any
               ;; indexing, so there's no reason to do any bit-level analysis.
@@ -3479,7 +3483,8 @@ doesn't have to recreate the default heuristics.</p>"
                 :msg "~s0 ~w1 has some bits that are never used: ~s2. (~s3)"
                 :args (list vartype name
                             (vl-lucid-summarize-bits unused-bits)
-                            (with-local-ps (vl-pp-scopestack-path ss))))))
+                            (with-local-ps (vl-pp-scopestack-path ss))
+                            item))))
 
        ;; Try to warn about any unset bits
        (warnings
@@ -3489,11 +3494,13 @@ doesn't have to recreate the default heuristics.</p>"
                    ((when just-passed-to-spurious-instances)
                     (warn :type :vl-lucid-spurious-port
                           :msg "~s0 ~w1 is never set and is only passed to module instances where it is not used. (~s2)"
-                          :args (list vartype name (with-local-ps (vl-pp-scopestack-path ss))))))
+                          :args (list vartype name (with-local-ps (vl-pp-scopestack-path ss))
+                                      item))))
                 (warn :type :vl-lucid-unset
                       :msg "~s0 ~w1 is used but is never initialized. (~s2)"
                       :args (list vartype name
-                                  (with-local-ps (vl-pp-scopestack-path ss))))))
+                                  (with-local-ps (vl-pp-scopestack-path ss))
+                                  item))))
              ((when set-solop)
               warnings)
              ((unless (and simplep
@@ -3509,7 +3516,7 @@ doesn't have to recreate the default heuristics.</p>"
                 :args (list vartype name
                             (vl-lucid-summarize-bits unset-bits)
                             (with-local-ps (vl-pp-scopestack-path ss))
-                            )))))
+                            item)))))
     warnings))
 
 (define vl-lucid-dissect-pair ((key vl-lucidkey-p)
@@ -3545,7 +3552,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Function ~w0 is never used. (~s1)"
                                 :args (list (vl-fundecl->name key.item)
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -3563,19 +3571,19 @@ doesn't have to recreate the default heuristics.</p>"
             (w (cond ((and (not usedp) (not setp))
                       (make-vl-warning :type :vl-lucid-spurious
                                        :msg "Genvar ~w0 is never used or set anywhere. (~s1)"
-                                       :args (list name path)
+                                       :args (list name path key.item)
                                        :fn __function__
                                        :fatalp nil))
                      ((and usedp (not setp))
                       (make-vl-warning :type :vl-lucid-unset
                                        :msg "Genvar ~w0 is never set. (~s1)"
-                                       :args (list name path)
+                                       :args (list name path key.item)
                                        :fn __function__
                                        :fatalp nil))
                      (t
                       (make-vl-warning :type :vl-lucid-unused
                                        :msg "Genvar ~w0 is never used. (~s1)"
-                                       :args (list name path)
+                                       :args (list name path key.item)
                                        :fn __function__
                                        :fatalp nil)))))
          (vl-extend-reportcard topname w reportcard)))
@@ -3589,7 +3597,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Modport ~s0 is never used. (~s1)"
                                 :args (list (vl-modport->name key.item)
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -3600,7 +3609,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "DPI imported function ~w0 is never used. (~s1)"
                                 :args (list (vl-dpiimport->name key.item)
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -3611,7 +3621,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Task ~w0 is never used. (~s1)"
                                 :args (list (vl-taskdecl->name key.item)
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -3622,7 +3633,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-unused
                                 :msg "Type ~w0 is never used. (~s1)"
                                 :args (list (vl-typedef->name key.item)
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -3645,7 +3657,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-spurious
                                 :msg "Interface port ~w0 is never mentioned. (~s1)"
                                 :args (list (vl-interfaceport->name key.item)
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -3665,7 +3678,8 @@ doesn't have to recreate the default heuristics.</p>"
             (w (make-vl-warning :type :vl-lucid-spurious
                                 :msg "Interface ~w0 is never mentioned. (~s1)"
                                 :args (list key.item.instname
-                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack))
+                                            key.item)
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
