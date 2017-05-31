@@ -88,7 +88,7 @@ fail for whatever reason, @('filename') may be @('nil').</p>
   ((tempdir stringp "Directory to generate the file in")
    (basename stringp "Base name to use for the new file")
    state)
-  :returns (mv (tempfile "Somethign like @('$TEMPDIR/$USER-$PID-$BASENAME')"
+  :returns (mv (tempfile "Something like @('$TEMPDIR/$USER-$PID-$BASENAME')"
                          (or (stringp tempfile)
                              (not tempfile))
                          :rule-classes :type-prescription)
@@ -111,6 +111,14 @@ name to create a temporary filename."
     (mv path state)))
 
 
+(defun pathname-to-unix (str)
+  (declare (xargs :guard (stringp str)))
+; Copied from axioms.lisp:pathname-os-to-unix
+  (if (equal str "")
+      str
+    (let* ((sep #\\)
+           (str0 (substitute ACL2::*directory-separator* sep str)))
+      str0)))
 
 (define default-tempdir (state)
   :returns (mv (tempdir "Directory to use for temporary files."
@@ -125,11 +133,11 @@ should use @('TEMP').  If either of these is set, we try to respect the choice.
 Otherwise, we just default to @('/tmp').</p>"
 
   (b* (((mv ?err tempdir state) (getenv$ "TMPDIR" state))
-       ((mv ?err temp state)   (getenv$ "TEMP" state)))
-    (mv (or (and (stringp tempdir) tempdir)
-            (and (stringp temp) temp)
-            "/tmp")
-        state)))
+       ((mv ?err temp state)   (getenv$ "TEMP" state))
+       (tmpdir (or (and (stringp tempdir) tempdir)
+                   (and (stringp temp) (pathname-to-unix temp)) ;; ACL2 traffics in unix-style pathnames
+                   "/tmp")))
+    (mv tmpdir state)))
 
 
 (define default-tempfile ((basename stringp)

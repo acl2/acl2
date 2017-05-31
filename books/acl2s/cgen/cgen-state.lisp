@@ -319,8 +319,28 @@ cgen-state"
 
 (defattach stopping-condition? stopping-condition?-builtin)
 
-(defun membership-relationp (R) ;TODO make this more general
-  (member-equal R '(acl2::member-eq acl2::member acl2::member-eql acl2::member-equal acl2s::in |ACL2S B|::in)))
+(table cgen::builtin-relations nil
+       '((:member . (member-equal member-eq member))
+         (:assoc . (assoc-equal assoc assoc-eq assoc-eql))
+         (:equal . (=  equal eq eql int= string-equal hons-equal))
+         (:less . (< <=))
+         (:greater . (> >=)))
+       :clear)
+
+(defun membership-relationp (R wrld) ;TODO clean this up
+  (or (member-equal R '(acl2::member-eq acl2::member acl2::member-eql acl2::member-equal acl2s::in |ACL2S B|::in))
+      (b* ((br-tbl (table-alist 'cgen::builtin-relations wrld))
+           (mem-relations (get1 :member br-tbl)))
+        (member-equal R mem-relations))))
+
+(defun add-builtin-relation (key R wrld)
+  (b* ((br-tbl (table-alist 'cgen::builtin-relations wrld))
+       (relations (get1 key br-tbl))
+       (new-val (append relations (list R))))
+    new-val))
+      
+(defmacro add-member-builtin-relation (R)
+  `(table cgen::builtin-relations :member (add-builtin-relation :member ',R acl2::world) :put))
 
 
 ; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a

@@ -54,6 +54,25 @@
 ; note-x-x-books.  Instead, we hope that the ACL2 Community will track
 ; changes to the books by maintaining note-x-x-books as they go.
 
+(defxdoc release-notes-books
+
+; This is a parent for the note-x-x-books topics, so they're all visible in one
+; place.
+
+  :parents (release-notes)
+  :short "Pointers to what has changed in the community books"
+  :long "<p>This section of the online @(see documentation) contains notes on
+            the changes in the community books between successive released
+            versions of ACL2.</p>
+
+         <p>Each topic @('note-x-y-books') is a note describing what in the
+            community books distributed with ACL2 version X.Y was new in
+            comparison to the community books distributed with the preceding
+            version of ACL2.</p>
+
+         <p>The current version of ACL2 is the value of the constant @('(@
+            acl2-version)').</p>")
+
 (defxdoc note-7-5-books
 
 ; Shilpi Goel: As discussed in the ACL2 2017 Workshop, I am adding
@@ -75,7 +94,7 @@
 ; this topic, when (if?) this topic gets fleshed out (see :doc
 ; note-7-2 for precedent).
 
-  :parents (note-7-5)
+  :parents (note-7-5 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.5"
 
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -186,7 +205,7 @@
 ;
 ;     > git log --since="May 5, 2015" --no-merges --stat filename
 ;
-  :parents (note-7-2)
+  :parents (note-7-2 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.2 (Jan 2016)"
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.1 and 7.2.</p>
@@ -864,7 +883,7 @@ of course there is more to do.</p>
 found in the change log.</p>")
 
 (defxdoc note-7-1-books
-  :parents (note-7-1)
+  :parents (note-7-1 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
 
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -1247,7 +1266,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-7-0-books
-  :parents (note-7-0)
+  :parents (note-7-0 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.0 (January
  2015)"
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -1948,7 +1967,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-6-5-books
-  :parents (note-6-5)
+  :parents (note-6-5 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 6.5 (August
  2014)."
 
@@ -2689,7 +2708,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-6-4-books
-  :parents (note-6-4)
+  :parents (note-6-4 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 6.4 (January,
  2013)."
 
