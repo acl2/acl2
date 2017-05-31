@@ -256,7 +256,7 @@
   #+gcl
 
 ; Camm Maguire tells us that conses are always 16-byte aligned in 64-bit GCL
-; and 8-bit aligned in 32-bit GCL.
+; and 8-byte aligned in 32-bit GCL.
 
   `(the fixnum
         (ash (the fixnum (si::address ,x))
