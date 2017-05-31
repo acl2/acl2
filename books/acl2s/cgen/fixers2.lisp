@@ -1042,6 +1042,7 @@ should we completely be general?
   (b* ((terms (append hyps  (if (not (acl2::logic-termp concl (w state)))
                                 '()
                               (list (cgen-dumb-negate-lit concl)))))
+       (- (acl2::tshell-ensure))
        ((mv erp res state)
         (fixer-arrangement1 terms terms vl ctx state))
        ((when erp) (value (list nil nil)))
