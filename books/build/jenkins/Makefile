@@ -19,48 +19,48 @@ ACL2_FAKE_SOURCES := acl2-proclaims.lisp acl2r.lisp
 ACL2_SOURCES      := $(filter-out $(ACL2_FAKE_SOURCES), $(ACL2_ALL_SOURCES))
 ACL2_DEPS         := $(ACL2_SOURCES) GNUmakefile
 
-.PHONY: acl2c acl2cp acl2cr acl2cpr
+#.PHONY: acl2c acl2cp acl2cr acl2cpr
 .PHONY: acl2 acl2p acl2r acl2pr
 
-acl2c: saved_acl2c
-acl2cp: saved_acl2cp
-acl2cr: saved_acl2cr
-acl2cpr: saved_acl2cpr
+#acl2c: saved_acl2c
+#acl2cp: saved_acl2cp
+#acl2cr: saved_acl2cr
+#acl2cpr: saved_acl2cpr
 
 # Note that we don't use &>, because otherwise the process goes on
 # immediately, and waiting 100 seconds isn't enough for SBCL builds.
 
-saved_acl2c: $(ACL2_DEPS)
-	echo "Making ACL2(c) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR= ACL2_REAL= > make-acl2.log
-	./books/build/wait.pl make-acl2.log
-	cat make-acl2.log
-	./books/build/wait.pl saved_acl2c
-	ls -lah saved_acl2c
+#saved_acl2c: $(ACL2_DEPS)
+#	echo "Making ACL2(c) on $(LISP)"
+#	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR= ACL2_REAL= > make-acl2.log
+#	./books/build/wait.pl make-acl2.log
+#	cat make-acl2.log
+#	./books/build/wait.pl saved_acl2c
+#	ls -lah saved_acl2c
 
-saved_acl2cp: $(ACL2_DEPS)
-	echo "Making ACL2(cp) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL= > make-acl2.log
-	./books/build/wait.pl make-acl2.log
-	cat make-acl2.log
-	./books/build/wait.pl saved_acl2cp
-	ls -lah saved_acl2cp
+#saved_acl2cp: $(ACL2_DEPS)
+#	echo "Making ACL2(cp) on $(LISP)"
+#	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL= > make-acl2.log
+#	./books/build/wait.pl make-acl2.log
+#	cat make-acl2.log
+#	./books/build/wait.pl saved_acl2cp
+#	ls -lah saved_acl2cp
 
-saved_acl2cr: $(ACL2_DEPS)
-	echo "Making ACL2(cr) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR= ACL2_REAL=r > make-acl2.log
-	./books/build/wait.pl make-acl2.log
-	cat make-acl2.log
-	./books/build/wait.pl saved_acl2cr
-	ls -lah saved_acl2cr
+#saved_acl2cr: $(ACL2_DEPS)
+#	echo "Making ACL2(cr) on $(LISP)"
+#	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR= ACL2_REAL=r > make-acl2.log
+#	./books/build/wait.pl make-acl2.log
+#	cat make-acl2.log
+#	./books/build/wait.pl saved_acl2cr
+#	ls -lah saved_acl2cr
 
-saved_acl2cpr: $(ACL2_DEPS)
-	echo "Making ACL2(cpr) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL=r > make-acl2.log
-	./books/build/wait.pl make-acl2.log
-	cat make-acl2.log
-	./books/build/wait.pl saved_acl2cpr
-	ls -lah saved_acl2cpr
+#saved_acl2cpr: $(ACL2_DEPS)
+#	echo "Making ACL2(cpr) on $(LISP)"
+#	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL=r > make-acl2.log
+#	./books/build/wait.pl make-acl2.log
+#	cat make-acl2.log
+#	./books/build/wait.pl saved_acl2cpr
+#	ls -lah saved_acl2cpr
 
 
 
