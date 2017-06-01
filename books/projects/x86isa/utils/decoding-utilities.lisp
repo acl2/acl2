@@ -16,12 +16,12 @@
   Manual, Volume 2, Appendix A.2.1.</p>
 
 <p>The constants @('*one-byte-opcode-map-lst*') and
-@('*two-byte-opcode-map-lst*') contains information presented in the
+@('*two-byte-opcode-map-lst*') contain information presented in the
 opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
 
 <p>An array @('*64-bit-mode-one-byte-has-modr/m-ar*') is created by
-  the function @(see 64-bit-compute-modr/m-map) for the efficient
-  look-up of modr/m-related information from
+  the function @(tsee 64-bit-compute-modr/m-map) for the efficient
+  lookup of modr/m-related information from
   @('*one-byte-opcode-map-lst*').</p>
 
 <p>@('*Z-addressing-method-info*'):</p>
