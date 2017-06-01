@@ -51,6 +51,7 @@
 (include-book "symbol-true-list-alists")
 (include-book "terms")
 (include-book "testing")
+(include-book "trans-eval-error-triple")
 (include-book "true-list-listp-theorems")
 (include-book "typed-list-theorems")
 (include-book "typed-tuples")
