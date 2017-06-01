@@ -21,7 +21,26 @@
  state).  If @('form') is syntactically illegal, then
  @('(mv :trans-error :trans-error state)') is returned.  Otherwise,
  evaluation of @('form') should produce an error-triple @('(mv erp val
- state)'), and that error-triple is returned.</p>")
+ state)'), and that error-triple is returned.  If you don't care about @('erp')
+ or @('val'), consider using @(see trans-eval-state) instead, which does not
+ require @('form') to evaluate to an error-triple.</p>")
+
+(defxdoc trans-eval-state
+  :parents (system-utilities)
+  :short "An ACL2 evaluator that returns @(see state)"
+  :long "@({
+ General Form:
+
+ (trans-eval-state form ctx state)
+
+ })
+
+ <p>where @('form') is a form to evaluate, @('ctx') is a context (see @(see
+ ctx)), and @('state') is the ACL2 @(see state).  After form is (translated to
+ internal form and) evaluated, the new ACL2 state is returned.  See @(see
+ trans-eval-error-triple) for a potentially more useful version of this
+ function that returns and @(see error-triple), which provides an error and
+ value as well rather than just a new state.</p>")
 
 (defun trans-eval-error-triple (form ctx state)
 
@@ -44,3 +63,13 @@
                            evaluate to an error triple."
                           form 'trans-eval-error-triple))
                      (t (mv (car triple) (cadr triple) state))))))))
+
+(defun trans-eval-state (form ctx state)
+
+; This version of trans-eval returns state.
+
+  (declare (xargs :mode :program :stobjs state))
+  (mv-let (trans-erp stobjs-out/replaced-val state)
+    (trans-eval form ctx state t)
+    (declare (ignore trans-erp stobjs-out/replaced-val))
+    state))
