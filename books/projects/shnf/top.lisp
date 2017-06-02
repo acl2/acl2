@@ -538,6 +538,7 @@
 ;; assignments, then they produce the same SHNF.
 
 (defun pad0 (i n)
+  (declare (xargs :guard (natp i)))
   (if (zp i)
       n
     (cons 0 (pad0 (1- i) n))))
