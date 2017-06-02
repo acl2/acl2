@@ -1404,7 +1404,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   :guard (and (true-list-listp row-info)
               (true-listp row-modr/m))
   :short "Returns a list of 1s and 0s corresponding to the presence or
-  absence of ModR/M byte for each opcode in a opcode row in the Intel
+  absence of ModR/M byte for each opcode in an opcode row in the Intel
   opcode maps"
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
