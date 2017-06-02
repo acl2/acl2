@@ -103,6 +103,9 @@
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 
+(include-book "centaur/glmc/glmc" :dir :system)
+(include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
+
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
 (include-book "centaur/satlink/benchmarks" :dir :system)

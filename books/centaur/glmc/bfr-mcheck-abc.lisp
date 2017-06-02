@@ -512,6 +512,8 @@
 
 (define bfr-mcheck-abc-simple (prop constr (updates bfr-updates-p) initstp (max-bvar natp))
   :returns (mv result ctrex-initst ctrex-ins)
+  :parents (glmc)
+  :short "@(see Bfr-mcheck) interface for ABC model-checking"
   (b* (((unless (bfr-mode))
         (prog2$ (er hard? 'bfr-mcheck-abc
                     "ABC model checking not supported in BDD mode")

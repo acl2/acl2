@@ -64,7 +64,7 @@
   :hints(("Goal" :in-theory (enable numlist-to-vars))))
 
 
-(fty::deflist nat-list :pred nat-listp :elt-type natp :true-listp t)
+(fty::deflist nat-list :pred nat-listp :elt-type natp :true-listp t :elementp-of-nil nil)
 
 (define pseudo-term-alistp (x)
   (if (atom x)
