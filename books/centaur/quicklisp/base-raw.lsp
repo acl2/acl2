@@ -30,8 +30,6 @@
 
 (in-package "ACL2")
 
-#+(and (not windows) (or win32 mswindows))
-(pushnew :windows *features*)
 
 ; It may be that we should do this for all Lisps instead of just Allegro.
 #+(or allegro lispworks)
@@ -100,7 +98,7 @@
 (push :hunchentoot-no-ssl *features*)
 
 
-#-windows ;; [harshrc 2017-05-30] SSL library load error on Win
+#-mswindows ;; [harshrc 2017-05-30] SSL library load error on Windows
 (load-system-from-acl2-quicklisp-bundle "hunchentoot")
 
 (load-system-from-acl2-quicklisp-bundle "osicat")
