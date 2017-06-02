@@ -1,0 +1,165 @@
+; Centaur SV Hardware Verification Tutorial
+; Copyright (C) 2016 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original authors: Sol Swords <sswords@centtech.com>
+
+
+(in-package "SV")
+
+(include-book "centaur/sv/top" :dir :system)
+(include-book "glmc")
+(include-book "centaur/gl/bfr-satlink" :dir :system)
+(include-book "bfr-mcheck-abc")
+(include-book "centaur/sv/svtv/fsm" :dir :system)
+(include-book "centaur/vl/loader/top" :dir :system)
+(include-book "centaur/sv/svex/gl-rules" :dir :system)
+(local (in-theory (disable (tau-system))))
+; (depends-on "counter.sv")
+; cert_param: (hons-only)
+; cert_param: (uses-glucose)
+; cert_param: (uses-abc)
+
+(value-triple (acl2::tshell-ensure))
+(gl::gl-satlink-mode)
+(gl::bfr-mcheck-use-abc-simple)
+
+(make-event
+
+; Disabling waterfall parallelism for unknown reasons other than that
+; certification stalls out with it enabled.
+
+ (if (and (acl2::hons-enabledp state)
+          (f-get-global 'acl2::parallel-execution-enabled state))
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
+(defconsts (*counter* state)
+  (b* (((mv loadres state)
+        (vl::vl-load (vl::make-vl-loadconfig
+                      :start-files (list "counter.sv"))))
+       (design (vl::vl-loadresult->design loadres))
+       ((mv ?err svdesign ?good ?bad)
+        (vl::cwtime (vl::vl-design->svex-design "counter" design (vl::make-vl-simpconfig)))))
+    (and err
+         (er hard? 'counter "Error: ~@0~%Warnings: ~s1~%" err
+             (vl::vl-reportcard-to-string (vl::vl-design-reportcard bad))))
+    (mv svdesign state)))
+
+
+(defsvtv counter-step
+  :mod *counter*
+  :inputs '(("clk"    0  1)
+            ("reset"  reset _)
+            ("incr"   incr  _))
+  :outputs '(("count" count _))
+  :state-machine t)
+
+
+
+(local (defun my-satlink-config ()
+         (declare (Xargs :guard t))
+         (satlink::make-config
+          :cmdline "glucose -model"
+          :verbose t
+          :mintime 1)))
+
+(local (defattach gl::gl-satlink-config my-satlink-config))
+
+
+(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+
+
+(define counter-run-step ((ins svex-env-p)
+                          (st svex-env-p))
+  :guard (equal (alist-keys st)
+                (svex-alist-keys (svtv->nextstate (counter-step))))
+  :guard-hints (("goal" :in-theory (enable ;; 
+                                           (counter-step))))
+  :prepwork ((local (in-theory (enable svtv-fsm-run-outs-and-states))))
+  :returns (mv (step svex-env-p)
+               (nextst svex-env-p))
+  (b* (((svtv counter) (counter-step))
+       (ins (make-fast-alist ins))
+       ((mv (list step) (list nextst))
+        (svtv-fsm-run-outs-and-states (list ins) st (counter-step)
+                                      :out-signals '((count reset incr))
+                                      :state-signals (list (alist-keys counter.nextstate)))))
+    (mv (make-fast-alist step)
+        (make-fast-alist nextst))))
+
+
+
+(define counter-ok ((st svex-env-p)
+                    (ins svex-envlist-p))
+  :measure (len ins)
+  :verify-guards nil
+  (b* (((when (atom ins)) t)
+       ((svtv counter) (counter-step))
+       (in (car ins))
+       ((mv step nextst) (counter-run-step in st))
+       (count (svex-env-lookup 'count step))
+       (reset (4vec-zero-ext 1 (svex-env-lookup 'reset in)))
+       (incr (4vec-zero-ext 1 (svex-env-lookup 'incr in)))
+       ((unless (and (2vec-p reset)
+                     (2vec-p incr))) t)
+       ((unless (and (2vec-p count)
+                     (not (equal (2vec->val count) 14))))
+        nil))
+    (counter-ok nextst (cdr ins))))
+
+(acl2::aig-env-lookup-missing-action nil)
+
+(defthm counter-is-ok
+  (b* (((mv step &) (counter-run-step (car ins) st))
+       (count (svex-env-lookup 'count step)))
+    (implies (and (2vec-p count)
+                  (< count 5))
+             (counter-ok st ins)))
+  :hints ((gl::glmc-hint
+           :state-var st
+           :nextstate (b* (((mv & nextst) (counter-run-step in st)))
+                        nextst)
+           :prop (b* (((mv step &) (counter-run-step in st))
+                      (count (svex-env-lookup 'count step)))
+                   (and (2vec-p count)
+                        (not (equal (2vec->val count) 14))))
+           :constraint (and (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'reset in)))
+                            (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'incr in))))
+           :initstatep (b* (((mv step &) (counter-run-step in st))
+                            (count (svex-env-lookup 'count step)))
+                         (and (2vec-p count)
+                              (< count 5)))
+           :frame-input-bindings ((in (car ins)))
+           :rest-of-input-bindings ((ins (cdr ins)))
+           :end-of-inputsp (atom ins)
+           :measure (len ins)
+           :run (counter-ok st ins)
+           :shape-spec-bindings `((in ,(gl::g-var 'in))
+                                  (st ,(gl::g-var 'st)))
+           :run-check-hints ('(:expand ((counter-ok st ins)))))))
