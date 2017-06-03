@@ -1,6 +1,6 @@
-(:CREATION-TIME "2017-06-02T16:05:25Z" :REQUESTED-SYSTEMS
- ("bordeaux-threads" "bt-semaphore" "cl-fad" "hunchentoot" "osicat"
-  "uiop" "html-template" "shellpool" "external-program")
+(:CREATION-TIME "2017-06-03T13:46:57Z" :REQUESTED-SYSTEMS
+ ("asdf" "bordeaux-threads" "bt-semaphore" "cl-fad" "hunchentoot"
+  "osicat" "uiop" "html-template" "shellpool" "external-program")
  :LISP-INFO
  (:MACHINE-INSTANCE "ubuntu-jenkins-managed-instances-3x28"
   :MACHINE-TYPE "x86_64" :MACHINE-VERSION
