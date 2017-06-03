@@ -43,6 +43,7 @@
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
 (include-book "numbered-names")
+(include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
 (include-book "prove-interface")
