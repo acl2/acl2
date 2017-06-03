@@ -30,9 +30,6 @@
 
 (in-package "ACL2")
 
-#+(and (not windows) (or win32 mswindows))
-(push :windows *features*)
-
 
 #+cmucl
 ; [Jared] temporary workaround.  CL+SSL apparently fails to load on my system
@@ -42,5 +39,5 @@
 ; Hopefully this will be fixed after the next Quicklisp release.
 (push :hunchentoot-no-ssl *features*)
 
-#-windows ;; [harshrc 2017-05-30] SSL library load error on Win
+#-mswindows ;; [harshrc 2017-05-30] SSL library load error on Windows
 (asdf:load-system "hunchentoot")
