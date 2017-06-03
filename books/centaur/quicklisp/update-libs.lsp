@@ -56,7 +56,8 @@
 ;;   "http://beta.quicklisp.org/dist/quicklisp/2015-03-02/distinfo.txt"
 ;;   :replace t)
 
-(ql:bundle-systems (list "bordeaux-threads"
+(ql:bundle-systems (list "asdf"
+                         "bordeaux-threads"
                          "bt-semaphore"
                          "cl-fad"
                          "hunchentoot"
