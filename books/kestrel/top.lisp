@@ -28,20 +28,20 @@
 
   :long
   "<img src='res/kestrel/kestrel-logo.png'/>
-  <p>
-  The <b>Kestrel Books</b> are a collection of ACL2 books
-  contributed mainly by <a href='http://www.kestrel.edu'>Kestrel Institute</a>.
-  The Kestrel Books are freely available under a liberal license.
-  Specific copyright, author, and license information
-  is provided in the individual files and subdirectories.
-  </p>
-  <p>
-  As they become more stable,
-  parts of the Kestrel Books may be moved
-  to other locations in the
-  <see topic='@(url community-books)'>Community Books</see>.
-  For example, <see topic='@(url std)'>STD</see>
-  includes some Kestrel contributions.
-  </p>")
+   <p>
+   The <b>Kestrel Books</b> are a collection of ACL2 books
+   contributed mainly by <a href='http://www.kestrel.edu'>Kestrel Institute</a>.
+   The Kestrel Books are freely available under a liberal license.
+   Specific copyright, author, and license information
+   is provided in the individual files and subdirectories.
+   </p>
+   <p>
+   As they become more stable,
+   parts of the Kestrel Books may be moved
+   to other locations in the
+   <see topic='@(url community-books)'>Community Books</see>.
+   For example, <see topic='@(url std)'>STD</see>
+   includes some Kestrel contributions.
+   </p>")
 
 (xdoc::add-resource-directory "kestrel" "images")
