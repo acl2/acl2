@@ -1583,7 +1583,7 @@
                  ,body)))
     (mv local-event exported-event)))
 
-(define tailrec-old-to-wrapper-thm-events
+(define tailrec-old-to-wrapper-intro-events
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (old-to-wrapper-thm-name symbolp "Result of @(tsee tailrec-check-inputs).")
@@ -1827,7 +1827,7 @@
                                                             wrld))
        ((mv
          old-to-wrapper-thm-local-event
-         old-to-wrapper-thm-exported-event) (tailrec-old-to-wrapper-thm-events
+         old-to-wrapper-thm-exported-event) (tailrec-old-to-wrapper-intro-events
                                              old-fn-name
                                              wrapper-fn-name
                                              old-to-wrapper-thm-name
