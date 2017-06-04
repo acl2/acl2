@@ -141,7 +141,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (result "A tuple @('(nonrec<x1,...,xn>
                                     (... update-xi<x1...,xn> ...)
                                     combine<q,r>
@@ -200,7 +201,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (result "A tuple @('(old-fn-name
                                     test<x1,...,xn>
                                     base<x1,...,xn>
@@ -315,7 +317,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (domain$ "A @(tsee pseudo-fn/lambda-p) that is
                          the predicate denoted by @('domain').")
                state)
@@ -360,7 +363,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (new-fn-name "A @(tsee symbolp)
                              to use as the name for the new function.")
                state)
@@ -386,7 +390,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (wrapper-fn-name "A @(tsee symbolp)
                                  to use as the name for the wrapper function.")
                state)
@@ -420,7 +425,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (old-to-wrapper-thm-name "A @(tsee symbolp)
                                          to use for the theorem that
                                          relates the old and new functions.")
@@ -485,7 +491,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (hints-alist "A @('symbol-alistp') that is
                              the alist form of the list of doublets @('hints').")
                state)
@@ -544,7 +551,8 @@
                               (ctx "Context for errors.")
                               state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (result "A tuple @('(old-fn-name
                                     test<x1,...,xn>
                                     base<x1,...,xn>
@@ -1210,7 +1218,7 @@
                                 the non-normalized definition
                                 of the old function.")
    (domain-of-old-thm-name
-    symbolp "Result of @(tsee tailrec-domain-of-old-thm-intro-event).")
+    symbolp "Result of @(tsee tailrec-domain-of-old-intro-event).")
    (new-fn-formals symbol-listp
                    "Result of @(tsee tailrec-new-fn-intro-events).")
    (new-fn-unnorm-name symbolp "Name of the theorem that installs
@@ -1897,7 +1905,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (event "A @(tsee pseudo-event-formp).")
                state)
   :mode :program

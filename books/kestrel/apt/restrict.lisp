@@ -33,7 +33,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (old-fn-name "A @(tsee symbolp) that is
                              the name of the target function
                              of the transformation,
@@ -79,7 +80,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (restriction$ "A @(tsee pseudo-termp) that is
                               the translation of @('restriction').")
                state)
@@ -115,7 +117,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (new-fn-name "A @(tsee symbolp)
                              to use as the name for the new function.")
                state)
@@ -142,7 +145,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (old-to-new-thm-name "A @(tsee symbolp)
                                      to use for the theorem
                                      that relates the old and new functions.")
@@ -193,7 +197,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (hints-alist "A @('symbol-alistp') that is
                              the alist form of the list of doublets @('hints').")
                state)
@@ -249,7 +254,8 @@
                                (ctx "Context for errors.")
                                state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (result "A tuple @('(old-fn-name
                                     restriction$
                                     new-fn-name
@@ -335,7 +341,7 @@
                  hints-alist))))
 
 (define restrict-restriction-of-rec-calls-consequent
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-input).")
+  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (rec-calls-with-tests pseudo-tests-and-call-listp
                          "Recursive calls, with controlling tests,
                           of the old function.")
@@ -930,7 +936,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
                (event "A @(tsee pseudo-event-formp).")
                state)
   :mode :program

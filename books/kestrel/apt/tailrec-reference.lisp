@@ -303,7 +303,7 @@
 
        <li>
        @(':auto'),
-       to use the <see topic='@(url numbered-names)'>numbered name</see>
+       to use the <see topic='@(url acl2::numbered-names)'>numbered name</see>
        obtained by <see topic='@(url next-numbered-name)'>incrementing</see>
        the index of @('old').
        </li>
