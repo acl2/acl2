@@ -36,7 +36,8 @@
 
   :long
 
-  "<p>
+  "<img src='res/kestrel/apt-logo.png'/>
+   <p>
    The APT transformation tools operate on ACL2 artifacts (e.g. functions)
    and generate corresponding transformed artifacts
    along with theorems asserting the relationship (e.g. equivalence)
