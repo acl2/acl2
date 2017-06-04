@@ -430,6 +430,16 @@ directly with ACL2.</p>
                                    (remove-hidden-terms clauses))
                                   nil))))))))))
 
+(defun maybe-inhibit-output-lst (inhibit-output state)
+  (cond ((eq inhibit-output :prove)
+         (union-eq '(proof-tree prove)
+                   (@ inhibit-output-lst)))
+        ((eq inhibit-output :all)
+         *valid-output-names*)
+        (inhibit-output
+         *valid-output-names-except-error*)
+        (t (@ inhibit-output-lst))))
+
 (defun tool1-fn (hyps state hints prove-assumptions inhibit-output
                       translate-flg print-flg)
 
@@ -439,18 +449,13 @@ directly with ACL2.</p>
 
   (state-global-let*
    ((ld-skip-proofsp nil)
-    (inhibit-output-lst
-     (if inhibit-output
-         (if (eq inhibit-output :prove)
-             (union-eq '(proof-tree prove) (@ inhibit-output-lst))
-           *valid-output-names-except-error*)
-       (@ inhibit-output-lst))))
+    (inhibit-output-lst (maybe-inhibit-output-lst inhibit-output state)))
    (with-ctx-summarized
     "( TOOL1 ...)"
     (let ((wrld (w state))
           (ens (ens state)))
       (tool1-fn1 hyps ctx ens wrld state hints prove-assumptions inhibit-output
-                      translate-flg print-flg)))))
+                 translate-flg print-flg)))))
 
 (defun tool1-fn0 (hyps ctx ens wrld state hints prove-assumptions inhibit-output
                        translate-flg print-flg)
@@ -459,12 +464,7 @@ directly with ACL2.</p>
 
   (state-global-let*
    ((ld-skip-proofsp nil)
-    (inhibit-output-lst
-     (if inhibit-output
-         (if (eq inhibit-output :prove)
-             (union-eq '(proof-tree prove) (@ inhibit-output-lst))
-           *valid-output-names-except-error*)
-       (@ inhibit-output-lst))))
+    (inhibit-output-lst (maybe-inhibit-output-lst inhibit-output state)))
    (tool1-fn1 hyps ctx ens wrld state hints prove-assumptions inhibit-output
               translate-flg print-flg)))
 
@@ -848,12 +848,7 @@ directly with ACL2.</p>
 ; DARON: added must-rewrite-flg to formals of tool2-fn0.
 
   (state-global-let*
-   ((inhibit-output-lst
-     (if inhibit-output
-         (if (eq inhibit-output :prove)
-             (union-eq '(proof-tree prove) (@ inhibit-output-lst))
-           *valid-output-names-except-error*)
-       (@ inhibit-output-lst))))
+   ((inhibit-output-lst (maybe-inhibit-output-lst inhibit-output state)))
    (prog2$
     (initialize-brr-stack state)
     (er-let*
@@ -1280,7 +1275,7 @@ happens.</p>
   General Form:
   (symsim term hyps
           :hints             hints
-          :inhibit-output    inhibit-flg ; t, :prove, or nil, default t
+          :inhibit-output    inhibit-flg ; t, :prove, :all, or nil, default t
           :prove-assumptions prove-flg   ; t, nil, or (default) any other value
           :print-flg         print-flg   ; t or nil, default nil
           :simplify-hyps-p   flg         ; t, nil, or :no-split; default t
@@ -1295,9 +1290,9 @@ do not want the @('hyps') to be simplified; otherwise, case splitting may occur
 in the course of their simplification.</p>
 
 <p>Prover output is inhibited if @(':inhibit-output') is @('t') (the default).
-Only proof output is inhibited if @(':inhibit-output') is @(':prover') (so for
-example, summaries and warnings are printed), and all prover output is shown if
-@(':inhibit-output') is @('nil').</p>
+Only proof output is inhibited if @(':inhibit-output') is @(':prove') (so for
+example, summaries and warnings are printed), and all prover output is shown or
+inhibited if @(':inhibit-output') is @('nil') or @(':all'), respectively.</p>
 
 <p>Also see @(see defthm?), which has a related functionality and is a bit more
 thoroughly documented.  Here are some examples that should help give an idea of

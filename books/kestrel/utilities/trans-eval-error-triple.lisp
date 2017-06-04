@@ -39,7 +39,7 @@
  ctx)), and @('state') is the ACL2 @(see state).  After form is (translated to
  internal form and) evaluated, the new ACL2 state is returned.  See @(see
  trans-eval-error-triple) for a potentially more useful version of this
- function that returns and @(see error-triple), which provides an error and
+ function that returns an @(see error-triple), which provides an error and
  value as well rather than just a new state.</p>")
 
 (defun trans-eval-error-triple (form ctx state)

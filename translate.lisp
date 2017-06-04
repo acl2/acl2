@@ -8147,10 +8147,10 @@
                 by Common Lisp because its Common Lisp meaning differs from ~
                 its ACL2 meaning.~@1"
                (car x)
-               (if (eq (car x) 'with-guard-checking-event)
-                   (msg "  Consider using ~x0 instead."
-                        'with-guard-checking-error-triple)
-                 "")))
+               (cond ((eq (car x) 'with-guard-checking-event)
+                      (msg "  Consider using ~x0 instead."
+                           'with-guard-checking-error-triple))
+                     (t ""))))
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
          (member-eq (car x)
@@ -8207,8 +8207,12 @@
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp runtime value and ~
-                effect differs from its ACL2 meaning."
-               (car x)))
+                effect differs from its ACL2 meaning.~@1"
+               (car x)
+               (cond ((eq (car x) 'with-output)
+                      (msg "  Consider using ~x0 instead."
+                           'with-output!))
+                     (t ""))))
    ((and (eq (car x) 'pargs)
          (true-listp x)
          (member (length x) '(2 3))

@@ -1006,11 +1006,11 @@
       `(fgetprop ,symb ,key ,default ,world-alist)
     `(sgetprop ,symb ,key ,default ,world-name ,world-alist)))
 
-(defmacro getpropc (symb key &optional default (wrld '(w state)))
+(defmacro getpropc (symb key &optional default (world-alist '(w state)))
 
 ; The "c" in "getpropc" suggests "current-acl2-world".
 
-  `(getprop ,symb ,key ,default 'current-acl2-world ,wrld))
+  `(getprop ,symb ,key ,default 'current-acl2-world ,world-alist))
 
 #-acl2-loop-only
 (progn
@@ -6219,12 +6219,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         nil
       (take (- lng n) lst))))
 
-#-acl2-loop-only
-(defmacro with-output (&rest args)
-  (car (last args)))
-
-#+acl2-loop-only
-(defmacro with-output (&rest args)
+(defmacro with-output! (&rest args)
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output
@@ -6233,6 +6228,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (illegal 'with-output
                      "Macroexpansion of ~q0 failed."
                      (list (cons #\0 (cons 'with-output args))))))))
+
+#-acl2-loop-only
+(defmacro with-output (&rest args)
+  (car (last args)))
+
+#+acl2-loop-only
+(defmacro with-output (&rest args)
+  `(with-output! ,@args))
 
 ; Mutual Recursion
 
