@@ -213,14 +213,14 @@
                              (rvm08 wvm08))))))
 
 (defthm rb-wb-disjoint
-  (implies (and (or (<= (+ n-2 addr-2) addr-1)
-                    (<= (+ n-1 addr-1) addr-2))
+  (implies (and (separate n-1 addr-1 n-2 addr-2)
                 (programmer-level-mode x86))
            (equal (mv-nth 1 (rb n-1 addr-1 r-x (mv-nth 1 (wb n-2 addr-2 w val x86))))
                   (mv-nth 1 (rb n-1 addr-1 r-x x86))))
   :hints (("Goal"
            :use ((:instance rb-1-wb-1-disjoint))
-           :in-theory (e/d* (rb wb) (rb-1-wb-1-disjoint wb-1 rb-1)))))
+           :in-theory (e/d* (rb wb separate)
+                            (rb-1-wb-1-disjoint wb-1 rb-1)))))
 
 ;; rb-wb-equal --- rb reads all the bytes written by wb:
 
@@ -384,13 +384,37 @@
                              rb-1-rb-1-subset-helper-2)
                             (unsigned-byte-p)))))
 
+;; rb-rb-split-reads --- split an rb read into two constituent reads:
+
+(defthmd rb-rb-split-reads
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ -1 k j addr))
+                (xr :programmer-level-mode 0 x86)
+                (natp j)
+                (natp k))
+           (equal (mv-nth 1 (rb (+ k j) addr r-x x86))
+                  ;; What form of RHS do we really want?
+                  (logior
+                   (mv-nth 1 (rb j addr r-x x86))
+                   (ash (mv-nth 1 (rb k (+ j addr) r-x x86)) (ash j 3))))
+           ;; (equal (mv-nth 1 (rb (+ k j) addr r-x x86))
+           ;;        ;; k is likely to be a constant, which is why we
+           ;;        ;; want (ash k 3) below since it'll evaluate to a
+           ;;        ;; concrete value.
+           ;;        (logior
+           ;;         (ash (mv-nth 1 (rb j (+ k addr) r-x x86)) (ash k 3))
+           ;;         (mv-nth 1 (rb k addr r-x x86))))
+           )
+  :hints (("Goal" :in-theory (e/d* (push-ash-inside-logior)
+                                   (unsigned-byte-p
+                                    (:meta acl2::mv-nth-cons-meta))))))
+
 ;; ----------------------------------------------------------------------
 
 ;; Lemmas about prog-at:
 
 (defthm prog-at-wb-disjoint
-  (implies (and (or (<= (+ (len bytes) prog-addr) addr)
-                    (<= (+ n addr) prog-addr))
+  (implies (and (separate (len bytes) prog-addr n addr)
                 (programmer-level-mode x86))
            (equal (prog-at prog-addr bytes (mv-nth 1 (wb n addr w val x86)))
                   (prog-at prog-addr bytes x86)))

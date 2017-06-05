@@ -142,6 +142,167 @@
 
 ;; ======================================================================
 
+;; Lemmas about canonical-address-p:
+
+;; Relating rip and canonical-address-p: We don't want the rule
+;; rip-is-i48p to be active anymore. Anything to do with rip and !rip
+;; should now be reasoned about in terms of canonical-address-p, even
+;; though canonical-address-p and i48p are the same, really.
+
+(defthm canonical-address-p-rip
+  (implies (x86p x86)
+           (canonical-address-p (xr :rip index x86)))
+  :rule-classes (:type-prescription :rewrite))
+
+(defthm rip-is-integerp
+  (implies (x86p x86)
+           (integerp (xr :rip index x86)))
+  :rule-classes :type-prescription)
+
+(defthm x86p-!rip-when-val-is-canonical-address-p
+  (implies (forced-and (x86p x86)
+                       (canonical-address-p v))
+           (x86p (xw :rip index v x86)))
+  :hints (("Goal" :in-theory (enable ripp))))
+
+(in-theory (disable (:type-prescription rip-is-i48p)))
+
+(defthm canonical-address-p-to-integerp-thm
+  (implies (canonical-address-p x)
+           (integerp x))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm canonical-address-p-limits-thm-0
+  ;; addr <= (+ k addr) < (+ i addr)
+  ;; i is positive, k is positive, k < i
+  (implies (and (canonical-address-p (+ i addr))
+                (canonical-address-p addr)
+                (< k i)
+                (<= 0 k)
+                (integerp k))
+           (canonical-address-p (+ k addr))))
+
+(defthm canonical-address-p-limits-thm-1
+  ;; (+ -i addr) < (+ -k addr) < addr
+  ;; i is negative, k is negative, k > i
+  (implies (and (< k 0)
+                (canonical-address-p (+ i addr))
+                (< i 0)
+                (< i k)
+                (canonical-address-p addr)
+                (integerp k))
+           (canonical-address-p (+ k addr))))
+
+(defthm canonical-address-p-limits-thm-2
+  ;; (+ i addr) < (+ k addr) < (+ j addr)
+  ;; i < k < j
+  (implies (and (canonical-address-p (+ i addr))
+                (canonical-address-p (+ j addr))
+                (< i k)
+                (< k j)
+                (integerp addr)
+                (integerp k))
+           (canonical-address-p (+ k addr))))
+
+(defthm canonical-address-p-limits-thm-3
+  ;; (+ -i addr) <= addr <= (+ j addr)
+  (implies (and (canonical-address-p (+ j addr))
+                (canonical-address-p (+ (- i) addr))
+                (natp i)
+                (natp j)
+                (integerp addr))
+           (canonical-address-p addr))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm canonical-address-p-limits-thm-4
+  ;; addr <= (+ -j i addr) <= (addr + i)
+  (implies (and (canonical-address-p (+ i addr))
+                (canonical-address-p addr)
+                (< j 0)
+                (<= (- i) j)
+                (natp i)
+                (integerp j))
+           (canonical-address-p (+ j (+ i addr))))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
+  :rule-classes (:rewrite :forward-chaining))
+
+(encapsulate
+  ()
+
+  ;; The following rules come in useful when we know that a canonical
+  ;; memory address is stored in a register.  These rules establish
+  ;; that the value being written to a register is signed-byte-p 64, a fact we need
+  ;; to know to relieve the hypotheses of rules like x86p-!rgfi.
+
+  (defthm canonical-address-p-and-signed-byte-p-64-limits-0
+    (implies (and (syntaxp (and (consp x)
+                                (eq (car x) 'rgfi)))
+                  (canonical-address-p x))
+             (signed-byte-p 64 x))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
+
+  (defthm canonical-address-p-and-signed-byte-p-64p-limits-1
+    (implies (and (syntaxp (and (consp x)
+                                (eq (car x) 'rgfi)))
+                  (canonical-address-p (+ a x)))
+             (signed-byte-p 64 (+ a x)))
+    :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
+
+  (defthm canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64
+    (implies (and (canonical-address-p y)
+                  (signed-byte-p 16 x))
+             (signed-byte-p 64 (+ x y)))
+    :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
+
+  (local (include-book "centaur/gl/gl" :dir :system))
+
+  (local
+   (def-gl-thm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64-helper
+     :hyp (and (canonical-address-p y)
+               (signed-byte-p 16 x))
+     :concl (equal (n64-to-i64
+                    (part-select
+                     (+ x (part-select
+                           y
+                           :low 0
+                           :width 64))
+                     :low 0 :width 64))
+                   (+ x y))
+     :g-bindings
+     `((x   (:g-number ,(gl-int 0 2 64)))
+       (y   (:g-number ,(gl-int 1 2 64))))))
+
+  (defthm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64
+    (implies (and (canonical-address-p y)
+                  (signed-byte-p 16 x))
+             (equal (n64-to-i64
+                     (part-select
+                      (+ x (part-select
+                            y
+                            :low 0
+                            :width 64))
+                      :low 0 :width 64))
+                    (+ x y)))
+    :hints (("Goal" :use
+             canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64-helper)))
+
+  (defthm loghead-64-n64-to-i64-canonical-address
+    (implies (canonical-address-p x)
+             (equal (n64-to-i64 (loghead 64 x))
+                    x))
+    :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ()))))
+
+  (defthm n64-to-i64-logead-64-x
+    (implies (signed-byte-p 64 x)
+             (equal (n64-to-i64 (loghead 64 x))
+                    x))
+    :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ())))))
+
+;; ======================================================================
+
 #||
 
 ;; Lemmas about byte-ify and combine-bytes:
@@ -661,135 +822,6 @@
   :hints (("Goal" :in-theory (e/d (disjoint-p
                                    create-canonical-address-list)
                                   ()))))
-
-(defthm canonical-address-p-limits-thm-0
-  ;; addr <= (+ k addr) < (+ i addr)
-  ;; i is positive, k is positive, k < i
-  (implies (and (canonical-address-p (+ i addr))
-                (canonical-address-p addr)
-                (< k i)
-                (<= 0 k)
-                (integerp k))
-           (canonical-address-p (+ k addr))))
-
-(defthm canonical-address-p-limits-thm-1
-  ;; (+ -i addr) < (+ -k addr) < addr
-  ;; i is negative, k is negative, k > i
-  (implies (and (< k 0)
-                (canonical-address-p (+ i addr))
-                (< i 0)
-                (< i k)
-                (canonical-address-p addr)
-                (integerp k))
-           (canonical-address-p (+ k addr))))
-
-(defthm canonical-address-p-limits-thm-2
-  ;; (+ i addr) < (+ k addr) < (+ j addr)
-  ;; i < k < j
-  (implies (and (canonical-address-p (+ i addr))
-                (canonical-address-p (+ j addr))
-                (< i k)
-                (< k j)
-                (integerp addr)
-                (integerp k))
-           (canonical-address-p (+ k addr))))
-
-(defthm canonical-address-p-limits-thm-3
-  ;; (+ -i addr) <= addr <= (+ j addr)
-  (implies (and (canonical-address-p (+ j addr))
-                (canonical-address-p (+ (- i) addr))
-                (natp i)
-                (natp j)
-                (integerp addr))
-           (canonical-address-p addr))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
-  :rule-classes (:rewrite :forward-chaining))
-
-(defthm canonical-address-p-limits-thm-4
-  ;; addr <= (+ -j i addr) <= (addr + i)
-  (implies (and (canonical-address-p (+ i addr))
-                (canonical-address-p addr)
-                (< j 0)
-                (<= (- i) j)
-                (natp i)
-                (integerp j))
-           (canonical-address-p (+ j (+ i addr))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
-  :rule-classes (:rewrite :forward-chaining))
-
-(encapsulate
-
- ()
-
- ;; The following rules come in useful when we know that a canonical
- ;; memory address is stored in a register.  These rules establish
- ;; that the value being written to a register is signed-byte-p 64, a fact we need
- ;; to know to relieve the hypotheses of rules like x86p-!rgfi.
-
- (defthm canonical-address-p-and-signed-byte-p-64-limits-0
-   (implies (and (syntaxp (and (consp x)
-                               (eq (car x) 'rgfi)))
-                 (canonical-address-p x))
-            (signed-byte-p 64 x))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
-
- (defthm canonical-address-p-and-signed-byte-p-64p-limits-1
-   (implies (and (syntaxp (and (consp x)
-                               (eq (car x) 'rgfi)))
-                 (canonical-address-p (+ a x)))
-            (signed-byte-p 64 (+ a x)))
-   :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
-
- (defthm canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64
-   (implies (and (canonical-address-p y)
-                 (signed-byte-p 16 x))
-            (signed-byte-p 64 (+ x y)))
-   :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
-
- (local (include-book "centaur/gl/gl" :dir :system))
-
- (local
-  (def-gl-thm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64-helper
-    :hyp (and (canonical-address-p y)
-              (signed-byte-p 16 x))
-    :concl (equal (n64-to-i64
-                   (part-select
-                    (+ x (part-select
-                          y
-                          :low 0
-                          :width 64))
-                    :low 0 :width 64))
-                  (+ x y))
-    :g-bindings
-    `((x   (:g-number ,(gl-int 0 2 64)))
-      (y   (:g-number ,(gl-int 1 2 64))))))
-
- (defthm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64
-   (implies (and (canonical-address-p y)
-                 (signed-byte-p 16 x))
-            (equal (n64-to-i64
-                    (part-select
-                     (+ x (part-select
-                           y
-                           :low 0
-                           :width 64))
-                     :low 0 :width 64))
-                   (+ x y)))
-   :hints (("Goal" :use
-            canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64-helper)))
-
- (defthm loghead-64-n64-to-i64-canonical-address
-   (implies (canonical-address-p x)
-            (equal (n64-to-i64 (loghead 64 x))
-                   x))
-   :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ()))))
-
- (defthm n64-to-i64-logead-64-x
-   (implies (signed-byte-p 64 x)
-            (equal (n64-to-i64 (loghead 64 x))
-                   x))
-   :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ())))))
 
 ;; ======================================================================
 

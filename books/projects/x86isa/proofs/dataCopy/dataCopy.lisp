@@ -11,7 +11,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* (rb-rb-subset)
+(local (in-theory (e/d* ()
                         (mv-nth-1-wb-and-!flgi-commute
                          ia32e-la-to-pa-values-and-!flgi
                          las-to-pas
@@ -100,8 +100,6 @@
                              ;; completely disabled.
                              (loop-clk)
                              loop-preconditions
-                             wb-remove-duplicate-writes
-                             create-canonical-address-list
                              effects-copyData-loop-recur
                              effects-copyData-loop-base
                              force (force))))))
@@ -116,8 +114,6 @@
   :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
-                             rb-rb-split-reads
-                             take-and-rb
                              (loop-clk-recur)
                              force (force))))))
 
@@ -136,29 +132,25 @@
                  (:instance rb-rb-split-reads
                             (k k)
                             (j m)
-                            (r-w-x :r)
+                            (r-x :r)
                             (addr (+ (- k) (xr :rgf *rdi* x86)))
                             (x86 (x86-run (loop-clk-recur) x86)))
                  (:instance rb-rb-split-reads
                             (k k)
                             (j (xr :rgf *rax* x86))
-                            (r-w-x :r)
+                            (r-x :r)
                             (addr (+ (- k) (xr :rgf *rdi* x86)))
                             (x86 x86)))
            :in-theory (e/d* ()
-                            ((:t xw)
-                             (:t consp-append)
-                             create-canonical-address-list
-                             disjoint-p-two-create-canonical-address-lists-thm-0
-                             disjoint-p-two-create-canonical-address-lists-thm-1
+                            (separate-smaller-regions
+                             rb-rb-split-reads
+                             (:t xw)
                              default-+-1
                              default-+-2
                              loop-clk-recur
                              effects-copyData-loop-recur-source-address-projection-full-helper
                              effects-copyData-loop-recur-source-address-projection-copied
                              effects-copyData-loop-recur-source-address-projection-original
-                             rb-rb-split-reads
-                             take-and-rb
                              (loop-clk-recur)
                              force (force))))))
 
@@ -204,8 +196,7 @@
                               loop-clk-recur
                               (loop-clk-recur)
                               loop-clk-base
-                              (loop-clk-base)
-                              create-canonical-address-list))))))
+                              (loop-clk-base)))))))
 
 (defthmd source-array-and-loop-state
   ;; src[(+ -k src-addr) to (src-addr + m)] in (loop-state k m src-addr dst-addr x86) =
@@ -224,8 +215,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthmd source-array-and-x86-state-after-loop-clk
   ;; src[(+ -k src-addr) to (src-addr + m)] in (loop-state k m src-addr src-addr x86) =
@@ -250,8 +240,7 @@
                              loop-clk-base
                              (loop-clk-base)
                              loop-clk
-                             (loop-clk)
-                             create-canonical-address-list)))))
+                             (loop-clk))))))
 
 (defthm loop-leaves-m-bytes-of-source-unmodified
   ;; src[ src-addr to (src-addr + m) ] in (loop-state 0 m src-addr src-addr x86) =
@@ -293,10 +282,11 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))
+                             (loop-clk-base))))
+          ;; Ugh, banish this subgoal hint!
           ("Subgoal *1/3"
-           :use ((:instance effects-copyData-loop-recur-source-address-projection-full))
+           :use
+           ((:instance effects-copyData-loop-recur-source-address-projection-full))
            :hands-off (x86-run)
            :in-theory (e/d* (effects-copyData-loop-helper-11)
                             (loop-preconditions
@@ -307,8 +297,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthmd destination-array-and-x86-state-after-loop-clk
   ;; dst[(+ -k dst-addr) to (dst-addr + m)] in (loop-state k m src-addr dst-addr x86) =
@@ -333,8 +322,7 @@
                              loop-clk-base
                              (loop-clk-base)
                              loop-clk
-                             (loop-clk)
-                             create-canonical-address-list)))))
+                             (loop-clk))))))
 
 (defthm loop-copies-m-bytes-from-source-to-destination
   ;; dst[ dst-addr to (dst-addr + m) ] in (loop-state 0 m src-addr dst-addr x86) =
@@ -376,12 +364,7 @@
        (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
        ;; Return address of the copyData sub-routine is canonical.
        (canonical-address-p
-        (logext
-         64
-         (combine-bytes
-          (mv-nth 1
-                  (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                      :r x86)))))
+        (logext 64 (mv-nth 1 (rb  8 (xr :rgf *rsp* x86) :r x86))))
        ;; All the destination addresses are canonical.
        (canonical-address-p (xr :rgf *rsi* x86))
        (canonical-address-p (+ (ash n 2) (xr :rgf *rsi* x86)))
@@ -398,42 +381,41 @@
                 (equal (loghead 3 (+ -8 (xr :rgf *rsp* x86))) 0))
          t)
        ;; Memory locations of interest are disjoint.
-       (disjoint-p
+       (separate
         ;; Location of the Return Address (on the stack)
-        (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+        8 (xr :rgf *rsp* x86)
         ;; Destination Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
-       (disjoint-p
+        (ash n 2) (xr :rgf *rsi* x86))
+       (separate
         ;; Program addresses
-        (create-canonical-address-list (len *copyData*) addr)
+        *prog-len* addr
         ;; Destination addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
-       (disjoint-p
+        (ash n 2) (xr :rgf *rsi* x86))
+       (separate
         ;; Program addresses
-        (create-canonical-address-list (len *copyData*) addr)
+        *prog-len* addr
         ;; Stack
-        (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
-       (disjoint-p
+        16 (+ -8 (xr :rgf *rsp* x86)))
+       (separate
         ;; Source Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+        (ash n 2) (xr :rgf *rdi* x86)
         ;; Stack
-        (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
-       (disjoint-p
+        16 (+ -8 (xr :rgf *rsp* x86)))
+       (separate
         ;; Destination Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86))
+        (ash n 2) (xr :rgf *rsi* x86)
         ;; Stack
-        (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
-       (disjoint-p
+        16 (+ -8 (xr :rgf *rsp* x86)))
+       (separate
         ;; Source Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+        (ash n 2) (xr :rgf *rdi* x86)
         ;; Destination Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
+        (ash n 2) (xr :rgf *rsi* x86))
        ;; Program is located at addr.
        ;; All program addresses are canonical.
        (canonical-address-p addr)
-       (canonical-address-p (+ (len *copyData*) addr))
-       (program-at (create-canonical-address-list (len *copyData*) addr)
-                   *copyData* x86)))
+       (canonical-address-p (+ *prog-len* addr))
+       (prog-at addr *copyData* x86)))
 
 (defthm preconditions-fwd-chain-to-its-body
   (implies (preconditions n addr x86)
@@ -450,12 +432,7 @@
                 (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
                 ;; Return address of the copyData sub-routine is canonical.
                 (canonical-address-p
-                 (logext
-                  64
-                  (combine-bytes
-                   (mv-nth 1
-                           (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                               :r x86)))))
+                 (logext 64 (mv-nth 1 (rb  8 (xr :rgf *rsp* x86) :r x86))))
                 ;; All the destination addresses are canonical.
                 (canonical-address-p (xr :rgf *rsi* x86))
                 (canonical-address-p (+ (ash n 2) (xr :rgf *rsi* x86)))
@@ -468,45 +445,45 @@
                     ;; natural boundary will be addresses divisible by 4.
                     (and (equal (loghead 2 (xr :rgf *rsi* x86)) 0)
                          (equal (loghead 2 (xr :rgf *rdi* x86)) 0)
+                         ;; rsp will be aligned to a 16-byte boundary.
                          (equal (loghead 3 (+ -8 (xr :rgf *rsp* x86))) 0))
                   t)
                 ;; Memory locations of interest are disjoint.
-                (disjoint-p
-                 ;; Location of the Return Addresses (on the stack)
-                 (create-canonical-address-list 8 (xr :rgf *rsp* x86))
+                (separate
+                 ;; Location of the Return Address (on the stack)
+                 8 (xr :rgf *rsp* x86)
                  ;; Destination Addresses
-                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
-                (disjoint-p
+                 (ash n 2) (xr :rgf *rsi* x86))
+                (separate
                  ;; Program addresses
-                 (create-canonical-address-list (len *copyData*) addr)
+                 *prog-len* addr
                  ;; Destination addresses
-                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
-                (disjoint-p
+                 (ash n 2) (xr :rgf *rsi* x86))
+                (separate
                  ;; Program addresses
-                 (create-canonical-address-list (len *copyData*) addr)
+                 *prog-len* addr
                  ;; Stack
-                 (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
-                (disjoint-p
+                 16 (+ -8 (xr :rgf *rsp* x86)))
+                (separate
                  ;; Source Addresses
-                 (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+                 (ash n 2) (xr :rgf *rdi* x86)
                  ;; Stack
-                 (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
-                (disjoint-p
+                 16 (+ -8 (xr :rgf *rsp* x86)))
+                (separate
                  ;; Destination Addresses
-                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86))
+                 (ash n 2) (xr :rgf *rsi* x86)
                  ;; Stack
-                 (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
-                (disjoint-p
+                 16 (+ -8 (xr :rgf *rsp* x86)))
+                (separate
                  ;; Source Addresses
-                 (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+                 (ash n 2) (xr :rgf *rdi* x86)
                  ;; Destination Addresses
-                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
+                 (ash n 2) (xr :rgf *rsi* x86))
                 ;; Program is located at addr.
                 ;; All program addresses are canonical.
                 (canonical-address-p addr)
-                (canonical-address-p (+ (len *copyData*) addr))
-                (program-at (create-canonical-address-list (len *copyData*) addr)
-                            *copyData* x86)))
+                (canonical-address-p (+ *prog-len* addr))
+                (prog-at addr *copyData* x86)))
   :rule-classes :forward-chaining)
 
 (defthm effects-copyData-pre
@@ -526,9 +503,8 @@
             (MV-NTH
              1
              (WB
-              (CREATE-ADDR-BYTES-ALIST
-               (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-               (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
+              8 (+ -8 (XR :RGF *RSP* X86))
+              :W (LOGHEAD 64 (XR :RGF *RBP* X86))
               (WRITE-USER-RFLAGS
                (LOGIOR
                 (LOGHEAD 32
@@ -579,9 +555,8 @@
          (MV-NTH
           1
           (WB
-           (CREATE-ADDR-BYTES-ALIST
-            (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-            (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
+           8 (+ -8 (XR :RGF *RSP* X86))
+           :W (LOGHEAD 64 (XR :RGF *RBP* X86))
            (WRITE-USER-RFLAGS
             (LOGIOR
              4
@@ -616,12 +591,9 @@
                                     n64-to-i64
                                     rim08
                                     two-byte-opcode-decode-and-execute
-                                    x86-effective-addr
-                                    subset-p)
+                                    x86-effective-addr)
 
-                                   (wb-remove-duplicate-writes
-                                    create-canonical-address-list
-                                    force (force))))))
+                                   (force (force))))))
 
 (defthm effects-copyData-pre-programmer-level-mode-projection
   (implies (preconditions n addr x86)
@@ -644,16 +616,14 @@
            (equal (xr :rgf *rdi* (x86-run (pre-clk n) x86))
                   (xr :rgf *rdi* x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-rsp-projection
   (implies (preconditions n addr x86)
            (equal (xr :rgf *rsp* (x86-run (pre-clk n) x86))
                   (+ -8 (xr :rgf *rsp* x86))))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-rax-projection
   (implies (and (preconditions n addr x86)
@@ -661,35 +631,29 @@
            (equal (xr :rgf *rax* (x86-run (pre-clk n) x86))
                   (ash n 2)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-program-at-projection
   (implies (and (preconditions n addr x86)
-                (equal prog-len (len *copydata*)))
-           (equal (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* (x86-run (pre-clk n) x86))
-                  (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* x86)))
+                (equal prog-len *prog-len*))
+           (equal (prog-at addr *copyData* (x86-run (pre-clk n) x86))
+                  (prog-at addr *copyData* x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-fault-projection
   (implies (preconditions n addr x86)
            (equal (xr :fault 0 (x86-run (pre-clk n) x86))
                   (xr :fault 0 x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-ms-projection
   (implies (preconditions n addr x86)
            (equal (xr :ms 0 (x86-run (pre-clk n) x86))
                   (xr :ms 0 x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-rip-projection
   (implies (and (preconditions n addr x86)
@@ -697,8 +661,7 @@
            (equal (xr :rip 0 (x86-run (pre-clk n) x86))
                   (+ 16 (xr :rip 0 x86))))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-x86p-projection
   (implies (preconditions n addr x86)
@@ -707,12 +670,8 @@
 
 (defthm effects-copyData-pre-return-address-projection
   (implies (preconditions n addr x86)
-           (equal (mv-nth 1
-                          (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                              :r (x86-run (pre-clk n) x86)))
-                  (mv-nth 1
-                          (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                              :r x86))))
+           (equal (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r (x86-run (pre-clk n) x86)))
+                  (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r x86))))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
            :in-theory (e/d* (canonical-address-p-limits-thm-3)
                             ((pre-clk) pre-clk force (force)
@@ -767,8 +726,7 @@
   :hints (("Goal"
            :use ((:instance preconditions-implies-loop-preconditions-after-pre-clk))
            :in-theory (e/d* (x86-run-plus-for-clk)
-                            (wb-remove-duplicate-writes
-                             effects-copydata-loop
+                            (effects-copydata-loop
                              preconditions-implies-loop-preconditions-after-pre-clk
                              loop-preconditions
                              effects-copydata-pre
@@ -779,26 +737,25 @@
                              loop-clk
                              pre-clk
                              (pre-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthmd pre+loop-copies-m-bytes-from-source-to-destination-helper-2
   (implies (and (preconditions n addr x86)
                 (not (zp n))
                 (equal m (ash n 2)))
-           (equal (source-bytes m (+ m (xr :rgf *rdi* x86)) (x86-run (pre-clk n) x86))
-                  (source-bytes m (+ m (xr :rgf *rdi* x86)) x86)))
+           (equal
+            (source-bytes m (+ m (xr :rgf *rdi* x86)) (x86-run (pre-clk n) x86))
+            (source-bytes m (+ m (xr :rgf *rdi* x86)) x86)))
   :hints (("Goal"
-           :in-theory (e/d* ()
-                            (wb-remove-duplicate-writes
+           :use ((:instance effects-copyData-pre))
+           :in-theory (e/d* (preconditions)
+                            (effects-copyData-pre
                              preconditions-implies-loop-preconditions-after-pre-clk
-                             preconditions
                              destination-bytes
                              (loop-clk)
                              loop-clk
                              pre-clk
                              (pre-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthm pre+loop-copies-m-bytes-from-source-to-destination
@@ -812,8 +769,7 @@
            :use ((:instance pre+loop-copies-m-bytes-from-source-to-destination-helper-1)
                  (:instance pre+loop-copies-m-bytes-from-source-to-destination-helper-2))
            :in-theory (e/d* ()
-                            (wb-remove-duplicate-writes
-                             preconditions-implies-loop-preconditions-after-pre-clk
+                            (preconditions-implies-loop-preconditions-after-pre-clk
                              loop-copies-m-bytes-from-source-to-destination
                              effects-copydata-pre
                              preconditions
@@ -824,7 +780,6 @@
                              pre-clk
                              clk
                              (pre-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthm pre+loop-leaves-m-bytes-of-source-unmodified
@@ -837,8 +792,7 @@
            :use ((:instance preconditions-implies-loop-preconditions-after-pre-clk)
                  (:instance pre+loop-copies-m-bytes-from-source-to-destination-helper-2))
            :in-theory (e/d* (x86-run-plus-for-clk)
-                            (wb-remove-duplicate-writes
-                             loop-preconditions
+                            (loop-preconditions
                              preconditions-implies-loop-preconditions-after-pre-clk
                              loop-copies-m-bytes-from-source-to-destination
                              effects-copydata-pre
@@ -850,7 +804,6 @@
                              loop-clk
                              pre-clk
                              (pre-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 ;; Now, to prove a theorem similar to
@@ -873,7 +826,6 @@
                              (loop-clk-recur)
                              loop-clk-base
                              (loop-clk-base)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthm loop-clk-programmer-level-mode-projection
@@ -886,17 +838,14 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-program-at-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k)
-                (equal prog-len (len *copydata*)))
-           (equal (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* (loop-state k m src-addr dst-addr x86))
-                  (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* x86)))
+                (equal prog-len *prog-len*))
+           (equal (prog-at addr *copyData* (loop-state k m src-addr dst-addr x86))
+                  (prog-at addr *copyData* x86)))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -907,24 +856,20 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-program-at-projection
   (implies (and (loop-preconditions 0 m addr src-addr dst-addr x86)
-                (equal prog-len (len *copydata*)))
-           (equal (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* (x86-run (loop-clk m) x86))
-                  (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* x86)))
+                (equal prog-len *prog-len*))
+           (equal (prog-at addr *copyData* (x86-run (loop-clk m) x86))
+                  (prog-at addr *copyData* x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-ms-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -941,8 +886,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-ms-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
@@ -954,8 +898,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-fault-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -972,8 +915,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-fault-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
@@ -985,8 +927,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-rip-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -1003,8 +944,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-rip-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
@@ -1016,8 +956,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-rsp-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -1034,8 +973,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-rsp-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
@@ -1047,8 +985,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-rsi-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -1065,8 +1002,8 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))
+                             (loop-clk-base))))
+          ;; Ugh, another one of these subgoal hints...
           ("Subgoal *1/3" :in-theory (e/d* (effects-copyData-loop-helper-11)
                                            (loop-preconditions)))))
 
@@ -1080,8 +1017,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm clk-rsi-projection
   (implies (preconditions n addr x86)
@@ -1098,8 +1034,7 @@
                              (clk)
                              pre-clk
                              effects-copydata-loop
-                             effects-copydata-pre
-                             create-canonical-address-list)))))
+                             effects-copydata-pre)))))
 
 (defthm loop-state-rdi-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -1116,8 +1051,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))
+                             (loop-clk-base))))
           ("Subgoal *1/3" :in-theory (e/d* (effects-copyData-loop-helper-11)
                                            (loop-preconditions)))))
 
@@ -1131,8 +1065,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm clk-rdi-projection
   (implies (preconditions n addr x86)
@@ -1149,20 +1082,15 @@
                              (clk)
                              pre-clk
                              effects-copydata-loop
-                             effects-copydata-pre
-                             create-canonical-address-list)))))
+                             effects-copydata-pre)))))
 
 (defthm loop-state-return-address-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (mv-nth 1
-                          (rb (create-canonical-address-list
-                               8 (+ 8 (xr :rgf *rsp* x86)))
-                              :r (loop-state k m src-addr dst-addr x86)))
-                  (mv-nth 1
-                          (rb (create-canonical-address-list
-                               8 (+ 8 (xr :rgf *rsp* x86)))
-                              :r x86))))
+           (equal
+            (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86))
+                          :r (loop-state k m src-addr dst-addr x86)))
+            (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86)) :r x86))))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -1173,18 +1101,15 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-return-address-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
            (equal (mv-nth 1
-                          (rb (create-canonical-address-list
-                               8 (+ 8 (xr :rgf *rsp* x86)))
+                          (rb 8 (+ 8 (xr :rgf *rsp* x86))
                               :r (x86-run (loop-clk m) x86)))
                   (mv-nth 1
-                          (rb (create-canonical-address-list
-                               8 (+ 8 (xr :rgf *rsp* x86)))
+                          (rb 8 (+ 8 (xr :rgf *rsp* x86))
                               :r x86))))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
@@ -1192,8 +1117,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defthm loop-state-alignment-checking-enabled-p-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -1210,8 +1134,7 @@
                              loop-clk-recur
                              (loop-clk-recur)
                              loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
+                             (loop-clk-base))))))
 
 (defthm loop-clk-alignment-checking-enabled-p-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
@@ -1223,8 +1146,7 @@
            :in-theory (e/d* ()
                             (loop-preconditions
                              (loop-clk) loop-clk
-                             effects-copydata-loop
-                             create-canonical-address-list)))))
+                             effects-copydata-loop)))))
 
 (defun-nx after-the-copy-conditions (n addr x86)
   (and (x86p x86)
@@ -1238,24 +1160,19 @@
        (canonical-address-p (+ 16 (xr :rgf *rsp* x86)))
        ;; The value of the return address is canonical.
        (canonical-address-p
-        (logext 64
-                (combine-bytes
-                 (mv-nth 1 (rb
-                            (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                            :r x86)))))
+        (logext 64 (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86)) :r x86))))
        ;; Alignment Checking
        (if (alignment-checking-enabled-p x86)
            (equal (loghead 3 (xr :rgf *rsp* x86)) 0)
          t)
        ;; All program addresses are canonical.
        (canonical-address-p addr)
-       ;; [Shilpi]: Why not (canonical-address-p (+ -1 (len *copyData*) addr))?
+       ;; [Shilpi]: Why not (canonical-address-p (+ -1 *prog-len* addr))?
        ;; In case of instructions like ret and jump, hyp 20 of
        ;; x86-fetch-decode-execute-opener doesn't apply. Modify?
        ;; (CANONICAL-ADDRESS-P$INLINE (BINARY-+ '2 (XR ':RIP '0 X86)))
-       (canonical-address-p (+ (len *copyData*) addr))
-       (program-at (create-canonical-address-list (len *copyData*) addr)
-                   *copyData* x86)))
+       (canonical-address-p (+ *prog-len* addr))
+       (prog-at addr *copyData* x86)))
 
 (defthmd preconditions-implies-after-the-copy-conditions-after-clk-helper
   (implies (and (loop-preconditions 0 (ash n 2)
@@ -1266,11 +1183,10 @@
            (canonical-address-p
             (logext
              64
-             (combine-bytes
-              (mv-nth
-               1
-               (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* (x86-run (pre-clk n) x86))))
-                   :r (x86-run (loop-clk (ash n 2)) (x86-run (pre-clk n) x86))))))))
+             (mv-nth
+              1
+              (rb 8 (+ 8 (xr :rgf *rsp* (x86-run (pre-clk n) x86)))
+                  :r (x86-run (loop-clk (ash n 2)) (x86-run (pre-clk n) x86)))))))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -1314,26 +1230,16 @@
   (implies (after-the-copy-conditions n addr x86)
            (equal
             (x86-run (post-clk) x86)
-            (XW
-             :RGF *RSP* (+ 16 (XR :RGF *RSP* X86))
-             (XW
-              :RGF *RBP*
-              (LOGEXT
-               64
-               (COMBINE-BYTES
-                (MV-NTH 1
-                        (RB (CREATE-CANONICAL-ADDRESS-LIST 8 (XR :RGF *RSP* X86))
-                            :R X86))))
-              (XW
-               :RIP 0
-               (LOGEXT
-                64
-                (COMBINE-BYTES
-                 (MV-NTH
-                  1
-                  (RB (CREATE-CANONICAL-ADDRESS-LIST 8 (+ 8 (XR :RGF *RSP* X86)))
-                      :R X86))))
-               X86)))))
+            (XW :RGF *RSP* (+ 16 (XR :RGF *RSP* X86))
+                (XW :RGF *RBP*
+                    (LOGEXT 64
+                            (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
+                    (XW :RIP 0
+                        (LOGEXT 64
+                                (MV-NTH 1
+                                        (RB 8 (+ 8 (XR :RGF *RSP* X86))
+                                            :R X86)))
+                        X86)))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
                              top-level-opcode-execute
@@ -1357,10 +1263,8 @@
                              rim08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
-                             subset-p
                              signed-byte-p)
-                            (wb-remove-duplicate-writes
-                             create-canonical-address-list)))))
+                            ()))))
 
 (defthmd x86-run-plus-for-program-clk
   (equal (x86-run (binary-clk+ (clk n) (post-clk)) x86)
@@ -1385,15 +1289,13 @@
                   (destination-bytes m (xr :rgf *rsi* x86) x86)))
   :hints (("Goal" :use ((:instance effects-copyData-after-clk))
            :in-theory (e/d* ()
-                            (wb-remove-duplicate-writes
-                             preconditions-implies-loop-preconditions-after-pre-clk
+                            (preconditions-implies-loop-preconditions-after-pre-clk
                              loop-copies-m-bytes-from-source-to-destination
                              effects-copydata-pre
                              preconditions
                              source-bytes
                              clk post-clk
                              (clk) (post-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthm program-copies-m-bytes-from-source-to-destination-till-finish-helper-2
@@ -1409,8 +1311,7 @@
                  (:instance program-copies-m-bytes-from-source-to-destination-till-finish-helper-1
                             (x86 (x86-run (clk n) x86))))
            :in-theory (e/d* (x86-run-plus-for-program-clk)
-                            (wb-remove-duplicate-writes
-                             after-the-copy-conditions
+                            (after-the-copy-conditions
                              preconditions-implies-loop-preconditions-after-pre-clk
                              preconditions-implies-after-the-copy-conditions-after-clk
                              loop-copies-m-bytes-from-source-to-destination
@@ -1420,7 +1321,6 @@
                              source-bytes
                              clk post-clk
                              (clk) (post-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthmd program-leaves-m-bytes-of-source-unmodified-helper-1
@@ -1433,14 +1333,12 @@
                   (source-bytes m (xr :rgf *rdi* x86) x86)))
   :hints (("Goal" :use ((:instance effects-copyData-after-clk))
            :in-theory (e/d* ()
-                            (wb-remove-duplicate-writes
-                             preconditions-implies-loop-preconditions-after-pre-clk
+                            (preconditions-implies-loop-preconditions-after-pre-clk
                              loop-copies-m-bytes-from-source-to-destination
                              effects-copydata-pre
                              preconditions
                              clk post-clk
                              (clk) (post-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthmd program-leaves-m-bytes-of-source-unmodified-helper-2
@@ -1454,8 +1352,7 @@
                  (:instance program-leaves-m-bytes-of-source-unmodified-helper-1
                             (x86 (x86-run (clk n) x86))))
            :in-theory (e/d* (x86-run-plus-for-program-clk)
-                            (wb-remove-duplicate-writes
-                             after-the-copy-conditions
+                            (after-the-copy-conditions
                              preconditions-implies-loop-preconditions-after-pre-clk
                              preconditions-implies-after-the-copy-conditions-after-clk
                              loop-copies-m-bytes-from-source-to-destination
@@ -1465,7 +1362,6 @@
                              source-bytes
                              clk post-clk
                              (clk) (post-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthm destination-array-is-a-copy-of-the-source-array
@@ -1478,13 +1374,11 @@
   :hints (("Goal"
            :use ((:instance program-copies-m-bytes-from-source-to-destination-till-finish-helper-2))
            :in-theory (e/d* ()
-                            (wb-remove-duplicate-writes
-                             program-copies-m-bytes-from-source-to-destination-till-finish-helper-2
+                            (program-copies-m-bytes-from-source-to-destination-till-finish-helper-2
                              after-the-copy-conditions
                              preconditions
                              clk post-clk pre-clk
-                             (clk) (post-clk) (pre-clk)
-                             create-canonical-address-list
+                             (clk) (post-clk) (pre-clk)                             
                              force (force))))))
 
 (defthm source-array-is-unmodified
@@ -1495,12 +1389,10 @@
             (source-bytes m (+ m (xr :rgf *rdi* x86)) x86)))
   :hints (("Goal" :use ((:instance program-leaves-m-bytes-of-source-unmodified-helper-2))
            :in-theory (e/d* ()
-                            (wb-remove-duplicate-writes
-                             after-the-copy-conditions
+                            (after-the-copy-conditions
                              preconditions
                              clk post-clk pre-clk
                              (clk) (post-clk) (pre-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthmd preconditions-implies-after-the-copy-conditions-after-clk-n=0
@@ -1532,7 +1424,6 @@
                              source-bytes
                              clk post-clk
                              (clk) (post-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 (defthm no-error-during-program-execution
@@ -1545,8 +1436,7 @@
                             (x86 (x86-run (clk n) x86))))
            :in-theory (e/d* (x86-run-plus-for-program-clk
                              preconditions-implies-after-the-copy-conditions-after-clk-n=0)
-                            (wb-remove-duplicate-writes
-                             after-the-copy-conditions
+                            (after-the-copy-conditions
                              preconditions-implies-loop-preconditions-after-pre-clk
                              preconditions-implies-after-the-copy-conditions-after-clk
                              loop-copies-m-bytes-from-source-to-destination
@@ -1556,7 +1446,6 @@
                              source-bytes
                              clk post-clk
                              (clk) (post-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 ;; ======================================================================
@@ -1604,12 +1493,10 @@
                             (source-array-is-unmodified
                              destination-array-is-a-copy-of-the-source-array
                              no-error-during-program-execution
-                             wb-remove-duplicate-writes
                              after-the-copy-conditions
                              preconditions
                              clk post-clk pre-clk
                              (clk) (post-clk) (pre-clk)
-                             create-canonical-address-list
                              force (force))))))
 
 ;; ======================================================================

@@ -3,8 +3,8 @@
 
 (in-package "X86ISA")
 
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/programmer-level-memory-utils" :dir :system :ttags :all)
-(include-book "projects/x86isa/tools/execution/x86-init-state" :dir :system :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "../../tools/execution/x86-init-state" :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "misc/eval" :dir :system)
 

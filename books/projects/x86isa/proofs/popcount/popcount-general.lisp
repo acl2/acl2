@@ -3,11 +3,10 @@
 
 (in-package "X86ISA")
 
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/programmer-level-memory-utils" :dir :system :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+
 (local (include-book "centaur/gl/gl" :dir :system))
-
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-
 (set-irrelevant-formals-ok t)
 
 ;; ======================================================================
@@ -56,70 +55,70 @@
    ;; Section: <popcount_32>:
 
 
-   (cons #x400610 #x89)  ;; mov %edi,%edx
-   (cons #x400611 #xfa)  ;;
-   (cons #x400612 #xd1)  ;; shr %edx
-   (cons #x400613 #xea)  ;;
-   (cons #x400614 #x81)  ;; and $0x55555555,%edx
-   (cons #x400615 #xe2)  ;;
-   (cons #x400616 #x55)  ;;
-   (cons #x400617 #x55)  ;;
-   (cons #x400618 #x55)  ;;
-   (cons #x400619 #x55)  ;;
-   (cons #x40061a #x29)  ;; sub %edx,%edi
-   (cons #x40061b #xd7)  ;;
-   (cons #x40061c #x89)  ;; mov %edi,%eax
-   (cons #x40061d #xf8)  ;;
-   (cons #x40061e #xc1)  ;; shr $0x2,%edi
-   (cons #x40061f #xef)  ;;
-   (cons #x400620 #x02)  ;;
-   (cons #x400621 #x25)  ;; and $0x33333333,%eax
-   (cons #x400622 #x33)  ;;
-   (cons #x400623 #x33)  ;;
-   (cons #x400624 #x33)  ;;
-   (cons #x400625 #x33)  ;;
-   (cons #x400626 #x81)  ;; and $0x33333333,%edi
-   (cons #x400627 #xe7)  ;;
-   (cons #x400628 #x33)  ;;
-   (cons #x400629 #x33)  ;;
-   (cons #x40062a #x33)  ;;
-   (cons #x40062b #x33)  ;;
-   (cons #x40062c #x01)  ;; add %eax,%edi
-   (cons #x40062d #xc7)  ;;
-   (cons #x40062e #x89)  ;; mov %edi,%eax
-   (cons #x40062f #xf8)  ;;
-   (cons #x400630 #xc1)  ;; shr $0x4,%eax
-   (cons #x400631 #xe8)  ;;
-   (cons #x400632 #x04)  ;;
-   (cons #x400633 #x01)  ;; add %edi,%eax
-   (cons #x400634 #xf8)  ;;
-   (cons #x400635 #x25)  ;; and $0xf0f0f0f,%eax
-   (cons #x400636 #x0f)  ;;
-   (cons #x400637 #x0f)  ;;
-   (cons #x400638 #x0f)  ;;
-   (cons #x400639 #x0f)  ;;
-   (cons #x40063a #x69)  ;; imul $0x1010101,%eax,%eax
-   (cons #x40063b #xc0)  ;;
-   (cons #x40063c #x01)  ;;
-   (cons #x40063d #x01)  ;;
-   (cons #x40063e #x01)  ;;
-   (cons #x40063f #x01)  ;;
-   (cons #x400640 #xc1)  ;; shr $0x18,%eax
-   (cons #x400641 #xe8)  ;;
-   (cons #x400642 #x18)  ;;
-   (cons #x400643 #xc3)  ;; retq
-   (cons #x400644 #x66)  ;; data32 data32 nopw %cs:0x0(%rax,%rax,1)
-   (cons #x400645 #x66)  ;;
-   (cons #x400646 #x66)  ;;
-   (cons #x400647 #x2e)  ;;
-   (cons #x400648 #x0f)  ;;
-   (cons #x400649 #x1f)  ;;
-   (cons #x40064a #x84)  ;;
-   (cons #x40064b #x00)  ;;
-   (cons #x40064c #x00)  ;;
-   (cons #x40064d #x00)  ;;
-   (cons #x40064e #x00)  ;;
-   (cons #x40064f #x00)  ;;
+   (cons #x400610 #x89) ;; mov %edi,%edx
+   (cons #x400611 #xfa) ;;
+   (cons #x400612 #xd1) ;; shr %edx
+   (cons #x400613 #xea) ;;
+   (cons #x400614 #x81) ;; and $0x55555555,%edx
+   (cons #x400615 #xe2) ;;
+   (cons #x400616 #x55) ;;
+   (cons #x400617 #x55) ;;
+   (cons #x400618 #x55) ;;
+   (cons #x400619 #x55) ;;
+   (cons #x40061a #x29) ;; sub %edx,%edi
+   (cons #x40061b #xd7) ;;
+   (cons #x40061c #x89) ;; mov %edi,%eax
+   (cons #x40061d #xf8) ;;
+   (cons #x40061e #xc1) ;; shr $0x2,%edi
+   (cons #x40061f #xef) ;;
+   (cons #x400620 #x02) ;;
+   (cons #x400621 #x25) ;; and $0x33333333,%eax
+   (cons #x400622 #x33) ;;
+   (cons #x400623 #x33) ;;
+   (cons #x400624 #x33) ;;
+   (cons #x400625 #x33) ;;
+   (cons #x400626 #x81) ;; and $0x33333333,%edi
+   (cons #x400627 #xe7) ;;
+   (cons #x400628 #x33) ;;
+   (cons #x400629 #x33) ;;
+   (cons #x40062a #x33) ;;
+   (cons #x40062b #x33) ;;
+   (cons #x40062c #x01) ;; add %eax,%edi
+   (cons #x40062d #xc7) ;;
+   (cons #x40062e #x89) ;; mov %edi,%eax
+   (cons #x40062f #xf8) ;;
+   (cons #x400630 #xc1) ;; shr $0x4,%eax
+   (cons #x400631 #xe8) ;;
+   (cons #x400632 #x04) ;;
+   (cons #x400633 #x01) ;; add %edi,%eax
+   (cons #x400634 #xf8) ;;
+   (cons #x400635 #x25) ;; and $0xf0f0f0f,%eax
+   (cons #x400636 #x0f) ;;
+   (cons #x400637 #x0f) ;;
+   (cons #x400638 #x0f) ;;
+   (cons #x400639 #x0f) ;;
+   (cons #x40063a #x69) ;; imul $0x1010101,%eax,%eax
+   (cons #x40063b #xc0) ;;
+   (cons #x40063c #x01) ;;
+   (cons #x40063d #x01) ;;
+   (cons #x40063e #x01) ;;
+   (cons #x40063f #x01) ;;
+   (cons #x400640 #xc1) ;; shr $0x18,%eax
+   (cons #x400641 #xe8) ;;
+   (cons #x400642 #x18) ;;
+   (cons #x400643 #xc3) ;; retq
+   (cons #x400644 #x66) ;; data32 data32 nopw %cs:0x0(%rax,%rax,1)
+   (cons #x400645 #x66) ;;
+   (cons #x400646 #x66) ;;
+   (cons #x400647 #x2e) ;;
+   (cons #x400648 #x0f) ;;
+   (cons #x400649 #x1f) ;;
+   (cons #x40064a #x84) ;;
+   (cons #x40064b #x00) ;;
+   (cons #x40064c #x00) ;;
+   (cons #x40064d #x00) ;;
+   (cons #x40064e #x00) ;;
+   (cons #x40064f #x00) ;;
 
    ))
 
@@ -204,86 +203,6 @@
    :g-bindings
    `((rdi    (:g-number ,(gl-int 0 1 33))))))
 
-(local
- ;; From accumulated persistence.
- (in-theory (e/d* ()
-                  ((:rewrite loghead-of-non-integerp)
-                   (:type-prescription bitops::logtail-natp)
-                   (:rewrite default-unary-minus)
-                   (:rewrite default-+-1)
-                   (:rewrite loghead-zero-smaller)
-                   (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
-                   (:rewrite logand-redundant)
-                   (:rewrite zf-spec-thm)
-                   (:linear rflags-is-n32p)
-                   (:rewrite acl2::ifix-when-not-integerp)
-                   (:linear bitops::logand->=-0-linear-2)
-                   (:linear bitops::upper-bound-of-logand . 2)
-                   (:rewrite bitops::logbitp-when-bitmaskp)
-                   (:rewrite acl2::ash-0)
-                   (:rewrite bitops::logbitp-of-negative-const)
-                   (:rewrite bitops::logbitp-of-mask)
-                   (:rewrite bitops::logbitp-of-const)
-                   (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
-                   (:meta bitops::open-logbitp-of-const-lite-meta)
-                   (:rewrite rb-values-and-!flgi-in-system-level-mode)
-                   (:rewrite acl2::zip-open)
-                   (:type-prescription natp)
-                   (:type-prescription acl2::logtail-type)
-                   (:rewrite canonical-address-p-limits-thm-3)
-                   (:rewrite rb-values-and-!flgi-undefined-in-system-level-mode)
-                   (:rewrite default-<-1)
-                   (:rewrite acl2::consp-when-member-equal-of-atom-listp)
-                   (:rewrite acl2::difference-unsigned-byte-p)
-                   (:rewrite bitops::signed-byte-p-monotonicity)
-                   (:rewrite default-+-2)
-                   (:rewrite subset-p-cdr-y)
-                   (:rewrite default-<-2)
-                   (:rewrite acl2::equal-of-booleans-rewrite)
-                   (:rewrite canonical-address-p-limits-thm-2)
-                   (:rewrite canonical-address-p-limits-thm-1)
-                   (:rewrite set::sets-are-true-lists)
-                   (:rewrite bitops::logior-fold-consts)
-                   (:linear n01p-zf-spec)
-                   (:definition true-listp)
-                   (:rewrite acl2::alistp-when-hons-duplicity-alist-p)
-                   (:type-prescription xw)
-                   (:type-prescription bitp)
-                   (:rewrite gl::nonnil-symbol-listp-true-listp)
-                   (:rewrite set::nonempty-means-set)
-                   (:rewrite acl2::hons-duplicity-alist-p-when-not-consp)
-                   (:rewrite acl2::unsigned-byte-p-loghead)
-                   (:rewrite default-*-2)
-                   (:linear bitops::logand-<-0-linear)
-                   (:rewrite bitops::logior-equal-0)
-                   (:type-prescription !flgi)
-                   (:rewrite unsigned-byte-p-of-logand-1)
-                   (:type-prescription set::setp-type)
-                   (:type-prescription acl2::nonnil-symbol-listp)
-                   (:type-prescription acl2::hons-duplicity-alist-p)
-                   (:type-prescription set::empty-type)
-                   (:linear bsf-posp-strict-upper-bound)
-                   (:rewrite signed-byte-p-limits-thm)
-                   (:rewrite acl2::posp-redefinition)
-                   (:linear <=-logior)
-                   (:linear bitops::logior-<-0-linear-2)
-                   (:linear bitops::logior-<-0-linear-1)
-                   (:linear bitops::logior->=-0-linear)
-                   (:rewrite set::in-set)
-                   (:rewrite acl2::consp-of-car-when-atom-listp)
-                   (:rewrite default-*-1)
-                   (:type-prescription zip)
-                   (:linear n01p-pf-spec32)
-                   (:rewrite acl2::zp-when-integerp)
-                   (:rewrite acl2::zp-when-gt-0)
-                   (:rewrite get-prefixes-opener-lemma-zero-cnt)
-                   (:linear n01p-of-spec32)
-                   (:linear n01p-sub-af-spec32)
-                   (:linear n01p-add-af-spec32)
-                   (:type-prescription posp)
-                   (:rewrite x86-run-halted)
-                   (:type-prescription acl2::logtail$inline)))))
-
 (defthm x86-popcount-32-symbolic-simulation
   (implies (and (x86p x86)
                 (equal (ms x86) nil)
@@ -292,11 +211,7 @@
                 (n32p (rgfi *rdi* x86))
                 (canonical-address-p (rip x86))
                 (canonical-address-p (+ -1 (len *popcount-32-bytes*) (rip x86)))
-                (program-at (create-canonical-address-list
-                             (len *popcount-32-bytes*)
-                             (rip x86))
-                            *popcount-32-bytes*
-                            x86))
+                (prog-at (rip x86) *popcount-32-bytes* x86))
            (equal (rgfi *rax* (x86-run 15 x86))
                   (logcount (xr :rgf *rdi* x86))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -339,11 +254,6 @@
                                     write-user-rflags)
 
                                    (unsigned-byte-p
-
-                                    wb-remove-duplicate-writes
-                                    append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp
                                     las-to-pas-values-and-!flgi
                                     las-to-pas
                                     default-+-2
@@ -842,6 +752,100 @@
 ;; 37 nopl (%rax)
 
 (local
+ ;; From accumulated persistence.
+ (in-theory (e/d* ()
+                  ((:rewrite loghead-of-non-integerp)
+                   (:type-prescription bitops::logtail-natp)
+                   (:rewrite default-unary-minus)
+                   (:rewrite default-+-1)
+                   (:rewrite loghead-zero-smaller)
+                   (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
+                   (:rewrite logand-redundant)
+                   (:rewrite zf-spec-thm)
+                   (:linear rflags-is-n32p)
+                   (:rewrite acl2::ifix-when-not-integerp)
+                   (:linear bitops::logand->=-0-linear-2)
+                   (:linear bitops::upper-bound-of-logand . 2)
+                   (:rewrite bitops::logbitp-when-bitmaskp)
+                   (:rewrite acl2::ash-0)
+                   (:rewrite bitops::logbitp-of-negative-const)
+                   (:rewrite bitops::logbitp-of-mask)
+                   (:rewrite bitops::logbitp-of-const)
+                   (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
+                   (:meta bitops::open-logbitp-of-const-lite-meta)
+                   (:rewrite rb-values-and-!flgi-in-system-level-mode)
+                   (:rewrite acl2::zip-open)
+                   (:type-prescription natp)
+                   (:type-prescription acl2::logtail-type)
+                   (:rewrite canonical-address-p-limits-thm-3)
+                   (:rewrite rb-values-and-!flgi-undefined-in-system-level-mode)
+                   (:rewrite default-<-1)
+                   (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                   (:rewrite acl2::difference-unsigned-byte-p)
+                   (:rewrite bitops::signed-byte-p-monotonicity)
+                   (:rewrite default-+-2)
+                   (:rewrite subset-p-cdr-y)
+                   (:rewrite default-<-2)
+                   (:rewrite acl2::equal-of-booleans-rewrite)
+                   (:rewrite canonical-address-p-limits-thm-2)
+                   (:rewrite canonical-address-p-limits-thm-1)
+                   (:rewrite set::sets-are-true-lists)
+                   (:rewrite bitops::logior-fold-consts)
+                   (:linear n01p-zf-spec)
+                   (:definition true-listp)
+                   (:rewrite acl2::alistp-when-hons-duplicity-alist-p)
+                   (:type-prescription xw)
+                   (:type-prescription bitp)
+                   (:rewrite gl::nonnil-symbol-listp-true-listp)
+                   (:rewrite set::nonempty-means-set)
+                   (:rewrite acl2::hons-duplicity-alist-p-when-not-consp)
+                   (:rewrite acl2::unsigned-byte-p-loghead)
+                   (:rewrite default-*-2)
+                   (:linear bitops::logand-<-0-linear)
+                   (:rewrite bitops::logior-equal-0)
+                   (:type-prescription !flgi)
+                   (:rewrite unsigned-byte-p-of-logand-1)
+                   (:type-prescription set::setp-type)
+                   (:type-prescription acl2::nonnil-symbol-listp)
+                   (:type-prescription acl2::hons-duplicity-alist-p)
+                   (:type-prescription set::empty-type)
+                   (:linear bsf-posp-strict-upper-bound)
+                   (:rewrite signed-byte-p-limits-thm)
+                   (:rewrite acl2::posp-redefinition)
+                   (:linear <=-logior)
+                   (:linear bitops::logior-<-0-linear-2)
+                   (:linear bitops::logior-<-0-linear-1)
+                   (:linear bitops::logior->=-0-linear)
+                   (:rewrite set::in-set)
+                   (:rewrite acl2::consp-of-car-when-atom-listp)
+                   (:rewrite default-*-1)
+                   (:type-prescription zip)
+                   (:linear n01p-pf-spec32)
+                   (:rewrite acl2::zp-when-integerp)
+                   (:rewrite acl2::zp-when-gt-0)
+                   (:rewrite get-prefixes-opener-lemma-zero-cnt)
+                   (:linear n01p-of-spec32)
+                   (:linear n01p-sub-af-spec32)
+                   (:linear n01p-add-af-spec32)
+                   (:type-prescription posp)
+                   (:rewrite x86-run-halted)
+                   (:type-prescription acl2::logtail$inline)
+                   (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                   (:linear bitops::upper-bound-of-logand . 1)
+                   (:linear bitops::logand->=-0-linear-1)
+                   (:rewrite rb-returns-x86-in-non-marking-mode-if-no-error)
+                   (:definition page-structure-marking-mode$inline)
+                   (:linear acl2::logext-bounds)
+                   (:meta acl2::mv-nth-cons-meta)
+                   (:rewrite acl2::natp-when-integerp)
+                   (:rewrite acl2::natp-when-gte-0)
+                   (:rewrite acl2::reduce-integerp-+-constant)
+                   (:linear mv-nth-1-imul-spec-32)
+                   (:type-prescription booleanp-page-structure-marking-mode-type)))))
+
+;; The following takes ~600s. Sigh.
+;; (acl2::why x86-run-opener-not-ms-not-zp-n)
+(local
  (defthm x86-popcount-64-symbolic-simulation-snorkeling
    (implies (and (x86p x86)
                  (equal (ms x86) nil)
@@ -851,11 +855,7 @@
                  (equal n (rr64 *rdi* x86))
                  (canonical-address-p (rip x86))
                  (canonical-address-p (+ -1 (len *popcount-64-bytes*) (rip x86)))
-                 (program-at (create-canonical-address-list
-                              (len *popcount-64-bytes*)
-                              (rip x86))
-                             *popcount-64-bytes*
-                             x86))
+                 (prog-at (rip x86) *popcount-64-bytes* x86))
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -901,15 +901,9 @@
                                      x86-effective-addr
                                      subset-p
                                      ;; Flags
-                                     write-user-rflags
-                                     )
+                                     write-user-rflags)
 
                                     (unsigned-byte-p
-
-                                     wb-remove-duplicate-writes
-                                     append-and-create-addr-bytes-alist
-                                     cons-and-create-addr-bytes-alist
-                                     append-and-addr-byte-alistp
                                      las-to-pas-values-and-!flgi
                                      las-to-pas
                                      default-+-2
@@ -930,11 +924,7 @@
                 (equal n (rr64 *rdi* x86))
                 (canonical-address-p (rip x86))
                 (canonical-address-p (+ -1 (len *popcount-64-bytes*) (rip x86)))
-                (program-at (create-canonical-address-list
-                             (len *popcount-64-bytes*)
-                             (rip x86))
-                            *popcount-64-bytes*
-                            x86))
+                (prog-at (rip x86) *popcount-64-bytes* x86))
            (equal (rgfi *rax* (x86-run *popcount-count* x86))
                   (logcount n)))
   :hints (("Goal"

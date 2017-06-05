@@ -10,7 +10,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* (rb-rb-subset)
+(local (in-theory (e/d* ()
                         (mv-nth-1-wb-and-!flgi-commute
                          ia32e-la-to-pa-values-and-!flgi
                          las-to-pas
@@ -27,15 +27,12 @@
            (equal (x86-run (loop-clk-recur) x86)
                   (XW
                    :RGF *RAX*
-                   (LOGEXT 64
-                           (+ 18446744073709551612
-                              (XR :RGF *RAX* X86)))
+                   (LOGHEAD 64
+                            (+ 18446744073709551612
+                               (XR :RGF *RAX* X86)))
                    (XW
                     :RGF *RCX*
-                    (COMBINE-BYTES
-                     (MV-NTH 1
-                             (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                                 :R X86)))
+                    (MV-NTH 1 (RB 4 (XR :RGF *RDI* X86) :R X86))
                     (XW
                      :RGF *RSI* (+ 4 (XR :RGF *RSI* X86))
                      (XW
@@ -45,11 +42,9 @@
                        (MV-NTH
                         1
                         (WB
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RSI* X86))
-                          (MV-NTH 1
-                                  (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (XR :RGF *RDI* X86))
-                                      :R X86)))
+                         4 (XR :RGF *RSI* X86)
+                         :W
+                         (MV-NTH 1 (RB 4 (XR :RGF *RDI* X86) :R X86))
                          (!FLGI
                           *CF*
                           (CF-SPEC64 (+ 18446744073709551612
@@ -101,9 +96,7 @@
                              x86-effective-addr
                              subset-p
                              signed-byte-p)
-                            (wb-remove-duplicate-writes
-                             create-canonical-address-list
-                             get-prefixes-opener-lemma-group-4-prefix
+                            (get-prefixes-opener-lemma-group-4-prefix
                              get-prefixes-opener-lemma-group-3-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-1-prefix)))))
@@ -117,9 +110,8 @@
                   (source-bytes k dst-addr x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
-                             rb-rb-split-reads
-                             take-and-rb
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -132,9 +124,8 @@
                   (source-bytes 4 (+ 4 src-addr) x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
-                             rb-rb-split-reads
-                             take-and-rb
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -145,48 +136,30 @@
                 (< 4 m))
            (equal (destination-bytes (+ 4 k) (+ 4 dst-addr) (x86-run (loop-clk-recur) x86))
                   (source-bytes (+ 4 k) (+ 4 src-addr) x86)))
-  :hints (("Goal" :use ((:instance effects-copydata-loop-recur)
-                        (:instance effects-copyData-loop-recur-destination-address-projection-copied)
-                        (:instance effects-copyData-loop-recur-destination-address-projection-original)
-                        (:instance rb-rb-split-reads
-                                   (k k)
-                                   (j 4)
-                                   (r-w-x :r)
-                                   (addr (+ (- k) (xr :rgf *rsi* x86)))
-                                   (x86 (x86-run (loop-clk-recur) x86))))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-loop-recur)
+                 (:instance effects-copyData-loop-recur-destination-address-projection-copied)
+                 (:instance effects-copyData-loop-recur-destination-address-projection-original)
+                 (:instance rb-rb-split-reads
+                            (k 4)
+                            (j k)
+                            (r-x :r)
+                            (addr (+ (- k) (xr :rgf *rsi* x86)))
+                            (x86 (x86-run (loop-clk-recur) x86)))
+                 (:instance rb-rb-split-reads
+                            (k 4)
+                            (j k)
+                            (r-x :r)
+                            (addr (+ (- k) (xr :rgf *rdi* x86)))
+                            (x86 x86)))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              effects-copyData-loop-recur-destination-address-projection-copied
                              effects-copyData-loop-recur-destination-address-projection-original
                              rb-rb-split-reads
-                             take-and-rb
                              (loop-clk-recur)
-                             force (force))))
-          (if
-              ;; Apply to all subgoals.
-              (and (consp (car id))
-                   (equal (car id) '(0))
-                   (equal (len (cadr id)) 1))
-              '(:use ((:instance rb-rb-split-reads
-                                 (k k)
-                                 (j 4)
-                                 (r-w-x :r)
-                                 (addr (+ (- k) (xr :rgf *rdi* x86)))
-                                 (x86 x86)))
-                     :in-theory (e/d* ()
-                                      (default-+-2
-                                        (:t xw)
-                                        (:t consp-append)
-                                        create-canonical-address-list
-                                        disjoint-p-two-create-canonical-address-lists-thm-1
-                                        loop-clk-recur
-                                        effects-copyData-loop-recur-destination-address-projection-copied
-                                        effects-copyData-loop-recur-destination-address-projection-original
-                                        rb-rb-split-reads
-                                        take-and-rb
-                                        (loop-clk-recur)
-                                        force (force))))
-            nil)))
+                             force (force))))))
 
 (defthm effects-copyData-loop-recur-source-address-projection-original
   ;; src[(+ -k src-addr) to src-addr] in (x86-run (loop-clk-recur) x86) =
@@ -198,8 +171,6 @@
   :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
-                             rb-rb-split-reads
-                             take-and-rb
                              (loop-clk-recur)
                              force (force))))))
 
@@ -213,8 +184,6 @@
   :hints (("Goal" :use ((:instance effects-copydata-loop-recur))
            :in-theory (e/d* ()
                             (loop-clk-recur
-                             rb-rb-split-reads
-                             take-and-rb
                              (loop-clk-recur)
                              force (force))))))
 
@@ -229,17 +198,23 @@
                         (:instance effects-copyData-loop-recur-source-address-projection-copied)
                         (:instance effects-copyData-loop-recur-source-address-projection-original)
                         (:instance rb-rb-split-reads
-                                   (k k)
-                                   (j 4)
-                                   (r-w-x :r)
+                                   (k 4)
+                                   (j k)
+                                   (r-x :r)
                                    (addr (+ (- k) (xr :rgf *rdi* x86)))
-                                   (x86 (x86-run (loop-clk-recur) x86))))
+                                   (x86 (x86-run (loop-clk-recur) x86)))
+                        (:instance rb-rb-split-reads
+                                   (k 4)
+                                   (j k)
+                                   (r-x :r)
+                                   (addr (+ (- k) (xr :rgf *rdi* x86)))
+                                   (x86 x86)))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              effects-copyData-loop-recur-source-address-projection-copied
                              effects-copyData-loop-recur-source-address-projection-original
                              rb-rb-split-reads
-                             take-and-rb
                              (loop-clk-recur)
                              force (force))))))
 
@@ -250,7 +225,8 @@
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -261,7 +237,8 @@
                   (alignment-checking-enabled-p x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* (alignment-checking-enabled-p)
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -272,7 +249,8 @@
                   (xr :ms 0 x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -283,7 +261,8 @@
                   (xr :fault 0 x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -291,10 +270,8 @@
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m)
                 (equal prog-len (len *copydata*)))
-           (equal (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* (x86-run (loop-clk-recur) x86))
-                  (program-at (create-canonical-address-list prog-len addr)
-                              *copyData* x86)))
+           (equal (prog-at addr *copyData* (x86-run (loop-clk-recur) x86))
+                  (prog-at addr *copyData* x86)))
   :hints (("Goal"
            :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
@@ -309,7 +286,8 @@
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -320,7 +298,8 @@
                   (+ 4 (xr :rgf *rsi* x86))))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -332,7 +311,8 @@
   :hints (("Goal"
            :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -344,7 +324,8 @@
   :hints (("Goal"
            :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -356,7 +337,8 @@
   :hints (("Goal"
            :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
-                            (loop-clk-recur
+                            (separate-smaller-regions
+                             loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 
@@ -365,19 +347,16 @@
                 (< 4 m))
            (x86p (x86-run (loop-clk-recur) x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                   (loop-clk-recur
+                                   (separate-smaller-regions
+                                    loop-clk-recur
                                     (loop-clk-recur)
                                     force (force))))))
 
 (defthm effects-copyData-loop-recur-return-address-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m))
-           (equal (mv-nth 1
-                          (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                              :r (x86-run (loop-clk-recur) x86)))
-                  (mv-nth 1
-                          (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                              :r x86))))
+           (equal (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86)) :r (x86-run (loop-clk-recur) x86)))
+                  (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86)) :r x86))))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur)
                         (:instance loop-preconditions-fwd-chain-to-its-body))
            :in-theory (e/d* ()
@@ -410,7 +389,6 @@
                              effects-copyData-loop-helper-14)
                             (loop-clk-recur
                              rb-rb-split-reads
-                             take-and-rb
                              destination-bytes
                              source-bytes
                              loop-preconditions
