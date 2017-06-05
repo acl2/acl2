@@ -1029,7 +1029,8 @@
                     new-body)
 
 ; Otherwise untranslate is :nice, but we give special treatment for defun-nx
-; (and defund-nx), to eliminate an extra prog2$.
+; (and defund-nx), to eliminate an extra prog2$ (added 6/5/2017 to accommodate
+; a change in directed-untranslate).
 
                    ((and non-executable
                          (eq (car fn-ubody) ; always true?
