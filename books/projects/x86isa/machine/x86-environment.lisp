@@ -261,6 +261,61 @@
 
   (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))
 
+  (define combine-bytes (bytes)
+    :guard (byte-listp bytes)
+    :enabled t
+    (if (endp bytes)
+        0
+      (logior (car bytes)
+              (ash (combine-bytes (cdr bytes)) 8)))
+
+    ///
+    (defthm natp-combine-bytes
+      (implies (force (byte-listp bytes))
+               (natp (combine-bytes bytes)))
+      :rule-classes :type-prescription)
+
+    (local
+     (encapsulate
+       ()
+       (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+       (defthm plus-and-expt
+         (implies (and (natp y)
+                       (natp a)
+                       (< a (expt 256 y))
+                       (natp b)
+                       (< b 256))
+                  (< (+ b (* 256 a))
+                     (expt 256 (+ 1 y)))))))
+
+    (local (include-book "arithmetic-5/top" :dir :system))
+
+    (local
+     (in-theory (disable acl2::normalize-factors-gather-exponents
+                         acl2::arith-5-active-flag
+                         acl2::|(* c (expt d n))|)))
+
+    (defthm size-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal l (len bytes)))
+               (< (combine-bytes bytes) (expt 2 (ash l 3))))
+      :hints (("Goal" :in-theory (e/d* (logapp) ())))
+      :rule-classes :linear)
+
+    (local (in-theory (e/d* (unsigned-byte-p) ())))
+
+    (defthm unsigned-byte-p-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal n (ash (len bytes) 3)))
+               (unsigned-byte-p n (combine-bytes bytes)))
+      :rule-classes ((:rewrite)
+                     (:linear
+                      :corollary
+                      (implies (and (byte-listp bytes)
+                                    (equal n (ash (len bytes) 3)))
+                               (<= 0 (combine-bytes bytes)))))))
+
   (local (in-theory (e/d () (str::coerce-to-list-removal))))
 
   (define write-bytes-to-memory
@@ -273,14 +328,14 @@
     :guard (and (integerp ptr)
                 (<= (- *2^47*) ptr)
                 (byte-listp bytes)
-                (< (+ (len bytes) ptr) *2^47*))
+                (< (+ -1 (len bytes) ptr) *2^47*))
     :returns (mv flg
                  (x86 x86p :hyp (x86p x86)))
 
     (if (mbt (and (integerp ptr)
                   (<= (- *2^47*) ptr)
                   (byte-listp bytes)
-                  (< (+ (len bytes) ptr) *2^47*)))
+                  (< (+ -1 (len bytes) ptr) *2^47*)))
 
         (if (endp bytes)
             (mv nil x86)
@@ -288,11 +343,33 @@
                 (wm08 ptr (the (unsigned-byte 8) (car bytes)) x86))
                ((when flg)
                 (mv flg x86)))
-              (write-bytes-to-memory
-               (the (signed-byte 49) (1+ ptr))
-               (cdr bytes) x86)))
+            (write-bytes-to-memory
+             (the (signed-byte 49) (1+ ptr))
+             (cdr bytes) x86)))
 
-      (mv t x86)))
+      (mv t x86))
+
+    ///
+
+    (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+
+    (defthm rewrite-write-bytes-to-memory-to-wb
+      (implies (and (programmer-level-mode x86)
+                    (canonical-address-p (+ -1 (len bytes) addr))
+                    (canonical-address-p addr)
+                    (byte-listp bytes))
+               (and
+                (equal (mv-nth 0 (write-bytes-to-memory addr bytes x86))
+                       (mv-nth 0 (wb (len bytes) addr :w (combine-bytes bytes) x86)))
+                (equal (mv-nth 1 (write-bytes-to-memory addr bytes x86))
+                       (mv-nth 1 (wb (len bytes) addr :w (combine-bytes bytes) x86)))))
+      :hints (("Goal" :in-theory (e/d* (wb
+                                        wb-1
+                                        wb-1-opener-theorem
+                                        wm08
+                                        canonical-address-p
+                                        signed-byte-p)
+                                       ())))))
 
   (define write-string-to-memory
     ((ptr :type (signed-byte #.*max-linear-address-size+1*))
@@ -303,14 +380,13 @@
     :guard (and (stringp str)
                 (integerp ptr)
                 (<= (- *2^47*) ptr)
-                (< (+ ptr (length str)) *2^47*))
+                (< (+ -1 ptr (length str)) *2^47*))
 
     :returns (mv flg
                  (x86 x86p :hyp (x86p x86)))
 
     (let ((bytes (string-to-bytes str)))
-      (write-bytes-to-memory ptr bytes x86)))
-  )
+      (write-bytes-to-memory ptr bytes x86))))
 
 ;; ======================================================================
 

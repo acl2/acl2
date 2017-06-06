@@ -42,7 +42,7 @@
               (bind-free
                (separate-bindings
                 'separate-smaller-regions mfc state)
-               (n-1 a-1 n-2 a-2))              
+               (n-1 a-1 n-2 a-2))
               (<= a-2 a-2-bigger)
               (<= (+ n-2-smaller a-2-bigger) (+ n-2 a-2))
               (<= a-1 a-1-bigger)
@@ -55,7 +55,9 @@
     (and (separate i (+ (- i) x) j x)
          (implies (<= j i)
                   (separate i x j (+ (- i) x)))
-         (separate i x j (+ i x)))
+         (separate i x j (+ i x))
+         (implies (or (<= (+ j k2) k1) (<= (+ i k1) k2))
+                  (separate i (+ k1 x) j (+ k2 x))))
     :hints (("Goal" :in-theory (e/d* (separate) ())))))
 
 ;; ======================================================================

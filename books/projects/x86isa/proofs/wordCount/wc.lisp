@@ -16,8 +16,6 @@
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-(local (in-theory (e/d ()
-                       (byte-ify-and-combine-bytes))))
 
 ;; ======================================================================
 
@@ -26,34 +24,27 @@
 ;; Inside the loop:
 
 (defun-nx word-state (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -8 (xr :rgf *rbp* x86)) :r next-x86)))
 
 (defun-nx nc (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -12 (xr :rgf *rbp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -12 (xr :rgf *rbp* x86)) :r next-x86)))
 
 (defun-nx nw (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -16 (xr :rgf *rbp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -16 (xr :rgf *rbp* x86)) :r next-x86)))
 
 (defun-nx nl (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -20 (xr :rgf *rbp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -20 (xr :rgf *rbp* x86)) :r next-x86)))
 
 ;; In the Main sub-routine (after return from GC):
 
 (defun-nx program-nc (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -20 (xr :rgf *rsp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -20 (xr :rgf *rsp* x86)) :r next-x86)))
 
 (defun-nx program-nw (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -24 (xr :rgf *rsp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -24 (xr :rgf *rsp* x86)) :r next-x86)))
 
 (defun-nx program-nl (x86 next-x86)
-  (mv-nth 1 (rb (create-canonical-address-list 4 (+ -28 (xr :rgf *rsp* x86)))
-                :r next-x86)))
+  (mv-nth 1 (rb 4 (+ -28 (xr :rgf *rsp* x86)) :r next-x86)))
 
 ;;======================================================================
 
@@ -250,53 +241,56 @@
        (equal (xr :os-info 0 x86) :linux)
        (env-assumptions x86)
        (canonical-address-p (xr :rgf *rsp* x86))
-       ;; (equal (xr :rip 0 x86) (+ (len *gc*) addr))
-       (equal addr (- (xr :rip 0 x86) (len *gc*)))
+       ;; (equal (xr :rip 0 x86) (+ *gc-len* addr))
+       (equal addr (- (xr :rip 0 x86) *gc-len*))
        (canonical-address-p addr)
-       (canonical-address-p (+ (1- (len *wc*)) addr))
+       (canonical-address-p (+ (1- *wc-len*) addr))
        ;; The following accounts for the rsp constraints of GC as
        ;; well.
        (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
-       (canonical-address-p (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))
-       ;; 104 =  (+ 48 8 #x20 8) + 8
-       (disjoint-p
-        ;; IMPORTANT:
-        ;; Convention: Keep the program addresses as the first
-        ;; argument.
-        (create-canonical-address-list
-         (len *wc*) addr)
-        (create-canonical-address-list
-         104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86))))
+       (canonical-address-p (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+       ;; 104 =  (+ 48 8 32 8) + 8
+       (separate
+        ;; Program
+        *wc-len* addr
+        ;; Stack
+        104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        ;; Enabling the SYSCALL instruction.
        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-       (program-at (create-canonical-address-list
-                    (len *wc*) addr) *wc* x86)))
+       (prog-at addr *wc* x86)))
 
 (defthm preconditions-forward-chain-addresses-info
   (implies (preconditions addr x86)
-           (and (canonical-address-p (xr :rgf *rsp* x86))
-                ;; (equal (xr :rip 0 x86) (+ (len *gc*) addr))
-                (equal addr (- (xr :rip 0 x86) (len *gc*)))
+           (and (x86p x86)
+                (xr :programmer-level-mode 0 x86)
+                ;; I don't care about alignment checks for this proof.
+                (not (alignment-checking-enabled-p x86))
+                (equal (xr :os-info 0 x86) :linux)
+                (env-assumptions x86)
+                (canonical-address-p (xr :rgf *rsp* x86))
+                ;; (equal (xr :rip 0 x86) (+ *gc-len* addr))
+                (equal addr (- (xr :rip 0 x86) *gc-len*))
                 (canonical-address-p addr)
-                (canonical-address-p (+ (1- (len *wc*)) addr))
+                (canonical-address-p (+ (1- *wc-len*) addr))
                 ;; The following accounts for the rsp constraints of GC as
                 ;; well.
                 (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
-                (canonical-address-p (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))
-                ;; 104 =  (+ 48 8 #x20 8) + 8
-                (disjoint-p
-                 ;; IMPORTANT:
-                 ;; Convention: Keep the program addresses as the first
-                 ;; argument.
-                 (create-canonical-address-list
-                  (len *wc*) addr)
-                 (create-canonical-address-list
-                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86))))
-                (program-at (create-canonical-address-list
-                             (len *wc*) addr) *wc* x86)))
+                (canonical-address-p (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+                ;; 104 =  (+ 48 8 32 8) + 8
+                (separate
+                 ;; Program
+                 *wc-len* addr
+                 ;; Stack
+                 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+                (equal (xr :ms 0 x86) nil)
+                (equal (xr :fault 0 x86) nil)
+                ;; Enabling the SYSCALL instruction.
+                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+                (prog-at addr *wc* x86)))
   :rule-classes :forward-chaining)
 
 (defthm preconditions-fwd-chaining-essentials
@@ -314,8 +308,7 @@
   :rule-classes :forward-chaining)
 
 (defun-nx loop-preconditions (addr x86)
-  ;; Note: addr is the address of the first instruction in the GC
-  ;; subroutine.
+  ;; Note: addr is the address of the first instruction in the GC subroutine.
   (and (x86p x86)
        (xr :programmer-level-mode 0 x86)
        (not (alignment-checking-enabled-p x86))
@@ -324,20 +317,18 @@
        (canonical-address-p (xr :rgf *rsp* x86))
        ;; Address of the call instruction in the main sub-routine
        ;; 95: Position of the call instruction in the main sub-routine
-       ;; (equal (xr :rip 0 x86) (+ (1- (+ (len *gc*) 95)) addr))
-       (equal addr (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
+       ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+       (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
        (canonical-address-p addr)
-       (canonical-address-p (+ (1- (len *wc*)) addr))
-       (canonical-address-p (+ #x20 (xr :rgf *rsp* x86)))
-       (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
-       ;; (+ 8 #x20 8 #x20) = 80
-       (disjoint-p
-        ;; IMPORTANT: Keep the program addresses as the first
-        ;; argument.
-        (create-canonical-address-list
-         (len *wc*) addr)
-        (create-canonical-address-list
-         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86))))
+       (canonical-address-p (+ (1- *wc-len*) addr))
+       (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
+       (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+       ;; (+ 8 32 8 32) = 80
+       (separate
+        ;; Program
+        *wc-len* addr
+        ;; Stack
+        80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
        ;; IMPORTANT: Why doesn't the following hyp work?
        ;; (equal (xr :rgf *rbp* x86) (- (+ (xr :rgf *rsp* x86) 40) 8))
        ;; See loop-preconditions-weird-rbp-rsp.
@@ -349,7 +340,7 @@
        ;; Enabling the SYSCALL instruction.
        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-       (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86)))
+       (prog-at addr *wc* x86)))
 
 (defthm loop-preconditions-weird-rbp-rsp
   (implies (equal (xr :rgf *rbp* x86)
@@ -368,27 +359,24 @@
            (and (canonical-address-p (xr :rgf *rsp* x86))
                 ;; Address of the call instruction in the main sub-routine
                 ;; 95: Position of the call instruction in the main sub-routine
-                ;; (equal (xr :rip 0 x86) (+ (1- (+ (len *gc*) 95)) addr))
-                (equal addr (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
+                ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+                (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
                 (canonical-address-p addr)
-                (canonical-address-p (+ (1- (len *wc*)) addr))
+                (canonical-address-p (+ (1- *wc-len*) addr))
                 (canonical-address-p (+ #x20 (xr :rgf *rsp* x86)))
                 (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
                 ;; (+ 8 #x20 8 #x20) = 80
-                (disjoint-p
-                 ;; IMPORTANT: Keep the program addresses as the first
-                 ;; argument.
-                 (create-canonical-address-list
-                  (len *wc*) addr)
-                 (create-canonical-address-list
-                  80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86))))
+                (separate
+                 ;; Program
+                 *wc-len* addr
+                 ;; Stack
+                 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
                 ;; IMPORTANT: Why doesn't the following hyp work?
                 ;; (equal (xr :rgf *rbp* x86) (- (+ (xr :rgf *rsp* x86) 40) 8))
                 (canonical-address-p (xr :rgf *rbp* x86))
                 (equal (xr :rgf *rsp* x86)
                        (- (xr :rgf *rbp* x86) 32))
-                (program-at (create-canonical-address-list
-                             (len *wc*) addr) *wc* x86)))
+                (prog-at addr *wc* x86)))
   :rule-classes ((:forward-chaining :trigger-terms ((loop-preconditions addr x86)))))
 
 (defthm loop-preconditions-fwd-chaining-essentials
@@ -423,7 +411,7 @@
 ;; Main
 ;;**********************************************************************
 
-(in-theory (e/d* (subset-p) (env-assumptions i64p)))
+(in-theory (e/d* () (env-assumptions i64p)))
 
 (defthm effects-to-gc-no-call
 
@@ -452,75 +440,87 @@
                       (MV-NTH
                        1
                        (WB
-                        (APPEND
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                          (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -16 (XR :RGF *RSP* X86)))
-                          '(0 0 0 0))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -20 (XR :RGF *RSP* X86)))
-                          '(0 0 0 0))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -24 (XR :RGF *RSP* X86)))
-                          '(0 0 0 0))
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -28 (XR :RGF *RSP* X86)))
-                          '(0 0 0 0)))
-                        (!FLGI
-                         *CF*
-                         (LOGHEAD 1
+                        4 (+ -28 (XR :RGF *RSP* X86))
+                        :W 0
+                        (MV-NTH
+                         1
+                         (WB
+                          4 (+ -24 (XR :RGF *RSP* X86))
+                          :W 0
+                          (MV-NTH
+                           1
+                           (WB
+                            4 (+ -20 (XR :RGF *RSP* X86))
+                            :W 0
+                            (MV-NTH
+                             1
+                             (WB
+                              4 (+ -16 (XR :RGF *RSP* X86))
+                              :W 0
+                              (MV-NTH
+                               1
+                               (WB
+                                8 (+ -8 (XR :RGF *RSP* X86))
+                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                                (!FLGI
+                                 *CF*
+                                 (LOGHEAD
+                                  1
                                   (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
                                                 32)))
-                         (!FLGI
-                          *PF*
-                          (LOGIOR
-                           (PF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                           (LOGHEAD
-                            -1
-                            (LOGTAIL 2
+                                 (!FLGI
+                                  *PF*
+                                  (LOGIOR
+                                   (PF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                                   (LOGHEAD
+                                    -1
+                                    (LOGTAIL
+                                     2
                                      (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
                                                    32)))))
-                          (!FLGI
-                           *AF*
-                           (LOGIOR
-                            (SUB-AF-SPEC64 (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                           32)
-                            (LOGHEAD
-                             -3
-                             (LOGTAIL 4
+                                  (!FLGI
+                                   *AF*
+                                   (LOGIOR
+                                    (SUB-AF-SPEC64 (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                   32)
+                                    (LOGHEAD
+                                     -3
+                                     (LOGTAIL
+                                      4
                                       (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
                                                     32)))))
-                           (!FLGI
-                            *ZF*
-                            (LOGIOR
-                             (ZF-SPEC (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                             (LOGHEAD
-                              -5
-                              (LOGTAIL 6
+                                   (!FLGI
+                                    *ZF*
+                                    (LOGIOR
+                                     (ZF-SPEC (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                                     (LOGHEAD
+                                      -5
+                                      (LOGTAIL
+                                       6
                                        (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
                                                      32)))))
-                            (!FLGI
-                             *SF*
-                             (LOGIOR
-                              (SF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                              (LOGHEAD
-                               -6
-                               (LOGTAIL 7
+                                    (!FLGI
+                                     *SF*
+                                     (LOGIOR
+                                      (SF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                                      (LOGHEAD
+                                       -6
+                                       (LOGTAIL
+                                        7
                                         (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
                                                       32)))))
-                             (!FLGI
-                              *OF*
-                              (LOGIOR
-                               (OF-SPEC64 (+ -40 (XR :RGF *RSP* X86)))
-                               (LOGHEAD
-                                -10
-                                (LOGTAIL
-                                 11
-                                 (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                               32)))))
-                              X86))))))))))))))
+                                     (!FLGI
+                                      *OF*
+                                      (LOGIOR
+                                       (OF-SPEC64 (+ -40 (XR :RGF *RSP* X86)))
+                                       (LOGHEAD
+                                        -10
+                                        (LOGTAIL
+                                         11
+                                         (BOOL->BIT
+                                          (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                             32)))))
+                                      X86))))))))))))))))))))))
   :hints (("Goal"
            :in-theory (e/d* (preconditions
                              gc-clk-main-before-call
@@ -555,15 +555,10 @@
                              rim08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
-                             subset-p
                              ;; Flags
                              write-user-rflags)
 
-                            (wb-remove-duplicate-writes
-                             append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp
-                             las-to-pas-values-and-!flgi
+                            (las-to-pas-values-and-!flgi
                              las-to-pas
                              default-+-2
                              get-prefixes-opener-lemma-group-1-prefix
@@ -627,10 +622,11 @@
                   (+ 94 (xr :rip 0 x86)))))
 
 (defthmd effects-to-gc-program-projection
-  (implies (and (preconditions addr x86)
-                (equal len-wc (len *wc*)))
-           (program-at (create-canonical-address-list len-wc addr)
-                       *wc* (x86-run (gc-clk-main-before-call) x86))))
+  (implies (preconditions addr x86)
+           (prog-at addr *wc* (x86-run (gc-clk-main-before-call) x86)))
+  :hints (("Goal" :use ((:instance effects-to-gc-no-call))
+           :in-theory (e/d* (preconditions)
+                            (effects-to-gc-no-call)))))
 
 (defthmd effects-to-gc-env-assumptions-projection
   (implies (preconditions addr x86)
@@ -672,27 +668,28 @@
 (defthm loop-preconditions-effects-to-gc
   (implies (preconditions addr x86)
            (loop-preconditions addr (x86-run (gc-clk-main-before-call) x86)))
-  :hints (("Goal" :in-theory (e/d* (effects-to-gc-rbp-projection
-                                    effects-to-gc-rsp-projection
-                                    x86p-effects-to-gc
-                                    effects-to-gc-msri-projection
-                                    effects-to-gc-rip-projection
-                                    effects-to-gc-ms-projection
-                                    effects-to-gc-fault-projection
-                                    effects-to-gc-env-assumptions-projection
-                                    (len)
-                                    effects-to-gc-programmer-level-mode-projection
-                                    effects-to-gc-alignment-checking-enabled-p-projection
-                                    effects-to-gc-os-info-projection
-                                    loop-preconditions-fwd-chaining-essentials
-                                    loop-preconditions-forward-chain-addresses-info
-                                    preconditions-fwd-chaining-essentials
-                                    preconditions-forward-chain-addresses-info
-                                    effects-to-gc-programmer-level-mode-projection
-                                    effects-to-gc-program-projection
-                                    subset-p-two-create-canonical-address-lists-general
-                                    )
-                                   (effects-to-gc-no-call))
+  :hints (("Goal"
+           :use ((:instance preconditions-forward-chain-addresses-info))
+           :in-theory (e/d* (effects-to-gc-rbp-projection
+                             effects-to-gc-rsp-projection
+                             x86p-effects-to-gc
+                             effects-to-gc-msri-projection
+                             effects-to-gc-rip-projection
+                             effects-to-gc-ms-projection
+                             effects-to-gc-fault-projection
+                             effects-to-gc-env-assumptions-projection
+                             (len)
+                             effects-to-gc-programmer-level-mode-projection
+                             effects-to-gc-alignment-checking-enabled-p-projection
+                             effects-to-gc-os-info-projection
+                             loop-preconditions-fwd-chaining-essentials
+                             loop-preconditions-forward-chain-addresses-info
+                             preconditions-fwd-chaining-essentials
+                             preconditions-forward-chain-addresses-info
+                             effects-to-gc-programmer-level-mode-projection
+                             effects-to-gc-program-projection)
+                            (effects-to-gc-no-call
+                             preconditions-forward-chain-addresses-info))
            :expand (loop-preconditions addr (x86-run (gc-clk-main-before-call) x86)))))
 
 ;; ----------------------------------------------------------------------
@@ -702,54 +699,27 @@
 (defthm effects-to-gc-variables-state
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
-           (equal (mv-nth 1 (rb
-                             (create-canonical-address-list 4 (+ -16 (xr :rgf *rsp* x86)))
-                             :r
-                             (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp)))))
+           (equal (mv-nth 1 (rb 4 (+ -16 (xr :rgf *rsp* x86)) :r
+                                (x86-run (gc-clk-main-before-call) x86)))
+                  0)))
 
 (defthmd effects-to-gc-variables-nc
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
-           (equal (mv-nth 1 (rb
-                             (create-canonical-address-list 4 (+ -20 (xr :rgf *rsp* x86)))
-                             :r
-                             (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp)))))
+           (equal (mv-nth 1 (rb 4 (+ -20 (xr :rgf *rsp* x86)) :r (x86-run (gc-clk-main-before-call) x86)))
+                  0)))
 
 (defthmd effects-to-gc-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
-           (equal (mv-nth 1 (rb
-                             (create-canonical-address-list 4 (+ -24 (xr :rgf *rsp* x86)))
-                             :r
-                             (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp)))))
+           (equal (mv-nth 1 (rb 4 (+ -24 (xr :rgf *rsp* x86)) :r (x86-run (gc-clk-main-before-call) x86)))
+                  0)))
 
 (defthmd effects-to-gc-variables-nl
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
-           (equal (mv-nth 1 (rb
-                             (create-canonical-address-list 4 (+ -28 (xr :rgf *rsp* x86)))
-                             :r
-                             (x86-run (gc-clk-main-before-call) x86)))
-                  (byte-ify 4 0)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp)))))
+           (equal (mv-nth 1 (rb 4 (+ -28 (xr :rgf *rsp* x86)) :r (x86-run (gc-clk-main-before-call) x86)))
+                  0)))
 
 ;;======================================================================
 ;; --------------------------------------------------------------------
@@ -769,54 +739,23 @@
 
   (local (in-theory (e/d* (take nthcdr) ())))
 
-  (local
-   (encapsulate
-     ()
+  (defthm grab-bytes-of-byte-listp
+    (implies (byte-listp xs)
+             (equal (grab-bytes xs) xs))
+    :hints (("Goal" :in-theory (e/d* (grab-bytes) ()))))
 
-     (local (include-book "std/lists/take" :dir :system))
+  (defthm byte-listp-of-take
+    (implies (and (byte-listp xs)
+                  (< n (len xs)))
+             (byte-listp (take n xs)))
+    :hints (("Goal" :in-theory (e/d* (byte-listp) (take)))))
 
-     (local
-      (defthm len-grab-bytes-when-string-non-empty-helper-1
-        (implies (and (byte-listp bytes-of-obj)
-                      (< obj-offset (len bytes-of-obj))
-                      (< 0 (len bytes-of-obj)))
-                 (and (byte-listp (nthcdr obj-offset bytes-of-obj))
-                      (< 0 (len (nthcdr obj-offset bytes-of-obj)))))))
-
-     (local
-      (defthm len-grab-bytes-when-string-non-empty-helper-2
-        (implies (and (byte-listp bytes-of-obj)
-                      (< obj-offset (len bytes-of-obj))
-                      (< 0 (len bytes-of-obj)))
-                 (byte-listp (take 1 (nthcdr obj-offset
-                                             bytes-of-obj))))
-        :hints (("Goal" :in-theory (e/d* () (take-byte-listp))
-                 :use ((:instance take-byte-listp
-                                  (xs (nthcdr obj-offset bytes-of-obj))
-                                  (n 1)))))))
-
-     (defthmd len-grab-bytes-when-string-non-empty
-       (implies (and (byte-listp bytes-of-obj)
-                     (< obj-offset (len bytes-of-obj))
-                     (< 0 (len bytes-of-obj)))
-                (and (nthcdr obj-offset bytes-of-obj)
-                     (< 0 (len (nthcdr obj-offset bytes-of-obj)))
-                     (byte-listp (nthcdr obj-offset bytes-of-obj))
-                     (take 1 (nthcdr obj-offset bytes-of-obj))
-                     (true-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
-                     (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
-
-                     (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))
-                     (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)
-                     (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))
-                     (true-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))
-                     (unsigned-byte-p 8 (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))))
-       :hints (("Goal" :in-theory (e/d* (grab-bytes
-                                         unsigned-byte-p)
-                                        (len-grab-bytes-when-string-non-empty-helper-2))
-                :use ((:instance len-grab-bytes-when-string-non-empty-helper-2)))))
-
-     )) ;; End of local encapsulate
+  (defthm unsigned-byte-p-of-nth-of-byte-listp
+    (implies (and (< i (len bytes))
+                  (natp i)
+                  (byte-listp bytes))
+             (unsigned-byte-p 8 (nth i bytes)))
+    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p byte-listp) ()))))
 
   (defthm byte-listp-of-bytes-of-obj-from-environment-assumptions
     (b* ((file-des-field (read-x86-file-des 0 x86))
@@ -830,42 +769,40 @@
        (and (env-assumptions x86)
             (x86p x86))
        (byte-listp bytes-of-obj)))
-    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                     (take nthcdr)))))
+    :hints (("Goal" :in-theory (e/d* (env-assumptions) (take nthcdr)))))
 
+  ;; (defthm byte-listp-and-consp-of-take-from-environment-assumptions
+  ;;   (b* ((file-des-field (read-x86-file-des 0 x86))
+  ;;        (obj-offset (cdr (assoc :offset file-des-field)))
+  ;;        (obj-name (cdr (assoc :name file-des-field)))
+  ;;        (obj-contents-field (read-x86-file-contents obj-name x86))
+  ;;        (obj-contents (cdr (assoc :contents obj-contents-field)))
+  ;;        (bytes-of-obj (string-to-bytes obj-contents)))
+  ;;     (implies
+  ;;      ;; (and (file-descriptor-fieldp file-des-field)
+  ;;      ;;      (file-contents-fieldp obj-contents-field))
+  ;;      (and (env-assumptions x86)
+  ;;           (x86p x86))
+  ;;      (and (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
+  ;;           (consp (take 1 (nthcdr obj-offset bytes-of-obj))))))
+  ;;   :hints (("Goal" :in-theory (e/d* (env-assumptions)
+  ;;                                    (take nthcdr)))))
 
-  (defthm byte-listp-and-consp-of-take-from-environment-assumptions
-    (b* ((file-des-field (read-x86-file-des 0 x86))
-         (obj-offset (cdr (assoc :offset file-des-field)))
-         (obj-name (cdr (assoc :name file-des-field)))
-         (obj-contents-field (read-x86-file-contents obj-name x86))
-         (obj-contents (cdr (assoc :contents obj-contents-field)))
-         (bytes-of-obj (string-to-bytes obj-contents)))
-      (implies
-       ;; (and (file-descriptor-fieldp file-des-field)
-       ;;      (file-contents-fieldp obj-contents-field))
-       (and (env-assumptions x86)
-            (x86p x86))
-       (and (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
-            (consp (take 1 (nthcdr obj-offset bytes-of-obj))))))
-    :hints (("Goal" :in-theory (e/d* (env-assumptions)
-                                     (take nthcdr)))))
-
-  (defthm byte-listp-of-grab-bytes-from-environment-assumptions
-    (b* ((file-des-field (read-x86-file-des 0 x86))
-         (obj-offset (cdr (assoc :offset file-des-field)))
-         (obj-name (cdr (assoc :name file-des-field)))
-         (obj-contents-field (read-x86-file-contents obj-name x86))
-         (obj-contents (cdr (assoc :contents obj-contents-field)))
-         (bytes-of-obj (string-to-bytes obj-contents)))
-      (implies
-       ;; (and (file-descriptor-fieldp file-des-field)
-       ;;      (file-contents-fieldp obj-contents-field))
-       (and (env-assumptions x86)
-            (x86p x86))
-       (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
-    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                     (take nthcdr)))))
+  ;; (defthm byte-listp-of-grab-bytes-from-environment-assumptions
+  ;;   (b* ((file-des-field (read-x86-file-des 0 x86))
+  ;;        (obj-offset (cdr (assoc :offset file-des-field)))
+  ;;        (obj-name (cdr (assoc :name file-des-field)))
+  ;;        (obj-contents-field (read-x86-file-contents obj-name x86))
+  ;;        (obj-contents (cdr (assoc :contents obj-contents-field)))
+  ;;        (bytes-of-obj (string-to-bytes obj-contents)))
+  ;;     (implies
+  ;;      ;; (and (file-descriptor-fieldp file-des-field)
+  ;;      ;;      (file-contents-fieldp obj-contents-field))
+  ;;      (and (env-assumptions x86)
+  ;;           (x86p x86))
+  ;;      (byte-listp (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
+  ;;   :hints (("Goal" :in-theory (e/d* (env-assumptions)
+  ;;                                    (take nthcdr)))))
 
   (defthm non-nil-grab-bytes-of-take-1-from-environment-assumptions
     (b* ((file-des-field (read-x86-file-des 0 x86))
@@ -881,43 +818,41 @@
        (and (env-assumptions x86)
             (x86p x86))
        (and (nthcdr obj-offset bytes-of-obj)
-            (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj))))))
-    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+            ;; (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))
+            )))
+    :hints (("Goal" :in-theory (e/d* (env-assumptions)
                                      (take nthcdr acl2::take-of-1 acl2::take-of-zero)))))
 
-  (defthm len-of-grab-bytes-take-1-from-environment-assumptions
-    (b* ((file-des-field (read-x86-file-des 0 x86))
+  ;; (defthm len-of-grab-bytes-take-1-from-environment-assumptions
+  ;;   (b* ((file-des-field (read-x86-file-des 0 x86))
+  ;;        (obj-offset (cdr (assoc :offset file-des-field)))
+  ;;        (obj-name (cdr (assoc :name file-des-field)))
+  ;;        (obj-contents-field (read-x86-file-contents obj-name x86))
+  ;;        (obj-contents (cdr (assoc :contents obj-contents-field)))
+  ;;        (bytes-of-obj (string-to-bytes obj-contents)))
+  ;;     (implies
+  ;;      ;; (and (file-descriptor-fieldp file-des-field)
+  ;;      ;;      (file-contents-fieldp obj-contents-field)
+  ;;      ;;      (< obj-offset (len bytes-of-obj)))
+  ;;      (and (env-assumptions x86)
+  ;;           (x86p x86))
+  ;;      (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)))
+  ;;   :hints (("Goal" :in-theory (e/d* (env-assumptions)
+  ;;                                    (take nthcdr acl2::take-of-zero acl2::take-of-1)))))
+
+
+  (defthm n08p-of-nth-byte-from-file
+    (b*
+        ((file-des-field (read-x86-file-des 0 x86))
          (obj-offset (cdr (assoc :offset file-des-field)))
          (obj-name (cdr (assoc :name file-des-field)))
          (obj-contents-field (read-x86-file-contents obj-name x86))
          (obj-contents (cdr (assoc :contents obj-contents-field)))
          (bytes-of-obj (string-to-bytes obj-contents)))
       (implies
-       ;; (and (file-descriptor-fieldp file-des-field)
-       ;;      (file-contents-fieldp obj-contents-field)
-       ;;      (< obj-offset (len bytes-of-obj)))
-       (and (env-assumptions x86)
-            (x86p x86))
-       (equal (len (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) 1)))
-    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                     (take nthcdr acl2::take-of-zero acl2::take-of-1)))))
-
-  (defthm n08p-of-car-grab-bytes-from-environment-assumptions
-    (b* ((file-des-field (read-x86-file-des 0 x86))
-         (obj-offset (cdr (assoc :offset file-des-field)))
-         (obj-name (cdr (assoc :name file-des-field)))
-         (obj-contents-field (read-x86-file-contents obj-name x86))
-         (obj-contents (cdr (assoc :contents obj-contents-field)))
-         (bytes-of-obj (string-to-bytes obj-contents)))
-      (implies
-       ;; (and (file-descriptor-fieldp file-des-field)
-       ;;      (file-contents-fieldp obj-contents-field)
-       ;;      (< obj-offset (len bytes-of-obj)))
-       (and (env-assumptions x86)
-            (x86p x86))
-       (unsigned-byte-p 8 (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))))
-    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
-                                     (take nthcdr acl2::take-of-1 acl2::take-of-zero)))))
+       (and (env-assumptions x86) (x86p x86))
+       (unsigned-byte-p 8 (nth obj-offset bytes-of-obj))))
+    :hints (("Goal" :in-theory (e/d* (env-assumptions) ()))))
 
   (defthm len-of-nthcdr-of-object-from-environment-assumptions
     (implies (and (file-descriptor-fieldp (read-x86-file-des 0 x86))
@@ -929,33 +864,28 @@
                   (equal bytes-of-obj (string-to-bytes obj-contents))
                   (< obj-offset (len bytes-of-obj)))
              (< 0 (len (nthcdr obj-offset bytes-of-obj))))
-    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+    :hints (("Goal" :in-theory (e/d* (env-assumptions)
                                      (take nthcdr acl2::take-of-zero acl2::take-of-1))))
     :rule-classes (:linear :rewrite))
 
+  (local (in-theory (e/d* () (acl2::take-of-1 acl2::take-of-zero take nthcdr))))
+
+  (local (include-book "std/lists/last" :dir :system))
+
+  (defthm last-is-eof-but-first-is-not-eof-=>-at-least-two-elements
+    (implies
+     (and (equal (last bl) (list *eof*))
+          (natp i)
+          (< i (len bl))
+          (not (equal (car (grab-bytes (take 1 (nthcdr i bl))))
+                      *eof*))
+          (< 0 (len bl))
+          (byte-listp bl))
+     (< (+ 1 i) (len bl)))
+    :hints (("Goal" :induct (nthcdr i bl)
+             :in-theory (e/d* (nthcdr) ()))))
+
   ) ;; End of encapsulate
-
-(local (in-theory (e/d* () (acl2::take-of-1 acl2::take-of-zero take nthcdr))))
-
-(encapsulate
- ()
-
- (local (include-book "std/lists/last" :dir :system))
-
- (defthm last-is-eof-but-first-is-not-eof-=>-at-least-two-elements
-   (implies
-    (and (equal (last bl) (list *eof*))
-         (natp i)
-         (< i (len bl))
-         (not (equal (car (grab-bytes (take 1 (nthcdr i bl))))
-                     *eof*))
-         (< 0 (len bl))
-         (byte-listp bl))
-    (< (+ 1 i) (len bl)))
-   :hints (("Goal" :induct (nthcdr i bl)
-            :in-theory (e/d* (nthcdr) ()))))
-
- ) ;; End of encapsulate
 
 ;;**********************************************************************
 ;; Call to GC + GC Procedure
@@ -990,47 +920,41 @@
         (canonical-address-p (xr :rgf *rsp* x86))
         ;; Address of the call instruction in the main sub-routine
         ;; 95: Position of the call instruction in the main sub-routine
-        ;; (equal (xr :rip 0 x86) (+ (1- (+ (len *gc*) 95)) addr))
-        (equal addr (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
+        ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+        (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
-        (canonical-address-p (+ #x20 (xr :rgf *rsp* x86)))
-        (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
-        ;; (+ 8 #x20 8 #x20) = 80
-        (disjoint-p
-         ;; IMPORTANT: Keep the program addresses as the first
-         ;; argument.
-         (create-canonical-address-list (len *wc*) addr)
-         (create-canonical-address-list 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86))))
+        (canonical-address-p (+ (1- *wc-len*) addr))
+        (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
+        (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        ;; (+ 8 32 8 32) = 80
+        (separate
+         ;; Program
+         *wc-len* addr
+         ;; Stack
+         80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-        (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86))
+        (prog-at addr *wc* x86))
    (equal (x86-run (gc-clk) x86)
           (XW
            :RGF *RAX*
            (LOGHEAD
             32
-            (CDR
-             (ASSOC-EQUAL
-              (+ -25 (XR :RGF *RSP* X86))
-              (ACL2::REV
-               (CREATE-ADDR-BYTES-ALIST
-                (LIST (+ -25 (XR :RGF *RSP* X86)))
-                (GRAB-BYTES
-                 (TAKE
-                  1
-                  (NTHCDR
-                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                   (STRING-TO-BYTES
-                    (CDR
-                     (ASSOC-EQUAL
-                      :CONTENTS
-                      (READ-X86-FILE-CONTENTS
-                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                       X86))))))))))))
+            (COMBINE-BYTES
+             (GRAB-BYTES
+              (TAKE
+               1
+               (NTHCDR
+                (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                (STRING-TO-BYTES
+                 (CDR
+                  (ASSOC-EQUAL
+                   :CONTENTS (READ-X86-FILE-CONTENTS
+                              (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                              X86)))))))))
            (XW
             :RGF *RCX* (+ -109 (XR :RIP 0 X86))
             (XW
@@ -1074,63 +998,79 @@
                     (MV-NTH
                      1
                      (WB
-                      (APPEND
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                        (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
-                        (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
-                        (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
-                        (BYTE-IFY 8
-                                  (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (LIST (+ -25 (XR :RGF *RSP* X86)))
-                        (GRAB-BYTES
-                         (TAKE
-                          1
-                          (NTHCDR
-                           (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                           (STRING-TO-BYTES
-                            (CDR
-                             (ASSOC-EQUAL
-                              :CONTENTS
-                              (READ-X86-FILE-CONTENTS
-                               (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                               X86))))))))
-                       (CREATE-ADDR-BYTES-ALIST
-                        (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
-                        '(1 0 0 0)))
+                      4 (+ -32 (XR :RGF *RSP* X86))
+                      :W 1
                       (!FLGI
                        *RF* 0
                        (!FLGI
                         *VM* 0
-                        (WRITE-X86-FILE-DES
-                         0
-                         (PUT-ASSOC-EQUAL
-                          :OFFSET
-                          (+ 1
-                             (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                          (READ-X86-FILE-DES 0 X86))
-                         (!FLGI-UNDEFINED
-                          4
-                          (!FLGI
-                           *CF* 0
-                           (!FLGI
-                            *PF* 1
-                            (!FLGI
-                             *AF*
-                             (BITOPS::LOGSQUASH
-                              -3
-                              (LOGHEAD 1
-                                       (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                             (!FLGI *ZF* 1
-                                    (!FLGI *SF* 0
-                                           (!FLGI *OF* 0 X86))))))))))))))))))))))))
+                        (MV-NTH
+                         1
+                         (WB
+                          1 (+ -25 (XR :RGF *RSP* X86))
+                          :W
+                          (COMBINE-BYTES
+                           (GRAB-BYTES
+                            (TAKE
+                             1
+                             (NTHCDR
+                              (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                              (STRING-TO-BYTES
+                               (CDR
+                                (ASSOC-EQUAL
+                                 :CONTENTS
+                                 (READ-X86-FILE-CONTENTS
+                                  (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                  X86))))))))
+                          (MV-NTH
+                           1
+                           (WB
+                            8 (+ -48 (XR :RGF *RSP* X86))
+                            :W
+                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                            (MV-NTH
+                             1
+                             (WB
+                              8 (+ -24 (XR :RGF *RSP* X86))
+                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
+                              (MV-NTH
+                               1
+                               (WB
+                                8 (+ -16 (XR :RGF *RSP* X86))
+                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                                (MV-NTH
+                                 1
+                                 (WB
+                                  8 (+ -8 (XR :RGF *RSP* X86))
+                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                  (WRITE-X86-FILE-DES
+                                   0
+                                   (PUT-ASSOC-EQUAL
+                                    :OFFSET
+                                    (+
+                                     1
+                                     (CDR
+                                      (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                    (READ-X86-FILE-DES 0 X86))
+                                   (!FLGI-UNDEFINED
+                                    4
+                                    (!FLGI
+                                     *CF* 0
+                                     (!FLGI
+                                      *PF* 1
+                                      (!FLGI
+                                       *AF*
+                                       (BITOPS::LOGSQUASH
+                                        -3
+                                        (LOGHEAD
+                                         1
+                                         (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                       (!FLGI
+                                        *ZF* 1
+                                        (!FLGI
+                                         *SF* 0
+                                         (!FLGI *OF*
+                                                0 X86))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (syscall-read
                              syscall-read-logic
@@ -1174,7 +1114,6 @@
                              rim64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
-                             subset-p
                              rr08
                              rr16
                              rr32
@@ -1182,10 +1121,7 @@
                              ;; Flags
                              write-user-rflags)
 
-                            (append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp
-                             negative-logand-to-positive-logand-with-integerp-x
+                            (negative-logand-to-positive-logand-with-integerp-x
                              las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
@@ -1198,38 +1134,8 @@
 ;; ----------------------------------------------------------------------
 
 (defthmd effects-call-gc-ms-projection
-  (implies (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
-                (xr :programmer-level-mode 0 x86)
-                (not (alignment-checking-enabled-p x86))
-                (equal (xr :os-info 0 x86) :linux)
-                (env-assumptions x86)
-                (canonical-address-p (xr :rgf *rsp* x86))
-                ;; Address of the call instruction in the main sub-routine
-                ;; 95: Position of the call instruction in the main sub-routine
-                ;; (equal (xr :rip 0 x86) (+ (1- (+ (len *gc*) 95)) addr))
-                (equal addr (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
-                (canonical-address-p addr)
-                (canonical-address-p (+ (1- (len *wc*)) addr))
-                (canonical-address-p (+ #x20 (xr :rgf *rsp* x86)))
-                (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
-                ;; (+ 8 #x20 8 #x20) = 80
-                (disjoint-p
-                 ;; IMPORTANT: Keep the program addresses as the first
-                 ;; argument.
-                 (create-canonical-address-list (len *wc*) addr)
-                 (create-canonical-address-list 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86))))
-                (equal (xr :ms 0 x86) nil)
-                (equal (xr :fault 0 x86) nil)
-                ;; Enabling the SYSCALL instruction.
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-                (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86))
-
-           (equal (xr :ms 0 (x86-run (gc-clk) x86)) nil)))
-
-(defthmd effects-call-gc-fault-projection
-  (implies
-   (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
+  (implies ;; Doesn't have the rbp binding of loop-preconditions
+   (and (x86p x86)
         (xr :programmer-level-mode 0 x86)
         (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
@@ -1237,24 +1143,54 @@
         (canonical-address-p (xr :rgf *rsp* x86))
         ;; Address of the call instruction in the main sub-routine
         ;; 95: Position of the call instruction in the main sub-routine
-        ;; (equal (xr :rip 0 x86) (+ (1- (+ (len *gc*) 95)) addr))
-        (equal addr (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
+        ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+        (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
-        (canonical-address-p (+ #x20 (xr :rgf *rsp* x86)))
-        (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
-        ;; (+ 8 #x20 8 #x20) = 80
-        (disjoint-p
-         ;; IMPORTANT: Keep the program addresses as the first
-         ;; argument.
-         (create-canonical-address-list (len *wc*) addr)
-         (create-canonical-address-list 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86))))
+        (canonical-address-p (+ (1- *wc-len*) addr))
+        (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
+        (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        ;; (+ 8 32 8 32) = 80
+        (separate
+         ;; Program
+         *wc-len* addr
+         ;; Stack
+         80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-        (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86))
+        (prog-at addr *wc* x86))
+   (equal (xr :ms 0 (x86-run (gc-clk) x86)) nil)))
+
+(defthmd effects-call-gc-fault-projection
+  (implies ;; Doesn't have the rbp binding of loop-preconditions
+   (and (x86p x86)
+        (xr :programmer-level-mode 0 x86)
+        (not (alignment-checking-enabled-p x86))
+        (equal (xr :os-info 0 x86) :linux)
+        (env-assumptions x86)
+        (canonical-address-p (xr :rgf *rsp* x86))
+        ;; Address of the call instruction in the main sub-routine
+        ;; 95: Position of the call instruction in the main sub-routine
+        ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+        (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
+        (canonical-address-p addr)
+        (canonical-address-p (+ (1- *wc-len*) addr))
+        (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
+        (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        ;; (+ 8 32 8 32) = 80
+        (separate
+         ;; Program
+         *wc-len* addr
+         ;; Stack
+         80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        (equal (xr :ms 0 x86) nil)
+        (equal (xr :fault 0 x86) nil)
+        ;; Enabling the SYSCALL instruction.
+        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
+        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+        (prog-at addr *wc* x86))
    (equal (xr :fault 0 (x86-run (gc-clk) x86)) nil)))
 
 ;; ======================================================================
@@ -1264,14 +1200,14 @@
 ;; EOF encountered
 ;;**********************************************************************
 
-(encapsulate
- ()
- (local (include-book "std/lists/nthcdr" :dir :system))
-
- (defthm assoc-equal-of-rev-of-alist
-   (implies (equal (len val) 1)
-            (equal (cdr (assoc-equal key (acl2::rev (create-addr-bytes-alist (list key) val))))
-                   (car val)))))
+(local
+ (defthmd negative-loghead
+   (implies (negp i)
+            (equal (loghead i x) 0))
+   :hints (("Goal" :in-theory (e/d* (negp
+                                     bitops::ihsext-recursive-redefs
+                                     bitops::ihsext-inductions)
+                                    ())))))
 
 (defthmd effects-eof-encountered-1
 
@@ -1331,88 +1267,93 @@
                             (MV-NTH
                              1
                              (WB
-                              (APPEND
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8
-                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8
-                                          (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                (GRAB-BYTES
-                                 (TAKE
-                                  1
-                                  (NTHCDR
-                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                   (STRING-TO-BYTES
-                                    (CDR
-                                     (ASSOC-EQUAL
-                                      :CONTENTS
-                                      (READ-X86-FILE-CONTENTS
-                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                       X86))))))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
-                                '(1 0 0 0))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 28 (XR :RGF *RSP* X86)))
-                                '(35 0 0 0)))
-                              (!FLGI
-                               *CF* 0
-                               (!FLGI
-                                *PF* 1
+                              4 (+ 28 (XR :RGF *RSP* X86))
+                              :W 35
+                              (MV-NTH
+                               1
+                               (WB
+                                4 (+ -32 (XR :RGF *RSP* X86))
+                                :W 1
                                 (!FLGI
-                                 *AF* 0
+                                 *CF* 0
                                  (!FLGI
-                                  *ZF* 1
+                                  *PF* 1
                                   (!FLGI
-                                   *SF* 0
+                                   *AF* 0
                                    (!FLGI
-                                    *OF* 0
+                                    *ZF* 1
                                     (!FLGI
-                                     *RF* 0
+                                     *SF* 0
                                      (!FLGI
-                                      *VM* 0
-                                      (WRITE-X86-FILE-DES
-                                       0
-                                       (PUT-ASSOC-EQUAL
-                                        :OFFSET
-                                        (+
+                                      *OF* 0
+                                      (!FLGI
+                                       *RF* 0
+                                       (!FLGI
+                                        *VM* 0
+                                        (MV-NTH
                                          1
-                                         (CDR
-                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                        (READ-X86-FILE-DES 0 X86))
-                                       (!FLGI-UNDEFINED
-                                        4
-                                        (!FLGI
-                                         *CF* 0
-                                         (!FLGI
-                                          *PF* 1
-                                          (!FLGI
-                                           *AF*
-                                           (BITOPS::LOGSQUASH
-                                            -3
-                                            (LOGHEAD
+                                         (WB
+                                          1 (+ -25 (XR :RGF *RSP* X86))
+                                          :W 35
+                                          (MV-NTH
+                                           1
+                                           (WB
+                                            8 (+ -48 (XR :RGF *RSP* X86))
+                                            :W
+                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                                            (MV-NTH
                                              1
-                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                           (!FLGI
-                                            *ZF* 1
-                                            (!FLGI
-                                             *SF* 0
-                                             (!FLGI *OF* 0 X86))))))))))))))))))))))))))))))
+                                             (WB
+                                              8 (+ -24 (XR :RGF *RSP* X86))
+                                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
+                                              (MV-NTH
+                                               1
+                                               (WB
+                                                8 (+ -16 (XR :RGF *RSP* X86))
+                                                :W
+                                                (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
+                                                (MV-NTH
+                                                 1
+                                                 (WB
+                                                  8 (+ -8 (XR :RGF *RSP* X86))
+                                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                                  (WRITE-X86-FILE-DES
+                                                   0
+                                                   (PUT-ASSOC-EQUAL
+                                                    :OFFSET
+                                                    (+
+                                                     1
+                                                     (CDR
+                                                      (ASSOC-EQUAL
+                                                       :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                                    (READ-X86-FILE-DES 0 X86))
+                                                   (!FLGI-UNDEFINED
+                                                    4
+                                                    (!FLGI
+                                                     *CF* 0
+                                                     (!FLGI
+                                                      *PF* 1
+                                                      (!FLGI
+                                                       *AF*
+                                                       (BITOPS::LOGSQUASH
+                                                        -3
+                                                        (LOGHEAD
+                                                         1
+                                                         (BOOL->BIT
+                                                          (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                                       (!FLGI
+                                                        *ZF* 1
+                                                        (!FLGI
+                                                         *SF* 0
+                                                         (!FLGI
+                                                          *OF* 0
+                                                          X86))))))))))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (top-level-opcode-execute
+           :in-theory (e/d* (env-assumptions
+                             top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
+                             gpr-add-spec-4
                              gpr-sub-spec-4
                              jcc/cmovcc/setcc-spec
 
@@ -1435,11 +1376,10 @@
                              x86-run-plus-1
                              effects-call-gc-ms-projection
                              effects-call-gc-fault-projection
-                             loop-preconditions)
+                             loop-preconditions
+                             zf-spec
+                             negative-loghead)
                             (x86-run-plus
-                             append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp
                              negative-logand-to-positive-logand-with-integerp-x
                              las-to-pas-values-and-!flgi
                              las-to-pas
@@ -1506,84 +1446,87 @@
                             (MV-NTH
                              1
                              (WB
-                              (APPEND
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8
-                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8
-                                          (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                (GRAB-BYTES
-                                 (TAKE
-                                  1
-                                  (NTHCDR
-                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                   (STRING-TO-BYTES
-                                    (CDR
-                                     (ASSOC-EQUAL
-                                      :CONTENTS
-                                      (READ-X86-FILE-CONTENTS
-                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                       X86))))))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
-                                '(1 0 0 0))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 28 (XR :RGF *RSP* X86)))
-                                '(35 0 0 0)))
-                              (!FLGI
-                               *CF* 0
-                               (!FLGI
-                                *PF* 1
+                              4 (+ 28 (XR :RGF *RSP* X86))
+                              :W 35
+                              (MV-NTH
+                               1
+                               (WB
+                                4 (+ -32 (XR :RGF *RSP* X86))
+                                :W 1
                                 (!FLGI
-                                 *AF* 0
+                                 *CF* 0
                                  (!FLGI
-                                  *ZF* 1
+                                  *PF* 1
                                   (!FLGI
-                                   *SF* 0
+                                   *AF* 0
                                    (!FLGI
-                                    *OF* 0
+                                    *ZF* 1
                                     (!FLGI
-                                     *RF* 0
+                                     *SF* 0
                                      (!FLGI
-                                      *VM* 0
-                                      (WRITE-X86-FILE-DES
-                                       0
-                                       (PUT-ASSOC-EQUAL
-                                        :OFFSET
-                                        (+
+                                      *OF* 0
+                                      (!FLGI
+                                       *RF* 0
+                                       (!FLGI
+                                        *VM* 0
+                                        (MV-NTH
                                          1
-                                         (CDR
-                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                        (READ-X86-FILE-DES 0 X86))
-                                       (!FLGI-UNDEFINED
-                                        4
-                                        (!FLGI
-                                         *CF* 0
-                                         (!FLGI
-                                          *PF* 1
-                                          (!FLGI
-                                           *AF*
-                                           (BITOPS::LOGSQUASH
-                                            -3
-                                            (LOGHEAD
+                                         (WB
+                                          1 (+ -25 (XR :RGF *RSP* X86))
+                                          :W 35
+                                          (MV-NTH
+                                           1
+                                           (WB
+                                            8 (+ -48 (XR :RGF *RSP* X86))
+                                            :W
+                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                                            (MV-NTH
                                              1
-                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                           (!FLGI
-                                            *ZF* 1
-                                            (!FLGI
-                                             *SF* 0
-                                             (!FLGI *OF* 0 X86))))))))))))))))))))))))))))))
+                                             (WB
+                                              8 (+ -24 (XR :RGF *RSP* X86))
+                                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
+                                              (MV-NTH
+                                               1
+                                               (WB
+                                                8 (+ -16 (XR :RGF *RSP* X86))
+                                                :W
+                                                (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
+                                                (MV-NTH
+                                                 1
+                                                 (WB
+                                                  8 (+ -8 (XR :RGF *RSP* X86))
+                                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                                  (WRITE-X86-FILE-DES
+                                                   0
+                                                   (PUT-ASSOC-EQUAL
+                                                    :OFFSET
+                                                    (+
+                                                     1
+                                                     (CDR
+                                                      (ASSOC-EQUAL
+                                                       :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                                    (READ-X86-FILE-DES 0 X86))
+                                                   (!FLGI-UNDEFINED
+                                                    4
+                                                    (!FLGI
+                                                     *CF* 0
+                                                     (!FLGI
+                                                      *PF* 1
+                                                      (!FLGI
+                                                       *AF*
+                                                       (BITOPS::LOGSQUASH
+                                                        -3
+                                                        (LOGHEAD
+                                                         1
+                                                         (BOOL->BIT
+                                                          (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                                       (!FLGI
+                                                        *ZF* 1
+                                                        (!FLGI
+                                                         *SF* 0
+                                                         (!FLGI
+                                                          *OF* 0
+                                                          X86))))))))))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-eof)
            :in-theory (union-theories
@@ -1688,9 +1631,7 @@
                 (equal (get-char (offset x86) (input x86)) *eof*))
            (equal (word-state x86 (x86-run (gc-clk-eof) x86))
                   (word-state x86 x86)))
-  :hints (("Goal" :in-theory (e/d*
-                              (loop-preconditions-weird-rbp-rsp)
-                              ()))))
+  :hints (("Goal" :in-theory (e/d* (loop-preconditions-weird-rbp-rsp) ()))))
 
 (defthmd effects-eof-encountered-variables-nc
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -1698,9 +1639,7 @@
                 (equal (get-char (offset x86) (input x86)) *eof*))
            (equal (nc x86 (x86-run (gc-clk-eof) x86))
                   (nc x86 x86)))
-  :hints (("Goal" :in-theory (e/d*
-                              (loop-preconditions-weird-rbp-rsp)
-                              ()))))
+  :hints (("Goal" :in-theory (e/d* (loop-preconditions-weird-rbp-rsp) ()))))
 
 (defthmd effects-eof-encountered-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -1708,9 +1647,7 @@
                 (equal (get-char (offset x86) (input x86)) *eof*))
            (equal (nw x86 (x86-run (gc-clk-eof) x86))
                   (nw x86 x86)))
-  :hints (("Goal" :in-theory (e/d*
-                              (loop-preconditions-weird-rbp-rsp)
-                              ()))))
+  :hints (("Goal" :in-theory (e/d* (loop-preconditions-weird-rbp-rsp) ()))))
 
 (defthmd effects-eof-encountered-variables-nl
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -1718,25 +1655,23 @@
                 (equal (get-char (offset x86) (input x86)) *eof*))
            (equal (nl x86 (x86-run (gc-clk-eof) x86))
                   (nl x86 x86)))
-  :hints (("Goal" :in-theory (e/d*
-                              (loop-preconditions-weird-rbp-rsp)
-                              ()))))
+  :hints (("Goal" :in-theory (e/d* (loop-preconditions-weird-rbp-rsp) ()))))
 
 ;;**********************************************************************
 ;; EOF Not Encountered (prelim to other branches)
 ;;**********************************************************************
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "arithmetic-5/top" :dir :system))
+  (local (include-book "arithmetic-5/top" :dir :system))
 
- (defthm effects-eof-not-encountered-prelim-helper
-   (implies (and (not (equal char 35))
-                 (unsigned-byte-p 8 char))
-            (equal (equal (loghead 32 (+ -35 (logext 32 char))) 0) nil))
-   :hints (("Goal" :in-theory (e/d* (loghead)
-                                    ())))))
+  (defthm effects-eof-not-encountered-prelim-helper
+    (implies (and (not (equal char 35))
+                  (unsigned-byte-p 8 char))
+             (equal (equal (loghead 32 (+ -35 (logext 32 char))) 0) nil))
+    :hints (("Goal" :in-theory (e/d* (loghead)
+                                     ())))))
 
 (defthm effects-eof-not-encountered-prelim
 
@@ -1754,18 +1689,14 @@
                    :RGF *RAX*
                    (LOGHEAD
                     32
-                    (CAR
-                     (GRAB-BYTES
-                      (TAKE
-                       1
-                       (NTHCDR
-                        (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                        (STRING-TO-BYTES
-                         (CDR
-                          (ASSOC-EQUAL
-                           :CONTENTS (READ-X86-FILE-CONTENTS
-                                      (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                      X86)))))))))
+                    (NTH
+                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                     (STRING-TO-BYTES
+                      (CDR
+                       (ASSOC-EQUAL
+                        :CONTENTS (READ-X86-FILE-CONTENTS
+                                   (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                   X86))))))
                    (XW
                     :RGF *RCX* (+ -109 (XR :RIP 0 X86))
                     (XW
@@ -1809,49 +1740,33 @@
                             (MV-NTH
                              1
                              (WB
-                              (APPEND
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8 (+ 5 (XR :RIP 0 X86))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -16 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8
-                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -24 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBX* X86))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -48 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY 8
-                                          (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (LIST (+ -25 (XR :RGF *RSP* X86)))
-                                (GRAB-BYTES
-                                 (TAKE
-                                  1
-                                  (NTHCDR
-                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                   (STRING-TO-BYTES
-                                    (CDR
-                                     (ASSOC-EQUAL
-                                      :CONTENTS
-                                      (READ-X86-FILE-CONTENTS
-                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                       X86))))))))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ -32 (XR :RGF *RSP* X86)))
-                                '(1 0 0 0))
-                               (CREATE-ADDR-BYTES-ALIST
-                                (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 28 (XR :RGF *RSP* X86)))
-                                (BYTE-IFY
-                                 4
+                              4 (+ 28 (XR :RGF *RSP* X86))
+                              :W
+                              (LOGHEAD
+                               32
+                               (NTH
+                                (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                (STRING-TO-BYTES
+                                 (CDR
+                                  (ASSOC-EQUAL
+                                   :CONTENTS
+                                   (READ-X86-FILE-CONTENTS
+                                    (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                    X86))))))
+                              (MV-NTH
+                               1
+                               (WB
+                                4 (+ -32 (XR :RGF *RSP* X86))
+                                :W 1
+                                (!FLGI
+                                 *CF*
                                  (LOGHEAD
-                                  32
-                                  (CAR
-                                   (GRAB-BYTES
-                                    (TAKE
-                                     1
-                                     (NTHCDR
+                                  1
+                                  (BOOL->BIT
+                                   (<
+                                    (LOGHEAD
+                                     32
+                                     (NTH
                                       (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
                                       (STRING-TO-BYTES
                                        (CDR
@@ -1859,90 +1774,19 @@
                                          :CONTENTS
                                          (READ-X86-FILE-CONTENTS
                                           (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                          X86))))))))))))
-                              (!FLGI
-                               *CF*
-                               (LOGHEAD
-                                1
-                                (BOOL->BIT
-                                 (<
-                                  (LOGHEAD
-                                   32
-                                   (CAR
-                                    (GRAB-BYTES
-                                     (TAKE
-                                      1
-                                      (NTHCDR
-                                       (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                       (STRING-TO-BYTES
-                                        (CDR
-                                         (ASSOC-EQUAL
-                                          :CONTENTS
-                                          (READ-X86-FILE-CONTENTS
-                                           (CDR
-                                            (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                           X86)))))))))
-                                  35)))
-                               (!FLGI
-                                *PF*
-                                (LOGIOR
-                                 (PF-SPEC32
-                                  (LOGHEAD
-                                   32
-                                   (+
-                                    -35
-                                    (LOGEXT
+                                          X86))))))
+                                    35)))
+                                 (!FLGI
+                                  *PF*
+                                  (LOGIOR
+                                   (PF-SPEC32
+                                    (LOGHEAD
                                      32
-                                     (CAR
-                                      (GRAB-BYTES
-                                       (TAKE
-                                        1
-                                        (NTHCDR
-                                         (CDR
-                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                         (STRING-TO-BYTES
-                                          (CDR
-                                           (ASSOC-EQUAL
-                                            :CONTENTS
-                                            (READ-X86-FILE-CONTENTS
-                                             (CDR
-                                              (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                             X86))))))))))))
-                                 (LOGHEAD
-                                  -1
-                                  (LOGTAIL
-                                   2
-                                   (BOOL->BIT
-                                    (<
-                                     (LOGHEAD
-                                      32
-                                      (CAR
-                                       (GRAB-BYTES
-                                        (TAKE
-                                         1
-                                         (NTHCDR
-                                          (CDR
-                                           (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                          (STRING-TO-BYTES
-                                           (CDR
-                                            (ASSOC-EQUAL
-                                             :CONTENTS
-                                             (READ-X86-FILE-CONTENTS
-                                              (CDR
-                                               (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                              X86)))))))))
-                                     35)))))
-                                (!FLGI
-                                 *AF*
-                                 (LOGIOR
-                                  (SUB-AF-SPEC32
-                                   (LOGHEAD
-                                    32
-                                    (CAR
-                                     (GRAB-BYTES
-                                      (TAKE
-                                       1
-                                       (NTHCDR
+                                     (+
+                                      -35
+                                      (LOGEXT
+                                       32
+                                       (NTH
                                         (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
                                         (STRING-TO-BYTES
                                          (CDR
@@ -1952,20 +1796,76 @@
                                             (CDR
                                              (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
                                             X86)))))))))
-                                   35)
-                                  (LOGHEAD
-                                   -3
-                                   (LOGTAIL
-                                    4
-                                    (BOOL->BIT
-                                     (<
-                                      (LOGHEAD
-                                       32
-                                       (CAR
-                                        (GRAB-BYTES
-                                         (TAKE
-                                          1
-                                          (NTHCDR
+                                   (LOGHEAD
+                                    -1
+                                    (LOGTAIL
+                                     2
+                                     (BOOL->BIT
+                                      (<
+                                       (LOGHEAD
+                                        32
+                                        (NTH
+                                         (CDR
+                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                         (STRING-TO-BYTES
+                                          (CDR
+                                           (ASSOC-EQUAL
+                                            :CONTENTS
+                                            (READ-X86-FILE-CONTENTS
+                                             (CDR
+                                              (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                             X86))))))
+                                       35)))))
+                                  (!FLGI
+                                   *AF*
+                                   (LOGIOR
+                                    (SUB-AF-SPEC32
+                                     (LOGHEAD
+                                      32
+                                      (NTH
+                                       (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                       (STRING-TO-BYTES
+                                        (CDR
+                                         (ASSOC-EQUAL
+                                          :CONTENTS
+                                          (READ-X86-FILE-CONTENTS
+                                           (CDR
+                                            (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                           X86))))))
+                                     35)
+                                    (LOGHEAD
+                                     -3
+                                     (LOGTAIL
+                                      4
+                                      (BOOL->BIT
+                                       (<
+                                        (LOGHEAD
+                                         32
+                                         (NTH
+                                          (CDR
+                                           (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                          (STRING-TO-BYTES
+                                           (CDR
+                                            (ASSOC-EQUAL
+                                             :CONTENTS
+                                             (READ-X86-FILE-CONTENTS
+                                              (CDR
+                                               (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                              X86))))))
+                                        35)))))
+                                   (!FLGI
+                                    *ZF* 0
+                                    (!FLGI
+                                     *SF*
+                                     (LOGIOR
+                                      (SF-SPEC32
+                                       (LOGHEAD
+                                        32
+                                        (+
+                                         -35
+                                         (LOGEXT
+                                          32
+                                          (NTH
                                            (CDR
                                             (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
                                            (STRING-TO-BYTES
@@ -1976,24 +1876,15 @@
                                                (CDR (ASSOC-EQUAL
                                                      :NAME (READ-X86-FILE-DES 0 X86)))
                                                X86)))))))))
-                                      35)))))
-                                 (!FLGI
-                                  *ZF* 0
-                                  (!FLGI
-                                   *SF*
-                                   (LOGIOR
-                                    (SF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (+
-                                       -35
-                                       (LOGEXT
-                                        32
-                                        (CAR
-                                         (GRAB-BYTES
-                                          (TAKE
-                                           1
-                                           (NTHCDR
+                                      (LOGHEAD
+                                       -6
+                                       (LOGTAIL
+                                        7
+                                        (BOOL->BIT
+                                         (<
+                                          (LOGHEAD
+                                           32
+                                           (NTH
                                             (CDR
                                              (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
                                             (STRING-TO-BYTES
@@ -2003,20 +1894,36 @@
                                                (READ-X86-FILE-CONTENTS
                                                 (CDR (ASSOC-EQUAL
                                                       :NAME (READ-X86-FILE-DES 0 X86)))
-                                                X86))))))))))))
-                                    (LOGHEAD
-                                     -6
-                                     (LOGTAIL
-                                      7
-                                      (BOOL->BIT
-                                       (<
-                                        (LOGHEAD
-                                         32
-                                         (CAR
-                                          (GRAB-BYTES
-                                           (TAKE
-                                            1
-                                            (NTHCDR
+                                                X86))))))
+                                          35)))))
+                                     (!FLGI
+                                      *OF*
+                                      (LOGIOR
+                                       (OF-SPEC32
+                                        (+
+                                         -35
+                                         (LOGEXT
+                                          32
+                                          (NTH
+                                           (CDR
+                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                           (STRING-TO-BYTES
+                                            (CDR
+                                             (ASSOC-EQUAL
+                                              :CONTENTS
+                                              (READ-X86-FILE-CONTENTS
+                                               (CDR (ASSOC-EQUAL
+                                                     :NAME (READ-X86-FILE-DES 0 X86)))
+                                               X86))))))))
+                                       (LOGHEAD
+                                        -10
+                                        (LOGTAIL
+                                         11
+                                         (BOOL->BIT
+                                          (<
+                                           (LOGHEAD
+                                            32
+                                            (NTH
                                              (CDR (ASSOC-EQUAL
                                                    :OFFSET (READ-X86-FILE-DES 0 X86)))
                                              (STRING-TO-BYTES
@@ -2026,88 +1933,84 @@
                                                 (READ-X86-FILE-CONTENTS
                                                  (CDR (ASSOC-EQUAL
                                                        :NAME (READ-X86-FILE-DES 0 X86)))
-                                                 X86)))))))))
-                                        35)))))
-                                   (!FLGI
-                                    *OF*
-                                    (LOGIOR
-                                     (OF-SPEC32
-                                      (+
-                                       -35
-                                       (LOGEXT
-                                        32
-                                        (CAR
-                                         (GRAB-BYTES
-                                          (TAKE
-                                           1
-                                           (NTHCDR
-                                            (CDR
-                                             (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                            (STRING-TO-BYTES
-                                             (CDR
-                                              (ASSOC-EQUAL
-                                               :CONTENTS
-                                               (READ-X86-FILE-CONTENTS
-                                                (CDR (ASSOC-EQUAL
-                                                      :NAME (READ-X86-FILE-DES 0 X86)))
-                                                X86)))))))))))
-                                     (LOGHEAD
-                                      -10
-                                      (LOGTAIL
-                                       11
-                                       (BOOL->BIT
-                                        (<
-                                         (LOGHEAD
-                                          32
-                                          (CAR
-                                           (GRAB-BYTES
-                                            (TAKE
-                                             1
-                                             (NTHCDR
-                                              (CDR (ASSOC-EQUAL
-                                                    :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                              (STRING-TO-BYTES
-                                               (CDR
-                                                (ASSOC-EQUAL
-                                                 :CONTENTS
-                                                 (READ-X86-FILE-CONTENTS
-                                                  (CDR (ASSOC-EQUAL
-                                                        :NAME (READ-X86-FILE-DES 0 X86)))
-                                                  X86)))))))))
-                                         35)))))
-                                    (!FLGI
-                                     *RF* 0
-                                     (!FLGI
-                                      *VM* 0
-                                      (WRITE-X86-FILE-DES
-                                       0
-                                       (PUT-ASSOC-EQUAL
-                                        :OFFSET
-                                        (+
+                                                 X86))))))
+                                           35)))))
+                                      (!FLGI
+                                       *RF* 0
+                                       (!FLGI
+                                        *VM* 0
+                                        (MV-NTH
                                          1
-                                         (CDR
-                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                        (READ-X86-FILE-DES 0 X86))
-                                       (!FLGI-UNDEFINED
-                                        4
-                                        (!FLGI
-                                         *CF* 0
-                                         (!FLGI
-                                          *PF* 1
-                                          (!FLGI
-                                           *AF*
-                                           (BITOPS::LOGSQUASH
-                                            -3
-                                            (LOGHEAD
+                                         (WB
+                                          1 (+ -25 (XR :RGF *RSP* X86))
+                                          :W
+                                          (NTH
+                                           (CDR
+                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                           (STRING-TO-BYTES
+                                            (CDR
+                                             (ASSOC-EQUAL
+                                              :CONTENTS
+                                              (READ-X86-FILE-CONTENTS
+                                               (CDR (ASSOC-EQUAL
+                                                     :NAME (READ-X86-FILE-DES 0 X86)))
+                                               X86)))))
+                                          (MV-NTH
+                                           1
+                                           (WB
+                                            8 (+ -48 (XR :RGF *RSP* X86))
+                                            :W
+                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                                            (MV-NTH
                                              1
-                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                           (!FLGI
-                                            *ZF* 1
-                                            (!FLGI
-                                             *SF* 0
-                                             (!FLGI *OF* 0 X86))))))))))))))))))))))))))))))
+                                             (WB
+                                              8 (+ -24 (XR :RGF *RSP* X86))
+                                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
+                                              (MV-NTH
+                                               1
+                                               (WB
+                                                8 (+ -16 (XR :RGF *RSP* X86))
+                                                :W
+                                                (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
+                                                (MV-NTH
+                                                 1
+                                                 (WB
+                                                  8 (+ -8 (XR :RGF *RSP* X86))
+                                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                                  (WRITE-X86-FILE-DES
+                                                   0
+                                                   (PUT-ASSOC-EQUAL
+                                                    :OFFSET
+                                                    (+
+                                                     1
+                                                     (CDR
+                                                      (ASSOC-EQUAL
+                                                       :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                                    (READ-X86-FILE-DES 0 X86))
+                                                   (!FLGI-UNDEFINED
+                                                    4
+                                                    (!FLGI
+                                                     *CF* 0
+                                                     (!FLGI
+                                                      *PF* 1
+                                                      (!FLGI
+                                                       *AF*
+                                                       (BITOPS::LOGSQUASH
+                                                        -3
+                                                        (LOGHEAD
+                                                         1
+                                                         (BOOL->BIT
+                                                          (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                                       (!FLGI
+                                                        *ZF* 1
+                                                        (!FLGI
+                                                         *SF* 0
+                                                         (!FLGI
+                                                          *OF* 0
+                                                          X86))))))))))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (top-level-opcode-execute
+           :in-theory (e/d* (env-assumptions
+                             top-level-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2134,9 +2037,6 @@
 
                              gc-clk-no-eof)
                             (x86-run-plus
-                             append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp
                              negative-logand-to-positive-logand-with-integerp-x
                              las-to-pas-values-and-!flgi
                              las-to-pas
@@ -2171,8 +2071,15 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
-           (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86))) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86))) 1)))
+           (and
+            (equal
+             (ia32_efer-slice :ia32_efer-sce
+                              (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
+             1)
+            (equal
+             (ia32_efer-slice :ia32_efer-lma
+                              (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
+             1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-eof-not-encountered-prelim-rsp-projection
@@ -2198,10 +2105,10 @@
 
 (defthmd effects-eof-not-encountered-prelim-program-projection
   (implies (and (loop-preconditions addr x86)
-                (equal len-wc (len *wc*))
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
-           (program-at (create-canonical-address-list len-wc addr)
-                       *wc* (x86-run (gc-clk-no-eof) x86))))
+           (prog-at addr *wc* (x86-run (gc-clk-no-eof) x86)))
+  :hints (("Goal" :in-theory (e/d* (loop-preconditions) (effects-eof-not-encountered-prelim))
+           :use ((:instance effects-eof-not-encountered-prelim)))))
 
 (defthmd effects-eof-not-encountered-prelim-env-assumptions-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2213,8 +2120,8 @@
            ;; last-is-eof-but-first-is-not-eof-=>-at-least-two-elements
            ;; to fire...
            (e/d* (env-assumptions
-                 eof-terminatedp)
-                ())
+                  eof-terminatedp)
+                 ())
            :use ((:instance
                   loop-preconditions-fwd-chaining-essentials)))))
 
@@ -2223,57 +2130,41 @@
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86))
                             *eof*)))
-           (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86)))
+           (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86))
                                 :r (x86-run (gc-clk-no-eof) x86)))
-                  (byte-ify
-                   4
-                   (loghead
-                    32
-                    (car
-                     (grab-bytes
-                      (take
-                       1
-                       (nthcdr
-                        (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                        (string-to-bytes
-                         (cdr
-                          (assoc-equal
-                           :contents (read-x86-file-contents
-                                      (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                      x86))))))))))))
+                  (loghead
+                   32
+                   (nth
+                    (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
+                    (string-to-bytes
+                     (cdr
+                      (assoc-equal
+                       :contents (read-x86-file-contents
+                                  (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
+                                  x86))))))))
   :hints (("Goal"
            :in-theory (e/d* ()
-                            (append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp))
+                            (loop-preconditions-fwd-chaining-essentials))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-eof-not-encountered-prelim-gc-byte-projection-size
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*)))
-           (unsigned-byte-p
-            8
-            (combine-bytes
-             (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86)))
-                           :r (x86-run (gc-clk-no-eof) x86))))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*)))
+           (unsigned-byte-p 8
+                            (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86))
+                                          :r (x86-run (gc-clk-no-eof) x86)))))
   :hints (("Goal"
            :use ((:instance effects-eof-not-encountered-prelim-gc-byte-projection)
-                 (:instance n08p-of-car-grab-bytes-from-environment-assumptions))
-           :in-theory (e/d* (remove-loghead-from-byte-ify
-                             combine-bytes-and-byte-ify-inequality-lemma)
+                 (:instance n08p-of-nth-byte-from-file))
+           :in-theory (e/d* (loop-preconditions env-assumptions)
                             (effects-eof-not-encountered-prelim
-                             n08p-of-car-grab-bytes-from-environment-assumptions
-                             append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp)))))
+                             n08p-of-nth-byte-from-file)))))
 
 (defthmd effects-eof-not-encountered-prelim-word-state-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*)))
+                (not (equal (get-char (offset x86) (input x86)) *eof*)))
            (equal (word-state x86 (x86-run (gc-clk-no-eof) x86))
                   (word-state x86 x86))))
 
@@ -2336,29 +2227,25 @@
                 (equal (xr :rip 0 (x86-run (gc-clk-no-eof) x86)) (+ 87 addr))
                 (equal (xr :ms 0 (x86-run (gc-clk-no-eof) x86)) nil)
                 (equal (xr :fault 0 (x86-run (gc-clk-no-eof) x86)) nil)
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86))) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86))) 1)
-                (program-at (create-canonical-address-list (len *wc*) addr)
-                            *wc* (x86-run (gc-clk-no-eof) x86))
-                (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86)))
-                                     :r
-                                     (x86-run (gc-clk-no-eof) x86)))
-                       (byte-ify
-                        4
-                        (loghead
-                         32
-                         (car
-                          (grab-bytes
-                           (take
-                            1
-                            (nthcdr
-                             (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                             (string-to-bytes
-                              (cdr
-                               (assoc-equal
-                                :contents (read-x86-file-contents
-                                           (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                           x86)))))))))))))
+                (equal (ia32_efer-slice :ia32_efer-sce
+                                        (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
+                       1)
+                (equal (ia32_efer-slice :ia32_efer-lma
+                                        (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
+                       1)
+                (prog-at addr *wc* (x86-run (gc-clk-no-eof) x86))
+                (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86))
+                                     :r (x86-run (gc-clk-no-eof) x86)))
+                       (loghead
+                        32
+                        (nth
+                         (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
+                         (string-to-bytes
+                          (cdr
+                           (assoc-equal
+                            :contents (read-x86-file-contents
+                                       (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
+                                       x86)))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (union-theories
                        '(subset-p
@@ -2396,33 +2283,17 @@
                                    (x86-run-plus)))))
 
 (defthmd programmer-level-mode-permissions-dont-matter
-  ;; [Shilpi]: This thing won't be true once I incorporate the
+  ;; [Shilpi]: This thing won't be true if I incorporate the
   ;; memory-permissions map into the programmer-level mode, unless I make sure
   ;; that the memory regions in question are both read and execute enabled.
   (implies (and (xr :programmer-level-mode 0 x86)
                 (x86p x86)
-                (force (canonical-address-listp addresses)))
-           (equal (mv-nth 1 (rb addresses :x x86))
-                  (mv-nth 1 (rb addresses :r x86))))
+                (force (canonical-address-p addr))
+                (force (canonical-address-p (+ -1 n addr))))
+           (equal (mv-nth 1 (rb n addr :x x86))
+                  (mv-nth 1 (rb n addr :r x86))))
   :hints (("Goal" :in-theory (e/d* (rb rm08)
-                                   (rb-1-accumulator-thm
-                                    (:meta acl2::mv-nth-cons-meta))))
-          (if
-              ;; Apply to all subgoals under a top-level induction.
-              (and (consp (car id))
-                   (< 1 (len (car id))))
-              '(:in-theory (e/d* (rb rm08)
-                                 (rb-1-accumulator-thm
-                                  (:meta acl2::mv-nth-cons-meta)))
-                           :use ((:instance rb-1-accumulator-thm
-                                            (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
-                                            (addresses (cdr addresses))
-                                            (r-w-x :x))
-                                 (:instance rb-1-accumulator-thm
-                                            (acc (list (mv-nth 1 (rvm08 (car addresses) x86))))
-                                            (addresses (cdr addresses))
-                                            (r-w-x :r))))
-            nil)))
+                                   ((:meta acl2::mv-nth-cons-meta))))))
 
 (defthmd effects-newline-encountered-limited
 
@@ -2439,21 +2310,16 @@
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
-        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- (len *gc*)))))
+        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- *gc-len*))))
 
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
+        (canonical-address-p (+ (1- *wc-len*) addr))
         (canonical-address-p (+ #x20 (xr :rgf *rsp* x86-new)))
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
-        (disjoint-p
-         ;; IMPORTANT: Keep the program addresses as the first
-         ;; argument.
-         (create-canonical-address-list
-          (len *wc*) addr)
-         (create-canonical-address-list
-          80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
-
+        (separate
+         *wc-len* addr
+         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
 
         ;; IMPORTANT: Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
@@ -2465,54 +2331,45 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (program-at (create-canonical-address-list
-                     (len *wc*) addr) *wc* x86-new)
+        (prog-at addr *wc* x86-new)
 
-        (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
-               (byte-ify 4 *newline*)))
+        (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
+               *newline*))
    (equal (x86-run 10 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
            (MV-NTH
             1
             (WB
-             (APPEND
-              (CREATE-ADDR-BYTES-ALIST
-               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-               (BYTE-IFY
-                4
-                (LOGHEAD
-                 32
-                 (+
-                  1
-                  (COMBINE-BYTES
-                   (MV-NTH
-                    1
-                    (RB
-                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                     :r X86-NEW)))))))
-              (CREATE-ADDR-BYTES-ALIST
-               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-               (BYTE-IFY
-                4
-                (LOGHEAD
-                 32
-                 (+
-                  1
-                  (COMBINE-BYTES
-                   (MV-NTH
-                    1
-                    (RB
-                     (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                     :r X86-NEW)))))))
-              (CREATE-ADDR-BYTES-ALIST
-               (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-               '(0 0 0 0)))
-             (!FLGI *CF* 0
-                    (!FLGI *PF* 1
-                           (!FLGI *AF* 0
-                                  (!FLGI *ZF* 1
-                                         (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
+             4 (+ 24 (XR :RGF *RSP* X86-NEW))
+             :W 0
+             (MV-NTH
+              1
+              (WB
+               4 (+ 12 (XR :RGF *RSP* X86-NEW))
+               :W
+               (LOGHEAD 32
+                        (+ 1
+                           (MV-NTH 1
+                                   (RB 4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                                       :R X86-NEW))))
+               (MV-NTH
+                1
+                (WB
+                 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                 :W
+                 (LOGHEAD 32
+                          (+ 1
+                             (MV-NTH 1
+                                     (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                         :R X86-NEW))))
+                 (!FLGI
+                  *CF* 0
+                  (!FLGI *PF* 1
+                         (!FLGI *AF* 0
+                                (!FLGI *ZF* 1
+                                       (!FLGI *SF*
+                                              0 (!FLGI *OF* 0 X86-NEW)))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
@@ -2541,10 +2398,7 @@
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
-                            (x86-run-plus
-                             append-and-create-addr-bytes-alist
-                             cons-and-create-addr-bytes-alist
-                             append-and-addr-byte-alistp
+                            (x86-run-plus                             
                              negative-logand-to-positive-logand-with-integerp-x
                              las-to-pas-values-and-!flgi
                              las-to-pas
@@ -2569,52 +2423,44 @@
                    (MV-NTH
                     1
                     (WB
-                     (APPEND
-                      (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                       (BYTE-IFY
-                        4
-                        (LOGHEAD
-                         32
-                         (+
-                          1
-                          (COMBINE-BYTES
-                           (MV-NTH
-                            1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
-                             :r X86-NEW)))))))
-                      (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                       (BYTE-IFY
-                        4
-                        (LOGHEAD
-                         32
-                         (+
-                          1
-                          (COMBINE-BYTES
-                           (MV-NTH
-                            1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 12 (XR :RGF *RSP* X86-NEW)))
-                             :r X86-NEW)))))))
-                      (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
-                       '(0 0 0 0)))
-                     (!FLGI *CF* 0
-                            (!FLGI *PF* 1
-                                   (!FLGI *AF* 0
-                                          (!FLGI *ZF* 1
-                                                 (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))
-  :hints (("Goal" :in-theory
-           (union-theories '(loop-preconditions
+                     4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                     :W 0
+                     (MV-NTH
+                      1
+                      (WB
+                       4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                       :W
+                       (LOGHEAD 32
+                                (+ 1
+                                   (MV-NTH 1
+                                           (RB 4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                                               :R X86-NEW))))
+                       (MV-NTH
+                        1
+                        (WB
+                         4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                         :W
+                         (LOGHEAD 32
+                                  (+ 1
+                                     (MV-NTH 1
+                                             (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                 :R X86-NEW))))
+                         (!FLGI
+                          *CF* 0
+                          (!FLGI *PF* 1
+                                 (!FLGI *AF* 0
+                                        (!FLGI *ZF* 1
+                                               (!FLGI *SF*
+                                                      0 (!FLGI *OF* 0 X86-NEW)))))))))))))))
+  :hints (("Goal"
+           :in-theory (e/d* (loop-preconditions
                              input
                              get-char
                              offset
                              rgfi-is-i64p
                              (len) (loghead)
                              programmer-level-mode-permissions-dont-matter)
-                           (theory 'minimal-theory))
+                            (not))
            :use ((:instance effects-newline-encountered-limited
                             (x86-new (x86-run (gc-clk-no-eof) x86)))
                  (:instance effects-eof-not-encountered-prelim-env-assumptions-projection)
@@ -2636,49 +2482,35 @@
                    (MV-NTH
                     1
                     (WB
-                     (APPEND
-                      (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST
-                        4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                       (BYTE-IFY
-                        4
-                        (LOGHEAD
-                         32
-                         (+
-                          1
-                          (COMBINE-BYTES
-                           (MV-NTH
-                            1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST
-                              4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                      (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST
-                        4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                       (BYTE-IFY
-                        4
-                        (LOGHEAD
-                         32
-                         (+
-                          1
-                          (COMBINE-BYTES
-                           (MV-NTH
-                            1
-                            (RB
-                             (CREATE-CANONICAL-ADDRESS-LIST
-                              4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                             :r (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                      (CREATE-ADDR-BYTES-ALIST
-                       (CREATE-CANONICAL-ADDRESS-LIST
-                        4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86))))
-                       '(0 0 0 0)))
-                     (!FLGI *CF* 0
-                            (!FLGI *PF* 1
-                                   (!FLGI *AF* 0
-                                          (!FLGI *ZF* 1
-                                                 (!FLGI *SF* 0
-                                                        (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
+                     4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     :W 0
+                     (MV-NTH
+                      1
+                      (WB
+                       4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                       :W
+                       (LOGHEAD 32
+                                (+ 1
+                                   (MV-NTH 1
+                                           (RB 4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                               :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                       (MV-NTH
+                        1
+                        (WB
+                         4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                         :W
+                         (LOGHEAD 32
+                                  (+ 1
+                                     (MV-NTH 1
+                                             (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                                 :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                         (!FLGI
+                          *CF* 0
+                          (!FLGI *PF* 1
+                                 (!FLGI *AF* 0
+                                        (!FLGI *ZF* 1
+                                               (!FLGI *SF*
+                                                      0 (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-newline)
            :in-theory (union-theories
@@ -2721,8 +2553,12 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-newline) x86))) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-newline) x86))) 1)))
+           (and (equal (ia32_efer-slice :ia32_efer-sce
+                                        (xr :msr *ia32_efer-idx* (x86-run (gc-clk-newline) x86)))
+                       1)
+                (equal (ia32_efer-slice :ia32_efer-lma
+                                        (xr :msr *ia32_efer-idx* (x86-run (gc-clk-newline) x86)))
+                       1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-newline-encountered-rip-projection
@@ -2745,10 +2581,13 @@
 
 (defthmd effects-newline-encountered-program-projection
   (implies (and (loop-preconditions addr x86)
-                (equal len-wc (len *wc*))
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (program-at (create-canonical-address-list len-wc addr)
-                       *wc* (x86-run (gc-clk-newline) x86))))
+           (prog-at addr *wc* (x86-run (gc-clk-newline) x86)))
+  :hints (("Goal" :in-theory (e/d* (loop-preconditions)
+                                   (effects-newline-encountered
+                                    effects-eof-not-encountered-prelim))
+           :use ((:instance effects-newline-encountered)
+                 (:instance effects-eof-not-encountered-prelim)))))
 
 (defthmd effects-newline-encountered-env-assumptions-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2828,12 +2667,8 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (equal (combine-bytes (word-state x86 (x86-run (gc-clk-newline) x86)))
-                  *out*))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp)))))
+           (equal (word-state x86 (x86-run (gc-clk-newline) x86))
+                  *out*)))
 
 (defthmd effects-newline-encountered-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2848,13 +2683,11 @@
 (defthmd effects-newline-encountered-variables-nc
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (equal (combine-bytes (nc x86 (x86-run (gc-clk-newline) x86)))
-                  (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
+           (equal (nc x86 (x86-run (gc-clk-newline) x86))
+                  (loghead 32 (+ 1 (nc x86 x86)))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
-                              (append-and-create-addr-bytes-alist
-                               cons-and-create-addr-bytes-alist
-                               append-and-addr-byte-alistp)))))
+                              ()))))
 
 (defthmd effects-newline-encountered-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2862,19 +2695,13 @@
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (nc (x86-run (gc-clk-newline) x86) xxx)
                   (nc x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(effects-newline-encountered-rbp-projection
-             nc))))
+  :hints (("Goal" :in-theory '(effects-newline-encountered-rbp-projection nc))))
 
 (defthmd effects-newline-encountered-variables-nw
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (nw x86 (x86-run (gc-clk-newline) x86))
-                  (nw x86 x86)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp)))))
+                  (nw x86 x86))))
 
 (defthmd effects-newline-encountered-variables-nw-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2882,20 +2709,14 @@
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (nw (x86-run (gc-clk-newline) x86) xxx)
                   (nw x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(effects-newline-encountered-rbp-projection
-             nw))))
+  :hints (("Goal" :in-theory '(effects-newline-encountered-rbp-projection nw))))
 
 (defthmd effects-newline-encountered-variables-nl
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (equal (combine-bytes (nl x86 (x86-run (gc-clk-newline) x86)))
-                  (loghead 32 (+ 1 (combine-bytes (nl x86 x86))))))
-  :hints (("Goal" :in-theory (e/d*
-                              (programmer-level-mode-permissions-dont-matter)
-                              (append-and-create-addr-bytes-alist
-                               cons-and-create-addr-bytes-alist
-                               append-and-addr-byte-alistp)))))
+           (equal (nl x86 (x86-run (gc-clk-newline) x86))
+                  (loghead 32 (+ 1 (nl x86 x86)))))
+  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter) ()))))
 
 (defthmd effects-newline-encountered-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2903,13 +2724,13 @@
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (nl (x86-run (gc-clk-newline) x86) xxx)
                   (nl x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(effects-newline-encountered-rbp-projection
-             nl))))
+  :hints (("Goal" :in-theory '(effects-newline-encountered-rbp-projection nl))))
 
 ;;**********************************************************************
 ;; Space Encountered
 ;;**********************************************************************
+
+(i-am-here)
 
 (defthmd effects-space-encountered-limited
 
@@ -2926,10 +2747,10 @@
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
-        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- (len *gc*)))))
+        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- *gc-len*))))
 
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
+        (canonical-address-p (+ (1- *wc-len*) addr))
         (canonical-address-p (+ #x20 (xr :rgf *rsp* x86-new)))
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
@@ -2937,7 +2758,7 @@
          ;; IMPORTANT: Keep the program addresses as the first
          ;; argument.
          (create-canonical-address-list
-          (len *wc*) addr)
+          *wc-len* addr)
          (create-canonical-address-list
           80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
 
@@ -2953,7 +2774,7 @@
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at (create-canonical-address-list
-                     (len *wc*) addr) *wc* x86-new)
+                     *wc-len* addr) *wc* x86-new)
 
         (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
                (byte-ify 4 *space*)))
@@ -3196,7 +3017,7 @@
 
 (defthmd effects-space-encountered-program-projection
   (implies (and (loop-preconditions addr x86)
-                (equal len-wc (len *wc*))
+                (equal len-wc *wc-len*)
                 (equal (get-char (offset x86) (input x86)) *space*))
            (program-at (create-canonical-address-list len-wc addr)
                        *wc*
@@ -3372,10 +3193,10 @@
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
-        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- (len *gc*)))))
+        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- *gc-len*))))
 
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
+        (canonical-address-p (+ (1- *wc-len*) addr))
         (canonical-address-p (+ #x20 (xr :rgf *rsp* x86-new)))
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
@@ -3383,7 +3204,7 @@
          ;; IMPORTANT: Keep the program addresses as the first
          ;; argument.
          (create-canonical-address-list
-          (len *wc*) addr)
+          *wc-len* addr)
          (create-canonical-address-list
           80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
 
@@ -3399,7 +3220,7 @@
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at (create-canonical-address-list
-                     (len *wc*) addr) *wc* x86-new)
+                     *wc-len* addr) *wc* x86-new)
 
         (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
                (byte-ify 4 *tab*)))
@@ -3642,7 +3463,7 @@
 
 (defthmd effects-tab-encountered-program-projection
   (implies (and (loop-preconditions addr x86)
-                (equal len-wc (len *wc*))
+                (equal len-wc *wc-len*)
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (program-at (create-canonical-address-list
                         len-wc addr)
@@ -3859,10 +3680,10 @@
         (canonical-address-p (xr :rgf *rsp* x86-new))
 
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
-        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- (len *gc*)))))
+        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- *gc-len*))))
 
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
+        (canonical-address-p (+ (1- *wc-len*) addr))
         (canonical-address-p (+ #x20 (xr :rgf *rsp* x86-new)))
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
@@ -3870,7 +3691,7 @@
          ;; IMPORTANT: Keep the program addresses as the first
          ;; argument.
          (create-canonical-address-list
-          (len *wc*) addr)
+          *wc-len* addr)
          (create-canonical-address-list
           80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
 
@@ -3885,7 +3706,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86-new)
+        (program-at (create-canonical-address-list *wc-len* addr) *wc* x86-new)
 
         ;; Other theorems say the following in terms of byte-ify, not combine-bytes...
         ;; (not (equal (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new))
@@ -4806,7 +4627,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (combine-bytes (word-state x86 x86)) *out*)
-                (equal len-wc (len *wc*)))
+                (equal len-wc *wc-len*))
            (program-at (create-canonical-address-list len-wc addr)
                        *wc* (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory (e/d*
@@ -5289,16 +5110,16 @@
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
-        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- (len *gc*)))))
+        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- *gc-len*))))
         (canonical-address-p addr)
-        (canonical-address-p (+ (1- (len *wc*)) addr))
+        (canonical-address-p (+ (1- *wc-len*) addr))
         (canonical-address-p (+ #x20 (xr :rgf *rsp* x86-new)))
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
         (disjoint-p
          ;; IMPORTANT: Keep the program addresses as the first
          ;; argument.
-         (create-canonical-address-list (len *wc*) addr)
+         (create-canonical-address-list *wc-len* addr)
          (create-canonical-address-list 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
         ;; IMPORTANT: Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
@@ -5309,7 +5130,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86-new)
+        (program-at (create-canonical-address-list *wc-len* addr) *wc* x86-new)
 
         (not (equal (combine-bytes
                      (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :r x86-new)))
@@ -6121,7 +5942,7 @@
                                     (:rewrite acl2::zp-when-gt-0))))))
 
 (defthmd effects-other-char-encountered-state-in-program-projection
-  (implies (and (loop-preconditions addr x86) (equal len-wc (len *wc*))
+  (implies (and (loop-preconditions addr x86) (equal len-wc *wc-len*)
                 (not (equal (get-char (offset x86) (input x86)) *eof*))
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
@@ -7919,7 +7740,7 @@
                  ;; Rest of the Memory
                  addresses
                  ;; Program Stack Space
-                 (create-canonical-address-list 104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))))
+                 (create-canonical-address-list 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))))
            (equal (mv-nth 1 (rb addresses r-w-x
                                 (x86-run (gc-clk-main-before-call) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
@@ -7936,10 +7757,10 @@
                 (canonical-address-p (xr :rgf *rsp* x86))
                 ;; Address of the call instruction in the main sub-routine
                 ;; 95: Position of the call instruction in the main sub-routine
-                ;; (equal (xr :rip 0 x86) (+ (1- (+ (len *gc*) 95)) addr))
-                (equal addr (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
+                ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+                (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
                 (canonical-address-p addr)
-                (canonical-address-p (+ (1- (len *wc*)) addr))
+                (canonical-address-p (+ (1- *wc-len*) addr))
                 (canonical-address-p (+ #x20 (xr :rgf *rsp* x86)))
                 (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
                 ;; (+ 8 #x20 8 #x20) = 80
@@ -7947,7 +7768,7 @@
                  ;; IMPORTANT: Keep the program addresses as the first
                  ;; argument.
                  (create-canonical-address-list
-                  (len *wc*) addr)
+                  *wc-len* addr)
                  (create-canonical-address-list
                   80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86))))
                 (equal (xr :ms 0 x86) nil)
@@ -7955,7 +7776,7 @@
                 ;; Enabling the SYSCALL instruction.
                 (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-                (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86)
+                (program-at (create-canonical-address-list *wc-len* addr) *wc* x86)
                 (canonical-address-listp addresses)
                 (disjoint-p
                  ;; Rest of the Memory
@@ -8172,7 +7993,7 @@
                  addresses
                  ;; Program Stack Space
                  (create-canonical-address-list
-                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))))
+                  104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))))
            (equal (mv-nth 1 (rb addresses r-w-x (loop-effects-hint 0 offset str-bytes (x86-run (gc-clk-main-before-call) x86))))
                   (mv-nth 1 (rb addresses r-w-x x86))))
   :hints
@@ -8236,7 +8057,7 @@
                  addresses
                  ;; Program Stack Space
                  (create-canonical-address-list
-                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))))
+                  104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))))
            (equal (mv-nth 1 (rb addresses r-w-x (x86-run (clock str-bytes x86) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
   :hints (("Goal" :in-theory (union-theories

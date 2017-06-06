@@ -929,9 +929,7 @@
                   (logcount n)))
   :hints (("Goal"
            :use ((:instance x86-popcount-64-symbolic-simulation-snorkeling)
-                 (:instance x86-run-plus
-                            (n1 18)
-                            (n2 16)))
+                 (:instance x86-run-plus (n1 18) (n2 16)))
            :in-theory (e/d* ()
                             (x86-popcount-64-symbolic-simulation-snorkeling
                              x86-run-plus)))))
