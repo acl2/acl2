@@ -263,7 +263,8 @@ processed, the annotation of edges is also returned"
            incoming)))
 ;       [2015-04-16 Thu] Add special support for member
        ((and (equal (len hyp) 3)
-             (membership-relationp (car hyp)) ;(member x term)
+             (member-eq (car hyp) '(acl2::member-eq acl2::member acl2::member-eql acl2::member-equal acl2s::in |ACL2S B|::in))
+             ;; (membership-relationp (car hyp)) TODO
              (proper-symbolp (second hyp)))
         (b* ((var (second hyp))
              (term (third hyp))

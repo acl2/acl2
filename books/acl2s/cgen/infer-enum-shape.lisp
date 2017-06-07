@@ -196,7 +196,7 @@
 ;Invariant: ans. is an alist thats in the order given by dependency analysis
   (f* ((add-constraints... () (put-additional-constraints. fvars term ans.))
 ; [2015-04-16 Thu] add support for membership
-       (add-eq/mem-constraint... (t1) (if (membership-relationp R)
+       (add-eq/mem-constraint... (t1) (if (membership-relationp R wrld)
                                           (put-member-constraint. x t1 vl ans.)
                                         (add-eq-constraint... t1)))
        (add-eq-constraint... (t1) (if (acl2::equivalence-relationp R wrld)

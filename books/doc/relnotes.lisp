@@ -51,7 +51,69 @@
 ;    considered a bug until we are very close to a release.
 
 ; Starting with Version 7.3, we no longer maintain release notes
-; note-x-x-books.  This could change if someone wants to volunteer.
+; note-x-x-books.  Instead, we hope that the ACL2 Community will track
+; changes to the books by maintaining note-x-x-books as they go.
+
+(defxdoc release-notes-books
+
+; This is a parent for the note-x-x-books topics, so they're all visible in one
+; place.
+
+  :parents (release-notes)
+  :short "Pointers to what has changed in the community books"
+  :long "<p>This section of the online @(see documentation) contains notes on
+            the changes in the community books between successive released
+            versions of ACL2.</p>
+
+         <p>Each topic @('note-x-y-books') is a note describing what in the
+            community books distributed with ACL2 version X.Y was new in
+            comparison to the community books distributed with the preceding
+            version of ACL2.</p>
+
+         <p>The current version of ACL2 is the value of the constant @('(@
+            acl2-version)').</p>")
+
+(defxdoc note-7-5-books
+
+; Shilpi Goel: As discussed in the ACL2 2017 Workshop, I am adding
+; this doc topic in the hopes that the members of the ACL2 community
+; will track changes to their books as they go by logging them here.
+; The idea is that the information in this topic can be somewhat more
+; high-level than is normally provided in commit messages.
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  <h4>Your Library Title</h4>
+;  <p>Details go here.</p>
+
+; I will change :doc note-7-5 in books/system/acl2-doc to point to
+; this topic, when (if?) this topic gets fleshed out (see :doc
+; note-7-2 for precedent).
+
+  :parents (note-7-5 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 7.5"
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 7.4 and 7.5.</p>
+
+ <p>See also @(see note-7-5) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h3>Licensing Changes</h3>
+
+ <h3>Build System Updates</h3>
+
+ <h3>Miscellaneous</h3>
+ ")
 
 (defxdoc note-7-2-books
 
@@ -143,7 +205,7 @@
 ;
 ;     > git log --since="May 5, 2015" --no-merges --stat filename
 ;
-  :parents (note-7-2)
+  :parents (note-7-2 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.2 (Jan 2016)"
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.1 and 7.2.</p>
@@ -821,7 +883,7 @@ of course there is more to do.</p>
 found in the change log.</p>")
 
 (defxdoc note-7-1-books
-  :parents (note-7-1)
+  :parents (note-7-1 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
 
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -1204,7 +1266,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-7-0-books
-  :parents (note-7-0)
+  :parents (note-7-0 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.0 (January
  2015)"
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -1905,7 +1967,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-6-5-books
-  :parents (note-6-5)
+  :parents (note-6-5 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 6.5 (August
  2014)."
 
@@ -2646,7 +2708,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-6-4-books
-  :parents (note-6-4)
+  :parents (note-6-4 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 6.4 (January,
  2013)."
 

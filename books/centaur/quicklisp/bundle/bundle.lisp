@@ -28,7 +28,10 @@
                      (relative pathname))))
 
            (initialize-bundled-systems-table (table data-source)
-             (system-table table (file-lines data-source)))
+             (system-table table
+                           (mapcar (lambda (line)
+                                     (merge-pathnames line data-source))
+                                   (file-lines data-source))))
 
            (local-projects-system-pathnames (data-source)
              (let ((files (directory (merge-pathnames "**/*.asd"
@@ -102,12 +105,18 @@
              (initialize
               (make-table :data-source (relative "system-index.txt")
                           :init-function #'initialize-bundled-systems-table)))
+           (make-bundled-local-projects-systems-table ()
+             (let ((data-source (relative "bundled-local-projects/system-index.txt")))
+               (when (probe-file data-source)
+                 (initialize
+                  (make-table :data-source data-source
+                              :init-function #'initialize-bundled-systems-table)))))
            (make-local-projects-table ()
              (initialize
               (make-table :data-source (relative "local-projects/")
                           :init-function #'initialize-local-projects-table)))
 
-           (=matching-data-sources (&rest tables)
+           (=matching-data-sources (tables)
              (let ((data-sources (mapcar #'data-source tables)))
                (lambda (table)
                  (member (data-source table) data-sources
@@ -134,14 +143,18 @@
 
     (let ((existing (check-for-existing-searcher
                      asdf:*system-definition-search-functions*)))
-      (let* ((bundled (make-bundled-systems-table))
-             (local (make-local-projects-table))
+      (let* ((local (make-local-projects-table))
+             (bundled-local-projects
+              (make-bundled-local-projects-systems-table))
+             (bundled (make-bundled-systems-table))
+             (new-tables (remove nil (list local
+                                           bundled-local-projects
+                                           bundled)))
              (existing-tables (get searcher-name indicator))
-             (filter (=matching-data-sources bundled local)))
+             (filter (=matching-data-sources new-tables)))
         (setf (get searcher-name indicator)
-              (list* local bundled (delete-if filter existing-tables)))
-        (clear-asdf local)
-        (clear-asdf bundled))
+              (append new-tables (delete-if filter existing-tables)))
+        (map nil #'clear-asdf new-tables))
       (unless existing
         (setf (symbol-function searcher-name) #'search-function)
         (push searcher-name asdf:*system-definition-search-functions*)))

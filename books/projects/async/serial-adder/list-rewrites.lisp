@@ -13,10 +13,20 @@
             (equal (list (car x)) x)))
 
 (defthmd list-rewrite-4
-  (implies (and (true-listp a)
-                (equal (len a) 4))
-           (equal (list (car a) (cadr a) (caddr a) (cadddr a))
-                  a)))
+  (implies (and (true-listp x)
+                (equal (len x) 4))
+           (equal (list (car x) (cadr x) (caddr x) (cadddr x))
+                  x)))
+
+(defthmd list-rewrite-4-alt
+  (implies (and (true-listp x)
+                (equal (len x) 4))
+           (equal (list (nth 0 x)
+                        (nth 1 x)
+                        (nth 2 x)
+                        (nth 3 x))
+                  x))
+  :hints (("Goal" :in-theory (enable open-nth))))
 
 (defthmd list-rewrite-5
   (implies (and (true-listp x)

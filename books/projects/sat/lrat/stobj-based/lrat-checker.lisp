@@ -1183,7 +1183,10 @@
 
 (defun verify-clause$ (formula add-step ncls ndel a$)
 
-; This function leaves a$ptr the way it found it.
+; In the normal case this function returns (mv ncls ndel formula a$) for new
+; ncls, ndel, formula, and a$.  Otherwise it returns (mv nil _ formula a$)
+; where formula is unchanged, but in that case a hard error occurs.  Note that
+; a$ptr is the same for the input and output a$.
 
   (declare (xargs :stobjs a$
                   :guard

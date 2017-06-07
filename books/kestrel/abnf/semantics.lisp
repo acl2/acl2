@@ -415,7 +415,11 @@
                        :range (and (= (len nats) 1)
                                    (<= num-val.min (car nats))
                                    (<= (car nats) num-val.max)))))
-  :guard-hints (("Goal" :cases ((natp (car (tree-leafterm->get tree))))))
+  :guard-hints (("Goal"
+                 :cases
+                 ((natp (car (tree-leafterm->get tree))))
+                 ;; Matt K. mod to get proof to work in ACL2(r):
+                 :in-theory (enable tree-leafterm->get)))
   :no-function t)
 
 (define nat-match-sensitive-char-p ((nat natp) (char characterp))

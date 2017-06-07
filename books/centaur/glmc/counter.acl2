@@ -1,0 +1,5 @@
+
+(set-deferred-ttag-notes t state)
+(include-book "portcullis")
+(include-book "centaur/sv/portcullis" :dir :system)
+; cert-flags: ? t :ttags :all :skip-proofs-okp t
