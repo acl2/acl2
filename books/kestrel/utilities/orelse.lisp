@@ -8,9 +8,60 @@
 
 (defxdoc orelse
   :parents (system-utilities)
-  :short "Evaluate a sequence of forms, until one succeeds"
-  :long "<p>Experimental; documentation will come later.  WARNING: This ~
-         utility may change!</p>")
+  :short "Evaluate an event and, if it fails, then evaluate a second event"
+  :long "<p><b>WARNING</b>: This utility may change!  (If you see this warning
+ after ACL2 Version 7.5 is released, please tell Make Kaufmann so that he can
+ consider removing it.)</p>
+
+ <p>NOTE: Also see @(see orelse*) for a similar utility that allows any number
+ of @(see events).</p>
+
+ @({
+ General Form:
+
+ (orelse form1 form2
+         :quiet      q ; default nil
+         :no-error   n ; default nil
+         :expansion? e ; default t
+ })
+
+ <p>where @('form1') and @('form2') are @(see events) (see @(see
+ embedded-event-form)) and the keywords have the indicated defaults.  The
+ behavior is as follows: @('form1') is submitted and if that succeeds &mdash;
+ that is, if the result is an @(see error-triple) @('(mv nil val state)')
+ &mdash; then the @('orelse') call returns that error-triple.  Otherwise, it
+ return the result of evaluating @('form2'), except that if that evaluation
+ also fails and if @(':no-error') is @('nil') (the default), then evaluation
+ concludes by submitting the event @('(value-triple :failed)').</p>
+
+ <p>If @(':quiet') has a non-@('nil') value, then output is suppressed using
+ @(tsee with-output) with argument @(':stack :push'), so that @('form1') and
+ @('form2') may recover the original output environment using @('with-output')
+ with argument @(':stack :pop').</p>
+
+ <p>The sizes of @(see certificate) files may be reduced with @(':expansion?
+ t') (the default).  That argument avoids storing a @(tsee make-event)
+ expansion for @('(orelse form1 form2 ...)') when evaluation of the first event
+ form succeeds.</p>
+
+ <p>See community book @('kestrel/utilities/orelse.lisp') for an utility,
+ @('encapsulate-report-errors'), that employs @('orelse').</p>")
+
+(defxdoc orelse*
+  :parents (system-utilities)
+  :short "Evaluate a sequence of @(see events), until one succeeds"
+  :long "<p>@('Orelse*') behaves as described in the documentation for @(see
+ orelse), except that @('orelse*') takes a list of forms, as shown below, and
+ its default for @(':expansion?') is @('nil').</p>
+
+ @({
+ General Form:
+
+ (orelse* (form1 form2 ...)
+          :quiet      q ; default nil
+          :no-error   n ; default nil
+          :expansion? e ; default nil
+ })")
 
 (defun orelse-fn (form-list quiet no-error expansion?p)
   (declare (xargs :guard (true-listp form-list)))
@@ -33,12 +84,14 @@
   (orelse-fn form-list quiet no-error expansion?p))
 
 (defmacro orelse (form1 form2
-                        &rest args
                         &key
                         quiet
-                        no-error)
-  (declare (ignore quiet no-error))
-  `(orelse* (,form1 ,form2) :expansion?p t ,@args))
+                        no-error
+                        (expansion?p 't))
+  `(orelse* (,form1 ,form2)
+            :quiet ,quiet
+            :no-error ,no-error
+            :expansion?p ,expansion?p))
 
 ; The following sample application of orelse is a drop-in replacement for
 ; encapsulate.  It replaces each event of the encapsulate with an orelse form
