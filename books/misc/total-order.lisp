@@ -26,7 +26,7 @@
 symbols, and strings.  That is, non-integer numbers and characters are probably
 somewhat rare.</p>
 
-<p>ACL2's built-in @(see alphorder) to first checks checks whether the elements
+<p>ACL2's built-in @(see alphorder) first checks whether the elements
 are real or complex numbers, then characters, then finally strings or symbols.
 This order isn't great if the conjecture above is true.  It seems especially
 unfortunate as @(see real/rationalp) and @(see complex/complex-rationalp) seem
