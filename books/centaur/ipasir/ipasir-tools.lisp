@@ -32,7 +32,7 @@
 
 (include-book "ipasir-logic")
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
-(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/basic/arith-equivs" :dir :system))
 
 (local (in-theory (disable ifix)))
 
