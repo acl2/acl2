@@ -107,6 +107,8 @@
     (b-and3      (list (f-and3 (car ins) (cadr ins) (caddr ins))))
     (b-and4      (list (f-and4 (car ins) (cadr ins)
                                (caddr ins) (cadddr ins))))
+    (b-AndOrInv  (list (f-not (f-or (f-and (car ins) (cadr ins))
+                                    (caddr ins)))))
     (b-bool      (list (f-bool (car ins))))
     (b-buf       (list (f-buf  (car ins))))
     (b-equv      (list (f-equv  (car ins) (cadr ins))))

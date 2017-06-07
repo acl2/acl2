@@ -1,5 +1,5 @@
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2016
+;; June 2017
 
 (in-package "ADE")
 
@@ -10,14 +10,14 @@
 
 ;; Some utility functions that help print out a readable format of link states.
 
-(defun 4v->link-state (x)
+(defun 4v->link-st (x)
   (declare (xargs :guard t))
   (cond ((equal x T)
          'full)
         ((equal x NIL)
          'empty)
         ((consp x)
-         (4v->link-state (car x)))
+         (4v->link-st (car x)))
         (t nil)))
 
 (defun 4v->data (x)
@@ -42,7 +42,7 @@
       nil
     (cons
      (list (string-append "L" (str::natstr idx))
-           (4v->link-state (car x))
+           (4v->link-st (car x))
            (reverse (list-fix (4v->data (cadr x)))))
      (map-to-links (cddr x) (1+ idx)))))
 
@@ -103,24 +103,24 @@
   (declare (xargs :guard t))
   (equal sw nil))
 
-(defun fullp (link)
+(defun fullp (link-st)
   (declare (xargs :guard t))
-  (equal link '((t))))
+  (equal link-st '((t))))
 
-(defun emptyp (link)
+(defun emptyp (link-st)
   (declare (xargs :guard t))
-  (equal link '((nil))))
+  (equal link-st '((nil))))
 
-(defun validp (link)
+(defun validp (link-st)
   (declare (xargs :guard t))
-  (or (fullp link) (emptyp link)))
+  (or (fullp link-st) (emptyp link-st)))
 
 ;; ======================================================================
 
-; Joint circuit
+;; Joint control circuit
 
-(defconst *joint*
-  '((joint
+(defconst *joint-cntl*
+  '((joint-cntl
      (fin fout go)
      (act)
      ()
@@ -129,13 +129,13 @@
       (g1 (b-go) b-bool (go))
       (jact (act) b-and (ready b-go))))))
 
-(defthmd joint-okp
-  (and (net-syntax-okp *joint*)
-       (net-arity-okp *joint*)))
+(defthmd joint-cntl-okp
+  (and (net-syntax-okp *joint-cntl*)
+       (net-arity-okp *joint-cntl*)))
 
-(defund joint& (netlist)
+(defund joint-cntl& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist joint))
+  (netlist-hyps netlist joint-cntl))
 
 (defun joint-act (fin fout go)
   (declare (xargs :guard t))
@@ -145,7 +145,9 @@
 (defthm joint-act-rewrite
   (and (not (joint-act nil fout go))
        (not (joint-act fin t go))
-       (not (joint-act fin fout nil))))
+       (not (joint-act fin fout nil))
+       (equal (joint-act t nil go)
+              (f-bool go))))
 
 (defthm joint-act-removes-f-buf
   (and (equal (joint-act (f-buf fin) fout go)
@@ -156,20 +158,20 @@
               (joint-act fin fout go)))
   :hints (("Goal" :in-theory (enable f-buf-delete-lemmas-2))))
 
-(defthmd joint$value
-  (implies (joint& netlist)
-           (equal (se 'joint (list fin fout go) sts netlist)
+(defthmd joint-cntl$value
+  (implies (joint-cntl& netlist)
+           (equal (se 'joint-cntl (list fin fout go) sts netlist)
                   (list (joint-act fin fout go))))
-  :hints (("Goal" :in-theory (enable* se-rules joint&))))
+  :hints (("Goal" :in-theory (enable* se-rules joint-cntl&))))
 
 (in-theory (disable joint-act))
 
 ;; ======================================================================
 
-; Click link control circuit
+;; Click link-state control circuit
 
-(defconst *click-link*
-  '((click-link
+(defconst *click-link-st*
+  '((click-link-st
      (fi dr)
      (ls)
      (ff0 ff1)
@@ -179,25 +181,25 @@
       (g1 (r) b-not (req))
       (g2 (a) b-not (ack))))))
 
-(defthmd click-link-okp
-  (and (net-syntax-okp *click-link*)
-       (net-arity-okp *click-link*)))
+(defthmd click-link-st-okp
+  (and (net-syntax-okp *click-link-st*)
+       (net-arity-okp *click-link-st*)))
 
-(defund click-link& (netlist)
+(defund click-link-st& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist click-link))
+  (netlist-hyps netlist click-link-st))
 
-(defthmd click-link$value
-  (implies (click-link& netlist)
-           (equal (se 'click-link (list fi dr) (list ff0 ff1) netlist)
+(defthmd click-link-st$value
+  (implies (click-link-st& netlist)
+           (equal (se 'click-link-st (list fi dr) (list ff0 ff1) netlist)
                   (list (f-xor (car ff0) (car ff1)))))
   :hints (("Goal" :in-theory (enable* se-rules
-                                      click-link&
+                                      click-link-st&
                                       f-gates))))
 
-(defthmd click-link$state
-  (implies (click-link& netlist)
-           (equal (de 'click-link (list fi dr) (list ff0 ff1) netlist)
+(defthmd click-link-st$state
+  (implies (click-link-st& netlist)
+           (equal (de 'click-link-st (list fi dr) (list ff0 ff1) netlist)
                   (list (list (f-if fi
                                     (f-not (car ff0))
                                     (car ff0)))
@@ -205,39 +207,39 @@
                                     (f-not (car ff1))
                                     (car ff1))))))
   :hints (("Goal" :in-theory (enable* de-rules
-                                      click-link&
+                                      click-link-st&
                                       f-gates))))
 
 ;; ======================================================================
 
-; SR-link circuit
+;; SR link-state circuit
 
-(defconst *sr-link*
-  '((sr-link
+(defconst *sr-link-st*
+  '((sr-link-st
      (fi dr)
      (ls)
      (sr-st)
      ((sr-st (ls ls~) sr (fi dr))))))
 
-(defthmd sr-link-okp
-  (and (net-syntax-okp *sr-link*)
-       (net-arity-okp *sr-link*)))
+(defthmd sr-link-st-okp
+  (and (net-syntax-okp *sr-link-st*)
+       (net-arity-okp *sr-link-st*)))
 
-(defund sr-link& (netlist)
+(defund sr-link-st& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist sr-link))
+  (netlist-hyps netlist sr-link-st))
 
-(defthmd sr-link$value
-  (implies (sr-link& netlist)
-           (equal (se 'sr-link ins sts netlist)
+(defthmd sr-link-st$value
+  (implies (sr-link-st& netlist)
+           (equal (se 'sr-link-st ins sts netlist)
                   (list (f-buf (caar sts)))))
-  :hints (("Goal" :in-theory (enable* se-rules sr-link&))))
+  :hints (("Goal" :in-theory (enable* se-rules sr-link-st&))))
 
-(defthmd sr-link$state
-  (implies (sr-link& netlist)
-           (equal (de 'sr-link (list fi dr) sts netlist)
+(defthmd sr-link-st$state
+  (implies (sr-link-st& netlist)
+           (equal (de 'sr-link-st (list fi dr) sts netlist)
                   (list (list (f-sr fi dr (caar sts))))))
-  :hints (("Goal" :in-theory (enable* de-rules sr-link&))))
+  :hints (("Goal" :in-theory (enable* de-rules sr-link-st&))))
 
 ;; ======================================================================
 
@@ -248,31 +250,31 @@
     (or (car x)
         (or-list (cdr x)))))
 
-(defconst *link*
-  '((link
+(defconst *link-st*
+  '((link-st
      (fi dr)
      (ls)
      (sr-st)
      ((sr-st (ls ls~) sr (fi dr))))))
 
-(defthmd link-okp
-  (and (net-syntax-okp *link*)
-       (net-arity-okp *link*)))
+(defthmd link-st-okp
+  (and (net-syntax-okp *link-st*)
+       (net-arity-okp *link-st*)))
 
-(defund link& (netlist)
+(defund link-st& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist link))
+  (netlist-hyps netlist link-st))
 
-(defthmd link$value
-  (implies (link& netlist)
-           (equal (se 'link ins sts netlist)
+(defthmd link-st$value
+  (implies (link-st& netlist)
+           (equal (se 'link-st ins sts netlist)
                   (list (f-buf (caar sts)))))
-  :hints (("Goal" :in-theory (enable* se-rules link&))))
+  :hints (("Goal" :in-theory (enable* se-rules link-st&))))
 
-(defthmd link$state
-  (implies (link& netlist)
-           (equal (de 'link (list fi dr) sts netlist)
+(defthmd link-st$state
+  (implies (link-st& netlist)
+           (equal (de 'link-st (list fi dr) sts netlist)
                   (list (list (f-sr fi dr (caar sts))))))
-  :hints (("Goal" :in-theory (enable* de-rules link&))))
+  :hints (("Goal" :in-theory (enable* de-rules link-st&))))
 
 
