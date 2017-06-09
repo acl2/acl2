@@ -166,7 +166,7 @@ delete an existing key if it wants to set a key's value to nil.
 (local
 (defthm values-not-nil
   (implies (rcdp alist)
-           ;; The order below ooks dangerous, but apparently the prover's
+           ;; The order below looks dangerous, but apparently the prover's
            ;; heuristics save us.
            (iff (assoc-equal key alist)
                 (cdr (assoc-equal key alist))))))
