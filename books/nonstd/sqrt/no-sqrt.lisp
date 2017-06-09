@@ -1,79 +1,68 @@
-#|					;
+#|
 
-BOZO: rewrite these comments for an audience of modern ACL2 users.
+In this ACL2 book, we prove that in standard ACL2, the square root of two does
+not exist, and in ACL2(r), it does exist and is an irrational real number.  The
+interested reader should also take a look at "iter-sqrt.lisp", in which we
+prove that you _can_ get arbitrarily close to the square root in standard ACL2.
+BOZO: We should also prove that you can get the actual square root in ACL2(r).
 
-HISTORICAL NOTE
+In standard ACL2 (as opposed to ACL2(r), which we will discuss below),
+irrational numbers are not part of ACL2's universe of discourse, and all
+numbers are Gaussian rationals (i.e. complex numbers whose real and imaginary
+parts are both rational).  Moreover, the result of any arithmetic operation is
+numeric, and non-numeric arguments to arithmetic operators behave as zero.  It
+is thus possible to prove that there cannot be a square root of two in ACL2:
 
-In ACL2 1.9 and earlier, ACL2 did not recognize the reals.  Moreover, it
-asserted that the result of any arithmetic operation was numeric, and that
-non-numeric arguments to arithmetic operators behaved as zero.  It was thus
-able to prove that any numeric operation resulted in either a rational or
-complex-rational number, and moreover that all other objects were (numerically)
-equivalent to zero.  Accordingly, it was possible to prove that the square root
-of two did not exist.  Basically, the square root of two cannot be a rational
-number, and since all numbers are rational, it cannot exist.
+    (defthm there-is-no-sqrt-2
+       (not (equal (* x x) 2)))
 
-This let us to extend the type system of ACL2 to include the reals.  Hence, the
-original result is no longer provable.  In its stead, we now prove that
+Why is this important?  Well, we wondered what would happen if somebody tried
+to define sqrt using something like
+
+    (encapsulate
+      (((sqrt *) => *))
+
+      (defthm sqrt-sqrt
+        (equal (* (sqrt x) (sqrt x)) x)))
+
+Of course, ACL2 will complain, because our careless programmer failed to
+provide a _witness_ function for sqrt.  That is, they failed to provide an
+example of a function that would satisfy the theorem sqrt-sqrt.  While it is
+often the case that providing such functions is annoying, in this case it is
+crucial, since we will see that no such function exists in the ACL2 world.
+
+Specifically, let's consider (sqrt 2).  It is well-known that this is an
+irrational number.  Since the ACL2 numbers are limited to the Gaussian
+rationals, it becomes obvious that (sqrt 2) cannot exist in the ACL2 universe.
+The heart of the proof, then, is to show that (sqrt 2) is not rational.
+
+To prove that (sqrt 2) is irrational, we follow the standard proof by
+contradiction.  Suppose that there were such a rational number p/q, in lowest
+terms, so that p/q * p/q is equal to 2.  Well, then, p^2 = 2 q^2, so we have
+immediately that p^2 is even, and hence so is p.  But in that case, p^2 is a
+multiple of 4, so q^2 is a multiple of 2, and hence q is also even.  But then
+p/q is not in lowest terms (i.e. p and q are not relatively prime since they
+share the factor 2), so we have derived a contradiction, completing the proof.
+
+
+Now we turn to the situation in ACL2(r) a variant of ACL2 described in :DOC
+real.
+
+In ACL2(r), the universe of discourse is expanded to contain all real numbers,
+including irrational ones.  So in ACL2(r), the square root of two *does* exist,
+and we cannot prove the theorem there-is-no-sqrt-2.  Instead, we can prove the
+following weaker theorem:
 
     (defthm irrational-sqrt-2
       (implies (equal (* x x) 2)
                (and (realp x)
                     (not (rationalp x)))))
 
-That is, the square root of two must be irrational.
-
-What follows is the original commentary on this file (before the addition of
-the reals into ACL2):
-
----------------------------
-
-In this Acl2 book, we prove that the square root of two does not exist.  In
-particular, we prove the following theorem:
-
-    (defthm there-is-no-sqrt-2
-      (not (equal (* x x) 2)))
-
-Why is this important?  Well, we wondered what would happen if somebody tried
-to define sqrt using something like
-
-    (encapsulate
-      ((sqrt (x) t))
-
-      (defthm sqrt-sqrt
-        (equal (* (sqrt x) (sqrt x)) x)))
-
-Of course, Acl2 will complain, because our careless programmer failed to
-provide a _witness_ function for sqrt.  That is, he failed to provide an
-example of a function that would satisfy the theorem sqrt-sqrt.  While it is
-often the case that providing such functions is annoying, in this case it is
-crucial, since we will see that no such function exists in the Acl2 world.
-
-Specifically, let's consider (sqrt 2).  It is well-known that this is an
-irrational number.  Since the Acl2 numbers are limited to the rationals and
-coplex-rationals, then it becomes obvious that (sqrt 2) can not exist in the
-Acl2 universe.  The heart of the proof, then, is to show that (sqrt 2) is not
-rational.
-
-To prove that (sqrt 2) is irrational, we follow the standard proof by
-contradiction.  Suppose that there were such a rational p/q so that p/q * p/q
-is equal to 2.  Well, then, p^2 = 2 q^2, so we have immediately that p^2 is
-even, and hence so is p.  But in that case, p^2 is a multiple of 4, so q^2 is a
-multiple of 2, and hence q is also even.  But then, if we let p' = p/2 and q' =
-q/2, we have that p'/q' * p'/q' = 2.  Since this argument is unchanged
-regardless of p and q, it suffices only to consider p & q in lowest terms
-(i.e., p, q relatively prime) to complete the proof.
-
-The interested reader should also take a look at "iter-sqrt.lisp", in which we
-prove that you _can_ get arbitrarily close to the square root.
-
-To load this book, it is sufficient to do something like this:
-
-    (certify-book "no-sqrt" 0 nil)
+That is to say, any square root of two must be an irrational real number.
 
 |#
 
-(in-package "ACL2")		; We're too lazy to build our own package
+(in-package "ACL2")
 
 (include-book "arithmetic/top" :dir :system)
 
