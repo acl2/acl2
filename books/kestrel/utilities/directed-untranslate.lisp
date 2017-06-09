@@ -1177,19 +1177,18 @@
 ;   ((equal tterm sterm)
 ;    uterm)
 
-    ((and (ffn-symb-p tterm 'return-last)
-          (equal (fargn tterm 1) ''progn)
-          (case-match uterm
-            (('prog2$ uterm1 uterm2)
-             (let ((tmp (directed-untranslate-rec
-                         uterm2 (fargn tterm 3) sterm iff-flg lflg wrld)))
-               `(prog2$ ,uterm1 ,tmp))))))
     ((or (variablep sterm)
          (fquotep sterm)
          (variablep tterm)
          (fquotep tterm)
          (atom uterm))
      (du-untranslate sterm iff-flg wrld))
+    ((and (ffn-symb-p tterm 'return-last)
+          (equal (fargn tterm 1) ''progn)
+          (case-match uterm
+            (('prog2$ & uterm2)
+             (directed-untranslate-rec
+              uterm2 (fargn tterm 3) sterm iff-flg lflg wrld)))))
     ((and (consp uterm) (eq (car uterm) 'mv-let))
      (let* ((uterm (expand-mv-let uterm tterm))
             (ans (directed-untranslate-rec uterm tterm sterm iff-flg lflg
