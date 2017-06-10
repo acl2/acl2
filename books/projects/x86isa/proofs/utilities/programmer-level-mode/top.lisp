@@ -79,7 +79,9 @@
    <li>When reasoning about disjointness/overlap of memory regions: <br/>
    @('rb-wb-disjoint') <br/>
    @('rb-wb-subset') <br/>
-   @('rb-wb-equal')
+   @('rb-wb-equal') <br/>
+   @('separate-smaller-regions') <br/>
+   @('separate-contiguous-regions')
    </li>
 
   </ul>
@@ -129,5 +131,7 @@
  @(def rb-wb-disjoint)
  @(def rb-wb-subset)
  @(def rb-wb-equal)
+ @(def separate-smaller-regions)
+ @(def separate-contiguous-regions)
  "
   )
