@@ -7556,14 +7556,98 @@
                           (declare (ignore changedp))
                           (cond
                            (contradictionp
-                            (er hard 'add-tau-simple-rule
-                                "It was thought impossible for the addition ~
-                                 of a simple subtype tau rule (derived from a ~
-                                 theorem) to yield a contradiction but it has ~
-                                 happened with the rule named ~x0, derived ~
-                                 from ~x1."
-                                rune
-                                (reprettyify hyps concl wrld)))
+
+; Consider the following example (sent June 8, 2017 by Grant Passmore).
+
+;   (defun f (x) (> x 0))
+;   (defun g (x) (< x 0))
+;   (defun h (x) (and (f x) (g x)))
+
+; When ACL2 admits h, it puts us in this case, i.e., where contradictionp is
+; true.  We return the world unchanged, but with perhaps undesirable
+; consequences, as follows.
+
+; The POS-IMPLICANTS of h are recorded as:
+
+; ACL2 !>(getpropc 'h 'pos-implicants nil (w state))
+; ((NIL)
+;  (ACL2-NUMBERP (NIL) T . 0)
+;  ((204 . H) (203 . G) (202 . F)))
+
+; which means that if we ever see (h A) assumed true we can infer various
+; things about A including that (g A) is true and that (f A) is true.  From
+; that we'll get a contradiction at proof time: the hypothesis that (h A) is
+; true is impossible.
+
+; Of course, tau has already figured this out, thus the contradictionp = t that
+; we're now ignoring.  The theorem prover would subsequently perform faster
+; (when false (h A) assumptions are made) if tau had a way to record that (h x)
+; implies ANYTHING.  Unfortunately, tau doesn't have a way to denote this.
+
+; How does this hurt us?  Suppose the user next proved
+
+; (defthm h-implies-consp
+;   (implies (h x) (consp x)))
+
+; We see tau has derived many new POS-IMPLICANTS.
+
+; ACL2 !>(getpropc 'h 'pos-implicants nil (w state))
+; ((NIL)
+;  (ACL2-NUMBERP (NIL) T . 0)
+;  ((204 . H)
+;   (203 . G)
+;   (202 . F)
+;   (175 . ZPF)
+;   (103 . WEAK-ABSSTOBJ-INFO-P)
+;   (71 . WEAK-CURRENT-LITERAL-P)
+;   (34 . WEAK-IO-RECORD-P)
+;   (16 . ZIP)
+;   (15 . ZP)
+;   (3 . CONSP))
+;  (184 . BAD-ATOM)
+;  (159 . FILE-CLOCK-P)
+;  (148 . 32-BIT-INTEGERP)
+;  (131 . KEYWORDP)
+;  (126 . LOWER-CASE-P)
+;  (125 . UPPER-CASE-P)
+;  (124 . ALPHA-CHAR-P)
+;  (121 . STANDARD-CHAR-P)
+;  (31 . BOOLEANP)
+;  (20 . O-FINP)
+;  (19 . POSP)
+;  (18 . BITP)
+;  (17 . NATP)
+;  (7 . SYMBOLP)
+;  (6 . STRINGP)
+;  (5 . RATIONALP)
+;  (4 . INTEGERP)
+;  (2 . COMPLEX-RATIONALP)
+;  (1 . CHARACTERP))
+
+; In particular, now it knows (h A) implies (consp A) and it has done the
+; transitive closure of adding all of consp's implicants to h's implicants.
+
+; Of course, that work is silly because in fact h implies everything.
+
+; To fix this, we'd have to add a way for tau to record that h is always false.
+; Then we could short-circuit any future attempts to do transitive closures
+; through h.
+
+; The question is whether that's worth it?  How many times does a user define a
+; monadic predicate that is always false and how much work do we do to discover
+; the contradiction anew each time the predicate is assumed, how many times
+; does the user prove theorems about the implications of that predicate
+; (provoking us into the transitive closure process), and how much work is it
+; to do the transitive closure?
+
+; Our guess is that this isn't worth worrying about; indeed, there is evidence
+; that this case is rare in practice.  We formerly caused a hard error here,
+; and Grant reports that the error from his example occurs at least as far back
+; as Version_6.4.  That version was released in January, 2014, yet there were
+; no corresponding regression failures or user reports of this bug until Grant
+; reported this issue in June, 2017.
+
+                            wrld)
                            (t (set-tau-runes nil rune wrld)))))))
 
 (defun convert-tau-like-terms-to-tau (complete-flg terms ens wrld)
