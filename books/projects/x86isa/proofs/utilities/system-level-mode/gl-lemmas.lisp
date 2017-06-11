@@ -4,7 +4,6 @@
 (in-package "X86ISA")
 
 (include-book "x86-ia32e-paging" :dir :machine)
-(include-book "clause-processors/find-subterms" :dir :system)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================
@@ -187,109 +186,5 @@
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
 (in-theory (e/d () (rm-low-64-and-write-to-physical-memory-equal-helper-2)))
-
-;; ======================================================================
-
-;; Some misc. utils for bind-free, etc.:
-
-(defun get-subterm-from-list-of-terms (n x)
-  (declare (xargs :guard (and (natp n) (pseudo-term-listp x))))
-  ;; E.g.:
-  ;; (get-subterm-from-list-of-terms 1 '((las-to-pas l-addrs-1 r-w-x cpl x86)
-  ;;                                     (las-to-pas l-addrs-2 r-w-x cpl x86)
-  ;;                                     (las-to-pas l-addrs-2 r-w-x cpl x86)
-  ;;                                     (foo x)))
-  (if (atom x)
-      nil
-    (cons (nth n (acl2::list-fix (car x)))
-          (get-subterm-from-list-of-terms n (cdr x)))))
-
-(define make-bind-free-alist-lists (var values)
-  (if (atom values)
-      nil
-    (cons (acons var (car values) nil)
-          (make-bind-free-alist-lists var (cdr values)))))
-
-(defun find-l-addrs-from-fn
-  (fn l-addrs-var mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
-  (b* ((calls (acl2::find-calls-lst fn (acl2::mfc-clause mfc)))
-       ((when (not calls))
-        ;; fn term not encountered.
-        nil)
-       (l-addrs (get-subterm-from-list-of-terms 1 calls))
-       (alst-lst (make-bind-free-alist-lists l-addrs-var l-addrs)))
-    alst-lst))
-
-(defun find-info-from-program-at-term (thm mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable thm state))
-  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
-       (call (if (not call)
-                 (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc))
-               call))
-       ((when (not call))
-        ;; (cw "~%~p0: Program-At and Program-At-Alt term not encountered.~%" thm)
-        nil)
-       (addresses (cadr call))
-       ((when (not (equal (car addresses)
-                          'create-canonical-address-list)))
-        ;; (cw "~%~p0: Program-At without Create-Canonical-Address-List encountered.~%" thm)
-        nil)
-       (n (cadr addresses))
-       (prog-addr (caddr addresses))
-       (bytes (caddr call)))
-    `((n . ,n)
-      (prog-addr . ,prog-addr)
-      (bytes . ,bytes))))
-
-(defun find-l-addrs-from-las-to-pas
-  (l-addrs-var mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
-  (b* ((calls (acl2::find-calls-lst 'las-to-pas (acl2::mfc-clause mfc)))
-       ((when (not calls))
-        ;; las-to-pas term not encountered.
-        nil)
-       (l-addrs (get-subterm-from-list-of-terms 1 calls))
-       (alst-lst (make-bind-free-alist-lists l-addrs-var l-addrs)))
-    alst-lst))
-
-(defun find-almost-matching-ia32e-la-to-pas-aux (free-r-w-x-var new-arg-lists original-arg-list)
-  (if (endp new-arg-lists)
-      nil
-    (b* ((new-arg-list (car new-arg-lists))
-         (matching? (and (equal (first new-arg-list)  (first original-arg-list)) ;; lin-addr
-                         (not (equal (second new-arg-list) (second original-arg-list))) ;; r-w-x
-                         (equal (third new-arg-list)  (third original-arg-list)) ;; cpl
-                         (equal (fourth new-arg-list) (fourth original-arg-list))))) ;; x86
-      (if matching?
-          (cons (acons free-r-w-x-var ;; original r-w-x
-                       (second new-arg-list)
-                       nil)
-                (find-almost-matching-ia32e-la-to-pas-aux free-r-w-x-var (cdr new-arg-lists) original-arg-list))
-        (find-almost-matching-ia32e-la-to-pas-aux free-r-w-x-var (cdr new-arg-lists) original-arg-list)))))
-
-(defun find-almost-matching-ia32e-la-to-pas
-  (fn-name free-r-w-x-var original-arg-list mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
-  (b* ((calls (acl2::find-calls-lst fn-name (acl2::mfc-clause mfc)))
-       ((when (not calls))
-        ;; ia32e-la-to-pa term not encountered.
-        nil)
-       (new-arg-lists (strip-cdrs calls)))
-    (find-almost-matching-ia32e-la-to-pas-aux free-r-w-x-var new-arg-lists original-arg-list)))
-
-(defun find-arg-of-fn (fn arg-number free-var mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
-  (b* ((calls (acl2::find-calls-lst fn (acl2::mfc-clause mfc)))
-       ((when (not calls)) nil)
-       (bind-candidates (get-subterm-from-list-of-terms arg-number calls))
-       (alst-lst
-        (make-bind-free-alist-lists free-var bind-candidates)))
-    alst-lst))
 
 ;; ======================================================================

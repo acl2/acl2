@@ -229,11 +229,11 @@
   :hints (("Goal" :in-theory (e/d () (force (force))))))
 
 (defthm |(rm-low-32 addr2 (wm-low-32 addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr1)
-                       (addr-range 4 addr2))
+  (implies (and (separate 4 addr1 4 addr2)
+                (natp addr1) (natp addr2))
            (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
                   (rm-low-32 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
+  :hints (("Goal" :in-theory (e/d (separate) (force (force))))))
 
 ;; wm-low-32 WoW:
 
@@ -244,10 +244,11 @@
   :hints (("Goal" :in-theory (e/d () (force (force))))))
 
 (defthm |(wm-low-32 addr2 val2 (wm-low-32 addr1 val1 x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr1)
-                       (addr-range 4 addr2))
+  (implies (and (separate 4 addr1 4 addr2)
+                (natp addr1) (natp addr2))
            (equal (wm-low-32 addr2 val2 (wm-low-32 addr1 val1 x86))
                   (wm-low-32 addr1 val1 (wm-low-32 addr2 val2 x86))))
+  :hints (("Goal" :in-theory (e/d* (separate) ())))
   :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
 
 ;; Theorems about rm64 and wm64:
@@ -265,11 +266,8 @@
   :hints (("Goal" :in-theory (e/d () (rm-low-32 wm-low-32)))))
 
 (defthm |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- disjoint addr|
-  ;; Shilpi: Can the integerp hyps be removed somehow?
-  (implies (and (disjoint-p (addr-range 8 addr1)
-                            (addr-range 8 addr2))
-                (integerp addr1)
-                (integerp addr2))
+  (implies (and (separate 8 addr1 8 addr2)
+                (natp addr1) (natp addr2))
            (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
                   (rm-low-64 addr2 x86)))
   :hints (("Goal" :in-theory (e/d () (rm-low-32 wm-low-32)))))
@@ -277,22 +275,19 @@
 ;; wm-low-64 WoW:
 
 (defthm |(wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86)) --- same addr|
-  ;; Shilpi: Can the integerp hyp be removed somehow?
   (implies (and (equal addr1 addr2)
-                (integerp addr1))
+                (natp addr1))
            (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
                   (wm-low-64 addr2 val2 x86)))
   :hints (("Goal" :in-theory (e/d () (rm-low-32 wm-low-32)))))
 
 (defthm |(wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86)) --- disjoint addr|
-  ;; Shilpi: Can the integerp hyps be removed somehow?
-  (implies (and (disjoint-p (addr-range 8 addr1)
-                            (addr-range 8 addr2))
-                (integerp addr1)
-                (integerp addr2))
+  (implies (and (separate 8 addr1 8 addr2)
+                (natp addr1)
+                (natp addr2))
            (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
                   (wm-low-64 addr1 val1 (wm-low-64 addr2 val2 x86))))
-  :hints (("Goal" :in-theory (e/d () (rm-low-32 wm-low-32))))
+  :hints (("Goal" :in-theory (e/d (separate) (rm-low-32 wm-low-32))))
   :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
 
 ;; Some theorems about the interaction of memi/!memi with
@@ -300,45 +295,121 @@
 ;; disjoint:
 
 (defthm |(rm-low-32 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 1 addr1)
-                       (addr-range 4 addr2))
+  (implies (and (separate 1 addr1 4 addr2)
+                (natp addr1)
+                (natp addr2))
            (equal (rm-low-32 addr2 (xw :mem addr1 val x86))
                   (rm-low-32 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
+  :hints (("Goal" :in-theory (e/d (separate) (force (force))))))
 
 (defthm |(rm-low-64 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 1 addr1)
-                       (addr-range 8 addr2))
+  (implies (and (separate 1 addr1 8 addr2)
+                (natp addr1) (natp addr2))
            (equal (rm-low-64 addr2 (xw :mem addr1 val x86))
                   (rm-low-64 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
+  :hints (("Goal" :in-theory (e/d (separate) (force (force))))))
 
 (defthm |(xr :mem addr1 (wm-low-32 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr2)
-                       (addr-range 1 addr1))
+  (implies (and (separate 4 addr2 1 addr1)
+                (natp addr1) (natp addr2))
            (equal (xr :mem addr1 (wm-low-32 addr2 val x86))
                   (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (e/d (ifix) (force (force))))))
+  :hints (("Goal" :in-theory (e/d (separate ifix) (force (force))))))
 
 (defthm |(xr :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr2)
-                       (addr-range 1 addr1))
+  (implies (and (separate 8 addr2 1 addr1)
+                (natp addr1) (natp addr2))
            (equal (xr :mem addr1 (wm-low-64 addr2 val x86))
                   (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (e/d (ifix) (force (force))))))
+  :hints (("Goal" :in-theory (e/d (separate ifix) (force (force))))))
 
 (defthm |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-  (implies (and (disjoint-p (addr-range 8 addr2)
-                            (addr-range 1 addr1))
-                (integerp addr1)
-                (integerp addr2))
+  (implies (and (separate 8 addr2 1 addr1)
+                (natp addr1)
+                (natp addr2))
            (equal (wm-low-64 addr2 val2 (xw :mem addr1 val1 x86))
                   (xw :mem addr1 val1 (wm-low-64 addr2 val2 x86))))
-  :hints (("Goal" :in-theory (e/d (ifix wm-low-64 wm-low-32) (force (force))))))
+  :hints (("Goal" :in-theory (e/d (separate ifix wm-low-64 wm-low-32) (force (force))))))
 
 (local (in-theory (disable rm-low-32 rm-low-64 wm-low-32 wm-low-64)))
 
 ;; ======================================================================
+
+;; Two linear memory regions are truly separate if their corresponding
+;; physical memory regions are separate --- the function
+;; separate-mapped-mem allows us to state this property.  We say
+;; "truly separate" because distinct linear memory regions can be
+;; mapped to the same physical memory region.
+
+(i-am-here)
+
+(define separate-mapped-mem ((n-1 posp)
+                             (l-addr-1 canonical-address-p)
+                             (r-x-1 :type (member :r :x))
+                             (n-2 posp)
+                             (l-addr-2 canonical-address-p)
+                             (r-x-2 :type (member :r :x))
+                             x86)
+
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p (+ -1 n-1 l-addr-1))
+              (canonical-address-p (+ -1 n-2 l-addr-2)))
+  :non-executable t
+
+  (disjoint-p (mv-nth 1 (las-to-pas (create-canonical-address-list n-1 l-addr-1) r-x-1 x86))
+              (mv-nth 1 (las-to-pas (create-canonical-address-list n-2 l-addr-2) r-x-2 x86)))
+
+
+  ///
+
+  (defthmd separate-mapped-mem-is-commutative
+    (implies (separate-mapped-mem n-1 a-1 n-2 a-2)
+             (separate-mapped-mem n-2 a-2 n-1 a-1))
+    :hints (("Goal" :in-theory (e/d* (separate-mapped-mem) ()))))
+
+  ;; (defun separate-mapped-mem-free-var-candidates (calls)
+  ;;   (if (endp calls)
+  ;;       nil
+  ;;     (cons (list (cons 'n-1 (nth 1 (car calls)))
+  ;;                 (cons 'a-1 (nth 2 (car calls)))
+  ;;                 (cons 'n-2 (nth 3 (car calls)))
+  ;;                 (cons 'a-2 (nth 4 (car calls))))
+  ;;           (separate-mapped-mem-free-var-candidates (cdr calls)))))
+
+  ;; (defun separate-mapped-mem-bindings (ctx mfc state)
+  ;;   (declare (xargs :stobjs (state) :mode :program)
+  ;;            (ignorable ctx state))
+  ;;   (b* ((calls (acl2::find-calls-lst 'separate-mapped-mem (acl2::mfc-clause mfc)))
+  ;;        ((when (not calls)) nil))
+  ;;     (separate-mapped-mem-free-var-candidates calls)))
+
+  ;; (defthm separate-mapped-mem-smaller-regions
+  ;;   (implies (and
+  ;;             (bind-free
+  ;;              (separate-mapped-mem-bindings
+  ;;               'separate-mapped-mem-smaller-regions mfc state)
+  ;;              (n-1 a-1 n-2 a-2))
+  ;;             (<= a-2 a-2-bigger)
+  ;;             (<= (+ n-2-smaller a-2-bigger) (+ n-2 a-2))
+  ;;             (<= a-1 a-1-bigger)
+  ;;             (<= (+ n-1-smaller a-1-bigger) (+ n-1 a-1))
+  ;;             (separate-mapped-mem n-1 a-1 n-2 a-2))
+  ;;            (separate-mapped-mem n-1-smaller a-1-bigger n-2-smaller a-2-bigger))
+  ;;   :hints (("Goal" :in-theory (e/d* (separate-mapped-mem) nil))))
+
+  ;; (defthm separate-mapped-mem-contiguous-regions
+  ;;   (and (separate-mapped-mem i (+ (- i) x) j x)
+  ;;        (implies (<= j i)
+  ;;                 (separate-mapped-mem i x j (+ (- i) x)))
+  ;;        (separate-mapped-mem i x j (+ i x))
+  ;;        (implies (or (<= (+ j k2) k1) (<= (+ i k1) k2))
+  ;;                 (separate-mapped-mem i (+ k1 x) j (+ k2 x))))
+  ;;   :hints (("Goal" :in-theory (e/d* (separate-mapped-mem) ()))))
+  )
+
+;; ======================================================================
+
+#||
 
 ;; Misc. lemmas:
 
@@ -435,7 +506,7 @@
                             (write-to-physical-memory
                              nth
                              force
-                             (force)                             
+                             (force)
                              member-p-cons
                              acl2::commutativity-of-logior
                              mv-nth-2-rcl-spec-16
@@ -511,14 +582,14 @@
 
 (defthmd rewrite-wm-low-64-to-write-to-physical-memory
   (implies (not (programmer-level-mode x86))
-	   (equal (wm-low-64 index value x86)
-		  (write-to-physical-memory (addr-range 8 index) (byte-ify 8 value) x86)))
+           (equal (wm-low-64 index value x86)
+                  (write-to-physical-memory (addr-range 8 index) (byte-ify 8 value) x86)))
   :hints (("Goal"
-	   :in-theory (e/d* (write-to-physical-memory
-			     wm-low-64
-			     wm-low-32
-			     byte-ify)
-			    ()))))
+           :in-theory (e/d* (write-to-physical-memory
+                             wm-low-64
+                             wm-low-32
+                             byte-ify)
+                            ()))))
 (encapsulate
   ()
 
@@ -665,3 +736,5 @@
                               ())))))
 
 ;; ======================================================================
+
+||#

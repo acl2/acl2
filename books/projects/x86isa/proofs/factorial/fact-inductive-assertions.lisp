@@ -43,18 +43,16 @@
     1))
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "arithmetic-5/top" :dir :system))
+  (local (include-book "arithmetic-5/top" :dir :system))
 
- (local (in-theory (e/d (loghead logbitp logapp logext) ())))
+  (local (in-theory (e/d (loghead logbitp logapp logext) ())))
 
- (defthm loghead-and-n32-to-i32-lemma
-   (implies (and (integerp n)
-                 (< 0 n))
-            (< (loghead 32 (+ -1 (logext 32 n)))
-               n)))
- )
+  (defthm loghead-and-n32-to-i32-lemma
+    (implies (and (integerp n)
+                  (< 0 n))
+             (< (loghead 32 (+ -1 (logext 32 n))) n))))
 
 (defun fact-algorithm (n a)
   (declare (xargs :guard (and (n32p n) (n32p a))))
@@ -315,10 +313,7 @@
              ;; Program is in the memory
              (canonical-address-p addr)
              (canonical-address-p (+ addr (len *factorial_recursive*)))
-             (program-at (create-canonical-address-list
-                          (len *factorial_recursive*) addr)
-                         *factorial_recursive*
-                         x86))
+             (prog-at addr *factorial_recursive* x86))
       (if (equal (rip x86) (+ 16 addr))
           (and (loop-inv n0 n 1 a)
                (not (ms x86))
@@ -327,10 +322,7 @@
                ;; Program is in the memory
                (canonical-address-p addr)
                (canonical-address-p (+ addr (len *factorial_recursive*)))
-               (program-at (create-canonical-address-list
-                            (len *factorial_recursive*) addr)
-                           *factorial_recursive*
-                           x86))
+               (prog-at addr *factorial_recursive* x86))
         (if (equal (rip x86) (+ 25 addr))
             (and (halt n0 a)
                  (programmer-level-mode x86)
@@ -339,10 +331,7 @@
                  ;; Program is in the memory
                  (canonical-address-p addr)
                  (canonical-address-p (+ addr (len *factorial_recursive*)))
-                 (program-at (create-canonical-address-list
-                              (len *factorial_recursive*) addr)
-                             *factorial_recursive*
-                             x86))
+                 (prog-at addr *factorial_recursive* x86))
           nil)))))
 
 ;; ======================================================================
@@ -423,10 +412,10 @@
                 (programmer-level-mode x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ 25 addr))
-                (program-at (create-canonical-address-list 25 addr)
-                            '(133 255 184 1 0 0 0 116 15 15 31 128 0
-                                  0 0 0 15 175 199 131 239 1 117 248 244)
-                            x86))
+                (prog-at addr
+                         '(133 255 184 1 0 0 0 116 15 15 31 128 0
+                               0 0 0 15 175 199 131 239 1 117 248 244)
+                         x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
            :in-theory (e/d* ()
@@ -581,42 +570,7 @@
              flgi
              zf-spec
              pf-spec32)
-            (create-canonical-address-list
-             (create-canonical-address-list)
-             (:rewrite get-prefixes-opener-lemma-group-4-prefix)
-             (:rewrite get-prefixes-opener-lemma-group-3-prefix)
-             (:rewrite get-prefixes-opener-lemma-group-2-prefix)
-             (:rewrite get-prefixes-opener-lemma-group-1-prefix)
-             (:rewrite combine-bytes-of-rb-of-1-address-in-programmer-level-mode)
-             (:definition combine-bytes)
-             (:rewrite acl2::ash-0)
-             (:rewrite acl2::zip-open)
-             (:rewrite rb-in-terms-of-nth-and-pos)
-             (:rewrite acl2::zp-when-integerp)
-             (:rewrite acl2::equal-of-booleans-rewrite)
-             (:rewrite canonical-address-p-limits-thm-3)
-             (:rewrite default-+-2)
-             (:rewrite acl2::zp-when-gt-0)
-             (:definition byte-listp)
-             (:linear unsigned-byte-p-of-combine-bytes)
-             (:linear size-of-combine-bytes)
-             (:rewrite default-<-2)
-             (:rewrite default-+-1)
-             (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
-             (:definition n08p$inline)
-             (:rewrite loghead-of-non-integerp)
-             (:rewrite default-<-1)
-             (:definition nth)
-             (:rewrite subset-p-cdr-y)
-             (:rewrite acl2::ifix-when-not-integerp)
-             (:rewrite acl2::logtail-identity)
-             (:rewrite canonical-address-p-limits-thm-2)
-             (:rewrite canonical-address-p-limits-thm-1)
-             (:rewrite acl2::consp-when-member-equal-of-atom-listp)
-             (:rewrite get-prefixes-opener-lemma-zero-cnt)
-             (:rewrite combine-bytes-rb-in-terms-of-rb-subset-p)
-             (:rewrite x86p-x86-fetch-decode-execute)
-             (:definition create-canonical-address-list))))
+            ()))
           ("Subgoal 2"
            :in-theory (e/d (x86-fetch-decode-execute
                             rr32)
@@ -678,22 +632,15 @@
                      (canonical-address-p
                       (+ addr (len
                                *factorial_recursive*))))
-                (program-at (create-canonical-address-list
-                             (len *factorial_recursive*)
-                             addr)
-                            *factorial_recursive* x86)
+                (prog-at addr *factorial_recursive* x86)
                 (equal x86-after-run (x86-run k x86))
                 (equal (rip x86-after-run) (+ 25 addr)))
            (and (halt n0 (rr32 *rax* x86-after-run))
                 (not (fault x86-after-run))
                 (ms x86-after-run)
-                (program-at (create-canonical-address-list
-                             (len *factorial_recursive*)
-                             addr)
-                            *factorial_recursive* x86-after-run)))
+                (prog-at addr *factorial_recursive* x86-after-run)))
   :hints (("Goal"
-           :use ((:instance
-                  partial-correctness-of-fact-recursive-effects-helper)))))
+           :use ((:instance partial-correctness-of-fact-recursive-effects-helper)))))
 
 (defthm partial-correctness-of-fact-recursive
   (implies (and (ok-inputs n0 x86)
@@ -706,22 +653,15 @@
                      (canonical-address-p
                       (+ addr (len
                                *factorial_recursive*)))
-                     (program-at (create-canonical-address-list
-                                  (len *factorial_recursive*)
-                                  addr)
-                                 *factorial_recursive* x86))
+                     (prog-at addr *factorial_recursive* x86))
                 (equal x86-after-run (x86-run k x86))
                 (equal (rip x86-after-run) (+ 25 addr)))
            (and (halt-spec n0 (rr32 *rax* x86-after-run))
                 (not (fault x86-after-run))
                 (ms x86-after-run)
-                (program-at (create-canonical-address-list
-                             (len *factorial_recursive*)
-                             addr)
-                            *factorial_recursive* x86-after-run)))
+                (prog-at addr *factorial_recursive* x86-after-run)))
   :hints (("Goal"
            :in-theory (e/d (halt-and-halt-spec) ())
-           :use ((:instance
-                  partial-correctness-of-fact-recursive-effects)))))
+           :use ((:instance partial-correctness-of-fact-recursive-effects)))))
 
 ;; ======================================================================

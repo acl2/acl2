@@ -5,6 +5,7 @@
 (include-book "common-system-level-utils")
 (include-book "paging/common-paging-lemmas")
 (include-book "gl-lemmas")
+(include-book "bind-free-utils")
 (include-book "clause-processors/find-subterms" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

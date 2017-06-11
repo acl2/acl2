@@ -156,10 +156,7 @@
        (programmer-level-mode x86)
        (canonical-address-p addr)
        (canonical-address-p (+ addr (len *factorial_recursive*)))
-       (program-at (create-canonical-address-list
-                    (len *factorial_recursive*) addr)
-                   *factorial_recursive*
-                   x86)))
+       (prog-at addr *factorial_recursive* x86)))
 
 (defthm fact-init-x86-state-forward-chaining
   (implies (fact-init-x86-state n addr x86)
@@ -172,10 +169,7 @@
                 (programmer-level-mode x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ addr (len *factorial_recursive*)))
-                (program-at (create-canonical-address-list
-                             (len *factorial_recursive*) addr)
-                            *factorial_recursive*
-                            x86)))
+                (prog-at addr *factorial_recursive* x86)))
   :rule-classes :forward-chaining)
 
 (in-theory (e/d () (fact-init-x86-state)))
@@ -680,7 +674,7 @@
            :in-theory (e/d
                        (rm08)
                        (f
-                        program-at
+                        prog-at
                         factorial-effects
                         x86-run-opener-not-ms-not-zp-n
                         x86-run-plus-1
@@ -693,7 +687,7 @@
                        (fact-init-x86-state
                         rm08)
                        (f
-                        program-at
+                        prog-at
                         factorial-effects
                         x86-run-opener-not-ms-not-zp-n
                         x86-run-plus-1

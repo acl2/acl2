@@ -23,8 +23,7 @@
    (programmer-level-mode x86)
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
-   (program-at (create-canonical-address-list (len *program*) (rip x86))
-               *program* x86)
+   (prog-at (rip x86) *program* x86)
    ;; The addresses where the program is located are canonical.
    (canonical-address-p (rip x86))
    (canonical-address-p (+ (len *program*) (rip x86)))
@@ -65,8 +64,7 @@
    (programmer-level-mode x86)
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
-   (program-at (create-canonical-address-list (len *program*) (rip x86))
-               *program* x86)
+   (prog-at (rip x86) *program* x86)
    ;; The addresses where the program is located are canonical.
    (canonical-address-p (rip x86))
    (canonical-address-p (+ -1 (len *program*) (rip x86)))
@@ -76,7 +74,7 @@
 
 (acl2::why x86-fetch-decode-execute-opener)
 
-(defthm program-effects-2
+(defthm program-effects-2-incomplete
   (implies (preconditions-incomplete x86)
            (equal (x86-run 2 x86)
                   xxx))

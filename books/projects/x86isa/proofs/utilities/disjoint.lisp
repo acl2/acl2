@@ -9,10 +9,9 @@
 
 ;; ===================================================================
 
-;; Make separate an equivalence relation?
-(define separate ((n-1 natp)
+(define separate ((n-1 posp)
                   (addr-1 integerp)
-                  (n-2 natp)
+                  (n-2 posp)
                   (addr-2 integerp))
 
   :non-executable t
@@ -20,6 +19,11 @@
       (<= (+ n-1 addr-1) addr-2))
 
   ///
+
+  (defthmd separate-is-commutative
+    (implies (separate n-1 a-1 n-2 a-2)
+             (separate n-2 a-2 n-1 a-1))
+    :hints (("Goal" :in-theory (e/d* (separate) ()))))
 
   (defun separate-free-var-candidates (calls)
     (if (endp calls)
