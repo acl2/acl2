@@ -65,7 +65,7 @@ and we include a theorem formerly from record-equality.lisp
 Main idea of how this all works:
 
 A lookup structure is the cons of any object onto a non-empty
-ordered-symbol-alistp that has only non-nil values, where the cdr is not such a
+ordered alist that has only non-nil values, where the cdr is not such a
 structure.
 
 Intuitively, the cdr of a lookup structure is the "junk", while the car is the
