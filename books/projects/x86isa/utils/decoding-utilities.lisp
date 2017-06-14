@@ -28,7 +28,10 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
   @(`(:code *Z-addressing-method-info*)`)
 
 <p>@('*one-byte-opcode-map-lst*'):</p>
-  @(`(:code *one-byte-opcode-map-lst*)`)"
+  @(`(:code *one-byte-opcode-map-lst*)`)
+
+<p>@('*one-byte-opcode-map-lst*'):</p>
+  @(`(:code *two-byte-opcode-map-lst*)`)"
 
   )
 
