@@ -1230,7 +1230,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   :short "Returns @('t') if at least one operand of an opcode requires
   a @('ModR/M') byte"
   (b* (((when (not (equal (len op_list) op_num)))
-        (er hard? "Expected length of ~x0 was 1." op_list)))
+        (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
 
       (if (zp op_num)
           bool
