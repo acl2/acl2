@@ -1343,6 +1343,9 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   returns a list of 1s and 0s corresponding to the presence or absence
   of ModR/M byte for each opcode in a simple opcode row in the Intel
   opcode maps.</p>"
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the result is only tested to contain 1
+  ;; (in 64-bit-compute-modr/m-for-an-opcode)
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
                 (true-listp row-modr/m)))
@@ -1420,6 +1423,11 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   :short "Returns a list of 1s and 0s corresponding to the presence or
   absence of ModR/M byte for each opcode in an opcode row in the Intel
   opcode maps"
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the results of all the rows are appended together
+  ;; (in 64-bit-compute-modr/m-map-1),
+  ;; and then reversed to be in the right order
+  ;; (in 64-bit-compute-modr/m-map)
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
                 (true-listp row-modr/m)))
@@ -1560,6 +1568,11 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               (true-listp row-prefix))
   :short "Takes in a single opcode row from an opcode map and returns
   prefix byte info for each of the opcodes in that row"
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the results of all the rows are appended together
+  ;; (in compute-prefix-byte-group-code-1),
+  ;; and eventually reversed to be in the right order
+  ;; (in compute-prefix-byte-group-code)
   :parents (decoding-utilities)
 
   (if (mbt (and (true-list-listp row-info)
