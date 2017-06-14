@@ -444,6 +444,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                ("MOV" 2 (E v) (S w))
                ("LEA" 2 (G v) (M))
                ("MOV" 2 (S w) (E w))
+               ;; in Table A-6, Grp 1A only contains POP,
+               ;; so we leave the latter implicit here:
                ((:d64 . ("Grp1a" 1 (E v) :1a))))
 
     #| 90 |# (("XCHG" 1 (:r8))
