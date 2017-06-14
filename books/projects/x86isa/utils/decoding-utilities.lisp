@@ -43,6 +43,13 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
 
   ;; See Intel Vol. 2, Appendix A.2.1
 
+  ;; The information in this constant definition comes not only from the
+  ;; aforementioned Appendix, but also from an examination of the involved
+  ;; instructions. However, the accuracy of this information has been so far
+  ;; confirmed only for the instructions covered by the current formal model;
+  ;; for unimplemented instructions, it is possible that the information may
+  ;; need to be changed.
+
   ;; (assoc :modr/m? (cdr (assoc 'A *Z-addressing-method-info*)))
 
   (list
