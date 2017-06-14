@@ -677,7 +677,7 @@ the sake of efficiency.</p>"
  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
  (define layout-constant-alistp (alst position max-size)
-   :short "Recognizer for all the layout constants"
+   :short "Recognizer for all the layout constants, i.e. contiguous bit fields"
    :guard (and (natp position)
                (natp max-size))
    :enabled t
