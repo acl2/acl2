@@ -247,6 +247,9 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 
 </ul>"
 
+  ;; since corollaries must just follow from their theorems,
+  ;; it may be possible to generate simpler hints for the corollaries below
+
   (defmacro defthm-natp (name &key hyp concl hints)
     (if concl
         `(defthm ,name
