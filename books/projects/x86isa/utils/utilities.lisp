@@ -309,6 +309,7 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
                                      (< ,concl ,2^bound)))
                         ,@(and hints-l `(:hints ,hints-l))))))))
       nil))
+  ;; no need to generate a (>= ... 0) linear rules so far
 
   (defmacro defthm-sb
       (name &key hyp bound concl
