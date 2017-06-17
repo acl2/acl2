@@ -90,9 +90,10 @@ Some examples
            (o-p (lsttoo x))))
 
 
-(defthm len-0
-  (equal (equal (len x) 0)
-         (atom x)))
+(local
+ (defthm len-0
+   (equal (equal (len x) 0)
+          (atom x))))
 
 (defthm ltoo-0
   (implies (natp-listp y)
