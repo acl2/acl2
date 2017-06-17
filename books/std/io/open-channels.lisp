@@ -64,35 +64,9 @@
                           set-serialize-character)))
 
 
-; Here are some theory tweaks we need, adapted from the std/io/base
-; book:
+; Here is a small theory tweak we need:
 
-(local (in-theory (e/d
-
-                   (put-global
-                    open-input-channel-p1
-                    open-output-channel-p1)
-
-                   (open-channels-p
-                    ordered-symbol-alistp
-                    plist-worldp
-                    symbol-alistp
-                    timer-alistp
-                    known-package-alistp
-                    true-listp
-                    32-bit-integer-listp
-                    integer-listp
-                    readable-files-p
-                    written-files-p
-                    read-files-p
-                    writeable-files-p
-                    true-list-listp
-                    all-boundp
-                    nth
-                    update-nth
-                    make-input-channel
-                    make-output-channel))))
-
+(local (in-theory (disable nth update-nth)))
 
 ; And here is a random lemma we need:
 
@@ -104,15 +78,20 @@
             (equal (assoc-equal name1 (delete-assoc name2 alist))
                    (assoc-equal name1 alist)))))
 
-; NOTE: Several of the lemmas below have some weird hypotheses, marked
+
+; And now here are the lemmas.
+
+; NOTE: Several of the lemmas below have a weird hypothesis, marked
 ; with a (*).  These hypotheses should all be unconditionally true
 ; when dealing with the real ACL2 state, but currently `state-p1' is
 ; not strong enough to imply them.  If the definition of `state-p1' is
 ; strengthened in the future, a (state-p1 state) hypothesis could be
-; added where necessary, and these weird hypotheses could be removed.
+; added where necessary, and these weird hypotheses could be removed,
+; as demonstrated in the commented out "desired versions" of the
+; theorems.
 
 ;;;;;;;;;;;;;;;;
-;;;; The built-in I/O functions preserve openness of input channels
+;;;; Open input channels stay open
 ;;;;;;;;;;;;;;;;
 
 (defthm open-input-channel-p1-under-open-input-channel
@@ -188,7 +167,7 @@
              (open-input-channel-p1 channel type state))))
 
 ;;;;;;;;;;;;;;;;
-;;;;
+;;;; Open output channels stay open
 ;;;;;;;;;;;;;;;;
 
 (defthm open-output-channel-p1-under-open-input-channel
