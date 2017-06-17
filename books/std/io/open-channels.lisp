@@ -29,34 +29,49 @@
 
 (include-book "std/util/bstar" :dir :system)
 
-(local
- (defthm assoc-after-delete-assoc
-   ;; borrowed from projects/filesystems/file-system-lemmas.lisp --
-   ;; should probably be in std/alists somewhere, I guess?
-   (implies (not (equal name1 name2))
-            (equal (assoc-equal name1 (delete-assoc name2 alist))
-                   (assoc-equal name1 alist)))))
+; OVERVIEW
+
+; When programming with I/O, you may need to write functions that
+; modify state in some way (perhaps by doing I/O) and exit returning a
+; state which has some channels open, perhaps for further reading and
+; writing later in your program.  Then, to prove guard theorems
+; elsewhere, you'll need returns theorems about your function showing
+; that it doesn't close those channels.
+
+; This book contains lemmas that can help you prove such returns
+; theorems.  For each built-in I/O function, there is a lemma saying
+; that, under appropriate hypotheses, it doesn't close your open input
+; or output channels.
+
+; Lemmas for other state-modifying builtins might be useful too, but I
+; figured I had to stop somewhere, so I decided to limit this book to
+; the functions mentioned in :DOC io.  I suppose you could add to this
+; book the corresponding lemmas about other built-in functions as
+; well, as you find yourself needing them.
+
+; Here are the builtins about which we're proving the lemmas:
+
+(local (in-theory (enable open-input-channel
+                          open-output-channel
+                          close-input-channel
+                          close-output-channel
+                          read-char$
+                          read-byte$
+                          read-object
+                          princ$
+                          write-byte$
+                          print-object$
+                          set-serialize-character)))
+
+
+; Here are some theory tweaks we need, adapted from the std/io/base
+; book:
 
 (local (in-theory (e/d
 
                    (put-global
                     open-input-channel-p1
-                    open-output-channel-p1
-
-; Below are the functions which we are proving will not affect the list
-; of open / closed channels, under appropriate assumptions.
-
-                    open-input-channel
-                    open-output-channel
-                    close-input-channel
-                    close-output-channel
-                    read-char$
-                    read-byte$
-                    read-object
-                    princ$
-                    write-byte$
-                    print-object$
-                    set-serialize-character)
+                    open-output-channel-p1)
 
                    (open-channels-p
                     ordered-symbol-alistp
@@ -77,6 +92,17 @@
                     update-nth
                     make-input-channel
                     make-output-channel))))
+
+
+; And here is a random lemma we need:
+
+(local
+ (defthm assoc-after-delete-assoc
+   ;; borrowed from projects/filesystems/file-system-lemmas.lisp --
+   ;; should probably be in std/alists somewhere, I guess?
+   (implies (not (equal name1 name2))
+            (equal (assoc-equal name1 (delete-assoc name2 alist))
+                   (assoc-equal name1 alist)))))
 
 ; NOTE: Several of the lemmas below have some weird hypotheses, marked
 ; with a (*).  These hypotheses should all be unconditionally true
