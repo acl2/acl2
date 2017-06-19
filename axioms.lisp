@@ -5976,7 +5976,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules hint-events warnings time steps value splitter-rules))
+  '(header form rules hint-events warnings time steps value splitter-rules
+
+; Errors are normally not part of the summary.  However, for encapsulate and
+; progn (and progn!), they are.
+
+           errors))
 
 (defmacro with-evisc-tuple (form &key ; from *evisc-tuple-sites*
                                  (term 'nil termp)

@@ -1031,4 +1031,5 @@
                                ',show-only
                                ',call
                                (cons 'restrict ',old)
-                               state)))))
+                               state)
+                  :on-behalf-of :quiet))))
