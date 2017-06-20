@@ -34,6 +34,7 @@
 (include-book "integers-from-to")
 (include-book "list-set-theorems")
 (include-book "list-theorems")
+(include-book "make-executable")
 (include-book "make-termination-theorem")
 (include-book "maybe-msgp")
 (include-book "maybe-unquote")

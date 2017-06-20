@@ -1036,11 +1036,12 @@
                          (eq (car fn-ubody) ; always true?
                              'prog2$)
                          (let ((x (directed-untranslate fn-ubody fn-body
-                                                        new-body nil wrld)))
+                                                        new-body nil nil
+                                                        wrld)))
                            (and (eq (car x) 'prog2$) ; always true?
                                 (car (last x))))))
                    (t
-                    (directed-untranslate fn-ubody fn-body new-body nil
+                    (directed-untranslate fn-ubody fn-body new-body nil nil
                                           wrld))))
        ((er -)
         (cond ((and simplify-body

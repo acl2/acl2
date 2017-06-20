@@ -49,12 +49,9 @@
   ;; 90 +rw: XCHG ax, r16
   ;; 90 +rd: XCHG eax/rax, r32/r64
 
-  ;; Note that opcode #x90 is XCHG rAX, rAX, i.e. NOP.  However, we
-  ;; choose to model it separately as a NOP for the sake of execution
-  ;; efficiency.
+  ;; Note that opcode #x90 with REX.B = 0 is XCHG rAX, rAX, i.e., NOP.
 
   :parents (one-byte-opcodes)
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d* () (not))))
 
   :returns (x86 x86p :hyp (and (x86p x86)
@@ -64,6 +61,8 @@
     (add-to-implemented-opcodes-table 'XCHG #x86 '(:nil nil)
                                       'x86-xchg)
     (add-to-implemented-opcodes-table 'XCHG #x87 '(:nil nil)
+                                      'x86-xchg)
+    (add-to-implemented-opcodes-table 'XCHG #x90 '(:nil nil)
                                       'x86-xchg)
     (add-to-implemented-opcodes-table 'XCHG #x91 '(:nil nil)
                                       'x86-xchg)
@@ -288,39 +287,6 @@
 ;; INSTRUCTION: NOP
 ;; ======================================================================
 
-(def-inst x86-nop
-
-  ;; Note: With operand-size override prefix (#x66), the single byte
-  ;; NOP instruction is equivalent to XCHG ax, ax.
-
-  ;; Op/En: NP
-  ;; 90
-
-  :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
-
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'NOP #x90 '(:nil nil) 'x86-nop)
-
-  :body
-
-
-  (b* ((ctx 'x86-nop)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes)))
-
-    ;; We don't need to check for valid length for one-byte
-    ;; instructions.  The length will be more than 15 only if
-    ;; get-prefixes fetches 15 prefixes, and that error will be
-    ;; caught in x86-fetch-decode-execute, that is, before control
-    ;; reaches this function.
-
-    ;; Update the x86 state:
-    (!rip temp-rip x86)))
-
 (def-inst x86-two-byte-nop
 
   ;; Op/En: NP
@@ -368,18 +334,51 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :next-rip-invalid temp-rip))
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
+              temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
+              start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
     x86))
+
+;; (def-inst x86-nop
+
+;;   ;; Note: With operand-size override prefix (#x66), the single byte
+;;   ;; NOP instruction is equivalent to XCHG ax, ax.
+
+;;   ;; Op/En: NP
+;;   ;; 90
+
+;;   :parents (one-byte-opcodes)
+;;   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+
+;;   :returns (x86 x86p :hyp (and (x86p x86)
+;;                                (canonical-address-p temp-rip)))
+;;   :implemented
+;;   (add-to-implemented-opcodes-table 'NOP #x90 '(:nil nil) 'x86-nop)
+
+;;   :body
+
+
+;;   (b* ((ctx 'x86-nop)
+;;        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+;;        ((when lock?)
+;;         (!!ms-fresh :lock-prefix prefixes)))
+
+;;     ;; We don't need to check for valid length for one-byte
+;;     ;; instructions.  The length will be more than 15 only if
+;;     ;; get-prefixes fetches 15 prefixes, and that error will be
+;;     ;; caught in x86-fetch-decode-execute, that is, before control
+;;     ;; reaches this function.
+
+;;     ;; Update the x86 state:
+;;     (!rip temp-rip x86)))
 
 ;; ======================================================================

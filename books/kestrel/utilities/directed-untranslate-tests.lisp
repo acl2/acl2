@@ -51,7 +51,7 @@
                (sterm '(< Y (BAR (CONS A (CONS B 'NIL)))))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X (CONS A (LIST B))))
                (> (BAR X) Y)))))
 
@@ -174,7 +174,7 @@
                           (BAR (CONS A (CONS B 'NIL)))))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X (CONS A (LIST B))))
                (LET ((Y (H (CONS C (LIST D)))))
                     (> (BAR X) Y))))))
@@ -206,7 +206,7 @@
                           (BAR (CONS A (CONS B 'NIL)))))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X (CONS A (LIST B)))
                  (Y (H (CONS C (LIST D)))))
                 (> (BAR X) Y)))))
@@ -414,7 +414,7 @@
                           (MESS A)))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X A))
                (LET ((Y (H (CONS C (LIST D)))))
                     (> (MESS X) Y))))))
@@ -448,7 +448,7 @@
                           (MESS A)))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X A)
                  (Y (H (CONS C (LIST D)))))
                 (> (MESS X) Y)))))
@@ -697,7 +697,7 @@
                           (MESS A)))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X A))
                (LET ((Y (H (CONS C (LIST D)))))
                     (LET ((Z (MESS X)))
@@ -735,7 +735,7 @@
                           (MESS A)))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X A)
                  (Y (H (CONS C (LIST D))))
                  (Z (MESS X)))
@@ -771,7 +771,7 @@
                           (MESS A)))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X A)
                  (Y (H (CONS C (LIST D)))))
                 (LET ((Z (MESS X)))
@@ -807,7 +807,7 @@
                           (MESS A)))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X A))
                (let* ((Y (H (CONS C (LIST D))))
                       (Z (MESS X)))
@@ -1003,7 +1003,7 @@
                (sterm '(< A (BAR (H (CONS A (CONS B 'NIL))))))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X (CONS A (LIST B))))
                (LET ((X (H X)))
                     (> (BAR X) A))))))
@@ -1033,7 +1033,7 @@
                (sterm '(< A (BAR (H (CONS A (CONS B 'NIL))))))
                (iff-flg nil)
                (wrld (w state)))
-           (directed-untranslate uterm tterm sterm iff-flg wrld))
+           (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X (CONS A (LIST B)))
                  (X (H X)))
                 (> (BAR X) A)))))
@@ -1180,7 +1180,7 @@
                  '(and a (if b c nil))     ; uterm
                  '(if a (if b c 'nil) 'nil) ; tterm
                  sterm                      ; sterm, a form to be untranslated
-                 nil
+                 nil nil
                  (w state))
                 '(AND A2 (IF B2 C2 NIL)))
          (equal (untranslate sterm nil (w state))
@@ -1221,7 +1221,7 @@
 
 (make-event
  `(defconst *sterm0-simp*
-    ',(directed-untranslate *uterm0* *tterm0* *sterm0* nil (w state))))
+    ',(directed-untranslate *uterm0* *tterm0* *sterm0* nil nil (w state))))
 
 ; In our initial implementation, we had capture!
 ; Compare with *sterm0*: (CONS Y (CONS X Y))
@@ -1342,7 +1342,7 @@
                           x2
                           x1)
                         '(f1 x1 (binary-append (f3 x1) x2))
-                        nil
+                        nil nil
                         (w state))
   '(LET* ((X3 (F3 X1))
           (X4 (APPEND X3 X2)))
@@ -1370,7 +1370,7 @@
                           y
                           x)
                         '(f1 x (binary-append (f3 x) y))
-                        nil
+                        nil nil
                         (w state))
   '(let* ((z (f3 x))
           (y (append z y)))
@@ -1413,7 +1413,7 @@
             (f2 c)
             c)
           '(binary-append (f1 c) c)
-          nil (w state))
+          nil nil (w state))
          '(APPEND (F1 C) C))))
 
 ; ------------------------------
@@ -1426,7 +1426,7 @@
  (equal (let ((uterm '(mv (first x) (car (cons y y))))
               (tterm '(cons (car x) (cons (car (cons y y)) 'nil)))
               (sterm '(cons (car x) (cons y 'nil))))
-          (directed-untranslate uterm tterm sterm nil (w state)))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv (first x) y)))
 
 ; !! Add an assert! for the following.  Also consider changing du-untranslate
@@ -1446,7 +1446,7 @@
                        (foo x y)))
               (sterm '(bar2 (mv-nth 0 (foo2 x y))
                             (mv-nth 1 (foo2 x y)))))
-          (directed-untranslate uterm tterm sterm nil (w state)))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 
 (assert!
@@ -1457,6 +1457,6 @@
                        (foo x y)))
               (sterm '(bar2 (car (foo2 x y))
                             (nth 1 (foo2 x y)))))
-          (directed-untranslate uterm tterm sterm nil (w state)))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 )

@@ -8712,7 +8712,8 @@
 ; initialization.
 
                                          wrld3a
-                                         state))))))))))))))))))
+                                         state)))))))))))))))
+     :event-type 'encapsulate)))
 
 (defun progn-fn1 (ev-lst progn!p bindings state)
 
@@ -8764,17 +8765,11 @@
                (er soft ctx
                    "PROGN may only be used on legal event forms (see :DOC ~
                     embedded-event-form).  Consider using ER-PROGN instead."))
-              (erp (er soft ctx
-                       "~x0 failed!~@1"
-                       (if progn!p 'progn! 'progn)
-                       (if (and progn!p
-                                (consp erp))
-                           (msg "  Note that the ~n0 form evaluated to a ~
-                                 multiple value (mv erp ...) with non-nil ~
-                                 erp, ~x1; see :DOC progn!."
-                                (list (1+ val))
-                                (car erp))
-                         "")))
+              (erp
+
+; The component events are responsible for reporting errors.
+
+               (silent-error state))
               (t (pprogn (f-put-global 'last-make-event-expansion
                                        (and expansion-alist
                                             (cons (if progn!p 'progn! 'progn)
@@ -8801,7 +8796,8 @@
 ; raw-mode -- so the point here isn't to make raw-mode sound.  But this nulling
 ; out in raw-mode should prevent most bad-lisp-objectp surprises from progn!.
 
-                                     val)))))))))))
+                                     val))))))))
+     :event-type 'progn)))
 
 (defun progn-fn (ev-lst state)
   (progn-fn1 ev-lst nil nil state))
@@ -28703,6 +28699,8 @@
                     But the shape of ~x0 is ~x1."
                    form
                    (prettyify-stobjs-out stobjs-out)))
+              ((eq on-behalf-of :quiet!)
+               (silent-error state))
               ((stringp (car vals))
                (er soft ctx
                    (car vals)))
@@ -28711,13 +28709,16 @@
                    "~@0"
                    (car vals)))
               ((car vals)
-               (er soft ctx
-                   "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
-                   (cond (on-behalf-of
-                          (msg "on behalf of~|  ~y0~|"
-                               on-behalf-of))
-                         (t ""))
-                   form))
+               (cond
+                ((eq on-behalf-of :quiet)
+                 (silent-error state))
+                (t (er soft ctx
+                       "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
+                       (cond (on-behalf-of
+                              (msg "on behalf of~|  ~y0~|"
+                                   on-behalf-of))
+                             (t ""))
+                       form))))
               (t (pprogn
                   (set-w! original-wrld state)
                   (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))
@@ -28730,11 +28731,14 @@
     (let ((depth (f-get-global 'make-event-debug-depth state)))
       (pprogn (fms "~x0> Expanding for MAKE-EVENT~@1~|  ~y2~|"
                    (list (cons #\0 depth)
-                         (cons #\1 (if on-behalf-of
-                                       (msg " on behalf of~|  ~Y01:"
-                                            on-behalf-of
-                                            (term-evisc-tuple nil state))
-                                     ":"))
+                         (cons #\1
+                               (if (and on-behalf-of
+                                        (not (member-eq on-behalf-of
+                                                        '(:quiet :quiet!))))
+                                   (msg " on behalf of~|  ~Y01:"
+                                        on-behalf-of
+                                        (term-evisc-tuple nil state))
+                                 ":"))
                          (cons #\2 form))
                    (proofs-co state) state nil)
               (value depth))))))

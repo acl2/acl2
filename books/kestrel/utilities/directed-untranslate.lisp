@@ -15,6 +15,8 @@
 
 (in-package "ACL2")
 
+(include-book "make-executable")
+
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc directed-untranslate
@@ -25,12 +27,47 @@
  and actual ``translated'' terms.</p>
 
  @({
+ General Form:
+ (directed-untranslate uterm tterm sterm iff-flg stobjs-out wrld)
+ })
+
+ <p>where:</p>
+
+ <ul>
+
+ <li>@('uterm') is an untranslated form that translates to the term,
+ @('tterm');</li>
+
+ <li>@('sterm') is a term, which might share a lot of structure with
+ @('tterm') (we may think of @('sterm') as a simplified version of
+ @('tterm'));</li>
+
+ <li>@('iff-flg') is a Boolean</li>
+
+ <li>@('stobjs-out') is either @('nil') or a @(tsee true-listp) each of whose
+ members is either @('nil') or the name of a @(see stobj), with no stobj name
+ repeated; and</li>
+
+ <li>@('wrld') is a logical @('world'), typically @('(w state)').</li>
+
+ </ul>
+
+ <p>The result is an untranslated form whose translation is provably equal to
+ @('sterm'), except that if @('iff-flg') is true then these need only be
+ Boolean equivalent rather than equal.  The goal is that the shared structure
+ between @('tterm') and @('sterm') is reflected in similar sharing between
+ @('uterm') and the result.  If @('stobjs-out') is not @('nil'), then an
+ attempt is made to produce a result with multiple-value return, whose i-th
+ element is an ordinary value or a stobj, @('st'), according to whether the
+ i-th element of @('stobjs-out') is @('nil') or @('st'), respectively.</p>
+
+ @({
  Example Form:
  (directed-untranslate
   '(and a (if b c nil))         ; uterm
   '(if a (if b c 'nil) 'nil)    ; tterm
   '(if a2 (if b2 c2 'nil) 'nil) ; sterm, a form to be untranslated
-  nil
+  nil nil
   (w state))
  })
 
@@ -86,42 +123,17 @@
  term @('tterm').  As it stands now, the original untranslated term @('uterm')
  is probably useless in that case.</li>
 
- <li>Macros including @(tsee mv-let), @(tsee b*), @(tsee case), and quite
- possibly others could probably be reasonably handled, but aren't yet.</li>
+ <li>Macros including @(tsee b*), @(tsee case), and quite possibly others could
+ probably be reasonably handled, but aren't yet.</li>
+
+ <li>Support for preserving @('let'), @('let*'), and @(tsee mv-let) may be
+ improved.</li>
 
  </ul></li>
 
  </ol>
 
- <p>End of Remarks.</p>
-
- @({
- General Form:
- (directed-untranslate uterm tterm sterm iff-flg wrld)
- })
-
- <p>where:</p>
-
- <ul>
-
- <li>@('uterm') is an untranslated form that translates to the term,
- @('tterm');</li>
-
- <li>@('sterm') is a term, which might share a lot of structure with
- @('tterm') (intuitively, we may think of @('sterm') as a simplified version
- of @('tterm'));</li>
-
- <li>@('iff-flg') is a Boolean; and</li>
-
- <li>@('wrld') is a logical @('world'), typically @('(w state)').</li>
-
- </ul>
-
- <p>The returned form is an untranslated form whose translation is provably
- equal to @('sterm'), except that if @('iff-flg') is true then these need only
- be Boolean equivalent rather than equal.  The goal is that the shared
- structure between @('tterm') and @('sterm') is reflected in similar sharing
- between @('uterm') and the returned form.</p>")
+ <p>End of Remarks.</p>")
 
 (program)
 
@@ -639,6 +651,59 @@
                    *nil*)
                  (gen-alist-args (cdr gen-alist) vars)))))
 
+(mutual-recursion
+
+(defun equal-mod-mv-list (t1 t2)
+  (cond
+   ((equal t1 t2) t)
+   ((or (variablep t2)
+        (fquotep t2))
+    nil)
+   ((and (eq (ffn-symb t2) 'mv-list)
+         (equal-mod-mv-list t1 (fargn t2 2))))
+   ((or (variablep t1)
+        (fquotep t1))
+    nil)
+   ((flambdap (ffn-symb t1))
+    (and (flambdap (ffn-symb t2))
+         (equal (lambda-formals (ffn-symb t1))
+                (lambda-formals (ffn-symb t2)))
+         (equal-mod-mv-list (lambda-body (ffn-symb t1))
+                            (lambda-body (ffn-symb t2)))
+         (equal-mod-mv-list-lst (fargs t1) (fargs t2))))
+   (t (and (eq (ffn-symb t1) (ffn-symb t2))
+           (equal-mod-mv-list-lst (fargs t1) (fargs t2))))))
+
+(defun equal-mod-mv-list-lst (lst1 lst2)
+  (cond ((endp lst1)
+         (assert$ (endp lst2) t))
+        (t (and (equal-mod-mv-list (car lst1) (car lst2))
+                (assert$ (consp lst2)
+                         (equal-mod-mv-list-lst (cdr lst1) (cdr lst2)))))))
+)
+
+(mutual-recursion
+
+(defun occurrence-mod-mv-list (t1 t2)
+
+; T1 and t2 are terms.  If t1 occurs in t2, perhaps ignoring mv-list calls in
+; t2, then we return such an occurrence but with those mv-list calls left in
+; place.  Otherwise we return nil.  Note that list dumb-occur, we do not look
+; inside quoteps.
+
+  (cond
+   ((equal-mod-mv-list t1 t2) t2)
+   ((or (variablep t2)
+        (fquotep t2))
+    nil)
+   (t (occurrence-mod-mv-list-lst t1 (fargs t2)))))
+
+(defun occurrence-mod-mv-list-lst (t1 lst)
+  (cond ((endp lst) nil)
+        (t (or (occurrence-mod-mv-list t1 (car lst))
+               (occurrence-mod-mv-list-lst t1 (cdr lst))))))
+)
+
 (defun lambda-subst (formals actuals term)
 
 ; Formals and actuals are in one-one correspondence.  Suppose that the
@@ -651,14 +716,14 @@
   (cond ((endp formals) (mv nil nil))
         ((eq (car formals) (car actuals))
          (lambda-subst (cdr formals) (cdr actuals) term))
-        ((dumb-occur (car actuals) term)
-         (mv-let (f1 a1)
-           (lambda-subst (cdr formals) (cdr actuals) term)
-           (cond ((eq f1 :fail)
-                  (mv :fail nil))
-                 (t (mv (cons (car formals) f1)
-                        (cons (car actuals) a1))))))
-        (t (mv :fail nil))))
+        (t (let ((found (occurrence-mod-mv-list (car actuals) term)))
+             (cond (found (mv-let (f1 a1)
+                            (lambda-subst (cdr formals) (cdr actuals) term)
+                            (cond ((eq f1 :fail)
+                                   (mv :fail nil))
+                                  (t (mv (cons (car formals) f1)
+                                         (cons found a1))))))
+                   (t (mv :fail nil)))))))
 
 (defun some-var-dumb-occur (lst1 term)
   (cond ((null lst1) nil)
@@ -723,6 +788,14 @@
 ; Invariant: Every variable free in tterm should be bound in (a cdr of) alist.
 
   (cond
+   ((and (nvariablep sterm)
+         (eq (ffn-symb sterm) 'mv-list)
+         (not (and (nvariablep tterm)
+                   (eq (ffn-symb tterm) 'mv-list))))
+    (mv-let (new-sterm alist)
+      (weak-one-way-unify-rec tterm (fargn sterm 2) alist)
+      (mv (and new-sterm (fcons-term* 'mv-list (fargn sterm 1) new-sterm))
+          alist)))
    ((variablep tterm)
     (extend-gen-alist tterm sterm alist))
    ((fquotep tterm)
@@ -1099,16 +1172,21 @@
 ; either MV or else an untranslated term whose list of returned values is of
 ; the same length as bindings.
 
-         (and (symbolp mv-var)         ; always true?
-              (doublet-listp bindings) ; always true?
-              (eql (uterm-values-len mv-let-body wrld)
-                   (length bindings))
-              (mv-let (flg vars)
-                (du-make-mv-let-aux bindings mv-var 0 nil)
-                (and flg
-                     `(mv-let ,vars
-                        ,mv-let-body
-                        ,main-body))))))
+         (let ((mv-let-body
+                (case-match mv-let-body
+                  (('mv-list & y)
+                   y)
+                  (& mv-let-body))))
+           (and (symbolp mv-var)       ; always true?
+                (doublet-listp bindings) ; always true?
+                (eql (uterm-values-len mv-let-body wrld)
+                     (length bindings))
+                (mv-let (flg vars)
+                  (du-make-mv-let-aux bindings mv-var 0 nil)
+                  (and flg
+                       `(mv-let ,vars
+                          ,mv-let-body
+                          ,main-body)))))))
       x))
 
 (defun expand-mv-let (uterm tterm)
@@ -1183,7 +1261,13 @@
          (fquotep tterm)
          (atom uterm))
      (du-untranslate sterm iff-flg wrld))
-    ((and (ffn-symb-p tterm 'return-last)
+    ((eq (ffn-symb sterm) 'mv-list)
+     (let ((ans (directed-untranslate-rec uterm tterm
+                                          (fargn sterm 2)
+                                          iff-flg lflg wrld))
+           (n (du-untranslate (fargn sterm 1) nil wrld)))
+       (list 'mv-list n ans)))
+    ((and (eq (ffn-symb tterm) 'return-last)
           (equal (fargn tterm 1) ''progn)
           (case-match uterm
             (('prog2$ & uterm2)
@@ -1706,7 +1790,7 @@
                         acl2-defaults-table)
                  wrld)))))
 
-(defun directed-untranslate (uterm tterm sterm iff-flg wrld)
+(defun directed-untranslate (uterm tterm sterm iff-flg stobjs-out wrld)
 
 ; Uterm is an untranslated form that we expect to translate to the term, tterm
 ; (otherwise we just untranslate sterm).  Sterm is a term, which may largely
@@ -1715,20 +1799,29 @@
 ; tterm and sterm is reflected in similar sharing between uterm and that
 ; result.
 
+; If stobjs-out is non-nil, then we attempt to make the resulting term have
+; that as its stobjs-out.
+
 ; Warning: check-du-inv-fn, called in directed-untranslate-rec, requires that
 ; uterm translates to tterm.  We ensure with set-ignore-ok-world below that
 ; such failures are not merely due to ignored formals.
 
-  (let ((wrld (set-ignore-ok-world t wrld)))
+  (let ((wrld (set-ignore-ok-world t wrld))
+        (sterm (if stobjs-out
+                   (make-executable sterm stobjs-out wrld)
+                 sterm)))
     (if (check-du-inv-fn uterm tterm wrld)
         (directed-untranslate-rec uterm tterm sterm iff-flg t wrld)
       (untranslate sterm iff-flg wrld))))
 
-(defun directed-untranslate-no-lets (uterm tterm sterm iff-flg wrld)
+(defun directed-untranslate-no-lets (uterm tterm sterm iff-flg stobjs-out wrld)
 
 ; See directed-untranslate.  Here we refuse to introduce lambdas into sterm.
 
-  (let ((wrld (set-ignore-ok-world t wrld)))
+  (let ((wrld (set-ignore-ok-world t wrld))
+        (sterm (if stobjs-out
+                   (make-executable sterm stobjs-out wrld)
+                 sterm)))
     (if (check-du-inv-fn uterm tterm wrld)
         (directed-untranslate-rec uterm tterm sterm iff-flg nil wrld)
       (untranslate sterm iff-flg wrld))))
