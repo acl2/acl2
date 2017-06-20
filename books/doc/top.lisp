@@ -198,6 +198,7 @@
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/memoize-prover-fns" :dir :system)
 (include-book "tools/untranslate-for-exec" :dir :system)
+(include-book "tools/er-soft-logic" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
 

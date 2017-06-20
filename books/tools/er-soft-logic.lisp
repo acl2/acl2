@@ -28,26 +28,25 @@
  in the @('alist') argument of @(tsee fmt).</p>
 
  <p>For a similar utility that returns a specified error and value component of
- the returned @(see error-triple), see @(see er-soft-plus).</p>")
+ the returned @(see error-triple), see @(see er-soft+).</p>")
 
 (defun error-fms-soft-logic (ctx str alist state)
 
 ; This is modified from ACL2 source function error-fms.
 
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'abbrev-evisc-tuple state)))
-  (fmt-to-comment-window "~%~%ACL2 Error in ~x0:  ~@1~%~%"
-                         (list (cons #\0 ctx)
-                               (cons #\1 (cons str alist)))
-                         0
-                         (abbrev-evisc-tuple state)))
+  (declare (xargs :stobjs state))
+  (and (f-boundp-global 'abbrev-evisc-tuple state)
+       (fmt-to-comment-window "~%~%ACL2 Error in ~x0:  ~@1~%~%"
+                              (list (cons #\0 ctx)
+                                    (cons #\1 (cons str alist)))
+                              0
+                              (abbrev-evisc-tuple state))))
 
 (defun error1-logic (ctx str alist state)
 
 ; This is modified from ACL2 source function error1.
 
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'abbrev-evisc-tuple state)))
+  (declare (xargs :stobjs state))
   (prog2$ (error-fms-soft-logic ctx str alist state)
           (mv t nil state)))
 

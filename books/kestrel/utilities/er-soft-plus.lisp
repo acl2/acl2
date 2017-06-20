@@ -35,8 +35,7 @@
 
 ; This is modified from ACL2 source function error1.
 
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'abbrev-evisc-tuple state)))
+  (declare (xargs :stobjs state))
   (prog2$ (error-fms-soft-logic ctx str alist state)
           (mv erp val state)))
 
