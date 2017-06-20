@@ -103,7 +103,7 @@
 ;;;; Open input channels stay open
 ;;;;;;;;;;;;;;;;
 
-  "<p>First are lemmas about @(tsee open-input-channel-p1).</p>"
+  "<p>First are lemmas about @({open-input-channel-p1}).</p>"
 
   (defthm open-input-channel-p1-under-open-input-channel
     ;; Desired version:
@@ -182,7 +182,7 @@
 ;;;; Open output channels stay open
 ;;;;;;;;;;;;;;;;
 
-  "<p>Next are lemmas about @(tsee open-output-channel-p1).</p>"
+  "<p>Next are lemmas about @({open-output-channel-p1}).</p>"
 
   (defthm open-output-channel-p1-under-open-input-channel
     (implies (open-output-channel-p1 channel type state)
