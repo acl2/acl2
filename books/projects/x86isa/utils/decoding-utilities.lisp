@@ -28,7 +28,10 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
   @(`(:code *Z-addressing-method-info*)`)
 
 <p>@('*one-byte-opcode-map-lst*'):</p>
-  @(`(:code *one-byte-opcode-map-lst*)`)"
+  @(`(:code *one-byte-opcode-map-lst*)`)
+
+<p>@('*one-byte-opcode-map-lst*'):</p>
+  @(`(:code *two-byte-opcode-map-lst*)`)"
 
   )
 
@@ -39,6 +42,13 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
 (defconst *Z-addressing-method-info*
 
   ;; See Intel Vol. 2, Appendix A.2.1
+
+  ;; The information in this constant definition comes not only from the
+  ;; aforementioned Appendix, but also from an examination of the involved
+  ;; instructions. However, the accuracy of this information has been so far
+  ;; confirmed only for the instructions covered by the current formal model;
+  ;; for unimplemented instructions, it is possible that the information may
+  ;; need to be changed.
 
   ;; (assoc :modr/m? (cdr (assoc 'A *Z-addressing-method-info*)))
 
@@ -421,7 +431,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
     #| 80 |#  (("ImmGrp1" 2 (E b) (I b) :1a)
                ("ImmGrp1" 2 (E v) (I z) :1a)
-               ((:i64 . ("ImmGrp1" 2 (E v) (I z) :1a)))
+               ((:i64 . ("ImmGrp1" 2 (E b) (I b) :1a)))
                ("ImmGrp1" 2 (E v) (I b) :1a)
                ("TEST" 2 (E b) (G b))
                ("TEST" 2 (E v) (G v))
@@ -434,24 +444,26 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                ("MOV" 2 (E v) (S w))
                ("LEA" 2 (G v) (M))
                ("MOV" 2 (S w) (E w))
+               ;; in Table A-6, Grp 1A only contains POP,
+               ;; so we leave the latter implicit here:
                ((:d64 . ("Grp1a" 1 (E v) :1a))))
 
     #| 90 |# (("XCHG" 1 (:r8))
-              ("XCHG" 2 (:rCX) (:r9))
-              ("XCHG" 2 (:rDX) (:r10))
-              ("XCHG" 2 (:rBX) (:r11))
-              ("XCHG" 2 (:rSP) (:r12))
-              ("XCHG" 2 (:rBP) (:r13))
-              ("XCHG" 2 (:rSI) (:14))
-              ("XCHG" 2 (:rDI) (:15))
+              ("XCHG" 2 (:rCX/r9)  (:rAX))
+              ("XCHG" 2 (:rDX/r10) (:rAX))
+              ("XCHG" 2 (:rBX/r11) (:rAX))
+              ("XCHG" 2 (:rSP/r12) (:rAX))
+              ("XCHG" 2 (:rBP/r13) (:rAX))
+              ("XCHG" 2 (:rSI/r14) (:rAX))
+              ("XCHG" 2 (:rDI/r15) (:rAX))
               ("CBW/CWDE/CDQE" 0)
               ("CWD/CDQ/CQO" 0)
               ((:i64 . ("CALL" 1 (A p))))
               ("FWAIT/WAIT" 0)
-              ((:d64 . ("PUSHQ"  1 (F v)))
-               (:i64 . ("PUSHFD" 1 (F v))))
-              ((:d64 . ("POPQ"   1 (F v)))
-               (:i64 . ("POPFD"  1 (F v))))
+              ((:d64 . ("PUSHF/PUSHFQ"  1 (F v)))
+               (:i64 . ("PUSHFD"        1 (F v))))
+              ((:d64 . ("POPF/POPFQ"    1 (F v)))
+               (:i64 . ("POPFD"         1 (F v))))
               ("SAHF" 0)
               ("LAHF" 0))
 
@@ -461,8 +473,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ("MOV" 2 (O v) (:rAX))
               ("MOVS/B" 2 (Y b) (X b))
               ("MOVS/W/D/Q" 2 (Y v) (X v))
-              ("CMPS/B" 2 (Y b) (X b))
-              ("CMPS/W/D/Q" 2 (Y v) (X v))
+              ("CMPS/B"   2 (X b) (Y b))
+              ("CMPS/W/D" 2 (X v) (Y v))
               ("TEST" 2 (:AL) (I b))
               ("TEST" 2 (:rAX) (I z))
               ("STOS/B" 2 (Y b) (:AL))
@@ -480,14 +492,14 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ("MOV" 2  (:CH/r13L) (I b))
               ("MOV" 2  (:DH/r14L) (I b))
               ("MOV" 2  (:BH/r15L) (I b))
-              ("MOV" 2  (:rA/r8)   (I v))
-              ("MOV" 2  (:rC/r9)   (I v))
-              ("MOV" 2  (:rD/r10)  (I v))
-              ("MOV" 2  (:rB/r11)  (I v))
-              ("MOV" 2  (:rS/r12)  (I v))
-              ("MOV" 2  (:rB/r13)  (I v))
-              ("MOV" 2  (:rS/r14)  (I v))
-              ("MOV" 2  (:rD/r15)  (I v)))
+              ("MOV" 2  (:rAX/r8)  (I v))
+              ("MOV" 2  (:rCX/r9)  (I v))
+              ("MOV" 2  (:rDX/r10) (I v))
+              ("MOV" 2  (:rBX/r11) (I v))
+              ("MOV" 2  (:rSP/r12) (I v))
+              ("MOV" 2  (:rBP/r13) (I v))
+              ("MOV" 2  (:rSI/r14) (I v))
+              ("MOV" 2  (:rDI/r15) (I v)))
 
     #| c0 |# (("ShftGrp2" 2 (E b) (I b) :1a)
               ("ShftGrp2" 2 (E v) (I b) :1a)
@@ -577,7 +589,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
     #| 08 |#  ("INVD" 0)
               ("WBINVD" 0)
               (:none)
-              ("UD2" 0)
+              ("UD2" 0 :1b)
               (:none)
               ("prefetchw(/1)" 1 (E v))
               (:none)
@@ -960,8 +972,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
     #| c8 |#  ("BSWAP" 1 (:RAX/EAX/R8/R8D))
               ("BSWAP" 1 (:RCX/ECX/R9/R9D))
-              ("BSWDP" 1 (:RDX/EDX/R10/R10D))
-              ("BSWBP" 1 (:RBX/EBX/R11/R11D))
+              ("BSWAP" 1 (:RDX/EDX/R10/R10D))
+              ("BSWAP" 1 (:RBX/EBX/R11/R11D))
               ("BSWAP" 1 (:RSP/ESP/R12/R12D))
               ("BSWAP" 1 (:RBP/EBP/R13/R13D))
               ("BSWAP" 1 (:RSI/ESI/R14/R14D))
@@ -1134,6 +1146,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          (and (stringp (nth 0 one-opcode-lst)) ;; Opcode
               (natp (nth 1 one-opcode-lst))    ;; Number of Operands
               ;; Number of operands <= addressing info. of all operands
+              ;; (for now the <= check allows certain ill-formed rows,
+              ;; but we may strengthen to a = check eventually):
               (<= (nth 1 one-opcode-lst) (len (nthcdr 1 one-opcode-lst))))
 
          ;; Just the keyword without any other information.
@@ -1230,7 +1244,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   :short "Returns @('t') if at least one operand of an opcode requires
   a @('ModR/M') byte"
   (b* (((when (not (equal (len op_list) op_num)))
-        (er hard? "Expected length of ~x0 was 1." op_list)))
+        (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
 
       (if (zp op_num)
           bool
@@ -1329,6 +1343,9 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   returns a list of 1s and 0s corresponding to the presence or absence
   of ModR/M byte for each opcode in a simple opcode row in the Intel
   opcode maps.</p>"
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the result is only tested to contain 1
+  ;; (in 64-bit-compute-modr/m-for-an-opcode)
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
                 (true-listp row-modr/m)))
@@ -1406,6 +1423,11 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   :short "Returns a list of 1s and 0s corresponding to the presence or
   absence of ModR/M byte for each opcode in an opcode row in the Intel
   opcode maps"
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the results of all the rows are appended together
+  ;; (in 64-bit-compute-modr/m-map-1),
+  ;; and then reversed to be in the right order
+  ;; (in 64-bit-compute-modr/m-map)
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
                 (true-listp row-modr/m)))
@@ -1546,6 +1568,11 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               (true-listp row-prefix))
   :short "Takes in a single opcode row from an opcode map and returns
   prefix byte info for each of the opcodes in that row"
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the results of all the rows are appended together
+  ;; (in compute-prefix-byte-group-code-1),
+  ;; and eventually reversed to be in the right order
+  ;; (in compute-prefix-byte-group-code)
   :parents (decoding-utilities)
 
   (if (mbt (and (true-list-listp row-info)

@@ -247,6 +247,9 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 
 </ul>"
 
+  ;; since corollaries must just follow from their theorems,
+  ;; it may be possible to generate simpler hints for the corollaries below
+
   (defmacro defthm-natp (name &key hyp concl hints)
     (if concl
         `(defthm ,name
@@ -306,6 +309,7 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
                                      (< ,concl ,2^bound)))
                         ,@(and hints-l `(:hints ,hints-l))))))))
       nil))
+  ;; no need to generate a (>= ... 0) linear rule so far
 
   (defmacro defthm-sb
       (name &key hyp bound concl
@@ -674,7 +678,7 @@ the sake of efficiency.</p>"
  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
  (define layout-constant-alistp (alst position max-size)
-   :short "Recognizer for all the layout constants"
+   :short "Recognizer for all the layout constants, i.e. contiguous bit fields"
    :guard (and (natp position)
                (natp max-size))
    :enabled t
