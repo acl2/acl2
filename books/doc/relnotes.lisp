@@ -108,6 +108,10 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <p>The @(see std/io) library now contains lemmas to help users prove
+ that opened input and output channels remain open until closed, to
+ aid guard theorem proofs.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
