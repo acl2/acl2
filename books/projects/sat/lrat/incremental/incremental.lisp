@@ -7,8 +7,8 @@
 (in-package "LRAT")
 
 (include-book "../sorted/lrat-checker")
-
 (include-book "../stobj-based/lrat-checker")
+(include-book "tools/er-soft-logic" :dir :system)
 
 (defun incl-verify-proof$-rec (ncls ndel formula proof a$)
   (declare (xargs :stobjs a$
@@ -881,51 +881,6 @@
                "Invalid proof!")
            a$)))))
 
-(verify-termination acl2::world-evisceration-alist
-  (declare (xargs :verify-guards t)))
-
-#!acl2
-(defun abbrev-evisc-tuple-logic (state)
-
-; This is modified from ACL2 source function abbrev-evisc-tuple.
-
-  (declare (xargs :stobjs state))
-  (let ((evisc-tuple (if (f-boundp-global 'abbrev-evisc-tuple state)
-                         (f-get-global 'abbrev-evisc-tuple state)
-                       :default)))
-    (cond
-     ((eq evisc-tuple :default)
-      (cons (world-evisceration-alist state nil)
-            '(5 7 nil)))
-     (t evisc-tuple))))
-
-#!acl2
-(defun error-fms-soft-logic (ctx str alist state)
-
-; This is modified from ACL2 source function error-fms.
-
-  (declare (xargs :stobjs state))
-  (fmt-to-comment-window "~%~%ACL2 Error in ~x0:  ~@1~%~%"
-                         (list (cons #\0 ctx)
-                               (cons #\1 (cons str alist)))
-                         0
-                         (acl2::abbrev-evisc-tuple-logic state)))
-
-#!acl2
-(defun error1-logic (ctx str alist state)
-
-; This is modified from ACL2 source function error1.
-
-  (declare (xargs :stobjs state))
-  (prog2$ (error-fms-soft-logic ctx str alist state)
-          (mv t nil state)))
-
-(defmacro er-soft-logic (ctx str &rest str-args)
-  (let ((alist (acl2::make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                          #\5 #\6 #\7 #\8 #\9)
-                                        str-args)))
-    (list 'acl2::error1-logic ctx str alist 'state)))
-
 (defun ordered-formula-p1 (formula index)
   (declare (xargs :guard (posp index)))
   (if (atom formula)
@@ -962,6 +917,12 @@
   (implies (ordered-formula-p formula)
            (formula-p formula))
   :hints (("Goal" :in-theory (enable formula-p ordered-formula-p))))
+
+(defmacro er-soft-logic (&rest args)
+
+; This macro should be deleted once er-soft-logic makes it into *acl2-exports*.
+
+  (cons 'acl2::er-soft-logic args))
 
 (defun incl-valid-proofp$-top (cnf-file clrat-file incomplete-okp chunk-size
                                         debug ctx state)

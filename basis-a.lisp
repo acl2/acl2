@@ -2900,6 +2900,7 @@
            (symbol-listp (cadddr x)))))
 
 (defun world-evisceration-alist (state alist)
+  (declare (xargs :stobjs state))
   (let ((wrld (w state)))
     (cond ((null wrld) ; loading during the build
            alist)
@@ -2915,6 +2916,8 @@
 ; tweak the set of uses of the abbrev-evisc-tuple.  This comment should
 ; similarly not be viewed as definitive if it is long after January 2009.
 
+  (declare (xargs :stobjs state
+                  :guard (f-boundp-global 'abbrev-evisc-tuple state)))
   (let ((evisc-tuple (f-get-global 'abbrev-evisc-tuple state)))
     (cond
      ((eq evisc-tuple :default)

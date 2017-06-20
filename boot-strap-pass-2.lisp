@@ -1410,6 +1410,7 @@
 
   '(("system/top"
      (>=-LEN ACL2-COUNT X)
+     (ABBREV-EVISC-TUPLE)
      (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
      (ALL->=-LEN ACL2-COUNT LST)
      (ALL-FFN-SYMBS ACL2-COUNT TERM)
@@ -1487,7 +1488,8 @@
      (TERMIFY-CLAUSE-SET ACL2-COUNT CLAUSES)
      (TERMP ACL2-COUNT X)
      (THROW-NONEXEC-ERROR-P)
-     (THROW-NONEXEC-ERROR-P1))))
+     (THROW-NONEXEC-ERROR-P1)
+     (WORLD-EVISCERATION-ALIST))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))

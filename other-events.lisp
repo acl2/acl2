@@ -28149,7 +28149,32 @@
 
 (defmacro defun-inline (name formals &rest lst)
 
-; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline Search for
+; Here is an explanation for why we insist on specific suffices for inlined and
+; notinlined functions, following up on remark (2) in :doc defun-inline.
+
+; We insist on a specific suffix for inlined functions, *inline-suffix*,
+; because Common Lisp provides no way to undo (declaim (inline foo)).  Consider
+; for example:
+
+;   (encapsulate
+;     ()
+;     (local (defun-inline foo (x) x))
+;     ...)
+;
+;   (defun foo (x) (cons x x))
+
+; When the encapsulate runs, the form (declaim (inline foo)) is generated.
+; Since there is no way to undo that declaim (before starting the second pass
+; of the encapsulate), the global definition of foo would also be an inline
+; definition.  A similar problem occurs if (defun-inline foo ...) is in a
+; locally included book.
+
+; By insisting on a syntactic naming convention for inlined functions --
+; namely, their names end in *inline-suffix* (i.e., in "$INLINE") -- we
+; avoid this undoing problem.  That is: we don't mind that we can't undo
+; the declaim, because every function of that name will be inlined.
+
+; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline: Search for
 ; ";;; Declaim forms:" in write-expansion-file, and notice the printing just
 ; below it of a readtime conditional for the host Lisp, so that declaim forms
 ; are restricted to that Lisp.  This mechanism was probably put into place so
