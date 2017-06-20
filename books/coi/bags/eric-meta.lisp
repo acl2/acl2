@@ -255,7 +255,7 @@
 
 
 ;;
-;; stuff about unsigned-bytep
+;; stuff about unsigned-byte-p
 ;;
 
 

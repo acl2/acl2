@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "base")
+(include-book "open-channels")
 (include-book "combine")
 (include-book "nthcdr-bytes")
 (include-book "read-file-bytes")
