@@ -69,10 +69,54 @@
  ;; x86 state
  x86)
 
-(!log-file-name "nop.log") 
+(!log-file-name "nop.log")
 (log_instr)
 
 ;; Run the program for up to 1000000 steps or till the machine halts, whatever comes first:
 ;; (x86-run-steps 1000000 x86)
 
 ;; ======================================================================
+
+(defconst *xchg*
+  '(
+    ;;     #x48 #xc7 #xc0 #x01 #x00 #x00 #x00 ;; movq	$0x1, %rax
+    ;;     #x49 #xb8 #xff #xff #xff #xff #x00 #x00 #x00 #x00 ;; movabsq	$0xffffffff, %r8
+    ;;     #x49 #x90 ;; xchgq	%r8, %rax
+
+    #x48 #xc7 #xc0 #x01 #x00 #x00 #x00 ; movq	$0x1, %rax
+    #x49 #xb8 #xff #xff #xff #xff #x00 #x00 #x00 #x00 ; movabsq	$0xffffffff, %r8
+    #x66 #x41 #x90 ; xchgw	%r8w, %ax
+
+    ))
+
+
+;; Initialize the x86 state:
+(init-x86-state
+ ;; Status (MS and fault field)
+ nil
+ ;; Start Address --- set the RIP to this address
+ 0
+ ;; Halt Address --- overwrites this address by #xF4 (HLT)
+ (len *xchg*)
+ ;; Initial values of General-Purpose Registers
+ nil
+ ;; Control Registers
+ nil
+ ;; Model-Specific Registers
+ nil
+ ;; Rflags Register
+ 2
+ ;; Memory image
+ (pairlis$
+  (create-canonical-address-list (len *xchg*) 0)
+  *xchg*)
+ ;; x86 state
+ x86)
+
+(!log-file-name "xchg.log")
+(log_instr)
+
+;; Run the program for up to 1000000 steps or till the machine halts, whatever comes first:
+;; (x86-run-steps 1000000 x86)
+
+;; ----------------------------------------------------------------------
