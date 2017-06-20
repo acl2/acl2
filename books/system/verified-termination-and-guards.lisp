@@ -74,6 +74,8 @@
 (verify-termination strip-cadrs) ; and guards
 (verify-termination alist-to-doublets) ; and guards
 (verify-termination ffnnamep) ; and guards
+(verify-termination world-evisceration-alist) ; and guards
+(verify-termination abbrev-evisc-tuple) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by David L. Rager.
