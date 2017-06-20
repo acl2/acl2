@@ -29,6 +29,10 @@ below.]
 Note that some books would probably need work to recertify if the
 following is done.
 
+Note from Keshav: the book std/io/open-channels contains several
+examples of theorems which could be strengthened if this to-do list
+item were implemented.
+
 The predicate state-p is too weak for some purposes, because it
 doesn't capture the invariant that the file-clock field of the state
 is an upper bound for the file-clocks of the open channels (and
