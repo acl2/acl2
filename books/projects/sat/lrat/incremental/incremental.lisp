@@ -868,11 +868,18 @@
       (:complete (mv t a$))
       (:incomplete (mv (or incomplete-okp
                            (er hard? ctx
-                               "Incomplete proof!"))
+                               "The proof is valid but does not contain the ~
+                                empty clause."))
                        a$))
-      (t (mv (er hard? ctx
-                 "Invalid proof!")
-             a$)))))
+      (t
+
+; We do not expect to reach the following case.  If nil is returned as the
+; first value, it is ultimately because an error occurred.  In particular,
+; verify-clause$ either succeeds or causes an error.
+
+       (mv (er hard? ctx
+               "Invalid proof!")
+           a$)))))
 
 (verify-termination acl2::world-evisceration-alist
   (declare (xargs :verify-guards t)))
@@ -959,7 +966,7 @@
 (defun incl-valid-proofp$-top (cnf-file clrat-file incomplete-okp chunk-size
                                         debug ctx state)
   (declare (xargs :guard t :stobjs state))
-  (let ((formula (time$ (ec-call (cnf-read-file cnf-file state)))))
+  (let ((formula (ec-call (cnf-read-file cnf-file state))))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic
@@ -973,7 +980,10 @@
         not.~|~x0"
        clrat-file))
      ((not (ordered-formula-p formula))
-      (er-soft-logic ctx "An invalid formula was supplied by the parser!"))
+      (er-soft-logic ctx
+                     "An invalid formula was supplied by the parser from ~
+                      input file ~x0."
+                     cnf-file))
      (t
       (mv-let (clrat-file-length state)
         (file-length$ clrat-file state)

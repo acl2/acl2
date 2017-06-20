@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 
+
 ; It may be that we should do this for all Lisps instead of just Allegro.
 #+(or allegro lispworks)
 (load "bundle/asdf.lisp")
@@ -96,7 +97,10 @@
 ; Hopefully this will be fixed after the next Quicklisp release.
 (push :hunchentoot-no-ssl *features*)
 
+
+#-mswindows ;; [harshrc 2017-05-30] SSL library load error on Windows
 (load-system-from-acl2-quicklisp-bundle "hunchentoot")
+
 (load-system-from-acl2-quicklisp-bundle "osicat")
 (load-system-from-acl2-quicklisp-bundle "shellpool")
 (load-system-from-acl2-quicklisp-bundle "uiop")

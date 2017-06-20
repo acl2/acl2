@@ -719,16 +719,19 @@
 
          <p>This is also useful in Verilog-2005, but isn't a named rule in the
          Verilog-2005 grammar.</p>"
-  :result (vl-casetype-p val)
-  :resultp-of-nil t
+  :result (and (consp val)
+               (vl-casetype-p (car val))
+               (vl-location-p (cdr val)))
+  ;; :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
         (type := (vl-match-some-token '(:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)))
-        (return (case (vl-token->type type)
-                  (:vl-kwd-case  nil) ;; if you change this, update resultp-of-nil
-                  (:vl-kwd-casez :vl-casez)
-                  (:vl-kwd-casex :vl-casex)))))
+        (return (cons (case (vl-token->type type)
+                        (:vl-kwd-case  nil)
+                        (:vl-kwd-casez :vl-casez)
+                        (:vl-kwd-casex :vl-casex))
+                      (vl-token->loc type)))))
 
 ; Our parser temporarily abuses the representation of vl-caselist-p and just
 ; use a NIL expression list to represent default statements.
@@ -761,6 +764,7 @@
    (expr  vl-expr-p)
    (items vl-caselist-p)
    (atts  vl-atts-p)
+   (loc   vl-location-p)
    (casekey (or (vl-token-p casekey) (not casekey))))
   :long "<p>This either returns a statement or @('nil') for failure.  The only
          reason it can fail is that more than one @('default') statement was
@@ -783,7 +787,8 @@
                                     (car defaults)
                                   (make-vl-nullstmt))
                       :atts     atts
-                      :casekey casekey)))
+                      :casekey casekey
+                      :loc loc)))
 
 (defparser vl-parse-1+-id=expr-pairs (type varp)
   :guard (and (vl-datatype-p type)
@@ -1108,7 +1113,7 @@
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     (seq tokstream
          (check := (vl-parse-unique-priority))
-         (type := (vl-parse-case-keyword))
+         ((type . loc) := (vl-parse-case-keyword))
          (:= (vl-match-token :vl-lparen))
          (test :s= (vl-parse-expression)) ;; bozo why do we need :s= here??
          (:= (vl-match-token :vl-rparen))
@@ -1125,7 +1130,7 @@
           ;; Per Verilog-2005, Section 9.5 (page 127) the default statement is
           ;; optional but at most one default statement is permitted.  This
           ;; same restriction is kept SystemVerilog, Section 12.5 (Page 270).
-          (let ((stmt (vl-make-case-statement check type test items atts casekey)))
+          (let ((stmt (vl-make-case-statement check type test items atts loc casekey)))
             (if (not stmt)
                 (vl-parse-error "Multiple defaults cases in case statement.")
               (mv nil stmt tokstream))))))

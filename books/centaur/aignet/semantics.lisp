@@ -85,8 +85,6 @@
 
 
 
-
-
 ;; (defsection aignet-untranslate
 ;;   (defun untranslate-preproc-node-types (term wrld)
 ;;     (declare (ignore wrld))
@@ -369,6 +367,12 @@
 
   (add-aignet-lookup-fn (lookup-regnum->nxst n new) new)
 
+  (defret stypes-of-lookup-regnum->nxst-when-reg-exists
+    (implies (< (nfix n) (stype-count :reg a))
+             (or (equal (stype (car suffix)) :nxst)
+                 (equal (stype (car suffix)) :reg)))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype (car suffix))))))
+
 
   (defthm lookup-regnum->nxsts-unique
     (implies (and (consp (lookup-regnum->nxst n1 aignet))
@@ -389,9 +393,382 @@
     (implies (and (consp suffix)
                   (not (equal suffix (lookup-stype n :reg a))))
              (equal (stype (car suffix)) :nxst))
-    :hints(("Goal" :in-theory (enable lookup-stype)))))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  (defret nxst-node->reg-of-lookup-regnum->nxst
+    (implies (Equal (stype (car suffix)) :nxst)
+             (equal (nxst-node->reg (car suffix))
+                    (node-count (lookup-stype n :reg a))))
+    :hints(("Goal" :in-theory (disable (:d lookup-regnum->nxst))
+            :induct <call>
+            :expand (<call>
+                     (lookup-stype n :reg a)))))
+
+  (defret aignet-idp-of-reg-in-cdr-nxst
+    (implies (equal (stype (car suffix)) :nxst)
+             (aignet-idp (node-count (lookup-stype n :reg a))
+                         (cdr suffix)))
+    :hints(("Goal" :in-theory (e/d* (aignet-idp)
+                                    ((:d lookup-regnum->nxst)))
+            :induct <call>
+            :expand (<call>
+                     (lookup-stype n :reg a)))))
+
+  ;; (local (defthm aignet-extension-p-of-cdr
+  ;;          (AIGNET-EXTENSION-P A (LOOKUP-REGNUM->NXST N (CDR A)))
+  ;;          :hints (("goal" :use ((:instance
+  ;;                                 (:theorem (AIGNET-EXTENSION-P (cons node A) (LOOKUP-REGNUM->NXST N a)))
+  ;;                                 (a (cdr a)) (node (car a))))
+  ;;                   :in-theory (enable aignet-extension-p)))))
+
+  (defret reg-count-of-lookup-regnum->nxst-when-reg
+    (implies (equal (ctype (stype (car suffix))) :input)
+             (equal (stype-count :reg (cdr suffix)) (nfix n))))
+
+  (defret lookup-reg->nxst-of-lookup-regnum->nxst
+    (implies (equal (ctype (stype (car suffix))) :input)
+             (equal (lookup-reg->nxst (node-count suffix) a)
+                    suffix))
+    :hints(("Goal" :in-theory (disable (:d lookup-regnum->nxst))
+            :induct <call>
+            :expand (<call>))
+           (and stable-under-simplificationp
+                '(:expand ((:free (c) (lookup-reg->nxst c a))))))))
 
 
+
+
+
+;; -------------------------- Reasoning about CIs/COs -----------------------------
+
+(define num-cis (aignet)
+  :enabled t
+  (+ (num-ins aignet) (num-regs aignet)))
+
+(define ci-id->cinum ((id natp) aignet)
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (in-type)))
+  :returns (cinum natp :rule-classes :type-prescription)
+  (b* ((slot (id->slot id 1 aignet))
+       (regp (snode->regp slot))
+       (num  (snode->ionum slot)))
+    (if (eql 1 regp)
+        (+ (num-ins aignet) num)
+      num))
+  ///
+  (defret ci-id->cinum-upper-bound
+    (implies (eql (id->type id aignet) (in-type))
+             (< cinum (num-cis aignet)))
+    :rule-classes :linear))
+
+(define lookup-cinum ((n natp) aignet)
+  :guard (< n (num-cis aignet))
+  :returns (suffix node-listp)
+  (non-exec (if (< (nfix n) (num-ins aignet))
+                (lookup-stype n :pi aignet)
+              (lookup-stype (- (nfix n) (num-ins aignet)) :reg aignet)))
+  ///
+  (defret aignet-extension-p-of-lookup-cinum
+    (aignet-extension-p aignet suffix))
+
+  (defret lookup-cinum-in-aignet-extension-when-pi
+    (implies (and (aignet-extension-binding)
+                  (< (nfix n) (num-ins orig)))
+             (equal (lookup-cinum n new) (lookup-cinum n orig))))
+
+  (defret lookup-cinum-in-aignet-extension-when-no-new-pis
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :pi new) (stype-count :pi orig))
+                  (< (nfix n) (num-cis orig)))
+             (equal (lookup-cinum n new) (lookup-cinum n orig))))
+
+  (defret stypes-of-lookup-cinum
+    (or (equal (stype (car suffix)) :pi)
+        (equal (stype (car suffix)) :reg)
+        (equal (stype (car suffix)) :const))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype (car suffix))))))
+
+  (defret stypes-of-lookup-cinum-in-range
+    (implies (< (nfix n) (+ (stype-count :pi aignet)
+                            (stype-count :reg aignet)))
+             (or (equal (stype (car suffix)) :pi)
+                 (equal (stype (car suffix)) :reg)))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype (car suffix))))))
+
+  (add-aignet-lookup-fn (lookup-cinum n new) new)
+
+  (local (defret equal-of-lookup-stype-of-different-stypes
+           (implies (not (stype-equiv stype1 stype2))
+                    (equal (equal (lookup-stype n stype1 aignet1)
+                                  (lookup-stype m stype2 aignet2))
+                           (and (not (lookup-stype n stype1 aignet1))
+                                (not (lookup-stype m stype2 aignet2)))))
+           :hints(("Goal" :use ((:instance stype-of-lookup-stype-split
+                                 (n n) (stype stype1) (aignet aignet1))
+                                (:instance stype-of-lookup-stype-split
+                                 (n m) (stype stype2) (aignet aignet2)))))))
+
+  (defret lookup-cinum-unique
+    (implies (and (consp (lookup-cinum n1 aignet))
+                  (consp (lookup-cinum n2 aignet)))
+             (equal (equal (lookup-cinum n1 aignet)
+                           (lookup-cinum n2 aignet))
+                    (nat-equiv n1 n2)))))
+
+(define cinum->id ((n natp) aignet)
+  :guard (< n (num-cis aignet))
+  :returns (id natp :rule-classes :type-prescription)
+  (if (< (lnfix n) (num-ins aignet))
+      (innum->id n aignet)
+    (regnum->id (- (lnfix n) (num-ins aignet)) aignet))
+  ///
+  
+  (defthm lookup-id-of-cinum->id
+    (equal (lookup-id (cinum->id n aignet) aignet)
+           (lookup-cinum n aignet))
+    :hints(("Goal" :in-theory (enable lookup-cinum))))
+
+  (defret aignet-idp-of-cinum->id
+    (aignet-idp id aignet))
+
+  (defret cinum->id-in-bounds
+    (<= id (node-count aignet))
+    :rule-classes :linear)
+
+  ;; (defret stype-of-cinum->id
+  ;;   (implies (< (nfix n) (num-cis aignet))
+  ;;            (or (equal (stype (car (lookup-id id aignet))) :pi)
+  ;;                (equal (stype (car (lookup-id id aignet))) :reg)))
+  ;;   :rule-classes
+  ;;   ((:forward-chaining :trigger-terms ((stype (car (lookup-id id aignet)))))))
+
+  ;; (defret ctype-of-cinum->id
+  ;;   (implies (< (nfix n) (num-cis aignet))
+  ;;            (equal (ctype (stype (car (lookup-id id aignet))))
+  ;;                   :input))
+  ;;   :rule-classes (:rewrite
+  ;;                  (:forward-chaining :trigger-terms ((car (lookup-id id aignet))))))
+
+  (defret ci-id->cinum-of-cinum->id
+    (implies (< (nfix n) (num-cis aignet))
+             (equal (ci-id->cinum (cinum->id n aignet) aignet)
+                    (nfix n)))
+    :hints(("Goal" :in-theory (enable ci-id->cinum))))
+
+  (defret cinum->id-of-ci-id->cinum
+    (implies (eql (id->type id aignet) (in-type))
+             (equal (cinum->id (ci-id->cinum id aignet) aignet)
+                    (nfix id)))
+    :hints(("Goal" :in-theory (enable ci-id->cinum)))))
+
+(define num-cos (aignet)
+  :enabled t
+  (+ (num-outs aignet) (num-regs aignet)))
+
+
+(define nxst-validp ((id natp) aignet)
+  :guard (id-existsp id aignet)
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  (b* ((type (id->type id aignet))
+       ((when (eql type (in-type)))
+        (and (eql 1 (io-id->regp id aignet))
+             (eql (reg-id->nxst id aignet) (lnfix id))))
+       ((unless (and (eql type (out-type))
+                     (eql 1 (io-id->regp id aignet))))
+        nil)
+       (reg (nxst-id->reg id aignet)))
+    (and (eql (id->type reg aignet) (in-type))
+         (eql (io-id->regp reg aignet) 1)
+         (eql (reg-id->nxst reg aignet) (lnfix id)))))
+
+(define co-validp ((id natp) aignet)
+  :guard (id-existsp id aignet)
+  (or (and (eql (id->type id aignet) (out-type))
+           (eql (io-id->regp id aignet) 0))
+      (nxst-validp id aignet)))
+              
+
+(define co-id->conum ((id natp) aignet)
+  :guard (and (id-existsp id aignet)
+              (co-validp id aignet))
+  :guard-hints (("goal" :in-theory (enable co-validp nxst-validp)))
+  :returns (conum natp :rule-classes :type-prescription)
+  (b* ((slot (id->slot id 1 aignet))
+       (regp (snode->regp slot))
+       ((unless (eql 1 regp))
+        ;; must be PO
+        (+ (num-regs aignet)  (snode->ionum slot)))
+       ((when (eql (id->type id aignet) (in-type)))
+        ;; reg
+        (snode->ionum slot))
+       (reg (snode->regid slot)))
+    (io-id->ionum reg aignet))
+  ///
+  (defret co-id->conum-upper-bound
+    (implies (and (eql (id->type id aignet) (out-type))
+                  (co-validp id aignet))
+             (< conum (num-cos aignet)))
+    :hints(("Goal" :in-theory (enable co-validp nxst-validp)))
+    :rule-classes :linear))
+
+
+(define lookup-conum ((n natp) aignet)
+  :guard (< n (num-cos aignet))
+  :returns (suffix node-listp)
+  (non-exec (if (< (nfix n) (num-regs aignet))
+                (lookup-regnum->nxst n aignet)
+              (lookup-stype (- (nfix n) (num-regs aignet)) :po aignet)))
+  ///
+  (defret aignet-extension-p-of-lookup-conum
+    (aignet-extension-p aignet suffix))
+
+
+  (defret stypes-of-lookup-conum
+    (or (equal (stype (car suffix)) :po)
+        (equal (stype (car suffix)) :nxst)
+        (equal (stype (car suffix)) :reg)
+        (equal (stype (car suffix)) :const))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype (car suffix))))))
+
+  (defret stypes-of-lookup-conum-in-range
+    (implies (< (nfix n) (+ (stype-count :reg aignet)
+                            (stype-count :po aignet)))
+             (or (equal (stype (car suffix)) :po)
+                 (equal (stype (car suffix)) :nxst)
+                 (equal (stype (car suffix)) :reg)))
+    :rule-classes ((:forward-chaining :trigger-terms ((stype (car suffix))))))
+
+  (add-aignet-lookup-fn (lookup-conum n new) new)
+
+  ;; (local (defret equal-of-lookup-stype-of-different-stypes
+  ;;          (implies (not (stype-equiv stype1 stype2))
+  ;;                   (equal (equal (lookup-stype n stype1 aignet1)
+  ;;                                 (lookup-stype m stype2 aignet2))
+  ;;                          (and (not (lookup-stype n stype1 aignet1))
+  ;;                               (not (lookup-stype m stype2 aignet2)))))
+  ;;          :hints(("Goal" :use ((:instance stype-of-lookup-stype-split
+  ;;                                (n n) (stype stype1) (aignet aignet1))
+  ;;                               (:instance stype-of-lookup-stype-split
+  ;;                                (n m) (stype stype2) (aignet aignet2)))))))
+
+  (local (defret lookup-regnum->nxst-equal-lookup-stype
+           (equal (equal (lookup-regnum->nxst n1 aignet1)
+                         (lookup-stype n2 :po aignet2))
+                  (and (not (lookup-regnum->nxst n1 aignet1))
+                       (not (lookup-stype n2 :po aignet2))))
+           :hints(("Goal" :use ((:instance stype-of-lookup-stype-split
+                                 (n n2) (stype :po) (aignet aignet2)))))))
+
+  (defret lookup-conum-unique
+    (implies (and (consp (lookup-conum n1 aignet))
+                  (consp (lookup-conum n2 aignet)))
+             (equal (equal (lookup-conum n1 aignet)
+                           (lookup-conum n2 aignet))
+                    (nat-equiv n1 n2)))))
+
+
+(define conum->id ((n natp) aignet)
+  :guard (< n (num-cos aignet))
+  :returns (id natp :rule-classes :type-prescription)
+  (if (< (lnfix n) (num-regs aignet))
+      (reg-id->nxst (regnum->id n aignet) aignet)
+    (outnum->id (- (lnfix n) (num-regs aignet)) aignet))
+  ///
+  (defret aignet-idp-of-conum->id
+    (aignet-idp id aignet))
+
+  (defret conum->id-in-bounds
+    (<= id (node-count aignet))
+    :rule-classes :linear)
+
+  (defret lookup-id-of-conum->id
+    (equal (lookup-id (conum->id n aignet) aignet)
+           (lookup-conum n aignet))
+    :hints(("Goal" :in-theory (enable lookup-conum))))
+
+  ;; (defret stype-of-conum->id
+  ;;   (implies (< (nfix n) (num-cos aignet))
+  ;;            (or (equal (stype (car (lookup-id id aignet))) :pi)
+  ;;                (equal (stype (car (lookup-id id aignet))) :reg)))
+  ;;   :rule-classes
+  ;;   ((:forward-chaining :trigger-terms ((stype (car (lookup-id id aignet)))))))
+
+  ;; (defret stype-of-conum->id
+  ;;   (implies (< (nfix n) (num-cos aignet))
+  ;;            (or (equal (stype (car (lookup-id id aignet))) :po)
+  ;;                (equal (stype (car (lookup-id id aignet))) :nxst)
+  ;;                (equal (stype (car (lookup-id id aignet))) :reg)))
+  ;;   :rule-classes ((:forward-chaining :trigger-terms ((car (lookup-id id aignet))))))
+
+  (defret co-validp-of-conum->id
+    (implies (< (nfix n) (num-cos aignet))
+             (co-validp id aignet))
+    :hints(("Goal" :in-theory (enable co-validp nxst-validp))))
+
+  (defret co-id->conum-of-conum->id
+    (implies (< (nfix n) (num-cos aignet))
+             (equal (co-id->conum id aignet)
+                    (nfix n)))
+    :hints(("Goal" :in-theory (enable co-id->conum regp))))
+
+  (local (defthmd equal-stype-count-of-extension
+           (implies (and (aignet-extension-p b a)
+                         (not (node-list-equiv b a)))
+                    (not (equal (stype-count (stype (car b)) a) (stype-count (stype (car b)) b))))
+           :hints(("Goal" :in-theory (enable aignet-extension-p stype-count)))))
+                    
+
+  (local (defthmd equal-of-stype-counts-of-suffixes
+           (implies (and (aignet-extension-p full a)
+                         (aignet-extension-p full b)
+                         (consp a) (consp b)
+                         (equal (stype (car b)) (stype (car a)))
+                         (not (node-list-equiv a b)))
+                    (not (equal (stype-count (stype (car a)) (cdr a)) (stype-count (stype (car a)) (Cdr b)))))
+           :hints (("goal" :induct (aignet-extension-p full a)
+                    :in-theory (enable aignet-extension-p))
+                   (and stable-under-simplificationp
+                        (cond ((member-equal '(not (aignet-extension-p (cdr a) b)) clause)
+                               '(:use ((:instance equal-stype-count-of-extension
+                                        (b (cdr a)) (a b)))))
+                              ((member-equal '(not (aignet-extension-p (cdr b) a)) clause)
+                               '(:use ((:instance equal-stype-count-of-extension
+                                        (b (cdr b)) (a a))))))))))
+
+  ;; (local (defthm lookup-reg->nxst-when-id-too-high
+  ;;          (implies (<= (node-count aignet) (nfix id))
+  ;;                   (equal (lookup-reg->nxst id aignet) nil))
+  ;;          :hints(("Goal" :in-theory (enable lookup-reg->nxst)))))
+                         
+  (local (defthm lookup-reg->nxst-when-reg
+           (implies (equal (stype (car (lookup-reg->nxst id aignet))) :reg)
+                    (and (equal (lookup-reg->nxst id aignet) (lookup-id id aignet))
+                         (equal (stype (car (lookup-id id aignet))) :reg)))
+           :hints(("Goal" :in-theory (enable lookup-reg->nxst)))))
+
+
+  (local (defthm lookup-regnum->nxst-of-stype-count-of-lookup-reg->nxst
+           (implies (equal (stype (car (lookup-reg->nxst id aignet))) :reg)
+                    (equal (lookup-regnum->nxst (stype-count :reg (cdr (lookup-id id aignet)))
+                                                aignet)
+                           (lookup-id id aignet)))
+           :hints(("Goal" :induct (lookup-reg->nxst id aignet)
+                   :expand ((lookup-reg->nxst id aignet)
+                            (:free (regnum) (lookup-regnum->nxst regnum aignet)))
+                   :in-theory (enable (:i lookup-reg->nxst)))
+                  ;; (and stable-under-simplificationp
+                  ;;      '(:use ((:instance equal-of-stype-counts-of-suffixes
+                  ;;               (full aignet)
+                  ;;               (a (lookup-id (nxst-node->reg (car aignet)) aignet))
+                  ;;               (b (lookup-reg->nxst id (cdr aignet)))))
+                  ;;        :in-theory (disable lookup-id-in-extension-inverse)))
+                  )))
+
+  (defthm conum->id-of-co-id->conum
+    (implies (co-validp id aignet)
+             (equal (conum->id (co-id->conum id aignet) aignet)
+                    (nfix id)))
+    :hints(("Goal" :in-theory (enable co-id->conum co-validp nxst-validp)))))
 
 
 
@@ -1478,6 +1855,96 @@ same input/register assignment.</li></ul>
   (defequiv comb-equiv)
   (defrefinement comb-equiv outs-comb-equiv)
   (defrefinement comb-equiv nxsts-comb-equiv))
+
+
+(define co-eval ((n natp) invals regvals aignet)
+  :guard (and (< n (num-cos aignet))
+              (<= (num-regs aignet) (bits-length regvals))
+              (<= (num-ins aignet) (bits-length invals)))
+  :guard-hints (("goal" :in-theory (enable conum->id lookup-conum)))
+  (mbe :exec (id-eval (conum->id n aignet) invals regvals aignet)
+       :logic (non-exec (lit-eval (fanin-if-co (lookup-conum n aignet))
+                                  invals regvals aignet)))
+  ///
+  (defthmd co-eval-in-terms-of-output/nxst-eval
+    (equal (co-eval n invals regvals aignet)
+           (if (< (nfix n) (num-regs aignet))
+               (nxst-eval n invals regvals aignet)
+             (output-eval (- (nfix n) (num-regs aignet)) invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable output-eval nxst-eval lookup-conum)))))
+
+
+(defsection co-equiv
+  (defun-sk co-equiv (aignet aignet2)
+    (forall (n invals regvals)
+            (equal (co-eval n invals regvals aignet)
+                   (co-eval n invals regvals aignet2)))
+    :rewrite :direct)
+
+  (in-theory (disable co-equiv))
+
+  (defthmd co-equiv-necc-lit-eval
+    (implies (co-equiv aignet aignet2)
+             (equal (equal (lit-eval (fanin-if-co (lookup-conum n aignet))
+                                     invals regvals aignet)
+                           (lit-eval (fanin-if-co (lookup-conum n aignet2))
+                                     invals regvals aignet2))
+                    t))
+    :hints(("Goal" :in-theory (e/d (co-eval)
+                                   (co-equiv-necc))
+            :use co-equiv-necc)))
+
+  (local (defthm refl
+           (co-equiv x x)
+           :hints(("Goal" :in-theory (enable co-equiv)))))
+  
+  (local
+   (defthm symm
+     (implies (co-equiv aignet aignet2)
+              (co-equiv aignet2 aignet))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance co-equiv-necc
+                           (n (mv-nth 0 (co-equiv-witness aignet2 aignet)))
+                           (invals (mv-nth 1 (co-equiv-witness aignet2 aignet)))
+                           (regvals (mv-nth 2 (co-equiv-witness aignet2
+                                                                  aignet))))))))))
+
+  (local
+   (defthm trans-lemma
+     (implies (and (co-equiv aignet aignet2)
+                   (co-equiv aignet2 aignet3))
+              (co-equiv aignet aignet3))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance co-equiv-necc
+                           (n (mv-nth 0 (co-equiv-witness aignet aignet3)))
+                           (invals (mv-nth 1 (co-equiv-witness aignet aignet3)))
+                           (regvals (mv-nth 2 (co-equiv-witness aignet aignet3))))
+                          (:instance co-equiv-necc
+                           (aignet aignet2) (aignet2 aignet3)
+                           (n (mv-nth 0 (co-equiv-witness aignet aignet3)))
+                           (invals (mv-nth 1 (co-equiv-witness aignet aignet3)))
+                           (regvals (mv-nth 2 (co-equiv-witness aignet
+                                                                aignet3))))))))))
+
+  (defequiv co-equiv)
+
+  (defthm co-equiv-implies-comb-equiv
+    (implies (and (co-equiv aignet aignet2)
+                  (equal (num-regs aignet) (num-regs aignet2)))
+             (equal (comb-equiv aignet aignet2) t))
+    :hints(("Goal" :in-theory (e/d (comb-equiv outs-comb-equiv nxsts-comb-equiv
+                                               co-eval-in-terms-of-output/nxst-eval)
+                                   (co-equiv-necc))
+            :use ((:instance co-equiv-necc
+                   (n (+ (num-regs aignet) (nfix (mv-nth 0 (outs-comb-equiv-witness aignet aignet2)))))
+                   (invals (mv-nth 1 (outs-comb-equiv-witness aignet aignet2)))
+                   (regvals (mv-nth 2 (outs-comb-equiv-witness aignet aignet2))))
+                  (:instance co-equiv-necc
+                   (n (mv-nth 0 (nxsts-comb-equiv-witness aignet aignet2)))
+                   (invals (mv-nth 1 (nxsts-comb-equiv-witness aignet aignet2)))
+                   (regvals (mv-nth 2 (nxsts-comb-equiv-witness aignet aignet2)))))))))
 
 
 

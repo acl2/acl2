@@ -1,5 +1,5 @@
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2017
+;; June 2017
 
 (in-package "ADE")
 
@@ -26,28 +26,28 @@
  '1-bit-adder
  (list* 'a-act 'a-in 'b-act 'b-in 'dr-l-ci 's-act
         (sis 'go 0 2))
- '(full empty- s-out ci-out)
+ '(empty-a- empty-b- ready-out s-out ci-out)
  '(l-a a l-b b l-ci ci l-s s l-co co)
  (list
   ;;; Links
   ;; L-A
-  '(l-a (l-a-status) link (a-act add-act))
+  '(l-a (l-a-status) link-st (a-act add-act))
   '(a (a-out a-out~) latch (a-act a-in))
 
   ;; L-B
-  '(l-b (l-b-status) link (b-act add-act))
+  '(l-b (l-b-status) link-st (b-act add-act))
   '(b (b-out b-out~) latch (b-act b-in))
 
   ;; L-CI
-  '(l-ci (l-ci-status) link (carry-act comb-dr-l-ci))
+  '(l-ci (l-ci-status) link-st (carry-act comb-dr-l-ci))
   '(ci (ci-out ci-out~) latch (carry-act ci-in))
 
   ;; L-S
-  '(l-s (l-s-status) link (add-act s-act))
+  '(l-s (l-s-status) link-st (add-act s-act))
   '(s (s-out s-out~) latch (add-act s-in))
 
   ;; L-CO
-  '(l-co (l-co-status) link (add-act carry-act))
+  '(l-co (l-co-status) link-st (add-act carry-act))
   '(co (co-out co-out~) latch (add-act co-in))
 
   ;;; Joints
@@ -56,7 +56,7 @@
   '(g1 (add-empty-out) b-or (l-s-status l-co-status))
   (list 'j-add
         '(add-act)
-        'joint
+        'joint-cntl
         (list 'add-full-in 'add-empty-out (si 'go 0)))
       
   '(h0 (s-in co-in) full-adder (a-out b-out ci-out))
@@ -64,7 +64,7 @@
   ;; CO to CI
   (list 'j-carry
         '(carry-act)
-        'joint
+        'joint-cntl
         (list 'l-co-status 'l-ci-status (si 'go 1)))
       
   '(h1 (ci-in) b-buf (co-out))
@@ -72,10 +72,16 @@
   '(c0 (comb-dr-l-ci) b-or (add-act dr-l-ci))
 
   ;;; Status
-  '(full-s (full) b-and (l-ci-status l-s-status))
+  ;; '(s0 (l-a+b-status~) b-nand (l-a-status l-b-status))
+  ;; '(empty--s (empty-) b-nand (l-ci-status l-a+b-status~))
+  
+  '(s0 (l-a-status~) b-not (l-a-status))
+  '(in-status-a (empty-a-) b-nand (l-ci-status l-a-status~))
 
-  '(s0 (l-a+b-status) b-nand (l-a-status l-b-status))
-  '(empty--s (empty-) b-nand (l-ci-status l-a+b-status))
+  '(s1 (l-b-status~) b-not (l-b-status))
+  '(in-status-b (empty-b-) b-nand (l-ci-status l-b-status~))
+
+  '(out-status (ready-out) b-and (l-ci-status l-s-status))
   )
 
  :guard t)
@@ -83,7 +89,7 @@
 (defun 1-bit-adder$netlist ()
   (declare (xargs :guard t))
   (cons (1-bit-adder*)
-        (union$ *link* *joint* *full-adder*
+        (union$ *link-st* *joint-cntl* *full-adder*
                 :test 'equal)))
 
 (defthmd 1-bit-adder$netlist-okp
@@ -95,40 +101,46 @@
   (and (equal (assoc '1-bit-adder netlist)
               (1-bit-adder*))
        (b* ((netlist (delete-to-eq '1-bit-adder netlist)))
-         (and (link& netlist)
-              (joint& netlist)
+         (and (link-st& netlist)
+              (joint-cntl& netlist)
               (full-adder& netlist)))))
 
-(defund 1-bit-adder$fullp (st)
+(defund 1-bit-adder$empty-a- (st)
+  (b* ((l-a  (nth 0 st))
+       (l-ci (nth 4 st)))
+    (f-nand (car (car l-ci))
+            (f-not (car (car l-a))))))
+
+(defund 1-bit-adder$empty-b- (st)
+  (b* ((l-b  (nth 2 st))
+       (l-ci (nth 4 st)))
+    (f-nand (car (car l-ci))
+            (f-not (car (car l-b))))))
+
+(defund 1-bit-adder$ready-out (st)
   (b* ((l-ci (nth 4 st))
        (l-s  (nth 6 st)))
     (f-and (car (car l-ci))
            (car (car l-s)))))
 
-(defund 1-bit-adder$emptyp- (st)
-  (b* ((l-a  (nth 0 st))
-       (l-b  (nth 2 st))
-       (l-ci (nth 4 st)))
-    (f-nand (car (car l-ci))
-            (f-nand (car (car l-a))
-                    (car (car l-b))))))
-
 (defthmd 1-bit-adder$value
   (b* ((st (list l-a a l-b b l-ci ci l-s s l-co co)))
     (implies (1-bit-adder& netlist)
              (equal (se '1-bit-adder inputs st netlist)
-                    (list (1-bit-adder$fullp st)
-                          (1-bit-adder$emptyp- st)
+                    (list (1-bit-adder$empty-a- st)
+                          (1-bit-adder$empty-b- st)
+                          (1-bit-adder$ready-out st)
                           (f-buf (car s))
                           (f-buf (car ci))))))
   :hints (("Goal" :in-theory (e/d* (se-rules
                                     1-bit-adder&
                                     1-bit-adder*$destructure
-                                    link$value
-                                    joint$value
+                                    link-st$value
+                                    joint-cntl$value
                                     full-adder$value
-                                    1-bit-adder$fullp
-                                    1-bit-adder$emptyp-)
+                                    1-bit-adder$ready-out
+                                    1-bit-adder$empty-a-
+                                    1-bit-adder$empty-b-)
                                    ((1-bit-adder*)
                                     (si)
                                     (sis)
@@ -217,8 +229,8 @@
            :in-theory (e/d* (de-rules
                              1-bit-adder&
                              1-bit-adder*$destructure
-                             link$value link$state
-                             joint$value
+                             link-st$value link-st$state
+                             joint-cntl$value
                              full-adder$value)
                             ((1-bit-adder*)
                              (si)
@@ -238,27 +250,28 @@
  'serial-adder
  (list* 'cntl-act 'bit-in 'result-act
         (sis 'go 0 5))
- (list* 'full 'empty-
+ (list* 'ready-in- 'ready-out
         (append (sis 'reg2-out 0 32) (list 'c-out)))
  '(l-reg0 reg0 l-reg1 reg1 l-reg2 reg2 bit-add-st)
  (list
   ;;; Links
   ;; L-REG0
-  '(l-reg0 (l-reg0-status) link (cntl-act a-act))
+  '(l-reg0 (l-reg0-status) link-st (cntl-act a-act))
   (list 'reg0 (sis 'reg0-out 0 32) 'shift-reg32 '(cntl-act bit-in))
   
   ;; L-REG1
-  '(l-reg1 (l-reg1-status) link (cntl-act b-act))
+  '(l-reg1 (l-reg1-status) link-st (cntl-act b-act))
   (list 'reg1 (sis 'reg1-out 0 32) 'shift-reg32 '(cntl-act bit-in))
   
   ;; L-REG2
   '(g (dr-l-reg2) b-or (cntl-act result-act))
-  '(l-reg2 (l-reg2-status) link (s-act dr-l-reg2))
+  '(l-reg2 (l-reg2-status) link-st (s-act dr-l-reg2))
   (list 'reg2 (sis 'reg2-out 0 32) 'shift-reg32 '(s-act s-out))
   
   ;; BIT-ADD-ST
   (list 'bit-add-st
-        '(bit-add-full bit-add-empty- s-out ci-out)
+        '(bit-add-empty-a- bit-add-empty-b- bit-add-ready-out
+                           s-out ci-out)
         '1-bit-adder
         (list* 'a-act 'a-in 'b-act 'b-in 'result-act 's-act
                (sis 'go 3 2)))
@@ -268,32 +281,31 @@
   ;; Fetch operand A
   (list 'j-a
         '(a-act)
-        'joint
-        (list 'l-reg0-status 'bit-add-empty- (si 'go 0)))
+        'joint-cntl
+        (list 'l-reg0-status 'bit-add-empty-a- (si 'go 0)))
   
   (list 'h0 '(a-in) 'b-buf (list (si 'reg0-out 0)))
   
   ;; Fetch operand B
   (list 'j-b
         '(b-act)
-        'joint
-        (list 'l-reg1-status 'bit-add-empty- (si 'go 1)))
+        'joint-cntl
+        (list 'l-reg1-status 'bit-add-empty-b- (si 'go 1)))
   
   (list 'h1 '(b-in) 'b-buf (list (si 'reg1-out 0)))
   
   ;; Write sum
   (list 'j-s
         '(s-act)
-        'joint
-        (list 'bit-add-full 'l-reg2-status (si 'go 2)))
+        'joint-cntl
+        (list 'bit-add-ready-out 'l-reg2-status (si 'go 2)))
   
   ;;'(h2 (bit2-in) b-buf (s-out))
   
   ;;; Status
-  '(full-s (full) b-buf (l-reg2-status))
-  
   '(s0 (l-reg2-status~) b-not (l-reg2-status))
-  '(empty--s (empty-) b-or3 (l-reg0-status l-reg1-status l-reg2-status~))
+  '(in-status (ready-in-) b-or3 (l-reg0-status l-reg1-status l-reg2-status~))
+  '(out-status (ready-out) b-buf (l-reg2-status))
   )
 
  :guard t)
@@ -312,24 +324,24 @@
   (and (equal (assoc 'serial-adder netlist)
               (serial-adder*))
        (b* ((netlist (delete-to-eq 'serial-adder netlist)))
-         (and (link& netlist)
-              (joint& netlist)
+         (and (link-st& netlist)
+              (joint-cntl& netlist)
               (1-bit-adder& netlist)))))
 
 (defthm check-serial-adder$netlist
   (serial-adder& (serial-adder$netlist)))
 
-(defund serial-adder$fullp (st)
-  (b* ((l-reg2 (nth 4 st)))
-    (f-buf (car (car l-reg2)))))
-
-(defund serial-adder$emptyp- (st)
+(defund serial-adder$ready-in- (st)
   (b* ((l-reg0 (nth 0 st))
        (l-reg1 (nth 2 st))
        (l-reg2 (nth 4 st)))
     (f-or3 (car (car l-reg0))
            (car (car l-reg1))
            (f-not (car (car l-reg2))))))
+
+(defund serial-adder$ready-out (st)
+  (b* ((l-reg2 (nth 4 st)))
+    (f-buf (car (car l-reg2)))))
 
 (defthmd serial-adder$value
   (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
@@ -338,18 +350,18 @@
                   (true-listp (car reg2))
                   (equal (len (car reg2)) 32))
              (equal (se 'serial-adder inputs st netlist)
-                    (list* (serial-adder$fullp st)
-                           (serial-adder$emptyp- st)
+                    (list* (serial-adder$ready-in- st)
+                           (serial-adder$ready-out st)
                            (append (car reg2)
                                    (list (f-buf (car ci))))))))
   :hints (("Goal" :in-theory (e/d (se-rules
                                    serial-adder&
                                    serial-adder*$destructure
-                                   link$value
-                                   joint$value
+                                   link-st$value
+                                   joint-cntl$value
                                    1-bit-adder$value
-                                   serial-adder$fullp
-                                   serial-adder$emptyp-)
+                                   serial-adder$ready-out
+                                   serial-adder$ready-in-)
                                   ((serial-adder*)
                                    (si)
                                    (sis)
@@ -377,14 +389,14 @@
        (s   (nth 7 bit-add-st))
 
        (a-act (joint-act (caar l-reg0)
-                         (1-bit-adder$emptyp- bit-add-st)
+                         (1-bit-adder$empty-a- bit-add-st)
                          go-a))
        (a-in (f-buf (caar reg0)))
        (b-act (joint-act (caar l-reg1)
-                         (1-bit-adder$emptyp- bit-add-st)
+                         (1-bit-adder$empty-b- bit-add-st)
                          go-b))
        (b-in (f-buf (caar reg1)))
-       (s-act (joint-act (1-bit-adder$fullp bit-add-st)
+       (s-act (joint-act (1-bit-adder$ready-out bit-add-st)
                          (caar l-reg2)
                          go-s))
        (1-bit-adder$inputs (list* a-act a-in b-act b-in result-act s-act
@@ -435,8 +447,8 @@
            :in-theory (e/d* (de-rules
                              serial-adder&
                              serial-adder*$destructure
-                             link$value link$state
-                             joint$value
+                             link-st$value link-st$state
+                             joint-cntl$value
                              1-bit-adder$value
                              1-bit-adder$state
                              take-of-len-is-itself
@@ -456,32 +468,32 @@
  async-adder* ()
  'async-adder
  (list* 'dr-l-result (sis 'go 0 8))
- (list* 'full 'empty- (sis 'result-out 0 33))
+ (list* 'ready-in- 'ready-out (sis 'result-out 0 33))
  '(l-cntl cntl l-next-cntl next-cntl l-done- done- l-result result
           serial-add-st)
  
  (list
   ;;; Links
   ;; L-CNTL
-  '(l-cntl (l-cntl-status) link (cntl-buf-act cntl-act))
+  '(l-cntl (l-cntl-status) link-st (cntl-buf-act cntl-act))
   (list 'cntl
         (sis 'cntl-out 0 5)
         (si 'latch-n 5)
         (list* 'cntl-buf-act (sis 'cntl-in 0 5)))
 
   ;; L-NEXT-CNTL
-  '(l-next-cntl (l-next-cntl-status) link (cntl-act cntl-buf-act))
+  '(l-next-cntl (l-next-cntl-status) link-st (cntl-act cntl-buf-act))
   (list 'next-cntl
         (sis 'next-cntl-out 0 5)
         (si 'latch-n 5)
         (list* 'cntl-act (sis 'next-cntl-in 0 5)))
 
   ;; L-DONE-
-  '(l-done- (l-done-status) link (cntl-act dr-l-done-))
+  '(l-done- (l-done-status) link-st (cntl-act dr-l-done-))
   '(done- (done-out- done-out) latch (cntl-act done-in-))
 
   ;; L-RESULT
-  '(l-result (l-result-status) link (result-act dr-l-result))
+  '(l-result (l-result-status) link-st (result-act dr-l-result))
   (list 'result
         (sis 'result-out 0 33)
         (si 'latch-n 33)
@@ -489,7 +501,7 @@
       
   ;; SERIAL-ADD-ST
   (list 'serial-add-st
-        (list* 'serial-add-full 'serial-add-empty-
+        (list* 'serial-add-ready-in- 'serial-add-ready-out
                (append (sis 'sum 0 32) (list 'carry)))
         'serial-adder
         (list* 'cntl-act 'low 'result-act (sis 'go 3 5)))
@@ -497,10 +509,10 @@
   ;;; Joints
   ;; Next control state
   '(g0 (cntl-ready) b-or3 (l-next-cntl-status l-done-status
-                                             serial-add-empty-))
+                                              serial-add-ready-in-))
   (list 'j-next-state
         '(cntl-act)
-        'joint
+        'joint-cntl
         (list 'l-cntl-status 'cntl-ready (si 'go 0)))
       
   (list 'h0
@@ -512,7 +524,7 @@
   '(g1 (next-cntl-ready) b-and3 (l-next-cntl-status l-done-status done-out-))
   (list 'j-buf-state
         '(cntl-buf-act)
-        'joint
+        'joint-cntl
         (list 'next-cntl-ready 'l-cntl-status (si 'go 1)))
   
   (list 'buf-state
@@ -521,21 +533,20 @@
         (sis 'next-cntl-out 0 5))
 
   ;; Store the result to RESULT register
-  '(g2 (result-ready) b-and3 (serial-add-full l-done-status done-out))
+  '(g2 (result-ready) b-and3 (serial-add-ready-out l-done-status done-out))
   (list 'j-result
         '(result-act)
-        'joint
+        'joint-cntl
         (list 'result-ready 'l-result-status (si 'go 2)))
 
   '(j-done- (dr-l-done-) b-or (cntl-buf-act result-act))
 
-  ;;; Status
-  '(full-s (full) b-buf (l-result-status))
-  
+;;; Status
   '(s0 (l-next-cntl-status~) b-not (l-next-cntl-status))
-  '(empty--s (empty-) b-or3 (l-next-cntl-status~
-                             l-done-status
-                             l-result-status))
+  '(in-status (ready-in-) b-or3 (l-next-cntl-status~
+                                 l-done-status
+                                 l-result-status))
+  '(out-status (ready-out) b-buf (l-result-status))
   )
 
  :guard t)
@@ -559,8 +570,8 @@
   (and (equal (assoc 'async-adder netlist)
               (async-adder*))
        (b* ((netlist (delete-to-eq 'async-adder netlist)))
-         (and (link& netlist)
-              (joint& netlist)
+         (and (link-st& netlist)
+              (joint-cntl& netlist)
               (latch-n& netlist 5)
               (latch-n& netlist 33)
               (v-buf& netlist 5)
@@ -570,17 +581,17 @@
 (defthm check-async-adder$netlist
   (async-adder& (async-adder$netlist)))
 
-(defund async-adder$fullp (st)
-  (b* ((l-result (nth 6 st)))
-    (f-buf (caar l-result))))
-
-(defund async-adder$emptyp- (st)
+(defund async-adder$ready-in- (st)
   (b* ((l-next-cntl (nth 2 st))
        (l-done-     (nth 4 st))
        (l-result    (nth 6 st)))
     (f-or3 (f-not (caar l-next-cntl))
            (caar l-done-)
            (caar l-result))))
+
+(defund async-adder$ready-out (st)
+  (b* ((l-result (nth 6 st)))
+    (f-buf (caar l-result))))
 
 (defthmd async-adder$value
   (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
@@ -595,21 +606,21 @@
                   (true-listp (car reg2))
                   (equal (len (car reg2)) 32))
              (equal (se 'async-adder inputs st netlist)
-                    (list* (async-adder$fullp st)
-                           (async-adder$emptyp- st)
+                    (list* (async-adder$ready-in- st)
+                           (async-adder$ready-out st)
                            (v-threefix (strip-cars result))))))
   :hints (("Goal"
            :in-theory (e/d (se-rules
                             async-adder&
                             async-adder*$destructure
-                            link$value
-                            joint$value
+                            link-st$value
+                            joint-cntl$value
                             latch-n$value
                             v-buf$value
                             next-cntl-state$value
                             serial-adder$value
-                            async-adder$fullp
-                            async-adder$emptyp-)
+                            async-adder$ready-out
+                            async-adder$ready-in-)
                            ((async-adder*)
                             (si)
                             (sis)
@@ -650,7 +661,7 @@
                   (joint-act (car (car l-cntl))
                              (f-or3 (car (car l-next-cntl))
                                     (car (car l-done-))
-                                    (serial-adder$emptyp- serial-add-st))
+                                    (serial-adder$ready-in- serial-add-st))
                              go-cntl)
                   (car (car l-cntl)))))
      (pairlis$ (fv-if (joint-act (f-and3 (car (car l-next-cntl))
@@ -665,7 +676,7 @@
       (list (f-sr (joint-act (car (car l-cntl))
                              (f-or3 (car (car l-next-cntl))
                                     (car (car l-done-))
-                                    (serial-adder$emptyp- serial-add-st))
+                                    (serial-adder$ready-in- serial-add-st))
                              go-cntl)
                   (joint-act (f-and3 (car (car l-next-cntl))
                                      (car (car l-done-))
@@ -677,7 +688,7 @@
       (fv-if (joint-act (car (car l-cntl))
                         (f-or3 (car (car l-next-cntl))
                                (car (car l-done-))
-                               (serial-adder$emptyp- serial-add-st))
+                               (serial-adder$ready-in- serial-add-st))
                         go-cntl)
              (f$next-cntl-state (v-threefix (strip-cars cntl)))
              (strip-cars next-cntl))
@@ -686,14 +697,14 @@
       (list (f-sr (joint-act (car (car l-cntl))
                              (f-or3 (car (car l-next-cntl))
                                     (car (car l-done-))
-                                    (serial-adder$emptyp- serial-add-st))
+                                    (serial-adder$ready-in- serial-add-st))
                              go-cntl)
                   (f-or (joint-act (f-and3 (car (car l-next-cntl))
                                            (car (car l-done-))
                                            (car done-))
                                    (car (car l-cntl))
                                    go-buf-cntl)
-                        (joint-act (f-and3 (serial-adder$fullp serial-add-st)
+                        (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
                                            (car (car l-done-))
                                            (f-not (car done-)))
                                    (car (car l-result))
@@ -702,17 +713,17 @@
      (list (f-if (joint-act (car (car l-cntl))
                             (f-or3 (car (car l-next-cntl))
                                    (car (car l-done-))
-                                   (serial-adder$emptyp- serial-add-st))
+                                   (serial-adder$ready-in- serial-add-st))
                             go-cntl)
                  (compute-done- (v-threefix (strip-cars cntl)))
                  (car done-)))
-     (list (list (f-sr (joint-act (f-and3 (serial-adder$fullp serial-add-st)
+     (list (list (f-sr (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
                                           (car (car l-done-))
                                           (f-not (car done-)))
                                   (car (car l-result))
                                   go-result)
                        dr-l-result (car (car l-result)))))
-     (pairlis$ (fv-if (joint-act (f-and3 (serial-adder$fullp serial-add-st)
+     (pairlis$ (fv-if (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
                                          (car (car l-done-))
                                          (f-not (car done-)))
                                  (car (car l-result))
@@ -725,10 +736,10 @@
       (list* (joint-act (car (car l-cntl))
                         (f-or3 (car (car l-next-cntl))
                                (car (car l-done-))
-                               (serial-adder$emptyp- serial-add-st))
+                               (serial-adder$ready-in- serial-add-st))
                         go-cntl)
              nil
-             (joint-act (f-and3 (serial-adder$fullp serial-add-st)
+             (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
                                 (car (car l-done-))
                                 (f-not (car done-)))
                         (car (car l-result))
@@ -768,8 +779,8 @@
           :in-theory (e/d* (de-rules
                             async-adder&
                             async-adder*$destructure
-                            link$value link$state
-                            joint$value
+                            link-st$value link-st$state
+                            joint-cntl$value
                             latch-n$value latch-n$state
                             v-buf$value
                             next-cntl-state$value
@@ -1123,25 +1134,25 @@
 (defund extract-async-adder-result-value (st)
   (strip-cars (nth 7 st)))
 
-(defun async-adder$result-emptyp-n (inputs-lst st n)
+(defun async-adder$result-empty-n (inputs-lst st n)
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       t
     (and (emptyp (extract-async-adder-result-status st))
-         (async-adder$result-emptyp-n
+         (async-adder$result-empty-n
           (cdr inputs-lst)
           (async-adder$state-fn (car inputs-lst) st)
           (1- n)))))
 
-(defthm open-async-adder$result-emptyp-n
+(defthm open-async-adder$result-empty-n
   (and
    (implies (zp n)
-            (equal (async-adder$result-emptyp-n inputs-lst st n)
+            (equal (async-adder$result-empty-n inputs-lst st n)
                    t))
    (implies (not (zp n))
-            (equal (async-adder$result-emptyp-n inputs-lst st n)
+            (equal (async-adder$result-empty-n inputs-lst st n)
                    (and (emptyp (extract-async-adder-result-status st))
-                        (async-adder$result-emptyp-n
+                        (async-adder$result-empty-n
                          (cdr inputs-lst)
                          (async-adder$state-fn (car inputs-lst) st)
                          (1- n)))))))
@@ -1149,17 +1160,17 @@
 (defthm async-adder$result-emptyp-m+n
   (implies (and (natp m)
                 (natp n))
-           (equal (async-adder$result-emptyp-n inputs-lst st (+ m n))
-                  (and (async-adder$result-emptyp-n inputs-lst st m)
-                       (async-adder$result-emptyp-n
+           (equal (async-adder$result-empty-n inputs-lst st (+ m n))
+                  (and (async-adder$result-empty-n inputs-lst st m)
+                       (async-adder$result-empty-n
                         (nthcdr m inputs-lst)
                         (async-adder$state-fn-n inputs-lst st m)
                         n))))
   :hints (("Goal"
-           :induct (async-adder$result-emptyp-n inputs-lst st m))))
+           :induct (async-adder$result-empty-n inputs-lst st m))))
 
-(defthm async-adder$result-emptyp-n-lemma
-  (implies (and (async-adder$result-emptyp-n inputs-lst st n)
+(defthm async-adder$result-empty-n-lemma
+  (implies (and (async-adder$result-empty-n inputs-lst st n)
                 (natp m)
                 (natp n)
                 (< m n))
@@ -1168,7 +1179,7 @@
   :hints (("Goal"
            :in-theory (enable async-adder$state-fn-n))))
 
-(in-theory (disable async-adder$result-emptyp-n))
+(in-theory (disable async-adder$result-empty-n))
 
 (defthm consp-fv-shift-right
   (implies (consp a)
@@ -1197,7 +1208,7 @@
        (hyps
         '((async-adder$inv-st st)))
        (concl1
-        '(async-adder$result-emptyp-n inputs-lst st n))
+        '(async-adder$result-empty-n inputs-lst st n))
        (concl2
         '(equal
           (async-adder$state-fn-n inputs-lst st n)
@@ -1253,7 +1264,7 @@
             :hints (("Goal"
                      :in-theory (e/d* (async-adder$st-trans
                                        async-adder$st-trans->numsteps)
-                                      (open-async-adder$result-emptyp-n
+                                      (open-async-adder$result-empty-n
                                        fullp emptyp posp
                                        open-async-adder$input-format-n)))))
           
@@ -1314,11 +1325,12 @@
                                          async-adder$state
                                          async-adder$state-fn
                                          serial-adder$state-fn
-                                         serial-adder$fullp
-                                         serial-adder$emptyp-
+                                         serial-adder$ready-out
+                                         serial-adder$ready-in-
                                          1-bit-adder$state-fn
-                                         1-bit-adder$fullp
-                                         1-bit-adder$emptyp-
+                                         1-bit-adder$ready-out
+                                         1-bit-adder$empty-a-
+                                         1-bit-adder$empty-b-
                                          async-adder$inv-st)
                                         (nth
                                          nthcdr
@@ -1344,11 +1356,12 @@
                                          async-adder$state
                                          async-adder$state-fn
                                          serial-adder$state-fn
-                                         serial-adder$fullp
-                                         serial-adder$emptyp-
+                                         serial-adder$ready-out
+                                         serial-adder$ready-in-
                                          1-bit-adder$state-fn
-                                         1-bit-adder$fullp
-                                         1-bit-adder$emptyp-
+                                         1-bit-adder$ready-out
+                                         1-bit-adder$empty-a-
+                                         1-bit-adder$empty-b-
                                          write-shift-reg
                                          async-adder$inv-st)
                                         (nth
@@ -1461,7 +1474,7 @@
        (hyps
         '((last-round-st st)))
        (concl1
-        '(async-adder$result-emptyp-n inputs-lst st n))
+        '(async-adder$result-empty-n inputs-lst st n))
        (concl2
         '(equal
           (async-adder$state-fn-n inputs-lst st n)
@@ -1526,7 +1539,7 @@
             :hints (("Goal"
                      :in-theory (e/d* (async-adder-last-round$st-trans
                                        async-adder-last-round$st-trans->numsteps)
-                                      (open-async-adder$result-emptyp-n
+                                      (open-async-adder$result-empty-n
                                        fullp emptyp posp
                                        open-async-adder$input-format-n)))))
 
@@ -1589,11 +1602,12 @@
                                          async-adder$state
                                          async-adder$state-fn
                                          serial-adder$state-fn
-                                         serial-adder$fullp
-                                         serial-adder$emptyp-
+                                         serial-adder$ready-out
+                                         serial-adder$ready-in-
                                          1-bit-adder$state-fn
-                                         1-bit-adder$fullp
-                                         1-bit-adder$emptyp-
+                                         1-bit-adder$ready-out
+                                         1-bit-adder$empty-a-
+                                         1-bit-adder$empty-b-
                                          last-round-st
                                          v-threefix-append)
                                         (nth
@@ -1620,11 +1634,12 @@
                                          async-adder$state
                                          async-adder$state-fn
                                          serial-adder$state-fn
-                                         serial-adder$fullp
-                                         serial-adder$emptyp-
+                                         serial-adder$ready-out
+                                         serial-adder$ready-in-
                                          1-bit-adder$state-fn
-                                         1-bit-adder$fullp
-                                         1-bit-adder$emptyp-
+                                         1-bit-adder$ready-out
+                                         1-bit-adder$empty-a-
+                                         1-bit-adder$empty-b-
                                          write-shift-reg
                                          last-round-st
                                          v-threefix-append)
@@ -1712,7 +1727,7 @@
                                      async-adder$state-fn
                                      serial-adder$state-fn
                                      1-bit-adder$state-fn
-                                     1-bit-adder$fullp
+                                     1-bit-adder$ready-out
                                      write-shift-reg
                                      v-threefix-append)
                                     (append-v-threefix))))))
@@ -2039,7 +2054,7 @@
                           (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
                                 (list l-a a l-b b l-ci ci l-s s l-co co))))
           (async-adder$inv-st st))
-     (async-adder$result-emptyp-n inputs-lst st n)))
+     (async-adder$result-empty-n inputs-lst st n)))
   :hints (("Goal"
            :in-theory (union-theories
                        '(async-adder$invalid-result)
@@ -2213,7 +2228,7 @@
                             (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
                                   (list l-a a l-b b l-ci ci l-s s l-co co))))
             (async-adder$inv-st st))
-       (async-adder$result-emptyp-n inputs-lst st n)))
+       (async-adder$result-empty-n inputs-lst st n)))
     :hints (("Goal"
              :induct
              (simulate-async-adder-loop-induct inputs-lst st n count)
@@ -2222,7 +2237,7 @@
                               async-adder$inv-st
                               async-adder$st-trans-n)
                              (open-async-adder$input-format-n
-                              open-async-adder$result-emptyp-n
+                              open-async-adder$result-empty-n
                               open-async-adder$state-fn-n
                               open-async-adder$st-trans-n
                               open-v-threefix
@@ -2505,7 +2520,7 @@
                           (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
                                 (list l-a a l-b b l-ci ci l-s s l-co co))))
           (async-adder$init-st st))
-     (async-adder$result-emptyp-n inputs-lst st n)))
+     (async-adder$result-empty-n inputs-lst st n)))
   :hints (("Goal"
            :do-not-induct t
            :use simulate-async-adder-loop-invalid-result
@@ -2723,7 +2738,7 @@
           (equal n (async-adder-numsteps inputs-lst operand-size))
           (async-adder$input-format-n inputs-lst n)
           (async-adder$init-st st))
-     (async-adder$result-emptyp-n inputs-lst st n)))
+     (async-adder$result-empty-n inputs-lst st n)))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance
@@ -2761,7 +2776,7 @@
                             last-round-st)
                            (async-adder$result-emptyp-m+n
                             async-adder$input-format-m+n
-                            open-async-adder$result-emptyp-n
+                            open-async-adder$result-empty-n
                             open-async-adder$input-format-n
                             open-async-adder$st-trans-n
                             open-async-adder$st-trans-n->numsteps
@@ -2966,7 +2981,54 @@
 
 ;; Prove that the async serial adder indeed performs the addition.
 
-(defthmd async-adder-works
+(defthmd async-adder$input-format-n-lemma
+ (implies (and (async-adder$input-format-n inputs-lst n)
+               (natp n)
+               (<= m n))
+          (async-adder$input-format-n inputs-lst m))
+ :hints (("Goal" :in-theory (enable async-adder$input-format-n))))
+
+(defthmd async-adder$empty-result
+ (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
+      (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
+                           bit-add-st))
+      (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
+                l-result result
+                serial-add-st)))
+   (implies
+    (and (async-adder& netlist)
+         (equal operand-size 32)
+         (async-adder-interleavings inputs-lst operand-size)
+         (natp m)
+         (< m n)
+         (equal n (async-adder-numsteps inputs-lst operand-size))
+         (async-adder$input-format-n inputs-lst n)
+         (async-adder$init-st st))
+    (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist m)))
+      (emptyp (extract-async-adder-result-status final-st)))))
+ :hints (("Goal"
+          :use (:instance
+                async-adder$result-empty-n-lemma
+                (st (list l-cntl cntl l-next-cntl
+                          next-cntl l-done- done- l-result result
+                          (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
+                                (list l-a a l-b b l-ci ci l-s s l-co co)))))
+          :in-theory (e/d (de-sim-n$async-adder
+                           async-adder$input-format-n-lemma
+                           async-adder$init-st
+                           simulate-async-adder-invalid-result)
+                          (async-adder$result-empty-n-lemma
+                           open-async-adder$result-empty-n
+                           fullp
+                           emptyp
+                           open-de-sim-n
+                           open-async-adder$state-fn-n
+                           open-async-adder$input-format-n
+                           car-cdr-elim)))))
+
+;; Termination theorem
+
+(defthmd async-adder$termination
   (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
        (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
                             bit-add-st))
@@ -2983,7 +3045,7 @@
           (async-adder$init-st st))
      (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist n)))
        (and
-        (fullp (extract-async-adder-result-status final-st))
+        (fullp (extract-async-adder-result-status final-st)) ;; Terminate
         (implies (and (bvp (car reg0))
                       (bvp (car reg1))
                       (bvp (car reg2))
@@ -3009,4 +3071,54 @@
                             open-fv-serial-sum
                             open-fv-serial-carry
                             car-cdr-elim)))))
+
+(encapsulate
+  ()
+  
+  (local
+   (defthm empty=>not-full
+     (implies (emptyp x)
+              (not (fullp x)))))
+
+  ;; Partial correctness theorem
+
+  (defthmd async-adder$partial-correct
+    (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
+         (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
+                              bit-add-st))
+         (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
+                   l-result result
+                   serial-add-st)))
+      (implies
+       (and (async-adder& netlist)
+            (equal operand-size 32)
+            (async-adder-interleavings inputs-lst operand-size)
+            (natp m)
+            (equal n (async-adder-numsteps inputs-lst operand-size))
+            (async-adder$input-format-n inputs-lst (max m n))
+            (async-adder$init-st st))
+       (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist m)))
+         (implies (and (fullp (extract-async-adder-result-status final-st))
+                       (bvp (car reg0))
+                       (bvp (car reg1))
+                       (bvp (car reg2))
+                       (booleanp (car ci)))
+                  (equal (v-to-nat
+                          (extract-async-adder-result-value final-st))
+                         (+ (bool->bit (car ci))
+                            (v-to-nat (car reg0))
+                            (v-to-nat (car reg1))))))))
+    :hints (("Goal"
+             :cases ((< m n))
+             :in-theory (e/d (async-adder$empty-result
+                              async-adder$termination)
+                             (fullp
+                              emptyp
+                              open-de-sim-n
+                              open-async-adder$state-fn-n
+                              open-async-adder$input-format-n
+                              open-fv-shift-right-nil-n
+                              open-fv-serial-sum
+                              open-fv-serial-carry
+                              car-cdr-elim))))))
 

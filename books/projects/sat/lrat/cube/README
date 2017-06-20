@@ -1,0 +1,102 @@
+See ../README for information about this project for checking lrat
+proofs.
+
+OVERALL STRUCTURE of cube-and-conquer proof effort, where a cube is a
+conjunction of literals:
+
+(1) Transform (with a given proof file) input formula F0 to a
+    "transformed" formula F1 (by adding clauses each verified by RAT).
+
+    Run proof to check that if F0 is SAT, then F1 is SAT.
+    See theorem TRANSFORM-PRESERVES-SAT in file transform.lisp.
+      + Optionally write F0 and F1 to files, to diff against the files
+        that allegedly contain these formulas.
+    See clean-formula.lisp for a discussion of writing out F1.
+
+(2) For a collection of cubes Gi, show that for each i, F1 tautologically
+    implies ~Gi: if a |= F1 then a |= ~Gi.
+    See theorem VERIFY-FOR-CUBE-SOUNDNESS in file
+    verify-for-cube-soundness.lisp.
+
+    Optionally: write F1 and, more importantly, write ~Gi as a
+    one-line file as so (see verify-for-cube-print in file top.lisp):
+
+        -lit_1 ... -lit_k 0
+
+(3) Run the usual incremental checker to prove that the conjunction of clauses
+    ~Gi is UNSAT.
+
+Notice that from (2) and (3) we know that F1 is UNSAT; hence from (1),
+F0 is UNSAT.  (We could even weaken (3) by conjoining F1 before
+proving UNSAT, though we do not do so.)
+
+(We could produce a single theorem by having a single function that takes all
+relevant input files and checks all of the above and returns all relevant
+formulas for diffing.  The theorem would state that if this process runs
+without error, then F0 is unsatisfiable.  But we don't do this, since we prefer
+to have theorems about (1) through (3) that make it really clear that F0 is
+UNSAT.  Suppose the proofs in (2) and (3) succeed.)
+
+....................
+
+IMPLEMENTATION REQUIREMENTS FOR (1):
+
+Trivially modify the function proved-formula so that it returns not
+only the input formula but also the produced formula, and prove the
+a theorem such as the following.
+
+  (let* ((results (run-checker cnf-file clrat-file
+                               chunk-size debug ctx state))
+         (error? (get-error? results))
+         (input-formula (get-input-formula results))
+         (produced-formula (get-produced-formula results)))
+    (implies (and (not error?)
+                  (satisfiable input-formula))
+             (satisfiable produced-formula)))
+
+....................
+
+IMPLEMENTATION REQUIREMENTS FOR (2):
+
+We write a new function:
+
+verify-for-cube(cnf-file, proof-file, cube-file, chunk-size, debug, state)
+
+Cnf-file contains a formula in the usual format.  Proof-file is in
+clrat format.  Cube-file has a single line:
+
+  a lit_1 lit_2 ... lit_k 0
+
+A very simple function, extend-with-cube, produces the formula to be
+proved UNSAT using proof-file.  That function appends, to the end of
+the formula read from cnf-file, the sequence of unit clauses obtained
+from cube-file:
+
+  {{lit_1}, {lit_2}, ..., {lit_k}}
+
+Verify-for-cube is similar to the existing function, proved-formula,
+in that it returns the formula parsed from the cnf-file.  But
+verify-for-cube also returns the clause obtained by negating the input
+cube, i.e., the clause:
+
+  {-lit_1, -lit_2, ..., -lit_k}
+
+The theorem to prove has essentially the following form.
+
+LET results = verify-for-cube(cnf-file,clrat-file,cube-file,...) IN
+LET error?  = get-error?(results) IN
+LET formula = get-formula(results) IN
+LET clause  = get-clause(results) IN
+  (NOT error?) & (assignment |= formula)
+  ==>
+  evaluate-clause(clause,assignment) = TRUE
+
+A new function, print-clause, will print a clause on a single line
+terminated by 0.  In our specific case where the clause is ~Gi, that
+line will be:
+
+  -lit_1 -lit_2 ..., -lit_k 0
+
+....................
+
+I'll tackle (2) first, then (1).

@@ -1,3 +1,6 @@
+See ../README for information about this project for checking lrat
+proofs.
+
 See ../stobj-based/README for information about running tests.  A few
 small tests are provided here, and are run when the books
 ../stobj-based/test-driver.lisp and ../list-based/test-driver.lisp are

@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems') -- Package
+; SOFT (Second-Order Functions and Theorems) -- Package
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file defines a package for SOFT ('Second-Order Functions and Theorems').
+; This file defines a package for SOFT (Second-Order Functions and Theorems).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

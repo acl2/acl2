@@ -2149,12 +2149,37 @@
 
 (defconst *tau-contradiction* :contradiction)
 
-; Note on contradictionp versus :contradiction: When a tau is being returned we
-; signal contradictions by using the bogus ``tau'' *tau-contradiction*.  But
-; when we're trafficking in other objects, e.g., the property list world, we
-; signal contradictions with the familiar (mv contradictionp ...) convention.
-; We do not ever put *tau-contradiction* into objects containing tau data
-; structures.
+(defconst *contradictory-tau*
+  (change tau *tau-empty*
+          :interval *tau-empty-interval*))
+
+; The above tau is contradictory on its face: it specifies an empty interval,
+; so if (h x) has this tau as its pos-implicants, for example, then (h a)
+; implies 0 < a < 0.  A way to create an h with this property is shown in the
+; example (sent by Grant Passmore) in add-tau-simple-rule below.
+
+; Note on contradictionp versus :contradiction versus the *contradictory-tau*:
+; When a tau is being returned we signal contradictions by using the bogus
+; ``tau'' *tau-contradiction*; we could have chosen to return
+; *contradictory-tau* instead but that would then require testing for EQUAL
+; rather than EQ and we test for *tau-contradiction* quite a lot especially in
+; tau-term and tau-assume, which are used a lot during proofs involving big
+; terms.  So we wanted to make testing fast.  When we're trafficking in other
+; objects, e.g., the property list world, we signal contradictions with the
+; familiar (mv contradictionp ...) convention because the contradiction
+; detected may be deeply buried in the world.  We do not ever put
+; *tau-contradiction* into objects containing tau data structures.  However,
+; when we are trafficking in the property list world (meaning we might have
+; updated various parts of the tau database, including the pos- or
+; neg-implicants of a symbol) we might store the contradictory tau,
+; *contradictory-tau*, in the database, as happens when we build the
+; pos-implicants, for example, of a predicate that is identically nil.  (See
+; the example in add-tau-simple-rule.)
+
+; It would clearly be better to have a single way to denote a contradictory
+; tau, e.g., to allow the symbol :contradiction to be treated like a tau but
+; tested with eq.  But that would require testing for that symbol in the tau
+; accessors which would slow us down.
 
 ; We will be more precise about the database later, but Simple rules are used
 ; to populate the database, storing all the implications of a given
@@ -4515,12 +4540,12 @@
 
 ; Recog is a tau-pair, singleton evg list, or one of the inequality
 ; recognizers, (k . :lessp-x-k) or (k . :lessp-k-x).  Tau is a tau object or
-; *tau-contradiction* and is not obviously contradictory unless it is
-; *tau-contradiction*.  We add sign/recog to tau -- WITHOUT any propagation of
-; implicants.  We clean up the new tau as much as possible, e.g., delete pos-
-; or neg-pairs evaluable under pos-evg changes and delete negative evgs made
-; redundant by pos- or neg-pairs, etc.  We return the modified tau or
-; *tau-contradiction*.
+; *tau-contradiction* or *contradictory-tau* and is not obviously contradictory
+; unless it is one of those two special values.  We add sign/recog to tau --
+; WITHOUT any propagation of implicants.  We clean up the new tau as much as
+; possible, e.g., delete pos- or neg-pairs evaluable under pos-evg changes and
+; delete negative evgs made redundant by pos- or neg-pairs, etc.  We return the
+; modified tau or *tau-contradiction*.
 
 ; Note that adding NATP, for example, to a tau will set the domain of the tau's
 ; interval to INTEGERP and the lower bound to at least 0.  But INTEGERP is not
@@ -4536,7 +4561,8 @@
 
   (let ((discriminator (cdr recog)))
     (cond
-     ((eq tau *tau-contradiction*)
+     ((or (eq tau *tau-contradiction*)
+          (equal tau *contradictory-tau*))
       *tau-contradiction*)
      ((eq discriminator nil)
       (cond
@@ -6770,7 +6796,12 @@
                   (add-to-tau1 q-sign q-recog old-tau ens wrld)))
             (cond
              ((eq new-tau *tau-contradiction*)
-              (mv t nil wrld))
+              (mv t
+                  t
+                  (putprop p-discriminator
+                           (if p-sign 'pos-implicants 'neg-implicants)
+                           *contradictory-tau*
+                           wrld)))
              ((equal old-tau new-tau)
               (mv nil nil wrld))
              (t (mv nil
@@ -7553,18 +7584,34 @@
                   (declare (ignore e criterion))
                   (mv-let (contradictionp changedp wrld)
                           (tau-put* p-sign p-recog q-sign q-recog ens wrld)
-                          (declare (ignore changedp))
-                          (cond
-                           (contradictionp
-                            (er hard 'add-tau-simple-rule
-                                "It was thought impossible for the addition ~
-                                 of a simple subtype tau rule (derived from a ~
-                                 theorem) to yield a contradiction but it has ~
-                                 happened with the rule named ~x0, derived ~
-                                 from ~x1."
-                                rune
-                                (reprettyify hyps concl wrld)))
-                           (t (set-tau-runes nil rune wrld)))))))
+                          (declare (ignore contradictionp changedp))
+
+; Consider the following example (sent June 8, 2017 by Grant Passmore).
+
+;   (defun f (x) (> x 0))
+;   (defun g (x) (< x 0))
+;   (defun h (x) (and (f x) (g x)))
+
+; When ACL2 admits h, it puts us in this case, i.e., where contradictionp is
+; true but it sets the POS-IMPLICANTS of h to the *contradictory-tau* so that
+; subsequent proofs in which (h x) is assumed are fast.  Indeed, we can
+; prove
+
+; (thm (not (h x))
+;      :hints (("Goal" :in-theory '(not (:e tau-system)))))
+
+; with just tau reasoning.  (This wouldn't be the case if we didn't
+; record the contradiction discovered when h was defined.)
+
+; Furthermore, if the user proves a theorem like:
+
+; (defthm h-implies-consp
+;   (implies (h x) (consp x)))
+
+; no work is done to add CONSP (and all its implicants) to those of h, since we
+; recognize that h is contradictory (i.e., already implies everything).
+
+                          (set-tau-runes nil rune wrld)))))
 
 (defun convert-tau-like-terms-to-tau (complete-flg terms ens wrld)
 

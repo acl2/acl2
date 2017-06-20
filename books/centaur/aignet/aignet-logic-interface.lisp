@@ -47,7 +47,7 @@
 
 (local (in-theory (disable true-listp-update-nth
                            acl2::nth-with-large-index)))
-
+(local (std::add-default-post-define-hook :fix))
 
 (define aignet$a::aignet-well-formedp (aignet)
   :enabled t

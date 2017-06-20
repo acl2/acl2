@@ -1,0 +1,3 @@
+(ld "cert.acl2")
+; Necessary, for defining "SORT-BY-CAR" package:
+(include-book "demos/sort-by-car" :dir :system)

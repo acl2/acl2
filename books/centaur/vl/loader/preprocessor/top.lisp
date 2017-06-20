@@ -474,7 +474,7 @@ The goal is for everything we support will be interpreted in the same way by
 Verilog-XL and other tools.</p>")
 
 
-(defaggregate vl-iframe
+(defprod vl-iframe
   :short "@('`ifdef') stack frame objects."
   :tag :vl-iframe
 
@@ -589,11 +589,13 @@ tree.</li>
 
 </ul>")
 
-(deflist vl-istack-p (x)
-  (vl-iframe-p x)
+(fty::deflist vl-istack :elt-type vl-iframe
   :elementp-of-nil nil)
 
-
+(local (defthm true-listp-of-vl-echarlist-fix
+         (equal (true-listp (vl-echarlist-fix x))
+                (true-listp x))
+         :hints(("Goal" :in-theory (enable vl-echarlist-fix)))))
 
 (define vl-process-ifdef
   :short "Handler for @('ifdef'), @('ifndef'), and @('elsif') directives."
@@ -605,20 +607,22 @@ tree.</li>
    (activep   booleanp))
   :returns
   (mv (successp)
-      (new-istack vl-istack-p :hyp (and (force (vl-istack-p istack))
-                                        (force (booleanp activep))))
-      (new-activep booleanp :hyp (and (force (booleanp activep))
-                                      (force (vl-istack-p istack))))
-      (remainder vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
-
+      (new-istack vl-istack-p)
+      (new-activep booleanp)
+      (remainder vl-echarlist-p))
   :long "<p>We assume that we have just read @('`directive') from @('echars').
 We need to read the identifier that should follow this directive, look it up in
 the defines table, and make the appropriate changes to the @('istack') and
 @('activep').</p>"
 
-  (b* (((mv & remainder)      (vl-read-while-whitespace echars))
+  (b* ((istack (vl-istack-fix istack))
+       (activep (mbe :logic (acl2::bool-fix activep) :exec activep))
+       (echars (vl-echarlist-fix echars))
+
+       ((mv & remainder)      (vl-read-while-whitespace echars))
        ((mv name & remainder) (vl-read-identifier remainder))
 
+       
        ((unless name)
         (mv (cw "Preprocessor error (~f0): found an `~s1 without an identifier.~%"
                 (vl-location-string loc) directive)
@@ -684,7 +688,7 @@ the defines table, and make the appropriate changes to the @('istack') and
   (defthm acl2-count-of-vl-process-ifdef-weak
     (<= (acl2-count (mv-nth 3 (vl-process-ifdef loc directive echars
                                                 defines istack activep)))
-        (acl2-count echars))
+        (acl2-count (vl-echarlist-fix echars)))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force)))))
 
@@ -693,7 +697,7 @@ the defines table, and make the appropriate changes to the @('istack') and
                                          defines istack activep))
              (< (acl2-count (mv-nth 3 (vl-process-ifdef loc directive echars
                                                         defines istack activep)))
-                (acl2-count echars)))
+                (acl2-count (vl-echarlist-fix echars))))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force))))))
 
@@ -705,10 +709,11 @@ the defines table, and make the appropriate changes to the @('istack') and
    (activep booleanp))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
-      (new-istack vl-istack-p :hyp (force (vl-istack-p istack)))
-      (new-activep booleanp :rule-classes :type-prescription
-                   :hyp (booleanp activep)))
-  (b* (((when (atom istack))
+      (new-istack vl-istack-p)
+      (new-activep booleanp :rule-classes :type-prescription))
+  (b* ((istack (vl-istack-fix istack))
+       (activep (mbe :logic (acl2::bool-fix activep) :exec activep))
+       ((when (atom istack))
         (mv (cw "Preprocessor error (~f0): found an `else, but no ~
                   ifdef/ifndef is open.~%"
                 (vl-location-string loc))
@@ -737,11 +742,11 @@ the defines table, and make the appropriate changes to the @('istack') and
    (activep booleanp))
   :returns
   (mv (successp   booleanp :rule-classes :type-prescription)
-      (new-istack vl-istack-p
-                  :hyp (force (vl-istack-p istack)))
-      (new-activep booleanp :rule-classes :type-prescription
-                   :hyp (booleanp activep)))
-  (b* (((when (atom istack))
+      (new-istack vl-istack-p)
+      (new-activep booleanp :rule-classes :type-prescription))
+  (b* ((istack (vl-istack-fix istack))
+       (activep (mbe :logic (acl2::bool-fix activep) :exec activep))
+       ((when (atom istack))
         (mv (cw "Preprocessor error (~f0): found an `endif, but no ifdef/ifndef ~
                  is open.~%"
                 (vl-location-string loc))
@@ -756,8 +761,8 @@ the defines table, and make the appropriate changes to the @('istack') and
    (config vl-loadconfig-p))
   :returns
   (mv (successp  booleanp       :rule-classes :type-prescription)
-      (prefix    vl-echarlist-p :hyp (force (vl-echarlist-p echars)))
-      (remainder vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
+      (prefix    vl-echarlist-p)
+      (remainder vl-echarlist-p))
   :long "<p>This is really tricky!  See @(see preprocessor-ifdef-minutia).</p>
 
 <p>The initial @('echars') are everything past the macro name, e.g., for:</p>
@@ -781,7 +786,11 @@ like</p>
 basically just read the whole line, then split it up into any arguments versus
 non-arguments pieces.</p>"
 
-  (b* (((when (atom echars))
+  :measure (acl2-count (vl-echarlist-fix echars))
+  :prepwork ((local (in-theory (disable (tau-system)))))
+
+  (b* ((echars (vl-echarlist-fix echars))
+       ((when (atom echars))
         ;; We allow macros to be defined on the last line of the file;
         ;; "implicitly inserting a newline" for them.
         (mv t nil echars))
@@ -1063,14 +1072,18 @@ non-arguments pieces.</p>"
         (mv nil nil echars)))
     (mv t (cons (car echars) text) remainder))
   ///
-  (defthm true-listp-of-vl-read-until-end-of-define-prefix
-    (true-listp (mv-nth 1 (vl-read-until-end-of-define echars config)))
-    :rule-classes :type-prescription)
-
+  (local (defthm cdr-of-vl-echarlist-fix
+           (equal (cdr (vl-echarlist-fix x))
+                  (vl-echarlist-fix (cdr x)))
+           :hints(("Goal" :in-theory (enable vl-echarlist-fix)))))
   (local (defthm true-listp-cdr-when-consp
            (implies (consp x)
                     (equal (true-listp (cdr x))
                            (True-listp x)))))
+
+  (defthm true-listp-of-vl-read-until-end-of-define-prefix
+    (true-listp (mv-nth 1 (vl-read-until-end-of-define echars config)))
+    :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-read-until-end-of-define-remainder
     (equal (true-listp (mv-nth 2 (vl-read-until-end-of-define echars config)))
@@ -1079,16 +1092,38 @@ non-arguments pieces.</p>"
 
   (defthm acl2-count-of-vl-read-until-end-of-define-weak
     (<= (acl2-count (mv-nth 2 (vl-read-until-end-of-define echars config)))
-        (acl2-count echars))
+        (acl2-count (vl-echarlist-fix echars)))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (disable (force)))))
+    :hints(("Goal" :in-theory (disable (force) (:d vl-read-until-end-of-define))
+            :induct (vl-read-until-end-of-define echars config)
+            :Expand ((vl-read-until-end-of-define echars config)))))
 
   (defthm acl2-count-of-vl-read-until-end-of-define-strong
     (implies (mv-nth 1 (vl-read-until-end-of-define echars config))
              (< (acl2-count (mv-nth 2 (vl-read-until-end-of-define echars config)))
-                (acl2-count echars)))
+                (acl2-count (vl-echarlist-fix echars))))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (disable (force))))))
+    :hints(("Goal" :in-theory (disable (force) (:d vl-read-until-end-of-define))
+            :induct (vl-read-until-end-of-define echars config)
+            :Expand ((vl-read-until-end-of-define echars config))))))
+
+(define vl-parse-define-formal-empty-default ((text vl-echarlist-p
+                                                    "text after the formal identifier"))
+  :returns (remainder vl-echarlist-p)
+  (b* ((text (vl-echarlist-fix text))
+       ((mv ?ws text) (vl-read-while-whitespace text))
+       ((when (and (consp text)
+                   (eql (vl-echar->char (car text)) #\=)))
+        (b* (((mv ?ws text) (vl-read-while-whitespace (cdr text))))
+          text)))
+    text)
+  ///
+  (defret acl2-count-of-vl-parse-define-formal-empty-default
+    (<= (acl2-count remainder)
+        (acl2-count (vl-echarlist-fix text)))
+    :rule-classes (:rewrite :linear)))
+                                              
+                                              
 
 
 (define vl-parse-define-formal-arguments
@@ -1101,9 +1136,10 @@ non-arguments pieces.</p>"
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (formals  vl-define-formallist-p)
-      (body     vl-echarlist-p "Remaining characters after the closing paren."
-                :hyp (force (vl-echarlist-p text))))
-  (b* (((when (atom text))
+      (body     vl-echarlist-p "Remaining characters after the closing paren."))
+  :measure (acl2-count (vl-echarlist-fix text))
+  (b* ((text (vl-echarlist-fix text))
+       ((when (atom text))
         (mv (cw "Preprocessor error (~f0): `define arguments are not closed.~%"
                 (vl-location-string starting-loc))
             nil nil))
@@ -1124,7 +1160,7 @@ non-arguments pieces.</p>"
        ;;          name1)
        ;;      nil nil))
 
-       ((mv ?ws rest) (vl-read-while-whitespace rest))
+       (rest (vl-parse-define-formal-empty-default rest))
        ;; BOZO implement support for equal signs, default values... but that is
        ;; going to be nasty, complex rules about what's allowed.  For now just
        ;; skip it.
@@ -1164,9 +1200,9 @@ non-arguments pieces.</p>"
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (formals  vl-define-formallist-p)
-      (body     vl-echarlist-p "Remaining characters after any macro arguments."
-                :hyp (force (vl-echarlist-p text))))
-  (b* (((unless (and (consp text)
+      (body     vl-echarlist-p "Remaining characters after any macro arguments."))
+  (b* ((text (vl-echarlist-fix text))
+       ((unless (and (consp text)
                      (eql (vl-echar->char (car text)) #\()))
         ;; SystemVerilog-2012: Page 640: "If formal arguments are used [...]
         ;; the left parenthesis shall follow the text macro name immediately,
@@ -1188,7 +1224,7 @@ non-arguments pieces.</p>"
   :returns
   (mv (successp)
       (new-defines vl-defines-p)
-      (remainder   vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
+      (remainder   vl-echarlist-p))
 
   :long "<p>We assume that @('`define') has just been read and @('echars') is
 the text which comes right after the @('`define') directive.  We read the name
@@ -1196,6 +1232,7 @@ and text for this new macro definition, and update the defines table
 appropriately if @('activep') is set.</p>"
 
   (b* ((defines (vl-defines-fix defines))
+       (echars (vl-echarlist-fix echars))
        ((mv & remainder)      (vl-read-while-whitespace echars))
        ((mv name & remainder) (vl-read-identifier remainder))
 
@@ -1273,14 +1310,14 @@ appropriately if @('activep') is set.</p>"
 
   (defthm acl2-count-of-vl-process-define
     (<= (acl2-count (mv-nth 2 (vl-process-define loc echars defines activep config)))
-        (acl2-count echars))
+        (acl2-count (vl-echarlist-fix echars)))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm acl2-count-of-vl-process-define-strong
     (implies (mv-nth 0 (vl-process-define loc echars defines activep config))
              (< (acl2-count (mv-nth 2 (vl-process-define loc echars defines activep config)))
-                (acl2-count echars)))
+                (acl2-count (vl-echarlist-fix echars))))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force))))))
 
@@ -1364,9 +1401,10 @@ there may well be mismatches left.</p>"
   (mv (successp  booleanp :rule-classes :type-prescription "Was there any error?")
       (morep     booleanp :rule-classes :type-prescription "Is this the last actual?")
       (actual    stringp  :rule-classes :type-prescription "Contents of the actual as a string.")
-      (remainder vl-echarlist-p "Remaining characters past the comma/closing paren."
-                 :hyp (force (vl-echarlist-p echars))))
-  (b* (((when (atom echars))
+      (remainder vl-echarlist-p "Remaining characters past the comma/closing paren."))
+  :measure (acl2-count (vl-echarlist-fix echars))
+  (b* ((echars (vl-echarlist-fix echars))
+       ((when (atom echars))
         ;; Error because we expect to eventually find a closing paren.
         (mv (cw "Preprocessor error (~f0): unexpected end of input while processing ~
                  arguments to `~s1." (vl-location-string loc) name)
@@ -1476,7 +1514,7 @@ there may well be mismatches left.</p>"
           (vl-parse-define-actual name echars config loc stk acc)))
       (implies successp
                (< (acl2-count remainder)
-                  (acl2-count echars))))
+                  (acl2-count (vl-echarlist-fix echars)))))
     :rule-classes ((:rewrite) (:linear))))
 
 
@@ -1492,13 +1530,13 @@ there may well be mismatches left.</p>"
       (actuals   string-listp)
       (remainder vl-echarlist-p
                  "Remainder of the input stream after eating all the actuals and also
-                  the closing paren."
-                 :hyp (force (vl-echarlist-p echars))))
+                  the closing paren."))
+  :measure (acl2-count (vl-echarlist-fix echars))
   (b* (((mv successp morep actual1 echars)
         (vl-parse-define-actual name echars config loc nil nil))
        ((unless successp)
         ;; Already printed an error message.
-        (mv nil nil echars))
+        (mv nil nil (vl-echarlist-fix echars)))
        ((unless morep)
         ;; That was the last formal.  We already ate the closing paren.
         (mv t (list actual1) echars))
@@ -1604,17 +1642,18 @@ there may well be mismatches left.</p>"
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (acc      vl-echarlist-p
-                "Accumulated characters, still in reverse order."
-                :hyp (and (force (vl-echarlist-p body))
-                          (force (vl-echarlist-p acc)))))
+                "Accumulated characters, still in reverse order."))
 
   :long "<p>This is very underspecified.  We need to minimally skip over things
 like string literals.  We can at least assume that the @('body') was accepted
 by @(see vl-read-until-end-of-define).  We try to do something reasonably
 sensible.</p>"
 
+  :measure (acl2-count (vl-echarlist-fix body))
   ;; Styled after vl-read-until-end-of-define.
-  (b* (((when (atom body))
+  (b* ((body (vl-echarlist-fix body))
+       (acc (vl-echarlist-fix acc))
+       ((when (atom body))
         (mv t acc))
        (char1 (vl-echar->char (first body)))
 
@@ -1825,8 +1864,7 @@ sensible.</p>"
   (mv (successp booleanp :rule-classes :type-prescription)
       (new-echars vl-echarlist-p
                   "On success, the updated characters with the macro invocation replaced by
-                   its expansion."
-                  :hyp (force (vl-echarlist-p echars))))
+                   its expansion."))
 
   :long "<p>Note that variables in `define are lazy, e.g., if you do:</p>
 
@@ -1851,7 +1889,8 @@ point at the grave character for the macro usage.  That is, if @('`foo') occurs
 on line 37 from characters 5 through 8, then we'll make every character of
 foo's expansion occur at 37:5.</p>"
 
-  (b* ((lookup (vl-find-define name defines))
+  (b* ((echars (vl-echarlist-fix echars))
+       (lookup (vl-find-define name defines))
        ((unless lookup)
         (mv (cw "Preprocessor error (~f0): `~s1 is not defined.~%"
                 (vl-location-string loc) name)
@@ -1938,13 +1977,14 @@ foo's expansion occur at 37:5.</p>"
   :returns
   (mv (successp)
       (new-defines vl-defines-p)
-      (remainder   vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
+      (remainder   vl-echarlist-p))
 
   :long "<p>We assume that an @('`undef') has just been read and @('echars') is
 the text which follows it.  We try to read the name we are to undefine, then
 update the defines table appropriately.</p>"
 
   (b* ((defines (vl-defines-fix defines))
+       (echars (vl-echarlist-fix echars))
        ((mv & remainder)      (vl-read-while-whitespace echars))
        ((mv name & remainder) (vl-read-identifier remainder))
 
@@ -1982,14 +2022,14 @@ update the defines table appropriately.</p>"
 
   (defthm acl2-count-of-vl-process-undef
     (<= (acl2-count (mv-nth 2 (vl-process-undef loc echars defines activep)))
-        (acl2-count echars))
+        (acl2-count (vl-echarlist-fix echars)))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm acl2-count-of-vl-process-undef-strong
     (implies (mv-nth 0 (vl-process-undef loc echars defines activep))
              (< (acl2-count (mv-nth 2 (vl-process-undef loc echars defines activep)))
-                (acl2-count echars)))
+                (acl2-count (vl-echarlist-fix echars))))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (disable (force))))))
 
@@ -2105,69 +2145,145 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                     (list #\"))
                    (list #\"))))
 
-(define vl-preprocess-loop
-  :short "Main loop for the preprocessor."
-  :long "<p>We accumulate the transformed characters that are to be given to
-  the lexer into acc, in reverse order.</p>"
-  ((echars  vl-echarlist-p)
-   (defines vl-defines-p)
-   (filemap vl-filemap-p)
-   (istack  vl-istack-p)
-   (activep booleanp)
-   (acc)
-   (n natp)
-   (config vl-loadconfig-p)
-   (state))
-  :returns (mv (successp)
-               (defines)
-               (filemap)
-               (acc)
-               (remainder)
-               (state))
-  :measure (two-nats-measure n (acl2-count echars))
-  :verify-guards nil
-  :hints(("Goal" :in-theory (disable (force))))
 
-  (b* (((when (atom echars))
-        (mv t defines filemap acc echars state))
+(defines vl-preprocess-loop
+  :prepwork ((set-state-ok t)
+             ;; (local (include-book "centaur/vl/util/default-hints" :dir :system))
+             (std::set-returnspec-mrec-default-hints
+              ((acl2::just-expand-mrec-default-hint 'std::fnname id nil world)))
+             (local (in-theory (disable not (tau-system)
+                                        vl-defines-p-when-subsetp-equal
+                                        vl-istack-p-when-subsetp-equal
+                                        vl-filemap-p-when-subsetp-equal
+                                        vl-defines-p-when-not-consp
+                                        vl-istack-p-when-not-consp
+                                        vl-filemap-p-when-not-consp
+                                        no-change-loser-of-vl-read-while-whitespace
+                                        acl2::rev-when-not-consp
+                                        vl-echarlist-p-when-not-consp
+                                        acl2::lower-bound-of-len-when-sublistp
+                                        acl2::len-when-atom
+                                        acl2::nthcdr-with-large-index))))
+  (define vl-preprocess-include-file ((fname stringp)
+                                      (loc vl-location-p)
+                                      (remainder vl-echarlist-p)
+                                      (defines vl-defines-p)
+                                      (filemap vl-filemap-p)
+                                      (istack  vl-istack-p)
+                                      (activep booleanp)
+                                      (acc vl-echarlist-p)
+                                      (n natp)
+                                      (config vl-loadconfig-p)
+                                      (state))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-defines vl-defines-p)
+                 (new-filemap vl-filemap-p)
+                 (new-acc vl-echarlist-p)
+                 (remainder vl-echarlist-p)
+                 (new-istack vl-istack-p)
+                 (new-activep booleanp)
+                 (new-state state-p1 :hyp (force (state-p1 state))))
+    :measure (two-nats-measure n 0)
+    (b* ((defines (vl-defines-fix defines))
+         (filemap (vl-filemap-fix filemap))
+         (acc (vl-echarlist-fix acc))
+         (istack (vl-istack-fix istack))
+         (remainder (vl-echarlist-fix remainder))
+         (activep (mbe :logic (acl2::bool-fix activep) :exec activep))
 
-       (echar1 (car echars))
-       (char1  (vl-echar->char echar1))
-       ((when (zp n))
-        (mv (cw "Preprocessor error (~f0): ran out of steps. Macro expansion ~
+         ((mv okp contents state)
+          (time$ (vl-read-file (string-fix fname))
+                 :msg "; ~f0: read: ~st sec, ~sa bytes~%"
+                 :args (list fname)
+                 :mintime (vl-loadconfig->mintime config)))
+         (contents (vl-echarlist-fix contents))
+         ((unless okp)
+          (mv (cw "Preprocessor error (~f0): unable to read ~s1."
+                  (vl-location-string loc) fname)
+              defines filemap acc remainder istack activep state))
+         
+         (filemap (if (vl-loadconfig->filemapp config)
+                      (cons (cons (string-fix fname)
+                                  (vl-echarlist->string contents))
+                            filemap)
+                    filemap))
+         ((when (zp n))
+          (mv (cw "Preprocessor error (~f0): ran out of steps. Macro expansion ~
                  or file inclusion loop?")
-            defines filemap acc echars state))
+              defines filemap acc remainder istack activep state)))
+      (vl-preprocess-loop contents defines filemap istack activep acc (- n 1) config state)))
+  (define vl-preprocess-loop
+    :short "Main loop for the preprocessor."
+    :long "<p>We accumulate the transformed characters that are to be given to
+  the lexer into acc, in reverse order.</p>"
+    ((echars  vl-echarlist-p)
+     (defines vl-defines-p)
+     (filemap vl-filemap-p)
+     (istack  vl-istack-p)
+     (activep booleanp)
+     (acc vl-echarlist-p)
+     (n natp)
+     (config vl-loadconfig-p)
+     (state))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-defines vl-defines-p)
+                 (new-filemap vl-filemap-p)
+                 (new-acc vl-echarlist-p)
+                 (remainder vl-echarlist-p)
+                 (new-istack vl-istack-p)
+                 (new-activep booleanp)
+                 (new-state state-p1 :hyp (force (state-p1 state))))
+    :measure (two-nats-measure n (acl2-count (vl-echarlist-fix echars)))
+    :verify-guards nil
+    :hints(("Goal" :in-theory (disable (force))))
+
+    (b* ((defines (vl-defines-fix defines))
+         (filemap (vl-filemap-fix filemap))
+         (acc (vl-echarlist-fix acc))
+         (istack (vl-istack-fix istack))
+         (activep (mbe :logic (acl2::bool-fix activep) :exec activep))
+         (echars (vl-echarlist-fix echars))
+
+         ((when (atom echars))
+          (mv t defines filemap acc echars istack activep state))
+
+         (echar1 (car echars))
+         (char1  (vl-echar->char echar1))
+         ((when (zp n))
+          (mv (cw "Preprocessor error (~f0): ran out of steps. Macro expansion ~
+                 or file inclusion loop?")
+              defines filemap acc echars istack activep state))
 
 ; Preliminaries.  We need to be sure to treat strings, escaped identifiers, and
 ; comments atomically.  For instance, we don't want to look at a string like
 ; "looks like an `endif to me" and think that we have just read an `endif.
 
-       ((when (eql char1 #\"))
-        ;; Start of a string literal
-        (b* (((mv string prefix remainder)
-              (vl-read-string echars (vl-lexstate-init config)))
-             ((unless string)
-              ;; it already printed a warning, so we don't use cw.
-              (mv nil defines filemap acc echars state)))
-          (vl-preprocess-loop remainder defines filemap istack activep
-                              (if activep (revappend prefix acc) acc)
-                              n config state)))
+         ((when (eql char1 #\"))
+          ;; Start of a string literal
+          (b* (((mv string prefix remainder)
+                (vl-read-string echars (vl-lexstate-init config)))
+               ((unless string)
+                ;; it already printed a warning, so we don't use cw.
+                (mv nil defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder defines filemap istack activep
+                                (if activep (revappend prefix acc) acc)
+                                n config state)))
 
-       ((when (eql char1 #\\))
-        ;; Start of an escaped identifier
-        (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars))
-             ((unless name)
-              (mv (cw "Preprocessor error (~f0): stray backslash?~%"
-                      (vl-location-string (vl-echar->loc echar1)))
-                  defines filemap acc echars state)))
-          (vl-preprocess-loop remainder defines filemap istack activep
-                              (if activep (revappend prefix acc) acc)
-                              n config state)))
+         ((when (eql char1 #\\))
+          ;; Start of an escaped identifier
+          (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars))
+               ((unless name)
+                (mv (cw "Preprocessor error (~f0): stray backslash?~%"
+                        (vl-location-string (vl-echar->loc echar1)))
+                    defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder defines filemap istack activep
+                                (if activep (revappend prefix acc) acc)
+                                n config state)))
 
-       ((when (and (eql char1 #\/)
-                   (consp (cdr echars))
-                   (eql (vl-echar->char (second echars)) #\/)))
-        ;; Start of a one-line comment
+         ((when (and (eql char1 #\/)
+                     (consp (cdr echars))
+                     (eql (vl-echar->char (second echars)) #\/)))
+          ;; Start of a one-line comment
 
 ; SPECIAL VL EXTENSION.
 ;
@@ -2194,366 +2310,361 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 ;
 ; respectively.
 
-        (if (vl-matches-string-p "@VL" (cddr echars))
-            (b* (((mv atts-text remainder)
-                  ;; Figure out how much text we want to read for the attributes...
-                  (b* (((mv & prefix remainder)
-                        (vl-read-until-literal *nls* (rest-n 5 echars)))
-                       ((mv comment1p pre-comment1 post-comment1)
-                        (vl-read-until-literal "//" prefix))
-                       ((mv comment2p pre-comment2 post-comment2)
-                        (vl-read-until-literal "/*" prefix)))
-                    (cond ((and comment1p comment2p)
-                           (if (< (len pre-comment1) (len pre-comment2))
-                               (mv pre-comment1 (append post-comment1 remainder))
-                             (mv pre-comment2 (append post-comment2 remainder))))
-                          (comment1p
-                           (mv pre-comment1 (append post-comment1 remainder)))
-                          (comment2p
-                           (mv pre-comment2 (append post-comment2 remainder)))
-                          (t
-                           (mv prefix remainder)))))
-                 (atts (append (vl-echarlist-from-str "(*")
-                               atts-text
-                               (vl-echarlist-from-str "*)"))))
-              ;; We leave the atts in the preprocessor's input stream so
-              ;; that, e.g., defines can still get expanded in them.
-              (vl-preprocess-loop (append atts remainder)
-                                  defines filemap istack activep
-                                  acc (- n 1) config state))
+          (if (vl-matches-string-p "@VL" (cddr echars))
+              (b* (((mv atts-text remainder)
+                    ;; Figure out how much text we want to read for the attributes...
+                    (b* (((mv & prefix remainder)
+                          (vl-read-until-literal *nls* (rest-n 5 echars)))
+                         ((mv comment1p pre-comment1 post-comment1)
+                          (vl-read-until-literal "//" prefix))
+                         ((mv comment2p pre-comment2 post-comment2)
+                          (vl-read-until-literal "/*" prefix)))
+                      (cond ((and comment1p comment2p)
+                             (if (< (len pre-comment1) (len pre-comment2))
+                                 (mv pre-comment1 (append post-comment1 remainder))
+                               (mv pre-comment2 (append post-comment2 remainder))))
+                            (comment1p
+                             (mv pre-comment1 (append post-comment1 remainder)))
+                            (comment2p
+                             (mv pre-comment2 (append post-comment2 remainder)))
+                            (t
+                             (mv prefix remainder)))))
+                   (atts (append (vl-echarlist-from-str "(*")
+                                 atts-text
+                                 (vl-echarlist-from-str "*)"))))
+                ;; We leave the atts in the preprocessor's input stream so
+                ;; that, e.g., defines can still get expanded in them.
 
-          ;; Else, not a //@VL comment
-          (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (cddr echars)))
-               ((when (vl-matches-string-p "+VL" prefix))
-                ;; The // part is already gone, strip off the +VL part and
-                ;; leave it in the preprocessor's input stream, as above.
-                (vl-preprocess-loop (append (rest-n 3 prefix) remainder)
+                ;; BOZO Maybe make this a mutually-recursive call to read the
+                ;; atts rather than appending them.
+                (vl-preprocess-loop (append atts remainder)
                                     defines filemap istack activep
                                     acc (- n 1) config state))
-               ;; Else, regular comment instead of //+VL or //@VL comment, so
-               ;; put the slashes back and don't try to preprocess it any more.
-               (prefix (list* (first echars) (second echars) prefix)))
-            (vl-preprocess-loop remainder defines filemap istack activep
-                                (if activep (revappend prefix acc) acc)
-                                n config state))))
 
-       ((when (and (eql char1 #\/)
-                   (consp (cdr echars))
-                   (eql (vl-echar->char (second echars)) #\*)))
-        ;; Start of a block comment.
+            ;; Else, not a //@VL comment
+            (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (cddr echars)))
+                 ((when (vl-matches-string-p "+VL" prefix))
+                  ;; The // part is already gone, strip off the +VL part and
+                  ;; leave it in the preprocessor's input stream, as above.
+                  (vl-preprocess-loop (append (rest-n 3 prefix) remainder)
+                                      defines filemap istack activep
+                                      acc (- n 1) config state))
+                 ;; Else, regular comment instead of //+VL or //@VL comment, so
+                 ;; put the slashes back and don't try to preprocess it any more.
+                 (prefix (list* (first echars) (second echars) prefix)))
+              (vl-preprocess-loop remainder defines filemap istack activep
+                                  (if activep (revappend prefix acc) acc)
+                                  n config state))))
+
+         ((when (and (eql char1 #\/)
+                     (consp (cdr echars))
+                     (eql (vl-echar->char (second echars)) #\*)))
+          ;; Start of a block comment.
 
 ; SPECIAL VL EXTENSION.  We do the same thing for /*+VL...*/, converting it into
 ; "..." here during preprocessing, and for /*@VL...*/, converting it into (*...*)
 ; We don't do anything special to support comments within the /*@VL ... */ form,
 ; since this is mainly intended for inline things
 
-        (b* (((mv successp prefix remainder)
-              (vl-read-through-literal "*/" (cddr echars)))
-             ((unless successp)
-              (mv (cw "Preprocessor error (~f0): block comment is never closed.~%"
-                      (vl-location-string (vl-echar->loc echar1)))
-                  defines filemap acc echars state))
+          (b* (((mv successp prefix remainder)
+                (vl-read-through-literal "*/" (cddr echars)))
+               ((unless successp)
+                (mv (cw "Preprocessor error (~f0): block comment is never closed.~%"
+                        (vl-location-string (vl-echar->loc echar1)))
+                    defines filemap acc echars istack activep state))
 
-             ((when (vl-matches-string-p "+VL" prefix))
-              ;; The /* part is already gone.  Strip off "+VL" and "*/", and put the
-              ;; comment's body into the input stream, as for //+VL above.
-              (b* ((body (butlast (rest-n 3 prefix) 2)))
-                (vl-preprocess-loop (append body remainder)
-                                    defines filemap istack activep
-                                    acc (- n 1) config state)))
+               ((when (vl-matches-string-p "+VL" prefix))
+                ;; The /* part is already gone.  Strip off "+VL" and "*/", and put the
+                ;; comment's body into the input stream, as for //+VL above.
+                (b* ((body (butlast (rest-n 3 prefix) 2)))
+                  (vl-preprocess-loop (append body remainder)
+                                      defines filemap istack activep
+                                      acc (- n 1) config state)))
 
-             ((when (vl-matches-string-p "@VL" prefix))
-              ;; The /* part is gone.  Strip off "@VL" and "*/"; add "(*" and "*)",
-              ;; and put the body into the input stream, as for //@VL above.
-              (b* ((body (append (vl-echarlist-from-str "(*")
-                                 (butlast (rest-n 3 prefix) 2)
-                                 (vl-echarlist-from-str "*)"))))
-                (vl-preprocess-loop (append body remainder)
-                                    defines filemap istack activep
-                                    acc (- n 1) config state)))
+               ((when (vl-matches-string-p "@VL" prefix))
+                ;; The /* part is gone.  Strip off "@VL" and "*/"; add "(*" and "*)",
+                ;; and put the body into the input stream, as for //@VL above.
+                (b* ((body (append (vl-echarlist-from-str "(*")
+                                   (butlast (rest-n 3 prefix) 2)
+                                   (vl-echarlist-from-str "*)"))))
+                  (vl-preprocess-loop (append body remainder)
+                                      defines filemap istack activep
+                                      acc (- n 1) config state)))
 
-             ;; Else, not a +VL or @VL comment, so put the /* back, and put
-             ;; the prefix into the acc becuase we're done preprocessing this
-             ;; comment.
-             (prefix (list* (first echars) (second echars) prefix)))
-          (vl-preprocess-loop remainder defines filemap istack activep
-                              (if activep (revappend prefix acc) acc)
-                              n config state)))
+               ;; Else, not a +VL or @VL comment, so put the /* back, and put
+               ;; the prefix into the acc becuase we're done preprocessing this
+               ;; comment.
+               (prefix (list* (first echars) (second echars) prefix)))
+            (vl-preprocess-loop remainder defines filemap istack activep
+                                (if activep (revappend prefix acc) acc)
+                                n config state)))
 
 
-       ((when (not (eql char1 #\`)))
-        ;; Any regular character.  Accumulate or discard, per activep.
-        (vl-preprocess-loop (cdr echars) defines filemap istack activep
-                            (if activep (cons (car echars) acc) acc)
-                            n config state))
+         ((when (not (eql char1 #\`)))
+          ;; Any regular character.  Accumulate or discard, per activep.
+          (vl-preprocess-loop (cdr echars) defines filemap istack activep
+                              (if activep (cons (car echars) acc) acc)
+                              n config state))
 
 ; Otherwise we just found a legitimate grave character which isn't inside a
 ; string literal or comment or anything.  We need to handle some compiler
 ; directive.
 
-       ((mv & remainder)
-        (vl-read-while-whitespace (cdr echars)))
+         ((mv & remainder)
+          (vl-read-while-whitespace (cdr echars)))
 
-       ((mv directive prefix remainder)
-        (vl-read-identifier remainder))
+         ((mv directive prefix remainder)
+          (vl-read-identifier remainder))
 
-       ((when (not directive))
-        (mv (cw "Preprocessor error (~f0): stray ` character.~%"
-                (vl-location-string (vl-echar->loc echar1)))
-            defines filemap acc echars state))
+         ((when (not directive))
+          (mv (cw "Preprocessor error (~f0): stray ` character.~%"
+                  (vl-location-string (vl-echar->loc echar1)))
+              defines filemap acc echars istack activep state))
 
-       ((when (not (vl-is-compiler-directive-p directive)))
+         ((when (not (vl-is-compiler-directive-p directive)))
 
 ; A macro usage like `foo.  The defines table stores the macro text in order,
 ; so we can essentially revappend it into the accumulator.
 
-        (b* (((unless activep)
-              ;; Subtle.  Never try to expand macros in inactive sections,
-              ;; because it is legitimate for them to be undefined.
-              (vl-preprocess-loop remainder defines filemap istack activep
-                                  acc n config state))
-             ((mv successp expansion)
-              (vl-expand-define directive defines remainder config (vl-echar->loc echar1)))
-             ((unless successp)
-              ;; Already printed an error message.
-              (mv nil defines filemap acc expansion state)))
+          (b* (((unless activep)
+                ;; Subtle.  Never try to expand macros in inactive sections,
+                ;; because it is legitimate for them to be undefined.
+                (vl-preprocess-loop remainder defines filemap istack activep
+                                    acc n config state))
+               ((mv successp expansion)
+                (vl-expand-define directive defines remainder config (vl-echar->loc echar1)))
+               ((unless successp)
+                ;; Already printed an error message.
+                (mv nil defines filemap acc expansion istack activep state)))
 
-          (vl-preprocess-loop expansion
-                              defines filemap istack activep
-                              acc
-                              (- (lnfix n) 1)
-                              config state)))
+            (vl-preprocess-loop expansion
+                                defines filemap istack activep
+                                acc
+                                (- (lnfix n) 1)
+                                config state)))
 
-       ((when (eql (vl-echar->char (car prefix)) #\\))
-        ;; We explicitly disallow `\define, `\ifdef, etc.
-        (mv (cw "Preprocessor error (~f0): we do not allow the use of \~s1.~%"
-                (vl-location-string (vl-echar->loc echar1)) directive)
-            defines filemap acc echars state))
+         ((when (eql (vl-echar->char (car prefix)) #\\))
+          ;; We explicitly disallow `\define, `\ifdef, etc.
+          (mv (cw "Preprocessor error (~f0): we do not allow the use of \~s1.~%"
+                  (vl-location-string (vl-echar->loc echar1)) directive)
+              defines filemap acc echars istack activep state))
 
-       ((when (or (equal directive "define")
-                  (equal directive "centaur_define")))
-        ;; CENTAUR EXTENSION: we also support centaur_define
-        (b* (((mv successp new-defines remainder)
-              (vl-process-define (vl-echar->loc echar1) remainder defines activep config))
-             ((unless successp)
-              (mv nil defines filemap acc echars state)))
-          (vl-preprocess-loop remainder new-defines filemap istack activep
-                              acc n config state)))
+         ((when (or (equal directive "define")
+                    (equal directive "centaur_define")))
+          ;; CENTAUR EXTENSION: we also support centaur_define
+          (b* (((mv successp new-defines remainder)
+                (vl-process-define (vl-echar->loc echar1) remainder defines activep config))
+               ((unless successp)
+                (mv nil defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder new-defines filemap istack activep
+                                acc n config state)))
 
-       ((when (equal directive "undef"))
-        (b* (((mv successp new-defines remainder)
-              (vl-process-undef (vl-echar->loc echar1) remainder defines activep))
-             ((unless successp)
-              (mv nil defines filemap acc echars state)))
-          (vl-preprocess-loop remainder new-defines filemap istack activep
-                              acc n config state)))
+         ((when (equal directive "undef"))
+          (b* (((mv successp new-defines remainder)
+                (vl-process-undef (vl-echar->loc echar1) remainder defines activep))
+               ((unless successp)
+                (mv nil defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder new-defines filemap istack activep
+                                acc n config state)))
 
-       ((when (or (equal directive "ifdef")
-                  (equal directive "ifndef")
-                  (equal directive "elsif")))
-        (b* (((mv successp new-istack new-activep remainder)
-              (vl-process-ifdef (vl-echar->loc echar1) directive remainder defines istack activep))
-             ((unless successp)
-              (mv nil defines filemap acc echars state)))
-          (vl-preprocess-loop remainder defines filemap new-istack new-activep
-                              acc n config state)))
+         ((when (or (equal directive "ifdef")
+                    (equal directive "ifndef")
+                    (equal directive "elsif")))
+          (b* (((mv successp new-istack new-activep remainder)
+                (vl-process-ifdef (vl-echar->loc echar1) directive remainder defines istack activep))
+               ((unless successp)
+                (mv nil defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder defines filemap new-istack new-activep
+                                acc n config state)))
 
-       ((when (equal directive "else"))
-        (b* (((mv successp new-istack new-activep)
-              (vl-process-else (vl-echar->loc echar1) istack activep))
-             ((unless successp)
-              (mv nil defines filemap acc echars state)))
-          (vl-preprocess-loop remainder defines filemap new-istack new-activep
-                              acc n config state)))
+         ((when (equal directive "else"))
+          (b* (((mv successp new-istack new-activep)
+                (vl-process-else (vl-echar->loc echar1) istack activep))
+               ((unless successp)
+                (mv nil defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder defines filemap new-istack new-activep
+                                acc n config state)))
 
-       ((when (equal directive "endif"))
-        (b* (((mv successp new-istack new-activep)
-              (vl-process-endif (vl-echar->loc echar1) istack activep))
-             ((unless successp)
-              (mv nil defines filemap acc echars state)))
-          (vl-preprocess-loop remainder defines filemap new-istack new-activep
-                              acc n config state)))
+         ((when (equal directive "endif"))
+          (b* (((mv successp new-istack new-activep)
+                (vl-process-endif (vl-echar->loc echar1) istack activep))
+               ((unless successp)
+                (mv nil defines filemap acc echars istack activep state)))
+            (vl-preprocess-loop remainder defines filemap new-istack new-activep
+                                acc n config state)))
 
-       ((when (equal directive "include"))
-        (b* (((unless activep)
-              ;; Don't even do anything, we'll read the string literal next
-              ;; and ignore it since we're not in an active section.  This
-              ;; seems to be the right behavior: both NCVerilog and
-              ;; Verilog-XL allow things like
-              ;;
-              ;;   `ifdef not_defined
-              ;;     `include 5
-              ;;   `endif
-              ;;
-              ;; but they complain if you do something like
-              ;;
-              ;;   `ifdef not_defined
-              ;;     `include "foo
-              ;;   `endif
-              ;;
-              ;; where the string literal isn't closed.  So, the behavior
-              ;; seems to just be, ignore the include token and continue
-              ;; ignoring whatever comes after it.
-              (vl-preprocess-loop remainder defines filemap istack activep
-                                  acc n config state))
+         ((when (equal directive "include"))
+          (b* (((unless activep)
+                ;; Don't even do anything, we'll read the string literal next
+                ;; and ignore it since we're not in an active section.  This
+                ;; seems to be the right behavior: both NCVerilog and
+                ;; Verilog-XL allow things like
+                ;;
+                ;;   `ifdef not_defined
+                ;;     `include 5
+                ;;   `endif
+                ;;
+                ;; but they complain if you do something like
+                ;;
+                ;;   `ifdef not_defined
+                ;;     `include "foo
+                ;;   `endif
+                ;;
+                ;; where the string literal isn't closed.  So, the behavior
+                ;; seems to just be, ignore the include token and continue
+                ;; ignoring whatever comes after it.
+                (vl-preprocess-loop remainder defines filemap istack activep
+                                    acc n config state))
 
-             ;; Else, we're in an active section, so (roughly): read the
-             ;; filename try to carry out the inclusion.
-             ;;
-             ;; But this is very subtle.  Ostensibly, per SystemVerilog-2012,
-             ;; the syntax is just
-             ;;
-             ;;     `include "filename"`
-             ;;  or `include <filename>`
-             ;;
-             ;; Except that the syntax permits only whitespace or "a comment"
-             ;; to occur on the same line as the include directive.  But this
-             ;; description doesn't at all describe how includes are supposed
-             ;; to interact with the rest of preprocessing.  For instance:
-             ;; should the following be legal?
-             ;;
-             ;;    `include `ifdef foo "foo.v" `else "bar.v" `endif
-             ;;
-             ;; NCVerilog allows it but VCS does not.  As another example:
-             ;; should the following be legal?
-             ;;
-             ;;    `define mymacro(filename) `"/some/path/to/filename.sv`"
-             ;;    `include `mymacro(foo)
-             ;;
-             ;; Both NCVerilog and VCS permit this.  To support this sort of
-             ;; thing, we will try to:
-             ;;
-             ;;   (1) read until the end of the line
-             ;;   (2) preprocess whatever we find
-             ;;   (3) read the post-preprocessing output to try to discover
-             ;;       a string literal which should be the file to include.
-             ;;
-             ;; This could possibly be wrong if the line with the include
-             ;; contains junk afterwards, e.g., consider
-             ;;
-             ;;    `include "foo.sv" `foo
-             ;;
-             ;; If `foo is defined within "foo.sv", then it isn't correct to
-             ;; try to preprocess it in the current context before we've loaded
-             ;; in foo.sv.
-             ;;
-             ;; We think this is sufficiently unlikely that we are not going to
-             ;; try to defend against it, for now.  If we need to add some
-             ;; defense against this, it could probably be added to
-             ;; vl-read-include itself.
-             ((mv & include-line rest-of-file) (vl-read-until-literal *nls* remainder))
+               ;; Else, we're in an active section, so (roughly): read the
+               ;; filename try to carry out the inclusion.
+               ;;
+               ;; But this is very subtle.  Ostensibly, per SystemVerilog-2012,
+               ;; the syntax is just
+               ;;
+               ;;     `include "filename"`
+               ;;  or `include <filename>`
+               ;;
+               ;; Except that the syntax permits only whitespace or "a comment"
+               ;; to occur on the same line as the include directive.  But this
+               ;; description doesn't at all describe how includes are supposed
+               ;; to interact with the rest of preprocessing.  For instance:
+               ;; should the following be legal?
+               ;;
+               ;;    `include `ifdef foo "foo.v" `else "bar.v" `endif
+               ;;
+               ;; NCVerilog allows it but VCS does not.  As another example:
+               ;; should the following be legal?
+               ;;
+               ;;    `define mymacro(filename) `"/some/path/to/filename.sv`"
+               ;;    `include `mymacro(foo)
+               ;;
+               ;; Both NCVerilog and VCS permit this.  To support this sort of
+               ;; thing, we will try to:
+               ;;
+               ;;   (1) read until the end of the line
+               ;;   (2) preprocess whatever we find
+               ;;   (3) read the post-preprocessing output to try to discover
+               ;;       a string literal which should be the file to include.
+               ;;
+               ;; This could possibly be wrong if the line with the include
+               ;; contains junk afterwards, e.g., consider
+               ;;
+               ;;    `include "foo.sv" `foo
+               ;;
+               ;; If `foo is defined within "foo.sv", then it isn't correct to
+               ;; try to preprocess it in the current context before we've loaded
+               ;; in foo.sv.
+               ;;
+               ;; We think this is sufficiently unlikely that we are not going to
+               ;; try to defend against it, for now.  If we need to add some
+               ;; defense against this, it could probably be added to
+               ;; vl-read-include itself.
+               ((mv & include-line rest-of-file) (vl-read-until-literal *nls* remainder))
 
-             ((mv okp defines filemap include-line-post-acc ?include-line-remainder state)
-              (vl-preprocess-loop include-line defines filemap istack activep
-                                  nil     ;; empty accumulator to begin with
-                                  (- n 1) ;; makes termination easy
-                                  config state))
-             ((unless okp)
-              (mv (cw "Preprocessor error (~f0): failed to preprocess rest of ~
+               ((mv okp defines filemap include-line-post-acc ?include-line-remainder istack activep state)
+                (vl-preprocess-loop include-line defines filemap istack activep
+                                    nil     ;; empty accumulator to begin with
+                                    (- n 1) ;; makes termination easy
+                                    config state))
+               ((unless okp)
+                (mv (cw "Preprocessor error (~f0): failed to preprocess rest of ~
                        `include line: ~s1.~%"
-                      (vl-location-string (vl-echar->loc echar1))
-                      include-line)
-                  defines filemap acc echars state))
+                        (vl-location-string (vl-echar->loc echar1))
+                        include-line)
+                    defines filemap acc echars istack activep state))
 
-             ((mv filename & &) (vl-read-include (rev include-line-post-acc) config))
-             ((unless filename)
-              ;; Already warned.
-              (mv nil defines filemap acc echars state))
+               ((mv filename & &) (vl-read-include (rev include-line-post-acc) config))
+               ((unless filename)
+                ;; Already warned.
+                (mv nil defines filemap acc echars istack activep state))
 
-             ((mv realfile state)
-              (vl-find-file filename (vl-loadconfig->include-dirs config) state))
-             ((unless realfile)
-              (mv (cw "Preprocessor error (~f0): unable to find ~s1.  The ~
+               ((mv realfile state)
+                (vl-find-file filename (vl-loadconfig->include-dirs config) state))
+               ((unless realfile)
+                (mv (cw "Preprocessor error (~f0): unable to find ~s1.  The ~
                        include directories are ~&2."
-                      (vl-location-string (vl-echar->loc echar1))
-                      filename
-                      (vl-loadconfig->include-dirs config))
-                  defines filemap acc echars state))
+                        (vl-location-string (vl-echar->loc echar1))
+                        filename
+                        (vl-loadconfig->include-dirs config))
+                    defines filemap acc echars istack activep state))
 
-             ((mv okp contents state)
-              (time$ (vl-read-file (string-fix realfile))
-                     :msg "; ~f0: read: ~st sec, ~sa bytes~%"
-                     :args (list realfile)
-                     :mintime (vl-loadconfig->mintime config)))
-             ((unless okp)
-              (mv (cw "Preprocessor error (~f0): unable to read ~s1."
-                      (vl-location-string (vl-echar->loc echar1)) realfile)
-                  defines filemap acc echars state))
+               ((mv okp defines filemap acc remainder istack activep state)
+                (vl-preprocess-include-file
+                 realfile (vl-echar->loc echar1) rest-of-file defines filemap istack activep acc n config state))
+               ((unless okp)
+                ;; already printed a msg
+                (mv nil defines filemap acc remainder istack activep state)))
 
-             (filemap (if (vl-loadconfig->filemapp config)
-                          (cons (cons realfile (vl-echarlist->string contents))
-                                filemap)
-                        filemap)))
+            (vl-preprocess-loop
+             ;; We could perhaps avoid this append with two recursive calls,
+             ;; but we'll have to modify vl-preprocess-loop to additionally
+             ;; return the updated istack and activep.
+             rest-of-file
+             defines filemap istack activep
+             acc n config state)))
 
-          (vl-preprocess-loop
-           ;; We could perhaps avoid this append with two recursive calls,
-           ;; but we'll have to modify vl-preprocess-loop to additionally
-           ;; return the updated istack and activep.
-           (append contents rest-of-file)
-           defines filemap istack activep
-           acc (- n 1) config state)))
-
-       ((when (equal directive "timescale"))
-        ;; [Jared] historically, our preprocessor recognized constructs such as
-        ;; `timescale 1ns/1ps and just threw them away.  But I later found that
-        ;; designers were using constructs such as `timescale `foo, which meant
-        ;; that I needed to somehow expand the `foo before trying to process
-        ;; the timescale part.  After considering how to handle this, I think
-        ;; the nicest approach is to move the job of ignoring `timescale from
-        ;; the preprocessor to the lexer.  The preprocessor can just leave the
-        ;; `timescale directives in, and the lexer can remove them after any
-        ;; other `define stuff within them has been expanded.
-        (vl-preprocess-loop remainder defines filemap istack activep
-                            (if activep
-                                (revappend prefix (cons echar1 acc))
-                              acc)
-                            n config state))
-
-       ((when (equal directive "__FILE__"))
-        (b* (((unless activep)
-              (vl-preprocess-loop remainder defines filemap istack activep
-                                  acc n config state))
-             ((vl-location loc) (vl-echar->loc echar1))
-             (quoted-escaped-filename-str
-              (vl-filename-to-string-literal loc.filename))
-             (quoted-escaped-filename-echars
-              (vl-change-echarlist-locations
-               (vl-echarlist-from-str quoted-escaped-filename-str)
-               loc)))
+         ((when (equal directive "timescale"))
+          ;; [Jared] historically, our preprocessor recognized constructs such as
+          ;; `timescale 1ns/1ps and just threw them away.  But I later found that
+          ;; designers were using constructs such as `timescale `foo, which meant
+          ;; that I needed to somehow expand the `foo before trying to process
+          ;; the timescale part.  After considering how to handle this, I think
+          ;; the nicest approach is to move the job of ignoring `timescale from
+          ;; the preprocessor to the lexer.  The preprocessor can just leave the
+          ;; `timescale directives in, and the lexer can remove them after any
+          ;; other `define stuff within them has been expanded.
           (vl-preprocess-loop remainder defines filemap istack activep
-                              (revappend quoted-escaped-filename-echars
-                                         acc)
-                              n config state)))
+                              (if activep
+                                  (revappend prefix (cons echar1 acc))
+                                acc)
+                              n config state))
 
-       ((when (equal directive "__LINE__"))
-        (b* (((unless activep)
-              (vl-preprocess-loop remainder defines filemap istack activep
-                                  acc n config state))
-             ((vl-location loc) (vl-echar->loc echar1))
-             (line-str (natstr loc.line))
-             (line-echars (vl-change-echarlist-locations
-                           (vl-echarlist-from-str line-str)
-                           loc)))
+         ((when (equal directive "__FILE__"))
+          (b* (((unless activep)
+                (vl-preprocess-loop remainder defines filemap istack activep
+                                    acc n config state))
+               ((vl-location loc) (vl-echar->loc echar1))
+               (quoted-escaped-filename-str
+                (vl-filename-to-string-literal loc.filename))
+               (quoted-escaped-filename-echars
+                (vl-change-echarlist-locations
+                 (vl-echarlist-from-str quoted-escaped-filename-str)
+                 loc)))
+            (vl-preprocess-loop remainder defines filemap istack activep
+                                (revappend quoted-escaped-filename-echars
+                                           acc)
+                                n config state)))
+
+         ((when (equal directive "__LINE__"))
+          (b* (((unless activep)
+                (vl-preprocess-loop remainder defines filemap istack activep
+                                    acc n config state))
+               ((vl-location loc) (vl-echar->loc echar1))
+               (line-str (natstr loc.line))
+               (line-echars (vl-change-echarlist-locations
+                             (vl-echarlist-from-str line-str)
+                             loc)))
+            (vl-preprocess-loop remainder defines filemap istack activep
+                                (revappend line-echars acc)
+                                n config state)))
+
+         ((when (or (equal directive "celldefine")
+                    (equal directive "endcelldefine")
+                    (equal directive "resetall")
+                    (equal directive "protect")
+                    (equal directive "endprotect")))
+          ;; BOZO maybe add a note that we are ignoring these directives?
           (vl-preprocess-loop remainder defines filemap istack activep
-                              (revappend line-echars acc)
-                              n config state)))
+                              acc n config state)))
 
-       ((when (or (equal directive "celldefine")
-                  (equal directive "endcelldefine")
-                  (equal directive "resetall")
-                  (equal directive "protect")
-                  (equal directive "endprotect")))
-        ;; BOZO maybe add a note that we are ignoring these directives?
-        (vl-preprocess-loop remainder defines filemap istack activep
-                            acc n config state)))
-
-    (mv (cw "Preprocessor error (~f0): we do not support ~s1.~%"
-            (vl-location-string (vl-echar->loc echar1)) directive)
-        defines filemap acc echars state))
+      (mv (cw "Preprocessor error (~f0): we do not support ~s1.~%"
+              (vl-location-string (vl-echar->loc echar1)) directive)
+          defines filemap acc echars istack activep state)))
 
   ///
 
-  (local (in-theory (enable vl-preprocess-loop)))
+  ;; (local (in-theory (enable vl-preprocess-loop)))
 
   (never-memoize vl-preprocess-loop)
 
@@ -2570,39 +2681,39 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                              ACL2::LEN-WHEN-PREFIXP
                              )))
 
-  (local (set-default-hints
-          ;; I think we might be hitting ACL2's heuristics on not opening up
-          ;; functions when it would introduce too many ifs, so we need this to
-          ;; tell it to really go ahead and open up the function.
-          '('(:expand ((:free (activep) (vl-preprocess-loop echars defines filemap istack activep acc n config state)))))))
+  ;; (local (set-default-hints
+  ;;         ;; I think we might be hitting ACL2's heuristics on not opening up
+  ;;         ;; functions when it would introduce too many ifs, so we need this to
+  ;;         ;; tell it to really go ahead and open up the function.
+  ;;         '('(:expand ((:free (activep) (vl-preprocess-loop echars defines filemap istack activep acc n config state)))))))
 
-  (defthm booleanp-of-vl-preprocess-loop-success
-    (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
-          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
-      (booleanp successp))
-    :rule-classes :type-prescription)
+  ;; (defthm booleanp-of-vl-preprocess-loop-success
+  ;;   (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+  ;;         (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+  ;;     (booleanp successp))
+  ;;   :rule-classes :type-prescription)
 
-  (defthm state-p1-of-vl-preprocess-loop
-    (implies (force (state-p1 state))
-             (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
-                   (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
-               (state-p1 state))))
+  ;; (defthm state-p1-of-vl-preprocess-loop
+  ;;   (implies (force (state-p1 state))
+  ;;            (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+  ;;                  (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+  ;;              (state-p1 state))))
 
-  (defthm vl-preprocess-loop-basics
-    (implies (and (force (vl-echarlist-p echars))
-                  (force (vl-defines-p defines))
-                  (force (vl-filemap-p filemap))
-                  (force (vl-istack-p istack))
-                  (force (vl-echarlist-p acc))
-                  (force (booleanp activep))
-                  (force (state-p1 state))
-                  )
-             (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
-                   (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
-               (and (vl-defines-p defines)
-                    (vl-filemap-p filemap)
-                    (vl-echarlist-p acc)
-                    (vl-echarlist-p remainder)))))
+  ;; (defthm vl-preprocess-loop-basics
+  ;;   (implies (and (force (vl-echarlist-p echars))
+  ;;                 (force (vl-defines-p defines))
+  ;;                 (force (vl-filemap-p filemap))
+  ;;                 (force (vl-istack-p istack))
+  ;;                 (force (vl-echarlist-p acc))
+  ;;                 (force (booleanp activep))
+  ;;                 (force (state-p1 state))
+  ;;                 )
+  ;;            (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+  ;;                  (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+  ;;              (and (vl-defines-p defines)
+  ;;                   (vl-filemap-p filemap)
+  ;;                   (vl-echarlist-p acc)
+  ;;                   (vl-echarlist-p remainder)))))
 
   (verify-guards vl-preprocess-loop
     :hints(("Goal"
@@ -2648,7 +2759,7 @@ out of memory before running out of clock.</p>"
       (state state-p1 :hyp (force (state-p1 state))))
 
   ;; Note: keep in sync with optimized version, below.
-  (b* (((mv successp defines filemap acc remainder state)
+  (b* (((mv successp defines filemap acc remainder ?istack ?activep state)
         (vl-preprocess-loop echars defines filemap
                             nil                   ;; istack
                             t                     ;; activep

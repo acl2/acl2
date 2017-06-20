@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems') -- Customization
+; SOFT (Second-Order Functions and Theorems) -- Customization
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file provides customization
-; for SOFT ('Second-Order Functions and Theorems'),
+; for SOFT (Second-Order Functions and Theorems),
 ; according to the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

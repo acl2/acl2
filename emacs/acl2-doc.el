@@ -93,10 +93,10 @@
   (let ((tuple (assoc key *acl2-doc-manual-alist*)))
     (cond
      (tuple
-      (setf (cdr tuple)
-            (acl2-doc-manual-alist-entry pathname top printname url
-                                         main-tags-file-name
-                                         acl2-tags-file-name))
+      (setcdr tuple ; avoid setf; see my-cl-position
+	      (acl2-doc-manual-alist-entry pathname top printname url
+					   main-tags-file-name
+					   acl2-tags-file-name))
       *acl2-doc-manual-alist*)
      (t (push (cons key (acl2-doc-manual-alist-entry pathname top printname url
                                                      main-tags-file-name
@@ -239,7 +239,8 @@
 ; threshold for a warning, to provide a modest cushion for avoiding
 ; the warning.
 
-          (max large-file-warning-threshold 80000000))
+          (max (or large-file-warning-threshold 0)
+	       80000000))
          (buf0 (find-buffer-visiting rendered-pathname))
 
 ; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed
@@ -784,8 +785,14 @@ Please report this error to the ACL2 implementors."))))
 
   (interactive)
   (acl2-doc-update-top-history-entry)
-  (while (equal major-mode 'acl2-doc-mode) ; quit acl2-doc-history etc. too
-    (quit-window)))
+
+;;; At one time we invoked (while (equal major-mode 'acl2-doc-mode)
+;;; (quit-window)), so that we would continue to quit, including
+;;; acl2-doc-history etc.  But a session that invoked emacs -nw from a
+;;; terminal on the Mac, that seemed to put us into an infinite loop.
+;;; It seems fine to quit just the current buffer.
+
+  (quit-window))
 
 (defun acl2-doc-initialize (&optional select)
 
@@ -1509,3 +1516,4 @@ with, for example, meta-3 control-t /."
 (define-key acl2-doc-mode-map "w" 'acl2-doc-where)
 (define-key acl2-doc-mode-map "W" 'acl2-doc-where-definition)
 (define-key acl2-doc-mode-map (kbd "C-<tab>") 'acl2-doc-tab-back)
+(define-key acl2-doc-mode-map (kbd "<backtab>") 'acl2-doc-tab-back)

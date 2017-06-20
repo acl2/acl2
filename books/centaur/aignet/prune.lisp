@@ -58,6 +58,8 @@
 
 ;(defsection aignet-copy-dfs
 
+
+
 (defsection aignet-copy-dfs-rec
 
   (acl2::defstobj-clone mark bitarr :suffix "-MARK")
@@ -67,10 +69,9 @@
              (xargs :stobjs (aignet mark copy strash aignet2)
                     :guard (and (id-existsp id aignet)
                                 (natp gatesimp)
-                                (<= (num-nodes aignet) (bits-length mark))
-                                (<= (num-nodes aignet) (lits-length copy))
-                                (aignet-copies-ok
-                                 (num-nodes aignet) copy aignet2))
+                                (< id (bits-length mark))
+                                (< id (lits-length copy))
+                                (aignet-copies-in-bounds copy aignet2))
                     :guard-debug t
                     :verify-guards nil
                     :measure (nfix id)))
@@ -126,7 +127,8 @@
     (litp (lit-negate-cond lit neg)))
 
   (local (in-theory (disable lit-negate-cond acl2::b-xor
-                             aignet-copies-ok)))
+                             ;; aignet-copies-ok
+                             )))
   (local (in-theory (enable (:induction aignet-copy-dfs-rec))))
 
   (def-aignet-preservation-thms aignet-copy-dfs-rec :stobjname aignet2)
@@ -171,22 +173,22 @@
   ;;                 (double-rewrite (aignet-idp n aignet)))
   ;;            (id-in-bounds n arr)))
 
-  (defthm aignet-copies-ok-implies-special-bind-free
-    (implies (and (bind-free '((aignet1 . aignet)) (aignet1))
-                  (aignet-copies-ok (num-nodes aignet1) copy aignet)
-                  (aignet-idp k aignet1))
-             (aignet-litp (nth-lit k copy) aignet)))
+  ;; (defthm aignet-copies-ok-implies-special-bind-free
+  ;;   (implies (and (bind-free '((aignet1 . aignet)) (aignet1))
+  ;;                 (aignet-copies-in-bounds copy aignet)
+  ;;                 (aignet-idp k aignet1))
+  ;;            (aignet-litp (nth-lit k copy) aignet)))
 
   (local (in-theory (enable lit-negate-cond)))
 
   (defthm aignet-copies-ok-of-aignet-copy-dfs-rec
     (implies (and (aignet-idp id aignet)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv & copy & aignet2)
                    (aignet-copy-dfs-rec
                     id aignet mark copy
                     strash gatesimp aignet2)))
-               (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)))
+               (aignet-copies-in-bounds copy aignet2)))
     :hints ((acl2::just-induct-and-expand
              (aignet-copy-dfs-rec
               id aignet mark copy
@@ -245,7 +247,7 @@
 
   (defthm aignet-copy-regs-preserves-aignet-ins-copied
     (implies (and (aignet-ins-copied aignet copy aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv copy aignet2)
                    (aignet-copy-regs aignet copy aignet2)))
                (aignet-ins-copied aignet copy aignet2)))
@@ -273,7 +275,7 @@
 
   (defthm id-eval-of-reg-index
     (implies (< (nfix n) (num-regs aignet))
-             (equal (id-eval (regnum->id n aignet)
+             (equal (id-eval (node-count (lookup-stype n :reg aignet))
                              invals regvals aignet)
                     (bfix (nth n regvals))))
     :hints(("Goal"
@@ -288,7 +290,7 @@
 
   (defthm aignet-copy-ins-preserves-aignet-regs-copied
     (implies (and (aignet-regs-copied aignet copy aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv copy aignet2)
                    (aignet-copy-ins aignet copy aignet2)))
                (aignet-regs-copied aignet copy aignet2)))
@@ -320,7 +322,7 @@
   (defthm aignet-cis-copied-of-aignet-copy-ins/regs
     (implies (and (equal 0 (num-ins aignet2))
                   (equal 0 (num-regs aignet2))
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv copy aignet2)
                    (aignet-copy-ins aignet copy aignet2))
                   ((mv copy aignet2)
@@ -495,7 +497,7 @@
 
   (defthm aignet-copy-dfs-rec-preserves-aignet-cis-copied
     (implies (and (aignet-cis-copied aignet copy aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv & copy & aignet2)
                    (aignet-copy-dfs-rec
                     id aignet mark copy strash gatesimp aignet2)))
@@ -532,7 +534,7 @@
   (defthm aignet-copy-dfs-invar-holds-of-aignet-copy-dfs-rec
     (implies (and (aignet-idp id aignet)
                   (aignet-copy-dfs-invar aignet mark copy aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                  (aignet-copies-in-bounds copy aignet2)
                   (aignet-cis-copied aignet copy aignet2))
              (b* (((mv mark copy ?strash aignet2)
                    (aignet-copy-dfs-rec
@@ -583,7 +585,7 @@
 
   (defthm lit-eval-in-aignet-copy-dfs-rec
     (implies (and (aignet-idp id aignet)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                  (aignet-copies-in-bounds copy aignet2)
                   (aignet-copy-dfs-invar aignet mark copy aignet2)
                   (aignet-cis-copied aignet copy aignet2)
                   (equal (nth-lit 0 copy) 0))
@@ -616,8 +618,7 @@
                     :guard (and (natp gatesimp)
                                 (<= (num-nodes aignet) (bits-length mark))
                                 (<= (num-nodes aignet) (lits-length copy))
-                                (aignet-copies-ok
-                                 (num-nodes aignet) copy aignet2))))
+                                (aignet-copies-in-bounds copy aignet2))))
     (b* ((outid (outnum->id n aignet)))
       (aignet-copy-dfs-rec
        outid aignet mark copy strash gatesimp aignet2))
@@ -683,18 +684,18 @@
 
   (defthm aignet-copies-ok-of-aignet-copy-dfs-outs-iter
     (implies (and (<= (nfix n) (num-outs aignet))
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv & copy & aignet2)
                    (aignet-copy-dfs-outs-iter
                     n aignet mark copy strash gatesimp aignet2)))
-               (aignet-copies-ok (+ 1 (node-count aignet))
+               (aignet-copies-in-bounds
                                  copy aignet2)))
     :hints ((acl2::just-induct-and-expand
              (aignet-copy-dfs-outs-iter
               n aignet mark copy strash gatesimp aignet2))))
 
   (defthm aignet-copy-dfs-outs-iter-preserves-aignet-cis-copied
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (aignet-cis-copied aignet copy aignet2)
                   (<= (nfix n) (num-outs aignet)))
              (b* (((mv & copy & aignet2)
@@ -712,7 +713,7 @@
 
   (defthm aignet-copy-dfs-outs-iter-preserves-aignet-copy-dfs-invar
     (implies (and (aignet-copy-dfs-invar aignet mark copy aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                  (aignet-copies-in-bounds copy aignet2)
                   (aignet-cis-copied aignet copy aignet2)
                   (<= (nfix n) (num-outs aignet)))
              (b* (((mv mark copy ?strash aignet2)
@@ -759,8 +760,7 @@
                     :guard (and (natp gatesimp)
                                 (<= (num-nodes aignet) (bits-length mark))
                                 (<= (num-nodes aignet) (lits-length copy))
-                                (aignet-copies-ok
-                                 (num-nodes aignet) copy aignet2))))
+                                (aignet-copies-in-bounds copy aignet2))))
     (b* ((regid (reg-id->nxst (regnum->id n aignet) aignet)))
       (aignet-copy-dfs-rec
        regid aignet mark copy strash gatesimp aignet2))
@@ -826,18 +826,18 @@
 
   (defthm aignet-copies-ok-of-aignet-copy-dfs-regs-iter
     (implies (and (<= (nfix n) (num-regs aignet))
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv & copy & aignet2)
                    (aignet-copy-dfs-regs-iter
                     n aignet mark copy strash gatesimp aignet2)))
-               (aignet-copies-ok (+ 1 (node-count aignet))
+               (aignet-copies-in-bounds
                                  copy aignet2)))
     :hints ((acl2::just-induct-and-expand
              (aignet-copy-dfs-regs-iter
               n aignet mark copy strash gatesimp aignet2))))
 
   (defthm aignet-copy-dfs-regs-iter-preserves-aignet-cis-copied
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (aignet-cis-copied aignet copy aignet2)
                   (<= (nfix n) (num-regs aignet)))
              (b* (((mv & copy & aignet2)
@@ -855,7 +855,7 @@
 
   (defthm aignet-copy-dfs-regs-iter-preserves-aignet-copy-dfs-invar
     (implies (and (aignet-copy-dfs-invar aignet mark copy aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                  (aignet-copies-in-bounds copy aignet2)
                   (aignet-cis-copied aignet copy aignet2)
                   (<= (nfix n) (num-regs aignet)))
              (b* (((mv mark copy ?strash aignet2)
@@ -901,19 +901,20 @@
 
   (local (in-theory (disable acl2::resize-list-when-atom)))
   
-  (defthm aignet-copies-ok-of-init
-    (aignet-copies-ok n (resize-list nil m 0)
-                      aignet2)
-    :hints (("goal" :induct (aignet-copies-ok n (update-nth 0 (resize-list nil m 0) '(nil))
-                                              aignet2)
-             :expand ((:free (copy)
-                       (aignet-copies-ok n copy aignet2)))
-             :in-theory (e/d (nth-lit
-                              ;; acl2::nth-with-large-index
-                              ;; acl2::nth-of-resize-list-split
-                              aignet-copies-ok)
-                             ((:induction resize-list)
-                              (:induction true-listp))))))
+  ;; (defthm aignet-copies-ok-of-init
+  ;;   (aignet-copies-in-bounds (resize-list nil m 0)
+  ;;                     aignet2)
+  ;;   :hints (("goal" :induct (aignet-copies-in-bounds (update-nth 0 (resize-list nil m 0) '(nil))
+  ;;                                             aignet2)
+  ;;            :expand ((:free (copy)
+  ;;                      (aignet-copies-in-bounds copy aignet2)))
+  ;;            :in-theory (e/d (nth-lit
+  ;;                             ;; acl2::nth-with-large-index
+  ;;                             ;; acl2::nth-of-resize-list-split
+  ;;                             ;; aignet-copies-ok
+  ;;                             )
+  ;;                            ((:induction resize-list)
+  ;;                             (:induction true-listp))))))
 
   (local (in-theory (enable (:induction aignet-copy-regs-iter))))
 
@@ -964,7 +965,7 @@
     (b* (((mv ?mark copy aignet2)
           (aignet-copy-dfs-setup aignet mark copy
                                  aignet2)))
-      (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)))
+      (aignet-copies-in-bounds copy aignet2)))
 
   (defthm num-outs-of-aignet-copy-dfs-setup
     (equal (stype-count (po-stype)
@@ -1155,7 +1156,7 @@
 
 
   ;; (defthm eval-out-of-aignet-copy-outs-iter
-  ;;   (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+  ;;   (implies (and (aignet-copies-in-bounds copy aignet2)
   ;;                 (<= (nfix n) (num-outs aignet))
   ;;                 (< (nfix m) (nfix n))
   ;;                 (zp (num-outs aignet2)))
@@ -1174,7 +1175,7 @@
   ;;               '(:cases ((equal (nfix m) (1- n)))))))
 
   ;; (defthm eval-out-of-aignet-copy-outs
-  ;;   (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+  ;;   (implies (and (aignet-copies-in-bounds copy aignet2)
   ;;                 (< (nfix m) (num-outs aignet))
   ;;                 (zp (num-outs aignet2)))
   ;;            (let ((aignet2-new (aignet-copy-outs aignet copy aignet2)))
@@ -1188,7 +1189,7 @@
   ;;   :hints(("Goal" :in-theory (enable aignet-copy-outs))))
 
   (defthm output-eval-of-aignet-copy-outs
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (< (nfix m) (num-outs aignet))
                   (zp (num-outs aignet2)))
              (let ((aignet2-new (aignet-copy-outs aignet copy aignet2)))
@@ -1260,7 +1261,7 @@
   ;; (local (in-theory (enable lookup-stype-in-bounds)))
 
   ;; (defthm eval-reg-of-aignet-copy-nxsts-iter
-  ;;   (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+  ;;   (implies (and (aignet-copies-in-bounds copy aignet2)
   ;;                 (<= (nfix n) (num-regs aignet))
   ;;                 (< (nfix m) (nfix n))
   ;;                 (<= (num-regs aignet) (num-regs aignet2-orig)))
@@ -1287,7 +1288,7 @@
   ;;               '(:cases ((equal (nfix m) (1- n)))))))
 
   ;; (defthm eval-reg-of-aignet-copy-nxsts
-  ;;   (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+  ;;   (implies (and (aignet-copies-in-bounds copy aignet2)
   ;;                 (< (nfix m) (num-regs aignet))
   ;;                 (<= (num-regs aignet) (num-regs aignet2-orig)))
   ;;            (let ((aignet2-new (aignet-copy-nxsts aignet copy aignet2)))
@@ -1309,7 +1310,7 @@
   ;;   :hints(("Goal" :in-theory (enable aignet-copy-nxsts))))
 
   (defthm nxst-eval-of-aignet-copy-nxsts
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (< (nfix m) (num-regs aignet))
                   (<= (num-regs aignet) (num-regs aignet2)))
              (let ((aignet2-new (aignet-copy-nxsts aignet copy aignet2)))
@@ -1969,8 +1970,7 @@
     (declare (xargs :stobjs (mark copy aignet strash aignet2)
                     :guard (and (<= (num-nodes aignet) (bits-length mark))
                                 (<= (num-nodes aignet) (lits-length copy))
-                                (aignet-copies-ok
-                                 (num-nodes aignet) copy aignet2)
+                                (aignet-copies-in-bounds copy aignet2)
                                 (natp gatesimp))
                     :guard-hints (("goal" :in-theory (enable aignet-idp)))))
     (b* ((id n)
@@ -2068,20 +2068,20 @@
                       (nth-lit idn copy)))))
 
   (defthm aignet-copy-marked-iter-preserves-aignet-copies-ok
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (<= (nfix n) (+ 1 (node-count aignet))))
              (b* (((mv copy1 & aignet2)
                    (aignet-copy-marked-iter n aignet mark copy strash gatesimp aignet2)))
-               (aignet-copies-ok (+ 1 (node-count aignet)) copy1 aignet2)))
+               (aignet-copies-in-bounds copy1 aignet2)))
     :hints((acl2::just-induct-and-expand
             (aignet-copy-marked-iter n aignet mark copy strash gatesimp
                                           aignet2))))
 
   (defthm aignet-copy-marked-preserves-aignet-copies-ok
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2))
+    (implies (and (aignet-copies-in-bounds copy aignet2))
              (b* (((mv copy1 & aignet2)
                    (aignet-copy-marked aignet mark copy strash gatesimp aignet2)))
-               (aignet-copies-ok (+ 1 (node-count aignet)) copy1 aignet2))))
+               (aignet-copies-in-bounds copy1 aignet2))))
 
   (defun-sk aignet-copy-marked-iter-invar (n aignet mark copy aignet2)
     (forall (id invals regvals)
@@ -2123,7 +2123,7 @@
     (implies (and (aignet-mark-comb-invar mark aignet)
                   (aignet-copy-marked-iter-invar 0 aignet mark copy
                                                       aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                  (aignet-copies-in-bounds copy aignet2)
                   (<= (nfix n) (num-nodes aignet)))
              (b* (((mv copy & aignet2)
                    (aignet-copy-marked-iter n aignet mark copy strash gatesimp aignet2)))
@@ -2155,7 +2155,7 @@
     (implies (and (aignet-mark-comb-invar mark aignet)
                   (aignet-copy-marked-iter-invar 0 aignet mark copy
                                                       aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv copy & aignet2)
                    (aignet-copy-marked aignet mark copy strash gatesimp aignet2)))
                (aignet-copy-marked-iter-invar
@@ -2165,7 +2165,7 @@
     (implies (and (aignet-mark-comb-invar mark aignet)
                   (aignet-copy-marked-iter-invar 0 aignet mark copy
                                                       aignet2)
-                  (aignet-copies-ok (num-nodes aignet) copy aignet2))
+                  (aignet-copies-in-bounds copy aignet2))
              (b* (((mv copy & aignet2)
                    (aignet-copy-marked aignet mark copy strash gatesimp
                                             aignet2)))
@@ -2272,7 +2272,7 @@
       (b* (((mv ?mark ?copy & ?aignet2)
             (aignet-prune-comb-aux
              mark copy aignet gatesimp strash aignet2)))
-        (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)))
+        (aignet-copies-in-bounds copy aignet2)))
 
     ;; (defthm eval-output-of-aignet-prune-comb-aux
     ;;   (b* (((mv ?mark ?copy & ?aignet2)
@@ -2932,7 +2932,7 @@
 ;;     (declare (xargs :stobjs (aignet2 copy aignet mark aignet-invals aignet-regvals)
 ;;                     :guard (and (<= (num-nodes aignet) (lits-length copy))
 ;;                                 (<= (num-nodes aignet) (bits-length mark))
-;;                                 (aignet-copies-ok (num-nodes aignet)
+;;                                 (aignet-copies-in-bounds
 ;;                                                   copy aignet2)
 ;;                                 (<= (num-ins aignet2) (bits-length aignet-invals))
 ;;                                 (<= (num-regs aignet2) (bits-length
@@ -2980,7 +2980,7 @@
 ;;   (defthm aignet-copy-marked-in-vals-iter-of-extension
 ;;     (implies (and (aignet-extension-binding :new new2
 ;;                                             :orig aignet2)
-;;                   (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;                   (aignet-copies-in-bounds copy aignet2)
 ;;                   (<= (nfix n) (num-ins aignet)))
 ;;              (equal (aignet-copy-marked-in-vals-iter
 ;;                      n vals aignet-invals aignet-regvals new2 copy mark aignet)
@@ -2999,7 +2999,7 @@
 ;;   (defthm aignet-copy-marked-in-vals-of-extension
 ;;     (implies (and (aignet-extension-binding :new new2
 ;;                                             :orig aignet2)
-;;                   (aignet-copies-ok (num-nodes aignet)
+;;                   (aignet-copies-in-bounds
 ;;                                     copy aignet2))
 ;;              (equal (aignet-copy-marked-in-vals
 ;;                      vals aignet-invals aignet-regvals new2 copy mark aignet)
@@ -3039,7 +3039,7 @@
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked-iter m aignet mark copy gatesimp strash aignet2)))
 ;;       (implies (and (<= (nfix n) (num-ins aignet))
-;;                     (aignet-copies-ok (num-nodes aignet) copy aignet2))
+;;                     (aignet-copies-in-bounds copy aignet2))
 ;;                (bits-equiv (aignet-copy-marked-in-vals-iter
 ;;                             n vals aignet-invals aignet-regvals aignet22
 ;;                             aignet-copy2 mark aignet)
@@ -3052,7 +3052,7 @@
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked aignet mark copy gatesimp strash aignet2)))
 ;;       (implies (and (<= (nfix n) (num-ins aignet))
-;;                     (aignet-copies-ok (num-nodes aignet) copy aignet2))
+;;                     (aignet-copies-in-bounds copy aignet2))
 ;;                (bits-equiv (aignet-copy-marked-in-vals-iter
 ;;                             n vals aignet-invals aignet-regvals aignet22
 ;;                             aignet-copy2 mark aignet)
@@ -3064,7 +3064,7 @@
 ;;   (defthm aignet-copy-marked-in-vals-after-copy-marked-iter
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked-iter m aignet mark copy gatesimp strash aignet2)))
-;;       (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;       (implies (aignet-copies-in-bounds copy aignet2)
 ;;                (bits-equiv (aignet-copy-marked-in-vals
 ;;                             vals aignet-invals aignet-regvals aignet22
 ;;                             aignet-copy2 mark aignet)
@@ -3076,7 +3076,7 @@
 ;;   (defthm aignet-copy-marked-in-vals-after-copy-marked-copy
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked aignet mark copy gatesimp strash aignet2)))
-;;       (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;       (implies (aignet-copies-in-bounds copy aignet2)
 ;;                (bits-equiv (aignet-copy-marked-in-vals
 ;;                             vals aignet-invals aignet-regvals aignet22
 ;;                             aignet-copy2 mark aignet)
@@ -3093,7 +3093,7 @@
 ;;     (declare (xargs :stobjs (aignet2 copy mark aignet aignet-invals aignet-regvals)
 ;;                     :guard (and (<= (num-nodes aignet) (lits-length copy))
 ;;                                 (<= (num-nodes aignet) (bits-length mark))
-;;                                 (aignet-copies-ok (num-nodes aignet)
+;;                                 (aignet-copies-in-bounds
 ;;                                                   copy aignet2)
 ;;                                 (<= (num-ins aignet2) (bits-length aignet-invals))
 ;;                                 (<= (num-regs aignet2) (bits-length aignet-regvals))
@@ -3141,7 +3141,7 @@
 ;;   (defthm aignet-copy-marked-reg-vals-iter-of-extension
 ;;     (implies (and (aignet-extension-binding :new new2
 ;;                                             :orig aignet2)
-;;                   (aignet-copies-ok (num-nodes aignet)
+;;                   (aignet-copies-in-bounds
 ;;                                     copy aignet2)
 ;;                   (<= (nfix n) (num-regs aignet)))
 ;;              (equal (aignet-copy-marked-reg-vals-iter
@@ -3160,7 +3160,7 @@
 ;;   (defthm aignet-copy-marked-reg-vals-of-extension
 ;;     (implies (and (aignet-extension-binding :new new2
 ;;                                             :orig aignet2)
-;;                   (aignet-copies-ok (num-nodes aignet)
+;;                   (aignet-copies-in-bounds
 ;;                                     copy aignet2))
 ;;              (equal (aignet-copy-marked-reg-vals
 ;;                      vals aignet-invals aignet-regvals new2 copy mark aignet)
@@ -3196,7 +3196,7 @@
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked-iter m aignet mark copy gatesimp strash aignet2)))
 ;;       (implies (and (<= (nfix n) (num-regs aignet))
-;;                     (aignet-copies-ok (num-nodes aignet) copy aignet2))
+;;                     (aignet-copies-in-bounds copy aignet2))
 ;;                (bits-equiv (aignet-copy-marked-reg-vals-iter
 ;;                             n vals aignet-invals aignet-regvals aignet22
 ;;                             aignet-copy2 mark aignet)
@@ -3210,7 +3210,7 @@
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked aignet mark copy gatesimp strash aignet2)))
 ;;       (implies (and (<= (nfix n) (num-regs aignet))
-;;                     (aignet-copies-ok (num-nodes aignet) copy aignet2))
+;;                     (aignet-copies-in-bounds copy aignet2))
 ;;                (bits-equiv (aignet-copy-marked-reg-vals-iter
 ;;                             n vals aignet-invals aignet-regvals aignet22
 ;;                             aignet-copy2 mark aignet)
@@ -3222,7 +3222,7 @@
 ;;   (defthm aignet-copy-marked-reg-vals-after-copy-marked-iter
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked-iter n aignet mark copy gatesimp strash aignet2)))
-;;       (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;       (implies (aignet-copies-in-bounds copy aignet2)
 ;;                (bits-equiv
 ;;                 (aignet-copy-marked-reg-vals
 ;;                  vals aignet-invals aignet-regvals aignet22 aignet-copy2 mark aignet)
@@ -3232,7 +3232,7 @@
 ;;   (defthm aignet-copy-marked-reg-vals-after-copy-marked-copy
 ;;     (b* (((mv aignet-copy2 & aignet22)
 ;;           (aignet-copy-marked aignet mark copy gatesimp strash aignet2)))
-;;       (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;       (implies (aignet-copies-in-bounds copy aignet2)
 ;;                (bits-equiv
 ;;                 (aignet-copy-marked-reg-vals
 ;;                  vals aignet-invals aignet-regvals aignet22 aignet-copy2 mark aignet)
@@ -3292,7 +3292,7 @@
 ;;               (implies (and
 ;;                         (aignet-copy-marked-gen-invar
 ;;                          n aignet mark copy1 aignet21)
-;;                         (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;                         (aignet-copies-in-bounds copy aignet2)
 ;;                         (aignet-idp id aignet)
 ;;                         (equal (nth id mark) 1)
 ;;                         (< (nfix id) (nfix n)))
@@ -3329,7 +3329,7 @@
 ;;   (local (in-theory (disable aignet-copy-marked-gen-invar-necc)))
 
 ;;   (defthm aignet-copy-marked-gen-invar-of-aignet-copy-marked-iter
-;;     (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;     (implies (and (aignet-copies-in-bounds copy aignet2)
 ;;                   (aignet-mark-comb-invar mark aignet)
 ;;                   (<= (nfix n) (num-nodes aignet)))
 ;;              (b* (((mv copy1 & aignet21)
@@ -3365,7 +3365,7 @@
 
 
 ;;   (defthm aignet-copy-marked-gen-invar-of-aignet-copy-marked
-;;     (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+;;     (implies (and (aignet-copies-in-bounds copy aignet2)
 ;;                   (aignet-mark-comb-invar mark aignet))
 ;;              (b* (((mv copy1 & aignet21)
 ;;                    (aignet-copy-marked
@@ -3393,7 +3393,7 @@
   (defthm aignet-copy-comb-in-vals-after-copy-marked-iter
     (b* (((mv aignet-copy2 & aignet22)
           (aignet-copy-marked-iter m aignet mark copy gatesimp strash aignet2)))
-      (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+      (implies (aignet-copies-in-bounds copy aignet2)
                (equal (aignet-copy-comb-in-vals
                        aignet-invals aignet-regvals aignet22 aignet-copy2
                        aignet)
@@ -3405,7 +3405,7 @@
   (defthm aignet-copy-comb-in-vals-after-copy-marked-copy
     (b* (((mv aignet-copy2 & aignet22)
           (aignet-copy-marked aignet mark copy gatesimp strash aignet2)))
-      (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+      (implies (aignet-copies-in-bounds copy aignet2)
                (equal (aignet-copy-comb-in-vals
                        aignet-invals aignet-regvals aignet22
                        aignet-copy2 aignet)
@@ -3434,7 +3434,7 @@
   (defthm aignet-copy-comb-reg-vals-after-copy-marked-iter
     (b* (((mv aignet-copy2 & aignet22)
           (aignet-copy-marked-iter n aignet mark copy gatesimp strash aignet2)))
-      (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+      (implies (aignet-copies-in-bounds copy aignet2)
                (equal
                 (aignet-copy-comb-reg-vals
                  aignet-invals aignet-regvals aignet22 aignet-copy2 aignet)
@@ -3446,7 +3446,7 @@
   (defthm aignet-copy-comb-reg-vals-after-copy-marked-copy
     (b* (((mv aignet-copy2 & aignet22)
           (aignet-copy-marked aignet mark copy gatesimp strash aignet2)))
-      (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+      (implies (aignet-copies-in-bounds copy aignet2)
                (equal
                 (aignet-copy-comb-reg-vals
                  aignet-invals aignet-regvals aignet22 aignet-copy2 aignet)
@@ -3489,7 +3489,7 @@
              (implies (and
                        (aignet-copy-marked-gen-invar
                         n aignet mark copy1 aignet21)
-                       (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                       (aignet-copies-in-bounds copy aignet2)
                        (aignet-idp id aignet)
                        (equal (nth id mark) 1)
                        (< (nfix id) (nfix n)))
@@ -3523,7 +3523,7 @@
   (local (in-theory (disable aignet-copy-marked-gen-invar-necc)))
 
   (defthm aignet-copy-marked-gen-invar-of-aignet-copy-marked-iter
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (aignet-mark-comb-invar mark aignet)
                   (<= (nfix n) (num-nodes aignet)))
              (b* (((mv copy1 & aignet21)
@@ -3560,7 +3560,7 @@
 
 
   (defthm aignet-copy-marked-gen-invar-of-aignet-copy-marked
-    (implies (and (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (aignet-mark-comb-invar mark aignet))
              (b* (((mv copy1 & aignet21)
                    (aignet-copy-marked
@@ -3574,7 +3574,7 @@
           (aignet-copy-marked
            aignet mark copy strash gatesimp aignet2)))
       (implies (and
-                (aignet-copies-ok (num-nodes aignet) copy aignet2)
+                (aignet-copies-in-bounds copy aignet2)
                 (aignet-mark-comb-invar mark aignet)
                 (aignet-idp id aignet)
                 (equal (nth id mark) 1))
@@ -3823,11 +3823,10 @@
     :rule-classes :linear)
 
   (defthm aignet-copies-ok-of-aignet-copy-marked-regs-iter
-    (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (aignet-copies-in-bounds copy aignet2)
              (mv-let (copy aignet2)
                (aignet-copy-marked-regs-iter n aignet mark copy aignet2)
-               (aignet-copies-ok
-                (+ 1 (node-count aignet))
+               (aignet-copies-in-bounds
                 copy aignet2))))
 
   (local (defthmd dumb-num-regs-lemma
@@ -3911,11 +3910,10 @@
     :rule-classes :linear)
 
   (defthm aignet-copies-ok-of-aignet-copy-marked-regs
-    (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+    (implies (aignet-copies-in-bounds copy aignet2)
              (mv-let (copy aignet2)
                (aignet-copy-marked-regs aignet mark copy aignet2)
-               (aignet-copies-ok
-                (+ 1 (node-count aignet))
+               (aignet-copies-in-bounds
                 copy aignet2))))
 
   (defthm num-regs-of-aignet-copy-marked-regs
@@ -3943,7 +3941,7 @@
   (defthm aignet-copy-comb-in-vals-of-aignet-copy-marked-regs
     (b* (((mv copy1 aignet21)
           (aignet-copy-marked-regs aignet mark copy aignet2)))
-      (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+      (implies (aignet-copies-in-bounds copy aignet2)
                (bits-equiv (aignet-copy-comb-in-vals
                             invals regvals aignet21 copy1 aignet)
                            (aignet-copy-comb-in-vals
@@ -3963,8 +3961,7 @@
                                 (<= (num-nodes aignet) (bits-length mark))
                                 (<= (marked-reg-count (num-regs aignet) mark aignet)
                                     (num-regs aignet2))
-                                (aignet-copies-ok
-                                 (num-nodes aignet) copy aignet2))
+                                (aignet-copies-in-bounds copy aignet2))
                     :verify-guards nil))
     (b* ((ro (regnum->id n aignet))
          ((unless (int= (get-bit ro mark) 1))
@@ -4032,7 +4029,7 @@
 
   (defthm lookup-nxst-of-aignet-copy-marked-nxsts-iter
     (implies (and ;; (aignet-extension-p aignet2 orig)
-                  (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
+                  (aignet-copies-in-bounds copy aignet2)
                   (<= (nfix n) (num-regs aignet))
                   (<= (marked-reg-count (num-regs aignet) mark aignet)
                       (num-regs aignet2))
@@ -4063,7 +4060,7 @@
                   :in-theory (enable lookup-stype-in-bounds)))))
 
   (defthm lookup-nxst-of-aignet-copy-marked-nxsts
-    (implies (and (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   ;; (aignet-extension-p aignet2 orig)
                   ;; (equal (num-regs orig) (num-regs aignet2))
                   (<= (marked-reg-count (num-regs aignet) mark aignet)
@@ -4089,7 +4086,7 @@
     (implies (and (<= (marked-reg-count (num-regs aignet) mark aignet)
                       (num-regs aignet2))
                   (< (nfix n) (marked-reg-count (num-regs aignet) mark aignet))
-                  (aignet-copies-ok (+ 1 (node-count aignet))
+                  (aignet-copies-in-bounds
                                     copy aignet2))
              (equal (nth n (frame-regvals k frames initsts
                                           (aignet-copy-marked-nxsts

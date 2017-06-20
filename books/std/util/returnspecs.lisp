@@ -535,7 +535,7 @@ For example, @('natp-of-foo').</dd>
 (set-returnspec-default-hints
  ((returnspec-default-default-hint 'fnname acl2::id world)))
 
-(defun returnspec-single-thm (name name-fn x subst badname-okp world)
+(defun returnspec-single-thm (name name-fn x body-subst hint-subst badname-okp world)
   "Returns EVENTS"
   ;; Only valid to call AFTER the function has been submitted, because we look
   ;; up the guard/formals from the world.
@@ -546,33 +546,33 @@ For example, @('natp-of-foo').</dd>
   (b* (((returnspec x) x)
        (formals (look-up-formals name-fn world))
        (binds `(,x.name (,name-fn . ,formals)))
-       (formula (returnspec-thm-body name-fn binds x world))
+       (formula (sublis body-subst (returnspec-thm-body name-fn binds x world)))
        ((when (eq formula t)) nil)
-       (hints (if x.hintsp (sublis subst x.hints)
+       (hints (if x.hintsp (sublis hint-subst x.hints)
                 (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x t badname-okp)
         ,formula
         :hints ,hints
-        :rule-classes ,(sublis subst x.rule-classes)))))
+        :rule-classes ,(sublis hint-subst x.rule-classes)))))
 
-(defun returnspec-multi-thm (name name-fn binds x subst badname-okp world)
+(defun returnspec-multi-thm (name name-fn binds x body-subst hint-subst badname-okp world)
   "Returns EVENTS"
   (declare (xargs :guard (and (symbolp name)
                               (symbolp name-fn)
                               (returnspec-p x)
                               (plist-worldp world))))
   (b* (((returnspec x) x)
-       (formula (returnspec-thm-body name-fn binds x world))
+       (formula (sublis body-subst (returnspec-thm-body name-fn binds x world)))
        ((when (equal formula t)) nil)
        (hints (if x.hintsp
-                  (sublis subst x.hints)
+                  (sublis hint-subst x.hints)
                 (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x nil badname-okp)
         ,formula
         :hints ,hints
-        :rule-classes ,(sublis subst x.rule-classes)))))
+        :rule-classes ,(sublis hint-subst x.rule-classes)))))
 
-(defun returnspec-multi-thms (name name-fn binds x subst badname-okp world)
+(defun returnspec-multi-thms (name name-fn binds x body-subst hint-subst badname-okp world)
   "Returns EVENTS"
   (declare (xargs :guard (and (symbolp name)
                               (symbolp name-fn)
@@ -580,8 +580,8 @@ For example, @('natp-of-foo').</dd>
                               (plist-worldp world))))
   (if (atom x)
       nil
-    (append (returnspec-multi-thm name name-fn binds (car x) subst badname-okp world)
-            (returnspec-multi-thms name name-fn binds (cdr x) subst badname-okp world))))
+    (append (returnspec-multi-thm name name-fn binds (car x) body-subst hint-subst badname-okp world)
+            (returnspec-multi-thms name name-fn binds (cdr x) body-subst hint-subst badname-okp world))))
 
 
 
@@ -604,16 +604,27 @@ For example, @('natp-of-foo').</dd>
     (cons (cons (car names) `(mv-nth ,idx ,call))
           (returnspec-mv-nth-subst (cdr names) (1+ idx) call))))
 
+(defun returnspec-symbol-packages (syms)
+  (if (atom syms)
+      nil
+    (add-to-set-equal (symbol-package-name (car syms))
+                      (returnspec-symbol-packages (cdr syms)))))
+
+(defun returnspec-call-sym-pairs (packages call)
+  (if (atom packages)
+      nil
+    (cons (cons (intern$ "<CALL>" (car packages)) call)
+          (returnspec-call-sym-pairs (cdr packages) call))))
+
 (defun returnspec-return-value-subst (name name-fn formals names)
   (declare (xargs :guard (and (symbolp name)
                               (symbol-listp names))))
-  (b* ((call-sym (intern-in-package-of-symbol "<CALL>" name))
-       (call (cons name-fn formals))
+  (b* ((call (cons name-fn formals))
+       (packages (returnspec-symbol-packages (list* name name-fn (append formals names))))
+       (call-pairs (returnspec-call-sym-pairs packages call))
        ((when (eql (len names) 1))
-        (list (cons call-sym call)
-              (cons (car names) call))))
-    (cons (cons call-sym call)
-          (returnspec-mv-nth-subst names 0 call))))
+        (mv call-pairs (cons (cons (car names) call) call-pairs))))
+    (mv call-pairs (append call-pairs (returnspec-mv-nth-subst names 0 call)))))
        
 
 (defun returnspec-thms (name name-fn specs world)
@@ -628,12 +639,12 @@ For example, @('natp-of-foo').</dd>
        (badname-okp t)
        (names   (returnspeclist->names specs))
        (formals (look-up-formals name-fn world))
-       (subst (returnspec-return-value-subst name name-fn formals names))
+       ((mv body-subst hint-subst) (returnspec-return-value-subst name name-fn formals names))
        ((when (equal (len specs) 1))
-        (returnspec-single-thm name name-fn (car specs) subst badname-okp world))
+        (returnspec-single-thm name name-fn (car specs) body-subst hint-subst badname-okp world))
        (ignorable-names (make-symbols-ignorable names))
        (binds   `((mv . ,ignorable-names) (,name-fn . ,formals))))
-    (returnspec-multi-thms name name-fn binds specs subst badname-okp world)))
+    (returnspec-multi-thms name name-fn binds specs body-subst hint-subst badname-okp world)))
 
 
 

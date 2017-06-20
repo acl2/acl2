@@ -1006,11 +1006,11 @@
       `(fgetprop ,symb ,key ,default ,world-alist)
     `(sgetprop ,symb ,key ,default ,world-name ,world-alist)))
 
-(defmacro getpropc (symb key &optional default (wrld '(w state)))
+(defmacro getpropc (symb key &optional default (world-alist '(w state)))
 
 ; The "c" in "getpropc" suggests "current-acl2-world".
 
-  `(getprop ,symb ,key ,default 'current-acl2-world ,wrld))
+  `(getprop ,symb ,key ,default 'current-acl2-world ,world-alist))
 
 #-acl2-loop-only
 (progn
@@ -1352,7 +1352,7 @@
    then the root cause may be call of a :program mode~%~
    function that has the wrong guard specified, or even no~%~
    guard specified (i.e., an implicit guard of t).~%~
-   See :DOC guards.~&")
+   See :DOC raw-lisp-error and see :DOC guards.~&")
 
 (defvar *acl2-error-msg-certify-book-step1*
   "~%The message above might explain the error.  If it mentions packages,
@@ -6219,12 +6219,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         nil
       (take (- lng n) lst))))
 
-#-acl2-loop-only
-(defmacro with-output (&rest args)
-  (car (last args)))
-
-#+acl2-loop-only
-(defmacro with-output (&rest args)
+(defmacro with-output! (&rest args)
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output
@@ -6233,6 +6228,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (illegal 'with-output
                      "Macroexpansion of ~q0 failed."
                      (list (cons #\0 (cons 'with-output args))))))))
+
+#-acl2-loop-only
+(defmacro with-output (&rest args)
+  (car (last args)))
+
+#+acl2-loop-only
+(defmacro with-output (&rest args)
+  `(with-output! ,@args))
 
 ; Mutual Recursion
 
@@ -12718,6 +12721,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     make-fast-alist
     serialize-read-fn serialize-write-fn
     read-object-suppress
+    read-object-with-case
+    print-object$-preserving-case
     assign-lock
     throw-or-attach-call
     oracle-apply oracle-apply-raw
@@ -16464,6 +16469,52 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :object state))))
   (print-object$-ser x (get-serialize-character state) channel state))
 
+#-acl2-loop-only
+(defmacro set-acl2-readtable-case (mode)
+  (declare (ignore mode))
+  #+gcl
+  (if (fboundp 'system::set-readtable-case)
+      '(setf (readtable-case *acl2-readtable*) :preserve)
+    nil)
+  #-gcl
+  '(setf (readtable-case *acl2-readtable*) :preserve))
+
+(defun print-object$-preserving-case (x channel state)
+
+; Logically, this function is just print-object$.  Is it unsound to identify
+; these functions, since they print differently?  We think not, because the
+; only way to see what resides in a file is with the various ACL2 reading
+; functions, which all use a file-clock.  See the discussion of "deus ex
+; machina" in :doc current-package.
+
+  (declare (xargs :guard (and (state-p state)
+                              (eq (get-serialize-character state)
+
+; It's not clear that it makes sense to print preserving case when doing
+; serialize printing.  If that capability is needed we can address weaking the
+; guard to match the guard of print-object$.
+
+                                  nil)
+                              (symbolp channel)
+                              (open-output-channel-p channel
+                                                     :object state))))
+  #-acl2-loop-only
+  (cond ((live-state-p state)
+         (cond
+          #+gcl
+          ((not (fboundp 'system::set-readtable-case))
+           (cerror "Use print-object$ instead"
+                   "Sorry, but ~s is not supported in this older version of ~%~
+                    GCL (because raw Lisp function ~s is undefined)."
+                   'print-object$-preserving-case
+                   'system::set-readtable-case))
+          (t
+           (return-from print-object$-preserving-case
+             (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
+               (set-acl2-readtable-case :preserve)
+               (print-object$ x channel state)))))))
+  (print-object$ x channel state))
+
 ;  We start the file-clock at one to avoid any possible confusion with
 ; the wired in standard-input/output channels, whose names end with
 ; "-0".
@@ -17714,6 +17765,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (open-input-channels state-state))
                 state-state)))
           (t (mv t nil state-state)))))
+
+(defun read-object-with-case (channel mode state)
+  (declare (xargs :guard
+                  (and (state-p state)
+                       (symbolp channel)
+                       (open-input-channel-p channel :object state)
+                       (member-eq mode ; case sensitivity mode
+                                  '(:upcase :downcase :preserve :invert)))))
+  #+acl2-loop-only
+  (declare (ignore mode))
+  #-acl2-loop-only
+  (cond ((live-state-p state)
+         (cond
+          #+gcl
+          ((not (fboundp 'system::set-readtable-case))
+           (cerror "Use read-object instead"
+                   "Sorry, but ~s is not supported in this older version of ~%~
+                    GCL (because raw Lisp function ~s is undefined)."
+                   'read-object-with-case
+                   'system::set-readtable-case))
+          (t
+           (return-from read-object-with-case
+             (cond ((eq mode :upcase) ; optimization
+                    (read-object channel state))
+                   (t (let ((*acl2-readtable*
+                             (copy-readtable *acl2-readtable*)))
+                        (set-acl2-readtable-case :preserve)
+                        (read-object channel state)))))))))
+  (read-object channel state))
 
 (defun read-object-suppress (channel state)
 
@@ -21220,11 +21300,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-ruler-extenders (x)
-
-; It seems a bit sad to evaluate x twice, but that seems kind of unavoidable if
-; we are to use a table event to set the acl2-defaults-table, since WORLD is
-; not available for the expression of that event.
-
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (er-progn

@@ -2559,21 +2559,26 @@ correctness criterion we've described.</p>
     :rule-classes (:rewrite :linear)))
 
 (defines aignet-lit->cnf
-  (define aignet-lit->cnf ((x litp)
-                           (use-muxes)
-                           (aignet-refcounts)
-                           (sat-lits)
-                           (aignet)
-                           (cnf))
+  (define aignet-lit->cnf ((x litp           "Literal to encode in the CNF")
+                           (use-muxes        "Flag saying whether to recognize muxes and encode them specially")
+                           (aignet-refcounts "Reference counts of aignet nodes")
+                           (sat-lits         "Records assignment of SAT variables to aignet nodes")
+                           (aignet           "AIG network")
+                           (cnf              "Accumulated formula"))
     :guard (and (< (lit-id x) (u32-length aignet-refcounts))
                 (fanin-litp x aignet)
                 (sat-lits-wfp sat-lits aignet))
     :returns (mv (new-sat-lits (implies (sat-lits-wfp sat-lits aignet)
-                                        (sat-lits-wfp new-sat-lits aignet)))
-                 (new-cnf))
+                                        (sat-lits-wfp new-sat-lits aignet))
+                               "Updated assignment of SAT variables to aignet nodes")
+                 (new-cnf      "CNF with additional clauses for the fanin cone of @('x')."))
     :verify-guards nil
     :flag lit
     :measure (acl2::two-nats-measure (lit-id x) 0)
+    :parents (aignet-cnf)
+    :short "Add clauses encoding the fanin cone of literal @('x') of the aignet to the cnf."
+    :long "<p>Assumes that aignet nodes that have SAT variables assigned in
+@('sat-lits') already have their fanin cones encoded, and maintains that invariant.</p>"
     (b* ((id (lit-id x))
          ((when (aignet-id-has-sat-var id sat-lits))
           ;; already added, so done
@@ -3107,7 +3112,18 @@ correctness criterion we've described.</p>
             (and stable-under-simplificationp
                  '(:in-theory (enable collect-supergate-correct
                                       collect-supergate-correct-rw-when-0
-                                      id-eval-when-id-is-mux))))))
+                                      id-eval-when-id-is-mux)))))
+
+  (local (defthm cdr-of-lit-list-fix
+           (equal (cdr (lit-list-fix x))
+                  (lit-list-fix (cdr x)))))
+
+  (local (defthm car-of-lit-list-fix
+           (implies (consp x)
+                    (equal (car (lit-list-fix x))
+                           (lit-fix (car x))))))
+
+  (fty::deffixequiv-mutual aignet-lit->cnf))
       
                 
 

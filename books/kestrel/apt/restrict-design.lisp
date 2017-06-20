@@ -1,0 +1,93 @@
+; APT Domain Restriction Transformation -- Design Notes
+;
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file provides a documentation topic for the design notes of
+; the domain restriction transformation,
+; which restricts the effective domain of a function,
+; e.g. to enable further optimizations.
+; The design notes are in design-notes/restrict.pdf.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "APT")
+
+(include-book "xdoc/top" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc restrict-design
+
+  :parents (design-notes restrict)
+
+  :short "Design notes for the domain restriction transformation."
+
+  :long
+
+  "<p>
+   The design of the transformation is described in
+   <a href='res/apt/restrict.pdf'>these notes</a>,
+   which use <a href='res/apt/notation.pdf'>this notation</a>.
+   </p>
+
+   <p>
+   The correspondence between the design notes and the reference documentation
+   is the following:
+   </p>
+
+   <ul>
+
+     <li>
+     @($f$) corresponds to @('old').
+     </li>
+
+     <li>
+     @($e(\\overline{x})$) corresponds to the body of @('old'),
+     when @('old') is not recursive.
+     </li>
+
+     <li>
+     When @('old') is recursive,
+     the notes use
+     a single non-recursive branch @($b(\\overline{x})$)
+     controlled by @($a(\\overline{x})$)
+     and a single recursive branch
+     @($c(\\overline{x},f(\\overline{d}(\\overline{x})))$)
+     controlled by the negation of @($a(\\overline{x})$).
+     This is a representative recursive structure,
+     but the transformation handles
+     multiple non-recursive and recursive branches.
+     In this representative recursive structure,
+     @($d_i(\\overline{x})$)
+     corresponds to @('update-xi<x1,...,xn>')
+     and the negation of @($a(\\overline{x})$)
+     corresponds to @('context<x1,...,xn>').
+     </li>
+
+     <li>
+     @($R$) corresponds to @('(lambda (x1 ... xn) restriction<x1,...,xn>)').
+     </li>
+
+     <li>
+     @($R{}d$) corresponds to @('restriction-of-rec-calls').
+     </li>
+
+     <li>
+     @($G{}R$) corresponds to @('restriction-guard').
+     </li>
+
+     <li>
+     @($f'$) corresponds to @('new').
+     </li>
+
+     <li>
+     @($f{}f'$) corresponds to @('old-to-new').
+     </li>
+
+   </ul>")

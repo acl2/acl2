@@ -103,6 +103,9 @@
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 
+(include-book "centaur/glmc/glmc" :dir :system)
+(include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
+
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
 (include-book "centaur/satlink/benchmarks" :dir :system)
@@ -264,6 +267,8 @@
 (include-book "projects/doc" :dir :system)
 
 (include-book "kestrel/top" :dir :system)
+
+(include-book "centaur/ipasir/ipasir-tools" :dir :system)
 
 ;; [Jared] keep these near the end to avoid expensive type prescription rules,
 ;; especially related to consp-append.
@@ -485,17 +490,26 @@
 ; LICENSE for more details.
 ")
 
-(make-event
- (time$
-  (xdoc::save-rendered
-   (extend-pathname (cbd)
-                    "../system/doc/rendered-doc-combined.lsp"
-                    state)
-   *rendered-doc-combined-header*
-   '*acl2+books-documentation*
-   t ; error if there is any xdoc-error
-   state)))
+(encapsulate
+  ()
+(defttag :save-rendered-event)
 
+(xdoc::save-rendered-event
+ (extend-pathname (cbd)
+                  "../system/doc/rendered-doc-combined.lsp"
+                  state)
+ *rendered-doc-combined-header*
+ '*acl2+books-documentation*
+ t ; error if there is any xdoc-error
+ :timep t
+
+; The following assumes that the community books are in the books/ subdirectory
+; of the local ACL2 distribution.
+
+ :script-file (extend-pathname (cbd)
+                               "../../bin/make-tags-acl2-doc.sh"
+                               state) )
+) ; end encapsulate
 
 (local
  (defmacro doc-rebuild ()

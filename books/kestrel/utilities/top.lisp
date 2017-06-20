@@ -43,6 +43,7 @@
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
 (include-book "numbered-names")
+(include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
 (include-book "prove-interface")
@@ -51,6 +52,7 @@
 (include-book "symbol-true-list-alists")
 (include-book "terms")
 (include-book "testing")
+(include-book "trans-eval-error-triple")
 (include-book "true-list-listp-theorems")
 (include-book "typed-list-theorems")
 (include-book "typed-tuples")

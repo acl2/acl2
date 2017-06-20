@@ -105,3 +105,25 @@
           (- (report-xdoc-errors 'save-rendered)))
        (value '(value-triple :ok))))))
 
+(defmacro save-rendered-event (outfile
+                               header
+                               topic-list-name
+                               error ; when true, cause an error on xdoc or Markup error
+                               &key
+                               script-file ; e.g., for building TAGS-acl2-doc
+                               script-args
+                               timep ; if a surrounding time$ call is desired
+                               )
+  (let* ((form1 `(save-rendered
+                  ,outfile ,header ,topic-list-name ,error
+                  state))
+         (form2 (if script-file
+                    `(prog2$ (sys-call ; requires active trust tag
+                              ,script-file ,script-args)
+                             ,form1)
+                  form1))
+         (form3 (if timep
+                    `(time$ ,form2)
+                  form2)))
+    `(make-event
+      ,form3)))

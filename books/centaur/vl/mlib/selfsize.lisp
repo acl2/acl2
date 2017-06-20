@@ -197,7 +197,9 @@ only meant as a heuristic for generating more useful warnings.</p>"
       :vl-mintypmax nil
       :vl-call      nil
       :vl-stream    nil
-      :vl-cast      nil ;; bozo?
+      :vl-cast      (vl-casttype-case x.to
+                      :type nil :size nil
+                      :otherwise (vl-expr-interesting-size-atoms x.expr))
       :vl-inside    nil
       :vl-tagged    nil ;; bozo?
       :vl-pattern   nil

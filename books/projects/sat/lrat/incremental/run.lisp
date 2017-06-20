@@ -36,7 +36,11 @@
                            (er-progn
                             (cond (formula-file
                                    (print-formula formula
+; Header was omitted historically; we preserve that for now (as expected in
+; a diff-based script elsewhere).
+                                                  :header-p nil
 ; Standard output for t or T.
+                                                  :filename
                                                   (and (not (member-equal
                                                              formula-file
                                                              '("t" "T")))
