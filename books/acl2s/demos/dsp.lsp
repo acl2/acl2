@@ -14,8 +14,9 @@
 (acl2s-defaults :set :sampling-method :uniform-random)
 (acl2s-defaults :set cgen-local-timeout 0); takes lot of time because of find-all-paths ? why?
 (acl2s-defaults :set num-trials 1000)
-(gl::gl-satlink-mode)
-(value-triple (tshell-ensure))
+(acl2s-defaults :set verbosity-level 3)
+(acl2s-defaults :set num-witnesses 0)
+
 ;(include-book "misc/profiling" :dir :system)
 ;-------------HEADER END-----------------------
 

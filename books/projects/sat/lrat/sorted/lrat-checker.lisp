@@ -9,7 +9,9 @@
 
 ; This modification of the list-based lrat-checker.lisp uses stobjs to speed up
 ; the handling of assignments, in particular, evaluation of literals and
-; clauses.
+; clauses.  It provides a slight modification of
+; ../stobj-based/lrat-checker.lisp; here we assume that each clause in a proof
+; file is sorted except perhaps for the first literal.
 
 (in-package "LRAT")
 
@@ -1003,7 +1005,10 @@
 
 (defun verify-clause$ (formula add-step ncls ndel a$)
 
-; This function leaves a$ptr the way it found it.
+; In the normal case this function returns (mv ncls ndel formula a$) for new
+; ncls, ndel, formula, and a$.  Otherwise it returns (mv nil _ formula a$)
+; where formula is unchanged, but in that case a hard error occurs.  Note that
+; a$ptr is the same for the input and output a$.
 
   (declare (xargs :stobjs a$
                   :guard

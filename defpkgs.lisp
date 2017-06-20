@@ -34,35 +34,35 @@
 (defconst *acl2-exports*
 
 ; This constant provides a handy list of symbols to export from the ACL2
-; package.  It includes all documented constants, functions, and macros, except
-; for those that we explicitly exclude, as checked by certifying community book
+; package.  The goal is to make it easy for ACL2 users to import documented
+; symbols into their own packages, by importing *acl2-exports* (and probably
+; also *common-lisp-symbols-from-main-lisp-package*).  This list thus includes
+; all documented constants, functions, and macros, except for those that we
+; explicitly exclude, as checked by certifying community book
 ; books/misc/check-acl2-exports.lisp.  See that book for the list of symbols,
-; *acl2-exports-exclusions*, that we explicitly exclude from this list.
+; *acl2-exports-exclusions*, that we explicitly exclude from the requirement
+; that documented constants, functions, and macros must belong to
+; *acl2-exports*.
+
+; WARNING: When you document a new constant, function, or macro symbol defined
+; by ACL2, then you MUST either add that symbol to *acl2-exports* or else add
+; it to the constant *acl2-exports-exclusions* in community book
+; books/misc/check-acl2-exports.lisp.  (See the preceding paragraph for
+; relevant remarks.)  Otherwise, after you rebuild doc.lisp (for example using
+; "make DOC") and then rebuild an ACL2 executable, certification will likely
+; fail with that executable for books/misc/check-acl2-exports.lisp.  (Note that
+; there is NOT such a failure in regression testing based on an executable that
+; was built before updating doc.lisp, as has long been typical as of this
+; writing in May 2017.)  It is ultimately best in most cases to add the symbol
+; to *acl2-exports* rather than to *acl2-exports-exclusions*; but for github
+; versions between releases it can be polite to add it temporarily to
+; *acl2-exports-exclusions*, so that package definitions aren't affected
+; (otherwise git users who update may need to recertify many books).  There
+; should be a comment in that constant definition, saying "Symbols below should
+; probably be added to *acl2-exports*", indicating where to add such a symbol.
 
 ; We keep this list sorted, since that makes defpkg more efficient when users
 ; choose to import these symbols; it avoids having to sort them then.
-
-; The following ``policy'' was used to determine this setting of *acl2-exports*.
-; First, if the user wishes to program in ACL2, he or she will import
-; *common-lisp-symbols-from-main-lisp-package* in addition to *acl2-exports*.
-; So this list was set primarily with theorem proving in mind.
-
-; Prior to ACL2 Version_2.4, the list was short.  It contained 55 symbols.
-; Before the release of ACL2 Version_2.5 we added symbols to the list.  The
-; symbols added were, in some cases, dependent on the :DOC topics as of 2.5.
-
-; (a) all :logic mode functions
-; (b) most of the symbols users had imported into packages in books/,
-; (c) selected :program mode functions with :DOC topics,
-; (d) all macros with :DOC topics,
-; (e) selected constants with :DOC topics,
-; (f) certain other constants
-; (g) symbols used to write defuns and theorems, gathered by looking
-;     at the documentation for DECLARE, HINTS, RULE-CLASSES, MACROS
-
-; This is still not very systematic, because there is a fundamental tension: if
-; we make it conveniently large we import symbols the user might wish to
-; define.
 
   (sort-symbol-listp
    (append

@@ -36,7 +36,7 @@ fi
 LISP=`which $LISP`
 echo "Using LISP = $LISP"
 echo "Using STARTJOB = `which startjob`"
-echo "Using ACL2_HONS = $ACL2_HONS"
+#echo "Using ACL2_HONS = $ACL2_HONS"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
@@ -48,13 +48,13 @@ else
 fi
 
 set ACL2_SUFFIX=""
-case "$ACL2_HONS" in
-  ""|no_h|no-h|none|NONE)
-    ACL2_SUFFIX="${ACL2_SUFFIX}c"
-    ;;
-  *)
-    ;;
-esac
+#case "$ACL2_HONS" in
+#  ""|no_h|no-h|none|NONE)
+#    ACL2_SUFFIX="${ACL2_SUFFIX}c"
+#    ;;
+#  *)
+#    ;;
+#esac
 
 case "$ACL2_PAR" in
   ""|no_p|no-p|none|NONE)

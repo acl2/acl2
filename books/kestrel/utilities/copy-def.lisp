@@ -261,7 +261,16 @@
          ()
          ,encap
          (local (in-theory '(,@(and recp `((:induction ,fn)))
-                             ,@runes)))
+                             ,@runes
+
+; We have seen an example in which copy-def fails unless return-last is
+; explicity enabled.  This presumably has something to do with :normalize nil,
+; as it showed up when we messed with prog2$ in directed-untranslate.  It seems
+; harmless and potentially useful simply to enable all guard-holders.  This
+; list of guard-holders comes from inspecting the definition of
+; remove-guard-holders1.
+
+                             return-last mv-list cons-with-hint the-check)))
          ,(fn-is-fn-copy fn hyps-fn hyps-preserved-thm-names equiv nil
                          wrld)))
      (t

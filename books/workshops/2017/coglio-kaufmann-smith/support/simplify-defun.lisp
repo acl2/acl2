@@ -1027,8 +1027,21 @@
                     (untranslate new-body nil wrld))
                    ((eq untranslate nil)
                     new-body)
-                   (t ; :nice
-                    (directed-untranslate fn-ubody fn-body new-body nil
+
+; Otherwise untranslate is :nice, but we give special treatment for defun-nx
+; (and defund-nx), to eliminate an extra prog2$ (added 6/5/2017 to accommodate
+; a change in directed-untranslate).
+
+                   ((and non-executable
+                         (eq (car fn-ubody) ; always true?
+                             'prog2$)
+                         (let ((x (directed-untranslate fn-ubody fn-body
+                                                        new-body nil nil
+                                                        wrld)))
+                           (and (eq (car x) 'prog2$) ; always true?
+                                (car (last x))))))
+                   (t
+                    (directed-untranslate fn-ubody fn-body new-body nil nil
                                           wrld))))
        ((er -)
         (cond ((and simplify-body

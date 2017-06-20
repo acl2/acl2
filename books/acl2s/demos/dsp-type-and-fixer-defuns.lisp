@@ -1,12 +1,5 @@
 (in-package "ACL2")
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
-(acl2s-defaults :set testing-enabled :naive)
-(acl2s-defaults :set :use-fixers t)
-(acl2s-defaults :set :recursively-fix nil)
-(acl2s-defaults :set :sampling-method :uniform-random)
-(acl2s-defaults :set num-trials 1000)
-(gl::gl-satlink-mode)
-(value-triple (tshell-ensure))
 (include-book "dsp-defuns" :ttags :all)
 ;(include-book "dsp-defthms" :ttags :all)
 

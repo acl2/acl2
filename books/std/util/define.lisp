@@ -1607,10 +1607,11 @@ specifiers is ignored.  You should usually put such documentation into the
        (badname-okp
         ;; This is meant to avoid name clashes.
         nil)
-       (subst (returnspec-return-value-subst guts.name guts.name-fn
-                                             (look-up-formals guts.name-fn world)
-                                             (list (returnspec->name origspec)))))
-    (returnspec-single-thm guts.name guts.name-fn newspec subst badname-okp world)))
+       ((mv body-subst hint-subst)
+        (returnspec-return-value-subst guts.name guts.name-fn
+                                       (look-up-formals guts.name-fn world)
+                                       (list (returnspec->name origspec)))))
+    (returnspec-single-thm guts.name guts.name-fn newspec body-subst hint-subst badname-okp world)))
 
 (defun returnspec-additional-single-thms (guts newspecs world)
   (if (atom newspecs)
@@ -1631,8 +1632,9 @@ specifiers is ignored.  You should usually put such documentation into the
                (car (set-difference-equal new-return-names fn-return-names))
                guts.name))
        (badname-okp nil)
-       (subst (returnspec-return-value-subst guts.name guts.name-fn fn-formals fn-return-names)))
-    (returnspec-multi-thms guts.name guts.name-fn binds newspecs subst badname-okp world)))
+       ((mv body-subst hint-subst)
+        (returnspec-return-value-subst guts.name guts.name-fn fn-formals fn-return-names)))
+    (returnspec-multi-thms guts.name guts.name-fn binds newspecs body-subst hint-subst badname-okp world)))
 
 (defun returnspec-additional-thms (guts newspecs world)
   ;; This deals with either the single- or multi-valued return case.
@@ -1760,7 +1762,7 @@ names between your formals and returns.</p>")
        (names (returnspeclist->names guts.returnspecs))
        (ign-names (make-symbols-ignorable names))
        (formals (look-up-formals guts.name-fn world))
-       (subst (returnspec-return-value-subst fn guts.name-fn formals names))
+       ((mv body-subst hint-subst) (returnspec-return-value-subst fn guts.name-fn formals names))
        (binding `((,(if (consp (cdr ign-names))
                         `(mv . ,ign-names)
                       (car ign-names))
@@ -1778,10 +1780,10 @@ names between your formals and returns.</p>")
                 `(implies ,hyp ,concl)
               concl)))
     `(,(if disablep 'defthmd 'defthm) ,name
-      ,thm
-      ,@(and hints?        `(:hints ,(sublis subst (cdr hints?))))
+      ,(sublis body-subst thm)
+      ,@(and hints?        `(:hints ,(sublis hint-subst (cdr hints?))))
       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-      ,@(and rule-classes? `(:rule-classes ,(sublis subst (cdr rule-classes?)))))))
+      ,@(and rule-classes? `(:rule-classes ,(sublis hint-subst (cdr rule-classes?)))))))
 
 
 (defun defret-fn (name args disablep world)

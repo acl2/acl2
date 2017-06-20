@@ -83,10 +83,10 @@ cat update-libs.out
 
 
 # Start of bordeaux-threads hack
-echo "Getting patched bordeaux-threads.  BOZO get rid of this step"
-echo "after the Lispworks patch gets into the main Quicklisp dist."
-svn export https://github.com/sionescu/bordeaux-threads/trunk bundle/local-projects/bordeaux-threads
-rm -rf bundle/software/bordeaux-threads-v0.8.4-git
+#echo "Getting patched bordeaux-threads.  BOZO get rid of this step"
+#echo "after the Lispworks patch gets into the main Quicklisp dist."
+#svn export https://github.com/sionescu/bordeaux-threads/trunk bundle/local-projects/bordeaux-threads
+#rm -rf bundle/software/bordeaux-threads-v0.8.4-git
 # End of bordeaux-threads hack
 
 

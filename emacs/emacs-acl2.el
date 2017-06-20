@@ -67,6 +67,8 @@
   ; "control-meta-q" indents s-expression even when not in lisp-mode.
   ; "control-t control-p" executes "meta-x up-list", moving to end of enclosing
   ;      s-expression.
+  ; "control-t p" compares the current form with one obtained with
+  ;      meta-. (see below for more details).
   ; "control-t w" does "meta-x compare-windows" (see emacs documentation,
   ;      "control-h f compare-windows", for more info).
   ; "control-t q" is like "control-t w" above, but ignores whitespace (and case
@@ -691,6 +693,18 @@ then also ignore case if that argument is positive, else do not ignore case."
 ; if desired.  Also consider compare-ignore-case.
 (define-key ctl-t-keymap "w" 'compare-windows)
 (define-key ctl-t-keymap "q" 'approx-compare-windows)
+
+; The following keyboard macro compares two forms in a horizontal
+; split of the current window.  The form in which the cursor resides,
+; starting with an open parenthesis on the left margin, is compared
+; (with compare-windows) to the form obtained by meta-. on the cadr of
+; that form.  For example, if the form is (defun foo ...), then
+; "control-t p" compares that form with the form produced by running
+; "meta-." on foo.
+(fset 'compare-acl2-patch
+      [?\C-x ?1 ?\C-n ?\C-e ?\C-\M-a ?\C-x ?2 ?\C-x ?o ?\C-f ?\C-\M-f ?\M-f
+	     ?\M-b ?\M-. return ?\C-x ?o ?\C-t ?w])
+(define-key ctl-t-keymap "p" 'compare-acl2-patch)
 
 (defun my-lisp-mode-hook ()
   (setq indent-tabs-mode nil)

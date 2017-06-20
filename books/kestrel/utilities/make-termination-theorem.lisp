@@ -8,7 +8,7 @@
 (include-book "defmacroq")
 
 (defxdoc make-termination-theorem
-  :parents (termination-theorem history measure)
+  :parents (termination-theorem history measure kestrel-utilities)
   :short "Create a copy of a function's termination theorem that calls stubs."
   :long "<p>The @(':')@(tsee termination-theorem) @(see lemma-instance)
  provides a way to re-use a recursive definition's termination (measure)

@@ -1,9 +1,6 @@
 #|$ACL2s-Preamble$;
-(set-waterfall-parallelism nil)
-(include-book "centaur/gl/portcullis" :dir :system)
-(include-book "centaur/satlink/portcullis" :dir :system)
-(ld "../package.lsp")
-; cert-flags: ? t :ttags :all
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
@@ -53,6 +50,7 @@ downloaded from the webpage.
 
 ; Make a Glucose satlink config
 (defconst *my-config* (satlink::make-config :cmdline "glucose"))
+;; (defconst *my-config* (satlink::make-config :cmdline "cryptominisat5.exe"))
 
 (defun gl-my-satlink-config ()
   (declare (xargs :guard t))

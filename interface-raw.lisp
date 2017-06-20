@@ -1854,8 +1854,10 @@
          ,formals
          ,(cons fn formals)))
       (t
-       (let* ((invariant-risk
-               (getpropc fn 'invariant-risk nil wrld))
+       (let* ((program-p (eq defun-mode :program))
+              (invariant-risk
+               (and program-p
+                    (getpropc fn 'invariant-risk nil wrld)))
               (super-stobjs-in ; At a "leaf" of a stobj-based computation?
                (if stobj-flag
 
@@ -1882,7 +1884,6 @@
 
                (and (not super-stobjs-in) (ignore-vars dcls)))
               (ignorable-vars (ignorable-vars dcls))
-              (program-p (eq defun-mode :program))
               (*1*guard (oneify guard nil wrld program-p))
 
 ; We throw away most declararations and the doc string, keeping only ignore and
