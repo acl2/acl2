@@ -385,7 +385,6 @@
 	    acl2::d<  ;; ??
 	    l<
 	    acl2::lexp
-	    acl2::natp-listp
 	    nfix
 	    not
 	    fix
