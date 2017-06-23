@@ -27,7 +27,7 @@
 
 (defxdoc abnf
 
-  :parents (acl2::kestrel-books)
+  :parents (acl2::kestrel-books acl2::projects)
 
   :short "A library for ABNF (Augmented Backus-Naur Form)."
 
