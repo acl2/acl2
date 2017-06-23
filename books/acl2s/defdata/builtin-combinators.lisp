@@ -56,13 +56,16 @@ data last modified: [2014-08-06]
     
        
 (defun get-tau-int (domain rexp)
+  (declare (xargs :verify-guards t))
   (let ((dom (if (eq domain 'acl2s::integer)
                  'acl2::integerp
                'acl2::rationalp)))
   (case-match rexp
     ((lo lo-rel-sym '_ hi-rel-sym hi)
      (b* ((lo-rel (eq lo-rel-sym '<))
-          (hi-rel (eq hi-rel-sym '<)))
+          (hi-rel (eq hi-rel-sym '<))
+          (lo (and (rationalp lo) lo))
+          (hi (and (rationalp hi) hi)))
        (acl2::make-tau-interval dom lo-rel lo hi-rel hi))))))
 
 (defun make-acl2-range-constraints (x domain rexp)
@@ -78,16 +81,14 @@ data last modified: [2014-08-06]
 ;(defun range-pred-I (x s) `(acl2::in-tau-intervalp ,x ',(get-tau-int (cadr s) (third s))))
 (defun range-pred-I (x s) `(AND . ,(make-acl2-range-constraints x (cadr s) (third s))))
 
-(defun make-enum-body-for-range (r domain tau-interval)
-  (b* ((lo (tau-interval-lo tau-interval))
-       (hi (tau-interval-hi tau-interval))
-       (lo-rel (tau-interval-lo-rel tau-interval))
-       (hi-rel (tau-interval-hi-rel tau-interval)))
+
+
+(defun make-enum-body-for-range (r domain lo hi lo-rel hi-rel)
     (case domain
       (acl2s::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
                            (hi (and hi (if hi-rel (1- hi) hi))))
-                       (cond ((and lo hi)
-                              `(acl2s::nth-integer-between ,r ,lo ,hi))
+                        (cond ((and lo hi)
+                               `(acl2s::nth-integer-between ,r ,lo ,hi))
                              
                              (lo ;hi is positive infinity
                               `(+ ,lo ,r))
@@ -118,13 +119,184 @@ data last modified: [2014-08-06]
                               rat-ans)));ans shud be less than or equal to hi
                         
                         (t;lo is neg infinity and hi is is <= 0
-                         `(- ,hi (acl2s::nth-positive-rational ,r)))))))))
+                         `(- ,hi (acl2s::nth-positive-rational ,r))))))))
 
-(defun range-enum-I (i s) (make-enum-body-for-range i (cadr s) (get-tau-int (cadr s) (third s))))
-(defun range-enum/acc-I (i s) 
-  (declare (ignorable i))
-  `(mv-let (i _SEED) (random-natural-seed _SEED)
-           (mv ,(range-enum-I 'i s) (the (unsigned-byte 31) _SEED))))
+(defun range-enum-I (i s)
+  (b* ((tau-interval (get-tau-int (cadr s) (third s)))
+       (lo (tau-interval-lo tau-interval))
+       (hi (tau-interval-hi tau-interval))
+       (lo-rel (tau-interval-lo-rel tau-interval))
+       (hi-rel (tau-interval-hi-rel tau-interval)))
+  
+  (make-enum-body-for-range i (cadr s) lo hi lo-rel hi-rel)))
+
+
+
+(defun minimum-range-lo-builtin ()
+  (declare (xargs :guard t))
+  (- 0 (expt 2 32)))
+(defun maximum-range-hi-builtin ()
+  (declare (xargs :guard t))
+  (+ 0 (expt 2 32)))
+(defstub minimum-range-lo () => *)
+(defstub maximum-range-hi () => *)
+(defattach minimum-range-lo minimum-range-lo-builtin)
+(defattach maximum-range-hi maximum-range-hi-builtin)
+#| Sampling distribution for Bounded Ranges [2017-06-21 Wed]
+.01 min, .01 max, .01 mid1, .01 mid2 
+    (or .02 if one mid, eg 1-4 has 2 mids: 2,3, but 1-5 has one: 3) 
+.10 uniform between -100 and 100 (added by harshrc)
+.19 geometric around mid
+.45 uniform between min-max
+.1 geometric around min (ie, [min---])
+.1 geometric around max (ie, [max--]) 
+.01 geometric [max+1 ...]) 
+.01 geometric [min-1 ...]) 
+|#
+
+;; The keys should add up to 100
+(defun sampling-dist-default (min max mid1 mid2)
+`((1 :eq ,min)
+  (1 :eq ,max)
+  (1 :eq ,mid1)
+  (1 :eq ,mid2)
+  (10 :uniform -100 100)
+  (19 :geometric :around ,mid1)
+  (45 :uniform ,min ,max)
+  (10 :geometric :leq ,max)
+  (10 :geometric :geq ,min)
+  (1 :geometric :geq ,(1+ max))
+  (1 :geometric :leq ,(1- min))))
+
+#|
+
+(defun test-weighted-switch-nat (wts n seed. acc)
+  (if (zp n)
+      (mv acc seed.)
+    (b* (((mv idx (the (unsigned-byte 31) seed.))
+          (defdata::random-index-seed 100 seed.))
+         ((mv x &) (defdata::weighted-switch-nat wts idx))
+         ((mv acc seed.) (test-weighted-switch-nat wts (1- n) seed. (update-nth x (1+ (nth x acc)) acc))))
+      (mv acc seed.))))
+
+(u::defloop list-div-mult-by (xs div mult)
+            (for ((x in xs)) (collect (* (/ x div) mult))))
+
+(defun test-weighted-switch-nat-top (wts n state)
+  (declare (xargs :stobjs (state) :verify-guards nil))
+  (b* ((acc (make-list (len wts) :initial-element 0))
+       ((mv acc seed.) (test-weighted-switch-nat wts n (defdata::getseed state) acc))
+       (state (defdata::putseed seed. state)))
+    (value (list-div-mult-by acc n 100))))
+
+(test-weighted-switch-nat-top '(1 1 1 1 29 45 10 10 1 1) 10000 state)
+
+(defun test-enum-dist (n state)
+  (declare (xargs :stobjs (state) :verify-guards nil))
+  (if (zp n)
+      (cw "~%")
+  (b* (((mv x seed.) (NTH-SRL-INT/ACC 0 (defdata::getseed state) acc))
+       (state (defdata::putseed seed. state)))
+    (prog2$ (cw "~x0  " x)
+            (test-enum-dist (1- n) state)))))
+
+
+
+
+|#
+(defun sampling-dist-lo (min max mid1 mid2)
+`((1 :eq ,min)
+  (1 :eq ,max)
+  (1 :eq ,mid1)
+  (1 :eq ,mid2)
+  (1 :geometric :around ,mid1)
+  (22 :uniform ,min ,max)
+  (1 :geometric :leq ,max)
+  (10 :uniform -100 100)
+  (60 :geometric :geq ,min)
+  (1 :geometric :geq ,(1+ max))
+  (1 :geometric :leq ,(1- min))))
+
+(defun sampling-dist-hi (min max mid1 mid2)
+`((1 :eq ,min)
+  (1 :eq ,max)
+  (1 :eq ,mid1)
+  (1 :eq ,mid2)
+  (1 :geometric :around ,mid1)
+  (22 :uniform ,min ,max)
+  (10 :uniform -100 100)
+  (60 :geometric :leq ,max)
+  (1 :geometric :geq ,min)
+  (1 :geometric :geq ,(1+ max))
+  (1 :geometric :leq ,(1- min))))
+
+(defun midpoints (lo hi)
+  (if (and (integerp lo) (integerp hi)
+           (oddp (- hi lo)))
+      (let ((half2 (/ (1+ (- hi lo)) 2)))
+        (mv (1- (+ lo half2)) (+ lo half2)))
+    (let ((half1 (/ (- hi lo) 2)))
+      (mv (+ lo half1) (+ lo half1)))))
+
+(defun make-enum-exp-for-bounded-range (ivar seedvar dom sampling-dist)
+  (b* ((weights (strip-cars sampling-dist))
+       (ctx 'make-enum-exp-for-bounded-range)
+       (nth-fn (if (eq dom 'acl2s::integer)
+                   'acl2s::nth-integer
+                 'acl2s::nth-rational))
+       (nth-pos-fn (if (eq dom 'acl2s::integer)
+                       'acl2s::nth-nat
+                     'acl2s::nth-positive-rational))
+       (between-fn (if (eq dom 'acl2s::integer)
+                       'defdata::random-integer-between-seed
+                     'defdata::random-rational-between-seed)))
+                     
+    
+    `(b* (((mv idx (the (unsigned-byte 31) ,seedvar))
+           (defdata::random-index-seed 100 ,seedvar))
+          ((mv choice &) (defdata::weighted-switch-nat ',weights idx))
+          (chosen (nth choice ',sampling-dist))
+          (sp (cdr chosen)))
+       (case-match sp ;sampling type dispatch
+         ((':eq x) (mv x ,seedvar))
+         ((':geometric ':around x)  (mv (+ x (,nth-fn ,ivar)) ,seedvar))
+         ((':geometric ':leq x)     (mv (- x (,nth-pos-fn ,ivar)) ,seedvar))
+         ((':geometric ':geq x)     (mv (+ x (,nth-pos-fn ,ivar)) ,seedvar))
+         ((':uniform x1 x2)         (,between-fn x1 x2 ,seedvar))
+         (& (mv (er hard ',ctx "~| Impossible case ~x0.~%" sp) ,seedvar))))))
+          
+       
+  
+(defun make-enum/acc-body-for-range (ivar seedvar domain lo hi lo-rel hi-rel)
+  (b* ((gap (if (eq domain 'acl2s::integer) 1 (/ (- hi lo) 1000)))
+       (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
+       (hi (and hi (if hi-rel (- hi gap) hi)))
+       (lo1 (or lo (minimum-range-lo)))
+       (hi1 (or hi (maximum-range-hi)))
+       ((mv mid1 mid2) (midpoints lo hi))
+       (exp (cond ((and lo hi)
+                   (make-enum-exp-for-bounded-range
+                    ivar seedvar domain (sampling-dist-default lo hi mid1 mid2)))
+                  (lo (make-enum-exp-for-bounded-range
+                       ivar seedvar domain (sampling-dist-lo lo hi1 mid1 mid2)))
+                  (t (make-enum-exp-for-bounded-range
+                       ivar seedvar domain (sampling-dist-hi lo1 hi1 mid1 mid2))))))
+           
+    `(mv-let (,ivar ,seedvar) (random-natural-seed ,seedvar) ;;overwrite original value of ivar
+             ,exp)))
+
+(defun range-enum/acc-I (ivar s) 
+  (declare (ignorable ivar))
+  (b* ((tau-interval (get-tau-int (cadr s) (third s)))
+       (lo (tau-interval-lo tau-interval))
+       (hi (tau-interval-hi tau-interval))
+       (lo-rel (tau-interval-lo-rel tau-interval))
+       (hi-rel (tau-interval-hi-rel tau-interval)))
+    (make-enum/acc-body-for-range ivar '_SEED (cadr s) lo hi lo-rel hi-rel)))
+
+
+
+
 
 (include-book "defdata-util")
 (defun make-defconst-event1 (p top-kwd-alist wrld)

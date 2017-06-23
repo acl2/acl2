@@ -465,7 +465,7 @@ information in a human-readable form. </p>
 )
 
 ;; Put the test-checkpoint no-op backtrack hint in the override-hints
-(acl2s-defaults :set testing-enabled t)
+;; (acl2s-defaults :set testing-enabled t)
 
 
 ; [2016-04-03 Sun] Add fixers support to Cgen
