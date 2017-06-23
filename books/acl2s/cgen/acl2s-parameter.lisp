@@ -219,10 +219,10 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :guard (member-eq value *search-strategy-values*))
 
 (add-acl2s-parameter 
- use-fixers t
+ use-fixers nil
  :short "Specify whether fixers are to be used."
  :long "
-  By default this parameter is set to <tt>t</tt>.
+  By default this parameter is set to <tt>nil</tt>.
    <code>
     Usage:
     (acl2s-defaults :set use-fixers t)
