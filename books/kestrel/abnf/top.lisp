@@ -78,6 +78,16 @@
    As another example, &lsquo;RFC.2.3&rsquo; refers to
    the result of updating Section 2.3 of RFC 5234
    as specified in Section 2.1 of RFC 7405.
+   </p>
+
+   <p>
+   The Kestrel Institute Technical Report
+   &ldquo;ABNF in ACL2&rdquo; of April 2017,
+   available <a href=\"http://www.kestrel.edu/~coglio\">here</a>,
+   provides an overview
+   of the formalization of the ABNF notation
+   and of the verified parser
+   (but not of the operations on ABNF grammars).
    </p>")
 
 (xdoc::order-subtopics abnf nil t)
