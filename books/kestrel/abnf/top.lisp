@@ -88,6 +88,63 @@
    of the formalization of the ABNF notation
    and of the verified parser
    (but not of the operations on ABNF grammars).
+   The differences between the technical report and the ABNF library
+   are described
+   <see topic='@(url differences-with-technical-report)'>here</see>.
    </p>")
 
 (xdoc::order-subtopics abnf nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc differences-with-technical-report
+
+  :parents (abnf)
+
+  :short "Differences with the technical report."
+
+  :long
+
+  "<p>
+   For brevity, the technical report makes the following slight simplfications
+   compared to the ABNF library:
+   </p>
+
+   <ul>
+
+     <li>
+     The forms in the technical reports omit
+     guards,
+     rule classes,
+     measures,
+     hints,
+     keyed options for documentation (e.g. @(':short')),
+     and some keyed options for
+     <see topic='@(url fty::fty)'>FTY</see> types (e.g. @(':pred')).
+     </li>
+
+     <li>
+     The technical report uses
+     @(tsee defun),
+     @(tsee mutual-recursion),
+     @(tsee defthm), and
+     @(tsee defun-sk)
+     instead of
+     @(tsee define),
+     @(tsee defines),
+     @(tsee defrule), and
+     @(tsee define-sk).
+     </li>
+
+     <li>
+     The technical report uses slightly shorter names
+     for the parameters of some functions
+     (e.g. @('alt') instead of @('alternation')).
+     </li>
+
+     <li>
+     The technical report uses @('*abnf-grammar*')
+     as the name of the constant @(tsee *all-concrete-syntax-rules*).
+     </li>
+
+   </ul>")
