@@ -402,10 +402,6 @@
                   (natp nat?))
          :name natp-of-parse-any
          :rule-classes :type-prescription)
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-any-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -437,10 +433,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-exact-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -474,10 +466,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-in-range-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -516,10 +504,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-in-either-range-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -586,10 +570,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-ichar-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -624,10 +604,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (- (len input) 2)))
-               :name len-of-parse-ichars-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -657,10 +633,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-alpha-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -716,10 +688,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-cr-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -746,10 +714,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-digit-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -776,10 +740,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-dquote-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -806,10 +766,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-htab-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -836,10 +792,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-lf-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -866,10 +818,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-sp-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -896,10 +844,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-vchar-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -928,10 +872,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (- (len input) 2)))
-               :name len-of-parse-crlf-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
@@ -1005,10 +945,6 @@
   ///
 
   (more-returns
-   (rest-input (implies (not error?)
-                        (equal (len rest-input)
-                               (1- (len input))))
-               :name len-of-parse-wsp-when-no-error)
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
