@@ -55,6 +55,11 @@
       (suppress-output form)
     form))
 
+; The following function should probably be completely replaced by
+; manage-screen-output, below.  The key difference is that
+; control-screen-output will show error output even if it is suppressed
+; globally, while manage-screen output respects the case of global suppression
+; by avoiding the production of error output.
 (define control-screen-output (verbose (form pseudo-event-formp))
   :returns (form-with-output-controlled pseudo-event-formp :hyp :guard)
   :parents (user-interface)
@@ -81,6 +86,9 @@
               :on error
               ,form))))
 
+; The following function, control-screen-output-and-maybe-replay, is obsolete
+; except that it is used in the workshop books' version of simplify-defun,
+; books/workshops/2017/coglio-kaufmann-smith/support/simplify-defun.lisp.
 (define control-screen-output-and-maybe-replay
   ((verbose "@('t') (or @(''t')) or @('nil') (or @(''nil')), else indicates
              replay on failure.")
@@ -143,6 +151,62 @@
                     (cond (erp (prog2$ (cw "~%===== VERBOSE REPLAY: =====~|")
                                        ,form-t))
                           (t (value val)))))))))))
+
+(define manage-screen-output-aux (verbose (form pseudo-event-formp) bangp)
+  :returns (form-with-output-managed pseudo-event-formp :hyp :guard)
+  (cond ((maybe-unquote verbose) form)
+        (t (let ((output-names (remove1 'error *valid-output-names*)))
+             `(,(if bangp 'with-output! 'with-output)
+               :off ,output-names
+               :gag-mode nil
+               ,form)))))
+
+(define manage-screen-output (verbose (form pseudo-event-formp))
+  :returns (form-with-output-managed pseudo-event-formp :hyp :guard)
+  :parents (user-interface)
+  :short "Manage the screen output generated from an event form."
+  :long
+  "<p>
+   If @('verbose') is not @('nil') or @(''nil'), keep all screen output.
+   If @('verbose') is @('nil') or @(''nil'), suppress all non-error screen
+   output.
+   </p>
+   <p>
+   This function can be used in a macro of the following form:
+   @({
+     (defmacro mac (... &key verbose ...)
+       (manage-screen-output verbose `(make-event ...)))
+   })
+   Invoking @('mac') at the ACL2 top-level will submit the event,
+   with the screen output managed by @('verbose').
+   </p>
+   <p>
+   Note that if @('form') is an event (see @(see embedded-event-form)), then
+   @('(manage-screen-output verbose form)') is an event.  However, the function
+   @('manage-screen-output') may not be called in the body of a function; for
+   that, see @(see manage-screen-output!).
+   </p>"
+  (manage-screen-output-aux verbose form nil))
+
+(define manage-screen-output! (verbose (form pseudo-event-formp))
+  :returns (form-with-output-managed pseudo-event-formp :hyp :guard)
+  :parents (user-interface)
+  :short "Programatically manage the screen output generated from an event form."
+  :long
+  "<p>See @(see manage-screen-output).  The two utilities are identical,
+  except:</p>
+
+  <ul>
+
+  <li>If @('form') is an event (see @(see embedded-event-form)), then
+  @('(manage-screen-output verbose form)') is an event but
+  @('(manage-screen-output! verbose form)') is not.</li>
+
+  <li>The function @('manage-screen-output!') may be called in a function body,
+  but the function @('manage-screen-output') may not.</li>
+
+  </ul>"
+  (manage-screen-output-aux verbose form t))
 
 (defsection cw-event
   :parents (user-interface)
