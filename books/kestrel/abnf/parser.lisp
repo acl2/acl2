@@ -1654,7 +1654,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-dec-val-linear
+               :name len-of-parse-dec-val-linear
                :rule-classes :linear))
 
   (defrule parse-dec-val-of-nat-list-fix
@@ -1685,7 +1685,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-hex-val-linear
+               :name len-of-parse-hex-val-linear
                :rule-classes :linear))
 
   (defrule parse-hex-val-of-nat-list-fix
@@ -1715,7 +1715,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-bin/dec/hex-val-linear
+               :name len-of-parse-bin/dec/hex-val-linear
                :rule-classes :linear))
 
   (defrule parse-bin/dec/hex-val-of-nat-list-fix
@@ -1743,7 +1743,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-num-val-linear
+               :name len-of-parse-num-val-linear
                :rule-classes :linear))
 
   (defrule parse-num-val-of-nat-list-fix
@@ -1773,7 +1773,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-quoted-string-linear
+               :name len-of-parse-quoted-string-linear
                :rule-classes :linear))
 
   (defrule parse-quoted-string-of-nat-list-fix
@@ -1801,7 +1801,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-case-sensitive-string-linear
+               :name len-of-parse-case-sensitive-string-linear
                :rule-classes :linear))
 
   (defrule parse-case-sensitive-string-of-nat-list-fix
@@ -1826,7 +1826,7 @@
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
-               :name parse-?%i-rest-linear
+               :name len-of-parse-?%i-rest-linear
                :rule-classes :linear))
 
   (defrule parse-?%i-of-nat-list-fix
@@ -1854,7 +1854,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-case-insensitive-string-linear
+               :name len-of-parse-case-insensitive-string-linear
                :rule-classes :linear))
 
   (defrule parse-case-insensitive-string-of-nat-list-fix
@@ -1884,7 +1884,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-char-val-linear
+               :name len-of-parse-char-val-linear
                :rule-classes :linear))
 
   (defrule parse-char-val-of-nat-list-fix
@@ -1912,7 +1912,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-wsp/vchar-linear
+               :name len-of-parse-wsp/vchar-linear
                :rule-classes :linear))
 
   (defrule parse-wsp/vchar-of-nat-list-fix
@@ -1967,7 +1967,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-comment-linear
+               :name len-of-parse-comment-linear
                :rule-classes :linear))
 
   (defrule parse-comment-of-nat-list-fix
@@ -1997,7 +1997,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-cnl-linear
+               :name len-of-parse-cnl-linear
                :rule-classes :linear))
 
   (defrule parse-cnl-of-nat-list-fix
@@ -2025,7 +2025,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-cnl-wsp-linear
+               :name len-of-parse-cnl-wsp-linear
                :rule-classes :linear))
 
   (defrule parse-cnl-wsp-of-nat-list-fix
@@ -2056,7 +2056,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-cwsp-linear
+               :name len-of-parse-cwsp-linear
                :rule-classes :linear))
 
   (defrule parse-cwsp-of-nat-list-fix
@@ -2106,7 +2106,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-1*cwsp-linear
+               :name len-of-parse-1*cwsp-linear
                :rule-classes :linear))
 
   (defrule parse-1*cwsp-of-nat-list-fix
@@ -2135,7 +2135,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-*digit-star-*digit-linear
+               :name len-of-parse-*digit-star-*digit-linear
                :rule-classes :linear))
 
   (defrule parse-*digit-star-*digit-of-nat-list-fix
@@ -2171,7 +2171,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-repeat-linear
+               :name len-of-parse-repeat-linear
                :rule-classes :linear))
 
   (defrule parse-repeat-of-nat-list-fix
@@ -2196,7 +2196,7 @@
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
-               :name parse-?repeat-linear
+               :name len-of-parse-?repeat-linear
                :rule-classes :linear))
 
   (defrule parse-?repeat-of-nat-list-fix
@@ -2226,7 +2226,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-alpha/digit/dash-linear
+               :name len-of-parse-alpha/digit/dash-linear
                :rule-classes :linear))
 
   (defrule parse-alpha/digit/dash-of-nat-list-fix
@@ -2251,7 +2251,7 @@
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
-               :name parse-*-alpha/digit/dash-linear
+               :name len-of-parse-*-alpha/digit/dash-linear
                :rule-classes :linear))
 
   (defrule parse-*-alpha/digit/dash-of-nat-list-fix
@@ -2278,7 +2278,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name parse-rulename-linear
+               :name len-of-parse-rulename-linear
                :rule-classes :linear))
 
   (defrule parse-rulename-of-nat-list-fix
