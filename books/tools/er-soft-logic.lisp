@@ -32,10 +32,20 @@
 
 (defun error-fms-soft-logic (ctx str alist state)
 
-; This is modified from ACL2 source function error-fms.
+; This is modified from ACL2 source function error-fms.  However, we put what
+; amounts to the io? wrapper (defined in the ACL2 sources) here, so that other
+; utilities (see in particular community book
+; kestrel/utilities/er-soft-plus.lisp) can rely on the present function to
+; inhibit error output.  Unlike io?, we never print the
+; window-interface-prelude (see io?); if that presents a problem maybe we'll
+; change that in the future, in which case we'll need to figure out if io? can
+; be wrapped around forms that don't return state.
 
   (declare (xargs :stobjs state))
-  (and (f-boundp-global 'abbrev-evisc-tuple state)
+  (and (f-boundp-global 'abbrev-evisc-tuple state) ; always true
+       (f-boundp-global 'inhibit-output-lst state) ; always true
+       (true-listp (f-get-global 'inhibit-output-lst state)) ; always true
+       (not (member-eq 'error (f-get-global 'inhibit-output-lst state)))
        (fmt-to-comment-window "~%~%ACL2 Error in ~x0:  ~@1~%~%"
                               (list (cons #\0 ctx)
                                     (cons #\1 (cons str alist)))
