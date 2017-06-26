@@ -388,7 +388,7 @@ B is the builtin combinator table."
 
 
 ; some type expressions can be named
-; e.g. (x . (cons nat pos)), (left-child . tree)
+; e.g. (x . pos), (left-child . tree)
 ; we will collect all such names and their binding and do some preliminary syntax checks
 ; we forbid nested names and all naming should be unique
 (mutual-recursion
@@ -398,6 +398,8 @@ B is the builtin combinator table."
         ((not (true-listp texp)) (b* (((cons name u) texp)
                                       ((unless (proper-symbolp name))
                                        (er hard? ctx "~| Expecting ~x0 to be a name symbol.~%" name))
+                                      ((unless (proper-symbolp u))
+                                       (er hard? ctx "~| Expecting ~x0 to be a (type) name symbol.~%" u))
                                       (N1 (collect-names-texp u ctx B))
                                       ((unless (null N1))
                                        (er hard? ctx "~| Nested naming currently disallowed! ~
