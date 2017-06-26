@@ -42,15 +42,30 @@
 ; be wrapped around forms that don't return state.
 
   (declare (xargs :stobjs state))
-  (and (f-boundp-global 'abbrev-evisc-tuple state) ; always true
-       (f-boundp-global 'inhibit-output-lst state) ; always true
+  (and (f-boundp-global 'abbrev-evisc-tuple state)           ; always true
+       (f-boundp-global 'inhibit-output-lst state)           ; always true
        (true-listp (f-get-global 'inhibit-output-lst state)) ; always true
        (not (member-eq 'error (f-get-global 'inhibit-output-lst state)))
-       (fmt-to-comment-window "~%~%ACL2 Error in ~x0:  ~@1~%~%"
-                              (list (cons #\0 ctx)
-                                    (cons #\1 (cons str alist)))
-                              0
-                              (abbrev-evisc-tuple state))))
+       (fmt-to-comment-window
+        "~%~%ACL2 Error in ~@0:  ~@1~%~%"
+        (list (cons #\0
+
+; The following is adapted from ACL2 source function fmt-ctx.
+
+                    (cond
+                     ((null ctx) "")
+                     ((symbolp ctx) (msg "~x0" ctx))
+                     ((and (consp ctx)
+                           (symbolp (car ctx)))
+                      (msg "(~@0~x1 ~x2 ...)"
+                           (if (member-eq (car ctx) *fmt-ctx-spacers*)
+                               " " "")
+                           (car ctx)
+                           (cdr ctx)))
+                     (t ctx)))
+              (cons #\1 (cons str alist)))
+        0
+        (abbrev-evisc-tuple state))))
 
 (defun error1-logic (ctx str alist state)
 

@@ -28841,10 +28841,13 @@
                                  (cadr raw-result))))))))))
 
 (defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
-                                         check-expansion wrld ctx state)
+                                         check-expansion on-behalf-of wrld ctx
+                                         state)
   (cond ((atom expansion-lst)
-         (er soft ctx
-             "Evaluation failed for all expansions."))
+         (cond ((member-eq on-behalf-of '(:quiet :quiet!))
+                (silent-error state))
+               (t (er soft ctx
+                      "Evaluation failed for all expansions."))))
         (t (pprogn
             (cond
              ((f-get-global 'make-event-debug state)
@@ -28862,11 +28865,12 @@
                              wrld ctx state)
              (cond (erp (make-event-fn2-lst (cdr expansion-lst)
                                             whole-form in-encapsulatep
-                                            check-expansion wrld ctx state))
+                                            check-expansion on-behalf-of
+                                            wrld ctx state))
                    (t (value val))))))))
 
 (defun make-event-fn1 (expansion0 whole-form in-encapsulatep check-expansion
-                                  wrld ctx state)
+                                  on-behalf-of wrld ctx state)
   (cond ((and (consp expansion0)
               (eq (car expansion0) :OR))
 
@@ -28881,7 +28885,7 @@
           ((cert-data nil))
           (make-event-fn2-lst (cdr expansion0)
                               whole-form in-encapsulatep check-expansion
-                              wrld ctx state)))
+                              on-behalf-of wrld ctx state)))
         (t (make-event-fn2 expansion0
                            whole-form in-encapsulatep check-expansion
                            wrld ctx state))))
@@ -29066,7 +29070,7 @@
                  (make-event-fn1
                   expansion0 whole-form
                   (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
-                  check-expansion wrld0 ctx state)))
+                  check-expansion on-behalf-of wrld0 ctx state)))
              (let* ((expansion1 (car expansion1/stobjs-out/result))
                     (stobjs-out (cadr expansion1/stobjs-out/result))
                     (result (cddr expansion1/stobjs-out/result))
