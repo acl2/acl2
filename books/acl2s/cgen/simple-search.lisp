@@ -600,15 +600,15 @@ where
                                          (symbol-unsigned-29bits-alistp BE.)
                                          (consp BE.) ;precondition TODOcheck
                                          (and ,@(make-guard-var-assoc-eq
-                                                 (strip-cars var-enumcalls-alist)
+                                                 (strip-cars v-cs%-alst)
                                                  'BE.)))
                              :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
-             ,(make-next-sigma_mv-let var-enumcalls-alist
+             ,(make-next-sigma_mv-let v-cs%-alst '() vl wrld
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
                                       `(B* ,(append partial-A elim-bindings)
                                           (mv ,(make-var-value-list-bindings
                                                 (remove-duplicates-eq
-                                                 (union-eq (strip-cars var-enumcalls-alist)
+                                                 (union-eq (strip-cars v-cs%-alst)
                                                            (strip-cars partial-A)
                                                            (strip-bound-vars elim-bindings))) '())
                                               seed. BE.))))
@@ -633,8 +633,8 @@ where
                                            ord-vs type-alist tau-interval-alist vl wrld))
 
 
-        ((mv erp var-enumcalls-alist) (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
-        ((when erp) (mv erp '() '()))
+        ;; ((mv erp var-enumcalls-alist) (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
+        ;; ((when erp) (mv erp '() '()))
         )
 ;   in
     (mv nil (defun-forms) (displayed-enum-alist v-cs%-alst '())))))
