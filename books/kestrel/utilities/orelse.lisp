@@ -68,9 +68,10 @@
   (let ((ev `(make-event '(:or ,@form-list
                                ,@(and no-error '((value-triple :failed))))
                          ,@(and expansion?p
-                                `(:expansion? ,(car form-list))))))
+                                `(:expansion? ,(car form-list)))
+                         :on-behalf-of :quiet!)))
     (cond (quiet `(with-output
-                    :stack :push
+                    ,@(and (eq quiet :stack-push) '(:stack :push))
                     :gag-mode nil
                     :off :all
                     ,ev))
@@ -129,13 +130,13 @@
         (t `(orelse ,event
                     (make-event
                      (with-output
-                       :stack :pop ; pop inhibition of errors
                        (er soft "event processing"
                            "The following event failed:~%~X01"
                            ',event
 ; The use of 12 below is quite arbitrary.  The goal is to print the entire
 ; event unless it's truly huge.
-                           (evisc-tuple 12 12 nil nil))))))))
+                           (evisc-tuple 12 12 nil nil)))
+                     :on-behalf-of :quiet)))))
 
 (defun report-event-when-error-fn-lst (lst)
   (cond ((atom lst) nil)
@@ -149,7 +150,8 @@
 (defun encapsulate-orelse-fn (fn signature events)
   (declare (xargs :guard (true-listp events)))
   `(make-event (let ((events (formal-map ',fn ',events)))
-                 (list* 'encapsulate ,signature events))))
+                 (list* 'encapsulate ,signature events))
+               :on-behalf-of :quiet!))
 
 (defmacro encapsulate-orelse (fn signature &rest events)
   (encapsulate-orelse-fn fn signature events))
