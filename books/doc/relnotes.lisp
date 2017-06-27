@@ -110,7 +110,7 @@
 
  <p>The @(see std/io) library now contains lemmas to help users prove
  that opened input and output channels remain open until closed, to
- aid guard theorem proofs.</p>
+ aid guard theorem proofs.  See @(see open-channel-lemmas).</p>
 
  <h3>Licensing Changes</h3>
 
