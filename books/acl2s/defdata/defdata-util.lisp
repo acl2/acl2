@@ -691,10 +691,11 @@
 
 
 (defun named-defdata-exp-p (texp)
-  "is it named, i.e of form (name . unnamed defdata-exp)"
+  "is it named, i.e of form (name . typename)"
   (and (not (possible-constant-value-p texp))
        (consp texp)
-       (not (true-listp texp))))
+       (not (true-listp texp))
+       (proper-symbolp (cdr texp))))
        
 (defun bind-names-vals1 (texp val)
   (and (named-defdata-exp-p texp)
@@ -860,7 +861,7 @@
 
 (defstub forbidden-names () => *)
 
-(defun forbidden-names-builtin () '())
+(defun forbidden-names-builtin () '(x acl2::x acl2s::x))
 (defattach forbidden-names forbidden-names-builtin)
 
 

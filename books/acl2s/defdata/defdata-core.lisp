@@ -9,6 +9,7 @@ author: harshrc
 file name: defdata-core.lisp
 date created: [2014-04-20 Sun]
 data last modified: [2014-07-2]
+data last modified: [2017-06-26 Mon]
 |#
 
 (in-package "DEFDATA")
@@ -319,7 +320,12 @@ B is the builtin combinator table."
                     :theory-name ,(get1 :theory-name kwd-alist)
                     :def ,odef
                     :normalized-def  ,ndef
-                    :prettyified-def ,pdef)))
+                    :prettyified-def ,pdef
+                    :min-rec-depth ,(get1 :min-rec-depth kwd-alist)
+                    :max-rec-depth ,(get1 :max-rec-depth kwd-alist)
+                    :recp ,(get1 :recp kwd-alist)
+                    :satisfies ,(get1 :satisfies kwd-alist)
+                    :satisfies-fixer ,(get1 :satisfies-fixer kwd-alist))))
 
 (defloop register-type-events1 (ps kwd-alist wrld)
   (for ((p in ps)) (collect (register-type-event p kwd-alist wrld))))
@@ -390,9 +396,9 @@ B is the builtin combinator table."
 ; some type expressions can be named
 ; e.g. (x . pos), (left-child . tree)
 ; we will collect all such names and their binding and do some preliminary syntax checks
-; we forbid nested names and all naming should be unique
+; we forbid naming non-typename expressions and all naming should be unique
 (mutual-recursion
-(defun collect-names-texp (texp ctx B)
+(defun collect-names-texp (texp parent-comb ctx B)
   (cond ((possible-constant-value-p texp) '())
         ((atom texp) '())
         ((not (true-listp texp)) (b* (((cons name u) texp)
@@ -400,10 +406,9 @@ B is the builtin combinator table."
                                        (er hard? ctx "~| Expecting ~x0 to be a name symbol.~%" name))
                                       ((unless (proper-symbolp u))
                                        (er hard? ctx "~| Expecting ~x0 to be a (type) name symbol.~%" u))
-                                      (N1 (collect-names-texp u ctx B))
-                                      ((unless (null N1))
-                                       (er hard? ctx "~| Nested naming currently disallowed! ~
-Please use intermediate definitions. If you think you cannot avoid nested naming, please send this example to the implementors.~%")))
+                                      ((when parent-comb)
+                                       (er hard? ctx "~| Name declaration not allowed under ~x0 scope.~%" parent-comb))
+                                      )
                                    (acons name u '())))
         (t (b* ((comb (car texp))
                 ((unless (proper-symbolp comb))
@@ -411,16 +416,16 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                 (ccomb (deref-combinator-alias comb B))
                 ((when (member-eq ccomb '(acl2s::range acl2s::member))) '()))
                                    
-             (collect-names-texps (cdr texp) ctx B)))))
+             (collect-names-texps (cdr texp) ccomb ctx B)))))
 
 
-(defun collect-names-texps (texps ctx B)
+(defun collect-names-texps (texps parent-comb ctx B)
   (if (atom texps)
       (if (null texps)
           '()
         (er hard? ctx "~| ~x0 is not null. Arguments of a combinator/constructor is expected to be a true-list.~%" texps))
-    (b* ((N1 (collect-names-texp (car texps) ctx B))
-         (N2 (collect-names-texps (cdr texps) ctx B))
+    (b* ((N1 (collect-names-texp (car texps) parent-comb ctx B))
+         (N2 (collect-names-texps (cdr texps) parent-comb ctx B))
          (non-unique-names (intersection-eq (strip-cars N1) (strip-cars N2)))
          ((when (consp non-unique-names))
           (er hard? ctx "~| Names ~x0 being used more than once.~%" non-unique-names)))
@@ -479,7 +484,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                    (otherwise (check-syntax-texps (cdr texp) scope tnames ctx wrld))))
                 ((when (assoc-eq (car texp) (table-alist 'data-constructor-table wrld)))
                  (check-syntax-texps (cdr texp) ;extend scope
-                                     (append (collect-names-texps (cdr texp) ctx B) scope) 
+                                     (append (collect-names-texps (cdr texp) nil ctx B) scope) 
                                      tnames ctx wrld)))
              (check-syntax-texps (cdr texp) scope tnames ctx wrld)))))
 
@@ -595,13 +600,13 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                       (acl2s::member nil)
                       (t (undefined-product-texps (cdr texp) ctx N wrld))))
                    ((assoc-eq comb C) ;data constructor -- extend scope
-                    (undefined-product-texps (cdr texp) ctx (append (collect-names-texps (cdr texp) ctx B) N) wrld))
+                    (undefined-product-texps (cdr texp) ctx (append (collect-names-texps (cdr texp) nil ctx B) N) wrld))
                    (t ;possible new  constructor -- extend scope
 ;TODO: add dependent expression support here.
                     (if (not (acl2::new-namep (car texp) wrld))
                         (er hard? ctx "~| ~x0 should be a fresh logical name.~%"  (car texp))
 ; lets not allow nested new constructors/records -- too much flexibility.
-                      (if (valid-record-fields-p (cdr texp) (append (collect-names-texps (cdr texp) ctx B) N))
+                      (if (valid-record-fields-p (cdr texp) (append (collect-names-texps (cdr texp) nil ctx B) N))
                         (list texp)
                         (er hard? ctx "~| Bad Syntax! Did you want to define a new record? Each record argument should be of form (field-name . type-name). There should be no name overlap among fields and types.~%" )))))))))
 
@@ -668,7 +673,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 
 
-(defconst *per-def-keywords* '(:satisfies :satisfies-fixer))
+(defconst *per-def-keywords* '(:satisfies :satisfies-fixer :min-rec-depth :max-rec-depth))
 
 
 
@@ -688,7 +693,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
       
 
 ; check if names are not nested and are unique
-       (N (collect-names-texp body ctx (table-alist 'builtin-combinator-table wrld)))
+       (N (collect-names-texp body 'TOP ctx (table-alist 'builtin-combinator-table wrld)))
        (M (table-alist 'type-metadata-table wrld))
        (cmn-nms (intersection-eq (strip-cars N) (strip-cars M)))
        ((when cmn-nms)
@@ -773,6 +778,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
             ;; :pre-hook-fns :post-hook-fns
             :testing-enabled)
           '(:hints :verbose)
+          *per-def-keywords*
           ))
 
 (defun delete-assoc-eq-lst (keys alst)
@@ -1172,52 +1178,62 @@ mandatory and provided by user.
 The following ASCII table shows the form of keyword-value-alist
 capturing the metadata associated with each typename.
 
-| property name    | kind of value    | default | internal | additional notes                |
-|------------------+------------------+---------+----------+---------------------------------|
-| :tau-recog-id    | nat              |         | yes      | from tau-database               |
-|------------------+------------------+---------+----------+---------------------------------|
-| :predicate       | 1-arity fn       |         | no       |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :size            | oneof pos t      | 't      | no       |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :enumerator      | 1-arity fn       |         | no       |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :enum/acc        | 2-arity fn       |         | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :enum/test       | 1-arity fn       |         | no       |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :enum/test/acc   | 2-arity fn       |         | yes      | acc version of enum/test        |
-|------------------+------------------+---------+----------+---------------------------------|
-| :equiv           | 2-arity fn       | 'equal  | no       | equivalence rel                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :equiv-fixer     | 1-arity fn       | n/i     | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :fixers          | alistof dom fn   | '()     | yes      | fn is 1-arity                   |
-|------------------+------------------+---------+----------+---------------------------------|
-| :base            | acl2 object      |         | yes      | base/default val                |
-|------------------+------------------+---------+----------+---------------------------------|
-| :generator       | generator%       | n/i     | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :sampling        | listof quot objs | '()     | no/yes   | an assorted sampling for cgen   |
-|------------------+------------------+---------+----------+---------------------------------|
-| :closed-under    | fn names         | '()     | yes      | polymorphism support?           |
-|------------------+------------------+---------+----------+---------------------------------|
-| :clique          | type names       | '()     | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :lub             | type name        | n/i     | no/yes   | smallest supertype in lattice   |
-|------------------+------------------+---------+----------+---------------------------------|
-| :glb             | type name        | n/i     | no/yes   | biggest subtype in type lattice |
-|------------------+------------------+---------+----------+---------------------------------|
-| :type-class      | type-class       | :undef  | yes      | is this needed?                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :def             | defdata body     | 'key    | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :prettyified-def | "         "      | 'key    | yes      | untrans/prettyified             |
-|------------------+------------------+---------+----------+---------------------------------|
-| :normalized-def  | core " "         | 'key    | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
-| :consistent-p    | boolean          | nil     | yes      |                                 |
-|------------------+------------------+---------+----------+---------------------------------|
+| property name       | kind of value    | default | internal | additional notes              |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :tau-recog-id       | nat              |         | yes      | from tau-database             |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :predicate          | 1-arity fn       |         | no       |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :domain-size        | oneof pos t      | 't      | no       |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :enumerator         | 1-arity fn       |         | no       |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :enum/acc           | 2-arity fn       |         | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :enum/test          | 1-arity fn       |         | no       |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :enum/test/acc      | 2-arity fn       |         | yes      | acc version of enum/test      |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :clique             | type names       | '()     | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :min-rec-depth      | pos              | 0       | no/yes   | min cons depth for recursive  |
+|                     |                  |         |          | types, i.e. the number of     |
+|                     |                  |         |          | constructor calls before      |
+|                     |                  |         |          | hitting base case.            |
+|                     |                  |         |          | Used by enum/acc.             |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :max-rec-depth      | pos              | 30      | no/yes   | max version of above          |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :satisfies          | expr(x)          |         | no       | boolean expr over x and names |
+|                     |                  |         |          | occuring in def and x ranges  |
+|                     |                  |         |          | over values of the type       |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :satisfies-fixer    | 1-arity fn       | n/i     | no       | expr(f(x)) is true            |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :default-base-value | acl2 object      |         | yes      | base/default val              |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :def                | defdata body     | 'key    | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :prettyified-def    | "         "      | 'key    | yes      | untrans/prettyified           |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :normalized-def     | core " "         | 'key    | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :generator          | generator%       | n/i     | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :sampling           | listof quot objs | '()     | no/yes   | an assorted sampling for cgen |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :closed-under       | fn names         | '()     | yes      | polymorphism support?         |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :equiv              | 2-arity fn       | 'equal  | no       | equivalence rel               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :equiv-fixer        | 1-arity fn       | n/i     | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :lub                | type name        | n/i     | no/yes   | smallest supertype in lattice |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :glb                | type name        | n/i     | no/yes   | biggest subtype in lattice    |
+|---------------------+------------------+---------+----------+-------------------------------|
+| :consistent-p       | boolean          | nil     | yes      |                               |
+|---------------------+------------------+---------+----------+-------------------------------|
 
 ** Invariants:
 - <<Tau predicate>> :: predicate should be recognized by Tau.

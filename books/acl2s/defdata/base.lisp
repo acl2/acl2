@@ -729,7 +729,7 @@
 ;                                   where (nth-T (T-index x)) = x
 
 (defmacro register-custom-type  (typename typesize enum pred &key verbose)
-  `(defdata::register-type ,typename :size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
+  `(defdata::register-type ,typename :domain-size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
 
 (register-custom-type nat t nth-nat-builtin natp)
 
@@ -780,7 +780,7 @@
              (defdata::random-natural-seed seed)
              (mv (nth-character-builtin n) (the (unsigned-byte 31) seed))))
    
-(defdata::register-type character :size 62 :enumerator nth-character-builtin :predicate characterp :enum/acc nth-character-uniform-builtin)
+(defdata::register-type character :domain-size 62 :enumerator nth-character-builtin :predicate characterp :enum/acc nth-character-uniform-builtin)
 
 
 
@@ -851,7 +851,7 @@
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
              (mv (nth-z-builtin n) (the (unsigned-byte 31) seed))))
-(defdata::register-type z :size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
+(defdata::register-type z :domain-size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
 
 
 ;Subtype relations betweem the above
@@ -1035,7 +1035,7 @@
       (t (mv '(1  2) seed.)))))
 
 (register-type proper-cons
-               :size t
+               :domain-size t
                :enumerator nth-proper-cons-builtin
                :enum/acc nth-proper-cons-uniform-builtin
                :predicate proper-consp)
@@ -1058,13 +1058,13 @@
 (defdata boolean-list (listof boolean) )
 (defdata symbol-list    (listof symbol) )
 (defdata::register-type character-list 
-               :size t 
+               :domain-size t 
                :predicate character-listp
                :enumerator nth-character-list-builtin  
                :prettyified-def (listof character))
                
 (defdata::register-type standard-char-list 
-               :size t 
+               :domain-size t 
                :predicate  standard-char-listp
                :enumerator nth-standard-char-list-builtin
                :prettyified-def (listof standard-char))
@@ -1235,7 +1235,7 @@
 
 (defdata::register-type all
   :predicate allp
-  :size t
+  :domain-size t
   :enumerator nth-all-builtin
   :enum/acc nth-all-uniform-builtin)
   
@@ -1263,7 +1263,7 @@
 (TABLE DEFDATA::TYPE-METADATA-TABLE 'EMPTY
         '((:PREDICATE . EMPTYP)
           (:ENUMERATOR . NTH-EMPTY)
-          (:SIZE . 0)
+          (:DOMAIN-SIZE . 0)
           (:ENUM/ACC . NTH-EMPTY/ACC)
           ))
 
@@ -1408,7 +1408,7 @@
 
 
 (defdata::register-type true-list 
-               :size t 
+               :domain-size t 
                :predicate true-listp
                :enumerator nth-true-list-builtin
                :enum/acc nth-true-list-uniform-builtin
@@ -1506,7 +1506,7 @@
       (mv ans seed.))))
              
 (register-type all-but-zero-nil-t
-               :size t
+               :domain-size t
                :enum/acc nth-all-but-zero-nil-t-uniform-builtin
                :enumerator nth-all-but-zero-nil-t-builtin
                :predicate all-but-zero-nil-tp)
@@ -1633,7 +1633,7 @@
       (t (mv '(1 . 2) seed)))))
 
 (register-type improper-cons
-               :size t
+               :domain-size t
                :enumerator nth-improper-cons-builtin
                :enum/acc nth-improper-cons-uniform-builtin
                :predicate improper-consp)

@@ -30,14 +30,13 @@
 (acl2::include-book "misc/eval" :dir :system)
 (in-package "ACL2S")
 
-:doc defunc
 
 ; 11 Feb 2016
 ; Test monomorphic sig
 (defun append-natlists (l1 l2)
   (if (endp l1)
     l2
-    (cons (car l1) (append-natlists (cdr l1) l2))))#|ACL2s-ToDo-Line|#
+    (cons (car l1) (append-natlists (cdr l1) l2))))
 
 ;TODO change name of main signature theorem
 (sig append-natlists (nat-list nat-list) => nat-list)
@@ -77,10 +76,10 @@
 
 
 ;7 Jan 2016 Check whether defdata works in program mode
-:program
+(program)
 (defdata rationallist (listof rational))
 (defdata-attach rationallist :enumerator nth-rational-list-builtin)
-:logic
+(logic)
 
 ;acl2s-issue non-canonical forms 
 ;acl2s-issue 
@@ -516,7 +515,7 @@
 ; now 0.79 sec
 
 
-:program 
+(program) 
 
 (defun q1 (x)
   x)
@@ -526,7 +525,7 @@
 
 (acl2::test? (equal (r3 x) (q1 x)))
 
-:logic
+(logic)
 
 ;tau complains.
 (defdata element acl2s::all)
@@ -920,7 +919,9 @@
 
 ;test arbitrary combinations of union and product type expressions
 (defdata (yoo (oneof (cons 1 2) (cons 'a 'b))))
-(defdata (zz (oneof (oneof 1 2) 3)))(defdata (zzz (oneof (oneof 1 2) (oneof 4 5))))
+(defdata (zz (oneof (oneof 1 2) 3)))
+
+(defdata (zzz (oneof (oneof 1 2) (oneof 4 5))))
 
 
 (defdata (zzzz (cons (oneof zz zzz) (oneof yoo int))))
@@ -1038,4 +1039,12 @@
     (+ 1
        (tree-count (node1-left tree))
        (tree-count (node1-right tree)))))
-  
+
+(acl2s-defaults :set search-strategy :simple)
+(acl2s-defaults :set sampling-method :uniform-random)
+(acl2s-defaults :set num-witnesses 0)
+
+(defdata loi10 (listof integer) :min-rec-depth 10)
+(defdata intlist (listof integer))
+(defdata intlist50 (listof integer) :min-rec-depth 50)
+(test? (implies (intlistp x) (< (len x) 40)))
