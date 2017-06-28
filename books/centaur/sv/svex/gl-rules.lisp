@@ -546,3 +546,6 @@
 (gl::def-glcp-ctrex-rewrite
   ((cdr x) val)
   (x (cons (car x) val)))
+
+;; For generating counterexamples...
+(memoize 'sv::svex-env-p)

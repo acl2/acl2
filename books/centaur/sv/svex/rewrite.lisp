@@ -1267,13 +1267,26 @@ functions) and that it is being given the right number of arguments.</p>
        
 
 
+(define svexlist-mask-acons-rev ((x svexlist-p) (mask 4vmask-p) (al svex-mask-alist-p))
+  (if (atom x)
+      (svex-mask-alist-fix al)
+    (svexlist-mask-acons-rev (cdr x) mask (svex-mask-acons (car x) mask al))))
+
+
 (define svexlist-mask-acons ((x svexlist-p) (mask 4vmask-p) (al svex-mask-alist-p))
   :verify-guards nil
   :returns (al svex-mask-alist-p)
-  (if (atom x)
-      (mbe :logic (svex-mask-alist-fix al) :exec al)
-    (svex-mask-acons (car x) mask (svexlist-mask-acons (cdr x) mask al)))
+  (mbe :logic (if (atom x)
+                  (mbe :logic (svex-mask-alist-fix al) :exec al)
+                (svex-mask-acons (car x) mask (svexlist-mask-acons (cdr x) mask al)))
+       :exec (svexlist-mask-acons-rev (rev x) mask al))
   ///
+
+  (local (defthm svexlist-mask-acons-rev-elim
+           (equal (svexlist-mask-acons-rev x mask al)
+                  (svexlist-mask-acons (rev x) mask al))
+           :hints(("Goal" :in-theory (enable svexlist-mask-acons-rev)))))
+
   (fty::deffixequiv svexlist-mask-acons
     :hints(("Goal" :expand ((svexlist-fix x)))))
 
