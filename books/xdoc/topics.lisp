@@ -224,9 +224,9 @@ and \"preformatted,\" i.e., newlines and spaces should be preserved.</li>
 because they automatically escape special HTML characters like &lt; into
 &amp;lt; and also automatically add hyperlinks to documented functions.</p>
 
-<p>(Note that the @('<tt>') and @('<code>') tags in XDOC do not correspond to
-the @('<tt>') and @('<code>') tags in HTML.  In fact, @('<tt>') is rendered
-with an HTML @('<span>'), and @('<code>') is rendered with an HTML
+<p>(Implementation Note.  The @('<tt>') and @('<code>') tags in XDOC do not
+correspond to the @('<tt>') and @('<code>') tags in HTML.  In fact, @('<tt>')
+is rendered with an HTML @('<span>'), and @('<code>') is rendered with an HTML
 @('<pre>').)</p>
 
 <p>Whenever you include Lisp code fragments in your documentation, you should

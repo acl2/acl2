@@ -208,7 +208,7 @@
                    :stobjs state))
    (cond ((not x) (mv nil nil))
          ((atom x)
-          (mv nil (cdr (assoc-eq x alist))))
+          (mv nil (cdr (hons-assoc-equal x alist))))
          ((eq (car x) 'quote) (mv nil (cadr x)))
          ((zp clk) (mv "clock ran out" nil))
          ((consp (car x))

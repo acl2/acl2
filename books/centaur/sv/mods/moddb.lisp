@@ -6740,8 +6740,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
                         (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
                         (not err))
                    (svarlist-idxaddr-okp (svex-vars ans)
-                                     (moddb-mod-totalwires
-                                      modidx moddb))))
+                                         (moddb-mod-totalwires
+                                          modidx moddb))))
         ;; :hints ('(:in-theory (enable svex-idxaddr-okp)))
         :flag svex-named->indexed)
       (defthm svexlist-named->indexed-idxaddr-ok
@@ -6750,9 +6750,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
                         (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
                         (not err))
                    (svarlist-idxaddr-okp (svexlist-vars
-                    ans)
-                    (moddb-mod-totalwires
-                     modidx moddb))))
+                                          ans)
+                                         (moddb-mod-totalwires
+                                          modidx moddb))))
         ;; :hints ('(:in-theory (enable svexlist-)))
         :flag svexlist-named->indexed))
 
@@ -6789,9 +6789,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
                       (not err))
                  (svarlist-idxaddr-okp (lhs-vars
-                  ans)
-                  (moddb-mod-totalwires
-                   modidx moddb))))
+                                        ans)
+                                       (moddb-mod-totalwires
+                                        modidx moddb))))
       :hints(("Goal" :in-theory (enable lhatom-vars)))))
 
   (define assigns-named->indexed ((x assigns-p) (modidx natp) (moddb moddb-ok))
@@ -6818,9 +6818,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
                       (not err))
                  (svarlist-idxaddr-okp (assigns-vars
-                  ans)
-                  (moddb-mod-totalwires
-                   modidx moddb))))))
+                                        ans)
+                                       (moddb-mod-totalwires
+                                        modidx moddb))))))
 
   (define svar-map-named->indexed ((x svar-map-p) (modidx natp) (moddb moddb-ok))
     :guard (and (svarlist-addr-p (svar-map-vars x))
@@ -6846,26 +6846,69 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
                       (not err))
                  (svarlist-idxaddr-okp (svar-map-vars
-                  ans)
-                  (moddb-mod-totalwires
-                   modidx moddb))))))
+                                        ans)
+                                       (moddb-mod-totalwires
+                                        modidx moddb))))))
+
+  (define lhspairs-named->indexed-aux-nrev ((x lhspairs-p) (modidx natp) (moddb moddb-ok) (acl2::nrev) (err))
+    :guard (and (svarlist-addr-p (lhspairs-vars x))
+                (< modidx (moddb->nmods moddb)))
+    :measure (len (lhspairs-fix x))
+    :prepwork ((local (in-theory (enable lhspairs-vars))))
+    (b* ((x (lhspairs-fix x))
+         ((when (atom x))
+          (b* ((acl2::nrev (acl2::nrev-fix acl2::nrev)))
+            (mv err acl2::nrev)))
+         ((cons lhs rhs) (car x))
+         ((mv err1 lhs) (lhs-named->indexed lhs modidx moddb))
+         ((mv err2 rhs) (lhs-named->indexed rhs modidx moddb))
+         (err (or err err1 err2))
+         (acl2::nrev (acl2::nrev-push (cons lhs rhs) acl2::nrev)))
+      (lhspairs-named->indexed-aux-nrev (cdr x) modidx moddb acl2::nrev err)))
 
   (define lhspairs-named->indexed ((x lhspairs-p) (modidx natp) (moddb moddb-ok))
     :guard (and (svarlist-addr-p (lhspairs-vars x))
                 (< modidx (moddb->nmods moddb)))
+    :verify-guards nil
     :measure (len (lhspairs-fix x))
     :returns (mv errmsg (xx lhspairs-p))
     :prepwork ((local (in-theory (enable lhspairs-vars))))
-    (b* ((x (lhspairs-fix x))
-         ((when (atom x)) (mv nil nil))
-         ((cons lhs rhs) (car x))
-         ((mv err1 lhs) (lhs-named->indexed lhs modidx moddb))
-         ((mv err2 rhs) (lhs-named->indexed rhs modidx moddb))
-         ((mv err3 rest) (lhspairs-named->indexed (cdr x) modidx moddb)))
-      (mv (or err1 err2 err3)
-          (cons (cons lhs rhs)
-                rest)))
+    (mbe :logic
+         (b* ((x (lhspairs-fix x))
+              ((when (atom x)) (mv nil nil))
+              ((cons lhs rhs) (car x))
+              ((mv err1 lhs) (lhs-named->indexed lhs modidx moddb))
+              ((mv err2 rhs) (lhs-named->indexed rhs modidx moddb))
+              ((mv err3 rest) (lhspairs-named->indexed (cdr x) modidx moddb)))
+           (mv (or err1 err2 err3)
+               (cons (cons lhs rhs)
+                     rest)))
+         :exec (if (atom x)
+                   (mv nil nil)
+                 (with-local-stobj acl2::nrev
+                   (mv-let (err ans acl2::nrev)
+                     (b* (((mv err acl2::nrev) (lhspairs-named->indexed-aux-nrev
+                                                x modidx moddb acl2::nrev nil))
+                          ((mv ans acl2::nrev) (acl2::nrev-finish acl2::nrev)))
+                       (mv err ans acl2::nrev))
+                     (mv err ans)))))
+    
     ///
+    (local (defthm lhspairs-named->index-aux-nrev-elim
+             (b* (((mv nrev-err nrev-ans)
+                   (lhspairs-named->indexed-aux-nrev x modidx moddb acl2::nrev err))
+                  ((mv regular-err regular-ans)
+                   (lhspairs-named->indexed x modidx moddb)))
+               (and (equal nrev-err (or err regular-err))
+                    (equal nrev-ans (append acl2::nrev regular-ans))))
+             :hints(("Goal" :in-theory (enable lhspairs-named->indexed-aux-nrev)))))
+
+    (defret lhspairs-named->indexed-true-listp
+      (true-listp xx)
+      :rule-classes :type-prescription)
+
+    (verify-guards lhspairs-named->indexed)
+
     (deffixequiv lhspairs-named->indexed)
 
     (defthm lhspairs-idxaddr-okp-of-lhspairs-named->indexed
@@ -6874,9 +6917,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
                       (not err))
                  (svarlist-idxaddr-okp (lhspairs-vars
-                  ans)
-                  (moddb-mod-totalwires
-                   modidx moddb))))))
+                                        ans)
+                                       (moddb-mod-totalwires
+                                        modidx moddb))))))
 
   (define module-named->indexed ((x module-p) (modidx natp) (moddb moddb-ok))
     :guard (and (svarlist-addr-p (module-vars x))
@@ -7120,6 +7163,30 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (moddb-ok moddb))
                  (svarlist-boundedp (svar-map-vars res) (modscope-top-bound scope moddb))))))
 
+  (acl2::defstobj-clone nrev acl2::nrev :suffix "0")
+  (acl2::defstobj-clone nrev1 acl2::nrev :suffix "1")
+
+  (define lhspairs->absindexed-nrev ((x lhspairs-p) (scope modscope-p) (moddb moddb-ok)
+                                     (nrev)   ;; fails
+                                     (nrev1)) ;; ans
+    :guard (and (modscope-okp scope moddb)
+                (svarlist-idxaddr-okp (lhspairs-vars x) (modscope-local-bound scope moddb)))
+    :prepwork ((local (in-theory (enable lhspairs-vars))))
+    :measure (len (lhspairs-fix x))
+    (b* ((x (lhspairs-fix x))
+         ((when (atom x))
+          (b* ((nrev (acl2::nrev-fix nrev))
+               (nrev1 (acl2::nrev-fix nrev1)))
+            (mv nrev nrev1)))
+         ((cons lhs rhs) (car x))
+         ((mv fails1 lhs) (lhs->absindexed lhs scope moddb))
+         ((mv fails2 rhs) (lhs->absindexed rhs scope moddb))
+         (nrev (acl2::nrev-append fails1 nrev))
+         (nrev (acl2::nrev-append fails2 nrev))
+         (nrev1 (acl2::nrev-push (cons lhs rhs) nrev1)))
+      (lhspairs->absindexed-nrev (cdr x) scope moddb nrev nrev1)))
+  
+  
   (define lhspairs->absindexed ((x lhspairs-p) (scope modscope-p) (moddb moddb-ok))
     :guard (and (modscope-okp scope moddb)
                 (svarlist-idxaddr-okp (lhspairs-vars x) (modscope-local-bound scope moddb)))
@@ -7127,15 +7194,38 @@ checked to see if it is a valid bitselect and returned as a separate value."
     :measure (len (lhspairs-fix x))
     :returns (mv (fails svarlist-p)
                  (xx lhspairs-p))
-    (b* ((x (lhspairs-fix x))
-         ((when (atom x)) (mv nil nil))
-         ((cons lhs rhs) (car x))
-         ((mv fails1 lhs) (lhs->absindexed lhs scope moddb))
-         ((mv fails2 rhs) (lhs->absindexed rhs scope moddb))
-         ((mv fails3 rest) (lhspairs->absindexed (cdr x) scope moddb)))
-      (mv (append-without-guard fails1 fails2 fails3)
-          (cons (cons lhs rhs) rest)))
+    :verify-guards nil
+    (mbe :logic (b* ((x (lhspairs-fix x))
+                     ((when (atom x)) (mv nil nil))
+                     ((cons lhs rhs) (car x))
+                     ((mv fails1 lhs) (lhs->absindexed lhs scope moddb))
+                     ((mv fails2 rhs) (lhs->absindexed rhs scope moddb))
+                     ((mv fails3 rest) (lhspairs->absindexed (cdr x) scope moddb)))
+                  (mv (append-without-guard fails1 fails2 fails3)
+                      (cons (cons lhs rhs) rest)))
+         :exec (if (atom x)
+                   (mv nil nil)
+                 (b* (((acl2::local-stobjs nrev nrev1)
+                       (mv fails ans nrev nrev1))
+                      ((mv nrev nrev1) (lhspairs->absindexed-nrev x scope moddb nrev nrev1))
+                      ((mv fails nrev) (acl2::nrev-finish nrev))
+                      ((mv ans nrev1) (acl2::nrev-finish nrev1)))
+                   (mv fails ans nrev nrev1))))
     ///
+    (local (defthm lhspairs->absindexed-nrev-elim
+             (b* (((mv nrev-fails nrev-ans)
+                   (lhspairs->absindexed-nrev x modidx moddb nrev nrev1))
+                  ((mv regular-fails regular-ans)
+                   (lhspairs->absindexed x modidx moddb)))
+               (and (equal nrev-fails (append nrev regular-fails))
+                    (equal nrev-ans (append nrev1 regular-ans))))
+             :hints(("Goal" :in-theory (enable lhspairs->absindexed-nrev)))))
+
+    (defret lhspairs->absindexed-true-listp
+      (true-listp xx)
+      :rule-classes :type-prescription)
+
+    (verify-guards lhspairs->absindexed)
     (deffixequiv lhspairs->absindexed)
 
     (defthm lhspairs-boundedp-of-lhspairs->absindexed
@@ -7460,8 +7550,15 @@ checked to see if it is a valid bitselect and returned as a separate value."
 
 
 
-
-
+(define binary-append-tr (x y)
+  :enabled t
+  (mbe :logic (append x y)
+       :exec (revappend-without-guard (rev x) y))
+  ///
+  (defmacro append-tr (&rest args)
+    (cond ((null args) nil)
+          ((null (cdr args)) (car args))
+          (t (xxxjoin 'binary-append-tr args)))))
 
 (defines svex-mod->flatten
   :prepwork ((local (in-theory (disable append))))
@@ -7506,11 +7603,11 @@ checked to see if it is a valid bitselect and returned as a separate value."
             ;; ((mv varfails3 abs-delays)  (svar-map->absindexed local-delays scope moddb))
             ((mv varfails4 modfails rest-aliases rest-assigns)
              (svex-modinsts->flatten 0 ninsts scope modalist moddb)))
-         (mv (append-without-guard varfails1 varfails2 varfails4)
+         (mv (append-tr varfails1 varfails2 varfails4)
              modfails
-             (append-without-guard abs-aliases rest-aliases)
-             (append-without-guard abs-assigns rest-assigns)
-             ;; (append-without-guard abs-delays rest-delays)
+             (append-tr abs-aliases rest-aliases)
+             (append-tr abs-assigns rest-assigns)
+             ;; (append-tr abs-delays rest-delays)
              ))
        :msg "; svex-mod->flatten ~x0: ~st sec, ~sa bytes, ~x1 instances, ~x2 aliases, ~x3 assigns~%"
        :args (list name ninsts (len local-aliases) (len local-assigns))
@@ -7561,10 +7658,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
           (svex-modinst->flatten (lnfix n) scope modalist moddb))
          ((mv var-fails2 mod-fails2 aliases2 assigns2)
           (svex-modinsts->flatten (1+ (lnfix n)) ninsts scope modalist moddb)))
-      (mv (append-without-guard var-fails1 var-fails2)
-          (append-without-guard mod-fails1 mod-fails2)
-          (append-without-guard aliases1 aliases2)
-          (append-without-guard assigns1 assigns2))))
+      (mv (append-tr var-fails1 var-fails2)
+          (append-tr mod-fails1 mod-fails2)
+          (append-tr aliases1 aliases2)
+          (append-tr assigns1 assigns2))))
 
   (define svex-modinst->flatten ((n natp)
                                  (scope modscope-p)

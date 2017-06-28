@@ -117,11 +117,12 @@
   (let* ((form1 `(save-rendered
                   ,outfile ,header ,topic-list-name ,error
                   state))
-         (form2 (if script-file
-                    `(prog2$ (sys-call ; requires active trust tag
-                              ,script-file ,script-args)
-                             ,form1)
-                  form1))
+         (form2 `(prog2$ (let ((script-file ,script-file)
+                               (script-args ,script-args))
+                           (and script-file
+                                (sys-call ; requires active trust tag
+                                 script-file script-args)))
+                         ,form1))
          (form3 (if timep
                     `(time$ ,form2)
                   form2)))

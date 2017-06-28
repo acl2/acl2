@@ -555,17 +555,39 @@ substitution are left in place."
 
   (memoize 'svex-compose* :condition '(eq (svex-kind x) :call)))
 
+(define svex-alist-compose*-nrev ((x svex-alist-p)
+                                 (a svex-alist-p)
+                                 (nrev))
+  :hooks nil
+  (if (atom x)
+      (acl2::nrev-fix nrev)
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (b* ((nrev (acl2::nrev-push (cons (caar x) (svex-compose* (cdar x) a)) nrev)))
+          (svex-alist-compose*-nrev (cdr x) a nrev))
+      (svex-alist-compose*-nrev (cdr x) a nrev))))
 
 (define svex-alist-compose* ((x svex-alist-p) (a svex-alist-p))
   :prepwork ((local (in-theory (enable svex-alist-p))))
   :returns (xx svex-alist-p)
+  :verify-guards nil
   (if (atom x)
       nil
-    (if (mbt (and (consp (car x)) (svar-p (caar x))))
-        (svex-acons (caar x) (svex-compose* (cdar x) a)
-                    (svex-alist-compose* (cdr x) a))
-      (svex-alist-compose* (cdr x) a)))
+    (mbe :logic
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (svex-acons (caar x) (svex-compose* (cdar x) a)
+                         (svex-alist-compose* (cdr x) a))
+           (svex-alist-compose* (cdr x) a))
+         :exec
+         (acl2::with-local-nrev
+           (svex-alist-compose*-nrev x a acl2::nrev))))
   ///
+  (local (defthm svex-alist-compose*-nrev-elim
+           (equal (svex-alist-compose*-nrev x a nrev)
+                  (append nrev (svex-alist-compose* x a)))
+           :hints(("Goal" :in-theory (enable svex-alist-compose*-nrev
+                                             svex-acons)))))
+  (verify-guards svex-alist-compose*)
+
   (fty::deffixequiv svex-alist-compose*
     :hints(("Goal" :in-theory (enable svex-alist-fix))))
 
