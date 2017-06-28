@@ -103,6 +103,7 @@ B is the builtin combinator table."
               (dest-calls (or (and (get1 :recp kwd-alist) mget-dex-calls) dest-calls)) ;recursive new-constructors take precedence!
               (binding (bind-names-vals (cdr s) dest-calls))
               (satisfies-exprs (get-all :satisfies kwd-alist))
+              (satisfies-exprs (acl2::subst x 'acl2s::x satisfies-exprs))
               (call-exprs (replace-calls-with-names dest-calls (cdr s)))
               (rst (append (make-pred-Is... (cdr s) call-exprs)
                            satisfies-exprs))
@@ -1165,6 +1166,7 @@ to install appropriate theories and to support polymorphism.
 
 * Type Metadata
 [2014-04-20 Sun 22:22] 
+[2017-06-28 Wed] Last updated.
 
 The keys of this table are type names and values, satisfying
 keyword-value-alistp, capture/record important information about the

@@ -861,7 +861,7 @@
 
 (defstub forbidden-names () => *)
 
-(defun forbidden-names-builtin () '(x acl2::x acl2s::x))
+(defun forbidden-names-builtin () '(defdata::x acl2::x acl2s::x))
 (defattach forbidden-names forbidden-names-builtin)
 
 
