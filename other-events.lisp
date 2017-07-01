@@ -28153,8 +28153,14 @@
 ; notinlined functions, following up on remark (2) in :doc defun-inline.
 
 ; We insist on a specific suffix for inlined functions, *inline-suffix*,
-; because Common Lisp provides no way to undo (declaim (inline foo)).  Consider
-; for example:
+; because Common Lisp provides no way to undo (declaim (inline foo)).  To see
+; why such undoing is relevant, suppose that (defun-inline foo (x) ...) simply
+; expanded to:
+
+;   (progn (declaim (inline foo))
+;          (defun foo ...))
+
+; Now consider this example:
 
 ;   (encapsulate
 ;     ()
@@ -28163,11 +28169,17 @@
 ;
 ;   (defun foo (x) (cons x x))
 
-; When the encapsulate runs, the form (declaim (inline foo)) is generated.
-; Since there is no way to undo that declaim (before starting the second pass
-; of the encapsulate), the global definition of foo would also be an inline
-; definition.  A similar problem occurs if (defun-inline foo ...) is in a
-; locally included book.
+; When that encapsulate runs, the form (declaim (inline foo)) would be
+; generated.  Since there is no way to undo that declaim before starting the
+; second pass of the encapsulate, the global (final) definition of foo would
+; also be an inline definition, perhaps contrary to intent.  A similar problem
+; occurs if (defun-inline foo ...) is in a locally included book.
+
+; (One might ask: why not undo the (declaim (inline foo)) with (declaim
+; (notinline foo))?  That also seems unacceptable, because perhaps it would be
+; advantageous for the Lisp compiler to inline some definitions of foo and not
+; others.  We would really like something like (declaim
+; (back-to-no-claims-about-inline foo)), but that's not available.)
 
 ; By insisting on a syntactic naming convention for inlined functions --
 ; namely, their names end in *inline-suffix* (i.e., in "$INLINE") -- we
