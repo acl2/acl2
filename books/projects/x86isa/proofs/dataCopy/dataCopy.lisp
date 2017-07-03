@@ -152,6 +152,7 @@
                              effects-copyData-loop-recur-source-address-projection-copied
                              effects-copyData-loop-recur-source-address-projection-original
                              (loop-clk-recur)
+                             (:type-prescription natp-of-mv-nth-1-rb)
                              force (force))))))
 
 (local
@@ -383,34 +384,44 @@
        ;; Memory locations of interest are disjoint.
        (separate
         ;; Location of the Return Address (on the stack)
-        8 (xr :rgf *rsp* x86)
+        :r 8 (xr :rgf *rsp* x86)
         ;; Destination Addresses
-        (ash n 2) (xr :rgf *rsi* x86))
+        :w (ash n 2) (xr :rgf *rsi* x86))
        (separate
         ;; Program addresses
-        *prog-len* addr
+        :x *prog-len* addr
         ;; Destination addresses
-        (ash n 2) (xr :rgf *rsi* x86))
-       (separate
+        :w (ash n 2) (xr :rgf *rsi* x86))
+       (separate ;; Read from stack
         ;; Program addresses
-        *prog-len* addr
+        :x *prog-len* addr
         ;; Stack
-        16 (+ -8 (xr :rgf *rsp* x86)))
-       (separate
+        :r 16 (+ -8 (xr :rgf *rsp* x86)))
+       (separate ;; Write to stack
+        ;; Program addresses
+        :x *prog-len* addr
+        ;; Stack
+        :w 16 (+ -8 (xr :rgf *rsp* x86)))
+       (separate ;; Read from stack
         ;; Source Addresses
-        (ash n 2) (xr :rgf *rdi* x86)
+        :r (ash n 2) (xr :rgf *rdi* x86)
         ;; Stack
-        16 (+ -8 (xr :rgf *rsp* x86)))
+        :r 16 (+ -8 (xr :rgf *rsp* x86)))
+       (separate ;; Write to stack
+        ;; Source Addresses
+        :r (ash n 2) (xr :rgf *rdi* x86)
+        ;; Stack
+        :w 16 (+ -8 (xr :rgf *rsp* x86)))
        (separate
         ;; Destination Addresses
-        (ash n 2) (xr :rgf *rsi* x86)
+        :w (ash n 2) (xr :rgf *rsi* x86)
         ;; Stack
-        16 (+ -8 (xr :rgf *rsp* x86)))
+        :r 16 (+ -8 (xr :rgf *rsp* x86)))
        (separate
         ;; Source Addresses
-        (ash n 2) (xr :rgf *rdi* x86)
+        :r (ash n 2) (xr :rgf *rdi* x86)
         ;; Destination Addresses
-        (ash n 2) (xr :rgf *rsi* x86))
+        :w (ash n 2) (xr :rgf *rsi* x86))
        ;; Program is located at addr.
        ;; All program addresses are canonical.
        (canonical-address-p addr)
@@ -451,34 +462,44 @@
                 ;; Memory locations of interest are disjoint.
                 (separate
                  ;; Location of the Return Address (on the stack)
-                 8 (xr :rgf *rsp* x86)
+                 :r 8 (xr :rgf *rsp* x86)
                  ;; Destination Addresses
-                 (ash n 2) (xr :rgf *rsi* x86))
+                 :w (ash n 2) (xr :rgf *rsi* x86))
                 (separate
                  ;; Program addresses
-                 *prog-len* addr
+                 :x *prog-len* addr
                  ;; Destination addresses
-                 (ash n 2) (xr :rgf *rsi* x86))
-                (separate
+                 :w (ash n 2) (xr :rgf *rsi* x86))
+                (separate ;; Read from stack
                  ;; Program addresses
-                 *prog-len* addr
+                 :x *prog-len* addr
                  ;; Stack
-                 16 (+ -8 (xr :rgf *rsp* x86)))
-                (separate
+                 :r 16 (+ -8 (xr :rgf *rsp* x86)))
+                (separate ;; Write to stack
+                 ;; Program addresses
+                 :x *prog-len* addr
+                 ;; Stack
+                 :w 16 (+ -8 (xr :rgf *rsp* x86)))
+                (separate ;; Read from stack
                  ;; Source Addresses
-                 (ash n 2) (xr :rgf *rdi* x86)
+                 :r (ash n 2) (xr :rgf *rdi* x86)
                  ;; Stack
-                 16 (+ -8 (xr :rgf *rsp* x86)))
+                 :r 16 (+ -8 (xr :rgf *rsp* x86)))
+                (separate ;; Write to stack
+                 ;; Source Addresses
+                 :r (ash n 2) (xr :rgf *rdi* x86)
+                 ;; Stack
+                 :w 16 (+ -8 (xr :rgf *rsp* x86)))
                 (separate
                  ;; Destination Addresses
-                 (ash n 2) (xr :rgf *rsi* x86)
+                 :w (ash n 2) (xr :rgf *rsi* x86)
                  ;; Stack
-                 16 (+ -8 (xr :rgf *rsp* x86)))
+                 :r 16 (+ -8 (xr :rgf *rsp* x86)))
                 (separate
                  ;; Source Addresses
-                 (ash n 2) (xr :rgf *rdi* x86)
+                 :r (ash n 2) (xr :rgf *rdi* x86)
                  ;; Destination Addresses
-                 (ash n 2) (xr :rgf *rsi* x86))
+                 :w (ash n 2) (xr :rgf *rsi* x86))
                 ;; Program is located at addr.
                 ;; All program addresses are canonical.
                 (canonical-address-p addr)
@@ -592,8 +613,7 @@
                                     rim08
                                     two-byte-opcode-decode-and-execute
                                     x86-effective-addr)
-
-                                   (force (force))))))
+                                   (not force (force))))))
 
 (defthm effects-copyData-pre-programmer-level-mode-projection
   (implies (preconditions n addr x86)

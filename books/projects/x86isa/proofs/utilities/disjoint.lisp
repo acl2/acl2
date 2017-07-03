@@ -5,39 +5,56 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/lists/rev" :dir :system)
 (include-book "std/lists/flatten" :dir :system)
-(include-book "clause-processors/find-subterms" :dir :system)
+(include-book "clause-processors/find-matching" :dir :system)
 
 ;; ===================================================================
 
-(define separate ((n-1 posp)
-                  (addr-1 integerp)
-                  (n-2 posp)
-                  (addr-2 integerp))
-
+(define separate ((r-w-x-1 :type (member :r :w :x))
+                  (n-1     posp)
+                  (addr-1  integerp)
+                  (r-w-x-2 :type (member :r :w :x))
+                  (n-2     posp)
+                  (addr-2  integerp))
+  ;; r-w-x-1 and r-w-x-2 are just for finding appropriate bindings for
+  ;; the free variables of rules where separateness of small regions
+  ;; is to be deduced from that of bigger ones.
+  :irrelevant-formals-ok t
   :non-executable t
+
   (or (<= (+ n-2 addr-2) addr-1)
       (<= (+ n-1 addr-1) addr-2))
 
   ///
 
   (defthmd separate-is-commutative
-    (implies (separate n-1 a-1 n-2 a-2)
-             (separate n-2 a-2 n-1 a-1))
+    (implies (separate r-w-x-1 n-1 a-1 r-w-x-2 n-2 a-2)
+             (separate r-w-x-2 n-2 a-2 r-w-x-1 n-1 a-1))
     :hints (("Goal" :in-theory (e/d* (separate) ()))))
 
   (defun separate-free-var-candidates (calls)
     (if (endp calls)
         nil
-      (cons (list (cons 'n-1 (nth 1 (car calls)))
-                  (cons 'a-1 (nth 2 (car calls)))
-                  (cons 'n-2 (nth 3 (car calls)))
-                  (cons 'a-2 (nth 4 (car calls))))
+      (cons (list ;; (cons 'r-w-x-1 (nth 1 (car calls)))
+             (cons 'n-1     (nth 2 (car calls)))
+             (cons 'a-1     (nth 3 (car calls)))
+             ;; (cons 'r-w-x-2 (nth 4 (car calls)))
+             (cons 'n-2     (nth 5 (car calls)))
+             (cons 'a-2     (nth 6 (car calls))))
             (separate-free-var-candidates (cdr calls)))))
 
-  (defun separate-bindings (ctx mfc state)
+  (defun separate-bindings (name r-w-x-1 r-w-x-2 mfc state)
     (declare (xargs :stobjs (state) :mode :program)
-             (ignorable ctx state))
-    (b* ((calls (acl2::find-calls-lst 'separate (acl2::mfc-clause mfc)))
+             (ignorable name state))
+    ;; (acl2::find-matches-list
+    ;;  '(separate ':r a b ':w c d)
+    ;;  '((separate ':r n1 a1 ':w n2 a2)
+    ;;    (a b c)
+    ;;    (separate ':r a b x c d))
+    ;;  nil)
+    (b* ((calls (acl2::find-matches-list
+                 `(separate ,r-w-x-1 a b ,r-w-x-2 c d)
+                 (acl2::mfc-clause mfc)
+                 nil))
          ((when (not calls)) nil))
       (separate-free-var-candidates calls)))
 
@@ -45,14 +62,14 @@
     (implies (and
               (bind-free
                (separate-bindings
-                'separate-smaller-regions mfc state)
+                'separate-smaller-regions r-w-x-1 r-w-x-2 mfc state)
                (n-1 a-1 n-2 a-2))
               (<= a-2 a-2-bigger)
               (<= (+ n-2-smaller a-2-bigger) (+ n-2 a-2))
               (<= a-1 a-1-bigger)
               (<= (+ n-1-smaller a-1-bigger) (+ n-1 a-1))
-              (separate n-1 a-1 n-2 a-2))
-             (separate n-1-smaller a-1-bigger n-2-smaller a-2-bigger))
+              (separate r-w-x-1 n-1 a-1 r-w-x-2 n-2 a-2))
+             (separate r-w-x-1 n-1-smaller a-1-bigger r-w-x-2 n-2-smaller a-2-bigger))
     :hints (("Goal" :in-theory (e/d* (separate) ())))
     ;; I don't want too much effort to be expended on rewriting a
     ;; separate term --- such terms should be more-or-less directly
@@ -63,28 +80,31 @@
     :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
   (defthm separate-contiguous-regions
-    (and (separate i (+ (- i) x) j x)
+    (and (separate r-w-x-1 i (+ (- i) x) r-w-x-2 j x)
          (implies (<= j i)
-                  (separate i x j (+ (- i) x)))
-         (separate i x j (+ i x))
+                  (separate r-w-x-1 i x r-w-x-2 j (+ (- i) x)))
+         (separate r-w-x-1 i x r-w-x-2 j (+ i x))
          (implies (or (<= (+ j k2) k1) (<= (+ i k1) k2))
-                  (separate i (+ k1 x) j (+ k2 x))))
+                  (separate r-w-x-1 i (+ k1 x) r-w-x-2 j (+ k2 x))))
     :hints (("Goal" :in-theory (e/d* (separate) ()))))
 
-  (in-theory (e/d* () ((separate)))))
+  (in-theory (e/d () ((separate)))))
+
+;; (acl2::why separate-smaller-regions)
+;; (acl2::trace$ separate-bindings)
 
 (local
  (defthm separate-smaller-regions-test-1
-   (implies (separate (+ 1 i) prog-addr n addr)
-            (separate i (+ 1 prog-addr) n addr))
-   :rule-classes nil))
+   (implies (and (separate :x 500 6000 :w 10 10000)
+                 (separate :w 10     0 :w 20 500)
+                 (separate :r 20     0 :w 50 100))
+            (separate :r 10 0 :w 20 120))
+   :hints (("Goal" :in-theory (e/d* () (separate (separate)))))))
 
 (local
  (defthm separate-smaller-regions-test-2
-   (implies (and (separate 500 6000 10 10000)
-                 (separate 10 0 20 500)
-                 (separate 20 0 50 100))
-            (separate 10 0 20 120))
+   (implies (separate :x (+ 1 i)       prog-addr :w n addr)
+            (separate :x i       (+ 1 prog-addr) :w n addr))
    :rule-classes nil))
 
 ;; ======================================================================

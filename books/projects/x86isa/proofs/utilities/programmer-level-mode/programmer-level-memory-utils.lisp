@@ -213,7 +213,7 @@
                              (rvm08 wvm08))))))
 
 (defthm rb-wb-disjoint
-  (implies (and (separate n-1 addr-1 n-2 addr-2)
+  (implies (and (separate r-x n-1 addr-1 w n-2 addr-2)
                 (programmer-level-mode x86))
            (equal (mv-nth 1 (rb n-1 addr-1 r-x (mv-nth 1 (wb n-2 addr-2 w val x86))))
                   (mv-nth 1 (rb n-1 addr-1 r-x x86))))
@@ -415,7 +415,7 @@
 
 (defthm prog-at-wb-disjoint
   (implies (and (equal l (len bytes))
-                (separate l prog-addr n addr)
+                (separate :x l prog-addr w n addr)
                 (programmer-level-mode x86))
            (equal (prog-at prog-addr bytes (mv-nth 1 (wb n addr w val x86)))
                   (prog-at prog-addr bytes x86)))

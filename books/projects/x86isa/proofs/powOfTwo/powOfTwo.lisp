@@ -192,10 +192,10 @@
    ;; Return address is canonical.
    (canonical-address-p
     (logext 64 (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r x86))))
-   ;; Stack and program are disjoint.
+   ;; Program and stack are disjoint.
    (separate
-    *l* (xr :rip 0 x86)
-    8 (+ -8 (xr :rgf *rsp* x86)))
+    :x *l* (xr :rip 0 x86)
+    :w  8  (+ -8 (xr :rgf *rsp* x86)))
    (unsigned-byte-p 64 (rr64 *rdi* x86))))
 
 (defun is-power-of-2-clock () 10)

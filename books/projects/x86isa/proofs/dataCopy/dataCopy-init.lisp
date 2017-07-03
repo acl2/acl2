@@ -206,14 +206,14 @@
        ;; Memory locations of interest are disjoint.
        (separate
         ;; Program addresses
-        *prog-len* addr
+        :x *prog-len* addr
         ;; Destination addresses
-        (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+        :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
        (separate
         ;; Return Address
-        8 (+ 8 (xr :rgf *rsp* x86))
+        :r 8 (+ 8 (xr :rgf *rsp* x86))
         ;; Destination Addresses
-        (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+        :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
        ;; We could modify the following pre-condition to say the following:
        ;; either the source and destination addresses are completely disjoint
        ;; or they are equal. However, the equality of the source and
@@ -221,9 +221,9 @@
        ;; choose to leave that out.
        (separate
         ;; Source Addresses
-        (+ m k) (+ (- k) (xr :rgf *rdi* x86))
+        :r (+ m k) (+ (- k) (xr :rgf *rdi* x86))
         ;; Destination Addresses
-        (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+        :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
        ;; Program is located at addr.
        ;; All program addresses are canonical.
        (canonical-address-p addr)
@@ -277,14 +277,14 @@
                 ;; Memory locations of interest are disjoint.
                 (separate
                  ;; Program addresses
-                 *prog-len* addr
+                 :x *prog-len* addr
                  ;; Destination addresses
-                 (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+                 :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
                 (separate
                  ;; Return Address
-                 8 (+ 8 (xr :rgf *rsp* x86))
+                 :r 8 (+ 8 (xr :rgf *rsp* x86))
                  ;; Destination Addresses
-                 (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+                 :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
                 ;; We could modify the following pre-condition to say the following:
                 ;; either the source and destination addresses are completely disjoint
                 ;; or they are equal. However, the equality of the source and
@@ -292,9 +292,9 @@
                 ;; choose to leave that out.
                 (separate
                  ;; Source Addresses
-                 (+ m k) (+ (- k) (xr :rgf *rdi* x86))
+                 :r (+ m k) (+ (- k) (xr :rgf *rdi* x86))
                  ;; Destination Addresses
-                 (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+                 :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
                 ;; Program is located at addr.
                 ;; All program addresses are canonical.
                 (canonical-address-p addr)
