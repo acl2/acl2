@@ -250,11 +250,16 @@
        (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
        (canonical-address-p (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
        ;; 104 =  (+ 48 8 32 8) + 8
-       (separate
+       (separate ;; Read from stack
         ;; Program
-        *wc-len* addr
+        :x *wc-len* addr
         ;; Stack
-        104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+        :r 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+       (separate ;; Write to stack
+        ;; Program
+        :x *wc-len* addr
+        ;; Stack
+        :w 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        ;; Enabling the SYSCALL instruction.
@@ -282,9 +287,14 @@
                 ;; 104 =  (+ 48 8 32 8) + 8
                 (separate
                  ;; Program
-                 *wc-len* addr
+                 :x *wc-len* addr
                  ;; Stack
-                 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+                 :r 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Program
+                 :x *wc-len* addr
+                 ;; Stack
+                 :w 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
@@ -326,9 +336,14 @@
        ;; (+ 8 32 8 32) = 80
        (separate
         ;; Program
-        *wc-len* addr
+        :x *wc-len* addr
         ;; Stack
-        80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+       (separate
+        ;; Program
+        :x *wc-len* addr
+        ;; Stack
+        :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
        ;; IMPORTANT: Why doesn't the following hyp work?
        ;; (equal (xr :rgf *rbp* x86) (- (+ (xr :rgf *rsp* x86) 40) 8))
        ;; See loop-preconditions-weird-rbp-rsp.
@@ -368,9 +383,14 @@
                 ;; (+ 8 #x20 8 #x20) = 80
                 (separate
                  ;; Program
-                 *wc-len* addr
+                 :x *wc-len* addr
                  ;; Stack
-                 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
+                 :r 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Program
+                 :x *wc-len* addr
+                 ;; Stack
+                 :w 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))
                 ;; IMPORTANT: Why doesn't the following hyp work?
                 ;; (equal (xr :rgf *rbp* x86) (- (+ (xr :rgf *rsp* x86) 40) 8))
                 (canonical-address-p (xr :rgf *rbp* x86))
@@ -929,9 +949,14 @@
         ;; (+ 8 32 8 32) = 80
         (separate
          ;; Program
-         *wc-len* addr
+         :x *wc-len* addr
          ;; Stack
-         80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+         :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        (separate
+         ;; Program
+         :x *wc-len* addr
+         ;; Stack
+         :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
@@ -1152,9 +1177,14 @@
         ;; (+ 8 32 8 32) = 80
         (separate
          ;; Program
-         *wc-len* addr
+         :x *wc-len* addr
          ;; Stack
-         80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+         :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        (separate
+         ;; Program
+         :x *wc-len* addr
+         ;; Stack
+         :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
@@ -1182,9 +1212,14 @@
         ;; (+ 8 32 8 32) = 80
         (separate
          ;; Program
-         *wc-len* addr
+         :x *wc-len* addr
          ;; Stack
-         80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+         :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+        (separate
+         ;; Program
+         :x *wc-len* addr
+         ;; Stack
+         :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
@@ -2318,8 +2353,11 @@
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
         (separate
-         *wc-len* addr
-         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+         :x *wc-len* addr
+         :r 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+        (separate
+         :x *wc-len* addr
+         :w 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
         (canonical-address-p (xr :rgf *rbp* x86-new))
@@ -2751,8 +2789,11 @@
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
         (separate
-         *wc-len* addr
-         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+         :x *wc-len* addr
+         :r 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+        (separate
+         :x *wc-len* addr
+         :w 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
         (canonical-address-p (xr :rgf *rbp* x86-new))
@@ -3154,8 +3195,11 @@
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
         (separate
-         *wc-len* addr
-         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+         :x *wc-len* addr
+         :r 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+        (separate
+         :x *wc-len* addr
+         :w 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
         (canonical-address-p (xr :rgf *rbp* x86-new))
@@ -3606,8 +3650,11 @@
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
         (separate
-         *wc-len* addr
-         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+         :x *wc-len* addr
+         :r 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+        (separate
+         :x *wc-len* addr
+         :w 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
         (canonical-address-p (xr :rgf *rbp* x86-new))
@@ -4367,8 +4414,11 @@
         (canonical-address-p (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; (+ 8 #x20 8 #x20) = 80
         (separate
-         *wc-len* addr
-         80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+         :x *wc-len* addr
+         :r 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
+        (separate
+         :x *wc-len* addr
+         :w 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new)))
         ;; Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
         (canonical-address-p (xr :rgf *rbp* x86-new))
@@ -6172,9 +6222,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-main-before-call) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6199,9 +6254,14 @@
                 ;; (+ 8 32 8 32) = 80
                 (separate
                  ;; Program
-                 *wc-len* addr
+                 :x *wc-len* addr
                  ;; Stack
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Program
+                 :x *wc-len* addr
+                 ;; Stack
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
@@ -6212,9 +6272,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6229,9 +6294,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-eof) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6246,9 +6316,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-newline) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6263,9 +6338,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-space) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6280,9 +6360,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-tab) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6301,9 +6386,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-otherwise-out) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6327,9 +6417,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (gc-clk-otherwise-in) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6352,9 +6447,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (loop-effects-hint old-word-state offset str-bytes x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
@@ -6396,9 +6496,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86))))
+                 :r 104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86))))
            (equal
             (mv-nth 1 (rb n-mem mem-addr r-x
                           (loop-effects-hint
@@ -6440,9 +6545,14 @@
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate
                  ;; Rest of the Memory
-                 n-mem mem-addr
+                 r-x n-mem mem-addr
                  ;; Program Stack Space
-                 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86))))
+                 :r 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Rest of the Memory
+                 r-x n-mem mem-addr
+                 ;; Program Stack Space
+                 :w 104 (+ (- (+ 48 8 32 8)) (xr :rgf *rsp* x86))))
            (equal (mv-nth 1 (rb n-mem mem-addr r-x
                                 (x86-run (clock str-bytes x86) x86)))
                   (mv-nth 1 (rb n-mem mem-addr r-x x86))))
