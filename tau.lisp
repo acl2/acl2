@@ -8766,15 +8766,33 @@
          (cons (car pairs) (acceptable-tau-rules (cdr pairs) wrld)))
         (t (acceptable-tau-rules (cdr pairs) wrld))))
 
-(defun cross-prod1 (a lst2)
-  (cond ((endp lst2) nil)
-        (t (cons (append a (car lst2))
-                 (cross-prod1 a (cdr lst2))))))
+(defun cross-prod1 (lst lst-lst acc)
+  (cond ((endp lst-lst) acc)
+        (t (cross-prod1 lst
+                        (cdr lst-lst)
+                        (cons (append lst (car lst-lst))
+                              acc)))))
+
+(defun cross-prod2 (lst1 lst2 acc)
+  (cond ((endp lst1) (reverse acc))
+        (t (cross-prod2 (cdr lst1)
+                        lst2
+                        (cross-prod1 (car lst1) lst2 acc)))))
 
 (defun cross-prod (lst1 lst2)
-  (cond ((endp lst1) nil)
-        (t (append (cross-prod1 (car lst1) lst2)
-                   (cross-prod (cdr lst1) lst2)))))
+
+; Lst1 and lst2 are both lists of lists.  Return:
+
+;   (loop for a in lst1
+;         append
+;         (loop for b in lst2
+;               collect
+;               (append a b)))
+
+; We compute this by accumulating all such (append a b) in reverse order, so
+; that the functions are tail-recursive.
+
+  (cross-prod2 lst1 lst2 nil))
 
 (defun cnf-dnf (sign term cnfp)
 

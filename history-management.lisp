@@ -6328,9 +6328,14 @@
 
 (defmacro pe! (logical-name)
   `(with-output :off (summary event)
-     (make-event (er-progn (table pe-table nil nil :clear)
-                           (pe ,logical-name)
-                           (value '(value-triple :invisible))))))
+     (make-event (er-progn
+                  (let ((logical-name ,logical-name))
+                    (cond
+                     ((eq logical-name :here)
+                      (pe :here))
+                     (t (er-progn (table pe-table nil nil :clear)
+                                  (pe ,logical-name)))))
+                  (value '(value-triple :invisible))))))
 
 (defmacro gthm (fn &optional (simp-p 't) guard-debug)
   `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
