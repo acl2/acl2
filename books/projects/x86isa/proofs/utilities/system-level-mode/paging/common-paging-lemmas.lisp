@@ -55,8 +55,10 @@
                       page-fault-exception page-size)
                      ()))))
 
-;; ;; !!! Note that xlation-governing-entries-paddrs-* do not talk about
-;; ;; validity of paging entries.  Is that good or bad?
+(i-am-here)
+
+;; TODO: xlation-governing-entries-paddrs-* do not talk about validity
+;; of paging entries.  Do we want that or not?
 
 (define xlation-governing-entries-paddrs-for-page-table
   ((lin-addr             :type (signed-byte   #.*max-linear-address-size*))

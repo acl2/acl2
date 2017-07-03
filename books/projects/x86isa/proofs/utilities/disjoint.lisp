@@ -53,7 +53,14 @@
               (<= (+ n-1-smaller a-1-bigger) (+ n-1 a-1))
               (separate n-1 a-1 n-2 a-2))
              (separate n-1-smaller a-1-bigger n-2-smaller a-2-bigger))
-    :hints (("Goal" :in-theory (e/d* (separate) nil))))
+    :hints (("Goal" :in-theory (e/d* (separate) ())))
+    ;; I don't want too much effort to be expended on rewriting a
+    ;; separate term --- such terms should be more-or-less directly
+    ;; inferrable from other separate terms already present in the
+    ;; goal.  Also, the reason why the backchain limit below is 1 and
+    ;; not 0 is because I do need _some_ rewriting --- for instance,
+    ;; to prove away hypotheses like (<= a-2 a-2-bigger).
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
   (defthm separate-contiguous-regions
     (and (separate i (+ (- i) x) j x)
@@ -62,7 +69,23 @@
          (separate i x j (+ i x))
          (implies (or (<= (+ j k2) k1) (<= (+ i k1) k2))
                   (separate i (+ k1 x) j (+ k2 x))))
-    :hints (("Goal" :in-theory (e/d* (separate) ())))))
+    :hints (("Goal" :in-theory (e/d* (separate) ()))))
+
+  (in-theory (e/d* () ((separate)))))
+
+(local
+ (defthm separate-smaller-regions-test-1
+   (implies (separate (+ 1 i) prog-addr n addr)
+            (separate i (+ 1 prog-addr) n addr))
+   :rule-classes nil))
+
+(local
+ (defthm separate-smaller-regions-test-2
+   (implies (and (separate 500 6000 10 10000)
+                 (separate 10 0 20 500)
+                 (separate 20 0 50 100))
+            (separate 10 0 20 120))
+   :rule-classes nil))
 
 ;; ======================================================================
 

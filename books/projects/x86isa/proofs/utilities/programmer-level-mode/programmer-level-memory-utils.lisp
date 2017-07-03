@@ -414,7 +414,8 @@
 ;; Lemmas about prog-at:
 
 (defthm prog-at-wb-disjoint
-  (implies (and (separate (len bytes) prog-addr n addr)
+  (implies (and (equal l (len bytes))
+                (separate l prog-addr n addr)
                 (programmer-level-mode x86))
            (equal (prog-at prog-addr bytes (mv-nth 1 (wb n addr w val x86)))
                   (prog-at prog-addr bytes x86)))

@@ -48,6 +48,8 @@
     #xc3                               ;; retq
     ))
 
+(defconst *l* (len *program*))
+
 (encapsulate
   ()
   (local (include-book "arithmetic-5/top" :dir :system))
@@ -143,11 +145,24 @@
    `((x    (:g-number ,(gl-int 0 1 65))))))
 
 (local
- (def-gl-thm power-of-2-p-result-helper
-   :hyp (and (unsigned-byte-p 64 x)
-             (power-of-2-p x))
+ (def-gl-thm power-of-2-p-result-helper-1
+   :hyp (unsigned-byte-p 64 x)
    :concl (equal (loghead 8 (logior 1 (logext 64 (bitops::logsquash 8 (+ -1 x)))))
                  1)
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
+
+(local
+ (def-gl-thm power-of-2-p-result-helper-2
+   :hyp (signed-byte-p 64 x)
+   :concl (signed-byte-p 64 (logior 1 (bitops::logsquash 8 (logext 64 (+ -1 x)))))
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
+
+(local
+ (def-gl-thm power-of-2-p-result-helper-3
+   :hyp (signed-byte-p 64 x)
+   :concl (signed-byte-p 64 (bitops::logsquash 8 (logext 64 (+ -1 x))))
    :g-bindings
    `((x    (:g-number ,(gl-int 0 1 65))))))
 
@@ -179,7 +194,7 @@
     (logext 64 (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r x86))))
    ;; Stack and program are disjoint.
    (separate
-    (len *program*) (rip x86) 
+    *l* (xr :rip 0 x86)
     8 (+ -8 (xr :rgf *rsp* x86)))
    (unsigned-byte-p 64 (rr64 *rdi* x86))))
 
@@ -270,6 +285,7 @@
                              write-user-rflags
                              zf-spec)
                             (canonical-address-p
+                             not
                              signed-byte-p)))))
 
 ;; ======================================================================

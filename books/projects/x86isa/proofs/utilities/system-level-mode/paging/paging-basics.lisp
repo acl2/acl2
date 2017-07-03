@@ -82,7 +82,7 @@
   :concl (pml4-table-base-addr x86))
 
 (defthm pml4-table-base-addr-and-mv-nth-1-wb
-  (equal (pml4-table-base-addr (mv-nth 1 (wb addr-lst w x86)))
+  (equal (pml4-table-base-addr (mv-nth 1 (wb n addr w value x86)))
          (pml4-table-base-addr x86)))
 
 (defun-nx page-dir-ptr-table-base-addr (lin-addr x86)

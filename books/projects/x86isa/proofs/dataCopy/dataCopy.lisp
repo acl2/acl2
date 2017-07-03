@@ -1378,7 +1378,7 @@
                              after-the-copy-conditions
                              preconditions
                              clk post-clk pre-clk
-                             (clk) (post-clk) (pre-clk)                             
+                             (clk) (post-clk) (pre-clk)
                              force (force))))))
 
 (defthm source-array-is-unmodified
