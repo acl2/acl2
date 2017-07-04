@@ -471,7 +471,7 @@ made from privilege level 3.</sf>"
       :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-las-to-pas
-      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas l-addrs r-w-x x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
