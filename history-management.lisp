@@ -2484,16 +2484,32 @@
                                       "")))
                         channel state)
      (newline channel state)
-     (fms *proof-failure-string* nil channel state nil))))
+     (io? summary nil state (channel)
+          (fms *proof-failure-string* nil channel state nil)))))
 
 (defun print-failure (erp event-type ctx state)
   (pprogn
-   (print-gag-state state)
+   (io? summary nil state nil
+        (print-gag-state state))
    #+acl2-par
    (print-acl2p-checkpoints state)
-   (cond ((not (member-eq event-type '(encapsulate progn)))
-          (io? error nil state (erp ctx)
-               (print-failure1 erp ctx state)))
+   (cond ((not (member-eq event-type
+
+; For events whose failure already produces a message of type error, we
+; consider further failure messages to be of type summary.  That way we see the
+; true source of errors when output is inhibited to show only errors.  Compound
+; events are in this category.  Defthm is not, since when a proof fails no
+; output of type error is typically generated, and thus the only error
+; generated for defthm is typically the failure message from print-failure1.
+; Defun is however in thie category, since proof failures result in error
+; messages about guard proof failure or termination proof failure.
+
+                          '(encapsulate progn make-event defun)))
+          (cond
+           ((output-ignored-p 'error state)
+            (io? summary nil state (erp ctx)
+                 (print-failure1 erp ctx state)))
+           (t (print-failure1 erp ctx state))))
          ((member-eq 'errors (f-get-global 'inhibited-summary-types state))
           state)
          (t (io? summary nil state (erp ctx)
@@ -2906,26 +2922,24 @@
 ; in case the proof was aborted without printing this part of the summary.
 
            state)
-          (cond
-           (output-ignored-p state)
-           (t (pprogn
-               (cond (erp
-                      (pprogn
-                       (print-failure erp event-type ctx state)
-                       (cond
-                        ((f-get-global 'proof-tree state)
-                         (io? proof-tree nil state
-                              (ctx)
-                              (pprogn (f-put-global 'proof-tree-ctx
-                                                    (cons :failed ctx)
-                                                    state)
-                                      (print-proof-tree state))))
-                        (t state))))
-                     (t (pprogn
-                         #+acl2-par
-                         (erase-acl2p-checkpoints-for-summary state)
-                         state)))
-               (f-put-global 'proof-tree nil state)))))))))))
+          (pprogn
+           (cond (erp
+                  (pprogn
+                   (print-failure erp event-type ctx state)
+                   (cond
+                    ((f-get-global 'proof-tree state)
+                     (io? proof-tree nil state
+                          (ctx)
+                          (pprogn (f-put-global 'proof-tree-ctx
+                                                (cons :failed ctx)
+                                                state)
+                                  (print-proof-tree state))))
+                    (t state))))
+                 (t (pprogn
+                     #+acl2-par
+                     (erase-acl2p-checkpoints-for-summary state)
+                     state)))
+           (f-put-global 'proof-tree nil state)))))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 

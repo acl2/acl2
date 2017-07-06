@@ -29236,7 +29236,8 @@
 
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
-                             (value result))))))))))))))))))
+                             (value result)))))))))))))))
+     :event-type 'make-event)))
 
 (defun get-check-invariant-risk (state)
   (let ((pair (assoc-eq :check-invariant-risk

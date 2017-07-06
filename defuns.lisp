@@ -8918,7 +8918,8 @@
               (chk-assumption-free-ttree (cdr pair) ctx state)
               (install-event-defuns names event-form def-lst0 symbol-class
                                     reclassifyingp non-executablep pair ctx wrld
-                                    state))))))))))))
+                                    state))))))))))
+        :event-type 'defun))
 
 (defun defun-fn (def state event-form #+:non-standard-analysis std-p)
 
