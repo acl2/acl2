@@ -26,7 +26,7 @@
 (in-package "STD")
 
 (local
- (defthm character-lisp-of-explode-nonnegative-integer
+ (defthm character-listp-of-explode-nonnegative-integer
    (implies (character-listp ans)
             (character-listp
              (explode-nonnegative-integer n print-base ans)))))
