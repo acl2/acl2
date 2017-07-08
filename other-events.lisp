@@ -10557,25 +10557,25 @@
                                               actual-entry
                                               state)
               (mv (cons
-                   (msg "-- its certificate requires the book \"~s0\" with ~
-                         certificate annotations~|  ~x1~|and book hash ~x2, ~
-                         but we have included ~@3~@4"
-                        full-book-name
-                        (car reqd-entry)  ;;; cert-annotations
-                        (cdr reqd-entry)  ;;; book-hash
-                        (cond
-                         ((null (cdr actual-entry))
-                          (msg "an uncertified version of ~x0 with ~
-                                certificate annotations~|  ~x1,"
+                   (cond
+                    ((null (cdr actual-entry))
+                     (msg "-- its certificate requires the uncertified book ~
+                           ~x0~@1"
+                          full-book-name
+                          phrase))
+                    (t
+                     (msg "-- its certificate requires the book \"~s0\" with ~
+                           certificate annotations~|  ~x1~|and book hash ~x2, ~
+                           but we have included ~@3~@4"
+                          full-book-name
+                          (car reqd-entry) ;;; cert-annotations
+                          (cdr reqd-entry) ;;; book-hash
+                          (msg "a version of ~x0 with certificate ~
+                                  annotations~|  ~x1~|and book-hash ~x2,"
                                familiar-name
                                (car actual-entry) ; cert-annotations
-                               ))
-                         (t (msg "a version of ~x0 with certificate ~
-                                  annotations~|  ~x1~|and book-hash ~x2,"
-                                 familiar-name
-                                 (car actual-entry) ; cert-annotations
-                                 (cdr actual-entry))))
-                        phrase)
+                               (cdr actual-entry))
+                          phrase)))
                    msgs)
                   state)))))))))
 
@@ -10592,7 +10592,7 @@
     (tilde-*-book-hash-phrase1 reqd-alist
                                actual-alist
                                state)
-    (mv (list "" "~%~@*" "~%~@*;~|" "~%~@*;~|"
+    (mv (list "~|" "~|~@*" "~|~@*;~|" "~|~@*;~|"
               phrase1)
         state)))
 
@@ -13553,7 +13553,7 @@
                                      (include-book-er1
                                       full-book-name nil
                                       (cons "After including the book ~
-                                             ~x0:~|~*3."
+                                             ~x0:~*3."
                                             (list (cons #\3 msgs)))
                                       warning-summary ctx state))))))
                               (t (value certified-p)))))
