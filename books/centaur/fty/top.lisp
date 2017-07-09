@@ -213,7 +213,8 @@ theorems mentioned in item 5, see the @(see std::returns-specifiers) feature of
 <p>Having unconditional return types and congruences is beneficial in and of
 itself.  But the main advantage of using the fixtype discipline is that in
 complex programs, program reasoning can be done while largely avoiding
-extensive @(see backchaining) involving proofs about type information.</p>
+extensive <see topic=\"@(url acl2::backchaining)\">backchaining</see> involving
+proofs about type information.</p>
 
 <p>Because each function's inputs are fixed to the appropriate type before
 being used, theorems about the function do not typically need hypotheses
