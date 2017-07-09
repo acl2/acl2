@@ -3,6 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "paging-basics" :ttags :all)
+(include-book "../bind-free-utils")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -53,10 +54,8 @@
                       page-fault-exception page-size)
                      ()))))
 
-(i-am-here)
-
-;; TODO: xlation-governing-entries-paddrs-* do not talk about validity
-;; of paging entries.  Do we want that or not?
+;; Note that xlation-governing-entries-paddrs-* do not talk about
+;; validity of paging entries.
 
 (define xlation-governing-entries-paddrs-for-page-table
   ((lin-addr             :type (signed-byte   #.*max-linear-address-size*))
@@ -405,10 +404,10 @@
   (defthm ia32e-la-to-pa-values-and-xw-mem-not-member
     (implies (and (not (member-p index (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
                   (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))
-                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))))
+             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
+                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
+                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
+                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
     :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))
 
   (defthm xlation-governing-entries-paddrs-and-!flgi
@@ -533,27 +532,10 @@
   (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (physical-address-listp p-addrs)
                 (canonical-address-p lin-addr))
-           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))
-                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))))
-  :hints (("Goal"
-           :induct (write-to-physical-memory p-addrs bytes x86)
-           :in-theory (e/d* (disjoint-p) (xlation-governing-entries-paddrs)))))
-
-
-(local
- (defthm nth-0-xs
-   (equal (nth 0 xs) (car xs))))
-
-(defthm ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint
-  (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-                (physical-address-listp p-addrs)
-                (canonical-address-p lin-addr))
-           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))
-                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))))
+           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
+                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
   :hints (("Goal"
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) (xlation-governing-entries-paddrs)))))
@@ -638,7 +620,7 @@
                   structure-type lin-addr
                   entry u/s-acc r/w-acc x/d-acc wp
                   smep smap ac nxe r-w-x cpl
-                  (mv-nth 1 (wb addr-lst w x86))
+                  (mv-nth 1 (wb n addr w value x86))
                   access-type))
          (mv-nth 0
                  (paging-entry-no-page-fault-p
@@ -656,9 +638,9 @@
 
 (defthm ia32e-la-to-pa-page-table-values-and-write-to-translation-governing-address
   ;; Similar lemmas can be found in proofs/zero-copy/zero-copy.lisp.
-  (b* ((p-addrs (xlation-governing-entries-paddrs-for-page-table lin-addr base-addr x86))
-       (page-table-entry (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86))
-       (value (combine-bytes bytes)))
+  (b* ((p-addrs (xlation-governing-entries-paddrs-for-page-table
+                 lin-addr base-addr x86))
+       (page-table-entry (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86)))
     (implies (and (not (mv-nth 0
                                (ia32e-la-to-pa-page-table
                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -673,9 +655,7 @@
                          (page-execute-disable value))
                   (equal (page-size page-table-entry)
                          (page-size value))
-
-                  (equal (len bytes) (len p-addrs))
-                  (byte-listp bytes)
+                  (unsigned-byte-p 64 value)
                   (canonical-address-p lin-addr)
                   (physical-address-p base-addr)
                   (equal (loghead 12 base-addr) 0)
@@ -684,23 +664,30 @@
                    (mv-nth 0 (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
                               wp smep smap ac nxe r-w-x cpl
-                              (write-to-physical-memory p-addrs bytes x86)))
+                              (write-to-physical-memory p-addrs value x86)))
                    nil)
                   (equal (mv-nth 1 (ia32e-la-to-pa-page-table
                                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                     wp smep smap ac nxe r-w-x cpl
-                                    (write-to-physical-memory p-addrs bytes x86)))
+                                    (write-to-physical-memory p-addrs value x86)))
                          (logior (loghead 12 lin-addr)
                                  (ash (loghead 40 (logtail 12 value))
                                       12))))))
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                            (entry-1
+                             (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86))
+                            (entry-2 value)
+                            (structure-type 0)
+                            (ignored 0)))
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-table
                              page-table-entry-addr
                              xlation-governing-entries-paddrs-for-page-table)
-                            (wb
+                            (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                             wb
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
