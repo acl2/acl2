@@ -7,9 +7,7 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
-(local (in-theory (e/d () (unsigned-byte-p
-                           signed-byte-p
-                           xw-mem-and-wm-low-64-commute))))
+(local (in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
 (local (xdoc::set-default-parents gather-paging-structures))
 

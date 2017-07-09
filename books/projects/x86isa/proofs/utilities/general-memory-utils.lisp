@@ -303,96 +303,7 @@
 
 ;; ======================================================================
 
-#||
-
-;; Lemmas about byte-ify and combine-bytes:
-
-(local
- (defthmd byte-ify-general-acc-helper-thm
-   (implies (and (byte-listp acc1)
-                 (byte-listp acc2)
-                 (integerp val)
-                 (natp n))
-            (equal (byte-ify-general n val (append acc1 acc2))
-                   (append (acl2::rev acc2) (byte-ify-general n val acc1))))
-   :hints (("Goal" :in-theory (e/d* (byte-ify-general) ())))))
-
-(defthm byte-ify-general-acc-thm
-  (implies (and (syntaxp (not (and (quotep acc)
-                                   (eq (car (unquote acc)) nil))))
-                (byte-listp acc)
-                (integerp val)
-                (natp n))
-           (equal (byte-ify-general n val acc)
-                  (append (acl2::rev acc) (byte-ify-general n val nil))))
-  :hints (("Goal" :use ((:instance byte-ify-general-acc-helper-thm
-                                   (acc2 acc)
-                                   (acc1 nil))))))
-
-
-(defthm combine-bytes-and-byte-ify
-  (implies (natp n)
-           (equal (combine-bytes (byte-ify n x))
-                  (loghead (ash n 3) x)))
-  :hints (("Goal" :in-theory (e/d* (combine-bytes
-                                    byte-ify-and-byte-ify-general
-                                    byte-ify-general)
-                                   ()))))
-
-(defthmd remove-loghead-from-byte-ify
-  ;; We keep this rule disabled because most of the times, removing loghead
-  ;; from within byte-ify isn't really necessary.
-  (implies (equal m (ash n 3))
-           (equal (byte-ify n (loghead m x))
-                  (byte-ify n x)))
-  :hints (("Goal" :in-theory (e/d* (byte-ify-and-byte-ify-general
-                                    byte-ify-general
-                                    ihsext-recursive-redefs
-                                    ihsext-inductions)
-                                   ()))))
-
-(defthmd combine-bytes-and-byte-ify-inequality-lemma
-  ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
-  ;; this rule very often.
-  (implies (and (equal bytes (byte-ify n x))
-                (natp n)
-                (not (equal (loghead (ash n 3) x) val)))
-           (equal (equal (combine-bytes bytes) val) nil))
-  :hints (("Goal" :in-theory (e/d* (combine-bytes
-                                    byte-ify-and-byte-ify-general
-                                    byte-ify-general)
-                                   ()))))
-
-(defthmd remove-loghead-from-combine-bytes
-  ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
-  ;; this rule very often.
-  (implies (and (equal m (ash (len bytes) 3))
-                (byte-listp bytes))
-           (equal (loghead m (combine-bytes bytes))
-                  (combine-bytes bytes)))
-  :hints (("Goal" :in-theory (e/d* (combine-bytes
-                                    ihsext-recursive-redefs
-                                    ihsext-inductions)
-                                   ()))))
-
-(defthm byte-ify-and-combine-bytes
-  ;; [Shilpi]: Generalize this to remove the len hyp...
-  (implies (and (equal (len byte-list) n)
-                (byte-listp byte-list))
-           (equal (byte-ify n (combine-bytes byte-list))
-                  byte-list))
-  :hints (("Goal"
-           :in-theory (e/d* (combine-bytes
-                             byte-ify-and-byte-ify-general
-                             byte-ify-general)
-                            ()))))
-
-;; ======================================================================
-
-;; Since reasoning about memory is largely list-based, here are some
-;; utilities to reason about lists:
-
-;; Some misc. lemmas:
+;; Some lemmas to reason about lists:
 
 (defthm append-x-nil-is-x
   (equal (append nil x) x))
@@ -428,268 +339,198 @@
            (canonical-address-listp (append x y)))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm addr-byte-alistp-append
-  (implies (and (addr-byte-alistp x)
-                (addr-byte-alistp y))
-           (addr-byte-alistp (append x y)))
-  :rule-classes (:rewrite :type-prescription))
-
-(defthm addr-byte-alistp-rev
-  (implies (addr-byte-alistp alst)
-           (addr-byte-alistp (acl2::rev alst))))
-
-(defthm-usb addr-byte-alistp-assoc-bound
-  :hyp (and (addr-byte-alistp addr-lst)
-            (member-p addr (strip-cars addr-lst)))
-  :bound 8
-  :concl (cdr (assoc-equal addr addr-lst)))
-
-(defthm canonical-address-p-addr-byte-alistp
-  (implies (and (addr-byte-alistp addr-lst)
-                (member-p addr (strip-cars addr-lst)))
-           (canonical-address-p addr))
-  :rule-classes :forward-chaining)
-
-(defthmd create-addr-bytes-alist-acons
-  (implies
-   (and (< 0 (len bytes))
-        (canonical-address-p (+ lin-addr (len bytes)))
-        (canonical-address-p lin-addr))
-   (equal
-    (create-addr-bytes-alist (create-canonical-address-list (len bytes) lin-addr) bytes)
-    (acons
-     lin-addr (car bytes)
-     (create-addr-bytes-alist (create-canonical-address-list
-                               (1- (len bytes))
-                               (1+ lin-addr))
-                              (cdr bytes))))))
-
-;; ----------------------------------------------------------------------
-
-(define assoc-list ((slst true-listp)
-                    (blst alistp))
+(define addr-range (count addr)
+  :guard (natp count)
 
   :enabled t
 
-  ;; (assoc-list  '(a b c e) '((a . 1) (b . 2) (c . 3) (d . 4))) =>
-  ;; '(1 2 3)
-
-  (if (endp slst)
+  (if (zp count)
       nil
-    (if (member-p (car slst) (strip-cars blst))
-        (cons (cdr (assoc-equal (car slst) blst))
-              (assoc-list (cdr slst) blst))
-      (assoc-list (cdr slst) blst)))
+    (cons (ifix addr)
+          (addr-range (1- count) (1+ (ifix addr)))))
 
   ///
 
-  (local (include-book "std/alists/top" :dir :system))
+  (defthm neg-addr-range=nil
+    (implies (negp i) (equal (addr-range i n) nil)))
 
-  (defthm assoc-list-and-cons
-    (implies (not (member-p ax cx))
-             (equal (assoc-list cx (cons (cons ax ay) term))
-                    (assoc-list cx term))))
+  (defthm true-listp-addr-range
+    (true-listp (addr-range count addr))
+    :rule-classes :type-prescription)
 
-  (defthm assoc-and-append-with-list-cons
-    (implies (not (equal ax cx))
-             (equal (assoc-equal cx (append term (list (cons ax ay))))
-                    (assoc-equal cx term))))
+  (defthm addr-range-1
+    (equal (addr-range 1 x)
+           (list (ifix x)))
+    :hints (("Goal" :expand (addr-range 1 x))))
 
-  (defthm assoc-list-of-append-with-list-cons
-    (implies (not (member-p ax cx))
-             (equal (assoc-list cx (append term (list (cons ax ay))))
-                    (assoc-list cx term))))
+  (defthm len-of-addr-range
+    (implies (natp n)
+             (equal (len (addr-range n val)) n))
+    :hints (("Goal" :in-theory (e/d (addr-range) ()))))
 
-  (defthm assoc-list-and-create-addr-bytes-alist
-    (implies (and (true-listp x)
-                  (true-listp y)
-                  (equal (len x) (len y))
-                  (no-duplicates-p x))
-             (equal (assoc-list x (create-addr-bytes-alist x y))
-                    y))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp)))))
+  (defthm canonical-address-listp-addr-range
+    (implies (and (canonical-address-p lin-addr)
+                  (canonical-address-p (+ -1 n lin-addr)))
+             (canonical-address-listp (addr-range n lin-addr)))
+    :hints (("Goal" :in-theory (e/d (addr-range) ()))))
 
-  (defthm assoc-list-of-rev-of-create-addr-bytes-alist
-    (implies (and (true-listp y)
-                  (equal (len x) (len y))
-                  (no-duplicates-p x))
-             (equal (assoc-list x (acl2::rev (create-addr-bytes-alist x y)))
-                    y))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp))))))
+  (defthm physical-address-listp-addr-range
+    (implies (and (physical-address-p lin-addr)
+                  (physical-address-p (+ -1 n lin-addr)))
+             (physical-address-listp (addr-range n lin-addr)))
+    :hints (("Goal" :in-theory (e/d (addr-range) ()))))
 
-;; ----------------------------------------------------------------------
+  (defthm member-p-addr-range
+    (implies (and (<= prog-addr addr)
+                  (< addr (+ n prog-addr))
+                  (integerp n)
+                  (integerp addr)
+                  (integerp prog-addr))
+             (equal (member-p addr (addr-range n prog-addr))
+                    t)))
 
-;; Some lemmas about addr-range:
+  (defthm member-p-addr-range-from-member-p-addr-range
+    (implies (and (member-p x (addr-range j y))
+                  (integerp l)
+                  (< j l))
+             (equal (member-p x (addr-range l y))
+                    t)))
 
-(defthm member-p-addr-range
-  (implies (and (<= prog-addr addr)
-                (< addr (+ n prog-addr))
-                (integerp n)
-                (integerp addr)
-                (integerp prog-addr))
-           (equal (member-p addr (addr-range n prog-addr))
-                  t)))
+  (defthm not-member-p-addr-range
+    (implies (and (or (< addr prog-addr)
+                      (<= (+ n prog-addr) addr))
+                  (integerp prog-addr))
+             (equal (member-p addr (addr-range n prog-addr))
+                    nil)))
 
-(defthm member-p-addr-range-from-member-p-addr-range
-  (implies (and (member-p x (addr-range j y))
-                (integerp l)
-                (< j l))
-           (equal (member-p x (addr-range l y))
-                  t)))
+  (defthm not-member-p-addr-range-from-not-member-p-addr-range
+    (implies (and (not (member-p x (addr-range j y)))
+                  (integerp j)
+                  (<= l j))
+             (equal (member-p x (addr-range l y))
+                    nil)))
 
-(defthm not-member-p-addr-range
-  (implies (and (or (< addr prog-addr)
-                    (<= (+ n prog-addr) addr))
-                (integerp prog-addr))
-           (equal (member-p addr (addr-range n prog-addr))
-                  nil)))
-
-(defthm not-member-p-addr-range-from-not-member-p-addr-range
-  (implies (and (not (member-p x (addr-range j y)))
-                (integerp j)
-                (<= l j))
-           (equal (member-p x (addr-range l y))
-                  nil)))
-
-(defthm subset-p-two-addr-ranges
-  (implies (and (integerp x)
-                (integerp y)
-                (<= y x)
-                (<= (+ i x) (+ j y))
-                (integerp j))
-           (subset-p (addr-range i x)
-                     (addr-range j y)))
-  :hints (("Goal" :in-theory (e/d (subset-p) nil))))
-
-(defthm not-disjoint-p-two-addr-ranges-thm
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp i)
-                (integerp j)
-                (<= x y)
-                (< y (+ i x))
-                (<= (+ i x) (+ j y)))
-           (equal (disjoint-p (addr-range i x)
-                              (addr-range j y))
-                  nil))
-  :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
-
-(defthm disjoint-p-two-addr-ranges-thm-0
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp j)
-                (< 0 j)
-                (<= (+ i x) y))
-           (disjoint-p (addr-range i x)
+  (defthm subset-p-two-addr-ranges
+    (implies (and (integerp x)
+                  (integerp y)
+                  (<= y x)
+                  (<= (+ i x) (+ j y))
+                  (integerp j))
+             (subset-p (addr-range i x)
                        (addr-range j y)))
-  :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
+    :hints (("Goal" :in-theory (e/d (subset-p) nil))))
 
-(defthm disjoint-p-two-addr-ranges-thm-1
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp j)
-                (< 0 j)
-                (<= (+ j y) x))
-           (disjoint-p (addr-range i x)
-                       (addr-range j y)))
-  :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
+  (defthm not-disjoint-p-two-addr-ranges-thm
+    (implies (and (integerp x)
+                  (integerp y)
+                  (integerp i)
+                  (integerp j)
+                  (<= x y)
+                  (< y (+ i x))
+                  (<= (+ i x) (+ j y)))
+             (equal (disjoint-p (addr-range i x)
+                                (addr-range j y))
+                    nil))
+    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
-;; (defthm disjoint-p-two-addr-ranges-thm-2
-;;   (implies (and (disjoint-p (addr-range i x)
-;;                             (addr-range j y))
-;;                 (integerp i)
-;;                 (integerp j)
-;;                 (<= k i)
-;;                 (<= l j))
-;;            (disjoint-p (addr-range k x)
-;;                        (addr-range l y)))
-;;   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
+  (defthm disjoint-p-two-addr-ranges-thm-0
+    (implies (and (integerp x)
+                  (integerp y)
+                  (integerp j)
+                  (< 0 j)
+                  (<= (+ i x) y))
+             (disjoint-p (addr-range i x)
+                         (addr-range j y)))
+    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
-(defthm disjoint-p-two-addr-ranges-thm-2
-  (implies (and (disjoint-p (addr-range i x)  (addr-range j y))
-                (subset-p   (addr-range ia a) (addr-range i x))
-                (subset-p   (addr-range jb b) (addr-range j y)))
-           (disjoint-p (addr-range ia a) (addr-range jb b)))
-  :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
+  (defthm disjoint-p-two-addr-ranges-thm-1
+    (implies (and (integerp x)
+                  (integerp y)
+                  (integerp j)
+                  (< 0 j)
+                  (<= (+ j y) x))
+             (disjoint-p (addr-range i x)
+                         (addr-range j y)))
+    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
-(defthm disjoint-p-two-addr-ranges-thm-3
-  (implies (and (disjoint-p (addr-range j y)  (addr-range i x))
-                (subset-p   (addr-range ia a) (addr-range i x))
-                (subset-p   (addr-range jb b) (addr-range j y)))
-           (disjoint-p (addr-range ia a) (addr-range jb b)))
-  :hints (("Goal" :use ((:instance disjoint-p-commutative
-                                   (a (addr-range j y))
-                                   (b (addr-range i x)))))))
+  ;; (defthm disjoint-p-two-addr-ranges-thm-2
+  ;;   (implies (and (disjoint-p (addr-range i x)
+  ;;                             (addr-range j y))
+  ;;                 (integerp i)
+  ;;                 (integerp j)
+  ;;                 (<= k i)
+  ;;                 (<= l j))
+  ;;            (disjoint-p (addr-range k x)
+  ;;                        (addr-range l y)))
+  ;;   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
-(defthm consp-addr-range
-  (implies (posp n)
-           (consp (addr-range n val)))
-  :rule-classes (:type-prescription :rewrite))
+  (defthm disjoint-p-two-addr-ranges-thm-2
+    (implies (and (disjoint-p (addr-range i x)  (addr-range j y))
+                  (subset-p   (addr-range ia a) (addr-range i x))
+                  (subset-p   (addr-range jb b) (addr-range j y)))
+             (disjoint-p (addr-range ia a) (addr-range jb b)))
+    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
-(defthm car-addr-range
-  (implies (posp n)
-           (equal (car (addr-range n val))
-                  (ifix val))))
+  (defthm disjoint-p-two-addr-ranges-thm-3
+    (implies (and (disjoint-p (addr-range j y)  (addr-range i x))
+                  (subset-p   (addr-range ia a) (addr-range i x))
+                  (subset-p   (addr-range jb b) (addr-range j y)))
+             (disjoint-p (addr-range ia a) (addr-range jb b)))
+    :hints (("Goal" :use ((:instance disjoint-p-commutative
+                                     (a (addr-range j y))
+                                     (b (addr-range i x)))))))
 
-(defthm cdr-addr-range
-  (implies (and (posp n)
-                (integerp val))
-           (equal (cdr (addr-range n val))
-                  (addr-range (1- n) (1+ val)))))
+  (defthm consp-addr-range
+    (implies (posp n)
+             (consp (addr-range n val)))
+    :rule-classes (:type-prescription :rewrite))
 
-(defthm no-duplicates-p-and-addr-range
-  (no-duplicates-p (addr-range n x))
-  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+  (defthm car-addr-range
+    (implies (posp n)
+             (equal (car (addr-range n val))
+                    (ifix val))))
 
-(defthm nth-pos-of-addr-range-first
-  (implies (and (integerp index)
-                (posp n))
-           (equal (pos index (addr-range n index)) 0))
-  :hints (("Goal" :in-theory (e/d* (pos) ()))))
+  (defthm cdr-addr-range
+    (implies (and (posp n)
+                  (integerp val))
+             (equal (cdr (addr-range n val))
+                    (addr-range (1- n) (1+ val)))))
 
-;; ======================================================================
+  (defthm no-duplicates-p-and-addr-range
+    (no-duplicates-p (addr-range n x))
+    :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
-;; Relating rip and canonical-address-p:
+  (defthm instance-of-pos-1-accumulator-thm
+    (implies (and (member-p e x)
+                  (natp acc))
+             (equal (pos-1 e x (+ 1 acc))
+                    (+ 1 (pos-1 e x acc)))))
 
-;; We don't want the rule rip-is-i48p to be active anymore. Anything
-;; to do with rip and !rip should now be reasoned about in terms of
-;; canonical-address-p, even though canonical-address-p and i48p are
-;; the same, really.
+  (defthm pos-and-create-canonical-address-list
+    (implies (member-p addr
+                       (create-canonical-address-list n prog-addr))
+             (equal (pos addr
+                         (create-canonical-address-list n prog-addr))
+                    (- addr prog-addr)))
+    :hints (("Goal" :in-theory (e/d (pos) ()))))
 
-(defthm canonical-address-p-rip
-  (implies (x86p x86)
-           (canonical-address-p (xr :rip index x86)))
-  :rule-classes (:type-prescription :rewrite))
+  ;; (defthm nth-pos-of-addr-range-first
+  ;;   (implies (and (integerp index)
+  ;;                 (posp n))
+  ;;            (equal (pos index (addr-range n index)) 0))
+  ;;   :hints (("Goal" :in-theory (e/d* (pos) ()))))
 
-(defthm rip-is-integerp
-  (implies (x86p x86)
-           (integerp (xr :rip index x86)))
-  :rule-classes :type-prescription)
-
-(defthm x86p-!rip-when-val-is-canonical-address-p
-  (implies (forced-and (x86p x86)
-                       (canonical-address-p v))
-           (x86p (xw :rip index v x86)))
-  :hints (("Goal" :in-theory (enable ripp))))
-
-(in-theory (disable (:type-prescription rip-is-i48p)))
+  (defthm nth-pos-of-addr-range
+    (implies (and (<= index i) (< i (+ n index))
+                  (integerp index) (integerp i) (posp n))
+             (equal (pos i (addr-range n index))
+                    (- i index)))
+    :hints (("Goal" :in-theory (e/d* (pos) ())))))
 
 ;; ======================================================================
 
 ;; Lemmas about canonical-address-p, canonical-address-listp, and
 ;; create-canonical-address-list:
-
-(defthm canonical-address-p-to-integerp-thm
-  (implies (canonical-address-p x)
-           (integerp x))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p) ())))
-  :rule-classes :forward-chaining)
 
 (defthm canonical-address-listp-fwd-chain-true-listp
   (implies (canonical-address-listp x)
@@ -823,228 +664,7 @@
                                    create-canonical-address-list)
                                   ()))))
 
-;; ======================================================================
-
-;; Pos and create-canonical-address-list:
-
-(defthm instance-of-pos-1-accumulator-thm
-  (implies (and (member-p e x)
-                (natp acc))
-           (equal (pos-1 e x (+ 1 acc))
-                  (+ 1 (pos-1 e x acc)))))
-
-(defthm pos-and-create-canonical-address-list
-  (implies (member-p addr
-                     (create-canonical-address-list n prog-addr))
-           (equal (pos addr
-                       (create-canonical-address-list n prog-addr))
-                  (- addr prog-addr)))
-  :hints (("Goal" :in-theory (e/d (pos) ()))))
-
-
-;; ======================================================================
-
-;; Remove duplicate keys:
-
-(define remove-duplicate-keys
-  ((alst (alistp alst)))
-
-  :enabled t
-
-  (if (endp alst)
-      nil
-    (if (member-p (caar alst) (strip-cars (cdr alst)))
-        (remove-duplicate-keys (cdr alst))
-      (cons (car alst) (remove-duplicate-keys (cdr alst)))))
-
-  ///
-
-  (defthm addr-byte-alistp-remove-duplicate-keys
-    (implies (addr-byte-alistp alst)
-             (addr-byte-alistp (remove-duplicate-keys alst)))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm member-p-remove-duplicate-keys
-    (implies (and (addr-byte-alistp alst)
-                  (member-p addr (strip-cars alst)))
-             (member-p addr (strip-cars (remove-duplicate-keys alst))))
-    :hints (("Goal" :in-theory (e/d (member-p) ()))))
-
-  (defthm canonical-address-listp-of-strip-cars-remove-duplicate-keys
-    (implies (addr-byte-alistp addr-lst)
-             (canonical-address-listp
-              (strip-cars (remove-duplicate-keys addr-lst))))
-    :rule-classes (:rewrite :forward-chaining)))
-
-(encapsulate
-  ()
-
-  (local (include-book "std/lists/reverse" :dir :system))
-
-  (defthm member-p-and-strip-cars-of-remove-duplicate-keys
-    (implies (member-p a (strip-cars xs))
-             (member-p a (strip-cars (remove-duplicate-keys xs)))))
-
-  (defthm member-p-and-remove-duplicate-keys-and-car
-    (implies (consp xs)
-             (member-p (car (car (remove-duplicate-keys xs)))
-                       (strip-cars xs))))
-
-  (defthm consp-remove-duplicate-keys
-    (implies (consp (remove-duplicate-keys xs))
-             (consp xs))
-    :rule-classes :forward-chaining)
-
-  (defthm subset-p-strip-cars-and-remove-duplicate-keys
-    (subset-p (strip-cars (cdr (remove-duplicate-keys xs)))
-              (strip-cars xs))
-    :hints (("Goal" :in-theory (e/d (subset-p) ()))))
-
-  (defthm member-p-strip-cars-of-remove-duplicate-keys
-    ;; implies, equal, or iff?
-    (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
-             (member-p a (strip-cars xs)))
-    :rule-classes (:forward-chaining :rewrite))
-
-  (defthm member-p-strip-cars-remove-duplicate-keys-and-rev
-    ;; implies, equal, or iff?
-    (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
-             (member-p a (strip-cars (acl2::rev xs))))
-    :rule-classes (:forward-chaining :rewrite))
-
-  (defthm canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
-    (implies (and (subset-p addresses (strip-cars (remove-duplicate-keys addr-lst)))
-                  (addr-byte-alistp addr-lst))
-             (canonical-address-listp addresses))
-    :hints (("Goal" :in-theory (e/d* (subset-p
-                                      canonical-address-listp
-                                      addr-byte-alistp)
-                                     ())))
-    :rule-classes :forward-chaining))
-
-;; ======================================================================
-
-;; Lemmas about assoc-list:
-
-(defthm assoc-list-of-append-with-subset-p
-  (implies (subset-p xs (strip-cars term1))
-           (equal (assoc-list xs (append term1 term2))
-                  (assoc-list xs term1)))
-  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
-
-(defthm assoc-list-append-and-rev-lemma-helper-1
-  (implies (and (canonical-address-listp x)
-                (byte-listp y)
-                (no-duplicates-p x)
-                (equal (len x) (len y)))
-           (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist x y)) term))
-                  y)))
-
-(defthm assoc-list-append-and-rev-lemma-helper-2
-  (implies (and (canonical-address-listp a)
-                (equal (len a) (len b))
-                (disjoint-p x a)
-                (consp term))
-           (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist a b)) term))
-                  (assoc-list x term)))
-  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
-
-;; (defthm assoc-list-append-and-rev-lemma
-;;   ;; Bad lemma --- can cause stack overflows and looping.
-;;   (implies (and (canonical-address-listp a)
-;;              (byte-listp b)
-;;              (no-duplicates-p a)
-;;              (equal (len a) (len b))
-;;              (consp term))
-;;         (equal (assoc-list
-;;                 x
-;;                 (append (acl2::rev (create-addr-bytes-alist a b))
-;;                         term))
-;;                (if (disjoint-p x a)
-;;                    (assoc-list x term)
-;;                  (if (equal x a)
-;;                      b
-;;                    ;; Maybe another branch here that deals with
-;;                    ;; when x is a subset of a?
-;;                    (assoc-list x
-;;                                (append (acl2::rev (create-addr-bytes-alist a b))
-;;                                        term)))))))
-
-;; ======================================================================
-
-;; Some lemmas about rb and wb that are applicable in both
-;; programmer-level and system-level mode.
-
-(defthmd mv-nth-0-rb-1-and-accumulator
-  (equal (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc-1))
-         (mv-nth 0 (rb-1 l-addrs r-w-x x86 acc-2))))
-
-(defthmd mv-nth-2-rb-1-and-accumulator
-  (equal (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-1))
-         (mv-nth 2 (rb-1 l-addrs r-w-x x86 acc-2))))
-
-(defthm rb-nil-lemma
-  (equal (mv-nth 1 (rb nil r-w-x x86)) nil)
-  :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-(defthm rb-returns-true-listp
-  (implies (x86p x86)
-           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
-  :rule-classes (:rewrite :type-prescription))
-
-(defthm wb-nil-lemma
-  (equal (mv-nth 1 (wb nil x86)) x86)
-  :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-(defthmd wb-not-consp-addr-byte-alistp
-  (implies (and (addr-byte-alistp addr-lst)
-                (not (consp addr-lst)))
-           (equal (wb addr-lst x86)
-                  (mv nil x86)))
-  :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-;; Write-bytes-to-memory and wb:
-
-(local
- (defthm write-bytes-to-memory-is-wb-1-in-programmer-level-mode
-   (implies (and (canonical-address-p (+ (len bytes) lin-addr))
-                 (byte-listp bytes)
-                 (canonical-address-p lin-addr)
-                 (programmer-level-mode x86))
-            (equal (write-bytes-to-memory lin-addr bytes x86)
-                   (wb-1 (create-addr-bytes-alist
-                          (create-canonical-address-list (len bytes) lin-addr)
-                          bytes)
-                         x86)))
-   :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
-                                    wb
-                                    wm08
-                                    wvm08
-                                    byte-ify)
-                                   (acl2::mv-nth-cons-meta
-                                    append-and-create-addr-bytes-alist
-                                    cons-and-create-addr-bytes-alist
-                                    append-and-addr-byte-alistp))))))
-
-(defthm write-bytes-to-memory-is-wb-in-programmer-level-mode
-  (implies (and (canonical-address-p (+ (len bytes) lin-addr))
-                (byte-listp bytes)
-                (canonical-address-p lin-addr)
-                (programmer-level-mode x86))
-           (equal (write-bytes-to-memory lin-addr bytes x86)
-                  (wb (create-addr-bytes-alist
-                       (create-canonical-address-list (len bytes) lin-addr)
-                       bytes)
-                      x86)))
-  :hints (("Goal" :in-theory (e/d (write-bytes-to-memory
-                                   wb-is-wb-1-for-programmer-level-mode)
-                                  (acl2::mv-nth-cons-meta
-                                   wb wb-1)))))
-
-;; ======================================================================
-
-;; Other misc. lemmas about pos, nth, etc. that are useful in both the
-;; modes:
+;; Other misc. lemmas about pos, nth, etc.:
 
 (defthmd create-canonical-address-list-end-addr-is-canonical
   (implies (and (equal (len (create-canonical-address-list count addr)) count)
@@ -1075,32 +695,92 @@
             (equal (nth (- (pos-1 e x n) n) y)
                    (nth (- (pos-1 e (cdr x) n) n) (cdr y))))))
 
-(local
- (defthm assoc-equal-and-nth-pos-1
-   (implies (and (equal (len l-addrs) (len bytes))
-                 (member-p e l-addrs)
-                 (natp n))
-            (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
-                   (nth (- (pos-1 e l-addrs n) n) bytes)))
-   :hints (("Goal"
-            :induct (create-addr-bytes-alist l-addrs bytes)
-            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus)))
-           ("Subgoal *1/2"
-            :in-theory (e/d* () (nth-pos-1-and-cdr-and-minus))
-            :use ((:instance nth-pos-1-and-cdr-and-minus
-                             (e e)
-                             (x l-addrs)
-                             (y bytes)
-                             (n n)))))))
 
-(defthm assoc-equal-and-nth-pos
-  (implies (and (equal (len l-addrs) (len bytes))
-                (member-p e l-addrs))
-           (equal (cdr (assoc-equal e (create-addr-bytes-alist l-addrs bytes)))
-                  (nth (pos e l-addrs) bytes)))
-  :hints (("Goal" :in-theory (e/d* (pos) (assoc-equal-and-nth-pos-1))
-           :use ((:instance assoc-equal-and-nth-pos-1
-                            (n 0))))))
+;; ======================================================================
+
+#||
+
+;; Lemmas about byte-ify and combine-bytes:
+
+(local
+ (defthmd byte-ify-general-acc-helper-thm
+   (implies (and (byte-listp acc1)
+                 (byte-listp acc2)
+                 (integerp val)
+                 (natp n))
+            (equal (byte-ify-general n val (append acc1 acc2))
+                   (append (acl2::rev acc2) (byte-ify-general n val acc1))))
+   :hints (("Goal" :in-theory (e/d* (byte-ify-general) ())))))
+
+(defthm byte-ify-general-acc-thm
+  (implies (and (syntaxp (not (and (quotep acc)
+                                   (eq (car (unquote acc)) nil))))
+                (byte-listp acc)
+                (integerp val)
+                (natp n))
+           (equal (byte-ify-general n val acc)
+                  (append (acl2::rev acc) (byte-ify-general n val nil))))
+  :hints (("Goal" :use ((:instance byte-ify-general-acc-helper-thm
+                                   (acc2 acc)
+                                   (acc1 nil))))))
+
+
+(defthm combine-bytes-and-byte-ify
+  (implies (natp n)
+           (equal (combine-bytes (byte-ify n x))
+                  (loghead (ash n 3) x)))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    byte-ify-and-byte-ify-general
+                                    byte-ify-general)
+                                   ()))))
+
+(defthmd remove-loghead-from-byte-ify
+  ;; We keep this rule disabled because most of the times, removing loghead
+  ;; from within byte-ify isn't really necessary.
+  (implies (equal m (ash n 3))
+           (equal (byte-ify n (loghead m x))
+                  (byte-ify n x)))
+  :hints (("Goal" :in-theory (e/d* (byte-ify-and-byte-ify-general
+                                    byte-ify-general
+                                    ihsext-recursive-redefs
+                                    ihsext-inductions)
+                                   ()))))
+
+(defthmd combine-bytes-and-byte-ify-inequality-lemma
+  ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
+  ;; this rule very often.
+  (implies (and (equal bytes (byte-ify n x))
+                (natp n)
+                (not (equal (loghead (ash n 3) x) val)))
+           (equal (equal (combine-bytes bytes) val) nil))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    byte-ify-and-byte-ify-general
+                                    byte-ify-general)
+                                   ()))))
+
+(defthmd remove-loghead-from-combine-bytes
+  ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
+  ;; this rule very often.
+  (implies (and (equal m (ash (len bytes) 3))
+                (byte-listp bytes))
+           (equal (loghead m (combine-bytes bytes))
+                  (combine-bytes bytes)))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    ihsext-recursive-redefs
+                                    ihsext-inductions)
+                                   ()))))
+
+(defthm byte-ify-and-combine-bytes
+  ;; [Shilpi]: Generalize this to remove the len hyp...
+  (implies (and (equal (len byte-list) n)
+                (byte-listp byte-list))
+           (equal (byte-ify n (combine-bytes byte-list))
+                  byte-list))
+  :hints (("Goal"
+           :in-theory (e/d* (combine-bytes
+                             byte-ify-and-byte-ify-general
+                             byte-ify-general)
+                            ()))))
 
 ;; ======================================================================
 

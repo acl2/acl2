@@ -143,6 +143,49 @@
 
 ;; ======================================================================
 
+(def-gl-export rm-low-64-and-write-to-physical-memory-equal-helper-1
+  :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+            (n08p e) (n08p f) (n08p g) (n08p h))
+  :concl (equal
+          (logior
+           a
+           (ash
+            (logior
+             b
+             (ash
+              (logior
+               c
+               (ash
+                (logior
+                 d
+                 (ash
+                  (logior
+                   e
+                   (ash (logior f
+                                (ash (logior g
+                                             (ash h 8))
+                                     8))
+                        8))
+                  8))
+                8))
+              8))
+            8))
+          (logior a
+                  (ash b 8)
+                  (ash (logior c
+                               (ash d 8))
+                       16)
+                  (ash (logior e
+                               (ash f 8)
+                               (ash (logior g
+                                            (ash h 8))
+                                    16))
+                       32)))
+  :g-bindings
+  (gl::auto-bindings
+   (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+         (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
 (def-gl-export rm-low-64-and-write-to-physical-memory-equal-helper-2
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
@@ -185,6 +228,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(in-theory (e/d () (rm-low-64-and-write-to-physical-memory-equal-helper-2)))
+(in-theory (e/d () (rm-low-64-and-write-to-physical-memory-equal-helper-1
+                    rm-low-64-and-write-to-physical-memory-equal-helper-2)))
 
 ;; ======================================================================
