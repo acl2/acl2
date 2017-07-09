@@ -15,10 +15,6 @@
   :parents (reasoning-about-page-tables)
 
   :short "Gather physical addresses where paging data structures are located"
-
-  :long "<p>WORK IN PROGRESS...</p>
-
-<p>This doc topic will be updated in later commits...</p>"
   )
 
 (local (xdoc::set-default-parents gather-paging-structures))
@@ -603,15 +599,6 @@
   paging structure referred to by a paging entry at address
   @('superior-structure-paddr').</p>"
 
-  ;; (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86))
-  ;;      (this-structure-base-addr
-  ;;       (ash (ia32e-page-tables-slice
-  ;;             :reference-addr superior-structure-entry) 12)))
-
-  ;;   ;; The inferior table will always fit into the physical
-  ;;   ;; memory.
-  ;;   (create-qword-address-list 512 this-structure-base-addr))
-
   (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86)))
     (if (and
          ;; (equal (page-present  superior-structure-entry) 1)
@@ -662,10 +649,8 @@
                                addr-range-1)))))
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-wm-low-64-disjoint
-    (implies (and (disjoint-p (addr-range 8 index)
-                              (addr-range 8 addr))
-                  (physical-address-p index)
-                  (physical-address-p addr))
+    (implies (disjoint-p (addr-range 8 index)
+                         (addr-range 8 addr))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
@@ -678,8 +663,6 @@
                   (xlate-equiv-entries (double-rewrite val)
                                        (rm-low-64 addr x86))
                   (unsigned-byte-p 64 val)
-                  (physical-address-p index)
-                  (physical-address-p (+ 7 index))
                   (not (xr :programmer-level-mode 0 x86)))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 index val x86))
@@ -718,8 +701,6 @@
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-wm-low-64-with-different-x86-disjoint
     (implies (and (disjoint-p (addr-range 8 index) (addr-range 8 addr))
-                  (physical-address-p addr)
-                  (physical-address-p index)
                   (equal (gather-qword-addresses-corresponding-to-1-entry addr x86-equiv)
                          (gather-qword-addresses-corresponding-to-1-entry addr x86)))
              ;; (xlate-equiv-entries (rm-low-64 addr x86-equiv)
@@ -746,8 +727,6 @@
     (implies (and (xlate-equiv-entries (double-rewrite val)
                                        (rm-low-64 addr x86))
                   (unsigned-byte-p 64 val)
-                  (physical-address-p addr)
-                  (physical-address-p (+ 7 addr))
                   (not (xr :programmer-level-mode 0 x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 addr val x86-equiv))
@@ -770,7 +749,6 @@
                   (physical-address-p index)
                   (equal (loghead 3 index) 0)
                   (physical-address-p addr)
-                  (physical-address-p (+ 7 addr))
                   (equal (loghead 3 addr) 0)
                   (unsigned-byte-p 64 value)
                   (not (programmer-level-mode x86)))
@@ -886,9 +864,7 @@
                                (addr-range))))))
 
   (defthm gather-qword-addresses-corresponding-to-entries-aux-wm-low-64-disjoint
-    (implies (and (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
-                  (physical-address-p index)
-                  (mult-8-qword-paddr-listp addrs))
+    (implies (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
              (equal (gather-qword-addresses-corresponding-to-entries-aux
                      addrs (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-entries-aux addrs x86)))
@@ -934,9 +910,7 @@
   (defthm gather-qword-addresses-corresponding-to-entries-aux-wm-low-64-with-different-x86-disjoint
     (implies (and (equal (gather-qword-addresses-corresponding-to-entries-aux addrs x86-equiv)
                          (gather-qword-addresses-corresponding-to-entries-aux addrs x86))
-                  (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
-                  (physical-address-p index)
-                  (mult-8-qword-paddr-listp addrs))
+                  (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs)))
              (equal (gather-qword-addresses-corresponding-to-entries-aux
                      addrs (wm-low-64 index val x86-equiv))
                     (gather-qword-addresses-corresponding-to-entries-aux addrs x86)))
@@ -1065,9 +1039,7 @@
                                (addr-range))))))
 
   (defthm gather-qword-addresses-corresponding-to-entries-wm-low-64-disjoint
-    (implies (and (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
-                  (physical-address-p index)
-                  (mult-8-qword-paddr-listp addrs))
+    (implies (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -1112,9 +1084,7 @@
   (defthm gather-qword-addresses-corresponding-to-entries-wm-low-64-with-different-x86-disjoint
     (implies (and (equal (gather-qword-addresses-corresponding-to-entries addrs x86-equiv)
                          (gather-qword-addresses-corresponding-to-entries addrs x86))
-                  (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs))
-                  (physical-address-p index)
-                  (mult-8-qword-paddr-listp addrs))
+                  (disjoint-p (addr-range 8 index) (open-qword-paddr-list addrs)))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (wm-low-64 index val x86-equiv))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -1301,10 +1271,9 @@
                                (a (append a b c d))))))))
 
   (defthm gather-all-paging-structure-qword-addresses-wm-low-64-disjoint
-    (implies (and (disjoint-p (addr-range 8 index)
-                              (open-qword-paddr-list
-                               (gather-all-paging-structure-qword-addresses x86)))
-                  (physical-address-p index))
+    (implies (disjoint-p (addr-range 8 index)
+                         (open-qword-paddr-list
+                          (gather-all-paging-structure-qword-addresses x86)))
              (equal (gather-all-paging-structure-qword-addresses
                      (wm-low-64 index val x86))
                     (gather-all-paging-structure-qword-addresses x86))))
@@ -1391,20 +1360,18 @@
   (defthm gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-subset-p
     (implies
      (and (equal p-addrs (addr-range 8 index))
-          (equal (page-size (combine-bytes bytes)) 1)
+          (equal (page-size value) 1)
           (physical-address-p index)
           (equal (loghead 3 index) 0)
-          (byte-listp bytes)
-          (equal (len bytes) 8)
+          (unsigned-byte-p 64 value)
           (not (programmer-level-mode x86)))
      (subset-p
       (gather-all-paging-structure-qword-addresses
-       (write-to-physical-memory p-addrs bytes x86))
+       (write-to-physical-memory p-addrs value x86))
       (gather-all-paging-structure-qword-addresses x86)))
     :hints (("Goal"
              :in-theory (e/d* () (gather-all-paging-structure-qword-addresses))
-             :use ((:instance rewrite-wm-low-64-to-write-to-physical-memory
-                              (value (combine-bytes bytes))))))))
+             :use ((:instance rewrite-wm-low-64-to-write-to-physical-memory))))))
 
 ;; ======================================================================
 
@@ -1486,9 +1453,8 @@
                                      (xlate-equiv-entries)))))
 
   (defthm xlate-equiv-entries-at-qword-addresses-with-xw-mem-disjoint
-    (implies (and (physical-address-p index)
-                  (disjoint-p (list index)
-                              (open-qword-paddr-list addrs)))
+    (implies (disjoint-p (list index)
+                         (open-qword-paddr-list addrs))
              (equal (xlate-equiv-entries-at-qword-addresses
                      addrs addrs
                      x86-1
@@ -1500,10 +1466,8 @@
     :hints (("Goal" :in-theory (e/d* (member-p) (xlate-equiv-entries)))))
 
   (defthm xlate-equiv-entries-at-qword-addresses-with-wm-low-64-disjoint
-    (implies (and (mult-8-qword-paddr-listp addrs)
-                  (physical-address-p index)
-                  (disjoint-p (addr-range 8 index)
-                              (open-qword-paddr-list addrs)))
+    (implies (disjoint-p (addr-range 8 index)
+                         (open-qword-paddr-list addrs))
              (equal (xlate-equiv-entries-at-qword-addresses
                      addrs addrs
                      x86-1
@@ -1610,7 +1574,7 @@
 ;; First, some bind-free and other misc. stuff:
 
 (defun find-xlate-equiv-structures-from-occurrence
-  (bound-x86-term mfc state)
+    (bound-x86-term mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
   (b* ((call (acl2::find-call-lst 'xlate-equiv-structures (acl2::mfc-clause mfc)))
@@ -1826,9 +1790,7 @@
                  (xw :mem index val y))))
 
      (defthm xr-mem-wm-low-64
-       (implies (and ;; (disjoint-p (list index) (addr-range 8 addr))
-                 (not (member-p index (addr-range 8 addr)))
-                 (physical-address-p addr))
+       (implies (not (member-p index (addr-range 8 addr)))
                 (equal (xr :mem index (wm-low-64 addr val x86))
                        (xr :mem index x86)))
        :hints (("Goal" :in-theory (e/d* (wm-low-64
@@ -1839,7 +1801,6 @@
      (local
       (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64-paging-entry-helper
         (implies (and (member-p index a)
-                      (mult-8-qword-paddr-listp a)
                       (disjoint-p (list i) (open-qword-paddr-list a)))
                  (equal (member-p i (addr-range 8 index))
                         nil))
@@ -1847,8 +1808,7 @@
                                          ())))))
 
      (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64-paging-entry
-       (implies (and (member-p index addrs)
-                     (mult-8-qword-paddr-listp addrs))
+       (implies (member-p index addrs)
                 (equal (all-mem-except-paging-structures-equal-aux i addrs (wm-low-64 index val x) y)
                        (all-mem-except-paging-structures-equal-aux i addrs x y)))
        :hints (("Goal" :in-theory (e/d* (member-p) ()))))
@@ -1967,7 +1927,6 @@
     (implies (and (xlate-equiv-entries (double-rewrite entry)
                                        (rm-low-64 entry-addr x86))
                   (member-p entry-addr (gather-all-paging-structure-qword-addresses x86))
-                  (x86p (double-rewrite x86))
                   (unsigned-byte-p 64 entry))
              (all-mem-except-paging-structures-equal
               (wm-low-64 entry-addr entry x86)
@@ -1979,7 +1938,6 @@
     (implies (and
               (bind-free (find-equiv-x86-for-components y mfc state))
               (all-mem-except-paging-structures-equal x y)
-              (physical-address-p index)
               (disjoint-p
                (addr-range 8 index)
                (open-qword-paddr-list (gather-all-paging-structure-qword-addresses y))))
@@ -2127,17 +2085,19 @@
 
 (defthm gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
   (implies
-   (and (bind-free
-         (find-an-xlate-equiv-x86
-          'gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
-          x86-1 'x86-2 mfc state)
-         (x86-2))
-        (xlate-equiv-structures (double-rewrite x86-1) (double-rewrite x86-2))
-        (equal (programmer-level-mode (double-rewrite x86-1)) nil)
-        (disjoint-p
-         (addr-range 8 index)
-         (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86-1)))
-        (physical-address-p index))
+   (and
+    (bind-free
+     (find-an-xlate-equiv-x86
+      'gather-all-paging-structure-qword-addresses-wm-low-64-different-x86-disjoint
+      x86-1 'x86-2
+      mfc state)
+     (x86-2))
+    (xlate-equiv-structures (double-rewrite x86-1)
+                            (double-rewrite x86-2))
+    (equal (programmer-level-mode (double-rewrite x86-1)) nil)
+    (disjoint-p (addr-range 8 index)
+                (open-qword-paddr-list
+                 (gather-all-paging-structure-qword-addresses x86-1))))
    (equal (gather-all-paging-structure-qword-addresses
            (wm-low-64 index val x86-1))
           (gather-all-paging-structure-qword-addresses x86-2)))
@@ -2188,8 +2148,7 @@
             (xlate-equiv-structures x86-1 (double-rewrite x86-2))
             (disjoint-p (addr-range 8 index)
                         (open-qword-paddr-list
-                         (gather-all-paging-structure-qword-addresses x86-1)))
-            (physical-address-p index))
+                         (gather-all-paging-structure-qword-addresses x86-1))))
            (xlate-equiv-structures (wm-low-64 index val x86-2) x86-1))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures) ()))))
 

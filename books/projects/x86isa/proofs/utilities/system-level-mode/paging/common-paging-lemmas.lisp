@@ -429,96 +429,118 @@
              :in-theory (e/d* (disjoint-p disjoint-p-commutative) (xlation-governing-entries-paddrs))))))
 
 (define all-xlation-governing-entries-paddrs
-  ((l-addrs canonical-address-listp)
+  ((n        natp)
+   (lin-addr canonical-address-p)
    x86)
-  :guard (not (xr :programmer-level-mode 0 x86))
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (canonical-address-p (+ n lin-addr)))
+  :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
   :enabled t
-  (if (endp l-addrs)
+  (if (zp n)
       nil
-    (append (xlation-governing-entries-paddrs (car l-addrs) x86)
-            (all-xlation-governing-entries-paddrs (cdr l-addrs)  x86)))
+    (append (xlation-governing-entries-paddrs lin-addr x86)
+            (all-xlation-governing-entries-paddrs (1- n) (1+ lin-addr) x86)))
   ///
 
-  (defthm all-xlation-governing-entries-paddrs-and-nil
-    (equal (all-xlation-governing-entries-paddrs nil x86) nil))
+  (defthm all-xlation-governing-entries-paddrs-and-zero-bytes
+    (equal (all-xlation-governing-entries-paddrs 0 lin-addr x86) nil))
+
+  (local
+   (defthm xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs-helper
+     (implies (and (integerp n) (< 0 n))
+              (subset-p (xlation-governing-entries-paddrs a x86)
+                        (all-xlation-governing-entries-paddrs n a x86)))
+     :hints (("Goal" :expand (all-xlation-governing-entries-paddrs n a x86)))))
 
   (defthm xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-    (implies (member-p addr l-addrs)
-             (equal (subset-p (xlation-governing-entries-paddrs addr x86)
-                              (all-xlation-governing-entries-paddrs l-addrs x86))
+    (implies (and (<= addr a) (< a (+ n addr))
+                  (posp n) (integerp a) (integerp addr))
+             (equal (subset-p (xlation-governing-entries-paddrs a x86)
+                              (all-xlation-governing-entries-paddrs n addr x86))
                     t))
     :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
   (defthm all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-    (implies (subset-p l-addrs-subset l-addrs)
-             (equal
-              (subset-p (all-xlation-governing-entries-paddrs l-addrs-subset x86)
-                        (all-xlation-governing-entries-paddrs l-addrs x86))
-              t))
+    (implies
+     (and (<= addr-2 addr-1)
+          (< (+ n-1 addr-1) (+ n-2 addr-2))
+          (posp n-2) (integerp addr-1) (integerp addr-2))
+     (equal
+      (subset-p (all-xlation-governing-entries-paddrs n-1 addr-1 x86)
+                (all-xlation-governing-entries-paddrs n-2 addr-2 x86))
+      t))
     :hints (("Goal" :in-theory (e/d* (subset-p member-p) ()))))
 
   (defthm all-xlation-governing-entries-paddrs-and-xw-not-mem
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :programmer-level-mode)))
-             (equal (all-xlation-governing-entries-paddrs l-addrs (xw fld index value x86))
-                    (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
+             (equal (all-xlation-governing-entries-paddrs n addr (xw fld index value x86))
+                    (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs)))))
 
   (defthm all-xlation-governing-entries-paddrs-and-xw-mem-not-member
-    (implies (and (not (member-p index (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
-                  (integerp index))
-             (equal (all-xlation-governing-entries-paddrs l-addrs (xw :mem index value x86))
-                    (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
+    (implies (not (member-p index (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
+             (equal (all-xlation-governing-entries-paddrs n addr (xw :mem index value x86))
+                    (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs)))))
 
   (defthm all-xlation-governing-entries-paddrs-and-!flgi
-    (equal (all-xlation-governing-entries-paddrs l-addrs (!flgi index value x86))
-           (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
+    (equal (all-xlation-governing-entries-paddrs n addr (!flgi index value x86))
+           (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs force (force))))))
 
   (defthm all-xlation-governing-entries-paddrs-and-!flgi-undefined
-    (equal (all-xlation-governing-entries-paddrs l-addrs (!flgi-undefined index x86))
-           (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
+    (equal (all-xlation-governing-entries-paddrs n addr (!flgi-undefined index x86))
+           (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs force (force)))))))
 
 ;; ======================================================================
 
-(defthm disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs
-  (implies (and (bind-free
-                 (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
-                 (l-addrs))
-                (disjoint-p (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)) other-p-addrs)
-                (member-p lin-addr l-addrs))
-           (disjoint-p (xlation-governing-entries-paddrs lin-addr x86) other-p-addrs))
-  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+(local
+ (defthmd disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-helper
+   (implies
+    (and
+     (disjoint-p
+      (all-xlation-governing-entries-paddrs n a (double-rewrite x86))
+      other-p-addrs)
+     (posp n) (integerp a))
+    (disjoint-p (xlation-governing-entries-paddrs a x86)
+                other-p-addrs))
+   :hints (("Goal" :in-theory (e/d* (member-p) ())))))
 
-;; (defthm disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
-;;   (implies (and (bind-free
-;;               (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
-;;               (l-addrs))
-;;              (syntaxp (not (eq l-addrs-subset l-addrs)))
-;;              (disjoint-p (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)) other-p-addrs)
-;;              (subset-p l-addrs-subset l-addrs))
-;;         (disjoint-p (all-xlation-governing-entries-paddrs l-addrs-subset x86) other-p-addrs))
-;;   :hints (("Goal" :in-theory (e/d* (subset-p member-p) (xlation-governing-entries-paddrs)))))
+(defthm disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs
+  (implies
+   (and
+    (bind-free
+     (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'n 'addr mfc state)
+     (n addr))
+    (disjoint-p
+     (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))
+     other-p-addrs)
+    (<= addr a) (< a (+ n addr))
+    (posp n) (integerp a) (integerp addr))
+   (disjoint-p (xlation-governing-entries-paddrs a x86)
+               other-p-addrs))
+  :hints (("Goal" :use ((:instance disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-helper)))))
 
 (defthm disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
   (implies
    (and
     (bind-free
-     (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
+     (find-l-addrs-from-fn
+      'all-xlation-governing-entries-paddrs 'n-2 'addr-2 mfc state)
      (l-addrs))
     (bind-free
      (find-arg-of-fn 'disjoint-p 2 'other-p-addrs mfc state)
      (other-p-addrs))
-    (syntaxp (not (eq l-addrs-subset l-addrs)))
-    ;; (syntaxp (not (eq other-p-addrs-subset other-p-addrs)))
-    (disjoint-p (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))
+    (disjoint-p (all-xlation-governing-entries-paddrs n-2 addr-2 (double-rewrite x86))
                 other-p-addrs)
     (subset-p other-p-addrs-subset other-p-addrs)
-    (subset-p l-addrs-subset l-addrs))
-   (disjoint-p (all-xlation-governing-entries-paddrs l-addrs-subset x86)
+    (<= addr-2 addr-1)
+    (< (+ n-1 addr-1) (+ n-2 addr-2))
+    (posp n-2) (integerp addr-1) (integerp addr-2))
+   (disjoint-p (all-xlation-governing-entries-paddrs n-1 addr-1 x86)
                other-p-addrs-subset))
   :hints
   (("Goal" :in-theory (e/d* (subset-p member-p)
