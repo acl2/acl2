@@ -530,7 +530,7 @@
     (bind-free
      (find-l-addrs-from-fn
       'all-xlation-governing-entries-paddrs 'n-2 'addr-2 mfc state)
-     (l-addrs))
+     (n-2 addr-2))
     (bind-free
      (find-arg-of-fn 'disjoint-p 2 'other-p-addrs mfc state)
      (other-p-addrs))
