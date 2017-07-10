@@ -1393,10 +1393,11 @@
 ; For example, cdr of the entry for "system/top" is produced by evaluating:
 ; (include-book "system/top" :dir :system).
 ; The indicated books need to be certified using an ACL2 executable that was
-; built with feature :acl2-devel set, but this should take only a couple of
-; minutes or so.  It assumes that the only alist entry below is for
-; "system/top" and that ACL2 is your ACL2 sources directory.  Note: Replace
-; "saved_acl2d" as necessary, e.g., "ccl-saved_acl2d".
+; built with feature :acl2-devel set (typically with "make ACL2_DEVEL=t"), but
+; this should take only a couple of minutes or so.  It assumes that the only
+; alist entry below is for "system/top" and that ACL2 is your ACL2 sources
+; directory.  Note: Replace "saved_acl2d" as necessary, e.g.,
+; "ccl-saved_acl2d".
 
 ; cd ACL2
 ; make clean-books ACL2=`pwd`/saved_acl2d
@@ -1457,6 +1458,7 @@
      (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
      (MSGP)
+     (OVERRIDE-HINTS)
      (PLAUSIBLE-DCLSP ACL2-COUNT LST)
      (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
      (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)

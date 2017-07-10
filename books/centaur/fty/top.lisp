@@ -158,15 +158,17 @@ functions and equivalence relations, then 4-5 are easy to engineer:</p>
 <ul>
 
 <li>If you build on existing functions that already satisfy these requirements,
-they are likely to follow naturally;</li>
+they are likely to follow naturally.</li>
 
 <li>Otherwise, you can simply fix each of the inputs to a function to their
-appropriate types for free, using @(see MBE).</li>
+appropriate types for free, using @(tsee mbe).</li>
 
 </ul>
 
 <p>For instance, here is a function that obeys the FTY discipline for natural
-numbers by simply fixing its argument before operating on it:</p>
+numbers by simply fixing its argument before operating on it.  Observe that
+thanks to the @('mbe'), execution efficiency is unaffected by the additional
+step of fixing @('n').</p>
 
 @({
     (defun nat-add-5 (n)
@@ -175,16 +177,52 @@ numbers by simply fixing its argument before operating on it:</p>
         (+ n 5)))
 })
 
-<p>FTY provides macro support for automatically proving the congruence rules;
-see @(see deffixequiv) and @(see deffixequiv-mutual).  Meanwhile, for a
-convenient way to prove unconditional return-value theorems, see the @(see
-std::returns-specifiers) feature of @(see std::define).</p>
+<p>However, writing these @('mbe') forms at the beginning of all of your
+functions can be unwieldy.  A more convenient approach is to put the @('mbe')
+inside the fixing function itself and inline the fixing function.  This enables
+you to call the fixing function anywhere without any execution penalty, though
+it does add a guard obligation.</p>
 
-<p>Having unconditional return types and congruences are both beneficial for in
-themselves.  But the main benefit of using the fixtype discipline is that
-reasoning about such functions does not require hypotheses constraining their
-inputs to the expected types, because they are fixed to that type (in a
-consistent manner) before being used.</p>")
+@({
+    (define foo-fix ((x foo-p))
+      :inline t
+      (mbe :logic ...
+           :exec x))
+
+    (define munge-foo ((x foo-p))
+      (b* ((x (foo-fix x)))
+        (bar (baz x) (xyzzy x))))
+})
+
+<p>There are versions of the ACL2 built-in fixing functions @(tsee nfix) and
+@(tsee ifix) which follow the above discipline, called @(tsee lnfix) and @(tsee
+lifix):</p>
+
+@({
+    (define nat-add-5 ((n natp))
+      (b* ((n (lnfix n)))
+        (+ n 5)))
+})
+
+<p>FTY provides macro support for automatically proving the congruence rules
+mentioned in item 4; see @(see deffixequiv) and @(see deffixequiv-mutual).
+Meanwhile, for a convenient way to prove the unconditional return-value
+theorems mentioned in item 5, see the @(see std::returns-specifiers) feature of
+@(see std::define).</p>
+
+<p>Having unconditional return types and congruences is beneficial in and of
+itself.  But the main advantage of using the fixtype discipline is that in
+complex programs, program reasoning can be done while largely avoiding
+extensive <see topic=\"@(url acl2::backchaining)\">backchaining</see> involving
+proofs about type information.</p>
+
+<p>Because each function's inputs are fixed to the appropriate type before
+being used, theorems about the function do not typically need hypotheses
+stating that the inputs are of that type.  And when a FTY-disciplined
+function's result is passed into some other function, the unconditional returns
+theorem for the first function allows us to instantly discharge any
+type-related goals that arise in guard theorems or other theorems about the
+second function.</p>")
 
 
 (defxdoc deffixtype

@@ -76,6 +76,7 @@
 (verify-termination ffnnamep) ; and guards
 (verify-termination world-evisceration-alist) ; and guards
 (verify-termination abbrev-evisc-tuple) ; and guards
+(verify-termination override-hints) ; and guards, as per Eric Smith
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by David L. Rager.
