@@ -40,19 +40,19 @@
 
 (set-state-ok t)
 
-(defconst *profiling-dir* "huebner/advice-profiler/")
+(defconst *profiling-dir* "advice-profiler/")
 
 (defun with-profiling-ccl-dir-warning (state)
   (declare (xargs :mode :program))
   (warning$ 'with-profiling nil
             "The CCL profiling routines used by books/misc/profiling.lisp ~
              depend on a directory ~s0, which should exist under the CCL ~
-             contrib/ subdirectory (for earlier CCL versions) or tools/ ~
-             subdirectory (for later CCL versions).  That directory is ~
-             missing under both contrib/ and tools/, which can happen for ~
-             earlier github distributions of CCL.  CCL directory tools/~s0 ~
-             should exist after you update your CCL distribution."
-            *profiling-dir*))
+             contrib/huebner/ subdirectory (for earlier CCL versions) or ~
+             tools/ subdirectory (for later CCL versions).  There is no ~s0 ~
+             directory under either contrib/huebner/ or tools/, as can happen ~
+             for earlier github distributions of CCL; it should exist under ~
+             tools/ after you update your CCL github distribution."
+             *profiling-dir*))
 
 (defun with-profiling-ccl-dir-lst (state)
   (declare (xargs :mode :program))
@@ -69,7 +69,7 @@
          ccl-dir
          (value (list (concatenate 'string
                                    ccl-dir
-                                   "/contrib/"
+                                   "/contrib/huebner/"
                                    *profiling-dir*)
                       (concatenate 'string
                                    ccl-dir
@@ -101,14 +101,17 @@
          (with-profiling-ccl-dir-warning state)
 
 ; The calls of error below avoid having to deal with multiple values, as is
-; done by the uses of our-multiple-value-prog1 in profiling-raw.lsp.
+; done by the uses of our-multiple-value-prog1 in profiling-raw.lsp.  This is
+; kind of sad in the case of the second definition, since normally we'd expect
+; a warning; but this case is rare anyhow, since it is only for github versions
+; of CCL prior to early July 2017.
 
          (eval `(defmacro with-profiling-raw (syms form)
                   (declare (ignore syms form))
                   '(progn
                      (with-profiling-ccl-dir-warning *the-live-state*)
                      (error "Profiling directory does not exist (see warning ~
-                           above):~%~a"))))
+                             above).~%"))))
          (eval '(defmacro with-sprofiling-internal-raw (options form)
                   (declare (ignore options form))
                   (error "The macro ~s does not do any profiling in CCL."
