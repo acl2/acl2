@@ -40,16 +40,21 @@
 
 (set-state-ok t)
 
-(defun with-profiling-ccl-dir-warning (prof-dir state)
+(defconst *profiling-dir* "huebner/advice-profiler/")
+
+(defun with-profiling-ccl-dir-warning (state)
   (declare (xargs :mode :program))
   (warning$ 'with-profiling nil
             "The CCL profiling routines used by books/misc/profiling.lisp ~
-             depend on directory ~x0, which does not exist in your CCL ~
-             distribution.  Such a directory exists in svn distributions of ~
-             CCL and may appear in a future ccl-contrib github repository."
-            prof-dir))
+             depend on a directory ~s0, which should exist under the CCL ~
+             contrib/ subdirectory (for earlier CCL versions) or tools/ ~
+             subdirectory (for later CCL versions).  That directory is ~
+             missing under both contrib/ and tools/, which can happen for ~
+             earlier github distributions of CCL.  CCL directory tools/~s0 ~
+             should exist after you update your CCL distribution."
+            *profiling-dir*))
 
-(defun with-profiling-ccl-dir (state)
+(defun with-profiling-ccl-dir-lst (state)
   (declare (xargs :mode :program))
   (cond
    ((not (eq (f-get-global 'host-lisp state) :ccl))
@@ -62,41 +67,52 @@
         (declare (ignore erp))
         (assert$
          ccl-dir
-         (value (concatenate 'string
-                             ccl-dir
-                             "/contrib/huebner/advice-profiler/")))))))
+         (value (list (concatenate 'string
+                                   ccl-dir
+                                   "/contrib/"
+                                   *profiling-dir*)
+                      (concatenate 'string
+                                   ccl-dir
+                                   "/tools/"
+                                   *profiling-dir*))))))))
 
 (progn!
  (set-raw-mode t)
  (cond
   ((and (eq (f-get-global 'host-lisp state) :ccl)
         (not (eq (os (w state)) :mswindows)))
-   (er-let* ((prof-dir (with-profiling-ccl-dir state)))
-     (cond
-      ((our-probe-file prof-dir)
-       (prog2$
-        (let ((*readtable* *host-readtable*))
-          (load (concatenate 'string prof-dir "package.lisp"))
-          (load (concatenate 'string prof-dir "profiler.lisp"))
-          (load (concatenate 'string (cbd) "profiling-raw.lsp")))
-        (value nil)))
-      (t
-       (with-profiling-ccl-dir-warning prof-dir state)
+   (mv-let
+     (erp prof-dir-lst state)
+     (with-profiling-ccl-dir-lst state)
+     (declare (ignore erp))
+     (let ((prof-dir (cond ((our-probe-file (nth 0 prof-dir-lst))
+                            (nth 0 prof-dir-lst))
+                           ((our-probe-file (nth 1 prof-dir-lst))
+                            (nth 1 prof-dir-lst)))))
+       (cond
+        (prof-dir
+         (prog2$
+          (let ((*readtable* *host-readtable*))
+            (load (concatenate 'string prof-dir "package.lisp"))
+            (load (concatenate 'string prof-dir "profiler.lisp"))
+            (load (concatenate 'string (cbd) "profiling-raw.lsp")))
+          (value nil)))
+        (t
+         (with-profiling-ccl-dir-warning state)
 
 ; The calls of error below avoid having to deal with multiple values, as is
 ; done by the uses of our-multiple-value-prog1 in profiling-raw.lsp.
 
-       (eval `(defmacro with-profiling-raw (syms form)
-                (declare (ignore syms form))
-                '(progn
-                   (with-profiling-ccl-dir-warning
-                    ,prof-dir *the-live-state*)
-                   (error "Directory does not exist (see warning above):~%~a"
-                          ,prof-dir))))
-       (eval '(defmacro with-sprofiling-internal-raw (options form)
-                (declare (ignore options form))
-                (error "The macro ~s does not do any profiling in CCL."
-                       'with-sprofiling)))))))
+         (eval `(defmacro with-profiling-raw (syms form)
+                  (declare (ignore syms form))
+                  '(progn
+                     (with-profiling-ccl-dir-warning *the-live-state*)
+                     (error "Profiling directory does not exist (see warning ~
+                           above):~%~a"))))
+         (eval '(defmacro with-sprofiling-internal-raw (options form)
+                  (declare (ignore options form))
+                  (error "The macro ~s does not do any profiling in CCL."
+                         'with-sprofiling))))))))
   (t (load (concatenate 'string (cbd) "profiling-raw.lsp")))))
 
 (defmacro-last with-profiling)

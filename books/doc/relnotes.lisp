@@ -191,8 +191,8 @@
  <p>Added file @('system/to-do.txt') to list some potential developer
  tasks.</p>
 
- <p>Fixed @('misc/profiling.lisp') to certify with GitHub distributions of
- CCL (Clozure Common Lisp).</p>
+ <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
+ Common Lisp), both from SVN and from GitHub.</p>
 
  ")
 
