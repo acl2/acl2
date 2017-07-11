@@ -4,9 +4,6 @@
 (in-package "X86ISA")
 (include-book "common-system-level-utils")
 (include-book "paging/common-paging-lemmas")
-(include-book "gl-lemmas")
-(include-book "bind-free-utils")
-(include-book "clause-processors/find-subterms" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -16,7 +13,7 @@
 
 ;; ======================================================================
 
-(defsection system-level-non-marking-mode-proof-utilities
+(defsection non-marking-mode-proof-utilities
   :parents (proof-utilities debugging-code-proofs)
 
   :short "General-purpose code-proof libraries to include in the
@@ -69,17 +66,17 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb):
     <br/>
-    Monitor @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode').
+    Monitor @('rb-one-byte-of-program-in-non-marking-mode').
     </li>
 
    <li>When monitoring other rules above indicates that ACL2 can't
     resolve that the program remained unchanged (@(see
     program-at)) after a write operation @(see wb) occurred: <br/>
-    Monitor @('program-at-wb-disjoint-in-system-level-non-marking-mode'). <br/>
+    Monitor @('program-at-wb-disjoint-in-non-marking-mode'). <br/>
     <br/>
     An instance of where monitoring this rule might be helpful is when
     the @('program-at') hypothesis of
-    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode') is not
+    @('rb-one-byte-of-program-in-non-marking-mode') is not
     being relieved.
    </li>
 
@@ -91,13 +88,13 @@
     list of addresses, of which that address is a member.  An instance
     of where monitoring this rule
     might be helpful is when the @('member-p') hypothesis of
-    @('rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode') is not
+    @('rb-one-byte-of-program-in-non-marking-mode') is not
     being relieved.
    </li>
 
    <li>When reasoning about disjointness/overlap of memory regions: <br/>
-   @('rb-wb-disjoint-in-system-level-non-marking-mode') <br/>
-   @('rb-wb-equal-in-system-level-non-marking-mode') <br/>
+   @('rb-wb-disjoint-in-non-marking-mode') <br/>
+   @('rb-wb-equal-in-non-marking-mode') <br/>
    @('la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode') <br/>
    @('all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-in-non-marking-mode')
    </li>
@@ -116,7 +113,7 @@
 ")
 
 (defsection unwind-x86-interpreter-in-non-marking-mode
-  :parents (system-level-non-marking-mode-proof-utilities)
+  :parents (non-marking-mode-proof-utilities)
 
   ;; A benefit of defining this topic (apart from letting the user
   ;; view the definitions of the rules) is that if the rule names
@@ -149,9 +146,9 @@
 
  <h3>Rules related to instruction fetches and program location</h3>
 
- @(def rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
+ @(def rb-one-byte-of-program-in-non-marking-mode)
 
- @(def program-at-wb-disjoint-in-system-level-non-marking-mode)
+ @(def program-at-wb-disjoint-in-non-marking-mode)
 
  <h3>Rules related to canonical linear addresses</h3>
 
@@ -159,22 +156,22 @@
 
  <h3>Rules related to disjointness/overlap of memory regions</h3>
 
-  @(def rb-wb-disjoint-in-system-level-non-marking-mode)
-  @(def rb-wb-equal-in-system-level-non-marking-mode)
+  @(def rb-wb-disjoint-in-non-marking-mode)
+  @(def rb-wb-equal-in-non-marking-mode)
   @(def la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
   @(def all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-in-non-marking-mode)
 ")
 
-(local (xdoc::set-default-parents system-level-non-marking-mode-proof-utilities))
+(local (xdoc::set-default-parents non-marking-mode-proof-utilities))
 
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
 ;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
-;; (acl2::why rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
-;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)
-;; (acl2::why program-at-wb-disjoint-in-system-level-non-marking-mode)
-;; (acl2::why rb-wb-disjoint-in-system-level-non-marking-mode)
+;; (acl2::why rb-one-byte-of-program-in-non-marking-mode)
+;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-non-marking-mode)
+;; (acl2::why program-at-wb-disjoint-in-non-marking-mode)
+;; (acl2::why rb-wb-disjoint-in-non-marking-mode)
 ;; (acl2::why disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
 
@@ -184,89 +181,61 @@
 
 (defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa-in-non-marking-mode
   (implies (not (page-structure-marking-mode x86))
-           (equal (read-from-physical-memory p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+           (equal (read-from-physical-memory
+                   p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-(defthmd rm08-in-terms-of-nth-pos-and-rb-in-system-level-non-marking-mode
-  (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-                (member-p addr l-addrs)
-                (canonical-address-listp l-addrs)
-                (equal bytes (mv-nth 1 (rb l-addrs r-w-x x86)))
-                (not (mv-nth 0 (rm08 addr r-w-x x86)))
-                (not (programmer-level-mode x86))
-                (not (page-structure-marking-mode x86))
-                (x86p x86))
-           (equal (mv-nth 1 (rm08 addr r-w-x x86))
-                  (nth (pos addr l-addrs) bytes)))
-  :hints (("Goal" :in-theory (e/d (pos rm08 member-p)
-                                  (signed-byte-p
-                                   (:meta acl2::mv-nth-cons-meta))))))
+(defun find-prog-at-info (addr-var bytes-var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((call (acl2::find-call-lst 'prog-at (acl2::mfc-clause mfc)))
+       ((when (not call))
+        ;; prog-at term not encountered.
+        nil))
+    `((,addr-var . ,(nth 1 call))
+      (,bytes-var . ,(nth 2 call)))))
 
-(local
- (defthmd rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode-helper
-   (implies
-    (and (signed-byte-p 48 lin-addr)
-         (not (mv-nth 0 (rb (list lin-addr) :x x86)))
-         (not (xr :programmer-level-mode 0 x86))
-         (not (xr :page-structure-marking-mode 0 x86))
-         (x86p x86))
-    (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
-           (combine-bytes (mv-nth 1 (rb (list lin-addr) :x x86)))))
-   :hints (("Goal" :in-theory (e/d* () ((:meta acl2::mv-nth-cons-meta)))))))
-
-(defthm rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
-  (implies (and (bind-free
-                 (find-info-from-program-at-term
-                  'rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
-                  mfc state)
-                 (n prog-addr bytes))
-                (program-at (create-canonical-address-list n prog-addr) bytes x86)
-                (member-p lin-addr (create-canonical-address-list n prog-addr))
-                (syntaxp (quotep n))
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr :x (cpl x86) x86)))
-                (not (programmer-level-mode x86))
-                (not (page-structure-marking-mode x86))
-                (x86p x86))
-           (equal (car (mv-nth 1 (rb (list lin-addr) :x x86)))
-                  (nth (pos lin-addr (create-canonical-address-list n prog-addr)) bytes)))
+(defthm rb-one-byte-of-program-in-non-marking-mode
+  (implies (and
+            (bind-free (find-prog-at-info 'prog-addr 'bytes mfc state)
+                       (prog-addr bytes))
+            (prog-at prog-addr bytes x86)
+            (<= prog-addr lin-addr)
+            (< lin-addr (+ (len bytes) prog-addr))
+            (canonical-address-p lin-addr)
+            (not (programmer-level-mode x86))
+            (x86p x86))
+           (equal (car (mv-nth 1 (rb 1 lin-addr :x x86)))
+                  (car (nth (- lin-addr prog-addr) bytes))))
   :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (program-at
-                            rm08
-                            rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode-helper)
-                           (acl2::mv-nth-cons-meta
-                            member-p-canonical-address-p-canonical-address-listp))
-           :use ((:instance member-p-canonical-address-p-canonical-address-listp
-                            (e lin-addr))
-                 (:instance rm08-in-terms-of-nth-pos-and-rb-in-system-level-non-marking-mode
-                            (addr lin-addr)
-                            (r-w-x :x)
-                            (l-addrs (create-canonical-address-list n prog-addr)))))))
+           :in-theory (e/d (prog-at rm08)
+                           (not acl2::mv-nth-cons-meta)))))
 
-(defthmd rb-unwinding-thm-in-system-level-non-marking-mode
-  (implies (and (consp l-addrs)
-                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (not (page-structure-marking-mode x86)))
-           (equal (mv-nth 1 (rb l-addrs r-w-x x86))
-                  (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
-                        (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta force (force))))))
+;; (defthmd rb-unwinding-thm-in-non-marking-mode
+;;   (implies (and (not (mv-nth 0 (rb n lin-addr r-w-x x86)))
+;;                 (not (page-structure-marking-mode x86)))
+;;            (equal (mv-nth 1 (rb n lin-addr r-w-x x86))
+;;                   (cons (car (mv-nth 1 (rb (list (car l-addrs)) r-w-x x86)))
+;;                         (mv-nth 1 (rb (cdr l-addrs) r-w-x x86)))))
+;;   :hints (("Goal" :in-theory (e/d (rb append) (acl2::mv-nth-cons-meta force (force))))))
 
-(defthmd rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
-  (implies (and (subset-p l-addrs-subset l-addrs)
-                (consp l-addrs)
-                (not (mv-nth 0 (rb l-addrs r-w-x x86)))
-                (not (page-structure-marking-mode x86)))
-           (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
-                  nil))
-  :hints (("Goal" :in-theory (e/d (subset-p) (acl2::mv-nth-cons-meta force (force))))))
+;; (defthmd rb-unwinding-thm-in-non-marking-mode-for-errors
+;;   (implies (and (subset-p l-addrs-subset l-addrs)
+;;                 (consp l-addrs)
+;;                 (not (mv-nth 0 (rb l-addrs r-w-x x86)))
+;;                 (not (page-structure-marking-mode x86)))
+;;            (equal (mv-nth 0 (rb l-addrs-subset r-w-x x86))
+;;                   nil))
+;;   :hints (("Goal" :in-theory (e/d (subset-p) (acl2::mv-nth-cons-meta force (force))))))
 
-(defthm rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+(i-am-here)
+
+(defthm rb-in-terms-of-rb-subset-p-in-non-marking-mode
   (implies
    (and (bind-free
          (find-info-from-program-at-term
-          'rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+          'rb-in-terms-of-rb-subset-p-in-non-marking-mode
           mfc state)
          (n prog-addr bytes))
         (program-at (create-canonical-address-list n prog-addr) bytes x86)
@@ -291,20 +260,20 @@
                            (rb
                             canonical-address-p
                             acl2::mv-nth-cons-meta
-                            rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode))
-           :use ((:instance rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode
+                            rb-one-byte-of-program-in-non-marking-mode))
+           :use ((:instance rb-one-byte-of-program-in-non-marking-mode
                             (lin-addr (car l-addrs)))
-                 (:instance rb-unwinding-thm-in-system-level-non-marking-mode
+                 (:instance rb-unwinding-thm-in-non-marking-mode
                             (r-w-x :x))
-                 (:instance rb-unwinding-thm-in-system-level-non-marking-mode-for-errors
+                 (:instance rb-unwinding-thm-in-non-marking-mode-for-errors
                             (r-w-x :x)
                             (l-addrs-subset (list (car l-addrs))))))))
 
-(defthm combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+(defthm combine-bytes-rb-in-terms-of-rb-subset-p-in-non-marking-mode
   (implies
    (and (bind-free
          (find-info-from-program-at-term
-          'combine-bytes-rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode
+          'combine-bytes-rb-in-terms-of-rb-subset-p-in-non-marking-mode
           mfc state)
          (n prog-addr bytes))
         (program-at (create-canonical-address-list n prog-addr) bytes x86)
@@ -326,13 +295,13 @@
   :hints (("Goal" :in-theory (union-theories
                               '()
                               (theory 'minimal-theory))
-           :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-non-marking-mode)))))
+           :use ((:instance rb-in-terms-of-rb-subset-p-in-non-marking-mode)))))
 
 ;; ======================================================================
 
 ;; Lemmas about memory writes:
 
-(defthm xr-mem-wb-in-system-level-non-marking-mode
+(defthm xr-mem-wb-in-non-marking-mode
   (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p (list index)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -353,14 +322,14 @@
                 (member-p lin-addr l-addrs)
                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (not (page-structure-marking-mode x86)))
-           (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)) nil))
+           (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)) nil))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode
   (implies (and (member-p lin-addr l-addrs)
                 (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
                 (not (page-structure-marking-mode x86)))
-           (member-p (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+           (member-p (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
                      (mv-nth 1 (las-to-pas     l-addrs r-w-x cpl x86))))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
@@ -420,7 +389,7 @@
   (implies (not (member-p addr (all-xlation-governing-entries-paddrs l-addrs x86)))
            (not (member-p addr (all-xlation-governing-entries-paddrs (remove-duplicates-equal l-addrs) x86)))))
 
-(defthmd wb-remove-duplicate-writes-in-system-level-non-marking-mode
+(defthmd wb-remove-duplicate-writes-in-non-marking-mode
   (implies (and (syntaxp (not (and (consp addr-lst)
                                    (eq (car addr-lst) 'remove-duplicate-keys))))
                 (disjoint-p
@@ -457,7 +426,7 @@
 
 ;; Lemmas about interaction of writes and paging walkers:
 
-(defthm rm-low-32-wb-in-system-level-non-marking-mode-disjoint
+(defthm rm-low-32-wb-in-non-marking-mode-disjoint
   (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p (addr-range 4 index)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -469,7 +438,7 @@
                                     (:meta acl2::mv-nth-cons-meta)
                                     force (force))))))
 
-(defthm rm-low-64-wb-in-system-level-non-marking-mode-disjoint
+(defthm rm-low-64-wb-in-non-marking-mode-disjoint
   (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
                 (disjoint-p (addr-range 8 index)
                             (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -659,10 +628,10 @@
                 (not (page-structure-marking-mode x86))
                 (canonical-address-p lin-addr))
            (and
-            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
-                   (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (mv-nth 1 (wb addr-lst w x86))))
-                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (mv-nth 1 (wb addr-lst w x86))))
+                   (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (mv-nth 1 (wb addr-lst w x86))))
+                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -698,7 +667,7 @@
 
 ;; Lemmas about interaction of memory reads and writes:
 
-(defthm rb-wb-disjoint-in-system-level-non-marking-mode
+(defthm rb-wb-disjoint-in-non-marking-mode
   (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -719,7 +688,7 @@
   :hints (("Goal" :do-not-induct t)))
 
 (defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint-in-non-marking-mode
-  ;; Similar to rb-wb-disjoint-in-system-level-non-marking-mode
+  ;; Similar to rb-wb-disjoint-in-non-marking-mode
   (implies (and (disjoint-p
                  p-addrs
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -732,7 +701,7 @@
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
-(defthmd rb-wb-equal-in-system-level-non-marking-mode
+(defthmd rb-wb-equal-in-non-marking-mode
   (implies (and (equal
                  (mv-nth 1 (las-to-pas l-addrs r-w-x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
@@ -787,7 +756,7 @@
 
 ;; Lemmas about program-at:
 
-(defthm program-at-wb-disjoint-in-system-level-non-marking-mode
+(defthm program-at-wb-disjoint-in-non-marking-mode
   (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas l-addrs :x (cpl x86) x86))
                  (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))

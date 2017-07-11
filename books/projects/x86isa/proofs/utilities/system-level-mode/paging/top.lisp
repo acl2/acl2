@@ -724,182 +724,71 @@
 
 ;; ======================================================================
 
-(i-am-here)
-
-;; Commuting physical memory writes with page table traversals:
-
-(encapsulate
-  ()
-
-  ;; The book page-walk-side-effects.lisp characterizes the effects of
-  ;; a page walk in terms of EQUAL instead of XLATE-EQUIV-MEMORY,
-  ;; which is an aberration for this library.  However, this
-  ;; characterization is useful in proving theorems like
-  ;; xw-mem-and-ia32e-la-to-pa-page-table-commute.  We include this
-  ;; book locally so that EQUAL doesn't pollute our canonical forms
-  ;; that rely on XLATE-EQUIV-MEMORY.
-  (local (include-book "page-walk-side-effects"))
-
-  (defthm xw-mem-and-ia32e-la-to-pa-page-table-commute
-    (implies (and
-              (disjoint-p
-               (list index)
-               (xlation-governing-entries-paddrs-for-page-table lin-addr base-addr (double-rewrite x86)))
-              (canonical-address-p lin-addr)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-             (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-page-table
-                                                    lin-addr
-                                                    base-addr u/s-acc r/w-acc x/d-acc
-                                                    wp smep smap ac nxe r-w-x cpl x86)))
-                    (mv-nth 2 (ia32e-la-to-pa-page-table
-                               lin-addr
-                               base-addr u/s-acc r/w-acc x/d-acc
-                               wp smep smap ac nxe r-w-x cpl
-                               (xw :mem index value x86)))))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (bitops::logand-with-negated-bitmask)))))
-
-
-  (defthm xw-mem-and-ia32e-la-to-pa-page-directory-commute
-    (implies (and
-              (disjoint-p
-               (list index)
-               (xlation-governing-entries-paddrs-for-page-directory lin-addr base-addr (double-rewrite x86)))
-              (canonical-address-p lin-addr)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-             (equal (xw :mem index value
-                        (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                   lin-addr
-                                   base-addr u/s-acc r/w-acc x/d-acc
-                                   wp smep smap ac nxe r-w-x cpl x86)))
-                    (mv-nth 2 (ia32e-la-to-pa-page-directory
-                               lin-addr
-                               base-addr u/s-acc r/w-acc x/d-acc
-                               wp smep smap ac nxe r-w-x cpl
-                               (xw :mem index value x86)))))
-    :hints (("Goal"
-             :in-theory (e/d* ()
-                              (bitops::logand-with-negated-bitmask
-                               |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|)))))
-
-  (defthm xw-mem-and-ia32e-la-to-pa-page-dir-ptr-table-commute
-    (implies (and
-              (disjoint-p
-               (list index)
-               (xlation-governing-entries-paddrs-for-page-dir-ptr-table lin-addr base-addr (double-rewrite x86)))
-              (canonical-address-p lin-addr)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-             (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-                                                    lin-addr
-                                                    base-addr u/s-acc r/w-acc x/d-acc
-                                                    wp smep smap ac nxe r-w-x cpl x86)))
-                    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-                               lin-addr
-                               base-addr u/s-acc r/w-acc x/d-acc
-                               wp smep smap ac nxe r-w-x cpl
-                               (xw :mem index value x86)))))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-                                      bitops::logand-with-negated-bitmask)))))
-
-  (defthm xw-mem-and-ia32e-la-to-pa-pml4-table-commute
-    (implies (and
-              (disjoint-p
-               (list index)
-               (xlation-governing-entries-paddrs-for-pml4-table lin-addr base-addr (double-rewrite x86)))
-              (canonical-address-p lin-addr)
-              (physical-address-p base-addr)
-              (equal (loghead 12 base-addr) 0)
-              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-             (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                                                    lin-addr base-addr
-                                                    wp smep smap ac nxe r-w-x cpl x86)))
-                    (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                               lin-addr base-addr
-                               wp smep smap ac nxe r-w-x cpl
-                               (xw :mem index value x86)))))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-                                      bitops::logand-with-negated-bitmask)))))
-
-  (defthm xw-mem-and-ia32e-la-to-pa-commute
-    (implies (and (disjoint-p
-                   (list index)
-                   (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-                  (canonical-address-p lin-addr)
-                  (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-             (equal (xw :mem index value
-                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl
-                                              (xw :mem index value x86))))))
-
-  (defthm xw-mem-and-las-to-pas-commute
-    (implies
-     (and (disjoint-p (list index)
-                      (all-xlation-governing-entries-paddrs
-                       l-addrs (double-rewrite x86)))
-          (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-          (canonical-address-listp l-addrs)
-          (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-     (equal (xw :mem index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))))
-    :hints
-    (("Goal"
-      :expand ((las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))
-      :in-theory (e/d* (disjoint-p
-                        las-to-pas
-                        member-p
-                        all-xlation-governing-entries-paddrs)
-                       ()))))
-
-  ) ;; End of encapsulate
-
-(defthm write-to-physical-memory-and-mv-nth-2-ia32e-la-to-pa-commute
-  (implies (and (disjoint-p
-                 p-addrs
-                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-                (canonical-address-p lin-addr)
-                (physical-address-listp p-addrs)
-                (byte-listp bytes)
-                (equal (len bytes) (len p-addrs))
-                (x86p x86))
-           (equal (write-to-physical-memory
-                   p-addrs bytes (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (mv-nth 2 (ia32e-la-to-pa
-                             lin-addr r-w-x cpl
-                             (write-to-physical-memory p-addrs bytes x86)))))
-  :hints (("Goal"
-           :induct (write-to-physical-memory p-addrs bytes x86)
-           :in-theory (e/d* (disjoint-p) ()))))
-
-(defthm write-to-physical-memory-and-mv-nth-2-las-to-pas-commute
-  (implies
-   (and (disjoint-p p-addrs
-                    (all-xlation-governing-entries-paddrs
-                     l-addrs (double-rewrite x86)))
-        (canonical-address-listp l-addrs)
-        (physical-address-listp p-addrs)
-        (byte-listp bytes)
-        (equal (len bytes) (len p-addrs))
-        (x86p x86))
-   (equal
-    (write-to-physical-memory p-addrs bytes (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-    (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))))
-  :hints
-  (("Goal" :induct (cons (las-to-pas l-addrs r-w-x cpl x86)
-                         (write-to-physical-memory p-addrs bytes x86))
-    :in-theory (e/d* (disjoint-p las-to-pas all-xlation-governing-entries-paddrs) ()))))
-
-;; ======================================================================
-
 ;; Lemmas to aid in inferring disjointness of las-to-pas and
 ;; translation-governing addresses:
+
+(local
+ (defthmd mv-nth-0-las-to-pas-subset-p-helper
+   ;; This is a pretty expensive rule --- a more general version of
+   ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
+   (implies (and (equal addr-1 addr-2)
+                 (< (+ n-2 addr-2) (+ n-1 addr-1))
+                 (<= addr-1 addr-2)
+                 (integerp addr-1) (integerp addr-2) (posp n-1) (posp n-2)
+                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86)))))
+            (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
+                   nil))
+   :hints (("Goal" :in-theory (e/d* (subset-p) ())))))
+
+(defthmd mv-nth-0-las-to-pas-subset-p
+  ;; This is a pretty expensive rule --- a more general version of
+  ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
+  (implies (and (bind-free
+                 (find-l-addrs-from-fn 'las-to-pas 'n-1 'addr-1 mfc state)
+                 (n-1 addr-1))
+                (< (+ n-2 addr-2) (+ n-1 addr-1))
+                (<= addr-1 addr-2)
+                (integerp addr-1) (integerp addr-2) (posp n-1) (posp n-2)
+                (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86)))))
+           (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
+                  nil))
+  :hints (("Goal"
+           :use ((:instance mv-nth-0-las-to-pas-subset-p-helper))
+           :in-theory (e/d* (subset-p) ()))))
+
+#||
+
+(defun find-l-addrs-from-program-at-or-program-at-alt-term (thm l-addrs-var mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable thm state))
+  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
+       (call (if (not call)
+                 (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc))
+               call))
+       ((when (not call))
+        ;; (cw "~%~p0: Program-At and Program-At-Alt term not encountered.~%" thm) ;
+        nil)
+       (addresses (cadr call)))
+    `((,l-addrs-var . ,addresses))))
+
+(defthm mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free
+  ;; This rule is tailored to rewrite (mv-nth 0 (las-to-pas
+  ;; l-addrs-subset r-w-x cpl x86)) to nil, given that l-addrs-subset
+  ;; is a subset of l-addrs, which are the program addresses. Thus, it
+  ;; helps in proving that the translation of an instruction doesn't
+  ;; yield an error, given that the entire program's translation
+  ;; doesn't yield an error.
+  (implies (and (bind-free
+                 (find-l-addrs-from-program-at-or-program-at-alt-term
+                  'mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free
+                  'l-addrs mfc state)
+                 (l-addrs))
+                (syntaxp (not (eq l-addrs-subset l-addrs)))
+                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
+                (subset-p l-addrs-subset l-addrs))
+           (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
+                  nil))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defun get-subterms-if-match (n match-fn terms)
   (declare (xargs :guard (and (natp n)
@@ -933,51 +822,6 @@
        (alst-lst
         (make-bind-free-alist-lists l-addrs-var l-addrs)))
     alst-lst))
-
-(defthmd mv-nth-0-las-to-pas-subset-p
-  ;; This is a pretty expensive rule --- a more general version of
-  ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
-  (implies (and (bind-free
-                 (find-l-addrs-from-fn 'las-to-pas 'l-addrs mfc state)
-                 (l-addrs))
-                (syntaxp (not (eq l-addrs-subset l-addrs)))
-                (subset-p l-addrs-subset l-addrs)
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86)))))
-           (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
-                  nil))
-  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
-
-(defun find-l-addrs-from-program-at-or-program-at-alt-term (thm l-addrs-var mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable thm state))
-  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
-       (call (if (not call)
-                 (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc))
-               call))
-       ((when (not call))
-        ;; (cw "~%~p0: Program-At and Program-At-Alt term not encountered.~%" thm)
-        nil)
-       (addresses (cadr call)))
-    `((,l-addrs-var . ,addresses))))
-
-(defthm mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free
-  ;; This rule is tailored to rewrite (mv-nth 0 (las-to-pas
-  ;; l-addrs-subset r-w-x cpl x86)) to nil, given that l-addrs-subset
-  ;; is a subset of l-addrs, which are the program addresses. Thus, it
-  ;; helps in proving that the translation of an instruction doesn't
-  ;; yield an error, given that the entire program's translation
-  ;; doesn't yield an error.
-  (implies (and (bind-free
-                 (find-l-addrs-from-program-at-or-program-at-alt-term
-                  'mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free
-                  'l-addrs mfc state)
-                 (l-addrs))
-                (syntaxp (not (eq l-addrs-subset l-addrs)))
-                (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-                (subset-p l-addrs-subset l-addrs))
-           (equal (mv-nth 0 (las-to-pas l-addrs-subset r-w-x cpl x86))
-                  nil))
-  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
   ;; This rule is tailored to rewrite
@@ -1455,3 +1299,176 @@
   )
 
 ;; ======================================================================
+
+;; Commuting physical memory writes with page table traversals:
+
+(encapsulate
+  ()
+
+  ;; The book page-walk-side-effects.lisp characterizes the effects of
+  ;; a page walk in terms of EQUAL instead of XLATE-EQUIV-MEMORY,
+  ;; which is an aberration for this library.  However, this
+  ;; characterization is useful in proving theorems like
+  ;; xw-mem-and-ia32e-la-to-pa-page-table-commute.  We include this
+  ;; book locally so that EQUAL doesn't pollute our canonical forms
+  ;; that rely on XLATE-EQUIV-MEMORY.
+;  (local (include-book "page-walk-side-effects"))
+
+  (defthm xw-mem-and-ia32e-la-to-pa-page-table-commute
+    (implies (and
+              (disjoint-p
+               (list index)
+               (xlation-governing-entries-paddrs-for-page-table lin-addr base-addr (double-rewrite x86)))
+              (canonical-address-p lin-addr)
+              (physical-address-p base-addr)
+              (equal (loghead 12 base-addr) 0)
+              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+             (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-page-table
+                                                    lin-addr
+                                                    base-addr u/s-acc r/w-acc x/d-acc
+                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                    (mv-nth 2 (ia32e-la-to-pa-page-table
+                               lin-addr
+                               base-addr u/s-acc r/w-acc x/d-acc
+                               wp smep smap ac nxe r-w-x cpl
+                               (xw :mem index value x86)))))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (bitops::logand-with-negated-bitmask)))))
+
+
+  (defthm xw-mem-and-ia32e-la-to-pa-page-directory-commute
+    (implies (and
+              (disjoint-p
+               (list index)
+               (xlation-governing-entries-paddrs-for-page-directory lin-addr base-addr (double-rewrite x86)))
+              (canonical-address-p lin-addr)
+              (physical-address-p base-addr)
+              (equal (loghead 12 base-addr) 0)
+              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+             (equal (xw :mem index value
+                        (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                   lin-addr
+                                   base-addr u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe r-w-x cpl x86)))
+                    (mv-nth 2 (ia32e-la-to-pa-page-directory
+                               lin-addr
+                               base-addr u/s-acc r/w-acc x/d-acc
+                               wp smep smap ac nxe r-w-x cpl
+                               (xw :mem index value x86)))))
+    :hints (("Goal"
+             :in-theory (e/d* ()
+                              (bitops::logand-with-negated-bitmask
+                               |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|)))))
+
+  (defthm xw-mem-and-ia32e-la-to-pa-page-dir-ptr-table-commute
+    (implies (and
+              (disjoint-p
+               (list index)
+               (xlation-governing-entries-paddrs-for-page-dir-ptr-table lin-addr base-addr (double-rewrite x86)))
+              (canonical-address-p lin-addr)
+              (physical-address-p base-addr)
+              (equal (loghead 12 base-addr) 0)
+              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+             (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                                    lin-addr
+                                                    base-addr u/s-acc r/w-acc x/d-acc
+                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                               lin-addr
+                               base-addr u/s-acc r/w-acc x/d-acc
+                               wp smep smap ac nxe r-w-x cpl
+                               (xw :mem index value x86)))))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
+                                      bitops::logand-with-negated-bitmask)))))
+
+  (defthm xw-mem-and-ia32e-la-to-pa-pml4-table-commute
+    (implies (and
+              (disjoint-p
+               (list index)
+               (xlation-governing-entries-paddrs-for-pml4-table lin-addr base-addr (double-rewrite x86)))
+              (canonical-address-p lin-addr)
+              (physical-address-p base-addr)
+              (equal (loghead 12 base-addr) 0)
+              (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+             (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                                    lin-addr base-addr
+                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                    (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                               lin-addr base-addr
+                               wp smep smap ac nxe r-w-x cpl
+                               (xw :mem index value x86)))))
+    :hints (("Goal" :in-theory (e/d* ()
+                                     (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
+                                      bitops::logand-with-negated-bitmask)))))
+
+  (defthm xw-mem-and-ia32e-la-to-pa-commute
+    (implies (and (disjoint-p
+                   (list index)
+                   (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
+                  (canonical-address-p lin-addr)
+                  (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+             (equal (xw :mem index value
+                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                              (xw :mem index value x86))))))
+
+  (defthm xw-mem-and-las-to-pas-commute
+    (implies
+     (and (disjoint-p (list index)
+                      (all-xlation-governing-entries-paddrs
+                       l-addrs (double-rewrite x86)))
+          (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
+          (canonical-address-listp l-addrs)
+          (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+     (equal (xw :mem index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))))
+    :hints
+    (("Goal"
+      :expand ((las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))
+      :in-theory (e/d* (disjoint-p
+                        las-to-pas
+                        member-p
+                        all-xlation-governing-entries-paddrs)
+                       ()))))
+
+  ) ;; End of encapsulate
+
+(defthm write-to-physical-memory-and-mv-nth-2-ia32e-la-to-pa-commute
+  (implies (and (disjoint-p
+                 p-addrs
+                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
+                (canonical-address-p lin-addr)
+                (physical-address-listp p-addrs)
+                (byte-listp bytes)
+                (equal (len bytes) (len p-addrs))
+                (x86p x86))
+           (equal (write-to-physical-memory
+                   p-addrs bytes (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                  (mv-nth 2 (ia32e-la-to-pa
+                             lin-addr r-w-x cpl
+                             (write-to-physical-memory p-addrs bytes x86)))))
+  :hints (("Goal"
+           :induct (write-to-physical-memory p-addrs bytes x86)
+           :in-theory (e/d* (disjoint-p) ()))))
+
+(defthm write-to-physical-memory-and-mv-nth-2-las-to-pas-commute
+  (implies
+   (and (disjoint-p p-addrs
+                    (all-xlation-governing-entries-paddrs
+                     l-addrs (double-rewrite x86)))
+        (canonical-address-listp l-addrs)
+        (physical-address-listp p-addrs)
+        (byte-listp bytes)
+        (equal (len bytes) (len p-addrs))
+        (x86p x86))
+   (equal
+    (write-to-physical-memory p-addrs bytes (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+    (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))))
+  :hints
+  (("Goal" :induct (cons (las-to-pas l-addrs r-w-x cpl x86)
+                         (write-to-physical-memory p-addrs bytes x86))
+    :in-theory (e/d* (disjoint-p las-to-pas all-xlation-governing-entries-paddrs) ()))))
+
+;; ======================================================================
+||#

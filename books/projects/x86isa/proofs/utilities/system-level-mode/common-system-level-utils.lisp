@@ -6,6 +6,7 @@
 (include-book "gl-lemmas")
 (include-book "bind-free-utils")
 (include-book "clause-processors/find-subterms" :dir :system)
+(include-book "clause-processors/find-matching" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -42,17 +43,13 @@
                 (page-structure-marking-mode x86)
                 (not (mv-nth 0 (rb n addr r-x (double-rewrite x86)))))
            (equal (mv-nth 2 (rb n addr r-x x86))
-                  (mv-nth 2 (las-to-pas
-                             (create-canonical-address-list n addr)
-                             r-x (double-rewrite x86)))))
+                  (mv-nth 2 (las-to-pas n addr r-x (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
 (defthm mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
            (equal (mv-nth 0 (rb n addr r-x x86))
-                  (mv-nth 0 (las-to-pas
-                             (create-canonical-address-list n addr)
-                             r-x x86))))
+                  (mv-nth 0 (las-to-pas n addr r-x x86))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
 ;; ======================================================================
@@ -65,8 +62,7 @@
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))
            (equal (mv-nth 0 (wb n addr w value x86))
-                  (mv-nth 0 (las-to-pas (create-canonical-address-list n addr)
-                                        :w (double-rewrite x86)))))
+                  (mv-nth 0 (las-to-pas n addr :w (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (wb) (force (force))))))
 
 ;; ======================================================================
@@ -148,8 +144,8 @@
                                   (force (force))))))
 
 (defthm mv-nth-1-las-to-pas-when-error
-  (implies (mv-nth 0 (las-to-pas l-addrs r-x x86))
-           (equal (mv-nth 1 (las-to-pas l-addrs r-x x86)) nil))
+  (implies (mv-nth 0 (las-to-pas n lin-addr r-x x86))
+           (equal (mv-nth 1 (las-to-pas n lin-addr r-x x86)) nil))
   :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
 
 ;; ======================================================================
@@ -359,19 +355,15 @@
                              force (force))))))
 
 (defthm r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
-  (implies (and (bind-free (find-almost-matching-ia32e-la-to-pas
-                            'ia32e-la-to-pa 'r-x-1
-                            (list lin-addr r-x-2 x86) mfc state)
-                           (r-x-1))
-                (syntaxp (and
-                          ;; The bind-free ensures that r-x-2 and
-                          ;; r-x-1 are unequal, but I'll still leave
-                          ;; this thing in.
-                          (not (eq r-x-2 r-x-1))
-                          ;; r-x-2 must be smaller than r-x-1.
+  (implies (and
+            (bind-free (find-almost-matching-ia32e-la-to-pas
+                        'r-x-1 lin-addr mfc state)
+                       (r-x-1))
+            (syntaxp (and (not (eq r-x-2 r-x-1))
+                          ;; r-x-2 must be "smaller" than r-x-1.
                           (term-order r-x-2 r-x-1)))
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-1 x86)))
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-2 x86))))
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-1 x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-2 x86))))
            (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-2 x86))
                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-1 x86))))
   :hints (("Goal"
@@ -599,15 +591,11 @@
 
 (defthm r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-when-no-errors
   (implies (and (bind-free (find-almost-matching-ia32e-la-to-pas
-                            'ia32e-la-to-pa 'r-x-1
-                            (list lin-addr r-x-2 x86) mfc state)
+                            'r-x-1 lin-addr mfc state)
                            (r-x-1))
                 (syntaxp (and
-                          ;; The bind-free ensures that r-x-2 and
-                          ;; r-x-1 are unequal, but I'll still leave
-                          ;; this thing in.
                           (not (eq r-x-2 r-x-1))
-                          ;; r-x-2 must be smaller than r-x-1.
+                          ;; r-x-2 must be "smaller" than r-x-1.
                           (term-order r-x-2 r-x-1)))
                 (not (equal r-x-1 :w))
                 (not (equal r-x-2 :w))
