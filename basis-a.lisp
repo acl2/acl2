@@ -6073,6 +6073,9 @@
 ; of variable symbols.  But just to make this an ironclad guarantee, we include
 ; the first conjunct below.
 
+  (declare (xargs :guard (and (plist-worldp w)
+                              (or (eq known-stobjs t)
+                                  (true-listp known-stobjs)))))
   (and x
        (symbolp x)
        (if (eq known-stobjs t)

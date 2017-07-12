@@ -142,8 +142,8 @@
      (and (stringp (car fn))
           (alistp (cdr fn))) ; character-alistp isn't defined yet...
      fn))
-   (t (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
-            list:~|~%~x1~@2~|~%~@3"
+   (t (msg "ACL2 cannot ev the call of non-executable function ~x0 on ~
+            argument list:~|~%~x1~@2~|~%~@3"
            fn
            args
            (ignored-attachment-msg ignored-attachment)

@@ -77,6 +77,7 @@
 (verify-termination world-evisceration-alist) ; and guards
 (verify-termination abbrev-evisc-tuple) ; and guards
 (verify-termination override-hints) ; and guards, as per Eric Smith
+(verify-termination stobjp) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by David L. Rager.

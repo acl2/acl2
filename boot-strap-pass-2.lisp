@@ -1400,7 +1400,7 @@
 ; "ccl-saved_acl2d".
 
 ; cd ACL2
-; make clean-books ACL2=`pwd`/saved_acl2d
+; make clean-books
 ; cd books
 ; (time nice ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert)
 ; cd ACL2
@@ -1465,6 +1465,7 @@
      (REMOVE-LAMBDAS)
      (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
      (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
+     (STOBJP)
      (STOBJS-OUT)
      (STRIP-CADRS ACL2-COUNT X)
      (STRIP-DCLS ACL2-COUNT LST)

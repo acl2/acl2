@@ -194,6 +194,9 @@
  <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
  Common Lisp), both from SVN and from GitHub.</p>
 
+ <p>The macro @(tsee defconsts) now provides a better error message when given
+ a symbol that does not have the syntax of a constant.</p>
+
  ")
 
 (defxdoc note-7-2-books

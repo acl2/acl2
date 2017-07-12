@@ -13552,8 +13552,8 @@
                                       state)
                                      (include-book-er1
                                       full-book-name nil
-                                      (cons "After including the book ~
-                                             ~x0:~*3."
+                                      (cons "After processing the events in ~
+                                             the book ~x0:~*3."
                                             (list (cons #\3 msgs)))
                                       warning-summary ctx state))))))
                               (t (value certified-p)))))

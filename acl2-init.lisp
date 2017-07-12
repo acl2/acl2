@@ -1844,7 +1844,13 @@ implementations.")
 ; out this option to us after ACL2 Version_6.2, we started using it in place of
 ; " --userinit /dev/null", which had not worked on Windows.
 
+; In July 2017 we added ${SBCL_USER_ARGS} below to accommodate Sol Swords's
+; request to be able to pass runtime-options without having to call save-exec.
+; Example:
+; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
+
         "~s --dynamic-space-size ~s --control-stack-size 64 --core ~s~a ~
+         ${SBCL_USER_ARGS} ~
          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*
