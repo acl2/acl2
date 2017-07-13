@@ -2173,6 +2173,9 @@
 )
 
 (defun newline (channel state)
+  (declare (xargs :guard (and (state-p state)
+                              (symbolp channel)
+                              (open-output-channel-p channel :character state))))
   (princ$ #\Newline channel state))
 
 (defun fmt-hard-right-margin (state)
@@ -2212,6 +2215,8 @@
         state))))
 
 (defun write-for-read (state)
+  (declare (xargs :guard (and (state-p state)
+                              (f-boundp-global 'write-for-read state))))
   (f-get-global 'write-for-read state))
 
 (defun spaces1 (n col hard-right-margin channel state)

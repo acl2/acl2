@@ -1151,6 +1151,10 @@
 ; string name introduced by an event, or the keyword :here meaning the
 ; most recent event.
 
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (known-package-alistp (global-val 'known-package-alist
+                                                         wrld)))))
   (cond ((symbolp name)
          (cond ((eq name :here) (not (null wrld)))
                (t (getpropc name 'absolute-event-number nil wrld))))

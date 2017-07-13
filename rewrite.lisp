@@ -7093,6 +7093,7 @@
                    (t (lookup-brr-stack var-name (cdr stack))))))))
 
 (defun clean-brr-stack1 (gstack stack)
+  (declare (xargs :guard (alistp stack)))
   (cond ((endp stack)
          nil)
         ((equal gstack (caar stack)) stack)
@@ -7124,6 +7125,7 @@
 ; Clearly, we should ignore it -- had no interrupt occurred it would
 ; have been popped down to nil.
 
+  (declare (xargs :guard (alistp stack)))
   (let ((cleaned-stack (clean-brr-stack1 gstack stack)))
     (prog2$
      (if (not (equal cleaned-stack stack))
