@@ -770,13 +770,18 @@ memory.</li>
                       x86))
       :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
 
+    ;; (defthm len-of-mv-nth-1-las-to-pas
+    ;;   (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+    ;;                 (natp n))
+    ;;            (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
+    ;;                   ;; Or I could remove the (natp n) hypothesis and say the following in the RHS:
+    ;;                   ;; (if (zp n) 0 n)
+    ;;                   n)))
+
     (defthm len-of-mv-nth-1-las-to-pas
-      (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
-                    (natp n))
+      (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
                (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
-                      ;; Or I could remove the (natp n) hypothesis and say the following in the RHS:
-                      ;; (if (zp n) 0 n)
-                      n)))
+                      (nfix n))))
 
     (defthm las-to-pas-values-and-!flgi
       (implies (and (not (equal index *ac*))
@@ -1087,6 +1092,7 @@ memory.</li>
                 (x86))
     :guard (canonical-address-p (+ -1 n addr))
     :enabled t
+    :ignore-ok t
 
     (if (mbt (canonical-address-p (+ -1 n addr)))
 
@@ -1164,6 +1170,10 @@ memory.</li>
 
   (define wb ((n natp "Number of bytes to be written")
               (addr integerp "First linear address")
+              ;; I could do away with the following argument (w),
+              ;; but I choose to keep it around because the current
+              ;; version of Codewalker expects reader and writer
+              ;; functions to have similar signatures.
               (w :type (member :w) "Type of memory access")
               (value natp)
               (x86))
@@ -1173,7 +1183,7 @@ memory.</li>
     :enabled t
 
     (if (programmer-level-mode x86)
-        (wb-1 n addr w value x86)
+        (wb-1 n addr :w value x86)
       (b* (((mv flgs p-addrs x86)
             (las-to-pas n addr :w x86))
            ((when flgs) (mv flgs x86))
