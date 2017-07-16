@@ -597,7 +597,7 @@
 
 (defthm mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
   (implies (and (bind-free
-                 (find-l-addrs-from-fn 'las-to-pas 'n 'addr-1 mfc state)
+                 (find-l-addrs-from-las-to-pas '(n addr-1) r-w-x mfc state)
                  (n addr-1))
                 (<= addr-1 addr-2)
                 (< addr-2 (+ n addr-1))
@@ -744,7 +744,7 @@
   ;; This is a pretty expensive rule --- a more general version of
   ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
   (implies (and (bind-free
-                 (find-l-addrs-from-fn 'las-to-pas 'n-1 'addr-1 mfc state)
+                 (find-l-addrs-from-las-to-pas '(n-1 addr-1) r-w-x mfc state)
                  (n-1 addr-1))
                 (< (+ n-2 addr-2) (+ n-1 addr-1))
                 (<= addr-1 addr-2)
@@ -1189,114 +1189,6 @@
                             (b (all-xlation-governing-entries-paddrs l-addrs-subset-2 x86))))))
 
   :rule-classes :rewrite)
-
-;; ======================================================================
-
-(define separate-mapped-mem ((n-1 posp)
-                             (l-addr-1 canonical-address-p)
-                             (r-x-1 :type (member :r :x))
-                             (n-2 posp)
-                             (l-addr-2 canonical-address-p)
-                             (r-x-2 :type (member :r :x))
-                             x86)
-  :returns (disjoint-p? booleanp :rule-classes :type-prescription)
-  :guard (and (not (programmer-level-mode x86))
-              (canonical-address-p (+ -1 n-1 l-addr-1))
-              (canonical-address-p (+ -1 n-2 l-addr-2)))
-
-  ;; TODO: Separation of xlate-governing-entries?
-
-  :long "<p>Two linear memory regions are truly separate if their
- corresponding physical memory regions are separate --- the function
- separate-mapped-mem allows us to state this property.  We say
- <i>truly</i> separate because distinct linear memory regions can be
- mapped to the same physical memory region.</p>"
-
-  :non-executable t
-
-  (b* (((mv r-1-err r-1-paddrs)
-        (las-to-pas (create-canonical-address-list n-1 l-addr-1) r-x-1 x86))
-       ((mv r-2-err r-2-paddrs)
-        (las-to-pas (create-canonical-address-list n-2 l-addr-2) r-x-2 x86)))
-    (and (not r-1-err)
-         (not r-2-err)
-         (disjoint-p r-1-paddrs r-2-paddrs)))
-
-  ///
-
-  (defthmd separate-mapped-mem-is-commutative
-    (implies (separate-mapped-mem n-1 a-1 r-x-1 n-2 a-2 r-x-2 x86)
-             (separate-mapped-mem n-2 a-2 r-x-2 n-1 a-1 r-x-1 x86))
-    :hints (("Goal" :in-theory (e/d* (disjoint-p-commutative) ()))))
-
-  (defun separate-mapped-mem-free-var-candidates (calls)
-    (if (endp calls)
-        nil
-      (cons (list (cons 'n-1   (nth 1 (car calls)))
-                  (cons 'a-1   (nth 2 (car calls)))
-                  ;; (cons 'r-x-1 (nth 3 (car calls)))
-                  (cons 'n-2   (nth 4 (car calls)))
-                  (cons 'a-2   (nth 5 (car calls)))
-                  ;; (cons 'r-x-2 (nth 6 (car calls)))
-                  ;; (cons 'x86   (nth 7 (car calls)))
-                  )
-            (separate-mapped-mem-free-var-candidates (cdr calls)))))
-
-  (defun separate-mapped-mem-bindings (ctx mfc state)
-    (declare (xargs :stobjs (state) :mode :program)
-             (ignorable ctx state))
-    (b* ((calls (acl2::find-calls-lst 'separate-mapped-mem (acl2::mfc-clause mfc)))
-         ((when (not calls)) nil))
-      (separate-mapped-mem-free-var-candidates calls)))
-
-  (i-am-here) ;; See ../general-memory-utils.lisp.
-
-  (defthm zp-create-canonical-address-list
-    (implies (zp n)
-             (equal (create-canonical-address-list n a) nil)))
-
-  (defthm no-error-smaller-region
-    (implies (and (<= a a-bigger)
-                  (<= (+ a-bigger n-smaller) (+ a n))
-                  (not (mv-nth 0 (las-to-pas (create-canonical-address-list n a) r-x x86)))
-                  (not (xr :programmer-level-mode 0 x86))
-                  (canonical-address-p (+ -1 a n))
-                  (posp n)
-                  (canonical-address-p a))
-             (equal (mv-nth 0 (las-to-pas
-                               (create-canonical-address-list n-smaller a-bigger)
-                               r-x x86))
-                    nil))
-    :hints (("Goal" :induct (cons (las-to-pas (create-canonical-address-list n-smaller a-bigger) r-x x86)
-                                  (las-to-pas (create-canonical-address-list n a) r-x x86))
-             :in-theory (e/d* () (signed-byte-p)))))
-
-  (defthm separate-mapped-mem-smaller-regions
-    (implies (and
-              (bind-free
-               (separate-mapped-mem-bindings
-                'separate-mapped-mem-smaller-regions mfc state)
-               (n-1 a-1 n-2 a-2))
-              (<= a-2 a-2-bigger)
-              (<= (+ n-2-smaller a-2-bigger) (+ n-2 a-2))
-              (<= a-1 a-1-bigger)
-              (<= (+ n-1-smaller a-1-bigger) (+ n-1 a-1))
-              (separate-mapped-mem n-1 a-1 r-x-1 n-2 a-2 r-x-2 x86)
-              (not (programmer-level-mode x86))
-              (canonical-address-p (+ -1 n-1 a-1))
-              (canonical-address-p (+ -1 n-2 a-2)))
-             (separate-mapped-mem n-1-smaller a-1-bigger r-x-1 n-2-smaller a-2-bigger r-x-2 x86))
-    :hints (("Goal" :in-theory (e/d* () (signed-byte-p)))))
-
-  (defthm separate-mapped-mem-contiguous-regions
-    (and (separate-mapped-mem i (+ (- i) x) j x)
-         (implies (<= j i)
-                  (separate-mapped-mem i x j (+ (- i) x)))
-         (separate-mapped-mem i x j (+ i x))
-         (implies (or (<= (+ j k2) k1) (<= (+ i k1) k2))
-                  (separate-mapped-mem i (+ k1 x) j (+ k2 x))))
-    :hints (("Goal" :in-theory (e/d* (separate-mapped-mem) ()))))
-  )
 
 ;; ======================================================================
 

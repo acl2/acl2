@@ -525,6 +525,7 @@
   :hints (("Goal" :use ((:instance disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-helper)))))
 
 (defthm disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
+  ;; TODO Very expensive because of the bind-frees!
   (implies
    (and
     (bind-free

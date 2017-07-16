@@ -27,6 +27,54 @@
 (local (xdoc::set-default-parents common-system-level-utils))
 
 ;; ======================================================================
+
+(define separate-mapped-mem ((r-w-x-1    :type (member :r :w :x))
+                             (n-1        posp)
+                             (lin-addr-1 canonical-address-p)
+                             (r-w-x-2    :type (member :r :w :x))
+                             (n-2        posp)
+                             (lin-addr-2 canonical-address-p)
+                             x86)
+  :returns (separatep booleanp :rule-classes :type-prescription)
+  :guard (and (not (programmer-level-mode x86))
+              (canonical-address-p (+ -1 n-1 lin-addr-1))
+              (canonical-address-p (+ -1 n-2 lin-addr-2)))
+
+  :long "<p>Two memory regions are <i>truly</i> separate if:</p>
+ <ul>
+ <li>the linear memory regions are separate, as defined by @(see separate)</li>
+ <li>their corresponding physical memory regions are separate.</li>
+ </ul>
+
+ <p>Note that this predicate ignores whether the translation of the
+ memory regions results in an error.</p>"
+
+  :non-executable t
+  :enabled t
+
+  (and
+   ;; Linear memory regions are separate.
+   (separate r-w-x-1 n-1 lin-addr-1 r-w-x-2 n-2 lin-addr-2)
+   ;; Physical memory regions are separate.
+   (b* (((mv ?r-1-err r-1-paddrs)
+         (las-to-pas n-1 lin-addr-1 r-w-x-1 x86))
+        ((mv ?r-2-err r-2-paddrs)
+         (las-to-pas n-2 lin-addr-2 r-w-x-2 x86)))
+     (and ;; (not r-1-err)
+      ;; (not r-2-err)
+      (disjoint-p r-1-paddrs r-2-paddrs))))
+
+  ///
+
+  (defthmd separate-mapped-mem-is-commutative
+    (implies (separate-mapped-mem r-w-x-1 n-1 a-1 r-w-x-2 n-2 a-2 x86)
+             (separate-mapped-mem r-w-x-2 n-2 a-2 r-w-x-1 n-1 a-1 x86))
+    :hints (("Goal" :in-theory (e/d* (separate-is-commutative
+                                      disjoint-p-commutative)
+                                     ())))))
+
+;; ======================================================================
+
 ;; Normalizing memory reads:
 
 ;; All these functions open up to rb.

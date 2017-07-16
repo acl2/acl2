@@ -186,16 +186,6 @@
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-(defun find-prog-at-info (addr-var bytes-var mfc state)
-  (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
-  (b* ((call (acl2::find-call-lst 'prog-at (acl2::mfc-clause mfc)))
-       ((when (not call))
-        ;; prog-at term not encountered.
-        nil))
-    `((,addr-var . ,(nth 1 call))
-      (,bytes-var . ,(nth 2 call)))))
-
 (defthm rb-one-byte-of-program-in-non-marking-mode
   (implies (and (bind-free
                  (find-prog-at-info 'prog-addr 'bytes mfc state)
@@ -284,6 +274,28 @@
            (member-p (mv-nth 1 (ia32e-la-to-pa a r-w-x x86))
                      (mv-nth 1 (las-to-pas n addr r-w-x x86))))
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
+
+(defthm mv-nth-1-ia32e-la-to-pa-not-member-of-mv-nth-1-las-to-pas
+  (implies (and (bind-free (find-l-addrs-from-las-to-pas '(n-1 addr-1) r-w-x-1 mfc state)
+                           (n-1 addr-1))
+                (disjoint-p (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x-1 x86))
+                            (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x-2 x86)))
+                ;; <1,a> is a subset of <n-1,addr-1>.
+                (<= addr-1 a) (< a (+ n-1 addr-1))
+                (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x-1 x86)))
+                (not (page-structure-marking-mode x86))
+                (posp n-1) (integerp a))
+           (equal (member-p (mv-nth 1 (ia32e-la-to-pa a r-w-x-1 x86))
+                            (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x-2 x86)))
+                  nil))
+  :hints
+  (("Goal"
+    :do-not-induct t
+    :in-theory
+    (e/d* (disjoint-p member-p)
+          (mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode))
+    :use ((:instance mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode
+                     (n n-1) (addr addr-1) (r-w-x r-w-x-1) (a a))))))
 
 (defthm las-to-pas-values-and-xw-mem-not-member-in-non-marking-mode
   (implies (and (not (member-p index (all-xlation-governing-entries-paddrs n lin-addr x86)))
@@ -619,17 +631,18 @@
                                    ()))))
 
 (defthm no-errors-when-translating-program-bytes-in-non-marking-mode
+  ;; Enabled version of
+  ;; mv-nth-0-las-to-pas-subset-p-in-non-marking-mode, with r-w-x == :w.
   ;; This rule will help in fetching instructions.
-  (implies (and ;; (bind-free
-            ;;  (find-prog-at-info 'prog-addr 'bytes mfc state)
-            ;;  (prog-addr bytes))
-            (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
-            (syntaxp (and (not (eq n-bytes n)) (not (eq prog-addr addr))))
-            ;; <n,addr> is a subset of <n-bytes,prog-addr>.
-            (<= prog-addr addr)
-            (< (+ n addr) (+ n-bytes prog-addr))
-            (posp n-bytes) (integerp addr)
-            (not (page-structure-marking-mode x86)))
+  (implies (and (bind-free (find-l-addrs-from-las-to-pas '(n-bytes prog-addr) :x mfc state)
+                           (n-bytes prog-addr))
+                (syntaxp (and (not (eq n-bytes n)) (not (eq prog-addr addr))))
+                (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
+                ;; <n,addr> is a subset of <n-bytes,prog-addr>.
+                (<= prog-addr addr)
+                (< (+ n addr) (+ n-bytes prog-addr))
+                (posp n-bytes) (integerp addr)
+                (not (page-structure-marking-mode x86)))
            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil)))
 
 ;; ======================================================================
@@ -641,51 +654,6 @@
                 (not (programmer-level-mode x86)))
            (equal (prog-at prog-addr bytes x86) nil))
   :hints (("Goal" :in-theory (e/d* (prog-at) (force (force))))))
-
-;; (defthm prog-at-in-terms-of-rb-in-non-marking-mode
-;;   (implies (and (not (mv-nth 0 (rb (len bytes) prog-addr :x x86)))
-;;                 (not (programmer-level-mode x86))
-;;                 (not (page-structure-marking-mode x86)))
-;;            (equal (prog-at prog-addr bytes x86)
-;;                   (equal (mv-nth 1 (rb (len bytes) prog-addr :x x86))
-;;                          (combine-bytes (acl2::rev bytes)))))
-;;   :hints (("Goal" :in-theory (e/d* (prog-at)
-;;                                    (rb)))))
-
-;; (defthm mv-nth-1-ia32e-la-to-pa-not-member-of-mv-nth-1-las-to-pas
-;;   (implies (and (bind-free (find-l-addrs-from-las-to-pas '(n-1 addr-1) r-w-x-1 mfc state)
-;;                            (n-1 addr-1))
-;;                 (disjoint-p (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x-1 x86))
-;;                             (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x-2 x86)))
-;;                 ;; <1,a> is a subset of <n-1,addr-1>.
-;;                 (<= addr-1 a) (< a (+ n-1 addr-1))
-;;                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x-1 x86)))
-;;                 (not (page-structure-marking-mode x86))
-;;                 (posp n-1) (integerp a))
-;;            (equal (member-p (mv-nth 1 (ia32e-la-to-pa a r-w-x-1 x86))
-;;                             (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x-2 x86)))
-;;                   nil))
-;;   :hints
-;;   (("Goal"
-;;     :do-not-induct t
-;;     :in-theory
-;;     (e/d* (disjoint-p member-p)
-;;           (mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode))
-;;     :use ((:instance mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode
-;;                      (n n-1) (addr addr-1) (r-w-x r-w-x-1) (a a))))))
-
-;; (defthm mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p-in-non-marking-mode-new
-;;   (implies (and
-;;             ;; <1,a> is a subset of <n,addr>.
-;;             (<= addr a)
-;;             (< a (+ n addr))
-;;             (not (mv-nth 0 (las-to-pas n addr r-w-x-1 x86)))
-;;             (not (mv-nth 0 (ia32e-la-to-pa a r-w-x-2 x86)))
-;;             (not (page-structure-marking-mode x86))
-;;             (posp n) (integerp a))
-;;            (member-p (mv-nth 1 (ia32e-la-to-pa a r-w-x-2 x86))
-;;                      (mv-nth 1 (las-to-pas n addr r-w-x-1 x86))))
-;;   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (local
  (defthm prog-at-wb-disjoint-in-non-marking-mode-helper-0

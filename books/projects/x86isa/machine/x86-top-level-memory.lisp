@@ -1183,7 +1183,7 @@ memory.</li>
     :enabled t
 
     (if (programmer-level-mode x86)
-        (wb-1 n addr :w value x86)
+        (wb-1 n addr w value x86)
       (b* (((mv flgs p-addrs x86)
             (las-to-pas n addr :w x86))
            ((when flgs) (mv flgs x86))
