@@ -1868,6 +1868,13 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
       :flag svexlist->a4vec)
     :skip-others t)
 
+  (defthm-svex->a4vec-flag len-of-svexlist->a4vec
+    (defthm len-of-svexlist->a4vec
+      (equal (len (mv-nth 0 (svexlist->a4vec x env masks memo)))
+             (len x))
+      :hints ('(:expand ((svexlist->a4vec x env masks memo))))
+      :flag svexlist->a4vec)
+    :skip-others t)
 
   (deffixequiv-mutual svex->a4vec))
 

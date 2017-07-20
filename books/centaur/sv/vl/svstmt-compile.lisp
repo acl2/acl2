@@ -32,6 +32,7 @@
 (include-book "svstmt")
 (include-book "../mods/svmods")
 (include-book "../svex/compose")
+(include-book "../svex/constraints")
 (include-book "../svex/env-ops")
 (include-book "../svex/rewrite")
 (include-book "../svex/select")
@@ -464,7 +465,7 @@ exists there.</p>"
                                       svstacks-compatible))))
 
   (defthm svstate-normalize-nonblkst-under-svstates-compatible
-    (implies (syntaxp (not (equal nonblkst ''nil)))
+    (implies (syntaxp (not (and (equal nonblkst ''nil))))
              (svstates-compatible (svstate blkst nonblkst)
                                   (svstate blkst nil))))
 
@@ -477,7 +478,8 @@ exists there.</p>"
     :hints(("Goal" :in-theory (enable svstate-fork)))))
 
 (defprod svjumpstate
-  ((breakcond svex-p "Condition under which we have hit an unmerged break")
+  ((constraints constraintlist-p "Constraints collected")
+   (breakcond svex-p "Condition under which we have hit an unmerged break")
    (breakst svstate-p "Current symbolic execution state, assuming we've hit a break")
    (continuecond svex-p "Condition under which we have hit a continue")
    (continuest svstate-p "Current symbolic execution state, assuming we've hit a continue")
@@ -495,16 +497,18 @@ exists there.</p>"
            (union (union (svex-vars x.continuecond)
                          (svstate-vars x.continuest))
                   (union (svex-vars x.returncond)
-                         (svstate-vars x.returnst)))))
+                         (union (svstate-vars x.returnst)
+                                (mergesort (constraintlist-vars x.constraints)))))))
   ///
   (defthm svjumpstate-vars-of-svjumpstate
-    (equal (svjumpstate-vars (svjumpstate breakcond breakst continuecond continuest returncond returnst))
+    (equal (svjumpstate-vars (svjumpstate constraints breakcond breakst continuecond continuest returncond returnst))
            (union (union (svex-vars breakcond)
                          (svstate-vars breakst))
                   (union (union (svex-vars continuecond)
                                 (svstate-vars continuest))
                          (union (svex-vars returncond)
-                                (svstate-vars returnst))))))
+                                (union (svstate-vars returnst)
+                                       (mergesort (constraintlist-vars constraints))))))))
   (defret vars-of-accessors-of-svjumpstate-vars
     (implies (not (member v vars))
              (b* (((svjumpstate x)))
@@ -513,14 +517,17 @@ exists there.</p>"
                     (not (member v (svex-vars x.continuecond)))
                     (not (member v (svstate-vars x.continuest)))
                     (not (member v (svex-vars x.returncond)))
-                    (not (member v (svstate-vars x.returnst))))))))
+                    (not (member v (svstate-vars x.returnst)))
+                    (not (member v (constraintlist-vars x.constraints))))))))
 
-(define make-empty-svjumpstate ((st svstate-p))
+(define make-empty-svjumpstate ((st svstate-p)
+                                &key ((constraints constraintlist-p) 'nil))
   :returns (jst svjumpstate-p)
   ;; Note: We don't bother to fork st into these places.  We aren't going to
   ;; use these for lookups except when merging, at which point we'll ensure
   ;; that the component alists are fast.
-  (make-svjumpstate :breakcond 0
+  (make-svjumpstate :constraints constraints
+                    :breakcond 0
                     :breakst st
                     :continuecond 0
                     :continuest st
@@ -528,13 +535,15 @@ exists there.</p>"
                     :returnst st)
   ///
   (defret vars-of-make-empty-svjumpstate
-    (implies (not (member v (svstate-vars st)))
+    (implies (and (not (member v (svstate-vars st)))
+                  (not (member v (constraintlist-vars constraints))))
              (not (member v (svjumpstate-vars jst))))
     :hints(("Goal" :in-theory (enable svjumpstate-vars))))
 
   (defret accs-of-make-empty-svjumpstate
     (b* (((svjumpstate jst)))
-      (and (equal jst.breakcond 0)
+      (and (equal jst.constraints (constraintlist-fix constraints))
+           (equal jst.breakcond 0)
            (equal jst.breakst (svstate-fix st))
            (equal jst.continuecond 0)
            (equal jst.continuest (svstate-fix st))
@@ -570,17 +579,17 @@ exists there.</p>"
   ///
   (defequiv svjumpstates-compatible)
   (defcong svjumpstates-compatible svstates-compatible (svjumpstate->breakst x) 1)
-  (defcong svstates-compatible svjumpstates-compatible (svjumpstate breakcond breakst
+  (defcong svstates-compatible svjumpstates-compatible (svjumpstate constraints breakcond breakst
                                                                     continuecond continuest
                                                                     returncond returnst)
     2)
   (defcong svjumpstates-compatible svstates-compatible (svjumpstate->continuest x) 1)
-  (defcong svstates-compatible svjumpstates-compatible (svjumpstate breakcond breakst
+  (defcong svstates-compatible svjumpstates-compatible (svjumpstate constraints breakcond breakst
                                                                     continuecond continuest
                                                                     returncond returnst)
     4)
   (defcong svjumpstates-compatible svstates-compatible (svjumpstate->returnst x) 1)
-  (defcong svstates-compatible svjumpstates-compatible (svjumpstate breakcond breakst
+  (defcong svstates-compatible svjumpstates-compatible (svjumpstate constraints breakcond breakst
                                                                     continuecond continuest
                                                                     returncond returnst)
     6))
@@ -628,13 +637,22 @@ exists there.</p>"
                   (svjumpstate-svstate-compatible jst continuest)
                   (svjumpstate-svstate-compatible jst returnst))
              (and (equal (svjumpstates-compatible
-                          (svjumpstate breakcond breakst continuecond continuest returncond returnst)
+                          (svjumpstate constraints breakcond breakst continuecond continuest returncond returnst)
                           jst)
                          t)
                   (equal (svjumpstates-compatible
                           jst
-                          (svjumpstate breakcond breakst continuecond continuest returncond returnst))
+                          (svjumpstate constraints breakcond breakst continuecond continuest returncond returnst))
                          t)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
+
+  (defthm svjumpstates-compatible-of-change
+    (svjumpstates-compatible (change-svjumpstate jst
+                                                 :constraints constraints
+                                                 :breakcond breakcond
+                                                 :continuecond continuecond
+                                                 :returncond returncond)
+                             (double-rewrite jst))
     :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
 
 
@@ -648,7 +666,7 @@ exists there.</p>"
 
   (defthm svjumpstates-svstate-compatible-of-svjumpstate
     (equal (svjumpstate-svstate-compatible
-            (svjumpstate breakcond breakst continuecond continuest returncond returnst)
+            (svjumpstate constraints breakcond breakst continuecond continuest returncond returnst)
             st)
            (and (svstates-compatible st breakst)
                 (svstates-compatible st continuest)
@@ -982,14 +1000,13 @@ exists there.</p>"
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-lookup lhs-vars lhatom-vars)))))
 
-
-    (defthm vars-of-svstmt-assign->subst
-      (implies (and (not (member v (svstate-vars st)))
-                    (not (member v (lhs-vars lhs)))
-                    (not (member v (svex-vars rhs))))
-               (not (member v (svstate-vars (svstmt-assign->subst lhs rhs offset blockingp st)))))
-      :hints(("Goal" :in-theory (e/d (svstate-vars)
-                                     (svstmt-assign->subst)))))
+  (defthm vars-of-svstmt-assign->subst
+    (implies (and (not (member v (svstate-vars st)))
+                  (not (member v (lhs-vars lhs)))
+                  (not (member v (svex-vars rhs))))
+             (not (member v (svstate-vars (svstmt-assign->subst lhs rhs offset blockingp st)))))
+    :hints(("Goal" :in-theory (e/d (svstate-vars)
+                                   (svstmt-assign->subst)))))
 
   (defret consp-blkst-of-svstmt-assign->subst
     (implies (consp (svstate->blkst st))
@@ -1296,7 +1313,48 @@ exists there.</p>"
              (not (member v (svex-vars or))))))
 
 
+(define constraintlist-add-pathcond ((cond svex-p)
+                                     (negatedp)
+                                     (constraints constraintlist-p))
+  ;; negatedp is confusing (of course): this function produces:
+  ;; (if not negatedp) constraints assumed if cond is true
+  ;; (if negatedp) constraints assumed if cond is false
+  :returns (new-constraints constraintlist-p)
+  (if (atom constraints)
+      nil
+    (cons (change-constraint (car constraints)
+                             :cond (svcall bitor
+                                           (if negatedp
+                                               cond
+                                             (svcall bitnot (svcall uor cond)))
+                                           (constraint->cond (car constraints))))
+          (constraintlist-add-pathcond cond negatedp (cdr constraints))))
+  ///
+  (defret vars-of-constraintlist-add-pathcond
+    (implies (and (not (member v (constraintlist-vars constraints)))
+                  (not (member v (svex-vars cond))))
+             (not (member v (constraintlist-vars new-constraints))))
+    :hints(("Goal" :in-theory (enable constraintlist-vars)))))
 
+(defthm constraintlist-vars-of-append
+  (equal (constraintlist-vars (append a b))
+         (append (constraintlist-vars a)
+                 (constraintlist-vars b)))
+  :hints(("Goal" :in-theory (enable constraintlist-vars))))
+
+(define constraintlist-merge-branches ((cond svex-p)
+                                       (then-constraints constraintlist-p)
+                                       (else-constraints constraintlist-p))
+  :returns (new-constraints constraintlist-p)
+  (append (constraintlist-add-pathcond cond nil then-constraints)
+          (constraintlist-add-pathcond cond t else-constraints))
+  ///
+  (defret vars-of-constraintlist-merge-branches
+    (implies (and (not (member v (constraintlist-vars then-constraints)))
+                  (not (member v (constraintlist-vars else-constraints)))
+                  (not (member v (svex-vars cond))))
+             (not (member v (constraintlist-vars new-constraints))))))
+  
 
 (define svex-alist-merge-branches ((key-alist svex-alist-p)
                                    (cond svex-p)
@@ -1912,6 +1970,7 @@ exists there.</p>"
   (b* (((svjumpstate then))
        ((svjumpstate else)))
     (make-svjumpstate
+     :constraints (constraintlist-merge-branches cond then.constraints else.constraints)
      :breakcond (svex-svstmt-ite cond then.breakcond else.breakcond)
      :breakst (svjumpstate-merge-svstate-branches cond then.breakcond else.breakcond then.breakst else.breakst)
      :continuecond (svex-svstmt-ite cond then.continuecond else.continuecond)
@@ -1979,6 +2038,7 @@ exists there.</p>"
        (jst1.anyjump (svex-svstmt-or jst1.breakcond (svex-svstmt-or jst1.continuecond
                                                                     jst1.returncond))))
     (make-svjumpstate
+     :constraints (append-without-guard jst1.constraints jst2.constraints)
      :breakcond (svex-svstmt-or jst1.breakcond
                                 (svex-svstmt-andc1 jst1.anyjump jst2.breakcond))
      :breakst (svjumpstate-sequence-svstates jst1.breakcond jst2.breakcond
@@ -2003,6 +2063,15 @@ exists there.</p>"
   (defret svjumpstates-compatible-of-svjumpstate-sequence
     (implies (double-rewrite (svjumpstates-compatible jst1 jst2))
              (svjumpstates-compatible seq (double-rewrite jst1)))
+    :hints(("Goal" :in-theory (enable svjumpstates-compatible))))
+
+  (defret svstates-compatible-of-svjumpstate-sequence
+    (implies (double-rewrite (svjumpstates-compatible jst1 jst2))
+             (b* (((svjumpstate seq))
+                  ((svjumpstate jst1) (double-rewrite jst1)))
+               (and (svstates-compatible seq.breakst jst1.breakst)
+                    (svstates-compatible seq.continuest jst1.continuest)
+                    (svstates-compatible seq.returnst jst1.returnst))))
     :hints(("Goal" :in-theory (enable svjumpstates-compatible)))))
 
 
@@ -2315,9 +2384,17 @@ exists there.</p>"
     (if blockingp
         (mv new-masks (4vmask-alist-fix nonblk-masks) conflicts)
       (mv (4vmask-alist-fix blk-masks) new-masks conflicts))))
-       
 
 
+(define constraintlist-compose-svstack ((x constraintlist-p)
+                                        (a svstack-p))
+  :returns (new-x (equal new-x (constraintlist-compose x (svstack-to-svex-alist a)))
+                  :hints(("Goal" :in-theory (enable constraintlist-compose))))
+  (if (atom x)
+      nil
+    (cons (change-constraint (car x)
+                             :cond (svex-compose-svstack (constraint->cond (car x)) a))
+          (constraintlist-compose-svstack (cdr x) a))))
 
 (defines svstmt-compile
   :verify-guards nil
@@ -2516,6 +2593,10 @@ exists there.</p>"
              (st (svstate-merge-branches cond-rw run-st norun-st))
              (jst (svjumpstate-merge-branches cond-rw run-jst norun-jst)))
           (mv ok warnings st jst blk-masks nonblk-masks))
+        :constraints (mv t warnings st
+                         (make-empty-svjumpstate st :constraints
+                                                 (constraintlist-compose-svstack x.constraints st.blkst))
+                         blk-masks nonblk-masks)
         :scope
         (b* ((subscope-st (svstate-push-scope st x.locals))
              ((vl::wmv ok warnings subscope-st subscope-jst blk-masks nonblk-masks)
@@ -2730,6 +2811,7 @@ exists there.</p>"
   :Returns (mv (ok)
                (warnings vl-warninglist-p)
                (final-st svstate-p)
+               (constraints sv::constraintlist-p)
                (blk-masks 4vmask-alist-p)
                (nonblk-masks 4vmask-alist-p))
   (b* (((mv ok warnings st jst blk-masks nonblk-masks)
@@ -2739,12 +2821,13 @@ exists there.</p>"
                                 jst.returncond jst.returnst st))))
     (svjumpstate-free jst)
     (svstate-free st)
-    (mv ok warnings final-st blk-masks nonblk-masks))
+    (mv ok warnings final-st jst.constraints blk-masks nonblk-masks))
   ///
   (defret vars-of-svstmtlist-compile-top
     (implies (and (svarlist-addr-p (svstmtlist-vars x))
                   ok)
-             (svarlist-addr-p (svstate-vars final-st)))))
+             (and (svarlist-addr-p (svstate-vars final-st))
+                  (svarlist-addr-p (constraintlist-vars constraints))))))
 
 
 
@@ -2792,6 +2875,7 @@ exists there.</p>"
               (svstmtlist-lhs-var-sizes x.body blockstack acc))
       :scope (svstmtlist-lhs-var-sizes
               x.body (cons (svstmt-initialize-locals x.locals) blockstack) acc)
+      :constraints (svar-size-alist-fix acc)
       :jump (svar-size-alist-fix acc)))
   (define svstmtlist-lhs-var-sizes ((x svstmtlist-p)
                                     (blockstack svstack-p)

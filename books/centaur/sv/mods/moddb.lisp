@@ -6822,6 +6822,30 @@ checked to see if it is a valid bitselect and returned as a separate value."
                                        (moddb-mod-totalwires
                                         modidx moddb))))))
 
+  (define constraintlist-named->indexed ((x constraintlist-p)
+                                         (modidx natp)
+                                         (moddb moddb-ok))
+    :guard (and (svarlist-addr-p (constraintlist-vars x))
+                (< modidx (moddb->nmods moddb)))
+    :returns (mv errmsg (xx constraintlist-p))
+    :prepwork ((local (in-theory (enable constraintlist-vars))))
+    (b* (((when (atom x)) (mv nil nil))
+         ((constraint x1) (car x))
+         ((mv err1 new-cond) (svex-named->indexed x1.cond modidx moddb))
+         ((mv err2 rest)
+          (constraintlist-named->indexed (cdr x) modidx moddb)))
+      (mv (or err1 err2)
+          (cons (change-constraint x1 :cond new-cond) rest)))
+    ///
+    (defthm constraintlist-idxaddr-okp-of-constraintlist-named->indexed
+      (b* (((mv err ans) (constraintlist-named->indexed x modidx moddb)))
+        (implies (and (moddb-ok moddb)
+                      (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
+                      (not err))
+                 (svarlist-idxaddr-okp (constraintlist-vars ans)
+                                       (moddb-mod-totalwires
+                                        modidx moddb))))))
+
   (define svar-map-named->indexed ((x svar-map-p) (modidx natp) (moddb moddb-ok))
     :guard (and (svarlist-addr-p (svar-map-vars x))
                 (< modidx (moddb->nmods moddb)))
@@ -6928,13 +6952,14 @@ checked to see if it is a valid bitselect and returned as a separate value."
     :prepwork ((local (in-theory (enable module-vars))))
     (b* (((module x) x)
          ((mv err1 assigns) (assigns-named->indexed x.assigns modidx moddb))
-         ;; ((mv err2 delays)  (svar-map-named->indexed x.delays modidx moddb))
+         ((mv err2 constraints)  (constraintlist-named->indexed x.constraints modidx moddb))
          ((mv err3 aliaspairs) (lhspairs-named->indexed x.aliaspairs modidx moddb))
          ;; ((mv err3 wires)   (wirelist-named->indexed x.wires modidx moddb))
          )
-      (mv (or err1 err3)
+      (mv (or err1 err2 err3)
           (change-module x
                          :assigns assigns
+                         :constraints constraints
                          ;; :delays delays
                          :aliaspairs aliaspairs)))
     ///
@@ -7133,6 +7158,29 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (modscope-okp scope moddb)
                       (moddb-ok moddb))
                  (svarlist-boundedp (assigns-vars res) (modscope-top-bound scope moddb))))))
+
+
+  (define constraintlist->absindexed ((x constraintlist-p)
+                                     (scope modscope-p)
+                                     (moddb moddb-ok))
+    :guard (and (modscope-okp scope moddb)
+                (svarlist-idxaddr-okp (constraintlist-vars x) (modscope-local-bound scope moddb)))
+    :returns (mv (fails svarlist-p) (xx constraintlist-p))
+    :prepwork ((local (in-theory (enable constraintlist-vars))))
+    (b* (((when (atom x)) (mv nil nil))
+         ((constraint x1) (car x))
+         ((mv fails1 new-cond) (svex->absindexed x1.cond scope moddb))
+         ((mv fails2 rest)
+          (constraintlist->absindexed (cdr x) scope moddb)))
+      (mv (append-without-guard fails1 fails2)
+          (cons (change-constraint x1 :cond new-cond) rest)))
+    ///
+    (defthm constraintlist-boundedp-of-constraintlist->absindexed
+      (b* (((mv ?fails res) (constraintlist->absindexed x scope moddb)))
+        (implies (and (svarlist-idxaddr-okp (constraintlist-vars x) (modscope-local-bound scope moddb))
+                      (modscope-okp scope moddb)
+                      (moddb-ok moddb))
+                 (svarlist-boundedp (constraintlist-vars res) (modscope-top-bound scope moddb))))))
 
   (define svar-map->absindexed ((x svar-map-p) (scope modscope-p) (moddb moddb-ok))
     :guard (and (modscope-okp scope moddb)
@@ -7522,6 +7570,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
                    (assigns-vars
                     (module->assigns (modalist-lookup name modalist)))
                    bound)
+                  (svarlist-idxaddr-okp
+                   (constraintlist-vars
+                    (module->constraints (modalist-lookup name modalist)))
+                   bound)
                   ;; (svarlist-idxaddr-okp
                   ;;  (svar-map-vars
                   ;;   (module->delays (modalist-lookup name modalist)))
@@ -7560,6 +7612,19 @@ checked to see if it is a valid bitselect and returned as a separate value."
           ((null (cdr args)) (car args))
           (t (xxxjoin 'binary-append-tr args)))))
 
+(define constraintlist-add-scope (scope (x constraintlist-p))
+  :returns (new-x constraintlist-p)
+  (if (atom x)
+      nil
+    (cons (change-constraint (car x)
+                             :name (cons scope (constraint->name (car x))))
+          (constraintlist-add-scope scope (cdr x))))
+  ///
+  (defret constraintlist-vars-of-constraintlist-add-scope
+    (equal (constraintlist-vars new-x)
+           (constraintlist-vars x))
+    :hints(("Goal" :in-theory (enable constraintlist-vars)))))
+
 (defines svex-mod->flatten
   :prepwork ((local (in-theory (disable append))))
   :verify-guards nil
@@ -7574,6 +7639,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                  (mod-fails modnamelist-p)
                  (aliases lhspairs-p)
                  (assigns assigns-p)
+                 (constraints constraintlist-p)
                  ;; (delays svar-map-p
                  ;;         :hints ('(:in-theory (disable svex-mod->flatten
                  ;;                                       svex-modinst->flatten
@@ -7587,26 +7653,29 @@ checked to see if it is a valid bitselect and returned as a separate value."
               (elab-mod-ninsts elab-mod)))
          (mod (modalist-lookup name modalist))
          ((unless mod)
-          (mv nil (list name) nil nil))
+          (mv nil (list name) nil nil nil))
          (local-aliases (module->aliaspairs mod))
-         (local-assigns (module->assigns mod)))
+         (local-assigns (module->assigns mod))
+         (local-constraints (constraintlist-add-scope (modscope-fix scope) (module->constraints mod))))
 
       (time$
        (b* (;; (local-delays  (and mod (module->delays mod)))
             ((mv varfails1 abs-aliases) (lhspairs->absindexed local-aliases scope moddb))
             ((mv varfails2 abs-assigns) (assigns->absindexed local-assigns scope moddb))
+            ((mv varfails3 abs-constraints) (constraintlist->absindexed local-constraints scope moddb))
             ;; We're never going to come back to this particular place in the
             ;; instantiation hierarchy -- i.e. we'll never call
             ;; svex->absindexed again with the same scope argument, so these
             ;; memoization tables aren't worth anything once we're done here.
             (- (clear-memoize-table 'svex->absindexed))
             ;; ((mv varfails3 abs-delays)  (svar-map->absindexed local-delays scope moddb))
-            ((mv varfails4 modfails rest-aliases rest-assigns)
+            ((mv varfails4 modfails rest-aliases rest-assigns rest-constraints)
              (svex-modinsts->flatten 0 ninsts scope modalist moddb)))
-         (mv (append-tr varfails1 varfails2 varfails4)
+         (mv (append-tr varfails1 varfails2 varfails3 varfails4)
              modfails
              (append-tr abs-aliases rest-aliases)
              (append-tr abs-assigns rest-assigns)
+             (append-tr abs-constraints rest-constraints)
              ;; (append-tr abs-delays rest-delays)
              ))
        :msg "; svex-mod->flatten ~x0: ~st sec, ~sa bytes, ~x1 instances, ~x2 aliases, ~x3 assigns~%"
@@ -7644,7 +7713,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
                                                        svex-modinsts->flatten)
                                    :expand ((:free (ninsts)
                                              (svex-modinsts->flatten
-                                              n ninsts scope modalist moddb)))))))
+                                              n ninsts scope modalist moddb))))))
+                 (constraints constraintlist-p))
     (b* ((ninsts (mbe :logic (b* (((modscope scope)))
                                (stobj-let ((elab-mod (moddb->modsi scope.modidx moddb)))
                                           (ninsts)
@@ -7653,15 +7723,16 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       :exec ninsts))
          ((when (mbe :logic (zp (- ninsts (nfix n)))
                      :exec (eql n ninsts)))
-          (mv nil nil nil nil))
-         ((mv var-fails1 mod-fails1 aliases1 assigns1)
+          (mv nil nil nil nil nil))
+         ((mv var-fails1 mod-fails1 aliases1 assigns1 constraints1)
           (svex-modinst->flatten (lnfix n) scope modalist moddb))
-         ((mv var-fails2 mod-fails2 aliases2 assigns2)
+         ((mv var-fails2 mod-fails2 aliases2 assigns2 constraints2)
           (svex-modinsts->flatten (1+ (lnfix n)) ninsts scope modalist moddb)))
       (mv (append-tr var-fails1 var-fails2)
           (append-tr mod-fails1 mod-fails2)
           (append-tr aliases1 aliases2)
-          (append-tr assigns1 assigns2))))
+          (append-tr assigns1 assigns2)
+          (append-tr constraints1 constraints2))))
 
   (define svex-modinst->flatten ((n natp)
                                  (scope modscope-p)
@@ -7682,11 +7753,12 @@ checked to see if it is a valid bitselect and returned as a separate value."
                          :hints ('(:in-theory (disable svex-mod->flatten
                                                        svex-modinst->flatten
                                                        svex-modinsts->flatten)
-                                   :expand ((svex-modinst->flatten n scope modalist moddb))))))
+                                   :expand ((svex-modinst->flatten n scope modalist moddb)))))
+                 (constraints constraintlist-p))
     (b* ((newscope (modscope-push-frame n scope moddb))
          ((unless (mbt (< (modscope->modidx newscope)
                           (modscope->modidx scope))))
-          (mv nil nil nil nil)))
+          (mv nil nil nil nil nil)))
       (svex-mod->flatten newscope modalist moddb)))
   ///
 
@@ -7753,7 +7825,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
 
   (defthm-svex-mod->flatten-flag
     (defthm svex-mod->flatten-bounded
-      (b* (((mv & & aliases assigns)
+      (b* (((mv & & aliases assigns constraints)
             (svex-mod->flatten scope modalist moddb))
            (bound (modscope-top-bound scope moddb)))
         (implies (and (moddb-ok moddb)
@@ -7761,13 +7833,14 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (modalist-all-idxaddr-okp modalist moddb))
                  (and (svarlist-boundedp (lhspairs-vars aliases) bound)
                       (svarlist-boundedp (assigns-vars assigns) bound)
+                      (svarlist-boundedp (constraintlist-vars constraints) bound)
                       ;; (svarlist-boundedp (svar-map-vars delays) bound)
                       )))
       :hints ('(:expand ((svex-mod->flatten scope modalist moddb))))
       :flag svex-mod->flatten)
 
     (defthm svex-modinsts->flatten-bounded
-      (b* (((mv & & aliases assigns)
+      (b* (((mv & & aliases assigns constraints)
             (svex-modinsts->flatten n ninsts scope modalist moddb))
            (bound (modscope-top-bound scope moddb)))
         (implies (and (moddb-ok moddb)
@@ -7775,6 +7848,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (modalist-all-idxaddr-okp modalist moddb))
                  (and (svarlist-boundedp (lhspairs-vars aliases) bound)
                       (svarlist-boundedp (assigns-vars assigns) bound)
+                      (svarlist-boundedp (constraintlist-vars constraints) bound)
                       ;; (svarlist-boundedp (svar-map-vars delays) bound)
                       )))
 
@@ -7783,7 +7857,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
       :flag svex-modinsts->flatten)
 
     (defthm svex-modinst->flatten-bounded
-      (b* (((mv & & aliases assigns)
+      (b* (((mv & & aliases assigns constraints)
             (svex-modinst->flatten n scope modalist moddb))
            (bound (modscope-top-bound scope moddb)))
         (implies (and (moddb-ok moddb)
@@ -7794,6 +7868,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                                                  (nth *moddb->modsi* moddb)))))
                  (and (svarlist-boundedp (lhspairs-vars aliases) bound)
                       (svarlist-boundedp (assigns-vars assigns) bound)
+                      (svarlist-boundedp (constraintlist-vars constraints) bound)
                       ;; (svarlist-boundedp (svar-map-vars delays) bound)
                       )))
       :hints ('(:expand ((svex-modinst->flatten
@@ -7801,7 +7876,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
       :flag svex-modinst->flatten))
 
     (defthm svex-mod->flatten-bounded-top
-      (b* (((mv & & aliases assigns)
+      (b* (((mv & & aliases assigns constraints)
             (svex-mod->flatten scope modalist moddb))
            (bound1 (modscope-top-bound scope moddb)))
         (implies (and (moddb-ok moddb)
@@ -7810,6 +7885,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                       (equal (nfix bound) bound1))
                  (and (svarlist-boundedp (lhspairs-vars aliases) bound)
                       (svarlist-boundedp (assigns-vars assigns) bound)
+                      (svarlist-boundedp (constraintlist-vars constraints) bound)
                       ;; (svarlist-boundedp (svar-map-vars delays) bound)
                       )))
       :hints (("goal" :use svex-mod->flatten-bounded

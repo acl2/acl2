@@ -34,6 +34,7 @@
 (include-book "nrev")
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm setp-singleton
          (setp (list x))
@@ -610,6 +611,7 @@ substitution are left in place."
 (define svex-alist-compose-nrev ((x svex-alist-p)
                                  (a svex-alist-p)
                                  (nrev))
+  :hooks nil
   (if (atom x)
       (acl2::nrev-fix nrev)
     (if (mbt (and (consp (car x)) (svar-p (caar x))))
@@ -670,3 +672,19 @@ substitution are left in place."
          (svex-lookup v x))
     :hints(("Goal" :in-theory (e/d (svex-lookup svex-alist-fix svex-acons)
                                    (svex-alist-p))))))
+
+
+(define constraintlist-compose ((x constraintlist-p)
+                                (a svex-alist-p))
+  :returns (new-x constraintlist-p)
+  (if (atom x)
+      nil
+    (cons (change-constraint (car x)
+                             :cond (svex-compose (constraint->cond (car x)) a))
+          (constraintlist-compose (cdr x) a)))
+  ///
+  (defret vars-of-constraintlist-compose
+    (implies (and (not (member v (constraintlist-vars x)))
+                  (not (member v (svex-alist-vars a))))
+             (not (member v (constraintlist-vars new-x))))
+    :hints(("Goal" :in-theory (enable constraintlist-vars)))))

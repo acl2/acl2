@@ -404,11 +404,26 @@ of adding the namespace.</p>"
   :returns (names namelist-p)
   :parents (modinstlist))
 
+(define constraintlist-addr-p ((x constraintlist-p))
+; Removed after v7-2 by Matt K. since logically, the definition is
+; non-recursive:
+; :measure (len (constraintlist-fix x))
+  :verify-guards nil
+  :enabled t
+  (mbe :logic (svarlist-addr-p (constraintlist-vars x))
+       :exec  (b* (((when (atom x)) t))
+                (and (svex-addr-p (constraint->cond (car x)))
+                     (constraintlist-addr-p (cdr x)))))
+  ///
+  (verify-guards constraintlist-addr-p
+    :hints(("Goal" :in-theory (enable constraintlist-vars)))))
+
 
 (fty::defprod module
   ((wires      wirelist)
    (insts      modinstlist)
    (assigns    assigns)
+   (constraints constraintlist)
    ;; (delays svar-map)
    (aliaspairs lhspairs)))
 
@@ -417,12 +432,18 @@ of adding the namespace.</p>"
   :returns (vars svarlist-p)
   (b* (((module x)))
     (append (assigns-vars x.assigns)
+            (constraintlist-vars x.constraints)
             ;; (svar-map-vars x.delays)
             (lhspairs-vars x.aliaspairs)))
   ///
   (defthm vars-of-module->assigns
     (implies (not (member v (module-vars x)))
              (not (member v (assigns-vars (module->assigns x)))))
+    :hints(("Goal" :in-theory (enable module-vars))))
+
+  (defthm vars-of-module->constraints
+    (implies (not (member v (module-vars x)))
+             (not (member v (constraintlist-vars (module->constraints x)))))
     :hints(("Goal" :in-theory (enable module-vars))))
 
   ;; (defthm vars-of-module->delays
@@ -438,10 +459,11 @@ of adding the namespace.</p>"
   (defthm vars-of-module
     (implies (and (not (member v (lhspairs-vars aliases)))
                   (not (member v (assigns-vars assigns)))
+                  (not (member v (constraintlist-vars constraints)))
                   ;; (not (member v (svar-map-vars delays)))
                   )
              (not (member v (module-vars
-                             (module wires insts assigns aliases)))))
+                             (module wires insts assigns constraints aliases)))))
     :hints(("Goal" :in-theory (enable module-vars)))))
 
 (define module-addr-p ((x module-p))
@@ -451,6 +473,7 @@ of adding the namespace.</p>"
   (mbe :logic (svarlist-addr-p (module-vars x))
        :exec (b* (((module x)))
                (and (assigns-addr-p x.assigns)
+                    (constraintlist-addr-p x.constraints)
                     (lhspairs-addr-p x.aliaspairs))))
   ///
   (verify-guards module-addr-p

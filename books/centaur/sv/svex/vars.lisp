@@ -1029,3 +1029,19 @@ Correctness is stated in terms of @(see svexlist-vars):</p>
     vars)
   ///
   (deffixequiv svexlist-opcount))
+
+
+
+
+(define constraintlist-vars ((x constraintlist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (append (svex-vars (constraint->cond (car x)))
+            (constraintlist-vars (cdr x))))
+  ///
+  (defthm constraintlist-vars-of-append
+    (equal (constraintlist-vars (append a b))
+           (append (constraintlist-vars a)
+                   (constraintlist-vars b)))))
+
