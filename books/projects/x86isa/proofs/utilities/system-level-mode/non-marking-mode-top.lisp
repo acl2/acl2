@@ -630,21 +630,6 @@
   :hints (("Goal" :in-theory (e/d* (mv-nth-0-las-to-pas-subset-p-in-non-marking-mode-helper-1)
                                    ()))))
 
-(defthm no-errors-when-translating-program-bytes-in-non-marking-mode
-  ;; Enabled version of
-  ;; mv-nth-0-las-to-pas-subset-p-in-non-marking-mode, with r-w-x == :w.
-  ;; This rule will help in fetching instructions.
-  (implies (and (bind-free (find-l-addrs-from-las-to-pas '(n-bytes prog-addr) :x mfc state)
-                           (n-bytes prog-addr))
-                (syntaxp (and (not (eq n-bytes n)) (not (eq prog-addr addr))))
-                (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
-                ;; <n,addr> is a subset of <n-bytes,prog-addr>.
-                (<= prog-addr addr)
-                (< (+ n addr) (+ n-bytes prog-addr))
-                (posp n-bytes) (integerp addr)
-                (not (page-structure-marking-mode x86)))
-           (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil)))
-
 ;; ======================================================================
 
 ;; Lemmas about prog-at:
@@ -654,6 +639,49 @@
                 (not (programmer-level-mode x86)))
            (equal (prog-at prog-addr bytes x86) nil))
   :hints (("Goal" :in-theory (e/d* (prog-at) (force (force))))))
+
+(defthm no-errors-when-translating-program-bytes-in-non-marking-mode
+  ;; This rule will help in fetching instruction bytes given relevant
+  ;; information about the program (using prog-at).
+
+  ;; If I use (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
+  ;; instead of (prog-at prog-addr bytes x86) hypothesis below, this
+  ;; rule would become as horrendously expensive as
+  ;; mv-nth-0-las-to-pas-subset-p-in-non-marking-mode.
+
+  (implies (and (bind-free
+                 (find-prog-at-info 'prog-addr 'bytes mfc state)
+                 (prog-addr bytes))
+                (prog-at prog-addr bytes x86)
+
+                ;; We don't need the following hypothesis because we
+                ;; have prog-at-nil-when-translation-error.
+                ;; (not (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)))
+
+                ;; <n,addr> is a subset of <(len bytes),prog-addr>.
+                (<= prog-addr addr)
+                (< (+ n addr) (+ (len bytes) prog-addr))
+                (posp n) (integerp addr)
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86)))
+           (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil))
+  :hints (("Goal"
+           :use ((:instance prog-at-nil-when-translation-error))
+           :in-theory (e/d* (mv-nth-0-las-to-pas-subset-p-in-non-marking-mode)
+                            (prog-at-nil-when-translation-error)))))
+
+;; (defthm no-errors-when-translating-program-bytes-in-non-marking-mode
+;;   ;; Too expensive to have around...
+;;   (implies (and (bind-free (find-l-addrs-from-las-to-pas '(n-bytes prog-addr) :x mfc state)
+;;                            (n-bytes prog-addr))
+;;                 (syntaxp (and (not (eq n-bytes n)) (not (eq prog-addr addr))))
+;;                 (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
+;;                 ;; <n,addr> is a subset of <n-bytes,prog-addr>.
+;;                 (<= prog-addr addr)
+;;                 (< (+ n addr) (+ n-bytes prog-addr))
+;;                 (posp n-bytes) (integerp addr)
+;;                 (not (page-structure-marking-mode x86)))
+;;            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil)))
 
 (local
  (defthm prog-at-wb-disjoint-in-non-marking-mode-helper-0

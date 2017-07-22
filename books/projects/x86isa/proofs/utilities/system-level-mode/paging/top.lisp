@@ -634,7 +634,7 @@
 ;; Misc. lemmas about las-to-pas that need some congruence-based
 ;; reasoning to be proved:
 
-(defthm mv-nth-1-las-to-pas-when-error
+(defthm mv-nth-1-las-to-pas-returns-nil-when-error
   (implies (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))
            (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))
                   nil)))
