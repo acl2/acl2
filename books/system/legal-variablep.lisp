@@ -44,6 +44,9 @@
 (verify-guards arglistp)
 (verify-guards lambda-keywordp)
 
+(verify-termination legal-constantp ; and guards [added by Matt K.]
+  (declare (xargs :verify-guards t)))
+
 (verify-termination find-first-bad-arg ; See later in file for verify-guards.
                     (declare (xargs :verify-guards nil)))
 

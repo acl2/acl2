@@ -4,7 +4,7 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
-(include-book "cgen/top" :load-compiled-file :comp :ttags :all)
+(include-book "cgen/top" :ttags :all)
 
 #||
 Here is the top-level defunc control flow:

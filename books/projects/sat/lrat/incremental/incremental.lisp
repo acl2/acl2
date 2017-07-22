@@ -7,8 +7,8 @@
 (in-package "LRAT")
 
 (include-book "../sorted/lrat-checker")
-
 (include-book "../stobj-based/lrat-checker")
+(include-book "tools/er-soft-logic" :dir :system)
 
 (defun incl-verify-proof$-rec (ncls ndel formula proof a$)
   (declare (xargs :stobjs a$
@@ -868,56 +868,18 @@
       (:complete (mv t a$))
       (:incomplete (mv (or incomplete-okp
                            (er hard? ctx
-                               "Incomplete proof!"))
+                               "The proof is valid but does not contain the ~
+                                empty clause."))
                        a$))
-      (t (mv (er hard? ctx
-                 "Invalid proof!")
-             a$)))))
+      (t
 
-(verify-termination acl2::world-evisceration-alist
-  (declare (xargs :verify-guards t)))
+; We do not expect to reach the following case.  If nil is returned as the
+; first value, it is ultimately because an error occurred.  In particular,
+; verify-clause$ either succeeds or causes an error.
 
-#!acl2
-(defun abbrev-evisc-tuple-logic (state)
-
-; This is modified from ACL2 source function abbrev-evisc-tuple.
-
-  (declare (xargs :stobjs state))
-  (let ((evisc-tuple (if (f-boundp-global 'abbrev-evisc-tuple state)
-                         (f-get-global 'abbrev-evisc-tuple state)
-                       :default)))
-    (cond
-     ((eq evisc-tuple :default)
-      (cons (world-evisceration-alist state nil)
-            '(5 7 nil)))
-     (t evisc-tuple))))
-
-#!acl2
-(defun error-fms-soft-logic (ctx str alist state)
-
-; This is modified from ACL2 source function error-fms.
-
-  (declare (xargs :stobjs state))
-  (fmt-to-comment-window "~%~%ACL2 Error in ~x0:  ~@1~%~%"
-                         (list (cons #\0 ctx)
-                               (cons #\1 (cons str alist)))
-                         0
-                         (acl2::abbrev-evisc-tuple-logic state)))
-
-#!acl2
-(defun error1-logic (ctx str alist state)
-
-; This is modified from ACL2 source function error1.
-
-  (declare (xargs :stobjs state))
-  (prog2$ (error-fms-soft-logic ctx str alist state)
-          (mv t nil state)))
-
-(defmacro er-soft-logic (ctx str &rest str-args)
-  (let ((alist (acl2::make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                          #\5 #\6 #\7 #\8 #\9)
-                                        str-args)))
-    (list 'acl2::error1-logic ctx str alist 'state)))
+       (mv (er hard? ctx
+               "Invalid proof!")
+           a$)))))
 
 (defun ordered-formula-p1 (formula index)
   (declare (xargs :guard (posp index)))
@@ -956,10 +918,16 @@
            (formula-p formula))
   :hints (("Goal" :in-theory (enable formula-p ordered-formula-p))))
 
+(defmacro er-soft-logic (&rest args)
+
+; This macro should be deleted once er-soft-logic makes it into *acl2-exports*.
+
+  (cons 'acl2::er-soft-logic args))
+
 (defun incl-valid-proofp$-top (cnf-file clrat-file incomplete-okp chunk-size
                                         debug ctx state)
   (declare (xargs :guard t :stobjs state))
-  (let ((formula (time$ (ec-call (cnf-read-file cnf-file state)))))
+  (let ((formula (ec-call (cnf-read-file cnf-file state))))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic
@@ -973,7 +941,10 @@
         not.~|~x0"
        clrat-file))
      ((not (ordered-formula-p formula))
-      (er-soft-logic ctx "An invalid formula was supplied by the parser!"))
+      (er-soft-logic ctx
+                     "An invalid formula was supplied by the parser from ~
+                      input file ~x0."
+                     cnf-file))
      (t
       (mv-let (clrat-file-length state)
         (file-length$ clrat-file state)

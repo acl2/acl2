@@ -2173,6 +2173,9 @@
 )
 
 (defun newline (channel state)
+  (declare (xargs :guard (and (state-p state)
+                              (symbolp channel)
+                              (open-output-channel-p channel :character state))))
   (princ$ #\Newline channel state))
 
 (defun fmt-hard-right-margin (state)
@@ -2212,6 +2215,8 @@
         state))))
 
 (defun write-for-read (state)
+  (declare (xargs :guard (and (state-p state)
+                              (f-boundp-global 'write-for-read state))))
   (f-get-global 'write-for-read state))
 
 (defun spaces1 (n col hard-right-margin channel state)
@@ -2900,6 +2905,7 @@
            (symbol-listp (cadddr x)))))
 
 (defun world-evisceration-alist (state alist)
+  (declare (xargs :stobjs state))
   (let ((wrld (w state)))
     (cond ((null wrld) ; loading during the build
            alist)
@@ -2915,6 +2921,8 @@
 ; tweak the set of uses of the abbrev-evisc-tuple.  This comment should
 ; similarly not be viewed as definitive if it is long after January 2009.
 
+  (declare (xargs :stobjs state
+                  :guard (f-boundp-global 'abbrev-evisc-tuple state)))
   (let ((evisc-tuple (f-get-global 'abbrev-evisc-tuple state)))
     (cond
      ((eq evisc-tuple :default)
@@ -6070,6 +6078,9 @@
 ; of variable symbols.  But just to make this an ironclad guarantee, we include
 ; the first conjunct below.
 
+  (declare (xargs :guard (and (plist-worldp w)
+                              (or (eq known-stobjs t)
+                                  (true-listp known-stobjs)))))
   (and x
        (symbolp x)
        (if (eq known-stobjs t)

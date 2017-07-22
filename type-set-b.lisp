@@ -176,6 +176,14 @@
 ; were driven to the invention of runes as unique rule names when we
 ; added type-prescription lemmas.
 
+  (declare (xargs :guard
+                  (if (and (consp x)
+                           (consp (cdr x))
+                           (symbolp (cadr x)))
+                      (and (plist-worldp wrld)
+                           (alistp (getpropc (cadr x) 'runic-mapping-pairs nil
+                                             wrld)))
+                    t)))
   (cond ((and (consp x)
               (consp (cdr x))
               (symbolp (cadr x)))
@@ -251,6 +259,13 @@
 ; rune is not a rune in the given world, wrld.  Nil is treated as an enabled
 ; nume by enabled-runep but not by active-runep.
 
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (consp rune)
+                       (consp (cdr rune))
+                       (symbolp (base-symbol rune))
+                       (alistp (getpropc (base-symbol rune)
+                                         'runic-mapping-pairs nil wrld)))))
   (car
    (assoc-equal-cdr rune
                     (getpropc (base-symbol rune) 'runic-mapping-pairs nil
@@ -334,6 +349,7 @@
     (:t . :type-prescription)))
 
 (defun translate-abbrev-rune (x macro-aliases)
+  (declare (xargs :guard (alistp macro-aliases)))
   (let ((kwd (and (consp x)
                   (consp (cdr x))
                   (symbolp (cadr x))
@@ -12240,4 +12256,6 @@
 ; structure for testing fns that take an ens arg:
 
 (defun ens (state)
+  (declare (xargs :guard (and (state-p state)
+                              (f-boundp-global 'global-enabled-structure state))))
   (f-get-global 'global-enabled-structure state))

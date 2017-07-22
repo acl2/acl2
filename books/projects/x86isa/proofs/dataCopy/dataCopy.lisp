@@ -358,7 +358,9 @@
        (equal (xr :fault 0 x86) nil)
        ;; We are poised to run the copyData sub-routine.
        (equal (xr :rip 0 x86) addr)
-       (unsigned-byte-p 32 n)
+       ;; [Shilpi] This used to be (unsigned-byte-p 32 n), but I
+       ;; needed to make this change after fixing the NOP/XCHG bug.
+       (unsigned-byte-p 14 n) ;; 32?
        (equal (xr :rgf *rdx* x86) n)
        ;; All the stack addresses are canonical.
        (canonical-address-p (+ -8 (xr :rgf *rsp* x86)))
@@ -507,6 +509,16 @@
                 (prog-at addr *copyData* x86)))
   :rule-classes :forward-chaining)
 
+(local
+ (defthm rdx-logsquash-lemma
+   (implies (unsigned-byte-p 14 rdx)
+            (equal (logext 64 (bitops::logsquash 16 (ash rdx 2)))
+                   0))
+   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                     bitops::ihsext-inductions
+                                     unsigned-byte-p)
+                                    ())))))
+
 (defthm effects-copyData-pre
   (implies
    (preconditions n addr x86)
@@ -514,7 +526,7 @@
     (x86-run (pre-clk n) x86)
     (if (< 0 n)
         (XW
-         :RGF *RAX* (ASH (XR :RGF *RDX* X86) 2)
+         :RGF *RAX* (LOGHEAD 16 (ASH (XR :RGF *RDX* X86) 2))
          (XW
           :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
           (XW
@@ -598,6 +610,8 @@
                                     x86-operand-to-reg/mem
                                     wr64
                                     wr32
+                                    wr16
+                                    rr16
                                     rr32
                                     rr64
                                     rm32

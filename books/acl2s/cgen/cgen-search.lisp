@@ -169,6 +169,27 @@ Why is ACL2 not good at this?
   (b* ((fns (all-functions-lst terms)))
     (mv-sig-alist1 fns wrld)))
 
+(defloop var-var-eq-hyps (hyps)
+  (for ((h in hyps)) (append (and (equiv-hyp? h)
+                                  (list h)))))
+
+;let*/b* binding
+(defun update-var-var-binding (rep other B)
+  (if (endp B)
+      (acons other rep nil)
+    (cons (cons (caar B) (if (eq other (second (car B))) rep (second (car B))))
+          (update-var-var-binding rep other (cdr B)))))
+
+(defun var-var-cc (var-var-eq-hyps bindings hyps)
+  (declare (xargs :mode :program))
+  (if (endp var-var-eq-hyps)
+      (mv bindings hyps)
+    (b* (((list & x1 x2) (car var-var-eq-hyps))
+         ((mv x-rep x-other) (if (term-order x1 x2) (mv x1 x2) (mv x2 x1)))
+         (rest (acl2::subst-var-lst x-other x-rep (cdr var-var-eq-hyps))))
+      (var-var-cc rest
+                  (update-var-var-binding x-rep x-other bindings)
+                  (acl2::subst-var-lst x-other x-rep hyps)))))
 
 
 ;;; The Main counterexample/witness generation function           
@@ -232,13 +253,21 @@ Why is ACL2 not good at this?
        
 ; mv-sig-alist : for each mv fn in H,C, stores its output arity
        (mv-sig-alist (mv-sig-alist (cons C H) (w state)))
-       (vars (vars-in-dependency-order H C vl (w state))))
+
+       ;;take care of var-var equalities [2016-10-29 Sat]
+       (var-var-eq-hyps (var-var-eq-hyps H))
+       ((mv elim-bindings H) (var-var-cc var-var-eq-hyps '() H))
+       (- (cw? (consp elim-bindings)
+               "DEBUG/cgen-search : elim-bindings:~x0  H:~x1~%" elim-bindings H))
+
+       (vars (vars-in-dependency-order H C vl (w state)))
+       )
          
   
 ;   in
     (case (cget search-strategy)
       (:simple      (simple-search name 
-                                   H C vars '() '()
+                                   H C vars '() elim-bindings
                                    type-alist tau-interval-alist mv-sig-alist
                                    test-outcomes% gcs%
                                    vl cgen-state
@@ -249,7 +278,7 @@ Why is ACL2 not good at this?
       (:incremental (if (endp vars)
 ;bugfix 21 May '12 - if only zero var, delegate to simple search
                         (simple-search name
-                                       H C vars '() '()
+                                       H C vars '() elim-bindings
                                        type-alist tau-interval-alist mv-sig-alist
                                        test-outcomes% gcs%
                                        vl cgen-state
@@ -258,11 +287,11 @@ Why is ACL2 not good at this?
                       
                       (b* ((- (cw? (verbose-stats-flag vl) 
                                    "~%~%CEgen/Note: Starting incremental (dpll) search~%"))
-                           (x0 (select (cons (cgen-dumb-negate-lit C) H) (debug-flag vl)))
+                           (x0 (select (cons (cgen-dumb-negate-lit C) H) vl (w state)))
                            (- (assert$ (proper-symbolp x0) x0))
                            (a% (acl2::make a% ;initial snapshot
                                            :vars vars :hyps H :concl C 
-                                           :partial-A '() :elim-bindings '()
+                                           :partial-A '() :elim-bindings elim-bindings
                                            :type-alist type-alist
                                            :tau-interval-alist tau-interval-alist
                                            :inconsistent? nil :cs nil

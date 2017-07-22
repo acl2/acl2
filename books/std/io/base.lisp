@@ -207,10 +207,7 @@ explanation of why opening the file failed.</p>"
               channel
               type
               (mv-nth 1 (open-input-channel fname type state))))
-    :hints(("Goal" :in-theory (enable state-p1))))
-
-
-  )
+    :hints(("Goal" :in-theory (enable state-p1)))))
 
 
 ;; helper theorems for reading
@@ -790,7 +787,9 @@ created.</li>
     ;; This is needed for open-output-channel!.
     (equal (open-output-channel-p1 channel type (put-global key val state))
            (open-output-channel-p1 channel type state))
-    :hints(("Goal" :in-theory (enable open-output-channel-p1 put-global)))))
+    :hints(("Goal" :in-theory (enable open-output-channel-p1 put-global))))
+
+  )
 
 
 

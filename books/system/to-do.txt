@@ -1,0 +1,400 @@
+Here are a few potential ACL2 development tasks, separated by lines of
+"<><>".  To see the one-line summaries:
+
+grep '^{{.*}}[ ]*$' to-do.txt | sed 's/^{{//' | sed 's/}}[ ]*$//' > to-do-summary.txt
+
+**WARNINGS**:
+
+(1) This is for a small group of incipient ACL2 developers who have
+undergone suitable training (see
+http://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/).  We
+hope you will contribute!
+
+(2) Matt and J need to approve any changes that go into any part of
+the ACL2 system except for what is under books/.  So, you might want
+to ask them to commit to looking at your changes before you spend time
+working on them.
+
+(3) The descriptions below are probably OK but not necessarily
+polished.  Please discuss with your developer colleagues if you have
+questions.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Strengthen state-p so that channel info has file-clocks that don't exceed file-clock.}}
+
+[Note that duplicate-free open channel lists probably also needs to be
+considered, as per Keshav.  See his email below the IRC thread,
+below.]
+
+Note that some books would probably need work to recertify if the
+following is done.
+
+Note from Keshav: the book std/io/open-channels contains several
+examples of theorems which could be strengthened if this to-do list
+item were implemented.
+
+The predicate state-p is too weak for some purposes, because it
+doesn't capture the invariant that the file-clock field of the state
+is an upper bound for the file-clocks of the open channels (and
+probably also of the read-files, though I haven't quite thought that
+through).  If we strengthen it then presumably some proofs will need
+to be redone.  Any thoughts on this?
+
+<kini> mattjk`: Suppose I've come up with some invariant of the current ACL2
+       state. There's no way for me to prove this invariant and make use of
+       it, short of adding it to state-p1 in axioms.lisp, is there?  [08:01]
+<kini> the actual example I have in mind is (and (no-duplicatesp (nth 0
+       state)) (no-duplicatesp (nth 1 state)), which as far as I understand
+       should always hold  [08:02]
+<mattjk`> Could you just prove as a rewrite rule (implies (state-p state)
+	  <property>)?  [08:04]
+<mattjk`> Oh -- I guess you're saying that this isn't always true.
+<mattjk`> In that case, I guess you could define (my-state-p state) = (and
+	  (state-p state) <property>) and use that in your guards etc.  Any
+	  reason that wouldn't work?  [08:05]
+<kini> Hmm, I haven't tried that. But would it be possible to guard-verify
+       such a thing?  [08:07]
+<kini> I guess so, it would be self-contained...  [08:08]
+<kini> hmm, but then would I be able to call such a function from the ACL2
+       loop with the live state... guard-checking a guard on state seems like
+       it might be hard since state contains some "fictional" things, doesn't
+       it?  [08:09]
+<mattjk`> OK, I see the problem.  I'm thinking on it....  [08:10]
+<mattjk`> I think that the right solution might be to arrange that the
+	  property indeed follows from state-p.  It almost does now, I think,
+	  but we'd need the invariant that (file-clock state) is an upper
+	  bound for all n such that, in the case of open-input-channels,
+	  [exists file-name type . (list file-name typ n) is a key of
+	  (readable-files state).  I don't know how disruptive that might be
+	  to proving our way through axioms.lisp and to books that
+								        [08:15]
+<mattjk`> reason about state.
+<mattjk`> Could be a fun task for you after the developer's workshop?  [08:16]
+<kini> heheh, perhaps :)  [08:17]
+<kini> but I don't quite follow
+<kini> If we had the invariant you propose, how would that imply the one I
+       gave about no-duplicatesp?  [08:18]
+<kini> your invariant would be sufficient to prove that the built-in functions
+       that modify (open-input-channels state) and (open-output-channels
+       state) maintain my invariant, but not, I think, that arbitrary user
+       functions that return state maintain my invariant  [08:19]
+<kini> and such user functions could have been run at the ACL2 loop in the
+       past
+<mattjk`> First: I should have added that I came up with that by looking at
+	  function open-input-channel in ACL2 source file axioms.lisp.  I
+	  should also have added that a similar change would be needed for
+	  open-output-channel.  [08:20]
+<mattjk`> But maybe you already got that.  It seems to me that arbitrary user
+	  functions would preserve the enhanced state-p, because they have no
+	  way to mess directly with the file-clock.
+<mattjk`> Do you want to have a short Skype about this now?  [08:21]
+<kini> sorry, not at the moment -- I'm not at the office yet, which means my
+       internet connection is only good for stuff like text chat, haha
+<kini> perhaps later today if you have some time
+<kini> maybe I need to understand better the stobj story for state  [08:23]
+<mattjk`> Probably not today (things scheduled to keep me busy from 10:45
+	  central time onward, maybe earlier even; maybe tonight).
+<kini> OK.  Anyway there's no huge rush, it's just something that occurred to
+       me
+<kini> I don't need this invariant for anything at the moment
+<mattjk`> I'll probably get J's thoughts on this on Friday.
+<kini> I wrote some theorems about how open-input-channel-p1 of a channel is
+       preserved under various orthogonal I/O operations, and one of the
+       theorems was that if a channel is open and you close a different
+       channel, the first channel remains open  [08:26]
+<kini> so it occurred to me that it might be nice to have the sister theorem
+       as well, that if a channel is open and you close the same channel, the
+       channel then becomes closed
+<kini> but the checkpoint I got when trying to prove this was basically asking
+       me to prove that the list of input channels was no-duplicatesp
+<kini> Sure, sounds good -- thanks!  [08:27]
+ERC>
+
+.....
+
+[From Keshav via gmail, Sun, May 21, 2017 at 12:13 PM:]
+
+  I'm still not sure that your condition about the file clock will be a
+  sufficient strengthening of state-p1 to prove a theorem about a
+  channel becoming closed after you attempt to close it, because it
+  doesn't imply that there are no duplicates in the list of open
+  channels.
+
+  Your condition would allow me to prove that if there were currently no
+  duplicate open channels in the state and I tried to open a channel,
+  then there would continue to be no duplicates in the list of open
+  channels.  But it doesn't seem to be strong enough to allow me to say
+  that if (STATE-P STATE), then there are no duplicate open channels in
+  STATE.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Do a better job of going into the debugger in ACL2 based on SBCL (and maybe others).}}
+
+[This could be a bit tricky, but might be a good one for Lisp hackers.]
+
+Keshav Kini sent this example:
+
+(set-debugger-enable t)
+(untranslate '(3 . 4) nil nil)
+
+I was able to extract the following example, which can be run either
+in ACL2 or in pure SBCL, if directions are followed.  Both above and
+below, ACL2 doesn't do well -- lots of recursive entries, it seems,
+into the debugger.  But in pure SBCL things work nicely.  So probably
+our handling of raw Lisp errors in ACL2 doesn't work well for SBCL.
+Not sure about other Lisps (though I'm not aware of any problems with
+CCL).
+
+(value :q)
+(LP!) ; only in ACL2
+#+acl2-loop-only (program)
+(defun foo (x) (declare (optimize (safety 0))) (car x))
+#+acl2-loop-only (set-debugger-enable t)
+(foo 3)
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Fix summary to record :use of :guard-theorem and (probably) :termination-theorem.}}
+
+After giving this hint
+
+                    :use ((:guard-theorem verify-proof$-rec))
+
+then I got this in the summary:
+
+Hint-events: ((:USE VERIFY-PROOF$-REC))
+
+Maybe better would be:
+
+Hint-events: ((:USE (:GUARD-THEOREM VERIFY-PROOF$-REC)))
+
+Probably there is a similar issue for :termination-theorem.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Fix profile book for sbcl.}}
+
+This could be a good one for Lisp hackers.
+
+The following is on linux -- I should try it on a Mac.  Maybe SBCL has
+some thread-local settings that I could increase.
+
+The error shown below even happens when starting SBCL with:
+--dynamic-space-size 240000 --control-stack-size 640
+
+acl2s
+(include-book "centaur/memoize/old/profile" :dir :system)
+(profile-all) ; goes into ldb
+
+The error (using the large settings above, but the error is
+essentially the same either way):
+
+ACL2 !>(profile-all)
+
+ACL2 Observation in MEMOIZE-CALL-ARRAY-GROW:  Now reinitializing memoization
+structures.  This will erase saved values and statistics.
+Thread local storage exhausted.
+fatal error encountered in SBCL pid 14538(tid 0x7ffff7fd4740):
+%PRIMITIVE HALT called; the party is over.
+
+
+Welcome to LDB, a low-level debugger for the Lisp runtime environment.
+ldb>
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Improve redundancy for :stobjs state.}}
+
+The last is not redundant, but probably should be:
+
+(set-state-ok t)
+(defun foo (state) state)
+(defun foo (state) (declare (xargs :stobjs state)) state)
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Improve redundancy for verify-termination.}}
+
+[Warning: This one might be tricky.]
+
+Try the files below with:
+
+(certify-book "sub")
+(certify-book "foo")
+
+The include-book phase of the latter is an error, I think because the
+make-event expansion wasn't recorded in the first phase.  How should
+we deal with this?  Notice that if we replace the verify-termination with
+(defun foo (x) x), the problem goes away.  But adding layers of make-event,
+encapsulate, etc. didn't seem to help.
+
+ginger:~/temp% cat sub.lisp
+(in-package "ACL2")
+
+(defun foo (x)
+  (declare (xargs :mode :program))
+  x)
+
+(verify-termination foo)
+ginger:~/temp% cat foo.lisp
+(in-package "ACL2")
+
+(local (include-book "sub"))
+
+(defun foo (x)
+  (declare (xargs :mode :program))
+  x)
+
+(verify-termination foo)
+
+(defun bar (x)
+  (foo x))
+
+ginger:~/temp%
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Improve redundancy for :ruler-extenders.}}
+
+This isn't redundant when executed twice.
+
+(defun foo (y)
+  (declare (xargs :ruler-extenders :lambdas))
+  (let ((z (if (consp y) (foo (cdr y)) y)))
+    z))
+
+This is:
+
+(defun foo (y)
+  (declare (xargs :ruler-extenders (:lambdas mv-list return-last)))
+  (let ((z (if (consp y) (foo (cdr y)) y)))
+    z))
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Maybe support custom printing for table guard violations.}}
+
+I asked in an ACL2 seminar (12/4, I think), and nobody seemed to care
+about this.  But I'm still tempted to do it.  The following recently
+(11/2016) came up in a wish-list entry from Eric Smith:
+
+--------------------
+
+REQUESTOR: Eric
+BENEFIT: VERY LOW
+
+The error generated by this is a bit inscrutable:
+
+(add-invisible-fns binary-+ binary-*)
+
+I believe the problem is that binary-* is not unary?  Would it be easy
+to print a message saying that?
+
+[Matt] I've looked into this, and there isn't currently a mechanism
+for printing anything better unless we want to print something as a
+side effect (for example with cw or (er hard ..)), which is kind of
+gross.  I could probably implement something for table guards that is
+analogous to set-guard-msg for function guards.  Maybe it would take
+an hour or two, or even three (documentation can take time).  If you
+want me to do that let me know; otherwise you could move this to
+wish-list-later.txt.  Either way is fine with me.
+
+--------------------
+
+From notes 11/30/2012:
+
+[[First see if there are sufficiently many places in our own sources
+to make this solution worth it.  If so, then go for it but only if
+it's not too much trouble (it's not that important).  We could
+consider doing this for :guard, too.  I made the point though that at
+least for guards there is print-gv to help with debugging for function
+guard violations.
+
+Possible candidates:
+macro-aliases-table
+waterfall-parallelism-table
+trusted-clause-processor-table
+memoize-table
+return-last-table
+]]
+
+[Someone] got the arguments backwards on add-macro-alias.  I think it
+would be great to print a more useful error message in that case,
+suggesting maybe switching the arguments if there are a function and
+macro symbol each in the position expected for the other.  So I
+imagine implementing a :guard-msg keyword, as shown below (though this
+example is silly, since I've used the default message).
+
+  (table tests nil nil :guard term      ; print the indicated
+         :guard-msg                     ;   message if the table guard is false
+         (msg
+          "The TABLE :guard for ~x0 disallows the combination of key ~x1 and ~
+           value ~x2.  The :guard is ~x3.  See :DOC table."
+          name key val (untranslate term t world)))
+
+Unlike the :guard keyword, I don't see a problem with changing the
+:guard-msg later.
+
+  (table tests nil nil :guard term)
+  (table tests nil nil :guard-msg msg1)
+  (table tests nil nil :guard-msg msg2)
+
+Thoughts?
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Make file-write-date$, delete-file$, and file-length$ sensitive to the cbd.}}
+
+Note: More ambitious would be to have the cbd be the OS-specified
+directory, and idea Keshav Kini put forward for consideration.  That
+is likely to be much more difficult, and it would also increase the
+lisp-specific code in the system.  So I (Matt) am not in favor of that
+approach, though it's intriguing.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Extend defstub to support :guard.}}
+
+Below is the relevant email thread.
+
+Harsh Raju Chamarthi <harshrc@gmail.com>	Mon, Jun 26, 2017 at 1:44 PM
+To: acl2-help <acl2-help@utlists.utexas.edu>
+
+The documentation for defstub says we can use signatures
+signatures also have the following form:
+((hd *) => * :formals (x) :guard (consp x))
+
+But neither
+(defstub hd (*) => * :formals (x) :guard (consp x))
+nor
+(defstub (hd *) => * :formals (x) :guard (consp x))
+works.
+
+Because this does not work I have to use encapsulate directly, which
+is more wordy, but works fine. Am I missing some basic syntax with
+defstub?
+
+Matt Kaufmann <kaufmann@cs.utexas.edu>	Mon, Jun 26, 2017 at 2:04 PM
+To: Harsh Raju Chamarthi <harshrc@gmail.com>
+Cc: acl2-help@utlists.utexas.edu
+Hi, Harsh --
+
+I don't think you're missing anything.  Defstub is very limited; it
+doesn't support the use of :guard (or :formals), or anything actually
+beyond what's shown in :doc defstub.  Of course, this is legal
+
+  (defstub hd (*) => *)
+
+as is the old-style version:
+
+  (defstub hd (x) t)
+
+But you were right to use encapsulate if you want anything beyond
+that.
+
+-- Matt
+[Quoted text hidden]
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>

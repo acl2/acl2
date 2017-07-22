@@ -1999,14 +1999,14 @@
          x86))))
 
 
-    (#x90
-     "#x90:  (XCHG rAX/R8) or (NOP) or (PAUSE)"
-     (x86-nop start-rip temp-rip prefixes rex-byte opcode
-              modr/m sib x86))
+    ;; (#x90
+    ;;  "#x90:  (XCHG rAX/R8) or (NOP) or (PAUSE)"
+    ;;  (x86-nop start-rip temp-rip prefixes rex-byte opcode
+    ;;           modr/m sib x86))
 
 
-    ((#x91 #x92 #x93 #x94 #x95 #x96 #x97)
-     "#x91 -- #x97:  (XCHG .. ..)"
+    ((#x90 #x91 #x92 #x93 #x94 #x95 #x96 #x97)
+     "#x90 -- #x97:  (XCHG .. ..)"
      (x86-xchg start-rip temp-rip prefixes rex-byte opcode modr/m sib
                x86))
 

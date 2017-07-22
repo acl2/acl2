@@ -103,6 +103,9 @@
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 
+(include-book "centaur/glmc/glmc" :dir :system)
+(include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
+
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
 (include-book "centaur/satlink/benchmarks" :dir :system)
@@ -195,6 +198,7 @@
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/memoize-prover-fns" :dir :system)
 (include-book "tools/untranslate-for-exec" :dir :system)
+(include-book "tools/er-soft-logic" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
 
@@ -264,6 +268,8 @@
 (include-book "projects/doc" :dir :system)
 
 (include-book "kestrel/top" :dir :system)
+
+(include-book "centaur/ipasir/ipasir-tools" :dir :system)
 
 ;; [Jared] keep these near the end to avoid expensive type prescription rules,
 ;; especially related to consp-append.
@@ -489,6 +495,8 @@
   ()
 (defttag :save-rendered-event)
 
+(defconsts (& *tags-acl2-doc* state) (getenv$ "TAGS_ACL2_DOC" state))
+
 (xdoc::save-rendered-event
  (extend-pathname (cbd)
                   "../system/doc/rendered-doc-combined.lsp"
@@ -499,11 +507,25 @@
  :timep t
 
 ; The following assumes that the community books are in the books/ subdirectory
-; of the local ACL2 distribution.
+; of the local ACL2 distribution.  We use the same environment variable,
+; TAGS_ACL2_DOC, as is used in the ACL2 top-level GNUmakefile to determine
+; whether or not to build tags table TAGS-acl2-doc.  However, by default, here
+; want to build TAGS-acl2-doc.  So rather than checking that the environment
+; variable value is neither undefined (which it will be for most users) nor the
+; empty string, here we check against a special value, SKIP.  So for example,
+; the build server can set TAGS_ACL2_DOC to SKIP in order to avoid building
+; TAGS-acl2-doc, an operation that apparently (as of June 2017) can cause an
+; out-of-memory-error.
 
- :script-file (extend-pathname (cbd)
-                               "../../bin/make-tags-acl2-doc.sh"
-                               state) )
+; If we find that users complain about out-of-memory errors here, we could test
+; below against the empty string (or nil) instead, and users who want
+; TAGS-acl2-doc could explicitly set TAGS_ACL2_DOC if they want the tags table.
+
+ :script-file
+ (and (not (equal *tags-acl2-doc* "SKIP")) ; e.g., for build server
+      (extend-pathname (cbd)
+                       "../../bin/make-tags-acl2-doc.sh"
+                       state)) )
 ) ; end encapsulate
 
 (local

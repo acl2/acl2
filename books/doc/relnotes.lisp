@@ -51,7 +51,153 @@
 ;    considered a bug until we are very close to a release.
 
 ; Starting with Version 7.3, we no longer maintain release notes
-; note-x-x-books.  This could change if someone wants to volunteer.
+; note-x-x-books.  Instead, we hope that the ACL2 Community will track
+; changes to the books by maintaining note-x-x-books as they go.
+
+(defxdoc release-notes-books
+
+; This is a parent for the note-x-x-books topics, so they're all visible in one
+; place.
+
+  :parents (release-notes)
+  :short "Pointers to what has changed in the community books"
+  :long "<p>This section of the online @(see documentation) contains notes on
+            the changes in the community books between successive released
+            versions of ACL2.</p>
+
+         <p>Each topic @('note-x-y-books') is a note describing what in the
+            community books distributed with ACL2 version X.Y was new in
+            comparison to the community books distributed with the preceding
+            version of ACL2.</p>
+
+         <p>The current version of ACL2 is the value of the constant @('(@
+            acl2-version)').</p>")
+
+(defxdoc note-7-5-books
+
+; Note: To see all git log entries with a given author, for example Joe
+; Q. Bignerd, you can issue a command such as the following (use a substring of
+; the author name) and then look at the new file, tmp:
+
+;    git log -n 1000 --name-only --author='gnerd' > tmp
+
+; Shilpi Goel: As discussed in the ACL2 2017 Workshop, I am adding
+; this doc topic in the hopes that the members of the ACL2 community
+; will track changes to their books as they go by logging them here.
+; The idea is that the information in this topic can be somewhat more
+; high-level than is normally provided in commit messages.
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  <h4>Your Library Title</h4>
+;  <p>Details go here.</p>
+
+; I will change :doc note-7-5 in books/system/acl2-doc to point to
+; this topic, when (if?) this topic gets fleshed out (see :doc
+; note-7-2 for precedent).
+
+  :parents (note-7-5 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 7.5"
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 7.4 and 7.5.</p>
+
+ <p>See also @(see note-7-5) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+ <h4>Supporting materials for the 2017 ACL2 Workshop</h4>
+
+ <p>See the new directory, @('workshops/2017/') &mdash; specifically, its
+ @('README') file.</p>
+
+ <h4>SAT proof-checker for cube-and-conquer</h4>
+
+ <p>The new directory is @('projects/sat/lrat/cube/').  See file @('README') in
+ that directory.</p>
+
+ <h4>EDIF conversion</h4>
+
+ <p>See @('projects/async/tools/convert-edif.lisp') for tools to convert
+ between EDIF format and corresponding convenient s-expressions.</p>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h4>@(see std/io)</h4>
+
+ <p>The @(see std/io) library now contains lemmas to help users prove
+ that opened input and output channels remain open until closed, to
+ aid guard theorem proofs.  See @(see open-channel-lemmas).</p>
+
+ <h4>@(see kestrel-utilities)</h4>
+
+ <p>Improved an error message for @('verify-guards-program') (thanks to Eric
+ Smith for feedback); see
+ @('kestrel/utilities/verify-guards-program.lisp').</p>
+
+ <p>Added utilities @(tsee trans-eval-state) and @(tsee
+ trans-eval-error-triple), which provide convenient interfaces to the ACL2
+ evaluator, @(tsee trans-eval).</p>
+
+ <p>Improved the utility, @(tsee directed-untranslate), especially for handling
+ @(tsee let) and @(tsee mv-let) expressions (and @('lambda') expressions) and
+ towards ensuring executability of its results.</p>
+
+ <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
+ logic) mode code, returning a specified @(see error-triple).  The new utility
+ @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
+ property needed of the returned @(see error-triple) is that its error
+ component is not @('nil').</p>
+
+ <p>New utilities @(tsee manage-screen-output) and @(tsee
+ manage-screen-output!) are improved versions of @(tsee
+ control-screen-output) (which may eventually be removed).</p>
+
+ <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
+ fails, then to evaluate a second event.</p>
+
+ <h4>The apply books</h4>
+
+ <p>Updated books pertaining to @('apply$'); see @('projects/apply-model/') and
+ @('projects/apply/').</p>
+
+ <h4>SAT proof-checker</h4>
+
+ <p>Additions and improvements have been made to the SAT proof-checker
+ directories, under @('projects/sat/lrat/').  In particular, the proof was
+ completed for the incremental checker (subdirectory @('incremental/') with an
+ improved soundness theorem; a new directory was addded (@('cube/'), as
+ mentioned above); and renamed subdirectory @('main/') to @('sorted/').  The
+ key subdirectory is @('incremental/'); a new top-level book @('top.lisp')
+ includes the top-level book in that subdirectory.</p>
+
+ <h3>Licensing Changes</h3>
+
+ <h3>Build System Updates</h3>
+
+ <p>Improved books cleaning slightly, in @('books/GNUmakefile').</p>
+
+ <p>Also see @(see note-7-5), specifically the section on ``Changes at the
+ System Level''.</p>
+
+ <h3>Miscellaneous</h3>
+
+ <p>Added file @('system/to-do.txt') to list some potential developer
+ tasks.</p>
+
+ <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
+ Common Lisp), both from SVN and from GitHub.</p>
+
+ <p>The macro @(tsee defconsts) now provides a better error message when given
+ a symbol that does not have the syntax of a constant.</p>
+
+ ")
 
 (defxdoc note-7-2-books
 
@@ -143,7 +289,7 @@
 ;
 ;     > git log --since="May 5, 2015" --no-merges --stat filename
 ;
-  :parents (note-7-2)
+  :parents (note-7-2 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.2 (Jan 2016)"
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.1 and 7.2.</p>
@@ -821,7 +967,7 @@ of course there is more to do.</p>
 found in the change log.</p>")
 
 (defxdoc note-7-1-books
-  :parents (note-7-1)
+  :parents (note-7-1 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
 
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -1204,7 +1350,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-7-0-books
-  :parents (note-7-0)
+  :parents (note-7-0 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 7.0 (January
  2015)"
   :long "<p>The following is a brief summary of changes made to the @(see
@@ -1905,7 +2051,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-6-5-books
-  :parents (note-6-5)
+  :parents (note-6-5 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 6.5 (August
  2014)."
 
@@ -2646,7 +2792,7 @@ found in the change log.</p>")
 
 
 (defxdoc note-6-4-books
-  :parents (note-6-4)
+  :parents (note-6-4 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 6.4 (January,
  2013)."
 

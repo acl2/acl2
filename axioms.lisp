@@ -1006,11 +1006,11 @@
       `(fgetprop ,symb ,key ,default ,world-alist)
     `(sgetprop ,symb ,key ,default ,world-name ,world-alist)))
 
-(defmacro getpropc (symb key &optional default (wrld '(w state)))
+(defmacro getpropc (symb key &optional default (world-alist '(w state)))
 
 ; The "c" in "getpropc" suggests "current-acl2-world".
 
-  `(getprop ,symb ,key ,default 'current-acl2-world ,wrld))
+  `(getprop ,symb ,key ,default 'current-acl2-world ,world-alist))
 
 #-acl2-loop-only
 (progn
@@ -5976,7 +5976,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules hint-events warnings time steps value splitter-rules))
+  '(header form rules hint-events warnings time steps value splitter-rules
+
+; Errors are normally not part of the summary.  However, for encapsulate and
+; progn (and progn!), they are.
+
+           errors))
 
 (defmacro with-evisc-tuple (form &key ; from *evisc-tuple-sites*
                                  (term 'nil termp)
@@ -6219,12 +6224,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         nil
       (take (- lng n) lst))))
 
-#-acl2-loop-only
-(defmacro with-output (&rest args)
-  (car (last args)))
-
-#+acl2-loop-only
-(defmacro with-output (&rest args)
+(defmacro with-output! (&rest args)
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output
@@ -6233,6 +6233,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (illegal 'with-output
                      "Macroexpansion of ~q0 failed."
                      (list (cons #\0 (cons 'with-output args))))))))
+
+#-acl2-loop-only
+(defmacro with-output (&rest args)
+  (car (last args)))
+
+#+acl2-loop-only
+(defmacro with-output (&rest args)
+  `(with-output! ,@args))
 
 ; Mutual Recursion
 
@@ -21297,11 +21305,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro set-ruler-extenders (x)
-
-; It seems a bit sad to evaluate x twice, but that seems kind of unavoidable if
-; we are to use a table event to set the acl2-defaults-table, since WORLD is
-; not available for the expression of that event.
-
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (er-progn

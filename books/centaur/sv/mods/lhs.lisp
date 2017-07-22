@@ -34,8 +34,8 @@
 (include-book "../svex/4vmask")
 (include-book "../svex/vars")
 (include-book "../svex/rsh-concat")
+(include-book "../svex/nrev")
 (include-book "std/stobjs/1d-arr" :dir :system)
-(include-book "std/stobjs/clone" :dir :system)
 (include-book "std/alists/hons-remove-assoc" :dir :system) ;; bozo
 (include-book "defsort/defsort" :dir :system)
 (local (include-book "std/lists/sets" :dir :system))
@@ -2024,19 +2024,40 @@ bits of @('foo'):</p>
 
 
 
-
+(define netassigns->resolves-nrev ((x netassigns-p) (nrev))
+  :measure (len (netassigns-fix x))
+  (b* ((x (netassigns-fix x))
+       ((when (atom x)) (acl2::nrev-fix nrev))
+       ((cons name drivers) (car x))
+       (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers))))
+       (nrev (acl2::nrev-push (cons name value) nrev)))
+    (netassigns->resolves-nrev (cdr x) nrev)))
 
 
 (define netassigns->resolves ((x netassigns-p))
   :measure (len (netassigns-fix x))
   :returns (assigns svex-alist-p)
-  (b* ((x (netassigns-fix x))
-       ((when (atom x)) nil)
-       ((cons name drivers) (car x))
-       (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers)))))
-    (cons (cons name value)
-          (netassigns->resolves (cdr x))))
+  :verify-guards nil
+  (mbe :logic
+       (b* ((x (netassigns-fix x))
+            ((when (atom x)) nil)
+            ((cons name drivers) (car x))
+            (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers)))))
+         (cons (cons name value)
+               (netassigns->resolves (cdr x))))
+       :exec
+       (if (atom x)
+           nil
+         (acl2::with-local-nrev
+           (netassigns->resolves-nrev x acl2::nrev))))
   ///
+  (local (defthm netassigns->resolves-nrev-elim
+           (equal (netassigns->resolves-nrev x nrev)
+                  (append nrev (netassigns->resolves x)))
+           :hints(("Goal" :in-theory (enable netassigns->resolves-nrev)))))
+
+  (verify-guards netassigns->resolves)
+
   (local (defthm vars-of-drivestrength-insert
            (implies (and (not (member v (driverlist-vars x)))
                          (not (member v (svex-vars (driver->value elt)))))

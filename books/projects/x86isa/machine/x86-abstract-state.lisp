@@ -682,7 +682,7 @@
 
   :parents (x86-abstract-state)
 
-  :short "Definition of the correspondence predicate @('corr')"
+  :short "Creation of the abstract stobj @('x86')."
 
   (defun create-x86-abstract-stobj-exports-1 (x86-model-field)
     (let* ((name (car x86-model-field))

@@ -193,6 +193,7 @@
              (TI.enum-uniform    (cdr (assoc-eq :enum/acc al)))
              (TI.size            (cdr (assoc-eq :size al)))
              (TI.pred            (cdr (assoc-eq :predicate al)))
+             (TI.ndef (cdr (assoc-eq :normalized-def al)))
              ((unless (or (eq 't TI.size)
                          (posp TI.size)))
               (prog2$
@@ -209,11 +210,19 @@
 ; interesting numeric type, like 4divp, primep, arithmetic
 ; progression, etc. But you can use / constructor to define some
 ; interesting types, so I need to think about how to make this more general!! TODO
-             ((when (and (defdata::subtype-p TI.pred 'integerp wrld)
+             ((when (and (and (eq 'ACL2S::RANGE (car TI.ndef))
+                              (defdata::range-subtype-p
+                                range
+                                (defdata::get-tau-int (cadr TI.ndef) (third TI.ndef))))
+                         (defdata::subtype-p TI.pred 'integerp wrld)
                          (non-empty-non-universal-interval-p range)))
               (make-range-enum-info% 'acl2s::integer range (list entry)))
 
-             ((when (and (defdata::subtype-p TI.pred 'acl2-numberp wrld)
+             ((when (and (and (eq 'ACL2S::RANGE (car TI.ndef))
+                              (defdata::range-subtype-p
+                                range
+                                (defdata::get-tau-int (cadr TI.ndef) (third TI.ndef))))
+                         (defdata::subtype-p TI.pred 'acl2-numberp wrld)
                          (non-empty-non-universal-interval-p range)))
               (make-range-enum-info% type range (list entry))))
                                              
@@ -454,8 +463,9 @@ thought about how to implement it.
 ; defdata type, but only if the variables in the eq-constraint are
 ; already computed i.e already have an enumcall in the final answer
     (('cs% defdata-type & eq-constraint range 'defdata::empty-mem-constraint &)
-     (b* ((eq-vs (all-vars eq-constraint))
-          (remaining (set-difference-eq eq-vs bound-vars)))
+     (b* ((?eq-vs (all-vars eq-constraint))
+          (?remaining (set-difference-eq eq-vs bound-vars))
+          )
       (if remaining
           (b* ((enum-info% (get-enum-info% defdata-type range vl wrld)))
            (mv (access enum-info% size) (list (access enum-info% expr)
@@ -503,7 +513,8 @@ enumerator call expression")
      (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
                                  ;; add in reverse order
                                  (cons (cons x calls) ans.)))))
-    
+
+
 (defun displayed-range (interval)
   (b* ((lo (acl2::access acl2::tau-interval interval :lo))
        (hi (acl2::access acl2::tau-interval interval :hi))

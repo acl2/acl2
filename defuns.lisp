@@ -357,9 +357,9 @@
                                               (car t-machine)
                                               :call)))))
 
-; If argn is nil then it means there was no enough args to get the one at pos.
-; This can happen in a mutually recursive clique not all clique members have the
-; same arity.
+; If argn is nil then it means there were not enough args to get the one at
+; pos.  This can happen in a mutually recursive clique where not all clique
+; members have the same arity.
 
                 (and argn
                      (proper-dumb-occur-as-output var argn))))
@@ -7177,16 +7177,19 @@
 
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)
 
-; WARNING: Before relaxing the requirement implemented by this check, consider
-; the comment in oneify-cltl-code about invariant-risk that says: "... since
-; :logic mode definitions cannot contain calls of :program mode functions,
-; :ideal functions should lead only to calls of *1* :logic-mode functions until
-; reaching a guard-compliant call of a guard-verified function."
-
 ; Assume we are defining names in terms of terms (1:1 correspondence).  Assume
 ; also that the definitions are to be :logic.  Then we insist that every
 ; function used in terms be :logic.  Str is a string used in our error
 ; message and is either "guard", "split-types expression", or "body".
+
+; WARNING: This function guarantees that a call of a :logic mode function
+; cannot lead to a call of a :program mode function.  This guarantee justifies
+; the restriction, implemented in oneify-cltl-code, that only :program mode
+; functions lay down *1* code that is sensitive to invariant-risk.  It seems
+; conceivable that without the guarantee, a :logic mode function could lead to
+; a call of a :program mode function that violates stobj invariants or writes
+; past the end of an array.  So be careful when considering a relaxation of
+; this guarantee!
 
   (cond ((null names) (value nil))
         (t (let ((bad (collect-programs
@@ -7698,7 +7701,12 @@
                                     ctx wrld2
                                     state))
       (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
-                                                    ctx wrld2 state))
+                                                    ctx
+
+; Warning: If you move this binding of ruler-extenders-lst, then consider
+; whether the 'formals property is still set on the new functions in wrld2.
+
+                                                    wrld2 state))
       (rel (get-unambiguous-xargs-flg
             :WELL-FOUNDED-RELATION
             fives
@@ -8910,7 +8918,8 @@
               (chk-assumption-free-ttree (cdr pair) ctx state)
               (install-event-defuns names event-form def-lst0 symbol-class
                                     reclassifyingp non-executablep pair ctx wrld
-                                    state))))))))))))
+                                    state))))))))))
+        :event-type 'defun))
 
 (defun defun-fn (def state event-form #+:non-standard-analysis std-p)
 

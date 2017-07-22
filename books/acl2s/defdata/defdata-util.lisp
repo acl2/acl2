@@ -281,7 +281,17 @@
     ;guard verif fails since, we dont know if P2-neg-implicants is a alist.
     (rassoc-eq P1 P2-neg-pairs)))
 
+(verify-termination ACL2::UPPER-BOUND-<)
+(verify-termination ACL2::LOWER-BOUND->)
+(verify-termination ACL2::SQUEEZE-K)
+(set-verify-guards-eagerness 1)
+(verify-termination acl2::conjoin-intervals)
+(set-verify-guards-eagerness 2)
 
+(defun range-subtype-p (interval1 interval2)
+  (declare (xargs :verify-guards nil))
+  (equal (acl2::conjoin-intervals interval1 interval2)
+         interval1))
 
 (defun disjoint-p (P1 P2 wrld)
   "Is P1 x => (not (P2 x)) in tau-database?"
@@ -944,3 +954,18 @@
                  (snd (cdr conspair)))
             (list fst snd))
           (convert-conspairs-to-listpairs (cdr conspairs)))))
+
+;; 2nd copy, original in builtin-combinators.lisp
+(defun get-tau-int (domain rexp)
+  (declare (xargs :verify-guards t))
+  (let ((dom (if (eq domain 'acl2s::integer)
+                 'acl2::integerp
+               'acl2::rationalp)))
+  (case-match rexp
+    ((lo lo-rel-sym '_ hi-rel-sym hi)
+     (b* ((lo-rel (eq lo-rel-sym '<))
+          (hi-rel (eq hi-rel-sym '<))
+          (lo (and (rationalp lo) lo))
+          (hi (and (rationalp hi) hi)))
+       (acl2::make-tau-interval dom lo-rel lo hi-rel hi))))))
+

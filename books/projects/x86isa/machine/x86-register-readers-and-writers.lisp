@@ -113,7 +113,7 @@ will read the contents of the GPRs as natural numbers. Remember that
 </tt>
 
 <p><tt>\(rr64 0 x86\)</tt> returns @('18446744073709551615') and
-<tt>(rgfi 0 x86)</tt> returns @('0').  Note that
+<tt>(rgfi 0 x86)</tt> returns @('-1').  Note that
 @('18446744073709551615') is a bignum in CCL. This is precisely the
 reason why we declared registers as @('i64p') instead of @('n64p');
 @('-1') would be stored as a bignum if the registers were

@@ -8712,7 +8712,8 @@
 ; initialization.
 
                                          wrld3a
-                                         state))))))))))))))))))
+                                         state)))))))))))))))
+     :event-type 'encapsulate)))
 
 (defun progn-fn1 (ev-lst progn!p bindings state)
 
@@ -8764,17 +8765,11 @@
                (er soft ctx
                    "PROGN may only be used on legal event forms (see :DOC ~
                     embedded-event-form).  Consider using ER-PROGN instead."))
-              (erp (er soft ctx
-                       "~x0 failed!~@1"
-                       (if progn!p 'progn! 'progn)
-                       (if (and progn!p
-                                (consp erp))
-                           (msg "  Note that the ~n0 form evaluated to a ~
-                                 multiple value (mv erp ...) with non-nil ~
-                                 erp, ~x1; see :DOC progn!."
-                                (list (1+ val))
-                                (car erp))
-                         "")))
+              (erp
+
+; The component events are responsible for reporting errors.
+
+               (silent-error state))
               (t (pprogn (f-put-global 'last-make-event-expansion
                                        (and expansion-alist
                                             (cons (if progn!p 'progn! 'progn)
@@ -8801,7 +8796,8 @@
 ; raw-mode -- so the point here isn't to make raw-mode sound.  But this nulling
 ; out in raw-mode should prevent most bad-lisp-objectp surprises from progn!.
 
-                                     val)))))))))))
+                                     val))))))))
+     :event-type 'progn)))
 
 (defun progn-fn (ev-lst state)
   (progn-fn1 ev-lst nil nil state))
@@ -10561,25 +10557,25 @@
                                               actual-entry
                                               state)
               (mv (cons
-                   (msg "-- its certificate requires the book \"~s0\" with ~
-                         certificate annotations~|  ~x1~|and book hash ~x2, ~
-                         but we have included ~@3~@4"
-                        full-book-name
-                        (car reqd-entry)  ;;; cert-annotations
-                        (cdr reqd-entry)  ;;; book-hash
-                        (cond
-                         ((null (cdr actual-entry))
-                          (msg "an uncertified version of ~x0 with ~
-                                certificate annotations~|  ~x1,"
+                   (cond
+                    ((null (cdr actual-entry))
+                     (msg "-- its certificate requires the uncertified book ~
+                           ~x0~@1"
+                          full-book-name
+                          phrase))
+                    (t
+                     (msg "-- its certificate requires the book \"~s0\" with ~
+                           certificate annotations~|  ~x1~|and book hash ~x2, ~
+                           but we have included ~@3~@4"
+                          full-book-name
+                          (car reqd-entry) ;;; cert-annotations
+                          (cdr reqd-entry) ;;; book-hash
+                          (msg "a version of ~x0 with certificate ~
+                                  annotations~|  ~x1~|and book-hash ~x2,"
                                familiar-name
                                (car actual-entry) ; cert-annotations
-                               ))
-                         (t (msg "a version of ~x0 with certificate ~
-                                  annotations~|  ~x1~|and book-hash ~x2,"
-                                 familiar-name
-                                 (car actual-entry) ; cert-annotations
-                                 (cdr actual-entry))))
-                        phrase)
+                               (cdr actual-entry))
+                          phrase)))
                    msgs)
                   state)))))))))
 
@@ -10596,7 +10592,7 @@
     (tilde-*-book-hash-phrase1 reqd-alist
                                actual-alist
                                state)
-    (mv (list "" "~%~@*" "~%~@*;~|" "~%~@*;~|"
+    (mv (list "~|" "~|~@*" "~|~@*;~|" "~|~@*;~|"
               phrase1)
         state)))
 
@@ -13556,8 +13552,8 @@
                                       state)
                                      (include-book-er1
                                       full-book-name nil
-                                      (cons "After including the book ~
-                                             ~x0:~|~*3."
+                                      (cons "After processing the events in ~
+                                             the book ~x0:~*3."
                                             (list (cons #\3 msgs)))
                                       warning-summary ctx state))))))
                               (t (value certified-p)))))
@@ -28153,7 +28149,44 @@
 
 (defmacro defun-inline (name formals &rest lst)
 
-; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline Search for
+; Here is an explanation for why we insist on specific suffices for inlined and
+; notinlined functions, following up on remark (2) in :doc defun-inline.
+
+; We insist on a specific suffix for inlined functions, *inline-suffix*,
+; because Common Lisp provides no way to undo (declaim (inline foo)).  To see
+; why such undoing is relevant, suppose that (defun-inline foo (x) ...) simply
+; expanded to:
+
+;   (progn (declaim (inline foo))
+;          (defun foo ...))
+
+; Now consider this example:
+
+;   (encapsulate
+;     ()
+;     (local (defun-inline foo (x) x))
+;     ...)
+;
+;   (defun foo (x) (cons x x))
+
+; When that encapsulate runs, the form (declaim (inline foo)) would be
+; generated.  Since there is no way to undo that declaim before starting the
+; second pass of the encapsulate, the global (final) definition of foo would
+; also be an inline definition, perhaps contrary to intent.  A similar problem
+; occurs if (defun-inline foo ...) is in a locally included book.
+
+; (One might ask: why not undo the (declaim (inline foo)) with (declaim
+; (notinline foo))?  That also seems unacceptable, because perhaps it would be
+; advantageous for the Lisp compiler to inline some definitions of foo and not
+; others.  We would really like something like (declaim
+; (back-to-no-claims-about-inline foo)), but that's not available.)
+
+; By insisting on a syntactic naming convention for inlined functions --
+; namely, their names end in *inline-suffix* (i.e., in "$INLINE") -- we
+; avoid this undoing problem.  That is: we don't mind that we can't undo
+; the declaim, because every function of that name will be inlined.
+
+; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline: Search for
 ; ";;; Declaim forms:" in write-expansion-file, and notice the printing just
 ; below it of a readtime conditional for the host Lisp, so that declaim forms
 ; are restricted to that Lisp.  This mechanism was probably put into place so
@@ -28703,6 +28736,8 @@
                     But the shape of ~x0 is ~x1."
                    form
                    (prettyify-stobjs-out stobjs-out)))
+              ((eq on-behalf-of :quiet!)
+               (silent-error state))
               ((stringp (car vals))
                (er soft ctx
                    (car vals)))
@@ -28711,13 +28746,16 @@
                    "~@0"
                    (car vals)))
               ((car vals)
-               (er soft ctx
-                   "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
-                   (cond (on-behalf-of
-                          (msg "on behalf of~|  ~y0~|"
-                               on-behalf-of))
-                         (t ""))
-                   form))
+               (cond
+                ((eq on-behalf-of :quiet)
+                 (silent-error state))
+                (t (er soft ctx
+                       "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
+                       (cond (on-behalf-of
+                              (msg "on behalf of~|  ~y0~|"
+                                   on-behalf-of))
+                             (t ""))
+                       form))))
               (t (pprogn
                   (set-w! original-wrld state)
                   (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))
@@ -28730,11 +28768,14 @@
     (let ((depth (f-get-global 'make-event-debug-depth state)))
       (pprogn (fms "~x0> Expanding for MAKE-EVENT~@1~|  ~y2~|"
                    (list (cons #\0 depth)
-                         (cons #\1 (if on-behalf-of
-                                       (msg " on behalf of~|  ~Y01:"
-                                            on-behalf-of
-                                            (term-evisc-tuple nil state))
-                                     ":"))
+                         (cons #\1
+                               (if (and on-behalf-of
+                                        (not (member-eq on-behalf-of
+                                                        '(:quiet :quiet!))))
+                                   (msg " on behalf of~|  ~Y01:"
+                                        on-behalf-of
+                                        (term-evisc-tuple nil state))
+                                 ":"))
                          (cons #\2 form))
                    (proofs-co state) state nil)
               (value depth))))))
@@ -28812,10 +28853,13 @@
                                  (cadr raw-result))))))))))
 
 (defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
-                                         check-expansion wrld ctx state)
+                                         check-expansion on-behalf-of wrld ctx
+                                         state)
   (cond ((atom expansion-lst)
-         (er soft ctx
-             "Evaluation failed for all expansions."))
+         (cond ((member-eq on-behalf-of '(:quiet :quiet!))
+                (silent-error state))
+               (t (er soft ctx
+                      "Evaluation failed for all expansions."))))
         (t (pprogn
             (cond
              ((f-get-global 'make-event-debug state)
@@ -28833,11 +28877,12 @@
                              wrld ctx state)
              (cond (erp (make-event-fn2-lst (cdr expansion-lst)
                                             whole-form in-encapsulatep
-                                            check-expansion wrld ctx state))
+                                            check-expansion on-behalf-of
+                                            wrld ctx state))
                    (t (value val))))))))
 
 (defun make-event-fn1 (expansion0 whole-form in-encapsulatep check-expansion
-                                  wrld ctx state)
+                                  on-behalf-of wrld ctx state)
   (cond ((and (consp expansion0)
               (eq (car expansion0) :OR))
 
@@ -28852,7 +28897,7 @@
           ((cert-data nil))
           (make-event-fn2-lst (cdr expansion0)
                               whole-form in-encapsulatep check-expansion
-                              wrld ctx state)))
+                              on-behalf-of wrld ctx state)))
         (t (make-event-fn2 expansion0
                            whole-form in-encapsulatep check-expansion
                            wrld ctx state))))
@@ -29037,7 +29082,7 @@
                  (make-event-fn1
                   expansion0 whole-form
                   (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
-                  check-expansion wrld0 ctx state)))
+                  check-expansion on-behalf-of wrld0 ctx state)))
              (let* ((expansion1 (car expansion1/stobjs-out/result))
                     (stobjs-out (cadr expansion1/stobjs-out/result))
                     (result (cddr expansion1/stobjs-out/result))
@@ -29191,7 +29236,8 @@
 
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
-                             (value result))))))))))))))))))
+                             (value result)))))))))))))))
+     :event-type 'make-event)))
 
 (defun get-check-invariant-risk (state)
   (let ((pair (assoc-eq :check-invariant-risk

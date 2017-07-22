@@ -9,16 +9,6 @@
 
 (in-package "ACL2")
 
-#+(and ccl (not mswindows))
-(let ((ccl-dir (ccl::getenv "CCL_DEFAULT_DIRECTORY"))
-      (*readtable* *host-readtable*))
-  (assert ccl-dir)
-  (let ((prof-dir (concatenate 'string
-                               ccl-dir
-                               "/contrib/huebner/advice-profiler/")))
-    (load (concatenate 'string prof-dir "package.lisp"))
-    (load (concatenate 'string prof-dir "profiler.lisp"))))
-
 ; May be needed with Linux (gb suggestion):
 #+(and ccl (not mswindows))
 (ignore-errors (profiler::open-shared-library "librt.so"))

@@ -35,8 +35,7 @@ date created: [2016-03-22 Tue]
   (b* ((verbosep (let ((lst (member :verbose keys)))
                    (and lst (cadr lst))))
        (keys (defdata::remove-keywords-from-args '(:verbose) keys)))
-
-    `(with-output
+    `(with-output 
       ,@(and (not verbosep) '(:off :all :on error)) :stack :push
       (make-event
        (cgen-rule-events ',name ',keys ',verbosep (w state) state)))))
@@ -74,7 +73,7 @@ date created: [2016-03-22 Tue]
     (if (<= arity 1)
         (list mv-exp)
       (b* ((possible-list-exp (acl2::untranslate mv-exp nil wrld))
-           ;;hack -- because mv gets expanded to a list
+           ;;hack -- because mv gets expanded to a list 
            ((when (and (consp possible-list-exp) (eq (car possible-list-exp) 'LIST)))
             (cdr possible-list-exp)))
         (destruct-mv1 arity mv-exp arity '())))))
@@ -143,9 +142,9 @@ date created: [2016-03-22 Tue]
 (cgen-rule rule-name
   :hyp hyp-term(In \cup Out)
   :rule (mv-let Out fixer-term(In)  ;mv-let binding
-                constraint-term(Vars))
+                constraint-term(Vars)) 
   :rule-classes :fixer)
-OR
+OR 
 (cgen-rule rule-name
   :hyp hyp-term(In \cup Out)
   :rule (let ((Y fixer-term(In)))  ;let binding Out={Y}
@@ -192,7 +191,6 @@ Invariants:
                             (cons :Out Out)
                             (cons :fixer-vars (union-eq In Out))
                             (cons :fixer-term fixer-term)
-
                             (cons :constraint-vars Vars)
                             (cons :constraint-term constraint-term)
                             (cons :fixer-let-binding fixer-binding)))
@@ -313,9 +311,6 @@ Invariants:
              (list :let Out fixer-exps constraint1 constraint)))
           (t (er hard? ctx "~| ~x0 is not a preservation rule.~%" rule)))))
 
-
-
-
 (defun assoc-equal-lst (keys alist)
   "give back the subset of the alist that correspond to these keys. the order
 of the entries is same as of the alist"
@@ -334,7 +329,6 @@ of the entries is same as of the alist"
        ((unless (equal c1 constraint))
         (er soft ctx "~| ~x0 should be same as ~x1 in a preservation rule.~%"
             c1 constraint))
-
        ((unless (and (defdata::proper-symbol-listp Out)
                      (> (len Out) 0)))
         (er soft ctx "~| ~x0 is not a non-empty list of variable names.~%" Out))
@@ -349,7 +343,6 @@ of the entries is same as of the alist"
                                     (destruct-mv (car fixer-terms) (len Out) wrld)
                                   fixer-terms))
        (fixer-binding (acl2::listlis Out mv-expanded-fixer-terms))
-
        (Vars (reverse (acl2::all-vars constraint-term)))
        ((unless (and (intersectp-equal Out Vars)))
         (er soft ctx "~| Invariant does not hold: ~x1 should have a common member with ~x0~%" Vars  Out))
@@ -397,7 +390,6 @@ of the entries is same as of the alist"
                    table-ev))))
 
 
-
 (defun make-cgen-rule-events (rule rule-class kwd-alist
                                    override-checkp verbosep ctx wrld state)
   (cond ((eq rule-class :fixer)
@@ -407,7 +399,6 @@ of the entries is same as of the alist"
          (make-cgen-rule-events/preservation rule kwd-alist
                                              override-checkp verbosep ctx wrld state))
         (t (er soft ctx "~| Unindentified rule-class: ~x0~%" rule-class))))
-
 
 (defun cgen-rule-events (name keys verbosep wrld state)
   (declare (xargs :mode :program))
@@ -435,7 +426,6 @@ of the entries is same as of the alist"
        (rule-class (defdata::get1 :rule-classes kwd-alist))
        ((unless (member-eq rule-class *cgen-rule-classes*))
         (er soft ctx "~| rule-class ~x0 should be one of ~x1~%" rule-class *cgen-rule-classes*))
-
        ((er events) (make-cgen-rule-events rule
                                       rule-class
                                       (list (cons :meta-precondition pre)

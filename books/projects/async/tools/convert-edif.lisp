@@ -1,3 +1,10 @@
+; Copyright (C) 2017, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; Thanks to Warren Hunt for requesting these utilities.  See Lisp comments
+; below for documentation.
+
 (in-package "ACL2")
 
 (defun convert-edif (in-file out-file state)

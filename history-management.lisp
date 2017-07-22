@@ -1151,6 +1151,10 @@
 ; string name introduced by an event, or the keyword :here meaning the
 ; most recent event.
 
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (known-package-alistp (global-val 'known-package-alist
+                                                         wrld)))))
   (cond ((symbolp name)
          (cond ((eq name :here) (not (null wrld)))
                (t (getpropc name 'absolute-event-number nil wrld))))
@@ -2473,23 +2477,47 @@
            (stringp (car arg))
            (character-alistp (cdr arg)))))
 
-(defun print-failure (erp ctx state)
-  (pprogn (print-gag-state state)
-          #+acl2-par
-          (print-acl2p-checkpoints state)
-          (io? error nil state
-               (ctx erp)
-               (let ((channel (proofs-co state)))
-                 (pprogn
-                  (newline channel state)
-                  (error-fms-channel nil ctx "~@0See :DOC failure."
-                                     (list (cons #\0
-                                                 (if (tilde-@p erp)
-                                                     erp
-                                                   "")))
-                                     channel state)
-                  (newline channel state)
-                  (fms *proof-failure-string* nil channel state nil))))))
+(defun print-failure1 (erp ctx state)
+  (let ((channel (proofs-co state)))
+    (pprogn
+     (newline channel state)
+     (error-fms-channel nil ctx "~@0See :DOC failure."
+                        (list (cons #\0
+                                    (if (tilde-@p erp)
+                                        erp
+                                      "")))
+                        channel state)
+     (newline channel state)
+     (io? summary nil state (channel)
+          (fms *proof-failure-string* nil channel state nil)))))
+
+(defun print-failure (erp event-type ctx state)
+  (pprogn
+   (io? summary nil state nil
+        (print-gag-state state))
+   #+acl2-par
+   (print-acl2p-checkpoints state)
+   (cond ((not (member-eq event-type
+
+; For events whose failure already produces a message of type error, we
+; consider further failure messages to be of type summary.  That way we see the
+; true source of errors when output is inhibited to show only errors.  Compound
+; events are in this category.  Defthm is not, since when a proof fails no
+; output of type error is typically generated, and thus the only error
+; generated for defthm is typically the failure message from print-failure1.
+; Defun is however in thie category, since proof failures result in error
+; messages about guard proof failure or termination proof failure.
+
+                          '(encapsulate progn make-event defun)))
+          (cond
+           ((output-ignored-p 'error state)
+            (io? summary nil state (erp ctx)
+                 (print-failure1 erp ctx state)))
+           (t (print-failure1 erp ctx state))))
+         ((member-eq 'errors (f-get-global 'inhibited-summary-types state))
+          state)
+         (t (io? summary nil state (erp ctx)
+                 (print-failure1 erp ctx state))))))
 
 (defstub initialize-event-user (ctx qbody state) state)
 
@@ -2732,7 +2760,7 @@
 
      (f-put-global 'accumulated-ttree nil state))))
 
-(defun print-summary (erp noop-flg ctx state)
+(defun print-summary (erp noop-flg event-type ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
 ; the timers.  Time accumulated before entry to this function is charged to
@@ -2775,13 +2803,13 @@
                            state))
                 (filename (concatenate 'string bookname ".lisp")))
            (with-open-file
-            (str filename
-                 :direction :output
-                 :if-exists :rename-and-delete)
-            (format str
-                    "~s~%"
-                    (cons filename
-                          (merge-sort-cdr-> *rewrite-depth-alist*)))))
+             (str filename
+                  :direction :output
+                  :if-exists :rename-and-delete)
+             (format str
+                     "~s~%"
+                     (cons filename
+                           (merge-sort-cdr-> *rewrite-depth-alist*)))))
          (setq *rewrite-depth-alist* nil)))
 
   #-acl2-loop-only (dmr-flush)
@@ -2823,9 +2851,9 @@
                (pop-timer 'proof-tree-time t state)
                (pop-timer 'other-time t state)
                (mv-let (warnings state)
-                       (pop-warning-frame nil state)
-                       (declare (ignore warnings))
-                       state)))
+                 (pop-warning-frame nil state)
+                 (declare (ignore warnings))
+                 state)))
       (t
 
 ; Even if this case were only taken when 'summary is inhibited, we would still
@@ -2857,13 +2885,13 @@
                         state)
                        (t
                         (mv-let
-                         (col state)
-                         (fmt1 "Form:  " nil 0 channel state nil)
-                         (mv-let
                           (col state)
-                          (fmt-ctx ctx col channel state)
-                          (declare (ignore col))
-                          (newline channel state)))))))
+                          (fmt1 "Form:  " nil 0 channel state nil)
+                          (mv-let
+                            (col state)
+                            (fmt-ctx ctx col channel state)
+                            (declare (ignore col))
+                            (newline channel state)))))))
           (print-rules-and-hint-events-summary
            (f-get-global 'accumulated-ttree state)
            state)
@@ -2871,24 +2899,23 @@
           (print-time-summary state)
           (print-steps-summary steps state)
           (progn$
-          (and
-            (not output-ignored-p)
+           (and (not output-ignored-p)
 
 ; If the time-tracker call below is changed, update :doc time-tracker
 ; accordingly.
 
-            (time-tracker
-             :tau :print?
-             :min-time 1
-             :msg
-             (concatenate
-              'string
-              "For the proof above, the total "
-              (if (f-get-global 'get-internal-time-as-realtime
-                                state)
-                  "realtime"
-                "runtime")
-              " spent in the tau system was ~st seconds.  See :DOC ~
+                (time-tracker
+                 :tau :print?
+                 :min-time 1
+                 :msg
+                 (concatenate
+                  'string
+                  "For the proof above, the total "
+                  (if (f-get-global 'get-internal-time-as-realtime
+                                    state)
+                      "realtime"
+                    "runtime")
+                  " spent in the tau system was ~st seconds.  See :DOC ~
                     time-tracker-tau.~|~%")))
 
 ; At one time we put (time-tracker :tau :end) here.  But in community book
@@ -2899,32 +2926,24 @@
 ; in case the proof was aborted without printing this part of the summary.
 
            state)
-          (cond
-           (output-ignored-p
-            (cond (erp (mv-let (erp val state)
-                               (er soft ctx "See :DOC failure.")
-                               (declare (ignore erp val))
-                               state))
-                  (t state)))
-           (t
-            (pprogn
-             (cond (erp
-                    (pprogn
-                     (print-failure erp ctx state)
-                     (cond
-                      ((f-get-global 'proof-tree state)
-                       (io? proof-tree nil state
-                            (ctx)
-                            (pprogn (f-put-global 'proof-tree-ctx
-                                                  (cons :failed ctx)
-                                                  state)
-                                    (print-proof-tree state))))
-                      (t state))))
-                   (t (pprogn
-                       #+acl2-par
-                       (erase-acl2p-checkpoints-for-summary state)
-                       state)))
-             (f-put-global 'proof-tree nil state)))))))))))
+          (pprogn
+           (cond (erp
+                  (pprogn
+                   (print-failure erp event-type ctx state)
+                   (cond
+                    ((f-get-global 'proof-tree state)
+                     (io? proof-tree nil state
+                          (ctx)
+                          (pprogn (f-put-global 'proof-tree-ctx
+                                                (cons :failed ctx)
+                                                state)
+                                  (print-proof-tree state))))
+                    (t state))))
+                 (t (pprogn
+                     #+acl2-par
+                     (erase-acl2p-checkpoints-for-summary state)
+                     state)))
+           (f-put-global 'proof-tree nil state)))))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
@@ -4089,7 +4108,7 @@
                                        form))
                               (t (value val)))))))))
 
-(defmacro with-ctx-summarized (ctx body)
+(defmacro with-ctx-summarized (ctx body &key event-type)
 
 ; A typical use of this macro by an event creating function is:
 
@@ -4140,6 +4159,7 @@
                        (pprogn
                         (print-summary erp
                                        (equal saved-wrld (w state))
+                                       ,event-type
                                        ctx state)
                         (er-progn
                          (xtrans-eval-state-fn-attachment
@@ -6326,9 +6346,14 @@
 
 (defmacro pe! (logical-name)
   `(with-output :off (summary event)
-     (make-event (er-progn (table pe-table nil nil :clear)
-                           (pe ,logical-name)
-                           (value '(value-triple :invisible))))))
+     (make-event (er-progn
+                  (let ((logical-name ,logical-name))
+                    (cond
+                     ((eq logical-name :here)
+                      (pe :here))
+                     (t (er-progn (table pe-table nil nil :clear)
+                                  (pe ,logical-name)))))
+                  (value '(value-triple :invisible))))))
 
 (defmacro gthm (fn &optional (simp-p 't) guard-debug)
   `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)

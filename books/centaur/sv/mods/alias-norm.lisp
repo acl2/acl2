@@ -1123,20 +1123,48 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
 
   (memoize 'svex-subst-from-svexarr :condition-fn 'svex-subst-from-svexarr-memo-ok$inline))
 
-(define assigns-subst ((x assigns-p) aliases svexarr)
+(define assigns-subst-nrev ((x assigns-p) aliases svexarr nrev)
   :guard (and (svarlist-boundedp (assigns-vars x) (aliass-length aliases))
               (svarlist-boundedp (assigns-vars x) (svexs-length svexarr)))
   :guard-hints (("goal" :expand ((assigns-vars x))))
-  :returns (xx assigns-p)
   :measure (len (assigns-fix x))
   (b* ((x (assigns-fix x))
-       ((when (atom x)) nil)
+       ((when (atom x)) (acl2::nrev-fix nrev))
        ((cons lhs (driver rhs)) (car x))
        (lhs (lhs-alias-norm lhs aliases))
-       (val (svex-subst-from-svexarr rhs.value svexarr)))
-    (cons (cons lhs (change-driver rhs :value val))
-          (assigns-subst (cdr x) aliases svexarr)))
+       (val (svex-subst-from-svexarr rhs.value svexarr))
+       (nrev (acl2::nrev-push (cons lhs (change-driver rhs :value val)) nrev)))
+    (assigns-subst-nrev (cdr x) aliases svexarr nrev)))
+
+(define assigns-subst ((x assigns-p) aliases svexarr)
+  :guard (and (svarlist-boundedp (assigns-vars x) (aliass-length aliases))
+              (svarlist-boundedp (assigns-vars x) (svexs-length svexarr)))
+  :returns (xx assigns-p)
+  :measure (len (assigns-fix x))
+  :verify-guards nil
+  (mbe :logic (b* ((x (assigns-fix x))
+                   ((when (atom x)) nil)
+                   ((cons lhs (driver rhs)) (car x))
+                   (lhs (lhs-alias-norm lhs aliases))
+                   (val (svex-subst-from-svexarr rhs.value svexarr)))
+                (cons (cons lhs (change-driver rhs :value val))
+                      (assigns-subst (cdr x) aliases svexarr)))
+       :exec (if (atom x)
+                 nil
+               (with-local-stobj nrev
+                 (mv-let (ans nrev)
+                   (b* ((nrev (assigns-subst-nrev x aliases svexarr nrev))
+                        ((mv ans nrev) (acl2::nrev-finish nrev)))
+                     (mv ans nrev))
+                   ans))))
   ///
+  (local (defthm assigns-subst-nrev-elim
+           (equal (assigns-subst-nrev x aliases svexarr nrev)
+                  (append nrev (assigns-subst x aliases svexarr)))
+           :hints(("Goal" :in-theory (enable assigns-subst-nrev acl2::rcons)))))
+
+  (verify-guards assigns-subst :hints (("goal" :expand ((assigns-vars x)))))
+
   (deffixequiv assigns-subst)
 
   (defthm svarlist-addr-p-of-assigns-subst

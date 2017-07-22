@@ -263,7 +263,9 @@ ACL2_DEPS := $(sources) $(sources_extra)
 all: large
 
 ifneq ($(TAGS_ACL2_DOC),)
+ifneq ($(TAGS_ACL2_DOC),SKIP)
 all: TAGS-acl2-doc
+endif
 endif
 
 # Build tags table for acl2-doc, with ACL2 topics first.

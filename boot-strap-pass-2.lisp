@@ -1393,13 +1393,14 @@
 ; For example, cdr of the entry for "system/top" is produced by evaluating:
 ; (include-book "system/top" :dir :system).
 ; The indicated books need to be certified using an ACL2 executable that was
-; built with feature :acl2-devel set, but this should take only a couple of
-; minutes or so.  It assumes that the only alist entry below is for
-; "system/top" and that ACL2 is your ACL2 sources directory.  Note: Replace
-; "saved_acl2d" as necessary, e.g., "ccl-saved_acl2d".
+; built with feature :acl2-devel set (typically with "make ACL2_DEVEL=t"), but
+; this should take only a couple of minutes or so.  It assumes that the only
+; alist entry below is for "system/top" and that ACL2 is your ACL2 sources
+; directory.  Note: Replace "saved_acl2d" as necessary, e.g.,
+; "ccl-saved_acl2d".
 
 ; cd ACL2
-; make clean-books ACL2=`pwd`/saved_acl2d
+; make clean-books
 ; cd books
 ; (time nice ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert)
 ; cd ACL2
@@ -1410,6 +1411,7 @@
 
   '(("system/top"
      (>=-LEN ACL2-COUNT X)
+     (ABBREV-EVISC-TUPLE)
      (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
      (ALL->=-LEN ACL2-COUNT LST)
      (ALL-FFN-SYMBS ACL2-COUNT TERM)
@@ -1418,11 +1420,16 @@
      (ARGLISTP1 ACL2-COUNT LST)
      (ARITIES-OKP ACL2-COUNT USER-TABLE)
      (ARITY)
+     (CLEAN-BRR-STACK)
+     (CLEAN-BRR-STACK1 ACL2-COUNT STACK)
      (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
      (CONS-TERM1-MV2)
      (DEFUN-MODE)
+     (DEREF-MACRO-NAME)
      (DOUBLET-LISTP ACL2-COUNT X)
      (DUMB-NEGATE-LIT)
+     (ENS)
+     (ER-CMP-FN)
      (FETCH-DCL-FIELD)
      (FETCH-DCL-FIELDS ACL2-COUNT LST)
      (FETCH-DCL-FIELDS1 ACL2-COUNT LST)
@@ -1433,10 +1440,14 @@
                    (BINARY-+ (LENGTH FULL-PATHNAME)
                              (UNARY-- I)))
      (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
+     (FNUME)
      (FORMALIZED-VARLISTP ACL2-COUNT VARLIST)
      (IMPLICATE)
      (LAMBDA-KEYWORDP)
+     (LAMBDA-SUBTERMP ACL2-COUNT TERM)
+     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
      (LATEST-BODY)
+     (LEGAL-CONSTANTP)
      (LEGAL-CONSTANTP1)
      (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
      (LEGAL-VARIABLEP)
@@ -1446,6 +1457,7 @@
      (LOGIC-TERM-LIST-LISTP)
      (LOGIC-TERM-LISTP)
      (LOGIC-TERMP)
+     (LOGICAL-NAMEP)
      (MACRO-ARGS)
      (MAKE-LAMBDA-APPLICATION)
      (MERGE-SORT-TERM-ORDER ; . (STEPS-TO-NIL L)
@@ -1456,12 +1468,16 @@
      (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
      (MSGP)
+     (NEWLINE)
+     (OVERRIDE-HINTS)
      (PLAUSIBLE-DCLSP ACL2-COUNT LST)
      (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
      (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
      (REMOVE-LAMBDAS)
      (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
      (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
+     (RUNEP)
+     (STOBJP)
      (STOBJS-OUT)
      (STRIP-CADRS ACL2-COUNT X)
      (STRIP-DCLS ACL2-COUNT LST)
@@ -1487,7 +1503,10 @@
      (TERMIFY-CLAUSE-SET ACL2-COUNT CLAUSES)
      (TERMP ACL2-COUNT X)
      (THROW-NONEXEC-ERROR-P)
-     (THROW-NONEXEC-ERROR-P1))))
+     (THROW-NONEXEC-ERROR-P1)
+     (TRANSLATE-ABBREV-RUNE)
+     (WORLD-EVISCERATION-ALIST)
+     (WRITE-FOR-READ))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))

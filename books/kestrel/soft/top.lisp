@@ -1,4 +1,4 @@
-; SOFT ('Second-Order Functions and Theorems')
+; SOFT (Second-Order Functions and Theorems)
 ;
 ; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides SOFT ('Second-Order Functions and Theorems'),
+; This file provides SOFT (Second-Order Functions and Theorems),
 ; a tool to mimic second-order functions and theorems
 ; in the first-order logic of ACL2.
 

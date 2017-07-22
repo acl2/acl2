@@ -267,6 +267,28 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
 
+$(info Determining whether an ipasir shared library is installed)
+ifdef IPASIR_SHARED_LIBRARY
+  IPASIR_LIB_EXISTS := $(wildcard $(IPASIR_SHARED_LIBRARY))
+  ifdef IPASIR_LIB_EXISTS
+    OS_HAS_IPASIR ?= 1
+    $(info Ipasir library supposedly exists)
+  else # ifdef IPASIR_LIB_EXISTS
+    $(info !!!WARNING: IPASIR_SHARED_LIBRARY was set to \
+      "$(IPASIR_SHARED_LIBRARY)", but this file does not exist)
+  endif # ifdef IPASIR_LIB_EXISTS
+endif # ifdef IPASIR_SHARED_LIBRARY
+
+$(info Determining whether ABC is installed)
+# If abc doesn't exist, then the error message saying it can't be
+# found is redirected to /dev/null, resulting in an empty value for
+# ABC_EXISTS
+ABC_EXISTS := $(shell abc -h 2>&1 | fgrep 'UC Berkeley, ABC' 2>/dev/null)
+ifdef ABC_EXISTS
+  OS_HAS_ABC ?= 1
+endif # ifdef ABC_EXISTS
+
+
 $(info Determining whether Z3 is installed, for use by SMTLink)
 SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
 ifdef SMTLINK_EXISTS
@@ -282,7 +304,8 @@ $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
-$(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
+$(info OS_HAS_ABC        := $(OS_HAS_ABC))
+$(info OS_HAS_IPASIR     := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK    := $(OS_HAS_SMTLINK))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
@@ -390,9 +413,14 @@ OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_ANSI), )
 
-ifeq ($(OS_HAS_GLUCOSE), )
-$(info Excluding books that need Glucose: [$(CERT_PL_USES_GLUCOSE)])
-OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
+ifeq ($(OS_HAS_ABC), )
+$(info Excluding books that need Abc: [$(CERT_PL_USES_ABC)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_ABC), $(OK_CERTS))
+endif
+
+ifeq ($(OS_HAS_IPASIR), )
+$(info Excluding books that need Ipasir: [$(CERT_PL_USES_IPASIR)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_IPASIR), $(OK_CERTS))
 endif
 
 ifeq ($(OS_HAS_SMTLINK), )
@@ -623,16 +651,20 @@ CLEAN_FILES_EXPLICIT := \
    centaur/getopt/demo2.lw \
    centaur/getopt/demo2.lx86cl64 \
    centaur/getopt/demo2.ccl \
-   nonstd/workshops/1999/calculus/book/outline/
+   nonstd/workshops/1999/calculus/book/outline/ \
+   projects/sat/lrat/incremental/lrat-check \
+   projects/sat/lrat/incremental/lrat-check.* \
+   projects/sat/lrat/cube/cube-check \
+   projects/sat/lrat/cube/cube-check.* \
+   projects/apply-model/ex1/evaluation-apply.lisp \
+   projects/apply-model/ex1/evaluation-user-defs.lisp \
+   projects/apply-model/ex2/evaluation-apply.lisp \
+   projects/apply-model/ex2/evaluation-user-defs.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
    doc/xdoc.sao \
-   projects/apply-model/ex1/evaluation-apply.lisp \
-   projects/apply-model/ex1/evaluation-user-defs.lisp \
-   projects/apply-model/ex2/evaluation-apply.lisp \
-   projects/apply-model/ex2/evaluation-user-defs.lisp
 
 .PHONY: clean_books clean
 
@@ -1643,7 +1675,7 @@ TAGS : $(CERT_PL_SOURCES)
 
 
 # BOZO --- the comments below should eventually be integrated into the XDOC
-# documentatio about cert.pl.
+# documentation about cert.pl.
 
 # In order to make the book- and dependency-scanning simple and reliable, books
 # are expected to follow certain conventions.  These conventions are generally

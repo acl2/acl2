@@ -177,7 +177,7 @@
                                                     literal-listp
                                                     literalp
                                                     unique-literalsp)))))
-  (let ((input-formula (time$ (ec-call (cnf-read-file cnf-file state)))))
+  (let ((input-formula (ec-call (cnf-read-file cnf-file state))))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic

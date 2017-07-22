@@ -65,17 +65,17 @@ and we include a theorem formerly from record-equality.lisp
 Main idea of how this all works:
 
 A lookup structure is the cons of any object onto a non-empty
-ordered-symbol-alistp that has only non-nil values, where the car is not such a
+ordered alist that has only non-nil values, where the cdr is not such a
 structure.
 
-Intuitively, the car of a lookup structure is the "junk", while the cdr is the
+Intuitively, the cdr of a lookup structure is the "junk", while the car is the
 alist that holds the values.  However, if we have other than a lookup structure
 then we view its entirety as "junk."
 
-Ge returns nil on a non-lookup structure, else looks up in the ordered symbol
+G returns nil on a non-lookup structure, else looks up in the ordered symbol
 alist part.
 
-Pu would "like" simply to set the value in the ordered symbol alist part.
+S would "like" simply to set the value in the ordered symbol alist part.
 However, it respects the form of the lookup structure, so for example it has to
 delete an existing key if it wants to set a key's value to nil.
 
@@ -166,7 +166,7 @@ delete an existing key if it wants to set a key's value to nil.
 (local
 (defthm values-not-nil
   (implies (rcdp alist)
-           ;; The order below ooks dangerous, but apparently the prover's
+           ;; The order below looks dangerous, but apparently the prover's
            ;; heuristics save us.
            (iff (assoc-equal key alist)
                 (cdr (assoc-equal key alist))))))

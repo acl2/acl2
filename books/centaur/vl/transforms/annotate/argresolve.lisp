@@ -32,6 +32,7 @@
 (include-book "../../mlib/port-tools")
 (include-book "../../mlib/modnamespace")
 (include-book "../../mlib/hid-tools")
+(include-book "../../mlib/find")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -313,6 +314,7 @@ vl-gateinst-p)s."
 ;
 ; -----------------------------------------------------------------------------
 
+
 (define vl-find-namedarg ((name stringp)
                           (args vl-namedarglist-p))
   :parents (vl-convert-namedargs)
@@ -339,6 +341,84 @@ becomes a problem.</p>"
            (if (member-equal name (vl-namedarglist->names args))
                t
              nil))))
+
+(FTY::DEFALIST VL-NAMEDARG-ALIST
+  :KEY-TYPE STRINGP
+  :VAL-TYPE VL-NAMEDARG-P
+  :KEYP-OF-NIL NIL
+  :VALP-OF-NIL NIL)
+
+(DEFINE
+  VL-NAMEDARGLIST-ALIST
+  ((X VL-NAMEDARGLIST-P) ACC)
+  :RETURNS
+  (ALIST (EQUAL (VL-NAMEDARG-ALIST-P ALIST)
+                (VL-NAMEDARG-ALIST-P ACC)))
+  :SHORT
+  (CAT "Extend an alist by binding the names of @(see VL-"
+       (SYMBOL-NAME 'NAMEDARG)
+       ")s to their definitions.")
+  :LONG
+  (CAT "<p>This can be used as an alternative to @(see "
+       (SYMBOL-NAME 'VL-FIND-NAMEDARG)
+       ") when you need to perform a lot of lookups.</p>")
+  (IF (ATOM X)
+      ACC
+      (CONS (CONS (VL-NAMEDARG->NAME (CAR X))
+                  (VL-NAMEDARG-FIX (CAR X)))
+            (VL-NAMEDARGLIST-ALIST (CDR X) ACC)))
+  ///
+  (DEFTHM
+    LOOKUP-IN-VL-NAMEDARGLIST-ALIST-ACC-ELIM
+    (IMPLIES (SYNTAXP (NOT (EQUAL ACC ''NIL)))
+             (EQUAL (HONS-ASSOC-EQUAL NAME (VL-NAMEDARGLIST-ALIST X ACC))
+                    (OR (HONS-ASSOC-EQUAL NAME (VL-NAMEDARGLIST-ALIST X NIL))
+                        (HONS-ASSOC-EQUAL NAME ACC)))))
+  (DEFTHM
+    LOOKUP-IN-VL-NAMEDARGLIST-ALIST-FAST
+    (IMPLIES (STRINGP NAME)
+             (EQUAL (HONS-ASSOC-EQUAL NAME (VL-NAMEDARGLIST-ALIST X NIL))
+                    (LET ((VAL (VL-FIND-NAMEDARG NAME X)))
+                         (AND VAL (CONS NAME VAL)))))
+    :HINTS (("Goal" :IN-THEORY (DISABLE (:D VL-NAMEDARGLIST-ALIST))
+             :INDUCT (VL-NAMEDARGLIST-ALIST X NIL)
+             :EXPAND ((VL-NAMEDARGLIST-ALIST X NIL)
+                      (VL-FIND-NAMEDARG NAME X))))))
+
+(define vl-make-namedarg-alist ((x vl-namedarglist-p))
+  :returns (palist vl-namedarg-alist-p :hyp :guard)
+  :short "Build a fast alist associating the name of each port declaration with
+the whole @(see vl-namedarg-p) object."
+  (make-fast-alist (vl-namedarglist-alist x nil))
+  ///
+  (local (defthm l0
+           (implies (alistp acc)
+                    (alistp (vl-namedarglist-alist x acc)))
+           :hints(("Goal" :in-theory (enable vl-namedarglist-alist)))))
+
+  (defthm alistp-of-vl-make-namedarg-alist
+    (alistp (vl-make-namedarg-alist x)))
+
+  (defthm hons-assoc-equal-of-vl-make-namedarg-alist
+    (implies (stringp k)
+             (equal (hons-assoc-equal k (vl-make-namedarg-alist x))
+                    (and (vl-find-namedarg k x)
+                         (cons k (vl-find-namedarg k x)))))
+    :hints(("Goal" :in-theory (e/d (vl-find-namedarg
+                                    vl-namedarglist-alist)
+                                   (vl-find-namedarg-under-iff))))))
+
+
+(define vl-fast-find-namedarg
+  ((name      stringp)
+   (namedargs vl-namedarglist-p)
+   (alist     (equal alist (vl-make-namedarg-alist namedargs))))
+  :short "Faster version of @(see vl-find-namedarg), where the search is done
+  as an fast-alist lookup rather than as string search."
+  :enabled t
+  :hooks nil
+  (mbe :logic (vl-find-namedarg name namedargs)
+       :exec (cdr (hons-get name alist))))
 
 (define vl-convert-namedargs-aux
   ((args  vl-namedarglist-p "Named arguments for some module instance")
@@ -375,6 +455,34 @@ is no argument to that port and we're to infer a blank connection.</p>"
   (defthm len-of-vl-convert-namedargs-aux
     (equal (len (vl-convert-namedargs-aux args ports))
            (len ports))))
+
+
+
+(define vl-convert-namedargs-aux-fal
+  ((args  vl-namedarglist-p "Named arguments for some module instance")
+   (alist (equal alist (vl-make-namedarg-alist args)))
+   (ports vl-portlist-p     "Ports of the submodule"))
+  :guard (not (member nil (vl-portlist->names ports)))
+  :parents (vl-convert-namedargs)
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable vl-convert-namedargs-aux)
+                 :expand ((:Free (alist) (vl-convert-namedargs-aux-fal args alist (cdr ports))))))
+  (mbe :logic (vl-convert-namedargs-aux args ports)
+       :exec
+       (b* (((when (atom ports))
+             nil)
+            (namedarg (vl-fast-find-namedarg (vl-port->name (car ports)) args alist))
+            (plainarg (if namedarg
+                          (make-vl-plainarg :expr (vl-namedarg->expr namedarg)
+                                            :atts (vl-namedarg->atts namedarg))
+                        ;; Otherwise, there's no argument corresponding to this
+                        ;; port.  That's bad, but we've already warned about it (see
+                        ;; below) and so we're just going to create a blank argument
+                        ;; for it.
+                        (make-vl-plainarg :expr nil
+                                          :atts '(("VL_MISSING_CONNECTION"))))))
+         (cons plainarg
+               (vl-convert-namedargs-aux-fal args alist (cdr ports))))))
 
 (define vl-create-namedarg-for-dotstar
   :parents (vl-expand-dotstar-arguments)
@@ -646,7 +754,13 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
                               (if (vl-plural-p missing) "ports" "port")
                               inst.modname missing)))))
 
-       (plainargs (vl-convert-namedargs-aux args ports))
+       (plainargs (mbe :logic (vl-convert-namedargs-aux args ports)
+                       :exec (if (< (len args) 20)
+                                 (vl-convert-namedargs-aux args ports)
+                               (b* ((alist (vl-make-namedarg-alist args))
+                                    (ans (vl-convert-namedargs-aux-fal args alist ports)))
+                                 (fast-alist-free alist)
+                                 ans))))
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv t (ok) new-x))
 

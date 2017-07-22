@@ -461,7 +461,7 @@
         (svtv-compile-phases-lazy 0 nphases outs updates data state-machine)))
     (fast-alist-free-list in-alists)
     (clear-memoize-table 'svex-compose)
-    (clear-memoize-table 'svex-compose-svtv-phases)
+    (clear-memoize-table 'svex-compose-svtv-phases-call)
     (mv outalist final-state)))
        
     

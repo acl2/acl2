@@ -210,7 +210,8 @@
 
 
 
-; Common book to all modes.
+; Common books to all modes.
+(include-book "cgen/top" :ttags :all)
 (include-book "defunc" :ttags :all)
 
 #!ACL2
@@ -229,7 +230,6 @@
 
      ;;Misc
      (set-guard-checking :nowarn)
-        
      (value '(value-triple :invisible))))
    
    (set-default-hints '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)))

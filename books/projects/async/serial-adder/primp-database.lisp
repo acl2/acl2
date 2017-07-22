@@ -52,6 +52,7 @@
     (b-and                  2    1    0)
     (b-and3                 3    1    0)
     (b-and4                 4    1    0)
+    (b-AndOrInv             3    1    0)
     (b-bool                 1    1    0)
     (b-buf                  1    1    0)
     (b-equv                 2    1    0)
