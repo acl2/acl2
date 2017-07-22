@@ -7,6 +7,7 @@
 
 (include-book "instructions/x86-instructions"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "std/strings/hexify" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -1059,7 +1060,7 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :non-canonical-address-encountered temp-rip))
 
        (modr/m? (x86-two-byte-opcode-ModR/M-p opcode))
@@ -1077,7 +1078,7 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :temp-rip-too-large temp-rip))
 
        (sib? (and modr/m?
@@ -1096,10 +1097,10 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :virtual-address-error temp-rip)))
-      (two-byte-opcode-execute start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86))
+    (two-byte-opcode-execute start-rip temp-rip prefixes rex-byte
+                             opcode modr/m sib x86))
 
   ///
 
@@ -3087,7 +3088,6 @@ address indicated by the instruction pointer @('rip'), decodes that
 instruction, and dispatches control to the appropriate instruction
 semantic function.</p>"
 
-  :guard-debug t
   :prepwork
   ((local (in-theory (e/d* () (unsigned-byte-p not)))))
 
@@ -3258,7 +3258,6 @@ semantic function.</p>"
 
        ((when flg6)
         (!!ms-fresh :virtual-address-error temp-rip)))
-
     (top-level-opcode-execute
      start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
@@ -3321,7 +3320,13 @@ semantic function.</p>"
           (and (canonical-address-p temp-rip3)
                (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
         t)
-      (x86p x86))
+      (x86p x86)
+      ;; Print the rip and the first opcode byte of the instruction
+      ;; under consideration after all the non-trivial hyps (above) of
+      ;; this rule have been relieved:
+      (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                    (not (cw "              op0: ~s0 ] ~%"
+                             (str::hexify (unquote opcode/escape-byte)))))))
      (equal (x86-fetch-decode-execute x86)
             (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                       opcode/escape-byte modr/m sib x86)))

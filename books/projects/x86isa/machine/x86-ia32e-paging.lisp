@@ -4,6 +4,7 @@
 
 (in-package "X86ISA")
 (include-book "x86-physical-memory" :ttags (:undef-flg))
+(include-book "clause-processors/find-matching" :dir :system)
 
 ;; [Shilpi]: For now, I've removed nested paging and all paging modes
 ;; except IA-32e paging from our model.
@@ -1009,32 +1010,71 @@ accesses.</p>
     :hints (("Goal" :in-theory (e/d (page-fault-exception)
                                     ()))))
 
+  (define find-similar-paging-entries-from-page-present-equality-aux
+    ((index natp) entry-var calls)
+    (if (atom calls)
+        nil
+      (b* ((one-call (car calls))
+           ((unless (and (true-listp one-call)
+                         (true-listp (nth index one-call))
+                         (equal (len (nth index one-call)) 2)))
+            nil))
+        (cons (list (cons entry-var    (nth 1 (nth index one-call))))
+              (find-similar-paging-entries-from-page-present-equality-aux
+               index entry-var (cdr calls))))))
+
+  (defun find-similar-paging-entries-from-page-present-equality
+      (bound-entry-val entry-var mfc state)
+    (declare (xargs :stobjs (state) :mode :program)
+             (ignorable state))
+    (b* (((mv index calls)
+          (mv
+           2
+           (acl2::find-matches-list
+            `(equal (page-present ,bound-entry-val) (page-present e))
+            (acl2::mfc-clause mfc)
+            nil)))
+         ((mv index calls)
+          (if (not calls)
+              (mv 1
+                  (acl2::find-matches-list
+                   `(equal (page-present e) (page-present ,bound-entry-val))
+                   (acl2::mfc-clause mfc)
+                   nil))
+            (mv index calls)))
+         ((when (not calls))
+          ;; equality of page-present term not encountered.
+          nil))
+      (find-similar-paging-entries-from-page-present-equality-aux index entry-var calls)))
+
   (defthm mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
-    (implies (and (equal (page-present entry-1)
-                         (page-present entry-2))
-                  (syntaxp (not (eq entry-1 entry-2)))
-                  ;; (syntaxp (and (consp entry-1)
-                  ;;               (equal (car entry-1) 'combine-bytes)))
-                  (equal (page-read-write entry-1)
-                         (page-read-write entry-2))
-                  (equal (page-user-supervisor entry-1)
-                         (page-user-supervisor entry-2))
-                  (equal (page-execute-disable entry-1)
-                         (page-execute-disable entry-2))
-                  (equal (page-size entry-1)
-                         (page-size entry-2))
-                  (if (equal structure-type 1)
-                      ;; For Page Directory
-                      (equal (part-select entry-1 :low 13 :high 20)
-                             (part-select entry-2 :low 13 :high 20))
-                    ;; For Page Directory Pointer Table
-                    (if (equal structure-type 2)
-                        (equal (part-select entry-1 :low 13 :high 29)
-                               (part-select entry-2 :low 13 :high 29))
-                      t))
-                  (unsigned-byte-p 2 structure-type)
-                  (unsigned-byte-p 64 entry-1)
-                  (unsigned-byte-p 64 entry-2))
+    (implies (and
+              (bind-free (find-similar-paging-entries-from-page-present-equality
+                          entry-1 'entry-2 mfc state)
+                         (entry-2))
+              (syntaxp (not (eq entry-1 entry-2)))
+              (equal (page-present entry-1)
+                     (page-present entry-2))
+              (equal (page-read-write entry-1)
+                     (page-read-write entry-2))
+              (equal (page-user-supervisor entry-1)
+                     (page-user-supervisor entry-2))
+              (equal (page-execute-disable entry-1)
+                     (page-execute-disable entry-2))
+              (equal (page-size entry-1)
+                     (page-size entry-2))
+              (if (equal structure-type 1)
+                  ;; For Page Directory
+                  (equal (part-select entry-1 :low 13 :high 20)
+                         (part-select entry-2 :low 13 :high 20))
+                ;; For Page Directory Pointer Table
+                (if (equal structure-type 2)
+                    (equal (part-select entry-1 :low 13 :high 29)
+                           (part-select entry-2 :low 13 :high 29))
+                  t))
+              (unsigned-byte-p 2 structure-type)
+              (unsigned-byte-p 64 entry-1)
+              (unsigned-byte-p 64 entry-2))
              (equal (mv-nth 0
                             (paging-entry-no-page-fault-p
                              structure-type lin-addr entry-1
