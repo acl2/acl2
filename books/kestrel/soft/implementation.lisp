@@ -8,18 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file implements SOFT (Second-Order Functions and Theorems),
-; a tool to mimic second-order functions and theorems
-; in the first-order logic of ACL2.
-; Some possible improvements/extensions are discussed at the end of the file.
-
-; SOFT is documented in documentation.lisp.
-; Examples of use of SOFT are in
-; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
-; Other tests are in tests.lisp.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "SOFT")
 
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
@@ -29,6 +17,8 @@
 (include-book "std/util/defines" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Some possible improvements/extensions are discussed at the end of the file.
 
 ; Second-order functions and theorems depend on function variables.
 ; Each function variable is typed by the number of its arguments (0 or more).

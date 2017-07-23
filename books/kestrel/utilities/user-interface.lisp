@@ -1,6 +1,6 @@
 ; User Interface
 ;
-; Copyright (C) 2015-2016
+; Copyright (C) 2015-2017
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -8,13 +8,8 @@
 ;
 ; Authors:
 ;   Alessandro Coglio (coglio@kestrel.edu)
-;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 ;   Eric Smith (eric.smith@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file provides utilities for
-; the user interface of event-generating macros.
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

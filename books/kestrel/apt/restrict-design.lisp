@@ -8,19 +8,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides a documentation topic for the design notes of
-; the domain restriction transformation,
-; which restricts the effective domain of a function,
-; e.g. to enable further optimizations.
-; The design notes are in design-notes/restrict.pdf.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "APT")
 
 (include-book "xdoc/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; documentation topic for the design notes,
+; which are in design-notes/restrict.pdf:
 
 (defxdoc restrict-design
 
