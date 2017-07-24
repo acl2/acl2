@@ -122,6 +122,14 @@
  <p>The new directory is @('projects/sat/lrat/cube/').  See file @('README') in
  that directory.</p>
 
+ <h4>SAT proof-checker from 2011</h4>
+
+ <p>An early SAT proof-checker based on resolution may be found in directory
+ @('books/projects/sat/zz-resolution-checker/'); see the @('README') in that
+ directory.  It was sufficiently efficient to get limited use in industry, but
+ ultimately was superseded by much more efficient clause-based
+ proof-checking (see directory @('books/projects/sat/lrat/')).</p>
+
  <h4>EDIF conversion</h4>
 
  <p>See @('projects/async/tools/convert-edif.lisp') for tools to convert
