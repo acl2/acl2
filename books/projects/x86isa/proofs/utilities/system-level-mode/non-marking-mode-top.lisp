@@ -701,7 +701,7 @@
          (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
     (equal (mv-nth 1 (rb 1 prog-addr :x (mv-nth 1 (wb n-w write-addr w value x86))))
            (mv-nth 1 (rb 1 prog-addr :x x86))))
-   :hints (("goal" :do-not-induct t
+   :hints (("Goal" :do-not-induct t
             :in-theory (e/d (disjoint-p prog-at) (rb wb))))))
 
 (local

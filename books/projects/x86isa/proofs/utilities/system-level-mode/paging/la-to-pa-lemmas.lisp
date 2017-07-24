@@ -439,7 +439,7 @@
 (defthm xlate-equiv-memory-and-mv-nth-1-las-to-pas-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
-                  (mv-nth 1(las-to-pas n lin-addr r-w-x x86-2))))
+                  (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory-and-las-to-pas) ())))
   :rule-classes :congruence)
 
@@ -453,7 +453,7 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (xlate-equiv-memory
             (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-1))
-            (mv-nth 2(las-to-pas n lin-addr r-w-x x86-2))))
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-2))))
   :hints (("Goal"
            :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
                          (las-to-pas n lin-addr r-w-x x86-2))))

@@ -1352,7 +1352,7 @@
       (gather-all-paging-structure-qword-addresses x86)))
     :hints (("Goal"
              :in-theory (e/d* (gather-all-paging-structure-qword-addresses
-                               subset-p-remove-duplicates-equal-is-subset-p)
+                               subset-p-and-remove-duplicates-equal-both)
                               (force
                                (force)
                                (:meta acl2::mv-nth-cons-meta))))))

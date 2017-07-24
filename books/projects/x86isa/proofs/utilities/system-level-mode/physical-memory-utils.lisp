@@ -40,13 +40,15 @@
 
 (defthm subset-p-physical-address-listp
   (implies (and (physical-address-listp y)
-                (subset-p x y))
+                (subset-p x y)
+                (true-listp x))
            (physical-address-listp x))
   :hints (("Goal" :in-theory (e/d (subset-p) ())))
   :rule-classes :forward-chaining)
 
 (defthm subset-p-physical-address-listp-create-physical-address-list
-  (implies (subset-p x (create-physical-address-list n prog-addr))
+  (implies (and (subset-p x (create-physical-address-list n prog-addr))
+                (true-listp x))
            (physical-address-listp x))
   :hints (("Goal" :in-theory (e/d ()
                                   (subset-p-physical-address-listp))

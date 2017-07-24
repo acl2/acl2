@@ -118,7 +118,7 @@
   :parents (proof-utilities)
   :enabled t
 
-  (if (endp x)
+  (if (atom x)
       nil
     (if (equal e (car x))
         t
@@ -172,7 +172,7 @@
   returned.</p>"
   :enabled t
 
-  (if (endp x)
+  (if (atom x)
       t
     (if (member-p (car x) y)
         nil
@@ -338,13 +338,9 @@
   :parents (proof-utilities)
   :enabled t
 
-  (if (consp x)
-      (if (member-p (car x) y)
-          (subset-p (cdr x) y)
-        nil)
-    (if (equal x nil)
-        t
-      nil))
+  (cond ((atom x) t)
+        ((member-p (car x) y) (subset-p (cdr x) y))
+        (t nil))
 
   ///
 
@@ -364,8 +360,7 @@
     :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
   (defthm subset-p-reflexive
-    (implies (true-listp x)
-             (equal (subset-p x x) t)))
+    (equal (subset-p x x) t))
 
   (defthmd subset-p-transitive
     (implies (and (subset-p x y)
@@ -378,10 +373,9 @@
   ;;            (subset-p (append a b) x)))
 
   (defthm subset-p-of-append-1
-    (implies (true-listp a)
-             (equal (subset-p (append a b) x)
-                    (and (subset-p a x)
-                         (subset-p b x)))))
+    (equal (subset-p (append a b) x)
+           (and (subset-p a x)
+                (subset-p b x))))
 
   (defthm subset-p-of-append-2
     (implies (or (subset-p a x)
@@ -394,7 +388,7 @@
 
   (defthm subset-p-of-nil
     (equal (subset-p x nil)
-           (equal x nil)))
+           (atom x)))
 
   (defthm subset-p-cons-2
     (implies (subset-p x y)
@@ -426,15 +420,6 @@
              (subset-p (remove-duplicates-equal x) (remove-duplicates-equal y)))
     :hints (("Goal" :in-theory (e/d* (subset-p-and-remove-duplicates-equal-1
                                       subset-p-and-remove-duplicates-equal-2)
-                                     ()))))
-
-  (defthmd subset-p-remove-duplicates-equal-is-subset-p
-    (implies (true-listp x)
-             (equal (subset-p (remove-duplicates-equal x) (remove-duplicates-equal y))
-                    (subset-p x y)))
-    :hints (("Goal" :in-theory (e/d* (subset-p
-                                      remove-duplicates-equal
-                                      subset-p-and-remove-duplicates-equal-both)
                                      ())))))
 
 ;; ======================================================================

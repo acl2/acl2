@@ -211,42 +211,6 @@
 
 ;; ======================================================================
 
-(defthm gather-all-paging-structure-qword-addresses-and-write-to-physical-memory-disjoint
-  (implies
-   (and (disjoint-p p-addrs
-                    (open-qword-paddr-list
-                     (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-        (physical-address-listp p-addrs))
-   (equal
-    (gather-all-paging-structure-qword-addresses (write-to-physical-memory p-addrs bytes x86))
-    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-  :hints (("Goal" :in-theory (e/d* (write-to-physical-memory
-                                    byte-listp
-                                    n08p
-                                    len
-                                    disjoint-p
-                                    gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)
-                                   ()))))
-
-(defthm gather-all-paging-structure-qword-addresses-and-wb-disjoint
-  (implies
-   (and
-    ;; We need disjoint-p$ here instead of disjoint-p because this
-    ;; first hyp should be present in the top-level hyps of the
-    ;; effects theorems of programs.
-    (disjoint-p$ (mv-nth 1 (las-to-pas
-                            (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-                 (open-qword-paddr-list
-                  (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-    (not (programmer-level-mode x86))
-    (addr-byte-alistp addr-lst))
-   (equal
-    (gather-all-paging-structure-qword-addresses (mv-nth 1 (wb addr-lst w x86)))
-    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-  :hints (("Goal" :in-theory (e/d* (wb disjoint-p$) (force (force) (:meta acl2::mv-nth-cons-meta))))))
-
-;; ======================================================================
-
 ;; Lemmas about direct-map-p:
 
 (defun-nx direct-map-p (count addr r-x cpl x86)
@@ -2389,7 +2353,15 @@
               0
               (las-to-pas
                (create-canonical-address-list 15 (xr :rip 0 x86))
-               :x (cpl x86) x86))))
+               :x (cpl x86) x86)))
+
+            
+            ;; Print the rip and the first opcode byte of the instruction
+            ;; under consideration after all the non-trivial hyps (above) of
+            ;; this rule have been relieved:
+            (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                          (not (cw "              op0: ~s0 ] ~%"
+                                   (str::hexify (unquote opcode/escape-byte)))))))
            (equal (x86-fetch-decode-execute x86)
                   (top-level-opcode-execute
                    start-rip temp-rip3 prefixes rex-byte opcode/escape-byte modr/m sib x86-4)))

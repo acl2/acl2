@@ -553,13 +553,15 @@
 
 (defthm subset-p-canonical-address-listp
   (implies (and (canonical-address-listp y)
-                (subset-p x y))
+                (subset-p x y)
+                (true-listp x))
            (canonical-address-listp x))
   :hints (("Goal" :in-theory (e/d (subset-p) ())))
   :rule-classes :forward-chaining)
 
 (defthm subset-p-canonical-address-listp-create-canonical-address-list
-  (implies (subset-p x (create-canonical-address-list n prog-addr))
+  (implies (and (subset-p x (create-canonical-address-list n prog-addr))
+                (true-listp x))
            (canonical-address-listp x))
   :hints (("Goal" :in-theory (e/d ()
                                   (subset-p-canonical-address-listp))
