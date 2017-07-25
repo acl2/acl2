@@ -45,6 +45,9 @@ field conveying useful information. </li>
 
 <li>@('!!ms-fresh'): @('ctx') and @('x86') must already be bound.</li>
 
+<li>@('!!fault-fresh'): like @('!!ms-fresh') but it updates
+the @('fault') field instead.</li>
+
 </ul>
 
 @(def !ms-erp)
@@ -53,7 +56,9 @@ field conveying useful information. </li>
 
 @(def !!ms)
 
-@(def !!ms-fresh)"
+@(def !!ms-fresh)
+
+@(def !!fault-fresh)"
 
   (defmacro !ms-erp (&rest args)
     `(cons (list ctx ,@args)
@@ -70,6 +75,10 @@ field conveying useful information. </li>
   (defmacro !!ms-fresh (&rest args)
     `(!ms (!ms-erp-fresh :rip (rip x86) ,@args)
           x86))
+
+  (defmacro !!fault-fresh (&rest args)
+    `(!fault (!ms-erp-fresh :rip (rip x86) ,@args)
+             x86))
   )
 
 (define 64-bit-modep (x86)
