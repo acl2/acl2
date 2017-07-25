@@ -302,7 +302,8 @@
                               (canonical-address-p addr))
                   :guard-hints (("Goal" :in-theory
                                  (e/d
-                                  (canonical-address-p) ())))))
+                                  (canonical-address-p signed-byte-p)
+                                  ())))))
   (let* ((n (rr32 *rdi* x86))
          (a (rr32 *rax* x86)))
     (if (equal (rip x86) addr)
@@ -313,7 +314,7 @@
              ;; Program is in the memory
              (canonical-address-p addr)
              (canonical-address-p (+ addr (len *factorial_recursive*)))
-             (prog-at addr *factorial_recursive* x86))
+             (program-at addr *factorial_recursive* x86))
       (if (equal (rip x86) (+ 16 addr))
           (and (loop-inv n0 n 1 a)
                (not (ms x86))
@@ -322,7 +323,7 @@
                ;; Program is in the memory
                (canonical-address-p addr)
                (canonical-address-p (+ addr (len *factorial_recursive*)))
-               (prog-at addr *factorial_recursive* x86))
+               (program-at addr *factorial_recursive* x86))
         (if (equal (rip x86) (+ 25 addr))
             (and (halt n0 a)
                  (programmer-level-mode x86)
@@ -331,7 +332,7 @@
                  ;; Program is in the memory
                  (canonical-address-p addr)
                  (canonical-address-p (+ addr (len *factorial_recursive*)))
-                 (prog-at addr *factorial_recursive* x86))
+                 (program-at addr *factorial_recursive* x86))
           nil)))))
 
 ;; ======================================================================
@@ -412,7 +413,7 @@
                 (programmer-level-mode x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ 25 addr))
-                (prog-at addr
+                (program-at addr
                          '(133 255 184 1 0 0 0 116 15 15 31 128 0
                                0 0 0 15 175 199 131 239 1 117 248 244)
                          x86))
@@ -632,13 +633,13 @@
                      (canonical-address-p
                       (+ addr (len
                                *factorial_recursive*))))
-                (prog-at addr *factorial_recursive* x86)
+                (program-at addr *factorial_recursive* x86)
                 (equal x86-after-run (x86-run k x86))
                 (equal (rip x86-after-run) (+ 25 addr)))
            (and (halt n0 (rr32 *rax* x86-after-run))
                 (not (fault x86-after-run))
                 (ms x86-after-run)
-                (prog-at addr *factorial_recursive* x86-after-run)))
+                (program-at addr *factorial_recursive* x86-after-run)))
   :hints (("Goal"
            :use ((:instance partial-correctness-of-fact-recursive-effects-helper)))))
 
@@ -653,13 +654,13 @@
                      (canonical-address-p
                       (+ addr (len
                                *factorial_recursive*)))
-                     (prog-at addr *factorial_recursive* x86))
+                     (program-at addr *factorial_recursive* x86))
                 (equal x86-after-run (x86-run k x86))
                 (equal (rip x86-after-run) (+ 25 addr)))
            (and (halt-spec n0 (rr32 *rax* x86-after-run))
                 (not (fault x86-after-run))
                 (ms x86-after-run)
-                (prog-at addr *factorial_recursive* x86-after-run)))
+                (program-at addr *factorial_recursive* x86-after-run)))
   :hints (("Goal"
            :in-theory (e/d (halt-and-halt-spec) ())
            :use ((:instance partial-correctness-of-fact-recursive-effects)))))

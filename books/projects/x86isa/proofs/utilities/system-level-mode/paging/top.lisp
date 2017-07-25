@@ -732,7 +732,7 @@
    ;; This is a pretty expensive rule --- a more general version of
    ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
    (implies (and (equal addr-1 addr-2)
-                 (< (+ n-2 addr-2) (+ n-1 addr-1))
+                 (<= (+ n-2 addr-2) (+ n-1 addr-1))
                  (<= addr-1 addr-2)
                  (integerp addr-1) (integerp addr-2) (posp n-1) (posp n-2)
                  (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86)))))
@@ -746,7 +746,7 @@
   (implies (and (bind-free
                  (find-l-addrs-from-las-to-pas '(n-1 addr-1) r-w-x mfc state)
                  (n-1 addr-1))
-                (< (+ n-2 addr-2) (+ n-1 addr-1))
+                (<= (+ n-2 addr-2) (+ n-1 addr-1))
                 (<= addr-1 addr-2)
                 (integerp addr-1) (integerp addr-2) (posp n-1) (posp n-2)
                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86)))))
@@ -756,28 +756,28 @@
            :use ((:instance mv-nth-0-las-to-pas-subset-p-helper))
            :in-theory (e/d* (subset-p) ()))))
 
-(defthm prog-at-nil-when-translation-error
+(defthm program-at-nil-when-translation-error
   ;; Stolen from non-marking-mode-top.lisp.
-  (implies (and (prog-at prog-addr bytes x86)
+  (implies (and (program-at prog-addr bytes x86)
                 (not (programmer-level-mode x86)))
            (equal (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)) nil))
-  :hints (("Goal" :in-theory (e/d* (prog-at rb) (force (force))))))
+  :hints (("Goal" :in-theory (e/d* (program-at rb) (force (force))))))
 
 (defthm no-errors-when-translating-program-bytes-in-marking-mode
   ;; This rule will help in fetching instruction bytes given relevant
-  ;; information about the program (using prog-at).
+  ;; information about the program (using program-at).
 
   ;; If I use (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
-  ;; instead of (prog-at prog-addr bytes x86) hypothesis below, this
+  ;; instead of (program-at prog-addr bytes x86) hypothesis below, this
   ;; rule would become as horrendously expensive.
 
   (implies (and (bind-free
-                 (find-prog-at-info 'prog-addr 'bytes mfc state)
+                 (find-program-at-info 'prog-addr 'bytes mfc state)
                  (prog-addr bytes))
-                (prog-at prog-addr bytes x86)
+                (program-at prog-addr bytes x86)
 
                 ;; We don't need the following hypothesis because we
-                ;; have prog-at-nil-when-translation-error.
+                ;; have program-at-nil-when-translation-error.
                 ;; (not (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)))
 
                 ;; <n,addr> is a subset of <(len bytes),prog-addr>.
@@ -787,14 +787,14 @@
                 (not (programmer-level-mode x86)))
            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil))
   :hints (("Goal"
-           :use ((:instance prog-at-nil-when-translation-error)
+           :use ((:instance program-at-nil-when-translation-error)
                  (:instance mv-nth-0-las-to-pas-subset-p
                             (n-1 (len bytes)) (addr-1 prog-addr)
                             (n-2 n) (addr-2 addr)
                             (r-w-x :x)))
-           :in-theory (e/d* (prog-at
+           :in-theory (e/d* (program-at
                              signed-byte-p)
-                            (prog-at-nil-when-translation-error)))))
+                            (program-at-nil-when-translation-error)))))
 
 (defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
   ;; This rule is tailored to rewrite
@@ -1007,11 +1007,11 @@
   ;; This rule is meant to apply only during instruction fetches.
   (implies
    (and
-    (bind-free (find-prog-at-info 'super-addr 'bytes mfc state)
+    (bind-free (find-program-at-info 'super-addr 'bytes mfc state)
                (super-addr bytes))
-    ;; I don't need the following prog-at hyp, but it makes searching
+    ;; I don't need the following program-at hyp, but it makes searching
     ;; for free vars more efficient.
-    (prog-at super-addr bytes x86)
+    (program-at super-addr bytes x86)
     (disjoint-p$
      (mv-nth 1 (las-to-pas (len bytes) super-addr :x (double-rewrite x86)))
      (open-qword-paddr-list

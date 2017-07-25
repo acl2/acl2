@@ -81,7 +81,7 @@
       (equal (rip x86) 0) ;; Added for codewalker
       ;; The program is located at linear addresses ranging from (rip
       ;; x86) to (+ -1 (len *program*) (rip x86)).
-      (prog-at (rip x86) *program* x86)
+      (program-at (rip x86) *program* x86)
       ;; The addresses where the program is located are canonical.
       (canonical-address-p (rip x86))
       (canonical-address-p (+ (len *program*) (rip x86)))

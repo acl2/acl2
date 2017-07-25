@@ -28,12 +28,12 @@
         nil))
     (l-addrs-candidates n-var addr-var calls)))
 
-(defun find-prog-at-info (addr-var bytes-var mfc state)
+(defun find-program-at-info (addr-var bytes-var mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
-  (b* ((call (acl2::find-call-lst 'prog-at (acl2::mfc-clause mfc)))
+  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
        ((when (not call))
-        ;; prog-at term not encountered.
+        ;; program-at term not encountered.
         nil))
     `((,addr-var . ,(nth 1 call))
       (,bytes-var . ,(nth 2 call)))))

@@ -115,16 +115,16 @@
 
 ;; ======================================================================
 
-;; Lemmas about prog-at:
+;; Lemmas about program-at:
 
-(defthm prog-at-pop-x86-oracle-in-system-level-mode
+(defthm program-at-pop-x86-oracle-in-system-level-mode
   (implies (not (programmer-level-mode x86))
-           (equal (prog-at addr bytes (mv-nth 1 (pop-x86-oracle x86)))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at pop-x86-oracle pop-x86-oracle-logic)
+           (equal (program-at addr bytes (mv-nth 1 (pop-x86-oracle x86)))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
                                   (rb)))))
 
-;; (defthm prog-at-xw-in-system-level-mode
+;; (defthm program-at-xw-in-system-level-mode
 ;;   (implies (and (not (programmer-level-mode x86))
 ;;                 (not (equal fld :mem))
 ;;                 (not (equal fld :rflags))
@@ -134,13 +134,13 @@
 ;;                 (not (equal fld :fault))
 ;;                 (not (equal fld :programmer-level-mode))
 ;;                 (not (equal fld :page-structure-marking-mode)))
-;;            (equal (prog-at l-addrs bytes (xw fld index value x86))
-;;                   (prog-at l-addrs bytes x86)))
-;;   :hints (("Goal" :in-theory (e/d* (prog-at) (rb)))))
+;;            (equal (program-at l-addrs bytes (xw fld index value x86))
+;;                   (program-at l-addrs bytes x86)))
+;;   :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
 
 ;; The following make-event generates a bunch of rules that together
-;; say the same thing as prog-at-xw-in-system-level-mode but these
-;; rules are more efficient than prog-at-xw-in-system-level-mode as
+;; say the same thing as program-at-xw-in-system-level-mode but these
+;; rules are more efficient than program-at-xw-in-system-level-mode as
 ;; they match less frequently.
 
 (make-event
@@ -148,35 +148,35 @@
   (remove-elements-from-list
    '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
    *x86-field-names-as-keywords*)
-  'prog-at
-  (acl2::formals 'prog-at (w state))
+  'program-at
+  (acl2::formals 'program-at (w state))
   :hyps '(not (programmer-level-mode x86))
-  :prepwork '((local (in-theory (e/d (prog-at) (rb)))))))
+  :prepwork '((local (in-theory (e/d (program-at) (rb)))))))
 
-(defthm prog-at-xw-rflags-not-ac-values-in-system-level-mode
+(defthm program-at-xw-rflags-not-ac-values-in-system-level-mode
   (implies (and (not (programmer-level-mode x86))
                 (equal (rflags-slice :ac value)
                        (rflags-slice :ac (rflags x86))))
-           (equal (prog-at addr bytes (xw :rflags 0 value x86))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d* (prog-at) (rb)))))
+           (equal (program-at addr bytes (xw :rflags 0 value x86))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
 
-(defthm prog-at-values-and-!flgi
+(defthm program-at-values-and-!flgi
   (implies (and (not (equal index *ac*))
                 (not (programmer-level-mode x86))
                 (x86p x86))
-           (equal (prog-at addr bytes (!flgi index value x86))
-                  (prog-at addr bytes x86)))
+           (equal (program-at addr bytes (!flgi index value x86))
+                  (program-at addr bytes x86)))
   :hints (("Goal" :in-theory (e/d* (rflags-slice-ac-simplify
                                     !flgi-open-to-xw-rflags)
                                    (rb)))))
 
-(defthm prog-at-values-and-!flgi-undefined
+(defthm program-at-values-and-!flgi-undefined
   (implies (and (not (equal index *ac*))
                 (not (programmer-level-mode x86))
                 (x86p x86))
-           (equal (prog-at addr bytes (!flgi-undefined index x86))
-                  (prog-at addr bytes x86)))
+           (equal (program-at addr bytes (!flgi-undefined index x86))
+                  (program-at addr bytes x86)))
   :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (rb)))))
 
 ;; ======================================================================

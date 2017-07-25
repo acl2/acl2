@@ -30,7 +30,7 @@
          (programmer-level-mode x86)
          (canonical-address-p program-rip)
          (canonical-address-p (+ program-rip (len *factorial_recursive*)))
-         (prog-at program-rip *factorial_recursive* x86))))
+         (program-at program-rip *factorial_recursive* x86))))
 
 (acl2::def-model-api
  :run x86-run-ALT               ;; the run function of the model
@@ -371,8 +371,8 @@
  ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
  ;; (acl2::why x86-fetch-decode-execute-opener)
  ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
- ;; (acl2::why one-read-with-rb-from-prog-at)
- ;; (acl2::why prog-at-wb-disjoint)
+ ;; (acl2::why one-read-with-rb-from-program-at)
+ ;; (acl2::why program-at-wb-disjoint)
 
  (DEFTHM SEM-16-CORRECT
    (IMPLIES (AND (FACTORIAL-HYPS X86)

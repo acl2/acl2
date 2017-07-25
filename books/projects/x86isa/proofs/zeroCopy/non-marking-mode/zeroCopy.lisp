@@ -121,7 +121,7 @@
 
 ;; Control printing:
 (acl2::add-untranslate-pattern-function
- (prog-at (xr :rip 0 x86)
+ (program-at (xr :rip 0 x86)
           '(15 32 216 72 137 68 36 232 72 139 84 36 232
                72 137 248 72 193 232 36 37 248 15 0 0
                72 129 226 0 240 255 255 72 9 208 72 139
@@ -145,7 +145,7 @@
                102 46 15 31 132 0 0 0 0 0 72 199 192
                255 255 255 255 195 15 31 132 0 0 0 0 0)
           x86)
- (prog-at (xr :rip 0 x86) *rewire_dst_to_src* x86))
+ (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86))
 
 ;; ======================================================================
 
@@ -283,7 +283,7 @@
    ;; Program addresses are canonical.
    (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip 0 x86)))
    ;; Program is located at linear address (rip x86) in the memory.
-   (prog-at (xr :rip 0 x86) *rewire_dst_to_src* x86)
+   (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86)
    ;; No errors encountered while translating the linear addresses
    ;; where the program is located.
    (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86)))))
@@ -665,7 +665,7 @@
 ;; ======================================================================
 
 ;; ACL2's default ancestors-check prevents
-;; prog-at-wb-disjoint-in-non-marking-mode from being used.
+;; program-at-wb-disjoint-in-non-marking-mode from being used.
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
 

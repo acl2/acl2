@@ -24,8 +24,8 @@
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
-;; (acl2::why one-read-with-rb-from-prog-at)
-;; (acl2::why prog-at-wb-disjoint)
+;; (acl2::why one-read-with-rb-from-program-at)
+;; (acl2::why program-at-wb-disjoint)
 
 ;; ======================================================================
 
@@ -84,11 +84,11 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (!flgi) (force (force))))))
 
-(defthm prog-at-!flgi
+(defthm program-at-!flgi
   (implies (programmer-level-mode x86)
-           (equal (prog-at prog-addr bytes (!flgi flg val x86))
-                  (prog-at prog-addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at !flgi) (force (force) rb)))))
+           (equal (program-at prog-addr bytes (!flgi flg val x86))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi) (force (force) rb)))))
 
 (defthm rb-!flgi-undefined-in-programmer-level-mode
   (implies (programmer-level-mode x86)
@@ -103,11 +103,11 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (!flgi-undefined !flgi) (force (force))))))
 
-(defthm prog-at-!flgi-undefined
+(defthm program-at-!flgi-undefined
   (implies (programmer-level-mode x86)
-           (equal (prog-at prog-addr bytes (!flgi-undefined flg x86))
-                  (prog-at prog-addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at !flgi-undefined) (prog-at)))))
+           (equal (program-at prog-addr bytes (!flgi-undefined flg x86))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at !flgi-undefined) (program-at)))))
 
 (defthm rb-write-user-rflags-in-programmer-level-mode
   (implies (programmer-level-mode x86)
@@ -205,9 +205,13 @@
  (defthm rb-1-wb-1-disjoint
    (implies (or (<= (+ n-2 addr-2) addr-1)
                 (<= (+ n-1 addr-1) addr-2))
-            (equal (mv-nth 1 (rb-1 n-1 addr-1 r-x
-                                   (mv-nth 1 (wb-1 n-2 addr-2 w val x86))))
-                   (mv-nth 1 (rb-1 n-1 addr-1 r-x x86))))
+            (and
+             (equal (mv-nth 0 (rb-1 n-1 addr-1 r-x
+                                    (mv-nth 1 (wb-1 n-2 addr-2 w val x86))))
+                    (mv-nth 0 (rb-1 n-1 addr-1 r-x x86)))
+             (equal (mv-nth 1 (rb-1 n-1 addr-1 r-x
+                                    (mv-nth 1 (wb-1 n-2 addr-2 w val x86))))
+                    (mv-nth 1 (rb-1 n-1 addr-1 r-x x86)))))
    :hints (("Goal" :do-not '(preprocess)
             :in-theory (e/d* (push-ash-inside-logior)
                              (rvm08 wvm08))))))
@@ -215,8 +219,11 @@
 (defthm rb-wb-disjoint
   (implies (and (separate r-x n-1 addr-1 w n-2 addr-2)
                 (programmer-level-mode x86))
-           (equal (mv-nth 1 (rb n-1 addr-1 r-x (mv-nth 1 (wb n-2 addr-2 w val x86))))
-                  (mv-nth 1 (rb n-1 addr-1 r-x x86))))
+           (and
+            (equal (mv-nth 0 (rb n-1 addr-1 r-x (mv-nth 1 (wb n-2 addr-2 w val x86))))
+                   (mv-nth 0 (rb n-1 addr-1 r-x x86)))
+            (equal (mv-nth 1 (rb n-1 addr-1 r-x (mv-nth 1 (wb n-2 addr-2 w val x86))))
+                   (mv-nth 1 (rb n-1 addr-1 r-x x86)))))
   :hints (("Goal"
            :use ((:instance rb-1-wb-1-disjoint))
            :in-theory (e/d* (rb wb separate)
@@ -329,7 +336,6 @@
                              (unsigned-byte-p
                               signed-byte-p))))))
 
-
 (defthm rb-wb-subset
   (implies
    (and (programmer-level-mode x86)
@@ -369,18 +375,67 @@
                      (loghead (ash (1+ j) 3) (ash x 8))))
      :hints (("Goal" :in-theory (e/d* (loghead ash) ()))))))
 
-(defthmd rb-rb-subset
-  ;; [Shilpi]: Expensive rule. Keep this disabled.
+(defthmd rb-1-rb-1-same-start-address-different-op-sizes
   (implies (and (equal (mv-nth 1 (rb i addr r-x-i x86)) val)
                 (canonical-address-p (+ -1 i addr))
                 (posp j)
-                (< j i)
+                (<= j i)
                 (programmer-level-mode x86)
                 (x86p x86))
            (equal (mv-nth 1 (rb j addr r-x-j x86))
                   (loghead (ash j 3) val)))
   :hints (("Goal"
            :in-theory (e/d* (rb-1-rb-1-subset-helper-1
+                             rb-1-rb-1-subset-helper-2)
+                            (unsigned-byte-p)))))
+
+(defun-nx rb-1-rb-1-induction-scheme (n-1 a-1 n-2 a-2 val x86)
+  ;; Similar to rb-1-wb-1-induction-scheme.
+;                    a-2
+;   ------------------------------------------------------------------------
+; ...   |   |   |   | w | w | w | w |   |   |   |   |   |   |   |   |   |  ...
+;   ------------------------------------------------------------------------
+;   0                    a-1                                               max
+  (cond ((or (zp n-1) (zp n-2) (< n-2 n-1) (< a-1 a-2))
+         (mv n-1 a-1 n-2 a-2 val x86))
+        ((equal a-1 a-2)
+         ;; n-1 and n-2 are irrelevant here.  See
+         ;; rb-1-rb-1-same-start-address-different-op-sizes.
+         (mv n-1 a-1 n-2 a-2 val x86))
+        ((< a-2 a-1)
+         ;; Byte that won't be read by the most recent rb-1.
+         (b* ((n-2 (1- n-2))
+              (a-2 (1+ a-2))
+              (val (logtail 8 val)))
+           (rb-1-rb-1-induction-scheme n-1 a-1 n-2 a-2 val x86)))))
+
+(defthmd rb-rb-subset
+  ;; [Shilpi]: Expensive rule. Keep this disabled.
+  (implies (and (equal (mv-nth 1 (rb i addr-i r-x-i x86)) val)
+                ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+                ;; This non-strictness is nice because it lets me have
+                ;; a better hyp in one-read-with-rb-from-program-at ---
+                ;; (< addr (+ (len bytes) prog-addr))
+                ;; instead of
+                ;; (< (+ 1 addr) (+ (len bytes) prog-addr))
+                (<= (+ j addr-j) (+ i addr-i))
+                (<= addr-i addr-j)
+                (canonical-address-p addr-i)
+                (canonical-address-p (+ -1 i addr-i))
+                (posp i) (posp j)
+                (integerp addr-j)
+                (programmer-level-mode x86)
+                (x86p x86))
+           (equal (mv-nth 1 (rb j addr-j r-x-j x86))
+                  (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+  :hints (("Goal"
+           :induct (rb-1-rb-1-induction-scheme j addr-j i addr-i val x86)
+           :in-theory (e/d* (ifix
+                             nfix
+                             rb-1-opener-theorem
+                             rb-1-rb-1-same-start-address-different-op-sizes
+                             rb-1-wb-1-subset-helper-1
+                             rb-1-rb-1-subset-helper-1
                              rb-1-rb-1-subset-helper-2)
                             (unsigned-byte-p)))))
 
@@ -411,79 +466,80 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Lemmas about prog-at:
+;; Lemmas about program-at:
 
-(defthm prog-at-wb-disjoint
-  (implies (and (equal l (len bytes))
-                (separate :x l prog-addr w n addr)
+(defthm program-at-wb-disjoint
+  (implies (and (separate :x (len bytes) prog-addr w n addr)
                 (programmer-level-mode x86))
-           (equal (prog-at prog-addr bytes (mv-nth 1 (wb n addr w val x86)))
-                  (prog-at prog-addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at) (rb wb)))))
+           (equal (program-at prog-addr bytes (mv-nth 1 (wb n addr w val x86)))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (program-at) (rb wb)))))
 
-(defthm prog-at-write-x86-file-des
+(defthm program-at-write-x86-file-des
   (implies (programmer-level-mode x86)
-           (equal (prog-at addr bytes (write-x86-file-des i v x86))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at
+           (equal (program-at addr bytes (write-x86-file-des i v x86))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at
                                    write-x86-file-des
                                    write-x86-file-des-logic)
                                   (rb)))))
 
-(defthm prog-at-delete-x86-file-des
+(defthm program-at-delete-x86-file-des
   (implies (programmer-level-mode x86)
-           (equal (prog-at addr bytes (delete-x86-file-des i x86))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at
+           (equal (program-at addr bytes (delete-x86-file-des i x86))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at
                                    delete-x86-file-des
                                    delete-x86-file-des-logic)
                                   (rb)))))
 
-(defthm prog-at-write-x86-file-contents
+(defthm program-at-write-x86-file-contents
   (implies (programmer-level-mode x86)
-           (equal (prog-at addr bytes (write-x86-file-contents i v x86))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at
+           (equal (program-at addr bytes (write-x86-file-contents i v x86))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at
                                    write-x86-file-contents
                                    write-x86-file-contents-logic)
                                   (rb)))))
 
-(defthm prog-at-delete-x86-file-contents
+(defthm program-at-delete-x86-file-contents
   (implies (programmer-level-mode x86)
-           (equal (prog-at addr bytes (delete-x86-file-contents i x86))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at
+           (equal (program-at addr bytes (delete-x86-file-contents i x86))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at
                                    delete-x86-file-contents
                                    delete-x86-file-contents-logic)
                                   (rb)))))
 
-(defthm prog-at-pop-x86-oracle
+(defthm program-at-pop-x86-oracle
   (implies (programmer-level-mode x86)
-           (equal (prog-at addr bytes (mv-nth 1 (pop-x86-oracle x86)))
-                  (prog-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (prog-at pop-x86-oracle pop-x86-oracle-logic)
+           (equal (program-at addr bytes (mv-nth 1 (pop-x86-oracle x86)))
+                  (program-at addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
                                   (rb)))))
 
-(defthm prog-at-write-user-rflags
+(defthm program-at-write-user-rflags
   (implies (programmer-level-mode x86)
-           (equal (prog-at addr bytes (write-user-rflags flags mask x86))
-                  (prog-at addr bytes x86)))
+           (equal (program-at addr bytes (write-user-rflags flags mask x86))
+                  (program-at addr bytes x86)))
   :hints (("Goal" :in-theory (e/d (write-user-rflags !flgi-undefined)
                                   (force (force))))))
 
 ;; ======================================================================
 
-;; Lemmas about rb and prog-at:
+;; Lemmas about rb and program-at:
 
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
 (local
- (defthm rb-1-from-prog-at-helper
+ (defthm rb-1-from-program-at-helper
    (implies (and (signed-byte-p 48 prog-addr)
                  (equal (car bytes) (ifix (mv-nth 1 (rvm08 prog-addr x86))))
                  (equal (mv-nth 1 (rb-1 1 addr :x x86))
                         (nth (+ -1 addr (- prog-addr)) (cdr bytes)))
-                 (prog-at (+ 1 prog-addr) (cdr bytes) x86)
+                 (program-at (+ 1 prog-addr) (cdr bytes) x86)
                  (signed-byte-p 48 addr)
                  (<= prog-addr addr)
                  (xr :programmer-level-mode 0 x86))
@@ -495,85 +551,155 @@
             :expand ((nth (+ addr (- prog-addr)) bytes))))))
 
 (local
- (defthm rb-1-from-prog-at
-   (implies (and (prog-at prog-addr bytes x86)
-                 (<= prog-addr addr)
-                 (< addr (+ (len bytes) prog-addr))
-                 (canonical-address-p addr)
-                 (programmer-level-mode x86))
-            (equal (mv-nth 1 (rb-1 1 addr :x x86))
-                   (nth (nfix (- addr prog-addr)) bytes)))
-   :hints (("Goal"
-            :induct (prog-at prog-addr bytes x86)
-            :in-theory (e/d (prog-at)
-                            (nth signed-byte-p))))))
+ (defthm ash-lemma
+   (implies (and (integerp i)
+                 (< 0 i))
+            (<= 8 (ash i 3)))
+   :rule-classes :linear))
 
-(defun find-info-from-prog-at-term-in-programmer-mode (ctx mfc state)
+(local
+ (defthm relating-nth-and-combine-bytes-helper
+   (implies (and (unsigned-byte-p 8 byte)
+                 (natp n)
+                 (<= 8 n))
+            (equal (logtail n byte) 0))
+   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                     bitops::ihsext-inductions)
+                                    ())))))
+
+(defthmd relating-nth-and-combine-bytes
+  (implies (and (byte-listp bytes)
+                (natp i)
+                (< i (len bytes)))
+           (equal (nth i bytes)
+                  (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
+  :hints (("Goal" :in-theory (e/d* (nth) ()))))
+
+(defthmd rb-1-error-free-implies-canonical-addresses
+  (implies (and (not (mv-nth 0 (rb-1 n addr r-x x86)))
+                (not (zp n))
+                (programmer-level-mode x86))
+           (and (canonical-address-p (+ -1 n addr))
+                (canonical-address-p addr))))
+
+(local
+ (defthm non-zero-len-of-consp
+   ;; Ugh.
+   (implies (consp x)
+            (equal (equal (len x) 0) nil))))
+
+(defthmd program-at-implies-canonical-addresses
+  (implies (and (program-at prog-addr bytes x86)
+                (consp bytes)
+                (programmer-level-mode x86))
+           (and (canonical-address-p (+ -1 (len bytes) prog-addr))
+                (canonical-address-p prog-addr)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-1-error-free-implies-canonical-addresses
+                            (n (len bytes))
+                            (addr prog-addr)
+                            (r-x :x)))
+           :in-theory (e/d* (program-at) ()))))
+
+(defun find-info-from-program-at-term-in-programmer-mode (ctx mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable ctx state))
-  (b* ((call (acl2::find-call-lst 'prog-at (acl2::mfc-clause mfc)))
+  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
        ((when (not call))
-        ;; (cw "~%~p0: prog-at term not encountered.~%" ctx)
+        ;; (cw "~%~p0: program-at term not encountered.~%" ctx)
         nil)
        (prog-addr (cadr call))
        (bytes (caddr call)))
     `((prog-addr . ,prog-addr)
       (bytes . ,bytes))))
 
-(defthm one-read-with-rb-from-prog-at
+(defthm one-read-with-rb-from-program-at
   (implies (and
-            (bind-free (find-info-from-prog-at-term-in-programmer-mode
-                        'one-read-with-rb-from-prog-at
+            (bind-free (find-info-from-program-at-term-in-programmer-mode
+                        'one-read-with-rb-from-program-at
                         mfc state)
                        (prog-addr bytes))
-            (prog-at prog-addr bytes x86)
+            (program-at prog-addr bytes x86)
             (<= prog-addr addr)
             (< addr (+ (len bytes) prog-addr))
+            ;; (< (+ 1 addr) (+ (len bytes) prog-addr))
             (canonical-address-p addr)
-            (programmer-level-mode x86))
+            (byte-listp bytes)
+            (programmer-level-mode x86)
+            (x86p x86))
            (equal (mv-nth 1 (rb 1 addr :x x86))
                   (nth (nfix (- addr prog-addr)) bytes)))
-  :hints (("Goal" :in-theory (e/d () (rb-1 nth signed-byte-p)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-rb-subset
+                            (j 1) (addr-j addr) (r-x-j :x) (x86 x86)
+                            (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
+                            (val (combine-bytes bytes)))
+                 (:instance program-at-implies-canonical-addresses))
+           :in-theory (e/d (relating-nth-and-combine-bytes program-at)
+                           (rb rb-1 nth signed-byte-p)))))
+
 
 (local
- (defthm many-reads-with-rb-1-from-prog-at
-   (implies
-    (and (prog-at prog-addr bytes x86)
-         (<= prog-addr addr)
-         (< (+ n addr) (+ (len bytes) prog-addr))
-         (canonical-address-p addr)
-         (canonical-address-p (+ -1 n addr))
-         (posp n)
-         (programmer-level-mode x86))
-    (equal (mv-nth 1 (rb-1 n addr :x x86))
-           (logior (nth (nfix (- addr prog-addr)) bytes)
-                   (ash (mv-nth 1 (rb-1 (1- n) (1+ addr) :x x86)) 8))))
+ (defthmd many-reads-with-rb-from-program-at-helper
+   (implies (and (program-at prog-addr bytes x86)
+                 (signed-byte-p 48 prog-addr)
+                 (<= prog-addr addr)
+                 (< (+ addr n) (+ prog-addr (len bytes)))
+                 (signed-byte-p 48 addr)
+                 (not (zp n))
+                 (byte-listp bytes)
+                 (xr :programmer-level-mode 0 x86)
+                 (x86p x86))
+            (equal (mv-nth 1 (rb n addr :x x86))
+                   (logior (loghead 8
+                                    (logtail (ash (+ addr (- prog-addr)) 3)
+                                             (combine-bytes bytes)))
+                           (ash (mv-nth 1 (rb (+ -1 n) (+ 1 addr) :x x86))
+                                8))))
    :hints (("Goal"
-            :induct (prog-at prog-addr bytes x86)
-            :in-theory (e/d* (prog-at)
-                             (signed-byte-p))))))
+            :do-not-induct t
+            :expand ((rb-1 n addr :x x86))
+            :use ((:instance one-read-with-rb-from-program-at))
+            :in-theory (e/d (relating-nth-and-combine-bytes)
+                            (one-read-with-rb-from-program-at
+                             acl2::commutativity-of-logior
+                             nth signed-byte-p))))))
 
-(defthm many-reads-with-rb-from-prog-at
+(defthm many-reads-with-rb-from-program-at
   (implies
-   (and (bind-free (find-info-from-prog-at-term-in-programmer-mode
-                    'many-reads-with-rb-from-prog-at
+   (and (bind-free (find-info-from-program-at-term-in-programmer-mode
+                    'many-reads-with-rb-from-program-at
                     mfc state)
                    (prog-addr bytes))
-        (prog-at prog-addr bytes x86)
+        (program-at prog-addr bytes x86)
         (<= prog-addr addr)
         (< (+ n addr) (+ (len bytes) prog-addr))
         (canonical-address-p addr)
-        (canonical-address-p (+ -1 n addr))
         (posp n)
-        (programmer-level-mode x86))
+        (byte-listp bytes)
+        (programmer-level-mode x86)
+        (x86p x86))
    (equal (mv-nth 1 (rb n addr :x x86))
           (logior (nth (nfix (- addr prog-addr)) bytes)
                   (ash (mv-nth 1 (rb (1- n) (1+ addr) :x x86)) 8))))
-  :hints (("Goal" :in-theory (e/d* () (rb-1 signed-byte-p)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance many-reads-with-rb-from-program-at-helper)
+                 (:instance rb-rb-subset
+                            (j n) (addr-j addr) (r-x-j :x) (x86 x86)
+                            (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
+                            (val (combine-bytes bytes)))
+                 (:instance program-at-implies-canonical-addresses))
+           :in-theory (e/d (program-at
+                            relating-nth-and-combine-bytes)
+                           (acl2::commutativity-of-logior
+                            rb rb-1 nth signed-byte-p)))))
 
 ;; ======================================================================
 
-(globally-disable '(rb wb canonical-address-p prog-at unsigned-byte-p signed-byte-p))
+(globally-disable '(rb wb canonical-address-p program-at unsigned-byte-p signed-byte-p))
 
 (in-theory (e/d*
             ;; We enable all these functions so that reasoning about

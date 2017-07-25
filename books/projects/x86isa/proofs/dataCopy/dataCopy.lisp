@@ -428,7 +428,7 @@
        ;; All program addresses are canonical.
        (canonical-address-p addr)
        (canonical-address-p (+ *prog-len* addr))
-       (prog-at addr *copyData* x86)))
+       (program-at addr *copyData* x86)))
 
 (defthm preconditions-fwd-chain-to-its-body
   (implies (preconditions n addr x86)
@@ -506,7 +506,7 @@
                 ;; All program addresses are canonical.
                 (canonical-address-p addr)
                 (canonical-address-p (+ *prog-len* addr))
-                (prog-at addr *copyData* x86)))
+                (program-at addr *copyData* x86)))
   :rule-classes :forward-chaining)
 
 (local
@@ -670,8 +670,8 @@
 (defthm effects-copyData-pre-program-at-projection
   (implies (and (preconditions n addr x86)
                 (equal prog-len *prog-len*))
-           (equal (prog-at addr *copyData* (x86-run (pre-clk n) x86))
-                  (prog-at addr *copyData* x86)))
+           (equal (program-at addr *copyData* (x86-run (pre-clk n) x86))
+                  (program-at addr *copyData* x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
            :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
@@ -878,8 +878,8 @@
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k)
                 (equal prog-len *prog-len*))
-           (equal (prog-at addr *copyData* (loop-state k m src-addr dst-addr x86))
-                  (prog-at addr *copyData* x86)))
+           (equal (program-at addr *copyData* (loop-state k m src-addr dst-addr x86))
+                  (program-at addr *copyData* x86)))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -895,8 +895,8 @@
 (defthm loop-clk-program-at-projection
   (implies (and (loop-preconditions 0 m addr src-addr dst-addr x86)
                 (equal prog-len *prog-len*))
-           (equal (prog-at addr *copyData* (x86-run (loop-clk m) x86))
-                  (prog-at addr *copyData* x86)))
+           (equal (program-at addr *copyData* (x86-run (loop-clk m) x86))
+                  (program-at addr *copyData* x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
@@ -1206,7 +1206,7 @@
        ;; x86-fetch-decode-execute-opener doesn't apply. Modify?
        ;; (CANONICAL-ADDRESS-P$INLINE (BINARY-+ '2 (XR ':RIP '0 X86)))
        (canonical-address-p (+ *prog-len* addr))
-       (prog-at addr *copyData* x86)))
+       (program-at addr *copyData* x86)))
 
 (defthmd preconditions-implies-after-the-copy-conditions-after-clk-helper
   (implies (and (loop-preconditions 0 (ash n 2)

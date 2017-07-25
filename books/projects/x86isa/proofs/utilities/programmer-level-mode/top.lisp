@@ -63,16 +63,16 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb):
     <br/>
-    Monitor @('one-read-with-rb-from-prog-at').
+    Monitor @('one-read-with-rb-from-program-at').
     </li>
 
    <li>When monitoring other rules above indicates that ACL2 can't
     resolve that the program remained unchanged (@(see
-    prog-at)) after a write operation @(see wb) occurred: <br/>
-    Monitor @('prog-at-wb-disjoint'). <br/>
+    program-at)) after a write operation @(see wb) occurred: <br/>
+    Monitor @('program-at-wb-disjoint'). <br/>
     <br/>
     An instance of where monitoring this rule might be helpful is when
-    the @('prog-at') hypothesis of @('rb-in-terms-of-nth-and-pos')
+    the @('program-at') hypothesis of @('rb-in-terms-of-nth-and-pos')
     is not being relieved.
    </li>
 
@@ -122,9 +122,9 @@
 
  <h3>Rules related to instruction fetches and program location</h3>
 
- @(def one-read-with-rb-from-prog-at)
+ @(def one-read-with-rb-from-program-at)
 
- @(def prog-at-wb-disjoint)
+ @(def program-at-wb-disjoint)
 
  <h3>Rules related to disjointness/overlap of memory regions</h3>
 

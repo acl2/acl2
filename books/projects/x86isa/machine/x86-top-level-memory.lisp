@@ -4307,109 +4307,162 @@ memory.</li>
 
 ;; ======================================================================
 
-(define byte-listp (x)
+(defsection program-location
   :parents (x86-top-level-memory)
-  :short "Recognizer of a list of bytes"
-  :enabled t
-  (if (equal x nil)
-      t
-    (and (consp x)
-         (n08p (car x))
-         (byte-listp (cdr x))))
-  ///
 
-  (defthm byte-listp-implies-true-listp
-    (implies (byte-listp x)
-             (true-listp x))
-    :rule-classes :forward-chaining)
+  (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+  
+  (define byte-listp (x)
+    :parents (x86-top-level-memory)
+    :short "Recognizer of a list of bytes"
+    :enabled t
+    (if (equal x nil)
+        t
+      (and (consp x)
+           (n08p (car x))
+           (byte-listp (cdr x))))
+    ///
 
-  (defthm-usb n08p-element-of-byte-listp
-    :hyp (and (byte-listp acc)
-              (natp m)
-              (< m (len acc)))
-    :bound 8
-    :concl (nth m acc)
-    :gen-linear t
-    :gen-type t)
+    (defthm byte-listp-implies-true-listp
+      (implies (byte-listp x)
+               (true-listp x))
+      :rule-classes :forward-chaining)
 
-  (defthm nthcdr-byte-listp
-    (implies (byte-listp xs)
-             (byte-listp (nthcdr n xs)))
-    :rule-classes (:rewrite :type-prescription))
+    (defthm-usb n08p-element-of-byte-listp
+      :hyp (and (byte-listp acc)
+                (natp m)
+                (< m (len acc)))
+      :bound 8
+      :concl (nth m acc)
+      :gen-linear t
+      :gen-type t)
 
-  (defthm len-of-nthcdr-byte-listp
-    (implies (and (< m (len acc))
-                  (natp m))
-             (equal (len (nthcdr m acc))
-                    (- (len acc) m))))
+    (defthm nthcdr-byte-listp
+      (implies (byte-listp xs)
+               (byte-listp (nthcdr n xs)))
+      :rule-classes (:rewrite :type-prescription))
 
-  (defthm byte-listp-revappend
-    (implies (forced-and (byte-listp lst1)
-                         (byte-listp lst2))
-             (byte-listp (revappend lst1 lst2)))
-    :rule-classes :type-prescription)
+    (defthm len-of-nthcdr-byte-listp
+      (implies (and (< m (len acc))
+                    (natp m))
+               (equal (len (nthcdr m acc))
+                      (- (len acc) m))))
 
-  (defthm true-listp-make-list-ac
-    (implies (true-listp ac)
-             (true-listp (make-list-ac n val ac)))
-    :rule-classes :type-prescription)
+    (defthm byte-listp-revappend
+      (implies (forced-and (byte-listp lst1)
+                           (byte-listp lst2))
+               (byte-listp (revappend lst1 lst2)))
+      :rule-classes :type-prescription)
 
-  (defthm make-list-ac-byte-listp
-    (implies (and (byte-listp x)
-                  (natp n)
-                  (n08p m))
-             (byte-listp (make-list-ac n m x)))
-    :rule-classes (:type-prescription :rewrite))
+    (defthm true-listp-make-list-ac
+      (implies (true-listp ac)
+               (true-listp (make-list-ac n val ac)))
+      :rule-classes :type-prescription)
 
-  (defthm reverse-byte-listp
-    (implies (byte-listp x)
-             (byte-listp (reverse x)))
-    :rule-classes (:type-prescription :rewrite))
+    (defthm make-list-ac-byte-listp
+      (implies (and (byte-listp x)
+                    (natp n)
+                    (n08p m))
+               (byte-listp (make-list-ac n m x)))
+      :rule-classes (:type-prescription :rewrite))
 
-  (defthm byte-listp-append
-    (implies (forced-and (byte-listp lst1)
-                         (byte-listp lst2))
-             (byte-listp (append lst1 lst2)))
-    :rule-classes (:rewrite :type-prescription)))
+    (defthm reverse-byte-listp
+      (implies (byte-listp x)
+               (byte-listp (reverse x)))
+      :rule-classes (:type-prescription :rewrite))
 
-(define prog-at ((addr integerp "First linear address")
-                 (bytes byte-listp "Program bytes")
-                 x86)
-  :non-executable t
+    (defthm byte-listp-append
+      (implies (forced-and (byte-listp lst1)
+                           (byte-listp lst2))
+               (byte-listp (append lst1 lst2)))
+      :rule-classes (:rewrite :type-prescription)))
 
-  :parents (x86-top-level-memory)
-  :short "Predicate that makes a statement about a program's location
+  (define combine-bytes (bytes)
+    :guard (byte-listp bytes)
+    :enabled t
+    (if (endp bytes)
+        0
+      (logior (car bytes)
+              (ash (combine-bytes (cdr bytes)) 8)))
+
+    ///
+    (defthm natp-combine-bytes
+      (implies (force (byte-listp bytes))
+               (natp (combine-bytes bytes)))
+      :rule-classes :type-prescription)
+
+    (local
+     (encapsulate
+       ()
+       (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+       (defthm plus-and-expt
+         (implies (and (natp y)
+                       (natp a)
+                       (< a (expt 256 y))
+                       (natp b)
+                       (< b 256))
+                  (< (+ b (* 256 a))
+                     (expt 256 (+ 1 y)))))))
+
+    (local (include-book "arithmetic-5/top" :dir :system))
+
+    (local
+     (in-theory (disable acl2::normalize-factors-gather-exponents
+                         acl2::arith-5-active-flag
+                         acl2::|(* c (expt d n))|)))
+
+    (defthm size-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal l (len bytes)))
+               (< (combine-bytes bytes) (expt 2 (ash l 3))))
+      :hints (("Goal" :in-theory (e/d* (logapp) ())))
+      :rule-classes :linear)
+
+    (local (in-theory (e/d* (unsigned-byte-p) ())))
+
+    (defthm unsigned-byte-p-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal n (ash (len bytes) 3)))
+               (unsigned-byte-p n (combine-bytes bytes)))
+      :rule-classes ((:rewrite)
+                     (:linear
+                      :corollary
+                      (implies (and (byte-listp bytes)
+                                    (equal n (ash (len bytes) 3)))
+                               (<= 0 (combine-bytes bytes)))))))   
+
+
+  (define program-at (prog-addr bytes x86)
+
+    :parents (x86-top-level-memory)
+    :non-executable t
+
+    :short "Predicate that makes a statement about a program's location
   in the memory"
+    :long "<p>We use @('program-at') to state that a program, given by
+  as a list of @('bytes'), is located at contiguous addresses from
+  @('prog-addr') to @('(len bytes) + prog-addr - 1') in the memory of
+  the x86 state.  Note that this function is non-executable; we use it
+  only for reasoning about machine-code.</p>"
+    :guard (and (canonical-address-p prog-addr)
+                (canonical-address-p (+ -1 (len bytes) prog-addr))
+                (byte-listp bytes))
 
-  :long "<p>We use @('prog-at') to state that a program, given by as a
-  list of @('bytes'), is located at contiguous addresses from
-  @('addr') to @('(len bytes) + addr - 1') in the memory of the x86
-  state.  Note that this function is non-executable; we use it only
-  for reasoning about machine-code.</p>"
+    (b* (((mv flg bytes-read ?x86)
+          (rb (len bytes) prog-addr :x x86)))
+      (and
+       (equal flg        nil)
+       (equal bytes-read (combine-bytes bytes))))
 
-  :measure (len bytes)
-  :guard (and (canonical-address-p addr)
-              (canonical-address-p (+ (len bytes) addr)))
+    ///
 
-  (if (endp bytes)
-      t
-    (b* ((program-byte (car bytes))
-         ((when (not (canonical-address-p addr)))
-          nil)
-         ((mv flg byte-read x86)
-          (rb 1 addr :x x86))
-         ((when flg) nil)
-         ((when (not (equal program-byte byte-read))) nil))
-      (prog-at (1+ addr) (cdr bytes) x86)))
-
-  ///
-
-  (defthm prog-at-xw-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (prog-at addr bytes (xw fld index value x86))
-                    (prog-at addr bytes x86)))
-    :hints (("Goal" :in-theory (e/d* () (rb))))))
+    (defthm program-at-xw-in-programmer-level-mode
+      (implies (and (programmer-level-mode x86)
+                    (not (equal fld :mem))
+                    (not (equal fld :programmer-level-mode)))
+               (equal (program-at addr bytes (xw fld index value x86))
+                      (program-at addr bytes x86)))
+      :hints (("Goal" :in-theory (e/d* () (rb)))))))
 
 ;; ======================================================================

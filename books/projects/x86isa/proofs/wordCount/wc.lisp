@@ -265,7 +265,7 @@
        ;; Enabling the SYSCALL instruction.
        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-       (prog-at addr *wc* x86)))
+       (program-at addr *wc* x86)))
 
 (defthm preconditions-forward-chain-addresses-info
   (implies (preconditions addr x86)
@@ -300,7 +300,7 @@
                 ;; Enabling the SYSCALL instruction.
                 (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-                (prog-at addr *wc* x86)))
+                (program-at addr *wc* x86)))
   :rule-classes :forward-chaining)
 
 (defthm preconditions-fwd-chaining-essentials
@@ -355,7 +355,7 @@
        ;; Enabling the SYSCALL instruction.
        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-       (prog-at addr *wc* x86)))
+       (program-at addr *wc* x86)))
 
 (defthm loop-preconditions-weird-rbp-rsp
   (implies (equal (xr :rgf *rbp* x86)
@@ -396,7 +396,7 @@
                 (canonical-address-p (xr :rgf *rbp* x86))
                 (equal (xr :rgf *rsp* x86)
                        (- (xr :rgf *rbp* x86) 32))
-                (prog-at addr *wc* x86)))
+                (program-at addr *wc* x86)))
   :rule-classes ((:forward-chaining :trigger-terms ((loop-preconditions addr x86)))))
 
 (defthm loop-preconditions-fwd-chaining-essentials
@@ -643,7 +643,7 @@
 
 (defthmd effects-to-gc-program-projection
   (implies (preconditions addr x86)
-           (prog-at addr *wc* (x86-run (gc-clk-main-before-call) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-main-before-call) x86)))
   :hints (("Goal" :use ((:instance effects-to-gc-no-call))
            :in-theory (e/d* (preconditions)
                             (effects-to-gc-no-call)))))
@@ -962,7 +962,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-        (prog-at addr *wc* x86))
+        (program-at addr *wc* x86))
    (equal (x86-run (gc-clk) x86)
           (XW
            :RGF *RAX*
@@ -1190,7 +1190,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-        (prog-at addr *wc* x86))
+        (program-at addr *wc* x86))
    (equal (xr :ms 0 (x86-run (gc-clk) x86)) nil)))
 
 (defthmd effects-call-gc-fault-projection
@@ -1225,7 +1225,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-        (prog-at addr *wc* x86))
+        (program-at addr *wc* x86))
    (equal (xr :fault 0 (x86-run (gc-clk) x86)) nil)))
 
 ;; ======================================================================
@@ -2141,7 +2141,7 @@
 (defthmd effects-eof-not-encountered-prelim-program-projection
   (implies (and (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
-           (prog-at addr *wc* (x86-run (gc-clk-no-eof) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-no-eof) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions) (effects-eof-not-encountered-prelim))
            :use ((:instance effects-eof-not-encountered-prelim)))))
 
@@ -2268,7 +2268,7 @@
                 (equal (ia32_efer-slice :ia32_efer-lma
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
                        1)
-                (prog-at addr *wc* (x86-run (gc-clk-no-eof) x86))
+                (program-at addr *wc* (x86-run (gc-clk-no-eof) x86))
                 (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86))
                                      :r (x86-run (gc-clk-no-eof) x86)))
                        (loghead
@@ -2368,7 +2368,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (prog-at addr *wc* x86-new)
+        (program-at addr *wc* x86-new)
         (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
                *newline*))
    (equal (x86-run 10 x86-new)
@@ -2618,7 +2618,7 @@
 (defthmd effects-newline-encountered-program-projection
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (prog-at addr *wc* (x86-run (gc-clk-newline) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-newline) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
                                    (effects-newline-encountered
                                     effects-eof-not-encountered-prelim))
@@ -2804,7 +2804,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (prog-at addr *wc* x86-new)
+        (program-at addr *wc* x86-new)
         (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
                *space*))
    (equal (x86-run 7 x86-new)
@@ -3030,7 +3030,7 @@
   (implies (and (loop-preconditions addr x86)
                 (equal len-wc *wc-len*)
                 (equal (get-char (offset x86) (input x86)) *space*))
-           (prog-at addr *wc* (x86-run (gc-clk-space) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-space) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
                                    (effects-space-encountered
                                     effects-eof-not-encountered-prelim))
@@ -3210,7 +3210,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (prog-at addr *wc* x86-new)
+        (program-at addr *wc* x86-new)
         (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
                *tab*))
    (equal (x86-run 11 x86-new)
@@ -3431,7 +3431,7 @@
   (implies (and (loop-preconditions addr x86)
                 (equal len-wc *wc-len*)
                 (equal (get-char (offset x86) (input x86)) *tab*))
-           (prog-at addr *wc* (x86-run (gc-clk-tab) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-tab) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
                                    (effects-tab-encountered
                                     effects-eof-not-encountered-prelim))
@@ -3665,7 +3665,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (prog-at addr *wc* x86-new)
+        (program-at addr *wc* x86-new)
         ;; Character read in is a byte.
         (unsigned-byte-p 8 (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new)))
         ;; ... but it is not one of the following...
@@ -4116,7 +4116,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86) *out*)
                 (equal len-wc *wc-len*))
-           (prog-at addr *wc* (x86-run (gc-clk-otherwise-out) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory (e/d*
                               (effects-eof-not-encountered-prelim-programmer-level-mode-projection
                                effects-eof-not-encountered-prelim-program-projection
@@ -4429,7 +4429,7 @@
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (prog-at addr *wc* x86-new)
+        (program-at addr *wc* x86-new)
         ;; Character read in is a byte.
         (unsigned-byte-p 8 (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new)))
         ;; ... but it is not one of the following...
@@ -4794,7 +4794,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (not (equal (word-state x86 x86) *out*)))
-           (prog-at addr *wc* (x86-run (gc-clk-otherwise-in) x86)))
+           (program-at addr *wc* (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory (e/d*
                               (effects-eof-not-encountered-prelim-programmer-level-mode-projection
                                effects-eof-not-encountered-prelim-program-projection
@@ -6267,7 +6267,7 @@
                 ;; Enabling the SYSCALL instruction.
                 (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-                (prog-at addr *wc* x86)
+                (program-at addr *wc* x86)
                 (canonical-address-p mem-addr)
                 (canonical-address-p (+ -1 n-mem mem-addr))
                 (separate

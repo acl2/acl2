@@ -27,7 +27,7 @@
    (not (page-structure-marking-mode x86))
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
-   (prog-at (rip x86) *program* x86)
+   (program-at (rip x86) *program* x86)
    ;; No error encountered when translating the programs linear
    ;; addresses to physical addresses.
    (not (mv-nth 0 (las-to-pas (len *program*) (rip x86) :x x86)))

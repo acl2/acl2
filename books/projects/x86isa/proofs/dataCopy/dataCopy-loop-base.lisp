@@ -24,8 +24,8 @@
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
-;; (acl2::why one-read-with-rb-from-prog-at)
-;; (acl2::why prog-at-wb-disjoint)
+;; (acl2::why one-read-with-rb-from-program-at)
+;; (acl2::why program-at-wb-disjoint)
 
 (defthmd effects-copyData-loop-base
   (implies
@@ -352,8 +352,8 @@
 (defthm effects-copyData-loop-base-program-at-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
-           (equal (prog-at addr *copyData* (x86-run (loop-clk-base) x86))
-                  (prog-at addr *copyData* x86)))
+           (equal (program-at addr *copyData* (x86-run (loop-clk-base) x86))
+                  (program-at addr *copyData* x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
                             (loop-clk-base

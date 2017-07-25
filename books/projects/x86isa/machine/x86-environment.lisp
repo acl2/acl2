@@ -259,62 +259,7 @@
 
   :parents (x86-environment)
 
-  (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))
-
-  (define combine-bytes (bytes)
-    :guard (byte-listp bytes)
-    :enabled t
-    (if (endp bytes)
-        0
-      (logior (car bytes)
-              (ash (combine-bytes (cdr bytes)) 8)))
-
-    ///
-    (defthm natp-combine-bytes
-      (implies (force (byte-listp bytes))
-               (natp (combine-bytes bytes)))
-      :rule-classes :type-prescription)
-
-    (local
-     (encapsulate
-       ()
-       (local (include-book "arithmetic/top-with-meta" :dir :system))
-
-       (defthm plus-and-expt
-         (implies (and (natp y)
-                       (natp a)
-                       (< a (expt 256 y))
-                       (natp b)
-                       (< b 256))
-                  (< (+ b (* 256 a))
-                     (expt 256 (+ 1 y)))))))
-
-    (local (include-book "arithmetic-5/top" :dir :system))
-
-    (local
-     (in-theory (disable acl2::normalize-factors-gather-exponents
-                         acl2::arith-5-active-flag
-                         acl2::|(* c (expt d n))|)))
-
-    (defthm size-of-combine-bytes
-      (implies (and (byte-listp bytes)
-                    (equal l (len bytes)))
-               (< (combine-bytes bytes) (expt 2 (ash l 3))))
-      :hints (("Goal" :in-theory (e/d* (logapp) ())))
-      :rule-classes :linear)
-
-    (local (in-theory (e/d* (unsigned-byte-p) ())))
-
-    (defthm unsigned-byte-p-of-combine-bytes
-      (implies (and (byte-listp bytes)
-                    (equal n (ash (len bytes) 3)))
-               (unsigned-byte-p n (combine-bytes bytes)))
-      :rule-classes ((:rewrite)
-                     (:linear
-                      :corollary
-                      (implies (and (byte-listp bytes)
-                                    (equal n (ash (len bytes) 3)))
-                               (<= 0 (combine-bytes bytes)))))))
+  (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))  
 
   (local (in-theory (e/d () (str::coerce-to-list-removal))))
 

@@ -270,8 +270,8 @@
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m)
                 (equal prog-len (len *copydata*)))
-           (equal (prog-at addr *copyData* (x86-run (loop-clk-recur) x86))
-                  (prog-at addr *copyData* x86)))
+           (equal (program-at addr *copyData* (x86-run (loop-clk-recur) x86))
+                  (program-at addr *copyData* x86)))
   :hints (("Goal"
            :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()

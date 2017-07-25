@@ -7,6 +7,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
@@ -66,7 +67,7 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb):
     <br/>
-    Monitor @('rb-one-byte-of-program-in-non-marking-mode').
+    Monitor @('one-read-with-rb-from-program-at-in-non-marking-mode').
     </li>
 
    <li>When monitoring other rules above indicates that ACL2 can't
@@ -76,7 +77,7 @@
     <br/>
     An instance of where monitoring this rule might be helpful is when
     the @('program-at') hypothesis of
-    @('rb-one-byte-of-program-in-non-marking-mode') is not
+    @('one-read-with-rb-from-program-at-in-non-marking-mode') is not
     being relieved.
    </li>
 
@@ -88,7 +89,7 @@
     list of addresses, of which that address is a member.  An instance
     of where monitoring this rule
     might be helpful is when the @('member-p') hypothesis of
-    @('rb-one-byte-of-program-in-non-marking-mode') is not
+    @('one-read-with-rb-from-program-at-in-non-marking-mode') is not
     being relieved.
    </li>
 
@@ -146,7 +147,7 @@
 
  <h3>Rules related to instruction fetches and program location</h3>
 
- @(def rb-one-byte-of-program-in-non-marking-mode)
+ @(def one-read-with-rb-from-program-at-in-non-marking-mode)
 
  @(def program-at-wb-disjoint-in-non-marking-mode)
 
@@ -168,73 +169,12 @@
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
 ;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
-;; (acl2::why rb-one-byte-of-program-in-non-marking-mode)
-;; (acl2::why combine-bytes-rb-in-terms-of-rb-subset-p-in-non-marking-mode)
+;; (acl2::why one-read-with-rb-from-program-at-in-non-marking-mode)
+;; (acl2::why combine-bytes-many-reads-with-rb-from-program-at-in-non-marking-mode)
 ;; (acl2::why program-at-wb-disjoint-in-non-marking-mode)
 ;; (acl2::why rb-wb-disjoint-in-non-marking-mode)
 ;; (acl2::why disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs)
 ;; (acl2::why la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-mode)
-
-;; ======================================================================
-
-;; Lemmas about memory reads:
-
-(defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa-in-non-marking-mode
-  (implies (not (page-structure-marking-mode x86))
-           (equal (read-from-physical-memory
-                   p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
-                  (read-from-physical-memory p-addrs x86)))
-  :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-(defthm rb-one-byte-of-program-in-non-marking-mode
-  (implies (and (bind-free
-                 (find-prog-at-info 'prog-addr 'bytes mfc state)
-                 (prog-addr bytes))
-                (prog-at prog-addr bytes x86)
-                (<= prog-addr lin-addr)
-                (< lin-addr (+ (len bytes) prog-addr))
-                (canonical-address-p lin-addr)
-                (not (page-structure-marking-mode x86)))
-           (equal (mv-nth 1 (rb 1 lin-addr :x x86))
-                  (nth (- lin-addr prog-addr) bytes)))
-  :hints (("Goal" :in-theory (e/d (prog-at rm08)
-                                  (not acl2::mv-nth-cons-meta)))))
-
-(defthmd rb-unwinding-thm-in-non-marking-mode
-  (implies (and (not (mv-nth 0 (rb n lin-addr r-w-x x86)))
-                (posp n)
-                (not (page-structure-marking-mode x86)))
-           (equal (mv-nth 1 (rb n lin-addr r-w-x x86))
-                  (logior (mv-nth 1 (rb 1 lin-addr r-w-x x86))
-                          (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) r-w-x x86)) 8))))
-  :hints (("Goal" :in-theory (e/d (rb) (acl2::mv-nth-cons-meta force (force))))))
-
-(defthm rb-in-terms-of-rb-subset-p-in-non-marking-mode
-  (implies
-   (and (bind-free
-         (find-prog-at-info 'prog-addr 'bytes mfc state)
-         (prog-addr bytes))
-        (syntaxp (quotep n))
-        (prog-at prog-addr bytes x86)
-        (<= prog-addr lin-addr)
-        (< (+ n lin-addr) (+ (len bytes) prog-addr))
-        (not (mv-nth 0 (las-to-pas n lin-addr :x x86)))
-        (posp n)
-        (not (programmer-level-mode x86))
-        (not (page-structure-marking-mode x86)))
-   (equal (mv-nth 1 (rb n lin-addr :x x86))
-          (logior (nth (- lin-addr prog-addr) bytes)
-                  (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) :x x86)) 8))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d ()
-                           (rb
-                            canonical-address-p
-                            acl2::mv-nth-cons-meta
-                            rb-one-byte-of-program-in-non-marking-mode))
-           :use ((:instance rb-one-byte-of-program-in-non-marking-mode)
-                 (:instance rb-unwinding-thm-in-non-marking-mode
-                            (r-w-x :x))))))
 
 ;; ======================================================================
 
@@ -591,11 +531,13 @@
 
 ;; ======================================================================
 
+;; las-to-pas error:
+
 (local
  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-mode-helper-0
    (implies (and (equal addr-2 addr-1)
                  ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
-                 (< (+ n-2 addr-2) (+ n-1 addr-2))
+                 (<= (+ n-2 addr-2) (+ n-1 addr-2))
                  (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
                  (posp n-1))
             (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
@@ -604,7 +546,7 @@
 (local
  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-mode-helper-1
    (implies (and (signed-byte-p 48 addr-1)
-                 (< (+ addr-1 n-2) (+ addr-1 n-1))
+                 (<= (+ addr-1 n-2) (+ addr-1 n-1))
                  (not (mv-nth 0 (ia32e-la-to-pa addr-1 r-w-x x86)))
                  (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
                  (not (xr :page-structure-marking-mode 0 x86))
@@ -620,9 +562,9 @@
                            (n-1 addr-1))
                 (syntaxp (and (not (eq n-1 n-2)) (not (eq addr-1 addr-2))))
                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
-                ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
+                ;; <n-2,addr-2> is a (not strict) subset of <n-1,addr-1>.
                 (<= addr-1 addr-2)
-                (< (+ n-2 addr-2) (+ n-1 addr-1))
+                (<= (+ n-2 addr-2) (+ n-1 addr-1))
                 (not (page-structure-marking-mode x86))
                 (posp n-1) (posp n-2) (integerp addr-2))
            (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
@@ -632,30 +574,30 @@
 
 ;; ======================================================================
 
-;; Lemmas about prog-at:
+;; Lemmas about program-at:
 
-(defthm prog-at-nil-when-translation-error
+(defthm program-at-nil-when-translation-error
   (implies (and (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86))
                 (not (programmer-level-mode x86)))
-           (equal (prog-at prog-addr bytes x86) nil))
-  :hints (("Goal" :in-theory (e/d* (prog-at) (force (force))))))
+           (equal (program-at prog-addr bytes x86) nil))
+  :hints (("Goal" :in-theory (e/d* (program-at) (force (force))))))
 
 (defthm no-errors-when-translating-program-bytes-in-non-marking-mode
   ;; This rule will help in fetching instruction bytes given relevant
-  ;; information about the program (using prog-at).
+  ;; information about the program (using program-at).
 
   ;; If I use (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
-  ;; instead of (prog-at prog-addr bytes x86) hypothesis below, this
+  ;; instead of (program-at prog-addr bytes x86) hypothesis below, this
   ;; rule would become as horrendously expensive as
   ;; mv-nth-0-las-to-pas-subset-p-in-non-marking-mode.
 
   (implies (and (bind-free
-                 (find-prog-at-info 'prog-addr 'bytes mfc state)
+                 (find-program-at-info 'prog-addr 'bytes mfc state)
                  (prog-addr bytes))
-                (prog-at prog-addr bytes x86)
+                (program-at prog-addr bytes x86)
 
                 ;; We don't need the following hypothesis because we
-                ;; have prog-at-nil-when-translation-error.
+                ;; have program-at-nil-when-translation-error.
                 ;; (not (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)))
 
                 ;; <n,addr> is a subset of <(len bytes),prog-addr>.
@@ -666,92 +608,11 @@
                 (not (page-structure-marking-mode x86)))
            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil))
   :hints (("Goal"
-           :use ((:instance prog-at-nil-when-translation-error))
+           :use ((:instance program-at-nil-when-translation-error))
            :in-theory (e/d* (mv-nth-0-las-to-pas-subset-p-in-non-marking-mode)
-                            (prog-at-nil-when-translation-error)))))
+                            (program-at-nil-when-translation-error)))))
 
-;; (defthm no-errors-when-translating-program-bytes-in-non-marking-mode
-;;   ;; Too expensive to have around...
-;;   (implies (and (bind-free (find-l-addrs-from-las-to-pas '(n-bytes prog-addr) :x mfc state)
-;;                            (n-bytes prog-addr))
-;;                 (syntaxp (and (not (eq n-bytes n)) (not (eq prog-addr addr))))
-;;                 (not (mv-nth 0 (las-to-pas n-bytes prog-addr :x x86)))
-;;                 ;; <n,addr> is a subset of <n-bytes,prog-addr>.
-;;                 (<= prog-addr addr)
-;;                 (< (+ n addr) (+ n-bytes prog-addr))
-;;                 (posp n-bytes) (integerp addr)
-;;                 (not (page-structure-marking-mode x86)))
-;;            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil)))
-
-(local
- (defthm prog-at-wb-disjoint-in-non-marking-mode-helper-0
-   (implies
-    (and (signed-byte-p 48 prog-addr)
-         (not (mv-nth 0 (ia32e-la-to-pa prog-addr :x x86)))
-         (disjoint-p (cons (mv-nth 1 (ia32e-la-to-pa prog-addr :x x86))
-                           (mv-nth 1
-                                   (las-to-pas (len (cdr bytes))
-                                               (+ 1 prog-addr)
-                                               :x x86)))
-                     (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-         (disjoint-p (xlation-governing-entries-paddrs prog-addr x86)
-                     (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-         (not (xr :programmer-level-mode 0 x86))
-         (not (xr :page-structure-marking-mode 0 x86))
-         (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
-    (equal (mv-nth 1 (rb 1 prog-addr :x (mv-nth 1 (wb n-w write-addr w value x86))))
-           (mv-nth 1 (rb 1 prog-addr :x x86))))
-   :hints (("Goal" :do-not-induct t
-            :in-theory (e/d (disjoint-p prog-at) (rb wb))))))
-
-(local
- (defthm non-zero-len-of-consp
-   ;; Ugh, why do I need this?
-   (implies (consp x)
-            (equal (equal (len x) 0) nil))))
-
-(local
- (defthm prog-at-wb-disjoint-in-non-marking-mode-helper-1
-   (implies
-    (and (consp bytes)
-         (signed-byte-p 48 prog-addr)
-         (disjoint-p
-          (all-xlation-governing-entries-paddrs (len bytes) prog-addr x86)
-          (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-         (not (xr :page-structure-marking-mode 0 x86))
-         (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
-    (equal (mv-nth 0 (ia32e-la-to-pa prog-addr :x (mv-nth 1 (wb n-w write-addr w value x86))))
-           (mv-nth 0 (ia32e-la-to-pa prog-addr :x x86))))
-   :hints (("goal" :do-not-induct t
-            :expand ((all-xlation-governing-entries-paddrs (len bytes) prog-addr x86))
-            :in-theory (e/d (disjoint-p prog-at) (rb wb))))))
-
-(local
- (defthm prog-at-wb-disjoint-in-non-marking-mode-helper-2
-   (implies (and (consp bytes)
-                 (signed-byte-p 48 prog-addr)
-                 (not (mv-nth 0 (ia32e-la-to-pa prog-addr :x x86)))
-                 (not (equal (car bytes)
-                             (mv-nth 1 (rb 1 prog-addr :x (mv-nth 1 (wb n-w write-addr w value x86))))))
-                 (disjoint-p
-                  (mv-nth 1 (las-to-pas (len bytes) prog-addr :x x86))
-                  (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-                 (disjoint-p
-                  (all-xlation-governing-entries-paddrs (len bytes) prog-addr x86)
-                  (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-                 (not (xr :programmer-level-mode 0 x86))
-                 (not (xr :page-structure-marking-mode 0 x86))
-                 (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
-            (not (prog-at prog-addr bytes x86)))
-   :hints (("Goal"
-            :use ((:instance prog-at-wb-disjoint-in-non-marking-mode-helper-0))
-            :expand ((las-to-pas (len bytes) prog-addr :x x86)
-                     (all-xlation-governing-entries-paddrs (len bytes) prog-addr x86))
-            :in-theory (e/d* ()
-                             (prog-at-wb-disjoint-in-non-marking-mode-helper-0 prog-at rb wb))
-            :do-not-induct t))))
-
-(defthm prog-at-wb-disjoint-in-non-marking-mode
+(defthm program-at-wb-disjoint-in-non-marking-mode
   (implies (and
             (disjoint-p
              (mv-nth 1 (las-to-pas (len bytes) prog-addr :x x86))
@@ -762,11 +623,301 @@
             (not (programmer-level-mode x86))
             (not (page-structure-marking-mode x86))
             (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
-           (equal (prog-at prog-addr bytes (mv-nth 1 (wb n-w write-addr w value x86)))
-                  (prog-at prog-addr bytes x86)))
+           (equal (program-at prog-addr bytes (mv-nth 1 (wb n-w write-addr w value x86)))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :in-theory (e/d (program-at) (rb wb)))))
+
+;; ======================================================================
+
+;; Lemmas about memory reads:
+
+(defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa-in-non-marking-mode
+  (implies (not (page-structure-marking-mode x86))
+           (equal (read-from-physical-memory
+                   p-addrs (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                  (read-from-physical-memory p-addrs x86)))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+
+(defthmd rb-unwinding-thm-in-non-marking-mode
+  (implies (and (not (mv-nth 0 (rb n lin-addr r-w-x x86)))
+                (posp n)
+                (not (page-structure-marking-mode x86)))
+           (equal (mv-nth 1 (rb n lin-addr r-w-x x86))
+                  (logior (mv-nth 1 (rb 1 lin-addr r-w-x x86))
+                          (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) r-w-x x86)) 8))))
+  :hints (("Goal" :in-theory (e/d (rb) (acl2::mv-nth-cons-meta force (force))))))
+
+(local
+ (defthmd rb-rb-subset-helper-1
+   (implies (and (posp j)
+                 (x86p x86))
+            (equal (loghead (ash j 3) (xr :mem index x86))
+                   (xr :mem index x86)))
+   :hints (("Goal" :in-theory (e/d* () (memi-is-n08p unsigned-byte-p))
+            :use ((:instance memi-is-n08p (i index)))))))
+
+(local
+ (encapsulate
+   ()
+   (local (include-book "arithmetic-3/top" :dir :system))
+
+   (defthmd rb-rb-subset-helper-2
+     (implies (natp j)
+              (equal (ash (loghead (ash j 3) x) 8)
+                     (loghead (ash (1+ j) 3) (ash x 8))))
+     :hints (("Goal" :in-theory (e/d* (loghead ash) ()))))))
+
+(local
+ (defthmd rb-rb-same-start-address-different-op-sizes-helper
+   (implies (and (equal (mv-nth 1 (rb i addr r-w-x x86)) val)
+                 (canonical-address-p (+ -1 i addr))
+                 (not (mv-nth 0 (las-to-pas i addr r-w-x x86)))
+                 ;; The following should be inferrable from the above...
+                 (not (mv-nth 0 (las-to-pas j addr r-w-x x86)))
+                 (posp j)
+                 (<= j i)
+                 (not (programmer-level-mode x86))
+                 (not (page-structure-marking-mode x86))
+                 (x86p x86))
+            (equal (mv-nth 1 (rb j addr r-w-x x86))
+                   (loghead (ash j 3) val)))
+   :hints (("Goal"
+            :in-theory (e/d* (rb-rb-subset-helper-1
+                              rb-rb-subset-helper-2)
+                             (unsigned-byte-p))))))
+
+(defthmd rb-rb-same-start-address-different-op-sizes
+  (implies (and (equal (mv-nth 1 (rb i addr r-w-x x86)) val)
+                (not (mv-nth 0 (las-to-pas i addr r-w-x x86)))
+                (posp j)
+                (<= j i)
+                (canonical-address-p (+ -1 i addr))
+                (integerp addr)
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86))
+                (x86p x86))
+           (equal (mv-nth 1 (rb j addr r-w-x x86))
+                  (loghead (ash j 3) val)))
   :hints (("Goal"
-           :induct (prog-at prog-addr bytes (mv-nth 1 (wb n-w write-addr w value x86)))
-           :in-theory (e/d (prog-at) (rb wb)))))
+           :do-not-induct t
+           :use ((:instance rb-rb-same-start-address-different-op-sizes-helper)
+                 (:instance mv-nth-0-las-to-pas-subset-p-in-non-marking-mode
+                            (n-1 i)
+                            (addr-1 addr)
+                            (n-2 j)
+                            (addr-2 addr)))
+           :in-theory (e/d* ()
+                            (unsigned-byte-p
+                             signed-byte-p)))))
+
+(defun-nx rb-rb-induction-scheme (n-1 a-1 n-2 a-2 val x86)
+;                    a-2
+;   ------------------------------------------------------------------------
+; ...   |   |   |   | w | w | w | w |   |   |   |   |   |   |   |   |   |  ...
+;   ------------------------------------------------------------------------
+;   0                    a-1                                               max
+  (cond ((or (zp n-1) (zp n-2) (< n-2 n-1) (< a-1 a-2))
+         (mv n-1 a-1 n-2 a-2 val x86))
+        ((equal a-1 a-2)
+         (mv n-1 a-1 n-2 a-2 val x86))
+        ((< a-2 a-1)
+         ;; Byte that won't be read by the most recent rb.
+         (b* ((n-2 (1- n-2))
+              (a-2 (1+ a-2))
+              (val (logtail 8 val)))
+           (rb-rb-induction-scheme n-1 a-1 n-2 a-2 val x86)))))
+
+(defthmd rb-rb-subset-in-non-marking-mode
+  ;; [Shilpi]: Expensive rule. Keep this disabled.
+  (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
+                (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+                ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+                ;; This non-strictness is nice because it lets me have
+                ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-mode ---
+                ;; (< lin-addr (+ (len bytes) prog-addr))
+                ;; instead of
+                ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
+                (<= (+ j addr-j) (+ i addr-i))
+                (<= addr-i addr-j)
+                (canonical-address-p addr-i)
+                (canonical-address-p (+ -1 i addr-i))
+                (canonical-address-p addr-j)
+                (posp i) (posp j)
+                (not (programmer-level-mode x86))
+                (not (page-structure-marking-mode x86))
+                (x86p x86))
+           (equal (mv-nth 1 (rb j addr-j r-w-x x86))
+                  (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+  :hints (("Goal"
+           :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
+                         (las-to-pas i addr-i r-w-x x86)
+                         (las-to-pas j addr-j r-w-x x86))
+           :in-theory (e/d* (signed-byte-p
+                             ifix
+                             nfix
+                             rb-1-opener-theorem)
+                            (unsigned-byte-p)))
+          (if (equal (car id) '(0 1))
+              '(:expand ((las-to-pas i addr-i r-w-x x86))
+                        :use ((:instance rb-rb-same-start-address-different-op-sizes
+                                         (addr addr-i)))
+                        :in-theory (e/d* (rb-rb-subset-helper-1
+                                          rb-rb-subset-helper-2
+                                          signed-byte-p
+                                          ifix
+                                          nfix
+                                          rb-1-opener-theorem)
+                                         (unsigned-byte-p
+                                          signed-byte-p)))
+            nil)))
+
+(local
+ (defthm ash-lemma
+   (implies (and (integerp i)
+                 (< 0 i))
+            (<= 8 (ash i 3)))
+   :rule-classes :linear))
+
+(local
+ (defthm relating-nth-and-combine-bytes-helper
+   (implies (and (unsigned-byte-p 8 byte)
+                 (natp n)
+                 (<= 8 n))
+            (equal (logtail n byte) 0))
+   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                     bitops::ihsext-inductions)
+                                    ())))))
+
+(defthmd relating-nth-and-combine-bytes
+  (implies (and (byte-listp bytes)
+                (natp i)
+                (< i (len bytes)))
+           (equal (nth i bytes)
+                  (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
+  :hints (("Goal" :in-theory (e/d* (nth) ()))))
+
+(defthmd rb-error-free-implies-canonical-addresses
+  (implies (and (not (mv-nth 0 (rb n addr r-x x86)))
+                (not (zp n))
+                (not (programmer-level-mode x86)))
+           (and (canonical-address-p (+ -1 n addr))
+                (canonical-address-p addr))))
+
+(local
+ (defthm non-zero-len-of-consp
+   ;; Ugh.
+   (implies (consp x)
+            (equal (equal (len x) 0) nil))))
+
+(defthmd program-at-implies-canonical-addresses
+  (implies (and (program-at prog-addr bytes x86)
+                (consp bytes)
+                (not (programmer-level-mode x86)))
+           (and (canonical-address-p (+ -1 (len bytes) prog-addr))
+                (canonical-address-p prog-addr)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-error-free-implies-canonical-addresses
+                            (n (len bytes))
+                            (addr prog-addr)
+                            (r-x :x)))
+           :in-theory (e/d* (program-at rb) ()))))
+
+(defthm one-read-with-rb-from-program-at-in-non-marking-mode
+  (implies (and (bind-free
+                 (find-program-at-info 'prog-addr 'bytes mfc state)
+                 (prog-addr bytes))
+                (program-at prog-addr bytes x86)
+                (<= prog-addr lin-addr)
+                (< lin-addr (+ (len bytes) prog-addr))
+                (canonical-address-p lin-addr)
+                (canonical-address-p prog-addr)
+                (byte-listp bytes)
+                (not (page-structure-marking-mode x86))
+                (not (programmer-level-mode x86))
+                (x86p x86))
+           (equal (mv-nth 1 (rb 1 lin-addr :x x86))
+                  (nth (- lin-addr prog-addr) bytes)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (program-at
+                            relating-nth-and-combine-bytes)
+                           (rb
+                            nth
+                            signed-byte-p
+                            not acl2::mv-nth-cons-meta))
+           :use ((:instance rb-rb-subset-in-non-marking-mode
+                            (addr-i prog-addr) (i (len bytes))
+                            (addr-j lin-addr)  (j 1)
+                            (r-w-x :x)
+                            (val (combine-bytes bytes)))
+                 (:instance program-at-implies-canonical-addresses)))))
+
+(local
+ (defthmd many-reads-with-rb-from-program-at-in-non-marking-mode-helper
+   (implies
+    (and (canonical-address-p prog-addr)
+         (not (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)))
+         (equal (mv-nth 1 (rb (len bytes) prog-addr :x x86))
+                (combine-bytes bytes))
+         (<= prog-addr lin-addr)
+         (< (+ lin-addr n) (+ prog-addr (len bytes)))
+         (not (mv-nth 0 (las-to-pas (+ -1 n) (+ 1 lin-addr) :x x86)))
+         (not (zp n))
+         (canonical-address-p lin-addr)
+         (byte-listp bytes)
+         (not (xr :programmer-level-mode 0 x86))
+         (not (xr :page-structure-marking-mode 0 x86))
+         (x86p x86))
+    (equal (mv-nth 1 (rb n lin-addr :x x86))
+           (logior (ash (mv-nth 1 (rb (+ -1 n) (+ 1 lin-addr) :x x86)) 8)
+                   (loghead 8 (logtail (ash (+ lin-addr (- prog-addr)) 3)
+                                       (combine-bytes bytes))))))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((rb n lin-addr :x x86))
+            :use ((:instance one-read-with-rb-from-program-at-in-non-marking-mode))
+            :in-theory (e/d (relating-nth-and-combine-bytes
+                             program-at
+                             logior)
+                            (one-read-with-rb-from-program-at-in-non-marking-mode
+                             acl2::commutativity-of-logior
+                             nth signed-byte-p
+                             acl2::mv-nth-cons-meta))))))
+
+(defthm many-reads-with-rb-from-program-at-in-non-marking-mode
+  (implies
+   (and (bind-free
+         (find-program-at-info 'prog-addr 'bytes mfc state)
+         (prog-addr bytes))
+        (syntaxp (quotep n))
+        (program-at prog-addr bytes x86)
+        (<= prog-addr lin-addr)
+        (< (+ n lin-addr) (+ (len bytes) prog-addr))
+        (not (mv-nth 0 (las-to-pas n lin-addr :x x86)))
+        (posp n) (canonical-address-p lin-addr)
+        (byte-listp bytes)
+        (not (programmer-level-mode x86))
+        (not (page-structure-marking-mode x86))
+        (x86p x86))
+   (equal (mv-nth 1 (rb n lin-addr :x x86))
+          (logior (nth (- lin-addr prog-addr) bytes)
+                  (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) :x x86)) 8))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-rb-subset-in-non-marking-mode
+                            (addr-i prog-addr) (i (len bytes))
+                            (addr-j lin-addr)  (j n)
+                            (r-w-x :x)
+                            (val (combine-bytes bytes)))
+                 (:instance program-at-implies-canonical-addresses)
+                 (:instance many-reads-with-rb-from-program-at-in-non-marking-mode-helper))
+           :in-theory (e/d (program-at                            
+                            relating-nth-and-combine-bytes)
+                           (rb
+                            canonical-address-p
+                            acl2::mv-nth-cons-meta)))))
 
 ;; ======================================================================
 
@@ -839,7 +990,7 @@
 
 ;; ======================================================================
 
-(globally-disable '(rb wb canonical-address-p prog-at
+(globally-disable '(rb wb canonical-address-p program-at
                        unsigned-byte-p signed-byte-p
                        las-to-pas all-xlation-governing-entries-paddrs))
 

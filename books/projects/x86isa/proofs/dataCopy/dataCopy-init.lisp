@@ -228,7 +228,7 @@
        ;; All program addresses are canonical.
        (canonical-address-p addr)
        (canonical-address-p (+ *prog-len* addr))
-       (prog-at addr *copyData* x86)
+       (program-at addr *copyData* x86)
        ;; Values copied in the previous iterations of the loop are unaltered.
        ;; dst[(+ -k dst-addr) to dst-addr]  =  src[(+ -k src-addr) to src-addr]
        (equal (destination-bytes k (xr :rgf *rsi* x86) x86)
@@ -299,7 +299,7 @@
                 ;; All program addresses are canonical.
                 (canonical-address-p addr)
                 (canonical-address-p (+ *prog-len* addr))
-                (prog-at addr *copyData* x86)
+                (program-at addr *copyData* x86)
                 ;; Values copied in the previous iterations of the loop are unaltered.
                 ;; dst[(+ -k dst-addr) to dst-addr]  =  src[(+ -k src-addr) to src-addr]
                 (equal (destination-bytes k (xr :rgf *rsi* x86) x86)

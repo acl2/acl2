@@ -211,7 +211,7 @@
                 (n32p (rgfi *rdi* x86))
                 (canonical-address-p (rip x86))
                 (canonical-address-p (+ -1 (len *popcount-32-bytes*) (rip x86)))
-                (prog-at (rip x86) *popcount-32-bytes* x86))
+                (program-at (rip x86) *popcount-32-bytes* x86))
            (equal (rgfi *rax* (x86-run 15 x86))
                   (logcount (xr :rgf *rdi* x86))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -855,7 +855,7 @@
                  (equal n (rr64 *rdi* x86))
                  (canonical-address-p (rip x86))
                  (canonical-address-p (+ -1 (len *popcount-64-bytes*) (rip x86)))
-                 (prog-at (rip x86) *popcount-64-bytes* x86))
+                 (program-at (rip x86) *popcount-64-bytes* x86))
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -924,7 +924,7 @@
                 (equal n (rr64 *rdi* x86))
                 (canonical-address-p (rip x86))
                 (canonical-address-p (+ -1 (len *popcount-64-bytes*) (rip x86)))
-                (prog-at (rip x86) *popcount-64-bytes* x86))
+                (program-at (rip x86) *popcount-64-bytes* x86))
            (equal (rgfi *rax* (x86-run *popcount-count* x86))
                   (logcount n)))
   :hints (("Goal"
