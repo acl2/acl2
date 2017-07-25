@@ -43,7 +43,7 @@ is typically the function name (a symbol).</li>
 be bound.  We return an updated @('x86') that has a non-nil @('ms')
 field conveying useful information. </li>
 
-<li>@('!!ms-fresh'): @('ctx') must already be bound.</li>
+<li>@('!!ms-fresh'): @('ctx') and @('x86') must already be bound.</li>
 
 </ul>
 
