@@ -157,14 +157,17 @@
  @(tsee let) and @(tsee mv-let) expressions (and @('lambda') expressions) and
  towards ensuring executability of its results.</p>
 
+ <p>Improved the utility, @('copy-def'), to avoid failures for some functions
+ defined by @(tsee mutual-recursion).  Thanks to Eric Smith for a helpful bug
+ report.</p>
+
  <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
  logic) mode code, returning a specified @(see error-triple).  The new utility
  @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
  property needed of the returned @(see error-triple) is that its error
  component is not @('nil').</p>
 
- <p>New utilities @(tsee manage-screen-output) and @(tsee
- manage-screen-output!) are improved versions of @(tsee
+ <p>New utility @(tsee manage-screen-output) is an improved versions o @(tsee
  control-screen-output) (which may eventually be removed).</p>
 
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that

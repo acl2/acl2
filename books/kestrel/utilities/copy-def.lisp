@@ -289,6 +289,15 @@
            (local (make-flag ,flag-name ,fn))
            ,encap
            (local (in-theory '((:induction ,flag-name)
+
+; We need the equivalence theorem, which is as follows, as per function
+; make-flag-fn in community book tools/flag.lisp.
+
+                               ,(intern-in-package-of-symbol
+                                 (concatenate 'string
+                                              (symbol-name flag-name)
+                                              "-EQUIVALENCES")
+                                 flag-name)
                                ,@runes)))
            ,@(and hyps-preserved-thm-names
                   `((local (set-default-hints
